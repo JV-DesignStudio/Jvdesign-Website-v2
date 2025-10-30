@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardust Collector | JVDesignStudio</title>
+    <link rel="icon" type="image/png" href="https://placehold.co/32x32/1a202c/ffffff?text=JV">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Using Fredoka for the game font, and Inter for the UI -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- General Setup --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            /* Set base background for consistency */
+            background-color: var(--color-light-beige);
+        }
+        
+        /* --- Cozy Creatures Color Palette --- */
+        :root {
+            --color-light-beige: #F0EAD6; /* Creamy/Base */
+            --color-soft-tan: #D2B48C;    /* Soft Tan */
+            --color-muted-rose: #BC4749;  /* Muted Rose/Berry - Used for Primary Buttons */
+            --color-cozy-teal: #70A3A7;   /* Muted Teal/Blue-Gray - Used for Links/Accents */
+            --color-deep-charcoal: #403B33; /* Dark Contrast - Used for Text/Hover */
+        }
+
+        /* --- Full-Page Wave Animation (Cozy Background) --- */
+        #wave-background {
+            background: linear-gradient(
+                -45deg,
+                var(--color-light-beige) 0%,
+                var(--color-soft-tan) 25%,
+                var(--color-muted-rose) 50%,
+                var(--color-cozy-teal) 75%,
+                var(--color-light-beige) 100%
+            );
+            background-size: 400% 400%;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1; 
+            animation: colorWave 45s ease-in-out infinite;
+        }
+
+        @keyframes colorWave {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Header Logo Color Shift (Harmonized with Cozy Colors) --- */
+        @keyframes logo-color-shift {
+            0% { color: var(--color-soft-tan); }
+            33% { color: var(--color-muted-rose); }
+            66% { color: var(--color-cozy-teal); }
+            100% { color: var(--color-soft-tan); }
+        }
+
+        .logo-animated-name {
+            display: inline-block;
+            font-weight: 800;
+            animation: logo-color-shift 6s infinite alternate ease-in-out;
+        }
+
+        /* --- Custom Styles: Updated to use Cozy Palette --- */
+        /* Primary Button: Muted Rose */
+        .btn-primary {
+            background-color: var(--color-muted-rose); 
+            transition: background-color 0.3s, transform 0.2s;
+            color: white !important; /* Ensure white text */
+        }
+        .btn-primary:hover {
+            background-color: var(--color-deep-charcoal); /* Dark charcoal hover */
+            transform: translateY(-2px);
+        }
+
+        /* Navigation link using cozy teal with hover to deep charcoal */
+        .nav-link {
+            color: var(--color-cozy-teal);
+            transition: color 0.15s ease-in-out;
+        }
+        .nav-link:hover {
+            color: var(--color-deep-charcoal);
+        }
+        
+        /* Card Hover Effect */
+        .card-project {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-project:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- STARDUST GAME STYLES (RE-THEMED) --- */
+        .game-font {
+             font-family: 'Fredoka', cursive;
+        }
+
+        #game-area {
+            position: relative;
+            width: 95vw;
+            max-width: 800px;
+            height: 80vh;
+            margin-top: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.2); /* Softened shadow */
+            /* Darker Inner Void (Unchanged - part of game) */
+            background: radial-gradient(circle at center, #0e0036 0%, #00000a 100%);
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #player {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            z-index: 15;
+            will-change: transform;
+            border-radius: 50%;
+            background-size: cover;
+            background-image: url("https://placehold.co/60x60/a0f0ff/000?text=STAR");
+            box-shadow: 0 0 15px rgba(160, 240, 255, 0.8);
+        }
+
+        .game-object {
+            position: absolute;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-in;
+            z-index: 10;
+            background-size: cover;
+            border-radius: 50%;
+        }
+        
+        .collected {
+            opacity: 0;
+            transform: scale(0.1);
+        }
+
+        /* Scoreboard re-themed to match Cozy-Charcoal */
+        #score-board {
+            background-color: var(--color-deep-charcoal); /* MATCHES FOOTER */
+            color: var(--color-light-beige); /* MATCHES FOOTER TEXT */
+            text-shadow: 2px 2px 4px #000;
+            border-radius: 0.5rem;
+            max-width: 800px;
+            width: 95vw;
+        }
+
+        #controls-info {
+            font-size: 0.9rem;
+            color: var(--color-deep-charcoal); /* Matched to body text */
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        /* Message box re-themed */
+        #message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 1.5rem 3rem;
+            background-color: var(--color-light-beige); /* MATCHES THEME */
+            border-radius: 1rem;
+            color: var(--color-deep-charcoal); /* MATCHES THEME */
+            font-size: 2rem;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            display: none;
+            text-align: center;
+            border: 5px solid var(--color-cozy-teal); /* MATCHES THEME */
+        }
+        
+        #message-box.game-over {
+            background-color: #fff6f6; /* Light red */
+            color: var(--color-muted-rose); /* Muted Rose */
+            border-color: var(--color-muted-rose);
+        }
+
+        /* Restart button re-themed to match btn-primary */
+        .restart-button {
+            margin-top: 1rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--color-muted-rose); /* MATCHES THEME */
+            color: white;
+            border-radius: 0.5rem;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px #883a3b; /* Darker rose shadow */
+        }
+
+        .restart-button:hover {
+            background-color: #A33B3D;
+            transform: translateY(-1px);
+            box-shadow: 0 5px #883a3b;
+        }
+        .restart-button:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px #883a3b;
+        }
+
+        /* Responsive adjustments for mobile */
+        @media (max-width: 640px) {
+            #score-board {
+                font-size: 1.2rem;
+                padding: 0.75rem;
+            }
+            #player {
+                width: 50px;
+                height: 50px;
+            }
+            #message-box {
+                font-size: 1.5rem;
+                padding: 1rem 2rem;
+            }
+            #controls-info {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light-beige">
+
+    <!-- FULL-PAGE ANIMATED BACKGROUND LAYER (The Cozy Wave) -->
+    <div id="wave-background"></div>
+
+    <!-- Header & Navigation (Matches index.html) -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo/Brand -->
+                <div class="flex-shrink-0">
+                    <a href="index.html" class="inline-flex items-center text-3xl" style="color: var(--color-deep-charcoal);">
+                        <img src="logo.png" alt="JV Design Studio Logo" class="h-10 w-auto mr-2 rounded-full" onerror="this.onerror=null;this.src='https://placehold.co/40x40/403B33/F0EAD6?text=JV'">
+                        <span class="logo-animated-name">JVDesignStudio</span>
+                    </a>
+                </div>
+                <!-- Navigation Links -->
+                <nav class="flex items-center space-x-4">
+                    <!-- CONTENT HUB BUTTON - Uses Cozy Rose -->
+                    <a href="content_hub.html" class="px-5 py-2 font-bold text-lg rounded-xl btn-primary shadow-md hover:shadow-lg">
+                        📚 Content Hub
+                    </a>
+                    <!-- About Link - Uses Cozy Teal -->
+                    <a href="index.html#about" class="font-medium transition duration-150 hidden sm:block nav-link">
+                        About
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Section -->
+    <main class="py-12 px-4 relative z-5">
+        <div class="max-w-4xl mx-auto flex flex-col items-center justify-start">
+            
+            <!-- Game Title -->
+            <h1 class="text-5xl sm:text-7xl font-extrabold text-gray-900 mb-6 leading-tight text-center game-font" style="color: var(--color-deep-charcoal);">
+                Stardust <span style="color: var(--color-muted-rose);">Collector</span>
+            </h1>
+            
+            <!-- Score and High Score Board -->
+            <div id="score-board" classm="flex justify-around items-center p-3 text-2xl font-bold game-font w-full">
+                <span id="current-score-display">Collected Dust: 0</span>
+                <span class="text-xl font-bold text-yellow-300 hidden sm:inline mx-4">|</span>
+                <span id="high-score-display" class="text-lg font-medium">Best Total: 0</span>
+            </div>
+
+            <!-- Instructions -->
+            <div id="controls-info" class="game-font">
+                Move: Use **Arrow Keys / WASD** or **Drag** on the screen.
+            </div>
+
+            <!-- Main Game Area (The Simulation Bit) -->
+            <div id="game-area" class="mt-4 mb-8 w-full">
+                <div id="player"></div>
+                <div id="message-box" class="game-font">
+                    <!-- Content will be set by JavaScript -->
+                </div>
+            </div>
+
+            <p class-="text-sm max-w-xl text-center" style="color: var(--color-deep-charcoal);">
+                *Avoid the fiery **Shadow Comets** and collect as much shimmering **Stardust** as possible to fuel your space journey. Difficulty increases with your score!
+            </p>
+
+        </div>
+    </main>
+
+    <!-- Footer (Matches index.html) -->
+    <footer class="py-8 relative z-5" style="background-color: var(--color-deep-charcoal);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
+            <p>&copy; 2025 JVDesignStudio. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <script>
+        // --- GAME LOGIC (Copied Verbatim) ---
+        // --- IMAGE PLACEHOLDERS (Themed to 'Stardust' book) ---
+        const PLAYER_IMAGE = "https://placehold.co/60x60/a0f0ff/000?text=STAR";
+        const DUST_IMAGE = "https://placehold.co/40x40/ffe787/000?text=DUST";
+        const COMET_IMAGE = "https://placehold.co/70x70/cc3333/fff?text=SHADOW";
+
+        // --- GAME STATE & ELEMENTS ---
+        const PLAYER_SPEED = 7;
+        const HIGH_SCORE_KEY = 'stardust_high_score'; // Key for localStorage
+        let SCROLL_SPEED = 3; 
+        
+        const player = document.getElementById('player');
+        const gameArea = document.getElementById('game-area');
+        const currentScoreDisplay = document.getElementById('current-score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const messageBox = document.getElementById('message-box');
+
+        let currentScore = 0;
+        let highScore = 0;
+        let gameActive = false;
+        let gameLoopId = null;
+        let objectSpawnTimer = 0;
+        const OBJECT_SPAWN_INTERVAL = 60; // Frames per spawn
+        let objects = []; 
+        let audioContext = null;
+
+        // Player position state
+        let playerX = 0;
+        let playerY = 0;
+        const playerWidth = 60;
+        const playerHeight = 60;
+
+        // Movement state
+        const keysPressed = {};
+        let isTouching = false;
+
+
+        // --- UTILITY FUNCTIONS (Audio) ---
+        // Initializes the Web Audio Context
+        function getAudioContext() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API not supported or failed to initialize:", e);
+                }
+            }
+            return audioContext;
+        }
+
+        // Plays a high-pitched sound when dust is collected
+        function playCollectSound() {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+            gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+            oscillator.stop(ctx.currentTime + 0.15);
+        }
+
+        // Plays a low, buzzing sound for game over
+        function playGameOverSound() {
+             const ctx = getAudioContext();
+            if (!ctx) return;
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(100, ctx.currentTime);
+            gainNode.gain.setValueAtTime(0.8, ctx.currentTime);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+            oscillator.stop(ctx.currentTime + 0.5);
+        }
+
+        // --- LOCAL STORAGE FUNCTIONS (for High Score) ---
+
+        function loadHighScore() {
+            try {
+                // NOTE: Using localStorage as per game instructions. For collaborative apps, Firebase is used.
+                const storedScore = localStorage.getItem(HIGH_SCORE_KEY);
+                highScore = storedScore ? parseInt(storedScore, 10) : 0;
+            } catch (e) {
+                console.error("Error loading high score from localStorage:", e);
+                highScore = 0;
+            }
+        }
+
+        function saveScore() {
+            if (currentScore > highScore) {
+                try {
+                    localStorage.setItem(HIGH_SCORE_KEY, currentScore.toString());
+                    highScore = currentScore;
+                    updateHighScoreDisplay();
+                    console.log("New high score saved:", highScore);
+                } catch (e) {
+                    console.error("Error saving high score to localStorage:", e);
+                }
+            }
+        }
+
+        // --- GAME LOGIC FUNCTIONS ---
+
+        // Sets up the initial game state and UI
+        function initializeGame() {
+            loadHighScore();
+
+            // Set Player Image (though CSS has a fallback)
+            player.style.backgroundImage = `url(${PLAYER_IMAGE})`;
+
+            // Set initial player position near the bottom center
+            const areaHeight = gameArea.clientHeight;
+            const areaWidth = gameArea.clientWidth;
+
+            // Player fixed position near the bottom
+            playerY = areaHeight * 0.85 - playerHeight / 2;
+            playerX = areaWidth / 2 - playerWidth / 2;
+            updatePlayerVisuals();
+            updateHighScoreDisplay();
+
+            // Display introductory message
+            messageBox.innerHTML = `
+                Welcome to Stardust Collector!
+                <button class="restart-button" onclick="window.startGame()">Start Journey</button>
+            `;
+            messageBox.style.display = 'block';
+
+            // Start the game loop only once
+            if (!gameLoopId) {
+                gameLoop();
+            }
+        }
+
+        // Resets the game state and starts playing
+        function startGame() {
+            if (gameActive) return;
+            
+            // Reset state
+            currentScore = 0;
+            SCROLL_SPEED = 3; 
+            gameActive = true;
+            messageBox.style.display = 'none';
+            messageBox.classList.remove('game-over');
+            
+            // Clear existing objects
+            objects.forEach(obj => obj.element.remove());
+            objects = [];
+
+            // Reset player position (re-center horizontally)
+            playerX = gameArea.clientWidth / 2 - playerWidth / 2;
+            updatePlayerVisuals();
+            updateCurrentScoreDisplay();
+        }
+
+        // Handles the end of the game
+        function gameOver() {
+            if (!gameActive) return;
+
+            gameActive = false;
+            playGameOverSound();
+            
+            saveScore(); // Check and save high score
+
+            // Show Game Over message
+            messageBox.classList.add('game-over');
+            messageBox.innerHTML = `
+                <span class="text-4xl">🌌 Lost in the Nebula! 🌌</span>
+                <div class="text-xl font-normal mt-2">Collected Dust: ${currentScore}</div>
+                ${currentScore > highScore ? '<div class="text-yellow-600 font-extrabold">NEW BEST!</div>' : ''}
+                <div class="text-base font-normal">Best Total: ${highScore}</div>
+                <button class="restart-button" onclick="window.startGame()">Start Again</button>
+            `;
+            messageBox.style.display = 'block';
+        }
+
+        // Applies current X/Y position to the player's DOM element
+        function updatePlayerVisuals() {
+            player.style.transform = `translate(${playerX}px, ${playerY}px)`;
+        }
+
+        function updateCurrentScoreDisplay() {
+            currentScoreDisplay.textContent = `Collected Dust: ${currentScore}`;
+        }
+
+        function updateHighScoreDisplay() {
+            highScoreDisplay.textContent = `Best Total: ${highScore}`;
+        }
+
+        // Creates a new falling object (Dust or Comet)
+        function spawnObject() {
+            const isComet = Math.random() < 0.25; // 25% chance of spawning an obstacle (Comet)
+            const size = isComet ? 70 : 40;
+            const image = isComet ? COMET_IMAGE : DUST_IMAGE;
+            const type = isComet ? 'comet-obstacle' : 'dust-particle';
+
+            const objElement = document.createElement('div');
+            objElement.className = `game-object ${type}`;
+            objElement.style.backgroundImage = `url(${image})`;
+            
+            // Random horizontal position
+            const width = gameArea.clientWidth;
+            const x = Math.random() * (width - size);
+
+            // Start just outside the top edge
+            const y = -size;
+
+            objElement.style.width = `${size}px`;
+            objElement.style.height = `${size}px`;
+            objElement.style.left = `${x}px`;
+            objElement.style.top = `${y}px`;
+
+            const obj = {
+                element: objElement,
+                x: x,
+                y: y,
+                width: size,
+                height: size,
+                isComet: isComet,
+                id: crypto.randomUUID()
+            };
+
+            objects.push(obj);
+            gameArea.appendChild(objElement);
+        }
+
+        // Moves all falling objects and checks for collisions
+        function updateObjects() {
+            const nextObjects = [];
+
+            // 1. Base SCROLL_SPEED increases with score (Difficulty Ramp)
+            SCROLL_SPEED = 3 + (currentScore * 0.005); 
+
+            for (let i = 0; i < objects.length; i++) {
+                const obj = objects[i];
+                
+                // Obstacle Speed Multiplier: Comets fall 1.5x faster plus a score bonus
+                const cometBonus = currentScore * 0.001;
+                const speedMultiplier = obj.isComet ? (1.5 + cometBonus) : 1;
+                const verticalMovement = SCROLL_SPEED * speedMultiplier;
+
+                // 2. Move object down
+                obj.y += verticalMovement;
+                obj.element.style.top = `${obj.y}px`;
+
+                // 3. Check if off screen (remove)
+                if (obj.y > gameArea.clientHeight) {
+                    obj.element.remove();
+                    continue;
+                }
+
+                // 4. Check Collision
+                if (!obj.element.classList.contains('collected') && checkCollision(obj)) {
+                    if (obj.isComet) {
+                        gameOver();
+                        return; // Stop processing frame on game over
+                    } else {
+                        // Collect Dust
+                        obj.element.classList.add('collected');
+                        playCollectSound();
+                        currentScore++;
+                        updateCurrentScoreDisplay();
+                    }
+                }
+
+                nextObjects.push(obj);
+            }
+
+            objects = nextObjects;
+
+            // Spawn logic: Interval decreases as score increases, down to a minimum of 30 frames
+            const currentSpawnInterval = Math.max(30, OBJECT_SPAWN_INTERVAL - Math.floor(currentScore / 2));
+            objectSpawnTimer++;
+            if (objectSpawnTimer >= currentSpawnInterval) {
+                spawnObject();
+                objectSpawnTimer = 0;
+            }
+        }
+
+        // Simple circle collision check
+        function checkCollision(obj) {
+            // Player center coordinates
+            const pCX = playerX + playerWidth / 2;
+            const pCY = playerY + playerHeight / 2;
+            const pR = playerWidth * 0.4; // Use 80% of width for collision radius
+
+            // Object center coordinates
+            const oCX = obj.x + obj.width / 2;
+            const oCY = obj.y + obj.height / 2;
+            const oR = obj.width * 0.4; // Use 80% of width for collision radius
+
+            // Distance check (Circle collision)
+            const distanceX = pCX - oCX;
+            const distanceY = pCY - oCY;
+            const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+            const requiredDistance = pR + oR;
+
+            return distanceSquared < requiredDistance * requiredDistance;
+        }
+
+        // --- MOVEMENT AND GAME LOOP ---
+
+        // Calculates the player's new position based on keys pressed
+        function updatePlayerPosition() {
+            let dx = 0;
+
+            // Keyboard controls (WASD or Arrow Keys)
+            if (keysPressed['arrowleft'] || keysPressed['a']) dx -= 1;
+            if (keysPressed['arrowright'] || keysPressed['d']) dx += 1;
+
+            // Update position
+            playerX += dx * PLAYER_SPEED;
+
+            // Clamp position within game area boundaries
+            const maxWidth = gameArea.clientWidth - playerWidth;
+
+            playerX = Math.max(0, Math.min(playerX, maxWidth));
+
+            updatePlayerVisuals();
+        }
+
+        // The main game loop function, called via requestAnimationFrame
+        function gameLoop() {
+            if (gameActive) {
+                updatePlayerPosition();
+                updateObjects();
+            }
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- EVENT LISTENERS (Inputs) ---
+
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (['arrowleft', 'arrowright', 'a', 'd'].includes(key)) {
+                keysPressed[key] = true;
+                e.preventDefault(); 
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keysPressed[e.key.toLowerCase()] = false;
+        });
+
+        // Touch/Drag Control for Mobile
+        gameArea.addEventListener('touchstart', (e) => {
+            // Only start moving if one finger is down and the game is active
+            if (e.touches.length === 1 && gameActive) {
+                e.preventDefault();
+                isTouching = true;
+            }
+             // Also allow touch to start the game
+            if (!gameActive && messageBox.style.display === 'block') {
+                 // Check if the click/touch was on the button
+                if (e.target.classList.contains('restart-button')) {
+                    startGame();
+                } else if (e.touches.length === 1) { 
+                    // Start game if touching game area on intro
+                    startGame();
+                }
+            }
+        }, { passive: false });
+
+        gameArea.addEventListener('touchmove', (e) => {
+            if (isTouching && e.touches.length === 1 && gameActive) {
+                e.preventDefault();
+                const touchX = e.touches[0].clientX;
+                const gameRect = gameArea.getBoundingClientRect();
+
+                // Calculate the new player position based on the absolute touch position relative to the game area
+                const newX = touchX - gameRect.left - playerWidth / 2;
+
+                // Clamp position within game area boundaries
+                const maxWidth = gameArea.clientWidth - playerWidth;
+
+                playerX = Math.max(0, Math.min(newX, maxWidth));
+
+                updatePlayerVisuals();
+            }
+        }, { passive: false });
+
+        gameArea.addEventListener('touchend', () => {
+            isTouching = false;
+        });
+        
+        // Expose startGame to the window so the restart button can call it
+        window.startGame = startGame;
+
+        // --- START GAME ---
+        // Initialize when the entire page is loaded
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+    </script>
+</body>
+</html>
+
