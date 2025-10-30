@@ -3,502 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JVDesignStudio | Void Rush</title>
+    <title>Void Rush Game Sandbox | JVDesignStudio</title>
     <link rel="icon" type="image/png" href="https://placehold.co/32x32/1a202c/ffffff?text=JV">
-    <script src="https://cdn.tailwindcss.com"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJ8uR4dJRQxH2Fw4S5wB4+D5i44e5M4q80Z7Z1ZpE0P7R4F4+P8p1b8z9WzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
     <style>
-        /* --- General Setup --- */
+        /* --- General Setup & Original Color Palette --- */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            /* Use Light Beige Background */
-            background-color: var(--color-light-beige); 
+            background-color: transparent;
+            color: var(--color-deep-charcoal);
         }
         
         /* --- Cozy Creatures Color Palette --- */
         :root {
-            --color-light-beige: #F0EAD6; /* Creamy/Base */
-            --color-soft-tan: #D2B48C;    /* Soft Tan - Accent BG */
-            --color-muted-rose: #BC4749;  /* Muted Rose/Berry - Primary CTA/Obstacles */
-            --color-cozy-teal: #70A3A7;   /* Muted Teal/Blue-Gray - Accent/Player */
-            --color-deep-charcoal: #1A202C; /* Text/Footer BG/Game Void */
+            --color-light-beige: #F0EAD6; 
+            --color-soft-tan: #D2B48C;    
+            --color-muted-rose: #BC4749;  
+            --color-cozy-teal: #70A3A7;   
+            --color-deep-charcoal: #403B33; 
         }
 
-        /* Custom utility for the primary CTA button */
-        .btn-primary {
-            background-color: var(--color-muted-rose);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            font-weight: 700;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease-in-out;
+        /* --- Full-Page Wave Animation --- */
+        #wave-background {
+            background: linear-gradient(-45deg, var(--color-light-beige) 0%, var(--color-soft-tan) 25%, var(--color-muted-rose) 50%, var(--color-cozy-teal) 75%, var(--color-light-beige) 100%);
+            background-size: 400% 400%;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1; 
+            animation: colorWave 45s ease-in-out infinite;
         }
 
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        @keyframes colorWave {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        /* --- Game-specific styling --- */
-        #gameCanvas {
-            /* Use deep charcoal for the 'Void' background */
-            background-color: var(--color-deep-charcoal);
-            border: 4px solid var(--color-soft-tan);
-            border-radius: 1rem;
-            display: block;
-            margin: 0 auto;
-            /* Ensure canvas is flexible within its container */
-            max-width: 100%;
-            aspect-ratio: 16 / 9;
-            height: auto; 
-            max-height: 600px;
-        }
-        .game-ui-card {
+        /* --- Header/Button Styles (Branding) --- */
+        .header {
             background-color: white;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .header-content {
+            max-width: 1280px; 
+            margin: 0 auto;
+            padding: 0 16px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px; 
+        }
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            font-size: 24px; 
             color: var(--color-deep-charcoal);
-            border-radius: 0.75rem;
+            text-decoration: none;
+            font-weight: 800;
+        }
+        .logo-link img {
+            height: 40px;
+            width: 40px;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+        .btn-primary {
+            background-color: var(--color-muted-rose); 
+            transition: background-color 0.3s, transform 0.2s;
+            color: white !important;
+            text-decoration: none;
+            padding: 10px 20px;
+            font-weight: 700;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover {
+            background-color: var(--color-deep-charcoal);
+            transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
-        .game-control-button {
-            background-color: var(--color-cozy-teal);
-            color: white;
-            transition: background-color 0.2s;
+
+        /* --- Game Section Styles (Aligned with Cozy Aesthetic) --- */
+        .game-section {
+            padding: 20px 0; /* Reduced padding for mobile */
+            text-align: center;
+            background-color: var(--color-light-beige); 
+            position: relative; 
+            z-index: 1;
         }
-        .game-control-button:hover {
-            background-color: var(--color-soft-tan);
+
+        .game-container {
+            max-width: 840px;
+            margin: 0 auto;
+            padding: 20px; /* Reduced padding for mobile */
+            background-color: var(--color-soft-tan); 
+            border-radius: 15px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            font-size: 32px; /* Smaller title for mobile */
+            font-weight: 800;
             color: var(--color-deep-charcoal);
+            margin-bottom: 5px;
         }
-        /* Mobile-friendly controls visibility */
-        @media (min-width: 640px) {
-            .mobile-controls {
-                display: none;
-            }
+
+        .subtitle {
+            font-size: 18px; 
+            color: var(--color-muted-rose);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        /* Styling for the game canvas remains Space-Themed */
+        #gameCanvas {
+            border: 2px solid var(--color-cozy-teal); 
+            display: block;
+            margin: 20px auto;
+            background-color: #0e0036;
+            background-image: radial-gradient(#ffffff33 1px, transparent 1px), radial-gradient(#ffffff33 1px, transparent 1px);
+            background-size: 50px 50px;
+            background-position: 0 0, 25px 25px;
+            box-shadow: 0 0 20px rgba(112, 163, 167, 0.8);
+            cursor: crosshair;
+            border-radius: 5px;
+            
+            /* Responsive canvas styling */
+            max-width: 100%; /* Ensure it shrinks on smaller screens */
+            height: auto;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px dashed var(--color-deep-charcoal);
+            border-radius: 8px;
+            color: var(--color-deep-charcoal);
+            background-color: var(--color-light-beige);
+            text-align: left;
+        }
+        .instructions h3 {
+            color: var(--color-muted-rose);
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: 800;
+        }
+        .instructions p {
+            margin: 5px 0;
+            font-size: 16px;
         }
         
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
+        /* Specific Mobile Instructions */
+        .mobile-only {
+            font-style: italic;
+            color: var(--color-cozy-teal);
+            margin-top: 10px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(112, 163, 167, 0.3);
+        }
 
-    <!-- Navigation Bar -->
-    <header class="shadow-md" style="background-color: white;">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-4">
-            <a href="index.html" class="text-3xl font-extrabold" style="color: var(--color-deep-charcoal);">
-                JV<span style="color: var(--color-cozy-teal);">Design</span>Studio
+        /* --- Footer Styles --- */
+        .footer {
+            padding: 32px 0; 
+            background-color: var(--color-deep-charcoal);
+            text-align: center;
+            color: #ccc; 
+        }
+        .footer p {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+    </style>
+    
+    <script>
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) { return; }
+            
+            // Set canvas size for desktop, CSS will handle scaling down
+            const GAME_WIDTH = 800;
+            const GAME_HEIGHT = 600;
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+
+            const ctx = canvas.getContext('2d');
+            
+            let score = 0;
+            let lives = 3;
+            let isGameOver = false;
+
+            // Player (Spaceship)
+            const player = {
+                // Initialize position relative to the defined size
+                x: GAME_WIDTH / 2 - 25,
+                y: GAME_HEIGHT - 70,
+                width: 50,
+                height: 50,
+                speed: 5,
+                color: '#a0f0ff',
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width / 2, this.y); 
+                    ctx.lineTo(this.x, this.y + this.height); 
+                    ctx.lineTo(this.x + this.width, this.y + this.height);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            };
+
+            // ... (Bullets and Obstacles logic remains the same) ...
+            let bullets = [];
+            const BULLET_SPEED = 7;
+            const FIRE_RATE = 200;
+            let lastFireTime = 0;
+
+            function fireBullet() {
+                const currentTime = Date.now();
+                if (currentTime - lastFireTime > FIRE_RATE && !isGameOver) {
+                    bullets.push({
+                        x: player.x + player.width / 2 - 2,
+                        y: player.y,
+                        width: 4,
+                        height: 10,
+                        color: '#ff4d4d'
+                    });
+                    lastFireTime = currentTime;
+                }
+            }
+
+            let obstacles = [];
+            let obstacleSpawnRate = 1200; 
+            let lastObstacleTime = 0;
+
+            function spawnObstacle() {
+                const type = Math.random() < 0.7 ? 'asteroid' : 'enemy'; 
+                const size = type === 'asteroid' ? (20 + Math.random() * 30) : 35;
+                const speed = type === 'asteroid' ? (1 + Math.random() * 2) : (2 + Math.random() * 1.5);
+                const color = type === 'asteroid' ? '#9e7b6d' : '#8c00ff';
+
+                obstacles.push({
+                    x: Math.random() * (canvas.width - size),
+                    y: -size,
+                    width: size,
+                    height: size,
+                    speed: speed,
+                    color: color,
+                    type: type
+                });
+            }
+
+            function drawObstacles() {
+                obstacles.forEach(obs => {
+                    ctx.fillStyle = obs.color;
+                    if (obs.type === 'asteroid') {
+                        ctx.beginPath();
+                        ctx.arc(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    }
+                });
+            }
+            // ... (End of Bullets and Obstacles logic) ...
+
+
+            // --- INPUT HANDLING ---
+            const keys = {};
+            let touchMoveDirection = 0; // -1 for left, 1 for right, 0 for stop
+
+            // 1. Desktop Keyboard Input (Retained)
+            document.addEventListener('keydown', (e) => {
+                keys[e.key] = true;
+                if (e.key === ' ' || e.key === 'Control') {
+                    e.preventDefault();
+                    fireBullet();
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                keys[e.key] = false;
+            });
+            canvas.addEventListener('click', () => {
+                fireBullet();
+            });
+            
+            // 2. Mobile Touch Input (NEW)
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touchX = e.touches[0].clientX;
+                const rect = canvas.getBoundingClientRect();
+                const canvasX = touchX - rect.left;
+                
+                // If touch is on the left half of the canvas
+                if (canvasX < rect.width / 2) {
+                    touchMoveDirection = -1; // Move Left
+                } 
+                // If touch is on the right half of the canvas
+                else {
+                    touchMoveDirection = 1; // Move Right
+                }
+                
+                // Also fire on the initial touch (like a tap)
+                fireBullet(); 
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touchX = e.touches[0].clientX;
+                const rect = canvas.getBoundingClientRect();
+                const canvasX = touchX - rect.left;
+                
+                // Update movement based on which half of the screen the touch is on
+                if (canvasX < rect.width / 2) {
+                    touchMoveDirection = -1; // Move Left
+                } else {
+                    touchMoveDirection = 1; // Move Right
+                }
+            }, { passive: false });
+            
+            canvas.addEventListener('touchend', () => {
+                touchMoveDirection = 0; // Stop movement when finger is lifted
+            });
+            // --- END INPUT HANDLING ---
+
+
+            function handlePlayerMovement() {
+                let moving = false;
+                
+                // Handle keyboard input
+                if (keys['ArrowLeft'] || keys['a']) {
+                    player.x -= player.speed;
+                    moving = true;
+                }
+                if (keys['ArrowRight'] || keys['d']) {
+                    player.x += player.speed;
+                    moving = true;
+                }
+
+                // Handle touch input
+                if (touchMoveDirection === -1) {
+                    player.x -= player.speed;
+                    moving = true;
+                } else if (touchMoveDirection === 1) {
+                    player.x += player.speed;
+                    moving = true;
+                }
+
+                // Keep player within bounds (using GAME_WIDTH)
+                if (player.x < 0) player.x = 0;
+                if (player.x + player.width > GAME_WIDTH) player.x = GAME_WIDTH - player.width;
+            }
+            
+            // ... (Update Bullets, Update Obstacles, Check Collision, Draw HUD remain the same) ...
+            function updateBullets() {
+                bullets = bullets.filter(bullet => {
+                    bullet.y -= BULLET_SPEED;
+                    return bullet.y + bullet.height > 0;
+                });
+            }
+
+            function updateObstacles() {
+                obstacles.forEach(obs => {
+                    obs.y += obs.speed;
+                });
+                obstacles = obstacles.filter(obs => obs.y < canvas.height);
+            }
+
+            function checkCollision() {
+                bullets.forEach((bullet, bIndex) => {
+                    obstacles.forEach((obs, oIndex) => {
+                        if (
+                            bullet.x < obs.x + obs.width &&
+                            bullet.x + bullet.width > obs.x &&
+                            bullet.y < obs.y + obs.height &&
+                            bullet.y + bullet.height > obs.y
+                        ) {
+                            bullets.splice(bIndex, 1);
+                            obstacles.splice(oIndex, 1);
+                            score += 10;
+                            return;
+                        }
+                    });
+                });
+
+                obstacles.forEach((obs, oIndex) => {
+                    if (
+                        player.x < obs.x + obs.width &&
+                        player.x + player.width > obs.x &&
+                        player.y < obs.y + obs.height &&
+                        player.y + player.height > obs.y
+                    ) {
+                        obstacles.splice(oIndex, 1);
+                        lives--;
+                        if (lives <= 0) {
+                            isGameOver = true;
+                        }
+                        return;
+                    }
+                });
+            }
+            
+            function drawHUD() {
+                ctx.fillStyle = '#a0f0ff';
+                ctx.font = '24px Inter';
+                ctx.textAlign = 'left';
+                ctx.fillText(`Score: ${score}`, 10, 30);
+                
+                ctx.textAlign = 'right';
+                ctx.fillText(`Lives: ${lives}`, canvas.width - 10, 30);
+            }
+            // ... (End of Update/Draw functions) ...
+
+
+            function gameLoop() {
+                if (isGameOver) {
+                    // ... (Game Over Screen) ...
+                    ctx.fillStyle = 'rgba(14, 0, 54, 0.9)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.fillStyle = '#ff4d4d';
+                    ctx.font = '72px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+                    
+                    ctx.fillStyle = '#a0f0ff';
+                    ctx.font = '30px Inter';
+                    ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+
+                    ctx.font = '20px Inter';
+                    ctx.fillText('Press F5 or reload to play again', canvas.width / 2, canvas.height / 2 + 60);
+                    
+                    return;
+                }
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                handlePlayerMovement();
+                updateBullets();
+                updateObstacles();
+                checkCollision();
+
+                if (Date.now() - lastObstacleTime > obstacleSpawnRate) {
+                    spawnObstacle();
+                    lastObstacleTime = Date.now();
+                    obstacleSpawnRate = Math.max(800, obstacleSpawnRate - 5);
+                }
+                
+                player.draw();
+                
+                bullets.forEach(bullet => {
+                    ctx.fillStyle = bullet.color;
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                });
+                
+                drawObstacles();
+                drawHUD();
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            gameLoop();
+        });
+    </script>
+</head>
+<body>
+
+    <div id="wave-background"></div>
+
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo-link">
+                <img src="logo.png" alt="JV Design Studio Logo" onerror="this.onerror=null;this.src='https://placehold.co/40x40/403B33/F0EAD6?text=JV'">
+                JVDesignStudio
             </a>
-            <div class="space-x-4 flex items-center">
-                <!-- Navigation Links -->
-                <a href="index.html" class="text-lg font-medium transition duration-150 hover:opacity-75" style="color: var(--color-deep-charcoal);">Home</a>
-                <a href="content_hub.html" class="text-lg font-medium transition duration-150 hover:opacity-75" style="color: var(--color-deep-charcoal);">Content Hub</a>
-                <a href="merch.html" class="text-lg font-medium transition duration-150 hover:opacity-75" style="color: var(--color-deep-charcoal);">Merch</a>
-                <!-- Active Link for Void Rush -->
-                <a href="voidrush.html" class="text-lg font-extrabold border-b-2" style="color: var(--color-muted-rose); border-color: var(--color-muted-rose);">Play!</a> 
-                <!-- Cart button (not functional here, just structural) -->
-                <button class="text-xl p-2 rounded-full transition duration-150 hover:bg-gray-100" style="color: var(--color-deep-charcoal);" aria-label="Shopping Cart">
-                    <i class="fas fa-shopping-cart"></i>
-                </button>
-            </div>
-        </nav>
+            <a href="index.html" class="btn-primary">
+                <i class="fas fa-home"></i> Back to Hub
+            </a>
+        </div>
     </header>
 
-    <!-- Hero/Game Banner -->
-    <section class="text-center py-12 sm:py-16" style="background-color: var(--color-soft-tan);">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 class="text-4xl sm:text-5xl font-extrabold mb-3" style="color: var(--color-deep-charcoal);">
-                Void Rush!
-            </h1>
-            <p class="text-lg sm:text-xl font-medium" style="color: var(--color-deep-charcoal);">
-                How long can you survive the endless abstract void? Dodge the walls and set a new high score!
-            </p>
-        </div>
-    </section>
+    <section class="game-section">
+        <div class="game-container">
+            <h1>Void Rush: Endless Runner Prototype</h1>
+            <p class="subtitle">Dodge and destroy the obstacles in your path!</p>
 
-    <!-- Game Section -->
-    <section class="flex-grow py-12 md:py-16">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div class="flex flex-col lg:flex-row gap-8">
+            <canvas id="gameCanvas"></canvas>
+
+            <div class="instructions">
+                <h3>Controls:</h3>
+                <p><strong>Desktop:</strong></p>
+                <p>Movement: **Left/Right Arrow Keys** or 'A' / 'D'</p>
+                <p>Shoot: **Spacebar**, **Control** Key, or **Click** the Mouse</p>
                 
-                <!-- Game Canvas (Main Area) -->
-                <div class="lg:flex-1 w-full relative">
-                    <canvas id="gameCanvas" width="800" height="450"></canvas>
-                    
-                    <!-- Game Info and Controls -->
-                    <div class="flex justify-between items-center mt-4 text-lg font-bold p-3 game-ui-card">
-                        <p>Score: <span id="scoreDisplay" class="text-xl" style="color: var(--color-muted-rose);">0</span></p>
-                        <button id="startButton" class="btn-primary">Start Game (Space)</button>
-                        <p>High Score: <span id="highScoreDisplay" class="text-xl" style="color: var(--color-cozy-teal);">0</span></p>
-                    </div>
+                <p class="mobile-only">
+                    <strong>Mobile:</strong>
+                    <br>
+                    Movement: **Touch and hold** the **left or right half** of the game screen.
+                    <br>
+                    Shoot: **Tap** the screen (fires automatically while moving).
+                </p>
 
-                    <!-- Mobile Controls (Visible only on small screens) -->
-                    <div class="mobile-controls flex justify-around mt-4 space-x-4">
-                        <button id="leftButton" class="w-1/2 p-4 rounded-lg game-control-button text-2xl font-extrabold shadow-md">
-                            &larr; Left
-                        </button>
-                        <button id="rightButton" class="w-1/2 p-4 rounded-lg game-control-button text-2xl font-extrabold shadow-md">
-                            Right &rarr;
-                        </button>
-                    </div>
-
-                </div>
-
+                <p style="margin-top: 15px; font-weight: 700;">Goal: Shoot the obstacles to increase your score and avoid collisions to save your lives!</p>
             </div>
-            
-            <!-- Instructions -->
-            <div class="mt-8 p-6 game-ui-card">
-                <h3 class="text-xl font-bold mb-3 border-b pb-2">How to Play:</h3>
-                <ul class="list-disc list-inside space-y-1">
-                    <li>**Goal:** Survive as long as possible without hitting the red walls.</li>
-                    <li>**Desktop Controls:** Press the **Left Arrow** or **A** key to move left. Press the **Right Arrow** or **D** key to move right.</li>
-                    <li>**Mobile Controls:** Use the **Left** and **Right** buttons beneath the score.</li>
-                    <li>The walls get faster the longer you survive!</li>
-                </ul>
-            </div>
-
         </div>
     </section>
-
-    <!-- Footer -->
-    <footer class="py-8 mt-auto" style="background-color: var(--color-deep-charcoal);">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
-            <p>&copy; <span id="year"></span> JVDesignStudio. All rights reserved.</p>
-            <div class="mt-2 space-x-4">
-                <a href="#" class="hover:text-white transition duration-150" style="color: var(--color-cozy-teal);">Privacy Policy</a>
-                <a href="#" class="hover:text-white transition duration-150" style="color: var(--color-cozy-teal);">Terms of Service</a>
-            </div>
-        </div>
+    
+    <footer class="footer">
+        <p>&copy; 2025 JVDesignStudio. All rights reserved. | Code Sandbox for Void Rush Prototype.</p>
     </footer>
-
-    <!-- Game Logic -->
-    <script>
-        // Set the current year for the footer
-        document.getElementById('year').textContent = new Date().getFullYear();
-
-        // --- Game Variables ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const highScoreDisplay = document.getElementById('highScoreDisplay');
-        const startButton = document.getElementById('startButton');
-
-        let isRunning = false;
-        let score = 0;
-        let highScore = localStorage.getItem('voidRushHighScore') || 0;
-        let animationFrameId;
-
-        // Player configuration (Teal color)
-        const player = {
-            width: 50,
-            height: 50,
-            x: 0, // Will be set in resetGame
-            y: 0, // Will be set in resetGame
-            speed: 8,
-            color: getComputedStyle(document.documentElement).getPropertyValue('--color-cozy-teal'),
-        };
-
-        // Obstacle configuration (Muted Rose color)
-        let obstacles = [];
-        let obstacleSpeed = 3;
-        let obstacleInterval = 75; // frames between new obstacles
-        let frameCount = 0;
-        const OBSTACLE_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--color-muted-rose');
-
-        // Input handling
-        let keys = { left: false, right: false };
-        
-        // --- Initialization and Reset ---
-
-        // Function to set canvas dimensions responsively
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            // Use 16:9 aspect ratio based on the container width
-            let w = container.clientWidth;
-            // Cap the width and height for very large screens
-            if (w > 800) w = 800; 
-
-            // Set intrinsic dimensions for drawing
-            canvas.width = w;
-            canvas.height = w * (9 / 16); 
-
-            // Reset player position after resize
-            if (!isRunning) {
-                player.x = (canvas.width / 2) - (player.width / 2);
-                player.y = canvas.height - player.height - 20;
-                draw(); // Redraw static screen
-            }
-        }
-        
-        // Load initial high score
-        highScoreDisplay.textContent = highScore;
-        
-        // Attach resize listener
-        window.addEventListener('resize', resizeCanvas);
-
-
-        function resetGame() {
-            isRunning = true;
-            score = 0;
-            obstacles = [];
-            obstacleSpeed = 3;
-            obstacleInterval = 75;
-            frameCount = 0;
-
-            // Place player in the center bottom
-            player.x = (canvas.width / 2) - (player.width / 2);
-            player.y = canvas.height - player.height - 20;
-
-            startButton.textContent = "Restart (Space)";
-            // Set initial velocity to 0 when starting/restarting
-            keys.left = false;
-            keys.right = false;
-        }
-
-
-        // --- Drawing Functions ---
-
-        function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
-
-        function drawObstacles() {
-            ctx.fillStyle = OBSTACLE_COLOR;
-            obstacles.forEach(obs => {
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-            });
-        }
-
-        function drawScore() {
-            scoreDisplay.textContent = Math.floor(score);
-            highScoreDisplay.textContent = highScore;
-        }
-
-        function drawGameOver() {
-            ctx.fillStyle = 'rgba(26, 32, 44, 0.8)'; // Deep Charcoal overlay
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            
-            // Game Over Text
-            ctx.font = '700 48px Inter, sans-serif';
-            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
-
-            // Score Text
-            ctx.font = '700 28px Inter, sans-serif';
-            ctx.fillText(`Final Score: ${Math.floor(score)}`, canvas.width / 2, canvas.height / 2 + 10);
-            
-            // Restart Prompt
-            ctx.font = '400 20px Inter, sans-serif';
-            ctx.fillText('Press SPACE or click Restart to play again', canvas.width / 2, canvas.height / 2 + 60);
-
-            startButton.textContent = "Restart (Space)";
-        }
-
-        function drawStartScreen() {
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-deep-charcoal');
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-
-            ctx.font = '700 48px Inter, sans-serif';
-            ctx.fillText('VOID RUSH', canvas.width / 2, canvas.height / 2 - 40);
-
-            ctx.font = '400 20px Inter, sans-serif';
-            ctx.fillText('Press SPACE or click Start to begin', canvas.width / 2, canvas.height / 2 + 10);
-        }
-
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw background (redundant since we fill the whole canvas, but good for void theme)
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-deep-charcoal');
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (isRunning) {
-                drawPlayer();
-                drawObstacles();
-            } else if (score > 0) {
-                drawGameOver();
-            } else {
-                drawStartScreen();
-            }
-            drawScore();
-        }
-
-
-        // --- Update Logic ---
-
-        function updatePlayer() {
-            // Horizontal Movement
-            if (keys.left) {
-                player.x -= player.speed;
-            }
-            if (keys.right) {
-                player.x += player.speed;
-            }
-
-            // Boundary checking (keep player on screen)
-            if (player.x < 0) {
-                player.x = 0;
-            }
-            if (player.x + player.width > canvas.width) {
-                player.x = canvas.width - player.width;
-            }
-        }
-
-        function spawnObstacle() {
-            // Create a new obstacle with random width and position
-            const obsWidth = 80; // Fixed obstacle width
-            const obsHeight = 20;
-            const obsX = Math.random() * (canvas.width - obsWidth);
-            
-            obstacles.push({
-                x: obsX,
-                y: -obsHeight, // Start just above the canvas
-                width: obsWidth,
-                height: obsHeight,
-            });
-        }
-
-        function updateObstacles() {
-            // Move existing obstacles
-            obstacles = obstacles.map(obs => {
-                obs.y += obstacleSpeed;
-                return obs;
-            }).filter(obs => obs.y < canvas.height); // Remove off-screen obstacles
-
-            // Spawn new obstacles
-            frameCount++;
-            if (frameCount % obstacleInterval === 0) {
-                spawnObstacle();
-            }
-        }
-
-        function checkCollision() {
-            for (let i = 0; i < obstacles.length; i++) {
-                const obs = obstacles[i];
-                
-                // AABB Collision Detection
-                if (player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.height > obs.y) {
-                    
-                    // Collision detected! Game Over.
-                    cancelAnimationFrame(animationFrameId);
-                    isRunning = false;
-                    
-                    // Update High Score
-                    if (score > highScore) {
-                        highScore = Math.floor(score);
-                        localStorage.setItem('voidRushHighScore', highScore);
-                    }
-                    
-                    draw(); // Draw game over screen
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function updateDifficulty() {
-            // Increase score
-            score += 0.1; 
-            
-            // Speed up based on score
-            obstacleSpeed = 3 + (Math.floor(score / 100) * 0.5); 
-            
-            // Increase obstacle frequency slightly, but cap it
-            if (Math.floor(score) % 50 === 0 && obstacleInterval > 20) {
-                obstacleInterval = Math.max(20, 75 - (Math.floor(score) / 50));
-            }
-        }
-
-
-        // --- Game Loop ---
-
-        function gameLoop() {
-            if (isRunning) {
-                updatePlayer();
-                updateObstacles();
-                updateDifficulty();
-                if (checkCollision()) {
-                    return; // Stop the loop on collision
-                }
-                draw();
-                animationFrameId = requestAnimationFrame(gameLoop);
-            }
-        }
-
-        // --- Event Listeners ---
-
-        function startGame() {
-            if (!isRunning) {
-                resetGame();
-                gameLoop();
-            }
-        }
-
-        // Keyboard Controls
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                keys.left = true;
-            }
-            if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                keys.right = true;
-            }
-            if (e.key === ' ' && !isRunning) {
-                e.preventDefault(); // Prevent spacebar from scrolling
-                startGame();
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                keys.left = false;
-            }
-            if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                keys.right = false;
-            }
-        });
-
-        // Start Button
-        startButton.addEventListener('click', startGame);
-
-        // Mobile Touch Controls
-        document.getElementById('leftButton').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            keys.left = true;
-            if (!isRunning) startGame();
-        });
-        document.getElementById('leftButton').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            keys.left = false;
-        });
-
-        document.getElementById('rightButton').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            keys.right = true;
-            if (!isRunning) startGame();
-        });
-        document.getElementById('rightButton').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            keys.right = false;
-        });
-
-
-        // --- Initial Load ---
-        window.onload = function() {
-            resizeCanvas(); // Set initial size
-            draw();         // Draw initial start screen
-        }
-
-    </script>
+    
 </body>
 </html>
