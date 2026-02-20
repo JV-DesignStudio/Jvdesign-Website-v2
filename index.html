@@ -3,367 +3,889 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JVDesignStudio | Cozy Home</title>
-    <link rel="icon" type="image/png" href="https://placehold.co/32x32/1a202c/ffffff?text=JV">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome for Social Media Icons (still useful for general use if needed later) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJ8uR4dJRQxH2Fw4S5wB4+D5i44e5M4q80Z7Z1ZpE0P7R4F4+P8p1b8z9WzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <title>JVDesignStudio | Books, Games & Creative Adventures</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        /* --- General Setup --- */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        /* ══════════════════════════════════════
+           PALETTE & RESET
+        ══════════════════════════════════════ */
+        :root {
+            --beige:      #F0EAD6;
+            --tan:        #D2B48C;
+            --tan-dk:     #b8956a;
+            --rose:       #BC4749;
+            --rose-dk:    #9b3a3c;
+            --rose-lt:    #f5e0e0;
+            --teal:       #70A3A7;
+            --teal-dk:    #4e7d80;
+            --teal-lt:    #e0edef;
+            --charcoal:   #403B33;
+            --charcoal-lt:#5a5449;
+            --white:      #ffffff;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', sans-serif;
-            margin: 0;
+            background: var(--beige);
+            color: var(--charcoal);
+            overflow-x: hidden;
         }
-        
-        /* --- Cozy Creatures Color Palette --- */
-        :root {
-            --color-light-beige: #F0EAD6; /* Creamy/Base */
-            --color-soft-tan: #D2B48C;    /* Soft Tan */
-            --color-muted-rose: #BC4749;  /* Muted Rose/Berry - Used for Primary Buttons */
-            --color-cozy-teal: #70A3A7;   /* Muted Teal/Blue-Gray - Used for Links/Accents */
-            --color-deep-charcoal: #403B33; /* Dark Contrast - Used for Text/Hover */
+        a { text-decoration: none; color: inherit; }
+        img { display: block; max-width: 100%; }
+
+        /* ══════════════════════════════════════
+           SHARED COMPONENTS
+        ══════════════════════════════════════ */
+
+        /* Logo animation */
+        @keyframes logo-shift {
+            0%   { color: var(--tan); }
+            33%  { color: var(--rose); }
+            66%  { color: var(--teal); }
+            100% { color: var(--tan); }
+        }
+        .logo-name { animation: logo-shift 6s infinite alternate ease-in-out; font-weight: 800; }
+
+        /* Buttons */
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--rose); color: white;
+            font-weight: 700; border-radius: 14px;
+            padding: 15px 34px; font-size: 1.05rem;
+            box-shadow: 0 4px 0 var(--rose-dk);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+        }
+        .btn-primary:hover  { background: var(--rose-dk); transform: translateY(-2px); box-shadow: 0 6px 0 #7a2e2f; }
+        .btn-primary:active { transform: translateY(2px);  box-shadow: 0 2px 0 var(--rose-dk); }
+
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: 8px;
+            border: 2px solid var(--teal-dk); color: var(--teal-dk);
+            font-weight: 700; border-radius: 14px;
+            padding: 13px 32px; font-size: 1.05rem;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .btn-outline:hover { background: var(--teal-dk); color: white; transform: translateY(-2px); }
+
+        /* Section label pill */
+        .section-tag {
+            display: inline-block;
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--teal-dk);
+            border: 1.5px solid var(--teal); border-radius: 999px;
+            padding: 4px 14px; margin-bottom: 14px;
         }
 
-        /* --- Full-Page Wave Animation (Cozy Background) --- */
-        #wave-background {
+        /* Section title */
+        .section-title {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 900; color: var(--charcoal);
+            line-height: 1.15;
+        }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* Card base */
+        .card {
+            background: white; border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(64,59,51,0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(64,59,51,0.14); }
+
+        /* ══════════════════════════════════════
+           HEADER
+        ══════════════════════════════════════ */
+        .site-header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(64,59,51,0.08);
+            box-shadow: 0 2px 16px rgba(64,59,51,0.07);
+        }
+        .header-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 28px; height: 74px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-link {
+            display: flex; align-items: center; gap: 11px;
+            font-size: 1.4rem;
+        }
+        .logo-link img { height: 42px; width: auto; border-radius: 10px; }
+
+        .main-nav { display: flex; align-items: center; gap: 6px; }
+        .nav-link {
+            font-weight: 600; font-size: 0.9rem;
+            color: var(--charcoal-lt); padding: 8px 14px; border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .nav-link:hover { color: var(--charcoal); background: var(--beige); }
+
+        /* Mobile nav toggle */
+        .nav-toggle {
+            display: none; background: none; border: none;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            font-size: 1.4rem; color: var(--charcoal);
+        }
+        .mobile-nav {
+            display: none; flex-direction: column;
+            background: white; border-top: 1px solid rgba(64,59,51,0.08);
+            padding: 12px 28px 20px; gap: 4px;
+        }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a {
+            font-weight: 600; color: var(--charcoal-lt);
+            padding: 10px 14px; border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .mobile-nav a:hover { background: var(--beige); color: var(--charcoal); }
+
+        @media (max-width: 768px) {
+            .desktop-nav { display: none; }
+            .nav-toggle   { display: block; }
+        }
+
+        /* ══════════════════════════════════════
+           HERO
+        ══════════════════════════════════════ */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            padding: 60px 28px;
+        }
+
+        /* Animated gradient background */
+        .hero-bg {
+            position: absolute; inset: 0; z-index: 0;
             background: linear-gradient(
                 -45deg,
-                var(--color-light-beige) 0%,
-                var(--color-soft-tan) 25%,
-                var(--color-muted-rose) 50%,
-                var(--color-cozy-teal) 75%,
-                var(--color-light-beige) 100%
+                var(--beige) 0%,
+                #e8d5c0 20%,
+                #f0c8c8 40%,
+                #c8dfe0 60%,
+                #d4c5b0 80%,
+                var(--beige) 100%
             );
             background-size: 400% 400%;
-            width: 100vw;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -1; 
-            animation: colorWave 45s ease-in-out infinite;
+            animation: gradwave 18s ease-in-out infinite;
         }
-
-        @keyframes colorWave {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        @keyframes gradwave {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        /* --- Header Logo Color Shift (Harmonized with Cozy Colors) --- */
-        @keyframes logo-color-shift {
-            0% { color: var(--color-soft-tan); }
-            33% { color: var(--color-muted-rose); }
-            66% { color: var(--color-cozy-teal); }
-            100% { color: var(--color-soft-tan); }
+        /* Floating shape decorations */
+        .hero-shape {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            animation: float-shape var(--dur, 8s) var(--delay, 0s) ease-in-out infinite alternate;
+        }
+        @keyframes float-shape {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to   { transform: translate(var(--tx, 20px), var(--ty, -20px)) rotate(var(--rot, 15deg)); }
         }
 
-        .logo-animated-name {
-            display: inline-block;
-            font-weight: 800;
-            animation: logo-color-shift 6s infinite alternate ease-in-out;
+        /* Floating emoji decorations */
+        .hero-emoji {
+            position: absolute;
+            font-size: var(--size, 2rem);
+            opacity: 0.18;
+            animation: float-emoji var(--dur, 7s) var(--delay, 0s) ease-in-out infinite alternate;
+            user-select: none; pointer-events: none;
+        }
+        @keyframes float-emoji {
+            from { transform: translateY(0) rotate(0deg); }
+            to   { transform: translateY(var(--ty, -18px)) rotate(var(--rot, 10deg)); }
         }
 
-        /* --- Custom Styles: Updated to use Cozy Palette --- */
-        .hero-section {
-            background-color: transparent !important;
-            background-image: none !important;
+        .hero-content {
+            position: relative; z-index: 1;
+            max-width: 760px; text-align: center;
         }
-        
-        /* Apply light-beige background to most sections for structure/contrast */
-        #shop, #updates, #about, #socials { 
-            background-color: var(--color-light-beige); 
+        .hero-eyebrow {
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--rose);
+            margin-bottom: 18px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-        
-        /* Apply soft-tan background to the new merch section */
-        #merch {
-            background-color: var(--color-soft-tan);
+        .hero-eyebrow::before, .hero-eyebrow::after {
+            content: ''; flex: 0 0 32px; height: 1.5px; background: var(--rose); opacity: 0.5;
+        }
+        .hero-title {
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 700; line-height: 1.05;
+            color: var(--charcoal);
+            margin-bottom: 22px;
+        }
+        .hero-title .accent { color: var(--rose); }
+        .hero-title .accent2 { color: var(--teal-dk); }
+
+        .hero-desc {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            color: var(--charcoal-lt); line-height: 1.7;
+            max-width: 560px; margin: 0 auto 36px;
+        }
+        .hero-buttons {
+            display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
         }
 
-        /* Primary Button: Muted Rose */
-        .btn-primary {
-            background-color: var(--color-muted-rose); 
-            transition: background-color 0.3s, transform 0.2s;
-            color: white !important; /* Ensure white text */
+        /* Scroll cue */
+        .scroll-cue {
+            position: absolute; bottom: 32px; left: 50%;
+            transform: translateX(-50%); z-index: 2;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            opacity: 0.5; animation: bounce-cue 2s ease-in-out infinite;
         }
-        .btn-primary:hover {
-            background-color: var(--color-deep-charcoal); /* Dark charcoal hover */
-            transform: translateY(-2px);
+        @keyframes bounce-cue {
+            0%,100% { transform: translateX(-50%) translateY(0); }
+            50%      { transform: translateX(-50%) translateY(6px); }
+        }
+        .scroll-cue span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--charcoal); }
+        .scroll-cue svg  { color: var(--charcoal); }
+
+        /* ══════════════════════════════════════
+           CATEGORY STRIP
+        ══════════════════════════════════════ */
+        .category-strip {
+            background: var(--charcoal);
+            padding: 22px 28px;
+        }
+        .category-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: center;
+            gap: 12px; flex-wrap: wrap;
+        }
+        .category-pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(240,234,214,0.8);
+            font-size: 0.85rem; font-weight: 600;
+            padding: 8px 18px; border-radius: 999px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .category-pill:hover { background: var(--rose); color: white; border-color: var(--rose); }
+
+        /* ══════════════════════════════════════
+           FEATURED SECTION
+        ══════════════════════════════════════ */
+        .featured-section {
+            padding: 88px 28px;
+            background: var(--beige);
+        }
+        .section-header {
+            text-align: center; margin-bottom: 52px;
+        }
+        .featured-grid {
+            max-width: 1200px; margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+        }
+        .feat-card {
+            display: flex; flex-direction: column;
+        }
+        .feat-card-img {
+            position: relative; overflow: hidden;
+        }
+        .feat-card-img img {
+            width: 100%; height: 220px; object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .card:hover .feat-card-img img { transform: scale(1.05); }
+        .feat-card-badge {
+            position: absolute; top: 14px; left: 14px;
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
+            text-transform: uppercase; color: white;
+            padding: 4px 12px; border-radius: 999px;
+        }
+        .badge-book  { background: var(--rose); }
+        .badge-free  { background: #c47f00; }
+        .badge-game  { background: var(--teal-dk); }
+
+        .feat-card-body {
+            padding: 22px 24px 26px;
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .feat-card-title {
+            font-size: 1.2rem; font-weight: 800;
+            color: var(--charcoal); margin-bottom: 8px;
+        }
+        .feat-card-desc {
+            font-size: 0.9rem; color: #6b6460;
+            line-height: 1.55; flex: 1; margin-bottom: 18px;
+        }
+        .feat-card-cta {
+            font-weight: 700; font-size: 0.9rem;
+            color: var(--teal-dk);
+            display: inline-flex; align-items: center; gap: 4px;
+            transition: gap 0.2s;
+        }
+        .card:hover .feat-card-cta { gap: 8px; }
+
+        .see-all-wrap { text-align: center; margin-top: 48px; }
+
+        /* ══════════════════════════════════════
+           ABOUT STRIP
+        ══════════════════════════════════════ */
+        .about-strip {
+            background: var(--teal-dk);
+            padding: 72px 28px;
+            position: relative; overflow: hidden;
+        }
+        .about-strip::before {
+            content: '📚';
+            position: absolute; right: -20px; top: -20px;
+            font-size: 160px; opacity: 0.07;
+            transform: rotate(-15deg);
+            pointer-events: none;
+        }
+        .about-strip::after {
+            content: '🎲';
+            position: absolute; left: -10px; bottom: -20px;
+            font-size: 140px; opacity: 0.07;
+            transform: rotate(10deg);
+            pointer-events: none;
+        }
+        .about-inner {
+            max-width: 780px; margin: 0 auto; text-align: center;
+            position: relative; z-index: 1;
+        }
+        .about-inner .section-tag { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.8); }
+        .about-inner h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; color: white; margin-bottom: 18px; }
+        .about-inner p  { font-size: 1.05rem; color: rgba(255,255,255,0.8); line-height: 1.75; margin-bottom: 32px; }
+        .about-stats {
+            display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;
+            margin-bottom: 36px;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-family: 'Fredoka', cursive; font-size: 2.4rem; font-weight: 700; color: white; line-height: 1; }
+        .stat-label { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+        .btn-about {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: white; color: var(--teal-dk);
+            font-weight: 700; border-radius: 14px;
+            padding: 14px 32px; font-size: 1rem;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .btn-about:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+        /* ══════════════════════════════════════
+           UPDATES
+        ══════════════════════════════════════ */
+        .updates-section {
+            padding: 88px 28px;
+            background: white;
+        }
+        .updates-grid {
+            max-width: 900px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .update-card {
+            background: var(--beige); border-radius: 18px;
+            padding: 28px 32px;
+            display: flex; gap: 28px; align-items: flex-start;
+            border-left: 4px solid var(--teal);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .update-card:hover { transform: translateX(4px); box-shadow: 0 8px 24px rgba(64,59,51,0.08); }
+        .update-card.rose  { border-color: var(--rose); }
+        .update-meta { flex: 0 0 140px; }
+        .update-date { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--teal-dk); margin-bottom: 6px; }
+        .update-card.rose .update-date { color: var(--rose); }
+        .update-title { font-size: 1.15rem; font-weight: 800; color: var(--charcoal); }
+        .update-body { flex: 1; }
+        .update-body p { font-size: 0.95rem; color: var(--charcoal-lt); line-height: 1.65; margin-bottom: 14px; }
+        .update-link { font-weight: 700; font-size: 0.9rem; color: var(--rose); transition: opacity 0.15s; }
+        .update-link:hover { opacity: 0.75; }
+
+        @media (max-width: 600px) {
+            .update-card { flex-direction: column; gap: 12px; }
+            .update-meta { flex: unset; }
         }
 
-        /* Navigation link using cozy teal with hover to deep charcoal */
-        .nav-link {
-            color: var(--color-cozy-teal);
-            transition: color 0.15s ease-in-out;
+        /* ══════════════════════════════════════
+           MERCH SECTION
+        ══════════════════════════════════════ */
+        .merch-section {
+            padding: 88px 28px;
+            background: var(--tan);
+            position: relative; overflow: hidden;
         }
-        .nav-link:hover {
-            color: var(--color-deep-charcoal);
+        .merch-section::before {
+            content: '🛍️';
+            position: absolute; right: 5%; top: 50%;
+            transform: translateY(-50%);
+            font-size: 200px; opacity: 0.08;
+            pointer-events: none;
         }
-        
-        /* Card Hover Effect */
-        .card-project {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .merch-inner {
+            max-width: 680px; margin: 0 auto; text-align: center;
+            position: relative; z-index: 1;
         }
-        .card-project:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        .merch-inner .section-tag { border-color: var(--charcoal); color: var(--charcoal); opacity: 0.7; }
+        .merch-inner h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: var(--charcoal); margin-bottom: 16px; }
+        .merch-inner p  { font-size: 1.05rem; color: var(--charcoal-lt); line-height: 1.7; margin-bottom: 32px; }
+
+        /* ══════════════════════════════════════
+           SOCIALS
+        ══════════════════════════════════════ */
+        .socials-section {
+            padding: 88px 28px;
+            background: var(--beige);
+            border-top: 2px solid rgba(64,59,51,0.06);
+        }
+        .socials-grid {
+            max-width: 1100px; margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .social-card {
+            background: white; border-radius: 18px;
+            padding: 26px 18px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(64,59,51,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .social-card:hover { transform: translateY(-5px); box-shadow: 0 14px 28px rgba(64,59,51,0.13); }
+        .social-card img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; }
+        .social-platform { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal-dk); }
+        .social-name { font-size: 1rem; font-weight: 800; color: var(--charcoal); }
+        .social-desc { font-size: 0.78rem; color: #7a746c; line-height: 1.4; }
+        .social-arrow { font-size: 0.85rem; font-weight: 700; color: var(--rose); margin-top: 4px; }
+
+        /* Contact row */
+        .contact-row {
+            max-width: 680px; margin: 48px auto 0;
+            background: white; border-radius: 18px;
+            padding: 36px 32px; text-align: center;
+            box-shadow: 0 4px 20px rgba(64,59,51,0.07);
+        }
+        .contact-row h3 { font-size: 1.4rem; font-weight: 800; color: var(--charcoal); margin-bottom: 8px; }
+        .contact-row p  { font-size: 0.95rem; color: var(--charcoal-lt); margin-bottom: 24px; }
+        .contact-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .contact-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-weight: 700; font-size: 0.9rem; padding: 11px 22px;
+            border-radius: 10px; border: 2px solid;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .contact-btn:hover { transform: translateY(-2px); }
+        .contact-btn.email { border-color: var(--rose); color: var(--rose); }
+        .contact-btn.email:hover { background: var(--rose); color: white; }
+        .contact-btn.insta { border-color: var(--teal-dk); color: var(--teal-dk); }
+        .contact-btn.insta:hover { background: var(--teal-dk); color: white; }
+
+        /* ══════════════════════════════════════
+           ABOUT SECTION (bottom)
+        ══════════════════════════════════════ */
+        #about {
+            padding: 72px 28px;
+            background: var(--charcoal);
+            text-align: center;
+        }
+        #about .section-tag { border-color: rgba(240,234,214,0.3); color: rgba(240,234,214,0.7); }
+        #about h2 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 900; color: var(--beige); margin-bottom: 16px; }
+        #about p  { font-size: 1rem; color: rgba(240,234,214,0.72); line-height: 1.8; max-width: 600px; margin: 0 auto; }
+
+        /* ══════════════════════════════════════
+           FOOTER
+        ══════════════════════════════════════ */
+        footer {
+            background: #2e2a24;
+            padding: 28px;
+            text-align: center;
+            color: rgba(240,234,214,0.35);
+            font-size: 0.82rem;
+        }
+        footer a { color: rgba(240,234,214,0.5); transition: color 0.15s; }
+        footer a:hover { color: rgba(240,234,214,0.85); }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE TWEAKS
+        ══════════════════════════════════════ */
+        @media (max-width: 640px) {
+            .hero-buttons { flex-direction: column; align-items: center; }
+            .btn-primary, .btn-outline { width: 100%; max-width: 300px; justify-content: center; }
+            .about-stats { gap: 24px; }
+            .header-inner { padding: 0 18px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- FULL-PAGE ANIMATED BACKGROUND LAYER (The Cozy Wave) -->
-    <div id="wave-background"></div>
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio Logo"
+                 onerror="this.onerror=null;this.src='https://placehold.co/42x42/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
 
-    <!-- Header & Navigation -->
-    <header class="bg-white shadow-md sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo/Brand -->
-                <div class="flex-shrink-0">
-                    <a href="index.html" class="inline-flex items-center text-3xl" style="color: var(--color-deep-charcoal);">
-                        <img src="logo.png" alt="JV Design Studio Logo" class="h-10 w-auto mr-2 rounded-full" onerror="this.onerror=null;this.src='https://placehold.co/40x40/403B33/F0EAD6?text=JV'">
-                        <span class="logo-animated-name">JVDesignStudio</span>
-                    </a>
-                </div>
-                <!-- Navigation Links (Updated) -->
-                <nav class="flex items-center space-x-4">
-                    <!-- CONTENT HUB BUTTON - Uses Cozy Rose -->
-                    <a href="content_hub.html" class="px-5 py-2 font-bold text-lg rounded-xl btn-primary shadow-md hover:shadow-lg">
-                        📚 Content Hub
-                    </a>
-                    <!-- New Updates Link -->
-                    <a href="#updates" class="font-medium transition duration-150 hidden sm:block nav-link">
-                        Updates
-                    </a>
-                    <!-- New Merch Link -->
-                    <a href="#merch" class="font-medium transition duration-150 hidden sm:block nav-link">
-                        Merch
-                    </a>
-                    <!-- Existing About Link -->
-                    <a href="#about" class="font-medium transition duration-150 hidden sm:block nav-link">
-                        About
-                    </a>
-                    <!-- New Connect/Socials Link -->
-                    <a href="#socials" class="font-medium transition duration-150 hidden sm:block nav-link">
-                        Connect
-                    </a>
-                </nav>
+        <!-- Desktop nav -->
+        <nav class="main-nav desktop-nav">
+            <a href="#featured" class="nav-link">Projects</a>
+            <a href="#updates"  class="nav-link">Updates</a>
+            <a href="#merch"    class="nav-link">Merch</a>
+            <a href="#socials"  class="nav-link">Connect</a>
+            <a href="#about"    class="nav-link">About</a>
+            <a href="content_hub.html" class="btn-primary" style="padding:10px 22px; font-size:0.9rem; margin-left:8px;">📚 Content Hub</a>
+        </nav>
+
+        <!-- Mobile toggle -->
+        <button class="nav-toggle" onclick="document.getElementById('mobileNav').classList.toggle('open')" aria-label="Toggle menu">☰</button>
+    </div>
+
+    <!-- Mobile nav -->
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="#featured" onclick="document.getElementById('mobileNav').classList.remove('open')">Projects</a>
+        <a href="#updates"  onclick="document.getElementById('mobileNav').classList.remove('open')">Updates</a>
+        <a href="#merch"    onclick="document.getElementById('mobileNav').classList.remove('open')">Merch</a>
+        <a href="#socials"  onclick="document.getElementById('mobileNav').classList.remove('open')">Connect</a>
+        <a href="#about"    onclick="document.getElementById('mobileNav').classList.remove('open')">About</a>
+        <a href="content_hub.html" style="color:var(--rose); font-weight:800;">📚 Content Hub →</a>
+    </nav>
+</header>
+
+<!-- ══════════════════════════════════════
+     HERO
+══════════════════════════════════════ -->
+<section class="hero">
+    <div class="hero-bg"></div>
+
+    <!-- Floating shapes -->
+    <div class="hero-shape" style="width:300px;height:300px;top:-80px;right:-60px;--dur:12s;--tx:20px;--ty:-15px;--rot:8deg;"></div>
+    <div class="hero-shape" style="width:180px;height:180px;bottom:60px;left:-40px;--dur:9s;--delay:2s;--tx:-10px;--ty:20px;--rot:-12deg;"></div>
+    <div class="hero-shape" style="width:100px;height:100px;top:30%;right:8%;--dur:7s;--delay:1s;--tx:15px;--ty:-25px;--rot:20deg;"></div>
+
+    <!-- Floating emojis -->
+    <div class="hero-emoji" style="top:12%;left:6%;--size:2.8rem;--dur:8s;--ty:-20px;--rot:15deg;">📚</div>
+    <div class="hero-emoji" style="top:20%;right:8%;--size:2.4rem;--dur:6s;--delay:1s;--ty:-15px;--rot:-10deg;">🎲</div>
+    <div class="hero-emoji" style="bottom:18%;left:10%;--size:2.2rem;--dur:9s;--delay:2s;--ty:-18px;--rot:8deg;">✨</div>
+    <div class="hero-emoji" style="bottom:22%;right:6%;--size:2.6rem;--dur:7s;--delay:0.5s;--ty:-22px;--rot:-15deg;">🌟</div>
+    <div class="hero-emoji" style="top:55%;left:4%;--size:1.8rem;--dur:10s;--delay:3s;--ty:-12px;--rot:20deg;">🎨</div>
+    <div class="hero-emoji" style="top:40%;right:4%;--size:2rem;--dur:8s;--delay:1.5s;--ty:-16px;--rot:-8deg;">🚀</div>
+
+    <div class="hero-content">
+        <div class="hero-eyebrow">Books · Games · Creative Adventures</div>
+        <h1 class="hero-title">
+            Where Every Page<br>
+            is an <span class="accent">Adventure</span><br>
+            <span class="accent2">Waiting</span> to Begin
+        </h1>
+        <p class="hero-desc">
+            Children's books, tabletop games, digital adventures and free creative goodies — all crafted with heart and a sprinkle of stardust.
+        </p>
+        <div class="hero-buttons">
+            <a href="content_hub.html" class="btn-primary">Explore All Projects →</a>
+            <a href="#featured"        class="btn-outline">See Highlights ↓</a>
+        </div>
+    </div>
+
+    <div class="scroll-cue">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+        <span>Scroll</span>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     CATEGORY STRIP
+══════════════════════════════════════ -->
+<div class="category-strip">
+    <div class="category-inner">
+        <a href="content_hub.html?filter=books"    class="category-pill">📚 Children's Books</a>
+        <a href="content_hub.html?filter=games"    class="category-pill">🎲 Games & Prototypes</a>
+        <a href="content_hub.html?filter=guides"   class="category-pill">💻 Technical Guides</a>
+        <a href="content_hub.html?filter=freebies" class="category-pill">🎁 Free Downloads</a>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FEATURED PROJECTS
+══════════════════════════════════════ -->
+<section class="featured-section" id="featured">
+    <div class="section-header reveal">
+        <span class="section-tag">✦ Highlights</span>
+        <h2 class="section-title">Featured Creations</h2>
+        <p style="color:var(--charcoal-lt);margin-top:10px;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
+            A taste of what's inside the hub — from bedtime stories to space adventures.
+        </p>
+    </div>
+
+    <div class="featured-grid">
+
+        <a href="Elara.html" class="card feat-card reveal">
+            <div class="feat-card-img">
+                <img src="Elara.jpg" alt="Elara & The Wire-Web Key"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x220/BC4749/ffffff?text=Elara'">
+                <span class="feat-card-badge badge-book">Book</span>
+            </div>
+            <div class="feat-card-body">
+                <h3 class="feat-card-title">Elara & The Wire-Web Key</h3>
+                <p class="feat-card-desc">A heartwarming story about safe online exploration — perfect for sparking conversations with young readers.</p>
+                <span class="feat-card-cta">Read More →</span>
+            </div>
+        </a>
+
+        <a href="Stardust.html" class="card feat-card reveal">
+            <div class="feat-card-img">
+                <img src="Front Cover Concept.jpg" alt="Stardust's Cosmic Adventure"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x220/70A3A7/ffffff?text=Stardust'">
+                <span class="feat-card-badge badge-book">Book</span>
+            </div>
+            <div class="feat-card-body">
+                <h3 class="feat-card-title">Stardust's Cosmic Adventure</h3>
+                <p class="feat-card-desc">A magical journey through the stars that sparks curiosity about astronomy and dreaming big.</p>
+                <span class="feat-card-cta">Read More →</span>
+            </div>
+        </a>
+
+        <a href="colouring-book.html" class="card feat-card reveal">
+            <div class="feat-card-img">
+                <img src="promotion.jpg" alt="Free Creativity Kit"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x220/e8a838/ffffff?text=Free+Kit'">
+                <span class="feat-card-badge badge-free">Free!</span>
+            </div>
+            <div class="feat-card-body">
+                <h3 class="feat-card-title">Free Creativity Kit</h3>
+                <p class="feat-card-desc">Printable colouring pages and fun activities — completely free to download and enjoy at home.</p>
+                <span class="feat-card-cta" style="color:#c47f00;">Get Freebie →</span>
+            </div>
+        </a>
+
+        <a href="cozy_creatures.html" class="card feat-card reveal">
+            <div class="feat-card-img">
+                <img src="Cozy Creatures.jpg" alt="Cozy Creatures: Snuggle Pile"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x220/F0EAD6/403B33?text=Cozy+Creatures'">
+                <span class="feat-card-badge badge-game">Game</span>
+            </div>
+            <div class="feat-card-body">
+                <h3 class="feat-card-title">Cozy Creatures: Snuggle Pile</h3>
+                <p class="feat-card-desc">A cooperative tabletop card game for 1–4 players — cosy, strategic, and full of cute creatures.</p>
+                <span class="feat-card-cta" style="color:var(--teal-dk);">View Rulebook →</span>
+            </div>
+        </a>
+
+        <a href="stardust.collection.html" class="card feat-card reveal">
+            <div class="feat-card-img">
+                <img src="Stardust_Collection_prototype image.png" alt="Stardust Collector Game"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x220/0e0036/a0f0ff?text=Stardust+Collector'">
+                <span class="feat-card-badge badge-game">Mini Game</span>
+            </div>
+            <div class="feat-card-body">
+                <h3 class="feat-card-title">Stardust Collector</h3>
+                <p class="feat-card-desc">Play right in your browser! An endless space runner — dodge hazards, collect stardust, build combos.</p>
+                <span class="feat-card-cta" style="color:var(--teal-dk);">Play Now →</span>
+            </div>
+        </a>
+
+        <!-- "See everything" card -->
+        <a href="content_hub.html" class="card feat-card reveal" style="background:var(--charcoal); border:2px dashed rgba(240,234,214,0.2);">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;gap:16px;">
+                <span style="font-size:2.8rem;">📦</span>
+                <h3 style="font-size:1.2rem;font-weight:800;color:var(--beige);">See Everything</h3>
+                <p style="font-size:0.9rem;color:rgba(240,234,214,0.6);line-height:1.5;">Books, games, guides, freebies — the full collection lives in the Content Hub.</p>
+                <span style="font-weight:700;font-size:0.9rem;color:var(--rose);">Go to Content Hub →</span>
+            </div>
+        </a>
+
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     ABOUT STRIP
+══════════════════════════════════════ -->
+<div class="about-strip">
+    <div class="about-inner reveal">
+        <span class="section-tag">✦ The Studio</span>
+        <h2>Made with Care,<br>Crafted for Curiosity</h2>
+        <div class="about-stats">
+            <div class="stat"><div class="stat-num">4+</div><div class="stat-label">Books</div></div>
+            <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Games</div></div>
+            <div class="stat"><div class="stat-num">1</div><div class="stat-label">Free Kit</div></div>
+            <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Imagination</div></div>
+        </div>
+        <p>Every project at JVDesignStudio is built to bring joy, spark learning, and ignite imagination — for young readers, curious minds, and playful hearts of all ages.</p>
+        <a href="#about" class="btn-about">Learn More About the Studio ↓</a>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     UPDATES
+══════════════════════════════════════ -->
+<section class="updates-section" id="updates">
+    <div class="section-header reveal">
+        <span class="section-tag">✦ What's New</span>
+        <h2 class="section-title">Latest Studio Updates</h2>
+    </div>
+
+    <div class="updates-grid">
+
+        <div class="update-card reveal">
+            <div class="update-meta">
+                <div class="update-date">November 2025</div>
+                <div class="update-title">New Books Incoming!</div>
+            </div>
+            <div class="update-body">
+                <p>Exciting news — another book is in the works, and there might even be two on the way! Both are coming soon to the Content Hub. Stay tuned for more details.</p>
+                <a href="content_hub.html" class="update-link">Go to Content Hub →</a>
             </div>
         </div>
-    </header>
 
-    <!-- Hero Section (Transparent to show the wave background) -->
-    <section class="hero-section py-20 sm:py-32">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <h1 class="text-5xl sm:text-7xl font-extrabold text-gray-900 mb-6 leading-tight" style="color: var(--color-deep-charcoal);">
-                Imagination Starts 
-                <!-- Accent Color for 'Here.' - Uses Cozy Rose -->
-                <span style="color: var(--color-muted-rose);">Here.</span>
-            </h1>
-            <p class="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-10" style="color: var(--color-deep-charcoal);">
-                Discover captivating children's books, fun activities, and engaging digital creations designed to spark curiosity and learning.
-            </p>
-            <!-- Hero Button - Uses Cozy Rose -->
-            <a href="content_hub.html" class="btn-primary inline-flex items-center justify-center px-10 py-4 border border-transparent text-xl font-bold rounded-xl shadow-xl hover:shadow-2xl">
-                Explore All Projects &rarr;
-            </a>
-        </div>
-    </section>
-
-    <!-- Featured Projects/Shop Teaser Section -->
-    <section id="shop" class="py-16 md:py-24">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-12" style="color: var(--color-deep-charcoal);">
-                Featured Creations
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                
-                <!-- Feature 1: Elara -->
-                <a href="Elara.html" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center">
-                    <img src="Elara.jpg" alt="Elara Book Cover" class="w-full h-56 object-cover border-b-2 border-gray-200" onerror="this.onerror=null;this.src='https://placehold.co/400x224/f43f5e/ffffff?text=Elara+Cover'">
-                    <div class="p-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2" style="color: var(--color-deep-charcoal);">Elara & The Wire-Web Key</h3>
-                        <p class="text-gray-600 mb-4">A story about safe online exploration.</p>
-                        <!-- Link Color - Uses Cozy Teal -->
-                        <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">Read More &rarr;</span>
-                    </div>
-                </a>
-
-                <!-- Feature 2: Stardust -->
-                <a href="Stardust.html" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center">
-                    <img src="Front Cover Concept.jpg" alt="Stardust Book Cover" class="w-full h-56 object-cover border-b-2 border-gray-200" onerror="this.onerror=null;this.src='https://placehold.co/400x224/facc15/000000?text=Stardust+Cover'">
-                    <div class="p-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2" style="color: var(--color-deep-charcoal);">Stardust's Cosmic Adventure</h3>
-                        <p class="text-gray-600 mb-4">A magical tale of stars and planets.</p>
-                        <!-- Link Color - Uses Cozy Teal -->
-                        <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">Read More &rarr;</span>
-                    </div>
-                </a>
-
-                <!-- Feature 3: Colouring Book -->
-                <a href="colouring-book.html" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center">
-                    <img src="promotion.jpg" alt="Coloring Book Pages" class="w-full h-56 object-cover border-b-2 border-gray-200" onerror="this.onerror=null;this.src='https://placehold.co/400x224/22c55e/ffffff?text=Coloring+Kit'">
-                    <div class="p-6">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-2" style="color: var(--color-deep-charcoal);">Free Creativity Kit</h3>
-                        <p class="text-gray-600 mb-4">Download complimentary colouring pages.</p>
-                        <!-- Link Color - Uses Cozy Teal -->
-                        <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">Get Freebie &rarr;</span>
-                    </div>
-                </a>
-
+        <div class="update-card rose reveal">
+            <div class="update-meta">
+                <div class="update-date">November 2025</div>
+                <div class="update-title">Secret Project 🤫</div>
             </div>
-
-            <div class="text-center mt-12">
-                <!-- See EVERYTHING Link - Uses Cozy Teal -->
-                <a href="content_hub.html" class="text-xl font-bold transition duration-150 hover:text-gray-900" style="color: var(--color-cozy-teal);">
-                    See EVERYTHING in the Content Hub &rarr;
-                </a>
+            <div class="update-body">
+                <p>There might be some exciting merch ideas in the works in-house... shhh! Follow along on Instagram for sneak peeks and behind-the-scenes updates.</p>
+                <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="update-link" style="color:var(--teal-dk);">Follow the progress on IG →</a>
             </div>
         </div>
-    </section>
 
-    <!-- Updates / Work in Progress Section (NEW) -->
-    <section id="updates" class="py-16 md:py-24 border-t border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-12" style="color: var(--color-deep-charcoal);">
-                Latest Studio Updates
-            </h2>
-            
-            <div class="space-y-12 max-w-4xl mx-auto">
-                
-                <!-- Update Item 1: The Candy Kingdom Adventure -->
-                <div class="flex flex-col sm:flex-row bg-white p-6 rounded-xl shadow-lg border-l-4" style="border-color: var(--color-cozy-teal);">
-                    <div class="flex-shrink-0 sm:w-1/4 mb-4 sm:mb-0">
-                        <span class="text-sm font-semibold uppercase block mb-1" style="color: var(--color-cozy-teal);">November 2025</span>
-                        <h3 class="text-2xl font-bold" style="color: var(--color-deep-charcoal);">New Books?</h3>
-                    </div>
-                    <div class="sm:ml-8 sm:w-3/4">
-                        <p class="text-gray-700 mb-3">
-                            I'm Thrilled to annouce Another Book is in the works.... Maybe even two! tThey will be coming soon
-                        </p>
-                        <a href="content_hub.html#candy-kingdom" class="font-semibold transition duration-150 hover:underline" style="color: var(--color-muted-rose);">
-                            Go to Content Hub &rarr;
-                        </a>
-                    </div>
-                </div>
+    </div>
+</section>
 
-                <!-- Update Item 2: Next Book in Development -->
-                <div class="flex flex-col sm:flex-row bg-white p-6 rounded-xl shadow-lg border-l-4" style="border-color: var(--color-muted-rose);">
-                    <div class="flex-shrink-0 sm:w-1/4 mb-4 sm:mb-0">
-                        <span class="text-sm font-semibold uppercase block mb-1" style="color: var(--color-muted-rose);">November2025</span>
-                        <h3 class="text-2xl font-bold" style="color: var(--color-deep-charcoal);">Secrete Project</h3>
-                    </div>
-                    <div class="sm:ml-8 sm:w-3/4">
-                        <p class="text-gray-700 mb-3">
-                            Exciting news! I May be looking at Merch Ideas In House.... Shhhhhh...  Check My Instagram for sneak peeks and updates.
-                        </p>
-                        <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="font-semibold transition duration-150 hover:underline" style="color: var(--color-cozy-teal);">
-                            Follow the progress on IG &rarr;
-                        </a>
-                    </div>
-                </div>
-                
-            </div>
+<!-- ══════════════════════════════════════
+     MERCH
+══════════════════════════════════════ -->
+<section class="merch-section" id="merch">
+    <div class="merch-inner reveal">
+        <span class="section-tag">✦ Shop</span>
+        <h2>Get Your Cozy Merch!</h2>
+        <p>Bring the magic home with exclusive stickers, prints, and merch featuring your favourite JVDesignStudio characters and games.</p>
+        <a href="merch.html" class="btn-primary" style="font-size:1.1rem;padding:16px 38px;">🛍️ Shop the Collection →</a>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SOCIALS
+══════════════════════════════════════ -->
+<section class="socials-section" id="socials">
+    <div class="section-header reveal" style="margin-bottom:40px;">
+        <span class="section-tag">✦ Community</span>
+        <h2 class="section-title">Find Me Everywhere</h2>
+        <p style="color:var(--charcoal-lt);margin-top:10px;font-size:1rem;">Follow along on the creative journey</p>
+    </div>
+
+    <div class="socials-grid" style="max-width:1100px;margin:0 auto;">
+
+        <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="social-card reveal">
+            <img src="JV_Instagram_logo.jpg" alt="Studio Instagram"
+                 onerror="this.onerror=null;this.src='https://placehold.co/60x60/BC4749/ffffff?text=IG'">
+            <span class="social-platform">Instagram</span>
+            <span class="social-name">Studio Creations</span>
+            <span class="social-desc">Latest art and design work</span>
+            <span class="social-arrow">Follow →</span>
+        </a>
+
+        <a href="https://www.instagram.com/joshhyyyv/" target="_blank" class="social-card reveal">
+            <img src="https://placehold.co/60x60/70A3A7/ffffff?text=IG" alt="Personal Instagram">
+            <span class="social-platform">Instagram</span>
+            <span class="social-name">Personal Adventures</span>
+            <span class="social-desc">Behind-the-scenes and life updates</span>
+            <span class="social-arrow">Follow →</span>
+        </a>
+
+        <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" class="social-card reveal">
+            <img src="JV_Youtube_Logo.jpg" alt="Official YouTube"
+                 onerror="this.onerror=null;this.src='https://placehold.co/60x60/BC4749/ffffff?text=YT'">
+            <span class="social-platform">YouTube</span>
+            <span class="social-name">Official Channel</span>
+            <span class="social-desc">Design tutorials and project deep dives</span>
+            <span class="social-arrow">Watch →</span>
+        </a>
+
+        <a href="https://www.youtube.com/@whyJoshyy" target="_blank" class="social-card reveal">
+            <img src="Joshhyy_Youtube_Logo.jpg" alt="Gaming YouTube"
+                 onerror="this.onerror=null;this.src='https://placehold.co/60x60/70A3A7/ffffff?text=YT'">
+            <span class="social-platform">YouTube</span>
+            <span class="social-name">Gaming Stream VODs</span>
+            <span class="social-desc">Let's plays and community streams</span>
+            <span class="social-arrow">Watch →</span>
+        </a>
+
+        <a href="https://joshhyyy.itch.io/" target="_blank" class="social-card reveal">
+            <img src="JV_Itch_Logo.jpg" alt="Itch.io"
+                 onerror="this.onerror=null;this.src='https://placehold.co/60x60/403B33/F0EAD6?text=ITCH'">
+            <span class="social-platform">Itch.io</span>
+            <span class="social-name">Game Demos & More</span>
+            <span class="social-desc">Playable prototypes and assets</span>
+            <span class="social-arrow">Play →</span>
+        </a>
+
+    </div>
+
+    <div class="contact-row reveal">
+        <h3>Have a question? Let's connect!</h3>
+        <p>I'd love to hear from you — whether it's about a project, a collab, or just to say hi.</p>
+        <div class="contact-buttons">
+            <a href="mailto:josh-couchman@outlook.com" class="contact-btn email">📧 Send Me an Email</a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="contact-btn insta">📸 Message on Instagram</a>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Merch/Stickers Section (NEW) -->
-    <section id="merch" class="py-20" style="background-color: var(--color-soft-tan);">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-4xl font-extrabold mb-4" style="color: var(--color-deep-charcoal);">
-                Get Your Cozy Stickers!
-            </h2>
-            <p class="text-xl text-gray-700 max-w-2xl mx-auto mb-8" style="color: var(--color-deep-charcoal);">
-                Bring the magic home with exclusive vinyl stickers, prints, and merch from your favorite JVDesignStudio characters and games.
-            </p>
-            <!-- Merch Button - Uses Cozy Rose Primary Button Style -->
-            <!-- IMPORTANT: Remember to replace the placeholder link below with your actual shop URL! -->
-            <a href="merch.html" target="_blank" class="btn-primary inline-flex items-center justify-center px-8 py-3 border border-transparent text-lg font-bold rounded-xl shadow-xl hover:shadow-2xl">
-                🛍️ Shop the Collection &rarr;
-            </a>
-        </div>
-    </section>
+<!-- ══════════════════════════════════════
+     ABOUT
+══════════════════════════════════════ -->
+<section id="about">
+    <div style="max-width:700px;margin:0 auto;" class="reveal">
+        <span class="section-tag">✦ About</span>
+        <h2>About JVDesignStudio</h2>
+        <p>I'm dedicated to creating engaging and meaningful content that brings joy, encourages learning, and sparks imagination in young readers and thinkers. Every project is crafted with care and passion — from bedtime stories to tabletop adventures — to offer a truly unique creative experience.</p>
+    </div>
+</section>
 
-    <!-- Socials/Connect Section (5 Links: 2 Insta, 2 YouTube, 1 Itch.io) -->
-    <section id="socials" class="py-16 border-t border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-4xl font-extrabold text-gray-900 text-center mb-12" style="color: var(--color-deep-charcoal);">
-                Find Me Everywhere
-            </h2>
-            
-            <!-- Grid adjusted to display 1, 2, 3, or 5 columns responsively -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-6xl mx-auto">
-                
-                <!-- 1. Instagram (Studio) -->
-                <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center p-6 flex flex-col items-center justify-center">
-                    <!-- Thumbnail placeholder (Muted Rose theme) -->
-                    <img src="JV_Instagram_logo.jpg" alt="Studio Creations Thumbnail" class="w-20 h-20 object-cover rounded-lg mb-4 shadow-md border-2" style="border-color: var(--color-muted-rose);">
-                    <h3 class="text-xl font-bold mb-1" style="color: var(--color-deep-charcoal);">Studio Creations</h3>
-                    <p class="text-gray-600 mb-4">Latest art and design work.</p>
-                    <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">Instagram &rarr;</span>
-                </a>
+<!-- ══════════════════════════════════════
+     FOOTER
+══════════════════════════════════════ -->
+<footer>
+    <p>© 2025 JVDesignStudio. All rights reserved. &nbsp;·&nbsp; <a href="content_hub.html">Content Hub</a> &nbsp;·&nbsp; <a href="mailto:josh-couchman@outlook.com">Contact</a></p>
+</footer>
 
-                <!-- 2. Instagram (Personal) -->
-                <a href="https://www.instagram.com/joshhyyyv/" target="_blank" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center p-6 flex flex-col items-center justify-center">
-                    <!-- Thumbnail placeholder (Cozy Teal theme) -->
-                    <img src="https://placehold.co/80x80/70A3A7/ffffff?text=IG" alt="Personal Adventures Thumbnail" class="w-20 h-20 object-cover rounded-lg mb-4 shadow-md border-2" style="border-color: var(--color-cozy-teal);">
-                    <h3 class="text-xl font-bold mb-1" style="color: var(--color-muted-rose);">Personal Adventures</h3>
-                    <p class="text-gray-600 mb-4">Behind-the-scenes and life updates.</p>
-                    <span class="font-semibold text-lg" style="color: var(--color-deep-charcoal);">Instagram &rarr;</span>
-                </a>
+<!-- ══════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════ -->
+<script>
+    /* Scroll reveal */
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Stagger cards in a grid
+                const parent = entry.target.parentElement;
+                const siblings = [...parent.querySelectorAll('.reveal')];
+                const idx = siblings.indexOf(entry.target);
+                setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 360));
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.08 });
 
-                <!-- 3. YouTube (Studio) -->
-                <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center p-6 flex flex-col items-center justify-center">
-                    <!-- Thumbnail placeholder (Muted Rose theme) -->
-                    <img src="JV_Youtube_Logo.jpg" alt="Official Channel Thumbnail" class="w-20 h-20 object-cover rounded-lg mb-4 shadow-md border-2" style="border-color: var(--color-muted-rose);">
-                    <h3 class="text-xl font-bold mb-1" style="color: var(--color-deep-charcoal);">Official Channel</h3>
-                    <p class="text-gray-600 mb-4">Design tutorials and project deep dives.</p>
-                    <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">YouTube &rarr;</span>
-                </a>
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
 
-                <!-- 4. YouTube (Gaming) -->
-                <a href="https://www.youtube.com/@whyJoshyy" target="_blank" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center p-6 flex flex-col items-center justify-center">
-                    <!-- Thumbnail placeholder (Cozy Teal theme) -->
-                    <img src="Joshhyy_Youtube_Logo.jpg" alt="Gaming Stream VODs Thumbnail" class="w-20 h-20 object-cover rounded-lg mb-4 shadow-md border-2" style="border-color: var(--color-cozy-teal);">
-                    <h3 class="text-xl font-bold mb-1" style="color: var(--color-muted-rose);">Gaming Stream VODs</h3>
-                    <p class="text-gray-600 mb-4">Let's plays and community streams.</p>
-                    <span class="font-semibold text-lg" style="color: var(--color-deep-charcoal);">YouTube &rarr;</span>
-                </a>
-                
-                <!-- 5. Itch.io (Deep Charcoal) -->
-                <a href="https://joshhyyy.itch.io/" target="_blank" class="card-project bg-white rounded-xl shadow-lg hover:shadow-xl overflow-hidden text-center p-6 flex flex-col items-center justify-center">
-                    <!-- Thumbnail placeholder (Deep Charcoal theme) -->
-                    <img src="JV_Itch_Logo.jpg" alt="Itch.io Game Demos Thumbnail" class="w-20 h-20 object-cover rounded-lg mb-4 shadow-md border-2" style="border-color: var(--color-deep-charcoal);">
-                    <h3 class="text-xl font-bold mb-1" style="color: var(--color-muted-rose);">Game Demos & More</h3>
-                    <p class="text-gray-600 mb-4">Playable prototypes and assets.</p>
-                    <span class="font-semibold text-lg" style="color: var(--color-cozy-teal);">Itch.io &rarr;</span>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="py-16 border-t border-gray-200">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center" style="color: var(--color-deep-charcoal);">
-            <h2 class="text-3xl font-extrabold mb-4">
-                About JVDesignStudio
-            </h2>
-            <p class="text-lg">
-                I'm dedicated to creating engaging and meaningful content that brings joy, encourages learning, and sparks imagination in young readers and thinkers. Every project is crafted with care and passion to offer a unique experience.
-            </p>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="py-8" style="background-color: var(--color-deep-charcoal);">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
-            <p>&copy; 2025 JVDesignStudio. All rights reserved.</p>
-        </div>
-    </footer>
-    
 </body>
 </html>

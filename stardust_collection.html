@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardust Collector | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ══════════════════════════════════════
+           PALETTE & RESET
+        ══════════════════════════════════════ */
+        :root {
+            --beige:    #F0EAD6;
+            --tan:      #D2B48C;
+            --rose:     #BC4749;
+            --rose-dk:  #9b3a3c;
+            --teal:     #70A3A7;
+            --teal-dk:  #4e7d80;
+            --charcoal: #403B33;
+            --space:    #03010f;
+            --space-mid:#0e0036;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--space);
+            color: var(--beige);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ══════════════════════════════════════
+           LOGO ANIMATION
+        ══════════════════════════════════════ */
+        @keyframes logo-shift {
+            0%   { color: var(--tan); }
+            33%  { color: var(--rose); }
+            66%  { color: var(--teal); }
+            100% { color: var(--tan); }
+        }
+        .logo-name { animation: logo-shift 6s infinite alternate ease-in-out; font-weight: 800; }
+
+        /* ══════════════════════════════════════
+           HEADER
+        ══════════════════════════════════════ */
+        .site-header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(3,1,15,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(112,163,167,0.2);
+        }
+        .header-inner {
+            max-width: 1100px; margin: 0 auto;
+            padding: 0 24px; height: 68px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-link {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; font-size: 1.3rem;
+        }
+        .logo-link img {
+            height: 38px; width: auto; border-radius: 8px;
+        }
+        .btn-hub {
+            background: var(--rose);
+            color: white; font-weight: 700; font-size: 0.9rem;
+            padding: 9px 20px; border-radius: 10px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-hub:hover { background: var(--rose-dk); transform: translateY(-1px); }
+
+        /* ══════════════════════════════════════
+           HERO / PAGE HEADER
+        ══════════════════════════════════════ */
+        .page-hero {
+            position: relative;
+            padding: 52px 24px 40px;
+            text-align: center;
+            overflow: hidden;
+        }
+        /* Twinkling star field background */
+        .starfield {
+            position: absolute; inset: 0; z-index: 0;
+            overflow: hidden;
+        }
+        .star-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--dur, 3s) var(--delay, 0s) infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%,100% { opacity: 0.15; transform: scale(1); }
+            50%      { opacity: 1;    transform: scale(1.4); }
+        }
+        .hero-content { position: relative; z-index: 1; }
+        .hero-tag {
+            display: inline-block;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--teal);
+            border: 1px solid var(--teal); border-radius: 999px;
+            padding: 4px 14px; margin-bottom: 16px;
+        }
+        .hero-title {
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(2.8rem, 7vw, 5rem);
+            font-weight: 700;
+            line-height: 1.05;
+            color: var(--beige);
+            text-shadow: 0 0 40px rgba(112,163,167,0.5);
+        }
+        .hero-title span { color: var(--rose); }
+        .hero-desc {
+            font-size: 1rem; color: rgba(240,234,214,0.7);
+            max-width: 480px; margin: 12px auto 0;
+            line-height: 1.6;
+        }
+
+        /* ══════════════════════════════════════
+           GAME WRAPPER
+        ══════════════════════════════════════ */
+        .game-wrapper {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 0 16px 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* ══════════════════════════════════════
+           SCOREBOARD
+        ══════════════════════════════════════ */
+        .scoreboard {
+            width: 100%;
+            background: rgba(14,0,54,0.8);
+            border: 1px solid rgba(112,163,167,0.3);
+            border-radius: 16px;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(8px);
+        }
+        .score-block { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .score-label {
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--teal);
+        }
+        .score-value {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.6rem; font-weight: 700;
+            color: var(--beige);
+            transition: transform 0.15s;
+        }
+        .score-value.bump { transform: scale(1.3); color: #ffd700; }
+        .lives-row { display: flex; gap: 4px; font-size: 1.4rem; }
+        .combo-badge {
+            font-family: 'Fredoka', cursive;
+            font-size: 1rem; font-weight: 700;
+            background: linear-gradient(135deg, #f1c40f, #e67e22);
+            color: #1a1a00;
+            padding: 4px 14px; border-radius: 999px;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .combo-badge.visible { opacity: 1; }
+
+        /* ══════════════════════════════════════
+           GAME AREA
+        ══════════════════════════════════════ */
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: min(75vh, 560px);
+            border-radius: 20px;
+            overflow: hidden;
+            touch-action: none;
+            cursor: none;
+            background: radial-gradient(ellipse at 50% 30%, #0e0036 0%, #03010f 70%);
+            border: 1px solid rgba(112,163,167,0.25);
+            box-shadow: 0 0 60px rgba(112,163,167,0.08), inset 0 0 80px rgba(0,0,0,0.4);
+        }
+        /* Subtle nebula layers */
+        #game-area::before {
+            content: '';
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 40% 30% at 20% 60%, rgba(112,163,167,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 30% 25% at 80% 30%, rgba(188,71,73,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════
+           PLAYER — cute little spaceship
+        ══════════════════════════════════════ */
+        #player {
+            position: absolute;
+            width: 52px; height: 52px;
+            z-index: 15;
+            font-size: 36px;
+            display: flex; align-items: center; justify-content: center;
+            filter: drop-shadow(0 0 8px rgba(160,240,255,0.9));
+            transition: filter 0.2s;
+            will-change: transform;
+            transform-origin: center;
+        }
+        #player.damaged {
+            animation: damage-flash 0.15s steps(1) 6;
+        }
+        @keyframes damage-flash {
+            0%,100% { filter: drop-shadow(0 0 8px rgba(255,80,80,1)) brightness(3); }
+            50%      { filter: drop-shadow(0 0 8px rgba(160,240,255,0.9)); }
+        }
+        #player.shielded {
+            filter: drop-shadow(0 0 14px rgba(52,152,219,1)) drop-shadow(0 0 28px rgba(52,152,219,0.5));
+        }
+        #player.speedy {
+            filter: drop-shadow(0 0 10px rgba(155,89,182,1));
+        }
+        #player.magnet-on {
+            filter: drop-shadow(0 0 10px rgba(230,126,34,1));
+        }
+
+        /* Player trail */
+        .trail-dot {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(160,240,255,0.8), transparent);
+            pointer-events: none;
+            z-index: 14;
+            animation: trail-fade 0.4s forwards;
+        }
+        @keyframes trail-fade {
+            0%   { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 0;   transform: scale(0.1); }
+        }
+
+        /* ══════════════════════════════════════
+           GAME OBJECTS
+        ══════════════════════════════════════ */
+        .game-object {
+            position: absolute;
+            z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            border-radius: 50%;
+            transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+            will-change: transform;
+            user-select: none;
+        }
+        .game-object.collected {
+            opacity: 0 !important;
+            transform: scale(0.1) !important;
+        }
+
+        /* Collectibles */
+        .dust-particle { filter: drop-shadow(0 0 5px rgba(255,231,135,0.9)); }
+        .moon-gem      { filter: drop-shadow(0 0 7px rgba(52,152,219,0.9)); }
+        .cosmic-crystal{ filter: drop-shadow(0 0 7px rgba(0,191,165,0.9)); }
+        .nebula-diamond{ filter: drop-shadow(0 0 10px rgba(142,36,170,1)); }
+        .stardust-nova { filter: drop-shadow(0 0 12px rgba(255,215,0,1)); }
+
+        /* Obstacles */
+        .comet-obstacle  { filter: drop-shadow(0 0 8px rgba(200,60,60,0.9)); animation: spin 2s linear infinite; }
+        .comet-storm     { filter: drop-shadow(0 0 14px rgba(139,0,0,0.9)); animation: spin 1.5s linear infinite; }
+        .ice-asteroid    { filter: drop-shadow(0 0 10px rgba(79,195,247,0.9)); animation: spin-slow 4s linear infinite; }
+        .volatile-fragment{ filter: drop-shadow(0 0 6px rgba(255,87,34,0.9)); animation: spin 1s linear infinite; }
+        .gravitic-mine   { filter: drop-shadow(0 0 15px rgba(0,0,0,1)); animation: pulse-mine 1s ease-in-out infinite; }
+        .cosmic-ray      { filter: drop-shadow(0 0 12px rgba(255,235,59,0.9)); animation: flicker 0.3s ease-in-out infinite alternate; }
+        .black-hole      { filter: drop-shadow(0 0 20px rgba(80,0,120,1)); animation: spin-slow 3s linear infinite; }
+
+        @keyframes spin      { to { transform: rotate(360deg); } }
+        @keyframes spin-slow { to { transform: rotate(360deg); } }
+        @keyframes pulse-mine {
+            0%,100% { filter: drop-shadow(0 0 10px rgba(150,0,200,0.7)); }
+            50%      { filter: drop-shadow(0 0 25px rgba(150,0,200,1)); }
+        }
+        @keyframes flicker {
+            from { opacity: 0.7; } to { opacity: 1; }
+        }
+
+        /* Power-ups */
+        .power-up {
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.4);
+            animation: pu-float 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes pu-float {
+            from { transform: translateY(-3px); }
+            to   { transform: translateY(3px); }
+        }
+        .pu-shield     { filter: drop-shadow(0 0 10px rgba(52,152,219,1)); }
+        .pu-speed      { filter: drop-shadow(0 0 10px rgba(155,89,182,1)); }
+        .pu-magnet     { filter: drop-shadow(0 0 10px rgba(230,126,34,1)); }
+        .pu-multiplier { filter: drop-shadow(0 0 10px rgba(241,196,15,1)); }
+        .pu-slow-motion{ filter: drop-shadow(0 0 10px rgba(26,188,156,1)); }
+        .pu-life       { filter: drop-shadow(0 0 10px rgba(255,100,100,1)); }
+
+        /* ══════════════════════════════════════
+           PARTICLES
+        ══════════════════════════════════════ */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 20;
+            animation: particle-burst var(--dur, 0.6s) ease-out forwards;
+        }
+        @keyframes particle-burst {
+            0%   { opacity: 1; transform: translate(0,0) scale(1); }
+            100% { opacity: 0; transform: translate(var(--tx,0px), var(--ty,-40px)) scale(0.1); }
+        }
+
+        /* ══════════════════════════════════════
+           FLOATING SCORE TEXT
+        ══════════════════════════════════════ */
+        .float-text {
+            position: absolute;
+            font-family: 'Fredoka', cursive;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #ffd700;
+            text-shadow: 0 0 8px rgba(255,215,0,0.8);
+            pointer-events: none;
+            z-index: 25;
+            animation: float-up 0.8s ease-out forwards;
+        }
+        @keyframes float-up {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+        }
+
+        /* ══════════════════════════════════════
+           SCREEN SHAKE
+        ══════════════════════════════════════ */
+        @keyframes shake {
+            0%,100% { transform: translate(0,0) rotate(0); }
+            15%      { transform: translate(-5px, 3px) rotate(-1deg); }
+            30%      { transform: translate(5px,-3px) rotate(1deg); }
+            45%      { transform: translate(-4px, 2px) rotate(-0.5deg); }
+            60%      { transform: translate(4px,-2px) rotate(0.5deg); }
+            75%      { transform: translate(-2px, 1px); }
+        }
+        #game-area.shaking { animation: shake 0.4s ease; }
+
+        /* ══════════════════════════════════════
+           MESSAGE BOX
+        ══════════════════════════════════════ */
+        #message-box {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(340px, 88%);
+            padding: 28px 32px;
+            background: rgba(14,0,54,0.96);
+            border: 2px solid var(--teal);
+            border-radius: 20px;
+            color: var(--beige);
+            font-family: 'Fredoka', cursive;
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(112,163,167,0.3);
+            z-index: 30;
+            display: none;
+            line-height: 1.4;
+            backdrop-filter: blur(10px);
+        }
+        #message-box.game-over { border-color: var(--rose); box-shadow: 0 0 60px rgba(188,71,73,0.3); }
+        #message-box .msg-emoji { font-size: 3rem; display: block; margin-bottom: 8px; }
+        #message-box .msg-sub   { font-family: 'Inter', sans-serif; font-size: 0.9rem; opacity: 0.7; font-weight: 400; margin-top: 4px; }
+        #message-box .new-best  { color: #ffd700; font-size: 1rem; margin-top: 6px; }
+
+        .restart-btn {
+            margin-top: 18px;
+            padding: 12px 28px;
+            background: var(--rose);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--rose-dk);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .restart-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 0 var(--rose-dk); }
+        .restart-btn:active { transform: translateY(3px);  box-shadow: 0 1px 0 var(--rose-dk); }
+
+        /* ══════════════════════════════════════
+           ACTIVE POWER-UP INDICATORS
+        ══════════════════════════════════════ */
+        #pu-indicators {
+            position: absolute;
+            top: 10px; right: 10px;
+            z-index: 20;
+            display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+        }
+        .pu-indicator {
+            font-size: 0.75rem; font-weight: 700;
+            padding: 3px 10px; border-radius: 999px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid currentColor;
+            display: flex; align-items: center; gap: 5px;
+            animation: pu-ind-in 0.2s ease;
+        }
+        @keyframes pu-ind-in { from { opacity:0; transform: scale(0.7); } to { opacity:1; transform:scale(1); } }
+
+        /* ══════════════════════════════════════
+           CONTROLS & INFO
+        ══════════════════════════════════════ */
+        .controls-strip {
+            width: 100%;
+            background: rgba(14,0,54,0.5);
+            border: 1px solid rgba(112,163,167,0.15);
+            border-radius: 12px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .ctrl-item {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.8rem; color: rgba(240,234,214,0.65);
+        }
+        .ctrl-key {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            padding: 1px 7px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: var(--teal);
+        }
+
+        /* ══════════════════════════════════════
+           LEGEND
+        ══════════════════════════════════════ */
+        .legend {
+            width: 100%;
+            background: rgba(14,0,54,0.5);
+            border: 1px solid rgba(112,163,167,0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+        }
+        .legend h3 {
+            font-family: 'Fredoka', cursive;
+            font-size: 1rem; font-weight: 700;
+            color: var(--teal);
+            margin-bottom: 14px;
+            letter-spacing: 0.05em;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px;
+        }
+        .legend-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem; color: rgba(240,234,214,0.75);
+        }
+        .legend-item span:first-child { font-size: 1.1rem; }
+
+        /* ══════════════════════════════════════
+           FOOTER
+        ══════════════════════════════════════ */
+        footer {
+            background: var(--charcoal);
+            padding: 24px;
+            text-align: center;
+            color: rgba(240,234,214,0.4);
+            font-size: 0.85rem;
+        }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════════════ */
+        @media (max-width: 600px) {
+            .scoreboard { padding: 10px 14px; }
+            .score-value { font-size: 1.3rem; }
+            .lives-row { font-size: 1.1rem; }
+            #game-area { height: 65vh; }
+            .legend-grid { grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio Logo"
+                 onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <a href="content_hub.html" class="btn-hub">📚 Content Hub</a>
+    </div>
+</header>
+
+<!-- ══════════ PAGE HERO ══════════ -->
+<section class="page-hero">
+    <div class="starfield" id="starfield"></div>
+    <div class="hero-content">
+        <span class="hero-tag">✦ Mini Game ✦</span>
+        <h1 class="hero-title">Stardust <span>Collector</span></h1>
+        <p class="hero-desc">Pilot your little star through the cosmos — collect shimmering dust and dodge space hazards!</p>
+    </div>
+</section>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="game-wrapper">
+
+    <!-- Scoreboard -->
+    <div class="scoreboard" id="score-board">
+        <div class="score-block">
+            <span class="score-label">✨ Stardust</span>
+            <span class="score-value" id="current-score-display">0</span>
+        </div>
+        <div class="score-block">
+            <span class="score-label">Lives</span>
+            <div class="lives-row" id="lives-display">❤️❤️❤️</div>
+        </div>
+        <div class="score-block" id="combo-block" style="display:none;">
+            <span class="score-label">Combo</span>
+            <span class="combo-badge visible" id="combo-display">x1</span>
+        </div>
+        <div class="score-block">
+            <span class="score-label">🏆 Best</span>
+            <span class="score-value" id="high-score-display">0</span>
+        </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <div id="game-area">
+        <div id="player">🌟</div>
+        <div id="pu-indicators"></div>
+        <div id="message-box">
+            <span class="msg-emoji">🌌</span>
+            Welcome to<br>Stardust Collector!
+            <br><span class="msg-sub">Collect dust · Dodge hazards · Build combos</span>
+            <br><button class="restart-btn" onclick="window.startGame()">🚀 Start Journey</button>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-strip">
+        <div class="ctrl-item">
+            <span class="ctrl-key">← →</span>
+            <span>/ <span class="ctrl-key">A D</span> to move</span>
+        </div>
+        <div class="ctrl-item">
+            <span>👆</span><span>Drag on mobile</span>
+        </div>
+        <div class="ctrl-item">
+            <span class="ctrl-key">Space</span><span>/ <span class="ctrl-key">Enter</span> to start</span>
+        </div>
+        <div class="ctrl-item">
+            <span>🔗</span><span>Chain collects for combos!</span>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <h3>✦ Field Guide</h3>
+        <div class="legend-grid">
+            <div class="legend-item"><span>✨</span><span>Stardust (+1)</span></div>
+            <div class="legend-item"><span>💎</span><span>Moon Gem (+5)</span></div>
+            <div class="legend-item"><span>🔷</span><span>Crystal (+10)</span></div>
+            <div class="legend-item"><span>⭐</span><span>Nebula Diamond (+25)</span></div>
+            <div class="legend-item"><span>🌟</span><span>Stardust Nova (+50)</span></div>
+            <div class="legend-item"><span>☄️</span><span>Shadow Comet ☠️</span></div>
+            <div class="legend-item"><span>🌑</span><span>Ice Asteroid ☠️</span></div>
+            <div class="legend-item"><span>💥</span><span>Volatile Frag ☠️</span></div>
+            <div class="legend-item"><span>🕳️</span><span>Black Hole ☠️</span></div>
+            <div class="legend-item"><span>⚡</span><span>Cosmic Ray (slows)</span></div>
+            <div class="legend-item"><span>🛡️</span><span>Shield power-up</span></div>
+            <div class="legend-item"><span>💨</span><span>Speed power-up</span></div>
+            <div class="legend-item"><span>🧲</span><span>Magnet power-up</span></div>
+            <div class="legend-item"><span>✖️</span><span>Score multiplier</span></div>
+            <div class="legend-item"><span>🐌</span><span>Slow-mo power-up</span></div>
+            <div class="legend-item"><span>💖</span><span>Extra life!</span></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+    <p>© 2025 JVDesignStudio. All rights reserved.</p>
+</footer>
+
+<!-- ══════════ GAME SCRIPT ══════════ -->
+<script>
+    /* ── STAR FIELD ── */
+    (function() {
+        const sf = document.getElementById('starfield');
+        for (let i = 0; i < 80; i++) {
+            const s = document.createElement('div');
+            s.className = 'star-dot';
+            const size = Math.random() * 2.5 + 0.5;
+            s.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${Math.random()*100}%;
+                top:${Math.random()*100}%;
+                --dur:${(Math.random()*3+2).toFixed(1)}s;
+                --delay:${(Math.random()*4).toFixed(1)}s;
+            `;
+            sf.appendChild(s);
+        }
+    })();
+
+    /* ══════════════════════════════════════
+       CONSTANTS & CONFIG
+    ══════════════════════════════════════ */
+    const BASE_PLAYER_SPEED = 7;
+    const MAX_LIVES         = 3;
+    const POWER_UP_DURATION = 8000;
+    const BASE_SCROLL_SPEED = 3;
+    const HIGH_SCORE_KEY    = 'stardust_high_score_v2';
+    const BASE_SPAWN_INTERVAL = 58;
+
+    /* ── SPAWN DEFINITIONS ── */
+    const SPAWN_DEFS = [
+        // Collectibles
+        { type:'dust',    emoji:'✨', size:36, scoreValue:1,  isCollectible:true, weight:40, pitch:880,  className:'dust-particle' },
+        { type:'gem',     emoji:'💎', size:44, scoreValue:5,  isCollectible:true, weight:15, pitch:1000, className:'moon-gem' },
+        { type:'crystal', emoji:'🔷', size:38, scoreValue:10, isCollectible:true, weight:6,  pitch:1100, className:'cosmic-crystal' },
+        { type:'diamond', emoji:'⭐', size:34, scoreValue:25, isCollectible:true, weight:2,  pitch:1200, className:'nebula-diamond' },
+        { type:'nova',    emoji:'🌟', size:48, scoreValue:50, isCollectible:true, weight:0.5,pitch:1400, className:'stardust-nova' },
+
+        // Obstacles
+        { type:'comet',    emoji:'☄️',  size:60,  isObstacle:true, speedFactor:1.5, weight:14 , className:'comet-obstacle' },
+        { type:'storm',    emoji:'🌪️',  size:80,  isObstacle:true, speedFactor:2.0, weight:5  , className:'comet-storm' },
+        { type:'ice',      emoji:'🌑',  size:90,  isObstacle:true, speedFactor:0.7, weight:4  , className:'ice-asteroid' },
+        { type:'volatile', emoji:'💥',  size:28,  isObstacle:true, speedFactor:2.5, weight:8  , className:'volatile-fragment' },
+        { type:'mine',     emoji:'🔮',  size:70,  isObstacle:true, speedFactor:1.0, weight:3  , className:'gravitic-mine', logicType:'mine' },
+        { type:'ray',      emoji:'⚡',  size:42,  isObstacle:true, speedFactor:1.2, weight:2  , className:'cosmic-ray',   logicType:'hazard' },
+        { type:'blackhole',emoji:'🕳️', size:85,  isObstacle:true, speedFactor:0.5, weight:1.5, className:'black-hole',   logicType:'blackhole' },
+
+        // Power-ups
+        { type:'pu-shield', emoji:'🛡️', size:46, isPowerUp:true, logicType:'shield',     weight:0.9, className:'power-up pu-shield' },
+        { type:'pu-speed',  emoji:'💨', size:46, isPowerUp:true, logicType:'speed',      weight:0.9, className:'power-up pu-speed' },
+        { type:'pu-magnet', emoji:'🧲', size:46, isPowerUp:true, logicType:'magnet',     weight:0.9, className:'power-up pu-magnet' },
+        { type:'pu-multi',  emoji:'✖️', size:46, isPowerUp:true, logicType:'multiplier', weight:0.9, className:'power-up pu-multiplier' },
+        { type:'pu-slow',   emoji:'🐌', size:46, isPowerUp:true, logicType:'slowMotion', weight:0.9, className:'power-up pu-slow-motion' },
+        { type:'pu-life',   emoji:'💖', size:46, isPowerUp:true, logicType:'life',       weight:0.4, className:'power-up pu-life' },
+    ];
+
+    /* ══════════════════════════════════════
+       STATE
+    ══════════════════════════════════════ */
+    let gameActive      = false;
+    let gameLoopId      = null;
+    let currentScore    = 0;
+    let highScore       = 0;
+    let currentLives    = MAX_LIVES;
+    let isInvincible    = false;
+    let SCROLL_SPEED    = BASE_SCROLL_SPEED;
+    let PLAYER_SPEED    = BASE_PLAYER_SPEED;
+    let scoreMultiplier = 1;
+    let objects         = [];
+    let spawnTimer      = 0;
+    let audioCtx        = null;
+    let playerX = 0, playerY = 0;
+    const playerW = 52, playerH = 52;
+    const keysPressed = {};
+    let isTouching = false;
+
+    // Combo system
+    let comboCount     = 0;
+    let comboTimer     = null;
+    const COMBO_WINDOW = 1800; // ms between collections to keep combo
+
+    // Power-up state
+    const puState = {
+        shield:     { active:false, timer:null },
+        speed:      { active:false, timer:null },
+        magnet:     { active:false, timer:null, radius:160 },
+        multiplier: { active:false, timer:null, factor:3 },
+        slowMotion: { active:false, timer:null },
+    };
+    let playerSlowed = { active:false, timer:null };
+
+    // Trail
+    let trailTimer = null;
+
+    /* ══════════════════════════════════════
+       DOM REFS
+    ══════════════════════════════════════ */
+    const player         = document.getElementById('player');
+    const gameArea       = document.getElementById('game-area');
+    const scoreEl        = document.getElementById('current-score-display');
+    const highScoreEl    = document.getElementById('high-score-display');
+    const livesEl        = document.getElementById('lives-display');
+    const messageBox     = document.getElementById('message-box');
+    const comboEl        = document.getElementById('combo-display');
+    const comboBlock     = document.getElementById('combo-block');
+    const puIndicators   = document.getElementById('pu-indicators');
+
+    /* ══════════════════════════════════════
+       AUDIO
+    ══════════════════════════════════════ */
+    function getAudio() {
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+        return audioCtx;
+    }
+    function playTone(freq=880, type='sine', dur=0.15, vol=0.4) {
+        const ctx = getAudio(); if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + dur);
+        osc.stop(ctx.currentTime + dur);
+    }
+    function playCollect(pitch=880) { playTone(pitch, 'sine', 0.15, 0.35); }
+    function playPowerUp()          { playTone(1200, 'sine', 0.25, 0.5); }
+    function playDamage()           { playTone(150, 'sawtooth', 0.4, 0.6); }
+    function playGameOver()         { playTone(80, 'sawtooth', 0.7, 0.7); }
+    function playCombo(level)       { playTone(880 + level * 80, 'triangle', 0.2, 0.5); }
+
+    /* ══════════════════════════════════════
+       VISUALS
+    ══════════════════════════════════════ */
+    function updatePlayerPos() {
+        player.style.transform = `translate(${playerX}px, ${playerY}px)`;
+    }
+    function updatePlayerFX() {
+        player.classList.remove('shielded','speedy','magnet-on');
+        if (puState.shield.active)  player.classList.add('shielded');
+        else if (puState.speed.active)   player.classList.add('speedy');
+        else if (puState.magnet.active)  player.classList.add('magnet-on');
+
+        if (playerSlowed.active) {
+            player.style.filter = 'grayscale(80%) drop-shadow(0 0 6px rgba(160,240,255,0.4))';
+        } else {
+            player.style.filter = '';
+        }
+        PLAYER_SPEED = playerSlowed.active ? BASE_PLAYER_SPEED * 0.5
+                     : puState.speed.active ? BASE_PLAYER_SPEED * 1.6
+                     : BASE_PLAYER_SPEED;
+    }
+
+    /* Trail */
+    function spawnTrail() {
+        if (!gameActive) return;
+        const dot = document.createElement('div');
+        dot.className = 'trail-dot';
+        const size = Math.random() * 10 + 6;
+        dot.style.cssText = `
+            width:${size}px; height:${size}px;
+            left:${playerX + playerW/2 - size/2}px;
+            top:${playerY + playerH/2 + 10}px;
+        `;
+        gameArea.appendChild(dot);
+        setTimeout(() => dot.remove(), 400);
+    }
+
+    /* Particles */
+    function spawnParticles(x, y, color='#ffd700', count=6) {
+        for (let i=0; i<count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random()*8+4;
+            const angle = (Math.PI*2/count)*i + Math.random()*0.5;
+            const dist  = Math.random()*40+20;
+            p.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${x}px; top:${y}px;
+                background:${color};
+                --tx:${(Math.cos(angle)*dist).toFixed(0)}px;
+                --ty:${(Math.sin(angle)*dist - 30).toFixed(0)}px;
+                --dur:${(Math.random()*0.3+0.4).toFixed(2)}s;
+            `;
+            gameArea.appendChild(p);
+            setTimeout(() => p.remove(), 800);
+        }
+    }
+
+    /* Float text */
+    function spawnFloatText(x, y, text) {
+        const el = document.createElement('div');
+        el.className = 'float-text';
+        el.style.left = `${x}px`;
+        el.style.top  = `${y}px`;
+        el.textContent = text;
+        gameArea.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+    }
+
+    /* Screen shake */
+    function shakeScreen() {
+        gameArea.classList.remove('shaking');
+        void gameArea.offsetWidth; // reflow
+        gameArea.classList.add('shaking');
+        setTimeout(() => gameArea.classList.remove('shaking'), 450);
+    }
+
+    /* Lives display */
+    function renderLives() {
+        livesEl.innerHTML = '❤️'.repeat(currentLives) + '🤍'.repeat(MAX_LIVES - currentLives);
+    }
+
+    /* Score display */
+    function renderScore() {
+        scoreEl.textContent = currentScore;
+        scoreEl.classList.add('bump');
+        setTimeout(() => scoreEl.classList.remove('bump'), 200);
+    }
+
+    /* Combo display */
+    function renderCombo() {
+        if (comboCount >= 2) {
+            comboBlock.style.display = '';
+            comboEl.textContent = `x${comboCount} 🔥`;
+            comboEl.classList.add('visible');
+        } else {
+            comboBlock.style.display = 'none';
+        }
+    }
+
+    /* Power-up indicators */
+    function updatePuIndicators() {
+        puIndicators.innerHTML = '';
+        const active = [];
+        if (puState.shield.active)     active.push({ icon:'🛡️', label:'Shield',     color:'#3498db' });
+        if (puState.speed.active)      active.push({ icon:'💨', label:'Speed',      color:'#9b59b6' });
+        if (puState.magnet.active)     active.push({ icon:'🧲', label:'Magnet',     color:'#e67e22' });
+        if (puState.multiplier.active) active.push({ icon:'✖️', label:`x${puState.multiplier.factor}`, color:'#f1c40f' });
+        if (puState.slowMotion.active) active.push({ icon:'🐌', label:'Slow-Mo',    color:'#1abc9c' });
+        if (playerSlowed.active)       active.push({ icon:'⚡', label:'SLOWED!',    color:'#e74c3c' });
+        active.forEach(({ icon, label, color }) => {
+            const div = document.createElement('div');
+            div.className = 'pu-indicator';
+            div.style.color = color;
+            div.innerHTML = `${icon} <span style="color:rgba(240,234,214,0.85)">${label}</span>`;
+            puIndicators.appendChild(div);
+        });
+    }
+
+    /* ══════════════════════════════════════
+       HIGH SCORE
+    ══════════════════════════════════════ */
+    function loadHighScore() {
+        try { highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10); } catch(e) { highScore = 0; }
+        highScoreEl.textContent = highScore;
+    }
+    function saveScore() {
+        if (currentScore > highScore) {
+            try { localStorage.setItem(HIGH_SCORE_KEY, currentScore); } catch(e) {}
+            highScore = currentScore;
+            highScoreEl.textContent = highScore;
+        }
+    }
+
+    /* ══════════════════════════════════════
+       COMBO SYSTEM
+    ══════════════════════════════════════ */
+    function registerCollect() {
+        clearTimeout(comboTimer);
+        comboCount++;
+        renderCombo();
+        if (comboCount > 1) playCombo(Math.min(comboCount, 8));
+        comboTimer = setTimeout(resetCombo, COMBO_WINDOW);
+    }
+    function resetCombo() {
+        comboCount = 0;
+        renderCombo();
+    }
+    function getComboBonus() {
+        if (comboCount < 3)  return 1;
+        if (comboCount < 6)  return 2;
+        if (comboCount < 10) return 3;
+        return 5;
+    }
+
+    /* ══════════════════════════════════════
+       LIVES / DAMAGE
+    ══════════════════════════════════════ */
+    function loseLife() {
+        if (isInvincible || !gameActive || currentLives <= 0) return;
+        currentLives--;
+        renderLives();
+        playDamage();
+        shakeScreen();
+        resetCombo();
+
+        if (currentLives <= 0) {
+            gameOver();
+        } else {
+            isInvincible = true;
+            player.classList.add('damaged');
+            setTimeout(() => {
+                isInvincible = false;
+                player.classList.remove('damaged');
+                updatePlayerFX();
+            }, 1600);
+        }
+    }
+
+    /* ══════════════════════════════════════
+       POWER-UPS
+    ══════════════════════════════════════ */
+    function activatePowerUp(type) {
+        clearTimeout(puState[type]?.timer);
+        playPowerUp();
+        if (!puState[type]) return;
+        puState[type].active = true;
+
+        if (type === 'multiplier') scoreMultiplier = puState.multiplier.factor;
+        if (type === 'slowMotion') gameArea.style.filter = 'brightness(0.75) saturate(0.6)';
+
+        updatePlayerFX();
+        updatePuIndicators();
+
+        puState[type].timer = setTimeout(() => deactivatePowerUp(type), POWER_UP_DURATION);
+    }
+
+    function deactivatePowerUp(type) {
+        clearTimeout(puState[type]?.timer);
+        if (!puState[type]) return;
+        puState[type].active = false;
+        if (type === 'multiplier') scoreMultiplier = 1;
+        if (type === 'slowMotion') gameArea.style.filter = '';
+        updatePlayerFX();
+        updatePuIndicators();
+    }
+
+    function applyCosmicRay() {
+        playTone(200, 'sawtooth', 0.3, 0.5);
+        clearTimeout(playerSlowed.timer);
+        playerSlowed.active = true;
+        updatePlayerFX();
+        updatePuIndicators();
+        playerSlowed.timer = setTimeout(() => {
+            playerSlowed.active = false;
+            updatePlayerFX();
+            updatePuIndicators();
+        }, POWER_UP_DURATION * 0.6);
+    }
+
+    /* ══════════════════════════════════════
+       OBJECT SPAWNING
+    ══════════════════════════════════════ */
+    function weightedRandom() {
+        const total = SPAWN_DEFS.reduce((s,d) => s + d.weight, 0);
+        let r = Math.random() * total;
+        for (const def of SPAWN_DEFS) {
+            r -= def.weight;
+            if (r < 0) return def;
+        }
+        return SPAWN_DEFS[0];
+    }
+
+    function spawnObject() {
+        const def = weightedRandom();
+        const el  = document.createElement('div');
+        el.className = `game-object ${def.className}`;
+        el.innerHTML  = def.emoji;
+        el.style.fontSize = `${def.size * 0.6}px`;
+
+        const areaW = gameArea.clientWidth;
+        const x = Math.random() * (areaW - def.size);
+        const y = -def.size;
+
+        el.style.width  = `${def.size}px`;
+        el.style.height = `${def.size}px`;
+        el.style.left   = `${x}px`;
+        el.style.top    = `${y}px`;
+
+        const obj = {
+            element: el, def,
+            x, y,
+            w: def.size, h: def.size,
+            isActivated: false,
+            id: Math.random()
+        };
+        objects.push(obj);
+        gameArea.appendChild(el);
+    }
+
+    /* ══════════════════════════════════════
+       COLLISION
+    ══════════════════════════════════════ */
+    function checkCollision(obj) {
+        const pCX = playerX + playerW/2, pCY = playerY + playerH/2, pR = playerW * 0.38;
+        const oCX = obj.x  + obj.w/2,   oCY = obj.y  + obj.h/2,   oR = obj.w  * 0.38;
+        const dx = pCX - oCX, dy = pCY - oCY;
+        return (dx*dx + dy*dy) < (pR+oR)*(pR+oR);
+    }
+
+    /* ══════════════════════════════════════
+       UPDATE LOOP
+    ══════════════════════════════════════ */
+    function updateObjects() {
+        const next = [];
+        const isMagnet = puState.magnet.active;
+        const pCX = playerX + playerW/2, pCY = playerY + playerH/2;
+
+        // Scroll speed ramp
+        let base = BASE_SCROLL_SPEED + currentScore * 0.004;
+        if (puState.slowMotion.active) base *= 0.45;
+        SCROLL_SPEED = base;
+
+        for (const obj of objects) {
+            const def = obj.def;
+            let speedMult = 1;
+
+            if (def.isObstacle) {
+                speedMult = def.speedFactor || 1;
+                speedMult += currentScore * 0.0008;
+                if (def.logicType === 'mine') {
+                    if (obj.y > gameArea.clientHeight * 0.2 && !obj.isActivated) obj.isActivated = true;
+                    speedMult = obj.isActivated ? 2.8 : 0.1;
+                }
+                if (def.logicType === 'blackhole') speedMult = 0.4; // drifts slowly
+            }
+
+            // Magnet attraction
+            if (isMagnet && def.isCollectible && !obj.element.classList.contains('collected')) {
+                const dist = Math.hypot(pCX - (obj.x+obj.w/2), pCY - (obj.y+obj.h/2));
+                if (dist < puState.magnet.radius && dist > 1) {
+                    const force = 0.07 * (puState.magnet.radius - dist);
+                    const nx = (pCX - (obj.x+obj.w/2)) / dist;
+                    const ny = (pCY - (obj.y+obj.h/2)) / dist;
+                    obj.x += nx * force;
+                    obj.y += ny * force;
+                    obj.x = Math.max(0, Math.min(obj.x, gameArea.clientWidth - obj.w));
+                    obj.element.style.left = `${obj.x}px`;
+                }
+            }
+
+            // Black hole sideways drift
+            if (def.logicType === 'blackhole') {
+                obj.x += Math.sin(obj.y * 0.03) * 1.5;
+                obj.x = Math.max(0, Math.min(obj.x, gameArea.clientWidth - obj.w));
+                obj.element.style.left = `${obj.x}px`;
+            }
+
+            obj.y += SCROLL_SPEED * speedMult;
+            obj.element.style.top = `${obj.y}px`;
+
+            if (obj.y > gameArea.clientHeight + 20) {
+                obj.element.remove();
+                continue;
+            }
+
+            // Collision check
+            if (!obj.element.classList.contains('collected') && checkCollision(obj)) {
+                const cx = obj.x + obj.w/2, cy = obj.y + obj.h/2;
+
+                if (def.isPowerUp) {
+                    obj.element.classList.add('collected');
+                    spawnParticles(cx, cy, '#f1c40f', 8);
+                    if (def.logicType === 'life') {
+                        if (currentLives < MAX_LIVES) {
+                            currentLives++;
+                            renderLives();
+                            spawnFloatText(cx - 10, cy - 10, '+❤️');
+                        } else {
+                            currentScore += 25 * scoreMultiplier;
+                            renderScore();
+                            spawnFloatText(cx - 10, cy - 10, '+25 ✨');
+                        }
+                        playTone(1000, 'sine', 0.3, 0.5);
+                    } else {
+                        activatePowerUp(def.logicType);
+                    }
+                } else if (def.isCollectible) {
+                    obj.element.classList.add('collected');
+                    registerCollect();
+                    const bonus = getComboBonus();
+                    const points = def.scoreValue * scoreMultiplier * bonus;
+                    currentScore += points;
+                    renderScore();
+                    playCollect(def.pitch || 880);
+
+                    // Particles
+                    const colors = { dust:'#ffe787', gem:'#3498db', crystal:'#00bfa5', diamond:'#8e24aa', nova:'#ffd700' };
+                    spawnParticles(cx, cy, colors[def.type] || '#ffd700', def.type === 'nova' ? 12 : 6);
+
+                    // Float text
+                    let label = `+${points}`;
+                    if (comboCount >= 3) label += ` 🔥`;
+                    spawnFloatText(cx - 12, cy - 10, label);
+
+                } else if (def.isObstacle) {
+                    if (def.logicType === 'hazard') {
+                        obj.element.classList.add('collected');
+                        applyCosmicRay();
+                        shakeScreen();
+                    } else if (puState.shield.active) {
+                        obj.element.classList.add('collected');
+                        deactivatePowerUp('shield');
+                        spawnParticles(cx, cy, '#3498db', 10);
+                        playTone(400, 'sine', 0.2, 0.4);
+                    } else {
+                        obj.element.classList.add('collected');
+                        spawnParticles(cx, cy, '#cc3333', 8);
+                        loseLife();
+                        if (currentLives <= 0) return;
+                    }
+                }
+            }
+
+            next.push(obj);
+        }
+        objects = next;
+
+        // Spawn
+        const interval = Math.max(28, BASE_SPAWN_INTERVAL - Math.floor(currentScore / 3));
+        spawnTimer++;
+        if (spawnTimer >= interval) {
+            spawnObject();
+            spawnTimer = 0;
+        }
+    }
+
+    function updatePlayerMovement() {
+        let dx = 0;
+        if (keysPressed['arrowleft'] || keysPressed['a']) dx -= 1;
+        if (keysPressed['arrowright'] || keysPressed['d']) dx += 1;
+        playerX += dx * PLAYER_SPEED;
+        playerX = Math.max(0, Math.min(playerX, gameArea.clientWidth - playerW));
+        updatePlayerPos();
+    }
+
+    function gameLoop() {
+        if (gameActive) {
+            updatePlayerMovement();
+            updateObjects();
+        }
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+
+    /* ══════════════════════════════════════
+       GAME STATE
+    ══════════════════════════════════════ */
+    function initGame() {
+        if (!gameArea || gameArea.clientWidth === 0) {
+            setTimeout(initGame, 100); return;
+        }
+        loadHighScore();
+        playerY = gameArea.clientHeight * 0.82 - playerH/2;
+        playerX = gameArea.clientWidth / 2 - playerW/2;
+        updatePlayerPos();
+        renderLives();
+        updatePlayerFX();
+
+        messageBox.innerHTML = `
+            <span class="msg-emoji">🌌</span>
+            Welcome to<br><strong>Stardust Collector!</strong>
+            <br><span class="msg-sub">Collect dust · Dodge hazards · Build combos</span>
+            <br><button class="restart-btn" onclick="window.startGame()">🚀 Start Journey</button>
+        `;
+        messageBox.style.display = 'block';
+
+        // Start trail
+        trailTimer = setInterval(spawnTrail, 60);
+
+        if (!gameLoopId) gameLoop();
+    }
+
+    window.startGame = function() {
+        if (gameActive) return;
+        currentScore    = 0;
+        scoreMultiplier = 1;
+        currentLives    = MAX_LIVES;
+        isInvincible    = false;
+        comboCount      = 0;
+        SCROLL_SPEED    = BASE_SCROLL_SPEED;
+        gameActive      = true;
+
+        messageBox.style.display = 'none';
+        messageBox.classList.remove('game-over');
+
+        // Reset power-ups
+        Object.keys(puState).forEach(t => deactivatePowerUp(t));
+        playerSlowed.active = false;
+        clearTimeout(playerSlowed.timer);
+        updatePlayerFX();
+        updatePuIndicators();
+
+        objects.forEach(o => o.element.remove());
+        objects = [];
+        spawnTimer = 0;
+
+        playerX = gameArea.clientWidth / 2 - playerW/2;
+        updatePlayerPos();
+        renderScore();
+        renderLives();
+        renderCombo();
+        gameArea.style.filter = '';
+    };
+
+    function gameOver() {
+        if (!gameActive) return;
+        gameActive = false;
+        playGameOver();
+        saveScore();
+        clearTimeout(comboTimer);
+        comboCount = 0; renderCombo();
+
+        const isNewBest = currentScore >= highScore && currentScore > 0;
+        messageBox.classList.add('game-over');
+        messageBox.innerHTML = `
+            <span class="msg-emoji">💫</span>
+            <strong>Lost in the Nebula!</strong>
+            <div class="msg-sub" style="margin-top:10px; font-size:1rem; color:var(--beige);">
+                You collected <strong>${currentScore}</strong> stardust
+            </div>
+            ${isNewBest ? '<div class="new-best">🏆 New Best Score!</div>' : `<div class="msg-sub">Best: ${highScore}</div>`}
+            <br><button class="restart-btn" onclick="window.startGame()">🚀 Try Again</button>
+        `;
+        messageBox.style.display = 'block';
+    }
+
+    /* ══════════════════════════════════════
+       INPUT
+    ══════════════════════════════════════ */
+    document.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        if (!gameActive && messageBox.style.display === 'block' && (k === ' ' || k === 'enter')) {
+            startGame(); e.preventDefault(); return;
+        }
+        if (['arrowleft','arrowright','a','d'].includes(k)) {
+            keysPressed[k] = true; e.preventDefault();
+        }
+    });
+    document.addEventListener('keyup', e => { keysPressed[e.key.toLowerCase()] = false; });
+
+    gameArea.addEventListener('click', e => {
+        if (!gameActive && messageBox.style.display === 'block' && !e.target.classList.contains('restart-btn')) {
+            startGame();
+        }
+    });
+
+    gameArea.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        if (gameActive) { isTouching = true; }
+        else if (messageBox.style.display === 'block' && !e.target.classList.contains('restart-btn')) { startGame(); }
+    }, { passive: false });
+
+    gameArea.addEventListener('touchmove', e => {
+        if (!isTouching || !gameActive || e.touches.length !== 1) return;
+        e.preventDefault();
+        const rect = gameArea.getBoundingClientRect();
+        playerX = Math.max(0, Math.min(e.touches[0].clientX - rect.left - playerW/2, gameArea.clientWidth - playerW));
+        updatePlayerPos();
+    }, { passive: false });
+
+    gameArea.addEventListener('touchend', () => { isTouching = false; });
+
+    /* ══════════════════════════════════════
+       BOOT
+    ══════════════════════════════════════ */
+    window.onload = initGame;
+</script>
+</body>
+</html>
