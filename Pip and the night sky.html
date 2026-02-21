@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pip & The Great Dark | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --beige:     #F0EAD6;
+            --tan:       #D2B48C;
+            --tan-dk:    #b8956a;
+            --rose:      #BC4749;
+            --rose-dk:   #9b3a3c;
+            --teal:      #70A3A7;
+            --teal-dk:   #4e7d80;
+            --charcoal:  #403B33;
+            --charcoal-lt:#5a5449;
+            /* Pip-specific: night sky + lantern warmth */
+            --night:     #0d1b2a;
+            --night-mid: #162032;
+            --night-lt:  #1e2d40;
+            --moon:      #e8d5a0;
+            --moon-dk:   #c9b07a;
+            --lantern:   #f5a623;
+            --lantern-dk:#c47f00;
+            --lantern-lt:#fff8ec;
+            --grass:     #4a7c59;
+            --grass-lt:  #e8f5ec;
+        }
+
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        html { scroll-behavior:smooth; }
+        body {
+            font-family:'Inter', sans-serif;
+            background:var(--beige);
+            color:var(--charcoal);
+            overflow-x:hidden;
+        }
+        a { text-decoration:none; color:inherit; }
+        img { display:block; max-width:100%; }
+
+        @keyframes logo-shift {
+            0%{color:var(--tan)} 33%{color:var(--rose)} 66%{color:var(--teal)} 100%{color:var(--tan)}
+        }
+        .logo-name { animation:logo-shift 6s infinite alternate ease-in-out; font-weight:800; }
+
+        .reveal {
+            opacity:0; transform:translateY(24px);
+            transition:opacity 0.55s ease, transform 0.55s ease;
+        }
+        .reveal.visible { opacity:1; transform:none; }
+
+        /* ══ HEADER ══ */
+        .site-header {
+            position:sticky; top:0; z-index:50;
+            background:rgba(255,255,255,0.96); backdrop-filter:blur(12px);
+            border-bottom:1px solid rgba(64,59,51,0.08);
+            box-shadow:0 2px 16px rgba(64,59,51,0.07);
+        }
+        .header-inner {
+            max-width:1100px; margin:0 auto; padding:0 24px; height:68px;
+            display:flex; justify-content:space-between; align-items:center;
+        }
+        .logo-link { display:flex; align-items:center; gap:10px; font-size:1.25rem; }
+        .logo-link img { height:38px; border-radius:9px; }
+        .header-nav { display:flex; align-items:center; gap:8px; }
+        .btn-back {
+            font-size:0.88rem; font-weight:600; color:var(--charcoal-lt);
+            padding:8px 14px; border-radius:8px; transition:background 0.15s,color 0.15s;
+        }
+        .btn-back:hover { background:var(--beige); color:var(--charcoal); }
+        .btn-hub {
+            background:var(--rose); color:white; font-weight:700; font-size:0.88rem;
+            padding:9px 18px; border-radius:10px; box-shadow:0 3px 0 var(--rose-dk);
+            transition:background 0.2s,transform 0.1s;
+        }
+        .btn-hub:hover { background:var(--rose-dk); transform:translateY(-1px); }
+
+        /* ══ COMING SOON BAR ══ */
+        .coming-soon-bar {
+            background:var(--night-mid); padding:14px 24px;
+            display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;
+        }
+        .coming-soon-bar p { font-size:0.88rem; font-weight:600; color:rgba(240,234,214,0.8); }
+        .coming-soon-bar strong { color:var(--moon); }
+        .notify-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            background:var(--rose); color:white; font-weight:700; font-size:0.82rem;
+            padding:7px 16px; border-radius:8px; transition:background 0.2s; white-space:nowrap;
+        }
+        .notify-btn:hover { background:var(--rose-dk); }
+
+        /* ══ HERO — night garden ══ */
+        .book-hero {
+            position:relative; overflow:hidden;
+            background:var(--night);
+            padding:70px 24px 100px;
+        }
+
+        /* Gradient ground */
+        .hero-ground {
+            position:absolute; bottom:0; left:0; right:0; height:140px;
+            background:linear-gradient(to top, var(--grass) 0%, rgba(74,124,89,0.4) 60%, transparent 100%);
+            pointer-events:none; z-index:0;
+        }
+        /* Moonlight glow */
+        .moon-glow {
+            position:absolute; top:-60px; right:8%;
+            width:280px; height:280px; border-radius:50%;
+            background:radial-gradient(circle, rgba(232,213,160,0.18) 0%, rgba(232,213,160,0.06) 50%, transparent 70%);
+            pointer-events:none; z-index:0;
+        }
+        /* Lantern glow */
+        .lantern-glow {
+            position:absolute; bottom:80px; left:10%;
+            width:220px; height:220px; border-radius:50%;
+            background:radial-gradient(circle, rgba(245,166,35,0.22) 0%, rgba(245,166,35,0.06) 60%, transparent 80%);
+            pointer-events:none; z-index:0;
+            animation:lantern-pulse 3s ease-in-out infinite;
+        }
+        @keyframes lantern-pulse {
+            0%,100%{opacity:0.8; transform:scale(1);}
+            50%{opacity:1; transform:scale(1.08);}
+        }
+
+        /* Stars */
+        .star {
+            position:absolute; border-radius:50%; background:white;
+            animation:twinkle var(--dur,3s) var(--del,0s) ease-in-out infinite;
+            pointer-events:none;
+        }
+        @keyframes twinkle {
+            0%,100%{opacity:0.12;transform:scale(1)}
+            50%{opacity:0.9;transform:scale(1.6)}
+        }
+
+        .hero-inner {
+            max-width:1000px; margin:0 auto; position:relative; z-index:1;
+            display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;
+        }
+        @media(max-width:720px){
+            .hero-inner{grid-template-columns:1fr;gap:36px;text-align:center;}
+            .hero-cover-wrap{order:-1;}
+        }
+
+        /* Book cover */
+        .hero-cover-wrap { position:relative; }
+        .book-cover-img {
+            width:100%; max-width:300px; margin:0 auto; border-radius:14px;
+            box-shadow:0 0 50px rgba(245,166,35,0.25), 12px 20px 48px rgba(0,0,0,0.55);
+            transition:transform 0.35s,box-shadow 0.35s;
+        }
+        .book-cover-img:hover {
+            transform:rotate(-1.5deg) scale(1.02);
+            box-shadow:0 0 70px rgba(245,166,35,0.4), 18px 28px 60px rgba(0,0,0,0.55);
+        }
+        @media(max-width:720px){ .book-cover-img{max-width:220px;} }
+        .cover-badge {
+            position:absolute; top:-14px; right:-10px;
+            background:var(--lantern); color:white;
+            font-family:'Fredoka',cursive; font-size:0.88rem; font-weight:700;
+            padding:7px 16px; border-radius:999px;
+            box-shadow:0 4px 16px rgba(245,166,35,0.4);
+        }
+        @media(max-width:720px){ .cover-badge{right:calc(50% - 115px);} }
+
+        /* Floating elements */
+        .float-elem {
+            position:absolute; font-size:var(--sz,1.4rem); opacity:0.65;
+            animation:float-el var(--dur,5s) var(--del,0s) ease-in-out infinite alternate;
+            pointer-events:none;
+        }
+        @keyframes float-el {
+            from{transform:translateY(0) rotate(0deg)}
+            to{transform:translateY(var(--ty,-12px)) rotate(var(--rot,10deg))}
+        }
+
+        /* Hero text */
+        .book-series {
+            display:inline-block; font-size:0.72rem; font-weight:700;
+            letter-spacing:0.13em; text-transform:uppercase; color:var(--moon);
+            border:1.5px solid rgba(232,213,160,0.4); border-radius:999px;
+            padding:4px 14px; margin-bottom:16px;
+        }
+        .book-title {
+            font-family:'Fredoka',cursive;
+            font-size:clamp(2rem,5vw,3.2rem); font-weight:700; color:white;
+            line-height:1.1; margin-bottom:16px;
+            text-shadow:0 0 40px rgba(245,166,35,0.3);
+        }
+        .book-title span { color:var(--lantern); }
+        .book-tagline {
+            font-family:'Lora',serif; font-style:italic;
+            font-size:1.05rem; color:rgba(240,234,214,0.8);
+            line-height:1.75; margin-bottom:28px; max-width:440px;
+        }
+        @media(max-width:720px){ .book-tagline{margin:0 auto 28px;} }
+        .book-meta { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:32px; }
+        @media(max-width:720px){ .book-meta{justify-content:center;} }
+        .meta-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            font-size:0.8rem; font-weight:600;
+            background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.15);
+            border-radius:999px; padding:6px 14px; color:rgba(240,234,214,0.85);
+        }
+        .hero-ctas { display:flex; gap:12px; flex-wrap:wrap; }
+        @media(max-width:720px){ .hero-ctas{justify-content:center;} }
+        .btn-primary {
+            display:inline-flex; align-items:center; gap:8px;
+            background:var(--lantern); color:white;
+            font-weight:800; font-size:1rem; padding:14px 28px; border-radius:13px;
+            box-shadow:0 4px 0 var(--lantern-dk);
+            transition:transform 0.12s,box-shadow 0.12s,filter 0.2s;
+        }
+        .btn-primary:hover { filter:brightness(1.1); transform:translateY(-2px); box-shadow:0 6px 0 var(--lantern-dk); }
+        .btn-primary:active{ transform:translateY(2px); box-shadow:0 2px 0 var(--lantern-dk); }
+        .btn-secondary {
+            display:inline-flex; align-items:center; gap:8px;
+            background:rgba(255,255,255,0.08); color:white;
+            font-weight:700; font-size:1rem; padding:13px 26px; border-radius:13px;
+            border:2px solid rgba(255,255,255,0.22);
+            transition:background 0.2s,transform 0.12s;
+        }
+        .btn-secondary:hover { background:rgba(255,255,255,0.15); transform:translateY(-2px); }
+
+        /* ══ ABOUT ══ */
+        .about-section { padding:72px 24px; background:white; }
+        .section-inner { max-width:1000px; margin:0 auto; }
+        .section-tag {
+            display:inline-block; font-size:0.7rem; font-weight:700;
+            letter-spacing:0.12em; text-transform:uppercase; color:var(--teal-dk);
+            border:1.5px solid var(--teal); border-radius:999px; padding:4px 14px; margin-bottom:14px;
+        }
+        .section-title {
+            font-size:clamp(1.7rem,4vw,2.4rem); font-weight:900; color:var(--charcoal);
+            margin-bottom:18px; line-height:1.15;
+        }
+        .about-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; }
+        @media(max-width:680px){ .about-grid{grid-template-columns:1fr;gap:28px;} }
+        .about-body p { font-size:1rem; color:var(--charcoal-lt); line-height:1.8; margin-bottom:16px; }
+        .feature-list { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        @media(max-width:480px){ .feature-list{grid-template-columns:1fr;} }
+        .feature-item { background:var(--lantern-lt); border-radius:14px; padding:18px 16px; text-align:center; }
+        .feature-icon  { font-size:1.8rem; margin-bottom:8px; }
+        .feature-title { font-size:0.9rem; font-weight:800; color:var(--charcoal); margin-bottom:4px; }
+        .feature-desc  { font-size:0.78rem; color:var(--charcoal-lt); line-height:1.4; }
+
+        /* ══ STORY TEASER — real verses ══ */
+        .teaser-section { padding:72px 24px; background:var(--night); }
+        .teaser-intro { text-align:center; max-width:560px; margin:0 auto 52px; }
+        .teaser-intro .section-tag { border-color:rgba(232,213,160,0.4); color:var(--moon); }
+        .teaser-intro h2 { color:white; font-size:clamp(1.7rem,4vw,2.4rem); font-weight:900; }
+        .teaser-intro p { font-size:0.95rem; color:rgba(240,234,214,0.6); margin-top:10px; line-height:1.65; }
+
+        .teaser-gallery {
+            max-width:1000px; margin:0 auto;
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px;
+        }
+
+        /* Story page cards */
+        .page-card {
+            background:var(--night-lt); border:1px solid rgba(255,255,255,0.08);
+            border-radius:18px; overflow:hidden;
+            box-shadow:0 6px 28px rgba(0,0,0,0.35);
+            transition:transform 0.25s,box-shadow 0.25s;
+            position:relative;
+        }
+        .page-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(0,0,0,0.45); }
+
+        /* Card illustration area */
+        .card-scene {
+            width:100%; aspect-ratio:4/3; position:relative;
+            display:flex; align-items:flex-end; justify-content:center;
+            overflow:hidden; padding:0 0 20px;
+        }
+        .scene-bg { position:absolute; inset:0; }
+        .scene-content { position:relative; z-index:1; text-align:center; }
+        .scene-emoji { font-size:3.8rem; display:block; filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5)); }
+
+        .page-num {
+            position:absolute; top:12px; left:12px;
+            background:rgba(13,27,42,0.8); color:rgba(232,213,160,0.8);
+            font-size:0.66rem; font-weight:700; letter-spacing:0.09em;
+            padding:3px 10px; border-radius:999px;
+        }
+
+        /* Verse text */
+        .card-verse {
+            padding:20px 22px 22px;
+        }
+        .verse-text {
+            font-family:'Lora',serif; font-style:italic;
+            font-size:0.88rem; color:rgba(240,234,214,0.85);
+            line-height:1.75; margin-bottom:10px;
+        }
+        .verse-pages { font-size:0.72rem; font-weight:700; color:rgba(232,213,160,0.5); letter-spacing:0.06em; text-transform:uppercase; }
+
+        /* Locked card overlay */
+        .card-locked .lock-overlay {
+            position:absolute; inset:0 0 calc(100% - 60%) 0;
+            background:rgba(13,27,42,0.78); backdrop-filter:blur(8px);
+            display:flex; align-items:center; justify-content:center;
+            font-family:'Fredoka',cursive; font-size:1.05rem; font-weight:700;
+            color:rgba(232,213,160,0.85);
+        }
+
+        /* Special: CTA card */
+        .cta-card {
+            background:linear-gradient(135deg, var(--night-lt), var(--night-mid));
+            border:1px solid rgba(245,166,35,0.2);
+            border-radius:18px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            text-align:center; padding:36px 28px; gap:16px;
+            box-shadow:0 6px 28px rgba(0,0,0,0.35);
+            transition:transform 0.25s;
+        }
+        .cta-card:hover { transform:translateY(-4px); }
+        .cta-card-title { font-family:'Fredoka',cursive; font-size:1.15rem; font-weight:700; color:white; }
+        .cta-card-sub   { font-size:0.82rem; color:rgba(240,234,214,0.55); line-height:1.5; }
+        .cta-card-btn {
+            background:var(--lantern); color:white; font-weight:800; font-size:0.9rem;
+            padding:11px 22px; border-radius:11px; box-shadow:0 3px 0 var(--lantern-dk);
+            transition:filter 0.15s,transform 0.12s;
+        }
+        .cta-card-btn:hover { filter:brightness(1.1); transform:translateY(-2px); }
+
+        /* ══ PURCHASE ══ */
+        .purchase-section {
+            padding:80px 24px; position:relative; overflow:hidden;
+            background:linear-gradient(160deg, var(--night-mid) 0%, var(--night) 100%);
+        }
+        .purchase-section::before {
+            content:'🌙'; position:absolute; right:2%; top:50%;
+            transform:translateY(-50%);
+            font-size:200px; opacity:0.055; pointer-events:none;
+        }
+        .purchase-inner {
+            max-width:700px; margin:0 auto; text-align:center; position:relative; z-index:1;
+        }
+        .purchase-inner .section-tag { border-color:rgba(232,213,160,0.4); color:var(--moon); }
+        .purchase-inner h2 { font-size:clamp(1.8rem,4vw,2.6rem); font-weight:900; color:white; margin-bottom:14px; }
+        .purchase-inner p  { font-size:1rem; color:rgba(240,234,214,0.72); line-height:1.7; margin-bottom:32px; }
+        .purchase-options { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+        .btn-buy {
+            display:inline-flex; align-items:center; gap:9px;
+            font-weight:700; font-size:1rem; padding:14px 28px; border-radius:13px;
+            transition:transform 0.15s,box-shadow 0.15s,filter 0.15s;
+        }
+        .btn-buy-warm {
+            background:var(--lantern); color:white; box-shadow:0 4px 0 var(--lantern-dk);
+        }
+        .btn-buy-warm:hover { filter:brightness(1.1); transform:translateY(-2px); box-shadow:0 6px 0 var(--lantern-dk); }
+        .btn-buy-outline { border:2px solid rgba(255,255,255,0.25); color:white; }
+        .btn-buy-outline:hover { background:rgba(255,255,255,0.1); transform:translateY(-2px); }
+        .coming-note {
+            margin-top:24px; font-size:0.82rem; color:rgba(240,234,214,0.4);
+            display:flex; align-items:center; justify-content:center; gap:8px;
+        }
+        .coming-note::before,.coming-note::after { content:''; flex:0 0 40px; height:1px; background:rgba(255,255,255,0.12); }
+
+        /* ══ THEMES ══ */
+        .themes-section { padding:72px 24px; background:white; }
+        .themes-grid {
+            max-width:900px; margin:40px auto 0;
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px;
+        }
+        .theme-card {
+            background:var(--lantern-lt); border-radius:16px; padding:24px 20px; text-align:center;
+            border-bottom:3px solid var(--lantern-dk);
+            transition:transform 0.2s,box-shadow 0.2s;
+        }
+        .theme-card:hover { transform:translateY(-4px); box-shadow:0 10px 24px rgba(64,59,51,0.1); }
+        .theme-card:nth-child(2){ border-color:var(--teal-dk); background:var(--grass-lt); }
+        .theme-card:nth-child(3){ border-color:var(--rose); background:#fdf0f0; }
+        .theme-card:nth-child(4){ border-color:var(--moon-dk); background:#fdf9ec; }
+        .theme-icon  { font-size:2.2rem; margin-bottom:10px; }
+        .theme-title { font-size:0.95rem; font-weight:800; color:var(--charcoal); margin-bottom:6px; }
+        .theme-desc  { font-size:0.8rem; color:var(--charcoal-lt); line-height:1.5; }
+
+        /* ══ GOODNIGHT QUOTE ══ */
+        .quote-section {
+            padding:80px 24px;
+            background:var(--night-lt);
+            position:relative; overflow:hidden;
+            text-align:center;
+        }
+        .quote-inner { max-width:680px; margin:0 auto; position:relative; z-index:1; }
+        .quote-text {
+            font-family:'Lora',serif; font-style:italic;
+            font-size:clamp(1.3rem,3vw,1.75rem); color:rgba(240,234,214,0.9);
+            line-height:1.7; margin-bottom:20px;
+        }
+        .quote-text em { color:var(--lantern); font-style:normal; }
+        .quote-attr { font-size:0.88rem; font-weight:600; color:rgba(232,213,160,0.5); letter-spacing:0.06em; text-transform:uppercase; }
+        /* Star decorations */
+        .q-star {
+            position:absolute; font-size:var(--sz,1.2rem); opacity:0.3;
+            animation:float-el var(--dur,6s) var(--del,0s) ease-in-out infinite alternate;
+        }
+
+        /* ══ AUTHOR ══ */
+        .author-section { padding:72px 24px; background:var(--charcoal); }
+        .author-inner {
+            max-width:680px; margin:0 auto;
+            background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+            border-radius:20px; padding:40px; text-align:center;
+        }
+        @media(max-width:480px){ .author-inner{padding:28px 24px;} }
+        .author-inner .section-tag { border-color:rgba(240,234,214,0.3); color:rgba(240,234,214,0.7); }
+        .author-inner h2 { font-size:1.5rem; font-weight:800; color:var(--beige); margin-bottom:16px; }
+        .author-inner p  { font-size:0.95rem; color:rgba(240,234,214,0.75); line-height:1.8; margin-bottom:12px; }
+        .author-sig { font-family:'Fredoka',cursive; font-size:1.3rem; color:var(--tan); margin-top:8px; }
+
+        /* ══ MORE BOOKS ══ */
+        .more-books { padding:64px 24px; background:var(--beige); border-top:2px solid rgba(64,59,51,0.06); }
+        .more-books-inner { max-width:900px; margin:0 auto; }
+        .more-books h2 { font-size:1.5rem; font-weight:900; color:var(--charcoal); text-align:center; margin-bottom:32px; }
+        .more-books-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+        .more-book-card {
+            background:white; border-radius:14px; overflow:hidden;
+            box-shadow:0 4px 16px rgba(64,59,51,0.08);
+            transition:transform 0.2s,box-shadow 0.2s; display:flex; flex-direction:column;
+        }
+        .more-book-card:hover { transform:translateY(-4px); box-shadow:0 12px 28px rgba(64,59,51,0.14); }
+        .more-book-card img { width:100%; aspect-ratio:3/4; object-fit:cover; }
+        .placeholder-cover {
+            width:100%; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; font-size:3rem;
+        }
+        .more-book-body { padding:14px 16px; flex:1; display:flex; flex-direction:column; }
+        .more-book-title { font-size:0.9rem; font-weight:800; color:var(--charcoal); margin-bottom:6px; }
+        .more-book-cta { margin-top:auto; font-size:0.82rem; font-weight:700; color:var(--teal-dk); }
+
+        /* ══ FOOTER ══ */
+        footer { background:#2e2a24; padding:24px; text-align:center; color:rgba(240,234,214,0.35); font-size:0.82rem; }
+        footer a { color:rgba(240,234,214,0.5); transition:color 0.15s; }
+        footer a:hover { color:rgba(240,234,214,0.85); }
+    </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio"
+                 onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <nav class="header-nav">
+            <a href="content_hub.html" class="btn-back">← All Books</a>
+            <a href="#purchase" class="btn-hub">🐢 Get the Book</a>
+        </nav>
+    </div>
+</header>
+
+<!-- ══ COMING SOON BAR ══ -->
+<div class="coming-soon-bar">
+    <p>🌙 <strong>Pip & The Great Dark</strong> is coming soon to Amazon & Etsy!</p>
+    <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="notify-btn">📸 Follow for updates</a>
+</div>
+
+<!-- ══ HERO ══ -->
+<section class="book-hero" id="hero-section">
+    <div class="hero-ground"></div>
+    <div class="moon-glow"></div>
+    <div class="lantern-glow"></div>
+
+    <!-- Floating elements -->
+    <span class="float-elem" style="top:12%;left:5%;--sz:1.8rem;--dur:7s;--del:0s;--ty:-14px;--rot:18deg;">🌙</span>
+    <span class="float-elem" style="top:18%;right:7%;--sz:1.4rem;--dur:5s;--del:1s;--ty:-10px;--rot:-12deg;">⭐</span>
+    <span class="float-elem" style="bottom:22%;left:8%;--sz:1.6rem;--dur:8s;--del:0.5s;--ty:-16px;--rot:8deg;">🐢</span>
+    <span class="float-elem" style="top:45%;right:5%;--sz:1.3rem;--dur:6s;--del:2s;--ty:-12px;--rot:-20deg;">✨</span>
+    <span class="float-elem" style="bottom:18%;right:10%;--sz:1.5rem;--dur:9s;--del:1.5s;--ty:-18px;--rot:15deg;">🏮</span>
+
+    <div class="hero-inner">
+        <!-- Cover -->
+        <div class="hero-cover-wrap reveal">
+            <span class="float-elem" style="top:-18px;left:-8px;--sz:1.5rem;--dur:6s;--del:0s;--ty:-12px;--rot:20deg;">⭐</span>
+            <span class="float-elem" style="top:8%;right:-16px;--sz:1.1rem;--dur:5s;--del:1.2s;--ty:-8px;--rot:-15deg;">💫</span>
+            <span class="float-elem" style="bottom:20%;left:-14px;--sz:1.3rem;--dur:7s;--del:0.8s;--ty:-14px;--rot:10deg;">🌙</span>
+
+            <img class="book-cover-img"
+                 src="PIP Cover.png"
+                 alt="Pip & The Great Dark book cover"
+                 onerror="this.onerror=null;this.src='https://placehold.co/300x380/0d1b2a/f5a623?text=Pip+%26+The+Great+Dark'">
+            <span class="cover-badge">📚 Children's Book</span>
+        </div>
+
+        <!-- Text -->
+        <div class="hero-text reveal">
+            <span class="book-series">✦ JVDesignStudio · Book 3</span>
+            <h1 class="book-title">Pip &<br>The <span>Great Dark</span></h1>
+            <p class="book-tagline">
+                "The Great Dark has things it wants to show."<br>
+                A brave little turtle, a gentle lantern, and a father's hand — learning that the dark isn't something to fear, but something to explore.
+            </p>
+            <div class="book-meta">
+                <span class="meta-pill">🐢 Ages 3–7</span>
+                <span class="meta-pill">📖 Picture Book</span>
+                <span class="meta-pill">🌙 Bedtime Story</span>
+                <span class="meta-pill">💛 Fear & Courage</span>
+            </div>
+            <div class="hero-ctas">
+                <a href="#purchase" class="btn-primary">🏮 Get the Book →</a>
+                <a href="#preview" class="btn-secondary">📖 Read a Verse</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ ABOUT ══ -->
+<section class="about-section" id="about">
+    <div class="section-inner">
+        <div class="about-grid">
+            <div class="about-body reveal">
+                <span class="section-tag">✦ The Story</span>
+                <h2 class="section-title">Brave in the sunshine.<br>Learning to be brave at night.</h2>
+                <p>Pip is a turtle who loves the daytime — bold, bright and fearless in the sun. But when the light fades and shadows stretch along the hall, even the bravest turtle feels small.</p>
+                <p>With the gentle guidance of his father and a little lantern called the Brave Light, Pip discovers that the Great Dark isn't hiding something terrible — it's hiding something wonderful. A perfect bedtime book for any child who finds the dark a little too quiet.</p>
+            </div>
+            <div class="feature-list reveal">
+                <div class="feature-item">
+                    <div class="feature-icon">🏮</div>
+                    <div class="feature-title">The Brave Light</div>
+                    <div class="feature-desc">A warm, relatable tool for helping children feel safe at night</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🐢</div>
+                    <div class="feature-title">Gentle Hero</div>
+                    <div class="feature-desc">Pip's fear is real and valid — and so is his bravery</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💛</div>
+                    <div class="feature-title">A Father's Bond</div>
+                    <div class="feature-desc">The warmth of "I'm right beside you" — guidance through fear, not away from it</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⭐</div>
+                    <div class="feature-title">Night is Magical</div>
+                    <div class="feature-desc">Stars, moonlight, and the garden at night — the dark holds wonders, not threats</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ STORY TEASER — real verses ══ -->
+<section class="teaser-section" id="preview">
+    <div class="teaser-intro reveal">
+        <span class="section-tag">✦ Read a Verse</span>
+        <h2>A few pages of Pip's journey</h2>
+        <p>Written in gentle rhyme — perfect to read aloud at bedtime. The rest of the story awaits in the full book.</p>
+    </div>
+
+    <div class="teaser-gallery">
+
+        <!-- P.1–2 -->
+        <div class="page-card reveal">
+            <div class="card-scene">
+                <div class="scene-bg" style="background:linear-gradient(180deg,#0d4a1a 0%,#1a6e2a 60%,#2d8c40 100%);"></div>
+                <div class="scene-content">
+                    <span class="scene-emoji">🐢</span>
+                </div>
+            </div>
+            <span class="page-num">P.1–2</span>
+            <div class="card-verse">
+                <p class="verse-text">"Pip was a turtle, brave and true, Bold in the sunshine, through and through. But when the sun slipped out of sight, Pip didn't feel so brave at night."</p>
+                <div class="verse-pages">Opening</div>
+            </div>
+        </div>
+
+        <!-- P.5–6 -->
+        <div class="page-card reveal">
+            <div class="card-scene">
+                <div class="scene-bg" style="background:linear-gradient(180deg,#0d1b2a 0%,#162032 60%,#1e2d40 100%);"></div>
+                <div class="scene-content">
+                    <span class="scene-emoji">🛏️</span>
+                </div>
+            </div>
+            <span class="page-num">P.5–6</span>
+            <div class="card-verse">
+                <p class="verse-text">"His bed was warm, his blanket tight, But corners felt bigger late at night. 'The dark feels large,' Pip whispered low. 'What if there's something I don't know?'"</p>
+                <div class="verse-pages">The Fear</div>
+            </div>
+        </div>
+
+        <!-- P.13–14 -->
+        <div class="page-card reveal">
+            <div class="card-scene">
+                <div class="scene-bg" style="background:radial-gradient(circle at 50% 70%, rgba(245,166,35,0.3) 0%, rgba(13,27,42,0.9) 70%),linear-gradient(180deg,#0d1b2a,#162032);"></div>
+                <div class="scene-content">
+                    <span class="scene-emoji">🏮</span>
+                </div>
+            </div>
+            <span class="page-num">P.13–14</span>
+            <div class="card-verse">
+                <p class="verse-text">"That evening, Father brought something bright: A lantern that glowed with gentle light. 'This is your Brave Light,' Father said. 'It stays with you, it's not ahead.'"</p>
+                <div class="verse-pages">The Brave Light</div>
+            </div>
+        </div>
+
+        <!-- P.19–20 locked -->
+        <div class="page-card card-locked reveal">
+            <div class="card-scene" style="position:relative;">
+                <div class="scene-bg" style="background:linear-gradient(180deg,#050c14 0%,#0d1b2a 60%,#162032 100%);"></div>
+                <div class="scene-content">
+                    <span class="scene-emoji">🌕</span>
+                </div>
+                <div class="lock-overlay">🔒 In the Full Book</div>
+            </div>
+            <span class="page-num">P.19–20</span>
+            <div class="card-verse">
+                <p class="verse-text">"His tummy still fluttered, small and slight... 'Look up,' said Father, calm and slow. 'The Great Dark has things it wants to show.'"</p>
+                <div class="verse-pages">The Turn</div>
+            </div>
+        </div>
+
+        <!-- P.21–22 locked -->
+        <div class="page-card card-locked reveal">
+            <div class="card-scene" style="position:relative;">
+                <div class="scene-bg" style="background:radial-gradient(ellipse at 50% 30%, rgba(155,89,182,0.2) 0%, rgba(13,27,42,0.95) 65%),linear-gradient(180deg,#050c14,#0d1b2a);"></div>
+                <div class="scene-content">
+                    <span class="scene-emoji">🌌</span>
+                </div>
+                <div class="lock-overlay">🔒 In the Full Book</div>
+            </div>
+            <span class="page-num">P.21–22</span>
+            <div class="card-verse">
+                <p class="verse-text">"To see each sparkle shining bright, We need a little dark at night. Pip turned his lantern softly low, And the sky above began to grow."</p>
+                <div class="verse-pages">The Discovery</div>
+            </div>
+        </div>
+
+        <!-- CTA card -->
+        <a href="#purchase" class="cta-card reveal">
+            <span style="font-size:2.8rem;">📖</span>
+            <div class="cta-card-title">Read How It Ends</div>
+            <div class="cta-card-sub">Does Pip find the stars? Does the Great Dark stay scary? The full story is coming soon.</div>
+            <span class="cta-card-btn">🐢 Get the Book →</span>
+        </a>
+
+    </div>
+</section>
+
+<!-- ══ THEMES ══ -->
+<section class="themes-section">
+    <div class="section-inner" style="text-align:center;">
+        <span class="section-tag reveal">✦ What This Story Teaches</span>
+        <h2 class="section-title reveal">Big feelings, gentle answers</h2>
+    </div>
+    <div class="themes-grid">
+        <div class="theme-card reveal">
+            <div class="theme-icon">🏮</div>
+            <div class="theme-title">Fear of the dark</div>
+            <div class="theme-desc">Pip's feelings are real, valid — and handled with warmth, not dismissal</div>
+        </div>
+        <div class="theme-card reveal">
+            <div class="theme-icon">🫶</div>
+            <div class="theme-title">Parental comfort</div>
+            <div class="theme-desc">"I'm right beside you" — the power of a parent being present, not just reassuring</div>
+        </div>
+        <div class="theme-card reveal">
+            <div class="theme-icon">💪</div>
+            <div class="theme-title">Small brave steps</div>
+            <div class="theme-desc">One step into the hall. That's all. Courage doesn't have to be big</div>
+        </div>
+        <div class="theme-card reveal">
+            <div class="theme-icon">⭐</div>
+            <div class="theme-title">Wonder in the dark</div>
+            <div class="theme-desc">Stars, moonlight and magic only visible when the lights go low</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══ PURCHASE ══ -->
+<section class="purchase-section" id="purchase">
+    <div class="purchase-inner reveal">
+        <span class="section-tag">✦ Get the Book</span>
+        <h2>Ready to brave<br>the Great Dark?</h2>
+        <p>Pip & The Great Dark is coming soon to Amazon and Etsy. Follow on Instagram to be the first to know when it drops — and get a sneak peek at the illustrations as they're made.</p>
+        <div class="purchase-options">
+            <a href="https://www.amazon.co.uk" target="_blank" class="btn-buy btn-buy-warm">
+                🛒 Amazon <span style="font-size:0.8rem;opacity:0.65;">(Coming Soon)</span>
+            </a>
+            <a href="https://www.etsy.com" target="_blank" class="btn-buy btn-buy-warm">
+                🏪 Etsy <span style="font-size:0.8rem;opacity:0.65;">(Coming Soon)</span>
+            </a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-buy btn-buy-outline">
+                📸 Follow for Updates
+            </a>
+        </div>
+        <div class="coming-note">Launching soon · Follow Instagram to be notified first</div>
+    </div>
+</section>
+
+<!-- ══ GOODNIGHT QUOTE ══ -->
+<section class="quote-section">
+    <span class="q-star" style="top:15%;left:8%;--sz:1.4rem;--dur:7s;--del:0s;--ty:-12px;--rot:15deg;">⭐</span>
+    <span class="q-star" style="top:20%;right:10%;--sz:1.1rem;--dur:5s;--del:1s;--ty:-8px;--rot:-12deg;">✨</span>
+    <span class="q-star" style="bottom:20%;left:12%;--sz:1.2rem;--dur:8s;--del:2s;--ty:-14px;--rot:20deg;">💫</span>
+    <span class="q-star" style="bottom:25%;right:8%;--sz:1.3rem;--dur:6s;--del:0.5s;--ty:-10px;--rot:-18deg;">⭐</span>
+    <div class="quote-inner reveal">
+        <p class="quote-text">
+            "Stars bloomed like diamonds, scattered deep,<br>
+            Pip gasped and smiled and felt at peace.<br>
+            The Great Dark held <em>wonders</em>, not fright.<br>
+            Pip was a turtle who loved the night."
+        </p>
+        <div class="quote-attr">— Pip & The Great Dark, P.23–24</div>
+        <p style="margin-top:28px;font-size:1.1rem;">🌙🐢 Goodnight, little explorer.</p>
+    </div>
+</section>
+
+<!-- ══ AUTHOR ══ -->
+<section class="author-section">
+    <div class="author-inner reveal">
+        <span class="section-tag">✦ A Note from the Author</span>
+        <h2>Why Pip needed to exist</h2>
+        <p>So many children fear the dark — and so many adults have forgotten what that really feels like. I wanted to write a story that didn't rush past the fear, but sat with it, acknowledged it, and then gently walked through it hand in hand.</p>
+        <p>The shadow that turns out to be Pip's own, the lantern that stays with him rather than going ahead, the stars that only appear when the lights go low — these felt like the truest ways to show a child that courage isn't about not being scared. It's about going anyway.</p>
+        <div class="author-sig">— J. Valentine, JVDesignStudio 🌙</div>
+    </div>
+</section>
+
+<!-- ══ MORE BOOKS ══ -->
+<section class="more-books">
+    <div class="more-books-inner">
+        <h2 class="reveal">More from JVDesignStudio 📚</h2>
+        <div class="more-books-grid">
+            <a href="Elara.html" class="more-book-card reveal">
+                <img src="Elara.jpg" alt="Elara & The Wire-Web Key"
+                     onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<div class=\'placeholder-cover\' style=\'background:#fdf0f0\'>🗝️</div>'">
+                <div class="more-book-body">
+                    <div class="more-book-title">Elara & The Wire-Web Key</div>
+                    <div class="more-book-cta">View Book →</div>
+                </div>
+            </a>
+            <a href="Stardust.html" class="more-book-card reveal">
+                <img src="Front Cover Concept.jpg" alt="Stardust's Cosmic Adventure"
+                     onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<div class=\'placeholder-cover\' style=\'background:#f0e8ff\'>🌟</div>'">
+                <div class="more-book-body">
+                    <div class="more-book-title">Stardust's Cosmic Adventure</div>
+                    <div class="more-book-cta">View Book →</div>
+                </div>
+            </a>
+            <a href="Echo_and_the_moutain_of_choices.html" class="more-book-card reveal" style="opacity:0.7;">
+                <div class="placeholder-cover" style="background:var(--beige);">🏔️</div>
+                <div class="more-book-body">
+                    <div class="more-book-title">Echo & The Mountain of Choices</div>
+                    <div class="more-book-cta" style="color:var(--charcoal-lt);">Coming Soon</div>
+                </div>
+            </a>
+            <a href="content_hub.html" class="more-book-card reveal" style="background:var(--charcoal);">
+                <div class="placeholder-cover" style="background:rgba(255,255,255,0.06);">📦</div>
+                <div class="more-book-body" style="background:var(--charcoal);">
+                    <div class="more-book-title" style="color:var(--beige);">See Everything</div>
+                    <div class="more-book-cta" style="color:var(--rose);">Content Hub →</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>© 2025 JVDesignStudio. All rights reserved. &nbsp;·&nbsp;
+       <a href="content_hub.html">Content Hub</a> &nbsp;·&nbsp;
+       <a href="https://www.instagram.com/jv_design.studio/" target="_blank">Instagram</a> &nbsp;·&nbsp;
+       <a href="mailto:josh-couchman@outlook.com">Contact</a>
+    </p>
+</footer>
+
+<script>
+    /* Star field */
+    (function() {
+        const hero = document.getElementById('hero-section');
+        for (let i = 0; i < 70; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2.2 + 0.5;
+            s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${(Math.random()*3+1.8).toFixed(1)}s;--del:${(Math.random()*6).toFixed(1)}s;`;
+            hero.appendChild(s);
+        }
+    })();
+
+    /* Scroll reveal */
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const siblings = [...entry.target.parentElement.querySelectorAll('.reveal')];
+                const idx = siblings.indexOf(entry.target);
+                setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 320));
+                obs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
