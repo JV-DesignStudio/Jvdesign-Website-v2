@@ -677,14 +677,13 @@
 </footer>
 
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
     /* ── Filter logic ── */
     function filterCards(cat, btn) {
-        // Update active button
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const items  = document.querySelectorAll('.project-item');
+        const items = document.querySelectorAll('.project-item');
         const sections = document.querySelectorAll('.cat-section');
         let visible = 0;
 
@@ -697,7 +696,6 @@
             }
         });
 
-        // Show/hide whole category sections
         sections.forEach(section => {
             const id = section.id.replace('section-', '');
             if (cat === 'all' || cat === id) {
@@ -707,30 +705,22 @@
             }
         });
 
-        // Result count
         const countEl = document.getElementById('result-count');
-        if (cat !== 'all') {
-            countEl.textContent = visible + ' project' + (visible !== 1 ? 's' : '');
-        } else {
-            countEl.textContent = '';
-        }
-
-        // Empty state
+        countEl.textContent = cat !== 'all' ? visible + ' project' + (visible !== 1 ? 's' : '') : '';
         document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
     }
 
     /* ── Scroll reveal ── */
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, i) => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
-                // Stagger siblings slightly
-                const siblings = entry.target.parentElement.querySelectorAll('.reveal');
-                let delay = 0;
-                siblings.forEach((el, idx) => {
-                    if (el === entry.target) delay = idx * 60;
-                });
-                setTimeout(() => entry.target.classList.add('visible'), Math.min(delay, 300));
+                entry.target.classList.add('visible');
                 observer.unobserve(entry.target);
             }
         });
-    }, { thresho
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

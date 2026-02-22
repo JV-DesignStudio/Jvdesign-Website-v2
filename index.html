@@ -883,14 +883,28 @@
 <!-- ══════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-    /* Scroll reveal */
+<script>
+    /* ── Scroll reveal ── */
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Stagger cards in a grid
+                // Stagger cards in a grid if they are siblings
                 const parent = entry.target.parentElement;
-                const siblings = [...parent.querySelectorAll('.reveal')];
+                const siblings = Array.from(parent.querySelectorAll('.reveal'));
                 const idx = siblings.indexOf(entry.target);
-                setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 360));
-       
+                
+                // Add a small delay based on index for a "wave" effect
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, idx * 100);
+                
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+
+    // Initialize all reveal elements
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
