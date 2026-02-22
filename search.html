@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root{--beige:#F0EAD6;--tan:#D2B48C;--tan-dk:#b8956a;--rose:#BC4749;--rose-dk:#9b3a3c;--rose-lt:#fdf0f0;--teal:#70A3A7;--teal-dk:#4e7d80;--teal-lt:#e8f2f3;--charcoal:#403B33;--charcoal-lt:#5a5449;}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        html{scroll-behavior:smooth;}
+        body{font-family:'Inter',sans-serif;background:var(--beige);color:var(--charcoal);overflow-x:hidden;}
+        a{text-decoration:none;color:inherit;}
+        @keyframes logo-shift{0%{color:var(--tan)}33%{color:var(--rose)}66%{color:var(--teal)}100%{color:var(--tan)}}
+        .logo-name{animation:logo-shift 6s infinite alternate ease-in-out;font-weight:800;}
+
+        .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(64,59,51,.07);box-shadow:0 2px 16px rgba(64,59,51,.07);}
+        .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:68px;display:flex;justify-content:space-between;align-items:center;}
+        .logo-link{display:flex;align-items:center;gap:10px;font-size:1.25rem;}
+        .logo-link img{height:38px;border-radius:9px;}
+        .header-nav{display:flex;gap:8px;align-items:center;}
+        .nav-link{font-size:.88rem;font-weight:600;color:var(--charcoal-lt);padding:8px 14px;border-radius:8px;transition:background .15s;}
+        .nav-link:hover{background:var(--beige);}
+
+        /* SEARCH HERO */
+        .search-hero{background:white;border-bottom:2px solid var(--beige);padding:48px 24px 40px;}
+        .search-inner{max-width:680px;margin:0 auto;text-align:center;}
+        .search-title{font-family:'Lora',serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:600;color:var(--charcoal);margin-bottom:8px;}
+        .search-sub{font-size:.97rem;color:var(--charcoal-lt);margin-bottom:28px;}
+        .search-box{position:relative;}
+        .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:1.2rem;pointer-events:none;}
+        .search-input{width:100%;padding:16px 20px 16px 50px;border:2.5px solid var(--tan);border-radius:16px;font-family:'Inter',sans-serif;font-size:1.05rem;color:var(--charcoal);background:var(--beige);outline:none;transition:border-color .2s,box-shadow .2s;}
+        .search-input:focus{border-color:var(--teal-dk);box-shadow:0 0 0 4px rgba(112,163,167,.18);background:white;}
+        .search-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:var(--tan);border:none;border-radius:999px;width:28px;height:28px;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;color:var(--charcoal);}
+        .search-clear.visible{display:flex;}
+
+        /* TAGS */
+        .tag-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px;}
+        .tag-chip{font-size:.78rem;font-weight:700;background:var(--beige);border:1.5px solid var(--tan);color:var(--charcoal-lt);padding:5px 14px;border-radius:999px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+        .tag-chip:hover,.tag-chip.active{background:var(--charcoal);border-color:var(--charcoal);color:white;}
+
+        /* RESULTS */
+        .results-section{padding:48px 24px 80px;min-height:60vh;}
+        .results-inner{max-width:900px;margin:0 auto;}
+        .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:8px;}
+        .results-count{font-size:.9rem;font-weight:700;color:var(--charcoal-lt);}
+        .results-count span{color:var(--rose);font-weight:800;}
+        .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;}
+
+        .result-card{background:white;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(64,59,51,.08);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;}
+        .result-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(64,59,51,.14);}
+        .rc-thumb{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;}
+        .rc-badge{position:absolute;top:10px;left:10px;font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:999px;color:white;}
+        .rc-body{padding:16px 18px;flex:1;display:flex;flex-direction:column;}
+        .rc-cat{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-dk);margin-bottom:5px;}
+        .rc-title{font-size:1rem;font-weight:800;color:var(--charcoal);margin-bottom:6px;}
+        .rc-desc{font-size:.83rem;color:var(--charcoal-lt);line-height:1.6;flex:1;margin-bottom:12px;}
+        .rc-tags{display:flex;gap:5px;flex-wrap:wrap;}
+        .rc-tag{font-size:.65rem;font-weight:700;background:var(--beige);border:1px solid var(--tan);color:var(--charcoal-lt);padding:2px 8px;border-radius:6px;}
+        .rc-cta{display:inline-flex;align-items:center;gap:5px;margin-top:12px;font-size:.82rem;font-weight:700;color:var(--rose);}
+
+        /* EMPTY STATE */
+        .empty-state{text-align:center;padding:60px 24px;display:none;}
+        .empty-state.show{display:block;}
+        .empty-emoji{font-size:4rem;margin-bottom:16px;}
+        .empty-title{font-family:'Lora',serif;font-size:1.5rem;font-weight:600;color:var(--charcoal);margin-bottom:8px;}
+        .empty-text{font-size:.97rem;color:var(--charcoal-lt);margin-bottom:24px;}
+        .empty-suggestions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+
+        footer{background:var(--charcoal);padding:24px;text-align:center;color:rgba(240,234,214,.25);font-size:.82rem;}
+        footer a{color:rgba(240,234,214,.4);transition:color .15s;}
+        footer a:hover{color:rgba(240,234,214,.85);}
+    
+        /* ══ UNIFIED NAV ══ */
+        .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(64,59,51,.07);box-shadow:0 2px 16px rgba(64,59,51,.07);}
+        .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:68px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+        .logo-link{display:flex;align-items:center;gap:10px;font-size:1.25rem;text-decoration:none;}
+        .logo-link img{height:38px;border-radius:9px;}
+        .main-nav{display:flex;align-items:center;gap:4px;}
+        .nav-link{font-size:.82rem;font-weight:600;color:#5a5449;padding:7px 12px;border-radius:8px;transition:background .15s,color .15s;text-decoration:none;white-space:nowrap;}
+        .nav-link:hover{background:#F0EAD6;color:#403B33;}
+        .nav-cta{background:#BC4749;color:white;font-weight:700;font-size:.82rem;padding:8px 16px;border-radius:10px;box-shadow:0 3px 0 #9b3a3c;transition:filter .15s,transform .1s;text-decoration:none;white-space:nowrap;}
+        .nav-cta:hover{filter:brightness(1.08);transform:translateY(-1px);}
+        .nav-toggle{display:none;background:none;border:1px solid rgba(64,59,51,.15);border-radius:8px;padding:6px 10px;font-size:1.1rem;cursor:pointer;color:#403B33;}
+        .mobile-nav{display:none;flex-direction:column;background:white;border-top:1px solid rgba(64,59,51,.07);box-shadow:0 8px 24px rgba(64,59,51,.1);}
+        .mobile-nav a{padding:14px 24px;font-size:.95rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,.05);text-decoration:none;transition:background .15s;}
+        .mobile-nav a:hover{background:#F0EAD6;}
+        .mobile-nav.open{display:flex;}
+        @media(max-width:820px){.main-nav{display:none;}.nav-toggle{display:block;}}
+        @media(max-width:500px){.nav-cta{display:none;}}
+
+        /* ══ UNIFIED FOOTER ══ */
+        .site-footer{background:#403B33;padding:48px 24px 28px;margin-top:auto;}
+        .footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;}
+        .footer-brand{display:flex;flex-direction:column;gap:5px;}
+        .footer-logo{font-family:'Fredoka',cursive;font-size:1.4rem;font-weight:700;color:#F0EAD6;}
+        .footer-tagline{font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(240,234,214,.4);}
+        .footer-nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+        .footer-nav a{font-size:.82rem;font-weight:600;color:rgba(240,234,214,.55);text-decoration:none;padding:4px 8px;border-radius:6px;transition:color .15s;}
+        .footer-nav a:hover{color:rgba(240,234,214,.9);}
+        .footer-socials{display:flex;gap:20px;justify-content:center;}
+        .footer-socials a{font-size:.82rem;font-weight:700;color:rgba(240,234,214,.4);text-decoration:none;transition:color .15s;}
+        .footer-socials a:hover{color:rgba(240,234,214,.9);}
+        .footer-copy{font-size:.75rem;color:rgba(240,234,214,.2);border-top:1px solid rgba(255,255,255,.06);padding-top:16px;width:100%;}
+
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <nav class="main-nav">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="content_hub.html" class="nav-link">All Projects</a>
+            <a href="search.html" class="nav-link">🔍 Search</a>
+            <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+            <a href="about.html" class="nav-link">About</a>
+            <a href="contact.html" class="nav-link">Contact</a>
+        </nav>
+        <a href="content_hub.html" class="nav-cta">📚 All Projects</a>
+        <button class="nav-toggle" onclick="document.getElementById('mobileNav').classList.toggle('open')" aria-label="Toggle menu">☰</button>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="index.html" onclick="document.getElementById('mobileNav').classList.remove('open')">🏠 Home</a>
+        <a href="content_hub.html" onclick="document.getElementById('mobileNav').classList.remove('open')">📦 All Projects</a>
+        <a href="search.html" onclick="document.getElementById('mobileNav').classList.remove('open')">🔍 Search</a>
+        <a href="freebies.html" onclick="document.getElementById('mobileNav').classList.remove('open')">🎁 Free Downloads</a>
+        <a href="about.html" onclick="document.getElementById('mobileNav').classList.remove('open')">👤 About</a>
+        <a href="contact.html" onclick="document.getElementById('mobileNav').classList.remove('open')">✉️ Contact</a>
+        <a href="press.html" onclick="document.getElementById('mobileNav').classList.remove('open')">📋 Press Kit</a>
+        <a href="newsletter.html" onclick="document.getElementById('mobileNav').classList.remove('open')">💌 Newsletter</a>
+    </nav>
+</header>
+
+<section class="search-hero">
+    <div class="search-inner">
+        <h1 class="search-title">Search JVDesignStudio</h1>
+        <p class="search-sub">Find books, games, guides and freebies across the whole studio.</p>
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" id="searchInput" placeholder="Try: fox, resilience, free, platformer…" autocomplete="off">
+            <button class="search-clear" id="clearBtn" onclick="clearSearch()">✕</button>
+        </div>
+        <div class="tag-row">
+            <span class="tag-chip" onclick="quickSearch('books',this)">📚 Books</span>
+            <span class="tag-chip" onclick="quickSearch('games',this)">🎲 Games</span>
+            <span class="tag-chip" onclick="quickSearch('free',this)">🎁 Free</span>
+            <span class="tag-chip" onclick="quickSearch('resilience',this)">💜 Resilience</span>
+            <span class="tag-chip" onclick="quickSearch('ages 4',this)">👶 Ages 4–7</span>
+            <span class="tag-chip" onclick="quickSearch('ages 6',this)">🧒 Ages 6–10</span>
+            <span class="tag-chip" onclick="quickSearch('guide',this)">💻 Guides</span>
+            <span class="tag-chip" onclick="quickSearch('coming soon',this)">⏳ Coming Soon</span>
+        </div>
+    </div>
+</section>
+
+<section class="results-section">
+    <div class="results-inner">
+        <div class="results-header" id="resultsHeader">
+            <div class="results-count" id="resultsCount">Showing all <span id="countNum">14</span> projects</div>
+        </div>
+        <div class="results-grid" id="resultsGrid"></div>
+        <div class="empty-state" id="emptyState">
+            <div class="empty-emoji">🔍</div>
+            <div class="empty-title">No results found</div>
+            <div class="empty-text">Try a different search — or browse everything in the Content Hub.</div>
+            <div class="empty-suggestions">
+                <span class="tag-chip" onclick="quickSearch('',null);document.getElementById('searchInput').value=''">Show All</span>
+                <a href="content_hub.html" class="tag-chip">📦 Content Hub</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <span class="footer-logo">JVDesignStudio</span>
+            <span class="footer-tagline">Books · Games · Creative Adventures</span>
+        </div>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="content_hub.html">All Projects</a>
+            <a href="freebies.html">Free Downloads</a>
+            <a href="about.html">About</a>
+            <a href="press.html">Press Kit</a>
+            <a href="contact.html">Contact</a>
+            <a href="newsletter.html">Newsletter</a>
+            <a href="search.html">🔍 Search</a>
+        </nav>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank">YouTube</a>
+            <a href="https://joshhyyy.itch.io/" target="_blank">Itch.io</a>
+        </nav>
+        <div class="footer-copy">© 2025 JVDesignStudio. All rights reserved.</div>
+    </div>
+</footer>
+
+<script>
+const ALL_PROJECTS = [
+    { title:"Lumo and the Grumble-Grit", cat:"Book", emoji:"🦊", color:"linear-gradient(135deg,#2a2838,#3d3952)", badge:"✨ New", badgeColor:"#6b4fa0", url:"lumo_and_the_grumble_grit.html", desc:"A purple fox learns quiet courage while carrying the Grumble-Grit — a story about invisible struggles, resilience, and a different kind of strength.", tags:["Ages 4–8","Free PDF","Resilience","Chronic pain","Anxiety"], keywords:"lumo fox purple grumble grit resilience chronic pain anxiety invisible struggle quiet courage picture book free" },
+    { title:"Echo & the Mountain of Choices", cat:"Book", emoji:"🦎", color:"linear-gradient(135deg,#2a3f58,#3a5270)", badge:"Coming Soon", badgeColor:"#8aaac0", url:"echo_and_the_mountain_of_choices.html", desc:"An axolotl climbs a mountain one small try at a time — resilience, creative problem-solving, and repeating refrains.", tags:["Ages 5–8","Coming Soon","Resilience"], keywords:"echo axolotl mountain choices resilience try small steps coming soon picture book" },
+    { title:"Elara & the Wire-Web Key", cat:"Book", emoji:"🔮", color:"linear-gradient(135deg,#1a0030,#2d0050)", badge:"Book", badgeColor:"#BC4749", url:"Elara.html", desc:"A heartwarming story about safe online exploration, digital literacy, and the connections that matter most.", tags:["Ages 5–9","Online Safety","Digital"], keywords:"elara wire web key online safety internet digital literacy picture book" },
+    { title:"Stardust's Cosmic Adventure", cat:"Book", emoji:"✨", color:"linear-gradient(135deg,#0a0a2e,#2d1b4e)", badge:"Book", badgeColor:"#BC4749", url:"Stardust.html", desc:"A magical journey sparking curiosity about astronomy, space, and dreaming big.", tags:["Ages 4–8","Space","Astronomy"], keywords:"stardust cosmic space astronomy stars adventure picture book dreaming" },
+    { title:"Pip & The Night Sky", cat:"Book", emoji:"🔭", color:"linear-gradient(135deg,#0a0a2e,#1a1a50)", badge:"Book", badgeColor:"#BC4749", url:"Pip_and_The_Night_Sky_.html", desc:"Pip faces a fear of the dark and discovers wonder in the night sky — a gentle, reassuring picture book.", tags:["Ages 4–8","Fear","Dark","Stars"], keywords:"pip night sky dark fear stars wonder gentle picture book bedtime" },
+    { title:"Candy Kingdom Adventure", cat:"Tabletop RPG", emoji:"🍬", color:"linear-gradient(135deg,#fff0f7,#ffe0ef)", badge:"Free Game", badgeColor:"#e91e8c", url:"candy_kingdom.html", desc:"A sweet tabletop RPG for ages 6–10. 6 candy heroes, a 1d6 system, free adventure pack, and one mischievous villain.", tags:["Ages 6–10","Free","Tabletop RPG","Print & Play"], keywords:"candy kingdom adventure tabletop rpg dice heroes gummy knight peppermint free print play ages 6" },
+    { title:"Cozy Creatures: Snuggle Pile", cat:"Tabletop Game", emoji:"🐾", color:"#F0EAD6", badge:"Game", badgeColor:"#4e7d80", url:"cozy_creatures.html", desc:"A cooperative tabletop card game for 1–4 players. Cosy, strategic, and full of adorable creatures.", tags:["1–4 Players","Cooperative","Ages 6+"], keywords:"cozy creatures snuggle pile card game cooperative tabletop strategy cute adorable family" },
+    { title:"Call of the Cards / Card of the Rings", cat:"Tabletop Game", emoji:"🃏", color:"linear-gradient(135deg,#403B33,#5a5449)", badge:"Prototype", badgeColor:"#4e7d80", url:"call_of_the_cards.html", desc:"A fast-paced two-player fantasy card game prototype with deep strategic play.", tags:["2 Players","Fantasy","Prototype"], keywords:"call cards rings fantasy card game two player prototype strategy" },
+    { title:"Stardust Collector", cat:"Web Game", emoji:"🚀", color:"linear-gradient(135deg,#0e0036,#1a0050)", badge:"Play Now", badgeColor:"#4e7d80", url:"stardust_collection.html", desc:"An endless space runner — play right in your browser! Dodge hazards, collect stardust, build combos.", tags:["Browser Game","Free","Space"], keywords:"stardust collector game browser play space runner endless dodge" },
+    { title:"Void Rush", cat:"Mobile Game", emoji:"🌌", color:"linear-gradient(135deg,#0a0a1e,#1a1a40)", badge:"Prototype", badgeColor:"#4e7d80", url:"voidrush.html", desc:"A fast-paced endless runner mobile game prototype set in the void of space.", tags:["Mobile","Endless Runner","Prototype"], keywords:"void rush mobile game endless runner space prototype" },
+    { title:"Godot 4 Platformer Tutorial", cat:"Technical Guide", emoji:"⚙️", color:"linear-gradient(135deg,#1e1e2e,#252535)", badge:"Free PDF", badgeColor:"#403B33", url:"godot_tutorial.html", desc:"Build your first 2D platformer from scratch using Godot 4.3 and GDScript. 9 modules, free PDF.", tags:["Free","Beginner","Godot 4.3","GDScript"], keywords:"godot tutorial platformer beginner gdscript 2d game development guide free pdf" },
+    { title:"Free Creativity Kit", cat:"Freebie", emoji:"🎨", color:"linear-gradient(135deg,#e8a838,#d4903a)", badge:"Free!", badgeColor:"#c47f00", url:"colouring-book.html", desc:"Printable colouring pages and activity sheets featuring JVDesignStudio characters. Free to download.", tags:["Free","Printable","All Ages","Activities"], keywords:"free colouring coloring activity kit printable download creativity pages children" },
+    { title:"Next Book Projects", cat:"Dev Log", emoji:"🗺️", color:"linear-gradient(135deg,#403B33,#5a5449)", badge:"Dev Log", badgeColor:"#4e7d80", url:"next_book_projects.html", desc:"6 books in development — teasers, live progress bars, and a running dev log from inside the studio.", tags:["Behind the Scenes","Upcoming","Dev Log"], keywords:"next book projects development coming soon dev log progress tracker studio" },
+    { title:"About J. Valentine", cat:"About", emoji:"✨", color:"linear-gradient(135deg,var(--teal-dk),#3a6060)", badge:"About", badgeColor:"#4e7d80", url:"about.html", desc:"The story behind JVDesignStudio — values, timeline, and the person behind every page.", tags:["About","J. Valentine","Studio"], keywords:"about j valentine studio designer author biography who jvdesignstudio" },
+];
+
+let activeChip = null;
+function renderAll(list, query){
+    const grid = document.getElementById('resultsGrid');
+    const empty = document.getElementById('emptyState');
+    const count = document.getElementById('countNum');
+    const header = document.getElementById('resultsHeader');
+    grid.innerHTML='';
+    count.textContent = list.length;
+    if(list.length===0){grid.style.display='none';empty.classList.add('show');}
+    else{grid.style.display='';empty.classList.remove('show');}
+    if(query) document.getElementById('resultsHeader').querySelector('.results-count').innerHTML = `Found <span>${list.length}</span> result${list.length!==1?'s':''} for "<strong>${query}</strong>"`;
+    else document.getElementById('resultsHeader').querySelector('.results-count').innerHTML = `Showing all <span>${list.length}</span> projects`;
+    list.forEach(p=>{
+        const card = document.createElement('a');
+        card.href = p.url;
+        card.className = 'result-card';
+        card.innerHTML = `
+            <div class="rc-thumb" style="background:${p.color};">${p.emoji}<span class="rc-badge" style="background:${p.badgeColor};">${p.badge}</span></div>
+            <div class="rc-body">
+                <div class="rc-cat">${p.cat}</div>
+                <div class="rc-title">${p.title}</div>
+                <div class="rc-desc">${p.desc}</div>
+                <div class="rc-tags">${p.tags.map(t=>`<span class="rc-tag">${t}</span>`).join('')}</div>
+                <span class="rc-cta">View Project →</span>
+            </div>`;
+        grid.appendChild(card);
+    });
+}
+
+function doSearch(){
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    document.getElementById('clearBtn').classList.toggle('visible', q.length>0);
+    if(!q){renderAll(ALL_PROJECTS,'');return;}
+    const results = ALL_PROJECTS.filter(p=>
+        p.title.toLowerCase().includes(q)||
+        p.desc.toLowerCase().includes(q)||
+        p.keywords.toLowerCase().includes(q)||
+        p.tags.some(t=>t.toLowerCase().includes(q))||
+        p.cat.toLowerCase().includes(q)
+    );
+    renderAll(results, q);
+}
+
+function quickSearch(term, chip){
+    document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
+    if(chip){chip.classList.add('active');}
+    document.getElementById('searchInput').value = term;
+    doSearch();
+}
+function clearSearch(){
+    document.getElementById('searchInput').value='';
+    document.getElementById('clearBtn').classList.remove('visible');
+    document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
+    renderAll(ALL_PROJECTS,'');
+}
+
+document.getElementById('searchInput').addEventListener('input', doSearch);
+// Focus search on load
+window.addEventListener('DOMContentLoaded',()=>{
+    renderAll(ALL_PROJECTS,'');
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if(q){document.getElementById('searchInput').value=q;doSearch();}
+    else document.getElementById('searchInput').focus();
+});
+</script>
+</body>
+</html>

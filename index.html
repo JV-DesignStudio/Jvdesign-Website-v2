@@ -883,28 +883,44 @@
 <!-- ══════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 <script>
-    /* ── Scroll reveal ── */
+    /* Scroll reveal logic */
+    const observerOptions = {
+        threshold: 0.1
+    };
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Stagger cards in a grid if they are siblings
+                // Find all reveal elements in the same container to stagger them
                 const parent = entry.target.parentElement;
-                const siblings = Array.from(parent.querySelectorAll('.reveal'));
+                const siblings = [...parent.querySelectorAll('.reveal')];
                 const idx = siblings.indexOf(entry.target);
                 
-                // Add a small delay based on index for a "wave" effect
+                // Add the visible class with a slight delay based on index
                 setTimeout(() => {
                     entry.target.classList.add('visible');
-                }, idx * 100);
+                }, Math.min(idx * 100, 400));
                 
+                // Stop watching once it's visible
                 observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.1 });
+    }, observerOptions);
 
-    // Initialize all reveal elements
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    // Initialize the observer on all elements with the 'reveal' class
+    document.addEventListener('DOMContentLoaded', () => {
+        const revealElements = document.querySelectorAll('.reveal');
+        revealElements.forEach(el => observer.observe(el));
+    });
+
+    /* Mobile Nav Toggle logic */
+    function toggleMobileNav() {
+        const nav = document.getElementById('mobileNav');
+        nav.classList.toggle('open');
+    }
 </script>
+
 </body>
 </html>

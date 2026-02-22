@@ -677,50 +677,44 @@
 </footer>
 
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
 <script>
-    /* ── Filter logic ── */
-    function filterCards(cat, btn) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    /* Scroll reveal logic */
+    const observerOptions = {
+        threshold: 0.1
+    };
 
-        const items = document.querySelectorAll('.project-item');
-        const sections = document.querySelectorAll('.cat-section');
-        let visible = 0;
-
-        items.forEach(item => {
-            if (cat === 'all' || item.dataset.cat === cat) {
-                item.classList.remove('hidden');
-                visible++;
-            } else {
-                item.classList.add('hidden');
-            }
-        });
-
-        sections.forEach(section => {
-            const id = section.id.replace('section-', '');
-            if (cat === 'all' || cat === id) {
-                section.style.display = '';
-            } else {
-                section.style.display = 'none';
-            }
-        });
-
-        const countEl = document.getElementById('result-count');
-        countEl.textContent = cat !== 'all' ? visible + ' project' + (visible !== 1 ? 's' : '') : '';
-        document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
-    }
-
-    /* ── Scroll reveal ── */
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
+        entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
+                // Find all reveal elements in the same container to stagger them
+                const parent = entry.target.parentElement;
+                const siblings = [...parent.querySelectorAll('.reveal')];
+                const idx = siblings.indexOf(entry.target);
+                
+                // Add the visible class with a slight delay based on index
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, Math.min(idx * 100, 400));
+                
+                // Stop watching once it's visible
                 observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.1 });
+    }, observerOptions);
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    // Initialize the observer on all elements with the 'reveal' class
+    document.addEventListener('DOMContentLoaded', () => {
+        const revealElements = document.querySelectorAll('.reveal');
+        revealElements.forEach(el => observer.observe(el));
+    });
+
+    /* Mobile Nav Toggle logic */
+    function toggleMobileNav() {
+        const nav = document.getElementById('mobileNav');
+        nav.classList.toggle('open');
+    }
 </script>
+
 </body>
 </html>
