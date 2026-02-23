@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Gem Match — a free match-3 puzzle game from JVDesignStudio. Swap gems, chain combos, and beat your high score.">
+    <title>Gem Match | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💎</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lora:ital,wght@0,400;0,600&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════
+           CSS VARIABLES + RESET
+        ═══════════════════════════════════ */
+        :root {
+            --beige:      #F0EAD6;
+            --tan:        #D2B48C;
+            --tan-dk:     #b8956a;
+            --rose:       #BC4749;
+            --rose-dk:    #9b3a3c;
+            --teal:       #70A3A7;
+            --teal-dk:    #4e7d80;
+            --charcoal:   #403B33;
+            --charcoal-lt:#5a5449;
+            --gold:       #c47f00;
+            --forest:     #5a7a4e;
+            --lavender:   #9b8ab4;
+
+            /* Game board */
+            --board-bg:   #2a2720;
+            --board-border:#403B33;
+            --cell-gap:   4px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--beige);
+            color: var(--charcoal);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            touch-action: none; /* prevent scroll during swipe */
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* ═══════════════════════════════════
+           SHARED: NAV + FOOTER  (v2 unified)
+        ═══════════════════════════════════ */
+        .site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,.08);box-shadow:0 2px 18px rgba(64,59,51,.08);}
+        .header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+        .logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;text-decoration:none;margin-right:auto;}
+        .logo-link img{height:36px;border-radius:8px;display:block;}
+        .logo-name{font-weight:800;}
+        @keyframes logo-shift{0%{color:var(--tan)}33%{color:var(--rose)}66%{color:var(--teal)}100%{color:var(--tan)}}
+        .logo-name{animation:logo-shift 6s infinite alternate ease-in-out;}
+        .main-nav{display:flex;align-items:center;gap:2px;}
+        .nav-link{font-size:.83rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s;}
+        .nav-link:hover{background:#F0EAD6;color:#403B33;}
+        .nav-cta{background:#BC4749;color:#fff;font-weight:700;font-size:.83rem;padding:8px 16px;border-radius:10px;box-shadow:0 3px 0 #9b3a3c;text-decoration:none;white-space:nowrap;flex-shrink:0;margin-left:8px;transition:filter .15s,transform .1s;}
+        .nav-cta:hover{filter:brightness(1.08);transform:translateY(-1px);}
+        .nav-toggle{display:none;background:none;border:1.5px solid rgba(64,59,51,.18);border-radius:8px;padding:5px 10px;font-size:1.1rem;cursor:pointer;color:#403B33;flex-shrink:0;}
+        .mobile-nav{display:none;flex-direction:column;position:absolute;top:68px;left:0;right:0;background:#fff;border-bottom:2px solid #F0EAD6;box-shadow:0 8px 28px rgba(64,59,51,.12);z-index:99;}
+        .mobile-nav a{padding:13px 24px;font-size:.95rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,.05);text-decoration:none;transition:background .12s;}
+        .mobile-nav a:hover{background:#F0EAD6;color:#403B33;}
+        .mobile-nav.open{display:flex;}
+        @media(max-width:860px){.main-nav,.nav-cta{display:none !important;}.nav-toggle{display:block !important;}}
+        .site-footer{background:#403B33;padding:52px 24px 28px;}
+        .footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+        .footer-brand{display:flex;flex-direction:column;gap:6px;}
+        .footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+        .footer-tagline{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,234,214,.38);}
+        .footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+        .footer-links a{font-size:.82rem;font-weight:600;color:rgba(240,234,214,.5);text-decoration:none;padding:4px 9px;border-radius:6px;transition:color .15s,background .15s;}
+        .footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,.07);}
+        .footer-socials{display:flex;gap:24px;justify-content:center;}
+        .footer-socials a{font-size:.82rem;font-weight:700;color:rgba(240,234,214,.38);text-decoration:none;transition:color .15s;}
+        .footer-socials a:hover{color:rgba(240,234,214,.85);}
+        .footer-copy{font-size:.73rem;color:rgba(240,234,214,.2);border-top:1px solid rgba(255,255,255,.07);padding-top:18px;width:100%;}
+        /* ═══════════════════════════════════ */
+
+        /* ═══════════════════════════════════
+           GAME PAGE LAYOUT
+        ═══════════════════════════════════ */
+        .game-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px 40px;
+            gap: 16px;
+        }
+
+        /* Title */
+        .game-title {
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(2rem, 6vw, 3rem);
+            font-weight: 700;
+            color: var(--charcoal);
+            letter-spacing: .02em;
+            text-align: center;
+            line-height: 1;
+        }
+        .game-title span { color: var(--rose); }
+
+        /* HUD row */
+        .hud {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+            width: 100%;
+            max-width: 420px;
+        }
+        .hud-card {
+            flex: 1;
+            background: var(--charcoal);
+            border-radius: 14px;
+            padding: 10px 14px;
+            text-align: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,.25);
+        }
+        .hud-label {
+            font-size: .6rem;
+            font-weight: 800;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: rgba(240,234,214,.4);
+            margin-bottom: 3px;
+        }
+        .hud-value {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--beige);
+            line-height: 1;
+        }
+        .hud-card.moves-card { border-top: 3px solid var(--teal); }
+        .hud-card.score-card { border-top: 3px solid var(--rose); flex: 2; }
+        .hud-card.best-card  { border-top: 3px solid var(--gold); }
+        .hud-value.low { color: var(--rose); animation: pulse-red .6s ease-in-out infinite alternate; }
+        @keyframes pulse-red { from { opacity: 1; } to { opacity: .5; } }
+
+        /* Combo banner */
+        .combo-banner {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .combo-tag {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--rose);
+            color: white;
+            padding: 4px 18px;
+            border-radius: 999px;
+            box-shadow: 0 3px 0 var(--rose-dk);
+            animation: combo-pop .25s cubic-bezier(.34,1.56,.64,1) forwards;
+            display: none;
+        }
+        .combo-tag.show { display: block; }
+        @keyframes combo-pop {
+            from { transform: scale(.6); opacity: 0; }
+            to   { transform: scale(1);  opacity: 1; }
+        }
+
+        /* ═══════════════════════════════════
+           BOARD
+        ═══════════════════════════════════ */
+        .board-wrap {
+            position: relative;
+            width: min(95vw, 420px);
+        }
+        #board {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--board-bg);
+            border-radius: 18px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: var(--cell-gap);
+            padding: 8px;
+            box-shadow:
+                0 0 0 3px var(--board-border),
+                0 12px 40px rgba(0,0,0,.4),
+                inset 0 1px 0 rgba(255,255,255,.06);
+            user-select: none;
+        }
+
+        /* ═══════════════════════════════════
+           GEM CELLS
+        ═══════════════════════════════════ */
+        .cell {
+            width: 100%;
+            height: 100%;
+            border-radius: 22%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(14px, 3.5vw, 22px);
+            cursor: pointer;
+            position: relative;
+            transition: transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+            will-change: transform;
+        }
+        .cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(145deg, rgba(255,255,255,.25) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* Gem colours */
+        .cell[data-color="rose"]     { background: linear-gradient(145deg, #e05a5c, #8c2a2c); box-shadow: 0 3px 0 #6b1a1c, 0 0 12px rgba(188,71,73,.3); }
+        .cell[data-color="teal"]     { background: linear-gradient(145deg, #88bfc3, #3a6568); box-shadow: 0 3px 0 #2a5558, 0 0 12px rgba(112,163,167,.3); }
+        .cell[data-color="gold"]     { background: linear-gradient(145deg, #f0c040, #9a5e00); box-shadow: 0 3px 0 #7a4400, 0 0 12px rgba(196,127,0,.35); }
+        .cell[data-color="forest"]   { background: linear-gradient(145deg, #78a860, #2e4e24); box-shadow: 0 3px 0 #1e3a16, 0 0 12px rgba(90,122,78,.3); }
+        .cell[data-color="lavender"] { background: linear-gradient(145deg, #c0a8e0, #6a4a90); box-shadow: 0 3px 0 #4a2a70, 0 0 12px rgba(155,138,180,.3); }
+
+        /* Special gems */
+        .cell[data-color="bomb"]     { background: linear-gradient(145deg, #ff6b35, #1a1a1a); box-shadow: 0 3px 0 #111, 0 0 18px rgba(255,107,53,.5); animation: bomb-glow 1.5s ease-in-out infinite alternate; }
+        .cell[data-color="wild"]     { background: linear-gradient(145deg, #fff, #c8a0e8); box-shadow: 0 3px 0 #8060a0, 0 0 18px rgba(255,255,255,.6); animation: wild-spin 3s linear infinite; }
+        @keyframes bomb-glow { from { box-shadow: 0 3px 0 #111, 0 0 10px rgba(255,107,53,.4); } to { box-shadow: 0 3px 0 #111, 0 0 28px rgba(255,107,53,.8); } }
+        @keyframes wild-spin { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+
+        /* Selected state */
+        .cell.selected {
+            transform: scale(1.12) translateY(-2px);
+            box-shadow: 0 0 0 3px white, 0 6px 18px rgba(0,0,0,.5) !important;
+            z-index: 10;
+        }
+        /* Match flash */
+        .cell.matching {
+            animation: gem-match .3s ease forwards;
+        }
+        @keyframes gem-match {
+            0%   { transform: scale(1); opacity: 1; }
+            50%  { transform: scale(1.3); opacity: .8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        /* Fall in */
+        .cell.falling {
+            animation: gem-fall .2s ease forwards;
+        }
+        @keyframes gem-fall {
+            from { transform: translateY(-20px); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+        /* Invalid swap */
+        .cell.shake {
+            animation: gem-shake .3s ease;
+        }
+        @keyframes gem-shake {
+            0%,100% { transform: translateX(0); }
+            25%  { transform: translateX(-6px); }
+            75%  { transform: translateX(6px); }
+        }
+
+        /* Empty (blank) cell */
+        .cell[data-color="empty"] {
+            background: rgba(255,255,255,.03);
+            box-shadow: none;
+            cursor: default;
+        }
+        .cell[data-color="empty"]::before { display: none; }
+
+        /* Floating score popup */
+        .score-pop {
+            position: absolute;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            pointer-events: none;
+            animation: score-float 1s ease forwards;
+            z-index: 20;
+            text-shadow: 0 2px 4px rgba(0,0,0,.5);
+        }
+        @keyframes score-float {
+            from { transform: translateY(0); opacity: 1; }
+            to   { transform: translateY(-50px); opacity: 0; }
+        }
+
+        /* Hint pulse */
+        .cell.hint { animation: hint-pulse 1s ease-in-out 3; }
+        @keyframes hint-pulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+
+        /* ═══════════════════════════════════
+           GAME OVER OVERLAY
+        ═══════════════════════════════════ */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: rgba(26,22,18,.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            z-index: 50;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .4s ease;
+        }
+        .overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .overlay-title {
+            font-family: 'Fredoka', cursive;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--beige);
+        }
+        .overlay-score {
+            font-family: 'Fredoka', cursive;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--rose);
+            line-height: 1;
+        }
+        .overlay-sub {
+            font-size: .9rem;
+            color: rgba(240,234,214,.5);
+        }
+        .overlay-best {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.2rem;
+            color: var(--gold);
+        }
+        .btn-restart {
+            background: var(--rose);
+            color: white;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.3rem;
+            font-weight: 700;
+            padding: 13px 36px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--rose-dk);
+            transition: filter .15s, transform .12s, box-shadow .12s;
+            margin-top: 4px;
+        }
+        .btn-restart:hover, .btn-restart:active {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 var(--rose-dk);
+        }
+
+        /* ═══════════════════════════════════
+           HOW TO PLAY
+        ═══════════════════════════════════ */
+        .how-to {
+            width: 100%;
+            max-width: 420px;
+            background: var(--charcoal);
+            border-radius: 18px;
+            padding: 20px 22px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .how-to h3 {
+            font-family: 'Fredoka', cursive;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--beige);
+            grid-column: 1 / -1;
+            margin-bottom: 2px;
+        }
+        .tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .tip-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+        .tip-text {
+            font-size: .78rem;
+            color: rgba(240,234,214,.6);
+            line-height: 1.5;
+        }
+        .tip-text strong { color: rgba(240,234,214,.9); display: block; }
+
+        /* Sound toggle */
+        .sound-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,.08);
+            border: 1.5px solid rgba(255,255,255,.15);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: .85rem;
+            color: rgba(240,234,214,.6);
+            cursor: pointer;
+            transition: background .15s;
+            z-index: 5;
+        }
+        .sound-btn:hover { background: rgba(255,255,255,.15); }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio"
+                 onerror="this.onerror=null;this.src='https://placehold.co/40x40/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <nav class="main-nav">
+            <a href="index.html"       class="nav-link">Home</a>
+            <a href="content_hub.html" class="nav-link">All Projects</a>
+            <a href="search.html"      class="nav-link">🔍 Search</a>
+            <a href="freebies.html"    class="nav-link">🎁 Free Downloads</a>
+            <a href="about.html"       class="nav-link">About</a>
+            <a href="contact.html"     class="nav-link">Contact</a>
+        </nav>
+        <a href="content_hub.html" class="nav-cta">📚 All Projects</a>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="index.html">🏠 Home</a>
+        <a href="content_hub.html">📦 All Projects</a>
+        <a href="search.html">🔍 Search</a>
+        <a href="freebies.html">🎁 Free Downloads</a>
+        <a href="about.html">👤 About</a>
+        <a href="contact.html">✉️ Contact</a>
+        <a href="press.html">📋 Press Kit</a>
+        <a href="newsletter.html">💌 Newsletter</a>
+        <a href="sitemap.html">🗺️ Sitemap</a>
+    </nav>
+</header>
+
+<!-- GAME -->
+<main class="game-page">
+
+    <div class="game-title">💎 <span>Gem</span> Match</div>
+
+    <!-- HUD -->
+    <div class="hud">
+        <div class="hud-card moves-card">
+            <div class="hud-label">Moves</div>
+            <div class="hud-value" id="movesDisplay">30</div>
+        </div>
+        <div class="hud-card score-card">
+            <div class="hud-label">Score</div>
+            <div class="hud-value" id="scoreDisplay">0</div>
+        </div>
+        <div class="hud-card best-card">
+            <div class="hud-label">Best</div>
+            <div class="hud-value" id="bestDisplay">0</div>
+        </div>
+    </div>
+
+    <!-- Combo banner -->
+    <div class="combo-banner">
+        <div class="combo-tag" id="comboTag">🔥 2× Combo!</div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+        <div id="board"></div>
+
+        <!-- Sound toggle -->
+        <button class="sound-btn" id="soundBtn" title="Toggle sound">🔊</button>
+
+        <!-- Game Over overlay -->
+        <div class="overlay" id="overlay">
+            <div class="overlay-title">✨ Game Over!</div>
+            <div class="overlay-score" id="overlayScore">0</div>
+            <div class="overlay-sub">Final Score</div>
+            <div class="overlay-best" id="overlayBest"></div>
+            <button class="btn-restart" id="restartBtn">Play Again →</button>
+        </div>
+    </div>
+
+    <!-- How to play -->
+    <div class="how-to">
+        <h3>💡 How to Play</h3>
+        <div class="tip"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap or Swipe</strong>Select a gem then tap adjacent, or swipe to swap.</div></div>
+        <div class="tip"><span class="tip-icon">💎</span><div class="tip-text"><strong>Match 3+</strong>Line up 3 or more gems of the same colour.</div></div>
+        <div class="tip"><span class="tip-icon">💣</span><div class="tip-text"><strong>Bomb Gem</strong>Match 4 in a row to create a bomb — it clears a 3×3 area.</div></div>
+        <div class="tip"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Wild Gem</strong>Match 5 or an L/T shape to get a wild that matches anything.</div></div>
+        <div class="tip"><span class="tip-icon">🔥</span><div class="tip-text"><strong>Combos</strong>Chain reactions multiply your score — keep them going!</div></div>
+        <div class="tip"><span class="tip-icon">🎯</span><div class="tip-text"><strong>30 Moves</strong>Score as high as you can before your moves run out.</div></div>
+    </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-brand">
+            <span class="footer-logo">JVDesignStudio</span>
+            <span class="footer-tagline">Books · Games · Creative Adventures</span>
+        </div>
+        <nav class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="content_hub.html">All Projects</a>
+            <a href="freebies.html">Free Downloads</a>
+            <a href="about.html">About</a>
+            <a href="press.html">Press Kit</a>
+            <a href="contact.html">Contact</a>
+            <a href="newsletter.html">Newsletter</a>
+            <a href="search.html">Search</a>
+            <a href="sitemap.html">Sitemap</a>
+        </nav>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener">Itch.io</a>
+        </nav>
+        <p class="footer-copy">© 2025 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  GEM MATCH — JVDesignStudio
+//  Architecture: state array → render DOM → event-driven loop
+// ═══════════════════════════════════════════════════════════════
+
+// ── Constants ──────────────────────────────────────────────────
+const GRID  = 8;
+const TOTAL = GRID * GRID;
+const COLORS = ['rose','teal','gold','forest','lavender'];
+const GEMS = {
+    rose:     '💎', teal: '🔷', gold: '⭐',
+    forest:   '🍀', lavender: '🔮',
+    bomb:     '💣', wild: '⚡', empty: ''
+};
+const MAX_MOVES = 30;
+const POINTS = { 3: 30, 4: 60, 5: 100, bomb: 50, wild: 80 };
+
+// ── State ──────────────────────────────────────────────────────
+let board   = [];   // 1D array of color strings
+let score   = 0;
+let moves   = MAX_MOVES;
+let bestScore = parseInt(localStorage.getItem('gemMatchBest') || '0');
+let selected  = -1; // index of selected cell
+let busy      = false; // locked during animations
+let comboCount = 0;
+let soundOn   = true;
+
+// ── DOM refs ───────────────────────────────────────────────────
+const boardEl       = document.getElementById('board');
+const scoreEl       = document.getElementById('scoreDisplay');
+const movesEl       = document.getElementById('movesDisplay');
+const bestEl        = document.getElementById('bestDisplay');
+const comboTag      = document.getElementById('comboTag');
+const overlay       = document.getElementById('overlay');
+const overlayScore  = document.getElementById('overlayScore');
+const overlayBest   = document.getElementById('overlayBest');
+const restartBtn    = document.getElementById('restartBtn');
+const soundBtn      = document.getElementById('soundBtn');
+
+// ── Web Audio ──────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+function playTone(freq, type='sine', duration=0.12, vol=0.18, delay=0) {
+    if (!soundOn) return;
+    try {
+        const ctx = getAudio();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, ctx.currentTime + delay + duration);
+        gain.gain.setValueAtTime(vol, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration + 0.01);
+    } catch(e) {}
+}
+function soundMatch(combo) {
+    const base = 440 + combo * 80;
+    playTone(base, 'sine', .1, .15);
+    playTone(base * 1.5, 'sine', .08, .08, .08);
+}
+function soundCombo(level) {
+    [1,1.25,1.5,2].slice(0, Math.min(level, 4)).forEach((m, i) => {
+        playTone(330 * m, 'sine', .1, .12, i * .1);
+    });
+}
+function soundBomb() {
+    playTone(80, 'sawtooth', .25, .2);
+    playTone(120, 'square', .2, .1, .05);
+}
+function soundWild() {
+    [1,1.2,1.5,2,2.5].forEach((m, i) => playTone(220 * m, 'sine', .12, .1, i * .06));
+}
+function soundInvalid() {
+    playTone(150, 'square', .08, .08);
+}
+function soundGameOver() {
+    [1,.8,.6,.4].forEach((m, i) => playTone(440 * m, 'sine', .2, .15, i * .18));
+}
+
+// ── Board initialisation ───────────────────────────────────────
+function randomColor() {
+    return COLORS[Math.floor(Math.random() * COLORS.length)];
+}
+
+function createBoard() {
+    board = Array.from({ length: TOTAL }, () => randomColor());
+    // Ensure no starting matches
+    let iterations = 0;
+    while (hasAnyMatch() && iterations < 100) {
+        board = Array.from({ length: TOTAL }, () => randomColor());
+        iterations++;
+    }
+    // Ensure at least one valid move exists
+    if (!hasAnyValidMove()) scramble();
+}
+
+function hasAnyMatch() {
+    // Quick check — don't resolve, just detect
+    for (let r = 0; r < GRID; r++) {
+        for (let c = 0; c < GRID - 2; c++) {
+            const i = r * GRID + c;
+            if (board[i] === board[i+1] && board[i] === board[i+2] &&
+                board[i] !== 'empty' && board[i] !== 'bomb' && board[i] !== 'wild') return true;
+        }
+    }
+    for (let c = 0; c < GRID; c++) {
+        for (let r = 0; r < GRID - 2; r++) {
+            const i = r * GRID + c;
+            if (board[i] === board[i+GRID] && board[i] === board[i+GRID*2] &&
+                board[i] !== 'empty' && board[i] !== 'bomb' && board[i] !== 'wild') return true;
+        }
+    }
+    return false;
+}
+
+function hasAnyValidMove() {
+    for (let i = 0; i < TOTAL; i++) {
+        const neighbors = getNeighbors(i);
+        for (const j of neighbors) {
+            swap(i, j);
+            const has = hasAnyMatch();
+            swap(i, j); // swap back
+            if (has) return true;
+        }
+    }
+    return false;
+}
+
+function scramble() {
+    // Shuffle until valid move exists
+    for (let i = board.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [board[i], board[j]] = [board[j], board[i]];
+    }
+}
+
+function getNeighbors(i) {
+    const neighbors = [];
+    const row = Math.floor(i / GRID), col = i % GRID;
+    if (col > 0)       neighbors.push(i - 1);
+    if (col < GRID-1)  neighbors.push(i + 1);
+    if (row > 0)       neighbors.push(i - GRID);
+    if (row < GRID-1)  neighbors.push(i + GRID);
+    return neighbors;
+}
+
+function swap(i, j) {
+    [board[i], board[j]] = [board[j], board[i]];
+}
+
+// ── Render ──────────────────────────────────────────────────────
+function render() {
+    const cells = boardEl.querySelectorAll('.cell');
+    cells.forEach((cell, i) => {
+        const color = board[i];
+        if (cell.dataset.color !== color) {
+            cell.dataset.color = color;
+            cell.textContent = GEMS[color] || '';
+        }
+        cell.classList.toggle('selected', i === selected);
+    });
+    scoreEl.textContent = score.toLocaleString();
+    movesEl.textContent = moves;
+    movesEl.classList.toggle('low', moves <= 5);
+    bestEl.textContent = bestScore.toLocaleString();
+}
+
+function buildGrid() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.dataset.color = board[i];
+        cell.textContent = GEMS[board[i]] || '';
+        boardEl.appendChild(cell);
+    }
+    attachEvents();
+}
+
+// ── Input: Click ───────────────────────────────────────────────
+function attachEvents() {
+    boardEl.addEventListener('click', handleClick);
+    // Touch swipe
+    let touchStartX, touchStartY, touchStartIdx;
+    boardEl.addEventListener('touchstart', e => {
+        if (busy) return;
+        const touch = e.touches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (el && el.classList.contains('cell')) {
+            touchStartX   = touch.clientX;
+            touchStartY   = touch.clientY;
+            touchStartIdx = parseInt(el.dataset.index);
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    boardEl.addEventListener('touchend', e => {
+        if (busy || touchStartIdx === undefined) return;
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+        const absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+        if (Math.max(absDx, absDy) < 12) {
+            // Too small — treat as tap
+            handleCellSelect(touchStartIdx);
+        } else {
+            // Swipe direction
+            let targetIdx;
+            if (absDx > absDy) {
+                targetIdx = dx > 0 ? touchStartIdx + 1 : touchStartIdx - 1;
+            } else {
+                targetIdx = dy > 0 ? touchStartIdx + GRID : touchStartIdx - GRID;
+            }
+            // Validate neighbor
+            if (targetIdx >= 0 && targetIdx < TOTAL && getNeighbors(touchStartIdx).includes(targetIdx)) {
+                selected = -1;
+                attemptSwap(touchStartIdx, targetIdx);
+            }
+        }
+        touchStartIdx = undefined;
+        e.preventDefault();
+    }, { passive: false });
+}
+
+function handleClick(e) {
+    if (busy) return;
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    handleCellSelect(parseInt(cell.dataset.index));
+}
+
+function handleCellSelect(idx) {
+    if (board[idx] === 'empty') return;
+    if (selected === -1) {
+        selected = idx;
+        render();
+        return;
+    }
+    if (selected === idx) {
+        selected = -1;
+        render();
+        return;
+    }
+    if (getNeighbors(selected).includes(idx)) {
+        const from = selected;
+        selected = -1;
+        attemptSwap(from, idx);
+    } else {
+        // Select the new gem instead
+        selected = idx;
+        render();
+    }
+}
+
+// ── Swap logic ──────────────────────────────────────────────────
+async function attemptSwap(i, j) {
+    if (busy) return;
+    busy = true;
+
+    swap(i, j);
+    render();
+
+    await sleep(150);
+
+    const matched = findMatches();
+    if (matched.length === 0) {
+        // No match — swap back + shake
+        swap(i, j);
+        render();
+        soundInvalid();
+        animateCells([i, j], 'shake');
+        await sleep(300);
+        busy = false;
+        return;
+    }
+
+    // Valid swap — deduct move
+    moves--;
+    comboCount = 0;
+    await resolveMatches(matched);
+
+    if (moves <= 0) {
+        endGame();
+    } else if (!hasAnyValidMove()) {
+        // No valid moves — auto-shuffle board
+        await sleep(200);
+        shuffleBoard();
+    }
+
+    busy = false;
+}
+
+// ── Match detection ────────────────────────────────────────────
+function findMatches() {
+    const toRemove = new Set();
+    const specialCreations = []; // { index, type }
+
+    // Horizontal
+    for (let r = 0; r < GRID; r++) {
+        let c = 0;
+        while (c < GRID) {
+            const color = board[r * GRID + c];
+            if (color === 'empty' || color === 'bomb' || color === 'wild') { c++; continue; }
+            let len = 1;
+            while (c + len < GRID && board[r * GRID + c + len] === color) len++;
+            if (len >= 3) {
+                for (let k = 0; k < len; k++) toRemove.add(r * GRID + c + k);
+                if (len === 4) specialCreations.push({ index: r * GRID + c + 1, type: 'bomb' });
+                if (len >= 5) specialCreations.push({ index: r * GRID + c + 2, type: 'wild' });
+            }
+            c += len;
+        }
+    }
+
+    // Vertical
+    for (let c = 0; c < GRID; c++) {
+        let r = 0;
+        while (r < GRID) {
+            const color = board[r * GRID + c];
+            if (color === 'empty' || color === 'bomb' || color === 'wild') { r++; continue; }
+            let len = 1;
+            while (r + len < GRID && board[(r + len) * GRID + c] === color) len++;
+            if (len >= 3) {
+                for (let k = 0; k < len; k++) toRemove.add((r + k) * GRID + c);
+                if (len === 4) specialCreations.push({ index: (r + 1) * GRID + c, type: 'bomb' });
+                if (len >= 5) specialCreations.push({ index: (r + 2) * GRID + c, type: 'wild' });
+            }
+            r += len;
+        }
+    }
+
+    return { cells: [...toRemove], specials: specialCreations };
+}
+
+// ── Resolve matches → cascade ──────────────────────────────────
+async function resolveMatches(matchResult) {
+    let { cells, specials } = matchResult;
+    if (cells.length === 0) return;
+
+    comboCount++;
+    const pts = calculatePoints(cells, comboCount);
+    score += pts;
+
+    // Show combo banner
+    if (comboCount >= 2) {
+        showCombo(comboCount);
+        soundCombo(comboCount);
+    } else {
+        soundMatch(comboCount);
+    }
+
+    // Show score popup
+    showScorePopup(cells, pts);
+
+    // Animate removal
+    animateCells(cells, 'matching');
+    await sleep(300);
+
+    // Handle special gem activations (bombs/wilds in matched cells)
+    const extraCells = new Set();
+    for (const idx of cells) {
+        if (board[idx] === 'bomb') {
+            getBombArea(idx).forEach(i => extraCells.add(i));
+            soundBomb();
+        } else if (board[idx] === 'wild') {
+            getWildTargets(idx).forEach(i => extraCells.add(i));
+            soundWild();
+        }
+    }
+
+    // Clear matched cells
+    cells.forEach(i => { board[i] = 'empty'; });
+
+    // Place any special gems
+    for (const sp of specials) {
+        if (board[sp.index] === 'empty') {
+            board[sp.index] = sp.type;
+        }
+    }
+
+    // Clear extra cells from bomb/wild
+    if (extraCells.size > 0) {
+        const extra = [...extraCells].filter(i => !cells.includes(i) && board[i] !== 'empty');
+        animateCells(extra, 'matching');
+        await sleep(300);
+        extra.forEach(i => { board[i] = 'empty'; });
+        score += extra.length * 10;
+    }
+
+    render();
+    await sleep(100);
+
+    // Gravity
+    await applyGravity();
+
+    // Check for cascades
+    const next = findMatches();
+    if (next.cells.length > 0) {
+        await resolveMatches(next);
+    } else {
+        comboCount = 0;
+        hideCombo();
+    }
+}
+
+function calculatePoints(cells, combo) {
+    const base = cells.length >= 5 ? POINTS[5] : cells.length === 4 ? POINTS[4] : POINTS[3];
+    const multiplier = Math.min(combo, 8);
+    return base + (cells.length - 3) * 10 + (multiplier > 1 ? Math.floor(base * (multiplier - 1) * 0.5) : 0);
+}
+
+function getBombArea(idx) {
+    const r = Math.floor(idx / GRID), c = idx % GRID;
+    const area = [];
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID) {
+                area.push(nr * GRID + nc);
+            }
+        }
+    }
+    return area;
+}
+
+function getWildTargets(idx) {
+    // Wild clears all gems of the most common color on the board
+    const counts = {};
+    COLORS.forEach(c => counts[c] = 0);
+    board.forEach((c, i) => { if (counts[c] !== undefined) counts[c]++; });
+    const dominant = Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0];
+    return board.reduce((acc, c, i) => { if (c === dominant) acc.push(i); return acc; }, []);
+}
+
+// ── Gravity ─────────────────────────────────────────────────────
+async function applyGravity() {
+    let changed = true;
+    while (changed) {
+        changed = false;
+        // Fall down
+        for (let c = 0; c < GRID; c++) {
+            for (let r = GRID - 2; r >= 0; r--) {
+                if (board[r * GRID + c] !== 'empty' && board[(r+1) * GRID + c] === 'empty') {
+                    board[(r+1) * GRID + c] = board[r * GRID + c];
+                    board[r * GRID + c] = 'empty';
+                    changed = true;
+                }
+            }
+        }
+    }
+    // Fill top with new gems
+    const newCells = [];
+    for (let i = 0; i < GRID; i++) {
+        if (board[i] === 'empty') {
+            board[i] = randomColor();
+            newCells.push(i);
+        }
+    }
+    render();
+    if (newCells.length > 0) {
+        animateCells(newCells, 'falling');
+        await sleep(200);
+    }
+}
+
+// ── Animations ──────────────────────────────────────────────────
+function animateCells(indices, className) {
+    const cells = boardEl.querySelectorAll('.cell');
+    indices.forEach(i => {
+        if (cells[i]) {
+            cells[i].classList.remove(className);
+            void cells[i].offsetWidth; // force reflow
+            cells[i].classList.add(className);
+            cells[i].addEventListener('animationend', () => cells[i].classList.remove(className), { once: true });
+        }
+    });
+}
+
+function showScorePopup(cells, pts) {
+    if (cells.length === 0) return;
+    const boardRect = boardEl.getBoundingClientRect();
+    const cellEls = boardEl.querySelectorAll('.cell');
+    const midIdx = cells[Math.floor(cells.length / 2)];
+    const cell = cellEls[midIdx];
+    if (!cell) return;
+    const rect = cell.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'score-pop';
+    pop.textContent = `+${pts}`;
+    pop.style.left = (rect.left - boardRect.left + rect.width / 2 - 20) + 'px';
+    pop.style.top  = (rect.top  - boardRect.top  + rect.height / 2 - 10) + 'px';
+    boardEl.parentElement.style.position = 'relative';
+    boardEl.parentElement.appendChild(pop);
+    pop.addEventListener('animationend', () => pop.remove());
+}
+
+function showCombo(count) {
+    comboTag.textContent = `🔥 ${count}× Combo!`;
+    comboTag.classList.remove('show');
+    void comboTag.offsetWidth;
+    comboTag.classList.add('show');
+}
+function hideCombo() {
+    setTimeout(() => comboTag.classList.remove('show'), 1200);
+}
+
+// ── Game Over ────────────────────────────────────────────────────
+function endGame() {
+    soundGameOver();
+    if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem('gemMatchBest', bestScore);
+    }
+    overlayScore.textContent = score.toLocaleString();
+    overlayBest.textContent = score >= bestScore ? '🏆 New Best Score!' : `Best: ${bestScore.toLocaleString()}`;
+    overlay.classList.add('show');
+}
+
+// ── Shuffle board (no valid moves) ───────────────────────────────
+function shuffleBoard() {
+    let attempts = 0;
+    do {
+        for (let i = board.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [board[i], board[j]] = [board[j], board[i]];
+        }
+        attempts++;
+    } while (!hasAnyValidMove() && attempts < 50);
+    render();
+}
+
+// ── Restart ──────────────────────────────────────────────────────
+function initGame() {
+    score = 0;
+    moves = MAX_MOVES;
+    comboCount = 0;
+    selected = -1;
+    busy = false;
+    overlay.classList.remove('show');
+    comboTag.classList.remove('show');
+    createBoard();
+    buildGrid();
+    render();
+}
+
+// ── Utilities ───────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Event bindings ───────────────────────────────────────────────
+restartBtn.addEventListener('click', initGame);
+
+soundBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? '🔊' : '🔇';
+});
+
+document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('mobileNav').classList.toggle('open');
+});
+
+// ── Boot ────────────────────────────────────────────────────────
+initGame();
+
+</script>
+</body>
+</html>
