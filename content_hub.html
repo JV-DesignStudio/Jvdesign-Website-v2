@@ -834,56 +834,46 @@
 </footer>
 
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-    /* ── Filter logic ── */
-    function filterCards(cat, btn) {
-        // Update active button
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        const items  = document.querySelectorAll('.project-item');
-        const sections = document.querySelectorAll('.cat-section');
-        let visible = 0;
-
-        items.forEach(item => {
-            if (cat === 'all' || item.dataset.cat === cat) {
-                item.classList.remove('hidden');
-                visible++;
-            } else {
-                item.classList.add('hidden');
-            }
+<script>
+    // A. MOBILE NAVIGATION
+    const navToggle = document.getElementById('navToggle');
+    const mobileNav = document.getElementById('mobileNav');
+    if (navToggle && mobileNav) {
+        navToggle.addEventListener('click', () => {
+            mobileNav.classList.toggle('open');
+            navToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
         });
-
-        // Show/hide whole category sections
-        sections.forEach(section => {
-            const id = section.id.replace('section-', '');
-            if (cat === 'all' || cat === id) {
-                section.style.display = '';
-            } else {
-                section.style.display = 'none';
-            }
-        });
-
-        // Result count
-        const countEl = document.getElementById('result-count');
-        if (cat !== 'all') {
-            countEl.textContent = visible + ' project' + (visible !== 1 ? 's' : '');
-        } else {
-            countEl.textContent = '';
-        }
-
-        // Empty state
-        document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
     }
 
-    /* ── Scroll reveal ── */
+    // B. DARK MODE TOGGLE
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeToggle');
+        if (body.hasAttribute('data-theme')) {
+            body.removeAttribute('data-theme');
+            btn.textContent = '🌙';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            btn.textContent = '☀️';
+        }
+    }
+
+    // C. SCROLL REVEAL (INTERSECTION OBSERVER)
+    const observerOptions = { threshold: 0.1 };
+
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, i) => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
-                // Stagger siblings slightly
-                const siblings = entry.target.parentElement.querySelectorAll('.reveal');
-                let delay = 0;
-                siblings.forEach((el, idx) => {
-                    if (el === entry.target) delay = idx * 60;
-                });
-                setTimeout(() =
+                // IMPORTANT: This line actually triggers the CSS animation
+                entry.target.classList.add('visible');
+                // Stop watching once revealed for performance
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Initialise the observer on every element with the 'reveal' class
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

@@ -961,11 +961,50 @@
 <!-- ══════════════════════════════════════
      SCRIPTS
 ══════════════════════════════════════ -->
-    /* Scroll reveal */
+<script>
+    // 1. Mobile Nav Toggle Logic
+    const navToggle = document.getElementById('navToggle');
+    const mobileNav = document.getElementById('mobileNav');
+
+    if (navToggle) {
+        navToggle.addEventListener('click', () => {
+            mobileNav.classList.toggle('open');
+            navToggle.textContent = mobileNav.classList.contains('open') ? '✕' : '☰';
+        });
+    }
+
+    // 2. Scroll Reveal Logic
+    const observerOptions = {
+        threshold: 0.15 // Trigger when 15% of the element is visible
+    };
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Stagger cards in a grid
-                const parent = entry.target.parentElement;
-                const siblings = [...parent.querySelectorAll('.reveal')];
-         
+                // Add the 'visible' class defined in your CSS
+                entry.target.classList.add('visible');
+                // Stop observing once it's visible to save performance
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Initialize observer on all elements with the 'reveal' class
+    document.querySelectorAll('.reveal').forEach(el => {
+        observer.observe(el);
+    });
+
+    // 3. Dark Mode Toggle Logic
+    function toggleTheme() {
+        const body = document.body;
+        const themeBtn = document.getElementById('themeToggle');
+        
+        if (body.getAttribute('data-theme') === 'dark') {
+            body.removeAttribute('data-theme');
+            themeBtn.textContent = '🌙';
+        } else {
+            body.setAttribute('data-theme', 'dark');
+            themeBtn.textContent = '☀️';
+        }
+    }
+</script>
