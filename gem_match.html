@@ -316,8 +316,20 @@ a{text-decoration:none;color:inherit}
 .cell.jiggle{animation:jiggle .28s ease}
 @keyframes jiggle{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(7px)}80%{transform:translateX(-4px)}}
 
-.cell.hint{animation:hintGlow 1s ease-in-out 3}
-@keyframes hintGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.7) drop-shadow(0 0 8px white)}}
+/* Special gem spawn flash */
+.cell.spawn-special{animation:spawnSpecial .5s cubic-bezier(.34,1.56,.64,1) forwards!important}
+@keyframes spawnSpecial{
+  0%{transform:scale(0) rotate(-90deg);opacity:0;filter:brightness(3)}
+  60%{transform:scale(1.3) rotate(8deg);opacity:1;filter:brightness(1.8)}
+  80%{transform:scale(.9) rotate(-4deg)}
+  100%{transform:scale(1) rotate(0);filter:brightness(1)}
+}
+
+.cell.hint{animation:hintGlow .7s ease-in-out 4;z-index:8}
+@keyframes hintGlow{
+  0%,100%{transform:scale(1);box-shadow:inherit;filter:brightness(1)}
+  50%{transform:scale(1.18) translateY(-3px);box-shadow:0 0 0 3px white,0 0 16px 4px rgba(255,255,255,.5);filter:brightness(1.5)}
+}
 
 /* ═══════════════════════════════════════════
    PARTICLES + SCORE POPS
@@ -411,11 +423,29 @@ a{text-decoration:none;color:inherit}
 .how-to{
   width:100%;max-width:var(--sz);
   background:rgba(28,22,16,.75);border:1px solid rgba(240,234,214,.06);
-  border-radius:18px;padding:18px 20px;
-  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  border-radius:18px;
   backdrop-filter:blur(8px);
+  overflow:hidden;
 }
-.how-to h3{font-family:'Fredoka',cursive;font-size:.92rem;font-weight:700;color:var(--beige);grid-column:1/-1;margin-bottom:2px}
+.how-to-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;cursor:pointer;user-select:none;
+}
+.how-to-header h3{font-family:'Fredoka',cursive;font-size:.92rem;font-weight:700;color:var(--beige);margin:0}
+.how-to-toggle{
+  font-size:.75rem;color:rgba(240,234,214,.35);
+  background:none;border:none;cursor:pointer;
+  transition:transform .25s ease,color .15s;color:rgba(240,234,214,.35);
+  font-weight:700;letter-spacing:.04em;
+}
+.how-to.open .how-to-toggle{transform:rotate(180deg)}
+.how-to-body{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:0 20px 16px;
+  max-height:0;overflow:hidden;
+  transition:max-height .3s ease,padding .3s ease;
+}
+.how-to.open .how-to-body{max-height:300px;padding:0 20px 16px}
 .tip{display:flex;align-items:flex-start;gap:7px}
 .tip-icon{font-size:.95rem;flex-shrink:0;margin-top:1px}
 .tip-text{font-size:.73rem;color:rgba(240,234,214,.45);line-height:1.5}
@@ -558,14 +588,19 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <!-- How to play -->
-  <div class="how-to">
-    <h3>💡 How to Play</h3>
-    <div class="tip"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap or Swipe</strong>Select a gem then tap adjacent, or swipe to swap.</div></div>
-    <div class="tip"><span class="tip-icon">💎</span><div class="tip-text"><strong>Match 3+</strong>Line up 3 or more gems of the same colour.</div></div>
-    <div class="tip"><span class="tip-icon">💣</span><div class="tip-text"><strong>Bomb</strong>Match 4 in a row — clears a 3×3 area on use.</div></div>
-    <div class="tip"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Wild</strong>Match 5+ — wipes all gems of one colour from the board.</div></div>
-    <div class="tip"><span class="tip-icon">🌟</span><div class="tip-text"><strong>Fever Mode</strong>4× chain = 2× points and a glowing board!</div></div>
-    <div class="tip"><span class="tip-icon">⏱️</span><div class="tip-text"><strong>Chain Bonus</strong>Every cascade adds +3 seconds to your timer.</div></div>
+  <div class="how-to" id="howTo">
+    <div class="how-to-header" id="howToHeader">
+      <h3>💡 How to Play</h3>
+      <button class="how-to-toggle" aria-label="Toggle tips">▼</button>
+    </div>
+    <div class="how-to-body">
+      <div class="tip"><span class="tip-icon">👆</span><div class="tip-text"><strong>Tap or Swipe</strong>Select a gem then tap adjacent, or swipe to swap.</div></div>
+      <div class="tip"><span class="tip-icon">💎</span><div class="tip-text"><strong>Match 3+</strong>Line up 3 or more gems of the same colour.</div></div>
+      <div class="tip"><span class="tip-icon">💣</span><div class="tip-text"><strong>Bomb</strong>Match 4 in a row — clears a 3×3 area on use.</div></div>
+      <div class="tip"><span class="tip-icon">⚡</span><div class="tip-text"><strong>Wild</strong>Match 5+ — wipes all gems of one colour from the board.</div></div>
+      <div class="tip"><span class="tip-icon">🌟</span><div class="tip-text"><strong>Fever Mode</strong>4× chain = 2× points and a glowing board!</div></div>
+      <div class="tip"><span class="tip-icon">⏱️</span><div class="tip-text"><strong>Chain Bonus</strong>Every cascade adds +3 seconds to your timer.</div></div>
+    </div>
   </div>
 
 </main>
@@ -612,7 +647,7 @@ const DURATION = 120;   // seconds
 const CHAIN_BONUS = 3;  // seconds added per cascade
 const FEVER_AT = 4;     // combo count that triggers fever
 const HINT_WAIT = 3800; // ms idle before hint
-const PTS = {3:30, 4:60, 5:100};
+const PTS = {3:300, 4:600, 5:1000};
 const SWAP_CLASS = {right:'swap-r',left:'swap-l',down:'swap-d',up:'swap-u'};
 
 // ── State ───────────────────────────────────────────
@@ -868,41 +903,99 @@ async function swap(i,j){
 }
 
 // ── Match detection ───────────────────────────────────
+// Step 1: find all horizontal runs ≥3 and vertical runs ≥3.
+// Step 2: flood-fill from every matched cell — pick up any same-colour
+//         neighbours that are also matched, ensuring L/T/+ shapes are
+//         fully collected as one group.
+// Bombs/wilds on the board are NOT matched by this function —
+// they are triggered separately in resolve() when adjacent gems clear.
 function findMatches(){
-  const rm=new Set(), sp=[];
-  // horizontal
+  const SPECIAL = new Set(['empty','bomb','wild']);
+
+  // --- pass 1: tag every cell that's part of a run of ≥3 ---
+  const inRun = new Set();
+  const runLen = {}; // idx -> length of the run it anchors (for special creation)
+
+  // horizontal runs
   for(let r=0;r<GRID;r++){
     let c=0;
     while(c<GRID){
       const col=board[r*GRID+c];
-      if(col==='empty'||col==='bomb'||col==='wild'){c++;continue;}
+      if(SPECIAL.has(col)){c++;continue;}
       let l=1;
       while(c+l<GRID&&board[r*GRID+c+l]===col) l++;
       if(l>=3){
-        for(let k=0;k<l;k++) rm.add(r*GRID+c+k);
-        if(l===4) sp.push({idx:r*GRID+c+1,type:'bomb'});
-        if(l>=5)  sp.push({idx:r*GRID+c+2,type:'wild'});
+        for(let k=0;k<l;k++) inRun.add(r*GRID+c+k);
+        // record run length at the anchor for special gem spawning
+        const anchor=r*GRID+c;
+        if(!runLen[anchor]||runLen[anchor]<l) runLen[anchor]=l;
       }
       c+=l;
     }
   }
-  // vertical
+  // vertical runs
   for(let c=0;c<GRID;c++){
     let r=0;
     while(r<GRID){
       const col=board[r*GRID+c];
-      if(col==='empty'||col==='bomb'||col==='wild'){r++;continue;}
+      if(SPECIAL.has(col)){r++;continue;}
       let l=1;
       while(r+l<GRID&&board[(r+l)*GRID+c]===col) l++;
       if(l>=3){
-        for(let k=0;k<l;k++) rm.add((r+k)*GRID+c);
-        if(l===4) sp.push({idx:(r+1)*GRID+c,type:'bomb'});
-        if(l>=5)  sp.push({idx:(r+2)*GRID+c,type:'wild'});
+        for(let k=0;k<l;k++) inRun.add((r+k)*GRID+c);
+        const anchor=r*GRID+c;
+        if(!runLen[anchor]||runLen[anchor]<l) runLen[anchor]=l;
       }
       r+=l;
     }
   }
-  return {cells:[...rm],specials:sp};
+
+  if(!inRun.size) return {cells:[],specials:[]};
+
+  // --- pass 2: flood-fill to merge connected groups of same colour ---
+  // This catches L, T, + shapes and any same-colour cell adjacent to a run cell.
+  const visited = new Set();
+  const groups  = [];   // array of arrays of indices
+
+  for(const seed of inRun){
+    if(visited.has(seed)) continue;
+    const col = board[seed];
+    const group = [];
+    const stack = [seed];
+    while(stack.length){
+      const idx=stack.pop();
+      if(visited.has(idx)) continue;
+      visited.add(idx);
+      group.push(idx);
+      // spread to neighbours of same colour that are also in inRun
+      const ri=Math.floor(idx/GRID), ci=idx%GRID;
+      const candidates=[];
+      if(ci>0)      candidates.push(idx-1);
+      if(ci<GRID-1) candidates.push(idx+1);
+      if(ri>0)      candidates.push(idx-GRID);
+      if(ri<GRID-1) candidates.push(idx+GRID);
+      for(const nb of candidates){
+        if(!visited.has(nb) && board[nb]===col && inRun.has(nb))
+          stack.push(nb);
+      }
+    }
+    groups.push({col, group});
+  }
+
+  // --- pass 3: build remove set and decide special gem spawns ---
+  const rm = new Set();
+  const sp = [];
+
+  for(const {group} of groups){
+    group.forEach(i=>rm.add(i));
+    const maxL = Math.max(...group.map(i=>runLen[i]||0).filter(Boolean), group.length);
+    // find the centre-ish cell for spawning
+    const mid = group[Math.floor(group.length/2)];
+    if(maxL>=5) sp.push({idx:mid,type:'wild'});
+    else if(maxL===4) sp.push({idx:mid,type:'bomb'});
+  }
+
+  return {cells:[...rm], specials:sp};
 }
 
 // ── Resolve / cascade ─────────────────────────────────
@@ -944,24 +1037,45 @@ async function resolve(m){
   rollScore(score);
   await wait(340);
 
-  // Bomb / wild chain-explosions
+  // ── Collect bomb/wild positions BEFORE clearing ───────
+  // Trigger specials IN the matched set, and also adjacent ones
   const blastSet=new Set();
+  const adjacentToCleared=new Set();
+  for(const idx of cells) for(const nb of nbrs(idx)) adjacentToCleared.add(nb);
+
   for(const idx of cells){
     if(board[idx]==='bomb'){ bombBlast(idx).forEach(i=>blastSet.add(i)); bombTally++; SFX.bomb(); shakeboard(); }
     if(board[idx]==='wild'){ wildBlast(idx).forEach(i=>blastSet.add(i)); wildTally++; SFX.wild(); }
   }
+  const cellSet=new Set(cells);
+  for(const nb of adjacentToCleared){
+    if(cellSet.has(nb)) continue;
+    if(board[nb]==='bomb'){ bombBlast(nb).forEach(i=>blastSet.add(i)); blastSet.add(nb); bombTally++; SFX.bomb(); shakeboard(); }
+    if(board[nb]==='wild'){ wildBlast(nb).forEach(i=>blastSet.add(i)); blastSet.add(nb); wildTally++; SFX.wild(); }
+  }
 
-  // Clear matched
+  // Clear matched cells
   cells.forEach(i=>{ board[i]='empty'; });
-  // Place specials
-  for(const s of specials) if(board[s.idx]==='empty') board[s.idx]=s.type;
-  // Blast extras
+  // Place new specials and animate them in
+  for(const s of specials){
+    if(board[s.idx]==='empty'){
+      board[s.idx]=s.type;
+      // flash the cell after next render
+      setTimeout(()=>{
+        const cellEls=boardEl.querySelectorAll('.cell');
+        const cel=cellEls[s.idx];
+        if(cel){ cel.classList.remove('spawn-special'); void cel.offsetWidth; cel.classList.add('spawn-special'); cel.addEventListener('animationend',()=>cel.classList.remove('spawn-special'),{once:true}); }
+      }, 60);
+    }
+  }
+
+  // Detonate blasted cells
   if(blastSet.size){
     const extra=[...blastSet].filter(i=>board[i]!=='empty');
     if(extra.length){
-      anim(extra,'matching'); await wait(300);
+      anim(extra,'matching'); await wait(320);
       extra.forEach(i=>{ board[i]='empty'; });
-      score+=extra.length*12*mult; rollScore(score);
+      score+=extra.length*120*mult; rollScore(score);
     }
   }
 
@@ -981,7 +1095,7 @@ function endChain(){
 function calcPts(cells,c){
   const l=cells.length;
   const base=l>=5?PTS[5]:l===4?PTS[4]:PTS[3];
-  return base+Math.max(0,l-3)*10+(c>1?Math.floor(base*(c-1)*.5):0);
+  return base+Math.max(0,l-3)*100+(c>1?Math.floor(base*(c-1)*.5):0);
 }
 
 function bombBlast(idx){
@@ -1160,6 +1274,7 @@ $('btnStart').addEventListener('click',()=>{
 $('btnAgain').addEventListener('click',init);
 $('sndBtn').addEventListener('click',()=>{soundOn=!soundOn;$('sndBtn').textContent=soundOn?'🔊':'🔇';});
 $('navToggle').addEventListener('click',()=>$('mobileNav').classList.toggle('open'));
+$('howToHeader').addEventListener('click',()=>$('howTo').classList.toggle('open'));
 
 // ── Boot ───────────────────────────────────────────────
 $('ssBest').textContent=bestScore.toLocaleString();
