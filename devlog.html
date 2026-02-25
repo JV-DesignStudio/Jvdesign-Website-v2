@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="JVDesignStudio Dev Log — behind the scenes on books, games, and the creative process.">
+    <title>Dev Log | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📓</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ── RESET + VARS ─────────────────────────── */
+        :root {
+            --beige:      #F0EAD6;
+            --tan:        #D2B48C;
+            --tan-dk:     #b8956a;
+            --rose:       #BC4749;
+            --rose-dk:    #9b3a3c;
+            --rose-lt:    #fdf0f0;
+            --teal:       #70A3A7;
+            --teal-dk:    #4e7d80;
+            --teal-lt:    #e8f2f3;
+            --charcoal:   #403B33;
+            --charcoal-lt:#5a5449;
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{scroll-behavior:smooth}
+        body{font-family:'Inter',sans-serif;background:var(--beige);color:var(--charcoal);overflow-x:hidden}
+        a{text-decoration:none;color:inherit}
+        img{display:block;max-width:100%}
+
+        /* ── DARK MODE ────────────────────────────── */
+        /* ── Dark mode overrides ─────────────────────────── */
+        [data-theme="dark"] body { background-color: #1e1c18 !important; color: #f0ead6 !important; }
+        [data-theme="dark"] { 
+            --beige:      #1e1c18;
+            --tan:        #3a3528;
+            --tan-dk:     #2e2a20;
+            --rose-lt:    #4a2020;
+            --teal-lt:    #1a3535;
+            --charcoal:   #f0ead6;
+            --charcoal-lt:#c8bfaa;
+            --white:      #2a2720;
+        }
+        [data-theme="dark"] .site-header { background: rgba(20,18,14,.97) !important; border-color: rgba(240,234,214,.08) !important; }
+        [data-theme="dark"] .nav-link { color: #c8bfaa !important; }
+        [data-theme="dark"] .nav-link:hover { background: #2a2720 !important; color: #f0ead6 !important; }
+        [data-theme="dark"] .logo-name { filter: brightness(1.3); }
+        [data-theme="dark"] .mobile-nav { background: #1e1c18 !important; border-color: rgba(240,234,214,.08) !important; }
+        [data-theme="dark"] .mobile-nav a { color: #c8bfaa !important; }
+        [data-theme="dark"] .mobile-nav a:hover { background: #2a2720 !important; }
+        /* ── End dark mode ────────────────────────────────── */
+
+        /* ── NAV ──────────────────────────────────── */
+        @keyframes logo-shift{0%{color:var(--tan)}33%{color:var(--rose)}66%{color:var(--teal)}100%{color:var(--tan)}}
+        .logo-name{animation:logo-shift 6s infinite alternate ease-in-out;font-weight:800}
+        .reveal{opacity:0;transform:translateY(22px);transition:opacity .55s ease,transform .55s ease}
+        .reveal.visible{opacity:1;transform:none}
+
+        .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(64,59,51,.07);box-shadow:0 2px 16px rgba(64,59,51,.07)}
+        .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:68px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+        .logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem}
+        .logo-link img{height:36px;border-radius:9px;display:block}
+        .header-nav{display:flex;align-items:center;gap:4px}
+        .nav-link{font-size:.86rem;font-weight:600;color:var(--charcoal-lt);padding:7px 12px;border-radius:8px;transition:background .15s;white-space:nowrap}
+        .nav-link:hover{background:var(--beige)}
+        .nav-cta{background:var(--rose);color:white;font-weight:700;font-size:.86rem;padding:8px 16px;border-radius:10px;box-shadow:0 3px 0 var(--rose-dk);transition:filter .15s,transform .1s;white-space:nowrap;flex-shrink:0;margin-left:4px}
+        .nav-cta:hover{filter:brightness(1.08);transform:translateY(-1px)}
+        .nav-toggle{display:none;background:none;border:1.5px solid rgba(64,59,51,.18);border-radius:8px;padding:5px 10px;font-size:1.1rem;cursor:pointer;color:var(--charcoal);flex-shrink:0}
+        .mobile-nav{display:none;flex-direction:column;position:absolute;top:68px;left:0;right:0;background:#fff;border-bottom:2px solid var(--beige);box-shadow:0 8px 28px rgba(64,59,51,.12);z-index:99}
+        .mobile-nav a{padding:13px 24px;font-size:.95rem;font-weight:600;color:var(--charcoal-lt);border-bottom:1px solid rgba(64,59,51,.05);transition:background .12s}
+        .mobile-nav a:hover{background:var(--beige)}
+        .mobile-nav.open{display:flex}
+        @media(max-width:860px){.header-nav,.nav-cta{display:none!important}.nav-toggle{display:block!important}}
+
+        /* Dark toggle btn */
+        .theme-toggle{background:none;border:1.5px solid rgba(64,59,51,.2);border-radius:8px;padding:5px 9px;font-size:.9rem;cursor:pointer;flex-shrink:0;margin-left:4px;transition:background .15s}
+        .theme-toggle:hover{background:rgba(64,59,51,.08)}
+        [data-theme="dark"] .theme-toggle{border-color:rgba(240,234,214,.2)}
+        [data-theme="dark"] .theme-toggle:hover{background:rgba(240,234,214,.08)}
+
+        /* ── HERO ─────────────────────────────────── */
+        .hero {
+            background: var(--charcoal);
+            padding: 72px 24px 80px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 75% 40%, rgba(112,163,167,.14) 0%, transparent 55%),
+                        radial-gradient(ellipse at 20% 80%, rgba(188,71,73,.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .hero-inner {
+            max-width: 720px; margin: 0 auto;
+            text-align: center; position: relative; z-index: 1;
+        }
+        .hero-eyebrow {
+            font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--teal);
+            border: 1.5px solid rgba(112,163,167,.3); border-radius: 999px;
+            padding: 5px 16px; display: inline-block; margin-bottom: 20px;
+        }
+        .hero-title {
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(2.4rem, 6vw, 3.8rem);
+            font-weight: 700; color: white; line-height: 1.05;
+            margin-bottom: 14px;
+        }
+        .hero-title span { color: var(--teal); }
+        .hero-sub {
+            font-size: 1rem; color: rgba(240,234,214,.65);
+            line-height: 1.75; max-width: 500px; margin: 0 auto 32px;
+        }
+        .hero-meta {
+            display: flex; gap: 20px; justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat-val {
+            font-family: 'Fredoka', cursive;
+            font-size: 1.8rem; font-weight: 700;
+            color: white; line-height: 1;
+        }
+        .hero-stat-lbl {
+            font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+            text-transform: uppercase; color: rgba(240,234,214,.35);
+            margin-top: 3px;
+        }
+
+        /* ── FILTER BAR ───────────────────────────── */
+        .filter-bar {
+            background: white;
+            border-bottom: 1px solid rgba(64,59,51,.07);
+            padding: 0 24px;
+            position: sticky; top: 68px; z-index: 40;
+            box-shadow: 0 2px 12px rgba(64,59,51,.05);
+        }
+        [data-theme="dark"] .filter-bar { background: #1a1814; border-color: rgba(240,234,214,.07); }
+        .filter-inner {
+            max-width: 1100px; margin: 0 auto;
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 0; overflow-x: auto; scrollbar-width: none;
+        }
+        .filter-inner::-webkit-scrollbar { display: none; }
+        .filter-btn {
+            font-size: .78rem; font-weight: 700; letter-spacing: .04em;
+            padding: 6px 16px; border-radius: 999px; border: 1.5px solid transparent;
+            cursor: pointer; white-space: nowrap; transition: all .15s;
+            background: none; color: var(--charcoal-lt);
+            border-color: rgba(64,59,51,.15);
+        }
+        .filter-btn:hover { background: var(--beige); border-color: var(--tan); color: var(--charcoal); }
+        .filter-btn.active { background: var(--charcoal); color: var(--beige); border-color: var(--charcoal); }
+        [data-theme="dark"] .filter-btn { color: #c8bfaa; border-color: rgba(240,234,214,.15); }
+        [data-theme="dark"] .filter-btn:hover { background: #2a2720; }
+        [data-theme="dark"] .filter-btn.active { background: var(--beige); color: var(--charcoal); border-color: var(--beige); }
+        .filter-count {
+            margin-left: auto; flex-shrink: 0;
+            font-size: .75rem; font-weight: 600;
+            color: var(--charcoal-lt); white-space: nowrap;
+        }
+        [data-theme="dark"] .filter-count { color: #8a8070; }
+
+        /* ── POST GRID ────────────────────────────── */
+        .posts-section {
+            max-width: 1100px; margin: 0 auto;
+            padding: 52px 24px 80px;
+        }
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        @media(max-width: 480px) { .posts-grid { grid-template-columns: 1fr; } }
+
+        /* ── POST CARD ────────────────────────────── */
+        .post-card {
+            background: white; border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(64,59,51,.08);
+            transition: transform .22s ease, box-shadow .22s ease;
+            display: flex; flex-direction: column;
+            cursor: pointer;
+        }
+        .post-card:hover { transform: translateY(-5px); box-shadow: 0 14px 36px rgba(64,59,51,.13); }
+        [data-theme="dark"] .post-card { background: #2a2620; box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+        [data-theme="dark"] .post-card:hover { box-shadow: 0 14px 36px rgba(0,0,0,.4); }
+
+        /* Card image */
+        .post-thumb {
+            width: 100%; aspect-ratio: 16/9;
+            background: var(--tan); overflow: hidden;
+            position: relative; flex-shrink: 0;
+        }
+        .post-thumb img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform .4s ease;
+        }
+        .post-card:hover .post-thumb img { transform: scale(1.04); }
+        .post-thumb-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem;
+        }
+        /* Per-tag thumb colours */
+        .post-card[data-tag="books"]   .post-thumb-placeholder { background: linear-gradient(135deg, #f5e0e0, #e8c4c4); }
+        .post-card[data-tag="games"]   .post-thumb-placeholder { background: linear-gradient(135deg, #e0edef, #c4d8da); }
+        .post-card[data-tag="life"]    .post-thumb-placeholder { background: linear-gradient(135deg, #f5f0e8, #e8dfc8); }
+        .post-card[data-tag="process"] .post-thumb-placeholder { background: linear-gradient(135deg, #ede8f5, #d8cfec); }
+        .post-card[data-tag="update"]  .post-thumb-placeholder { background: linear-gradient(135deg, #e8f5e0, #cfe8c4); }
+
+        /* Tag badge on thumb */
+        .post-tag-badge {
+            position: absolute; top: 12px; left: 12px;
+            font-size: .62rem; font-weight: 800; letter-spacing: .07em;
+            text-transform: uppercase; padding: 4px 11px;
+            border-radius: 999px; z-index: 2;
+        }
+        .tag-books   { background: var(--rose);    color: white; }
+        .tag-games   { background: var(--teal-dk); color: white; }
+        .tag-life    { background: var(--tan-dk);  color: white; }
+        .tag-process { background: #7a6a9b;        color: white; }
+        .tag-update  { background: #4a7a3a;        color: white; }
+
+        /* Card body */
+        .post-body {
+            padding: 20px 22px 22px;
+            display: flex; flex-direction: column; flex: 1;
+        }
+        .post-date {
+            font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--tan-dk);
+            margin-bottom: 8px;
+        }
+        [data-theme="dark"] .post-date { color: #a08060; }
+        .post-title {
+            font-family: 'Lora', serif;
+            font-size: 1.1rem; font-weight: 600;
+            color: var(--charcoal); line-height: 1.35;
+            margin-bottom: 10px;
+        }
+        [data-theme="dark"] .post-title { color: #f0ead6; }
+        .post-excerpt {
+            font-size: .85rem; color: var(--charcoal-lt);
+            line-height: 1.7; flex: 1; margin-bottom: 16px;
+        }
+        [data-theme="dark"] .post-excerpt { color: #a09880; }
+        .post-read-more {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: .8rem; font-weight: 700;
+            color: var(--teal-dk);
+            transition: gap .15s, color .15s;
+        }
+        .post-card:hover .post-read-more { gap: 9px; color: var(--rose); }
+
+        /* ── EXPANDED POST MODAL ──────────────────── */
+        .modal-backdrop {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(40,35,28,.7);
+            backdrop-filter: blur(6px);
+            display: flex; align-items: flex-start; justify-content: center;
+            padding: 40px 16px 40px;
+            overflow-y: auto;
+            opacity: 0; pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+        .modal {
+            background: white; border-radius: 24px;
+            width: 100%; max-width: 680px;
+            box-shadow: 0 24px 80px rgba(0,0,0,.25);
+            overflow: hidden;
+            transform: translateY(24px) scale(.98);
+            transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+            flex-shrink: 0;
+        }
+        [data-theme="dark"] .modal { background: #26221e; }
+        .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+
+        .modal-thumb {
+            width: 100%; aspect-ratio: 16/9;
+            overflow: hidden; position: relative;
+        }
+        .modal-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .modal-thumb-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 5rem;
+        }
+        .modal-close {
+            position: absolute; top: 14px; right: 14px;
+            background: rgba(0,0,0,.5); color: white;
+            border: none; border-radius: 50%;
+            width: 36px; height: 36px;
+            font-size: 1.1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .15s; z-index: 5;
+        }
+        .modal-close:hover { background: rgba(0,0,0,.75); }
+
+        .modal-body { padding: 32px 36px 40px; }
+        @media(max-width:560px){ .modal-body { padding: 24px; } }
+
+        .modal-tag { display: inline-block; margin-bottom: 10px; font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; }
+        .modal-date { font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tan-dk); margin-bottom: 12px; }
+        [data-theme="dark"] .modal-date { color: #a08060; }
+        .modal-title {
+            font-family: 'Lora', serif;
+            font-size: clamp(1.4rem, 4vw, 1.9rem);
+            font-weight: 600; color: var(--charcoal);
+            line-height: 1.25; margin-bottom: 20px;
+        }
+        [data-theme="dark"] .modal-title { color: #f0ead6; }
+        .modal-content {
+            font-size: .95rem; color: var(--charcoal-lt);
+            line-height: 1.85;
+        }
+        [data-theme="dark"] .modal-content { color: #b0a890; }
+        .modal-content p { margin-bottom: 16px; }
+        .modal-content p:last-child { margin-bottom: 0; }
+
+        .modal-footer {
+            padding: 20px 36px 28px;
+            border-top: 1px solid rgba(64,59,51,.08);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            flex-wrap: wrap;
+        }
+        [data-theme="dark"] .modal-footer { border-color: rgba(240,234,214,.07); }
+        .modal-nav-btns { display: flex; gap: 10px; }
+        .modal-nav-btn {
+            font-size: .82rem; font-weight: 700;
+            padding: 8px 16px; border-radius: 10px; border: none;
+            cursor: pointer; transition: background .15s, color .15s;
+            background: var(--beige); color: var(--charcoal);
+        }
+        .modal-nav-btn:hover { background: var(--tan); }
+        .modal-nav-btn:disabled { opacity: .35; cursor: default; }
+        [data-theme="dark"] .modal-nav-btn { background: #332e28; color: #c8bfaa; }
+        [data-theme="dark"] .modal-nav-btn:hover { background: #3e3830; }
+        .modal-close-btn {
+            font-size: .82rem; font-weight: 700;
+            padding: 8px 18px; border-radius: 10px; border: none;
+            cursor: pointer; background: var(--rose); color: white;
+            transition: filter .15s;
+        }
+        .modal-close-btn:hover { filter: brightness(1.1); }
+
+        /* ── EMPTY STATE ──────────────────────────── */
+        .empty-state {
+            text-align: center; padding: 80px 24px; display: none;
+        }
+        .empty-state.show { display: block; }
+        .empty-emoji { font-size: 3rem; margin-bottom: 16px; }
+        .empty-msg { font-size: 1rem; color: var(--charcoal-lt); }
+
+        /* ── NEW POST CTA ─────────────────────────── */
+        .add-post-card {
+            background: none;
+            border: 2.5px dashed rgba(64,59,51,.18);
+            border-radius: 20px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 10px; padding: 40px 24px;
+            cursor: default; min-height: 280px;
+            color: var(--charcoal-lt);
+        }
+        [data-theme="dark"] .add-post-card { border-color: rgba(240,234,214,.12); color: #8a8070; }
+        .add-post-icon { font-size: 2rem; opacity: .4; }
+        .add-post-label { font-size: .82rem; font-weight: 600; opacity: .5; }
+
+        /* ── FOOTER ───────────────────────────────── */
+        .site-footer{background:var(--charcoal);padding:52px 24px 28px}
+        .footer-inner{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
+        .footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:var(--beige)}
+        .footer-tagline{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,234,214,.38)}
+        .footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}
+        .footer-links a{font-size:.82rem;font-weight:600;color:rgba(240,234,214,.5);padding:4px 9px;border-radius:6px;transition:color .15s,background .15s}
+        .footer-links a:hover{color:var(--beige);background:rgba(255,255,255,.07)}
+        .footer-socials{display:flex;gap:24px;justify-content:center}
+        .footer-socials a{font-size:.82rem;font-weight:700;color:rgba(240,234,214,.38);transition:color .15s}
+        .footer-socials a:hover{color:rgba(240,234,214,.85)}
+        .footer-copy{font-size:.73rem;color:rgba(240,234,214,.2);border-top:1px solid rgba(255,255,255,.07);padding-top:18px;width:100%}
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/40x40/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <nav class="header-nav">
+            <a href="index.html"       class="nav-link">Home</a>
+            <a href="content_hub.html" class="nav-link">All Projects</a>
+            <a href="devlog.html"      class="nav-link" style="color:var(--rose)">Dev Log</a>
+            <a href="search.html"      class="nav-link">🔍 Search</a>
+            <a href="freebies.html"    class="nav-link">🎁 Free Downloads</a>
+            <a href="about.html"       class="nav-link">About</a>
+        </nav>
+        <a href="contact.html" class="nav-cta">✉️ Contact</a>
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="index.html">🏠 Home</a>
+        <a href="content_hub.html">📦 All Projects</a>
+        <a href="devlog.html">📓 Dev Log</a>
+        <a href="search.html">🔍 Search</a>
+        <a href="freebies.html">🎁 Free Downloads</a>
+        <a href="about.html">👤 About</a>
+        <a href="contact.html">✉️ Contact</a>
+        <a href="press.html">📋 Press Kit</a>
+        <a href="newsletter.html">💌 Newsletter</a>
+        <a href="sitemap.html">🗺️ Sitemap</a>
+    </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-eyebrow">📓 Dev Log</div>
+        <h1 class="hero-title">Behind the <span>Scenes</span></h1>
+        <p class="hero-sub">The real story of making books, building games, and figuring it all out as I go. No filter, no polish — just progress.</p>
+        <div class="hero-meta">
+            <div class="hero-stat">
+                <div class="hero-stat-val" id="heroPostCount">0</div>
+                <div class="hero-stat-lbl">Posts</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-val" id="heroTagCount">0</div>
+                <div class="hero-stat-lbl">Topics</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-val" id="heroLatestDate">—</div>
+                <div class="hero-stat-lbl">Last Entry</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+    <div class="filter-inner" id="filterInner">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="books">📚 Books</button>
+        <button class="filter-btn" data-filter="games">🎮 Games</button>
+        <button class="filter-btn" data-filter="life">☀️ Life</button>
+        <button class="filter-btn" data-filter="process">🎨 Process</button>
+        <button class="filter-btn" data-filter="update">📢 Update</button>
+        <span class="filter-count" id="filterCount">0 posts</span>
+    </div>
+</div>
+
+<!-- POSTS -->
+<section class="posts-section">
+    <div class="posts-grid" id="postsGrid"></div>
+    <div class="empty-state" id="emptyState">
+        <div class="empty-emoji">🔍</div>
+        <p class="empty-msg">No posts in this category yet.</p>
+    </div>
+</section>
+
+<!-- POST MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="modal" role="dialog" aria-modal="true">
+        <div class="modal-thumb" id="modalThumb">
+            <button class="modal-close" id="modalCloseX" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+            <span class="modal-tag" id="modalTag"></span>
+            <div class="modal-date" id="modalDate"></div>
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-content" id="modalContent"></div>
+        </div>
+        <div class="modal-footer">
+            <div class="modal-nav-btns">
+                <button class="modal-nav-btn" id="btnPrev">← Prev</button>
+                <button class="modal-nav-btn" id="btnNext">Next →</button>
+            </div>
+            <button class="modal-close-btn" id="modalCloseBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="content_hub.html">All Projects</a>
+            <a href="devlog.html">Dev Log</a>
+            <a href="freebies.html">Free Downloads</a>
+            <a href="about.html">About</a>
+            <a href="press.html">Press Kit</a>
+            <a href="contact.html">Contact</a>
+            <a href="newsletter.html">Newsletter</a>
+            <a href="search.html">Search</a>
+            <a href="sitemap.html">Sitemap</a>
+        </nav>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener">Itch.io</a>
+        </nav>
+        <p class="footer-copy">© 2025 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DEV LOG  |  JVDesignStudio
+//  Add your posts to the POSTS array below.
+//  Each post: { id, date, tag, emoji, title, excerpt, content, image (optional) }
+//  Tags: 'books' | 'games' | 'life' | 'process' | 'update'
+// ═══════════════════════════════════════════════════
+
+const TAG_LABELS = {
+    books:   '📚 Books',
+    games:   '🎮 Games',
+    life:    '☀️ Life',
+    process: '🎨 Process',
+    update:  '📢 Update',
+};
+const TAG_CLASSES = {
+    books:'tag-books', games:'tag-games', life:'tag-life',
+    process:'tag-process', update:'tag-update',
+};
+const TAG_EMOJIS = {
+    books:'📚', games:'🎮', life:'☀️', process:'🎨', update:'📢',
+};
+
+// ── YOUR POSTS GO HERE ─────────────────────────────
+// Delete the example posts and add your own.
+// 'content' supports plain paragraphs — separate with \n\n.
+// 'image' is optional — set to a filename like 'Lumo_Concept_V002.png'
+//  or leave as '' to use the emoji placeholder.
+
+const POSTS = [
+    {
+        id: 1,
+        date: 'Add your date here',
+        tag: 'books',
+        emoji: '📚',
+        title: 'Your first post title goes here',
+        excerpt: 'A short one or two sentence teaser that shows on the card. Keep it punchy.',
+        image: '',
+        content: `Your full post content goes here.\n\nYou can use multiple paragraphs by separating them with a blank line like this.\n\nThis is the third paragraph.`,
+    },
+    {
+        id: 2,
+        date: 'Add your date here',
+        tag: 'games',
+        emoji: '🎮',
+        title: 'Another post title',
+        excerpt: 'Another short teaser line for the card view.',
+        image: '',
+        content: `Write your post here.\n\nAdd as many paragraphs as you like.`,
+    },
+    {
+        id: 3,
+        date: 'Add your date here',
+        tag: 'process',
+        emoji: '🎨',
+        title: 'And another one',
+        excerpt: 'Short excerpt for the card.',
+        image: '',
+        content: `Your post content here.`,
+    },
+];
+
+// ── END POSTS ──────────────────────────────────────
+
+// State
+let currentFilter = 'all';
+let currentPostIdx = 0;
+let filteredPosts = [];
+
+// DOM
+const postsGrid   = document.getElementById('postsGrid');
+const filterCount = document.getElementById('filterCount');
+const emptyState  = document.getElementById('emptyState');
+const backdrop    = document.getElementById('modalBackdrop');
+const modal       = document.getElementById('modal');
+
+// ── Build hero stats ───────────────────────────────
+function buildHeroStats(){
+    document.getElementById('heroPostCount').textContent = POSTS.length;
+    const tags = new Set(POSTS.map(p=>p.tag));
+    document.getElementById('heroTagCount').textContent = tags.size;
+    if(POSTS.length){
+        // Show year of most recent post (first in array = newest)
+        const d = POSTS[0].date;
+        const yr = d.match(/\d{4}/)?.[0] || d.slice(-4) || '—';
+        document.getElementById('heroLatestDate').textContent = yr;
+    }
+}
+
+// ── Render grid ────────────────────────────────────
+function renderPosts(){
+    filteredPosts = currentFilter === 'all'
+        ? [...POSTS]
+        : POSTS.filter(p => p.tag === currentFilter);
+
+    filterCount.textContent = filteredPosts.length + (filteredPosts.length===1?' post':' posts');
+    postsGrid.innerHTML = '';
+    emptyState.classList.toggle('show', filteredPosts.length === 0);
+
+    filteredPosts.forEach((post, i) => {
+        const card = document.createElement('div');
+        card.className = 'post-card reveal';
+        card.dataset.tag = post.tag;
+        card.style.transitionDelay = (i * 0.06) + 's';
+
+        const thumbInner = post.image
+            ? `<img src="${post.image}" alt="${escHtml(post.title)}" loading="lazy" onerror="this.parentElement.innerHTML=this.parentElement.innerHTML.replace(this.outerHTML,'<div class=post-thumb-placeholder>${post.emoji}</div>')">`
+            : `<div class="post-thumb-placeholder">${post.emoji}</div>`;
+
+        card.innerHTML = `
+            <div class="post-thumb">
+                ${thumbInner}
+                <span class="post-tag-badge ${TAG_CLASSES[post.tag]}">${TAG_LABELS[post.tag]}</span>
+            </div>
+            <div class="post-body">
+                <div class="post-date">${escHtml(post.date)}</div>
+                <div class="post-title">${escHtml(post.title)}</div>
+                <div class="post-excerpt">${escHtml(post.excerpt)}</div>
+                <span class="post-read-more">Read more →</span>
+            </div>`;
+
+        card.addEventListener('click', () => openModal(i));
+        postsGrid.appendChild(card);
+    });
+
+    // Add "placeholder" card at end so the grid doesn't look lopsided with 1 card
+    if(filteredPosts.length < 3 || filteredPosts.length % 3 !== 0){
+        // Only show the "add entry" prompt when looking at all posts
+        if(currentFilter === 'all'){
+            const add = document.createElement('div');
+            add.className = 'add-post-card';
+            add.innerHTML = `<div class="add-post-icon">✏️</div><div class="add-post-label">More entries coming soon</div>`;
+            postsGrid.appendChild(add);
+        }
+    }
+
+    // Trigger reveal animations
+    requestAnimationFrame(()=>{
+        document.querySelectorAll('.reveal').forEach(el=>{
+            const obs = new IntersectionObserver(entries=>{
+                entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); }});
+            },{threshold:.1});
+            obs.observe(el);
+        });
+    });
+}
+
+// ── Modal ──────────────────────────────────────────
+function openModal(filteredIdx){
+    currentPostIdx = filteredIdx;
+    renderModal();
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    backdrop.scrollTop = 0;
+}
+
+function closeModal(){
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function renderModal(){
+    const post = filteredPosts[currentPostIdx];
+    if(!post) return;
+
+    // Thumb
+    const thumbEl = document.getElementById('modalThumb');
+    const closeX  = document.getElementById('modalCloseX');
+    if(post.image){
+        thumbEl.innerHTML = `<img src="${post.image}" alt="${escHtml(post.title)}" onerror="this.outerHTML='<div class=modal-thumb-placeholder style=background:linear-gradient(135deg,#f5e8e8,#e8d0d0)>${post.emoji}</div>'">`;
+    } else {
+        const bgs = {books:'linear-gradient(135deg,#f5e0e0,#e8c4c4)',games:'linear-gradient(135deg,#e0edef,#c4d8da)',life:'linear-gradient(135deg,#f5f0e8,#e8dfc8)',process:'linear-gradient(135deg,#ede8f5,#d8cfec)',update:'linear-gradient(135deg,#e8f5e0,#cfe8c4)'};
+        thumbEl.innerHTML = `<div class="modal-thumb-placeholder" style="background:${bgs[post.tag]||'linear-gradient(135deg,#eee,#ddd)'}">${post.emoji}</div>`;
+    }
+    // re-attach close button
+    const newClose = document.createElement('button');
+    newClose.className = 'modal-close';
+    newClose.id = 'modalCloseX';
+    newClose.setAttribute('aria-label','Close');
+    newClose.textContent = '✕';
+    newClose.addEventListener('click', closeModal);
+    thumbEl.appendChild(newClose);
+
+    document.getElementById('modalTag').className = `modal-tag ${TAG_CLASSES[post.tag]}`;
+    document.getElementById('modalTag').textContent = TAG_LABELS[post.tag];
+    document.getElementById('modalDate').textContent = post.date;
+    document.getElementById('modalTitle').textContent = post.title;
+
+    // Render content paragraphs
+    const contentEl = document.getElementById('modalContent');
+    contentEl.innerHTML = post.content
+        .split(/\n\n+/)
+        .map(p => `<p>${escHtml(p.trim())}</p>`)
+        .join('');
+
+    // Nav buttons
+    document.getElementById('btnPrev').disabled = currentPostIdx === 0;
+    document.getElementById('btnNext').disabled = currentPostIdx === filteredPosts.length - 1;
+
+    // Reset scroll
+    backdrop.scrollTop = 0;
+}
+
+function escHtml(str){
+    return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
+}
+
+// ── Events ─────────────────────────────────────────
+document.getElementById('filterInner').addEventListener('click', e=>{
+    const btn = e.target.closest('.filter-btn');
+    if(!btn) return;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderPosts();
+});
+
+document.getElementById('btnPrev').addEventListener('click',()=>{ if(currentPostIdx>0){currentPostIdx--;renderModal();} });
+document.getElementById('btnNext').addEventListener('click',()=>{ if(currentPostIdx<filteredPosts.length-1){currentPostIdx++;renderModal();} });
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target===backdrop) closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); if(e.key==='ArrowLeft') document.getElementById('btnPrev').click(); if(e.key==='ArrowRight') document.getElementById('btnNext').click(); });
+
+document.getElementById('navToggle').addEventListener('click',()=>document.getElementById('mobileNav').classList.toggle('open'));
+
+// ── Dark mode ──────────────────────────────────────
+(function(){
+    var t=localStorage.getItem('jvds-theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+    document.documentElement.dataset.theme=t;
+    function upd(){var b=document.getElementById('themeToggle');if(b)b.textContent=document.documentElement.dataset.theme==='dark'?'☀️':'🌙';}
+    window.toggleTheme=function(){var d=document.documentElement.dataset.theme==='dark';document.documentElement.dataset.theme=d?'light':'dark';localStorage.setItem('jvds-theme',document.documentElement.dataset.theme);upd();};
+    document.addEventListener('DOMContentLoaded',upd);
+})();
+
+// ── Boot ───────────────────────────────────────────
+buildHeroStats();
+renderPosts();
+</script>
+</body>
+</html>
