@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcane Citadel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #020008; font-family: 'Cinzel', serif; }
+        canvas { display: block; touch-action: none; }
+
+        /* ── HUD ── */
+        #hud {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 12px 18px;
+            display: flex; align-items: center; gap: 16px;
+            background: linear-gradient(to bottom, rgba(2,0,8,.85) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .hud-block { display: flex; flex-direction: column; gap: 2px; }
+        .hud-label {
+            font-size: 9px; font-weight: 700; letter-spacing: .15em;
+            text-transform: uppercase; color: rgba(180,140,255,.5);
+        }
+        .hud-val {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 18px; font-weight: 700;
+            color: #c0a0ff;
+            text-shadow: 0 0 12px rgba(160,80,255,.8);
+        }
+        .hud-sep { width: 1px; height: 36px; background: rgba(160,80,255,.2); margin: 0 4px; }
+
+        /* HP bar */
+        #hp-bar-wrap {
+            flex: 1; display: flex; flex-direction: column; gap: 3px;
+        }
+        #hp-bar-track {
+            height: 8px; background: rgba(255,255,255,.07);
+            border-radius: 4px; overflow: hidden;
+            border: 1px solid rgba(160,80,255,.2);
+        }
+        #hp-bar-fill {
+            height: 100%; width: 100%;
+            background: linear-gradient(90deg, #ff3366, #ff6b35);
+            border-radius: 4px;
+            transition: width .3s ease, background .3s ease;
+            box-shadow: 0 0 8px rgba(255,51,102,.6);
+        }
+        .hp-label-row { display: flex; justify-content: space-between; }
+
+        /* ── SCREENS ── */
+        .screen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: radial-gradient(ellipse at 50% 40%, rgba(80,0,160,.35) 0%, rgba(2,0,8,.98) 70%);
+            text-align: center; padding: 24px;
+        }
+        .screen.hidden { display: none; }
+
+        .screen-glyph {
+            font-size: 64px; margin-bottom: 8px;
+            filter: drop-shadow(0 0 20px rgba(160,80,255,.9));
+            animation: pulse-glyph 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glyph {
+            from { filter: drop-shadow(0 0 10px rgba(160,80,255,.5)); transform: scale(1); }
+            to   { filter: drop-shadow(0 0 30px rgba(200,120,255,1)); transform: scale(1.06); }
+        }
+
+        .screen-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(2rem, 7vw, 3.5rem);
+            font-weight: 900; letter-spacing: .06em;
+            background: linear-gradient(135deg, #c0a0ff 0%, #ff80cc 50%, #80c8ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+        .screen-sub {
+            font-size: clamp(.75rem, 2.5vw, .95rem);
+            color: rgba(180,140,255,.6);
+            letter-spacing: .1em; text-transform: uppercase;
+            margin-bottom: 32px; line-height: 1.7;
+            max-width: 420px;
+        }
+
+        .rune-btn {
+            position: relative; display: inline-block;
+            background: linear-gradient(135deg, rgba(100,0,200,.5), rgba(160,0,120,.4));
+            border: 1px solid rgba(180,80,255,.5);
+            color: #d0b0ff; font-family: 'Cinzel', serif;
+            font-size: clamp(.85rem, 2.5vw, 1.05rem);
+            font-weight: 700; letter-spacing: .08em;
+            padding: 14px 36px; border-radius: 8px; cursor: pointer;
+            transition: all .2s ease;
+            box-shadow: 0 0 20px rgba(120,0,255,.3), inset 0 1px 0 rgba(255,255,255,.1);
+            text-transform: uppercase;
+        }
+        .rune-btn:hover {
+            background: linear-gradient(135deg, rgba(130,0,255,.7), rgba(200,0,150,.5));
+            border-color: rgba(200,120,255,.9);
+            color: white;
+            box-shadow: 0 0 35px rgba(160,0,255,.6), inset 0 1px 0 rgba(255,255,255,.15);
+            transform: translateY(-2px);
+        }
+        .rune-btn:active { transform: translateY(0); }
+
+        /* Stats row on game over */
+        .go-stats {
+            display: flex; gap: 28px; justify-content: center;
+            flex-wrap: wrap; margin-bottom: 28px;
+        }
+        .go-stat { text-align: center; }
+        .go-stat-val {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.8rem; font-weight: 700;
+            color: #c0a0ff; line-height: 1;
+            text-shadow: 0 0 14px rgba(160,80,255,.8);
+        }
+        .go-stat-lbl {
+            font-size: .65rem; letter-spacing: .12em;
+            text-transform: uppercase; color: rgba(180,140,255,.5);
+            margin-top: 3px;
+        }
+
+        /* ── UPGRADE MENU ── */
+        #upgrade-menu {
+            position: absolute; inset: 0;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(2,0,8,.88);
+            backdrop-filter: blur(6px);
+        }
+        #upgrade-menu.show { display: flex; }
+        .upgrade-panel {
+            background: linear-gradient(145deg, rgba(20,0,50,.95), rgba(10,0,30,.95));
+            border: 1px solid rgba(160,80,255,.4);
+            border-radius: 18px; padding: 32px 28px;
+            text-align: center; max-width: 420px; width: 92%;
+            box-shadow: 0 0 60px rgba(120,0,255,.3), 0 0 120px rgba(120,0,255,.1);
+        }
+        .upgrade-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.3rem; color: #d0b0ff; margin-bottom: 6px;
+            text-shadow: 0 0 12px rgba(160,80,255,.7);
+        }
+        .upgrade-sub {
+            font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+            color: rgba(180,140,255,.45); margin-bottom: 24px;
+        }
+        .upgrade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .upgrade-card {
+            background: rgba(100,0,200,.15);
+            border: 1px solid rgba(160,80,255,.25);
+            border-radius: 12px; padding: 16px 12px;
+            cursor: pointer; transition: all .2s;
+            display: flex; flex-direction: column; align-items: center; gap: 7px;
+        }
+        .upgrade-card:hover {
+            background: rgba(140,0,255,.3);
+            border-color: rgba(200,120,255,.7);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(160,0,255,.3);
+        }
+        .uc-icon { font-size: 1.8rem; }
+        .uc-name {
+            font-size: .78rem; font-weight: 700; letter-spacing: .07em;
+            text-transform: uppercase; color: #c0a0ff;
+        }
+        .uc-desc { font-size: .65rem; color: rgba(180,140,255,.55); line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-block">
+        <div class="hud-label">Score</div>
+        <div class="hud-val" id="hud-score">0</div>
+    </div>
+    <div class="hud-sep"></div>
+    <div class="hud-block">
+        <div class="hud-label">Level</div>
+        <div class="hud-val" id="hud-level">1</div>
+    </div>
+    <div class="hud-sep"></div>
+    <div id="hp-bar-wrap">
+        <div class="hp-label-row">
+            <span class="hud-label">Citadel HP</span>
+            <span class="hud-label" id="hud-hp-num">100 / 100</span>
+        </div>
+        <div id="hp-bar-track"><div id="hp-bar-fill"></div></div>
+    </div>
+</div>
+
+<!-- START SCREEN -->
+<div id="screen-start" class="screen">
+    <div class="screen-glyph">🏰</div>
+    <div class="screen-title">Arcane Citadel</div>
+    <div class="screen-sub">
+        The dark crystals hunger for the Citadel.<br>
+        You are its last ward.<br><br>
+        <strong style="color:rgba(200,160,255,.8)">Drag to move · Auto-aims · Survive</strong>
+    </div>
+    <button class="rune-btn" onclick="startGame()">✦ Begin ✦</button>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="screen-gameover" class="screen hidden">
+    <div class="screen-glyph">💀</div>
+    <div class="screen-title">Citadel<br>Fallen</div>
+    <div class="screen-sub" style="margin-bottom:20px">The dark crystals claim the realm.</div>
+    <div class="go-stats">
+        <div class="go-stat">
+            <div class="go-stat-val" id="go-score">0</div>
+            <div class="go-stat-lbl">Score</div>
+        </div>
+        <div class="go-stat">
+            <div class="go-stat-val" id="go-level">1</div>
+            <div class="go-stat-lbl">Level</div>
+        </div>
+        <div class="go-stat">
+            <div class="go-stat-val" id="go-kills">0</div>
+            <div class="go-stat-lbl">Crystals Slain</div>
+        </div>
+    </div>
+    <button class="rune-btn" onclick="restartGame()">↺ Try Again</button>
+</div>
+
+<!-- UPGRADE MENU -->
+<div id="upgrade-menu">
+    <div class="upgrade-panel">
+        <div class="upgrade-title">✦ Boon Granted ✦</div>
+        <div class="upgrade-sub">Choose your power — Level <span id="upgrade-level">2</span></div>
+        <div class="upgrade-grid">
+            <div class="upgrade-card" onclick="upgrade('dmg')">
+                <div class="uc-icon">⚔️</div>
+                <div class="uc-name">Arcane Might</div>
+                <div class="uc-desc">Spell damage +1</div>
+            </div>
+            <div class="upgrade-card" onclick="upgrade('spd')">
+                <div class="uc-icon">⚡</div>
+                <div class="uc-name">Swift Casting</div>
+                <div class="uc-desc">Fire rate ×1.25</div>
+            </div>
+            <div class="upgrade-card" onclick="upgrade('hp')">
+                <div class="uc-icon">💠</div>
+                <div class="uc-name">Mend Stones</div>
+                <div class="uc-desc">Restore 30 HP</div>
+            </div>
+            <div class="upgrade-card" onclick="upgrade('move')">
+                <div class="uc-icon">🌀</div>
+                <div class="uc-name">Windstep</div>
+                <div class="uc-desc">Move speed +1</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+'use strict';
+
+// ── Canvas setup ──────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    if (tower) { tower.x = W / 2; tower.y = H / 2; }
+}
+window.addEventListener('resize', resize);
+
+// ── Game state ────────────────────────────────────────────
+let gameState = 'start'; // start | playing | dead | upgrade
+let score = 0;
+let level = 1;
+let killCount = 0;
+let killsForNextLevel = 10;
+let killsSinceLevel = 0;
+
+let player, tower;
+let enemies  = [];
+let spells   = [];
+let particles = [];
+let stars    = [];
+let lastShot = 0;
+let spawnTimer = 0;
+let spawnInterval = 1500;
+let animID = null;
+
+// Joystick
+let joystick = { active: false, startX: 0, startY: 0, currX: 0, currY: 0 };
+
+// ── Init / Reset ──────────────────────────────────────────
+function initGame() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+
+    player = { x: W/2, y: H/2 - 120, r: 12, angle: 0, speed: 3.5, dmg: 1, fireRate: 450 };
+    tower  = { x: W/2, y: H/2, r: 44, hp: 100, maxHp: 100 };
+
+    enemies  = [];
+    spells   = [];
+    particles = [];
+    score    = 0;
+    level    = 1;
+    killCount = 0;
+    killsSinceLevel = 0;
+    killsForNextLevel = 10;
+    lastShot = 0;
+    spawnInterval = 1500;
+
+    // Generate background stars once
+    stars = Array.from({length: 120}, () => ({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 1.5 + 0.3,
+        brightness: Math.random(),
+        twinkle: Math.random() * Math.PI * 2,
+    }));
+
+    updateHUD();
+}
+
+function startGame() {
+    document.getElementById('screen-start').classList.add('hidden');
+    initGame();
+    gameState = 'playing';
+    if (animID) cancelAnimationFrame(animID);
+    loop();
+}
+
+function restartGame() {
+    document.getElementById('screen-gameover').classList.add('hidden');
+    document.getElementById('upgrade-menu').classList.remove('show');
+    initGame();
+    gameState = 'playing';
+    if (animID) cancelAnimationFrame(animID);
+    loop();
+}
+
+// ── HUD update ────────────────────────────────────────────
+function updateHUD() {
+    document.getElementById('hud-score').textContent = score.toLocaleString();
+    document.getElementById('hud-level').textContent = level;
+    document.getElementById('hud-hp-num').textContent = `${Math.max(0,tower.hp)} / ${tower.maxHp}`;
+    const pct = Math.max(0, tower.hp / tower.maxHp);
+    document.getElementById('hp-bar-fill').style.width = (pct * 100) + '%';
+    const r = Math.round(255 * (1 - pct) * 2).toString(16).padStart(2,'0');
+    const g = Math.round(255 * pct * 1.5).toString(16).padStart(2,'0');
+    document.getElementById('hp-bar-fill').style.background = `linear-gradient(90deg, #${r.slice(0,2)}3366, #ff6b35)`;
+}
+
+// ── Controls ──────────────────────────────────────────────
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    joystick.active = true;
+    joystick.startX = joystick.currX = t.clientX;
+    joystick.startY = joystick.currY = t.clientY;
+}, {passive: false});
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!joystick.active) return;
+    joystick.currX = e.touches[0].clientX;
+    joystick.currY = e.touches[0].clientY;
+}, {passive: false});
+
+canvas.addEventListener('touchend', () => { joystick.active = false; });
+
+// Mouse fallback for desktop testing
+canvas.addEventListener('mousemove', e => {
+    if (gameState !== 'playing') return;
+    const dx = e.clientX - player.x;
+    const dy = e.clientY - player.y;
+    // Mouse steers player toward cursor
+    player.angle = Math.atan2(dy, dx);
+});
+
+canvas.addEventListener('mousedown', e => {
+    if (gameState !== 'playing') return;
+    joystick.active = true;
+    joystick.startX = joystick.currX = e.clientX;
+    joystick.startY = joystick.currY = e.clientY;
+});
+
+canvas.addEventListener('mousemove', e => {
+    if (!joystick.active || gameState !== 'playing') return;
+    joystick.currX = e.clientX;
+    joystick.currY = e.clientY;
+});
+
+canvas.addEventListener('mouseup', () => { joystick.active = false; });
+
+// ── Helpers ───────────────────────────────────────────────
+function nearestEnemy() {
+    if (!enemies.length) return null;
+    let best = null, bestD = Infinity;
+    for (const en of enemies) {
+        const d = Math.hypot(en.x - player.x, en.y - player.y);
+        if (d < bestD) { bestD = d; best = en; }
+    }
+    return best;
+}
+
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const ang  = Math.random() * Math.PI * 2;
+        const spd  = 1.5 + Math.random() * 4;
+        particles.push({
+            x, y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            life: 1, decay: 0.035 + Math.random() * 0.04,
+            r: 2 + Math.random() * 3,
+            color,
+        });
+    }
+}
+
+// ── Spawn enemies ─────────────────────────────────────────
+function spawnEnemy() {
+    const side = Math.floor(Math.random() * 4);
+    let x, y;
+    const pad = 60;
+    if      (side === 0) { x = Math.random() * W; y = -pad; }
+    else if (side === 1) { x = W + pad; y = Math.random() * H; }
+    else if (side === 2) { x = Math.random() * W; y = H + pad; }
+    else                 { x = -pad; y = Math.random() * H; }
+
+    // Enemy variety based on level
+    const roll = Math.random();
+    let type, hp, speed, r, color, pts;
+    if (level >= 4 && roll < 0.15) {
+        // Brute — big, slow, tanky
+        type = 'brute'; hp = level * 4; speed = 0.4 + level * 0.08;
+        r = 28 + Math.random() * 8; color = '#cc0044'; pts = 300;
+    } else if (level >= 2 && roll < 0.3) {
+        // Swarm — tiny, fast
+        type = 'swarm'; hp = 1; speed = 1.2 + level * 0.25;
+        r = 8; color = '#ffaa00'; pts = 50;
+    } else {
+        // Normal crystal
+        type = 'crystal'; hp = Math.ceil(level * 0.8); speed = 0.55 + level * 0.18;
+        r = 14 + Math.random() * 10; color = '#7000ff'; pts = 100;
+    }
+
+    enemies.push({ x, y, r, hp, maxHp: hp, speed, color, type, pts, angle: 0 });
+}
+
+// ── Upgrade ───────────────────────────────────────────────
+function upgrade(type) {
+    if (type === 'dmg')  player.dmg++;
+    if (type === 'spd')  player.fireRate = Math.max(100, player.fireRate * 0.8);
+    if (type === 'hp')   { tower.hp = Math.min(tower.hp + 30, tower.maxHp); updateHUD(); }
+    if (type === 'move') player.speed += 1;
+
+    document.getElementById('upgrade-menu').classList.remove('show');
+    gameState = 'playing';
+}
+
+// ── Show upgrade menu ─────────────────────────────────────
+function showUpgrade() {
+    gameState = 'upgrade';
+    document.getElementById('upgrade-level').textContent = level + 1;
+    document.getElementById('upgrade-menu').classList.add('show');
+}
+
+// ── Game Over ─────────────────────────────────────────────
+function gameOver() {
+    gameState = 'dead';
+    document.getElementById('go-score').textContent  = score.toLocaleString();
+    document.getElementById('go-level').textContent  = level;
+    document.getElementById('go-kills').textContent  = killCount;
+    document.getElementById('screen-gameover').classList.remove('hidden');
+}
+
+// ── Update ────────────────────────────────────────────────
+let lastTime = 0;
+function update(dt) {
+    // dt cap at 100ms to avoid spiral-of-death after tab switch
+    const dtCapped = Math.min(dt, 100);
+    const dtFactor = dtCapped / 16.67; // normalise to ~60fps
+
+    // ── Player movement via joystick ──
+    if (joystick.active) {
+        const dx = joystick.currX - joystick.startX;
+        const dy = joystick.currY - joystick.startY;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 8) {
+            const mx = (dx / dist) * player.speed * dtFactor;
+            const my = (dy / dist) * player.speed * dtFactor;
+            player.x = Math.max(player.r, Math.min(W - player.r, player.x + mx));
+            player.y = Math.max(player.r, Math.min(H - player.r, player.y + my));
+        }
+    }
+
+    // ── Auto-rotate player toward nearest enemy ──
+    const target = nearestEnemy();
+    if (target) {
+        const desiredAngle = Math.atan2(target.y - player.y, target.x - player.x);
+        // Smooth rotation
+        let diff = desiredAngle - player.angle;
+        while (diff > Math.PI)  diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        player.angle += diff * 0.2;
+    }
+
+    // ── Auto-shoot toward nearest enemy ──
+    const now = Date.now();
+    if (now - lastShot > player.fireRate && target) {
+        const aimAngle = Math.atan2(target.y - player.y, target.x - player.x);
+        // Slight spread for visual interest
+        const spread = (Math.random() - 0.5) * 0.08;
+        spells.push({
+            x: player.x, y: player.y,
+            vx: Math.cos(aimAngle + spread) * 9,
+            vy: Math.sin(aimAngle + spread) * 9,
+            life: 1,
+        });
+        lastShot = now;
+    }
+
+    // ── Spawn timer ──
+    spawnTimer += dtCapped;
+    if (spawnTimer >= spawnInterval) {
+        spawnTimer = 0;
+        spawnEnemy();
+        // Extra enemy every 2 levels
+        if (level >= 3 && Math.random() < 0.4) spawnEnemy();
+    }
+
+    // ── Move enemies — collect collisions into arrays ──
+    const deadEnemyIdx  = new Set();
+    const deadSpellIdx  = new Set();
+
+    for (let ei = 0; ei < enemies.length; ei++) {
+        const en = enemies[ei];
+        en.angle += 0.04 * dtFactor; // rotation for drawing
+        const ang = Math.atan2(tower.y - en.y, tower.x - en.x);
+        en.x += Math.cos(ang) * en.speed * dtFactor;
+        en.y += Math.sin(ang) * en.speed * dtFactor;
+
+        // Tower collision
+        if (Math.hypot(en.x - tower.x, en.y - tower.y) < en.r + tower.r) {
+            tower.hp -= (en.type === 'brute' ? 20 : en.type === 'swarm' ? 5 : 10);
+            deadEnemyIdx.add(ei);
+            spawnParticles(en.x, en.y, '#ff3366', 6);
+            updateHUD();
+            if (tower.hp <= 0) { gameOver(); return; }
+        }
+    }
+
+    // ── Move spells & check enemy hits ──
+    for (let si = 0; si < spells.length; si++) {
+        const sp = spells[si];
+        sp.x += sp.vx * dtFactor;
+        sp.y += sp.vy * dtFactor;
+        sp.life -= 0.012 * dtFactor;
+
+        // Off screen or expired
+        if (sp.life <= 0 || sp.x < -20 || sp.x > W+20 || sp.y < -20 || sp.y > H+20) {
+            deadSpellIdx.add(si);
+            continue;
+        }
+
+        for (let ei = 0; ei < enemies.length; ei++) {
+            if (deadEnemyIdx.has(ei)) continue;
+            const en = enemies[ei];
+            if (Math.hypot(sp.x - en.x, sp.y - en.y) < en.r + 5) {
+                en.hp -= player.dmg;
+                deadSpellIdx.add(si);
+                spawnParticles(sp.x, sp.y, en.color, 5);
+                if (en.hp <= 0) {
+                    deadEnemyIdx.add(ei);
+                    spawnParticles(en.x, en.y, en.color, 12);
+                    score += en.pts;
+                    killCount++;
+                    killsSinceLevel++;
+                    updateHUD();
+
+                    // Level up check
+                    if (killsSinceLevel >= killsForNextLevel) {
+                        killsSinceLevel = 0;
+                        killsForNextLevel = Math.floor(killsForNextLevel * 1.3);
+                        level++;
+                        spawnInterval = Math.max(500, spawnInterval - 80);
+                        showUpgrade();
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // Remove dead entities — iterate backwards to preserve indices
+    enemies = enemies.filter((_, i) => !deadEnemyIdx.has(i));
+    spells  = spells.filter((_, i)  => !deadSpellIdx.has(i));
+
+    // ── Particles ──
+    for (const p of particles) {
+        p.x += p.vx * dtFactor;
+        p.y += p.vy * dtFactor;
+        p.vx *= 0.92;
+        p.vy *= 0.92;
+        p.life -= p.decay * dtFactor;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    // ── Twinkle stars ──
+    for (const s of stars) s.twinkle += 0.03 * dtFactor;
+}
+
+// ── Draw ──────────────────────────────────────────────────
+function draw(timestamp) {
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = '#020008';
+    ctx.fillRect(0, 0, W, H);
+
+    // Radial vignette glow from tower
+    const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H) * 0.65);
+    grad.addColorStop(0,   'rgba(60,0,120,.18)');
+    grad.addColorStop(0.5, 'rgba(20,0,50,.10)');
+    grad.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    for (const s of stars) {
+        const bright = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.twinkle));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,180,255,${bright * 0.6})`;
+        ctx.fill();
+    }
+
+    if (gameState === 'start') return;
+
+    // Ground runes — subtle hex grid
+    ctx.strokeStyle = 'rgba(100,0,200,.07)';
+    ctx.lineWidth = 0.5;
+    const hex = 60;
+    for (let gx = 0; gx < W + hex; gx += hex * 1.5) {
+        for (let gy = 0; gy < H + hex; gy += hex * Math.sqrt(3)) {
+            const ox = (Math.floor(gy / (hex * Math.sqrt(3))) % 2) * hex * 0.75;
+            drawHex(gx + ox, gy, hex * 0.5);
+        }
+    }
+
+    // ── Tower ──
+    const towerPulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.002);
+    const hpPct = Math.max(0, tower.hp / tower.maxHp);
+
+    // Tower glow
+    const tGlow = ctx.createRadialGradient(tower.x, tower.y, 0, tower.x, tower.y, tower.r * 3);
+    tGlow.addColorStop(0, `rgba(${Math.round(80*(1-hpPct)+0)},${Math.round(150*hpPct)},${Math.round(255*hpPct)},${ 0.25 + towerPulse * 0.1 })`);
+    tGlow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = tGlow;
+    ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.r * 3, 0, Math.PI * 2); ctx.fill();
+
+    // Tower body
+    ctx.save();
+    ctx.shadowBlur = 18 + towerPulse * 8;
+    ctx.shadowColor = hpPct > 0.5 ? '#00aaff' : '#ff3344';
+    ctx.fillStyle = '#0c0020';
+    ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.r, 0, Math.PI * 2); ctx.fill();
+
+    // Battlements (decorative notches)
+    ctx.strokeStyle = hpPct > 0.5 ? '#0088dd' : '#cc2244';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.r, 0, Math.PI * 2); ctx.stroke();
+
+    // Inner rune glow
+    ctx.strokeStyle = `rgba(0,${Math.round(200*hpPct)},255,${0.3 + towerPulse * 0.2})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(tower.x, tower.y, tower.r * 0.6, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+
+    // ── Enemies ──
+    for (const en of enemies) {
+        ctx.save();
+        ctx.translate(en.x, en.y);
+        ctx.rotate(en.angle);
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = en.color;
+
+        if (en.type === 'brute') {
+            // Spiky brute
+            ctx.fillStyle = en.color;
+            for (let i = 0; i < 6; i++) {
+                const a = (i / 6) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(a) * en.r, Math.sin(a) * en.r);
+                ctx.lineTo(Math.cos(a + 0.3) * en.r * 0.5, Math.sin(a + 0.3) * en.r * 0.5);
+                ctx.closePath(); ctx.fill();
+            }
+        } else if (en.type === 'swarm') {
+            // Diamond swarm
+            ctx.fillStyle = en.color;
+            ctx.beginPath();
+            ctx.moveTo(0, -en.r); ctx.lineTo(en.r, 0);
+            ctx.lineTo(0, en.r);  ctx.lineTo(-en.r, 0);
+            ctx.closePath(); ctx.fill();
+        } else {
+            // Crystal — octagon
+            ctx.fillStyle = en.color + 'cc';
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2;
+                i === 0
+                    ? ctx.moveTo(Math.cos(a) * en.r, Math.sin(a) * en.r)
+                    : ctx.lineTo(Math.cos(a) * en.r, Math.sin(a) * en.r);
+            }
+            ctx.closePath(); ctx.fill();
+            // HP indicator ring
+            if (en.hp < en.maxHp) {
+                const hpF = en.hp / en.maxHp;
+                ctx.strokeStyle = '#ffffff44';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, en.r + 4, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(0, 0, en.r + 4, -Math.PI/2, -Math.PI/2 + Math.PI * 2 * hpF); ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    // ── Spells ──
+    for (const sp of spells) {
+        const alpha = Math.min(1, sp.life * 4);
+        ctx.save();
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = '#00ffcc';
+        ctx.fillStyle = `rgba(100,255,210,${alpha})`;
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2); ctx.fill();
+        // Trail
+        ctx.fillStyle = `rgba(0,255,180,${alpha * 0.3})`;
+        ctx.beginPath(); ctx.arc(sp.x - sp.vx, sp.y - sp.vy, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+    // ── Particles ──
+    for (const p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 6; ctx.shadowColor = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+
+    // ── Player ──
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(player.angle);
+    ctx.shadowBlur = 20; ctx.shadowColor = '#dd00ff';
+    // Mage robe shape
+    ctx.fillStyle = '#dd00ff';
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(-10, 11);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-10, -11);
+    ctx.closePath(); ctx.fill();
+    // Staff glow tip
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 10; ctx.shadowColor = '#ffffff';
+    ctx.beginPath(); ctx.arc(16, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // ── Joystick UI ──
+    if (joystick.active) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(joystick.startX, joystick.startY, 50, 0, Math.PI * 2); ctx.stroke();
+        const dx = joystick.currX - joystick.startX;
+        const dy = joystick.currY - joystick.startY;
+        const dist = Math.hypot(dx, dy);
+        const clampedX = joystick.startX + (dx / Math.max(dist, 50)) * 50;
+        const clampedY = joystick.startY + (dy / Math.max(dist, 50)) * 50;
+        ctx.fillStyle = 'rgba(200,150,255,0.25)';
+        ctx.beginPath(); ctx.arc(clampedX, clampedY, 22, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(200,150,255,0.4)';
+        ctx.beginPath(); ctx.arc(clampedX, clampedY, 22, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Only update game logic when playing
+    if (gameState === 'playing') update(dt || 16);
+}
+
+function drawHex(x, y, r) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 - Math.PI / 6;
+        i === 0
+            ? ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r)
+            : ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    ctx.closePath(); ctx.stroke();
+}
+
+// ── Main loop ─────────────────────────────────────────────
+function loop(timestamp = 0) {
+    draw(timestamp);
+    animID = requestAnimationFrame(loop);
+}
+
+// ── Boot ──────────────────────────────────────────────────
+resize();
+// Draw stars on start screen
+loop();
+</script>
+</body>
+</html>

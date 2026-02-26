@@ -413,8 +413,41 @@ function clearSearch(){
 }
 
 document.getElementById('searchInput').addEventListener('input', doSearch);
+
+/* ── Mobile nav ── */
+document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('mobileNav').classList.toggle('open');
+});
+
+/* ── Dark mode toggle ── */
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('jvds-theme', isDark ? 'light' : 'dark');
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+}
+
 // Focus search on load
 window.addEventListener('DOMContentLoaded',()=>{
+    // Restore theme
+    const saved = localStorage.getItem('jvds-theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = '☀️';
+    }
+    // Scroll reveal
+    const revealObs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                revealObs.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.06 });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
     renderAll(ALL_PROJECTS,'');
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q');

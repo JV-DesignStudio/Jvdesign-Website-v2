@@ -928,7 +928,7 @@
 </footer>
 
 <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
     /* ── Filter logic ── */
     function filterCards(cat, btn) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -957,18 +957,48 @@
         if (countEl) {
             countEl.textContent = cat !== 'all' ? visible + ' project' + (visible !== 1 ? 's' : '') : '';
         }
-
         document.getElementById('empty-state').style.display = visible === 0 ? 'block' : 'none';
     }
 
     /* ── Scroll reveal ── */
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, i) => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
-                // Stagger siblings slightly
-                const siblings = entry.target.parentElement.querySelectorAll('.reveal');
-                let delay = 0;
-                siblings.forEach((el, idx) => {
-                    if (el === entry.target) delay = idx * 60;
-                });
-                setTimeout(() =
+                const siblings = [...entry.target.parentElement.querySelectorAll('.reveal')];
+                const idx = siblings.indexOf(entry.target);
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, Math.min(idx * 60, 400));
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.06 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    /* ── Dark mode toggle ── */
+    function toggleTheme() {
+        const html = document.documentElement;
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.setItem('jvds-theme', isDark ? 'light' : 'dark');
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+    }
+
+    /* ── Mobile nav ── */
+    document.getElementById('navToggle').addEventListener('click', () => {
+        document.getElementById('mobileNav').classList.toggle('open');
+    });
+
+    /* ── Restore theme on load ── */
+    (function() {
+        const saved = localStorage.getItem('jvds-theme');
+        if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            const btn = document.getElementById('themeToggle');
+            if (btn) btn.textContent = '☀️';
+        }
+    })();
+</script>
+</body>
+</html>
