@@ -388,7 +388,7 @@
 
 <!-- ══ HERO — full cover image ══ -->
 <section class="lumo-hero">
-    <img class="hero-cover-img" src="Lumo_Front_Cover_Concept_V001.png" alt="Lumo and the Grumble-Grit cover — purple fox with mossy Grumble-Grit on his back, standing on a hill at golden dusk">
+    <img class="hero-cover-img" src="Lumo Front Cover Concept V001.png" alt="Lumo and the Grumble-Grit cover — purple fox with mossy Grumble-Grit on his back, standing on a hill at golden dusk">
     <div class="hero-overlay"></div>
     <div style="max-width:1100px;margin:0 auto;position:relative;">
         <div class="hero-text-block reveal">
@@ -645,23 +645,69 @@
         <p class="footer-copy">© 2025 JVDesignStudio. All rights reserved.</p>
     </div>
 </footer>
-
 <script>
-    /* Fireflies in CTA */
-    const ff = document.getElementById('fireflies');
-    for (let i = 0; i < 12; i++) {
-        const el = document.createElement('div');
-        const size = 4 + Math.random() * 5;
-        el.className = 'firefly';
-        el.style.cssText = `width:${size}px;height:${size}px;top:${10+Math.random()*80}%;left:${5+Math.random()*90}%;--dur:${6+Math.random()*8}s;--del:${Math.random()*6}s;--tx:${(Math.random()-0.5)*60}px;--ty:${-20-Math.random()*40}px;`;
-        ff.appendChild(el);
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Navigation Toggle
+        const navToggle = document.getElementById('navToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        
+        if (navToggle && mobileNav) {
+            navToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mobileNav.classList.toggle('open');
+            });
+        }
 
-    /* Scroll reveal */
-    const obs = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const siblings = [...entry.target.parentElement.querySelectorAll('.reveal')];
-                const idx = siblings.indexOf(entry.target);
-                setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 300));
-                obs.unobserve(entry.target)
+        // 2. Theme Toggle (Global Access)
+        window.toggleTheme = function() {
+            const body = document.body;
+            const btn = document.getElementById('themeToggle');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                btn.innerText = '🌙';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerText = '☀️';
+            }
+        };
+
+        // 3. Scroll Reveal Logic (Improved)
+        const revealElements = document.querySelectorAll('.reveal');
+        
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px' // Triggers slightly before element enters
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    // Slight delay for the stagger effect
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, 150); 
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        revealElements.forEach(el => observer.observe(el));
+
+        // 4. Atmospheric Fireflies (Container Check)
+        const hero = document.getElementById('hero');
+        if (hero) {
+            for (let i = 0; i < 15; i++) {
+                const fly = document.createElement('div');
+                fly.className = 'firefly';
+                const size = (Math.random() * 4 + 2) + 'px';
+                fly.style.width = size;
+                fly.style.height = size;
+                fly.style.top = (Math.random() * 80 + 10) + '%'; // Keep away from extreme edges
+                fly.style.left = (Math.random() * 90 + 5) + '%';
+                fly.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                fly.style.animationDelay = (Math.random() * 5) + 's';
+                hero.appendChild(fly);
+            }
+        }
+    });
+</script>
