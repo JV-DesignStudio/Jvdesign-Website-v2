@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Arcane Citadel — a dark fantasy roguelite tower defence. Choose your spell, survive the waves, slay the boss. Free to play in your browser.">
+    <title>Arcane Citadel | JVDesignStudio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ══════════════════════════════════════
+           PALETTE & RESET  (matches site)
+        ══════════════════════════════════════ */
+        :root {
+            --beige:    #F0EAD6;
+            --tan:      #D2B48C;
+            --rose:     #BC4749;
+            --rose-dk:  #9b3a3c;
+            --teal:     #70A3A7;
+            --teal-dk:  #4e7d80;
+            --charcoal: #403B33;
+            --void:     #03010f;
+            --void-mid: #0e0028;
+            --arcane:   #9040ee;
+            --arcane-lt:#c880ff;
+            --gold:     #ffd080;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--void);
+            color: var(--beige);
+            overflow-x: hidden;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* ══════════════════════════════════════
+           LOGO ANIMATION  (matches site)
+        ══════════════════════════════════════ */
+        @keyframes logo-shift {
+            0%   { color: var(--tan); }
+            33%  { color: var(--rose); }
+            66%  { color: var(--teal); }
+            100% { color: var(--tan); }
+        }
+        .logo-name { animation: logo-shift 6s infinite alternate ease-in-out; font-weight: 800; }
+
+        /* ══════════════════════════════════════
+           HEADER  (matches stardust_collection)
+        ══════════════════════════════════════ */
+        .site-header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(3,1,15,0.94);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(144,64,238,0.25);
+        }
+        .header-inner {
+            max-width: 1100px; margin: 0 auto;
+            padding: 0 24px; height: 68px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-link {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 1.3rem;
+        }
+        .logo-link img { height: 38px; border-radius: 8px; }
+        .btn-hub {
+            background: var(--rose);
+            color: white; font-weight: 700; font-size: 0.9rem;
+            padding: 9px 20px; border-radius: 10px;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-hub:hover { background: var(--rose-dk); transform: translateY(-1px); }
+
+        /* ══════════════════════════════════════
+           HERO
+        ══════════════════════════════════════ */
+        .page-hero {
+            position: relative;
+            padding: 56px 24px 44px;
+            text-align: center;
+            overflow: hidden;
+        }
+        .starfield {
+            position: absolute; inset: 0; z-index: 0; overflow: hidden;
+        }
+        .star-dot {
+            position: absolute; border-radius: 50%; background: white;
+            animation: twinkle var(--dur, 3s) var(--delay, 0s) infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%,100% { opacity: 0.1; transform: scale(1); }
+            50%      { opacity: 0.8; transform: scale(1.5); }
+        }
+        /* Purple radial glow behind title */
+        .hero-glow {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px; height: 300px;
+            background: radial-gradient(ellipse, rgba(100,0,200,0.2) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+        .hero-content { position: relative; z-index: 1; }
+
+        .hero-tag {
+            display: inline-block;
+            font-family: 'Cinzel', serif;
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--arcane-lt);
+            border: 1px solid rgba(160,80,255,0.35); border-radius: 999px;
+            padding: 5px 16px; margin-bottom: 18px;
+        }
+        .hero-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(2.8rem, 8vw, 5.4rem);
+            font-weight: 900; line-height: 1.05;
+            background: linear-gradient(135deg, #c080ff 0%, #ff60cc 45%, #80c0ff 90%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        .hero-desc {
+            font-size: 1rem; color: rgba(220,190,255,0.65);
+            max-width: 500px; margin: 0 auto 30px;
+            line-height: 1.65;
+        }
+        .hero-badges {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .badge {
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 5px 14px; border-radius: 999px;
+            border: 1px solid rgba(160,80,255,0.3);
+            color: rgba(200,150,255,0.7);
+        }
+
+        /* ══════════════════════════════════════
+           GAME WRAPPER
+        ══════════════════════════════════════ */
+        .game-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 16px 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Info bar above game */
+        .game-info-bar {
+            width: 100%;
+            background: rgba(30,0,60,0.7);
+            border: 1px solid rgba(144,64,238,0.3);
+            border-radius: 14px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            backdrop-filter: blur(8px);
+        }
+        .info-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem; color: rgba(200,160,255,0.65);
+        }
+        .info-item strong {
+            font-family: 'Cinzel', serif; font-size: 0.68rem;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--arcane-lt);
+        }
+        .info-sep { color: rgba(160,80,255,0.25); }
+
+        /* The game iframe */
+        .game-frame-wrap {
+            width: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(144,64,238,0.3);
+            box-shadow: 0 0 60px rgba(100,0,200,0.15), 0 20px 60px rgba(0,0,0,0.5);
+            background: #04010e;
+            position: relative;
+        }
+        .game-frame-wrap iframe {
+            display: block;
+            width: 100%;
+            height: min(85vh, 680px);
+            border: none;
+        }
+
+        /* Controls strip */
+        .controls-strip {
+            width: 100%;
+            display: flex; flex-wrap: wrap;
+            gap: 14px; justify-content: center;
+        }
+        .ctrl-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; color: rgba(200,160,255,0.5);
+        }
+        .ctrl-key {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(160,80,255,0.2);
+            border-radius: 6px; padding: 3px 10px;
+            font-family: 'Cinzel', serif; font-size: 0.68rem;
+            font-weight: 700; letter-spacing: 0.05em;
+            color: rgba(200,160,255,0.75);
+        }
+
+        /* ══════════════════════════════════════
+           GUIDE SECTION
+        ══════════════════════════════════════ */
+        .guide-wrap {
+            max-width: 1000px; margin: 0 auto;
+            padding: 0 16px 72px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .guide-panel {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(144,64,238,0.15);
+            border-radius: 18px;
+            padding: 28px 24px;
+        }
+        .guide-panel h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--arcane-lt);
+            margin-bottom: 18px;
+        }
+
+        /* Spells grid */
+        .spells-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .spell-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 12px;
+            background: rgba(160,80,255,0.05);
+            border: 1px solid rgba(160,80,255,0.1);
+            border-radius: 10px;
+        }
+        .spell-emoji { font-size: 1.4rem; flex-shrink: 0; }
+        .spell-name {
+            font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 0.07em; text-transform: uppercase;
+            color: var(--arcane-lt); margin-bottom: 2px;
+        }
+        .spell-trait { font-size: 0.72rem; color: rgba(190,150,255,0.5); line-height: 1.4; }
+
+        /* Enemies list */
+        .enemy-list { display: flex; flex-direction: column; gap: 8px; }
+        .enemy-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 8px 10px;
+            border-radius: 8px;
+        }
+        .enemy-item:hover { background: rgba(160,80,255,0.05); }
+        .enemy-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+        .enemy-name {
+            font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 0.07em; text-transform: uppercase;
+            color: rgba(210,170,255,0.8); margin-bottom: 2px;
+        }
+        .enemy-tip { font-size: 0.73rem; color: rgba(180,140,255,0.45); line-height: 1.4; }
+
+        /* How to play list */
+        .how-list { display: flex; flex-direction: column; gap: 12px; }
+        .how-item { display: flex; gap: 12px; align-items: flex-start; }
+        .how-num {
+            flex-shrink: 0;
+            width: 24px; height: 24px;
+            background: rgba(144,64,238,0.25);
+            border: 1px solid rgba(160,80,255,0.35);
+            border-radius: 50%;
+            font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700;
+            color: var(--arcane-lt);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .how-text { font-size: 0.82rem; color: rgba(200,170,255,0.6); line-height: 1.55; }
+        .how-text strong { color: rgba(210,180,255,0.85); font-weight: 600; }
+
+        /* Relics teaser */
+        .relics-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .relic-chip {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 12px;
+            background: rgba(160,80,255,0.06);
+            border: 1px solid rgba(160,80,255,0.15);
+            border-radius: 20px;
+            font-size: 0.72rem; color: rgba(190,150,255,0.6);
+        }
+        .relic-chip span:first-child { font-size: 1rem; }
+
+        /* Full-width guide panel */
+        .guide-panel.full { grid-column: 1 / -1; }
+        .boss-info {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px;
+        }
+        .boss-card {
+            background: rgba(200,0,80,0.06);
+            border: 1px solid rgba(220,60,80,0.2);
+            border-radius: 10px; padding: 14px;
+        }
+        .boss-wave {
+            font-family: 'Cinzel', serif; font-size: 0.6rem; font-weight: 700;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: rgba(255,120,120,0.6); margin-bottom: 4px;
+        }
+        .boss-name {
+            font-family: 'Cinzel Decorative', serif; font-size: 0.82rem;
+            color: rgba(255,160,160,0.85); margin-bottom: 4px;
+        }
+        .boss-desc { font-size: 0.72rem; color: rgba(200,150,150,0.5); line-height: 1.4; }
+
+        /* ══════════════════════════════════════
+           FOOTER
+        ══════════════════════════════════════ */
+        footer {
+            border-top: 1px solid rgba(144,64,238,0.15);
+            padding: 26px 24px;
+            text-align: center;
+            font-size: 0.78rem;
+            color: rgba(160,120,200,0.4);
+        }
+        footer a { color: rgba(160,120,200,0.55); }
+        footer a:hover { color: rgba(200,160,255,0.8); }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE
+        ══════════════════════════════════════ */
+        @media (max-width: 680px) {
+            .guide-wrap { grid-template-columns: 1fr; }
+            .guide-panel.full { grid-column: 1; }
+            .spells-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: clamp(2.4rem, 10vw, 3.6rem); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio Logo"
+                 onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <a href="content_hub.html" class="btn-hub">📚 Content Hub</a>
+    </div>
+</header>
+
+<!-- ══════════ HERO ══════════ -->
+<section class="page-hero">
+    <div class="starfield" id="starfield"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+        <span class="hero-tag">✦ Free Browser Game ✦</span>
+        <h1 class="hero-title">Arcane Citadel</h1>
+        <p class="hero-desc">Dark creatures hunger for the Citadel. Choose your element, move through the arena, and survive wave after wave — a boss lurks every five rounds.</p>
+        <div class="hero-badges">
+            <span class="badge">⚡ 6 Elements</span>
+            <span class="badge">💀 7 Enemy Types</span>
+            <span class="badge">🏰 Boss Every Wave 5</span>
+            <span class="badge">✨ 48 Upgrades</span>
+            <span class="badge">🎮 Works on Mobile</span>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="game-wrapper">
+
+    <!-- Info bar -->
+    <div class="game-info-bar">
+        <div class="info-item">
+            <strong>Move</strong>
+            <span class="ctrl-key">WASD</span>
+            <span>or joystick</span>
+        </div>
+        <span class="info-sep">·</span>
+        <div class="info-item">
+            <strong>Aim</strong>
+            <span>Auto — stays on nearest enemy</span>
+        </div>
+        <span class="info-sep">·</span>
+        <div class="info-item">
+            <strong>Upgrade</strong>
+            <span>Between each wave in the shop</span>
+        </div>
+        <span class="info-sep">·</span>
+        <div class="info-item">
+            <strong>Sound</strong>
+            <span>🔊 button top-right inside game</span>
+        </div>
+    </div>
+
+    <!-- Game iframe -->
+    <div class="game-frame-wrap">
+        <iframe
+            src="arcane_citadel.html"
+            title="Arcane Citadel Game"
+            allowfullscreen
+            scrolling="no">
+        </iframe>
+    </div>
+
+    <!-- Controls reminder -->
+    <div class="controls-strip">
+        <div class="ctrl-item">
+            <span class="ctrl-key">W A S D</span>
+            <span>Move</span>
+        </div>
+        <div class="ctrl-item">
+            <span class="ctrl-key">👆 Drag</span>
+            <span>Virtual joystick on mobile</span>
+        </div>
+        <div class="ctrl-item">
+            <span>🏰</span>
+            <span>Protect the Citadel — don't let them reach it</span>
+        </div>
+        <div class="ctrl-item">
+            <span>⚜</span>
+            <span>Spend gold between waves to upgrade</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════ GUIDE ══════════ -->
+<div class="guide-wrap">
+
+    <!-- How to play -->
+    <div class="guide-panel">
+        <h3>⚔ How to Play</h3>
+        <div class="how-list">
+            <div class="how-item">
+                <div class="how-num">1</div>
+                <div class="how-text"><strong>Pick your element</strong> — each has unique mechanics, upgrades, and a different way to kill things.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-num">2</div>
+                <div class="how-text"><strong>Move around the arena</strong> — your mage auto-fires at the nearest enemy. Position matters.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-num">3</div>
+                <div class="how-text"><strong>Enemies march toward the Citadel</strong> — if they reach it, it takes damage. Citadel falls = run over.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-num">4</div>
+                <div class="how-text"><strong>Kill enemies for gold</strong> — spend it between waves on upgrades at the Arcane Stall.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-num">5</div>
+                <div class="how-text"><strong>Every 5th wave is a boss fight</strong> — the boss targets the player directly. Survive or fall.</div>
+            </div>
+            <div class="how-item">
+                <div class="how-num">6</div>
+                <div class="how-text"><strong>Rare relics drop</strong> from enemies — permanent buffs that alter your whole run.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enemies -->
+    <div class="guide-panel">
+        <h3>👻 Enemy Types</h3>
+        <div class="enemy-list">
+            <div class="enemy-item">
+                <span class="enemy-icon">👤</span>
+                <div>
+                    <div class="enemy-name">Shade</div>
+                    <div class="enemy-tip">Fast and numerous — the front line of every assault.</div>
+                </div>
+            </div>
+            <div class="enemy-item">
+                <span class="enemy-icon">🪨</span>
+                <div>
+                    <div class="enemy-name">Golem</div>
+                    <div class="enemy-tip">Slow and tanky. High damage when it reaches the Citadel.</div>
+                </div>
+            </div>
+            <div class="enemy-item">
+                <span class="enemy-icon">👻</span>
+                <div>
+                    <div class="enemy-name">Wraith</div>
+                    <div class="enemy-tip">Phases through the arena — immune to damage while phasing.</div>
+                </div>
+            </div>
+            <div class="enemy-item">
+                <span class="enemy-icon">🗡️</span>
+                <div>
+                    <div class="enemy-name">Hexblade</div>
+                    <div class="enemy-tip">Carries a directional magic shield. Hit it from the back.</div>
+                </div>
+            </div>
+            <div class="enemy-item">
+                <span class="enemy-icon">🌀</span>
+                <div>
+                    <div class="enemy-name">Voidling</div>
+                    <div class="enemy-tip">Splits into two Imps on death — kill it fast.</div>
+                </div>
+            </div>
+            <div class="enemy-item">
+                <span class="enemy-icon">🔮</span>
+                <div>
+                    <div class="enemy-name">Cultist</div>
+                    <div class="enemy-tip">Fires ranged bolts at the Citadel from a distance.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spells -->
+    <div class="guide-panel">
+        <h3>🔮 The Six Elements</h3>
+        <div class="spells-grid">
+            <div class="spell-item">
+                <span class="spell-emoji">⚡</span>
+                <div>
+                    <div class="spell-name">Lightning</div>
+                    <div class="spell-trait">Instant chain strikes. High damage, jumps between enemies.</div>
+                </div>
+            </div>
+            <div class="spell-item">
+                <span class="spell-emoji">🔥</span>
+                <div>
+                    <div class="spell-name">Fire</div>
+                    <div class="spell-trait">Ignites on hit. Burn spreads, scorch pools linger.</div>
+                </div>
+            </div>
+            <div class="spell-item">
+                <span class="spell-emoji">💧</span>
+                <div>
+                    <div class="spell-name">Water</div>
+                    <div class="spell-trait">Piercing bolts that slow and split on kill.</div>
+                </div>
+            </div>
+            <div class="spell-item">
+                <span class="spell-emoji">☠️</span>
+                <div>
+                    <div class="spell-name">Poison</div>
+                    <div class="spell-trait">Miasma clouds that linger and spread infection.</div>
+                </div>
+            </div>
+            <div class="spell-item">
+                <span class="spell-emoji">💨</span>
+                <div>
+                    <div class="spell-name">Wind</div>
+                    <div class="spell-trait">Knockback gusts. Three-way spread, vortex traps.</div>
+                </div>
+            </div>
+            <div class="spell-item">
+                <span class="spell-emoji">❄️</span>
+                <div>
+                    <div class="spell-name">Ice</div>
+                    <div class="spell-trait">Freezes solid. Shatter for double damage.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Relics -->
+    <div class="guide-panel">
+        <h3>✨ Relics</h3>
+        <p style="font-size:0.82rem;color:rgba(190,150,255,0.55);line-height:1.6;margin-bottom:14px;">
+            Rare relics drop randomly from enemies. Each one permanently changes your run — you can hold up to 8 at once.
+        </p>
+        <div class="relics-grid">
+            <div class="relic-chip"><span>🩸</span>Voidheart — triple damage every 5th kill</div>
+            <div class="relic-chip"><span>👁️</span>Twin Gaze — 20% chance to fire twice</div>
+            <div class="relic-chip"><span>💀</span>Death Chill — kills slow nearby enemies</div>
+            <div class="relic-chip"><span>⚡</span>Wrath Brand — +50% damage below 30% HP</div>
+            <div class="relic-chip"><span>🏃</span>Bloodrush — speed burst on every kill</div>
+            <div class="relic-chip"><span>🛡️</span>Ward Sigil — reduces Citadel damage taken</div>
+        </div>
+    </div>
+
+    <!-- Boss waves — full width -->
+    <div class="guide-panel full">
+        <h3>💀 Boss Waves — Every Round 5</h3>
+        <div class="boss-info">
+            <div class="boss-card">
+                <div class="boss-wave">Wave 5</div>
+                <div class="boss-name">Malgrath</div>
+                <div class="boss-desc">The Hollow Warden. Summons shades and charges the player.</div>
+            </div>
+            <div class="boss-card">
+                <div class="boss-wave">Wave 10</div>
+                <div class="boss-name">Severeth</div>
+                <div class="boss-desc">The Plague Duchess. Spreads poison fields across the arena.</div>
+            </div>
+            <div class="boss-card">
+                <div class="boss-wave">Wave 15</div>
+                <div class="boss-name">Drakthorn</div>
+                <div class="boss-desc">The Ashen Colossus. Walls of fire and golem bodyguards.</div>
+            </div>
+            <div class="boss-card">
+                <div class="boss-wave">Wave 20</div>
+                <div class="boss-name">Xal'vareth</div>
+                <div class="boss-desc">The Void Sovereign. Phases in and out, summons voidlings.</div>
+            </div>
+        </div>
+        <p style="font-size:0.75rem;color:rgba(200,120,120,0.45);margin-top:14px;letter-spacing:0.03em;">
+            ⚠ All bosses enter an enraged phase at 50% HP — faster, harder-hitting, and more dangerous.
+        </p>
+    </div>
+
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+    <p>© 2025 JVDesignStudio &nbsp;·&nbsp; <a href="index.html">Home</a> &nbsp;·&nbsp; <a href="content_hub.html">Content Hub</a></p>
+</footer>
+
+<script>
+    // Star field in hero
+    (function(){
+        const sf = document.getElementById('starfield');
+        for(let i = 0; i < 80; i++){
+            const s = document.createElement('div');
+            s.className = 'star-dot';
+            const size = Math.random() * 2.2 + 0.4;
+            s.style.cssText = `
+                width:${size}px; height:${size}px;
+                left:${Math.random()*100}%;
+                top:${Math.random()*100}%;
+                --dur:${(Math.random()*3+1.5).toFixed(1)}s;
+                --delay:${(Math.random()*4).toFixed(1)}s;
+            `;
+            sf.appendChild(s);
+        }
+    })();
+</script>
+
+</body>
+</html>

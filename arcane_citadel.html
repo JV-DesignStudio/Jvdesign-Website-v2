@@ -99,7 +99,7 @@
         #lb-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;z-index:199;}
         #lb-overlay.show{display:block;}
         .lb-title{font-family:'Cinzel Decorative',serif;font-size:1.1rem;color:#d0b0ff;text-align:center;margin-bottom:4px;}
-        .lb-tabs{display:flex;gap:6px;margin-bottom:14px;justify-content:center;}
+        
         .lb-tab{background:rgba(60,0,120,.25);border:1px solid rgba(160,80,255,.22);color:rgba(180,140,255,.6);font-family:'Cinzel',serif;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:7px 18px;border-radius:6px;cursor:pointer;transition:all .18s;}
         .lb-tab.active{background:rgba(120,0,255,.4);border-color:rgba(200,120,255,.7);color:#d8b8ff;}
         .lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:5px;background:rgba(255,255,255,.03);}
@@ -161,11 +161,7 @@
 <div id="lb-overlay" onclick="closeLB()"></div>
 <div id="lb-panel">
     <button class="lb-close" onclick="closeLB()">✕</button>
-    <div class="lb-title">🏆 Leaderboard</div>
-    <div class="lb-tabs">
-        <button class="lb-tab active" onclick="switchLBTab('global',this)">🌍 Global</button>
-        <button class="lb-tab" onclick="switchLBTab('personal',this)">👤 Mine</button>
-    </div>
+    <div class="lb-title">🏆 Best Runs</div>
     <div id="lb-rows"></div>
 </div>
 
@@ -223,17 +219,10 @@
         <div class="go-stat"><div class="go-stat-val" id="go-kills">0</div><div class="go-stat-lbl">Slain</div></div>
         <div class="go-stat"><div class="go-stat-val" id="go-spell">⚡</div><div class="go-stat-lbl">Element</div></div>
     </div>
-    <div id="go-relics" style="margin-bottom:12px;min-height:28px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;"></div>
-    <!-- Name entry for leaderboard -->
-    <div style="display:flex;gap:8px;justify-content:center;align-items:center;margin-bottom:14px;">
-        <input id="go-name-input" type="text" maxlength="16" placeholder="Your mage name…"
-            style="background:rgba(60,0,120,.35);border:1px solid rgba(160,80,255,.4);color:#d0b0ff;font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.06em;padding:8px 14px;border-radius:7px;outline:none;width:160px;"
-            onkeydown="if(event.key==='Enter')submitScore()">
-        <button id="go-save-btn" class="rune-btn" style="padding:8px 16px;font-size:.72rem;" onclick="submitScore()">⚔ Save Score</button>
-    </div>
-    <div id="go-rank-msg" style="font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,160,80,.7);min-height:18px;margin-bottom:10px;text-align:center;"></div>
+    <div id="go-relics" style="margin-bottom:10px;min-height:28px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;"></div>
+    <div id="go-rank-msg" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(200,160,80,.85);min-height:20px;margin-bottom:14px;text-align:center;"></div>
     <button class="rune-btn" onclick="restartGame()" style="margin-bottom:10px">↺ Try Again</button>
-    <button class="rune-btn" style="background:rgba(60,0,120,.4);margin-top:4px" onclick="openLB()">🏆 View Scores</button>
+    <button class="rune-btn" style="background:rgba(60,0,120,.4);margin-top:4px" onclick="openLB()">🏆 Best Runs</button>
 </div>
 
 <!-- WAVE COMPLETE + SHOP -->
@@ -396,68 +385,68 @@ function renderRelicBar(){
 }
 
 const UNIVERSAL_UPGRADES = [
-    {id:'speed',    icon:'🌙', name:'Shadowstep',      desc:'Move speed +1 (feel the dark wind)',         baseCost:3, maxOwned:4, stat:'speed',        inc:1},
+    {id:'speed',    icon:'🌙', name:'Shadowstep',      desc:'Move speed +1 (feel the dark wind)',         baseCost:3, maxOwned:6, stat:'speed',        inc:1},
     {id:'hp',       icon:'🕯️',name:'Hearthstone',      desc:'Restore 40 Citadel HP',                     baseCost:4, maxOwned:99,stat:'_heal',         inc:40},
-    {id:'hpmax',    icon:'🏰', name:'Fortify Walls',   desc:'Max Citadel HP +20',                        baseCost:5, maxOwned:4, stat:'_maxhp',        inc:20},
-    {id:'range',    icon:'🔭', name:'Scrying Eye',     desc:'Spell range +25%',                          baseCost:3, maxOwned:4, stat:'rangeBonus',    inc:0.25},
-    {id:'firerate', icon:'⏳', name:'Haste Rune',      desc:'Casting speed +20%',                        baseCost:4, maxOwned:5, stat:'fireRateBonus', inc:0.20},
+    {id:'hpmax',    icon:'🏰', name:'Fortify Walls',   desc:'Max Citadel HP +20',                        baseCost:5, maxOwned:6, stat:'_maxhp',        inc:20},
+    {id:'range',    icon:'🔭', name:'Scrying Eye',     desc:'Spell range +25%',                          baseCost:3, maxOwned:6, stat:'rangeBonus',    inc:0.25},
+    {id:'firerate', icon:'⏳', name:'Haste Rune',      desc:'Casting speed +20%',                        baseCost:4, maxOwned:7, stat:'fireRateBonus', inc:0.20},
     {id:'multitgt', icon:'👁️', name:'Twin Sight',      desc:'Cast at 2 targets simultaneously',          baseCost:8, maxOwned:1, stat:'multiTarget',   inc:1},
-    {id:'pierce',   icon:'🗡️', name:'Soul Piercer',    desc:'Spells pass through +1 extra foe',          baseCost:7, maxOwned:3, stat:'pierceCount',   inc:1},
-    {id:'lifesteal',icon:'🩸', name:'Blood Tithe',     desc:'Each kill mends Citadel by 3',              baseCost:6, maxOwned:1, stat:'lifeSteal',     inc:1},
-    {id:'goldbonus',icon:'💀', name:'Grave Robber',    desc:'Fallen foes drop +1 gold shard',            baseCost:5, maxOwned:3, stat:'coinBonus',     inc:1},
-    {id:'dmgflat',  icon:'📜', name:'Dark Inscription',desc:'All spell damage +1',                       baseCost:5, maxOwned:5, stat:'dmg',           inc:1},
-    {id:'wardstone',icon:'🛡️', name:'Ward Stone',      desc:'Reduce damage taken by Citadel 10%',        baseCost:6, maxOwned:3, stat:'wardBonus',     inc:0.1},
-    {id:'soulharvest',icon:'✨',name:'Soul Harvest',   desc:'Every 4th kill restores +8 HP to Citadel',  baseCost:7, maxOwned:1, stat:'soulHarvest',   inc:1},
+    {id:'pierce',   icon:'🗡️', name:'Soul Piercer',    desc:'Spells pass through +1 extra foe',          baseCost:7, maxOwned:5, stat:'pierceCount',   inc:1},
+    {id:'lifesteal',icon:'🩸', name:'Blood Tithe',     desc:'Each kill mends Citadel by 3',              baseCost:6, maxOwned:3, stat:'lifeSteal',     inc:3},
+    {id:'goldbonus',icon:'💀', name:'Grave Robber',    desc:'Fallen foes drop +1 gold shard',            baseCost:5, maxOwned:5, stat:'coinBonus',     inc:1},
+    {id:'dmgflat',  icon:'📜', name:'Dark Inscription',desc:'All spell damage +1',                       baseCost:5, maxOwned:99,stat:'dmg',           inc:1},
+    {id:'wardstone',icon:'🛡️', name:'Ward Stone',      desc:'Reduce damage taken by Citadel 10%',        baseCost:6, maxOwned:5, stat:'wardBonus',     inc:0.1},
+    {id:'soulharvest',icon:'✨',name:'Soul Harvest',   desc:'Every 4th kill restores +8 HP to Citadel',  baseCost:7, maxOwned:3, stat:'soulHarvest',   inc:1},
 ];
 
 const ELEMENT_UPGRADES = {
     lightning:[
-        {id:'chain',      icon:'⛓️', name:'Arcane Chain',    desc:'Lightning jumps to +1 more foe',        baseCost:5, maxOwned:4, stat:'chainCount',   inc:1},
-        {id:'voltdmg',    icon:'☄️', name:'Thunderheart',    desc:'Lightning strike damage +2',             baseCost:4, maxOwned:5, stat:'dmg',          inc:2},
+        {id:'chain',      icon:'⛓️', name:'Arcane Chain',    desc:'Lightning jumps to +1 more foe',        baseCost:5, maxOwned:6, stat:'chainCount',   inc:1},
+        {id:'voltdmg',    icon:'☄️', name:'Thunderheart',    desc:'Lightning strike damage +2',             baseCost:4, maxOwned:99,stat:'dmg',          inc:2},
         {id:'rapidchain', icon:'🌀', name:'Storm\'s Hunger', desc:'Chain strikes 40% faster',               baseCost:6, maxOwned:1, stat:'rapidChain',   inc:1},
         {id:'aoe',        icon:'💥', name:'Runic Detonation',desc:'Each hit erupts in arcane shockwave',    baseCost:7, maxOwned:1, stat:'aoeBlast',     inc:1},
-        {id:'voltrange',  icon:'🌩️',name:'Stormcaller\'s Eye',desc:'Lightning range +40%',                 baseCost:5, maxOwned:3, stat:'rangeBonus',   inc:0.4},
-        {id:'voltspd',    icon:'⚡', name:'Arc Reflex',      desc:'Cast speed +25%',                        baseCost:4, maxOwned:4, stat:'fireRateBonus',inc:0.25},
+        {id:'voltrange',  icon:'🌩️',name:'Stormcaller\'s Eye',desc:'Lightning range +40%',                 baseCost:5, maxOwned:6, stat:'rangeBonus',   inc:0.4},
+        {id:'voltspd',    icon:'⚡', name:'Arc Reflex',      desc:'Cast speed +25%',                        baseCost:4, maxOwned:6, stat:'fireRateBonus',inc:0.25},
     ],
     fire:[
-        {id:'burnDur',    icon:'🕯️',name:'Everflame',        desc:'Witch-fire burns 50% longer',           baseCost:4, maxOwned:4, stat:'burnDuration', inc:0.5},
-        {id:'burnDmg',    icon:'🌋', name:'Hellscorch',       desc:'Burn devours +1 HP per tick',           baseCost:5, maxOwned:4, stat:'burnDmg',      inc:1},
+        {id:'burnDur',    icon:'🕯️',name:'Everflame',        desc:'Witch-fire burns 50% longer',           baseCost:4, maxOwned:6, stat:'burnDuration', inc:0.5},
+        {id:'burnDmg',    icon:'🌋', name:'Hellscorch',       desc:'Burn devours +1 HP per tick',           baseCost:5, maxOwned:99,stat:'burnDmg',      inc:1},
         {id:'burnSpread', icon:'🔥', name:'Funeral Pyre',     desc:'Flames leap to nearby demons',          baseCost:7, maxOwned:1, stat:'burnSpread',   inc:1},
-        {id:'fireDmg',    icon:'💣', name:'Cinder Fist',      desc:'Fireball impact +2 damage',             baseCost:4, maxOwned:5, stat:'dmg',          inc:2},
+        {id:'fireDmg',    icon:'💣', name:'Cinder Fist',      desc:'Fireball impact +2 damage',             baseCost:4, maxOwned:99,stat:'dmg',          inc:2},
         {id:'firePulse',  icon:'🌑', name:'Dark Ember',       desc:'Fireballs leave scorched ground',        baseCost:6, maxOwned:1, stat:'firePool',     inc:1},
-        {id:'fireRate',   icon:'🐉', name:'Dragon\'s Pace',   desc:'Fireball cast rate +20%',               baseCost:5, maxOwned:3, stat:'fireRateBonus',inc:0.2},
+        {id:'fireRate',   icon:'🐉', name:'Dragon\'s Pace',   desc:'Fireball cast rate +20%',               baseCost:5, maxOwned:6, stat:'fireRateBonus',inc:0.2},
     ],
     water:[
-        {id:'piercePlus', icon:'🌊', name:'Riptide',          desc:'Current pierces +2 more foes',          baseCost:4, maxOwned:3, stat:'pierceCount',  inc:2},
+        {id:'piercePlus', icon:'🌊', name:'Riptide',          desc:'Current pierces +2 more foes',          baseCost:4, maxOwned:6, stat:'pierceCount',  inc:2},
         {id:'waterSlice', icon:'🧊', name:'Drowning Pull',    desc:'Soaked foes move at 40% speed',         baseCost:5, maxOwned:1, stat:'slowOnHit',    inc:1},
         {id:'waterSplit', icon:'💧', name:'Tidewraith Fork',  desc:'Bolt splits into two on kill',           baseCost:7, maxOwned:1, stat:'waterSplit',   inc:1},
-        {id:'waterDmg',   icon:'⚓', name:'Abyssal Weight',   desc:'Bolt crushing force +2',                baseCost:4, maxOwned:5, stat:'dmg',          inc:2},
-        {id:'waterRange', icon:'🐚', name:'Ocean\'s Reach',   desc:'Bolt range +35%',                       baseCost:4, maxOwned:3, stat:'rangeBonus',   inc:0.35},
-        {id:'waterSpd',   icon:'🌀', name:'Torrent Rush',     desc:'Cast speed +25%',                        baseCost:4, maxOwned:4, stat:'fireRateBonus',inc:0.25},
+        {id:'waterDmg',   icon:'⚓', name:'Abyssal Weight',   desc:'Bolt crushing force +2',                baseCost:4, maxOwned:99,stat:'dmg',          inc:2},
+        {id:'waterRange', icon:'🐚', name:'Ocean\'s Reach',   desc:'Bolt range +35%',                       baseCost:4, maxOwned:6, stat:'rangeBonus',   inc:0.35},
+        {id:'waterSpd',   icon:'🌀', name:'Torrent Rush',     desc:'Cast speed +25%',                        baseCost:4, maxOwned:6, stat:'fireRateBonus',inc:0.25},
     ],
     poison:[
-        {id:'cloudSize',  icon:'🌫️',name:'Plaguewind',        desc:'Miasma cloud spreads 30% wider',        baseCost:4, maxOwned:4, stat:'cloudRadius',  inc:0.3},
-        {id:'poisonDmg',  icon:'🐍', name:'Serpent\'s Venom', desc:'Poison ravages +1 HP per tick',         baseCost:5, maxOwned:4, stat:'poisonDmg',    inc:1},
+        {id:'cloudSize',  icon:'🌫️',name:'Plaguewind',        desc:'Miasma cloud spreads 30% wider',        baseCost:4, maxOwned:6, stat:'cloudRadius',  inc:0.3},
+        {id:'poisonDmg',  icon:'🐍', name:'Serpent\'s Venom', desc:'Poison ravages +1 HP per tick',         baseCost:5, maxOwned:99,stat:'poisonDmg',    inc:1},
         {id:'contagion',  icon:'🕷️',name:'The Spreading Rot', desc:'Infection passes between foes',         baseCost:7, maxOwned:1, stat:'poisonSpread', inc:1},
         {id:'acidBurst',  icon:'💀', name:'Necrotic Rupture',  desc:'Clouds burst when they expire',         baseCost:6, maxOwned:1, stat:'acidBurst',    inc:1},
-        {id:'poisonRate', icon:'🍄', name:'Spore Haste',       desc:'Cast speed +25%',                       baseCost:4, maxOwned:4, stat:'fireRateBonus',inc:0.25},
-        {id:'poisonDur',  icon:'⚗️', name:'Alchemist\'s Reserve',desc:'Poison lasts 50% longer',            baseCost:5, maxOwned:3, stat:'poisonDur',    inc:0.5},
+        {id:'poisonRate', icon:'🍄', name:'Spore Haste',       desc:'Cast speed +25%',                       baseCost:4, maxOwned:6, stat:'fireRateBonus',inc:0.25},
+        {id:'poisonDur',  icon:'⚗️', name:'Alchemist\'s Reserve',desc:'Poison lasts 50% longer',            baseCost:5, maxOwned:6, stat:'poisonDur',    inc:0.5},
     ],
     wind:[
-        {id:'pushForce',  icon:'🌪️',name:'Galeforce Wrath',   desc:'Gust hurls foes 50% further',           baseCost:4, maxOwned:4, stat:'pushForce',    inc:0.5},
-        {id:'windDmg',    icon:'🪶', name:'Razorblade Wind',   desc:'Gust tears for +1 damage',              baseCost:3, maxOwned:6, stat:'dmg',          inc:1},
-        {id:'windRate',   icon:'💨', name:'Zephyr\'s Gift',    desc:'Cast speed +30%',                       baseCost:5, maxOwned:4, stat:'fireRateBonus',inc:0.30},
+        {id:'pushForce',  icon:'🌪️',name:'Galeforce Wrath',   desc:'Gust hurls foes 50% further',           baseCost:4, maxOwned:6, stat:'pushForce',    inc:0.5},
+        {id:'windDmg',    icon:'🪶', name:'Razorblade Wind',   desc:'Gust tears for +1 damage',              baseCost:3, maxOwned:99,stat:'dmg',          inc:1},
+        {id:'windRate',   icon:'💨', name:'Zephyr\'s Gift',    desc:'Cast speed +30%',                       baseCost:5, maxOwned:6, stat:'fireRateBonus',inc:0.30},
         {id:'windCyclone',icon:'🌀', name:'Vortex Prison',     desc:'Gusts trap foes in spinning cyclones',  baseCost:8, maxOwned:1, stat:'cyclone',      inc:1},
-        {id:'windRange',  icon:'🦅', name:'Skyward Reach',     desc:'Gust range +40%',                       baseCost:4, maxOwned:3, stat:'rangeBonus',   inc:0.4},
+        {id:'windRange',  icon:'🦅', name:'Skyward Reach',     desc:'Gust range +40%',                       baseCost:4, maxOwned:6, stat:'rangeBonus',   inc:0.4},
         {id:'windTriple', icon:'🔱', name:'Three Winds',       desc:'Fire in a 3-way spread',                baseCost:8, maxOwned:1, stat:'windTriple',   inc:1},
     ],
     ice:[
-        {id:'freezeDur',  icon:'🧊', name:'Permafrost Sigil',  desc:'Foes stay frozen 40% longer',          baseCost:4, maxOwned:4, stat:'freezeDuration',inc:0.4},
+        {id:'freezeDur',  icon:'🧊', name:'Permafrost Sigil',  desc:'Foes stay frozen 40% longer',          baseCost:4, maxOwned:6, stat:'freezeDuration',inc:0.4},
         {id:'shatter',    icon:'💎', name:'Crystalline Curse', desc:'Frozen foes shatter for 2× damage',     baseCost:6, maxOwned:1, stat:'shatterBonus', inc:1},
         {id:'frozenAoe',  icon:'❄️', name:'Glacial Nova',      desc:'Frozen death explodes outward',         baseCost:7, maxOwned:1, stat:'iceNova',      inc:1},
-        {id:'iceDmg',     icon:'🌨️',name:'Winter\'s Cruelty', desc:'Shard pierces for +2 damage',           baseCost:4, maxOwned:5, stat:'dmg',          inc:2},
-        {id:'iceRange',   icon:'🏔️',name:'Mountain\'s Reach', desc:'Shard range +35%',                      baseCost:4, maxOwned:3, stat:'rangeBonus',   inc:0.35},
-        {id:'iceRate',    icon:'⛄', name:'Blizzard Tempo',    desc:'Cast speed +25%',                       baseCost:4, maxOwned:4, stat:'fireRateBonus',inc:0.25},
+        {id:'iceDmg',     icon:'🌨️',name:'Winter\'s Cruelty', desc:'Shard pierces for +2 damage',           baseCost:4, maxOwned:99,stat:'dmg',          inc:2},
+        {id:'iceRange',   icon:'🏔️',name:'Mountain\'s Reach', desc:'Shard range +35%',                      baseCost:4, maxOwned:6, stat:'rangeBonus',   inc:0.35},
+        {id:'iceRate',    icon:'⛄', name:'Blizzard Tempo',    desc:'Cast speed +25%',                       baseCost:4, maxOwned:6, stat:'fireRateBonus',inc:0.25},
     ],
 };
 
@@ -570,7 +559,6 @@ function updatePlayerHpBar(){
 }
 let enemies=[],projectiles=[],arcs=[],particles=[],poisonClouds=[],scorchPools=[],vortexZones=[],stars=[];
 let lastShot=0,animID=null,shakeAmt=0;
-let lbTab='global';
 
 const keys={};
 window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;});
@@ -579,99 +567,49 @@ let joystick={active:false,startX:0,startY:0,currX:0,currY:0};
 let shopOwned={};
 
 // ══════════════════════════════════════════════════════════
-// LEADERBOARD (uses window.storage for global, localStorage for personal)
+// LEADERBOARD — localStorage, auto-saves on game over
 // ══════════════════════════════════════════════════════════
-let pendingScoreEntry = null; // holds score data until name submitted
-
-async function saveScore(scoreVal, waveVal, spellName, playerName){
-    const name = (playerName||'Anonymous Mage').trim().slice(0,16) || 'Anonymous Mage';
-    const entry = {score:scoreVal, wave:waveVal, spell:spellName, name, date:Date.now()};
-    let personalRank = null;
-    // Personal
+function saveScore(scoreVal, waveVal, spellName){
+    const entry={score:scoreVal, wave:waveVal, spell:spellName, date:Date.now()};
+    let rank=null;
     try{
-        const raw = localStorage.getItem('ac_scores');
-        const arr = raw ? JSON.parse(raw) : [];
+        const arr=JSON.parse(localStorage.getItem('ac_scores')||'[]');
         arr.push(entry);
         arr.sort((a,b)=>b.score-a.score);
-        personalRank = arr.findIndex(e=>e===arr.find(x=>x.date===entry.date))+1;
-        localStorage.setItem('ac_scores', JSON.stringify(arr.slice(0,20)));
+        rank=arr.findIndex(e=>e.date===entry.date)+1;
+        localStorage.setItem('ac_scores',JSON.stringify(arr.slice(0,20)));
     }catch(e){}
-    // Global
-    let globalRank = null;
-    try{
-        const gRaw = await window.storage.get('ac_global');
-        const gArr = gRaw ? JSON.parse(gRaw.value) : [];
-        gArr.push(entry);
-        gArr.sort((a,b)=>b.score-a.score);
-        globalRank = gArr.findIndex(x=>x.date===entry.date)+1;
-        await window.storage.set('ac_global', JSON.stringify(gArr.slice(0,20)), true);
-    }catch(e){}
-    return {personalRank, globalRank};
+    return rank;
 }
 
-async function submitScore(){
-    const input = document.getElementById('go-name-input');
-    const msg = document.getElementById('go-rank-msg');
-    const name = input ? input.value.trim() : '';
-    if(!name){if(input)input.focus();return;}
-    if(msg) msg.textContent = 'Saving…';
-    const sp = chosenSpell ? chosenSpell.emoji+' '+chosenSpell.name : '?';
-    const result = await saveScore(score, wave, sp, name);
-    SFX.uiClick();
-    if(msg){
-        const {personalRank:pr, globalRank:gr} = result||{};
-        const parts = [];
-        if(pr && pr<=10) parts.push(`Personal #${pr}`);
-        if(gr && gr<=10) parts.push(`Global #${gr} 🏆`);
-        msg.textContent = parts.length ? '✨ '+parts.join(' · ') : 'Score saved!';
-        msg.style.color = gr && gr<=3 ? 'rgba(255,200,80,.9)' : 'rgba(160,255,120,.7)';
-    }
-    if(input) input.disabled = true;
-    const btn = input?.nextElementSibling;
-    if(btn) btn.disabled = true;
-}
-
-async function loadLB(tab){
+function loadLB(){
     const el=document.getElementById('lb-rows');
-    el.innerHTML='<div class="lb-empty">Loading…</div>';
+    if(!el)return;
     let arr=[];
-    if(tab==='global'){
-        try{
-            const r=await window.storage.get('ac_global');
-            arr=r?JSON.parse(r.value):[];
-        }catch(e){}
-    }else{
-        try{
-            const r=localStorage.getItem('ac_scores');
-            arr=r?JSON.parse(r):[];
-        }catch(e){}
+    try{ arr=JSON.parse(localStorage.getItem('ac_scores')||'[]'); }catch(e){}
+    if(!arr.length){
+        el.innerHTML='<div class="lb-empty">No runs yet — go survive some waves!</div>';
+        return;
     }
-    if(!arr.length){el.innerHTML='<div class="lb-empty">No scores yet — be the first!</div>';return;}
     const medals=['🥇','🥈','🥉'];
-    const fmtDate=ts=>{const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});};
+    const fmt=ts=>{const d=new Date(ts);return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});};
     el.innerHTML=arr.slice(0,10).map((e,i)=>`
         <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
             <div class="lb-rank">${medals[i]||'#'+(i+1)}</div>
-            <div class="lb-name">${e.name||'Mage'} ${e.spell?`<span style="opacity:.5">${e.spell}</span>`:''}</div>
+            <div class="lb-name">${e.spell||'?'}</div>
             <div class="lb-score">${Number(e.score).toLocaleString()}</div>
-            <div class="lb-meta">W${e.wave}${e.date?` · ${fmtDate(e.date)}`:''}</div>
+            <div class="lb-meta">W${e.wave}${e.date?' · '+fmt(e.date):''}</div>
         </div>`).join('');
 }
 
 function openLB(){
     document.getElementById('lb-overlay').classList.add('show');
     document.getElementById('lb-panel').classList.add('show');
-    loadLB(lbTab);
+    loadLB();
 }
 function closeLB(){
     document.getElementById('lb-overlay').classList.remove('show');
     document.getElementById('lb-panel').classList.remove('show');
-}
-function switchLBTab(tab,btn){
-    lbTab=tab;
-    document.querySelectorAll('.lb-tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    loadLB(tab);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1559,6 +1497,20 @@ function update(dt){
         en.x+=en.vx*dtF;
         en.y+=en.vy*dtF;
 
+        // Hard cap on velocity — prevents knockback sending enemies off screen
+        const maxSpd=22;
+        if(Math.abs(en.vx)>maxSpd) en.vx=Math.sign(en.vx)*maxSpd;
+        if(Math.abs(en.vy)>maxSpd) en.vy=Math.sign(en.vy)*maxSpd;
+        // Soft boundary — enemies that go off-screen take damage and bounce back
+        const margin=en.r;
+        if(en.x<-margin||en.x>W+margin||en.y<-margin||en.y>H+margin){
+            en.hp-=en.maxHp*0.12; // 12% max HP damage for leaving arena
+            en.x=Math.max(margin,Math.min(W-margin,en.x));
+            en.y=Math.max(margin,Math.min(H-margin,en.y));
+            en.vx*=-0.4; en.vy*=-0.4;
+            if(en.hp<=0) killEnemy(en);
+        }
+
         // Poison spread
         if(chosenSpell.id==='poison'&&player.poisonSpread&&en.poisonTimer>0){
             for(const e2 of enemies){
@@ -2373,23 +2325,21 @@ function gameOver(){
     document.getElementById('go-wave').textContent=wave;
     document.getElementById('go-kills').textContent=killCount;
     document.getElementById('go-spell').textContent=chosenSpell?chosenSpell.emoji:'?';
-    const nameInput=document.getElementById('go-name-input');
-    if(nameInput){
-        nameInput.value=localStorage.getItem('ac_last_name')||'';
-        nameInput.disabled=false;
-        nameInput.onchange=()=>localStorage.setItem('ac_last_name',nameInput.value.trim());
-    }
-    const saveBtn=document.getElementById('go-save-btn');
-    if(saveBtn) saveBtn.disabled=false;
+    // Auto-save
+    const sp=chosenSpell?chosenSpell.emoji+' '+chosenSpell.name:'?';
+    const rank=saveScore(score,wave,sp);
     const msg=document.getElementById('go-rank-msg');
-    if(msg) msg.textContent='';
+    if(msg){
+        if(rank===1) msg.textContent='👑 New personal best!';
+        else if(rank&&rank<=3) msg.textContent=`🏆 #${rank} on your board!`;
+        else if(rank&&rank<=10) msg.textContent=`#${rank} on your board`;
+        else msg.textContent='';
+    }
     const relicEl=document.getElementById('go-relics');
     if(relicEl){
-        if(activeRelics.length){
-            relicEl.innerHTML=activeRelics.map(r=>`<span title="${r.name}: ${r.desc}" style="font-size:1.4rem;cursor:help">${r.icon}</span>`).join(' ');
-        }else{
-            relicEl.innerHTML='<span style="color:rgba(180,140,255,.3);font-size:.7rem;letter-spacing:.08em">No relics found</span>';
-        }
+        relicEl.innerHTML=activeRelics.length
+            ? activeRelics.map(r=>`<span title="${r.name}: ${r.desc}" style="font-size:1.4rem;cursor:help">${r.icon}</span>`).join(' ')
+            : '<span style="color:rgba(180,140,255,.3);font-size:.7rem;letter-spacing:.08em">No relics found</span>';
     }
     document.getElementById('screen-gameover').classList.remove('hidden');
 }
