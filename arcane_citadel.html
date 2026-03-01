@@ -100,8 +100,6 @@
         #lb-overlay.show{display:block;}
         .lb-title{font-family:'Cinzel Decorative',serif;font-size:1.1rem;color:#d0b0ff;text-align:center;margin-bottom:4px;}
         
-        .lb-tab{background:rgba(60,0,120,.25);border:1px solid rgba(160,80,255,.22);color:rgba(180,140,255,.6);font-family:'Cinzel',serif;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:7px 18px;border-radius:6px;cursor:pointer;transition:all .18s;}
-        .lb-tab.active{background:rgba(120,0,255,.4);border-color:rgba(200,120,255,.7);color:#d8b8ff;}
         .lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:5px;background:rgba(255,255,255,.03);}
         .lb-row.top1{background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.2);}
         .lb-row.top2{background:rgba(180,180,180,.06);border:1px solid rgba(180,180,180,.15);}
@@ -754,7 +752,12 @@ function getBossDef(wave){
 
 function isBossWave(w){ return w>0 && w%5===0; }
 
-function calcWaveSize(w){ return isBossWave(w)?1:8+w*4; }
+function calcWaveSize(w){ 
+    if(isBossWave(w)) return 1;
+    // Soften the wave immediately after a boss fight
+    const postBoss = w>1 && isBossWave(w-1);
+    return postBoss ? Math.max(8, 8+w*4-8) : 8+w*4;
+}
 
 function spawnWaveEnemies(){
     const count=calcWaveSize(wave);
@@ -869,7 +872,7 @@ function spawnEnemy(){
         type='golem'; hp=wave*5; speed=0.3+wave*0.06; r=26+Math.random()*4; color='#887766'; pts=300; coinDrop=3;
     } else if(wave>=2 && roll<0.6){
         // IMP — tiny cackling demon, fast swarm
-        type='imp'; hp=1; speed=1.1+wave*0.18; r=6; color='#ff8800'; pts=60; coinDrop=1;
+        type='imp'; hp=1; speed=Math.min(1.1+wave*0.10, 3.0); r=6; color='#ff8800'; pts=60; coinDrop=1;
     } else {
         // SHADE — dark spirit, the most common foe
         type='shade'; hp=Math.ceil(wave*0.9); speed=0.48+wave*0.13; r=13+Math.random()*7; color='#6622cc'; pts=100; coinDrop=1;
@@ -890,7 +893,7 @@ function spawnMinionNear(bx,by,type,w){
     if(type==='hexblade'){hp=w*4;speed=0.35+w*0.05;r=20+Math.random()*4;color='#8866aa';pts=200;coinDrop=2;}
     else if(type==='golem'){hp=w*3;speed=0.32+w*0.05;r=20+Math.random()*3;color='#887766';pts=180;coinDrop=2;}
     else if(type==='wraith'){hp=w*2;speed=0.55+w*0.08;r=14;color='#aabbff';pts=150;coinDrop=1;}
-    else if(type==='imp'){hp=1;speed=1.2+w*0.15;r=5;color='#ff8800';pts=30;coinDrop=0;}
+    else if(type==='imp'){hp=1;speed=Math.min(1.2+w*0.10, 3.0);r=5;color='#ff8800';pts=30;coinDrop=0;}
     else{hp=w;speed=0.5+w*0.12;r=11+Math.random()*5;color='#6622cc';pts=60;coinDrop=1;}// shade
     enemies.push({x,y,r,hp,maxHp:hp,speed,color,type,pts,coinDrop,
         angle:0,slowTimer:0,burnTimer:0,burnDmg:0,freezeTimer:0,poisonTimer:0,poisonDmg:0,
@@ -952,6 +955,8 @@ function showWaveComplete(){
     if(gameState!=='playing')return;
     gameState='shop';
     SFX.waveComplete();
+    // Clear lingering visual effects so they don't show behind the shop
+    scorchPools=[]; vortexZones=[]; poisonClouds=[]; projectiles=[]; arcs=[];
     document.getElementById('wc-wave').textContent=wave;
     const wcPrefix=document.getElementById('wc-prefix');
     if(wcPrefix) wcPrefix.textContent=isBossWave(wave)?'⚔ Boss ':'✦ Wave ';
@@ -997,8 +1002,8 @@ function updateHUD(){
         badge.style.background='rgba(160,0,0,.5)';
         badge.style.borderColor='rgba(255,80,80,.5)';
         badge.style.color='rgba(255,160,160,.9)';
-        if(badgeLabel) badgeLabel.textContent='⚔ BOSS WAVE';
-        if(hudEnemies) hudEnemies.textContent='';
+        if(badgeLabel) badgeLabel.textContent='⚔ Boss + ';
+        if(hudEnemies) hudEnemies.textContent=enemies.filter(e=>!e._dead&&e.type!=='megaboss').length||'';
     }else{
         badge.style.background='rgba(100,0,200,.3)';
         badge.style.borderColor='rgba(180,80,255,.3)';
@@ -2321,6 +2326,8 @@ function hexPath(x,y,r){
 function gameOver(){
     gameState='dead';
     SFX.gameOver();
+    // Clear all gameplay objects so nothing renders behind the game over screen
+    enemies=[]; projectiles=[]; arcs=[]; scorchPools=[]; vortexZones=[]; poisonClouds=[];
     document.getElementById('go-score').textContent=score.toLocaleString();
     document.getElementById('go-wave').textContent=wave;
     document.getElementById('go-kills').textContent=killCount;
