@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="A behind-the-scenes look at the next books from JVDesignStudio — progress bars, dev log updates, and stories currently taking shape.">
+    <link rel="canonical" href="https://jvdesignstudio.com/next_book_projects.html">
     <title>Next Book Projects | JVDesignStudio</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
@@ -22,7 +25,22 @@
             --charcoal-lt:#5a5449;
         }
 
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        [data-theme="dark"]{--beige:#1e1c1a;--tan:#8a6d50;--tan-dk:#6b4f37;--rose:#d45f61;--rose-dk:#b54345;--rose-lt:#2a1515;--teal:#5a8f93;--teal-dk:#3f6e71;--teal-lt:#0e2021;--charcoal:#e8e0d0;--charcoal-lt:#b0a898;}
+        [data-theme="dark"] body{background:#181614;}
+        [data-theme="dark"] .site-header{background:rgba(24,22,20,.96);}
+        [data-theme="dark"] .projects-section{background:#1e1c1a;}
+        [data-theme="dark"] .project-body{background:#252220 !important;}
+        [data-theme="dark"] .log-card{background:#252220;}
+        [data-theme="dark"] .project-card{box-shadow:0 5px 24px rgba(0,0,0,.3);}
+        [data-theme="dark"] .project-tag{background:#2e2c2a;border-color:#444;}
+        [data-theme="dark"] .progress-track{background:#333;}
+        .theme-toggle{background:none;border:1.5px solid rgba(64,59,51,.18);border-radius:8px;padding:7px 10px;cursor:pointer;font-size:1rem;line-height:1;color:var(--charcoal);transition:background .15s;}
+        .theme-toggle:hover{background:var(--beige);}
+        .nav-mobile-toggle{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--charcoal);font-size:1.4rem;}
+        @media(max-width:700px){
+          .header-nav .btn-back{display:none;}
+          .nav-mobile-toggle{display:block;}
+        }
         html { scroll-behavior:smooth; }
         body { font-family:'Inter',sans-serif; background:var(--beige); color:var(--charcoal); overflow-x:hidden; }
         a { text-decoration:none; color:inherit; }
@@ -262,10 +280,12 @@
             <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
             <span class="logo-name">JVDesignStudio</span>
         </a>
-        <nav class="header-nav">
+        <nav class="header-nav" id="main-nav">
             <a href="content_hub.html" class="btn-back">← Content Hub</a>
-            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-follow">📸 Follow Updates</a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer" class="btn-follow">📸 Follow Updates</a>
+            <button class="theme-toggle" id="themeBtn" aria-label="Toggle dark mode">🌙</button>
         </nav>
+        <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Open menu">☰</button>
     </div>
 </header>
 
@@ -614,7 +634,7 @@
         <h2>Don't miss what's coming next</h2>
         <p>Every new launch, dev log update, and behind-the-scenes moment goes to Instagram first. Come follow along and be part of how these books come to life.</p>
         <div class="follow-btns">
-            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-ig">📸 Follow on Instagram</a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer" class="btn-ig">📸 Follow on Instagram</a>
             <a href="content_hub.html" class="btn-hub">📦 See Everything →</a>
         </div>
     </div>
@@ -623,7 +643,7 @@
 <footer>
     <p>© 2026 JVDesignStudio. All rights reserved. &nbsp;·&nbsp;
        <a href="content_hub.html">Content Hub</a> &nbsp;·&nbsp;
-       <a href="https://www.instagram.com/jv_design.studio/" target="_blank">Instagram</a> &nbsp;·&nbsp;
+       <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a> &nbsp;·&nbsp;
        <a href="mailto:josh-couchman@outlook.com">Contact</a>
     </p>
 </footer>
@@ -651,7 +671,23 @@
     }, { threshold: 0.3 });
     bars.forEach(b => { const w = b.style.width; b.style.width = '0'; setTimeout(()=>b.style.width=w,200); barObs.observe(b); });
 
-    /* Scroll reveal */
+    /* Dark mode */
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('themeBtn');
+        if (btn) {
+            const saved = localStorage.getItem('jv_theme');
+            if (saved) { document.documentElement.setAttribute('data-theme', saved); btn.textContent = saved === 'dark' ? '☀️' : '🌙'; }
+            btn.addEventListener('click', () => {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                btn.textContent = isDark ? '🌙' : '☀️';
+                localStorage.setItem('jv_theme', isDark ? 'light' : 'dark');
+            });
+        }
+        const tog = document.getElementById('mobileToggle');
+        const nav = document.getElementById('main-nav');
+        if (tog && nav) tog.addEventListener('click', () => nav.classList.toggle('open'));
+    });
     const obs = new IntersectionObserver(entries => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
