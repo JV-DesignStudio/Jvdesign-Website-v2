@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://jvdesignstudio.com/devlog.html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="JVDesignStudio Dev Log — behind the scenes on books, games, and the creative process.">
     <title>Dev Log | JVDesignStudio</title>
@@ -510,11 +508,11 @@
             <a href="sitemap.html">Sitemap</a>
         </nav>
         <nav class="footer-socials">
-            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
-            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
-            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener">Itch.io</a>
         </nav>
-        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+        <p class="footer-copy">© 2025 JVDesignStudio. All rights reserved.</p>
     </div>
 </footer>
 
@@ -549,7 +547,51 @@ const TAG_EMOJIS = {
 
 const POSTS = [
 
-    // ── 1 · VoidRush ──────────────────────────────────────────────────────
+    // ── 1 · Lumo Firefly Shooter ─────────────────────────────────────────
+    {
+        id: 15,
+        date: '12 March 2026',
+        tag: 'games',
+        emoji: '🌙',
+        title: "Lumo's Firefly Night — Building a Bubble Shooter From Scratch",
+        excerpt: "A Bust-A-Move style bubble shooter starring Lumo, with special fireflies, power-ups, Web Audio sound design, and Lumo's actual sprite. Here's how the whole thing came together.",
+        image: 'Lumo_Concept_V003.png',
+        url: 'lumo_firefly_night.html',
+        content: `Lumo's Firefly Night is a bubble shooter in the classic Bust-A-Move tradition. Lumo stands at the bottom of the screen, you aim with the mouse, fire coloured fireflies upward into a hex grid, and match three or more to pop them. Clear the board before the fireflies drift down to Lumo.
+
+The hex grid was the first thing to solve. A hexagonal grid has two offset patterns — every other row shifts half a cell sideways — and the collision detection for "which cell did this bubble land in" has to account for that. I ended up calculating the nearest grid centre by transforming from screen coordinates into hex space, rounding, then converting back. Once that was solid the rest of the game could build on top of it.
+
+The five normal firefly types each have a name and a colour: Golden, Meadow, Moonbeam, Twilight, and Ember. On top of those there are three special types. Rainbow fireflies match any colour. Bomb fireflies explode and clear a small area with a satisfying screen shake. Star fireflies grant a random power-up from a selection of four: a three-shot spread, a bomb next shot, a slow-motion mode that turns the screen blue, and a ghost shot.
+
+The power-up bar sits above the canvas and shows which powers are active. The current bubble and the next bubble are both previewed in animated canvases so you can plan your shot. That next-bubble preview is small but it changes the game from reaction-based to strategic.
+
+Sound is all Web Audio API — no audio files. The shoot has a short filtered tone, pops use harmonic chords tuned to the bubble colour, bombs get a deep impact hit, wall bounces click, and level completion fires a three-note fanfare. It's all synthesised in real time from oscillators and noise generators.
+
+Getting Lumo into the game meant processing the original character art to remove the background. The character bobs gently, there's an aim arrow, and a little glow effect pulses from his chest during gameplay. Small things but they make the game feel like it belongs to the Lumo world rather than being a generic bubble shooter with his name on it.`,
+    },
+
+    // ── 2 · Arcane Citadel balance + wind ────────────────────────────────
+    {
+        id: 16,
+        date: '12 March 2026',
+        tag: 'games',
+        emoji: '💨',
+        title: "Arcane Citadel — Fixing Wind and Rebalancing the Whole Game",
+        excerpt: "Wind was broken — it kept launching enemies straight into the citadel. The fix turned into something much more interesting: a full knockback state with wall bouncing and enemy bowling.",
+        image: '',
+        url: 'arcane_citadel_page.html',
+        content: `After playing Arcane Citadel for a few sessions it became obvious there were two problems. First, the difficulty curve was too flat — by wave six you were comfortably OP regardless of how you'd built. Second, the wind spell was actively working against you.
+
+The balance pass was mostly about adding quadratic scaling to enemy HP. Previously everything scaled linearly with wave number, so a Shade at wave 10 had ten times the HP of wave one. That sounds right but it meant upgrades kept pace too easily. The fix was to add a wave-squared component to all enemy HP and reduce it for early waves to keep the opening accessible. Wave six now feels like a genuine pressure point instead of a comfortable plateau. Shop costs got steeper too, so you can't buy your way to invincibility in the first few waves.
+
+The wind problem was more interesting to fix. Wind is supposed to push enemies away. But the knockback was calculated from the projectile's position to the enemy — which is the same direction the projectile was already travelling. Since you shoot toward enemies and enemies walk toward the citadel, the knockback was launching them exactly where they wanted to go. Changing it to push away from the player instead helped, but the real problem was structural: enemies in a knocked-back state were still registered as normal enemies and could still deal citadel collision damage mid-flight.
+
+The solution was a proper knockback state. When wind hits an enemy they enter a tumbling state for about 40 frames. During that time: their normal steering and pathfinding are completely suspended, they can't deal damage to the citadel even if they fly through it, they bounce off the screen edges with a crack and take wall damage, and — the fun part — if they hit another enemy mid-flight both take damage and the struck enemy gets launched too. Chain reactions where one well-placed wind shot bounces through a cluster and damages five enemies are now genuinely possible. It turned a broken mechanic into one of the most satisfying tools in the game.
+
+The knockback check has to run before everything else in the enemy update loop — before freeze timers, before wraith phasing, before cultist casting logic — otherwise any of those have their own early-exit paths that skip the knockback handling entirely. Getting the order right was the last piece.`,
+    },
+
+    // ── 3 · Arcane Citadel VoidRush ──────────────────────────────────────────────────────
     {
         id: 10,
         date: '3 March 2026',
@@ -889,7 +931,10 @@ function buildHeroStats(){
     const tags = new Set(POSTS.map(p=>p.tag));
     document.getElementById('heroTagCount').textContent = tags.size;
     if(POSTS.length){
-        document.getElementById('heroLatestDate').textContent = POSTS[0].date;
+        // Show year of most recent post (first in array = newest)
+        const d = POSTS[0].date;
+        const yr = d.match(/\d{4}/)?.[0] || d.slice(-4) || '—';
+        document.getElementById('heroLatestDate').textContent = yr;
     }
 }
 
@@ -1008,15 +1053,7 @@ function renderModal(){
         contentEl.parentNode.insertBefore(ctaEl, contentEl.nextSibling);
     }
     if(post.url){
-        const ctaLabels = {
-            books:   '📖 View Book →',
-            games:   '🎮 Play Now →',
-            life:    '✦ Read More →',
-            process: '✦ View Project →',
-            update:  '✦ See Update →',
-        };
-        const label = ctaLabels[post.tag] || '✦ View →';
-        ctaEl.innerHTML = `<a href="${post.url}" style="display:inline-block;background:var(--teal);color:white;font-weight:700;font-size:.95rem;padding:12px 28px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 var(--teal-dk);transition:filter .15s;">${label}</a>`;
+        ctaEl.innerHTML = `<a href="${post.url}" style="display:inline-block;background:var(--teal);color:white;font-weight:700;font-size:.95rem;padding:12px 28px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 var(--teal-dk);transition:filter .15s;">🎮 Play Arcane Citadel →</a>`;
     } else {
         ctaEl.innerHTML = '';
     }
