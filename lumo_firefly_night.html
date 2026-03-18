@@ -68,6 +68,7 @@ canvas{display:block;width:100%;touch-action:none;}
     <div class="sb-block"><span class="sb-lbl">Score</span><span class="sb-val" id="sbScore">0</span></div>
     <div class="sb-block"><span class="sb-lbl">Best</span><span class="sb-val" id="sbBest">0</span></div>
     <div class="sb-block"><span class="sb-lbl">Level</span><span class="sb-val" id="sbLevel">1</span></div>
+    <div class="sb-block"><span class="sb-lbl">Left</span><span class="sb-val" id="sbLeft">—</span></div>
     <div class="bubble-previews">
       <div class="bprev">
         <span class="bprev-lbl">Now</span>
@@ -87,6 +88,7 @@ canvas{display:block;width:100%;touch-action:none;}
     <div class="pu-pill inactive" id="puBomb">💥 Bomb</div>
     <div class="pu-pill inactive" id="puSlow">🌙 Slow</div>
     <div class="pu-pill inactive" id="puGhost">👻 Ghost</div>
+    <div class="pu-pill inactive" id="puFreeze">❄️ Freeze</div>
   </div>
   <div class="canvas-frame" id="cframe">
     <canvas id="gc"></canvas>
@@ -95,8 +97,8 @@ canvas{display:block;width:100%;touch-action:none;}
     <div class="overlay" id="ovStart">
       <div class="ov-emoji">🦊</div>
       <div class="ov-title">Lumo's Firefly<br>Shooter</div>
-      <p class="ov-sub">Pop groups of 3+ fireflies before they reach Lumo! Collect special ones for power-ups.</p>
-      <div class="legend-grid">
+      <p class="ov-sub">Clear ALL fireflies from the board to advance! Match 3+ of the same colour. Miss too many shots and new rows appear...</p>
+      <div class="legend-grid" style="grid-template-columns:1fr 1fr;">
         <div class="leg"><div class="dot" style="background:#f0c060;box-shadow:0 0 5px #f0c060"></div><div class="dtxt"><b>Golden</b>10 pts</div></div>
         <div class="leg"><div class="dot" style="background:#88ee44;box-shadow:0 0 5px #88ee44"></div><div class="dtxt"><b>Meadow</b>10 pts</div></div>
         <div class="leg"><div class="dot" style="background:#66ccff;box-shadow:0 0 5px #66ccff"></div><div class="dtxt"><b>Moonbeam</b>10 pts</div></div>
@@ -105,6 +107,8 @@ canvas{display:block;width:100%;touch-action:none;}
         <div class="leg"><div class="dot" style="background:#ffffff;box-shadow:0 0 8px #fff,0 0 16px #aaf"></div><div class="dtxt"><b>✨ Rainbow</b>Matches any!</div></div>
         <div class="leg"><div class="dot" style="background:radial-gradient(circle,#ff4444,#aa0000);box-shadow:0 0 8px #f44"></div><div class="dtxt"><b>💥 Bomb</b>Clears area</div></div>
         <div class="leg"><div class="dot" style="background:radial-gradient(circle,#aaffaa,#44aa44);box-shadow:0 0 5px #afa"></div><div class="dtxt"><b>⭐ Star</b>Power-up!</div></div>
+        <div class="leg"><div class="dot" style="background:radial-gradient(circle,#aaddff,#5599cc);box-shadow:0 0 8px #adf"></div><div class="dtxt"><b>❄️ Freeze</b>Stop drops!</div></div>
+        <div class="leg"><div class="dot" style="background:radial-gradient(circle,#ffdd44,#cc8800);box-shadow:0 0 8px #fd4"></div><div class="dtxt"><b>✦ Scatter</b>Spreads 3!</div></div>
       </div>
       <button class="btn-play" id="btnStart">✨ Start Shooting!</button>
     </div>
@@ -112,7 +116,7 @@ canvas{display:block;width:100%;touch-action:none;}
     <!-- LEVEL CLEAR -->
     <div class="overlay off" id="ovClear">
       <div class="ov-emoji">🌟</div>
-      <div class="ov-title">Level Clear!</div>
+      <div class="ov-title">Board Cleared! 🌟</div>
       <p class="ov-sub" id="clearMsg">All fireflies freed!</p>
       <button class="btn-play" id="btnNext">Next Level →</button>
     </div>
@@ -162,19 +166,27 @@ function playTone(freq, type, vol, dur, attack=0.01, decay=0.1){
     o.start(ac.currentTime); o.stop(ac.currentTime+dur+0.05);
   }catch(e){}
 }
-function sndShoot(){ playTone(320,'sine',0.18,0.12,0.005,0.1); playTone(520,'sine',0.08,0.08); }
-function sndPop(n){
-  // happy chord pop, bigger for larger groups
-  const base = 440 + n*30;
-  playTone(base,'sine',0.2,0.18);
-  playTone(base*1.25,'sine',0.12,0.14,0.02);
-  playTone(base*1.5,'sine',0.08,0.12,0.04);
-  if(n>=5) playTone(base*2,'sine',0.15,0.25,0.02);
+function sndShoot(){
+  const pitches=[300,320,340,360];
+  const p=pitches[Math.floor(Math.random()*pitches.length)];
+  playTone(p,'sine',0.16,0.11,0.005,0.08);
+  playTone(p+200,'sine',0.07,0.07);
 }
+function sndPop(n){
+  // happy chord pop with xylophone-like quality
+  const base = 380 + n*35;
+  playTone(base,'sine',0.22,0.22);
+  playTone(base*1.26,'triangle',0.14,0.18,0.01);
+  playTone(base*1.5,'sine',0.09,0.14,0.03);
+  if(n>=4) playTone(base*2,'sine',0.18,0.28,0.01);
+  if(n>=6) playTone(base*2.5,'sine',0.12,0.22,0.02);
+}
+function sndFreeze(){ [600,800,1000].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.15,0.15),i*60)); }
+function sndScatter(){ [300,450,600,750].forEach((f,i)=>setTimeout(()=>playTone(f,'triangle',0.14,0.1),i*40)); }
 function sndBomb(){ playTone(80,'sawtooth',0.3,0.4,0.01,0.3); playTone(200,'square',0.2,0.25); }
 function sndPowerup(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.2,0.18),i*80)); }
 function sndDanger(){ playTone(220,'sawtooth',0.15,0.3,0.01,0.2); playTone(180,'sawtooth',0.1,0.25,0.1); }
-function sndLevelClear(){ [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.22,0.3),i*100)); }
+function sndLevelClear(){ [523,659,784,1047,1319,1568].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.22,0.3),i*90)); }
 function sndWall(){ playTone(800,'sine',0.06,0.06); }
 
 // ═══════════════════════════════════════
@@ -187,7 +199,7 @@ const GH    = 580;
 const SHOOT_Y   = GH - 52;
 const DANGER_Y  = GH - 160;
 const BSPEED    = 11;
-const SHOTS_PER_DROP = 8;
+const SHOTS_PER_DROP = 6;
 
 // Bubble types: 0-4 normal, 5=rainbow, 6=bomb, 7=star(powerup)
 const TYPES = [
@@ -199,6 +211,8 @@ const TYPES = [
   {id:5,col:'#ffffff',glow:'rgba(200,200,255,', name:'Rainbow', special:true},
   {id:6,col:'#ff3333',glow:'rgba(255,50,50,',   name:'Bomb',    special:true},
   {id:7,col:'#aaffaa',glow:'rgba(170,255,170,', name:'Star',    special:true},
+  {id:8,col:'#aaddff',glow:'rgba(170,221,255,', name:'Freeze',  special:true},
+  {id:9,col:'#ffdd44',glow:'rgba(255,221,68,',  name:'Scatter', special:true},
 ];
 
 const QUOTES=[
@@ -211,7 +225,7 @@ const QUOTES=[
 ];
 
 // Power-up state
-const PU = { multi:0, bomb:0, slow:0, ghost:0 };
+const PU = { multi:0, bomb:0, slow:0, ghost:0, freeze:0 };
 
 // ═══════════════════════════════════════
 // CANVAS
@@ -245,19 +259,26 @@ let score=0, best=0, level=1;
 let state='start';
 let tick=0, shootCount=0, dangerFlash=0;
 let shakeFrames=0;
+let freezeActive=0; // frames remaining (freezes row-drop timer)
 const sparks=[], popTexts=[], stars=[];
+let exciteTick=0;
 
 // Slow-mo
 let slowActive=0; // frames remaining
 
-function numTypes(lv){ return Math.min(2+lv,5); }
+function numTypes(lv){ return Math.min(2+Math.floor(lv*0.7),5); }
 
 // ═══════════════════════════════════════
 // STARS BG
 // ═══════════════════════════════════════
+const bgFireflies=[];
 function initStars(){
-  stars.length=0;
-  for(let i=0;i<50;i++) stars.push({x:Math.random()*GW,y:Math.random()*(GH*.65),r:Math.random()*1.2+.3,a:Math.random()*.5+.1,da:(Math.random()*.006+.003)*(Math.random()<.5?1:-1)});
+  stars.length=0;bgFireflies.length=0;
+  for(let i=0;i<55;i++) stars.push({x:Math.random()*GW,y:Math.random()*(GH*.6),r:Math.random()*1.3+.3,a:Math.random()*.5+.1,da:(Math.random()*.007+.003)*(Math.random()<.5?1:-1)});
+  const ffCols=['240,192,96','136,238,68','102,204,255','221,136,255','255,136,68'];
+  for(let i=0;i<12;i++){
+    bgFireflies.push({x:Math.random()*GW,y:GH*.5+Math.random()*(GH*.25),r:1.5+Math.random()*1.5,angle:Math.random()*Math.PI*2,spd:0.3+Math.random()*0.4,da:(Math.random()*.04-.02),glow:Math.random(),dg:0.008+Math.random()*0.01,rgb:ffCols[i%ffCols.length]});
+  }
 }
 
 // ═══════════════════════════════════════
@@ -276,7 +297,7 @@ function initGrid(rows, nt){
       if(r%2===1&&c===COLS-1){grid[r][c]=null;continue;}
       // 5% chance of special in later levels
       let t;
-      const sc=0.05+level*0.015; if(Math.random()<sc){const r2=Math.random();t=r2<0.55?5:r2<0.85?7:6;}
+      const sc=0.04+level*0.02; if(Math.random()<sc){const r2=Math.random();t=r2<0.40?5:r2<0.65?7:r2<0.80?6:r2<0.90?8:9;}
       else t=Math.floor(Math.random()*nt);
       grid[r][c]={type:t};
     }
@@ -367,13 +388,51 @@ function placeBubble(bx,by,type){
     popBurst(cellXY(row,col).x,cellXY(row,col).y,'#aaffaa',14);
     grid[row][col]=null; return;
   }
+  // --- FREEZE stops row drops ---
+  if(type===8){
+    PU.freeze=1; updatePUBar(); sndPowerup();
+    freezeActive=200;
+    sndFreeze();
+    popBurst(cellXY(row,col).x,cellXY(row,col).y,'#aaddff',12);
+    addPopText(GW/2,SHOOT_Y-80,'❄️ FROZEN!','#aaddff');
+    grid[row][col]=null; return;
+  }
+  // --- SCATTER splits into 3 shots ---
+  if(type===9){
+    sndScatter();
+    const cx=cellXY(row,col).x, cy=cellXY(row,col).y;
+    popBurst(cx,cy,'#ffdd44',14);
+    addPopText(GW/2,SHOOT_Y-80,'✦ SCATTER!','#ffdd44');
+    // place in 3 spots around the hit
+    for(const[nr,nc] of [[row-1,col],[row,col-1],[row,col+1]]){
+      if(nr>=0&&nc>=0&&nc<COLS){
+        while(grid.length<=nr) grid.push(new Array(COLS).fill(null));
+        if(!grid[nr]||!grid[nr][nc]) { if(!grid[nr]) grid[nr]=new Array(COLS).fill(null); grid[nr][nc]={type:Math.floor(Math.random()*numTypes(level))}; }
+      }
+    }
+    grid[row][col]=null;
+    // check for matches after scatter
+    for(const[nr,nc] of [[row-1,col],[row,col-1],[row,col+1]]){
+      if(nr>=0&&nc>=0&&nc<COLS&&grid[nr]&&grid[nr][nc]){
+        const t2=grid[nr][nc].type;
+        const g2=floodSame(nr,nc,t2);
+        if(g2.length>=3){
+          const pts2=g2.length*10;score+=pts2;sndPop(g2.length);
+          for(const[r3,c3] of g2){const{x:x3,y:y3}=cellXY(r3,c3);popBurst(x3,y3,TYPES[Math.min(t2,4)].col,6);grid[r3][c3]=null;}
+        }
+      }
+    }
+    updateHUD(true);
+    return;
+  }
 
   // --- normal / rainbow match ---
   const group=floodSame(row,col,type);
   if(group.length>=3){
-    const pts=group.length*10*(group.length>=6?3:group.length>=4?2:1);
+    const mult=1+Math.floor(level/3)*0.5;const pts=Math.round(group.length*10*(group.length>=6?3:group.length>=4?2:1)*mult);
     score+=pts;
     sndPop(group.length);
+    if(group.length>=3) exciteTick=40;
     addPopText(GW/2,SHOOT_Y-70,'+'+pts,TYPES[Math.min(type,4)].col);
     for(const[r,c]of group){
       const{x,y}=cellXY(r,c);
@@ -431,7 +490,7 @@ function bombAt(row,col){
 
 function grantPowerup(){
   // pick one randomly
-  const opts=['multi','bomb','slow','ghost'];
+  const opts=['multi','bomb','slow','ghost','freeze'];
   const pick=opts[Math.floor(Math.random()*opts.length)];
   PU[pick]=1;
   updatePUBar();
@@ -439,7 +498,7 @@ function grantPowerup(){
 }
 
 function updatePUBar(){
-  ['multi','bomb','slow','ghost'].forEach(k=>{
+  ['multi','bomb','slow','ghost','freeze'].forEach(k=>{
     document.getElementById('pu'+k.charAt(0).toUpperCase()+k.slice(1))
       .classList.toggle('inactive',!PU[k]);
   });
@@ -456,16 +515,22 @@ function triggerShake(){
 // SHOOTING
 // ═══════════════════════════════════════
 function newBubble(){
-  // Ghost powerup: bullet passes through walls (handled in movement)
-  // Multi powerup: 3 bullets
   currentBubble={type:nextType,x:GW/2,y:SHOOT_Y,vx:0,vy:0,flying:false,multi:[]};
-  // pick next — avoid specials unless level > 2
+  // Pool strongly biased toward colours currently on the board (keeps game winnable)
+  const activeColors=getActiveColors();
+  const pool=[];
+  // Add board colours with heavy weighting (x4 each)
+  for(const col of activeColors) for(let i=0;i<4;i++) pool.push(col);
+  // Add remaining colours lightly so occasional "bad" bubble still appears
   const nt=numTypes(level);
-  const pool=Array.from({length:nt},(_,i)=>i);
+  for(let i=0;i<nt;i++) if(!activeColors.includes(i)) pool.push(i);
+  // Specials
   const sw=Math.min(level,4);
-  for(let i=0;i<sw;i++) pool.push(5);
-  if(level>=2) for(let i=0;i<Math.floor(sw/2)+1;i++) pool.push(7);
-  if(level>=3) pool.push(6);
+  for(let i=0;i<sw;i++) pool.push(5);                          // rainbow
+  if(level>=2) for(let i=0;i<Math.floor(sw/2)+1;i++) pool.push(7); // star
+  if(level>=3) pool.push(6);                                     // bomb
+  if(level>=2) for(let i=0;i<Math.max(1,sw-2);i++) pool.push(8); // freeze
+  if(level>=2) for(let i=0;i<Math.max(1,sw-2);i++) pool.push(9); // scatter
   nextType=pool[Math.floor(Math.random()*pool.length)];
   drawNext();
   drawCurrent();
@@ -514,6 +579,7 @@ function shoot(){
 
   if(PU.slow){ PU.slow=0; slowActive=180; updatePUBar(); }
   if(PU.ghost){ PU.ghost=0; updatePUBar(); }
+  if(PU.freeze){ PU.freeze=0; freezeActive=200; updatePUBar(); }
   if(PU.bomb){
     PU.bomb=0; updatePUBar();
     currentBubble.type=6; // next shot is bomb
@@ -545,6 +611,7 @@ function drawFly(c,x,y,r,type,wt,wings){
   const isRainbow=type.id===5;
   const isBomb=type.id===6;
   const isStar=type.id===7;
+  // isFreeze/isScatter handled below
 
   if(isBomb){
     // pulsing red ball with fuse
@@ -574,6 +641,34 @@ function drawFly(c,x,y,r,type,wt,wings){
     }
     c.closePath();c.fillStyle='#aaffaa';c.fill();
     c.strokeStyle='#ffffff';c.lineWidth=1;c.stroke();
+    c.restore();
+    return;
+  }
+  const isFreeze=type.id===8;
+  const isScatter=type.id===9;
+  if(isFreeze){
+    // snowflake/ice crystal
+    const grd=c.createRadialGradient(x,y,0,x,y,r*2.5);
+    grd.addColorStop(0,'rgba(170,221,255,0.8)');grd.addColorStop(1,'transparent');
+    c.fillStyle=grd;c.beginPath();c.arc(x,y,r*2.5,0,Math.PI*2);c.fill();
+    c.save();c.translate(x,y);c.rotate(wt*.03);
+    c.strokeStyle='#aaddff';c.lineWidth=2;
+    for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*r,Math.sin(a)*r);c.stroke();}
+    c.beginPath();c.arc(0,0,r*.35,0,Math.PI*2);c.fillStyle='#ddeeff';c.fill();
+    // sparkle dots
+    for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2;c.beginPath();c.arc(Math.cos(a)*r*.65,Math.sin(a)*r*.65,2,0,Math.PI*2);c.fillStyle='#ffffff';c.fill();}
+    c.restore();
+    return;
+  }
+  if(isScatter){
+    // golden burst / scatter star
+    const grd=c.createRadialGradient(x,y,0,x,y,r*3);
+    grd.addColorStop(0,'rgba(255,221,68,0.8)');grd.addColorStop(1,'transparent');
+    c.fillStyle=grd;c.beginPath();c.arc(x,y,r*3,0,Math.PI*2);c.fill();
+    c.save();c.translate(x,y);c.rotate(wt*.04);
+    c.beginPath();
+    for(let i=0;i<12;i++){const rr=i%2===0?r*1.1:r*.45;const a=(i/12)*Math.PI*2-Math.PI/2;i===0?c.moveTo(Math.cos(a)*rr,Math.sin(a)*rr):c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}
+    c.closePath();c.fillStyle='#ffdd44';c.fill();c.strokeStyle='#ffaa00';c.lineWidth=1;c.stroke();
     c.restore();
     return;
   }
@@ -617,12 +712,39 @@ function drawFly(c,x,y,r,type,wt,wings){
 
 function drawBG(){
   const sg=ctx.createLinearGradient(0,0,0,GH);
-  sg.addColorStop(0,'#1c1a2e');sg.addColorStop(.6,'#2a2838');sg.addColorStop(1,'#1e2818');
+  sg.addColorStop(0,'#0d0b1e');sg.addColorStop(.4,'#1c1a2e');sg.addColorStop(.7,'#2a2838');sg.addColorStop(1,'#1a2615');
   ctx.fillStyle=sg;ctx.fillRect(0,0,GW,GH);
+  // moon glow
+  const mg=ctx.createRadialGradient(GW*.82,GH*.08,0,GW*.82,GH*.08,GH*.22);
+  mg.addColorStop(0,'rgba(240,230,200,0.06)');mg.addColorStop(1,'transparent');
+  ctx.fillStyle=mg;ctx.fillRect(0,0,GW,GH);
   for(const s of stars){
     s.a+=s.da;if(s.a>.7)s.da=-Math.abs(s.da);if(s.a<.05)s.da=Math.abs(s.da);
     ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
     ctx.fillStyle=`rgba(240,234,214,${s.a.toFixed(2)})`;ctx.fill();
+  }
+  // draw moon
+  ctx.save();
+  const moonX=GW*.82, moonY=GH*.08, moonR=18;
+  const moonG=ctx.createRadialGradient(moonX-4,moonY-4,0,moonX,moonY,moonR);
+  moonG.addColorStop(0,'rgba(255,248,220,0.92)');moonG.addColorStop(0.7,'rgba(240,225,180,0.7)');moonG.addColorStop(1,'rgba(220,200,140,0.0)');
+  ctx.fillStyle=moonG;ctx.beginPath();ctx.arc(moonX,moonY,moonR,0,Math.PI*2);ctx.fill();
+  // moon crater
+  ctx.fillStyle='rgba(180,160,100,0.15)';ctx.beginPath();ctx.arc(moonX+6,moonY+4,4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(moonX-5,moonY+7,2.5,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // ambient fireflies in background (decorative)
+  for(let i=0;i<bgFireflies.length;i++){
+    const bf=bgFireflies[i];
+    bf.x+=Math.cos(bf.angle)*bf.spd; bf.y+=Math.sin(bf.angle)*bf.spd;
+    bf.angle+=bf.da; bf.glow+=bf.dg;
+    if(bf.glow>1)bf.dg=-Math.abs(bf.dg); if(bf.glow<0.1)bf.dg=Math.abs(bf.dg);
+    if(bf.x<0)bf.x=GW; if(bf.x>GW)bf.x=0; if(bf.y<0)bf.y=GH*.7; if(bf.y>GH*.75)bf.y=0;
+    const br=ctx.createRadialGradient(bf.x,bf.y,0,bf.x,bf.y,bf.r*3);
+    br.addColorStop(0,`rgba(${bf.rgb},${(bf.glow*0.5).toFixed(2)})`);br.addColorStop(1,'transparent');
+    ctx.fillStyle=br;ctx.beginPath();ctx.arc(bf.x,bf.y,bf.r*3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(bf.x,bf.y,bf.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${bf.rgb},${bf.glow.toFixed(2)})`;ctx.fill();
   }
   // hills
   ctx.beginPath();ctx.moveTo(0,GH);
@@ -701,7 +823,8 @@ lumoImg.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABBsAAAJYCAYAAAAjXu4
 
 function drawLumo(){
   const cx=GW/2, cy=SHOOT_Y;
-  const bob=Math.abs(Math.sin(tick*.028))*3.5;
+  const bob=Math.abs(Math.sin(tick*.032))*(exciteTick>0?6:3.5);
+  if(exciteTick>0)exciteTick--;
   const sp=Math.sin(tick*.12)*.5+.5;
   const sw=90, sh=90; // sprite draw size
   ctx.save();
@@ -746,9 +869,15 @@ function drawParticles(){
 function drawSlowTint(){
   if(slowActive<=0)return;
   ctx.save();ctx.fillStyle='rgba(100,120,180,0.08)';ctx.fillRect(0,0,GW,GH);
-  // clock indicator
   ctx.font='bold 11px Fredoka,cursive';ctx.fillStyle='rgba(150,180,255,0.7)';
   ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('🌙 SLOW',6,6);
+  ctx.restore();
+}
+function drawFreezeTint(){
+  if(freezeActive<=0)return;
+  ctx.save();ctx.fillStyle='rgba(100,180,220,0.06)';ctx.fillRect(0,0,GW,GH);
+  ctx.font='bold 11px Fredoka,cursive';ctx.fillStyle='rgba(170,221,255,0.8)';
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('❄️ FROZEN',6,18);
   ctx.restore();
 }
 
@@ -791,6 +920,7 @@ function loop(){
   requestAnimationFrame(loop);
   tick++;
   if(slowActive>0)slowActive--;
+  if(freezeActive>0)freezeActive--;
 
   const dt = slowActive>0 ? 0.45 : 1;
 
@@ -804,6 +934,7 @@ function loop(){
   drawDanger();
   drawAimGuide();
   drawSlowTint();
+  drawFreezeTint();
   drawCurrent();
 
   // move primary bubble
@@ -841,7 +972,7 @@ function loop(){
 
 function afterShot(){
   shootCount++;
-  if(countBubbles()<=4){levelClear();return;}
+  if(countBubbles()===0){levelClear();return;}
   if(checkDead()){endGame();return;}
   if(shootCount>=SHOTS_PER_DROP)dropRow();
   checkDanger();
@@ -849,13 +980,30 @@ function afterShot(){
   updateHUD();
 }
 
+function getActiveColors(){
+  // Returns array of color types currently on the board (for smart penalty rows)
+  const present=new Set();
+  for(const row of grid) for(const b of row) if(b&&b.type<5) present.add(b.type);
+  if(present.size===0){for(let i=0;i<numTypes(level);i++) present.add(i);}
+  return [...present];
+}
+
 function dropRow(){
-  const nt=numTypes(level);
+  if(freezeActive>0){shootCount=0;return;} // freeze prevents new row
+  const activeColors=getActiveColors();
   const newRow=[];
-  for(let c=0;c<COLS;c++){
-    if(grid.length%2===1&&c===COLS-1){newRow.push(null);continue;}
-    let t=Math.floor(Math.random()*nt);
-    const dc=0.05+level*0.015; if(Math.random()<dc){const r2=Math.random();t=r2<0.55?5:r2<0.85?7:6;}
+  for(let ci=0;ci<COLS;ci++){
+    if(grid.length%2===1&&ci===COLS-1){newRow.push(null);continue;}
+    // Penalty rows use only colours already on the board (keeps it winnable)
+    // Small chance of a special bubble still
+    const dc=0.04+level*0.02;
+    let t;
+    if(Math.random()<dc){
+      const r2=Math.random();
+      t=r2<0.45?5:r2<0.65?7:r2<0.78?6:r2<0.89?8:9;
+    } else {
+      t=activeColors[Math.floor(Math.random()*activeColors.length)];
+    }
     newRow.push({type:t});
   }
   grid.unshift(newRow);
@@ -894,6 +1042,9 @@ function updateHUD(pop){
   best=Math.max(best,score);
   document.getElementById('sbBest').textContent=best;
   document.getElementById('sbLevel').textContent=level;
+  const rem=countBubbles();
+  const elLeft=document.getElementById('sbLeft');
+  if(elLeft){ elLeft.textContent=rem; elLeft.style.color=rem<=8?'#ff6666':rem<=20?'#f0c060':'#c4b8d8'; }
   // save best
   try{localStorage.setItem('lumo_best',best);}catch(e){}
 }
@@ -902,9 +1053,9 @@ function updateHUD(pop){
 // LIFECYCLE
 // ═══════════════════════════════════════
 function startLevel(){
-  initGrid(7+Math.floor(level*.5),numTypes(level));
+  initGrid(8+Math.floor(level*.65),numTypes(level));
   sparks.length=0;popTexts.length=0;
-  shootCount=0;dangerFlash=0;slowActive=0;
+  shootCount=0;dangerFlash=0;slowActive=0;freezeActive=0;exciteTick=0;
   PU.multi=0;PU.bomb=0;PU.slow=0;PU.ghost=0;
   updatePUBar();
   nextType=Math.floor(Math.random()*numTypes(level));
@@ -929,7 +1080,8 @@ function levelClear(){
   score+=bonus;
   best=Math.max(best,score);
   sndLevelClear();
-  document.getElementById('clearMsg').textContent='Level '+level+' cleared! +'+bonus+' bonus!';
+  const remaining=countBubbles(); // always 0 at this point
+  document.getElementById('clearMsg').textContent='Board cleared! Level '+level+' complete! +'+bonus+' bonus!';
   updateHUD();
   document.getElementById('ovClear').classList.remove('off');
   level++;
