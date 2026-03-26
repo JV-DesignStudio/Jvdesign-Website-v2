@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUGEN Workshop — Build Your Own Fighter | JVDesignStudio</title>
+<meta name="description" content="Learn to build MUGEN characters and stages from scratch. Free guides, templates, cheat sheets, project briefs and more. By JVDesignStudio.">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0c;
+  --bg2:#111114;
+  --bg3:#18181d;
+  --border:rgba(255,255,255,.07);
+  --text:#e4e0d8;
+  --muted:rgba(228,224,216,.45);
+  --red:#e8312b;
+  --red-lt:#f5635e;
+  --red-dk:#a01f1b;
+  --gold:#f5a623;
+  --gold-lt:#ffc046;
+  --blue:#4a9eff;
+  --blue-lt:#7dbfff;
+  --purple:#9b6bff;
+  --green:#3ddc84;
+  --teal:#70A3A7;
+  --rose:#BC4749;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+code,pre{font-family:'DM Mono',monospace}
+
+/* ── HEADER ── */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(10,10,12,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo-link{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:.05em;color:var(--text)}
+.logo-link img{height:36px;border-radius:8px}
+.main-nav{display:flex;align-items:center;gap:4px}
+.nav-link{font-size:.82rem;font-weight:500;color:var(--muted);padding:6px 12px;border-radius:8px;transition:color .15s,background .15s}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.nav-toggle{display:none;background:none;border:none;padding:8px 10px;font-size:1.4rem;cursor:pointer;color:var(--text);flex-shrink:0;line-height:1}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:#0a0a0c;border-top:2px solid var(--red);box-shadow:0 8px 32px rgba(0,0,0,.7);max-height:0;overflow:hidden;transition:max-height .4s ease}
+.mobile-nav.open{max-height:calc(100vh - 64px);overflow-y:auto}
+.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:.95rem;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);transition:background .12s}
+.mobile-nav a:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.mobile-nav a:last-child{border-bottom:none}
+@media(max-width:860px){.main-nav{display:none!important}.nav-toggle{display:block!important}}
+@media(min-width:861px){.mobile-nav{display:none!important}}
+
+/* ── HERO ── */
+.hero{
+  position:relative;overflow:hidden;
+  min-height:88vh;display:flex;align-items:center;
+  background:var(--bg);
+}
+.hero-scanlines{
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.012) 2px,rgba(255,255,255,.012) 4px);
+  z-index:1;
+}
+.hero-glow-red{position:absolute;top:-200px;right:-100px;width:600px;height:600px;background:radial-gradient(ellipse,rgba(232,49,43,.18) 0%,transparent 65%);pointer-events:none;z-index:0}
+.hero-glow-gold{position:absolute;bottom:-100px;left:-100px;width:500px;height:400px;background:radial-gradient(ellipse,rgba(245,166,35,.1) 0%,transparent 65%);pointer-events:none;z-index:0}
+.hero-inner{max-width:1200px;margin:0 auto;padding:80px 24px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;position:relative;z-index:2}
+@media(max-width:760px){.hero-inner{grid-template-columns:1fr;gap:40px}}
+.hero-kicker{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--red-lt);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.hero-kicker::before{content:'';width:24px;height:2px;background:var(--red)}
+.hero-title{font-family:'Bebas Neue',cursive;font-size:clamp(3.5rem,8vw,6.5rem);line-height:.95;letter-spacing:.02em;margin-bottom:20px}
+.hero-title .accent{color:var(--red)}
+.hero-title .dim{color:rgba(228,224,216,.35);font-size:.55em}
+.hero-sub{font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:32px;max-width:460px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px}
+.hero-pill{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;padding:5px 12px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.06em;text-transform:uppercase}
+.hero-pill.red{border-color:rgba(232,49,43,.3);color:var(--red-lt);background:rgba(232,49,43,.08)}
+.hero-pill.gold{border-color:rgba(245,166,35,.3);color:var(--gold-lt);background:rgba(245,166,35,.08)}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap}
+.btn-red{display:inline-flex;align-items:center;gap:8px;background:var(--red);color:white;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.08em;padding:13px 28px;border-radius:10px;box-shadow:0 4px 0 var(--red-dk),0 8px 32px rgba(232,49,43,.3);transition:transform .12s,filter .15s}
+.btn-red:hover{filter:brightness(1.12);transform:translateY(-2px)}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--text);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.08em;padding:12px 24px;border-radius:10px;border:1.5px solid rgba(255,255,255,.15);transition:border-color .2s,background .2s}
+.btn-outline:hover{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.04)}
+
+/* Hero VS panel */
+.hero-vs{position:relative;display:flex;flex-direction:column;gap:12px}
+.vs-badge{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;font-family:'Bebas Neue',cursive;font-size:2.8rem;color:var(--gold);text-shadow:0 0 40px rgba(245,166,35,.6);letter-spacing:.1em}
+.file-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;transition:border-color .2s}
+.file-card:hover{border-color:rgba(255,255,255,.15)}
+.file-ext{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.1em;width:48px;text-align:center;padding:6px 0;border-radius:6px;flex-shrink:0}
+.ext-def{background:rgba(155,107,255,.15);color:var(--purple);border:1px solid rgba(155,107,255,.2)}
+.ext-sff{background:rgba(74,158,255,.15);color:var(--blue-lt);border:1px solid rgba(74,158,255,.2)}
+.ext-air{background:rgba(245,166,35,.15);color:var(--gold-lt);border:1px solid rgba(245,166,35,.2)}
+.ext-cmd{background:rgba(61,220,132,.15);color:var(--green);border:1px solid rgba(61,220,132,.2)}
+.ext-cns{background:rgba(232,49,43,.15);color:var(--red-lt);border:1px solid rgba(232,49,43,.2)}
+.ext-snd{background:rgba(112,163,167,.15);color:var(--teal);border:1px solid rgba(112,163,167,.2)}
+.file-info-name{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;color:var(--text)}
+.file-info-desc{font-size:.72rem;color:var(--muted);margin-top:2px}
+
+/* ── SECTION LAYOUT ── */
+.section-wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.section-label{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px;display:inline-flex;align-items:center;gap:8px}
+.section-label::before{content:'';width:16px;height:2px}
+.section-heading{font-family:'Bebas Neue',cursive;font-size:clamp(2rem,5vw,3.2rem);letter-spacing:.04em;color:white;margin-bottom:8px;line-height:1}
+.section-desc{font-size:.95rem;color:var(--muted);line-height:1.7;max-width:540px}
+
+/* ── COURSE SECTIONS ── */
+.course-section{padding:80px 0;border-bottom:1px solid var(--border)}
+.course-grid{display:grid;grid-template-columns:280px 1fr;gap:0;margin-top:48px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+@media(max-width:700px){.course-grid{grid-template-columns:1fr}}
+
+/* Sidebar */
+.course-sidebar{background:var(--bg3);border-right:1px solid var(--border);padding:24px 0}
+@media(max-width:700px){.course-sidebar{border-right:none;border-bottom:1px solid var(--border);padding:16px 0;display:flex;flex-wrap:wrap;gap:4px;padding:12px}}
+.step-btn{width:100%;display:flex;align-items:center;gap:12px;padding:13px 20px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;transition:background .15s,color .15s;text-align:left}
+.step-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.step-btn.active{color:white;background:rgba(255,255,255,.06)}
+.step-num{width:28px;height:28px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:.9rem;letter-spacing:.05em;flex-shrink:0;transition:all .2s}
+.step-btn.active .step-num{background:currentColor;border-color:currentColor;color:var(--bg)}
+.step-btn.done .step-num::after{content:'✓';font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:700}
+@media(max-width:700px){.step-btn{width:auto;padding:8px 12px;border-radius:8px;font-size:.78rem}.step-num{width:22px;height:22px;font-size:.75rem}}
+
+/* Main content */
+.course-main{padding:36px 40px;min-height:420px}
+@media(max-width:700px){.course-main{padding:24px 20px}}
+.step-panel{display:none}
+.step-panel.active{display:block}
+.step-tag{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+.step-title{font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:.04em;color:white;margin-bottom:12px;line-height:1.1}
+.step-body{font-size:.9rem;color:var(--muted);line-height:1.75}
+.step-body p{margin-bottom:10px}
+.step-body strong{color:var(--text);font-weight:600}
+.step-body ul{padding-left:18px;margin-bottom:10px}
+.step-body li{margin-bottom:5px}
+.step-list{list-style:none;padding:0;margin:16px 0;display:flex;flex-direction:column;gap:8px}
+.step-list li{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.85rem;color:var(--text)}
+.step-list li::before{content:attr(data-n);font-family:'Bebas Neue',cursive;font-size:.9rem;letter-spacing:.05em;color:var(--muted);min-width:18px;padding-top:1px}
+.code-block{background:#0d0d10;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px 20px;margin:14px 0;overflow-x:auto}
+.code-block pre{font-size:.78rem;line-height:1.65;color:#a8c8ff}
+.code-block .comment{color:#505060}
+.code-block .key{color:var(--gold-lt)}
+.code-block .val{color:var(--green)}
+.tip-box{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:12px 16px;margin:12px 0;font-size:.82rem;color:rgba(228,224,216,.75);display:flex;gap:10px}
+.tip-box::before{content:'💡';flex-shrink:0}
+.warn-box{background:rgba(232,49,43,.07);border:1px solid rgba(232,49,43,.2);border-radius:10px;padding:12px 16px;margin:12px 0;font-size:.82rem;color:rgba(228,224,216,.75);display:flex;gap:10px}
+.warn-box::before{content:'⚠️';flex-shrink:0}
+.step-nav{display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)}
+.btn-step{padding:9px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;border:none;transition:background .15s,opacity .15s}
+.btn-step-prev{background:rgba(255,255,255,.06);color:var(--muted)}
+.btn-step-prev:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-step-next{background:var(--red);color:white;box-shadow:0 3px 0 var(--red-dk)}
+.btn-step-next:hover{filter:brightness(1.1)}
+.btn-step:disabled{opacity:.3;cursor:default}
+
+/* Clsn diagram */
+.clsn-diagram{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+@media(max-width:500px){.clsn-diagram{grid-template-columns:1fr}}
+.clsn-box{border-radius:10px;padding:14px 16px}
+.clsn2{background:rgba(74,158,255,.08);border:2px solid rgba(74,158,255,.35)}
+.clsn1{background:rgba(232,49,43,.08);border:2px solid rgba(232,49,43,.35)}
+.clsn-title{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.06em;margin-bottom:4px}
+.clsn2 .clsn-title{color:var(--blue-lt)}
+.clsn1 .clsn-title{color:var(--red-lt)}
+.clsn-desc{font-size:.78rem;color:var(--muted);line-height:1.5}
+
+/* Group table */
+.group-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.8rem}
+.group-table th{text-align:left;padding:8px 10px;font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.group-table td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
+.group-table td:first-child{font-family:'DM Mono',monospace;color:var(--gold-lt)}
+.group-table tr:last-child td{border-bottom:none}
+
+/* ── STAGE SECTION ── */
+.stage-section{padding:80px 0;border-bottom:1px solid var(--border);background:var(--bg2)}
+.parallax-demo{margin:32px 0;background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.parallax-layers{display:flex;flex-direction:column;gap:0}
+.layer-row{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border)}
+.layer-row:last-child{border-bottom:none}
+.layer-depth{width:120px;flex-shrink:0;padding:14px 16px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);border-right:1px solid var(--border)}
+.layer-bar-wrap{flex:1;padding:10px 16px}
+.layer-bar{height:24px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;color:rgba(0,0,0,.7);transition:width .3s}
+.layer-desc{width:180px;flex-shrink:0;padding:14px 16px;font-size:.78rem;color:var(--muted);border-left:1px solid var(--border)}
+@media(max-width:600px){.layer-depth,.layer-desc{display:none}}
+
+/* ── DOWNLOADS SECTION ── */
+.downloads-section{padding:80px 0}
+.downloads-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:40px}
+.dl-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s}
+.dl-card:hover{transform:translateY(-3px)}
+.dl-card-top{display:flex;align-items:center;gap:14px}
+.dl-icon{font-size:2rem;flex-shrink:0}
+.dl-type-badge{font-family:'DM Mono',monospace;font-size:.6rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:5px}
+.dl-title{font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:.04em;color:white;line-height:1.1}
+.dl-desc{font-size:.8rem;color:var(--muted);line-height:1.6;flex:1}
+.dl-btn{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;transition:filter .15s;margin-top:4px}
+.dl-btn:hover{filter:brightness(1.1)}
+
+/* ── SCROLL REVEAL ── */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ── FOOTER ── */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:28px 24px;text-align:center;color:var(--muted);font-size:.8rem}
+footer a{color:var(--muted);transition:color .15s}
+footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/36x36/0a0a0c/e8312b?text=JV'">
+      JVDesignStudio
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="content_hub.html" class="nav-link">All Projects</a>
+      <a href="workshop.html" class="nav-link">Workshop</a>
+      <a href="learn.html" class="nav-link">🔧 Learn</a>
+      <a href="search.html" class="nav-link">🔍 Search</a>
+      <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="content_hub.html">📦 All Projects</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="learn.html">📖 Learn</a>
+    <a href="search.html">🔍 Search</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="devlog.html">📓 Dev Log</a>
+    <a href="videos.html">🎬 Videos</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-scanlines"></div>
+  <div class="hero-glow-red"></div>
+  <div class="hero-glow-gold"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-kicker">JVDesignStudio · MUGEN Workshop</div>
+      <h1 class="hero-title">
+        Build Your<br>
+        Own <span class="accent">Fighter</span><br>
+        <span class="dim">From Scratch</span>
+      </h1>
+      <p class="hero-sub">A complete free course for creating original MUGEN characters and custom stages. Draw sprites, write code, build a stage and put it all into a playable fighting game.</p>
+      <div class="hero-pills">
+        <span class="hero-pill red">MUGEN 1.0 / 1.1</span>
+        <span class="hero-pill gold">Fighter Factory 3</span>
+        <span class="hero-pill">🆓 Completely Free</span>
+        <span class="hero-pill">Ages 12+</span>
+      </div>
+      <div class="hero-ctas">
+        <a href="#mugen-course" class="btn-red">⚔ Start Learning</a>
+        <a href="#downloads" class="btn-outline">📦 Get All Files</a>
+      </div>
+    </div>
+    <div class="hero-vs">
+      <div class="file-card">
+        <span class="file-ext ext-def">.DEF</span>
+        <div><div class="file-info-name">mychar.def</div><div class="file-info-desc">Master config links every other file</div></div>
+      </div>
+      <div class="file-card">
+        <span class="file-ext ext-sff">.SFF</span>
+        <div><div class="file-info-name">mychar.sff</div><div class="file-info-desc">All character sprites packed together</div></div>
+      </div>
+      <div class="file-card">
+        <span class="file-ext ext-air">.AIR</span>
+        <div><div class="file-info-name">mychar.air</div><div class="file-info-desc">Animation data which sprites play when</div></div>
+      </div>
+      <div class="file-card">
+        <span class="file-ext ext-cmd">.CMD</span>
+        <div><div class="file-info-name">mychar.cmd</div><div class="file-info-desc">Player inputs and button combos</div></div>
+      </div>
+      <div class="file-card">
+        <span class="file-ext ext-cns">.CNS</span>
+        <div><div class="file-info-name">mychar.cns</div><div class="file-info-desc">Health, speed, hitboxes, move logic</div></div>
+      </div>
+      <div class="file-card">
+        <span class="file-ext ext-snd">.SND</span>
+        <div><div class="file-info-name">mychar.snd</div><div class="file-info-desc">Sound effects (optional but great)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MUGEN COURSE ══ -->
+<section class="course-section" id="mugen-course">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--red-lt)">
+        <span style="background:var(--red)"></span>
+        ⚔ Part 1 MUGEN Basics
+      </div>
+      <h2 class="section-heading">From Zero to Playable Fighter</h2>
+      <p class="section-desc">Start here if you're new to MUGEN. This section covers everything from drawing your first sprites to getting your character onto the select screen.</p>
+    </div>
+
+    <div class="course-grid reveal" id="mugen-grid">
+      <div class="course-sidebar">
+        <button class="step-btn active" data-course="mugen" data-step="0" style="--c:var(--red-lt)">
+          <span class="step-num" style="color:var(--red-lt);border-color:var(--red-lt)">1</span>
+          What is MUGEN?
+        </button>
+        <button class="step-btn" data-course="mugen" data-step="1" style="--c:var(--red-lt)">
+          <span class="step-num" style="color:var(--red-lt);border-color:var(--red-lt)">2</span>
+          Drawing Your Sprites
+        </button>
+        <button class="step-btn" data-course="mugen" data-step="2" style="--c:var(--red-lt)">
+          <span class="step-num" style="color:var(--red-lt);border-color:var(--red-lt)">3</span>
+          Packing the SFF
+        </button>
+        <button class="step-btn" data-course="mugen" data-step="3" style="--c:var(--red-lt)">
+          <span class="step-num" style="color:var(--red-lt);border-color:var(--red-lt)">4</span>
+          The File Structure
+        </button>
+        <button class="step-btn" data-course="mugen" data-step="4" style="--c:var(--red-lt)">
+          <span class="step-num" style="color:var(--red-lt);border-color:var(--red-lt)">5</span>
+          Importing & Testing
+        </button>
+      </div>
+
+      <div class="course-main">
+
+        <!-- Step 0 -->
+        <div class="step-panel active" data-course="mugen" data-step="0">
+          <div class="step-tag" style="color:var(--red-lt)">MUGEN Basics — Step 1 of 5</div>
+          <div class="step-title">What is MUGEN?</div>
+          <div class="step-body">
+            <p>MUGEN is a free, customisable 2D fighting game engine created by Elecbyte. It lets you build your own roster of fighters, stages, and screen packs all from scratch or downloaded from the community.</p>
+            <p>The two most common versions are <strong>MUGEN 1.0</strong> and <strong>MUGEN 1.1</strong>. Make sure your content matches your engine version.</p>
+            <p><strong>What you'll need to get started:</strong></p>
+            <ul class="step-list">
+              <li data-n="🎨">A <strong>sprite editor</strong> Aseprite, GraphicsGale (free), or Piskel (browser-based)</li>
+              <li data-n="📝">A <strong>text editor</strong> Notepad++, VS Code, or even Notepad</li>
+              <li data-n="⚙️"><strong>Fighter Factory 3</strong>  The standard tool for packing sprites and editing animations</li>
+              <li data-n="🎮">A copy of <strong>MUGEN 1.0 or 1.1</strong></li>
+            </ul>
+            <div class="tip-box">MUGEN itself doesn't require any installation just extract the zip and run mugen.exe.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" disabled>← Previous</button>
+            <button class="btn-step btn-step-next" data-course="mugen" data-next="1">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="step-panel" data-course="mugen" data-step="1">
+          <div class="step-tag" style="color:var(--red-lt)">MUGEN Basics Step 2 of 5</div>
+          <div class="step-title">Drawing Your Sprites</div>
+          <div class="step-body">
+            <p>Sprites are the individual images that make up your character's animations. Before touching any MUGEN tools, you need to draw them.</p>
+            <p><strong>Sprite rules:</strong></p>
+            <ul class="step-list">
+              <li data-n="1">Draw at a <strong>consistent resolution</strong> (e.g. 100×120 pixels per frame)</li>
+              <li data-n="2">Use a <strong>magenta background (#FF00FF)</strong> MUGEN makes this colour transparent</li>
+              <li data-n="3">Keep your character centred on a <strong>consistent axis point</strong> across all frames</li>
+              <li data-n="4">Name files logically: <code>idle_01.png</code>, <code>walk_01.png</code>, <code>punch_01.png</code></li>
+            </ul>
+            <p><strong>Minimum sprite set to get started:</strong></p>
+            <table class="group-table">
+              <tr><th>Animation</th><th>Frames</th><th>Group</th></tr>
+              <tr><td>Idle stance</td><td>4–6 frames</td><td>0</td></tr>
+              <tr><td>Walk forward</td><td>6–8 frames</td><td>20</td></tr>
+              <tr><td>Jump</td><td>3–5 frames</td><td>40</td></tr>
+              <tr><td>Light punch</td><td>3–5 frames</td><td>200</td></tr>
+              <tr><td>Light kick</td><td>3–5 frames</td><td>400</td></tr>
+              <tr><td>Getting hit</td><td>2–3 frames</td><td>5000</td></tr>
+              <tr><td>Portrait</td><td>1 frame</td><td>9000</td></tr>
+            </table>
+            <div class="tip-box">Start with the idle animation just 4 frames of subtle breathing movement. Get that working first before adding more.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="mugen" data-prev="0">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="mugen" data-next="2">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-panel" data-course="mugen" data-step="2">
+          <div class="step-tag" style="color:var(--red-lt)">MUGEN Basics Step 3 of 5</div>
+          <div class="step-title">Packing Sprites into an SFF</div>
+          <div class="step-body">
+            <p>The <strong>.SFF (Sprite File Format)</strong> bundles all your character's images into one file that MUGEN can read. Each sprite is stored with a <strong>Group number</strong> and an <strong>Image number</strong>.</p>
+            <ul class="step-list">
+              <li data-n="1">Open Fighter Factory 3 and click <strong>File → New</strong></li>
+              <li data-n="2">Go to the <strong>Sprites section</strong> and click Add to import your PNG files</li>
+              <li data-n="3">For each sprite, set the <strong>Group</strong> and <strong>Image number</strong> (Group 0 = Idle, 20 = Walk, 200 = Punch)</li>
+              <li data-n="4">Set the <strong>axis point</strong> for each sprite click the crosshair tool and place it at the character's feet</li>
+              <li data-n="5">Save as <code>yourcharacter.sff</code></li>
+            </ul>
+            <div class="tip-box">Use View → Show Guidelines to see the floor line. Every character's axis point should sit exactly on this line — this is what stops them from floating or sinking.</div>
+            <div class="warn-box">Wrong axis points are the number one cause of characters floating above the ground. Take your time setting them correctly for every sprite.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="mugen" data-prev="1">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="mugen" data-next="3">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-panel" data-course="mugen" data-step="3">
+          <div class="step-tag" style="color:var(--red-lt)">MUGEN Basics Step 4 of 5</div>
+          <div class="step-title">The File Structure</div>
+          <div class="step-body">
+            <p>Every MUGEN character is a folder containing six files. Here's your <code>mychar.def</code> template the master config that links everything together:</p>
+            <div class="code-block"><pre><span class="comment">; mychar.def — edit names to match your character</span>
+<span class="key">[Info]</span>
+<span class="val">name</span>        = <span class="comment">"My Character"</span>
+<span class="val">displayname</span> = <span class="comment">"My Character"</span>
+<span class="val">author</span>      = <span class="comment">"Your Name"</span>
+<span class="val">pal.defaults</span> = 1
+
+<span class="key">[Files]</span>
+<span class="val">sprite</span> = mychar.sff
+<span class="val">anim</span>   = mychar.air
+<span class="val">cmd</span>    = mychar.cmd
+<span class="val">cns</span>    = mychar.cns
+<span class="val">stcommon</span> = common1.cns
+<span class="val">sound</span>  =</pre></div>
+            <div class="tip-box"><code>stcommon = common1.cns</code> points to MUGEN's built-in states file. Don't create it it already exists inside MUGEN's data folder.</div>
+            <p>Your complete character folder structure:</p>
+            <ul class="step-list">
+              <li data-n="📁"><code>MUGEN/chars/mychar/mychar.def</code></li>
+              <li data-n="🖼">mychar.sff — all your sprites</li>
+              <li data-n="🎬">mychar.air — animation sequences</li>
+              <li data-n="🎮">mychar.cmd — button commands</li>
+              <li data-n="⚙️">mychar.cns — stats and move logic</li>
+            </ul>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="mugen" data-prev="2">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="mugen" data-next="4">Next →</button>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-panel" data-course="mugen" data-step="4">
+          <div class="step-tag" style="color:var(--red-lt)">MUGEN Basics Step 5 of 5</div>
+          <div class="step-title">Importing & Testing</div>
+          <div class="step-body">
+            <ul class="step-list">
+              <li data-n="1">Place your entire character folder inside <code>MUGEN/chars/</code></li>
+              <li data-n="2">Open <code>MUGEN/data/select.def</code> in a text editor</li>
+              <li data-n="3">Find the <code>[Characters]</code> section and add your folder name on a new line: <code>mychar</code></li>
+              <li data-n="4">Save <code>select.def</code> and launch <code>mugen.exe</code></li>
+              <li data-n="5">Your character should appear on the select screen!</li>
+            </ul>
+            <p><strong>Common issues:</strong></p>
+            <table class="group-table">
+              <tr><th>Problem</th><th>Fix</th></tr>
+              <tr><td>Not on select screen</td><td>Check select.def folder name must match exactly (case-sensitive)</td></tr>
+              <tr><td>Character invisible</td><td>.AIR has wrong Group/Image numbers — check against .SFF</td></tr>
+              <tr><td>Character frozen</td><td>Action 0 (idle) is missing or has wrong sprite numbers</td></tr>
+              <tr><td>Floats/sinks</td><td>Axis points wrong re-align in Fighter Factory 3</td></tr>
+              <tr><td>MUGEN crashes</td><td>Missing file in .DEF or typo in .CNS/.CMD — check the error log</td></tr>
+            </table>
+            <div class="tip-box">FF3 has a built-in "Run in M.U.G.E.N." button set your MUGEN path in Options and click Run to test instantly without manual copying.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="mugen" data-prev="3">← Previous</button>
+            <button class="btn-step btn-step-next" disabled>Complete ✓</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FF3 COURSE ══ -->
+<section class="course-section" id="ff3-course" style="background:var(--bg2)">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--gold-lt)">
+        <span style="background:var(--gold)"></span>
+        ⚙️ Part 2 Fighter Factory 3
+      </div>
+      <h2 class="section-heading">Master Your Toolkit</h2>
+      <p class="section-desc">Fighter Factory 3 is the essential MUGEN tool. This section walks through every major section sprites, animations, collision boxes, sounds, and code.</p>
+    </div>
+
+    <div class="course-grid reveal" id="ff3-grid">
+      <div class="course-sidebar">
+        <button class="step-btn active" data-course="ff3" data-step="0">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">1</span>
+          What is FF3?
+        </button>
+        <button class="step-btn" data-course="ff3" data-step="1">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">2</span>
+          Importing Sprites
+        </button>
+        <button class="step-btn" data-course="ff3" data-step="2">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">3</span>
+          Building Animations
+        </button>
+        <button class="step-btn" data-course="ff3" data-step="3">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">4</span>
+          Collision Boxes
+        </button>
+        <button class="step-btn" data-course="ff3" data-step="4">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">5</span>
+          Adding Sounds
+        </button>
+        <button class="step-btn" data-course="ff3" data-step="5">
+          <span class="step-num" style="color:var(--gold-lt);border-color:var(--gold-lt)">6</span>
+          Code & Testing
+        </button>
+      </div>
+
+      <div class="course-main">
+
+        <!-- FF3 Step 0 -->
+        <div class="step-panel active" data-course="ff3" data-step="0">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 1 of 6</div>
+          <div class="step-title">What is Fighter Factory 3?</div>
+          <div class="step-body">
+            <p>Fighter Factory 3 (FF3) is a free, all-in-one editor for MUGEN content. It replaces multiple separate tools with a single visual interface the go-to standard for the MUGEN community.</p>
+            <ul class="step-list">
+              <li data-n="🖼">Edit and pack sprites into .SFF files</li>
+              <li data-n="🎬">Create and preview animations (.AIR) in real-time</li>
+              <li data-n="📝">Built-in editors for .DEF, .CMD, .CNS with syntax highlighting</li>
+              <li data-n="🔊">Import and manage sound effects (.SND)</li>
+              <li data-n="📍">Set axis points visually</li>
+              <li data-n="🎯">Preview characters with hitboxes visible</li>
+            </ul>
+            <p><strong>Download:</strong> Go to <code>virtualltek.com</code> and download FF3 (3.0.1) or FF Studio for your OS. No installer needed just extract and run <code>FighterFactory.exe</code>.</p>
+            <div class="tip-box">Choose the <strong>Neo interface mode</strong> on first launch it has the clearest layout for beginners.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" disabled>← Previous</button>
+            <button class="btn-step btn-step-next" data-course="ff3" data-next="1" style="background:var(--gold);box-shadow:0 3px 0 #b07d10">Next →</button>
+          </div>
+        </div>
+
+        <!-- FF3 Step 1 -->
+        <div class="step-panel" data-course="ff3" data-step="1">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 2 of 6</div>
+          <div class="step-title">Importing Sprites</div>
+          <div class="step-body">
+            <ul class="step-list">
+              <li data-n="1">Open FF3 and click <strong>File → New</strong> to start a fresh .SFF project</li>
+              <li data-n="2">Go to the <strong>Sprites editor tab</strong></li>
+              <li data-n="3">Click <strong>Add</strong> (or drag-and-drop) to import your PNG files</li>
+              <li data-n="4">For each sprite, set the <strong>Group</strong> and <strong>Image number</strong> in the panel</li>
+              <li data-n="5">Click the <strong>crosshair tool</strong> and click at the character's feet to set the axis</li>
+              <li data-n="6">Enable <strong>View → Show Guidelines</strong> to check alignment against the floor line</li>
+              <li data-n="7">Save with <strong>File → Save As</strong> → name it <code>mychar.sff</code></li>
+            </ul>
+            <div class="tip-box">Use <strong>Add → select multiple files</strong> for batch import. FF3 auto-increments the Image number for you.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="ff3" data-prev="0">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="ff3" data-next="2" style="background:var(--gold);box-shadow:0 3px 0 #b07d10">Next →</button>
+          </div>
+        </div>
+
+        <!-- FF3 Step 2 -->
+        <div class="step-panel" data-course="ff3" data-step="2">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 3 of 6</div>
+          <div class="step-title">Building Animations</div>
+          <div class="step-body">
+            <p>The Animations editor is where you build your .AIR file sequences of sprites that play as actions. Each animation is an "Action" with a number.</p>
+            <ul class="step-list">
+              <li data-n="1">Switch to the <strong>Animations editor tab</strong></li>
+              <li data-n="2">Right-click the action list → <strong>Add</strong> → set the action number (e.g. 0 for idle)</li>
+              <li data-n="3">Click <strong>Add Frame</strong> → pick sprites from your .SFF list</li>
+              <li data-n="4">Set the <strong>Ticks</strong> field for each frame (6–8 ticks = smooth, 1 tick = 60fps)</li>
+              <li data-n="5">Hit <strong>Play</strong> or press <strong>Space</strong> to preview</li>
+            </ul>
+            <div class="code-block"><pre><span class="comment">; .AIR format (you can also edit this as text)</span>
+<span class="key">[Begin Action 0]</span>  <span class="comment">; idle animation</span>
+<span class="val">0,0,  0,0,  7</span>      <span class="comment">; Group,Image, X,Y, Duration</span>
+<span class="val">0,1,  0,0,  7</span>
+<span class="val">0,2,  0,0,  7</span>
+<span class="val">0,3,  0,0,  7</span>     <span class="comment">; loops back to start</span></pre></div>
+            <div class="tip-box">Use <strong>Loopstart</strong> on the frame where the loop should begin. For idle, that's usually the first frame.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="ff3" data-prev="1">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="ff3" data-next="3" style="background:var(--gold);box-shadow:0 3px 0 #b07d10">Next →</button>
+          </div>
+        </div>
+
+        <!-- FF3 Step 3 -->
+        <div class="step-panel" data-course="ff3" data-step="3">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 4 of 6</div>
+          <div class="step-title">Collision Boxes</div>
+          <div class="step-body">
+            <p>Collision boxes define where your character can be hit (Clsn2) and where their attacks deal damage (Clsn1).</p>
+            <div class="clsn-diagram">
+              <div class="clsn-box clsn2">
+                <div class="clsn-title">CLSN2 Hurtbox</div>
+                <div class="clsn-desc">The area where your character <strong>can be hit</strong>. Draw it around the body. Every frame of every animation needs at least one without it, the character is invincible on that frame.</div>
+              </div>
+              <div class="clsn-box clsn1">
+                <div class="clsn-title">CLSN1 — Hitbox</div>
+                <div class="clsn-desc">The area where your character <strong>deals damage</strong>. Only draw these on attack frames. Cover the fist, foot, or weapon — not the whole body.</div>
+              </div>
+            </div>
+            <ul class="step-list">
+              <li data-n="💙">Use <strong>Clsn2 Default</strong> to set one hurtbox for an entire animation great for idle, walk, and hit reactions</li>
+              <li data-n="❤️">Add <strong>Clsn1 boxes only</strong> on the frames where the attack is active</li>
+              <li data-n="👁">Toggle <strong>Show Clsn</strong> in the preview to visually verify your boxes</li>
+            </ul>
+            <div class="tip-box">Keep hitboxes slightly smaller than the visual attack it feels fairer to opponents and more fun to play.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="ff3" data-prev="2">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="ff3" data-next="4" style="background:var(--gold);box-shadow:0 3px 0 #b07d10">Next →</button>
+          </div>
+        </div>
+
+        <!-- FF3 Step 4 -->
+        <div class="step-panel" data-course="ff3" data-step="4">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 5 of 6</div>
+          <div class="step-title">Adding Sounds</div>
+          <div class="step-body">
+            <p>The Sounds editor builds your .SND file. Each sound gets a <strong>Group</strong> and <strong>Sound number</strong>, just like sprites.</p>
+            <ul class="step-list">
+              <li data-n="1">Switch to the <strong>Sounds editor tab</strong></li>
+              <li data-n="2">Click <strong>Add</strong> and import WAV files</li>
+              <li data-n="3">Set Group and Sound numbers (see table below)</li>
+              <li data-n="4">Click <strong>Play</strong> to preview each sound</li>
+              <li data-n="5"><strong>File → Save As</strong> → name it <code>mychar.snd</code></li>
+            </ul>
+            <table class="group-table">
+              <tr><th>Group</th><th>Type</th></tr>
+              <tr><td>0, X</td><td>Punch &amp; kick impacts</td></tr>
+              <tr><td>1, X</td><td>Character voice lines / grunts</td></tr>
+              <tr><td>2, X</td><td>Special move effects</td></tr>
+              <tr><td>3, X</td><td>Super move effects</td></tr>
+              <tr><td>10, X</td><td>Win / loss quotes</td></tr>
+            </table>
+            <div class="tip-box">Need free sound effects? Try freesound.org search for "punch hit", "ki energy", "sword swing".</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="ff3" data-prev="3">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="ff3" data-next="5" style="background:var(--gold);box-shadow:0 3px 0 #b07d10">Next →</button>
+          </div>
+        </div>
+
+        <!-- FF3 Step 5 -->
+        <div class="step-panel" data-course="ff3" data-step="5">
+          <div class="step-tag" style="color:var(--gold-lt)">Fighter Factory 3 Step 6 of 6</div>
+          <div class="step-title">Code Editors & Testing</div>
+          <div class="step-body">
+            <p>FF3's built-in code editors handle .DEF, .CMD, and .CNS files with <strong>syntax highlighting, auto-complete, and error checking</strong>.</p>
+            <div class="code-block"><pre><span class="comment">; .CNS snippet light punch state</span>
+<span class="key">[Statedef 200]</span>
+<span class="val">type</span>    = S
+<span class="val">movetype</span> = A
+<span class="val">anim</span>    = 200
+<span class="val">ctrl</span>    = 0
+
+<span class="key">[State 200, HitDef]</span>
+<span class="val">type</span>       = HitDef
+<span class="val">trigger1</span>   = AnimElem = 2
+<span class="val">damage</span>     = 20, 0
+<span class="val">hitsound</span>   = 5, 0
+
+<span class="key">[State 200, End]</span>
+<span class="val">type</span>     = ChangeState
+<span class="val">trigger1</span> = AnimTime = 0
+<span class="val">value</span>    = 0
+<span class="val">ctrl</span>     = 1</pre></div>
+            <p>To test directly from FF3: set your MUGEN path in <strong>Options</strong>, then click <strong>Run in M.U.G.E.N.</strong> — no manual file copying needed.</p>
+            <div class="tip-box">The workflow is: Save → Run → See problem → Fix → Repeat. Don't be precious about it iteration is the process.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="ff3" data-prev="4">← Previous</button>
+            <button class="btn-step btn-step-next" disabled>Complete ✓</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STAGE SECTION ══ -->
+<section class="stage-section" id="stage-course">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--purple)">
+        <span style="background:var(--purple)"></span>
+        🏰 Part 3 — Custom Stage
+      </div>
+      <h2 class="section-heading">Dark Dungeon Arena</h2>
+      <p class="section-desc">Learn to build a multi-layer parallax stage with animated torches. A complete walkthrough using the Dungeon Arena as the example project template .DEF file included to download.</p>
+    </div>
+
+    <div class="course-grid reveal" id="stage-grid">
+      <div class="course-sidebar">
+        <button class="step-btn active" data-course="stage" data-step="0">
+          <span class="step-num" style="color:var(--purple);border-color:var(--purple)">1</span>
+          How Stages Work
+        </button>
+        <button class="step-btn" data-course="stage" data-step="1">
+          <span class="step-num" style="color:var(--purple);border-color:var(--purple)">2</span>
+          The Layer System
+        </button>
+        <button class="step-btn" data-course="stage" data-step="2">
+          <span class="step-num" style="color:var(--purple);border-color:var(--purple)">3</span>
+          Writing the DEF
+        </button>
+        <button class="step-btn" data-course="stage" data-step="3">
+          <span class="step-num" style="color:var(--purple);border-color:var(--purple)">4</span>
+          Animated Elements
+        </button>
+        <button class="step-btn" data-course="stage" data-step="4">
+          <span class="step-num" style="color:var(--purple);border-color:var(--purple)">5</span>
+          Import & Test
+        </button>
+      </div>
+
+      <div class="course-main">
+
+        <div class="step-panel active" data-course="stage" data-step="0">
+          <div class="step-tag" style="color:var(--purple)">Stage Creation Step 1 of 5</div>
+          <div class="step-title">How MUGEN Stages Work</div>
+          <div class="step-body">
+            <p>A MUGEN stage is a <strong>stack of background images (layers)</strong> that scroll at different speeds as the camera moves. Far layers move slowly, close layers move fast this is called <strong>parallax scrolling</strong> and it makes a flat 2D stage feel three-dimensional.</p>
+            <p>Each layer has a <strong>delta value</strong> that controls its scroll speed relative to the camera.</p>
+            <p><strong>Files you need:</strong></p>
+            <ul class="step-list">
+              <li data-n="📄">.DEF file — stage config defining layers, camera, music</li>
+              <li data-n="🖼">.SFF file — all background images packed together</li>
+              <li data-n="🎨">Background art — your layer images (PNG or PCX)</li>
+              <li data-n="🔊">.SND (optional) — background music or ambient sound</li>
+            </ul>
+            <div class="tip-box">You need Fighter Factory 3 to pack your background images into the .SFF the same tool used for characters.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" disabled>← Previous</button>
+            <button class="btn-step btn-step-next" data-course="stage" data-next="1" style="background:var(--purple);box-shadow:0 3px 0 #6040a0">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-panel" data-course="stage" data-step="1">
+          <div class="step-tag" style="color:var(--purple)">Stage Creation Step 2 of 5</div>
+          <div class="step-title">The Parallax Layer System</div>
+          <div class="step-body">
+            <p>The Dungeon Arena uses 5 layers at different depths. Each layer has a delta value lower = further away, higher = closer.</p>
+            <div class="parallax-demo">
+              <div class="parallax-layers">
+                <div class="layer-row">
+                  <div class="layer-depth">delta: 0.1</div>
+                  <div class="layer-bar-wrap"><div class="layer-bar" style="width:10%;background:#2a1a0a;color:rgba(255,220,180,.6)">Cavern wall / lava glow</div></div>
+                  <div class="layer-desc">Deep background — barely moves</div>
+                </div>
+                <div class="layer-row">
+                  <div class="layer-depth">delta: 0.4</div>
+                  <div class="layer-bar-wrap"><div class="layer-bar" style="width:40%;background:#1a1a2a;color:rgba(200,180,255,.7)">Stone pillars + chains</div></div>
+                  <div class="layer-desc">Mid-ground — slow scroll</div>
+                </div>
+                <div class="layer-row">
+                  <div class="layer-depth">delta: 0.7</div>
+                  <div class="layer-bar-wrap"><div class="layer-bar" style="width:70%;background:#1a1208;color:rgba(255,180,60,.8)">Torch brackets</div></div>
+                  <div class="layer-desc">Closer details — medium</div>
+                </div>
+                <div class="layer-row">
+                  <div class="layer-depth">delta: 1.0</div>
+                  <div class="layer-bar-wrap"><div class="layer-bar" style="width:100%;background:#2a2a2a;color:rgba(220,220,220,.9)">Arena floor fighters stand here</div></div>
+                  <div class="layer-desc">Ground level — matches camera</div>
+                </div>
+                <div class="layer-row">
+                  <div class="layer-depth">delta: 1.3</div>
+                  <div class="layer-bar-wrap"><div class="layer-bar" style="width:100%;background:#1a0a0a;color:rgba(255,120,80,.8);overflow:visible;white-space:nowrap">Foreground bars / dust</div></div>
+                  <div class="layer-desc">Foreground faster than cam</div>
+                </div>
+              </div>
+            </div>
+            <div class="tip-box"><strong>delta = 0, 0</strong> means the layer is completely fixed and doesn't move at all good for a very distant sky.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="stage" data-prev="0">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="stage" data-next="2" style="background:var(--purple);box-shadow:0 3px 0 #6040a0">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-panel" data-course="stage" data-step="2">
+          <div class="step-tag" style="color:var(--purple)">Stage Creation — Step 3 of 5</div>
+          <div class="step-title">Writing the Stage DEF</div>
+          <div class="step-body">
+            <p>The stage .DEF defines every layer, the camera bounds, and player start positions. Here's the Dungeon Arena floor layer as an example:</p>
+            <div class="code-block"><pre><span class="key">[BGdef]</span>
+<span class="val">spr</span> = dungeon.sff
+
+<span class="key">[BG ArenaFloor]</span>
+<span class="val">type</span>     = normal
+<span class="val">spriteno</span> = 3, 0      <span class="comment">; Group 3, Image 0</span>
+<span class="val">layerno</span>  = 0
+<span class="val">start</span>    = 0, 185
+<span class="val">delta</span>    = 1, 1      <span class="comment">; matches camera exactly</span>
+<span class="val">tile</span>     = 1, 0      <span class="comment">; tile horizontally</span>
+<span class="val">tilespacing</span> = 0, 0
+<span class="val">mask</span>     = 0
+
+<span class="key">[BG DeepWall]</span>
+<span class="val">type</span>     = normal
+<span class="val">spriteno</span> = 0, 0
+<span class="val">start</span>    = 0, 0
+<span class="val">delta</span>    = 0.1, 0.1  <span class="comment">; barely moves feels far away</span>
+<span class="val">tile</span>     = 1, 0</pre></div>
+            <div class="tip-box">Download the full <code>dungeon.def</code> template below it has all 5 layers, camera settings, and player positions ready to use.</div>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="stage" data-prev="1">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="stage" data-next="3" style="background:var(--purple);box-shadow:0 3px 0 #6040a0">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-panel" data-course="stage" data-step="3">
+          <div class="step-tag" style="color:var(--purple)">Stage Creation Step 4 of 5</div>
+          <div class="step-title">Adding Animated Elements</div>
+          <div class="step-body">
+            <p>Use <code>type = anim</code> instead of <code>type = normal</code> to make a layer play a looping animation. Perfect for flickering torches, dripping water, or lava bubbles.</p>
+            <div class="code-block"><pre><span class="comment">; Define the animation in your stage .DEF</span>
+<span class="key">[Begin Action 10]</span>
+<span class="val">10,0,  0,0,  6</span>    <span class="comment">; bright frame</span>
+<span class="val">10,1,  0,0,  4</span>    <span class="comment">; dim frame</span>
+<span class="val">10,2,  0,0,  6</span>    <span class="comment">; bright again</span>
+<span class="val">10,1,  0,0,  3</span>    <span class="comment">; dim loops</span>
+
+<span class="comment">; Then reference it as a background layer</span>
+<span class="key">[BG TorchFlicker]</span>
+<span class="val">type</span>     = anim
+<span class="val">actionno</span> = 10
+<span class="val">start</span>    = -80, 50
+<span class="val">delta</span>    = 0.7, 0.7
+<span class="val">mask</span>     = 1</pre></div>
+            <p><strong>Animation ideas for the dungeon:</strong></p>
+            <table class="group-table">
+              <tr><th>Effect</th><th>Frames</th><th>Difficulty</th></tr>
+              <tr><td>Flickering torches</td><td>3–4 alternating brightness</td><td style="color:var(--green)">Easy</td></tr>
+              <tr><td>Lava glow pulse</td><td>2–3 fading orange</td><td style="color:var(--green)">Easy</td></tr>
+              <tr><td>Swaying chains</td><td>4–6 subtle swing</td><td style="color:var(--gold)">Medium</td></tr>
+              <tr><td>Dripping water</td><td>5–8 droplet frames</td><td style="color:var(--gold)">Medium</td></tr>
+              <tr><td>Floating dust</td><td>6–10 drifting particles</td><td style="color:var(--red-lt)">Hard</td></tr>
+            </table>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="stage" data-prev="2">← Previous</button>
+            <button class="btn-step btn-step-next" data-course="stage" data-next="4" style="background:var(--purple);box-shadow:0 3px 0 #6040a0">Next →</button>
+          </div>
+        </div>
+
+        <div class="step-panel" data-course="stage" data-step="4">
+          <div class="step-tag" style="color:var(--purple)">Stage Creation Step 5 of 5</div>
+          <div class="step-title">Import & Test Your Stage</div>
+          <div class="step-body">
+            <ul class="step-list">
+              <li data-n="1">Create <code>MUGEN/stages/dungeon/</code> and place <code>dungeon.def</code> and <code>dungeon.sff</code> inside</li>
+              <li data-n="2">Open <code>MUGEN/data/select.def</code> and find <code>[ExtraStages]</code></li>
+              <li data-n="3">Add a new line: <code>stages/dungeon/dungeon.def</code></li>
+              <li data-n="4">Save and run <code>mugen.exe</code> your stage appears in VS mode stage select</li>
+              <li data-n="5">Move characters left and right to test the parallax scrolling</li>
+            </ul>
+            <p><strong>Troubleshooting:</strong></p>
+            <table class="group-table">
+              <tr><th>Problem</th><th>Fix</th></tr>
+              <tr><td>Black screen</td><td>Check dungeon.sff exists and spr= path in [BGdef] is correct</td></tr>
+              <tr><td>No parallax</td><td>Check each [BG] has different delta values</td></tr>
+              <tr><td>Coloured blocks</td><td>Set mask = 1 on transparent layers, or use SFF v2 with PNG alpha</td></tr>
+              <tr><td>Fighters float</td><td>Adjust start Y on your floor layer or tweak [PlayerInfo] p1starty</td></tr>
+              <tr><td>Anim not playing</td><td>Check type = anim and actionno matches your [Begin Action N]</td></tr>
+            </table>
+          </div>
+          <div class="step-nav">
+            <button class="btn-step btn-step-prev" data-course="stage" data-prev="3">← Previous</button>
+            <button class="btn-step btn-step-next" disabled>Complete ✓</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DOWNLOADS ══ -->
+<section class="downloads-section" id="downloads">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--green)">
+        <span style="background:var(--green)"></span>
+        📦 Downloads
+      </div>
+      <h2 class="section-heading">Everything Free to Download</h2>
+      <p class="section-desc">Guides, cheat sheets, project briefs, a quiz, and the Dungeon Arena .DEF template. All free no sign-up needed.</p>
+    </div>
+
+    <div class="downloads-grid">
+
+      <div class="dl-card reveal" style="border-color:rgba(245,166,35,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📊</span>
+          <span class="dl-type-badge" style="background:rgba(245,166,35,.1);color:var(--gold-lt);border:1px solid rgba(245,166,35,.2)">PPTX Slides</span>
+        </div>
+        <div class="dl-title">MUGEN Beginner's Guide</div>
+        <div class="dl-desc">9-slide presentation covering sprites, SFF packing, file structure, and importing into MUGEN. Great for teaching sessions.</div>
+        <a href="MUGEN_Beginner_Guide.pptx" download class="dl-btn" style="background:rgba(245,166,35,.15);color:var(--gold-lt);border:1px solid rgba(245,166,35,.2)">⬇ Download PPTX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(74,158,255,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📊</span>
+          <span class="dl-type-badge" style="background:rgba(74,158,255,.1);color:var(--blue-lt);border:1px solid rgba(74,158,255,.2)">PPTX Slides</span>
+        </div>
+        <div class="dl-title">Fighter Factory 3 Guide</div>
+        <div class="dl-desc">10-slide walkthrough of FF3 from download to testing sprites, animations, collision boxes, sounds, and code editors.</div>
+        <a href="FF3_Beginner_Guide.pptx" download class="dl-btn" style="background:rgba(74,158,255,.1);color:var(--blue-lt);border:1px solid rgba(74,158,255,.2)">⬇ Download PPTX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(155,107,255,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📊</span>
+          <span class="dl-type-badge" style="background:rgba(155,107,255,.1);color:var(--purple);border:1px solid rgba(155,107,255,.2)">PPTX Slides</span>
+        </div>
+        <div class="dl-title">Stage Creation Guide</div>
+        <div class="dl-desc">11-slide walkthrough for building the Dark Dungeon Arena layers, parallax, animated torches, and importing into MUGEN.</div>
+        <a href="MUGEN_Stage_Dungeon_Arena.pptx" download class="dl-btn" style="background:rgba(155,107,255,.1);color:var(--purple);border:1px solid rgba(155,107,255,.2)">⬇ Download PPTX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(61,220,132,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📋</span>
+          <span class="dl-type-badge" style="background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">MUGEN Cheat Sheet</div>
+        <div class="dl-desc">Quick-reference card file types, sprite groups, CMD input notation, key CNS triggers, parallax delta guide, and AI difficulty values.</div>
+        <a href="MUGEN_Cheat_Sheet.docx" download class="dl-btn" style="background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(61,220,132,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📋</span>
+          <span class="dl-type-badge" style="background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">FF3 Cheat Sheet</div>
+        <div class="dl-desc">Keyboard shortcuts, sprite editor tasks, animation editor tasks, AIR format reference, sound groups, and a testing checklist.</div>
+        <a href="FF3_Cheat_Sheet.docx" download class="dl-btn" style="background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(112,163,167,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📖</span>
+          <span class="dl-type-badge" style="background:rgba(112,163,167,.1);color:var(--teal);border:1px solid rgba(112,163,167,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">SFF to MUGEN Guide</div>
+        <div class="dl-desc">The complete guide for getting your character into MUGEN full .DEF, .AIR, .CNS, and .CMD file templates you can copy and use immediately.</div>
+        <a href="SFF_to_MUGEN_Guide.docx" download class="dl-btn" style="background:rgba(112,163,167,.1);color:var(--teal);border:1px solid rgba(112,163,167,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(232,49,43,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">🎯</span>
+          <span class="dl-type-badge" style="background:rgba(232,49,43,.1);color:var(--red-lt);border:1px solid rgba(232,49,43,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">FF3 Project Brief</div>
+        <div class="dl-desc">5-phase student project Setup & Sprites, Animations, Collision Boxes, Sounds, Code & Testing. Each phase has a clear deliverable.</div>
+        <a href="FF3_Project_Brief.docx" download class="dl-btn" style="background:rgba(232,49,43,.1);color:var(--red-lt);border:1px solid rgba(232,49,43,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(232,49,43,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">🎯</span>
+          <span class="dl-type-badge" style="background:rgba(232,49,43,.1);color:var(--red-lt);border:1px solid rgba(232,49,43,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">MUGEN Project Brief</div>
+        <div class="dl-desc">5-step full project from concept sketch to playable fighter with specials, a custom stage, sound effects, and AI. Bonus challenges included.</div>
+        <a href="MUGEN_Project_Brief.docx" download class="dl-btn" style="background:rgba(232,49,43,.1);color:var(--red-lt);border:1px solid rgba(232,49,43,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(245,166,35,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">📝</span>
+          <span class="dl-type-badge" style="background:rgba(245,166,35,.1);color:var(--gold-lt);border:1px solid rgba(245,166,35,.2)">DOCX</span>
+        </div>
+        <div class="dl-title">MUGEN Knowledge Quiz</div>
+        <div class="dl-desc">Short answer, multiple choice, and code-reading questions covering file structure, sprites, moves, stages, sound, and AI. Answer key included.</div>
+        <a href="MUGEN_Quiz.docx" download class="dl-btn" style="background:rgba(245,166,35,.1);color:var(--gold-lt);border:1px solid rgba(245,166,35,.2)">⬇ Download DOCX</a>
+      </div>
+
+      <div class="dl-card reveal" style="border-color:rgba(155,107,255,.2)">
+        <div class="dl-card-top">
+          <span class="dl-icon">🏰</span>
+          <span class="dl-type-badge" style="background:rgba(155,107,255,.1);color:var(--purple);border:1px solid rgba(155,107,255,.2)">.DEF File</span>
+        </div>
+        <div class="dl-title">Dungeon Arena Stage Template</div>
+        <div class="dl-desc">A complete, fully commented <code>dungeon.def</code> 5 parallax layers, camera settings, player positions, and animated torch definition. Ready to use immediately.</div>
+        <a href="dungeon.def" download class="dl-btn" style="background:rgba(155,107,255,.1);color:var(--purple);border:1px solid rgba(155,107,255,.2)">⬇ Download .DEF</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <p>© 2025 JVDesignStudio &nbsp;·&nbsp;
+    <a href="workshop.html">Workshop</a> &nbsp;·&nbsp;
+    <a href="content_hub.html">All Projects</a> &nbsp;·&nbsp;
+    <a href="devlog.html">Dev Log</a> &nbsp;·&nbsp;
+    <a href="contact.html">Contact</a>
+  </p>
+</footer>
+
+<script>
+/* ── Course step navigation ── */
+function setStep(course, step) {
+  const panels = document.querySelectorAll(`.step-panel[data-course="${course}"]`);
+  const btns   = document.querySelectorAll(`.step-btn[data-course="${course}"]`);
+  panels.forEach(p => p.classList.toggle('active', +p.dataset.step === step));
+  btns.forEach(b => b.classList.toggle('active', +b.dataset.step === step));
+}
+
+document.querySelectorAll('.step-btn').forEach(btn => {
+  btn.addEventListener('click', () => setStep(btn.dataset.course, +btn.dataset.step));
+});
+document.querySelectorAll('.btn-step-next').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.next !== undefined) setStep(btn.dataset.course, +btn.dataset.next);
+  });
+});
+document.querySelectorAll('.btn-step-prev').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.prev !== undefined) setStep(btn.dataset.course, +btn.dataset.prev);
+  });
+});
+
+/* ── Scroll reveal ── */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const sibs = [...e.target.parentElement.querySelectorAll('.reveal')];
+      const idx = sibs.indexOf(e.target);
+      setTimeout(() => e.target.classList.add('visible'), Math.min(idx * 80, 240));
+      obs.unobserve(e.target);
+    }
+  });
+}, {threshold: 0.07});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── Mobile nav ── */
+(function(){
+  var btn = document.getElementById('navToggle');
+  var nav = document.getElementById('mobileNav');
+  if(!btn||!nav) return;
+  function open(){ nav.classList.add('open'); btn.textContent='✕'; }
+  function close(){ nav.classList.remove('open'); btn.textContent='☰'; }
+  btn.addEventListener('click', e => { e.stopPropagation(); nav.classList.contains('open') ? close() : open(); });
+  nav.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+  document.addEventListener('click', e => { if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape') close(); });
+})();
+</script>
+</body>
+</html>
