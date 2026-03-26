@@ -231,6 +231,16 @@ footer a:hover{color:rgba(240,234,214,.85)}
 
 /* Tilt hint */
 #tilt-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-family:'Fredoka',cursive;font-size:.85rem;color:rgba(64,59,51,.4);pointer-events:none;z-index:10;white-space:nowrap;display:none}
+
+/* ═══ MOBILE NAV ═══ */
+.nav-toggle{{display:none;background:none;border:none;padding:8px 10px;font-size:1.4rem;cursor:pointer;color:inherit;flex-shrink:0;line-height:1;}}
+.mobile-nav{{position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--header-bg,#fff);border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:0;overflow:hidden;transition:max-height .4s ease;display:block;}}
+.mobile-nav.open{{max-height:calc(100vh - 68px);overflow-y:auto;}}
+.mobile-nav a{{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:var(--charcoal,#403B33);border-bottom:1px solid rgba(64,59,51,.08);transition:background .12s;text-decoration:none;}}
+.mobile-nav a:hover{{background:rgba(64,59,51,.05);}}
+.mobile-nav a:last-child{{border-bottom:none;}}
+@media(max-width:860px){{.main-nav,.nav-cta,.header-nav{{display:none!important;}}.nav-toggle{{display:block!important;}}}}
+@media(min-width:861px){{.mobile-nav{{display:none!important;}}}}
 </style>
 </head>
 <body>
@@ -420,6 +430,14 @@ footer a:hover{color:rgba(240,234,214,.85)}
 /* ══════════════════════════════════════════
    LAUNCH / EXIT
 ══════════════════════════════════════════ */
+/* ── Echo sprite image ── */
+let echoSprite=null;
+(function(){
+  const img=new Image();
+  img.onload=function(){ echoSprite=img; };
+  img.src='Axo Fruit Catch.png';
+})();
+
 function launchGame(){
   document.getElementById('game-container').classList.add('active');
   document.getElementById('siteHeader').style.display='none';
@@ -689,23 +707,29 @@ function drawBG3(){
   cx.fillStyle='rgba(0,0,0,.06)';cx.fillRect(0,H*.88,W,2);
 }
 
-/* ── Draw Echo (placeholder sprite — swap later!) ── */
+/* ── Draw Echo with basket sprite ── */
 function drawEcho(x,y,wobble){
-  const sz=echoW;
+  const sz=echoW*2.2;   // sprite is taller than old emoji — scale up nicely
   cx.save();
   cx.translate(x,y);
-  cx.rotate(Math.sin(wobble)*.055);
+  cx.rotate(Math.sin(wobble)*.045);
 
-  // Shadow
-  cx.globalAlpha=.18;cx.fillStyle='#000';
-  cx.beginPath();cx.ellipse(0,sz*.55,sz*.4,sz*.1,0,0,Math.PI*2);cx.fill();
+  // Shadow under feet
+  cx.globalAlpha=.15;cx.fillStyle='#000';
+  cx.beginPath();cx.ellipse(0,sz*.38,sz*.28,sz*.07,0,0,Math.PI*2);cx.fill();
   cx.globalAlpha=1;
 
-  // Emoji sprite — replace this with a real sprite image later
-  cx.font=`${sz*1.1}px sans-serif`;
-  cx.textAlign='center';
-  cx.textBaseline='middle';
-  cx.fillText('🦎', 0, 0);
+  if(echoSprite){
+    // Draw sprite centred — basket sits at top (~20% down from top of image)
+    // So offset upward so basket aligns with catch zone
+    const sw=sz, sh=sz;
+    cx.drawImage(echoSprite, -sw/2, -sh*.6, sw, sh);
+  } else {
+    // Fallback emoji until image loads
+    cx.font=`${echoW*1.1}px sans-serif`;
+    cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('🦎',0,0);
+  }
 
   cx.restore();
 }
@@ -745,10 +769,10 @@ function tickParticles3(){
 
 /* ── Collision ── */
 function checkCollision(){
-  const hitW=echoW*.55, hitH=echoH*.45;
+  const hitW=echoW*.7, hitH=echoH*.3;  // basket catch zone — wide & at top of sprite
   items.forEach(it=>{
     if(!it.alive) return;
-    const dx=Math.abs(echoX-it.x), dy=Math.abs(echoY-it.y);
+    const dx=Math.abs(echoX-it.x), dy=Math.abs((echoY-echoH*.45)-it.y);  // basket top
     if(dx<hitW+it.size*.4&&dy<hitH+it.size*.35){
       it.alive=false;
       if(it.type==='rock'){
