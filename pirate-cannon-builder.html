@@ -241,6 +241,7 @@ header h1 {
 
 .control-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 14px;
   height: 14px;
   background: var(--gold);
@@ -669,7 +670,7 @@ function animate() {
   const cy = camDist * Math.cos(camPhi);
   const cz = camDist * Math.sin(camPhi) * Math.sin(camTheta);
   camera.position.set(cx, cy + 0.3, cz);
-  camera.lookAt(0, 0.2, 0);
+  camera.lookAt(0, 0.3, 0);
   renderer.render(scene, camera);
 }
 
@@ -698,113 +699,128 @@ function rebuildCannon() {
   const woodMat = new THREE.MeshStandardMaterial({ color: p.carriageColor, roughness: 0.7, metalness: 0.05 });
   const wheelMat = new THREE.MeshStandardMaterial({ color: p.wheelColor, roughness: 0.65, metalness: 0.05 });
   const ropeMat = new THREE.MeshStandardMaterial({ color: p.ropeColor, roughness: 0.9, metalness: 0 });
+  const boreMat = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5, metalness: 0.3 });
 
   const angleRad = p.carriageAngle * Math.PI / 180;
   const carriageTopY = p.wheelR + p.carriageH;
 
-  // --- Barrel ---
+  // =============================================
+  // BARREL PIVOT GROUP
+  // Local space: barrel extends along +Z (breech at -Z, muzzle at +Z).
+  // Pivot sits at trunnion mount on carriage top.
+  // Elevation: rotate around X to tilt muzzle up.
+  // =============================================
+  const barrelPivot = new THREE.Group();
+  barrelPivot.position.set(0, carriageTopY + p.barrelOuterR * 0.55, -p.carriageLen * 0.05);
+  barrelPivot.rotation.x = angleRad; // positive X rotation tilts muzzle (+Z) upward
+  cannonGroup.add(barrelPivot);
+
+  // Helper: radius at a given t (0=breech, 1=muzzle)
+  function radiusAt(t) {
+    let r = p.barrelOuterR;
+    r -= p.barrelTaper * 0.1 * t;
+    if (t > 0.92) r += p.muzzleFlare * ((t - 0.92) / 0.08);
+    return Math.max(r, 0.01);
+  }
+
+  // Pivot is at 25% of barrel length from breech
+  const breechZ = -p.barrelLen * 0.25;
+  const muzzleZ = p.barrelLen * 0.75;
+
+  // --- Barrel (built as a LatheGeometry along Y, then rotated to Z) ---
   const barrelPts = [];
-  const segs = 20;
+  const segs = 24;
   for (let i = 0; i <= segs; i++) {
     const t = i / segs;
-    let r = p.barrelOuterR;
-    // Taper toward muzzle
-    r -= p.barrelTaper * 0.1 * t;
-    // Flare at very end
-    if (t > 0.92) r += p.muzzleFlare * ((t - 0.92) / 0.08);
-    barrelPts.push(new THREE.Vector2(Math.max(r, 0.01), t * p.barrelLen));
+    barrelPts.push(new THREE.Vector2(radiusAt(t), t * p.barrelLen));
   }
   const barrelGeo = new THREE.LatheGeometry(barrelPts, 32);
   const barrel = new THREE.Mesh(barrelGeo, barrelMat);
   barrel.castShadow = true;
-  barrel.rotation.x = -Math.PI / 2 - angleRad;
-  barrel.position.y = carriageTopY + p.barrelOuterR * 0.6;
-  barrel.position.z = -p.carriageLen * 0.3;
-  cannonGroup.add(barrel);
+  // Lathe grows along Y; rotate so it grows along +Z instead
+  barrel.rotation.x = -Math.PI / 2;
+  barrel.position.z = breechZ;
+  barrelPivot.add(barrel);
 
-  // Inner bore
-  const boreGeo = new THREE.CylinderGeometry(p.barrelInnerR, p.barrelInnerR, p.barrelLen * 0.95, 16);
-  const boreMat = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5, metalness: 0.3 });
+  // Inner bore (cylinder along Y → rotate to Z)
+  const boreGeo = new THREE.CylinderGeometry(p.barrelInnerR, p.barrelInnerR, p.barrelLen * 0.92, 16);
   const bore = new THREE.Mesh(boreGeo, boreMat);
-  bore.rotation.x = -Math.PI / 2 - angleRad;
-  bore.position.copy(barrel.position);
-  const offset = new THREE.Vector3(0, 0, p.barrelLen * 0.025);
-  offset.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-  bore.position.add(offset);
-  cannonGroup.add(bore);
+  bore.rotation.x = Math.PI / 2;
+  bore.position.z = breechZ + p.barrelLen * 0.5;
+  barrelPivot.add(bore);
 
-  // --- Muzzle Ring ---
+  // --- Muzzle Ring (torus wrapping around barrel at muzzle) ---
   if (p.muzzleRingSize > 0) {
-    const mRingGeo = new THREE.TorusGeometry(p.barrelOuterR - p.barrelTaper * 0.1 + p.muzzleFlare + p.muzzleRingSize * 0.5, p.muzzleRingSize, 12, 32);
+    const tipR = radiusAt(1.0);
+    const mRingGeo = new THREE.TorusGeometry(tipR + p.muzzleRingSize * 0.3, p.muzzleRingSize, 12, 32);
     const mRing = new THREE.Mesh(mRingGeo, metalMat);
-    const muzzleOffset = new THREE.Vector3(0, 0, p.barrelLen);
-    muzzleOffset.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-    mRing.position.set(barrel.position.x + muzzleOffset.x, barrel.position.y + muzzleOffset.y, barrel.position.z + muzzleOffset.z);
-    mRing.rotation.x = -angleRad;
+    // Torus default is in XY plane; for it to circle around Z axis, we leave rotation alone
+    // (XY torus around Z axis is exactly what we want)
+    mRing.position.z = muzzleZ;
     mRing.castShadow = true;
-    cannonGroup.add(mRing);
+    barrelPivot.add(mRing);
   }
 
-  // --- Cascabel ---
+  // --- Cascabel (rear knob + neck, behind breech) ---
   const cascGeo = new THREE.SphereGeometry(p.cascabelR, 16, 12);
   const casc = new THREE.Mesh(cascGeo, metalMat);
-  const cascNeckGeo = new THREE.CylinderGeometry(p.cascabelNeckR, p.cascabelNeckR, 0.04, 12);
-  const cascNeck = new THREE.Mesh(cascNeckGeo, metalMat);
-  const rearOff = new THREE.Vector3(0, 0, -p.cascabelR * 0.5);
-  rearOff.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-  casc.position.set(barrel.position.x + rearOff.x, barrel.position.y + rearOff.y, barrel.position.z + rearOff.z);
-  cascNeck.position.copy(casc.position);
-  const neckOff = new THREE.Vector3(0, 0, p.cascabelR * 0.3);
-  neckOff.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-  cascNeck.position.add(neckOff);
-  cascNeck.rotation.x = -angleRad;
+  casc.position.z = breechZ - p.cascabelR * 0.6;
   casc.castShadow = true;
-  cannonGroup.add(casc);
-  cannonGroup.add(cascNeck);
+  barrelPivot.add(casc);
 
-  // --- Trunnions ---
+  const cascNeckGeo = new THREE.CylinderGeometry(p.cascabelNeckR, p.cascabelNeckR, p.cascabelR * 0.8, 12);
+  const cascNeck = new THREE.Mesh(cascNeckGeo, metalMat);
+  cascNeck.rotation.x = Math.PI / 2; // align along Z
+  cascNeck.position.z = breechZ - p.cascabelR * 0.15;
+  barrelPivot.add(cascNeck);
+
+  // --- Trunnions (stick out sideways at pivot point Z=0) ---
   const trGeo = new THREE.CylinderGeometry(p.trunnionR, p.trunnionR, p.trunnionLen, 12);
   [-1, 1].forEach(side => {
     const tr = new THREE.Mesh(trGeo, metalMat);
-    const trOff = new THREE.Vector3(0, 0, p.barrelLen * 0.35);
-    trOff.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-    tr.position.set(barrel.position.x + trOff.x, barrel.position.y + trOff.y, barrel.position.z + trOff.z);
+    // Cylinder along Y → rotate to extend along X
     tr.rotation.z = Math.PI / 2;
-    tr.position.x += side * (p.barrelOuterR + p.trunnionLen * 0.5);
+    tr.position.set(side * (radiusAt(0.25) + p.trunnionLen * 0.5), 0, 0);
     tr.castShadow = true;
-    cannonGroup.add(tr);
+    barrelPivot.add(tr);
   });
 
-  // --- Reinforce Rings ---
+  // --- Reinforce Rings (torus bands along barrel) ---
   for (let i = 0; i < p.ringCount; i++) {
     const t = 0.15 + (i / Math.max(p.ringCount, 1)) * 0.5;
-    const rr = p.barrelOuterR - p.barrelTaper * 0.1 * t + p.ringSize;
+    const rr = radiusAt(t) + p.ringSize;
     const ringGeo = new THREE.TorusGeometry(rr, p.ringSize, 8, 32);
     const ring = new THREE.Mesh(ringGeo, metalMat);
-    const rOff = new THREE.Vector3(0, 0, p.barrelLen * t);
-    rOff.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-    ring.position.set(barrel.position.x + rOff.x, barrel.position.y + rOff.y, barrel.position.z + rOff.z);
-    ring.rotation.x = -angleRad;
+    // Torus in XY plane circles around Z — perfect
+    ring.position.z = breechZ + p.barrelLen * t;
     ring.castShadow = true;
-    cannonGroup.add(ring);
+    barrelPivot.add(ring);
   }
 
-  // --- Vent hole ---
-  const ventGeo = new THREE.CylinderGeometry(p.ventHoleR, p.ventHoleR, p.barrelOuterR * 2, 8);
-  const ventMat = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 });
-  const vent = new THREE.Mesh(ventGeo, ventMat);
-  const ventOff = new THREE.Vector3(0, 0, p.barrelLen * 0.12);
-  ventOff.applyAxisAngle(new THREE.Vector3(1, 0, 0), -angleRad);
-  vent.position.set(barrel.position.x + ventOff.x, barrel.position.y + ventOff.y + p.barrelOuterR * 0.5, barrel.position.z + ventOff.z);
-  cannonGroup.add(vent);
+  // --- Vent / Touch Hole (pokes out radially near breech) ---
+  const ventZ = breechZ + p.barrelLen * 0.12;
+  const ventGeo = new THREE.CylinderGeometry(p.ventHoleR, p.ventHoleR, radiusAt(0.12) * 2.2, 8);
+  const ventMat2 = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 });
+  const vent = new THREE.Mesh(ventGeo, ventMat2);
+  // Vent pokes upward (along Y local) from barrel surface
+  vent.position.set(0, radiusAt(0.12) * 0.5, ventZ);
+  barrelPivot.add(vent);
 
-  // --- Carriage ---
+  // =============================================
+  // CARRIAGE GROUP — the wooden body, cheeks,
+  // metal bands, rope, wedge. All parented so
+  // they stay together.
+  // =============================================
+  const carriageGroup = new THREE.Group();
+  cannonGroup.add(carriageGroup);
+
+  // Main carriage box
   const cGeo = new THREE.BoxGeometry(p.carriageW, p.carriageH, p.carriageLen);
   const carriage = new THREE.Mesh(cGeo, woodMat);
   carriage.position.y = p.wheelR + p.carriageH / 2;
   carriage.castShadow = true;
   carriage.receiveShadow = true;
-  cannonGroup.add(carriage);
+  carriageGroup.add(carriage);
 
   // Carriage side cheeks (tapered)
   [-1, 1].forEach(side => {
@@ -819,10 +835,60 @@ function rebuildCannon() {
     cheek.rotation.y = Math.PI / 2;
     cheek.position.set(side * (p.carriageW / 2 + 0.012), p.wheelR, 0);
     cheek.castShadow = true;
-    cannonGroup.add(cheek);
+    carriageGroup.add(cheek);
   });
 
-  // --- Wheels ---
+  // Barrel cradle notches on top of cheeks
+  [-1, 1].forEach(side => {
+    const cradleGeo = new THREE.TorusGeometry(p.barrelOuterR + 0.005, 0.012, 6, 16, Math.PI);
+    const cradle = new THREE.Mesh(cradleGeo, metalMat);
+    cradle.position.set(side * (p.carriageW / 2 + 0.012), carriageTopY + p.barrelOuterR * 0.1, -p.carriageLen * 0.05);
+    cradle.rotation.x = Math.PI / 2;
+    cradle.rotation.z = side > 0 ? Math.PI : 0;
+    carriageGroup.add(cradle);
+  });
+
+  // Metal bands on carriage
+  for (let i = 0; i < 3; i++) {
+    const bandZ = -p.carriageLen * 0.3 + i * p.carriageLen * 0.3;
+    const bandGeo = new THREE.BoxGeometry(p.carriageW + 0.01, 0.015, 0.02);
+    const band = new THREE.Mesh(bandGeo, metalMat);
+    band.position.set(0, p.wheelR + p.carriageH + 0.005, bandZ);
+    carriageGroup.add(band);
+  }
+
+  // --- Rope ---
+  if (p.showRope) {
+    [-1, 1].forEach(side => {
+      const ropeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(side * p.carriageW * 0.4, carriageTopY + 0.05, p.carriageLen * 0.4),
+        new THREE.Vector3(side * p.carriageW * 0.55, carriageTopY - 0.05, p.carriageLen * 0.2),
+        new THREE.Vector3(side * p.carriageW * 0.4, carriageTopY + 0.02, 0),
+      ]);
+      const ropeGeo = new THREE.TubeGeometry(ropeCurve, 20, 0.006, 6, false);
+      carriageGroup.add(new THREE.Mesh(ropeGeo, ropeMat));
+    });
+  }
+
+  // --- Quoin Wedge (elevation wedge under barrel at rear) ---
+  if (p.showWedge) {
+    const wedgeShape = new THREE.Shape();
+    wedgeShape.moveTo(0, 0);
+    wedgeShape.lineTo(0.12, 0);
+    wedgeShape.lineTo(0.12, 0.04);
+    wedgeShape.lineTo(0, 0.015);
+    const wedgeGeo = new THREE.ExtrudeGeometry(wedgeShape, { depth: 0.06, bevelEnabled: false });
+    const wedge = new THREE.Mesh(wedgeGeo, woodMat);
+    wedge.position.set(-0.03, carriageTopY, -p.carriageLen * 0.32);
+    carriageGroup.add(wedge);
+  }
+
+  // =============================================
+  // WHEEL + AXLE GROUP
+  // =============================================
+  const wheelAxleGroup = new THREE.Group();
+  cannonGroup.add(wheelAxleGroup);
+
   [-1, 1].forEach(side => {
     const wheelGroup = new THREE.Group();
     // Rim
@@ -846,57 +912,15 @@ function rebuildCannon() {
     wheelGroup.rotation.y = Math.PI / 2;
     wheelGroup.position.set(side * (p.carriageW / 2 + p.wheelThick), p.wheelR, -p.carriageLen * 0.15);
     wheelGroup.children.forEach(c => c.castShadow = true);
-    cannonGroup.add(wheelGroup);
+    wheelAxleGroup.add(wheelGroup);
   });
 
-  // --- Axle ---
+  // Axle
   const axleGeo = new THREE.CylinderGeometry(p.axleR, p.axleR, p.carriageW + p.wheelThick * 4, 8);
   const axle = new THREE.Mesh(axleGeo, metalMat);
   axle.rotation.z = Math.PI / 2;
   axle.position.set(0, p.wheelR, -p.carriageLen * 0.15);
-  cannonGroup.add(axle);
-
-  // Metal bands on carriage
-  for (let i = 0; i < 3; i++) {
-    const bandZ = -p.carriageLen * 0.3 + i * p.carriageLen * 0.3;
-    const bandGeo = new THREE.BoxGeometry(p.carriageW + 0.01, 0.015, 0.02);
-    const band = new THREE.Mesh(bandGeo, metalMat);
-    band.position.set(0, p.wheelR + p.carriageH + 0.005, bandZ);
-    cannonGroup.add(band);
-  }
-
-  // --- Rope ---
-  if (p.showRope) {
-    const ropeCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-p.carriageW * 0.4, carriageTopY + 0.05, p.carriageLen * 0.4),
-      new THREE.Vector3(-p.carriageW * 0.5, carriageTopY - 0.05, p.carriageLen * 0.2),
-      new THREE.Vector3(-p.carriageW * 0.4, carriageTopY + 0.02, 0),
-    ]);
-    const ropeGeo = new THREE.TubeGeometry(ropeCurve, 20, 0.006, 6, false);
-    const rope = new THREE.Mesh(ropeGeo, ropeMat);
-    cannonGroup.add(rope);
-    // Mirror side
-    const ropeCurve2 = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(p.carriageW * 0.4, carriageTopY + 0.05, p.carriageLen * 0.4),
-      new THREE.Vector3(p.carriageW * 0.5, carriageTopY - 0.05, p.carriageLen * 0.2),
-      new THREE.Vector3(p.carriageW * 0.4, carriageTopY + 0.02, 0),
-    ]);
-    const ropeGeo2 = new THREE.TubeGeometry(ropeCurve2, 20, 0.006, 6, false);
-    cannonGroup.add(new THREE.Mesh(ropeGeo2, ropeMat));
-  }
-
-  // --- Quoin Wedge ---
-  if (p.showWedge) {
-    const wedgeShape = new THREE.Shape();
-    wedgeShape.moveTo(0, 0);
-    wedgeShape.lineTo(0.12, 0);
-    wedgeShape.lineTo(0.12, 0.04);
-    wedgeShape.lineTo(0, 0.015);
-    const wedgeGeo = new THREE.ExtrudeGeometry(wedgeShape, { depth: 0.06, bevelEnabled: false });
-    const wedge = new THREE.Mesh(wedgeGeo, woodMat);
-    wedge.position.set(-0.03, carriageTopY, -p.carriageLen * 0.32);
-    cannonGroup.add(wedge);
-  }
+  wheelAxleGroup.add(axle);
 
   // Ground plane
   const floorGeo = new THREE.PlaneGeometry(p.wsWidth, p.wsDepth);
