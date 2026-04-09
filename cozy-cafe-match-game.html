@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cozy Cafe Match — Play</title>
+<meta name="description" content="A cozy match-3 puzzle game. Match snacks, fill cravings, share a quiet afternoon at the cafe.">
+
+<!-- ============================================================ -->
+<!--  COZY CAFE MATCH — PLAYABLE GAME (v1)                         -->
+<!--                                                                -->
+<!--  Single self-contained HTML file. Drop into the JVDS site as   -->
+<!--  cozy-cafe-match-play.html and link from the landing page.    -->
+<!--                                                                -->
+<!--  PLACEHOLDER ART: Tiles are SVG shapes with cozy colours.      -->
+<!--  When you have real art, replace renderTile() — that's the    -->
+<!--  ONLY place tile visuals are defined.                          -->
+<!--                                                                -->
+<!--  SHARED VAULT: Reads/writes localStorage key 'jvds_player_    -->
+<!--  vault'. Schema is versioned so Sky High Squirt can read it.   -->
+<!-- ============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --cream:        #FBF4E8;
+    --cream-deep:  #F5E9D3;
+    --milk:        #FFFDF8;
+    --rose:        #F4B6C2;
+    --rose-deep:   #E48BA0;
+    --mint:        #B8DDC8;
+    --mint-deep:   #6FB89A;
+    --cocoa:       #4A3528;
+    --cocoa-soft:  #6B4F3E;
+    --sun:         #F5C76A;
+    --lavender:    #C9B8E0;
+
+    /* Tile colours — 5 distinct snacks */
+    --tile-berry:    #9B6BC4;  /* purple — blueberry */
+    --tile-strawb:   #E8617A;  /* pink — strawberry tart */
+    --tile-algae:    #6FB89A;  /* mint — algae cracker */
+    --tile-mush:     #D49B6F;  /* tan — mushroom */
+    --tile-marsh:    #F5C76A;  /* sun — marshmallow */
+
+    --shadow-soft:   0 6px 24px rgba(74, 53, 40, 0.08);
+    --shadow-card:   0 12px 40px rgba(74, 53, 40, 0.12);
+    --shadow-tile:   0 4px 12px rgba(74, 53, 40, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--cocoa);
+    background: var(--cream);
+    min-height: 100vh;
+    padding: 24px 16px;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(244, 182, 194, 0.10) 0%, transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(184, 221, 200, 0.10) 0%, transparent 45%);
+    overflow-x: hidden;
+  }
+
+  .game-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ============ HEADER ============ */
+  .game-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .game-title {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 900;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .game-title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--rose-deep);
+  }
+
+  .game-subtitle {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--cocoa-soft);
+    margin-top: 6px;
+    font-size: 15px;
+  }
+
+  /* ============ HUD ============ */
+  .hud {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    background: var(--milk);
+    border: 2px dashed var(--cream-deep);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .guest-block {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .guest-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--cream-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+    border: 3px solid var(--rose);
+    transition: transform 0.4s ease, border-color 0.4s ease;
+  }
+
+  .guest-avatar.happy { animation: bounce 0.6s ease; border-color: var(--mint-deep); }
+  .guest-avatar.sad   { animation: shake 0.4s ease; }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    30%      { transform: translateY(-8px) scale(1.1); }
+    60%      { transform: translateY(0) scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-4px) rotate(-3deg); }
+    75%      { transform: translateX(4px) rotate(3deg); }
+  }
+
+  .guest-info { min-width: 0; flex: 1; }
+
+  .guest-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 17px;
+    line-height: 1.1;
+  }
+
+  .guest-craving {
+    font-size: 13px;
+    color: var(--cocoa-soft);
+    margin-top: 2px;
+  }
+
+  .guest-craving strong { color: var(--cocoa); }
+
+  .craving-bar {
+    margin-top: 6px;
+    height: 8px;
+    background: var(--cream-deep);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .craving-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--rose), var(--sun));
+    border-radius: 100px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--cream);
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cocoa);
+    white-space: nowrap;
+  }
+
+  .stat-icon { font-size: 15px; }
+
+  /* ============ CAFE BACKGROUND SCENE ============ */
+  .board-wrap {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+
+  .cafe-scene {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #F5E0D8 0%, #F4B6C2 40%, #E8C4A8 100%);
+    z-index: 0;
+  }
+
+  .cafe-scene svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .sparkle-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* ============ BOARD ============ */
+  .board {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    padding: 14px;
+    background: rgba(251, 244, 232, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 24px;
+    aspect-ratio: 1;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tile {
+    position: relative;
+    background: var(--milk);
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-tile);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+    aspect-ratio: 1;
+    touch-action: none;
+  }
+
+  .tile:hover { transform: translateY(-2px); }
+
+  .tile.selected {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 3px var(--rose-deep), var(--shadow-tile);
+    z-index: 3;
+  }
+
+  .tile.matching {
+    animation: pop 0.4s ease forwards;
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(1); opacity: 1; }
+    50%  { transform: scale(1.25) rotate(8deg); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
+  }
+
+  .tile.falling { animation: fall 0.35s ease; }
+
+  @keyframes fall {
+    0%   { transform: translateY(-30px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .tile svg { width: 70%; height: 70%; }
+
+  /* ============ CONTROLS ============ */
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    background: var(--milk);
+    border: 2px dashed var(--cream-deep);
+    color: var(--cocoa);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ctrl-btn:hover {
+    border-color: var(--rose);
+    transform: translateY(-2px);
+  }
+
+  .ctrl-btn.active {
+    background: var(--cocoa);
+    color: var(--cream);
+    border-color: var(--cocoa);
+  }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--cocoa);
+    color: var(--cream);
+    padding: 14px 24px;
+    border-radius: 100px;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.4s ease;
+    z-index: 100;
+    pointer-events: none;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ============ FOOTER ============ */
+  .game-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--cocoa-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="game-wrap">
+
+  <div class="game-header">
+    <h1 class="game-title">Cozy Cafe <em>Match</em></h1>
+    <p class="game-subtitle">match snacks, fill cravings, no rush</p>
+  </div>
+
+  <!-- ============ HUD ============ -->
+  <div class="hud">
+    <div class="guest-block">
+      <div class="guest-avatar" id="guestAvatar">🦊</div>
+      <div class="guest-info">
+        <div class="guest-name" id="guestName">The Fox</div>
+        <div class="guest-craving" id="guestCraving">wants <strong>0 / 0</strong> blueberries</div>
+        <div class="craving-bar"><div class="craving-fill" id="cravingFill"></div></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="stat-icon">🪙</span><span id="coinCount">0</span></div>
+      <div class="stat"><span class="stat-icon">✨</span><span id="happyCount">0</span></div>
+    </div>
+  </div>
+
+  <!-- ============ BOARD + CAFE SCENE ============ -->
+  <div class="board-wrap">
+    <div class="cafe-scene">
+      <!-- A soft cafe scene: window, tables, lanterns -->
+      <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+        <!-- Wall + floor gradient handled by parent. Add window. -->
+        <rect x="40" y="50" width="120" height="140" rx="8" fill="#FFFDF8" opacity="0.5"/>
+        <rect x="40" y="50" width="120" height="140" rx="8" fill="none" stroke="#4A3528" stroke-width="3" opacity="0.3"/>
+        <line x1="100" y1="50" x2="100" y2="190" stroke="#4A3528" stroke-width="2" opacity="0.3"/>
+        <line x1="40" y1="120" x2="160" y2="120" stroke="#4A3528" stroke-width="2" opacity="0.3"/>
+
+        <!-- Hanging lantern 1 -->
+        <line x1="240" y1="0" x2="240" y2="60" stroke="#4A3528" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="240" cy="75" r="14" fill="#F5C76A" opacity="0.7"/>
+        <circle cx="240" cy="75" r="14" fill="none" stroke="#4A3528" stroke-width="1.5" opacity="0.4"/>
+
+        <!-- Hanging lantern 2 -->
+        <line x1="320" y1="0" x2="320" y2="40" stroke="#4A3528" stroke-width="1.5" opacity="0.4"/>
+        <circle cx="320" cy="55" r="11" fill="#F4B6C2" opacity="0.7"/>
+        <circle cx="320" cy="55" r="11" fill="none" stroke="#4A3528" stroke-width="1.5" opacity="0.4"/>
+
+        <!-- Plant -->
+        <rect x="195" y="160" width="30" height="30" rx="4" fill="#D49B6F" opacity="0.6"/>
+        <circle cx="200" cy="155" r="10" fill="#6FB89A" opacity="0.7"/>
+        <circle cx="215" cy="150" r="12" fill="#6FB89A" opacity="0.7"/>
+        <circle cx="225" cy="158" r="9"  fill="#6FB89A" opacity="0.7"/>
+
+        <!-- Table left -->
+        <ellipse cx="80"  cy="320" rx="55" ry="10" fill="#4A3528" opacity="0.15"/>
+        <rect x="55" y="280" width="50" height="40" rx="6" fill="#D49B6F" opacity="0.7"/>
+        <!-- Coffee cup on table -->
+        <rect x="68" y="265" width="24" height="18" rx="3" fill="#FFFDF8" opacity="0.85"/>
+        <path d="M 92 270 Q 100 270 100 277 Q 100 283 92 283" fill="none" stroke="#FFFDF8" stroke-width="2.5" opacity="0.85"/>
+
+        <!-- Table right -->
+        <ellipse cx="320" cy="320" rx="55" ry="10" fill="#4A3528" opacity="0.15"/>
+        <rect x="295" y="280" width="50" height="40" rx="6" fill="#D49B6F" opacity="0.7"/>
+        <!-- Tea cup -->
+        <rect x="308" y="265" width="24" height="18" rx="3" fill="#F4B6C2" opacity="0.85"/>
+
+        <!-- Animated steam from cups -->
+        <g opacity="0.5">
+          <path d="M 80 260 Q 75 250 80 240 Q 85 230 80 220" stroke="#FFFDF8" stroke-width="2" fill="none" stroke-linecap="round">
+            <animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/>
+          </path>
+          <path d="M 320 260 Q 315 250 320 240 Q 325 230 320 220" stroke="#FFFDF8" stroke-width="2" fill="none" stroke-linecap="round">
+            <animate attributeName="opacity" values="0.3;0.6;0.3" dur="4s" repeatCount="indefinite"/>
+          </path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="board" id="board"></div>
+    <div class="sparkle-layer" id="sparkleLayer"></div>
+  </div>
+
+  <!-- ============ CONTROLS ============ -->
+  <div class="controls">
+    <button class="ctrl-btn" id="audioBtn">🎵 Lofi: Off</button>
+    <button class="ctrl-btn" id="resetBtn">↻ New Board</button>
+    <button class="ctrl-btn" id="vaultBtn">🪙 View Vault</button>
+  </div>
+
+  <p class="game-footer">a JV Design Studio game • part of the Sky High Squirt world</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============ AUDIO (placeholder URLs — swap freely) ============ -->
+<audio id="lofiAudio" loop preload="none">
+  <!-- Replace with your own hosted lofi/rain track -->
+  <source src="" type="audio/mpeg">
+</audio>
+
+<script>
+/* ================================================================
+   COZY CAFE MATCH — GAME LOGIC
+   ================================================================ */
+
+// ----- CONFIG -----
+const GRID_SIZE = 8;
+const TILE_TYPES = ['berry', 'strawb', 'algae', 'mush', 'marsh'];
+
+// Tile visual definitions — swap shapes for real art later by editing
+// renderTile() and nothing else.
+const TILE_DATA = {
+  berry:  { color: 'var(--tile-berry)',  shape: 'circle',  label: 'blueberries' },
+  strawb: { color: 'var(--tile-strawb)', shape: 'heart',   label: 'strawberry tarts' },
+  algae:  { color: 'var(--tile-algae)',  shape: 'square',  label: 'algae crackers' },
+  mush:   { color: 'var(--tile-mush)',   shape: 'dome',    label: 'mushrooms' },
+  marsh:  { color: 'var(--tile-marsh)',  shape: 'diamond', label: 'marshmallows' }
+};
+
+// The four characters and their favourite + least favourite snacks.
+const GUESTS = [
+  { id: 'fox',    name: 'The Fox',     emoji: '🦊', favourite: 'berry',  hated: 'algae',  flavour: 'a quiet thinker by the window' },
+  { id: 'tiger',  name: 'The Tiger',   emoji: '🐯', favourite: 'strawb', hated: 'mush',   flavour: 'always asking for seconds' },
+  { id: 'axo',    name: 'The Axolotl', emoji: '🌸', favourite: 'marsh',  hated: 'algae',  flavour: 'a tiny dreamer with a sweet tooth' },
+  { id: 'turtle', name: 'The Turtle',  emoji: '🐢', favourite: 'algae',  hated: 'strawb', flavour: 'a curious explorer who loves greens' }
+];
+
+// ----- VAULT (shared with Sky High Squirt) -----
+const VAULT_KEY = 'jvds_player_vault';
+const VAULT_SCHEMA = 1;
+
+function loadVault() {
+  try {
+    const raw = localStorage.getItem(VAULT_KEY);
+    if (!raw) return defaultVault();
+    const v = JSON.parse(raw);
+    if (v.schema !== VAULT_SCHEMA) return defaultVault();
+    return v;
+  } catch (e) { return defaultVault(); }
+}
+
+function defaultVault() {
+  return {
+    schema: VAULT_SCHEMA,
+    coins: 0,
+    happiness: 0,
+    unlocked_items: [],
+    equipped: {},
+    achievements: [],
+    stats: { matches: 0, guests_served: 0 }
+  };
+}
+
+function saveVault(v) {
+  try { localStorage.setItem(VAULT_KEY, JSON.stringify(v)); }
+  catch (e) { console.warn('vault save failed', e); }
+}
+
+// ----- STATE -----
+let board = [];
+let selected = null;
+let busy = false;
+let currentGuest = null;
+let cravingTarget = 0;
+let cravingProgress = 0;
+let vault = loadVault();
+
+// ----- BOARD CREATION -----
+function randomTile(exclude = []) {
+  const choices = TILE_TYPES.filter(t => !exclude.includes(t));
+  return choices[Math.floor(Math.random() * choices.length)];
+}
+
+function createBoard() {
+  board = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    board[r] = [];
+    for (let c = 0; c < GRID_SIZE; c++) {
+      // Avoid creating accidental matches at start
+      const exclude = [];
+      if (c >= 2 && board[r][c-1] === board[r][c-2]) exclude.push(board[r][c-1]);
+      if (r >= 2 && board[r-1][c] === board[r-2][c]) exclude.push(board[r-1][c]);
+      board[r][c] = randomTile(exclude);
+    }
+  }
+  // Make sure at least one move exists
+  if (!hasAnyMove()) createBoard();
+}
+
+// ----- RENDER -----
+const boardEl = document.getElementById('board');
+
+function renderTile(type) {
+  const data = TILE_DATA[type];
+  const c = data.color;
+  // SVG shapes — placeholder art. Replace this function for real assets.
+  switch (data.shape) {
+    case 'circle':
+      return `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="${c}"/><circle cx="15" cy="15" r="3" fill="white" opacity="0.6"/></svg>`;
+    case 'heart':
+      return `<svg viewBox="0 0 40 40"><path d="M20 33 C 8 25, 5 15, 12 10 C 16 8, 20 11, 20 14 C 20 11, 24 8, 28 10 C 35 15, 32 25, 20 33 Z" fill="${c}"/></svg>`;
+    case 'square':
+      return `<svg viewBox="0 0 40 40"><rect x="7" y="7" width="26" height="26" rx="5" fill="${c}"/><circle cx="14" cy="14" r="2" fill="white" opacity="0.5"/><circle cx="26" cy="20" r="2" fill="white" opacity="0.5"/><circle cx="18" cy="28" r="2" fill="white" opacity="0.5"/></svg>`;
+    case 'dome':
+      return `<svg viewBox="0 0 40 40"><path d="M8 26 Q 20 6, 32 26 Z" fill="${c}"/><rect x="14" y="26" width="12" height="6" rx="2" fill="${c}" opacity="0.7"/><circle cx="16" cy="18" r="2" fill="white" opacity="0.7"/><circle cx="24" cy="22" r="2" fill="white" opacity="0.7"/></svg>`;
+    case 'diamond':
+      return `<svg viewBox="0 0 40 40"><path d="M20 6 L 34 20 L 20 34 L 6 20 Z" fill="${c}"/><path d="M20 6 L 34 20 L 20 12 Z" fill="white" opacity="0.3"/></svg>`;
+  }
+}
+
+function render() {
+  boardEl.innerHTML = '';
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.r = r;
+      tile.dataset.c = c;
+      tile.innerHTML = renderTile(board[r][c]);
+      if (selected && selected.r === r && selected.c === c) tile.classList.add('selected');
+      boardEl.appendChild(tile);
+    }
+  }
+}
+
+// ----- INPUT -----
+boardEl.addEventListener('click', (e) => {
+  if (busy) return;
+  const tileEl = e.target.closest('.tile');
+  if (!tileEl) return;
+  const r = parseInt(tileEl.dataset.r);
+  const c = parseInt(tileEl.dataset.c);
+  handleTap(r, c);
+});
+
+function handleTap(r, c) {
+  if (!selected) {
+    selected = { r, c };
+    render();
+    return;
+  }
+  if (selected.r === r && selected.c === c) {
+    selected = null;
+    render();
+    return;
+  }
+  // Adjacent?
+  const dr = Math.abs(selected.r - r);
+  const dc = Math.abs(selected.c - c);
+  if (dr + dc === 1) {
+    attemptSwap(selected, { r, c });
+    selected = null;
+  } else {
+    selected = { r, c };
+    render();
+  }
+}
+
+// ----- SWAP & MATCH -----
+async function attemptSwap(a, b) {
+  busy = true;
+  swapTiles(a, b);
+  render();
+  await sleep(200);
+
+  const matches = findMatches();
+  if (matches.length === 0) {
+    // No match — swap back
+    swapTiles(a, b);
+    render();
+    busy = false;
+    return;
+  }
+  await resolveMatches(matches);
+  busy = false;
+}
+
+function swapTiles(a, b) {
+  const t = board[a.r][a.c];
+  board[a.r][a.c] = board[b.r][b.c];
+  board[b.r][b.c] = t;
+}
+
+function findMatches() {
+  const matched = new Set();
+  // Horizontal
+  for (let r = 0; r < GRID_SIZE; r++) {
+    let runStart = 0;
+    for (let c = 1; c <= GRID_SIZE; c++) {
+      if (c === GRID_SIZE || board[r][c] !== board[r][runStart]) {
+        if (c - runStart >= 3) {
+          for (let k = runStart; k < c; k++) matched.add(`${r},${k}`);
+        }
+        runStart = c;
+      }
+    }
+  }
+  // Vertical
+  for (let c = 0; c < GRID_SIZE; c++) {
+    let runStart = 0;
+    for (let r = 1; r <= GRID_SIZE; r++) {
+      if (r === GRID_SIZE || board[r][c] !== board[runStart][c]) {
+        if (r - runStart >= 3) {
+          for (let k = runStart; k < r; k++) matched.add(`${k},${c}`);
+        }
+        runStart = r;
+      }
+    }
+  }
+  return [...matched].map(s => {
+    const [r, c] = s.split(',').map(Number);
+    return { r, c, type: board[r][c] };
+  });
+}
+
+async function resolveMatches(matches) {
+  // Score this batch
+  scoreMatches(matches);
+
+  // Animate match
+  matches.forEach(m => {
+    const idx = m.r * GRID_SIZE + m.c;
+    const el = boardEl.children[idx];
+    if (el) el.classList.add('matching');
+  });
+  await sleep(380);
+
+  // Clear matched cells
+  matches.forEach(m => { board[m.r][m.c] = null; });
+
+  // Drop tiles down
+  for (let c = 0; c < GRID_SIZE; c++) {
+    const col = [];
+    for (let r = GRID_SIZE - 1; r >= 0; r--) {
+      if (board[r][c] !== null) col.push(board[r][c]);
+    }
+    while (col.length < GRID_SIZE) col.push(randomTile());
+    for (let r = GRID_SIZE - 1; r >= 0; r--) {
+      board[r][c] = col[GRID_SIZE - 1 - r];
+    }
+  }
+  render();
+  // Mark new tiles as falling
+  [...boardEl.children].forEach(el => el.classList.add('falling'));
+  await sleep(360);
+
+  // Cascade: check for new matches
+  const next = findMatches();
+  if (next.length > 0) {
+    await resolveMatches(next);
+    return;
+  }
+
+  // No more matches — make sure a move exists
+  if (!hasAnyMove()) {
+    showToast('No moves left — reshuffling the board ✨');
+    await sleep(800);
+    do { createBoard(); } while (!hasAnyMove());
+    render();
+  }
+}
+
+// ----- SCORING + GUEST LOGIC -----
+function scoreMatches(matches) {
+  vault.stats.matches += matches.length;
+
+  let coinsEarned = 0;
+  let cravingDelta = 0;
+  let leastFavHit = false;
+
+  for (const m of matches) {
+    let coin = 1;
+    if (currentGuest) {
+      if (m.type === currentGuest.favourite) {
+        coin = 2;
+        cravingDelta += 1;
+      }
+      if (m.type === currentGuest.hated) {
+        leastFavHit = true;
+      }
+    }
+    coinsEarned += coin;
+  }
+
+  vault.coins += coinsEarned;
+  cravingProgress += cravingDelta;
+
+  if (leastFavHit) {
+    document.getElementById('guestAvatar').classList.add('sad');
+    setTimeout(() => document.getElementById('guestAvatar').classList.remove('sad'), 500);
+  }
+
+  if (matches.length >= 4) burstSparkles();
+
+  // Craving fulfilled?
+  if (currentGuest && cravingProgress >= cravingTarget) {
+    fulfilGuest();
+  }
+
+  saveVault(vault);
+  updateHUD();
+}
+
+function fulfilGuest() {
+  vault.happiness += 1;
+  vault.stats.guests_served += 1;
+  vault.coins += 10; // bonus
+  saveVault(vault);
+
+  document.getElementById('guestAvatar').classList.add('happy');
+  setTimeout(() => document.getElementById('guestAvatar').classList.remove('happy'), 700);
+  burstSparkles();
+  showToast(`${currentGuest.name} is happy! +10 🪙`);
+
+  setTimeout(nextGuest, 1400);
+}
+
+function nextGuest() {
+  // Pick a different random guest
+  const others = GUESTS.filter(g => !currentGuest || g.id !== currentGuest.id);
+  currentGuest = others[Math.floor(Math.random() * others.length)];
+  cravingTarget = 6 + Math.floor(Math.random() * 6); // 6–11
+  cravingProgress = 0;
+  updateHUD();
+  showToast(`${currentGuest.name} sits down — ${currentGuest.flavour}`);
+}
+
+// ----- HUD -----
+function updateHUD() {
+  if (!currentGuest) return;
+  document.getElementById('guestAvatar').textContent = currentGuest.emoji;
+  document.getElementById('guestName').textContent = currentGuest.name;
+  const favLabel = TILE_DATA[currentGuest.favourite].label;
+  document.getElementById('guestCraving').innerHTML =
+    `wants <strong>${cravingProgress} / ${cravingTarget}</strong> ${favLabel}`;
+  const pct = Math.min(100, (cravingProgress / cravingTarget) * 100);
+  document.getElementById('cravingFill').style.width = pct + '%';
+  document.getElementById('coinCount').textContent = vault.coins;
+  document.getElementById('happyCount').textContent = vault.happiness;
+}
+
+// ----- MOVE CHECK -----
+function hasAnyMove() {
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      // Try right
+      if (c < GRID_SIZE - 1) {
+        swapTiles({r,c}, {r, c: c+1});
+        if (findMatches().length > 0) { swapTiles({r,c}, {r, c: c+1}); return true; }
+        swapTiles({r,c}, {r, c: c+1});
+      }
+      // Try down
+      if (r < GRID_SIZE - 1) {
+        swapTiles({r,c}, {r: r+1, c});
+        if (findMatches().length > 0) { swapTiles({r,c}, {r: r+1, c}); return true; }
+        swapTiles({r,c}, {r: r+1, c});
+      }
+    }
+  }
+  return false;
+}
+
+// ----- SPARKLES -----
+function burstSparkles() {
+  const layer = document.getElementById('sparkleLayer');
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div');
+    s.textContent = ['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];
+    s.style.cssText = `
+      position: absolute;
+      left: ${20 + Math.random() * 60}%;
+      top: ${20 + Math.random() * 60}%;
+      font-size: ${16 + Math.random() * 14}px;
+      animation: sparkleFloat 1.2s ease-out forwards;
+      pointer-events: none;
+    `;
+    layer.appendChild(s);
+    setTimeout(() => s.remove(), 1300);
+  }
+}
+
+// Inject sparkle keyframes
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @keyframes sparkleFloat {
+    0%   { opacity: 0; transform: translateY(0) scale(0.5) rotate(0deg); }
+    20%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-60px) scale(1.3) rotate(180deg); }
+  }
+`;
+document.head.appendChild(styleSheet);
+
+// ----- TOAST -----
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ----- CONTROLS -----
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (busy) return;
+  createBoard();
+  render();
+  showToast('Fresh board ✨');
+});
+
+const audioBtn = document.getElementById('audioBtn');
+const lofi = document.getElementById('lofiAudio');
+audioBtn.addEventListener('click', () => {
+  if (audioBtn.classList.contains('active')) {
+    lofi.pause();
+    audioBtn.classList.remove('active');
+    audioBtn.textContent = '🎵 Lofi: Off';
+  } else {
+    // Will silently fail if no source set — that's fine
+    lofi.play().catch(() => {});
+    audioBtn.classList.add('active');
+    audioBtn.textContent = '🎵 Lofi: On';
+  }
+});
+
+document.getElementById('vaultBtn').addEventListener('click', () => {
+  showToast(`Vault: ${vault.coins} 🪙 • ${vault.happiness} ✨ • ${vault.stats.guests_served} served`);
+});
+
+// ----- INIT -----
+function init() {
+  createBoard();
+  nextGuest();
+  render();
+  updateHUD();
+}
+
+init();
+
+/* ================================================================
+   For Sky High Squirt: read the same vault with
+   const v = JSON.parse(localStorage.getItem('jvds_player_vault'));
+   It contains: coins, happiness, unlocked_items, equipped,
+   achievements, stats. Schema is versioned at v.schema.
+   ================================================================ */
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0620">
+<meta name="description" content="Little Steps — a cosmic endless runner. Choose your path through the void.">
+<title>Little Steps — A Cosmic Journey</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0a0620; --void-2:#140933; --void-3:#1e0f4a;
+    --cyan:#5ee1ff; --cyan-dim:#3aa8c2;
+    --gold:#ffd04a; --pink:#ff9ac8; --purple:#a78bfa;
+    --danger:#ff5470;
+    --text:#f5f0ff; --text-dim:rgba(245,240,255,.65); --text-faint:rgba(245,240,255,.35);
+    --card-bg:rgba(255,255,255,.04); --card-border:rgba(255,255,255,.1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{
+    font-family:'Inter',sans-serif;background:var(--void);color:var(--text);
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    overscroll-behavior:none;position:fixed;inset:0;
+  }
+  #stage{position:fixed;inset:0;z-index:1;display:block;width:100%;height:100%}
+
+  #hud{
+    position:fixed;top:max(18px,env(safe-area-inset-top));left:0;right:0;z-index:20;
+    display:none;justify-content:space-between;padding:0 22px;pointer-events:none;
+    font-family:'Fredoka',sans-serif;
+  }
+  #hud.show{display:flex}
+  .hud-block{
+    background:rgba(10,6,32,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(94,225,255,.25);border-radius:14px;padding:9px 16px;min-width:96px;
+  }
+  .hud-block.r{border-color:rgba(255,208,74,.3)}
+  .hud-label{
+    font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--cyan);font-family:'Inter',sans-serif;
+  }
+  .hud-block.r .hud-label{color:var(--gold)}
+  .hud-value{font-size:1.35rem;font-weight:700;color:white;line-height:1.1;margin-top:2px}
+  .hud-block.r .hud-value{color:var(--gold);text-align:right}
+
+  #hint{
+    position:fixed;left:50%;top:36%;transform:translate(-50%,-50%);z-index:15;
+    text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;
+  }
+  #hint.show{opacity:.95}
+  #hint .txt{
+    font-family:'Fredoka',sans-serif;font-size:1.05rem;font-weight:600;
+    color:var(--cyan);letter-spacing:.14em;
+    text-shadow:0 0 20px rgba(94,225,255,.5);text-transform:uppercase;
+  }
+  #hint .sub{
+    font-family:'Inter',sans-serif;font-size:.75rem;color:var(--text-dim);
+    margin-top:6px;font-style:italic;
+  }
+
+  .screen{
+    position:fixed;inset:0;z-index:30;display:none;
+    flex-direction:column;align-items:center;justify-content:center;
+    padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(167,139,250,.18), transparent 55%),
+      linear-gradient(180deg, rgba(10,6,32,.85) 0%, rgba(10,6,32,.95) 100%);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    overflow-y:auto;animation:fadeIn .35s ease;
+  }
+  .screen.show{display:flex}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+  .title{
+    font-family:'Fredoka',sans-serif;font-weight:700;
+    font-size:clamp(2.4rem,9vw,3.6rem);letter-spacing:-.02em;color:white;
+    text-shadow:0 0 30px rgba(94,225,255,.4),0 0 60px rgba(167,139,250,.3);
+    margin-bottom:6px;line-height:1;
+  }
+  .title .accent{
+    background:linear-gradient(135deg,var(--cyan) 0%,var(--purple) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .tag{
+    font-family:'Inter',sans-serif;font-style:italic;color:var(--text-dim);
+    font-size:.95rem;margin-bottom:32px;text-align:center;max-width:340px;
+  }
+  .btn{
+    background:linear-gradient(135deg,var(--cyan) 0%,#3aa8c2 100%);
+    color:var(--void);border:none;padding:16px 34px;font-size:.95rem;
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    border-radius:14px;cursor:pointer;margin:6px 0;min-width:240px;
+    font-family:'Inter',sans-serif;
+    box-shadow:0 4px 0 #2a7a8e,0 8px 24px rgba(94,225,255,.25);
+    transition:transform .12s,filter .15s;
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #2a7a8e,0 4px 12px rgba(94,225,255,.25)}
+  .btn:hover{filter:brightness(1.08)}
+  .btn-secondary{
+    background:rgba(255,255,255,.06);color:var(--text);
+    border:1.5px solid rgba(255,255,255,.15);box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .btn-secondary:active{box-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .btn-danger{
+    background:rgba(255,84,112,.12);color:var(--danger);
+    border:1.5px solid rgba(255,84,112,.35);box-shadow:0 3px 0 rgba(90,20,30,.5);
+  }
+
+  .spark-bank{
+    font-family:'Fredoka',sans-serif;font-size:1.6rem;font-weight:700;
+    color:var(--gold);text-shadow:0 0 20px rgba(255,208,74,.4);
+    margin-bottom:24px;display:flex;align-items:center;gap:10px;
+  }
+  .spark-bank .lbl{
+    font-family:'Inter',sans-serif;font-size:.62rem;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-right:4px;
+  }
+  .shop-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;
+    width:100%;max-width:420px;margin-bottom:22px;
+  }
+  .shop-card{
+    background:var(--card-bg);border:1.5px solid var(--card-border);
+    border-radius:16px;padding:16px 12px 14px;text-align:center;cursor:pointer;
+    transition:transform .15s,border-color .15s,background .15s;position:relative;
+  }
+  .shop-card:active{transform:scale(.97)}
+  .shop-card.equipped{
+    border-color:var(--cyan);background:rgba(94,225,255,.08);
+    box-shadow:0 0 0 1px var(--cyan),0 0 24px rgba(94,225,255,.2);
+  }
+  .shop-card.locked{opacity:.75}
+  .shop-avatar{
+    width:66px;height:66px;border-radius:50%;margin:0 auto 10px;
+    box-shadow:0 0 0 2px rgba(255,255,255,.12),0 6px 18px rgba(0,0,0,.4);
+  }
+  .shop-name{font-family:'Fredoka',sans-serif;font-weight:700;font-size:.95rem;color:white;margin-bottom:3px}
+  .shop-desc{font-size:.7rem;color:var(--text-dim);line-height:1.35;margin-bottom:10px;min-height:2.4em}
+  .shop-badge{
+    display:inline-block;font-size:.65rem;font-weight:800;
+    letter-spacing:.08em;text-transform:uppercase;
+    padding:5px 12px;border-radius:999px;border:1px solid transparent;
+  }
+  .shop-badge.equipped-b{background:rgba(94,225,255,.15);color:var(--cyan);border-color:rgba(94,225,255,.4)}
+  .shop-badge.unlocked-b{background:rgba(255,255,255,.06);color:var(--text);border-color:rgba(255,255,255,.2)}
+  .shop-badge.locked-b{background:rgba(255,208,74,.1);color:var(--gold);border-color:rgba(255,208,74,.35)}
+  .shop-badge.afford{
+    background:rgba(94,225,255,.12);color:var(--cyan);border-color:var(--cyan);
+    animation:pulseGlow 2s infinite;
+  }
+  @keyframes pulseGlow{
+    0%,100%{box-shadow:0 0 0 0 rgba(94,225,255,0)}
+    50%{box-shadow:0 0 12px 2px rgba(94,225,255,.3)}
+  }
+
+  .settings-panel{
+    width:100%;max-width:380px;background:var(--card-bg);
+    border:1px solid var(--card-border);border-radius:18px;padding:22px;margin-bottom:20px;
+  }
+  .setting-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .setting-row:last-child{border-bottom:none}
+  .setting-label{font-size:.9rem;font-weight:600;color:var(--text)}
+  .setting-hint{font-size:.72rem;color:var(--text-faint);margin-top:2px}
+  .toggle{
+    position:relative;width:48px;height:26px;
+    background:rgba(255,255,255,.12);border-radius:999px;cursor:pointer;
+    transition:background .2s;
+  }
+  .toggle::after{
+    content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;
+    border-radius:50%;background:white;transition:transform .2s;
+  }
+  .toggle.on{background:var(--cyan)}
+  .toggle.on::after{transform:translateX(22px)}
+
+  #gameOverScreen .title{font-size:clamp(2rem,7vw,2.8rem);color:var(--pink)}
+  .go-stats{display:flex;gap:32px;margin:14px 0 28px}
+  .go-stat{text-align:center}
+  .go-stat .lbl{font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+  .go-stat .val{font-family:'Fredoka',sans-serif;font-size:1.8rem;font-weight:700;color:white;margin-top:2px}
+  .go-stat.sparks .val{color:var(--gold)}
+  .go-best{font-size:.8rem;color:var(--gold);margin-top:-12px;margin-bottom:22px;opacity:0}
+  .go-best.show{opacity:1}
+
+  .site-link{
+    position:fixed;top:max(16px,env(safe-area-inset-top));left:16px;z-index:40;
+    font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--text-faint);text-decoration:none;padding:8px 12px;
+    background:rgba(10,6,32,.4);backdrop-filter:blur(6px);
+    border-radius:8px;border:1px solid rgba(255,255,255,.08);
+  }
+
+  @media (max-height:600px){
+    .title{font-size:2rem;margin-bottom:2px}
+    .tag{margin-bottom:18px;font-size:.85rem}
+    .btn{padding:13px 28px;min-width:220px}
+    .spark-bank{margin-bottom:14px;font-size:1.4rem}
+    .shop-grid{gap:10px;margin-bottom:14px}
+    .shop-card{padding:12px 10px}
+    .shop-avatar{width:54px;height:54px;margin-bottom:6px}
+  }
+  @media (min-width:768px){
+    .shop-grid{max-width:560px;grid-template-columns:repeat(4,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stage"></canvas>
+
+<div id="hud">
+  <div class="hud-block">
+    <div class="hud-label">Progress</div>
+    <div class="hud-value" id="scoreHUD">0m</div>
+  </div>
+  <div class="hud-block r">
+    <div class="hud-label">Dream Sparks</div>
+    <div class="hud-value" id="sparkHUD">✨ 0</div>
+  </div>
+</div>
+
+<div id="hint">
+  <div class="txt" id="hintText">TAP TO JUMP</div>
+  <div class="sub" id="hintSub">Space / Up on desktop</div>
+</div>
+
+<div id="menuScreen" class="screen show">
+  <h1 class="title">LITTLE <span class="accent">STEPS</span></h1>
+  <p class="tag">A journey of a thousand miles begins with a single step.</p>
+  <button class="btn" onclick="startGame()">✨ Begin Journey</button>
+  <button class="btn btn-secondary" onclick="showScreen('shopScreen')">👤 Dream Shop</button>
+  <button class="btn btn-secondary" onclick="showScreen('howScreen')">❓ How to Play</button>
+  <button class="btn btn-secondary" onclick="showScreen('settingsScreen')">⚙ Settings</button>
+  <div style="margin-top:22px;font-size:.7rem;color:var(--text-faint);letter-spacing:.1em">
+    BEST: <span id="menuBest">0</span>m
+  </div>
+</div>
+
+<div id="howScreen" class="screen">
+  <h1 class="title" style="font-size:clamp(1.8rem,6vw,2.4rem)">How to <span class="accent">Play</span></h1>
+  <div class="settings-panel" style="text-align:left">
+    <div class="setting-row"><div>
+      <div class="setting-label">🟣 Jump</div>
+      <div class="setting-hint">Tap screen · Space / Up arrow</div>
+    </div></div>
+    <div class="setting-row"><div>
+      <div class="setting-label">🟢 Slide</div>
+      <div class="setting-hint">Swipe down · Down arrow</div>
+    </div></div>
+    <div class="setting-row"><div>
+      <div class="setting-label">🔀 Fork in the Path</div>
+      <div class="setting-hint">A stone wall blocks you ahead — swipe left or right to turn. Left / Right arrows on desktop.</div>
+    </div></div>
+    <div class="setting-row"><div>
+      <div class="setting-label">✨ Dream Sparks</div>
+      <div class="setting-hint">Collect to unlock new dreamers</div>
+    </div></div>
+  </div>
+  <button class="btn btn-secondary" onclick="showScreen('menuScreen')">← Back</button>
+</div>
+
+<div id="shopScreen" class="screen">
+  <h1 class="title" style="font-size:clamp(1.8rem,6vw,2.4rem)">The <span class="accent">Dream Shop</span></h1>
+  <div class="spark-bank"><span class="lbl">Bank</span>✨ <span id="shopBank">0</span></div>
+  <div class="shop-grid" id="shopGrid"></div>
+  <button class="btn btn-secondary" onclick="showScreen('menuScreen')">← Back</button>
+</div>
+
+<div id="settingsScreen" class="screen">
+  <h1 class="title" style="font-size:clamp(1.8rem,6vw,2.4rem)"><span class="accent">Settings</span></h1>
+  <div class="settings-panel">
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Haptics</div>
+        <div class="setting-hint">Vibration on collision</div>
+      </div>
+      <div class="toggle on" id="hapticsToggle" onclick="toggleSetting('haptics',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Reduced Motion</div>
+        <div class="setting-hint">Calmer visuals, less shake</div>
+      </div>
+      <div class="toggle" id="motionToggle" onclick="toggleSetting('reducedMotion',this)"></div>
+    </div>
+  </div>
+  <button class="btn btn-danger" onclick="resetJourney()">Reset Journey</button>
+  <button class="btn btn-secondary" onclick="showScreen('menuScreen')">← Back</button>
+</div>
+
+<div id="gameOverScreen" class="screen">
+  <h1 class="title">Rest <span class="accent">Now</span></h1>
+  <div class="go-stats">
+    <div class="go-stat">
+      <div class="lbl">Distance</div>
+      <div class="val" id="goDist">0m</div>
+    </div>
+    <div class="go-stat sparks">
+      <div class="lbl">Sparks</div>
+      <div class="val" id="goSparks">✨ 0</div>
+    </div>
+  </div>
+  <div class="go-best" id="goBest">✨ New Best Distance!</div>
+  <button class="btn" onclick="startGame()">Try Again</button>
+  <button class="btn btn-secondary" onclick="showScreen('menuScreen')">Menu</button>
+</div>
+
+<a href="index.html" class="site-link">← JVDesignStudio</a>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LITTLE STEPS v4 — Temple Run style
+   Jump · Slide · Turn at forks
+═══════════════════════════════════════════════════════════════ */
+
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+
+/* ─── Persistent state ─── */
+const db = {
+  sparks: parseInt(localStorage.getItem('ls_sparks')) || 0,
+  best: parseInt(localStorage.getItem('ls_best')) || 0,
+  haptics: localStorage.getItem('ls_haptics') !== '0',
+  reducedMotion: localStorage.getItem('ls_rmotion') === '1',
+  selected: localStorage.getItem('ls_char') || 'axolotl',
+  unlocked: JSON.parse(localStorage.getItem('ls_unlocked') || '["axolotl"]'),
+};
+function saveDB(){
+  localStorage.setItem('ls_sparks', db.sparks);
+  localStorage.setItem('ls_best', db.best);
+  localStorage.setItem('ls_haptics', db.haptics ? '1' : '0');
+  localStorage.setItem('ls_rmotion', db.reducedMotion ? '1' : '0');
+  localStorage.setItem('ls_char', db.selected);
+  localStorage.setItem('ls_unlocked', JSON.stringify(db.unlocked));
+}
+
+const CHARS = {
+  axolotl:  { name:'Axolotl Dreamer', desc:'Balanced. The standard journey.',  cost:0,    color:'#ff9ac8', accent:'#ffc4dd', cloakColor:'#3d5c3a', ability:'balanced' },
+  turtle:   { name:'Lantern Turtle',  desc:'Sturdy. Forgiving collisions.',     cost:250,  color:'#6dd98a', accent:'#b4f0c4', cloakColor:'#2a4a30', ability:'sturdy' },
+  wolf:     { name:'Wolf-Fox',        desc:'Agile. Jumps higher.',              cost:600,  color:'#a78bfa', accent:'#d4c5ff', cloakColor:'#2d1b4e', ability:'agile' },
+  tiger:    { name:'Tiger Cub',       desc:'Lucky. +35% spark spawns.',         cost:1200, color:'#fb923c', accent:'#ffd0a6', cloakColor:'#5c2e0f', ability:'lucky' },
+};
+
+/* ─── Game state ─── */
+const game = {
+  active:false,
+  score:0,
+  runSparks:0,
+  startTime:0,       // for grace period
+
+  // Player
+  y:0, vy:0, grounded:true,
+  sliding:false, slideTimer:0,
+
+  // Obstacles (on current straight section)
+  obstacles:[],
+  nextSpawn:0,
+
+  // Fork state
+  // We model a fork as: a "wall z" that approaches the camera.
+  // Meanwhile, a previewLeft/previewRight path is shown behind the wall so
+  // the player can see which way to go.
+  fork:null,         // { z, warned } or null
+  nextForkAt:0,      // score at which next fork will be queued
+
+  // Camera whip (for visual turn effect)
+  whipT:0,           // countdown timer for the whip animation
+  whipDir:0,         // -1 for left, +1 for right, 0 none
+  WHIP_DURATION:500,
+
+  distanceAccum:0,
+  lastFrame:0,
+  shakeT:0,
+
+  _slideHintShown:false,
+  _forkHintShown:false,
+};
+
+const GRAVITY = 1800;
+const JUMP_V = -720;
+const JUMP_V_AGILE = -820;
+const SLIDE_DURATION = 650;
+
+/* ─── Canvas ─── */
+let W=0, H=0, DPR=1;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = Math.floor(W * DPR);
+  canvas.height = Math.floor(H * DPR);
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ─── Starfield + planets ─── */
+const STARS = [];
+for (let i=0;i<120;i++){
+  STARS.push({ x: Math.random(), y: Math.random() * 0.5, s: Math.random() * 1.4 + 0.3, tw: Math.random() * Math.PI * 2 });
+}
+const PLANETS = [
+  { x:.82, y:.18, r:22, color:'#ff9ac8', ring:false },
+  { x:.14, y:.25, r:14, color:'#6dd98a', ring:false },
+  { x:.72, y:.10, r:18, color:'#a78bfa', ring:true  },
+];
+
+/* ─── Input actions ─── */
+function doJump(){
+  if (!game.active || !game.grounded) return;
+  const c = CHARS[db.selected];
+  game.vy = c.ability === 'agile' ? JUMP_V_AGILE : JUMP_V;
+  game.grounded = false;
+  game.sliding = false;
+  game.slideTimer = 0;
+  if (db.haptics && navigator.vibrate) navigator.vibrate(12);
+}
+function doSlide(){
+  if (!game.active || !game.grounded || game.sliding) return;
+  game.sliding = true;
+  game.slideTimer = SLIDE_DURATION;
+  if (db.haptics && navigator.vibrate) navigator.vibrate(10);
+}
+function doTurn(dir){
+  if (!game.active) return;
+  // Only valid if there's a fork wall close enough to turn at
+  if (!game.fork) return;
+  // Must be close to the wall — within turn window (z < 0.22)
+  if (game.fork.z > 0.22) return;
+  if (game.whipT > 0) return; // already turning
+
+  // Commit: start the whip animation, clear the fork + obstacles
+  game.whipT = game.WHIP_DURATION;
+  game.whipDir = dir === 'L' ? -1 : 1;
+  game.fork = null;
+  // Clear any obstacles that were near the fork
+  game.obstacles = game.obstacles.filter(o => o.z > 0.3);
+  // Schedule next fork a bit in the future
+  game.nextForkAt = game.score + 80 + Math.random() * 60;
+  if (db.haptics && navigator.vibrate) navigator.vibrate(20);
+}
+
+/* Touch */
+let tStartX=null, tStartY=null, tStartT=0;
+canvas.addEventListener('touchstart', e=>{
+  if (!game.active) return;
+  const t = e.touches[0];
+  tStartX = t.clientX; tStartY = t.clientY;
+  tStartT = performance.now();
+},{passive:true});
+canvas.addEventListener('touchend', e=>{
+  if (!game.active || tStartX == null) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - tStartX;
+  const dy = t.clientY - tStartY;
+  const dt = performance.now() - tStartT;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  const SWIPE = 45;
+
+  if (dt < 500 && (adx > SWIPE || ady > SWIPE)){
+    if (adx > ady){
+      if (dx > 0) doTurn('R'); else doTurn('L');
+    } else {
+      if (dy > 0) doSlide(); else doJump();
+    }
+  } else if (dt < 250 && adx < 25 && ady < 25){
+    doJump();
+  }
+  tStartX = null;
+},{passive:true});
+
+window.addEventListener('keydown', e=>{
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w'){
+    e.preventDefault();
+    if (game.active) doJump();
+    else if (document.getElementById('menuScreen').classList.contains('show')) startGame();
+  } else if (e.key === 'ArrowDown' || e.key === 's'){
+    e.preventDefault(); doSlide();
+  } else if (e.key === 'ArrowLeft' || e.key === 'a'){
+    e.preventDefault(); doTurn('L');
+  } else if (e.key === 'ArrowRight' || e.key === 'd'){
+    e.preventDefault(); doTurn('R');
+  }
+});
+
+/* ─── Screens ─── */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  if (id) document.getElementById(id).classList.add('show');
+  document.getElementById('hud').classList.remove('show');
+  if (id === 'shopScreen') renderShop();
+  if (id === 'settingsScreen') syncSettings();
+  if (id === 'menuScreen') document.getElementById('menuBest').textContent = db.best;
+}
+function renderShop(){
+  document.getElementById('shopBank').textContent = db.sparks;
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = '';
+  Object.entries(CHARS).forEach(([id,c])=>{
+    const unlocked = db.unlocked.includes(id);
+    const equipped = db.selected === id;
+    const canAfford = !unlocked && db.sparks >= c.cost;
+    let badgeCls, badgeText;
+    if (equipped){ badgeCls='equipped-b'; badgeText='Equipped'; }
+    else if (unlocked){ badgeCls='unlocked-b'; badgeText='Equip'; }
+    else if (canAfford){ badgeCls='afford'; badgeText='✨ '+c.cost; }
+    else { badgeCls='locked-b'; badgeText='✨ '+c.cost; }
+    const card = document.createElement('div');
+    card.className = 'shop-card' + (equipped?' equipped':'') + (!unlocked?' locked':'');
+    card.innerHTML = `
+      <div class="shop-avatar" style="background:radial-gradient(circle at 35% 30%, ${c.accent}, ${c.color})"></div>
+      <div class="shop-name">${c.name}</div>
+      <div class="shop-desc">${c.desc}</div>
+      <div class="shop-badge ${badgeCls}">${badgeText}</div>
+    `;
+    card.onclick = ()=>handleShopClick(id);
+    grid.appendChild(card);
+  });
+}
+function handleShopClick(id){
+  const c = CHARS[id];
+  if (db.unlocked.includes(id)){ db.selected = id; }
+  else if (db.sparks >= c.cost){
+    db.sparks -= c.cost;
+    db.unlocked.push(id);
+    db.selected = id;
+    if (db.haptics && navigator.vibrate) navigator.vibrate([20,40,20]);
+  } else return;
+  saveDB();
+  renderShop();
+}
+function syncSettings(){
+  document.getElementById('hapticsToggle').classList.toggle('on', db.haptics);
+  document.getElementById('motionToggle').classList.toggle('on', db.reducedMotion);
+}
+function toggleSetting(key, el){
+  if (key === 'haptics'){
+    db.haptics = !db.haptics;
+    el.classList.toggle('on', db.haptics);
+    if (db.haptics && navigator.vibrate) navigator.vibrate(30);
+  } else if (key === 'reducedMotion'){
+    db.reducedMotion = !db.reducedMotion;
+    el.classList.toggle('on', db.reducedMotion);
+  }
+  saveDB();
+}
+function resetJourney(){
+  if (!confirm('Erase all sparks, unlocks and best distance? This cannot be undone.')) return;
+  localStorage.clear();
+  location.reload();
+}
+function showHint(text, sub){
+  const h = document.getElementById('hint');
+  document.getElementById('hintText').textContent = text;
+  document.getElementById('hintSub').textContent = sub;
+  h.classList.add('show');
+  clearTimeout(showHint._t);
+  showHint._t = setTimeout(()=>h.classList.remove('show'), 2600);
+}
+
+/* ─── Start ─── */
+function startGame(){
+  game.active = true;
+  game.score = 0;
+  game.runSparks = 0;
+  game.startTime = performance.now();
+  game.y = 0; game.vy = 0;
+  game.grounded = true;
+  game.sliding = false; game.slideTimer = 0;
+  game.obstacles = [];
+  game.nextSpawn = performance.now() + 2500;  // 2.5s grace before first obstacle
+  game.fork = null;
+  game.nextForkAt = 120 + Math.random() * 40;  // first fork between 120-160m
+  game.whipT = 0;
+  game.whipDir = 0;
+  game.distanceAccum = 0;
+  game.shakeT = 0;
+  game._slideHintShown = false;
+  game._forkHintShown = false;
+
+  showScreen(null);
+  document.getElementById('hud').classList.add('show');
+  showHint('TAP TO JUMP', 'Space / Up arrow on desktop');
+
+  game.lastFrame = performance.now();
+  requestAnimationFrame(loop);
+}
+
+/* ─── Difficulty ─── */
+function forwardSpeed(score){
+  return Math.min(13, 4 + Math.sqrt(score) * 0.22);
+}
+function spawnGap(score){
+  return Math.max(800, 1900 - score * 0.9);
+}
+
+function loop(now){
+  if (!game.active) return;
+  const dt = Math.min(48, now - game.lastFrame);
+  game.lastFrame = now;
+  update(dt, now);
+  render(now);
+  requestAnimationFrame(loop);
+}
+
+/* ─── Update ─── */
+function update(dt, now){
+  const dts = dt / 1000;
+  const c = CHARS[db.selected];
+  const elapsedMs = now - game.startTime;
+  const inGrace = elapsedMs < 1200;  // 1.2s spawn grace (no collisions)
+
+  // Player physics
+  if (!game.grounded){
+    game.vy += GRAVITY * dts;
+    game.y += game.vy * dts;
+    if (game.y >= 0){ game.y = 0; game.vy = 0; game.grounded = true; }
+  }
+  if (game.sliding){
+    game.slideTimer -= dt;
+    if (game.slideTimer <= 0) game.sliding = false;
+  }
+
+  // Camera whip timer decay
+  if (game.whipT > 0){
+    game.whipT -= dt;
+    if (game.whipT < 0) { game.whipT = 0; game.whipDir = 0; }
+  }
+
+  // Score
+  const speed = forwardSpeed(game.score);
+  game.distanceAccum += speed * dts * 1.5;
+  while (game.distanceAccum >= 1){
+    game.score++;
+    game.distanceAccum -= 1;
+  }
+
+  // Spawn a fork when we're due
+  if (!game.fork && game.score >= game.nextForkAt && game.whipT === 0){
+    game.fork = { z: 1.3, warned: false };
+  }
+
+  // Advance the fork wall toward the camera
+  const zDecr = speed * dts * 0.13;
+  if (game.fork){
+    game.fork.z -= zDecr;
+    // Show hint first time the fork appears
+    if (game.fork.z < 0.9 && !game._forkHintShown){
+      game._forkHintShown = true;
+      showHint('SWIPE LEFT OR RIGHT', 'Choose your path at the wall');
+    }
+    // If player didn't turn by the time the wall is at the player plane — crash
+    if (game.fork.z <= 0.02){
+      gameOver();
+      return;
+    }
+  }
+
+  // Spawn obstacles — but NOT while a fork is imminent (within 0.8 depth)
+  // and NOT during grace period
+  const forkNear = game.fork && game.fork.z < 0.9;
+  if (!inGrace && !forkNear && game.score >= 10 && now >= game.nextSpawn){
+    const slidesUnlocked = game.score >= 100;
+    const sparkChance = c.ability === 'lucky' ? 0.35 : 0.26;
+    let type;
+    const r = Math.random();
+    if (r < sparkChance) type = 'spark';
+    else if (slidesUnlocked && r < sparkChance + 0.28) type = 'vine';
+    else type = 'crystal';
+
+    if (type === 'vine' && !game._slideHintShown){
+      game._slideHintShown = true;
+      showHint('SWIPE DOWN TO SLIDE', 'Vines hang from above');
+    }
+
+    game.obstacles.push({ z: 1.1, type, wobble: Math.random()*Math.PI*2 });
+    game.nextSpawn = now + spawnGap(game.score);
+  }
+
+  // Advance obstacles
+  const forgiveness = c.ability === 'sturdy' ? 0.72 : 1;
+  for (let i = game.obstacles.length - 1; i >= 0; i--){
+    const o = game.obstacles[i];
+    o.z -= zDecr;
+
+    if (o.z <= -0.1){ game.obstacles.splice(i,1); continue; }
+
+    // Collisions (skipped during grace)
+    if (!inGrace && o.z < 0.1 && o.z > -0.02){
+      if (o.type === 'spark'){
+        if (!o._collected && o.z < 0.08){
+          o._collected = true;
+          game.runSparks++;
+        }
+      } else if (o.type === 'crystal'){
+        if (o.z < 0.09 * forgiveness && o.z > 0.0){
+          if (game.y > -50){ gameOver(); return; }
+        }
+      } else if (o.type === 'vine'){
+        if (o.z < 0.09 * forgiveness && o.z > 0.0){
+          if (!game.sliding){ gameOver(); return; }
+        }
+      }
+    }
+  }
+
+  if (game.shakeT > 0) game.shakeT -= dt;
+}
+
+/* ═══ RENDERING ═══ */
+function render(now){
+  ctx.clearRect(0,0,W,H);
+  let sx=0, sy=0;
+  if (game.shakeT > 0 && !db.reducedMotion){
+    sx = (Math.random()-.5) * game.shakeT * 0.15;
+    sy = (Math.random()-.5) * game.shakeT * 0.15;
+  }
+
+  drawBackground(now);
+
+  // Whip transform: world slides horizontally + rotates during turn animation
+  let whipOffset = 0, whipRot = 0;
+  if (game.whipT > 0){
+    // progress 1 -> 0
+    const p = game.whipT / game.WHIP_DURATION;
+    // Ease out — the world zips the opposite way from the turn direction
+    whipOffset = game.whipDir * W * 0.9 * p * p;
+    whipRot = game.whipDir * 0.25 * p;
+  }
+
+  ctx.save();
+  ctx.translate(W/2 + sx + whipOffset, H*0.52 + sy);
+  ctx.rotate(whipRot);
+  ctx.translate(-W/2, -H*0.52);
+
+  drawPath(now);
+  drawFork(now);
+  drawObstacles(now);
+
+  ctx.restore();
+
+  // Player is rendered outside the camera rotation so they stay upright and centred
+  ctx.save();
+  ctx.translate(sx, sy);
+  drawPlayer(now);
+  ctx.restore();
+
+  drawVignette();
+
+  // Fork prompt overlay — draws the "← CHOOSE →" UI when fork is close
+  if (game.fork && game.fork.z < 0.9){
+    drawForkPrompt(game.fork.z, now);
+  }
+
+  document.getElementById('scoreHUD').textContent = game.score + 'm';
+  document.getElementById('sparkHUD').textContent = '✨ ' + game.runSparks;
+}
+
+function drawBackground(now){
+  const t = now * 0.001;
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0, '#0a0620');
+  sky.addColorStop(0.5, '#140933');
+  sky.addColorStop(1, '#1e0f4a');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H);
+
+  const neb1 = ctx.createRadialGradient(W*.7, H*.2, 10, W*.7, H*.2, W*.4);
+  neb1.addColorStop(0, 'rgba(167,139,250,.18)');
+  neb1.addColorStop(1, 'rgba(167,139,250,0)');
+  ctx.fillStyle = neb1; ctx.fillRect(0,0,W,H);
+
+  const neb2 = ctx.createRadialGradient(W*.25, H*.3, 10, W*.25, H*.3, W*.4);
+  neb2.addColorStop(0, 'rgba(94,225,255,.12)');
+  neb2.addColorStop(1, 'rgba(94,225,255,0)');
+  ctx.fillStyle = neb2; ctx.fillRect(0,0,W,H);
+
+  ctx.save();
+  ctx.translate(W*.18, H*.15);
+  ctx.fillStyle = 'rgba(255,240,200,0.9)';
+  ctx.shadowColor = 'rgba(255,240,200,0.5)';
+  ctx.shadowBlur = 40;
+  ctx.beginPath();
+  ctx.arc(0,0,28,0,Math.PI*2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(11,-5,26,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = 'white';
+  for (const s of STARS){
+    const a = 0.4 + 0.6 * Math.abs(Math.sin(t*2 + s.tw));
+    ctx.globalAlpha = a;
+    ctx.beginPath();
+    ctx.arc(s.x * W, s.y * H, s.s, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const p of PLANETS){
+    ctx.save();
+    ctx.translate(p.x*W, p.y*H);
+    if (p.ring){
+      ctx.strokeStyle = 'rgba(255,255,255,.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0,0, p.r*1.6, p.r*0.4, -0.3, 0, Math.PI*2);
+      ctx.stroke();
+    }
+    const pg = ctx.createRadialGradient(-p.r*0.3,-p.r*0.3,0, 0,0,p.r);
+    pg.addColorStop(0, p.color);
+    pg.addColorStop(1, 'rgba(0,0,0,.6)');
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.arc(0,0,p.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* Perspective helpers */
+const HORIZON_FRAC = 0.52;
+const PATH_NEAR_W = 0.44;
+const PATH_FAR_W = 0.045;
+
+function perspY(z){
+  const horizonY = H * HORIZON_FRAC;
+  const depth = Math.max(0, 1 - z);
+  const p = Math.pow(depth, 1.5);
+  return horizonY + (H - horizonY) * p;
+}
+function perspW(z){
+  const depth = Math.max(0, 1 - z);
+  const p = Math.pow(depth, 1.5);
+  return (PATH_FAR_W + (PATH_NEAR_W - PATH_FAR_W) * p) * W;
+}
+function perspScale(z){
+  const depth = Math.max(0, 1 - z);
+  return Math.max(0.1, Math.pow(depth, 1.5) * 1.4 + 0.1);
+}
+
+/* Draw the path — but if a fork is close, cut it off at the wall */
+function drawPath(now){
+  const cx = W/2;
+  const horizonY = H * HORIZON_FRAC;
+
+  // If fork exists, path only goes from camera to fork.z (the wall position)
+  const pathEndZ = game.fork ? Math.max(0.02, game.fork.z) : 0;
+  const pathStartZ = 1.1;
+
+  const yF = perspY(pathStartZ);
+  const yN = perspY(pathEndZ);
+  const wF = perspW(pathStartZ);
+  const wN = perspW(pathEndZ);
+
+  const pg = ctx.createLinearGradient(0, horizonY, 0, H);
+  pg.addColorStop(0, 'rgba(94,225,255,.06)');
+  pg.addColorStop(0.5, 'rgba(94,225,255,.14)');
+  pg.addColorStop(1, 'rgba(94,225,255,.22)');
+  ctx.fillStyle = pg;
+  ctx.beginPath();
+  ctx.moveTo(cx - wF/2, yF);
+  ctx.lineTo(cx + wF/2, yF);
+  ctx.lineTo(cx + wN/2, yN);
+  ctx.lineTo(cx - wN/2, yN);
+  ctx.closePath();
+  ctx.fill();
+
+  // Glowing edges
+  ctx.strokeStyle = 'rgba(94,225,255,.55)';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(94,225,255,.7)';
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.moveTo(cx - wF/2, yF); ctx.lineTo(cx - wN/2, yN);
+  ctx.moveTo(cx + wF/2, yF); ctx.lineTo(cx + wN/2, yN);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Scrolling rungs for motion
+  const speed = forwardSpeed(game.score);
+  const scroll = (now * speed * 0.00015) % 1;
+  ctx.strokeStyle = 'rgba(94,225,255,.3)';
+  ctx.lineWidth = 1.5;
+  for (let i=0;i<14;i++){
+    let zNorm = (i / 14) + scroll;
+    if (zNorm > 1) zNorm -= 1;
+    // Map to actual path range [pathEndZ, pathStartZ]
+    const z = pathEndZ + (pathStartZ - pathEndZ) * (1 - zNorm);
+    if (z < pathEndZ || z > pathStartZ) continue;
+    const y = perspY(z);
+    const w = perspW(z);
+    const depth = 1 - z;
+    ctx.globalAlpha = Math.pow(depth, 1.5);
+    ctx.beginPath();
+    ctx.moveTo(cx - w/2, y);
+    ctx.lineTo(cx + w/2, y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* Draw the fork: solid wall at the dead end + two perpendicular side paths */
+function drawFork(now){
+  if (!game.fork) return;
+  const cx = W/2;
+  const z = game.fork.z;
+  if (z > 1.1 || z < 0) return;
+
+  const y = perspY(z);
+  const w = perspW(z);
+  const scale = perspScale(z);
+
+  // === SIDE PATHS (drawn first, behind the wall) ===
+  // Each side path extends sideways from the base of the wall
+  drawSidePath(cx - w/2, y, z, scale, 'L');
+  drawSidePath(cx + w/2, y, z, scale, 'R');
+
+  // === THE WALL ===
+  // Solid stone wall across the full lane width
+  const wallH = 160 * scale;
+  const wallTop = y - wallH;
+
+  // Wall shadow on the path in front
+  ctx.fillStyle = 'rgba(0,0,0,.45)';
+  ctx.beginPath();
+  ctx.ellipse(cx, y + 6, w/2, 10*scale, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Stone wall body
+  const wallG = ctx.createLinearGradient(0, wallTop, 0, y);
+  wallG.addColorStop(0, '#4a3366');
+  wallG.addColorStop(0.5, '#2a1a40');
+  wallG.addColorStop(1, '#1a0a28');
+  ctx.fillStyle = wallG;
+  ctx.strokeStyle = 'rgba(167,139,250,.6)';
+  ctx.lineWidth = Math.max(1.5, 2*scale);
+  ctx.shadowColor = 'rgba(167,139,250,.5)';
+  ctx.shadowBlur = 18 * scale;
+
+  // Jagged rocky top
+  ctx.beginPath();
+  ctx.moveTo(cx - w/2, y);
+  ctx.lineTo(cx - w/2, wallTop + wallH*0.3);
+  ctx.lineTo(cx - w*0.35, wallTop + wallH*0.15);
+  ctx.lineTo(cx - w*0.2, wallTop);
+  ctx.lineTo(cx - w*0.05, wallTop + wallH*0.12);
+  ctx.lineTo(cx + w*0.1, wallTop + wallH*0.02);
+  ctx.lineTo(cx + w*0.25, wallTop + wallH*0.18);
+  ctx.lineTo(cx + w*0.4, wallTop + wallH*0.05);
+  ctx.lineTo(cx + w/2, wallTop + wallH*0.25);
+  ctx.lineTo(cx + w/2, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Rocky crack details on the wall face
+  ctx.strokeStyle = 'rgba(0,0,0,.4)';
+  ctx.lineWidth = Math.max(1, 1.5*scale);
+  ctx.beginPath();
+  ctx.moveTo(cx - w*0.2, wallTop + wallH*0.3);
+  ctx.lineTo(cx - w*0.1, y - wallH*0.3);
+  ctx.lineTo(cx + w*0.05, y - wallH*0.1);
+  ctx.moveTo(cx + w*0.25, wallTop + wallH*0.4);
+  ctx.lineTo(cx + w*0.15, y - wallH*0.2);
+  ctx.stroke();
+
+  // Warning pulse as you get closer
+  const danger = z < 0.4 ? 1 : 0;
+  if (danger){
+    const pulse = 0.5 + Math.sin(now*0.012) * 0.3;
+    ctx.fillStyle = `rgba(255,84,112,${0.15 * pulse})`;
+    ctx.fillRect(cx - w/2, wallTop, w, wallH);
+  }
+}
+
+/* Side path — a rectangle running perpendicular behind the wall,
+   showing the player where each branch goes */
+function drawSidePath(originX, originY, z, scale, dir){
+  const depth = 1 - z;
+  const p = Math.pow(depth, 1.5);
+
+  // Direction multiplier
+  const dx = dir === 'L' ? -1 : 1;
+
+  // Vanishing point for the side path (receding into the distance behind the wall)
+  const vpX = originX + dx * W * 0.5 * p;
+  const vpY = originY - H * 0.15 * p;
+
+  // Side path width at the near end (the fork junction) and the far end (vanishing)
+  const nearW = perspW(z) * 0.9;
+  const farW = nearW * 0.2;
+
+  ctx.save();
+
+  // Fill
+  const sg = ctx.createLinearGradient(originX, originY, vpX, vpY);
+  sg.addColorStop(0, 'rgba(94,225,255,.22)');
+  sg.addColorStop(1, 'rgba(94,225,255,.04)');
+  ctx.fillStyle = sg;
+
+  // Compute the two parallel edges of the side path
+  // The path runs from origin outward. Its "near" edge is a small segment at the junction,
+  // its "far" edge is a small segment at the vanishing point.
+  const angleSide = Math.atan2(vpY - originY, vpX - originX);
+  // Perpendicular direction (for width offset)
+  const perpX = -Math.sin(angleSide);
+  const perpY = Math.cos(angleSide);
+
+  // Near edge points
+  const nx1 = originX - perpX * nearW * 0.3;
+  const ny1 = originY - perpY * nearW * 0.3;
+  const nx2 = originX + perpX * nearW * 0.3;
+  const ny2 = originY + perpY * nearW * 0.3;
+  // Far edge points
+  const fx1 = vpX - perpX * farW * 0.3;
+  const fy1 = vpY - perpY * farW * 0.3;
+  const fx2 = vpX + perpX * farW * 0.3;
+  const fy2 = vpY + perpY * farW * 0.3;
+
+  ctx.beginPath();
+  ctx.moveTo(nx1, ny1);
+  ctx.lineTo(nx2, ny2);
+  ctx.lineTo(fx2, fy2);
+  ctx.lineTo(fx1, fy1);
+  ctx.closePath();
+  ctx.fill();
+
+  // Glowing edges
+  ctx.strokeStyle = 'rgba(94,225,255,.6)';
+  ctx.lineWidth = Math.max(1.5, 2*scale);
+  ctx.shadowColor = 'rgba(94,225,255,.7)';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.moveTo(nx1, ny1); ctx.lineTo(fx1, fy1);
+  ctx.moveTo(nx2, ny2); ctx.lineTo(fx2, fy2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Arrow on the side path indicating direction
+  if (z < 0.7){
+    const ax = originX + (vpX - originX) * 0.35;
+    const ay = originY + (vpY - originY) * 0.35;
+    const alpha = Math.min(1, (0.7 - z) * 2);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#5ee1ff';
+    ctx.shadowColor = 'rgba(94,225,255,.8)';
+    ctx.shadowBlur = 12;
+    ctx.font = `800 ${Math.max(16, 26*scale)}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(dir === 'L' ? '←' : '→', ax, ay);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+/* ─── Obstacles ─── */
+function drawObstacles(now){
+  const cx = W/2;
+  const sorted = [...game.obstacles].sort((a,b)=>b.z - a.z);
+  for (const o of sorted){
+    if (o.z > 1.1 || o.z < -0.1) continue;
+    const y = perspY(o.z);
+    const scale = perspScale(o.z);
+
+    if (o.type === 'spark'){
+      drawSpark(cx, y - 55 * (1-o.z), scale, now);
+    } else if (o.type === 'crystal'){
+      drawCrystal(cx, y, scale, now, o.z);
+    } else if (o.type === 'vine'){
+      drawVine(cx, o.z, scale, now, o.wobble);
+    }
+  }
+}
+
+function drawCrystal(x, y, scale, now, z){
+  ctx.save();
+  ctx.translate(x, y);
+  const s = 52 * scale;
+  const danger = z < 0.3 ? 1 : 0;
+  const pulse = danger ? (0.7 + Math.sin(now*0.015) * 0.3) : 1;
+
+  const g = ctx.createLinearGradient(0,-s,0,s*0.3);
+  g.addColorStop(0, '#e2d4ff');
+  g.addColorStop(0.5, '#8b5cf6');
+  g.addColorStop(1, '#2e1065');
+  ctx.fillStyle = g;
+  ctx.strokeStyle = `rgba(255,255,255,${0.4 + danger*0.3*pulse})`;
+  ctx.lineWidth = Math.max(1.5, scale*1.5);
+  ctx.shadowColor = `rgba(196,179,255,${0.7 + danger*0.3*pulse})`;
+  ctx.shadowBlur = 20 * scale;
+
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(s*.55, -s*.3);
+  ctx.lineTo(s*.45, s*.3);
+  ctx.lineTo(-s*.45, s*.3);
+  ctx.lineTo(-s*.55, -s*.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(0,0,0,.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, s*.3, s*.55, s*.1, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,.3)';
+  ctx.beginPath();
+  ctx.moveTo(-s*.22, -s*.8);
+  ctx.lineTo(s*.05, -s*.8);
+  ctx.lineTo(-s*.1, s*.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawVine(cx, z, scale, now, wobbleSeed){
+  const y = perspY(z);
+  const p = Math.pow(Math.max(0, 1-z), 1.5);
+  const vineTopY = 0;
+  const vineBottomY = y - 30 * scale;
+  const pathW = perspW(z);
+  const danger = z < 0.3 ? 1 : 0;
+  const pulse = danger ? (0.7 + Math.sin(now*0.015) * 0.3) : 1;
+
+  const xs = [cx - pathW*0.3, cx, cx + pathW*0.3];
+  for (let i=0;i<xs.length;i++){
+    const x = xs[i];
+    const wobble = Math.sin(now*0.002 + wobbleSeed + i) * 8 * p;
+    ctx.save();
+    ctx.strokeStyle = `rgba(167,139,250,${0.85 + danger*0.15*pulse})`;
+    ctx.lineWidth = Math.max(3, 6 * scale);
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(167,139,250,.7)';
+    ctx.shadowBlur = 12 * scale;
+    ctx.beginPath();
+    const segments = 8;
+    for (let j=0;j<=segments;j++){
+      const t = j / segments;
+      const vy = vineTopY + (vineBottomY - vineTopY) * t;
+      const vx = x + Math.sin(t * Math.PI * 1.5 + now*0.001 + wobbleSeed + i) * wobble;
+      if (j === 0) ctx.moveTo(vx, vy);
+      else ctx.lineTo(vx, vy);
+    }
+    ctx.stroke();
+
+    const tipY = vineBottomY;
+    const tipX = x + Math.sin(Math.PI * 1.5 + now*0.001 + wobbleSeed + i) * wobble;
+    ctx.shadowBlur = 18 * scale;
+    ctx.fillStyle = `rgba(236,72,153,${0.9 + danger*0.1*pulse})`;
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, 8 * scale, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.beginPath();
+    ctx.arc(tipX - 2*scale, tipY - 2*scale, 3*scale, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (z < 0.5){
+    ctx.save();
+    ctx.globalAlpha = 0.25 * (0.5 - z) * 2;
+    ctx.fillStyle = '#ff5470';
+    ctx.beginPath();
+    ctx.ellipse(cx, y, pathW*0.35, 8 * scale, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawSpark(x, y, scale, now){
+  ctx.save();
+  ctx.translate(x, y);
+  const pulse = 1 + Math.sin(now*0.008) * 0.15;
+  const s = 20 * scale * pulse;
+  ctx.shadowColor = 'rgba(255,208,74,.9)';
+  ctx.shadowBlur = 22 * scale;
+  ctx.fillStyle = '#ffd04a';
+  ctx.beginPath();
+  for (let i=0;i<4;i++){
+    const a = (i / 4) * Math.PI * 2;
+    const ax = Math.cos(a) * s;
+    const ay = Math.sin(a) * s;
+    const ma = a + Math.PI/4;
+    const mx = Math.cos(ma) * s * 0.32;
+    const my = Math.sin(ma) * s * 0.32;
+    if (i === 0) ctx.moveTo(ax, ay);
+    else ctx.lineTo(ax, ay);
+    ctx.lineTo(mx, my);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.beginPath();
+  ctx.arc(0,0,s*.22,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/* Fork prompt UI — top of screen */
+function drawForkPrompt(z, now){
+  const p = Math.min(1, (0.9 - z) * 1.6);
+  if (p <= 0) return;
+  const y = H * 0.2;
+  const cx = W / 2;
+  const alpha = Math.min(0.95, p);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Background pill
+  const pillW = 220, pillH = 56;
+  ctx.fillStyle = 'rgba(10,6,32,.75)';
+  ctx.strokeStyle = 'rgba(255,84,112,.6)';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(255,84,112,.5)';
+  ctx.shadowBlur = 18;
+  roundRect(cx - pillW/2, y - pillH/2, pillW, pillH, 14);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Arrows + label
+  ctx.fillStyle = '#5ee1ff';
+  ctx.font = '800 30px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('←', cx - 72, y);
+  ctx.fillText('→', cx + 72, y);
+
+  ctx.fillStyle = '#ff5470';
+  ctx.font = '800 14px Inter, sans-serif';
+  ctx.fillText('TURN!', cx, y);
+
+  ctx.restore();
+}
+
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+/* ─── Player: back-view axolotl in cloak ─── */
+function drawPlayer(now){
+  const c = CHARS[db.selected];
+  const cx = W/2;
+  const baseY = H - 130;
+  const x = cx;
+  const y = baseY + game.y;
+
+  const shadowSize = game.grounded ? 1 : Math.max(0.4, 1 - Math.abs(game.y)/320);
+  ctx.fillStyle = `rgba(0,0,0,${0.45 * shadowSize})`;
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY + 40, 38 * shadowSize, 8 * shadowSize, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  const aura = ctx.createRadialGradient(x, y, 0, x, y, 85);
+  aura.addColorStop(0, c.color + 'aa');
+  aura.addColorStop(0.4, c.color + '44');
+  aura.addColorStop(1, c.color + '00');
+  ctx.fillStyle = aura;
+  ctx.fillRect(x-100, y-90, 200, 180);
+
+  ctx.save();
+  ctx.translate(x, y);
+  const bob = (game.grounded && !db.reducedMotion) ? Math.sin(now*0.012) * 2 : 0;
+  ctx.translate(0, bob);
+
+  if (game.sliding){
+    ctx.scale(1.25, 0.55);
+    ctx.translate(0, 25);
+  }
+
+  const bodyGrad = ctx.createRadialGradient(-6, -8, 4, 0, 0, 34);
+  bodyGrad.addColorStop(0, c.accent);
+  bodyGrad.addColorStop(1, c.color);
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.ellipse(0, 10, 30, 32, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(0, -18, 26, 24, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = c.color;
+  for (let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.ellipse(-26 - i*4, -22 + i*5, 8, 5, -0.5 - i*0.2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(26 + i*4, -22 + i*5, 8, 5, 0.5 + i*0.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.fillStyle = c.accent;
+  for (let i=0;i<3;i++){
+    ctx.beginPath();
+    ctx.ellipse(-26 - i*4, -24 + i*5, 4.5, 2.5, -0.5 - i*0.2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(26 + i*4, -24 + i*5, 4.5, 2.5, 0.5 + i*0.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = 'rgba(200,80,130,.55)';
+  ctx.beginPath(); ctx.arc(-7,-24,1.8,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(4,-26,1.6,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-2,-20,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(8,-22,1.4,0,Math.PI*2); ctx.fill();
+
+  const cloakG = ctx.createLinearGradient(0,-8,0,48);
+  cloakG.addColorStop(0, c.cloakColor);
+  cloakG.addColorStop(1, '#1a2a18');
+  ctx.fillStyle = cloakG;
+  ctx.strokeStyle = 'rgba(0,0,0,.45)';
+  ctx.lineWidth = 1.5;
+
+  ctx.beginPath();
+  ctx.moveTo(-24, -8);
+  ctx.quadraticCurveTo(-30, -22, -12, -26);
+  ctx.quadraticCurveTo(0, -28, 12, -26);
+  ctx.quadraticCurveTo(30, -22, 24, -8);
+  ctx.lineTo(22, 4);
+  ctx.lineTo(-22, 4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-24, 0);
+  ctx.quadraticCurveTo(-36, 14, -34, 44);
+  ctx.quadraticCurveTo(-17, 50, 0, 48);
+  ctx.quadraticCurveTo(17, 50, 34, 44);
+  ctx.quadraticCurveTo(36, 14, 24, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,.07)';
+  ctx.beginPath();
+  ctx.moveTo(-20, 0);
+  ctx.quadraticCurveTo(-28, 18, -24, 42);
+  ctx.lineTo(-16, 42);
+  ctx.quadraticCurveTo(-20, 18, -14, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawVignette(){
+  const v = ctx.createRadialGradient(W/2, H/2, H*0.4, W/2, H/2, H*0.85);
+  v.addColorStop(0, 'rgba(0,0,0,0)');
+  v.addColorStop(1, 'rgba(0,0,0,.55)');
+  ctx.fillStyle = v;
+  ctx.fillRect(0,0,W,H);
+}
+
+function gameOver(){
+  game.active = false;
+  game.shakeT = 24;
+  if (db.haptics && navigator.vibrate) navigator.vibrate([80, 40, 120]);
+  db.sparks += game.runSparks;
+  const isBest = game.score > db.best;
+  if (isBest) db.best = game.score;
+  saveDB();
+  document.getElementById('goDist').textContent = game.score + 'm';
+  document.getElementById('goSparks').textContent = '✨ ' + game.runSparks;
+  document.getElementById('goBest').classList.toggle('show', isBest);
+  setTimeout(()=>showScreen('gameOverScreen'), 450);
+}
+
+function idleLoop(now){
+  if (game.active) return;
+  ctx.clearRect(0,0,W,H);
+  drawBackground(now);
+  drawVignette();
+  requestAnimationFrame(idleLoop);
+}
+requestAnimationFrame(idleLoop);
+
+syncSettings();
+document.getElementById('menuBest').textContent = db.best;
+</script>
+</body>
+</html>
