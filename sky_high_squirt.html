@@ -3,21 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Sky High Squirt &amp; Friends — Prototype</title>
+<title>Sky High Squirt &amp; Friends</title>
 <style>
   /* ============================================================
-     SKY HIGH SQUIRT — PROTOTYPE v0.1
-     Focus: core jump feel + procedural zones + coins + squish.
-     Hooks present for: sprites, shop, power-ups, persistence,
-     star fragments, achievement unlocks. See // HOOK comments.
+     SKY HIGH SQUIRT — v0.2
+     Adds: localStorage persistence, character unlocks at height
+     milestones, full shop screen with hats/skins/auras, equipped
+     loadouts per character, trail particles, achievement unlocks.
      ============================================================ */
 
   :root {
     --ui-bg: rgba(20, 14, 38, 0.78);
+    --ui-bg-solid: #1a1140;
+    --ui-bg-dark: #0d0726;
     --ui-stroke: rgba(255, 255, 255, 0.18);
     --ui-text: #fdf6e3;
     --accent: #ffd23f;
     --accent-2: #ff7eb9;
+    --accent-3: #5cdbff;
+    --locked: #4a3d6b;
+    --owned: #4caf50;
+    --equipped: #ffd23f;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,18 +47,17 @@
 
   canvas {
     display: block;
-    background: #87ceeb; /* zone 1 default; gets painted over */
+    background: #87ceeb;
     box-shadow: 0 30px 80px rgba(0,0,0,0.6);
     border-radius: 6px;
     image-rendering: auto;
     touch-action: none;
-    width: 420px;   /* default; resize() will adjust */
+    width: 420px;
     height: 700px;
     max-width: 100vw;
     max-height: 100vh;
   }
 
-  /* ----- HUD ----- */
   .hud {
     position: fixed;
     top: 14px;
@@ -78,7 +83,6 @@
   .hud .pill .label { opacity: 0.6; font-weight: 500; margin-right: 6px; font-size: 11px; text-transform: uppercase; }
   .hud .pill.coins { color: var(--accent); }
 
-  /* ----- Overlays (menu / game over) ----- */
   .overlay {
     position: fixed;
     inset: 0;
@@ -87,16 +91,24 @@
     background: radial-gradient(ellipse at center, rgba(10,6,23,0.75), rgba(10,6,23,0.95));
     z-index: 10;
     pointer-events: auto;
+    overflow-y: auto;
+    padding: 20px;
   }
   .overlay.hidden { display: none; }
+
   .panel {
-    background: linear-gradient(180deg, #1a1140, #0d0726);
+    background: linear-gradient(180deg, var(--ui-bg-solid), var(--ui-bg-dark));
     border: 1px solid var(--ui-stroke);
     border-radius: 18px;
-    padding: 32px 36px;
+    padding: 28px 32px;
     text-align: center;
-    max-width: 420px;
+    max-width: 460px;
+    width: 100%;
     box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .panel.shop-panel {
+    max-width: 540px;
+    text-align: left;
   }
   .panel h1 {
     font-size: 30px;
@@ -106,15 +118,20 @@
     background-clip: text;
     color: transparent;
     letter-spacing: 0.5px;
+    text-align: center;
   }
-  .panel h2 { font-size: 22px; margin-bottom: 12px; }
-  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+  .panel h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; text-align: center; }
 
   .char-row {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin: 18px 0 22px;
+    margin: 18px 0 10px;
   }
   .char-btn {
     width: 64px;
@@ -127,18 +144,44 @@
     display: grid;
     place-items: center;
     transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
   }
-  .char-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+  .char-btn:hover:not(.locked) { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
   .char-btn.active {
     border-color: var(--accent);
     background: rgba(255, 210, 63, 0.15);
     box-shadow: 0 0 20px rgba(255, 210, 63, 0.3);
   }
+  .char-btn.locked {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.8);
+  }
+  .char-btn .lock {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--locked);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.4);
+  }
   .char-name {
     font-size: 13px;
-    opacity: 0.7;
-    margin-bottom: 16px;
+    opacity: 0.8;
+    margin-bottom: 4px;
     height: 16px;
+    text-align: center;
+  }
+  .char-unlock-hint {
+    font-size: 11px;
+    color: var(--accent-3);
+    height: 14px;
+    margin-bottom: 14px;
+    text-align: center;
   }
 
   .btn {
@@ -157,6 +200,19 @@
   }
   .btn:hover { transform: translateY(-1px); }
   .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.secondary {
+    background: linear-gradient(180deg, #6b4ba8, #483078);
+    color: #fff;
+    box-shadow: 0 6px 0 #2e1a4e, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.secondary:active { box-shadow: 0 3px 0 #2e1a4e, 0 5px 10px rgba(0,0,0,0.3); }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+  }
 
   .stats {
     display: flex;
@@ -172,10 +228,151 @@
     font-size: 12px;
     opacity: 0.55;
     line-height: 1.6;
+    text-align: center;
   }
   .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
 
-  /* ----- Mobile touch zones ----- */
+  /* ----- Shop ----- */
+  .shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--ui-stroke);
+  }
+  .shop-header h1 { text-align: left; font-size: 24px; }
+  .shop-coins {
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .shop-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .shop-tab {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    color: var(--ui-text);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .shop-tab:hover { background: rgba(255,255,255,0.1); }
+  .shop-tab.active {
+    background: rgba(255, 210, 63, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .shop-char-select {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+  }
+  .shop-char-select .char-btn { width: 48px; height: 48px; font-size: 24px; }
+
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px 4px 4px 0;
+  }
+  .shop-grid::-webkit-scrollbar { width: 6px; }
+  .shop-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  .shop-item {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid var(--ui-stroke);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .shop-item:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .shop-item.owned { border-color: var(--owned); }
+  .shop-item.equipped {
+    border-color: var(--equipped);
+    background: rgba(255, 210, 63, 0.1);
+    box-shadow: 0 0 16px rgba(255, 210, 63, 0.25);
+  }
+  .shop-item.locked { cursor: not-allowed; opacity: 0.5; }
+  .shop-item.cant-afford { opacity: 0.7; }
+
+  .shop-item-preview {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+  }
+  .shop-item-name {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shop-item-price {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .shop-item-status {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .shop-item.owned .shop-item-status { background: var(--owned); color: #fff; }
+  .shop-item.equipped .shop-item-status { background: var(--equipped); color: #2a1a00; }
+  .shop-item.locked .shop-item-status { background: var(--locked); color: #fff; }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--ui-bg-solid);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    z-index: 100;
+    transition: transform 0.4s cubic-bezier(.2,1.5,.5,1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
   .touch-zone {
     position: fixed;
     bottom: 0;
@@ -206,6 +403,8 @@
 <div class="touch-zone left"></div>
 <div class="touch-zone right"></div>
 
+<div class="toast" id="toast"></div>
+
 <!-- ===== START MENU ===== -->
 <div class="overlay" id="menu">
   <div class="panel">
@@ -213,19 +412,46 @@
     <p>Bounce as high as you can. Collect coins. Don't fall.</p>
 
     <div class="char-name" id="char-name">Squirt the Turtle</div>
-    <div class="char-row" id="char-row">
-      <!-- Placeholder emojis until sprite PNGs land. See HOOK: SPRITES -->
-      <button class="char-btn active" data-char="turtle" data-name="Squirt the Turtle">🐢</button>
-      <button class="char-btn" data-char="tiger" data-name="Roar the Tiger">🐯</button>
-      <button class="char-btn" data-char="fox" data-name="Ember the Fox">🦊</button>
-      <button class="char-btn" data-char="axolotl" data-name="Bubble the Axolotl">🦎</button>
+    <div class="char-unlock-hint" id="char-unlock-hint"></div>
+    <div class="char-row" id="char-row"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="menu-best">0m</div><div class="l">Best</div></div>
+      <div class="stat"><div class="v" id="menu-coins">0</div><div class="l">Coins</div></div>
     </div>
 
-    <button class="btn" id="play-btn">Play</button>
+    <div class="btn-row">
+      <button class="btn" id="play-btn">Play</button>
+      <button class="btn secondary" id="shop-btn">Shop</button>
+    </div>
 
     <div class="controls-hint">
       <span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to move<br>
       Wraps around screen edges
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHOP ===== -->
+<div class="overlay hidden" id="shop">
+  <div class="panel shop-panel">
+    <div class="shop-header">
+      <h1>The Sky Shop</h1>
+      <div class="shop-coins">🪙 <span id="shop-coin-count">0</span></div>
+    </div>
+
+    <div class="shop-char-select" id="shop-char-select"></div>
+
+    <div class="shop-tabs">
+      <button class="shop-tab active" data-tab="hat">Hats</button>
+      <button class="shop-tab" data-tab="skin">Skins</button>
+      <button class="shop-tab" data-tab="aura">Auras</button>
+    </div>
+
+    <div class="shop-grid" id="shop-grid"></div>
+
+    <div class="btn-row" style="margin-top: 18px;">
+      <button class="btn secondary" id="shop-back-btn">Back</button>
     </div>
   </div>
 </div>
@@ -239,14 +465,16 @@
       <div class="stat"><div class="v" id="go-coins">0</div><div class="l">Coins</div></div>
       <div class="stat"><div class="v" id="go-best">0m</div><div class="l">Best</div></div>
     </div>
-    <button class="btn" id="retry-btn">Retry</button>
+    <div class="btn-row">
+      <button class="btn" id="retry-btn">Retry</button>
+      <button class="btn secondary" id="menu-btn">Menu</button>
+    </div>
   </div>
 </div>
 
 <script>
 /* ============================================================================
-   SKY HIGH SQUIRT — Game Code
-   Prototype: prioritizes jump feel. Modular hooks for future systems.
+   SKY HIGH SQUIRT v0.2
    ============================================================================ */
 
 const canvas = document.getElementById('game');
@@ -254,56 +482,108 @@ const ctx = canvas.getContext('2d');
 const W = canvas.width;
 const H = canvas.height;
 
-/* ---------- Tunable physics (the "feel" knobs) ---------- */
 const PHYS = {
   gravity: 0.42,
-  jumpVel: -13.2,        // standard bounce
-  superJumpVel: -19,     // HOOK: super-spring power-up uses this
+  jumpVel: -13.2,
+  superJumpVel: -19,
   moveAccel: 0.7,
   moveMax: 6.5,
   friction: 0.86,
   cameraLerp: 0.12,
-  scoreScale: 0.1,       // pixels-climbed → meters
+  scoreScale: 0.1,
 };
 
-/* ---------- Game state ---------- */
+const CHARS = {
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Squirt the Turtle',  emoji: '🐢', unlockM: 0 },
+  fox:     { body: '#ff5722', accent: '#bf360c', eye: '#fff', name: 'Ember the Fox',      emoji: '🦊', unlockM: 1000 },
+  tiger:   { body: '#ff9800', accent: '#e65100', eye: '#fff', name: 'Roar the Tiger',     emoji: '🐯', unlockM: 3000 },
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Bubble the Axolotl', emoji: '🦎', unlockM: 5000 },
+};
+const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl'];
+
+const COSMETICS = {
+  hat: [
+    { id: 'none',      name: 'No Hat',     price: 0, draw: null },
+    { id: 'cap',       name: 'Cap',        price: 50,  draw: drawHatCap },
+    { id: 'crown',     name: 'Crown',      price: 200, draw: drawHatCrown },
+    { id: 'wizard',    name: 'Wizard Hat', price: 350, draw: drawHatWizard },
+    { id: 'party',     name: 'Party Hat',  price: 150, draw: drawHatParty },
+    { id: 'bow',       name: 'Big Bow',    price: 100, draw: drawHatBow },
+    { id: 'halo',      name: 'Halo',       price: 500, draw: drawHatHalo },
+  ],
+  skin: [
+    { id: 'default',   name: 'Default',    price: 0,    tint: null },
+    { id: 'shadow',    name: 'Shadow',     price: 250,  tint: '#222' },
+    { id: 'ice',       name: 'Ice',        price: 300,  tint: '#9fdfff' },
+    { id: 'rose',      name: 'Rose',       price: 300,  tint: '#ff6b9d' },
+    { id: 'gold',      name: 'Gold Skin',  price: 0,    tint: '#ffd23f', achievement: 'reach10000' },
+  ],
+  aura: [
+    { id: 'none',      name: 'No Aura',    price: 0, color: null },
+    { id: 'sparkle',   name: 'Sparkle',    price: 150, color: '#ffd23f' },
+    { id: 'fire',      name: 'Fire Trail', price: 250, color: '#ff5722' },
+    { id: 'frost',     name: 'Frost',      price: 250, color: '#5cdbff' },
+    { id: 'rainbow',   name: 'Rainbow',    price: 600, color: 'rainbow' },
+  ],
+};
+
+const SAVE_KEY = 'skyHighSquirt:save:v1';
+
+function defaultSave() {
+  return {
+    bestHeight: 0,
+    lifetimeCoins: 0,
+    coins: 0,
+    unlockedChars: ['turtle'],
+    owned: { hat: ['none'], skin: ['default'], aura: ['none'] },
+    equipped: {
+      turtle:  { hat: 'none', skin: 'default', aura: 'none' },
+      fox:     { hat: 'none', skin: 'default', aura: 'none' },
+      tiger:   { hat: 'none', skin: 'default', aura: 'none' },
+      axolotl: { hat: 'none', skin: 'default', aura: 'none' },
+    },
+    achievements: [],
+  };
+}
+
+let save = loadSave();
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return defaultSave();
+    const parsed = JSON.parse(raw);
+    const def = defaultSave();
+    return Object.assign(def, parsed, {
+      owned: Object.assign(def.owned, parsed.owned || {}),
+      equipped: Object.assign(def.equipped, parsed.equipped || {}),
+    });
+  } catch (e) {
+    console.warn('Save load failed', e);
+    return defaultSave();
+  }
+}
+
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
+  catch (e) { console.warn('Save failed', e); }
+}
+
 const state = {
-  mode: 'menu',          // 'menu' | 'playing' | 'dead'
+  mode: 'menu',
   character: 'turtle',
   player: null,
   platforms: [],
   coins: [],
-  // starFragments: [],  // HOOK: STAR FRAGMENTS (above 5000m)
-  // powerups: [],       // HOOK: in-run power-up spawns (jetpack etc.)
   cameraY: 0,
   highestY: 0,
   runCoins: 0,
   heightM: 0,
-  zone: 1,
-  bestHeight: 0,         // HOOK: PERSISTENCE — load/save to localStorage
-  // lifetimeCoins: 0,   // HOOK: PERSISTENCE — for achievement unlocks
-  // ownedCosmetics: [], // HOOK: SHOP — array of cosmetic IDs
-  // equipped: {},       // HOOK: SHOP — { headwear, cloak, aura, base }
-  // inventory: {},      // HOOK: SHOP — { lanternShield: 2, superSpring: 5 }
-  // activeBoost: null,  // HOOK: SHOP — pre-run boost selected
+  zone: 0,
   particles: [],
+  trailTimer: 0,
 };
 
-/* ---------- Character palettes (placeholder until sprites) ----------
-   HOOK: SPRITES — replace drawPlayer() with sprite blits keyed by character.
-   Suggested file layout:
-     /assets/characters/{turtle|tiger|fox|axolotl}/{idle,jump,fall,squish}.png
-   Each char needs ~32x32 base. Cosmetic layers (hat, cloak, aura) draw on top
-   of the base sprite at fixed anchor points. */
-const CHARS = {
-  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Squirt' },
-  tiger:   { body: '#ff9800', accent: '#e65100', eye: '#fff', name: 'Roar' },
-  fox:     { body: '#ff5722', accent: '#bf360c', eye: '#fff', name: 'Ember' },
-  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Bubble' },
-};
-
-/* ---------- Zones (visual only) ----------
-   Procedural sky tinting based on height. Three bands per the GDD. */
 const ZONES = [
   { name: 'Meadow',    minM: 0,    sky: ['#87ceeb', '#b3e5fc'], plat: '#66bb6a', platEdge: '#2e7d32' },
   { name: 'Dusk',      minM: 1000, sky: ['#5d3a82', '#ff7043'], plat: '#8d6e63', platEdge: '#3e2723' },
@@ -315,35 +595,18 @@ function getZone(m) {
   return 0;
 }
 
-/* ---------- Player ---------- */
 function makePlayer() {
-  return {
-    x: W / 2,
-    y: H - 120,
-    vx: 0,
-    vy: 0,
-    w: 34,
-    h: 34,
-    squish: 0,        // 0 = neutral, 1 = full squish; decays each frame
-    facing: 1,
-  };
+  return { x: W / 2, y: H - 120, vx: 0, vy: 0, w: 34, h: 34, squish: 0, facing: 1 };
 }
 
-/* ---------- Platforms ----------
-   Procedural generation: spawn upward as the camera climbs. */
 function makePlatform(y) {
   const w = 70;
   const x = Math.random() * (W - w);
-  return {
-    x, y, w, h: 14,
-    type: 'static',   // HOOK: add 'moving', 'breakable', 'spring' later
-    bounced: false,
-  };
+  return { x, y, w, h: 14, type: 'static', bounced: false };
 }
 
 function seedPlatforms() {
   state.platforms.length = 0;
-  // Ground platform under the player
   state.platforms.push({ x: W/2 - 50, y: H - 60, w: 100, h: 14, type: 'static', bounced: false });
   let y = H - 140;
   while (y > -200) {
@@ -352,26 +615,17 @@ function seedPlatforms() {
   }
 }
 
-/* ---------- Coins ----------
-   GDD: clusters of 3-5 above platforms. */
 function maybeSpawnCoins(plat) {
   if (Math.random() < 0.35) {
     const n = 3 + Math.floor(Math.random() * 3);
     const cx = plat.x + plat.w / 2;
     const cy = plat.y - 28;
     for (let i = 0; i < n; i++) {
-      state.coins.push({
-        x: cx + (i - (n-1)/2) * 16,
-        y: cy,
-        r: 7,
-        collected: false,
-        bob: Math.random() * Math.PI * 2,
-      });
+      state.coins.push({ x: cx + (i - (n-1)/2) * 16, y: cy, r: 7, collected: false, bob: Math.random() * Math.PI * 2 });
     }
   }
 }
 
-/* ---------- Input ---------- */
 const keys = { left: false, right: false };
 window.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
@@ -381,14 +635,11 @@ window.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
 });
-
-// Touch zones for mobile
 document.querySelector('.touch-zone.left').addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; });
 document.querySelector('.touch-zone.left').addEventListener('touchend',   e => { e.preventDefault(); keys.left = false; });
 document.querySelector('.touch-zone.right').addEventListener('touchstart',e => { e.preventDefault(); keys.right = true; });
 document.querySelector('.touch-zone.right').addEventListener('touchend',  e => { e.preventDefault(); keys.right = false; });
 
-/* ---------- Particles (small juice for landings/coin pickups) ---------- */
 function spawnParticles(x, y, color, n = 6) {
   for (let i = 0; i < n; i++) {
     state.particles.push({
@@ -401,49 +652,60 @@ function spawnParticles(x, y, color, n = 6) {
   }
 }
 
-/* ---------- Update loop ---------- */
+function spawnTrailParticle() {
+  const p = state.player;
+  const eq = save.equipped[state.character];
+  const aura = COSMETICS.aura.find(a => a.id === eq.aura);
+  if (!aura || !aura.color) return;
+  let color = aura.color;
+  if (color === 'rainbow') {
+    const hues = ['#ff0066','#ff9900','#ffd23f','#66dd44','#5cdbff','#9966ff'];
+    color = hues[Math.floor(Math.random() * hues.length)];
+  }
+  state.particles.push({
+    x: p.x + p.w/2 + (Math.random() - 0.5) * 10,
+    y: p.y + p.h/2 + (Math.random() - 0.5) * 6,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: 1 + Math.random() * 1,
+    life: 1,
+    color,
+  });
+}
+
 function update() {
   if (state.mode !== 'playing') return;
   const p = state.player;
 
-  // Horizontal movement
   if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
   if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
   if (!keys.left && !keys.right) p.vx *= PHYS.friction;
   p.vx = Math.max(-PHYS.moveMax, Math.min(PHYS.moveMax, p.vx));
 
-  // Gravity
   p.vy += PHYS.gravity;
   p.x += p.vx;
   p.y += p.vy;
 
-  // Screen wrap
   if (p.x < -p.w) p.x = W;
   if (p.x > W) p.x = -p.w;
 
-  // Platform collisions — only when falling (vy > 0)
   if (p.vy > 0) {
     for (const plat of state.platforms) {
-      const hit =
-        p.x + p.w > plat.x &&
-        p.x < plat.x + plat.w &&
-        p.y + p.h > plat.y &&
-        p.y + p.h < plat.y + plat.h + 10;
+      const hit = p.x + p.w > plat.x && p.x < plat.x + plat.w && p.y + p.h > plat.y && p.y + p.h < plat.y + plat.h + 10;
       if (hit) {
         p.y = plat.y - p.h;
         p.vy = PHYS.jumpVel;
-        p.squish = 1;                      // trigger squish anim
+        p.squish = 1;
         spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 4);
-        // HOOK: SOUND — play 'boing.wav'
         break;
       }
     }
   }
 
-  // Squish decay
   p.squish *= 0.82;
 
-  // Coin pickups
+  state.trailTimer++;
+  if (state.trailTimer % 3 === 0) spawnTrailParticle();
+
   for (const c of state.coins) {
     if (c.collected) continue;
     const dx = (p.x + p.w/2) - c.x;
@@ -451,25 +713,19 @@ function update() {
     if (dx*dx + dy*dy < (c.r + 16) * (c.r + 16)) {
       c.collected = true;
       state.runCoins++;
+      save.lifetimeCoins++;
       spawnParticles(c.x, c.y, '#ffd23f', 8);
-      // HOOK: SOUND — coin ping
-      // HOOK: PERSISTENCE — state.lifetimeCoins++
     }
     c.bob += 0.08;
   }
 
-  // Camera follow (only scrolls up)
   const targetCam = p.y - H * 0.45;
-  if (targetCam < state.cameraY) {
-    state.cameraY += (targetCam - state.cameraY) * PHYS.cameraLerp;
-  }
+  if (targetCam < state.cameraY) state.cameraY += (targetCam - state.cameraY) * PHYS.cameraLerp;
 
-  // Track highest point for score
   if (p.y < state.highestY) state.highestY = p.y;
   state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
   state.zone = getZone(state.heightM);
 
-  // Spawn new platforms above as we climb; cull below
   const topMost = Math.min(...state.platforms.map(pl => pl.y));
   if (topMost > state.cameraY - 200) {
     let y = topMost - (60 + Math.random() * 40);
@@ -478,18 +734,13 @@ function update() {
       state.platforms.push(newP);
       maybeSpawnCoins(newP);
       y -= 60 + Math.random() * 40;
-      // HOOK: DIFFICULTY — at higher zones, increase gap, add moving platforms
     }
   }
   state.platforms = state.platforms.filter(pl => pl.y < state.cameraY + H + 100);
   state.coins = state.coins.filter(c => !c.collected && c.y < state.cameraY + H + 100);
 
-  // Death: fell below camera
-  if (p.y > state.cameraY + H + 40) {
-    die();
-  }
+  if (p.y > state.cameraY + H) die();
 
-  // Particles
   for (const pt of state.particles) {
     pt.x += pt.vx;
     pt.y += pt.vy;
@@ -498,31 +749,23 @@ function update() {
   }
   state.particles = state.particles.filter(pt => pt.life > 0);
 
-  // HUD
   document.getElementById('hud-height').textContent = state.heightM + 'm';
   document.getElementById('hud-coins').textContent = state.runCoins;
 }
 
-/* ---------- Render ---------- */
 function drawSky() {
-  // Smoothly interpolate sky between current and next zone
   const z = ZONES[state.zone];
   const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
   const zoneRange = (zNext.minM - z.minM) || 1;
-  const t = state.zone < ZONES.length - 1
-    ? Math.min(1, (state.heightM - z.minM) / zoneRange)
-    : 0;
-
+  const t = state.zone < ZONES.length - 1 ? Math.min(1, (state.heightM - z.minM) / zoneRange) : 0;
   const sky1 = lerpColor(z.sky[0], zNext.sky[0], t);
   const sky2 = lerpColor(z.sky[1], zNext.sky[1], t);
-
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, sky1);
   grad.addColorStop(1, sky2);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // A few parallax stars in zone 2+
   if (state.heightM > 800) {
     const starAlpha = Math.min(1, (state.heightM - 800) / 1200);
     ctx.fillStyle = `rgba(255,255,255,${starAlpha * 0.8})`;
@@ -539,13 +782,10 @@ function drawPlatforms() {
   for (const plat of state.platforms) {
     const y = plat.y - state.cameraY;
     if (y < -20 || y > H + 20) continue;
-    // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
-    // top
     ctx.fillStyle = z.plat;
     ctx.fillRect(plat.x, y, plat.w, plat.h);
-    // edge highlight
     ctx.fillStyle = z.platEdge;
     ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
   }
@@ -556,24 +796,105 @@ function drawCoins() {
     if (c.collected) continue;
     const y = c.y - state.cameraY + Math.sin(c.bob) * 2;
     if (y < -20 || y > H + 20) continue;
-    // glow
     ctx.fillStyle = 'rgba(255, 210, 63, 0.3)';
     ctx.beginPath(); ctx.arc(c.x, y, c.r + 4, 0, Math.PI * 2); ctx.fill();
-    // body
     ctx.fillStyle = '#ffd23f';
     ctx.beginPath(); ctx.arc(c.x, y, c.r, 0, Math.PI * 2); ctx.fill();
-    // highlight
     ctx.fillStyle = '#fff5c4';
     ctx.beginPath(); ctx.arc(c.x - 2, y - 2, c.r * 0.4, 0, Math.PI * 2); ctx.fill();
   }
 }
 
+/* ---------- Hat draw functions ----------
+   Each takes (ctx, x, y, w, h) — the player body box */
+function drawHatCap(ctx, x, y, w, h) {
+  ctx.fillStyle = '#d32f2f';
+  roundRect(ctx, x + 2, y - 8, w - 4, 10, 4); ctx.fill();
+  ctx.fillStyle = '#b71c1c';
+  ctx.fillRect(x + w * 0.55, y - 4, w * 0.4, 4);
+}
+
+function drawHatCrown(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y);
+  ctx.lineTo(x + 4, y - 6);
+  ctx.lineTo(x + w * 0.25, y - 2);
+  ctx.lineTo(x + w * 0.4, y - 10);
+  ctx.lineTo(x + w * 0.55, y - 2);
+  ctx.lineTo(x + w * 0.7, y - 10);
+  ctx.lineTo(x + w * 0.85, y - 2);
+  ctx.lineTo(x + w - 4, y - 6);
+  ctx.lineTo(x + w - 4, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ff5722';
+  ctx.beginPath(); ctx.arc(x + w * 0.4, y - 8, 1.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + w * 0.7, y - 8, 1.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatWizard(ctx, x, y, w, h) {
+  ctx.fillStyle = '#3949ab';
+  ctx.beginPath();
+  ctx.moveTo(x + 2, y + 1);
+  ctx.lineTo(x + w - 2, y + 1);
+  ctx.lineTo(x + w/2 + 2, y - 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillRect(x + 2, y - 2, w - 4, 3);
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath(); ctx.arc(x + w/2, y - 10, 1.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatParty(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ff7eb9';
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.2, y + 1);
+  ctx.lineTo(x + w * 0.8, y + 1);
+  ctx.lineTo(x + w/2, y - 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillRect(x + w * 0.3, y - 4, 2, 2);
+  ctx.fillRect(x + w * 0.55, y - 8, 2, 2);
+  ctx.fillStyle = '#5cdbff';
+  ctx.beginPath(); ctx.arc(x + w/2, y - 16, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatBow(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ff5722';
+  ctx.beginPath();
+  ctx.ellipse(x + w * 0.3, y + 2, 5, 4, -0.3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + w * 0.7, y + 2, 5, 4, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#bf360c';
+  ctx.fillRect(x + w/2 - 2, y, 4, 5);
+}
+
+function drawHatHalo(ctx, x, y, w, h) {
+  ctx.strokeStyle = '#ffd23f';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(x + w/2, y - 2, w * 0.55, 3, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 1;
+}
+
 function drawPlayer() {
   const p = state.player;
-  const c = CHARS[state.character];
-  const y = p.y - state.cameraY;
+  const baseChar = CHARS[state.character];
+  const eq = save.equipped[state.character];
+  const skin = COSMETICS.skin.find(s => s.id === eq.skin);
+  const hat = COSMETICS.hat.find(h => h.id === eq.hat);
 
-  // Squish: when 1, character is wider and shorter (landing impact)
+  const bodyColor = skin && skin.tint ? skin.tint : baseChar.body;
+  const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : baseChar.accent;
+
+  const y = p.y - state.cameraY;
   const sx = 1 + p.squish * 0.35;
   const sy = 1 - p.squish * 0.35;
   const drawW = p.w * sx;
@@ -581,29 +902,26 @@ function drawPlayer() {
   const drawX = p.x + (p.w - drawW) / 2;
   const drawY = y + (p.h - drawH);
 
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath();
   ctx.ellipse(p.x + p.w/2, y + p.h + 2, drawW/2, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // HOOK: SPRITES — replace this rounded-rect block with a sprite blit:
-  //   ctx.drawImage(spriteSheet[state.character][frame], drawX, drawY, drawW, drawH);
-  // Then layer cosmetics: headwear above, cloak behind, aura around.
-  ctx.fillStyle = c.body;
+  ctx.fillStyle = bodyColor;
   roundRect(ctx, drawX, drawY, drawW, drawH, 8); ctx.fill();
-  ctx.fillStyle = c.accent;
+  ctx.fillStyle = accentColor;
   roundRect(ctx, drawX + 2, drawY + drawH * 0.55, drawW - 4, drawH * 0.4, 6); ctx.fill();
 
-  // Eyes
   const eyeY = drawY + drawH * 0.32;
   const eyeOffset = p.facing * 2;
-  ctx.fillStyle = c.eye;
+  ctx.fillStyle = baseChar.eye;
   ctx.beginPath(); ctx.arc(drawX + drawW * 0.32 + eyeOffset, eyeY, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(drawX + drawW * 0.68 + eyeOffset, eyeY, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(drawX + drawW * 0.32 + eyeOffset + 0.5, eyeY, 1.8, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(drawX + drawW * 0.68 + eyeOffset + 0.5, eyeY, 1.8, 0, Math.PI * 2); ctx.fill();
+
+  if (hat && hat.draw) hat.draw(ctx, drawX, drawY, drawW, drawH);
 }
 
 function drawParticles() {
@@ -625,7 +943,6 @@ function render() {
   }
 }
 
-/* ---------- Helpers ---------- */
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -647,7 +964,15 @@ function lerpColor(a, b, t) {
   return `rgb(${r},${g},${bl})`;
 }
 
-/* ---------- Game flow ---------- */
+function darken(hex, amt) {
+  const p = parseInt(hex.slice(1), 16);
+  let r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
+  r = Math.round(r * (1 - amt));
+  g = Math.round(g * (1 - amt));
+  b = Math.round(b * (1 - amt));
+  return `rgb(${r},${g},${b})`;
+}
+
 function startGame() {
   state.mode = 'playing';
   state.player = makePlayer();
@@ -658,39 +983,269 @@ function startGame() {
   state.runCoins = 0;
   state.heightM = 0;
   state.zone = 0;
+  state.trailTimer = 0;
   seedPlatforms();
-  // Seed initial coin clusters
   for (const plat of state.platforms) maybeSpawnCoins(plat);
 
   document.getElementById('menu').classList.add('hidden');
   document.getElementById('gameover').classList.add('hidden');
+  document.getElementById('shop').classList.add('hidden');
 }
 
 function die() {
   state.mode = 'dead';
-  if (state.heightM > state.bestHeight) state.bestHeight = state.heightM;
-  // HOOK: PERSISTENCE — save bestHeight + lifetimeCoins to localStorage here
-  // HOOK: ACHIEVEMENTS — check 10000m gold-skin unlock, 50000 lifetime coin lantern unlock
+
+  save.coins += state.runCoins;
+  if (state.heightM > save.bestHeight) save.bestHeight = state.heightM;
+
+  const newlyUnlocked = [];
+  for (const charId of CHAR_ORDER) {
+    const c = CHARS[charId];
+    if (!save.unlockedChars.includes(charId) && save.bestHeight >= c.unlockM) {
+      save.unlockedChars.push(charId);
+      newlyUnlocked.push(c.name);
+    }
+  }
+
+  if (save.bestHeight >= 10000 && !save.achievements.includes('reach10000')) {
+    save.achievements.push('reach10000');
+    if (!save.owned.skin.includes('gold')) save.owned.skin.push('gold');
+    newlyUnlocked.push('Gold Skin!');
+  }
+
+  persist();
+
   document.getElementById('go-height').textContent = state.heightM + 'm';
   document.getElementById('go-coins').textContent = state.runCoins;
-  document.getElementById('go-best').textContent = state.bestHeight + 'm';
+  document.getElementById('go-best').textContent = save.bestHeight + 'm';
   document.getElementById('gameover').classList.remove('hidden');
+
+  if (newlyUnlocked.length) {
+    setTimeout(() => showToast('Unlocked: ' + newlyUnlocked.join(', ')), 400);
+  }
 }
 
-/* ---------- Menu wiring ---------- */
-document.querySelectorAll('.char-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.character = btn.dataset.char;
-    document.getElementById('char-name').textContent = btn.dataset.name;
+function returnToMenu() {
+  state.mode = 'menu';
+  document.getElementById('gameover').classList.add('hidden');
+  document.getElementById('shop').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function refreshMenu() {
+  document.getElementById('menu-best').textContent = save.bestHeight + 'm';
+  document.getElementById('menu-coins').textContent = save.coins;
+
+  const row = document.getElementById('char-row');
+  row.innerHTML = '';
+  for (const id of CHAR_ORDER) {
+    const c = CHARS[id];
+    const unlocked = save.unlockedChars.includes(id);
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (state.character === id ? ' active' : '') + (unlocked ? '' : ' locked');
+    btn.dataset.char = id;
+    btn.innerHTML = c.emoji + (unlocked ? '' : `<span class="lock">${c.unlockM}m</span>`);
+    btn.addEventListener('click', () => {
+      if (!unlocked) {
+        showToast(`Reach ${c.unlockM}m to unlock ${c.name}`);
+        return;
+      }
+      state.character = id;
+      refreshMenu();
+    });
+    row.appendChild(btn);
+  }
+
+  const c = CHARS[state.character];
+  document.getElementById('char-name').textContent = c.name;
+  const hint = document.getElementById('char-unlock-hint');
+  if (c.unlockM > 0 && save.unlockedChars.includes(state.character)) {
+    hint.textContent = `Unlocked at ${c.unlockM}m`;
+  } else {
+    hint.textContent = '';
+  }
+}
+
+let shopTab = 'hat';
+let shopChar = 'turtle';
+
+function openShop() {
+  shopChar = state.character;
+  if (!save.unlockedChars.includes(shopChar)) shopChar = 'turtle';
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('shop').classList.remove('hidden');
+  refreshShop();
+}
+
+function closeShop() {
+  document.getElementById('shop').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+
+function refreshShop() {
+  document.getElementById('shop-coin-count').textContent = save.coins;
+
+  const sel = document.getElementById('shop-char-select');
+  sel.innerHTML = '';
+  for (const id of CHAR_ORDER) {
+    const c = CHARS[id];
+    const unlocked = save.unlockedChars.includes(id);
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (shopChar === id ? ' active' : '') + (unlocked ? '' : ' locked');
+    btn.innerHTML = c.emoji + (unlocked ? '' : `<span class="lock">🔒</span>`);
+    btn.addEventListener('click', () => {
+      if (!unlocked) { showToast(`Reach ${c.unlockM}m to unlock ${c.name}`); return; }
+      shopChar = id;
+      refreshShop();
+    });
+    sel.appendChild(btn);
+  }
+
+  document.querySelectorAll('.shop-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === shopTab);
+  });
+
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+  const items = COSMETICS[shopTab];
+  const ownedList = save.owned[shopTab];
+  const equippedId = save.equipped[shopChar][shopTab];
+
+  for (const item of items) {
+    const owned = ownedList.includes(item.id);
+    const equipped = equippedId === item.id;
+    const lockedByAchievement = item.achievement && !save.achievements.includes(item.achievement);
+    const canAfford = save.coins >= item.price;
+
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    if (equipped) div.classList.add('equipped');
+    else if (owned) div.classList.add('owned');
+    if (lockedByAchievement && !owned) div.classList.add('locked');
+    if (!owned && !canAfford && !lockedByAchievement) div.classList.add('cant-afford');
+
+    const previewWrap = document.createElement('div');
+    previewWrap.className = 'shop-item-preview';
+    const pcanvas = document.createElement('canvas');
+    pcanvas.width = 56; pcanvas.height = 56;
+    previewWrap.appendChild(pcanvas);
+    drawShopPreview(pcanvas, shopChar, shopTab, item);
+
+    const name = document.createElement('div');
+    name.className = 'shop-item-name';
+    name.textContent = item.name;
+
+    const status = document.createElement('div');
+    if (equipped) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Equipped';
+    } else if (owned) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Tap to equip';
+    } else if (lockedByAchievement) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Reach 10000m';
+    } else {
+      status.className = 'shop-item-price';
+      status.textContent = '🪙 ' + item.price;
+    }
+
+    div.appendChild(previewWrap);
+    div.appendChild(name);
+    div.appendChild(status);
+
+    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement));
+    grid.appendChild(div);
+  }
+}
+
+function handleShopItemClick(item, owned, equipped, lockedByAchievement) {
+  if (lockedByAchievement && !owned) {
+    showToast('Reach 10000m to unlock!');
+    return;
+  }
+  if (equipped) return;
+  if (owned) {
+    save.equipped[shopChar][shopTab] = item.id;
+    persist();
+    refreshShop();
+    return;
+  }
+  if (save.coins < item.price) {
+    showToast('Not enough coins!');
+    return;
+  }
+  save.coins -= item.price;
+  save.owned[shopTab].push(item.id);
+  save.equipped[shopChar][shopTab] = item.id;
+  persist();
+  showToast(`Bought ${item.name}!`);
+  refreshShop();
+}
+
+function drawShopPreview(canvas, charId, tab, item) {
+  const pctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const baseChar = CHARS[charId];
+
+  const px = 12, py = 12, pw = 32, ph = 32;
+
+  let bodyColor = baseChar.body;
+  let accentColor = baseChar.accent;
+  if (tab === 'skin' && item.tint) {
+    bodyColor = item.tint;
+    accentColor = darken(item.tint, 0.3);
+  }
+
+  if (tab === 'aura' && item.color) {
+    const c = item.color === 'rainbow' ? '#ff7eb9' : item.color;
+    pctx.fillStyle = c;
+    pctx.globalAlpha = 0.4;
+    pctx.beginPath(); pctx.arc(w/2, h/2, 22, 0, Math.PI*2); pctx.fill();
+    pctx.globalAlpha = 1;
+  }
+
+  pctx.fillStyle = bodyColor;
+  roundRect(pctx, px, py, pw, ph, 8); pctx.fill();
+  pctx.fillStyle = accentColor;
+  roundRect(pctx, px + 2, py + ph * 0.55, pw - 4, ph * 0.4, 6); pctx.fill();
+
+  pctx.fillStyle = '#fff';
+  pctx.beginPath(); pctx.arc(px + pw * 0.32, py + ph * 0.32, 3.5, 0, Math.PI*2); pctx.fill();
+  pctx.beginPath(); pctx.arc(px + pw * 0.68, py + ph * 0.32, 3.5, 0, Math.PI*2); pctx.fill();
+  pctx.fillStyle = '#000';
+  pctx.beginPath(); pctx.arc(px + pw * 0.32, py + ph * 0.32, 1.8, 0, Math.PI*2); pctx.fill();
+  pctx.beginPath(); pctx.arc(px + pw * 0.68, py + ph * 0.32, 1.8, 0, Math.PI*2); pctx.fill();
+
+  if (tab === 'hat' && item.draw) {
+    item.draw(pctx, px, py, pw, ph);
+  }
+}
+
+document.getElementById('play-btn').addEventListener('click', startGame);
+document.getElementById('shop-btn').addEventListener('click', openShop);
+document.getElementById('shop-back-btn').addEventListener('click', closeShop);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+document.getElementById('menu-btn').addEventListener('click', returnToMenu);
+
+document.querySelectorAll('.shop-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    shopTab = t.dataset.tab;
+    refreshShop();
   });
 });
 
-document.getElementById('play-btn').addEventListener('click', startGame);
-document.getElementById('retry-btn').addEventListener('click', startGame);
-
-/* ---------- Resize: keep canvas in proportion within viewport ---------- */
 function resize() {
   const maxH = window.innerHeight - 20;
   const maxW = window.innerWidth - 20;
@@ -707,25 +1262,14 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-/* ---------- Main loop ---------- */
+refreshMenu();
+
 function loop() {
   update();
   render();
   requestAnimationFrame(loop);
 }
 loop();
-
-/* ============================================================================
-   FUTURE WORK (search for "HOOK:" in this file)
-   - SPRITES: replace drawPlayer rounded-rect with sprite blits + cosmetic layers
-   - SHOP: cosmetics, power-up purchases, inventory UI
-   - PERSISTENCE: localStorage for bestHeight, lifetimeCoins, owned, equipped
-   - POWER-UPS: lantern shield, star magnet, super spring, jetpack spawns
-   - STAR FRAGMENTS: rare collectible above 5000m, converts 10:100 coins
-   - ACHIEVEMENTS: 10000m gold skin, 50000 lifetime coin Lantern of Legends
-   - DIFFICULTY: moving platforms, breakable platforms, gap scaling per zone
-   - SOUND: boing on bounce, ping on coin, whoosh on death
-============================================================================ */
 </script>
 </body>
 </html>
