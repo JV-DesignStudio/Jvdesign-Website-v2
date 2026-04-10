@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sky High Squirt &amp; Friends — Prototype</title>
+<style>
+  /* ============================================================
+     SKY HIGH SQUIRT — PROTOTYPE v0.1
+     Focus: core jump feel + procedural zones + coins + squish.
+     Hooks present for: sprites, shop, power-ups, persistence,
+     star fragments, achievement unlocks. See // HOOK comments.
+     ============================================================ */
+
+  :root {
+    --ui-bg: rgba(20, 14, 38, 0.78);
+    --ui-stroke: rgba(255, 255, 255, 0.18);
+    --ui-text: #fdf6e3;
+    --accent: #ffd23f;
+    --accent-2: #ff7eb9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #0a0617;
+    color: var(--ui-text);
+    font-family: 'Trebuchet MS', 'Lucida Sans', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  canvas {
+    display: block;
+    background: #87ceeb; /* zone 1 default; gets painted over */
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    border-radius: 6px;
+    image-rendering: auto;
+    touch-action: none;
+    width: 420px;   /* default; resize() will adjust */
+    height: 700px;
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+
+  /* ----- HUD ----- */
+  .hud {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .hud .pill {
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .hud .pill .label { opacity: 0.6; font-weight: 500; margin-right: 6px; font-size: 11px; text-transform: uppercase; }
+  .hud .pill.coins { color: var(--accent); }
+
+  /* ----- Overlays (menu / game over) ----- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, rgba(10,6,23,0.75), rgba(10,6,23,0.95));
+    z-index: 10;
+    pointer-events: auto;
+  }
+  .overlay.hidden { display: none; }
+  .panel {
+    background: linear-gradient(180deg, #1a1140, #0d0726);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 18px;
+    padding: 32px 36px;
+    text-align: center;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .panel h1 {
+    font-size: 30px;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .panel h2 { font-size: 22px; margin-bottom: 12px; }
+  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+
+  .char-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 18px 0 22px;
+  }
+  .char-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    font-size: 32px;
+    display: grid;
+    place-items: center;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .char-btn:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+  .char-btn.active {
+    border-color: var(--accent);
+    background: rgba(255, 210, 63, 0.15);
+    box-shadow: 0 0 20px rgba(255, 210, 63, 0.3);
+  }
+  .char-name {
+    font-size: 13px;
+    opacity: 0.7;
+    margin-bottom: 16px;
+    height: 16px;
+  }
+
+  .btn {
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin: 18px 0;
+  }
+  .stat .v { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat .l { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+  .controls-hint {
+    margin-top: 16px;
+    font-size: 12px;
+    opacity: 0.55;
+    line-height: 1.6;
+  }
+  .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+  /* ----- Mobile touch zones ----- */
+  .touch-zone {
+    position: fixed;
+    bottom: 0;
+    width: 50%;
+    height: 50%;
+    z-index: 3;
+    display: none;
+  }
+  .touch-zone.left { left: 0; }
+  .touch-zone.right { right: 0; }
+  @media (hover: none) and (pointer: coarse) {
+    .touch-zone { display: block; }
+    .controls-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="game" width="420" height="700"></canvas>
+</div>
+
+<div class="hud">
+  <div class="pill"><span class="label">Height</span><span id="hud-height">0m</span></div>
+  <div class="pill coins"><span class="label">Coins</span><span id="hud-coins">0</span></div>
+</div>
+
+<div class="touch-zone left"></div>
+<div class="touch-zone right"></div>
+
+<!-- ===== START MENU ===== -->
+<div class="overlay" id="menu">
+  <div class="panel">
+    <h1>Sky High Squirt</h1>
+    <p>Bounce as high as you can. Collect coins. Don't fall.</p>
+
+    <div class="char-name" id="char-name">Squirt the Turtle</div>
+    <div class="char-row" id="char-row">
+      <!-- Placeholder emojis until sprite PNGs land. See HOOK: SPRITES -->
+      <button class="char-btn active" data-char="turtle" data-name="Squirt the Turtle">🐢</button>
+      <button class="char-btn" data-char="tiger" data-name="Roar the Tiger">🐯</button>
+      <button class="char-btn" data-char="fox" data-name="Ember the Fox">🦊</button>
+      <button class="char-btn" data-char="axolotl" data-name="Bubble the Axolotl">🦎</button>
+    </div>
+
+    <button class="btn" id="play-btn">Play</button>
+
+    <div class="controls-hint">
+      <span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to move<br>
+      Wraps around screen edges
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div class="overlay hidden" id="gameover">
+  <div class="panel">
+    <h2>You Fell!</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="go-height">0m</div><div class="l">Height</div></div>
+      <div class="stat"><div class="v" id="go-coins">0</div><div class="l">Coins</div></div>
+      <div class="stat"><div class="v" id="go-best">0m</div><div class="l">Best</div></div>
+    </div>
+    <button class="btn" id="retry-btn">Retry</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   SKY HIGH SQUIRT — Game Code
+   Prototype: prioritizes jump feel. Modular hooks for future systems.
+   ============================================================================ */
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+
+/* ---------- Tunable physics (the "feel" knobs) ---------- */
+const PHYS = {
+  gravity: 0.42,
+  jumpVel: -13.2,        // standard bounce
+  superJumpVel: -19,     // HOOK: super-spring power-up uses this
+  moveAccel: 0.7,
+  moveMax: 6.5,
+  friction: 0.86,
+  cameraLerp: 0.12,
+  scoreScale: 0.1,       // pixels-climbed → meters
+};
+
+/* ---------- Game state ---------- */
+const state = {
+  mode: 'menu',          // 'menu' | 'playing' | 'dead'
+  character: 'turtle',
+  player: null,
+  platforms: [],
+  coins: [],
+  // starFragments: [],  // HOOK: STAR FRAGMENTS (above 5000m)
+  // powerups: [],       // HOOK: in-run power-up spawns (jetpack etc.)
+  cameraY: 0,
+  highestY: 0,
+  runCoins: 0,
+  heightM: 0,
+  zone: 1,
+  bestHeight: 0,         // HOOK: PERSISTENCE — load/save to localStorage
+  // lifetimeCoins: 0,   // HOOK: PERSISTENCE — for achievement unlocks
+  // ownedCosmetics: [], // HOOK: SHOP — array of cosmetic IDs
+  // equipped: {},       // HOOK: SHOP — { headwear, cloak, aura, base }
+  // inventory: {},      // HOOK: SHOP — { lanternShield: 2, superSpring: 5 }
+  // activeBoost: null,  // HOOK: SHOP — pre-run boost selected
+  particles: [],
+};
+
+/* ---------- Character palettes (placeholder until sprites) ----------
+   HOOK: SPRITES — replace drawPlayer() with sprite blits keyed by character.
+   Suggested file layout:
+     /assets/characters/{turtle|tiger|fox|axolotl}/{idle,jump,fall,squish}.png
+   Each char needs ~32x32 base. Cosmetic layers (hat, cloak, aura) draw on top
+   of the base sprite at fixed anchor points. */
+const CHARS = {
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Squirt' },
+  tiger:   { body: '#ff9800', accent: '#e65100', eye: '#fff', name: 'Roar' },
+  fox:     { body: '#ff5722', accent: '#bf360c', eye: '#fff', name: 'Ember' },
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Bubble' },
+};
+
+/* ---------- Zones (visual only) ----------
+   Procedural sky tinting based on height. Three bands per the GDD. */
+const ZONES = [
+  { name: 'Meadow',    minM: 0,    sky: ['#87ceeb', '#b3e5fc'], plat: '#66bb6a', platEdge: '#2e7d32' },
+  { name: 'Dusk',      minM: 1000, sky: ['#5d3a82', '#ff7043'], plat: '#8d6e63', platEdge: '#3e2723' },
+  { name: 'Night Sky', minM: 5000, sky: ['#0d0633', '#1a0a4a'], plat: '#7e57c2', platEdge: '#311b92' },
+];
+
+function getZone(m) {
+  for (let i = ZONES.length - 1; i >= 0; i--) if (m >= ZONES[i].minM) return i;
+  return 0;
+}
+
+/* ---------- Player ---------- */
+function makePlayer() {
+  return {
+    x: W / 2,
+    y: H - 120,
+    vx: 0,
+    vy: 0,
+    w: 34,
+    h: 34,
+    squish: 0,        // 0 = neutral, 1 = full squish; decays each frame
+    facing: 1,
+  };
+}
+
+/* ---------- Platforms ----------
+   Procedural generation: spawn upward as the camera climbs. */
+function makePlatform(y) {
+  const w = 70;
+  const x = Math.random() * (W - w);
+  return {
+    x, y, w, h: 14,
+    type: 'static',   // HOOK: add 'moving', 'breakable', 'spring' later
+    bounced: false,
+  };
+}
+
+function seedPlatforms() {
+  state.platforms.length = 0;
+  // Ground platform under the player
+  state.platforms.push({ x: W/2 - 50, y: H - 60, w: 100, h: 14, type: 'static', bounced: false });
+  let y = H - 140;
+  while (y > -200) {
+    state.platforms.push(makePlatform(y));
+    y -= 60 + Math.random() * 40;
+  }
+}
+
+/* ---------- Coins ----------
+   GDD: clusters of 3-5 above platforms. */
+function maybeSpawnCoins(plat) {
+  if (Math.random() < 0.35) {
+    const n = 3 + Math.floor(Math.random() * 3);
+    const cx = plat.x + plat.w / 2;
+    const cy = plat.y - 28;
+    for (let i = 0; i < n; i++) {
+      state.coins.push({
+        x: cx + (i - (n-1)/2) * 16,
+        y: cy,
+        r: 7,
+        collected: false,
+        bob: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+}
+
+/* ---------- Input ---------- */
+const keys = { left: false, right: false };
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+});
+
+// Touch zones for mobile
+document.querySelector('.touch-zone.left').addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; });
+document.querySelector('.touch-zone.left').addEventListener('touchend',   e => { e.preventDefault(); keys.left = false; });
+document.querySelector('.touch-zone.right').addEventListener('touchstart',e => { e.preventDefault(); keys.right = true; });
+document.querySelector('.touch-zone.right').addEventListener('touchend',  e => { e.preventDefault(); keys.right = false; });
+
+/* ---------- Particles (small juice for landings/coin pickups) ---------- */
+function spawnParticles(x, y, color, n = 6) {
+  for (let i = 0; i < n; i++) {
+    state.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4 - 1,
+      life: 1,
+      color,
+    });
+  }
+}
+
+/* ---------- Update loop ---------- */
+function update() {
+  if (state.mode !== 'playing') return;
+  const p = state.player;
+
+  // Horizontal movement
+  if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
+  if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
+  if (!keys.left && !keys.right) p.vx *= PHYS.friction;
+  p.vx = Math.max(-PHYS.moveMax, Math.min(PHYS.moveMax, p.vx));
+
+  // Gravity
+  p.vy += PHYS.gravity;
+  p.x += p.vx;
+  p.y += p.vy;
+
+  // Screen wrap
+  if (p.x < -p.w) p.x = W;
+  if (p.x > W) p.x = -p.w;
+
+  // Platform collisions — only when falling (vy > 0)
+  if (p.vy > 0) {
+    for (const plat of state.platforms) {
+      const hit =
+        p.x + p.w > plat.x &&
+        p.x < plat.x + plat.w &&
+        p.y + p.h > plat.y &&
+        p.y + p.h < plat.y + plat.h + 10;
+      if (hit) {
+        p.y = plat.y - p.h;
+        p.vy = PHYS.jumpVel;
+        p.squish = 1;                      // trigger squish anim
+        spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 4);
+        // HOOK: SOUND — play 'boing.wav'
+        break;
+      }
+    }
+  }
+
+  // Squish decay
+  p.squish *= 0.82;
+
+  // Coin pickups
+  for (const c of state.coins) {
+    if (c.collected) continue;
+    const dx = (p.x + p.w/2) - c.x;
+    const dy = (p.y + p.h/2) - c.y;
+    if (dx*dx + dy*dy < (c.r + 16) * (c.r + 16)) {
+      c.collected = true;
+      state.runCoins++;
+      spawnParticles(c.x, c.y, '#ffd23f', 8);
+      // HOOK: SOUND — coin ping
+      // HOOK: PERSISTENCE — state.lifetimeCoins++
+    }
+    c.bob += 0.08;
+  }
+
+  // Camera follow (only scrolls up)
+  const targetCam = p.y - H * 0.45;
+  if (targetCam < state.cameraY) {
+    state.cameraY += (targetCam - state.cameraY) * PHYS.cameraLerp;
+  }
+
+  // Track highest point for score
+  if (p.y < state.highestY) state.highestY = p.y;
+  state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
+  state.zone = getZone(state.heightM);
+
+  // Spawn new platforms above as we climb; cull below
+  const topMost = Math.min(...state.platforms.map(pl => pl.y));
+  if (topMost > state.cameraY - 200) {
+    let y = topMost - (60 + Math.random() * 40);
+    while (y > state.cameraY - 400) {
+      const newP = makePlatform(y);
+      state.platforms.push(newP);
+      maybeSpawnCoins(newP);
+      y -= 60 + Math.random() * 40;
+      // HOOK: DIFFICULTY — at higher zones, increase gap, add moving platforms
+    }
+  }
+  state.platforms = state.platforms.filter(pl => pl.y < state.cameraY + H + 100);
+  state.coins = state.coins.filter(c => !c.collected && c.y < state.cameraY + H + 100);
+
+  // Death: fell below camera
+  if (p.y > state.cameraY + H + 40) {
+    die();
+  }
+
+  // Particles
+  for (const pt of state.particles) {
+    pt.x += pt.vx;
+    pt.y += pt.vy;
+    pt.vy += 0.15;
+    pt.life -= 0.04;
+  }
+  state.particles = state.particles.filter(pt => pt.life > 0);
+
+  // HUD
+  document.getElementById('hud-height').textContent = state.heightM + 'm';
+  document.getElementById('hud-coins').textContent = state.runCoins;
+}
+
+/* ---------- Render ---------- */
+function drawSky() {
+  // Smoothly interpolate sky between current and next zone
+  const z = ZONES[state.zone];
+  const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
+  const zoneRange = (zNext.minM - z.minM) || 1;
+  const t = state.zone < ZONES.length - 1
+    ? Math.min(1, (state.heightM - z.minM) / zoneRange)
+    : 0;
+
+  const sky1 = lerpColor(z.sky[0], zNext.sky[0], t);
+  const sky2 = lerpColor(z.sky[1], zNext.sky[1], t);
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, sky1);
+  grad.addColorStop(1, sky2);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // A few parallax stars in zone 2+
+  if (state.heightM > 800) {
+    const starAlpha = Math.min(1, (state.heightM - 800) / 1200);
+    ctx.fillStyle = `rgba(255,255,255,${starAlpha * 0.8})`;
+    for (let i = 0; i < 30; i++) {
+      const sx = (i * 73) % W;
+      const sy = ((i * 131 + state.cameraY * 0.2) % H + H) % H;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+  }
+}
+
+function drawPlatforms() {
+  const z = ZONES[state.zone];
+  for (const plat of state.platforms) {
+    const y = plat.y - state.cameraY;
+    if (y < -20 || y > H + 20) continue;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+    // top
+    ctx.fillStyle = z.plat;
+    ctx.fillRect(plat.x, y, plat.w, plat.h);
+    // edge highlight
+    ctx.fillStyle = z.platEdge;
+    ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+  }
+}
+
+function drawCoins() {
+  for (const c of state.coins) {
+    if (c.collected) continue;
+    const y = c.y - state.cameraY + Math.sin(c.bob) * 2;
+    if (y < -20 || y > H + 20) continue;
+    // glow
+    ctx.fillStyle = 'rgba(255, 210, 63, 0.3)';
+    ctx.beginPath(); ctx.arc(c.x, y, c.r + 4, 0, Math.PI * 2); ctx.fill();
+    // body
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath(); ctx.arc(c.x, y, c.r, 0, Math.PI * 2); ctx.fill();
+    // highlight
+    ctx.fillStyle = '#fff5c4';
+    ctx.beginPath(); ctx.arc(c.x - 2, y - 2, c.r * 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawPlayer() {
+  const p = state.player;
+  const c = CHARS[state.character];
+  const y = p.y - state.cameraY;
+
+  // Squish: when 1, character is wider and shorter (landing impact)
+  const sx = 1 + p.squish * 0.35;
+  const sy = 1 - p.squish * 0.35;
+  const drawW = p.w * sx;
+  const drawH = p.h * sy;
+  const drawX = p.x + (p.w - drawW) / 2;
+  const drawY = y + (p.h - drawH);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(p.x + p.w/2, y + p.h + 2, drawW/2, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // HOOK: SPRITES — replace this rounded-rect block with a sprite blit:
+  //   ctx.drawImage(spriteSheet[state.character][frame], drawX, drawY, drawW, drawH);
+  // Then layer cosmetics: headwear above, cloak behind, aura around.
+  ctx.fillStyle = c.body;
+  roundRect(ctx, drawX, drawY, drawW, drawH, 8); ctx.fill();
+  ctx.fillStyle = c.accent;
+  roundRect(ctx, drawX + 2, drawY + drawH * 0.55, drawW - 4, drawH * 0.4, 6); ctx.fill();
+
+  // Eyes
+  const eyeY = drawY + drawH * 0.32;
+  const eyeOffset = p.facing * 2;
+  ctx.fillStyle = c.eye;
+  ctx.beginPath(); ctx.arc(drawX + drawW * 0.32 + eyeOffset, eyeY, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(drawX + drawW * 0.68 + eyeOffset, eyeY, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(drawX + drawW * 0.32 + eyeOffset + 0.5, eyeY, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(drawX + drawW * 0.68 + eyeOffset + 0.5, eyeY, 1.8, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawParticles() {
+  for (const pt of state.particles) {
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = Math.max(0, pt.life);
+    ctx.fillRect(pt.x - 2, pt.y - state.cameraY - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render() {
+  drawSky();
+  if (state.mode === 'playing' || state.mode === 'dead') {
+    drawPlatforms();
+    drawCoins();
+    drawParticles();
+    if (state.player) drawPlayer();
+  }
+}
+
+/* ---------- Helpers ---------- */
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function lerpColor(a, b, t) {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ar = (pa >> 16) & 255, ag = (pa >> 8) & 255, ab = pa & 255;
+  const br = (pb >> 16) & 255, bg = (pb >> 8) & 255, bb = pb & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+/* ---------- Game flow ---------- */
+function startGame() {
+  state.mode = 'playing';
+  state.player = makePlayer();
+  state.coins.length = 0;
+  state.particles.length = 0;
+  state.cameraY = 0;
+  state.highestY = state.player.y;
+  state.runCoins = 0;
+  state.heightM = 0;
+  state.zone = 0;
+  seedPlatforms();
+  // Seed initial coin clusters
+  for (const plat of state.platforms) maybeSpawnCoins(plat);
+
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('gameover').classList.add('hidden');
+}
+
+function die() {
+  state.mode = 'dead';
+  if (state.heightM > state.bestHeight) state.bestHeight = state.heightM;
+  // HOOK: PERSISTENCE — save bestHeight + lifetimeCoins to localStorage here
+  // HOOK: ACHIEVEMENTS — check 10000m gold-skin unlock, 50000 lifetime coin lantern unlock
+  document.getElementById('go-height').textContent = state.heightM + 'm';
+  document.getElementById('go-coins').textContent = state.runCoins;
+  document.getElementById('go-best').textContent = state.bestHeight + 'm';
+  document.getElementById('gameover').classList.remove('hidden');
+}
+
+/* ---------- Menu wiring ---------- */
+document.querySelectorAll('.char-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.char-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.character = btn.dataset.char;
+    document.getElementById('char-name').textContent = btn.dataset.name;
+  });
+});
+
+document.getElementById('play-btn').addEventListener('click', startGame);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+
+/* ---------- Resize: keep canvas in proportion within viewport ---------- */
+function resize() {
+  const maxH = window.innerHeight - 20;
+  const maxW = window.innerWidth - 20;
+  const aspect = W / H;
+  let dispH = maxH;
+  let dispW = dispH * aspect;
+  if (dispW > maxW) {
+    dispW = maxW;
+    dispH = dispW / aspect;
+  }
+  canvas.style.width = dispW + 'px';
+  canvas.style.height = dispH + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------- Main loop ---------- */
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+
+/* ============================================================================
+   FUTURE WORK (search for "HOOK:" in this file)
+   - SPRITES: replace drawPlayer rounded-rect with sprite blits + cosmetic layers
+   - SHOP: cosmetics, power-up purchases, inventory UI
+   - PERSISTENCE: localStorage for bestHeight, lifetimeCoins, owned, equipped
+   - POWER-UPS: lantern shield, star magnet, super spring, jetpack spawns
+   - STAR FRAGMENTS: rare collectible above 5000m, converts 10:100 coins
+   - ACHIEVEMENTS: 10000m gold skin, 50000 lifetime coin Lantern of Legends
+   - DIFFICULTY: moving platforms, breakable platforms, gap scaling per zone
+   - SOUND: boing on bounce, ping on coin, whoosh on death
+============================================================================ */
+</script>
+</body>
+</html>
