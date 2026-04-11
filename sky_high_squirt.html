@@ -45,7 +45,7 @@
     place-items: center;
   }
 
-  canvas {
+  #game {
     display: block;
     background: #87ceeb;
     box-shadow: 0 30px 80px rgba(0,0,0,0.6);
@@ -223,6 +223,74 @@
   .stat .v { font-size: 28px; font-weight: 800; color: var(--accent); }
   .stat .l { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
 
+  /* XP bar */
+  .xp-bar-wrap { margin: 14px 0 4px; }
+  .xp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .xp-row span:first-child { color: var(--accent-3); }
+  .xp-row span:last-child  { color: var(--accent); }
+  .xp-bar {
+    height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--ui-stroke);
+  }
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
+    box-shadow: 0 0 8px rgba(255, 210, 63, 0.5);
+  }
+  .xp-text {
+    font-size: 10px;
+    opacity: 0.6;
+    text-align: center;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Streak badge */
+  .streak-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 14px;
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff7043;
+  }
+  .streak-badge.zero { display: none; }
+
+  /* New best banner */
+  .newbest-banner {
+    display: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #2a1a00;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    margin: 0 auto 12px;
+    width: fit-content;
+    letter-spacing: 1px;
+    animation: newbestpulse 1.2s ease-in-out infinite;
+    box-shadow: 0 4px 20px rgba(255, 210, 63, 0.5);
+  }
+  @keyframes newbestpulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
   .controls-hint {
     margin-top: 16px;
     font-size: 12px;
@@ -329,6 +397,11 @@
     display: grid;
     place-items: center;
   }
+  .shop-item-preview canvas {
+    width: 56px !important;
+    height: 56px !important;
+    display: block;
+  }
   .shop-item-name {
     font-size: 11px;
     font-weight: 700;
@@ -373,20 +446,27 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
-  .touch-zone {
-    position: fixed;
-    bottom: 0;
-    width: 50%;
-    height: 50%;
-    z-index: 3;
-    display: none;
+  /* Tilt button — only shown when device supports it */
+  .tilt-toggle {
+    margin-top: 14px;
+    background: rgba(92, 219, 255, 0.15);
+    border: 1px solid var(--accent-3);
+    color: var(--accent-3);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
   }
-  .touch-zone.left { left: 0; }
-  .touch-zone.right { right: 0; }
-  @media (hover: none) and (pointer: coarse) {
-    .touch-zone { display: block; }
-    .controls-hint { display: none; }
+  .tilt-toggle:hover { background: rgba(92, 219, 255, 0.25); }
+  .tilt-toggle.active {
+    background: var(--accent-3);
+    color: #0a3a4a;
   }
+  .tilt-toggle.hidden { display: none; }
 </style>
 </head>
 <body>
@@ -399,9 +479,6 @@
   <div class="pill"><span class="label">Height</span><span id="hud-height">0m</span></div>
   <div class="pill coins"><span class="label">Coins</span><span id="hud-coins">0</span></div>
 </div>
-
-<div class="touch-zone left"></div>
-<div class="touch-zone right"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -418,14 +495,24 @@
     <div class="stats">
       <div class="stat"><div class="v" id="menu-best">0m</div><div class="l">Best</div></div>
       <div class="stat"><div class="v" id="menu-coins">0</div><div class="l">Coins</div></div>
+      <div class="stat"><div class="v" id="menu-level">Lv 1</div><div class="l">Level</div></div>
     </div>
+
+    <div class="xp-bar-wrap">
+      <div class="xp-bar"><div class="xp-fill" id="menu-xp-fill"></div></div>
+      <div class="xp-text" id="menu-xp-text">0 / 100 XP</div>
+    </div>
+
+    <div class="streak-badge" id="streak-badge">🔥 <span id="streak-num">0</span> day streak</div>
 
     <div class="btn-row">
       <button class="btn" id="play-btn">Play</button>
       <button class="btn secondary" id="shop-btn">Shop</button>
     </div>
 
-    <div class="controls-hint">
+    <button class="tilt-toggle hidden" id="tilt-btn">📱 Enable Tilt Controls</button>
+
+    <div class="controls-hint" id="controls-hint">
       <span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to move<br>
       Wraps around screen edges
     </div>
@@ -460,10 +547,19 @@
 <div class="overlay hidden" id="gameover">
   <div class="panel">
     <h2>You Fell!</h2>
+    <div class="newbest-banner" id="go-newbest">⭐ NEW BEST! ⭐</div>
     <div class="stats">
       <div class="stat"><div class="v" id="go-height">0m</div><div class="l">Height</div></div>
       <div class="stat"><div class="v" id="go-coins">0</div><div class="l">Coins</div></div>
       <div class="stat"><div class="v" id="go-best">0m</div><div class="l">Best</div></div>
+    </div>
+
+    <div class="xp-bar-wrap">
+      <div class="xp-row">
+        <span id="go-level">Lv 1</span>
+        <span id="go-xp">+0 XP</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" id="go-xp-bar"></div></div>
     </div>
     <div class="btn-row">
       <button class="btn" id="retry-btn">Retry</button>
@@ -510,6 +606,9 @@ const COSMETICS = {
     { id: 'party',     name: 'Party Hat',  price: 150, draw: drawHatParty },
     { id: 'bow',       name: 'Big Bow',    price: 100, draw: drawHatBow },
     { id: 'halo',      name: 'Halo',       price: 500, draw: drawHatHalo },
+    { id: 'top',       name: 'Top Hat',    price: 0, draw: drawHatTop, levelReq: 5 },
+    { id: 'horns',     name: 'Devil Horns',price: 0, draw: drawHatHorns, levelReq: 10 },
+    { id: 'star',      name: 'Star Crown', price: 0, draw: drawHatStar, levelReq: 20 },
   ],
   skin: [
     { id: 'default',   name: 'Default',    price: 0,    tint: null },
@@ -517,6 +616,7 @@ const COSMETICS = {
     { id: 'ice',       name: 'Ice',        price: 300,  tint: '#9fdfff' },
     { id: 'rose',      name: 'Rose',       price: 300,  tint: '#ff6b9d' },
     { id: 'gold',      name: 'Gold Skin',  price: 0,    tint: '#ffd23f', achievement: 'reach10000' },
+    { id: 'galaxy',    name: 'Galaxy',     price: 0,    tint: '#5e35b1', levelReq: 15 },
   ],
   aura: [
     { id: 'none',      name: 'No Aura',    price: 0, color: null },
@@ -524,10 +624,11 @@ const COSMETICS = {
     { id: 'fire',      name: 'Fire Trail', price: 250, color: '#ff5722' },
     { id: 'frost',     name: 'Frost',      price: 250, color: '#5cdbff' },
     { id: 'rainbow',   name: 'Rainbow',    price: 600, color: 'rainbow' },
+    { id: 'cosmic',    name: 'Cosmic',     price: 0, color: '#9966ff', levelReq: 25 },
   ],
 };
 
-const SAVE_KEY = 'skyHighSquirt:save:v1';
+const SAVE_KEY = 'skyHighSquirt:save:v2';
 
 function defaultSave() {
   return {
@@ -543,6 +644,16 @@ function defaultSave() {
       axolotl: { hat: 'none', skin: 'default', aura: 'none' },
     },
     achievements: [],
+    // XP / level
+    xp: 0,
+    level: 1,
+    // Ghost: array of { t, x, y } samples from best run
+    ghostRun: null,
+    ghostChar: 'turtle',
+    // Streak
+    lastPlayDate: null,    // 'YYYY-MM-DD'
+    streak: 0,
+    bestStreak: 0,
   };
 }
 
@@ -567,6 +678,96 @@ function loadSave() {
 function persist() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
   catch (e) { console.warn('Save failed', e); }
+}
+
+/* ---------- XP & Levels ----------
+   Curve: level N requires N * 100 XP cumulative growth
+   (i.e. L1→2 = 100 xp, L2→3 = 200 xp, L3→4 = 300 xp...)
+   Total XP for level N = 100 * (N-1) * N / 2 */
+function xpForLevel(level) {
+  return 100 * (level - 1) * level / 2;
+}
+function levelFromXp(xp) {
+  let lvl = 1;
+  while (xpForLevel(lvl + 1) <= xp) lvl++;
+  return lvl;
+}
+function xpProgressInLevel(xp) {
+  const lvl = levelFromXp(xp);
+  const base = xpForLevel(lvl);
+  const next = xpForLevel(lvl + 1);
+  return { lvl, current: xp - base, needed: next - base, pct: (xp - base) / (next - base) };
+}
+
+function awardXp(amount) {
+  const oldLevel = save.level;
+  save.xp += amount;
+  const newLevel = levelFromXp(save.xp);
+  if (newLevel > oldLevel) {
+    save.level = newLevel;
+    return newLevel; // signal level-up
+  }
+  return null;
+}
+
+/* ---------- Streak ---------- */
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysBetween(a, b) {
+  // Both YYYY-MM-DD
+  const da = new Date(a + 'T00:00:00');
+  const db = new Date(b + 'T00:00:00');
+  return Math.round((db - da) / (1000 * 60 * 60 * 24));
+}
+function updateStreak() {
+  const today = todayStr();
+  if (save.lastPlayDate === today) return { newDay: false, bonus: 0 };
+  const diff = save.lastPlayDate ? daysBetween(save.lastPlayDate, today) : null;
+  let bonus = 0;
+  if (diff === 1) {
+    save.streak++;
+    bonus = 25 + save.streak * 5; // 30, 35, 40...
+  } else {
+    save.streak = 1;
+    bonus = 25;
+  }
+  if (save.streak > save.bestStreak) save.bestStreak = save.streak;
+  save.lastPlayDate = today;
+  save.coins += bonus;
+  persist();
+  return { newDay: true, bonus };
+}
+
+/* ---------- Ghost ----------
+   Record samples every GHOST_SAMPLE_INTERVAL frames during a run.
+   Stored as flat array of [t, x, y] triples to save space. */
+const GHOST_SAMPLE_INTERVAL = 4; // every 4 frames @ 60fps = 15 samples/sec
+let ghostRecording = []; // built up during current run
+let ghostFrame = 0;
+
+function recordGhostSample() {
+  if (ghostFrame % GHOST_SAMPLE_INTERVAL === 0) {
+    const p = state.player;
+    ghostRecording.push(ghostFrame, Math.round(p.x), Math.round(p.y));
+  }
+  ghostFrame++;
+}
+
+function getGhostPosAtFrame(f) {
+  if (!save.ghostRun || save.ghostRun.length < 6) return null;
+  // ghostRun is flat: [f0,x0,y0, f1,x1,y1, ...]
+  // Find the two samples bracketing f and lerp
+  const arr = save.ghostRun;
+  // Binary search not worth it for typical lengths; linear is fine
+  let i = 0;
+  while (i + 3 < arr.length && arr[i + 3] <= f) i += 3;
+  if (i + 3 >= arr.length) return null; // ghost run is over
+  const f0 = arr[i],   x0 = arr[i+1], y0 = arr[i+2];
+  const f1 = arr[i+3], x1 = arr[i+4], y1 = arr[i+5];
+  const t = (f - f0) / (f1 - f0);
+  return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t };
 }
 
 const state = {
@@ -599,19 +800,79 @@ function makePlayer() {
   return { x: W / 2, y: H - 120, vx: 0, vy: 0, w: 34, h: 34, squish: 0, facing: 1 };
 }
 
+/* ---------- Platforms ----------
+   Types:
+     'static'    — normal green platform
+     'spring'    — trampoline, ~2.4x bounce
+     'moving'    — slides left/right
+     'breakable' — one bounce, then it falls away
+     'cloud'     — soft, fades after a brief stand-time
+     'vanishing' — phases in/out on a timer (only solid when visible)
+   Rarity scales with height. */
 function makePlatform(y) {
   const w = 70;
   const x = Math.random() * (W - w);
-  return { x, y, w, h: 14, type: 'static', bounced: false };
+  const r = Math.random();
+  const heightM = state.heightM || 0;
+
+  // Probability bands — these are cumulative thresholds
+  const springChance    = 0.08 + Math.min(0.04, heightM / 25000);
+  const movingChance    = heightM > 500  ? Math.min(0.15, (heightM - 500)  / 7000) : 0;
+  const breakableChance = heightM > 300  ? Math.min(0.12, (heightM - 300)  / 6000) : 0;
+  const cloudChance     = heightM > 1500 ? Math.min(0.10, (heightM - 1500) / 6000) : 0;
+  const vanishingChance = heightM > 3000 ? Math.min(0.10, (heightM - 3000) / 8000) : 0;
+
+  let acc = 0;
+  let type = 'static';
+  if      (r < (acc += springChance))    type = 'spring';
+  else if (r < (acc += movingChance))    type = 'moving';
+  else if (r < (acc += breakableChance)) type = 'breakable';
+  else if (r < (acc += cloudChance))     type = 'cloud';
+  else if (r < (acc += vanishingChance)) type = 'vanishing';
+
+  return {
+    x, y, w, h: 14,
+    type,
+    bounced: false,
+    broken: false,             // breakable: true after one bounce → falls away
+    fallVy: 0,                 // breakable falling speed
+    cloudLife: 1,              // cloud: 1.0 → 0 fade over time after standing
+    cloudTouched: false,       // cloud: starts fading once stood on
+    phase: Math.random() * Math.PI * 2, // vanishing: timing offset
+    vx: type === 'moving' ? (Math.random() < 0.5 ? -1 : 1) * (1 + Math.random() * 1.2) : 0,
+  };
+}
+
+/* Vanishing platforms are only solid when their phase is in the "visible" half
+   of the cycle. Period: ~2 seconds. */
+function vanishingVisible(plat) {
+  const t = (performance.now() / 1000) + plat.phase;
+  return Math.sin(t * Math.PI) > 0;  // half on, half off
+}
+
+function vanishingAlpha(plat) {
+  const t = (performance.now() / 1000) + plat.phase;
+  // Smooth fade rather than hard pop
+  return Math.max(0.1, (Math.sin(t * Math.PI) + 1) / 2);
 }
 
 function seedPlatforms() {
   state.platforms.length = 0;
-  state.platforms.push({ x: W/2 - 50, y: H - 60, w: 100, h: 14, type: 'static', bounced: false });
+  // Ground platform — always static
+  state.platforms.push({ x: W/2 - 50, y: H - 60, w: 100, h: 14, type: 'static', bounced: false, vx: 0 });
   let y = H - 140;
+  let count = 0;
   while (y > -200) {
-    state.platforms.push(makePlatform(y));
+    if (count < 4) {
+      // First few platforms guaranteed static so the player can find their feet
+      const w = 70;
+      const x = Math.random() * (W - w);
+      state.platforms.push({ x, y, w, h: 14, type: 'static', bounced: false, vx: 0 });
+    } else {
+      state.platforms.push(makePlatform(y));
+    }
     y -= 60 + Math.random() * 40;
+    count++;
   }
 }
 
@@ -635,10 +896,72 @@ window.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
 });
-document.querySelector('.touch-zone.left').addEventListener('touchstart', e => { e.preventDefault(); keys.left = true; });
-document.querySelector('.touch-zone.left').addEventListener('touchend',   e => { e.preventDefault(); keys.left = false; });
-document.querySelector('.touch-zone.right').addEventListener('touchstart',e => { e.preventDefault(); keys.right = true; });
-document.querySelector('.touch-zone.right').addEventListener('touchend',  e => { e.preventDefault(); keys.right = false; });
+/* ---------- Tilt controls ----------
+   Uses DeviceOrientationEvent.gamma (left/right tilt in degrees).
+   iOS 13+ requires permission via user gesture.
+   Falls back gracefully — keyboard always works. */
+const tilt = {
+  enabled: false,
+  permissionNeeded: false,
+  value: 0,        // -1 (full left) to 1 (full right)
+  calibration: 0,  // gamma offset captured when enabled
+};
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function tiltSupported() {
+  return typeof DeviceOrientationEvent !== 'undefined';
+}
+
+function handleOrientation(e) {
+  if (e.gamma == null) return;
+  // gamma: -90 (left) to 90 (right). Most natural play in landscape-ish portrait
+  // is around ±25°. Subtract calibration so "neutral" = however you were holding it.
+  const raw = e.gamma - tilt.calibration;
+  const max = 25;
+  tilt.value = Math.max(-1, Math.min(1, raw / max));
+}
+
+async function enableTilt() {
+  if (!tiltSupported()) {
+    showToast('Tilt not supported on this device');
+    return false;
+  }
+  // iOS permission flow
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') {
+        showToast('Tilt permission denied');
+        return false;
+      }
+    } catch (err) {
+      showToast('Could not enable tilt');
+      return false;
+    }
+  }
+  window.addEventListener('deviceorientation', handleOrientation);
+  tilt.enabled = true;
+  // Calibrate to current hold angle on first event
+  const calibrate = e => {
+    if (e.gamma != null) {
+      tilt.calibration = e.gamma;
+      window.removeEventListener('deviceorientation', calibrate);
+    }
+  };
+  window.addEventListener('deviceorientation', calibrate);
+  showToast('Tilt enabled — tilt phone to move');
+  return true;
+}
+
+// Detect if we should show the tilt button at all
+function shouldOfferTilt() {
+  // Mobile-ish heuristic: touch capable + small viewport
+  return tiltSupported() && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}
 
 function spawnParticles(x, y, color, n = 6) {
   for (let i = 0; i < n; i++) {
@@ -676,10 +999,18 @@ function update() {
   if (state.mode !== 'playing') return;
   const p = state.player;
 
-  if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
-  if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
-  if (!keys.left && !keys.right) p.vx *= PHYS.friction;
-  p.vx = Math.max(-PHYS.moveMax, Math.min(PHYS.moveMax, p.vx));
+  // Movement: tilt takes priority on mobile, keys otherwise
+  if (tilt.enabled) {
+    // Direct velocity from tilt — feels much more responsive than acceleration
+    p.vx = tilt.value * PHYS.moveMax;
+    if (tilt.value < -0.05) p.facing = -1;
+    else if (tilt.value > 0.05) p.facing = 1;
+  } else {
+    if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
+    if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
+    if (!keys.left && !keys.right) p.vx *= PHYS.friction;
+    p.vx = Math.max(-PHYS.moveMax, Math.min(PHYS.moveMax, p.vx));
+  }
 
   p.vy += PHYS.gravity;
   p.x += p.vx;
@@ -688,14 +1019,57 @@ function update() {
   if (p.x < -p.w) p.x = W;
   if (p.x > W) p.x = -p.w;
 
+  // Move/update all platforms each frame
+  for (const plat of state.platforms) {
+    if (plat.type === 'moving') {
+      plat.x += plat.vx;
+      if (plat.x < 0) { plat.x = 0; plat.vx = Math.abs(plat.vx); }
+      if (plat.x + plat.w > W) { plat.x = W - plat.w; plat.vx = -Math.abs(plat.vx); }
+    }
+    if (plat.type === 'breakable' && plat.broken) {
+      // Falls away after being bounced once
+      plat.fallVy += 0.5;
+      plat.y += plat.fallVy;
+    }
+    if (plat.type === 'cloud' && plat.cloudTouched) {
+      plat.cloudLife -= 0.018;
+    }
+  }
+
   if (p.vy > 0) {
     for (const plat of state.platforms) {
+      // Skip non-solid platforms
+      if (plat.type === 'breakable' && plat.broken) continue;
+      if (plat.type === 'cloud' && plat.cloudLife <= 0) continue;
+      if (plat.type === 'vanishing' && !vanishingVisible(plat)) continue;
+
       const hit = p.x + p.w > plat.x && p.x < plat.x + plat.w && p.y + p.h > plat.y && p.y + p.h < plat.y + plat.h + 10;
       if (hit) {
         p.y = plat.y - p.h;
-        p.vy = PHYS.jumpVel;
-        p.squish = 1;
-        spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 4);
+
+        if (plat.type === 'spring') {
+          p.vy = PHYS.jumpVel * 2.4;
+          p.squish = 1.4;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#5cdbff', 12);
+        } else if (plat.type === 'breakable') {
+          p.vy = PHYS.jumpVel;
+          p.squish = 1;
+          plat.broken = true;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#d4a574', 8);
+        } else if (plat.type === 'cloud') {
+          p.vy = PHYS.jumpVel * 0.85; // Slightly weaker bounce — clouds are soft
+          p.squish = 1;
+          plat.cloudTouched = true;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 6);
+        } else if (plat.type === 'vanishing') {
+          p.vy = PHYS.jumpVel;
+          p.squish = 1;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#e1bee7', 8);
+        } else {
+          p.vy = PHYS.jumpVel;
+          p.squish = 1;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 4);
+        }
         break;
       }
     }
@@ -705,6 +1079,9 @@ function update() {
 
   state.trailTimer++;
   if (state.trailTimer % 3 === 0) spawnTrailParticle();
+
+  // Ghost recording
+  recordGhostSample();
 
   for (const c of state.coins) {
     if (c.collected) continue;
@@ -736,7 +1113,12 @@ function update() {
       y -= 60 + Math.random() * 40;
     }
   }
-  state.platforms = state.platforms.filter(pl => pl.y < state.cameraY + H + 100);
+  state.platforms = state.platforms.filter(pl => {
+    if (pl.y > state.cameraY + H + 200) return false;
+    if (pl.type === 'cloud' && pl.cloudLife <= 0) return false;
+    if (pl.type === 'breakable' && pl.broken && pl.fallVy > 30) return false;
+    return true;
+  });
   state.coins = state.coins.filter(c => !c.collected && c.y < state.cameraY + H + 100);
 
   if (p.y > state.cameraY + H) die();
@@ -782,12 +1164,101 @@ function drawPlatforms() {
   for (const plat of state.platforms) {
     const y = plat.y - state.cameraY;
     if (y < -20 || y > H + 20) continue;
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
-    ctx.fillStyle = z.plat;
-    ctx.fillRect(plat.x, y, plat.w, plat.h);
-    ctx.fillStyle = z.platEdge;
-    ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+
+    if (plat.type === 'spring') {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+      ctx.fillStyle = '#5cdbff';
+      ctx.fillRect(plat.x, y, plat.w, plat.h);
+      ctx.fillStyle = '#0288d1';
+      ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(plat.x + 8 + i * 16, y + 3, 8, 2);
+      }
+      ctx.fillStyle = 'rgba(92, 219, 255, 0.3)';
+      ctx.fillRect(plat.x - 2, y - 2, plat.w + 4, plat.h + 4);
+    } else if (plat.type === 'moving') {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+      ctx.fillStyle = '#ab47bc';
+      ctx.fillRect(plat.x, y, plat.w, plat.h);
+      ctx.fillStyle = '#6a1b9a';
+      ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+      ctx.fillStyle = '#fff';
+      const dir = plat.vx > 0 ? 1 : -1;
+      const ax = plat.x + plat.w/2;
+      ctx.beginPath();
+      ctx.moveTo(ax + dir * 6, y + plat.h/2);
+      ctx.lineTo(ax - dir * 4, y + 3);
+      ctx.lineTo(ax - dir * 4, y + plat.h - 3);
+      ctx.closePath();
+      ctx.fill();
+    } else if (plat.type === 'breakable') {
+      // Wood-look planks; once broken, draw with a slight tilt and falling
+      ctx.save();
+      if (plat.broken) ctx.globalAlpha = Math.max(0, 1 - plat.fallVy / 30);
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+      ctx.fillStyle = '#a1887f';
+      ctx.fillRect(plat.x, y, plat.w, plat.h);
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+      // Plank lines
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      for (let i = 1; i < 4; i++) {
+        ctx.fillRect(plat.x + (plat.w / 4) * i, y, 1, plat.h);
+      }
+      // Crack hint when about to be jumped on
+      if (!plat.broken) {
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(plat.x + plat.w * 0.3, y + 4, 1, plat.h - 8);
+        ctx.fillRect(plat.x + plat.w * 0.55, y + 3, 1, plat.h - 8);
+      }
+      ctx.restore();
+    } else if (plat.type === 'cloud') {
+      // Soft white puffs, fading with cloudLife
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, plat.cloudLife) * 0.95;
+      ctx.fillStyle = '#ffffff';
+      // Draw three overlapping circles for a fluffy look
+      const cy = y + plat.h / 2;
+      ctx.beginPath();
+      ctx.arc(plat.x + plat.w * 0.2,  cy, 12, 0, Math.PI * 2);
+      ctx.arc(plat.x + plat.w * 0.5,  cy, 14, 0, Math.PI * 2);
+      ctx.arc(plat.x + plat.w * 0.8,  cy, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(200, 220, 240, 0.6)';
+      ctx.beginPath();
+      ctx.arc(plat.x + plat.w * 0.3, cy + 4, 8, 0, Math.PI * 2);
+      ctx.arc(plat.x + plat.w * 0.65, cy + 4, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else if (plat.type === 'vanishing') {
+      const a = vanishingAlpha(plat);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+      ctx.fillStyle = '#ce93d8';
+      ctx.fillRect(plat.x, y, plat.w, plat.h);
+      ctx.fillStyle = '#7b1fa2';
+      ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+      // Sparkle dots to read as magical/phasing
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(plat.x + 14 + i * 20, y + 4, 2, 2);
+      }
+      ctx.restore();
+    } else {
+      // Static
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(plat.x + 2, y + 4, plat.w, plat.h);
+      ctx.fillStyle = z.plat;
+      ctx.fillRect(plat.x, y, plat.w, plat.h);
+      ctx.fillStyle = z.platEdge;
+      ctx.fillRect(plat.x, y + plat.h - 4, plat.w, 4);
+    }
   }
 }
 
@@ -884,6 +1355,57 @@ function drawHatHalo(ctx, x, y, w, h) {
   ctx.lineWidth = 1;
 }
 
+function drawHatTop(ctx, x, y, w, h) {
+  // Brim
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(x, y - 2, w, 3);
+  // Tower
+  ctx.fillRect(x + w * 0.25, y - 14, w * 0.5, 12);
+  // Red band
+  ctx.fillStyle = '#d32f2f';
+  ctx.fillRect(x + w * 0.25, y - 5, w * 0.5, 2);
+}
+
+function drawHatHorns(ctx, x, y, w, h) {
+  ctx.fillStyle = '#b71c1c';
+  // Left horn
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.3, y + 1);
+  ctx.lineTo(x + w * 0.18, y - 10);
+  ctx.lineTo(x + w * 0.38, y - 2);
+  ctx.closePath();
+  ctx.fill();
+  // Right horn
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.7, y + 1);
+  ctx.lineTo(x + w * 0.82, y - 10);
+  ctx.lineTo(x + w * 0.62, y - 2);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawHatStar(ctx, x, y, w, h) {
+  // 5-pointed star above the head
+  const cx = x + w/2;
+  const cy = y - 8;
+  const outer = 7, inner = 3;
+  ctx.fillStyle = '#ffd23f';
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
 function drawPlayer() {
   const p = state.player;
   const baseChar = CHARS[state.character];
@@ -933,12 +1455,55 @@ function drawParticles() {
   ctx.globalAlpha = 1;
 }
 
+function drawGhost() {
+  if (!save.ghostRun) return;
+  const pos = getGhostPosAtFrame(ghostFrame);
+  if (!pos) return;
+  const y = pos.y - state.cameraY;
+  if (y < -50 || y > H + 50) return;
+
+  const ghostChar = CHARS[save.ghostChar] || CHARS.turtle;
+  const w = 34, h = 34;
+
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+
+  // Body
+  ctx.fillStyle = ghostChar.body;
+  roundRect(ctx, pos.x, y, w, h, 8); ctx.fill();
+  ctx.fillStyle = ghostChar.accent;
+  roundRect(ctx, pos.x + 2, y + h * 0.55, w - 4, h * 0.4, 6); ctx.fill();
+
+  // Eyes (simple, no facing)
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(pos.x + w * 0.32, y + h * 0.32, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(pos.x + w * 0.68, y + h * 0.32, 3.5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(pos.x + w * 0.32, y + h * 0.32, 1.8, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(pos.x + w * 0.68, y + h * 0.32, 1.8, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // "GHOST" label above when on screen and within ~80px of player horizontally
+  const p = state.player;
+  if (p && Math.abs(pos.x - p.x) < 100 && Math.abs(pos.y - p.y) < 200) {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GHOST', pos.x + w/2, y - 4);
+    ctx.restore();
+  }
+}
+
 function render() {
   drawSky();
   if (state.mode === 'playing' || state.mode === 'dead') {
     drawPlatforms();
     drawCoins();
     drawParticles();
+    drawGhost();
     if (state.player) drawPlayer();
   }
 }
@@ -987,6 +1552,16 @@ function startGame() {
   seedPlatforms();
   for (const plat of state.platforms) maybeSpawnCoins(plat);
 
+  // Reset ghost recording
+  ghostRecording = [];
+  ghostFrame = 0;
+
+  // Streak check (only awards on new day)
+  const streakResult = updateStreak();
+  if (streakResult.newDay && streakResult.bonus > 0) {
+    setTimeout(() => showToast(`🔥 Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
+  }
+
   document.getElementById('menu').classList.add('hidden');
   document.getElementById('gameover').classList.add('hidden');
   document.getElementById('shop').classList.add('hidden');
@@ -996,7 +1571,20 @@ function die() {
   state.mode = 'dead';
 
   save.coins += state.runCoins;
-  if (state.heightM > save.bestHeight) save.bestHeight = state.heightM;
+
+  // Award XP — based on height + coins + a small completion bonus
+  const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10;
+  const levelUp = awardXp(xpEarned);
+
+  const isNewBest = state.heightM > save.bestHeight;
+  if (isNewBest) {
+    save.bestHeight = state.heightM;
+    // Save ghost recording — but only if it's a meaningful run
+    if (ghostRecording.length >= 30) {
+      save.ghostRun = ghostRecording.slice();
+      save.ghostChar = state.character;
+    }
+  }
 
   const newlyUnlocked = [];
   for (const charId of CHAR_ORDER) {
@@ -1018,10 +1606,21 @@ function die() {
   document.getElementById('go-height').textContent = state.heightM + 'm';
   document.getElementById('go-coins').textContent = state.runCoins;
   document.getElementById('go-best').textContent = save.bestHeight + 'm';
+
+  // XP bar on game-over
+  const xpInfo = xpProgressInLevel(save.xp);
+  document.getElementById('go-level').textContent = 'Lv ' + xpInfo.lvl;
+  document.getElementById('go-xp').textContent = '+' + xpEarned + ' XP';
+  document.getElementById('go-xp-bar').style.width = (xpInfo.pct * 100) + '%';
+  document.getElementById('go-newbest').style.display = isNewBest ? 'block' : 'none';
+
   document.getElementById('gameover').classList.remove('hidden');
 
-  if (newlyUnlocked.length) {
-    setTimeout(() => showToast('Unlocked: ' + newlyUnlocked.join(', ')), 400);
+  const messages = [];
+  if (levelUp) messages.push(`⭐ Level ${levelUp}!`);
+  if (newlyUnlocked.length) messages.push('Unlocked: ' + newlyUnlocked.join(', '));
+  if (messages.length) {
+    setTimeout(() => showToast(messages.join('  •  ')), 400);
   }
 }
 
@@ -1045,6 +1644,22 @@ function showToast(msg) {
 function refreshMenu() {
   document.getElementById('menu-best').textContent = save.bestHeight + 'm';
   document.getElementById('menu-coins').textContent = save.coins;
+
+  // Level + XP
+  const xpInfo = xpProgressInLevel(save.xp);
+  document.getElementById('menu-level').textContent = 'Lv ' + xpInfo.lvl;
+  document.getElementById('menu-xp-fill').style.width = (xpInfo.pct * 100) + '%';
+  document.getElementById('menu-xp-text').textContent =
+    `${xpInfo.current} / ${xpInfo.needed} XP`;
+
+  // Streak
+  const streakBadge = document.getElementById('streak-badge');
+  if (save.streak > 0) {
+    streakBadge.classList.remove('zero');
+    document.getElementById('streak-num').textContent = save.streak;
+  } else {
+    streakBadge.classList.add('zero');
+  }
 
   const row = document.getElementById('char-row');
   row.innerHTML = '';
@@ -1126,14 +1741,15 @@ function refreshShop() {
     const owned = ownedList.includes(item.id);
     const equipped = equippedId === item.id;
     const lockedByAchievement = item.achievement && !save.achievements.includes(item.achievement);
+    const lockedByLevel = item.levelReq && save.level < item.levelReq;
     const canAfford = save.coins >= item.price;
 
     const div = document.createElement('div');
     div.className = 'shop-item';
     if (equipped) div.classList.add('equipped');
     else if (owned) div.classList.add('owned');
-    if (lockedByAchievement && !owned) div.classList.add('locked');
-    if (!owned && !canAfford && !lockedByAchievement) div.classList.add('cant-afford');
+    if ((lockedByAchievement || lockedByLevel) && !owned) div.classList.add('locked');
+    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && item.price > 0) div.classList.add('cant-afford');
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'shop-item-preview';
@@ -1156,23 +1772,30 @@ function refreshShop() {
     } else if (lockedByAchievement) {
       status.className = 'shop-item-status';
       status.textContent = 'Reach 10000m';
+    } else if (lockedByLevel) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Lv ' + item.levelReq;
     } else {
       status.className = 'shop-item-price';
-      status.textContent = '🪙 ' + item.price;
+      status.textContent = item.price === 0 ? 'Free' : '🪙 ' + item.price;
     }
 
     div.appendChild(previewWrap);
     div.appendChild(name);
     div.appendChild(status);
 
-    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement));
+    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel));
     grid.appendChild(div);
   }
 }
 
-function handleShopItemClick(item, owned, equipped, lockedByAchievement) {
+function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel) {
   if (lockedByAchievement && !owned) {
     showToast('Reach 10000m to unlock!');
+    return;
+  }
+  if (lockedByLevel && !owned) {
+    showToast(`Reach Level ${item.levelReq} to unlock!`);
     return;
   }
   if (equipped) return;
@@ -1238,6 +1861,34 @@ document.getElementById('shop-btn').addEventListener('click', openShop);
 document.getElementById('shop-back-btn').addEventListener('click', closeShop);
 document.getElementById('retry-btn').addEventListener('click', startGame);
 document.getElementById('menu-btn').addEventListener('click', returnToMenu);
+
+// Tilt button — show on touch devices, wire up enable
+const tiltBtn = document.getElementById('tilt-btn');
+if (shouldOfferTilt()) {
+  tiltBtn.classList.remove('hidden');
+  document.getElementById('controls-hint').innerHTML =
+    'Tap <strong>Enable Tilt</strong> to play with motion<br>or use a keyboard if connected';
+}
+tiltBtn.addEventListener('click', async () => {
+  if (tilt.enabled) {
+    // Recalibrate
+    tilt.calibration = 0;
+    const recal = e => {
+      if (e.gamma != null) {
+        tilt.calibration = e.gamma;
+        window.removeEventListener('deviceorientation', recal);
+      }
+    };
+    window.addEventListener('deviceorientation', recal);
+    showToast('Tilt recalibrated');
+    return;
+  }
+  const ok = await enableTilt();
+  if (ok) {
+    tiltBtn.classList.add('active');
+    tiltBtn.textContent = '📱 Recalibrate Tilt';
+  }
+});
 
 document.querySelectorAll('.shop-tab').forEach(t => {
   t.addEventListener('click', () => {
