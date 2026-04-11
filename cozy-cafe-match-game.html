@@ -491,6 +491,22 @@
   }
   .ach-item.locked { opacity: 0.5; }
   .ach-item.unlocked { border-color: var(--mint-deep); }
+  .ach-item.secret, .shop-item.secret {
+    border-style: dashed;
+    border-color: var(--lavender);
+    background: linear-gradient(135deg, var(--milk), #F0E8F5);
+  }
+  .ach-item.secret .ach-name, .shop-item.secret .ach-name {
+    font-style: italic;
+    color: var(--lavender);
+  }
+  .shop-item.locked-item .ach-name {
+    color: var(--cocoa-soft);
+  }
+  .shop-item.locked-item .shop-icon {
+    background: var(--cream-deep);
+    opacity: 0.6;
+  }
   .ach-icon, .shop-icon {
     font-size: 28px;
     width: 44px;
@@ -568,6 +584,7 @@
   .cafe-scene.cafe_garden  { background: linear-gradient(180deg, #C8E6C9 0%, #81C784 50%, #4CAF50 100%); }
   .cafe-scene.cafe_beach   { background: linear-gradient(180deg, #B3E5FC 0%, #4FC3F7 50%, #FFE0B2 100%); }
   .cafe-scene.cafe_library { background: linear-gradient(180deg, #5D4037 0%, #795548 50%, #3E2723 100%); }
+  .cafe-scene.cafe_space   { background: radial-gradient(ellipse at center, #1a0a3e 0%, #03010f 70%); }
 
   /* Tile skin variants */
   .board.skin_pastel .tile { background: #FFF0F5; }
@@ -646,7 +663,7 @@
     <button class="bb-btn" id="hapticBtn"><span class="bb-icon">📳</span>Haptic</button>
     <button class="bb-btn" id="shopBtn"><span class="bb-icon">🛍️</span>Shop</button>
     <button class="bb-btn" id="achBtn"><span class="bb-icon">🏆</span>Goals</button>
-    <button class="bb-btn" id="resetBtn"><span class="bb-icon">↻</span>New</button>
+    <button class="bb-btn" id="resetBtn"><span class="bb-icon">↻</span>New 25🪙</button>
   </div>
 </div>
 
@@ -687,6 +704,8 @@ const Audio = (() => {
   let musicPlaying = false;
   let musicNodes = [];
   let musicTimer = null;
+  let fileMusic = null;     // <audio> element if galaxy.mp3 loads
+  let fileMusicReady = false;
 
   function init() {
     if (ctx) return;
@@ -704,6 +723,14 @@ const Audio = (() => {
     sfxGain = ctx.createGain();
     sfxGain.gain.value = 0.5;
     sfxGain.connect(masterGain);
+
+    // Try to load galaxy.mp3 from the same folder. If it works, we use it
+    // instead of procedural music. If not, procedural is the fallback.
+    fileMusic = new window.Audio('galaxy.mp3');
+    fileMusic.loop = true;
+    fileMusic.volume = 0.5;
+    fileMusic.addEventListener('canplaythrough', () => { fileMusicReady = true; }, { once: true });
+    fileMusic.addEventListener('error', () => { fileMusic = null; });
   }
 
   // ----- SOUND EFFECTS -----
@@ -806,11 +833,29 @@ const Audio = (() => {
   function startMusic() {
     if (!ctx || musicPlaying) return;
     musicPlaying = true;
+
+    // Prefer the real file if it loaded
+    if (fileMusic && fileMusicReady) {
+      fileMusic.play().catch(() => {
+        // If file playback fails, fall through to procedural
+        startProceduralMusic();
+      });
+      return;
+    }
+    // If file is still loading, give it a brief chance
+    if (fileMusic && !fileMusicReady) {
+      fileMusic.play().catch(() => startProceduralMusic());
+      return;
+    }
+    startProceduralMusic();
+  }
+
+  function startProceduralMusic() {
+    if (!musicPlaying) return;
     musicGain.gain.cancelScheduledValues(ctx.currentTime);
     musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
     musicGain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 1.5);
 
-    // Chord progression: Cmaj7 - Am7 - Fmaj7 - G7 (cozy lofi feel)
     const progressions = [
       [261.63, 329.63, 392.00, 493.88], // Cmaj7
       [220.00, 261.63, 329.63, 392.00], // Am7
@@ -819,14 +864,13 @@ const Audio = (() => {
     ];
 
     let chordIdx = 0;
-    const beatLen = 2.4; // seconds per chord
+    const beatLen = 2.4;
 
     function playChord() {
       if (!musicPlaying) return;
       const chord = progressions[chordIdx];
       const startT = ctx.currentTime;
 
-      // Soft pad layer
       chord.forEach(freq => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -846,7 +890,6 @@ const Audio = (() => {
         osc.stop(startT + beatLen + 0.1);
       });
 
-      // Arpeggio sparkle on top
       chord.forEach((freq, i) => {
         const t = startT + i * (beatLen / 8) + Math.random() * 0.05;
         const osc = ctx.createOscillator();
@@ -862,7 +905,6 @@ const Audio = (() => {
         osc.stop(t + 0.6);
       });
 
-      // Soft kick on beat 1 of every other chord
       if (chordIdx % 2 === 0) {
         const kick = ctx.createOscillator();
         const kickGain = ctx.createGain();
@@ -886,6 +928,10 @@ const Audio = (() => {
   function stopMusic() {
     if (!ctx || !musicPlaying) return;
     musicPlaying = false;
+    if (fileMusic && !fileMusic.paused) {
+      fileMusic.pause();
+      fileMusic.currentTime = 0;
+    }
     musicGain.gain.cancelScheduledValues(ctx.currentTime);
     musicGain.gain.setValueAtTime(musicGain.gain.value, ctx.currentTime);
     musicGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.8);
@@ -922,30 +968,66 @@ const GUESTS = [
 ];
 
 const ACHIEVEMENTS = [
+  // ----- Starter -----
   { id: 'first_match', name: 'First Bite',     desc: 'Make your first match',         icon: '🍓', check: v => v.stats.matches >= 1 },
   { id: 'first_serve', name: 'First Order Up', desc: 'Serve your first guest',        icon: '☕', check: v => v.stats.guests_served >= 1 },
+
+  // ----- Serving tiers -----
   { id: 'served_10',   name: 'Cozy Regular',   desc: 'Serve 10 guests',               icon: '🌿', check: v => v.stats.guests_served >= 10 },
   { id: 'served_25',   name: 'Open All Hours', desc: 'Serve 25 guests',               icon: '🕯️', check: v => v.stats.guests_served >= 25 },
   { id: 'served_50',   name: 'Cafe Favourite', desc: 'Serve 50 guests',               icon: '🌷', check: v => v.stats.guests_served >= 50 },
   { id: 'served_100',  name: 'Local Legend',   desc: 'Serve 100 guests',              icon: '🏆', check: v => v.stats.guests_served >= 100 },
+  { id: 'served_250',  name: 'Cafe Veteran',   desc: 'Serve 250 guests',              icon: '🎖️', check: v => v.stats.guests_served >= 250 },
+
+  // ----- Match tiers -----
   { id: 'matches_100', name: 'Snack Master',   desc: 'Match 100 tiles',               icon: '✨', check: v => v.stats.matches >= 100 },
   { id: 'matches_500', name: 'Tile Whisperer', desc: 'Match 500 tiles',               icon: '🌠', check: v => v.stats.matches >= 500 },
+  { id: 'matches_1k',  name: 'Snack Sage',     desc: 'Match 1,000 tiles',             icon: '🔮', check: v => v.stats.matches >= 1000 },
+  { id: 'matches_5k',  name: 'Tile Titan',     desc: 'Match 5,000 tiles',             icon: '👑', check: v => v.stats.matches >= 5000 },
+
+  // ----- Combos -----
   { id: 'combo_3',     name: 'Cascade!',       desc: 'Hit a 3x combo',                icon: '💫', check: v => v.stats.max_combo >= 3 },
   { id: 'combo_5',     name: 'Sparkle Storm',  desc: 'Hit a 5x combo',                icon: '🌟', check: v => v.stats.max_combo >= 5 },
   { id: 'combo_8',     name: 'Cosmic Cascade', desc: 'Hit an 8x combo',               icon: '☄️', check: v => v.stats.max_combo >= 8 },
+  { id: 'combo_12',    name: 'Reality Bender', desc: 'Hit a 12x combo',               icon: '🌌', check: v => v.stats.max_combo >= 12, secret: true },
+
+  // ----- Streaks -----
   { id: 'streak_5',    name: 'Soft Streak',    desc: 'Serve 5 guests in a row clean', icon: '🔥', check: v => v.stats.max_streak >= 5 },
   { id: 'streak_10',   name: 'Smooth Operator',desc: 'Serve 10 guests in a row clean',icon: '🌈', check: v => v.stats.max_streak >= 10 },
+  { id: 'streak_25',   name: 'Untouchable',    desc: 'Serve 25 guests in a row clean',icon: '⚡', check: v => v.stats.max_streak >= 25 },
+
+  // ----- Family -----
   { id: 'all_guests',  name: 'Full Family',    desc: 'Serve all five friends',        icon: '🏡', check: v => Object.keys(v.stats.guests_each || {}).length >= 5 },
   { id: 'fox_10',      name: 'Foxs Favourite', desc: 'Serve the Fox 10 times',        icon: '🦊', check: v => (v.stats.guests_each.fox || 0) >= 10 },
   { id: 'tiger_10',    name: 'Tiger Tamer',    desc: 'Serve the Tiger 10 times',      icon: '🐯', check: v => (v.stats.guests_each.tiger || 0) >= 10 },
   { id: 'axo_10',      name: 'Axolotl Adorer', desc: 'Serve the Axolotl 10 times',    icon: '🌸', check: v => (v.stats.guests_each.axo || 0) >= 10 },
   { id: 'turtle_10',   name: 'Turtle Trusted', desc: 'Serve the Turtle 10 times',     icon: '🐢', check: v => (v.stats.guests_each.turtle || 0) >= 10 },
   { id: 'stardust_10', name: 'Belonging',      desc: 'Serve Stardust 10 times',       icon: '✦',  check: v => (v.stats.guests_each.stardust || 0) >= 10 },
+  { id: 'fox_25',      name: 'Fox Confidant',  desc: 'Serve the Fox 25 times',        icon: '🦊', check: v => (v.stats.guests_each.fox || 0) >= 25 },
+  { id: 'tiger_25',    name: 'Tigers Pride',   desc: 'Serve the Tiger 25 times',      icon: '🐯', check: v => (v.stats.guests_each.tiger || 0) >= 25 },
+
+  // ----- Economy -----
   { id: 'coins_500',   name: 'Tip Jar',        desc: 'Earn 500 coins total',          icon: '🪙', check: v => v.stats.lifetime_coins >= 500 },
-  { id: 'coins_2000',  name: 'Big Spender',    desc: 'Earn 2000 coins total',         icon: '💰', check: v => v.stats.lifetime_coins >= 2000 },
+  { id: 'coins_2000',  name: 'Big Spender',    desc: 'Earn 2,000 coins total',        icon: '💰', check: v => v.stats.lifetime_coins >= 2000 },
+  { id: 'coins_10k',   name: 'Cafe Tycoon',    desc: 'Earn 10,000 coins total',       icon: '💎', check: v => v.stats.lifetime_coins >= 10000 },
+
+  // ----- Power-ups -----
   { id: 'first_power', name: 'Power Snack',    desc: 'Create your first power-up',    icon: '⚡', check: v => v.stats.powerups_made >= 1 },
   { id: 'rainbow_made',name: 'Over the Rainbow',desc:'Create a rainbow tile',         icon: '🌈', check: v => v.stats.rainbows_made >= 1 },
-  { id: 'wear_hat',    name: 'Looking Sharp',  desc: 'Equip a hat from the shop',     icon: '🎩', check: v => Object.keys(v.equipped || {}).length >= 1 }
+  { id: 'powers_25',   name: 'Power Hour',     desc: 'Create 25 power-ups',           icon: '✨', check: v => (v.stats.powerups_made || 0) >= 25 },
+  { id: 'rainbow_5',   name: 'Prism Master',   desc: 'Create 5 rainbow tiles',        icon: '🦄', check: v => (v.stats.rainbows_made || 0) >= 5 },
+
+  // ----- Customisation -----
+  { id: 'wear_hat',    name: 'Looking Sharp',  desc: 'Equip a hat from the shop',     icon: '🎩', check: v => !!(v.equipped && v.equipped.hat) },
+  { id: 'wear_acc',    name: 'Accessorised',   desc: 'Equip an accessory',            icon: '👓', check: v => !!(v.equipped && v.equipped.accessory) },
+  { id: 'all_cosmetic',name: 'Fully Decked',   desc: 'Equip something in every slot', icon: '🌟', check: v => v.equipped && v.equipped.hat && v.equipped.accessory && v.equipped.background && v.equipped.trail && v.equipped.skin },
+  { id: 'collector_10',name: 'Collector',      desc: 'Own 10 shop items',             icon: '📦', check: v => (v.unlocked_items || []).length >= 10 },
+  { id: 'collector_20',name: 'Hoarder',        desc: 'Own 20 shop items',             icon: '🗝️', check: v => (v.unlocked_items || []).length >= 20 },
+
+  // ----- Secret achievements -----
+  { id: 'reset_10',    name: 'Indecisive',     desc: 'Buy a fresh board 10 times',    icon: '↻', check: v => (v.stats.boards_bought || 0) >= 10, secret: true },
+  { id: 'night_owl',   name: 'Night Owl',      desc: 'Play between midnight and 4am', icon: '🌙', check: v => v.stats.played_at_night, secret: true },
+  { id: 'early_bird',  name: 'Early Bird',     desc: 'Play between 5am and 7am',      icon: '🌅', check: v => v.stats.played_at_dawn, secret: true }
 ];
 
 const SHOP_CATEGORIES = [
@@ -963,9 +1045,12 @@ const SHOP_ITEMS = [
   { id: 'wizard_hat',  cat: 'hat', name: 'Wizard Hat',    emoji: '🎩', price: 80   },
   { id: 'flower',      cat: 'hat', name: 'Flower Crown',  emoji: '🌸', price: 120  },
   { id: 'party',       cat: 'hat', name: 'Party Hat',     emoji: '🎉', price: 150  },
+  { id: 'top_hat',     cat: 'hat', name: 'Top Hat',       emoji: '🎩', price: 200  },
   { id: 'crown',       cat: 'hat', name: 'Tiny Crown',    emoji: '👑', price: 250  },
   { id: 'chef',        cat: 'hat', name: 'Chef Toque',    emoji: '🍳', price: 300  },
+  { id: 'graduation',  cat: 'hat', name: 'Graduate Cap',  emoji: '🎓', price: 400  },
   { id: 'witch_hat',   cat: 'hat', name: 'Witchy Hat',    emoji: '🧙', price: 600  },
+  { id: 'halo',        cat: 'hat', name: 'Tiny Halo',     emoji: '😇', price: 1500, secret: true },
 
   // ----- ACCESSORIES -----
   { id: 'glasses',     cat: 'accessory', name: 'Round Glasses', emoji: '👓', price: 40  },
@@ -973,6 +1058,8 @@ const SHOP_ITEMS = [
   { id: 'bow_tie',     cat: 'accessory', name: 'Bow Tie',       emoji: '🎀', price: 100 },
   { id: 'scarf',       cat: 'accessory', name: 'Soft Scarf',    emoji: '🧣', price: 150 },
   { id: 'flower_pin',  cat: 'accessory', name: 'Flower Pin',    emoji: '🌷', price: 200 },
+  { id: 'sunglasses',  cat: 'accessory', name: 'Sunglasses',    emoji: '🕶️', price: 300 },
+  { id: 'cape',        cat: 'accessory', name: 'Tiny Cape',     emoji: '🦸', price: 450 },
   { id: 'monocle',     cat: 'accessory', name: 'Tiny Monocle',  emoji: '🔍', price: 500 },
 
   // ----- BACKGROUNDS -----
@@ -980,13 +1067,16 @@ const SHOP_ITEMS = [
   { id: 'cafe_garden',  cat: 'background', name: 'Garden Cafe',   emoji: '🌿', price: 200  },
   { id: 'cafe_beach',   cat: 'background', name: 'Seaside Cafe',  emoji: '🏖️', price: 400 },
   { id: 'cafe_library', cat: 'background', name: 'Library Cafe',  emoji: '📚', price: 700  },
+  { id: 'cafe_space',   cat: 'background', name: 'Space Cafe',    emoji: '🌌', price: 1200 },
 
   // ----- TRAILS -----
   { id: 'trail_petal', cat: 'trail', name: 'Petal Trail',  emoji: '🌸', price: 0   },
   { id: 'trail_star',  cat: 'trail', name: 'Star Trail',   emoji: '⭐', price: 100 },
   { id: 'trail_heart', cat: 'trail', name: 'Heart Trail',  emoji: '💗', price: 200 },
   { id: 'trail_bubble',cat: 'trail', name: 'Bubble Trail', emoji: '🫧', price: 300 },
+  { id: 'trail_leaf',  cat: 'trail', name: 'Leaf Trail',   emoji: '🍃', price: 400 },
   { id: 'trail_snow',  cat: 'trail', name: 'Snow Trail',   emoji: '❄️', price: 500 },
+  { id: 'trail_fire',  cat: 'trail', name: 'Ember Trail',  emoji: '🔥', price: 800 },
 
   // ----- TILE SKINS -----
   { id: 'skin_default',cat: 'skin', name: 'Cosy Cream',  emoji: '🤎', price: 0    },
@@ -1518,7 +1608,9 @@ function startAmbientSystems() {
     trail_star:   ['⭐','✨','🌟','💫'],
     trail_heart:  ['💗','💕','💖','♡'],
     trail_bubble: ['🫧','○','◯','⚪'],
-    trail_snow:   ['❄️','❅','❆','✻']
+    trail_leaf:   ['🍃','🌿','☘️','🍀'],
+    trail_snow:   ['❄️','❅','❆','✻'],
+    trail_fire:   ['🔥','✨','💥','⭐']
   };
   function spawnPetal() {
     const wrap = document.querySelector('.board-wrap');
@@ -1672,8 +1764,13 @@ function checkAchievements() {
 function renderAchievements() {
   const list = $('achList');
   list.innerHTML = '';
+  let secretLockedCount = 0;
   for (const ach of ACHIEVEMENTS) {
     const unlocked = vault.achievements.includes(ach.id);
+    if (ach.secret && !unlocked) {
+      secretLockedCount++;
+      continue;
+    }
     const item = document.createElement('div');
     item.className = 'ach-item ' + (unlocked ? 'unlocked' : 'locked');
     item.innerHTML = `
@@ -1681,6 +1778,19 @@ function renderAchievements() {
       <div class="ach-text">
         <div class="ach-name">${ach.name}</div>
         <div class="ach-desc">${ach.desc}</div>
+      </div>
+    `;
+    list.appendChild(item);
+  }
+  // Show a "??? secrets remaining" placeholder for hidden ones
+  if (secretLockedCount > 0) {
+    const item = document.createElement('div');
+    item.className = 'ach-item locked secret';
+    item.innerHTML = `
+      <div class="ach-icon">❔</div>
+      <div class="ach-text">
+        <div class="ach-name">??? Secret${secretLockedCount > 1 ? 's' : ''}</div>
+        <div class="ach-desc">${secretLockedCount} hidden goal${secretLockedCount > 1 ? 's' : ''} to discover</div>
       </div>
     `;
     list.appendChild(item);
@@ -1711,13 +1821,18 @@ function renderShop() {
 
   // Items in current category
   const items = SHOP_ITEMS.filter(i => i.cat === currentShopTab);
+  let secretCount = 0;
   for (const item of items) {
     const owned = vault.unlocked_items.includes(item.id);
+    if (item.secret && !owned) {
+      secretCount++;
+      continue;
+    }
     const equipped = vault.equipped[item.cat] === item.id;
     const canAfford = vault.coins >= item.price;
     const isFree = item.price === 0;
     const row = document.createElement('div');
-    row.className = 'shop-item';
+    row.className = 'shop-item' + (owned ? '' : ' locked-item');
     let btnLabel, btnClass = '', btnDisabled = '';
     if (equipped) { btnLabel = 'Equipped'; btnClass = 'equipped'; }
     else if (owned) { btnLabel = 'Wear'; btnClass = 'owned'; }
@@ -1725,12 +1840,26 @@ function renderShop() {
     else if (canAfford) { btnLabel = `${item.price} 🪙`; }
     else { btnLabel = `${item.price} 🪙`; btnDisabled = 'disabled'; }
     row.innerHTML = `
-      <div class="shop-icon">${item.emoji}</div>
+      <div class="shop-icon">${owned ? item.emoji : '🔒'}</div>
       <div class="ach-text">
         <div class="ach-name">${item.name}</div>
         <div class="ach-desc">${owned ? 'Owned' : item.price >= 500 ? 'Splurge ✨' : 'Cosmetic'}</div>
       </div>
       <button class="shop-buy ${btnClass}" data-id="${item.id}" ${btnDisabled}>${btnLabel}</button>
+    `;
+    list.appendChild(row);
+  }
+  // Secret placeholder
+  if (secretCount > 0) {
+    const row = document.createElement('div');
+    row.className = 'shop-item locked-item secret';
+    row.innerHTML = `
+      <div class="shop-icon">❔</div>
+      <div class="ach-text">
+        <div class="ach-name">??? Secret</div>
+        <div class="ach-desc">${secretCount} mystery item${secretCount > 1 ? 's' : ''}</div>
+      </div>
+      <button class="shop-buy" disabled>???</button>
     `;
     list.appendChild(row);
   }
@@ -1805,14 +1934,24 @@ function showToast(msg, kind = '') {
 
 $('resetBtn').addEventListener('click', () => {
   if (busy) return;
+  const COST = 25;
+  if (vault.coins < COST) {
+    showToast(`Need ${COST} 🪙 for a fresh board`);
+    Audio.sfxBadSwap();
+    return;
+  }
+  vault.coins -= COST;
+  vault.stats.boards_bought = (vault.stats.boards_bought || 0) + 1;
+  saveVault();
   createBoard();
-  // Clear any lingering animation classes
   [...boardEl.children].forEach(el => {
     el.className = 'tile';
     el.dataset.contentKey = '';
   });
   render();
-  showToast('Fresh board ✨');
+  updateHUD();
+  checkAchievements();
+  showToast('Fresh board ✨ −25 🪙');
 });
 
 const audioBtn = $('audioBtn');
@@ -1856,6 +1995,11 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
 });
 
 function init() {
+  // Time-based secret achievement triggers
+  const hour = new Date().getHours();
+  if (hour >= 0 && hour < 4) vault.stats.played_at_night = true;
+  if (hour >= 5 && hour < 7) vault.stats.played_at_dawn = true;
+
   createBoard();
   buildBoardOnce();
   refillQueue();
