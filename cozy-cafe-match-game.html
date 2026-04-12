@@ -1199,7 +1199,7 @@ function renderTileSVG(type) {
     case 'circle':
       return `<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="${c}"/><circle cx="15" cy="15" r="3" fill="white" opacity="0.6"/></svg>`;
     case 'heart':
-      return `<svg viewBox="0 0 40 40"><path d="M20 33 C 8 25, 5 15, 12 10 C 16 8, 20 11, 20 14 C 20 11, 24 8, 28 10 C 35 15, 32 25, 20 33 Z" fill="${c}"/></svg>`;
+      return `<svg viewBox="0 0 40 40"><path d="M20 34 C 6 24, 4 14, 12 10 C 16 8, 19 10, 20 13 C 21 10, 24 8, 28 10 C 36 14, 34 24, 20 34 Z" fill="${c}"/><ellipse cx="15" cy="15" rx="2" ry="3" fill="white" opacity="0.5"/></svg>`;
     case 'square':
       return `<svg viewBox="0 0 40 40"><rect x="7" y="7" width="26" height="26" rx="5" fill="${c}"/><circle cx="14" cy="14" r="2" fill="white" opacity="0.5"/><circle cx="26" cy="20" r="2" fill="white" opacity="0.5"/><circle cx="18" cy="28" r="2" fill="white" opacity="0.5"/></svg>`;
     case 'dome':
@@ -1314,12 +1314,54 @@ async function attemptSwap(a, b) {
     await sleep(180);
 
     const ca = board[a.r][a.c], cb = board[b.r][b.c];
+
+    // Rainbow activation: swapping rainbow with any tile clears all of that type
     if (ca.power === 'rainbow' || cb.power === 'rainbow') {
       const targetType = ca.power === 'rainbow' ? cb.type : ca.type;
       const matches = activateRainbow(a, b, targetType);
       comboCount = 0;
       Audio.sfxRainbow();
       await resolveMatches(matches);
+      return;
+    }
+
+    // Two power-ups swapped together: combine them into a super-effect.
+    // Striped + striped = clear full row AND column. Striped + bomb = clear 3-wide cross.
+    // Bomb + bomb = clear 5x5.
+    if (ca.power && cb.power) {
+      const cells = [];
+      const powA = ca.power, powB = cb.power;
+      const bothStriped = (powA === 'striped-h' || powA === 'striped-v') && (powB === 'striped-h' || powB === 'striped-v');
+      const oneBomb = powA === 'bomb' || powB === 'bomb';
+      if (bothStriped) {
+        // Clear the row AND column of b
+        for (let cc = 0; cc < GRID_SIZE; cc++) cells.push({ r: b.r, c: cc });
+        for (let rr = 0; rr < GRID_SIZE; rr++) cells.push({ r: rr, c: b.c });
+        Audio.sfxStriped(); Audio.sfxStriped();
+      } else if (oneBomb && (powA === 'bomb' && powB === 'bomb')) {
+        // 5x5 blast
+        for (let rr = Math.max(0, b.r-2); rr <= Math.min(GRID_SIZE-1, b.r+2); rr++) {
+          for (let cc = Math.max(0, b.c-2); cc <= Math.min(GRID_SIZE-1, b.c+2); cc++) {
+            cells.push({ r: rr, c: cc });
+          }
+        }
+        Audio.sfxBomb();
+      } else if (oneBomb) {
+        // Bomb + striped: 3-wide row AND column
+        for (let rr = Math.max(0, b.r-1); rr <= Math.min(GRID_SIZE-1, b.r+1); rr++) {
+          for (let cc = 0; cc < GRID_SIZE; cc++) cells.push({ r: rr, c: cc });
+        }
+        for (let cc = Math.max(0, b.c-1); cc <= Math.min(GRID_SIZE-1, b.c+1); cc++) {
+          for (let rr = 0; rr < GRID_SIZE; rr++) cells.push({ r: rr, c: cc });
+        }
+        Audio.sfxBomb();
+      }
+      cells.push(a, b);
+      // Consume the power-ups so the resolve loop doesn't re-trigger them endlessly
+      board[a.r][a.c] = { ...ca, power: null };
+      board[b.r][b.c] = { ...cb, power: null };
+      comboCount = 0;
+      await resolveMatches([{ cells, dir: 'combo', length: cells.length, type: ca.type }]);
       return;
     }
 
@@ -1434,7 +1476,7 @@ async function resolveMatches(runs) {
 
   const powerSpawns = [];
   for (const run of runs) {
-    if (run.dir === 'rainbow') continue;
+    if (run.dir === 'rainbow' || run.dir === 'combo') continue;
     const spawnCell = run.cells[Math.floor(run.cells.length / 2)];
     if (run.length >= 5) {
       powerSpawns.push({ r: spawnCell.r, c: spawnCell.c, power: 'rainbow', type: run.type });
@@ -1463,12 +1505,16 @@ async function resolveMatches(runs) {
     board[r][c] = null;
   });
 
-  // Clear the .matching class from now-empty tiles so they don't linger
+  // Invalidate the render cache for every triggered cell so new content
+  // is actually drawn even if the type happens to match the previous one.
   triggered.forEach(key => {
     const [r, c] = key.split(',').map(Number);
     const idx = r * GRID_SIZE + c;
     const el = boardEl.children[idx];
-    if (el) el.classList.remove('matching');
+    if (el) {
+      el.classList.remove('matching');
+      el.dataset.contentKey = '__forced_refresh__';
+    }
   });
 
   for (const spawn of powerSpawns) {
@@ -1476,6 +1522,13 @@ async function resolveMatches(runs) {
       board[spawn.r][spawn.c] = newCell(spawn.type, spawn.power);
     }
   }
+
+  // Figure out which columns had any clear - those columns need full refresh
+  const dirtyCols = new Set();
+  triggered.forEach(key => {
+    const [r, c] = key.split(',').map(Number);
+    dirtyCols.add(c);
+  });
 
   for (let c = 0; c < GRID_SIZE; c++) {
     const col = [];
@@ -1487,6 +1540,19 @@ async function resolveMatches(runs) {
       board[r][c] = col[GRID_SIZE - 1 - r];
     }
   }
+
+  // Force re-render of every tile in dirty columns so dropped tiles always
+  // get fresh DOM content even when types happen to repeat.
+  dirtyCols.forEach(c => {
+    for (let r = 0; r < GRID_SIZE; r++) {
+      const idx = r * GRID_SIZE + c;
+      const el = boardEl.children[idx];
+      if (el) {
+        el.classList.remove('matching', 'falling');
+        el.dataset.contentKey = '__forced_refresh__';
+      }
+    }
+  });
   render();
   await sleep(340);
 
