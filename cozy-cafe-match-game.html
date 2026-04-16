@@ -128,6 +128,11 @@
   }
   .guest-avatar.happy { animation: bounce 0.6s ease; border-color: var(--mint-deep); }
   .guest-avatar.sad   { animation: shake 0.4s ease; }
+  .guest-avatar.flash { animation: avatarFlash 0.6s ease; }
+  @keyframes avatarFlash {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(228, 139, 160, 0); }
+    50% { box-shadow: 0 0 0 8px rgba(228, 139, 160, 0.5); }
+  }
   .guest-hat {
     position: absolute;
     top: -10px;
@@ -288,17 +293,18 @@
   .tile svg { width: 72%; height: 72%; pointer-events: none; }
   .tile * { pointer-events: none; }
 
-  /* Subtle breathing on idle tiles */
+  /* Subtle breathing on idle tile SVGs (not the tile itself — that would
+     conflict with the pop animation when matching). */
   @keyframes breathe {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.015); }
+    50% { transform: scale(1.04); }
   }
-  .tile:not(.matching):not(.selected) {
+  .tile:not(.matching):not(.selected) > svg {
     animation: breathe 4s ease-in-out infinite;
   }
-  .tile:nth-child(3n)  { animation-delay: 0.5s; }
-  .tile:nth-child(5n)  { animation-delay: 1.2s; }
-  .tile:nth-child(7n)  { animation-delay: 1.9s; }
+  .tile:nth-child(3n) > svg { animation-delay: 0.5s; }
+  .tile:nth-child(5n) > svg { animation-delay: 1.2s; }
+  .tile:nth-child(7n) > svg { animation-delay: 1.9s; }
 
   /* Floating petals */
   .petal {
@@ -341,22 +347,37 @@
   .cat {
     position: absolute;
     bottom: 12%;
-    left: -50px;
+    left: 0;
     font-size: 28px;
     z-index: 3;
     pointer-events: none;
     opacity: 0;
+    transform: translateX(-60px);
+    will-change: transform;
   }
-  @keyframes catWalk {
-    0%   { left: -50px; opacity: 0; transform: scaleX(1); }
+  @keyframes catWalkRight {
+    0%   { transform: translateX(-60px) translateY(0); opacity: 0; }
     5%   { opacity: 1; }
-    50%  { transform: scaleX(1) translateY(0); }
-    52%  { transform: scaleX(1) translateY(-3px); }
-    54%  { transform: scaleX(1) translateY(0); }
+    20%  { transform: translateX(20vw) translateY(0); }
+    22%  { transform: translateX(22vw) translateY(-3px); }
+    24%  { transform: translateX(24vw) translateY(0); }
+    50%  { transform: translateX(50vw) translateY(0); }
+    52%  { transform: translateX(52vw) translateY(-3px); }
+    54%  { transform: translateX(54vw) translateY(0); }
     95%  { opacity: 1; }
-    100% { left: calc(100% + 50px); opacity: 0; transform: scaleX(1); }
+    100% { transform: translateX(calc(100vw + 60px)) translateY(0); opacity: 0; }
   }
-  .cat.active { animation: catWalk 14s linear; }
+  @keyframes catWalkLeft {
+    0%   { transform: translateX(calc(100vw + 60px)) scaleX(-1); opacity: 0; }
+    5%   { opacity: 1; }
+    50%  { transform: translateX(50vw) scaleX(-1) translateY(0); }
+    52%  { transform: translateX(50vw) scaleX(-1) translateY(-3px); }
+    54%  { transform: translateX(50vw) scaleX(-1) translateY(0); }
+    95%  { opacity: 1; }
+    100% { transform: translateX(-60px) scaleX(-1); opacity: 0; }
+  }
+  .cat.active-right { animation: catWalkRight 14s linear; }
+  .cat.active-left  { animation: catWalkLeft 14s linear; }
 
   .tile.striped-h::before, .tile.striped-v::before {
     content: '';
@@ -408,6 +429,7 @@
   }
   .bb-btn:active { transform: scale(0.96); }
   .bb-btn.active { background: var(--cocoa); color: var(--cream); border-color: var(--cocoa); }
+  .bb-btn.cant-afford { opacity: 0.45; }
   .bb-icon { font-size: 18px; line-height: 1; }
 
   /* TOAST */
@@ -456,6 +478,8 @@
     width: 100%;
     max-height: 85vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     box-shadow: var(--shadow-card);
     border: 2px dashed var(--cream-deep);
   }
@@ -585,6 +609,37 @@
   .cafe-scene.cafe_beach   { background: linear-gradient(180deg, #B3E5FC 0%, #4FC3F7 50%, #FFE0B2 100%); }
   .cafe-scene.cafe_library { background: linear-gradient(180deg, #5D4037 0%, #795548 50%, #3E2723 100%); }
   .cafe-scene.cafe_space   { background: radial-gradient(ellipse at center, #1a0a3e 0%, #03010f 70%); }
+  .cafe-scene.cafe_space::before,
+  .cafe-scene.cafe_space::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, white, transparent),
+      radial-gradient(1px 1px at 80% 20%, white, transparent),
+      radial-gradient(1px 1px at 40% 70%, white, transparent),
+      radial-gradient(1.5px 1.5px at 60% 40%, white, transparent),
+      radial-gradient(1px 1px at 15% 80%, white, transparent),
+      radial-gradient(1px 1px at 90% 60%, white, transparent),
+      radial-gradient(1.5px 1.5px at 50% 15%, white, transparent),
+      radial-gradient(1px 1px at 75% 85%, white, transparent),
+      radial-gradient(1px 1px at 30% 50%, white, transparent);
+    animation: twinkle 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .cafe-scene.cafe_space::after {
+    animation-delay: 2s;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, white, transparent),
+      radial-gradient(1px 1px at 65% 25%, white, transparent),
+      radial-gradient(1.5px 1.5px at 35% 85%, white, transparent),
+      radial-gradient(1px 1px at 85% 45%, white, transparent),
+      radial-gradient(1px 1px at 45% 60%, white, transparent);
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
 
   /* Tile skin variants */
   .board.skin_pastel .tile { background: #FFF0F5; }
@@ -652,18 +707,18 @@
         <rect x="308" y="265" width="24" height="18" rx="3" fill="#F4B6C2" opacity="0.85"/>
       </svg>
     </div>
-    <div class="board" id="board"></div>
+    <div class="board" id="board" role="grid" aria-label="Cozy cafe match board"></div>
     <div class="rain-layer" id="rainLayer"></div>
     <div class="cat" id="cat">🐈</div>
     <div class="sparkle-layer" id="sparkleLayer"></div>
   </div>
 
   <div class="bottombar">
-    <button class="bb-btn" id="audioBtn"><span class="bb-icon">🎵</span>Music</button>
-    <button class="bb-btn" id="hapticBtn"><span class="bb-icon">📳</span>Haptic</button>
-    <button class="bb-btn" id="shopBtn"><span class="bb-icon">🛍️</span>Shop</button>
-    <button class="bb-btn" id="achBtn"><span class="bb-icon">🏆</span>Goals</button>
-    <button class="bb-btn" id="resetBtn"><span class="bb-icon">↻</span>New 25🪙</button>
+    <button class="bb-btn" id="audioBtn" aria-label="Toggle music"><span class="bb-icon">🎵</span>Music</button>
+    <button class="bb-btn" id="hapticBtn" aria-label="Toggle haptic feedback"><span class="bb-icon">📳</span>Haptic</button>
+    <button class="bb-btn" id="shopBtn" aria-label="Open shop"><span class="bb-icon">🛍️</span>Shop</button>
+    <button class="bb-btn" id="achBtn" aria-label="View achievements"><span class="bb-icon">🏆</span>Goals</button>
+    <button class="bb-btn" id="resetBtn" aria-label="Buy a fresh board for 25 coins"><span class="bb-icon">↻</span>New 25🪙</button>
   </div>
 </div>
 
@@ -1143,7 +1198,19 @@ function loadVault() {
   } catch (e) { return defaultVault(); }
 }
 
+let _saveTimer = null;
 function saveVault() {
+  // Debounce: batch rapid saves into one localStorage write
+  if (_saveTimer) return;
+  _saveTimer = setTimeout(() => {
+    _saveTimer = null;
+    try { localStorage.setItem(VAULT_KEY, JSON.stringify(vault)); }
+    catch (e) {}
+  }, 500);
+}
+function saveVaultNow() {
+  // Immediate save — used on critical actions (shop purchase, etc)
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   try { localStorage.setItem(VAULT_KEY, JSON.stringify(vault)); }
   catch (e) {}
 }
@@ -1252,6 +1319,7 @@ let dragStart = null;
 
 boardEl.addEventListener('pointerdown', (e) => {
   if (busy) return;
+  Audio.init(); // Wake up audio on first user interaction so SFX work immediately
   const tileEl = e.target.closest('.tile');
   if (!tileEl) return;
   e.preventDefault();
@@ -1699,9 +1767,9 @@ function startAmbientSystems() {
   // Walking cat — every 25–60 seconds
   const catEl = $('cat');
   function walkCat() {
-    catEl.classList.remove('active');
-    void catEl.offsetWidth; // restart animation
-    catEl.classList.add('active');
+    catEl.classList.remove('active-right', 'active-left');
+    void catEl.offsetWidth;
+    catEl.classList.add(Math.random() < 0.5 ? 'active-right' : 'active-left');
   }
   setTimeout(walkCat, 8000);
   setInterval(walkCat, 30000 + Math.random() * 30000);
@@ -1777,7 +1845,7 @@ function updateHUD() {
 
   const q = $('orderQueue');
   q.innerHTML = '';
-  guestQueue.slice(0, 2).forEach(g => {
+  guestQueue.slice(0, 3).forEach(g => {
     const chip = document.createElement('div');
     chip.className = 'order-chip';
     chip.textContent = g.emoji;
@@ -1794,6 +1862,12 @@ function updateHUD() {
 
   const hatItem = SHOP_ITEMS.find(i => i.id === vault.equipped.hat);
   $('guestHat').textContent = hatItem ? hatItem.emoji : '';
+
+  // Reset button dims when you can't afford it
+  const resetBtn = $('resetBtn');
+  if (resetBtn) {
+    resetBtn.classList.toggle('cant-afford', vault.coins < 25);
+  }
 }
 
 function hasAnyMove() {
@@ -1955,10 +2029,17 @@ function handleShopAction(itemId) {
     buzz(30);
     Audio.sfxAchievement();
   }
-  saveVault();
+  saveVaultNow();
   renderShop();
   updateHUD();
   applyCosmetics();
+  // Visual flash so you can see the change took effect
+  const avatar = $('guestAvatar');
+  if (avatar) {
+    avatar.classList.remove('flash');
+    void avatar.offsetWidth;
+    avatar.classList.add('flash');
+  }
 }
 
 function burstSparkles() {
@@ -1989,13 +2070,35 @@ sparkleStyle.textContent = `
 `;
 document.head.appendChild(sparkleStyle);
 
-let toastTimer;
+let toastQueue = [];
+let toastActive = false;
+
 function showToast(msg, kind = '') {
+  // Achievement toasts jump the queue; others append
+  if (kind === 'achievement') {
+    toastQueue.unshift({ msg, kind });
+  } else {
+    toastQueue.push({ msg, kind });
+  }
+  processToastQueue();
+}
+
+function processToastQueue() {
+  if (toastActive || toastQueue.length === 0) return;
+  toastActive = true;
+  const { msg, kind } = toastQueue.shift();
   const t = $('toast');
   t.textContent = msg;
   t.className = 'toast show ' + kind;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  // Achievement toasts linger longer so you can actually read them
+  const duration = kind === 'achievement' ? 2800 : 1800;
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => {
+      toastActive = false;
+      processToastQueue();
+    }, 400);
+  }, duration);
 }
 
 $('resetBtn').addEventListener('click', () => {
@@ -2058,6 +2161,13 @@ document.querySelectorAll('.modal-backdrop').forEach(bd => {
   bd.addEventListener('click', (e) => {
     if (e.target === bd) bd.classList.remove('show');
   });
+});
+
+// Escape key closes any open modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-backdrop.show').forEach(bd => bd.classList.remove('show'));
+  }
 });
 
 function init() {
