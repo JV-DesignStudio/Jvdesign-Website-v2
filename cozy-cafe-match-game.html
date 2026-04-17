@@ -560,6 +560,59 @@
   .shop-buy.owned { background: var(--mint-deep); }
   .shop-buy.equipped { background: var(--rose-deep); }
 
+  /* Tutorial */
+  .tutorial-modal { max-width: 360px; text-align: center; }
+  .tutorial-page h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 10px;
+  }
+  .tutorial-page h3 em { font-style: italic; color: var(--rose-deep); font-weight: 400; }
+  .tutorial-page p {
+    font-size: 14px;
+    color: var(--cocoa-soft);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+  .tutorial-page .tut-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .tutorial-page .tut-step {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--rose-deep);
+    margin-bottom: 8px;
+  }
+
+  /* Keyboard cursor */
+  .tile.kb-cursor {
+    box-shadow: 0 0 0 3px var(--sun), 0 0 0 5px rgba(245, 199, 106, 0.4), var(--shadow-tile) !important;
+    z-index: 4;
+  }
+
+  /* Seasonal tint overlay */
+  .seasonal-tint {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.12;
+    mix-blend-mode: overlay;
+    transition: background 1s ease;
+  }
+  .seasonal-tint.spring { background: linear-gradient(180deg, #FFB7C5, #C8E6C9); }
+  .seasonal-tint.summer { background: linear-gradient(180deg, #B3E5FC, #FFF9C4); }
+  .seasonal-tint.autumn { background: linear-gradient(180deg, #FFAB91, #FFE0B2); }
+  .seasonal-tint.winter { background: linear-gradient(180deg, #B3E5FC, #E1BEE7); }
+
+  /* Tappable avatar */
+  .guest-avatar { cursor: pointer; }
+
   /* Shop tabs */
   .shop-tabs {
     display: flex;
@@ -708,6 +761,7 @@
       </svg>
     </div>
     <div class="board" id="board" role="grid" aria-label="Cozy cafe match board"></div>
+    <div class="seasonal-tint" id="seasonalTint"></div>
     <div class="rain-layer" id="rainLayer"></div>
     <div class="cat" id="cat">🐈</div>
     <div class="sparkle-layer" id="sparkleLayer"></div>
@@ -718,11 +772,34 @@
     <button class="bb-btn" id="hapticBtn" aria-label="Toggle haptic feedback"><span class="bb-icon">📳</span>Haptic</button>
     <button class="bb-btn" id="shopBtn" aria-label="Open shop"><span class="bb-icon">🛍️</span>Shop</button>
     <button class="bb-btn" id="achBtn" aria-label="View achievements"><span class="bb-icon">🏆</span>Goals</button>
+    <button class="bb-btn" id="shareBtn" aria-label="Share your stats"><span class="bb-icon">📤</span>Share</button>
     <button class="bb-btn" id="resetBtn" aria-label="Buy a fresh board for 25 coins"><span class="bb-icon">↻</span>New 25🪙</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ============ TUTORIAL OVERLAY ============ -->
+<div class="modal-backdrop" id="tutorialModal">
+  <div class="modal tutorial-modal">
+    <div class="tutorial-page" id="tutorialContent"></div>
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <button class="shop-buy owned" id="tutSkip" style="flex:1">Skip</button>
+      <button class="shop-buy" id="tutNext" style="flex:1">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GUEST BIO MODAL ============ -->
+<div class="modal-backdrop" id="bioModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="bioTitle">The Fox</div>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <div id="bioContent" style="font-size:14px; color: var(--cocoa-soft); line-height:1.7;"></div>
+  </div>
+</div>
 
 <div class="modal-backdrop" id="achModal">
   <div class="modal">
@@ -1015,11 +1092,16 @@ const TILE_DATA = {
 };
 
 const GUESTS = [
-  { id: 'fox',      name: 'The Fox',     emoji: '🦊', favourite: 'berry',  hated: 'algae'  },
-  { id: 'tiger',    name: 'The Tiger',   emoji: '🐯', favourite: 'strawb', hated: 'mush'   },
-  { id: 'axo',      name: 'The Axolotl', emoji: '🌸', favourite: 'mush',   hated: 'algae'  },
-  { id: 'turtle',   name: 'The Turtle',  emoji: '🐢', favourite: 'algae',  hated: 'strawb' },
-  { id: 'stardust', name: 'Stardust',    emoji: '✦',  favourite: 'marsh',  hated: 'algae'  }
+  { id: 'fox',      name: 'The Fox',     emoji: '🦊', favourite: 'berry',  hated: 'algae',
+    facts: ['Likes to read by the window with a cup of tea.', 'Secretly writes poetry in a little notebook.', 'Always the last to leave the cafe.', 'Favourite colour is deep purple — like blueberries.'] },
+  { id: 'tiger',    name: 'The Tiger',   emoji: '🐯', favourite: 'strawb', hated: 'mush',
+    facts: ['Always asks for seconds. Always.', 'Gives the best hugs in the whole cafe.', 'Once ate seven strawberry tarts in one sitting.', 'Hums while waiting for their order.'] },
+  { id: 'axo',      name: 'The Axolotl', emoji: '🌸', favourite: 'mush',   hated: 'algae',
+    facts: ['Draws little pictures on the napkins.', 'Believes mushrooms taste like clouds.', 'Wants sparkles on absolutely everything.', 'Falls asleep in the cafe sometimes. It\'s adorable.'] },
+  { id: 'turtle',   name: 'The Turtle',  emoji: '🐢', favourite: 'algae',  hated: 'strawb',
+    facts: ['Knows the name of every plant in the garden cafe.', 'Brings a magnifying glass everywhere. Just in case.', 'Thinks algae crackers are very underrated.', 'Once found a tiny frog in the cafe and made friends with it.'] },
+  { id: 'stardust', name: 'Stardust',    emoji: '✦',  favourite: 'marsh',  hated: 'algae',
+    facts: ['Still looking for where they belong.', 'Glows a little brighter when someone smiles at them.', 'Too small to be a star, too scattered for a comet\'s scar.', 'Loves marshmallows because they\'re soft and warm, like belonging.'] }
 ];
 
 const ACHIEVEMENTS = [
@@ -2170,6 +2252,169 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ============ SEASONAL SYSTEM ============
+function getSeason() {
+  const m = new Date().getMonth();
+  if (m >= 2 && m <= 4) return 'spring';
+  if (m >= 5 && m <= 7) return 'summer';
+  if (m >= 8 && m <= 10) return 'autumn';
+  return 'winter';
+}
+
+const SEASONAL_DATA = {
+  spring: { label: '🌸 Spring' },
+  summer: { label: '☀️ Summer' },
+  autumn: { label: '🍂 Autumn' },
+  winter: { label: '❄️ Winter' }
+};
+
+function applySeasonal() {
+  const season = getSeason();
+  const tint = $('seasonalTint');
+  if (tint) tint.className = 'seasonal-tint ' + season;
+}
+
+// ============ DAILY BONUS ============
+function checkDailyBonus() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (vault.last_daily !== today) {
+    vault.last_daily = today;
+    vault.coins += 50;
+    vault.stats.lifetime_coins += 50;
+    saveVaultNow();
+    showToast('☀️ Daily bonus! +50 🪙', 'achievement');
+    updateHUD();
+  }
+}
+
+// ============ SHARE STATS ============
+$('shareBtn').addEventListener('click', () => {
+  const guestEmojis = GUESTS.map(g => g.emoji).join('');
+  const season = getSeason();
+  const seasonLabel = SEASONAL_DATA[season].label;
+  const text = `☕ My Cozy Cafe ${seasonLabel}\n` +
+    `🪙 ${vault.coins} coins · ✨ ${vault.happiness} happy guests\n` +
+    `📊 ${vault.stats.guests_served} served · ${vault.stats.matches} matches · ${vault.stats.max_combo}x best combo\n` +
+    `🏆 ${vault.achievements.length}/${ACHIEVEMENTS.length} achievements\n` +
+    `${guestEmojis}\n` +
+    `Play at jvdesignstudio.co.uk`;
+
+  if (navigator.share) {
+    navigator.share({ text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Stats copied to clipboard! 📋');
+    }).catch(() => {
+      showToast('Couldn\'t copy — try again');
+    });
+  } else {
+    showToast('Sharing not supported on this browser');
+  }
+});
+
+// ============ GUEST BIO (tap avatar) ============
+$('guestAvatar').addEventListener('click', () => {
+  if (!currentGuest) return;
+  $('bioTitle').textContent = currentGuest.name + ' ' + currentGuest.emoji;
+  const facts = currentGuest.facts || [];
+  const favLabel = TILE_DATA[currentGuest.favourite].label;
+  const hatedLabel = TILE_DATA[currentGuest.hated].label;
+  let html = `<p><strong>Favourite:</strong> ${favLabel} (2× coins!)</p>`;
+  html += `<p><strong>Least favourite:</strong> ${hatedLabel} (breaks your streak)</p>`;
+  html += `<p style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--cream-deep);">`;
+  html += facts.map(f => `<em>"${f}"</em>`).join('<br><br>');
+  html += `</p>`;
+  $('bioContent').innerHTML = html;
+  $('bioModal').classList.add('show');
+});
+
+// ============ KEYBOARD CONTROLS ============
+let kbCursor = null;
+
+document.addEventListener('keydown', (e) => {
+  if (document.querySelector('.modal-backdrop.show')) return;
+  if (busy) return;
+  Audio.init();
+
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d'].includes(e.key)) {
+    e.preventDefault();
+    if (!kbCursor) {
+      kbCursor = { r: 3, c: 3 };
+    } else {
+      const dir = { ArrowUp: [-1,0], w: [-1,0], ArrowDown: [1,0], s: [1,0],
+                    ArrowLeft: [0,-1], a: [0,-1], ArrowRight: [0,1], d: [0,1] };
+      const d = dir[e.key];
+      if (d) {
+        kbCursor.r = Math.max(0, Math.min(GRID_SIZE-1, kbCursor.r + d[0]));
+        kbCursor.c = Math.max(0, Math.min(GRID_SIZE-1, kbCursor.c + d[1]));
+      }
+    }
+    renderKBCursor();
+    return;
+  }
+
+  if ((e.key === ' ' || e.key === 'Enter') && kbCursor) {
+    e.preventDefault();
+    handleTap(kbCursor.r, kbCursor.c);
+    renderKBCursor();
+    return;
+  }
+});
+
+function renderKBCursor() {
+  [...boardEl.children].forEach(el => el.classList.remove('kb-cursor'));
+  if (kbCursor) {
+    const idx = kbCursor.r * GRID_SIZE + kbCursor.c;
+    const el = boardEl.children[idx];
+    if (el) el.classList.add('kb-cursor');
+  }
+}
+
+// ============ TUTORIAL ============
+const TUTORIAL_PAGES = [
+  { icon: '☕', title: 'Welcome to the <em>Cafe</em>', body: 'Match snacks to serve your guests. Swap two adjacent tiles to line up three or more of the same kind.' },
+  { icon: '🦊', title: 'Guest <em>Cravings</em>', body: 'Each guest wants a specific snack. Match their favourite to fill their craving bar — and earn 2× coins! The snack icon in the HUD shows what they want.' },
+  { icon: '⚡', title: '<em>Power-Ups</em>', body: 'Match 4 in a row for a striped tile that clears a whole line. Match 5 for a rainbow tile that clears every tile of one type. Swap two power-ups together for a super combo!' },
+  { icon: '🛍️', title: 'The <em>Shop</em>', body: 'Spend coins on hats, accessories, backgrounds, trails, and tile skins. Tap a guest\'s avatar to learn about them. Your purchases are shared with other JVDesignStudio games.' },
+  { icon: '✨', title: 'One more thing...', body: 'There are no fail states. No lives. No timers. The cafe is here whenever you need it. Enjoy.' }
+];
+
+let tutorialPage = 0;
+
+function showTutorial() {
+  tutorialPage = 0;
+  renderTutorialPage();
+  $('tutorialModal').classList.add('show');
+}
+
+function renderTutorialPage() {
+  const page = TUTORIAL_PAGES[tutorialPage];
+  $('tutorialContent').innerHTML = `
+    <div class="tut-step">Step ${tutorialPage + 1} of ${TUTORIAL_PAGES.length}</div>
+    <span class="tut-icon">${page.icon}</span>
+    <h3>${page.title}</h3>
+    <p>${page.body}</p>
+  `;
+  $('tutNext').textContent = tutorialPage < TUTORIAL_PAGES.length - 1 ? 'Next →' : 'Let\'s go! ☕';
+}
+
+$('tutNext').addEventListener('click', () => {
+  tutorialPage++;
+  if (tutorialPage >= TUTORIAL_PAGES.length) {
+    $('tutorialModal').classList.remove('show');
+    vault.tutorial_seen = true;
+    saveVaultNow();
+    return;
+  }
+  renderTutorialPage();
+});
+
+$('tutSkip').addEventListener('click', () => {
+  $('tutorialModal').classList.remove('show');
+  vault.tutorial_seen = true;
+  saveVaultNow();
+});
+
 function init() {
   // Time-based secret achievement triggers
   const hour = new Date().getHours();
@@ -2183,8 +2428,17 @@ function init() {
   render();
   updateHUD();
   applyCosmetics();
+  applySeasonal();
   checkAchievements();
   startAmbientSystems();
+
+  // Daily bonus check
+  checkDailyBonus();
+
+  // Tutorial on first ever visit
+  if (!vault.tutorial_seen) {
+    setTimeout(showTutorial, 600);
+  }
 }
 
 init();
