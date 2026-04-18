@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FBF4E8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Biscuit Tin">
+<title>Biscuit Tin — Cozy Clicker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:#FBF4E8; --cream-deep:#F5E9D3; --milk:#FFFDF8;
+  --rose:#F4B6C2; --rose-deep:#E48BA0; --mint:#B8DDC8; --mint-deep:#6FB89A;
+  --cocoa:#4A3528; --cocoa-soft:#6B4F3E; --sun:#F5C76A; --lavender:#C9B8E0;
+  --shadow-soft:0 4px 16px rgba(74,53,40,0.08); --shadow-card:0 8px 28px rgba(74,53,40,0.14);
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var(--cream);-webkit-user-select:none;user-select:none;background-image:radial-gradient(circle at 20% 30%,rgba(244,182,194,.10) 0%,transparent 45%),radial-gradient(circle at 80% 70%,rgba(184,221,200,.10) 0%,transparent 45%);touch-action:manipulation}
+.app{height:100vh;height:100dvh;max-width:540px;margin:0 auto;display:flex;flex-direction:column;padding:calc(var(--safe-top) + 8px) 12px calc(var(--safe-bottom) + 8px)}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 8px;flex-shrink:0}
+.brand{font-family:'Fraunces',serif;font-weight:900;font-size:22px;line-height:1;letter-spacing:-.02em}
+.brand em{font-style:italic;font-weight:400;color:var(--rose-deep)}
+.topbar-stats{display:flex;gap:6px}
+.stat-pill{background:var(--milk);border:2px solid var(--cream-deep);padding:5px 11px;border-radius:100px;font-size:12px;font-weight:800;display:flex;align-items:center;gap:4px;box-shadow:var(--shadow-soft)}
+.prestige-badge{background:var(--sun);border:2px solid #E8B840;color:var(--cocoa);padding:5px 10px;border-radius:100px;font-size:12px;font-weight:800;display:none;align-items:center;gap:3px;box-shadow:var(--shadow-soft);cursor:pointer}
+.prestige-badge.visible{display:flex}
+
+/* SCENE */
+.scene-wrap{position:relative;flex-shrink:0;border-radius:22px;overflow:hidden;box-shadow:var(--shadow-card);background:linear-gradient(180deg,#F5E0D8 0%,#F4B6C2 50%,#E8C4A8 100%);height:175px}
+.scene-svg{position:absolute;inset:0;width:100%;height:100%}
+.scene-rain{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity 2s}
+.scene-rain.active{opacity:1}
+.raindrop{position:absolute;width:1.5px;background:linear-gradient(180deg,transparent,rgba(200,220,240,.6));border-radius:100px;animation:raindrop linear infinite}
+@keyframes raindrop{0%{transform:translateY(-20px)}100%{transform:translateY(102%)}}
+
+/* CHARACTERS */
+.char-row{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:flex-end;justify-content:space-around;padding:0 8px 4px;z-index:3}
+.char-seat{display:flex;flex-direction:column;align-items:center;cursor:pointer;position:relative;transition:transform .15s}
+.char-seat.on-cooldown{cursor:not-allowed}
+.char-seat:not(.on-cooldown):active{transform:scale(.93)}
+@keyframes readyBounce{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-10px) scale(1.15)}55%{transform:translateY(2px) scale(.95)}75%{transform:translateY(-5px) scale(1.08)}}
+.char-seat.just-ready{animation:readyBounce .7s ease}
+.cooldown-ring{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:52px;height:52px;pointer-events:none;opacity:0;transition:opacity .2s}
+.char-seat.on-cooldown .cooldown-ring{opacity:1}
+.cooldown-track{fill:none;stroke:var(--cream-deep);stroke-width:3}
+.cooldown-fill{fill:none;stroke:var(--rose-deep);stroke-width:3;stroke-linecap:round;transform-origin:26px 26px;transform:rotate(-90deg);transition:stroke-dashoffset .25s linear}
+.cooldown-timer{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--rose-deep);background:rgba(255,253,248,.9);border-radius:100px;padding:1px 5px;pointer-events:none;opacity:0;white-space:nowrap}
+.char-seat.on-cooldown .cooldown-timer{opacity:1}
+.char-seat.on-cooldown .char-emoji{opacity:.45;filter:grayscale(.4)}
+.char-emoji{font-size:36px;line-height:1;filter:drop-shadow(0 3px 6px rgba(74,53,40,.2));animation:charBob 3s ease-in-out infinite}
+.char-seat:nth-child(1) .char-emoji{animation-delay:0s}
+.char-seat:nth-child(2) .char-emoji{animation-delay:.7s}
+.char-seat:nth-child(3) .char-emoji{animation-delay:1.4s}
+.char-seat:nth-child(4) .char-emoji{animation-delay:2.1s}
+@keyframes charBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.char-seat.excited .char-emoji{animation:charPop .45s ease}
+@keyframes charPop{0%,100%{transform:scale(1)}40%{transform:scale(1.28) rotate(-8deg)}70%{transform:scale(1.15) rotate(5deg)}}
+.char-label{font-size:9px;font-weight:800;color:var(--cocoa-soft);background:rgba(255,253,248,.75);border-radius:100px;padding:1px 6px;margin-top:1px}
+.char-hat{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:18px;pointer-events:none}
+
+/* PETALS */
+.petal-layer{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+.petal{position:absolute;pointer-events:none;opacity:0;font-size:14px}
+@keyframes petalDrift{0%{transform:translate(0,0) rotate(0deg);opacity:0}10%{opacity:.8}90%{opacity:.6}100%{transform:translate(var(--dx,40px),110px) rotate(360deg);opacity:0}}
+
+/* CLICKER */
+.clicker-area{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 0 5px}
+.biscuit-tin{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;width:100px;height:100px}
+.tin-glow{position:absolute;inset:-10px;border-radius:50%;background:radial-gradient(circle,rgba(244,182,194,.35) 0%,transparent 70%);animation:glowPulse 2.8s ease-in-out infinite;pointer-events:none}
+@keyframes glowPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.2);opacity:1}}
+.tin-emoji{font-size:72px;line-height:1;animation:tinFloat 3.5s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(74,53,40,.18));pointer-events:none}
+@keyframes tinFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+.biscuit-tin.tapped .tin-emoji{animation:none;transform:scale(.88) rotate(-6deg) !important}
+.biscuits-label{font-family:'Fraunces',serif;font-weight:700;font-size:15px;color:var(--cocoa);letter-spacing:-.01em;margin-top:3px}
+.biscuits-label span{color:var(--rose-deep);font-style:italic;font-weight:400}
+.rate-label{font-size:11px;color:var(--cocoa-soft);font-weight:700;margin-top:1px}
+
+/* CLICK FX */
+.click-pop{position:fixed;pointer-events:none;font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--rose-deep);animation:clickPop .75s ease-out forwards;z-index:999}
+@keyframes clickPop{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-55px) scale(.7)}}
+.click-biscuit{position:fixed;pointer-events:none;font-size:22px;animation:biscuitFly .85s ease-out forwards;z-index:999}
+@keyframes biscuitFly{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.4) rotate(var(--rot))}}
+
+/* TABS */
+.tabs{display:flex;gap:4px;flex-shrink:0;padding:0 2px}
+.tab-btn{flex:1;background:var(--milk);border:2px solid var(--cream-deep);color:var(--cocoa-soft);font-family:'Nunito',sans-serif;font-size:10px;font-weight:800;padding:7px 2px;border-radius:14px 14px 0 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .2s}
+.tab-btn .tab-icon{font-size:16px}
+.tab-btn.active{background:var(--milk);color:var(--cocoa);border-color:var(--cocoa-soft);border-bottom-color:var(--milk);box-shadow:0 -2px 8px rgba(74,53,40,.06)}
+
+/* PANEL */
+.panel{flex:1;background:var(--milk);border:2px solid var(--cocoa-soft);border-radius:0 0 18px 18px;overflow-y:auto;overflow-x:hidden;padding:10px 12px;-webkit-overflow-scrolling:touch;min-height:0}
+.panel::-webkit-scrollbar{display:none}
+
+/* HELPERS */
+.helper-list{display:flex;flex-direction:column;gap:7px}
+.helper-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;cursor:pointer;transition:border-color .2s,background .15s,transform .1s;position:relative;overflow:hidden}
+.helper-row::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(244,182,194,.06) 0%,transparent 60%);pointer-events:none}
+.helper-row.affordable{border-color:var(--rose-deep)}
+.helper-row.affordable:active{transform:scale(.98);background:#FFF0F4}
+.helper-row.cant-afford{opacity:.6}
+.helper-emoji{font-size:30px;flex-shrink:0;line-height:1}
+.helper-body{flex:1;min-width:0}
+.helper-name{font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--cocoa)}
+.helper-desc{font-size:11px;color:var(--cocoa-soft);margin-top:1px}
+.helper-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.helper-count{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--rose-deep);line-height:1}
+.helper-cost{font-size:11px;font-weight:800;color:var(--cocoa-soft)}
+.helper-cost.too-much{color:var(--cream-deep)}
+
+/* UPGRADES */
+.upgrade-list{display:flex;flex-direction:column;gap:7px}
+.upgrade-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;cursor:pointer;transition:border-color .2s,transform .1s;position:relative}
+.upgrade-row.affordable{border-color:var(--mint-deep)}
+.upgrade-row.affordable:active{transform:scale(.98)}
+.upgrade-row.bought{opacity:.45;pointer-events:none}
+.upgrade-row.cant-afford{opacity:.55}
+.upgrade-emoji{font-size:32px;flex-shrink:0}
+.upgrade-body{flex:1;min-width:0}
+.upgrade-name{font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--cocoa)}
+.upgrade-desc{font-size:11px;color:var(--cocoa-soft);margin-top:1px}
+.upgrade-cost{font-size:12px;font-weight:800;color:var(--cocoa-soft);flex-shrink:0}
+.upgrade-cost.too-much{color:var(--cream-deep)}
+.upgrade-tick{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:18px}
+
+/* ACHIEVEMENTS */
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ach-card{background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;padding:10px;text-align:center}
+.ach-card.unlocked{border-color:var(--mint-deep)}
+.ach-card.locked{opacity:.45}
+.ach-card-icon{font-size:28px;margin-bottom:3px}
+.ach-card-name{font-family:'Fraunces',serif;font-weight:700;font-size:12px;color:var(--cocoa);line-height:1.2}
+.ach-card-desc{font-size:10px;color:var(--cocoa-soft);margin-top:2px;line-height:1.3}
+.ach-card-badge{font-size:11px;color:var(--mint-deep);font-weight:800;margin-top:3px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat-card{background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;padding:12px 10px;text-align:center}
+.stat-card-value{font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:var(--rose-deep);line-height:1.1;word-break:break-all}
+.stat-card-label{font-size:11px;color:var(--cocoa-soft);margin-top:4px;font-weight:700}
+.stats-section-title{font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px}
+.stats-section-title:first-child{margin-top:0}
+.prestige-panel{background:linear-gradient(135deg,#FFF9E8,#FFF0D8);border:2px solid var(--sun);border-radius:16px;padding:14px;text-align:center;margin-top:10px}
+.prestige-panel h3{font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:6px}
+.prestige-panel p{font-size:12px;color:var(--cocoa-soft);line-height:1.6;margin-bottom:8px}
+.prestige-btn{background:linear-gradient(135deg,var(--sun),#E8A830);border:none;border-radius:100px;padding:10px 24px;font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:pointer;box-shadow:0 4px 12px rgba(245,199,106,.4);transition:transform .15s}
+.prestige-btn:active{transform:scale(.97)}
+.prestige-btn:disabled{opacity:.4;pointer-events:none}
+
+/* TOAST */
+.toast{position:fixed;top:calc(var(--safe-top) + 16px);left:50%;transform:translateX(-50%) translateY(-120px);background:var(--cocoa);color:var(--cream);padding:11px 22px;border-radius:100px;font-family:'Fraunces',serif;font-weight:700;font-size:14px;box-shadow:var(--shadow-card);transition:transform .35s ease;z-index:500;pointer-events:none;max-width:88vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.achievement{background:var(--sun);color:var(--cocoa)}
+.toast.milestone{background:var(--rose-deep);color:var(--milk)}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(74,53,40,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:300;padding:20px}
+.modal-backdrop.show{display:flex}
+.modal{background:var(--cream);border-radius:24px;padding:22px 20px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow-card);border:2px dashed var(--cream-deep)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-family:'Fraunces',serif;font-size:22px;font-weight:900}
+.modal-title em{font-style:italic;color:var(--rose-deep);font-weight:400}
+.modal-close{background:var(--milk);border:2px solid var(--cream-deep);width:34px;height:34px;border-radius:50%;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.char-bio{text-align:center;padding:4px 0 12px}
+.char-bio-avatar{font-size:56px;margin-bottom:8px}
+.char-bio-name{font-family:'Fraunces',serif;font-size:20px;font-weight:900;margin-bottom:3px}
+.char-bio-role{font-size:12px;color:var(--cocoa-soft);margin-bottom:12px}
+.char-bio-biscuit{background:var(--milk);border:2px dashed var(--cream-deep);border-radius:14px;padding:10px 14px;text-align:left;margin-bottom:10px}
+.char-bio-biscuit strong{color:var(--cocoa)}
+.char-bio-biscuit p{font-size:12px;color:var(--cocoa-soft);line-height:1.6;margin-top:4px}
+.offline-modal{text-align:center;padding:8px 0}
+.offline-modal .big-emoji{font-size:56px;margin-bottom:12px}
+.offline-modal h3{font-family:'Fraunces',serif;font-size:22px;font-weight:900;margin-bottom:6px}
+.offline-modal p{font-size:13px;color:var(--cocoa-soft);line-height:1.7;margin-bottom:12px}
+.offline-amount{font-family:'Fraunces',serif;font-size:32px;font-weight:900;color:var(--rose-deep);margin:8px 0}
+.offline-collect-btn{background:var(--cocoa);color:var(--cream);border:none;border-radius:100px;padding:12px 28px;font-family:'Fraunces',serif;font-size:16px;font-weight:700;cursor:pointer;transition:transform .15s}
+.offline-collect-btn:active{transform:scale(.97)}
+
+/* BOTTOMBAR */
+.bottombar{display:flex;gap:6px;padding-top:6px;flex-shrink:0}
+.bb-btn{flex:1;background:var(--milk);border:2px solid var(--cream-deep);color:var(--cocoa);font-family:'Nunito',sans-serif;font-weight:700;font-size:10px;padding:8px 5px;border-radius:14px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:var(--shadow-soft)}
+.bb-btn:active{transform:scale(.96)}
+.bb-btn.active-audio{background:var(--cocoa);color:var(--cream);border-color:var(--cocoa)}
+.bb-icon{font-size:17px;line-height:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">Biscuit <em>Tin</em></div>
+    <div class="topbar-stats">
+      <div class="prestige-badge" id="prestigeBadge">⭐ <span id="prestigeCount">0</span></div>
+      <div class="stat-pill">🍪 <span id="coinCount">0</span></div>
+      <div class="stat-pill">✨ <span id="happyCount">0</span></div>
+    </div>
+  </div>
+
+  <div class="scene-wrap">
+    <svg class="scene-svg" viewBox="0 0 540 180" preserveAspectRatio="xMidYMid slice">
+      <rect x="30" y="20" width="110" height="100" rx="8" fill="#FFFDF8" opacity="0.55"/>
+      <rect x="30" y="20" width="110" height="100" rx="8" fill="none" stroke="#4A3528" stroke-width="2.5" opacity="0.25"/>
+      <line x1="85" y1="20" x2="85" y2="120" stroke="#4A3528" stroke-width="2" opacity="0.2"/>
+      <line x1="30" y1="70" x2="140" y2="70" stroke="#4A3528" stroke-width="2" opacity="0.2"/>
+      <path d="M160 0 Q200 30 240 10 Q280 -5 320 15 Q360 35 400 20 Q440 5 480 25" fill="none" stroke="#4A3528" stroke-width="1.5" opacity="0.3"/>
+      <circle cx="195" cy="28" r="6" fill="#F5C76A" opacity="0.8"/><circle cx="240" cy="13" r="5" fill="#F5C76A" opacity="0.7"/>
+      <circle cx="285" cy="17" r="6" fill="#F5C76A" opacity="0.8"/><circle cx="330" cy="24" r="5" fill="#F5C76A" opacity="0.7"/>
+      <circle cx="375" cy="15" r="6" fill="#F5C76A" opacity="0.8"/><circle cx="420" cy="28" r="5" fill="#F5C76A" opacity="0.7"/>
+      <rect x="175" y="18" width="70" height="55" rx="5" fill="#4A3528" opacity="0.8"/>
+      <text x="210" y="35" font-size="8" fill="#F5C76A" text-anchor="middle" font-family="serif" opacity="0.9">MENU</text>
+      <line x1="182" y1="43" x2="238" y2="43" stroke="#F5E9D3" stroke-width="1" opacity="0.4"/>
+      <line x1="182" y1="52" x2="230" y2="52" stroke="#F5E9D3" stroke-width="1" opacity="0.4"/>
+      <line x1="182" y1="61" x2="235" y2="61" stroke="#F5E9D3" stroke-width="1" opacity="0.4"/>
+      <rect x="430" y="10" width="100" height="80" rx="4" fill="#D49B6F" opacity="0.5"/>
+      <rect x="435" y="15" width="8" height="45" rx="2" fill="#E48BA0" opacity="0.7"/>
+      <rect x="446" y="20" width="6" height="40" rx="2" fill="#6FB89A" opacity="0.7"/>
+      <rect x="455" y="18" width="9" height="42" rx="2" fill="#C9B8E0" opacity="0.7"/>
+      <rect x="467" y="22" width="7" height="38" rx="2" fill="#F5C76A" opacity="0.7"/>
+      <rect x="477" y="17" width="8" height="43" rx="2" fill="#E48BA0" opacity="0.6"/>
+      <rect x="488" y="19" width="6" height="41" rx="2" fill="#B8DDC8" opacity="0.7"/>
+      <rect x="430" y="60" width="100" height="5" rx="2" fill="#4A3528" opacity="0.3"/>
+      <ellipse cx="270" cy="172" rx="180" ry="12" fill="#D49B6F" opacity="0.35"/>
+      <rect x="130" y="155" width="280" height="18" rx="4" fill="#D49B6F" opacity="0.45"/>
+    </svg>
+    <div class="petal-layer" id="petalLayer"></div>
+    <div class="scene-rain" id="sceneRain"></div>
+    <div class="char-row">
+      <div class="char-seat" id="cs-fox" data-char="fox">
+        <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-fox" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-hat" id="hat-fox"></div>
+        <div class="char-emoji">🦊</div>
+        <div class="cooldown-timer" id="timer-fox"></div>
+        <div class="char-label">Fox</div>
+      </div>
+      <div class="char-seat" id="cs-tiger" data-char="tiger">
+        <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-tiger" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-emoji">🐯</div>
+        <div class="cooldown-timer" id="timer-tiger"></div>
+        <div class="char-label">Tiger</div>
+      </div>
+      <div class="char-seat" id="cs-turtle" data-char="turtle">
+        <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-turtle" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-emoji">🐢</div>
+        <div class="cooldown-timer" id="timer-turtle"></div>
+        <div class="char-label">Turtle</div>
+      </div>
+      <div class="char-seat" id="cs-axolotl" data-char="axolotl">
+        <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-axolotl" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-emoji">🌸</div>
+        <div class="cooldown-timer" id="timer-axolotl"></div>
+        <div class="char-label">Axolotl</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="clicker-area">
+    <div class="biscuit-tin" id="tinBtn" role="button" aria-label="Tap to bake biscuits">
+      <div class="tin-glow"></div>
+      <div class="tin-emoji">🍪</div>
+    </div>
+    <div class="biscuits-label" id="biscuitsLabel">0 <span>biscuits</span></div>
+    <div class="rate-label" id="rateLabel">tap to start baking!</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="helpers"><span class="tab-icon">🏡</span>Helpers</button>
+    <button class="tab-btn" data-tab="upgrades"><span class="tab-icon">⚡</span>Upgrades</button>
+    <button class="tab-btn" data-tab="achievements"><span class="tab-icon">🏆</span>Goals</button>
+    <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Stats</button>
+  </div>
+  <div class="panel" id="panel"></div>
+
+  <div class="bottombar">
+    <button class="bb-btn" id="audioBtn"><span class="bb-icon">🎵</span>Music</button>
+    <button class="bb-btn" id="achBtn"><span class="bb-icon">🏆</span>Goals</button>
+    <button class="bb-btn" id="shareBtn"><span class="bb-icon">📤</span>Share</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="bioModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="bioTitle">The Fox</div><button class="modal-close" data-close>×</button></div>
+    <div id="bioContent"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="achModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Little <em>Goals</em></div><button class="modal-close" data-close>×</button></div>
+    <div class="ach-grid" id="achList"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="offlineModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Welcome <em>Back!</em></div><button class="modal-close" data-close>×</button></div>
+    <div class="offline-modal">
+      <div class="big-emoji">🌙</div>
+      <h3>Your helpers kept baking!</h3>
+      <p id="offlineMsg">While you were away...</p>
+      <div class="offline-amount" id="offlineAmount">+0 🍪</div>
+      <button class="offline-collect-btn" id="offlineCollect">Collect biscuits!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ AUDIO ENGINE (ported from Cozy Cafe) ══
+const Audio = (() => {
+  let ctx=null,masterGain=null,musicGain=null,sfxGain=null,musicPlaying=false,musicTimer=null;
+  function init(){
+    if(ctx)return;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+    ctx=new AC();
+    masterGain=ctx.createGain(); masterGain.gain.value=0.6; masterGain.connect(ctx.destination);
+    musicGain=ctx.createGain(); musicGain.gain.value=0; musicGain.connect(masterGain);
+    sfxGain=ctx.createGain(); sfxGain.gain.value=0.5; sfxGain.connect(masterGain);
+  }
+  function tone({freq=440,dur=0.15,type='sine',vol=0.3,attack=0.01}){
+    if(!ctx)return;
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,ctx.currentTime);
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    g.gain.linearRampToValueAtTime(vol,ctx.currentTime+attack);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    o.connect(g); g.connect(sfxGain); o.start(); o.stop(ctx.currentTime+dur+0.05);
+  }
+  function sfxTap(){
+    tone({freq:520,dur:0.09,type:'sine',vol:0.13,attack:0.005});
+    tone({freq:380,dur:0.12,type:'triangle',vol:0.07,attack:0.005});
+  }
+  function sfxCharDrop(semi=0){
+    const b=523.25*Math.pow(2,semi/12);
+    [b,b*1.25,b*1.5].forEach((f,i)=>setTimeout(()=>tone({freq:f,dur:0.4,type:'sine',vol:0.17,attack:0.01}),i*70));
+  }
+  function sfxAchievement(){
+    [659,784,987,1175].forEach((n,i)=>setTimeout(()=>tone({freq:n,dur:0.3,type:'triangle',vol:0.19}),i*90));
+  }
+  function sfxPrestige(){
+    [523,659,784,1047,1319].forEach((n,i)=>setTimeout(()=>tone({freq:n,dur:0.5,type:'sine',vol:0.21}),i*100));
+  }
+  function startMusic(){
+    if(!ctx||musicPlaying)return;
+    musicPlaying=true;
+    musicGain.gain.cancelScheduledValues(ctx.currentTime);
+    musicGain.gain.setValueAtTime(musicGain.gain.value,ctx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0.28,ctx.currentTime+1.5);
+    const prog=[[261.63,329.63,392,493.88],[220,261.63,329.63,392],[174.61,220,261.63,329.63],[196,246.94,293.66,349.23]];
+    let ci=0; const bl=2.4;
+    function chord(){
+      if(!musicPlaying)return;
+      const ch=prog[ci],st=ctx.currentTime;
+      ch.forEach(fr=>{
+        const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();
+        o.type='sine'; o.frequency.value=fr; f.type='lowpass'; f.frequency.value=1400;
+        g.gain.setValueAtTime(0,st); g.gain.linearRampToValueAtTime(0.052,st+0.4);
+        g.gain.linearRampToValueAtTime(0.032,st+bl-0.3); g.gain.linearRampToValueAtTime(0,st+bl);
+        o.connect(f); f.connect(g); g.connect(musicGain); o.start(st); o.stop(st+bl+0.1);
+      });
+      ch.forEach((fr,i)=>{
+        const t=st+i*(bl/8)+Math.random()*0.04;
+        const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='triangle'; o.frequency.value=fr*2;
+        g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.032,t+0.02); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+        o.connect(g); g.connect(musicGain); o.start(t); o.stop(t+0.6);
+      });
+      ci=(ci+1)%prog.length; musicTimer=setTimeout(chord,bl*1000);
+    }
+    chord();
+  }
+  function stopMusic(){
+    if(!ctx||!musicPlaying)return; musicPlaying=false;
+    musicGain.gain.cancelScheduledValues(ctx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0,ctx.currentTime+0.8);
+    if(musicTimer)clearTimeout(musicTimer);
+  }
+  function isMusicPlaying(){return musicPlaying}
+  return{init,sfxTap,sfxCharDrop,sfxAchievement,sfxPrestige,startMusic,stopMusic,isMusicPlaying};
+})();
+
+// ══ VAULT ══
+const VAULT_KEY='jvds_player_vault';
+function defaultVault(){
+  return{schema:3,coins:0,happiness:0,haptic:true,
+    unlocked_items:['cafe_default','trail_petal','skin_default'],
+    equipped:{background:'cafe_default',trail:'trail_petal',skin:'skin_default'},
+    achievements:[],
+    stats:{matches:0,guests_served:0,max_combo:0,max_streak:0,lifetime_coins:0,powerups_made:0,rainbows_made:0,guests_each:{}},
+    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()}};
+}
+function loadVault(){
+  try{
+    const raw=localStorage.getItem(VAULT_KEY); if(!raw)return defaultVault();
+    const v=JSON.parse(raw);
+    if(!v.biscuit)v.biscuit=defaultVault().biscuit;
+    const db=defaultVault().biscuit;
+    for(const k of Object.keys(db))if(v.biscuit[k]===undefined)v.biscuit[k]=db[k];
+    if(!v.biscuit.charTaps)v.biscuit.charTaps={fox:0,tiger:0,turtle:0,axolotl:0};
+    if(!v.stats)v.stats=defaultVault().stats;
+    if(!v.stats.guests_each)v.stats.guests_each={};
+    if(!v.unlocked_items)v.unlocked_items=['cafe_default','trail_petal','skin_default'];
+    if(!v.equipped)v.equipped={background:'cafe_default',trail:'trail_petal',skin:'skin_default'};
+    return v;
+  }catch{return defaultVault();}
+}
+let saveTimer=null;
+function saveVault(){bv().lastSave=Date.now();clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}},450);}
+function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}}
+let vault=loadVault();
+const bv=()=>vault.biscuit;
+
+// ══ GAME DATA ══
+const CHARACTERS={
+  fox:    {emoji:'🦊',name:'The Fox',    role:'Chief Taster', biscuit:'Blueberry Shortbread',biscuitEmoji:'🫐',biscuitValue:25, cooldown:30, color:'#9B6BC4',semi:0,  desc:'The Fox has an impossibly refined palate. She can detect exactly how many blueberries went into each biscuit.',facts:['Always saves the last biscuit for someone else.','Favourite seat is by the window, where the light is just right.','Keeps a little notebook full of biscuit ratings.']},
+  tiger:  {emoji:'🐯',name:'The Tiger',  role:'Head Dunker',  biscuit:'Strawberry Jam Ring', biscuitEmoji:'🍓',biscuitValue:50, cooldown:60, color:'#E8617A',semi:4,  desc:'The Tiger holds the cafe record for longest biscuit dunk without breaking. Seven seconds. Nobody has come close.',facts:['Hums while waiting for the kettle.','Once ate nine jam rings. Nobody said anything.','Gives genuinely excellent hugs, biscuit-scented or otherwise.']},
+  turtle: {emoji:'🐢',name:'The Turtle', role:'Slow Baker',   biscuit:'Algae Cracker',       biscuitEmoji:'🌿',biscuitValue:100,cooldown:120,color:'#6FB89A',semi:7,  desc:'The Turtle perfected the algae cracker over forty-seven attempts. She says the secret is patience.',facts:['Brings a magnifying glass to inspect biscuit edges.','Knows the name of every plant on the windowsill.','Made friends with a tiny frog who visits the cafe sometimes.']},
+  axolotl:{emoji:'🌸',name:'The Axolotl',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'The Axolotl believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
+};
+const HELPERS=[
+  {id:'oven',    emoji:'🫙',name:'Cookie Jar',    desc:'Biscuits appear as if by magic',       baseCost:10,    baseRate:0.1, costMult:1.15},
+  {id:'kettle',  emoji:'🫖',name:'Kettle',        desc:'Hot tea makes everyone bake faster',   baseCost:80,    baseRate:0.5, costMult:1.15},
+  {id:'mixer',   emoji:'🌀',name:'Stand Mixer',   desc:'Whips up batter in moments',           baseCost:450,   baseRate:2.2, costMult:1.15},
+  {id:'cat',     emoji:'🐈',name:'Cafe Cat',      desc:'Somehow makes biscuits appear faster', baseCost:2000,  baseRate:8,   costMult:1.15},
+  {id:'recipe',  emoji:'📖',name:'Secret Recipe', desc:'Ancient baking knowledge unlocked',    baseCost:9000,  baseRate:28,  costMult:1.15},
+  {id:'fox_bake',emoji:'🦊',name:"Fox's Kitchen", desc:'The Fox leads a baking brigade',       baseCost:30000, baseRate:80,  costMult:1.15},
+  {id:'sparkle', emoji:'✨',name:'Magic Sprinkles',desc:'Enchanted sprinkles multiply output', baseCost:100000,baseRate:220, costMult:1.15},
+];
+const UPGRADES=[
+  {id:'better_hands', emoji:'🤲',name:'Floury Hands',   desc:'2x biscuits per tap',       cost:75,    type:'click', mult:2},
+  {id:'baking_gloves',emoji:'🧤',name:'Baking Gloves',  desc:'2x biscuits per tap',       cost:500,   type:'click', mult:2},
+  {id:'golden_spoon', emoji:'🥄',name:'Golden Spoon',   desc:'3x biscuits per tap',       cost:2500,  type:'click', mult:3},
+  {id:'cozy_vibes',   emoji:'🕯️',name:'Cosy Vibes',     desc:'4x biscuits per tap',       cost:15000, type:'click', mult:4},
+  {id:'jar_lid',      emoji:'🍯',name:'Better Jar Lid', desc:'2x Cookie Jar output',      cost:150,   type:'helper',target:'oven',   mult:2},
+  {id:'loose_leaf',   emoji:'🌿',name:'Loose-Leaf Tea', desc:'2x Kettle output',          cost:900,   type:'helper',target:'kettle', mult:2},
+  {id:'bowl_attach',  emoji:'🥣',name:'Extra Bowl',     desc:'2x Mixer output',           cost:5000,  type:'helper',target:'mixer',  mult:2},
+  {id:'cat_nap',      emoji:'😴',name:'Power Nap',      desc:'2x Cat output',             cost:22000, type:'helper',target:'cat',    mult:2},
+  {id:'ink_pen',      emoji:'🖊️',name:'Ink Pen',        desc:'2x Recipe output',          cost:90000, type:'helper',target:'recipe', mult:2},
+  {id:'cozy_decor',   emoji:'🌸',name:'Cosy Decor',     desc:'1.5x all biscuit output',   cost:6000,  type:'global',mult:1.5},
+  {id:'full_cafe',    emoji:'🏡',name:'Full House',     desc:'2x all biscuit output',     cost:60000, type:'global',mult:2},
+];
+const MILESTONES=[
+  {n:100,   msg:'100 biscuits baked! The tin is filling up! 🍪'},
+  {n:500,   msg:'500 biscuits! The cafe smells amazing. ☕'},
+  {n:1000,  msg:'1,000 biscuits! You could open a bakery! 🏪'},
+  {n:5000,  msg:'5,000 biscuits! The friends are very pleased. 🦊'},
+  {n:10000, msg:'10,000 biscuits! A legendary baker! 🏆'},
+  {n:50000, msg:'50,000 biscuits! The tin never empties. ✨'},
+  {n:100000,msg:'100,000 biscuits! You may now Prestige! 🌟'},
+  {n:500000,msg:'500,000 biscuits! A biscuit empire! 💎'},
+  {n:1e6,   msg:'One million biscuits! Truly legendary. 👑'},
+];
+const ACHIEVEMENTS=[
+  {id:'bt_first',    emoji:'🍪',name:'First Biscuit',  desc:'Bake your first biscuit',            check:v=>bv().clicks>=1},
+  {id:'bt_100c',     emoji:'👋',name:'Eager Baker',    desc:'Tap 100 times',                      check:v=>bv().clicks>=100},
+  {id:'bt_1kc',      emoji:'🔥',name:'Baking Frenzy',  desc:'Tap 1,000 times',                    check:v=>bv().clicks>=1000},
+  {id:'bt_100',      emoji:'🍫',name:'Tiny Tin',       desc:'Bake 100 biscuits total',            check:v=>bv().lifetime>=100},
+  {id:'bt_1k',       emoji:'🛍️',name:'Biscuit Stack',  desc:'Bake 1,000 biscuits total',          check:v=>bv().lifetime>=1000},
+  {id:'bt_10k',      emoji:'🏪',name:'Biscuit Bakery', desc:'Bake 10,000 biscuits total',         check:v=>bv().lifetime>=10000},
+  {id:'bt_100k',     emoji:'🏆',name:'Biscuit Empire', desc:'Bake 100,000 biscuits total',        check:v=>bv().lifetime>=100000},
+  {id:'bt_1m',       emoji:'👑',name:'Biscuit Legend', desc:'Bake 1,000,000 biscuits total',      check:v=>bv().lifetime>=1000000},
+  {id:'bt_helper1',  emoji:'🤝',name:'First Helper',   desc:'Hire your first helper',             check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=1},
+  {id:'bt_helpers10',emoji:'👨‍👩‍👧',name:'Baking Team',   desc:'Have 10 helpers working',            check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=10},
+  {id:'bt_helpers50',emoji:'🏘️',name:'Full Bakery',    desc:'Have 50 helpers working',            check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=50},
+  {id:'bt_upgrade3', emoji:'⚡',name:'Upgraded!',       desc:'Buy 3 upgrades',                     check:v=>bv().upgrades.length>=3},
+  {id:'bt_upgrade8', emoji:'✨',name:'Fully Upgraded', desc:'Buy 8 upgrades',                     check:v=>bv().upgrades.length>=8},
+  {id:'bt_fox',      emoji:'🦊',name:"Fox's Favourite",desc:'Tap the Fox 10 times',               check:v=>(bv().charTaps.fox||0)>=10},
+  {id:'bt_tiger',    emoji:'🐯',name:"Tiger's Pal",    desc:'Tap the Tiger 10 times',             check:v=>(bv().charTaps.tiger||0)>=10},
+  {id:'bt_turtle',   emoji:'🐢',name:'Shell Friends',  desc:'Tap the Turtle 10 times',            check:v=>(bv().charTaps.turtle||0)>=10},
+  {id:'bt_axolotl',  emoji:'🌸',name:'Sparkle Crew',   desc:'Tap the Axolotl 10 times',           check:v=>(bv().charTaps.axolotl||0)>=10},
+  {id:'bt_allfour',  emoji:'🌈',name:'Full Family',    desc:'Tap all four friends',               check:v=>Object.values(bv().charTaps).every(n=>n>0)},
+  {id:'bt_prestige', emoji:'🌟',name:'New Season',     desc:'Prestige for the first time',        check:v=>(bv().prestige||0)>=1},
+  {id:'bt_prestige3',emoji:'💎',name:'Seasoned Baker', desc:'Prestige 3 times',                   check:v=>(bv().prestige||0)>=3},
+  {id:'bt_hat',      emoji:'🎩',name:'Dressed to Bake',desc:'Buy a hat in Cozy Cafe for Fox to wear',check:v=>!!(v.equipped&&v.equipped.hat)},
+  {id:'bt_both',     emoji:'☕',name:'Regulars',       desc:'Play both Cozy Cafe and Biscuit Tin',check:v=>v.stats.guests_served>=1&&bv().lifetime>=1},
+];
+const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇'};
+
+// ══ RUNTIME ══
+let clickPower=1,productionRate=0,lastTick=Date.now(),activeTab='helpers';
+const charReady={fox:0,tiger:0,turtle:0,axolotl:0};
+const charWasCD={fox:false,tiger:false,turtle:false,axolotl:false};
+const CIRC=138.2;
+let milestonesHit=new Set();
+
+function fmt(n){
+  n=Math.floor(n);
+  if(n>=1e9)return(n/1e9).toFixed(1)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return n.toString();
+}
+
+function recalc(){
+  let cp=1;
+  for(const up of UPGRADES)if(up.type==='click'&&bv().upgrades.includes(up.id))cp*=up.mult;
+  clickPower=cp*(bv().prestigeBonus||1);
+  let gm=1;
+  for(const up of UPGRADES)if(up.type==='global'&&bv().upgrades.includes(up.id))gm*=up.mult;
+  let rate=0;
+  for(const h of HELPERS){
+    const cnt=bv().helpers[h.id]||0; if(!cnt)continue;
+    let hm=1;
+    for(const up of UPGRADES)if(up.type==='helper'&&up.target===h.id&&bv().upgrades.includes(up.id))hm*=up.mult;
+    rate+=h.baseRate*cnt*hm;
+  }
+  productionRate=rate*gm*(bv().prestigeBonus||1);
+}
+
+// ══ TICK ══
+function tick(){
+  const now=Date.now(),dt=Math.min((now-lastTick)/1000,5);
+  lastTick=now;
+  if(productionRate>0){
+    const g=productionRate*dt;
+    bv().total+=g; bv().lifetime+=g;
+    vault.coins+=g*0.1;
+    vault.stats.lifetime_coins=(vault.stats.lifetime_coins||0)+g*0.1;
+  }
+  checkMilestones(); updateHUD(); checkAchievements();
+  requestAnimationFrame(tick);
+}
+
+// ══ MILESTONES ══
+function checkMilestones(){
+  for(const m of MILESTONES){
+    if(!milestonesHit.has(m.n)&&bv().lifetime>=m.n){
+      milestonesHit.add(m.n); showToast(m.msg,'milestone');
+    }
+  }
+}
+function seedMilestones(){for(const m of MILESTONES)if(bv().lifetime>=m.n)milestonesHit.add(m.n);}
+
+// ══ HUD ══
+function updateHUD(){
+  const total=Math.floor(bv().total);
+  document.getElementById('coinCount').textContent=fmt(total);
+  document.getElementById('happyCount').textContent=vault.happiness;
+  document.getElementById('biscuitsLabel').innerHTML=fmt(total)+' <span>biscuits</span>';
+  const prestige=bv().prestige||0;
+  const badge=document.getElementById('prestigeBadge');
+  badge.classList.toggle('visible',prestige>0);
+  document.getElementById('prestigeCount').textContent=prestige;
+  const rps=productionRate;
+  document.getElementById('rateLabel').textContent=rps>0?(rps>=1?fmt(rps):rps.toFixed(1))+' biscuits / sec':'tap the tin!';
+  // Fox hat from shared vault
+  const hat=vault.equipped&&vault.equipped.hat;
+  document.getElementById('hat-fox').textContent=hat?(HAT_EMOJIS[hat]||''):'';
+}
+
+// ══ COOLDOWN RINGS + READY BOUNCE ══
+function updateCooldownRings(){
+  const now=Date.now();
+  for(const id of Object.keys(charReady)){
+    const seat=document.getElementById('cs-'+id);
+    const ring=document.getElementById('ring-'+id);
+    const timer=document.getElementById('timer-'+id);
+    if(!seat||!ring||!timer)continue;
+    const readyAt=charReady[id],char=CHARACTERS[id],totalMs=char.cooldown*1000;
+    if(now>=readyAt){
+      if(charWasCD[id]){
+        charWasCD[id]=false;
+        seat.classList.add('just-ready');
+        setTimeout(()=>seat.classList.remove('just-ready'),700);
+      }
+      seat.classList.remove('on-cooldown'); ring.style.strokeDashoffset=0; timer.textContent='';
+    } else {
+      charWasCD[id]=true; seat.classList.add('on-cooldown');
+      const rem=readyAt-now,prog=rem/totalMs;
+      ring.style.strokeDashoffset=CIRC*(1-prog);
+      const s=Math.ceil(rem/1000);
+      timer.textContent=s>=60?Math.ceil(s/60)+'m':s+'s';
+    }
+  }
+}
+setInterval(updateCooldownRings,250);
+
+// ══ CLICK ══
+function doClick(x,y){
+  Audio.init(); Audio.sfxTap();
+  const gained=clickPower;
+  bv().total+=gained; bv().lifetime+=gained; bv().clicks=(bv().clicks||0)+1;
+  const tin=document.getElementById('tinBtn');
+  tin.classList.add('tapped'); setTimeout(()=>tin.classList.remove('tapped'),140);
+  spawnClickPop(x,y,'+'+fmt(gained));
+  for(let i=0;i<Math.min(3,Math.ceil(gained));i++)spawnBiscuit(x,y);
+  updateHUD(); saveVault(); checkAchievements();
+  if(activeTab==='helpers'||activeTab==='upgrades')renderPanel();
+}
+function spawnClickPop(x,y,text){
+  const el=document.createElement('div'); el.className='click-pop'; el.textContent=text;
+  el.style.left=(x-20)+'px'; el.style.top=(y-20)+'px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),750);
+}
+function spawnBiscuit(x,y){
+  const el=document.createElement('div'); el.className='click-biscuit'; el.textContent='🍪';
+  const a=Math.random()*Math.PI*2,d=35+Math.random()*50;
+  el.style.setProperty('--dx',Math.cos(a)*d+'px'); el.style.setProperty('--dy',Math.sin(a)*d-20+'px');
+  el.style.setProperty('--rot',(Math.random()*360-180)+'deg');
+  el.style.left=x+'px'; el.style.top=y+'px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),850);
+}
+function spawnCharBiscuit(x,y,emoji,color){
+  const el=document.createElement('div'); el.className='click-biscuit'; el.textContent=emoji;
+  el.style.fontSize='24px'; el.style.filter=`drop-shadow(0 0 6px ${color}88)`;
+  const a=Math.random()*Math.PI*2,d=45+Math.random()*70;
+  el.style.setProperty('--dx',Math.cos(a)*d+'px'); el.style.setProperty('--dy',Math.sin(a)*d-30+'px');
+  el.style.setProperty('--rot',(Math.random()*360-180)+'deg');
+  el.style.left=x+'px'; el.style.top=y+'px';
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+
+// ══ CHARACTER TAPS ══
+document.querySelectorAll('.char-seat').forEach(el=>{
+  let pressTimer;
+  el.addEventListener('click',()=>{
+    Audio.init();
+    const id=el.dataset.char;
+    if(Date.now()<charReady[id])return;
+    const char=CHARACTERS[id];
+    charReady[id]=Date.now()+char.cooldown*1000; charWasCD[id]=true;
+    bv().charTaps[id]=(bv().charTaps[id]||0)+1;
+    const gained=char.biscuitValue*(bv().prestigeBonus||1);
+    bv().total+=gained; bv().lifetime+=gained;
+    el.classList.add('excited'); setTimeout(()=>el.classList.remove('excited'),500);
+    const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    spawnClickPop(cx,cy,'+'+fmt(gained)+' '+char.biscuitEmoji);
+    for(let i=0;i<6;i++)spawnCharBiscuit(cx,cy,char.biscuitEmoji,char.color);
+    Audio.sfxCharDrop(char.semi);
+    showToast(`${char.emoji} ${char.biscuitEmoji} ${char.biscuit}! +${fmt(gained)}`);
+    updateHUD(); updateCooldownRings(); saveVault(); checkAchievements();
+  });
+  el.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>showBio(el.dataset.char),600);});
+  el.addEventListener('touchend',()=>clearTimeout(pressTimer));
+  el.addEventListener('mousedown',()=>{pressTimer=setTimeout(()=>showBio(el.dataset.char),600);});
+  el.addEventListener('mouseup',()=>clearTimeout(pressTimer));
+  el.addEventListener('mouseleave',()=>clearTimeout(pressTimer));
+});
+
+function showBio(id){
+  const c=CHARACTERS[id],taps=bv().charTaps[id]||0,now=Date.now();
+  const ready=charReady[id]<=now,rem=ready?0:Math.ceil((charReady[id]-now)/1000);
+  const cdText=ready?'Ready to bake!':''+( rem>=60?Math.ceil(rem/60)+'min':rem+'s')+' remaining';
+  document.getElementById('bioTitle').innerHTML=c.emoji+' '+c.name;
+  document.getElementById('bioContent').innerHTML=`<div class="char-bio"><div class="char-bio-avatar">${c.emoji}</div><div class="char-bio-name">${c.name}</div><div class="char-bio-role">${c.role}</div><div class="char-bio-biscuit"><strong>${c.biscuitEmoji} ${c.biscuit} — ${c.biscuitValue} biscuits per tap</strong><p>${cdText} · ${c.cooldown>=60?c.cooldown/60+'min cooldown':c.cooldown+'s cooldown'}</p></div><div class="char-bio-biscuit"><strong>About</strong><p>${c.desc}</p></div><div class="char-bio-biscuit"><strong>🍪 Times helped: ${taps}</strong><p>${c.facts.join('<br>')}</p></div></div>`;
+  document.getElementById('bioModal').classList.add('show');
+}
+
+// ══ PANEL ══
+function renderPanel(){
+  const panel=document.getElementById('panel');
+  if(activeTab==='helpers')renderHelpers(panel);
+  else if(activeTab==='upgrades')renderUpgrades(panel);
+  else if(activeTab==='achievements')renderAchievements(panel);
+  else renderStats(panel);
+}
+function renderHelpers(el){
+  el.innerHTML='';
+  const list=document.createElement('div'); list.className='helper-list';
+  HELPERS.forEach(h=>{
+    const cnt=bv().helpers[h.id]||0,cost=Math.floor(h.baseCost*Math.pow(h.costMult,cnt)),canAfford=Math.floor(bv().total)>=cost;
+    let hm=1,gm=1;
+    for(const up of UPGRADES){if(up.type==='helper'&&up.target===h.id&&bv().upgrades.includes(up.id))hm*=up.mult;if(up.type==='global'&&bv().upgrades.includes(up.id))gm*=up.mult;}
+    const eff=h.baseRate*hm*gm*(bv().prestigeBonus||1);
+    const row=document.createElement('div'); row.className='helper-row '+(canAfford?'affordable':'cant-afford');
+    row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}</div><div class="helper-desc">${h.desc} · ${eff>=1?fmt(eff):eff.toFixed(1)}/sec each</div></div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(cost)}</div></div>`;
+    row.addEventListener('click',()=>{
+      if(Math.floor(bv().total)<cost)return;
+      bv().total-=cost; bv().helpers[h.id]=(bv().helpers[h.id]||0)+1; bv().helpersOwned=(bv().helpersOwned||0)+1;
+      recalc(); renderPanel(); showToast(h.emoji+' '+h.name+' joined the cafe!'); saveVault(); checkAchievements();
+    });
+    list.appendChild(row);
+  });
+  el.appendChild(list);
+}
+function renderUpgrades(el){
+  el.innerHTML='';
+  const list=document.createElement('div'); list.className='upgrade-list';
+  UPGRADES.forEach(up=>{
+    const bought=bv().upgrades.includes(up.id),canAfford=!bought&&Math.floor(bv().total)>=up.cost;
+    const row=document.createElement('div'); row.className='upgrade-row '+(bought?'bought':canAfford?'affordable':'cant-afford');
+    row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name}</div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${(!bought&&!canAfford)?'too-much':''}">🍪 ${fmt(up.cost)}</div>${bought?'<div class="upgrade-tick">✅</div>':''}`;
+    if(!bought)row.addEventListener('click',()=>{
+      if(Math.floor(bv().total)<up.cost)return;
+      bv().total-=up.cost; bv().upgrades.push(up.id);
+      recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' unlocked!'); saveVault(); checkAchievements();
+    });
+    list.appendChild(row);
+  });
+  el.appendChild(list);
+}
+function renderAchievements(el){
+  el.innerHTML='';
+  const grid=document.createElement('div'); grid.className='ach-grid';
+  ACHIEVEMENTS.forEach(a=>{
+    const unlocked=vault.achievements.includes(a.id);
+    const card=document.createElement('div'); card.className='ach-card '+(unlocked?'unlocked':'locked');
+    card.innerHTML=`<div class="ach-card-icon">${a.emoji}</div><div class="ach-card-name">${a.name}</div><div class="ach-card-desc">${a.desc}</div>${unlocked?'<div class="ach-card-badge">Earned!</div>':''}`;
+    grid.appendChild(card);
+  });
+  el.appendChild(grid);
+}
+function renderStats(el){
+  const totalHelpers=Object.values(bv().helpers).reduce((a,b)=>a+b,0);
+  const topChar=Object.entries(bv().charTaps).sort((a,b)=>b[1]-a[1])[0];
+  const topName=topChar&&topChar[1]>0?CHARACTERS[topChar[0]].emoji+' '+CHARACTERS[topChar[0]].name:'—';
+  const prestige=bv().prestige||0;
+  el.innerHTML=`
+    <div class="stats-section-title">🍪 Biscuits</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value">${fmt(bv().total)}</div><div class="stat-card-label">In the tin</div></div>
+      <div class="stat-card"><div class="stat-card-value">${fmt(bv().lifetime)}</div><div class="stat-card-label">Baked lifetime</div></div>
+      <div class="stat-card"><div class="stat-card-value">${productionRate>=1?fmt(productionRate):productionRate.toFixed(1)}</div><div class="stat-card-label">Per second</div></div>
+      <div class="stat-card"><div class="stat-card-value">${fmt(bv().clicks||0)}</div><div class="stat-card-label">Total taps</div></div>
+    </div>
+    <div class="stats-section-title">👨‍👩‍👧 Friends</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value" style="font-size:14px">${topName}</div><div class="stat-card-label">Most tapped</div></div>
+      <div class="stat-card"><div class="stat-card-value">${totalHelpers}</div><div class="stat-card-label">Helpers hired</div></div>
+      <div class="stat-card"><div class="stat-card-value">${bv().upgrades.length}</div><div class="stat-card-label">Upgrades</div></div>
+      <div class="stat-card"><div class="stat-card-value">${vault.achievements.filter(id=>id.startsWith('bt_')).length}/${ACHIEVEMENTS.length}</div><div class="stat-card-label">Goals earned</div></div>
+    </div>
+    <div class="stats-section-title">⭐ Prestige</div>
+    <div class="prestige-panel">
+      <h3>🌟 New Tin${prestige>0?' (Season '+(prestige+1)+')':''}</h3>
+      <p>Reset your biscuits and helpers for a permanent <strong>x${((bv().prestigeBonus||1)+0.5).toFixed(1)} production bonus</strong> forever.</p>
+      <p style="font-size:11px;color:var(--rose-deep);font-weight:800;margin-bottom:10px">Current bonus: x${(bv().prestigeBonus||1).toFixed(1)} · Lifetime: ${fmt(bv().lifetime)} / 100,000</p>
+      <button class="prestige-btn" id="prestigeBtn" ${bv().lifetime>=100000?'':'disabled'}>🌟 Start a New Season</button>
+    </div>`;
+  document.getElementById('prestigeBtn')?.addEventListener('click',doPrestige);
+}
+
+// ══ PRESTIGE ══
+function doPrestige(){
+  if(bv().lifetime<100000)return;
+  Audio.sfxPrestige();
+  bv().prestige=(bv().prestige||0)+1;
+  bv().prestigeBonus=(bv().prestigeBonus||1)+0.5;
+  bv().total=0; bv().helpers={}; bv().upgrades=[]; bv().helpersOwned=0;
+  recalc(); renderPanel(); updateHUD();
+  showToast('🌟 Season '+(bv().prestige+1)+' begins! x'+bv().prestigeBonus.toFixed(1)+' bonus','achievement');
+  saveNow(); checkAchievements();
+}
+
+// ══ ACHIEVEMENTS ══
+function checkAchievements(){
+  for(const a of ACHIEVEMENTS){
+    if(vault.achievements.includes(a.id))continue;
+    if(a.check(vault)){
+      vault.achievements.push(a.id); Audio.sfxAchievement();
+      showToast(a.emoji+' '+a.name+' unlocked!','achievement');
+      vault.happiness+=1; saveVault();
+      if(activeTab==='achievements')renderPanel();
+    }
+  }
+}
+
+// ══ TOAST ══
+let toastQueue=[],toastBusy=false;
+function showToast(msg,kind=''){
+  if(kind==='achievement'||kind==='milestone')toastQueue.unshift({msg,kind});
+  else toastQueue.push({msg,kind});
+  processToasts();
+}
+function processToasts(){
+  if(toastBusy||!toastQueue.length)return;
+  toastBusy=true;
+  const{msg,kind}=toastQueue.shift();
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+kind;
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>{toastBusy=false;processToasts();},380);},kind==='achievement'?2800:2000);
+}
+
+// ══ OFFLINE EARNINGS ══
+function checkOffline(){
+  const lastSave=bv().lastSave||Date.now(),elapsed=(Date.now()-lastSave)/1000;
+  if(elapsed<60||productionRate<=0)return;
+  const eff=Math.min(elapsed,4*3600),earned=Math.floor(productionRate*eff);
+  if(earned<1)return;
+  bv().total+=earned; bv().lifetime+=earned;
+  const h=Math.floor(eff/3600),m=Math.floor((eff%3600)/60);
+  document.getElementById('offlineMsg').textContent=`You were away for ${h>0?h+'h '+m+'m':m+'m'} and your helpers kept baking!`;
+  document.getElementById('offlineAmount').textContent='+'+fmt(earned)+' 🍪';
+  document.getElementById('offlineModal').classList.add('show');
+  saveVault();
+}
+document.getElementById('offlineCollect').addEventListener('click',()=>{
+  document.getElementById('offlineModal').classList.remove('show'); updateHUD();
+});
+
+// ══ AMBIENCE ══
+const TRAIL_EMOJIS={trail_petal:['🌸','🌼','✿','❀'],trail_star:['⭐','✨','🌟','💫'],trail_heart:['💗','💕','💖','♡'],trail_bubble:['🫧','○','◯','⚪'],trail_leaf:['🍃','🌿','☘️','🍀'],trail_snow:['❄️','❅','❆','✻'],trail_fire:['🔥','✨','💥','⭐']};
+function spawnPetal(){
+  const layer=document.getElementById('petalLayer'); if(!layer)return;
+  const trail=vault.equipped?.trail||'trail_petal',emojis=TRAIL_EMOJIS[trail]||TRAIL_EMOJIS.trail_petal;
+  const p=document.createElement('div'); p.className='petal';
+  p.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+  p.style.left=(Math.random()*90)+'%'; p.style.top='5px';
+  p.style.setProperty('--dx',(Math.random()*80-40)+'px');
+  p.style.animation=`petalDrift ${7+Math.random()*5}s linear forwards`;
+  layer.appendChild(p); setTimeout(()=>p.remove(),13000);
+}
+function maybeRain(){
+  if(Math.random()<0.3){
+    const rain=document.getElementById('sceneRain'); rain.innerHTML='';
+    for(let i=0;i<25;i++){
+      const d=document.createElement('div'); d.className='raindrop';
+      d.style.left=(Math.random()*100)+'%'; d.style.height=(12+Math.random()*16)+'px';
+      d.style.animationDuration=(0.5+Math.random()*0.5)+'s'; d.style.animationDelay=(Math.random()*0.8)+'s';
+      rain.appendChild(d);
+    }
+    rain.classList.add('active'); setTimeout(()=>rain.classList.remove('active'),18000+Math.random()*15000);
+  }
+}
+
+// ══ EVENTS ══
+const tinBtn=document.getElementById('tinBtn');
+let lastTapTime=0;
+function handleTinTap(x,y){const now=Date.now();if(now-lastTapTime<80)return;lastTapTime=now;doClick(x,y);}
+tinBtn.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];handleTinTap(t.clientX,t.clientY);},{passive:false});
+tinBtn.addEventListener('click',e=>{handleTinTap(e.clientX,e.clientY);});
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); activeTab=btn.dataset.tab; renderPanel();
+  });
+});
+
+const audioBtn=document.getElementById('audioBtn');
+audioBtn.addEventListener('click',()=>{
+  Audio.init();
+  if(Audio.isMusicPlaying()){Audio.stopMusic();audioBtn.classList.remove('active-audio');}
+  else{Audio.startMusic();audioBtn.classList.add('active-audio');}
+});
+
+document.getElementById('achBtn').addEventListener('click',()=>{
+  const achList=document.getElementById('achList'); achList.innerHTML='';
+  ACHIEVEMENTS.forEach(a=>{
+    const unlocked=vault.achievements.includes(a.id);
+    const card=document.createElement('div'); card.className='ach-card '+(unlocked?'unlocked':'locked');
+    card.innerHTML=`<div class="ach-card-icon">${a.emoji}</div><div class="ach-card-name">${a.name}</div><div class="ach-card-desc">${a.desc}</div>${unlocked?'<div class="ach-card-badge">Earned!</div>':''}`;
+    achList.appendChild(card);
+  });
+  document.getElementById('achModal').classList.add('show');
+});
+
+document.getElementById('shareBtn').addEventListener('click',()=>{
+  const text=`🍪 My Biscuit Tin\n${fmt(Math.floor(bv().lifetime))} biscuits baked · ${bv().clicks||0} taps\n⭐ Season ${(bv().prestige||0)+1} · x${(bv().prestigeBonus||1).toFixed(1)} bonus\n🏆 ${vault.achievements.filter(id=>id.startsWith('bt_')).length}/${ACHIEVEMENTS.length} goals\nPlay at jvdesignstudio.co.uk`;
+  if(navigator.share)navigator.share({text}).catch(()=>{});
+  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>showToast('Stats copied! 📋')).catch(()=>{});
+  else showToast('Sharing not available');
+});
+
+document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',e=>e.target.closest('.modal-backdrop').classList.remove('show')));
+document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.remove('show');}));
+setInterval(()=>{if(activeTab==='helpers'||activeTab==='upgrades')renderPanel();},2000);
+
+function checkDailyBonus(){
+  const today=new Date().toISOString().slice(0,10);
+  if(vault.biscuit_last_daily!==today){
+    vault.biscuit_last_daily=today; bv().total+=50; bv().lifetime+=50;
+    saveNow(); setTimeout(()=>showToast('Daily bonus! +50 🍪','achievement'),800);
+  }
+}
+
+// ══ INIT ══
+recalc(); seedMilestones();
+checkOffline(); // before tick so lastSave is fresh
+renderPanel(); updateHUD();
+lastTick=Date.now();
+requestAnimationFrame(tick);
+setInterval(spawnPetal,3500); spawnPetal();
+setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
+checkDailyBonus(); checkAchievements();
+</script>
+</body>
+</html>
