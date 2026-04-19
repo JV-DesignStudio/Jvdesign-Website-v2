@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JVDesignStudio Project Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a1612;--bg2:#211d18;--bg3:#2a2520;
+  --text:#F0EAD6;--muted:rgba(240,234,214,.55);
+  --border:rgba(240,234,214,.08);
+  --teal:#70A3A7;--rose:#BC4749;--tan:#D2B48C;--charcoal:#403B33;
+  --done:#2ecc71;--done-bg:rgba(46,204,113,.1);
+  --prog:#f1c40f;--prog-bg:rgba(241,196,15,.1);
+  --todo:#e74c3c;--todo-bg:rgba(231,76,60,.08);
+  --idea:#9b59b6;--idea-bg:rgba(155,89,182,.1);
+  --broken:#e74c3c;--broken-bg:rgba(231,76,60,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
+a{color:var(--teal);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.header{padding:32px 24px 24px;text-align:center;border-bottom:1px solid var(--border)}
+.header h1{font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:6px}
+.header p{font-size:.88rem;color:var(--muted);max-width:500px;margin:0 auto}
+
+.tabs{display:flex;gap:6px;padding:20px 24px 0;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+.tab{padding:8px 16px;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab:hover{border-color:rgba(240,234,214,.3);color:var(--text)}
+.tab.active{background:var(--teal);border-color:var(--teal);color:white}
+
+.panel{display:none;padding:20px 24px;max-width:1200px;margin:0 auto}
+.panel.active{display:block}
+.panel-title{font-family:'Fredoka',cursive;font-size:1.4rem;font-weight:700;color:white;margin-bottom:4px}
+.panel-sub{font-size:.82rem;color:var(--muted);margin-bottom:20px}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+@media(max-width:500px){.card-grid{grid-template-columns:1fr}}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
+.card:hover{border-color:rgba(112,163,167,.3)}
+.card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card-num{font-size:.65rem;font-weight:800;color:var(--muted);background:var(--bg3);padding:3px 8px;border-radius:6px;flex-shrink:0}
+.card-title{font-family:'Fredoka',cursive;font-size:1.05rem;font-weight:700;color:white;flex:1;min-width:0;line-height:1.25}
+.card-badge{font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;flex-shrink:0;white-space:nowrap}
+.badge-done{background:var(--done-bg);color:var(--done);border:1px solid rgba(46,204,113,.25)}
+.badge-prog{background:var(--prog-bg);color:var(--prog);border:1px solid rgba(241,196,15,.25)}
+.badge-todo{background:var(--todo-bg);color:var(--todo);border:1px solid rgba(231,76,60,.2)}
+.badge-idea{background:var(--idea-bg);color:var(--idea);border:1px solid rgba(155,89,182,.25)}
+.badge-broken{background:var(--broken-bg);color:var(--broken);border:1px solid rgba(231,76,60,.3);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+.card-meta{display:flex;flex-wrap:wrap;gap:5px}
+.meta-pill{font-size:.68rem;font-weight:600;color:var(--tan);background:rgba(210,180,140,.08);border:1px solid rgba(210,180,140,.15);padding:3px 9px;border-radius:999px}
+
+.progress-row{display:flex;gap:12px;align-items:center}
+.progress-label{font-size:.68rem;font-weight:700;color:var(--muted);width:75px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em}
+.progress-track{flex:1;height:6px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width .6s}
+.progress-pct{font-size:.7rem;font-weight:800;width:36px;text-align:right;flex-shrink:0}
+
+.card-note{font-size:.8rem;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
+.card-note strong{color:var(--text);font-weight:700}
+
+.summary-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.summary-stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;flex-direction:column;align-items:center;min-width:80px}
+.summary-num{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:white}
+.summary-label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 JVDesignStudio Project Tracker</h1>
+  <p>Everything in one place — books, games, workshops, site pages, monetisation, and bugs.</p>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="books">📚 Books</button>
+  <button class="tab" data-tab="games">🎮 Games</button>
+  <button class="tab" data-tab="workshops">🔧 Workshops</button>
+  <button class="tab" data-tab="pages">🌐 Site Pages</button>
+  <button class="tab" data-tab="money">💰 Monetisation</button>
+  <button class="tab" data-tab="bugs">🐛 Bugs</button>
+</div>
+
+<!-- ══ BOOKS ══ -->
+<div class="panel active" id="panel-books">
+  <div class="panel-title">📚 Children's Books</div>
+  <div class="panel-sub">10 projects  4 published, 1 in progress, 2 writing, 3 ideas</div>
+  <div class="summary-strip">
+    <div class="summary-stat"><div class="summary-num" style="color:var(--done)">4</div><div class="summary-label">Published</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">1</div><div class="summary-label">In Progress</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">2</div><div class="summary-label">Writing</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--idea)">3</div><div class="summary-label">Ideas</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--todo)">0</div><div class="summary-label">KDP Ready</div></div>
+  </div>
+  <div class="card-grid" id="books-grid"></div>
+</div>
+
+<!-- ══ GAMES ══ -->
+<div class="panel" id="panel-games">
+  <div class="panel-title">🎮 Browser Games</div>
+  <div class="panel-sub">16 games tracked  11 mobile-friendly, 2 desktop-only, 2 unintegrated</div>
+  <div class="summary-strip">
+    <div class="summary-stat"><div class="summary-num" style="color:var(--done)">14</div><div class="summary-label">Live</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--teal)">11</div><div class="summary-label">Mobile Hub</div></div>
+    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">2</div><div class="summary-label">Not Integrated</div></div>
+  </div>
+  <div class="card-grid" id="games-grid"></div>
+</div>
+
+<!-- ══ WORKSHOPS ══ -->
+<div class="panel" id="panel-workshops">
+  <div class="panel-title">🔧 Workshops & Courses</div>
+  <div class="panel-sub">14 courses all live. 6 live builders, 3 Godot, 2 MUGEN, 2 misc.</div>
+  <div class="card-grid" id="workshops-grid"></div>
+</div>
+
+<!-- ══ SITE PAGES ══ -->
+<div class="panel" id="panel-pages">
+  <div class="panel-title">🌐 Site Pages & Infrastructure</div>
+  <div class="panel-sub">21 pages tracked. Newsletter is broken highest priority fix.</div>
+  <div class="card-grid" id="pages-grid"></div>
+</div>
+
+<!-- ══ MONETISATION ══ -->
+<div class="panel" id="panel-money">
+  <div class="panel-title">💰 Monetisation Channels</div>
+  <div class="panel-sub">7 channels — 2 live, 1 in progress, 3 not started, 1 broken.</div>
+  <div class="card-grid" id="money-grid"></div>
+</div>
+
+<!-- ══ BUGS ══ -->
+<div class="panel" id="panel-bugs">
+  <div class="panel-title">🐛 Known Bugs & Tech Debt</div>
+  <div class="panel-sub">10 issues tracked. Newsletter is #1 priority.</div>
+  <div class="card-grid" id="bugs-grid"></div>
+</div>
+
+<script>
+// ── TAB SWITCHING ──
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+function badgeClass(s) {
+  s = (s||'').toLowerCase();
+  if (['done','live','shipped','complete','published'].includes(s)) return 'badge-done';
+  if (['in progress','writing','illustrating','building','fixing'].includes(s)) return 'badge-prog';
+  if (['not started','planned','to do','todo'].includes(s)) return 'badge-todo';
+  if (['idea','early idea','concept'].includes(s)) return 'badge-idea';
+  if (['broken','blocked','bug'].includes(s)) return 'badge-broken';
+  return 'badge-prog';
+}
+
+function progressBar(label, pct, color) {
+  const w = pct === '???' ? 0 : parseInt(pct);
+  return `<div class="progress-row">
+    <span class="progress-label">${label}</span>
+    <div class="progress-track"><div class="progress-fill" style="width:${w}%;background:${color}"></div></div>
+    <span class="progress-pct" style="color:${color}">${pct}</span>
+  </div>`;
+}
+
+function renderCards(gridId, cards) {
+  document.getElementById(gridId).innerHTML = cards.map((c,i) => `
+    <div class="card">
+      <div class="card-top">
+        <span class="card-num">${i+1}</span>
+        <span class="card-title">${c.title}</span>
+        <span class="card-badge ${badgeClass(c.status)}">${c.status}</span>
+      </div>
+      ${c.meta ? `<div class="card-meta">${c.meta.map(m=>`<span class="meta-pill">${m}</span>`).join('')}</div>` : ''}
+      ${c.progress ? c.progress.map(p => progressBar(p[0],p[1],p[2]||'#70A3A7')).join('') : ''}
+      ${c.note ? `<div class="card-note">${c.note}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ══ DATA ══
+
+renderCards('books-grid', [
+  { title:'Lumo and the Grumble-Grit', status:'Published', meta:['Ages 4–8','Free PDF','On Site'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['Layout','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Live on site. Free PDF available. <strong>Next:</strong> Prep for Amazon KDP once artwork finalised.' },
+  { title:'Pip and the Night Sky', status:'Published', meta:['Ages 4–7','Free PDF','2 Games'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Two browser games built around this book (Star Connect + Night Sky).' },
+  { title:"Stardust's Cosmic Adventure", status:'Published', meta:['Ages 4–7','On Site','1 Game'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Stardust Collector browser game built around this book.' },
+  { title:'Elara and the Wire-Web Key', status:'Published', meta:['Ages 5–8','On Site'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Live on site.' },
+  { title:'Echo and the Mountain of Choices', status:'In Progress', meta:['Ages 5–8','Teaser Live'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','40%','#f1c40f'],['Layout','0%','#e74c3c'],['KDP','0%','#e74c3c']], note:'Manuscript done. <strong>Illustration in progress (40%).</strong> Free PDF planned for launch. Teaser page live.' },
+  { title:'The Seed That Waited', status:'Writing', meta:['Ages 4–7','Patience/Growth'], progress:[['Manuscript','55%','#f1c40f'],['Illustration','0%','#e74c3c']], note:'Working title. Patience and growth theme.' },
+  { title:'The Fox Who Forgot How to Play', status:'Writing', meta:['Ages 5–8','Play/Burnout'], progress:[['Manuscript','30%','#f1c40f'],['Illustration','0%','#e74c3c']], note:'Play and burnout theme.' },
+  { title:'Where Do Worries Go at Night?', status:'Early Idea', meta:['Ages 4–7','Anxiety/Comfort'], progress:[['Manuscript','10%','#9b59b6'],['Illustration','0%','#e74c3c']], note:'Very early. Anxiety and comfort theme.' },
+  { title:"The Crab Who Couldn't Let Go", status:'Early Idea', meta:['Ages 5–9','Letting Go'], progress:[['Manuscript','5%','#9b59b6'],['Illustration','0%','#e74c3c']], note:'Very early. Letting-go theme.' },
+  { title:'Secret Project', status:'Idea', meta:['TBD','Watch This Space'], note:'Mentioned on next_book_projects page. No details public yet.' },
+]);
+
+renderCards('games-grid', [
+  { title:'Sky High Squirt & Friends', status:'Live', meta:['📱 Mobile','Endless Bouncer','Featured on Hub','Tilt Controls','Shop','15 Achievements'], note:'Doodle-Jump-style. Character unlocks, coin shop, hats/skins/auras, daily streak. <strong>Featured</strong> on Mobile Games Hub.' },
+  { title:"Roar's Tiger Smash", status:'Live', meta:['📱 Mobile','Brick Breaker','Squirt Universe'], note:'Paddle/ball unlocks. Part of Sky High Squirt universe.' },
+  { title:'Biscuit Tin — Cozy Clicker', status:'Live', meta:['📱 Mobile','Idle Clicker','Cozy Universe'], note:'Same cozy universe as Cozy Cafe Match.' },
+  { title:'Cozy Cafe Match', status:'Live', meta:['📱 Mobile','Match-3','No Timer','Cozy'], note:'Gentle match-3. No cover image yet — uses emoji gradient placeholder.' },
+  { title:"Pip's Star Connect", status:'Live', meta:['📱 Mobile','Tap Puzzle','Book Tie-in'], note:'Was <strong>broken</strong> (truncated file) — fixed this session.' },
+  { title:"Pip's Night Sky", status:'Live', meta:['📱 Mobile','Exploration','Book Tie-in'], note:'Constellation puzzle tied to the Pip book.' },
+  { title:"Echo's Fruit Catch", status:'Live', meta:['📱 Mobile','Tilt Game','Ages 3+'], note:'Tilt phone to catch fruit. Made for young players.' },
+  { title:"Lumo's Firefly Shooter", status:'Live', meta:['📱 Mobile','Bubble Shooter'], note:'' },
+  { title:'Gem Match', status:'Live', meta:['📱 Mobile','Match-3','Timer','Leaderboard'], note:'The competitive match-3 (2 min timer, global leaderboard) vs Cozy Cafe\'s relaxed one.' },
+  { title:'VoidRush', status:'Live', meta:['📱 Mobile','Runner','Swipe Controls'], note:'Neon space runner.' },
+  { title:'Stardust Collector', status:'Live', meta:['📱 Mobile','Runner','Book Tie-in'], note:'Tied to the Stardust book.' },
+  { title:'Arcane Citadel', status:'Live', meta:['🖥 Desktop Only','Tower Defence','Roguelite'], note:'No touch handlers. Desktop only. Not on Mobile Hub.' },
+  { title:'Crypt Crawlers', status:'Live', meta:['🖥 Desktop Only','Dungeon Crawler','Keyboard'], note:'Desktop RPG. Not on Mobile Hub.' },
+  { title:'Little Steps', status:'Live', meta:['📱 Mobile','Endless Runner','Dream Sparks Currency'], note:'Temple Run style. Uses localStorage. Not on Mobile Hub yet.' },
+  { title:'Cozy Cafe Match (old version?)', status:'Not started', meta:['⚠️ Not Integrated','cozy-cafe-match.html'], note:'<strong>Check if duplicate or different game.</strong> File exists but not linked anywhere.' },
+  { title:'Dungeon Delve', status:'Not started', meta:['⚠️ Not Integrated','dungeon-delve.html'], note:'<strong>File exists in project but not linked from any page.</strong> Card game? Needs investigation.' },
+]);
+
+renderCards('workshops-grid', [
+  { title:'JavaScript Platformer Builder', status:'Live', meta:['JavaScript','10 Steps','Live Builder'], note:'Fill in values, game updates live.' },
+  { title:'Python Game Builder', status:'Live', meta:['Python','10 Steps','Live Builder'], note:'Dodge-and-collect game.' },
+  { title:'C++ Tower Defence Builder', status:'Live', meta:['C++','20 Steps','Live Builder'], note:'Grid, towers, enemies, waves, upgrades, boss scaling.' },
+  { title:'GML Shooter Trainer', status:'Live', meta:['GML/GameMaker','12 Levels','Live Code'], note:'GML-style live code execution. Green theme.' },
+  { title:'Sci-Fi Runner Builder', status:'Live', meta:['JavaScript','10 Steps','Cyan Theme'], note:'Lane-based runner.' },
+  { title:'MUGEN Workshop', status:'Live', meta:['MUGEN','3 Parts','10 Downloads'], note:'Basics, Fighter Factory 3, Stage creation.' },
+  { title:'Add Your Own Stage (MUGEN)', status:'Live', meta:['MUGEN','7 Steps','Starter Pack'], note:'<strong>NEW this session.</strong> Beginner lesson. Starter pack: .def + 2 PNGs.' },
+  { title:'Build Space Invaders', status:'Live', meta:['Godot 4','11 Chapters'], note:'Full Space Invaders clone.' },
+  { title:'Roblox Creator Journey', status:'Live', meta:['Roblox Studio','Multi-step'], note:'T-shirts, clothing, 3D accessories.' },
+  { title:'Godot 4 Starter Templates', status:'Live', meta:['Godot 4','4 Projects','Download'], note:'4 downloadable projects. <strong>⚠️ ZIP files may be missing from server.</strong>' },
+  { title:'Godot 4 Tutorial PDF', status:'Live', meta:['Godot 4','9 Modules','Free PDF'], note:'On freebies page too.' },
+  { title:'Pirate Ship Builder', status:'Live', meta:['JavaScript','⚠️ Not on Workshop Page'], note:'pirate-ship-builder.html exists but isn\'t linked from workshop.html.' },
+  { title:'Pirate Cannon Builder', status:'Live', meta:['JavaScript','⚠️ Not on Workshop Page'], note:'pirate-cannon-builder.html exists but isn\'t linked from workshop.html.' },
+]);
+
+renderCards('pages-grid', [
+  { title:'Homepage', status:'Live', meta:['index.html','Core'], note:'Mobile nav fix applied this session. Games count = 12.' },
+  { title:'Content Hub', status:'Live', meta:['content_hub.html','Core'], note:'Full catalogue. Dark mode toggle. All games/books/workshops.' },
+  { title:'Mobile Games Hub', status:'Live', meta:['mobile-games.html','Core'], note:'<strong>NEW this session.</strong> 11 mobile-friendly games. Phone-first layout.' },
+  { title:'Search', status:'Live', meta:['search.html','Core'], note:'All entries up to date.' },
+  { title:'Workshop Hub', status:'Live', meta:['workshop.html','Workshop'], note:'Stats: 13 courses, 6 live builders, 17+ downloads.' },
+  { title:'Free Downloads', status:'Live', meta:['freebies.html','Freebies'], note:'MUGEN starter pack added this session.' },
+  { title:'Videos', status:'Live', meta:['videos.html','Content'], note:'<strong>Rebuilt this session.</strong> No more iframe embeds — click-to-YouTube cards.' },
+  { title:'Dev Log', status:'Live', meta:['devlog.html','Content'], note:'25 entries. Latest: Sky High Squirt + Mobile Hub.' },
+  { title:'Newsletter', status:'Broken', meta:['newsletter.html','Studio','⚠️ HIGH PRIORITY'], note:'<strong>Shows alert("coming soon") instead of collecting emails.</strong> Needs real email service (Mailchimp / Buttondown / etc).' },
+  { title:'Discovery Session', status:'Live', meta:['discovery_session.html','Studio'], note:'Image fixes applied. Still has <strong>6 missing cover images</strong>.' },
+  { title:'For Schools', status:'Live', meta:['for-schools.html','Studio'], note:'Image fixes applied this session.' },
+  { title:'About', status:'Live', meta:['about.html','Studio'], note:'' },
+  { title:'Contact', status:'Live', meta:['contact.html','Studio'], note:'' },
+  { title:'Press Kit', status:'Live', meta:['press.html','Studio'], note:'' },
+  { title:'Merch', status:'Live', meta:['merch.html','Monetisation'], note:'Printify merch. <strong>Status unclear — needs review.</strong>' },
+  { title:'Sitemap (HTML)', status:'Live', meta:['sitemap.html','SEO'], note:'Updated with all new pages this session.' },
+  { title:'Sitemap (XML)', status:'Live', meta:['sitemap.xml','SEO'], note:'Updated with all new URLs this session.' },
+  { title:'Colouring Book', status:'Live', meta:['colouring-book.html','Freebies'], note:'References missing <strong>Colour In Pages.pdf</strong>.' },
+  { title:'Next Book Projects', status:'Live', meta:['next_book_projects.html','Content'], note:'6 books tracked with progress bars.' },
+  { title:'Learn', status:'Live', meta:['learn.html','Workshop'], note:'Alternative entry to workshop content.' },
+  { title:'404 Page', status:'Live', meta:['404.html','Core'], note:'' },
+]);
+
+renderCards('money-grid', [
+  { title:'Itch.io', status:'Live', meta:['joshhyyy.itch.io','Pay-what-you-want'], note:'<strong>Next:</strong> Add Sky High Squirt, Tiger Smash, Biscuit Tin, Cozy Cafe to Itch.' },
+  { title:'Ko-fi', status:'Live', meta:['Tip Jar','In Footers'], note:'Working. Tip jar linked in site footers.' },
+  { title:'Printify Merch', status:'In Progress', meta:['Character Merch','Lumo, Echo, Pip'], note:'<strong>Next:</strong> Expand with new character designs. merch.html exists.' },
+  { title:'Gumroad', status:'Not started', meta:['Paid PDFs','Godot Tutorial'], note:'<strong>Next:</strong> Package Godot 4 tutorial as paid PDF. Set pricing.' },
+  { title:'Etsy', status:'Not started', meta:['Printable Activity Packs'], note:'<strong>Next:</strong> Design and list premium printable activity packs.' },
+  { title:'Amazon KDP', status:'Not started', meta:['Self-Publishing','Picture Books'], note:'<strong>Blocked:</strong> Need book artwork complete first. Start with Lumo or Pip.' },
+  { title:'Newsletter / Email List', status:'Broken', meta:['⚠️ HIGHEST PRIORITY','Email Capture'], note:'<strong>Currently just shows an alert.</strong> Can\'t promote launches without an email list. Need Mailchimp, Buttondown, or similar.' },
+]);
+
+renderCards('bugs-grid', [
+  { title:'Newsletter signup broken', status:'Broken', meta:['newsletter.html','High Priority'], note:'Shows alert("coming soon") instead of collecting emails. <strong>Needs real email service integration.</strong>' },
+  { title:'7 missing cover images', status:'Not started', meta:['discovery_session, index, content_hub','Medium'], note:'CryptCrawlers_Cover, GodotTemplates_Cover, JSPlatformer_Cover, PythonBuilder_Cover, SpaceInvaders_Cover, WebsiteArticle_Cover — files don\'t exist on disk.' },
+  { title:'4 missing Godot template ZIPs', status:'Not started', meta:['godot_templates.html','Medium'], note:'asteroids_template.zip, platformer_template.zip, space_invaders_template.zip, tower_defence_template.zip — not on disk.' },
+  { title:'dungeon.def missing', status:'Not started', meta:['mugen-workshop.html','Low'], note:'Download link for dungeon.def template — file doesn\'t exist on server.' },
+  { title:'Colour In Pages.pdf missing', status:'Not started', meta:['colouring-book.html','Low'], note:'Download link broken — PDF not on disk.' },
+  { title:'YouTube VIDEO_ID placeholders', status:'Not started', meta:['index.html','Low'], note:'YouTube video section on homepage uses placeholder VIDEO_ID values needing replacement with real IDs.' },
+  { title:'Nav not consistent across pages', status:'In Progress', meta:['Various pages','Low'], note:'📱 Mobile link added to index + content_hub. Still missing from workshop, freebies, videos, devlog, about, etc.' },
+  { title:'Duplicate cozy-cafe files', status:'Not started', meta:['cozy-cafe-match.html','Low'], note:'cozy-cafe-match.html AND cozy-cafe-match-game.html both exist. Are they duplicates or different versions?' },
+  { title:'dungeon-delve.html orphaned', status:'Not started', meta:['dungeon-delve.html','Low'], note:'File exists in project but not linked from any page.' },
+  { title:'Google Analytics', status:'Done', meta:['All pages','Info'], note:'G-3JBXCCNY4C added across all pages. No action needed.' },
+]);
+</script>
+</body>
+</html>
