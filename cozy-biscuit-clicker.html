@@ -129,6 +129,13 @@ body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var
 .upgrade-cost{font-size:12px;font-weight:800;color:var(--cocoa-soft);flex-shrink:0}
 .upgrade-cost.too-much{color:var(--cream-deep)}
 .upgrade-tick{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:18px}
+.upgrade-lvl{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:'Fraunces',serif;font-size:12px;font-weight:700;color:var(--mint-deep);background:var(--mint);border-radius:100px;padding:2px 8px}
+.event-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,var(--sun),#E8A830);border:3px solid #C88A10;border-radius:22px;padding:18px 24px;text-align:center;z-index:400;box-shadow:0 12px 40px rgba(74,53,40,.3);cursor:pointer;transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-width:300px;width:88vw}
+.event-banner.show{transform:translate(-50%,-50%) scale(1)}
+.event-banner-emoji{font-size:48px;margin-bottom:6px}
+.event-banner-title{font-family:'Fraunces',serif;font-size:20px;font-weight:900;color:var(--cocoa);margin-bottom:4px}
+.event-banner-desc{font-size:13px;color:var(--cocoa-soft);margin-bottom:12px;line-height:1.5}
+.event-banner-btn{background:var(--cocoa);color:var(--cream);border:none;border-radius:100px;padding:10px 22px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;cursor:pointer}
 
 /* ACHIEVEMENTS */
 .ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -240,18 +247,21 @@ body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var
       </div>
       <div class="char-seat" id="cs-tiger" data-char="tiger">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-tiger" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-hat" id="hat-tiger"></div>
         <div class="char-emoji">🐯</div>
         <div class="cooldown-timer" id="timer-tiger"></div>
         <div class="char-label">Tiger</div>
       </div>
       <div class="char-seat" id="cs-turtle" data-char="turtle">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-turtle" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-hat" id="hat-turtle"></div>
         <div class="char-emoji">🐢</div>
         <div class="cooldown-timer" id="timer-turtle"></div>
         <div class="char-label">Turtle</div>
       </div>
       <div class="char-seat" id="cs-axolotl" data-char="axolotl">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-axolotl" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
+        <div class="char-hat" id="hat-axolotl"></div>
         <div class="char-emoji">🌸</div>
         <div class="cooldown-timer" id="timer-axolotl"></div>
         <div class="char-label">Axolotl</div>
@@ -272,6 +282,7 @@ body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var
     <button class="tab-btn active" data-tab="helpers"><span class="tab-icon">🏡</span>Helpers</button>
     <button class="tab-btn" data-tab="upgrades"><span class="tab-icon">⚡</span>Upgrades</button>
     <button class="tab-btn" data-tab="achievements"><span class="tab-icon">🏆</span>Goals</button>
+    <button class="tab-btn" data-tab="daily"><span class="tab-icon">📅</span>Daily</button>
     <button class="tab-btn" data-tab="stats"><span class="tab-icon">📊</span>Stats</button>
   </div>
   <div class="panel" id="panel"></div>
@@ -284,6 +295,12 @@ body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="event-banner" id="eventBanner">
+  <div class="event-banner-emoji" id="eventEmoji">🌟</div>
+  <div class="event-banner-title" id="eventTitle">Golden Biscuit!</div>
+  <div class="event-banner-desc" id="eventDesc">Tap to collect your bonus!</div>
+  <button class="event-banner-btn" id="eventBtn">Collect!</button>
+</div>
 
 <div class="modal-backdrop" id="bioModal">
   <div class="modal">
@@ -394,7 +411,7 @@ function defaultVault(){
     equipped:{background:'cafe_default',trail:'trail_petal',skin:'skin_default'},
     achievements:[],
     stats:{matches:0,guests_served:0,max_combo:0,max_streak:0,lifetime_coins:0,powerups_made:0,rainbows_made:0,guests_each:{}},
-    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()}};
+    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()}};
 }
 function loadVault(){
   try{
@@ -425,61 +442,109 @@ const CHARACTERS={
   axolotl:{emoji:'🌸',name:'The Axolotl',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'The Axolotl believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
 };
 const HELPERS=[
-  {id:'oven',    emoji:'🫙',name:'Cookie Jar',    desc:'Biscuits appear as if by magic',       baseCost:10,    baseRate:0.1, costMult:1.15},
-  {id:'kettle',  emoji:'🫖',name:'Kettle',        desc:'Hot tea makes everyone bake faster',   baseCost:80,    baseRate:0.5, costMult:1.15},
-  {id:'mixer',   emoji:'🌀',name:'Stand Mixer',   desc:'Whips up batter in moments',           baseCost:450,   baseRate:2.2, costMult:1.15},
-  {id:'cat',     emoji:'🐈',name:'Cafe Cat',      desc:'Somehow makes biscuits appear faster', baseCost:2000,  baseRate:8,   costMult:1.15},
-  {id:'recipe',  emoji:'📖',name:'Secret Recipe', desc:'Ancient baking knowledge unlocked',    baseCost:9000,  baseRate:28,  costMult:1.15},
-  {id:'fox_bake',emoji:'🦊',name:"Fox's Kitchen", desc:'The Fox leads a baking brigade',       baseCost:30000, baseRate:80,  costMult:1.15},
-  {id:'sparkle', emoji:'✨',name:'Magic Sprinkles',desc:'Enchanted sprinkles multiply output', baseCost:100000,baseRate:220, costMult:1.15},
+  {id:'oven',    emoji:'🫙',name:'Cookie Jar',     desc:'Biscuits appear as if by magic',          baseCost:10,     baseRate:0.1,  costMult:1.15},
+  {id:'kettle',  emoji:'🫖',name:'Kettle',         desc:'Hot tea makes everyone bake faster',      baseCost:80,     baseRate:0.5,  costMult:1.15},
+  {id:'mixer',   emoji:'🌀',name:'Stand Mixer',    desc:'Whips up batter in moments',              baseCost:450,    baseRate:2.2,  costMult:1.15},
+  {id:'cat',     emoji:'🐈',name:'Cafe Cat',       desc:'Somehow makes biscuits appear faster',    baseCost:2000,   baseRate:8,    costMult:1.15},
+  {id:'recipe',  emoji:'📖',name:'Secret Recipe',  desc:'Ancient baking knowledge unlocked',       baseCost:9000,   baseRate:28,   costMult:1.15},
+  {id:'fox_bake',emoji:'🦊',name:"Fox's Kitchen",  desc:'The Fox leads a baking brigade',          baseCost:30000,  baseRate:80,   costMult:1.15},
+  {id:'sparkle', emoji:'✨',name:'Magic Sprinkles', desc:'Enchanted sprinkles multiply output',    baseCost:100000, baseRate:220,  costMult:1.15},
+  {id:'bakery',  emoji:'🏪',name:'Cozy Bakery',    desc:'A whole bakery dedicated to biscuits',   baseCost:400000, baseRate:600,  costMult:1.15},
+  {id:'wizard',  emoji:'🧙',name:'Biscuit Wizard',  desc:'Uses ancient spells to conjure biscuits',baseCost:1500000,baseRate:1600, costMult:1.15},
+  {id:'factory', emoji:'🏭',name:'Biscuit Factory', desc:'Industrial-scale cozy production',      baseCost:6000000,baseRate:4500, costMult:1.15},
 ];
 const UPGRADES=[
-  {id:'better_hands', emoji:'🤲',name:'Floury Hands',   desc:'2x biscuits per tap',       cost:75,    type:'click', mult:2},
-  {id:'baking_gloves',emoji:'🧤',name:'Baking Gloves',  desc:'2x biscuits per tap',       cost:500,   type:'click', mult:2},
-  {id:'golden_spoon', emoji:'🥄',name:'Golden Spoon',   desc:'3x biscuits per tap',       cost:2500,  type:'click', mult:3},
-  {id:'cozy_vibes',   emoji:'🕯️',name:'Cosy Vibes',     desc:'4x biscuits per tap',       cost:15000, type:'click', mult:4},
-  {id:'jar_lid',      emoji:'🍯',name:'Better Jar Lid', desc:'2x Cookie Jar output',      cost:150,   type:'helper',target:'oven',   mult:2},
-  {id:'loose_leaf',   emoji:'🌿',name:'Loose-Leaf Tea', desc:'2x Kettle output',          cost:900,   type:'helper',target:'kettle', mult:2},
-  {id:'bowl_attach',  emoji:'🥣',name:'Extra Bowl',     desc:'2x Mixer output',           cost:5000,  type:'helper',target:'mixer',  mult:2},
-  {id:'cat_nap',      emoji:'😴',name:'Power Nap',      desc:'2x Cat output',             cost:22000, type:'helper',target:'cat',    mult:2},
-  {id:'ink_pen',      emoji:'🖊️',name:'Ink Pen',        desc:'2x Recipe output',          cost:90000, type:'helper',target:'recipe', mult:2},
-  {id:'cozy_decor',   emoji:'🌸',name:'Cosy Decor',     desc:'1.5x all biscuit output',   cost:6000,  type:'global',mult:1.5},
-  {id:'full_cafe',    emoji:'🏡',name:'Full House',     desc:'2x all biscuit output',     cost:60000, type:'global',mult:2},
+  // ── One-time click upgrades ──
+  {id:'better_hands',  emoji:'🤲',name:'Floury Hands',     desc:'2x biscuits per tap',              cost:75,      type:'click', mult:2},
+  {id:'baking_gloves', emoji:'🧤',name:'Baking Gloves',    desc:'2x biscuits per tap',              cost:500,     type:'click', mult:2},
+  {id:'golden_spoon',  emoji:'🥄',name:'Golden Spoon',     desc:'3x biscuits per tap',              cost:2500,    type:'click', mult:3},
+  {id:'cozy_vibes',    emoji:'🕯️',name:'Cosy Vibes',       desc:'4x biscuits per tap',              cost:15000,   type:'click', mult:4},
+  {id:'enchanted_tap', emoji:'🪄',name:'Enchanted Tap',    desc:'5x biscuits per tap',              cost:200000,  type:'click', mult:5},
+  {id:'biscuit_master',emoji:'👑',name:'Biscuit Master',   desc:'6x biscuits per tap',              cost:2000000, type:'click', mult:6},
+  // ── One-time helper upgrades ──
+  {id:'jar_lid',       emoji:'🍯',name:'Better Jar Lid',   desc:'2x Cookie Jar output',             cost:150,     type:'helper',target:'oven',    mult:2},
+  {id:'loose_leaf',    emoji:'🌿',name:'Loose-Leaf Tea',   desc:'2x Kettle output',                 cost:900,     type:'helper',target:'kettle',  mult:2},
+  {id:'bowl_attach',   emoji:'🥣',name:'Extra Bowl',       desc:'2x Mixer output',                  cost:5000,    type:'helper',target:'mixer',   mult:2},
+  {id:'cat_nap',       emoji:'😴',name:'Power Nap',        desc:'2x Cat output',                    cost:22000,   type:'helper',target:'cat',     mult:2},
+  {id:'ink_pen',       emoji:'🖊️',name:'Ink Pen',          desc:'2x Recipe output',                 cost:90000,   type:'helper',target:'recipe',  mult:2},
+  {id:'fox_apron',     emoji:'👘',name:"Fox's Apron",      desc:"2x Fox's Kitchen output",          cost:350000,  type:'helper',target:'fox_bake',mult:2},
+  {id:'glitter_jar',   emoji:'🌟',name:'Glitter Jar',      desc:'2x Magic Sprinkles output',        cost:1200000, type:'helper',target:'sparkle', mult:2},
+  {id:'grand_sign',    emoji:'🪧',name:'Grand Opening Sign',desc:'2x Cozy Bakery output',           cost:5000000, type:'helper',target:'bakery',  mult:2},
+  {id:'spellbook',     emoji:'📚',name:'Spellbook',        desc:'2x Biscuit Wizard output',         cost:18000000,type:'helper',target:'wizard',  mult:2},
+  // ── One-time global multipliers ──
+  {id:'cozy_decor',    emoji:'🌸',name:'Cosy Decor',       desc:'1.5x all biscuit output',          cost:6000,    type:'global',mult:1.5},
+  {id:'full_cafe',     emoji:'🏡',name:'Full House',       desc:'2x all biscuit output',            cost:60000,   type:'global',mult:2},
+  {id:'warm_lights',   emoji:'💡',name:'Warm Lights',      desc:'2x all biscuit output',            cost:500000,  type:'global',mult:2},
+  {id:'cozy_anthem',   emoji:'🎵',name:'Cozy Anthem',      desc:'3x all biscuit output',            cost:5000000, type:'global',mult:3},
+  {id:'golden_tin',    emoji:'🏅',name:'Golden Tin',       desc:'4x all biscuit output',            cost:50000000,type:'global',mult:4},
+  // ── Repeatable upgrades (can be bought multiple times, cost scales) ──
+  {id:'flour_sack',    emoji:'🌾',name:'Flour Sack',       desc:'+10% biscuits per tap each time',  cost:300,     type:'repeat_click', mult:1.1, costMult:2.2},
+  {id:'secret_spice',  emoji:'🫙',name:'Secret Spice',     desc:'+15% all production each time',    cost:2000,    type:'repeat_global',mult:1.15,costMult:2.5},
+  {id:'cozy_chair',    emoji:'🪑',name:'Cosy Chair',       desc:'+20% biscuits per tap each time',  cost:50000,   type:'repeat_click', mult:1.2, costMult:3.0},
+  {id:'moon_yeast',    emoji:'🌙',name:'Moon Yeast',       desc:'+25% all production each time',    cost:500000,  type:'repeat_global',mult:1.25,costMult:3.5},
 ];
 const MILESTONES=[
-  {n:100,   msg:'100 biscuits baked! The tin is filling up! 🍪'},
-  {n:500,   msg:'500 biscuits! The cafe smells amazing. ☕'},
-  {n:1000,  msg:'1,000 biscuits! You could open a bakery! 🏪'},
-  {n:5000,  msg:'5,000 biscuits! The friends are very pleased. 🦊'},
-  {n:10000, msg:'10,000 biscuits! A legendary baker! 🏆'},
-  {n:50000, msg:'50,000 biscuits! The tin never empties. ✨'},
-  {n:100000,msg:'100,000 biscuits! You may now Prestige! 🌟'},
-  {n:500000,msg:'500,000 biscuits! A biscuit empire! 💎'},
-  {n:1e6,   msg:'One million biscuits! Truly legendary. 👑'},
+  {n:100,    msg:'100 biscuits baked! The tin is filling up! 🍪'},
+  {n:500,    msg:'500 biscuits! The cafe smells amazing. ☕'},
+  {n:1000,   msg:'1,000 biscuits! You could open a bakery! 🏪'},
+  {n:5000,   msg:'5,000 biscuits! The friends are very pleased. 🦊'},
+  {n:10000,  msg:'10,000 biscuits! A legendary baker! 🏆'},
+  {n:50000,  msg:'50,000 biscuits! The tin never empties. ✨'},
+  {n:100000, msg:'100,000 biscuits! You may now Prestige! 🌟'},
+  {n:500000, msg:'500,000 biscuits! A biscuit empire! 💎'},
+  {n:1e6,    msg:'One million biscuits! Truly legendary. 👑'},
+  {n:5e6,    msg:'Five million! The whole town smells of biscuits. 🌆'},
+  {n:10e6,   msg:'Ten million biscuits! You are a biscuit deity. 🌟'},
+  {n:50e6,   msg:'Fifty million! A golden age of biscuits. 🥇'},
+  {n:100e6,  msg:'One hundred million biscuits! Unimaginable. 💫'},
 ];
 const ACHIEVEMENTS=[
-  {id:'bt_first',    emoji:'🍪',name:'First Biscuit',  desc:'Bake your first biscuit',            check:v=>bv().clicks>=1},
-  {id:'bt_100c',     emoji:'👋',name:'Eager Baker',    desc:'Tap 100 times',                      check:v=>bv().clicks>=100},
-  {id:'bt_1kc',      emoji:'🔥',name:'Baking Frenzy',  desc:'Tap 1,000 times',                    check:v=>bv().clicks>=1000},
-  {id:'bt_100',      emoji:'🍫',name:'Tiny Tin',       desc:'Bake 100 biscuits total',            check:v=>bv().lifetime>=100},
-  {id:'bt_1k',       emoji:'🛍️',name:'Biscuit Stack',  desc:'Bake 1,000 biscuits total',          check:v=>bv().lifetime>=1000},
-  {id:'bt_10k',      emoji:'🏪',name:'Biscuit Bakery', desc:'Bake 10,000 biscuits total',         check:v=>bv().lifetime>=10000},
-  {id:'bt_100k',     emoji:'🏆',name:'Biscuit Empire', desc:'Bake 100,000 biscuits total',        check:v=>bv().lifetime>=100000},
-  {id:'bt_1m',       emoji:'👑',name:'Biscuit Legend', desc:'Bake 1,000,000 biscuits total',      check:v=>bv().lifetime>=1000000},
-  {id:'bt_helper1',  emoji:'🤝',name:'First Helper',   desc:'Hire your first helper',             check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=1},
-  {id:'bt_helpers10',emoji:'👨‍👩‍👧',name:'Baking Team',   desc:'Have 10 helpers working',            check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=10},
-  {id:'bt_helpers50',emoji:'🏘️',name:'Full Bakery',    desc:'Have 50 helpers working',            check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=50},
-  {id:'bt_upgrade3', emoji:'⚡',name:'Upgraded!',       desc:'Buy 3 upgrades',                     check:v=>bv().upgrades.length>=3},
-  {id:'bt_upgrade8', emoji:'✨',name:'Fully Upgraded', desc:'Buy 8 upgrades',                     check:v=>bv().upgrades.length>=8},
-  {id:'bt_fox',      emoji:'🦊',name:"Fox's Favourite",desc:'Tap the Fox 10 times',               check:v=>(bv().charTaps.fox||0)>=10},
-  {id:'bt_tiger',    emoji:'🐯',name:"Tiger's Pal",    desc:'Tap the Tiger 10 times',             check:v=>(bv().charTaps.tiger||0)>=10},
-  {id:'bt_turtle',   emoji:'🐢',name:'Shell Friends',  desc:'Tap the Turtle 10 times',            check:v=>(bv().charTaps.turtle||0)>=10},
-  {id:'bt_axolotl',  emoji:'🌸',name:'Sparkle Crew',   desc:'Tap the Axolotl 10 times',           check:v=>(bv().charTaps.axolotl||0)>=10},
-  {id:'bt_allfour',  emoji:'🌈',name:'Full Family',    desc:'Tap all four friends',               check:v=>Object.values(bv().charTaps).every(n=>n>0)},
-  {id:'bt_prestige', emoji:'🌟',name:'New Season',     desc:'Prestige for the first time',        check:v=>(bv().prestige||0)>=1},
-  {id:'bt_prestige3',emoji:'💎',name:'Seasoned Baker', desc:'Prestige 3 times',                   check:v=>(bv().prestige||0)>=3},
-  {id:'bt_hat',      emoji:'🎩',name:'Dressed to Bake',desc:'Buy a hat in Cozy Cafe for Fox to wear',check:v=>!!(v.equipped&&v.equipped.hat)},
-  {id:'bt_both',     emoji:'☕',name:'Regulars',       desc:'Play both Cozy Cafe and Biscuit Tin',check:v=>v.stats.guests_served>=1&&bv().lifetime>=1},
+  // Tapping
+  {id:'bt_first',      emoji:'🍪',name:'First Biscuit',    desc:'Bake your first biscuit',              coins:5,   check:v=>bv().clicks>=1},
+  {id:'bt_100c',       emoji:'👋',name:'Eager Baker',      desc:'Tap 100 times',                        coins:10,  check:v=>bv().clicks>=100},
+  {id:'bt_1kc',        emoji:'🔥',name:'Baking Frenzy',    desc:'Tap 1,000 times',                      coins:20,  check:v=>bv().clicks>=1000},
+  {id:'bt_10kc',       emoji:'⚡',name:'Tireless Tapper',  desc:'Tap 10,000 times',                     coins:50,  check:v=>bv().clicks>=10000},
+  {id:'bt_50kc',       emoji:'🦾',name:'Iron Fingers',     desc:'Tap 50,000 times',                     coins:100, check:v=>bv().clicks>=50000},
+  // Biscuit totals
+  {id:'bt_100',        emoji:'🍫',name:'Tiny Tin',         desc:'Bake 100 biscuits total',              coins:5,   check:v=>bv().lifetime>=100},
+  {id:'bt_1k',         emoji:'🛍️',name:'Biscuit Stack',    desc:'Bake 1,000 biscuits total',            coins:10,  check:v=>bv().lifetime>=1000},
+  {id:'bt_10k',        emoji:'🏪',name:'Biscuit Bakery',   desc:'Bake 10,000 biscuits total',           coins:25,  check:v=>bv().lifetime>=10000},
+  {id:'bt_100k',       emoji:'🏆',name:'Biscuit Empire',   desc:'Bake 100,000 biscuits total',          coins:50,  check:v=>bv().lifetime>=100000},
+  {id:'bt_1m',         emoji:'👑',name:'Biscuit Legend',   desc:'Bake 1,000,000 biscuits total',        coins:100, check:v=>bv().lifetime>=1000000},
+  {id:'bt_10m',        emoji:'💎',name:'Biscuit Deity',    desc:'Bake 10,000,000 biscuits total',       coins:200, check:v=>bv().lifetime>=10000000},
+  {id:'bt_100m',       emoji:'🌌',name:'Cosmic Baker',     desc:'Bake 100,000,000 biscuits total',      coins:500, check:v=>bv().lifetime>=100000000},
+  // Helpers
+  {id:'bt_helper1',    emoji:'🤝',name:'First Helper',     desc:'Hire your first helper',               coins:10,  check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=1},
+  {id:'bt_helpers10',  emoji:'👨‍👩‍👧',name:'Baking Team',     desc:'Have 10 helpers working',              coins:20,  check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=10},
+  {id:'bt_helpers50',  emoji:'🏘️',name:'Full Bakery',      desc:'Have 50 helpers working',              coins:50,  check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=50},
+  {id:'bt_helpers100', emoji:'🌆',name:'Biscuit Town',     desc:'Have 100 helpers working',             coins:100, check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=100},
+  {id:'bt_helpers200', emoji:'🌍',name:'Biscuit Nation',   desc:'Have 200 helpers working',             coins:200, check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=200},
+  {id:'bt_allhelpers', emoji:'🎪',name:'Full Crew',        desc:'Own at least one of every helper',     coins:150, check:v=>['oven','kettle','mixer','cat','recipe','fox_bake','sparkle','bakery','wizard','factory'].every(id=>(bv().helpers[id]||0)>=1)},
+  // Upgrades
+  {id:'bt_upgrade3',   emoji:'⚡',name:'Upgraded!',         desc:'Buy 3 upgrades',                       coins:15,  check:v=>bv().upgrades.length>=3},
+  {id:'bt_upgrade8',   emoji:'✨',name:'Fully Kitted',      desc:'Buy 8 upgrades',                       coins:40,  check:v=>bv().upgrades.length>=8},
+  {id:'bt_upgrade15',  emoji:'🌟',name:'Maxed Out',         desc:'Buy 15 upgrades',                      coins:100, check:v=>bv().upgrades.length>=15},
+  // Characters
+  {id:'bt_fox',        emoji:'🦊',name:"Fox's Favourite",  desc:'Tap the Fox 10 times',                 coins:10,  check:v=>(bv().charTaps.fox||0)>=10},
+  {id:'bt_tiger',      emoji:'🐯',name:"Tiger's Pal",      desc:'Tap the Tiger 10 times',               coins:10,  check:v=>(bv().charTaps.tiger||0)>=10},
+  {id:'bt_turtle',     emoji:'🐢',name:'Shell Friends',    desc:'Tap the Turtle 10 times',              coins:10,  check:v=>(bv().charTaps.turtle||0)>=10},
+  {id:'bt_axolotl',    emoji:'🌸',name:'Sparkle Crew',     desc:'Tap the Axolotl 10 times',             coins:10,  check:v=>(bv().charTaps.axolotl||0)>=10},
+  {id:'bt_allfour',    emoji:'🌈',name:'Full Family',      desc:'Tap all four friends',                 coins:25,  check:v=>Object.values(bv().charTaps).every(n=>n>0)},
+  {id:'bt_foxfan',     emoji:'🦊',name:'Fox Superfan',     desc:'Tap the Fox 100 times',                coins:30,  check:v=>(bv().charTaps.fox||0)>=100},
+  {id:'bt_tigerfan',   emoji:'🐯',name:'Tiger Superfan',   desc:'Tap the Tiger 100 times',              coins:30,  check:v=>(bv().charTaps.tiger||0)>=100},
+  {id:'bt_turtlefan',  emoji:'🐢',name:'Turtle Superfan',  desc:'Tap the Turtle 100 times',             coins:30,  check:v=>(bv().charTaps.turtle||0)>=100},
+  {id:'bt_axofan',     emoji:'🌸',name:'Axolotl Superfan', desc:'Tap the Axolotl 100 times',            coins:30,  check:v=>(bv().charTaps.axolotl||0)>=100},
+  // Prestige
+  {id:'bt_prestige',   emoji:'🌟',name:'New Season',       desc:'Prestige for the first time',          coins:50,  check:v=>(bv().prestige||0)>=1},
+  {id:'bt_prestige3',  emoji:'💎',name:'Seasoned Baker',   desc:'Prestige 3 times',                     coins:100, check:v=>(bv().prestige||0)>=3},
+  {id:'bt_prestige5',  emoji:'🏅',name:'Veteran Baker',    desc:'Prestige 5 times',                     coins:200, check:v=>(bv().prestige||0)>=5},
+  {id:'bt_prestige10', emoji:'🌌',name:'Eternal Baker',    desc:'Prestige 10 times',                    coins:500, check:v=>(bv().prestige||0)>=10},
+  // Daily
+  {id:'bt_daily3',     emoji:'📅',name:'Creature of Habit',desc:'Collect 3 daily bonuses',              coins:20,  check:v=>(bv().dailyCount||0)>=3},
+  {id:'bt_daily10',    emoji:'🗓️',name:'Regular',          desc:'Collect 10 daily bonuses',             coins:50,  check:v=>(bv().dailyCount||0)>=10},
+  // Cosmetic / misc
+  {id:'bt_hat',        emoji:'🎩',name:'Dressed to Bake',  desc:'Equip a hat in Cozy Cafe',             coins:25,  check:v=>!!(v.equipped&&v.equipped.hat)},
+  {id:'bt_both',       emoji:'☕',name:'Regulars',         desc:'Play both Cozy Cafe and Biscuit Tin',  coins:30,  check:v=>v.stats.guests_served>=1&&bv().lifetime>=1},
 ];
 const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇'};
 
@@ -500,10 +565,16 @@ function fmt(n){
 
 function recalc(){
   let cp=1;
-  for(const up of UPGRADES)if(up.type==='click'&&bv().upgrades.includes(up.id))cp*=up.mult;
+  for(const up of UPGRADES){
+    if(up.type==='click'&&bv().upgrades.includes(up.id))cp*=up.mult;
+    if(up.type==='repeat_click'){const lvl=bv().repeatUpgrades?.[up.id]||0;if(lvl>0)cp*=Math.pow(up.mult,lvl);}
+  }
   clickPower=cp*(bv().prestigeBonus||1);
   let gm=1;
-  for(const up of UPGRADES)if(up.type==='global'&&bv().upgrades.includes(up.id))gm*=up.mult;
+  for(const up of UPGRADES){
+    if(up.type==='global'&&bv().upgrades.includes(up.id))gm*=up.mult;
+    if(up.type==='repeat_global'){const lvl=bv().repeatUpgrades?.[up.id]||0;if(lvl>0)gm*=Math.pow(up.mult,lvl);}
+  }
   let rate=0;
   for(const h of HELPERS){
     const cnt=bv().helpers[h.id]||0; if(!cnt)continue;
@@ -523,6 +594,7 @@ function tick(){
     bv().total+=g; bv().lifetime+=g;
     vault.coins+=g*0.1;
     vault.stats.lifetime_coins=(vault.stats.lifetime_coins||0)+g*0.1;
+    trackDailyProgress('earn',g);
   }
   checkMilestones(); updateHUD(); checkAchievements();
   requestAnimationFrame(tick);
@@ -550,9 +622,13 @@ function updateHUD(){
   document.getElementById('prestigeCount').textContent=prestige;
   const rps=productionRate;
   document.getElementById('rateLabel').textContent=rps>0?(rps>=1?fmt(rps):rps.toFixed(1))+' biscuits / sec':'tap the tin!';
-  // Fox hat from shared vault
+  // Hat on all four characters from shared vault
   const hat=vault.equipped&&vault.equipped.hat;
-  document.getElementById('hat-fox').textContent=hat?(HAT_EMOJIS[hat]||''):'';
+  const hatEmoji=hat?(HAT_EMOJIS[hat]||''):'';
+  ['fox','tiger','turtle','axolotl'].forEach(id=>{
+    const el=document.getElementById('hat-'+id);
+    if(el)el.textContent=hatEmoji;
+  });
 }
 
 // ══ COOLDOWN RINGS + READY BOUNCE ══
@@ -591,7 +667,8 @@ function doClick(x,y){
   tin.classList.add('tapped'); setTimeout(()=>tin.classList.remove('tapped'),140);
   spawnClickPop(x,y,'+'+fmt(gained));
   for(let i=0;i<Math.min(3,Math.ceil(gained));i++)spawnBiscuit(x,y);
-  updateHUD(); saveVault(); checkAchievements();
+  trackDailyProgress('earn',gained);
+  updateHUD(); saveVault(); checkAchievements(); trackDailyProgress('tap');
   if(activeTab==='helpers'||activeTab==='upgrades')renderPanel();
 }
 function spawnClickPop(x,y,text){
@@ -635,6 +712,7 @@ document.querySelectorAll('.char-seat').forEach(el=>{
     for(let i=0;i<6;i++)spawnCharBiscuit(cx,cy,char.biscuitEmoji,char.color);
     Audio.sfxCharDrop(char.semi);
     showToast(`${char.emoji} ${char.biscuitEmoji} ${char.biscuit}! +${fmt(gained)}`);
+    trackDailyProgress('earn',gained); trackDailyProgress('char');
     updateHUD(); updateCooldownRings(); saveVault(); checkAchievements();
   });
   el.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>showBio(el.dataset.char),600);});
@@ -659,8 +737,17 @@ function renderPanel(){
   if(activeTab==='helpers')renderHelpers(panel);
   else if(activeTab==='upgrades')renderUpgrades(panel);
   else if(activeTab==='achievements')renderAchievements(panel);
+  else if(activeTab==='daily')renderDaily(panel);
   else renderStats(panel);
 }
+
+// ══ DAILY CHALLENGES ══
+const DAILY_POOL=[
+  {key:'tap',   emoji:'👋',name:'Eager Fingers',   desc:'Tap the tin {n} times today',         amounts:[50,100,250],rewards:[200,500,1500]},
+  {key:'earn',  emoji:'🍪',name:'Big Bake Day',     desc:'Bake {n} biscuits today (any source)', amounts:[500,2000,10000],rewards:[1000,4000,20000]},
+  {key:'char',  emoji:'🦊',name:'Cafe Rounds',      desc:'Tap any character {n} times today',   amounts:[5,15,30],rewards:[300,900,2500]},
+  {key:'buy',   emoji:'🏪',name:'Shopkeeper',       desc:'Buy {n} helpers or upgrades today',    amounts:[3,8,15],rewards:[500,2000,8000]},
+];
 function renderHelpers(el){
   el.innerHTML='';
   const list=document.createElement('div'); list.className='helper-list';
@@ -674,7 +761,7 @@ function renderHelpers(el){
     row.addEventListener('click',()=>{
       if(Math.floor(bv().total)<cost)return;
       bv().total-=cost; bv().helpers[h.id]=(bv().helpers[h.id]||0)+1; bv().helpersOwned=(bv().helpersOwned||0)+1;
-      recalc(); renderPanel(); showToast(h.emoji+' '+h.name+' joined the cafe!'); saveVault(); checkAchievements();
+      recalc(); renderPanel(); showToast(h.emoji+' '+h.name+' joined the cafe!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
     });
     list.appendChild(row);
   });
@@ -684,15 +771,34 @@ function renderUpgrades(el){
   el.innerHTML='';
   const list=document.createElement('div'); list.className='upgrade-list';
   UPGRADES.forEach(up=>{
-    const bought=bv().upgrades.includes(up.id),canAfford=!bought&&Math.floor(bv().total)>=up.cost;
-    const row=document.createElement('div'); row.className='upgrade-row '+(bought?'bought':canAfford?'affordable':'cant-afford');
-    row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name}</div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${(!bought&&!canAfford)?'too-much':''}">🍪 ${fmt(up.cost)}</div>${bought?'<div class="upgrade-tick">✅</div>':''}`;
-    if(!bought)row.addEventListener('click',()=>{
-      if(Math.floor(bv().total)<up.cost)return;
-      bv().total-=up.cost; bv().upgrades.push(up.id);
-      recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' unlocked!'); saveVault(); checkAchievements();
-    });
-    list.appendChild(row);
+    const isRepeat=up.type==='repeat_click'||up.type==='repeat_global';
+    if(isRepeat){
+      if(!bv().repeatUpgrades)bv().repeatUpgrades={};
+      const lvl=bv().repeatUpgrades[up.id]||0;
+      const cost=Math.floor(up.cost*Math.pow(up.costMult,lvl));
+      const canAfford=Math.floor(bv().total)>=cost;
+      const row=document.createElement('div'); row.className='upgrade-row '+(canAfford?'affordable':'cant-afford');
+      row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name} <span style="font-size:10px;color:var(--mint-deep);font-weight:800">REPEATABLE</span></div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${canAfford?'':'too-much'}">🍪 ${fmt(cost)}</div>${lvl>0?`<div class="upgrade-lvl">Lv ${lvl}</div>`:''}`;
+      row.addEventListener('click',()=>{
+        if(!bv().repeatUpgrades)bv().repeatUpgrades={};
+        const curLvl=bv().repeatUpgrades[up.id]||0;
+        const curCost=Math.floor(up.cost*Math.pow(up.costMult,curLvl));
+        if(Math.floor(bv().total)<curCost)return;
+        bv().total-=curCost; bv().repeatUpgrades[up.id]=(curLvl+1);
+        recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' Lv '+(curLvl+1)+'!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
+      });
+      list.appendChild(row);
+    } else {
+      const bought=bv().upgrades.includes(up.id),canAfford=!bought&&Math.floor(bv().total)>=up.cost;
+      const row=document.createElement('div'); row.className='upgrade-row '+(bought?'bought':canAfford?'affordable':'cant-afford');
+      row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name}</div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${(!bought&&!canAfford)?'too-much':''}">🍪 ${fmt(up.cost)}</div>${bought?'<div class="upgrade-tick">✅</div>':''}`;
+      if(!bought)row.addEventListener('click',()=>{
+        if(Math.floor(bv().total)<up.cost)return;
+        bv().total-=up.cost; bv().upgrades.push(up.id);
+        recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' unlocked!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
+      });
+      list.appendChild(row);
+    }
   });
   el.appendChild(list);
 }
@@ -707,6 +813,139 @@ function renderAchievements(el){
   });
   el.appendChild(grid);
 }
+function getDailyChallenge(){
+  const today=new Date().toISOString().slice(0,10);
+  const seed=today.split('-').reduce((a,b)=>a*31+parseInt(b),0);
+  const pool=DAILY_POOL,p=pool[seed%pool.length];
+  const tier=(seed>>4)%3;
+  return{...p,today,target:p.amounts[tier],reward:p.rewards[tier]};
+}
+function trackDailyProgress(key,amount=1){
+  const ch=getDailyChallenge();
+  if(ch.key!==key)return;
+  if(!bv().dailyChallenge||bv().dailyChallenge.date!==ch.today){
+    bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
+  }
+  const dc=bv().dailyChallenge;
+  if(dc.claimed)return;
+  dc.progress=(dc.progress||0)+amount;
+  if(activeTab==='daily')renderPanel();
+}
+function renderDaily(el){
+  const ch=getDailyChallenge();
+  const dc=bv().dailyChallenge||{};
+  const todayDone=dc.date===ch.today&&dc.claimed;
+  const progress=dc.date===ch.today?(dc.progress||0):0;
+  const pct=Math.min(100,Math.floor((progress/ch.target)*100));
+  const canClaim=progress>=ch.target&&!todayDone;
+
+  el.innerHTML='';
+
+  const title=document.createElement('div');
+  title.style.cssText='padding:4px 0 10px;font-family:Fraunces,serif;font-size:17px;font-weight:900;color:var(--cocoa)';
+  title.textContent='📅 Today\'s Challenge';
+  el.appendChild(title);
+
+  const card=document.createElement('div');
+  card.style.cssText='background:linear-gradient(135deg,#FFF9E8,#FFF0D8);border:2px solid var(--sun);border-radius:18px;padding:16px 14px;margin-bottom:14px';
+  el.appendChild(card);
+
+  card.innerHTML=`
+    <div style="font-size:32px;margin-bottom:6px">${ch.emoji}</div>
+    <div style="font-family:Fraunces,serif;font-weight:700;font-size:17px;color:var(--cocoa);margin-bottom:4px">${ch.name}</div>
+    <div style="font-size:12px;color:var(--cocoa-soft);line-height:1.6;margin-bottom:12px">${ch.desc.replace('{n}',ch.target.toLocaleString())}</div>
+    <div style="background:var(--cream-deep);border-radius:100px;height:10px;margin-bottom:6px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--sun),#E8A830);border-radius:100px;transition:width .5s"></div>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--cocoa-soft);margin-bottom:12px">${Math.floor(progress).toLocaleString()} / ${ch.target.toLocaleString()} · ${pct}%</div>
+    <div style="background:var(--milk);border:2px dashed var(--cream-deep);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:800;color:var(--cocoa-soft);margin-bottom:12px">🎁 Reward: +${fmt(ch.reward)} biscuits</div>`;
+
+  if(todayDone){
+    const done=document.createElement('div');
+    done.style.cssText='text-align:center;font-family:Fraunces,serif;font-size:14px;font-weight:700;color:var(--mint-deep)';
+    done.textContent='✅ Claimed! Come back tomorrow.';
+    card.appendChild(done);
+  } else {
+    const btn=document.createElement('button');
+    btn.textContent=canClaim?'🎁 Claim Reward!':'Keep baking...';
+    btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--sun),#E8A830)':'var(--cream-deep)'};border:none;border-radius:100px;padding:11px;font-family:Fraunces,serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.5};box-shadow:${canClaim?'0 4px 12px rgba(245,199,106,.4)':'none'}`;
+    btn.addEventListener('click',()=>{
+      if(!canClaim)return;
+      if(!bv().dailyChallenge)bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
+      const dc2=bv().dailyChallenge;
+      if(dc2.date!==ch.today||dc2.claimed||(dc2.progress||0)<ch.target)return;
+      dc2.claimed=true;
+      bv().total+=ch.reward; bv().lifetime+=ch.reward;
+      showToast('🎉 Challenge complete! +'+fmt(ch.reward)+' 🍪','achievement');
+      saveNow(); renderPanel(); updateHUD(); checkAchievements();
+    });
+    card.appendChild(btn);
+  }
+
+  const howTitle=document.createElement('div');
+  howTitle.style.cssText='font-family:Fraunces,serif;font-size:13px;font-weight:700;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px';
+  howTitle.textContent='How to earn';
+  el.appendChild(howTitle);
+
+  const howBox=document.createElement('div');
+  howBox.style.cssText='font-size:12px;color:var(--cocoa-soft);line-height:1.9;background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;padding:12px 14px';
+  howBox.innerHTML=(ch.key==='tap'?'Tap the biscuit tin. Every tap counts!':
+    ch.key==='earn'?'Bake biscuits by tapping, helpers, or tapping characters.':
+    ch.key==='char'?'Tap any of the four friends in the scene above.':
+    'Buy helpers from the Helpers tab or upgrades from the Upgrades tab.')+
+    '<br>A new challenge unlocks every day at midnight. 🌙';
+  el.appendChild(howBox);
+}
+
+// ══ RANDOM EVENTS ══
+const RANDOM_EVENTS=[
+  {id:'golden',  emoji:'✨',title:'Golden Biscuit!',   desc:'A shimmering biscuit appeared! Tap to collect a bonus.',   reward:()=>Math.floor((clickPower||1)*50+bv().lifetime*0.001+100)},
+  {id:'rush',    emoji:'🔥',title:'Baking Rush!',      desc:'Everyone\'s hungry! Double biscuits for 30 seconds.',      reward:null, duration:30},
+  {id:'cat',     emoji:'🐈',title:'The Cat Helped!',   desc:'The cafe cat knocked over the flour. Bonus biscuits!',     reward:()=>Math.floor(productionRate*45+500)},
+  {id:'recipe',  emoji:'📖',title:'Secret Recipe Found!',desc:'An ancient recipe was discovered in the tin!',           reward:()=>Math.floor(bv().lifetime*0.005+1000)},
+  {id:'rain',    emoji:'🌧️',title:'Biscuit Rain!',     desc:'It\'s raining biscuits! Collect them all!',               reward:()=>Math.floor(productionRate*60+200)},
+  {id:'visitor', emoji:'🦊',title:'Special Visitor!',  desc:'A mysterious guest left a gift in the tin!',              reward:()=>Math.floor(Math.random()*5000+500)},
+];
+let eventActive=false,rushActive=false,rushTimer=null;
+function maybeSpawnEvent(){
+  if(eventActive||bv().lifetime<100)return;
+  if(Math.random()>0.18)return; // ~18% chance each interval
+  const ev=RANDOM_EVENTS[Math.floor(Math.random()*RANDOM_EVENTS.length)];
+  spawnEvent(ev);
+}
+function spawnEvent(ev){
+  eventActive=true;
+  document.getElementById('eventEmoji').textContent=ev.emoji;
+  document.getElementById('eventTitle').textContent=ev.title;
+  document.getElementById('eventDesc').textContent=ev.desc;
+  const btn=document.getElementById('eventBtn');
+  btn.textContent='Collect!';
+  document.getElementById('eventBanner').classList.add('show');
+  // auto-dismiss after 20s
+  const autoClose=setTimeout(()=>dismissEvent(),20000);
+  btn.onclick=()=>{
+    clearTimeout(autoClose);
+    dismissEvent();
+    if(ev.id==='rush'){
+      rushActive=true;
+      const prevRate=productionRate;
+      productionRate*=2; clickPower*=2;
+      showToast('🔥 Baking Rush! 2x for 30 seconds!','achievement');
+      if(rushTimer)clearTimeout(rushTimer);
+      rushTimer=setTimeout(()=>{rushActive=false;recalc();showToast('🔥 Baking Rush ended!');},30000);
+    } else {
+      const amount=ev.reward();
+      bv().total+=amount; bv().lifetime+=amount;
+      updateHUD(); saveVault();
+      showToast(ev.emoji+' +'+fmt(amount)+' biscuits!','achievement');
+    }
+  };
+}
+function dismissEvent(){
+  document.getElementById('eventBanner').classList.remove('show');
+  setTimeout(()=>{eventActive=false;},400);
+}
+setInterval(maybeSpawnEvent,90000); // check every 90s
 function renderStats(el){
   const totalHelpers=Object.values(bv().helpers).reduce((a,b)=>a+b,0);
   const topChar=Object.entries(bv().charTaps).sort((a,b)=>b[1]-a[1])[0];
@@ -743,7 +982,7 @@ function doPrestige(){
   Audio.sfxPrestige();
   bv().prestige=(bv().prestige||0)+1;
   bv().prestigeBonus=(bv().prestigeBonus||1)+0.5;
-  bv().total=0; bv().helpers={}; bv().upgrades=[]; bv().helpersOwned=0;
+  bv().total=0; bv().lifetime=0; bv().helpers={}; bv().upgrades=[]; bv().helpersOwned=0;
   recalc(); renderPanel(); updateHUD();
   showToast('🌟 Season '+(bv().prestige+1)+' begins! x'+bv().prestigeBonus.toFixed(1)+' bonus','achievement');
   saveNow(); checkAchievements();
@@ -755,8 +994,10 @@ function checkAchievements(){
     if(vault.achievements.includes(a.id))continue;
     if(a.check(vault)){
       vault.achievements.push(a.id); Audio.sfxAchievement();
-      showToast(a.emoji+' '+a.name+' unlocked!','achievement');
-      vault.happiness+=1; saveVault();
+      const coinReward=a.coins||10;
+      vault.coins+=coinReward; vault.happiness+=1;
+      showToast(a.emoji+' '+a.name+' +'+coinReward+'✨','achievement');
+      saveVault();
       if(activeTab==='achievements')renderPanel();
     }
   }
@@ -853,9 +1094,10 @@ document.getElementById('achBtn').addEventListener('click',()=>{
 });
 
 document.getElementById('shareBtn').addEventListener('click',()=>{
-  const text=`🍪 My Biscuit Tin\n${fmt(Math.floor(bv().lifetime))} biscuits baked · ${bv().clicks||0} taps\n⭐ Season ${(bv().prestige||0)+1} · x${(bv().prestigeBonus||1).toFixed(1)} bonus\n🏆 ${vault.achievements.filter(id=>id.startsWith('bt_')).length}/${ACHIEVEMENTS.length} goals\nPlay at jvdesignstudio.co.uk`;
-  if(navigator.share)navigator.share({text}).catch(()=>{});
-  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>showToast('Stats copied! 📋')).catch(()=>{});
+  const gameUrl='https://jvdesignstudio.co.uk/cozy-biscuit-clicker.html';
+  const text=`🍪 Biscuit Tin — Cozy Clicker\n${fmt(Math.floor(bv().lifetime))} biscuits baked · ${bv().clicks||0} taps\n⭐ Season ${(bv().prestige||0)+1} · x${(bv().prestigeBonus||1).toFixed(1)} bonus\n🏆 ${vault.achievements.filter(id=>id.startsWith('bt_')).length}/${ACHIEVEMENTS.length} goals\n\nPlay free at ${gameUrl}`;
+  if(navigator.share)navigator.share({title:'Biscuit Tin',text,url:gameUrl}).catch(()=>{});
+  else if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard! 📋')).catch(()=>{});
   else showToast('Sharing not available');
 });
 
@@ -867,6 +1109,7 @@ function checkDailyBonus(){
   const today=new Date().toISOString().slice(0,10);
   if(vault.biscuit_last_daily!==today){
     vault.biscuit_last_daily=today; bv().total+=50; bv().lifetime+=50;
+    bv().dailyCount=(bv().dailyCount||0)+1;
     saveNow(); setTimeout(()=>showToast('Daily bonus! +50 🍪','achievement'),800);
   }
 }
