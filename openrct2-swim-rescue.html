@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenRCT2 Swim Rescue Save Your Guests with JavaScript | JVDesignStudio</title>
+<meta name="description" content="Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 10 steps, live simulation. Ages 11+. Free.">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<style>
+:root{
+  --bg:#04090f; --bg2:#080f1a; --bg3:#0d1624;
+  --border:rgba(255,255,255,.07);
+  --text:#cce4f7; --muted:rgba(204,228,247,.4);
+  --blue:#38bdf8; --blue-lt:#7dd3fc; --blue-dk:#0369a1;
+  --wave:#0ea5e9; --water:#0c4a6e; --water-lt:#075985;
+  --sand:#c8a96e; --sand-lt:#e8c98e;
+  --green:#22c55e; --green-lt:#4ade80;
+  --red:#ef4444; --red-lt:#fca5a5;
+  --gold:#f5c842; --purple:#a78bfa;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+
+/* HEADER */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(4,9,15,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.header-inner{max-width:1400px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo-link{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:.05em}
+.logo-link img{height:32px;border-radius:7px}
+.btn-back{font-size:.8rem;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:color .15s,border-color .15s}
+.btn-back:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+.nav-toggle{display:none;background:none;border:none;padding:6px 8px;font-size:1.3rem;cursor:pointer;color:var(--text)}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:#04090f;border-top:2px solid var(--blue);box-shadow:0 8px 32px rgba(0,0,0,.8);max-height:0;overflow:hidden;transition:max-height .4s ease}
+.mobile-nav.open{max-height:80vh;overflow-y:auto}
+.mobile-nav a{display:flex;align-items:center;gap:10px;padding:13px 22px;font-size:.9rem;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border)}
+.mobile-nav a:hover{background:rgba(255,255,255,.04);color:var(--text)}
+@media(max-width:860px){.btn-back{display:none}.nav-toggle{display:block!important}}
+@media(min-width:861px){.mobile-nav{display:none!important}}
+
+/* HERO */
+.hero{padding:44px 24px 36px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(56,189,248,.06) 1px,transparent 1px);background-size:26px 26px;mask-image:radial-gradient(ellipse 80% 100% at 50% 0%,black,transparent)}
+.hero-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;position:relative;z-index:1}
+@media(max-width:700px){.hero-inner{grid-template-columns:1fr}}
+.hero-tag{font-family:'JetBrains Mono',monospace;font-size:.63rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
+.hero-title{font-family:'Bebas Neue',cursive;font-size:clamp(2.2rem,6vw,3.8rem);line-height:.95;letter-spacing:.03em;color:white;margin-bottom:12px}
+.hero-title .hl{color:var(--blue)}
+.hero-sub{font-size:.92rem;color:var(--muted);line-height:1.7;max-width:480px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:4px 10px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.b{border-color:rgba(56,189,248,.3);color:var(--blue-lt);background:rgba(56,189,248,.07)}
+.hero-cta{background:var(--blue);color:#04090f;font-family:'Bebas Neue',cursive;font-size:1.05rem;letter-spacing:.1em;padding:11px 26px;border-radius:10px;box-shadow:0 4px 0 var(--blue-dk);transition:transform .12s,filter .15s;display:inline-block;margin-top:16px}
+.hero-cta:hover{filter:brightness(1.1);transform:translateY(-2px)}
+.hero-preview{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;min-width:200px}
+.hero-preview-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
+.hero-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.hero-stat:last-child{border-bottom:none}
+.hero-stat-label{color:var(--muted);font-size:.72rem}
+.hero-stat-val{font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:.05em;color:var(--blue-lt)}
+
+/* MAIN LAYOUT */
+.main-layout{display:grid;grid-template-columns:1fr 400px;max-width:1400px;margin:0 auto;min-height:calc(100vh - 60px)}
+@media(max-width:960px){.main-layout{grid-template-columns:1fr}}
+
+/* STEPS */
+.steps-panel{border-right:1px solid var(--border)}
+.steps-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2)}
+.steps-tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:12px 11px;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--blue-lt);border-bottom-color:var(--blue)}
+.tab-btn.done::before{content:"✓ ";color:var(--green-lt)}
+.step-body{padding:26px 30px;overflow-y:auto;max-height:calc(100vh - 120px)}
+@media(max-width:960px){.step-body{max-height:none;overflow-y:visible}}
+@media(max-width:680px){.step-body{padding:18px 14px}}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:5px}
+.step-title{font-family:'Bebas Neue',cursive;font-size:1.85rem;letter-spacing:.04em;color:white;margin-bottom:9px;line-height:1}
+.step-intro{font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:18px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.8rem;line-height:1.6;display:flex;gap:9px;align-items:flex-start}
+.box-concept{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.18);color:rgba(204,228,247,.75)}
+.box-concept::before{content:"📖";flex-shrink:0}
+.box-tip{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);color:rgba(204,228,247,.75)}
+.box-tip::before{content:"💡";flex-shrink:0}
+.box-warn{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);color:rgba(204,228,247,.8)}
+.box-warn::before{content:"🌊";flex-shrink:0}
+.box-rescue{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.22);color:rgba(204,228,247,.8)}
+.box-rescue::before{content:"🏊";flex-shrink:0}
+
+/* CODE */
+.code-area{margin:14px 0}
+.code-area-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.live-badge{color:var(--blue-lt);font-size:.56rem;padding:2px 7px;border-radius:4px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2)}
+.code-block{background:#02070e;border:1px solid rgba(56,189,248,.1);border-radius:11px;overflow:hidden}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--muted);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.8;overflow-x:auto;white-space:pre}
+
+/* Syntax */
+.ck{color:#38bdf8}.cs{color:#86efac}.cn{color:#fbbf24}.cc{color:#3a5a3a}.cf{color:#c084fc}.cg{color:#4ade80}.co{color:#fb923c}.cy{color:#f5c842}.cr{color:#f87171}
+
+/* BLANKS */
+.blank{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#04090f;background:var(--blue);border:none;border-radius:5px;padding:2px 7px;width:var(--w,80px);text-align:center;outline:none;vertical-align:middle;transition:background .2s,box-shadow .2s}
+.blank:focus{background:var(--blue-lt);box-shadow:0 0 0 3px rgba(56,189,248,.35)}
+.blank-select{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#04090f;background:var(--blue);border:none;border-radius:5px;padding:2px 8px;vertical-align:middle;outline:none;cursor:pointer;transition:background .2s}
+.blank-select:focus{background:var(--blue-lt)}
+
+/* RUN BTN */
+.run-btn{width:100%;margin-top:12px;padding:13px;background:var(--blue);color:#04090f;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.1em;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 0 var(--blue-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.run-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.run-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--blue-dk)}
+
+/* NAV */
+.step-nav{display:flex;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.btn-prev,.btn-next{flex:1;padding:11px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:.84rem;font-weight:800;cursor:pointer;border:none;transition:background .15s}
+.btn-prev{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-prev:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-next{background:rgba(56,189,248,.11);color:var(--blue-lt);border:1px solid rgba(56,189,248,.2)}
+.btn-next:hover:not(:disabled){background:rgba(56,189,248,.2)}
+.btn-prev:disabled,.btn-next:disabled{opacity:.3;cursor:default}
+
+/* SIM PANEL */
+.game-panel{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:60px;height:calc(100vh - 60px)}
+@media(max-width:960px){.game-panel{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-live{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--blue-lt)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.sim-wrap{flex:1;position:relative;overflow:hidden;padding:10px}
+canvas{width:100%;border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 40px rgba(0,0,0,.8);display:block}
+
+/* LOG */
+.event-log{background:var(--bg2);border-top:1px solid var(--border);padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:.62rem;height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.log-line{color:var(--muted);transition:color .3s}
+.log-line.rescue{color:var(--green-lt)}
+.log-line.drown{color:var(--red-lt)}
+.log-line.warn{color:var(--gold)}
+.log-line.info{color:var(--blue-lt)}
+
+/* PROGRESS */
+.progress-strip{background:var(--bg2);border-top:1px solid var(--border);padding:9px 20px;display:flex;align-items:center;gap:14px;max-width:1400px;margin:0 auto;width:100%;position:sticky;bottom:0;z-index:50}
+.prog-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:5px;flex-shrink:0}
+.prog-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.prog-dot.done{background:var(--green)}.prog-dot.active{background:var(--blue);transform:scale(1.3)}
+
+/* STATS STRIP */
+.stats-strip{display:flex;gap:0;border-top:1px solid var(--border);flex-shrink:0}
+.stat-box{flex:1;padding:8px 12px;border-right:1px solid var(--border);text-align:center}
+.stat-box:last-child{border-right:none}
+.stat-val{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:.05em}
+.stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+
+/* MORE */
+.more-section{padding:52px 24px;max-width:1400px;margin:0 auto}
+.more-title{font-family:'Bebas Neue',cursive;font-size:1.9rem;letter-spacing:.04em;color:white;margin-bottom:20px}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.more-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:17px 19px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s,transform .2s}
+.more-card:hover{border-color:rgba(255,255,255,.15);transform:translateY(-3px)}
+.more-icon{font-size:1.5rem}
+.more-tag{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.more-name{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.04em;color:white}
+.more-cta{font-size:.76rem;font-weight:700;margin-top:auto}
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:22px;text-align:center;color:var(--muted);font-size:.76rem}
+footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/32x32/04090f/38bdf8?text=JV'">
+      JVDesignStudio
+    </a>
+    <a href="workshop.html" class="btn-back">← Workshop</a>
+    <button class="nav-toggle" id="navToggle">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="content_hub.html">📦 All Projects</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="search.html">🔍 Search</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="devlog.html">📓 Dev Log</a>
+    <a href="videos.html">🎬 Videos</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-dots"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">JVDesignStudio · OpenRCT2 Plugin Workshop</div>
+      <h1 class="hero-title">Save Your<br><span class="hl">Guests</span><br>From Drowning</h1>
+      <p class="hero-sub">Write a real OpenRCT2 plugin in JavaScript. Detect when guests fall into water, catch the error, and make them swim to safety step by step, live simulation on the right.</p>
+      <div class="hero-pills">
+        <span class="pill b">JavaScript</span>
+        <span class="pill b">OpenRCT2 Plugin API</span>
+        <span class="pill">10 Steps</span>
+        <span class="pill">Ages 11+</span>
+        <span class="pill">🆓 Free</span>
+      </div>
+      <a href="#builder" class="hero-cta">🏊 Start Rescuing</a>
+    </div>
+    <div class="hero-preview">
+      <div class="hero-preview-title">What you'll build</div>
+      <div class="hero-stat"><span class="hero-stat-label">Guest detection</span><span class="hero-stat-val">YOU code it</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Swim speed</span><span class="hero-stat-val">YOU decide</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Rescue radius</span><span class="hero-stat-val">YOU decide</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">try/catch error handling</span><span class="hero-stat-val">YOU write it</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Guests saved</span><span class="hero-stat-val">LIVE COUNT</span></div>
+    </div>
+  </div>
+</section>
+
+<div id="builder">
+<div class="main-layout">
+  <div class="steps-panel">
+    <div class="steps-tabs" id="stepsTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+
+  <!-- LIVE SIM PANEL -->
+  <div class="game-panel">
+    <div class="game-top">
+      <span class="game-top-title">🌊 Live Park Simulation</span>
+      <span class="game-live"><span class="live-dot"></span><span id="liveStatus">Waiting for your plugin…</span></span>
+    </div>
+    <div class="sim-wrap">
+      <canvas id="simCanvas"></canvas>
+    </div>
+    <div class="stats-strip">
+      <div class="stat-box"><div class="stat-val" id="statSaved" style="color:var(--green-lt)">0</div><div class="stat-lbl">Saved 🏊</div></div>
+      <div class="stat-box"><div class="stat-val" id="statDrowned" style="color:var(--red-lt)">0</div><div class="stat-lbl">Drowned 💀</div></div>
+      <div class="stat-box"><div class="stat-val" id="statInWater" style="color:var(--blue-lt)">0</div><div class="stat-lbl">In Water 🌊</div></div>
+      <div class="stat-box"><div class="stat-val" id="statTick" style="color:var(--muted)">0</div><div class="stat-lbl">Ticks ⏱</div></div>
+    </div>
+    <div class="event-log" id="eventLog">
+      <div class="log-line info">▶ Plugin not loaded yet complete Step 1</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="progress-strip">
+  <span class="prog-label">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:10%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<section class="more-section">
+  <div class="more-title">Keep Building</div>
+  <div class="more-grid">
+    <a href="openrct2-modding-builder.html" class="more-card"><span class="more-icon">🎢</span><span class="more-tag" style="color:#00c87a">Python · 10 Steps</span><span class="more-name">OpenRCT2 Shops Mod</span><span class="more-cta" style="color:#00c87a">Start →</span></a>
+    <a href="python-game-builder.html" class="more-card"><span class="more-icon">🐍</span><span class="more-tag" style="color:#f7c948">Python · Live Builder</span><span class="more-name">Python Game Builder</span><span class="more-cta" style="color:#f7c948">Start →</span></a>
+    <a href="cpp-tower-defence-builder.html" class="more-card"><span class="more-icon">🏰</span><span class="more-tag" style="color:#4a9eff">C++ · Live Builder</span><span class="more-name">Tower Defence Builder</span><span class="more-cta" style="color:#4a9eff">Start →</span></a>
+    <a href="workshop.html" class="more-card"><span class="more-icon">🔧</span><span class="more-tag" style="color:#70A3A7">All Resources</span><span class="more-name">The Workshop</span><span class="more-cta" style="color:#70A3A7">Visit →</span></a>
+  </div>
+</section>
+<footer><p>© 2026 JVDesignStudio &nbsp;·&nbsp; <a href="workshop.html">Workshop</a> &nbsp;·&nbsp; <a href="learn.html">Learn</a> &nbsp;·&nbsp; <a href="contact.html">Contact</a> &nbsp;·&nbsp; <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a></p></footer>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   SIMULATION STATE
+══════════════════════════════════════════════════════ */
+const sim = {
+  pluginLoaded:   false,
+  rescueEnabled:  false,
+  swimSpeed:      1.5,
+  rescueRadius:   60,
+  detectionOn:    false,
+  tryCatchOn:     false,
+  loopOn:         false,
+  callbackOn:     false,
+  saved:          0,
+  drowned:        0,
+  tick:           0,
+  guests:         [],
+  waterZones:     [],   // filled at init
+  pathTiles:      [],   // safe zones
+};
+
+/* ══════════════════════════════════════════════════════
+   CANVAS SETUP
+══════════════════════════════════════════════════════ */
+const canvas = document.getElementById('simCanvas');
+const ctx    = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth  - 20;
+  canvas.height = Math.min(wrap.clientHeight - 10, 480);
+  initLayout();
+}
+
+let POOL, PATHS, COASTER_START, COASTER_END;
+
+function initLayout(){
+  const W=canvas.width, H=canvas.height;
+  POOL          = {x:W*.3, y:H*.25, w:W*.42, h:H*.42};
+  PATHS         = [
+    {x:0,       y:H*.72, w:W,    h:H*.1},   // bottom path
+    {x:W*.05,   y:0,     w:W*.12,h:H*.72},  // left path
+    {x:W*.83,   y:0,     w:W*.12,h:H*.72},  // right path
+  ];
+  COASTER_START = {x:W*.83+W*.06, y:H*.15};
+  COASTER_END   = {x:W*.3+W*.21,  y:H*.25+H*.21};
+  sim.waterZones=[POOL];
+  sim.pathTiles=PATHS;
+}
+
+/* ══════════════════════════════════════════════════════
+   GUEST SYSTEM
+══════════════════════════════════════════════════════ */
+const GUEST_COLS=['#e74c3c','#3498db','#f1c40f','#2ecc71','#e67e22','#9b59b6','#1abc9c','#e91e63'];
+
+function spawnGuest(){
+  const W=canvas.width, H=canvas.height;
+  // Guests start on the right path, heading for the coaster
+  sim.guests.push({
+    id: sim.guests.length,
+    x: W*.89,
+    y: H*.72 - 20 - Math.random()*H*.05,
+    vx: 0, vy: 0,
+    state: 'walking',  // walking | inwater | swimming | saved | drowned
+    col: GUEST_COLS[Math.floor(Math.random()*GUEST_COLS.length)],
+    swimAngle: 0,
+    rescueTimer: 0,
+    drownTimer: 0,
+    bobOffset: Math.random()*Math.PI*2,
+  });
+}
+
+function updateGuests(dt){
+  const W=canvas.width, H=canvas.height;
+  sim.tick++;
+  document.getElementById('statTick').textContent = sim.tick;
+
+  // Occasionally launch a guest off the coaster into the pool
+  if(sim.tick % 120 === 0 && sim.guests.filter(g=>g.state==='walking').length < 8){
+    spawnGuest();
+  }
+
+  // Move guests toward coaster exit, then they "fall" into pool
+  sim.guests.forEach(g => {
+    if(g.state==='walking'){
+      // Walk up the right path toward the coaster
+      if(g.y > H*.18){
+        g.vy = -0.8;
+        g.vx = 0;
+      } else {
+        // Launch off coaster into pool
+        g.vx = -(1.8 + Math.random()*1.2);
+        g.vy =  (0.6 + Math.random()*0.8);
+        g.state = 'falling';
+        addLog(`⚠ Guest #${g.id} launched off coaster!`, 'warn');
+      }
+      g.x += g.vx;
+      g.y += g.vy;
+    }
+
+    if(g.state==='falling'){
+      g.x += g.vx;
+      g.y += g.vy;
+      g.vy += 0.08; // gravity
+      // Check if landed in pool
+      if(inPool(g.x, g.y)){
+        g.state = 'inwater';
+        g.drownTimer = sim.tryCatchOn ? 300 : 180; // try/catch gives more time
+        addLog(`🌊 Guest #${g.id} hit the water!`, 'drown');
+        if(sim.detectionOn) handleGuestInWater(g);
+      }
+      // Check if landed on path (lucky!)
+      if(onPath(g.x, g.y)){
+        g.state = 'saved';
+        g.vy=0; g.vx=0;
+      }
+    }
+
+    if(g.state==='inwater'){
+      g.drownTimer--;
+      g.bobOffset += 0.08;
+      if(g.drownTimer <= 0){
+        g.state = 'drowned';
+        sim.drowned++;
+        document.getElementById('statDrowned').textContent=sim.drowned;
+        addLog(`💀 Guest #${g.id} drowned. Plugin didn't save them in time.`, 'drown');
+      }
+      // If rescue enabled, swim toward nearest path
+      if(sim.rescueEnabled){
+        const target = nearestPathEdge(g.x, g.y);
+        const dx = target.x - g.x;
+        const dy = target.y - g.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist > 4){
+          g.x += (dx/dist)*sim.swimSpeed;
+          g.y += (dy/dist)*sim.swimSpeed;
+        }
+        if(onPath(g.x,g.y)||dist<6){
+          g.state='saved';
+          sim.saved++;
+          document.getElementById('statSaved').textContent=sim.saved;
+          addLog(`✅ Guest #${g.id} swam to safety! 🏊`, 'rescue');
+        }
+      }
+    }
+
+    if(g.state==='swimming'){
+      // handled above via rescueEnabled
+    }
+  });
+
+  // Update in-water count
+  const inW = sim.guests.filter(g=>g.state==='inwater').length;
+  document.getElementById('statInWater').textContent = inW;
+
+  // Clean up very old drowned/saved guests
+  if(sim.guests.length > 40){
+    sim.guests = sim.guests.filter(g=>g.state!=='drowned'&&g.state!=='saved').concat(
+      sim.guests.filter(g=>g.state==='drowned'||g.state==='saved').slice(-8)
+    );
+  }
+}
+
+function handleGuestInWater(g){
+  if(sim.tryCatchOn){
+    addLog(`  try { rescueGuest(${g.id}) } — catching water event…`, 'info');
+  }
+  if(sim.rescueEnabled){
+    addLog(`  → swim_to_nearest_path() called for Guest #${g.id}`, 'rescue');
+  }
+}
+
+function inPool(x,y){
+  return x>POOL.x && x<POOL.x+POOL.w && y>POOL.y && y<POOL.y+POOL.h;
+}
+
+function onPath(x,y){
+  return PATHS.some(p=>x>p.x&&x<p.x+p.w&&y>p.y&&y<p.y+p.h);
+}
+
+function nearestPathEdge(gx,gy){
+  // Find nearest point on any path edge
+  let best={x:POOL.x-20,y:POOL.y+POOL.h/2}, bestDist=Infinity;
+  const candidates=[
+    {x:POOL.x-15,     y:gy},
+    {x:POOL.x+POOL.w+15,y:gy},
+    {x:gx,            y:POOL.y+POOL.h+15},
+  ];
+  candidates.forEach(c=>{
+    const d=Math.hypot(c.x-gx,c.y-gy);
+    if(d<bestDist){bestDist=d;best=c;}
+  });
+  return best;
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDERER
+══════════════════════════════════════════════════════ */
+let waveOffset=0;
+
+function drawSim(){
+  const W=canvas.width, H=canvas.height;
+  waveOffset += 0.03;
+
+  // Sky / park background
+  const skyGrad=ctx.createLinearGradient(0,0,0,H*.7);
+  skyGrad.addColorStop(0,'#0a1628');
+  skyGrad.addColorStop(1,'#1a3a1a');
+  ctx.fillStyle=skyGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Ground
+  ctx.fillStyle='#1a3d1a';
+  ctx.fillRect(0,H*.6,W,H*.4);
+
+  // Paths
+  ctx.fillStyle='#c8a96e';
+  PATHS.forEach(p=>ctx.fillRect(p.x,p.y,p.w,p.h));
+
+  // Pool — animated water
+  const waterGrad=ctx.createLinearGradient(POOL.x,POOL.y,POOL.x,POOL.y+POOL.h);
+  waterGrad.addColorStop(0,'#0369a1');
+  waterGrad.addColorStop(1,'#0c4a6e');
+  ctx.fillStyle=waterGrad;
+  ctx.beginPath();
+  ctx.roundRect(POOL.x,POOL.y,POOL.w,POOL.h,8);
+  ctx.fill();
+
+  // Pool label
+  ctx.fillStyle='rgba(56,189,248,.15)';
+  ctx.font='bold 11px Nunito,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('POOL', POOL.x+POOL.w/2, POOL.y+POOL.h/2+4);
+
+  // Wave lines on pool
+  ctx.strokeStyle='rgba(125,211,252,.25)';
+  ctx.lineWidth=1.5;
+  for(let row=0;row<3;row++){
+    ctx.beginPath();
+    const wy=POOL.y+POOL.h*(0.25+row*0.25);
+    for(let wx=POOL.x;wx<POOL.x+POOL.w;wx+=4){
+      const wh=Math.sin((wx*0.06)+waveOffset+row*1.2)*4;
+      wx===POOL.x?ctx.moveTo(wx,wy+wh):ctx.lineTo(wx,wy+wh);
+    }
+    ctx.stroke();
+  }
+
+  // Pool border
+  ctx.strokeStyle='rgba(56,189,248,.4)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.roundRect(POOL.x,POOL.y,POOL.w,POOL.h,8);
+  ctx.stroke();
+
+  // Coaster track (simple arc from right side into pool)
+  ctx.strokeStyle='#888';
+  ctx.lineWidth=3;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(W*.83, H*.05);
+  ctx.quadraticCurveTo(W*.83, H*.15, COASTER_END.x, COASTER_END.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Coaster label
+  ctx.fillStyle='rgba(255,255,255,.3)';
+  ctx.font='bold 9px JetBrains Mono,monospace';
+  ctx.textAlign='left';
+  ctx.fillText('🎢 COASTER EXIT', W*.56, H*.08);
+
+  // Rescue radius ring (if rescue on)
+  if(sim.rescueEnabled){
+    sim.guests.filter(g=>g.state==='inwater').forEach(g=>{
+      ctx.strokeStyle='rgba(56,189,248,.2)';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.arc(g.x,g.y,sim.rescueRadius,0,Math.PI*2);
+      ctx.stroke();
+    });
+  }
+
+  // Guests
+  sim.guests.forEach(g => drawGuest(g));
+
+  // HUD
+  drawHUD(W,H);
+}
+
+function drawGuest(g){
+  const bob = g.state==='inwater'?Math.sin(g.bobOffset)*3:0;
+  const y = g.y + bob;
+
+  if(g.state==='drowned'){
+    ctx.globalAlpha=0.3;
+    ctx.fillStyle='#888';
+    ctx.font='14px serif';
+    ctx.textAlign='center';
+    ctx.fillText('💀',g.x,y);
+    ctx.globalAlpha=1;
+    return;
+  }
+
+  // Shadow
+  if(g.state!=='falling'){
+    ctx.fillStyle='rgba(0,0,0,.2)';
+    ctx.beginPath();
+    ctx.ellipse(g.x,y+12,6,3,0,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  // Body colour — blue tint when in water
+  const col = g.state==='inwater'?'#7dd3fc':
+              g.state==='saved'?'#4ade80':g.col;
+
+  // Head
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.arc(g.x,y-8,5,0,Math.PI*2);
+  ctx.fill();
+
+  // Body
+  ctx.fillRect(g.x-4,y-4,8,9);
+
+  // Legs (wiggle when swimming)
+  ctx.fillStyle = g.state==='inwater'?'#0ea5e9':'#555';
+  if(g.state==='inwater'){
+    // Swimming legs (horizontal kick)
+    const kick=Math.sin(g.bobOffset*3)*4;
+    ctx.fillRect(g.x-7,y+4,6,3);
+    ctx.fillRect(g.x+1,y+4+kick,6,3);
+  } else {
+    ctx.fillRect(g.x-4,y+5,3,6);
+    ctx.fillRect(g.x+1,y+5,3,6);
+  }
+
+  // Water splash ring
+  if(g.state==='inwater'){
+    ctx.strokeStyle=`rgba(125,211,252,${0.4+Math.sin(g.bobOffset*2)*.2})`;
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.ellipse(g.x,y+2,10+Math.sin(g.bobOffset)*2,4,0,0,Math.PI*2);
+    ctx.stroke();
+  }
+
+  // Drowned timer bar above guest in water
+  if(g.state==='inwater' && !sim.rescueEnabled){
+    const pct = g.drownTimer / (sim.tryCatchOn?300:180);
+    ctx.fillStyle='rgba(0,0,0,.4)';
+    ctx.fillRect(g.x-14,y-20,28,4);
+    ctx.fillStyle=pct>0.5?'#4ade80':pct>0.25?'#f5c842':'#ef4444';
+    ctx.fillRect(g.x-14,y-20,28*pct,4);
+  }
+}
+
+function drawHUD(W,H){
+  const status = sim.pluginLoaded ?
+    (sim.rescueEnabled ? '🏊 RESCUE PLUGIN ACTIVE' : '⚠ PLUGIN LOADED — RESCUE OFF') :
+    '❌ NO PLUGIN LOADED';
+  const col = sim.rescueEnabled?'#4ade80':sim.pluginLoaded?'#f5c842':'#ef4444';
+
+  ctx.fillStyle='rgba(0,0,0,.6)';
+  ctx.beginPath();
+  ctx.roundRect(10,10,240,28,6);
+  ctx.fill();
+  ctx.fillStyle=col;
+  ctx.font='bold 10px Nunito,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText(status,18,28);
+}
+
+/* ══════════════════════════════════════════════════════
+   GAME LOOP
+══════════════════════════════════════════════════════ */
+let lastTime=0;
+function loop(ts){
+  const dt=(ts-lastTime)/16;
+  lastTime=ts;
+  updateGuests(dt);
+  drawSim();
+  requestAnimationFrame(loop);
+}
+
+/* ══════════════════════════════════════════════════════
+   EVENT LOG
+══════════════════════════════════════════════════════ */
+const MAX_LOG=40;
+function addLog(msg,type='info'){
+  const log=document.getElementById('eventLog');
+  const line=document.createElement('div');
+  line.className='log-line '+type;
+  line.textContent=msg;
+  log.appendChild(line);
+  if(log.children.length>MAX_LOG) log.removeChild(log.firstChild);
+  log.scrollTop=log.scrollHeight;
+}
+
+function setOutput(msg){
+  document.getElementById('liveStatus').textContent=msg;
+}
+
+/* ══════════════════════════════════════════════════════
+   STEPS
+══════════════════════════════════════════════════════ */
+const STEPS = [
+
+  // ── STEP 1: How OpenRCT2 plugins work 
+  {
+    title:"How OpenRCT2 Plugins Work",
+    tag:"STEP 01 INTRO",
+    intro:`OpenRCT2 has a built-in Plugin API written in JavaScript. You drop a <code style="color:var(--blue-lt);font-size:.8rem">.js</code> file into the plugin folder, and the game loads it when the park starts running your code every tick alongside the game itself.`,
+    body:()=>`
+<div class="box box-concept">A plugin is a JavaScript file that hooks into the game. It can read guest positions, detect events like "guest entered water", and even teleport guests to safety all while the game is running.</div>
+
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js Plugin skeleton <span class="live-badge">JavaScript</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cc">// OpenRCT2 Plugin — Swim Rescue</span>
+<span class="cc">// Drop this in: Documents/OpenRCT2/plugin/</span>
+
+<span class="ck">var</span> <span class="co">pluginInfo</span> = {
+    <span class="cs">name</span>:    <span class="cs">"Swim Rescue"</span>,
+    <span class="cs">version</span>: <span class="cs">"1.0"</span>,
+    <span class="cs">authors</span>: [<span class="cs">"You!"</span>],
+};
+
+<span class="cf">function</span> <span class="cg">main</span>() {
+    <span class="cc">// This runs when the park loads</span>
+    <span class="cg">console</span>.<span class="cg">log</span>(<span class="cs">"Swim Rescue plugin loaded!"</span>);
+}
+
+<span class="cc">// Register the plugin with OpenRCT2:</span>
+<span class="ck">registerPlugin</span>({
+    <span class="cs">name</span>:    <span class="co">pluginInfo</span>.<span class="cs">name</span>,
+    <span class="cs">version</span>: <span class="co">pluginInfo</span>.<span class="cs">version</span>,
+    <span class="cs">main</span>:    <span class="cg">main</span>,
+});</div>
+  </div>
+</div>
+
+<div class="box box-tip"><code style="color:var(--blue-lt)">registerPlugin()</code> is the OpenRCT2 API function that tells the game your plugin exists. The <code style="color:var(--blue-lt)">main</code> function runs once at startup like pressing play.</div>
+
+<button class="run-btn" onclick="doApply()">▶ Load Plugin — Start Simulation!</button>
+`+nav(0),
+    onApply(){
+      sim.pluginLoaded=true;
+      spawnGuest(); spawnGuest(); spawnGuest();
+      addLog('✅ swim_rescue.js registered with OpenRCT2','rescue');
+      addLog('ℹ Guests are falling in — plugin can\'t save them yet!','warn');
+      setOutput('Plugin loaded — guests still drowning!');
+    }
+  },
+
+  // ── STEP 2: Variables & guest objects ──
+  {
+    title:"Guests Are Objects",
+    tag:"STEP 02 — OBJECTS",
+    intro:`In the OpenRCT2 API, every guest is a JavaScript object a bundle of properties like <code style="color:var(--blue-lt);font-size:.8rem">x</code>, <code style="color:var(--blue-lt);font-size:.8rem">y</code>, <code style="color:var(--blue-lt);font-size:.8rem">id</code>, and <code style="color:var(--blue-lt);font-size:.8rem">isInWater</code>. Reading those properties tells us where each guest is and what they're doing.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js Reading a guest <span class="live-badge">JavaScript</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cc">// The API gives us a guest object like this:</span>
+<span class="ck">var</span> <span class="co">guest</span> = <span class="ck">map</span>.<span class="cg">getGuest</span>(<span class="cn">0</span>);
+
+<span class="cc">// We can read properties:</span>
+<span class="ck">var</span> <span class="co">guestId</span>   = <span class="co">guest</span>.<span class="ck">id</span>;
+<span class="ck">var</span> <span class="co">guestX</span>    = <span class="co">guest</span>.<span class="ck">x</span>;
+<span class="ck">var</span> <span class="co">guestY</span>    = <span class="co">guest</span>.<span class="ck">y</span>;
+<span class="ck">var</span> <span class="co">inWater</span>   = <span class="co">guest</span>.<span class="ck">isInWater</span>;  <span class="cc">// true/false!</span>
+
+<span class="cc">// And write properties to move them:</span>
+<span class="co">guest</span>.<span class="ck">x</span> = <span class="cn"><input class="blank" id="safeX" type="number" value="128" style="--w:52px" min="0" max="255"></span>;
+<span class="co">guest</span>.<span class="ck">y</span> = <span class="cn"><input class="blank" id="safeY" type="number" value="180" style="--w:52px" min="0" max="255"></span>;
+
+<span class="cc">// That line teleports the guest instantly!</span></div>
+  </div>
+</div>
+
+<div class="box box-concept">A JavaScript object uses dot notation to access properties. <code style="color:var(--blue-lt)">guest.isInWater</code> reads the value. <code style="color:var(--blue-lt)">guest.x = 128</code> changes it. OpenRCT2 reads the changed <code style="color:var(--blue-lt)">x</code> and <code style="color:var(--blue-lt)">y</code> on the next tick and moves the guest there in-game.</div>
+
+<div class="box box-warn">The safe X value is where guests get teleported to when rescued. Try changing it watch where they end up in the sim!</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply Understand Guest Objects</button>
+`+nav(1),
+    onApply(){
+      addLog('ℹ Guests have: id, x, y, isInWater properties','info');
+      addLog('ℹ Changing guest.x / guest.y moves them next tick','info');
+      setOutput('Objects understood — now let\'s detect water!');
+    }
+  },
+
+  // ── STEP 3: if statement — detect water ──
+  {
+    title:"Detect the Water",
+    tag:"STEP 03 IF STATEMENTS",
+    intro:`Before we can save guests, we need to detect when they're in water. That's an if statement JavaScript's way of checking a condition and only running code when it's true.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js — Water detection <span class="live-badge">Editable</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">checkGuest</span>(<span class="co">guest</span>) {
+    <span class="cc">// Only act if the guest is in water:</span>
+    <span class="ck">if</span> (<span class="co">guest</span>.<span class="ck">isInWater</span> === <select class="blank-select" id="waterCondition">
+  <option value="true">true</option>
+  <option value="false">false</option>
+</select>) {
+        <span class="cc">// Guest is in water — log it for now</span>
+        <span class="ck">console</span>.<span class="cg">log</span>(
+            <span class="cs">"Guest "</span> + <span class="co">guest</span>.<span class="ck">id</span> +
+            <span class="cs">" is in water!"</span>
+        );
+    }
+}
+
+<span class="cc">// Test it:</span>
+<span class="co">checkGuest</span>({ id: <span class="cn">1</span>, isInWater: <span class="cn">true</span>, x: <span class="cn">50</span>, y: <span class="cn">80</span> });
+<span class="co">checkGuest</span>({ id: <span class="cn">2</span>, isInWater: <span class="cn">false</span>, x: <span class="cn">10</span>, y: <span class="cn">10</span> });</div>
+  </div>
+</div>
+
+<div class="box box-concept"><code style="color:var(--blue-lt)">===</code> is JavaScript's strict equality check it's true only if both sides are exactly equal. The <code style="color:var(--blue-lt)">if</code> block only runs when the condition is true. Guest 2 won't trigger it because <code style="color:var(--blue-lt)">isInWater</code> is false.</div>
+
+<div class="box box-tip">Watch the event log on the right you'll see detection messages appear as guests hit the water!</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply — Turn On Detection!</button>
+`+nav(2),
+    onApply(){
+      const cond = document.getElementById('waterCondition')?.value;
+      sim.detectionOn = (cond === 'true');
+      if(sim.detectionOn){
+        addLog('🔍 Detection ON — watching for guests in water…','info');
+        setOutput('Detection active — guests logged when they hit water!');
+      } else {
+        addLog('⚠ Detection set to false — no guests will be detected!','warn');
+        setOutput('Oops — condition is false, nothing will be detected!');
+      }
+    }
+  },
+
+  // ── STEP 4: for loop — check all guests ──
+  {
+    title:"Loop Through All Guests",
+    tag:"STEP 04 — FOR LOOPS",
+    intro:`One guest is easy. But a park has hundreds of guests. We need a for loop to check every single one every tick without writing the same code over and over.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js — Checking all guests <span class="live-badge">Editable</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">checkAllGuests</span>() {
+    <span class="cc">// How many guests to check each tick:</span>
+    <span class="ck">var</span> <span class="co">total</span> = <span class="ck">map</span>.<span class="cg">numGuests</span>;
+
+    <span class="ck">for</span> (<span class="ck">var</span> <span class="co">i</span> = <span class="cn">0</span>; <span class="co">i</span> &lt; <input class="blank" id="loopMax" type="number" value="50" min="1" max="200" style="--w:52px">; <span class="co">i</span>++) {
+        <span class="ck">var</span> <span class="co">guest</span> = <span class="ck">map</span>.<span class="cg">getGuest</span>(<span class="co">i</span>);
+
+        <span class="cc">// Skip if guest doesn't exist:</span>
+        <span class="ck">if</span> (!<span class="co">guest</span>) <span class="ck">continue</span>;
+
+        <span class="ck">if</span> (<span class="co">guest</span>.<span class="ck">isInWater</span>) {
+            <span class="cg">checkGuest</span>(<span class="co">guest</span>);
+        }
+    }
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept">A for loop has three parts: <code style="color:var(--blue-lt)">var i = 0</code> (start), <code style="color:var(--blue-lt)">i &lt; 50</code> (keep going while true), <code style="color:var(--blue-lt)">i++</code> (add 1 each time). The continue keyword skips the rest of the loop body for that iteration and jumps to the next guest.</div>
+
+<div class="box box-warn">Setting the loop max too low means some guests won't be checked. Too high wastes processing. In a real park, <code style="color:var(--blue-lt)">map.numGuests</code> gives the exact number.</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply Loop Through Guests!</button>
+`+nav(3),
+    onApply(){
+      sim.loopOn=true;
+      addLog('🔄 Loop active checking all guests every tick','info');
+      setOutput('Loop running every guest checked each tick!');
+    }
+  },
+
+  // ── STEP 5: try/catch — handle the water event ──
+  {
+    title:"try / catch — Handle Errors",
+    tag:"STEP 05 — TRY/CATCH",
+    intro:`In OpenRCT2, a guest entering water triggers an exception an error event. Normally the game catches it and <em>drowns</em> the guest. With try/catch we intercept it first and handle it ourselves.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js try/catch water event <span class="live-badge">Key Concept</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">rescueGuest</span>(<span class="co">guest</span>) {
+    <span class="ck">try</span> {
+        <span class="cc">// Attempt to move the guest to safety</span>
+        <span class="co">guest</span>.<span class="ck">x</span> = <span class="cg">findNearestPath</span>(<span class="co">guest</span>).<span class="ck">x</span>;
+        <span class="co">guest</span>.<span class="ck">y</span> = <span class="cg">findNearestPath</span>(<span class="co">guest</span>).<span class="ck">y</span>;
+        <span class="co">guest</span>.<span class="ck">isInWater</span> = <span class="cn">false</span>;
+
+    } <span class="ck">catch</span> (<span class="cr">error</span>) {
+        <span class="cc">// If something went wrong, log it</span>
+        <span class="ck">console</span>.<span class="cg">log</span>(<span class="cs">"Rescue failed: "</span> + <span class="cr">error</span>.<span class="ck">message</span>);
+
+        <span class="cc">// Fallback — teleport to park entrance</span>
+        <span class="co">guest</span>.<span class="ck">x</span> = <span class="cn">32</span>;
+        <span class="co">guest</span>.<span class="ck">y</span> = <span class="cn">32</span>;
+    }
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept">try says "attempt this code". If anything goes wrong inside it, instead of crashing, execution jumps to catch. The <code style="color:var(--blue-lt)">error</code> object tells you what went wrong. This is how you write safe code always have a fallback!</div>
+
+<div class="box box-rescue">Watch the event log you'll see "try { rescueGuest() }" messages appearing. Guests now get more time before drowning because we're handling the error instead of panicking!</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply — Add try/catch!</button>
+`+nav(4),
+    onApply(){
+      sim.tryCatchOn=true;
+      addLog('🛡 try/catch active guests get more time to be rescued','rescue');
+      addLog('ℹ Drown timer extended: 300 ticks instead of 180','info');
+      setOutput('try/catch active errors handled, guests get more time!');
+    }
+  },
+
+  // ── STEP 6: Functions — swim_to_nearest_path ──
+  {
+    title:"Write the Swim Function",
+    tag:"STEP 06 FUNCTIONS",
+    intro:`Now the key function <code style="color:var(--blue-lt);font-size:.8rem">swimToNearestPath()</code>. This calculates which safe tile is closest to the guest and moves them toward it, a little bit each tick, so they swim rather than teleport.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js The swim function <span class="live-badge">Editable</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">swimToNearestPath</span>(<span class="co">guest</span>) {
+    <span class="cc">// Find the nearest safe tile:</span>
+    <span class="ck">var</span> <span class="co">target</span> = <span class="cg">findNearestPath</span>(<span class="co">guest</span>);
+
+    <span class="cc">// Work out direction (dx, dy):</span>
+    <span class="ck">var</span> <span class="co">dx</span>   = <span class="co">target</span>.<span class="ck">x</span>  <span class="co">guest</span>.<span class="ck">x</span>;
+    <span class="ck">var</span> <span class="co">dy</span>   = <span class="co">target</span>.<span class="ck">y</span> <span class="co">guest</span>.<span class="ck">y</span>;
+    <span class="ck">var</span> <span class="co">dist</span> = <span class="ck">Math</span>.<span class="cg">sqrt</span>(<span class="co">dx</span>*<span class="co">dx</span> + <span class="co">dy</span>*<span class="co">dy</span>);
+
+    <span class="cc">// Move a little bit each tick (swim speed):</span>
+    <span class="ck">var</span> <span class="co">speed</span> = <input class="blank" id="swimSpeed" type="number" value="1.5" min="0.5" max="5" step="0.5" style="--w:44px">;
+    <span class="co">guest</span>.<span class="ck">x</span> += (<span class="co">dx</span> / <span class="co">dist</span>) * <span class="co">speed</span>;
+    <span class="co">guest</span>.<span class="ck">y</span> += (<span class="co">dy</span> / <span class="co">dist</span>) * <span class="co">speed</span>;
+
+    <span class="cc">// Close enough? Mark as saved:</span>
+    <span class="ck">if</span> (<span class="co">dist</span> &lt; <input class="blank" id="arrivalDist" type="number" value="6" min="2" max="20" style="--w:44px">) {
+        <span class="co">guest</span>.<span class="ck">isInWater</span> = <span class="cn">false</span>;
+        <span class="cg">console</span>.<span class="cg">log</span>(<span class="cs">"Guest "</span> + <span class="co">guest</span>.<span class="ck">id</span> + <span class="cs">" reached safety!"</span>);
+    }
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept"><code style="color:var(--blue-lt)">Math.sqrt(dx*dx + dy*dy)</code> is Pythagoras' theorem it gives the straight-line distance between two points. Dividing <code style="color:var(--blue-lt)">dx/dist</code> normalises the direction so the speed stays consistent regardless of distance.</div>
+
+<button class="run-btn" onclick="doApply()">🏊 Apply — Enable Swimming!</button>
+`+nav(5),
+    onApply(){
+      const speed=parseFloat(document.getElementById('swimSpeed')?.value)||1.5;
+      sim.swimSpeed=speed;
+      sim.rescueEnabled=true;
+      addLog('🏊 swimToNearestPath() active! Speed: '+speed+'/tick','rescue');
+      addLog('✅ Guests will now swim instead of drown!','rescue');
+      setOutput('RESCUE ACTIVE — watch them swim! 🏊');
+    }
+  },
+
+  // ── STEP 7: context.subscribe — the tick hook ──
+  {
+    title:"Subscribe to the Game Tick",
+    tag:"STEP 07 EVENTS",
+    intro:`Swimming only works if we call it every single tick. OpenRCT2 has an event system <code style="color:var(--blue-lt);font-size:.8rem">context.subscribe()</code> that runs your function automatically on every game update, like a heartbeat.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js — Subscribing to tick events <span class="live-badge">JavaScript</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">main</span>() {
+    <span class="ck">console</span>.<span class="cg">log</span>(<span class="cs">"Swim Rescue loaded!"</span>);
+
+    <span class="cc">// Subscribe to every game tick:</span>
+    <span class="ck">context</span>.<span class="cg">subscribe</span>(
+        <span class="cs">"interval.tick"</span>,   <span class="cc">// event name</span>
+        <span class="cf">function</span>() {         <span class="cc">// callback runs each tick</span>
+            <span class="cg">checkAllGuests</span>();
+        }
+    );
+
+    <span class="cc">// Also subscribe to guest spawning:</span>
+    <span class="ck">context</span>.<span class="cg">subscribe</span>(
+        <span class="cs">"guest.spawned"</span>,
+        <span class="cf">function</span>(<span class="co">e</span>) {
+            <span class="ck">console</span>.<span class="cg">log</span>(<span class="cs">"New guest: "</span> + <span class="co">e</span>.<span class="ck">guest</span>.<span class="ck">id</span>);
+        }
+    );
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept"><code style="color:var(--blue-lt)">context.subscribe(eventName, callback)</code> registers a callback function a function that runs whenever that event fires. <code style="color:var(--blue-lt)">"interval.tick"</code> fires every game tick (~40 times per second). This is the heartbeat of your plugin.</div>
+
+<div class="box box-rescue">The simulation is already running this pattern the <code style="color:var(--blue-lt)">requestAnimationFrame</code> loop on the right is the browser equivalent of OpenRCT2's tick system!</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply Connect the Tick!</button>
+`+nav(6),
+    onApply(){
+      sim.callbackOn=true;
+      addLog('⏱ context.subscribe("interval.tick") connected','info');
+      addLog('⏱ checkAllGuests() now runs every tick automatically','info');
+      setOutput('Tick subscribed — plugin runs automatically!');
+    }
+  },
+
+  // ── STEP 8: Rescue radius ──
+  {
+    title:"Rescue Radius",
+    tag:"STEP 08  DISTANCE LOGIC",
+    intro:`Not every guest in water needs the same rescue route. We can add a rescue radius if a guest is within range of the pool edge, we pull them toward that edge. If they're too far in the middle, we pick a different target.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js Rescue radius check <span class="live-badge">Editable</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="ck">var</span> <span class="co">RESCUE_RADIUS</span> = <input class="blank" id="rescueRadius" type="number" value="60" min="20" max="120" style="--w:52px">;
+
+<span class="cf">function</span> <span class="cg">findBestExit</span>(<span class="co">guest</span>) {
+    <span class="ck">var</span> <span class="co">exits</span> = <span class="cg">getPoolExits</span>(); <span class="cc">// returns array of exit tiles</span>
+    <span class="ck">var</span> <span class="co">best</span>  = <span class="cn">null</span>;
+    <span class="ck">var</span> <span class="co">bestDist</span> = <span class="ck">Infinity</span>;
+
+    <span class="ck">for</span> (<span class="ck">var</span> <span class="co">i</span> = <span class="cn">0</span>; <span class="co">i</span> &lt; <span class="co">exits</span>.<span class="ck">length</span>; <span class="co">i</span>++) {
+        <span class="ck">var</span> <span class="co">exit</span>  = <span class="co">exits</span>[<span class="co">i</span>];
+        <span class="ck">var</span> <span class="co">dist</span>  = <span class="ck">Math</span>.<span class="cg">hypot</span>(
+            <span class="co">exit</span>.<span class="ck">x</span> - <span class="co">guest</span>.<span class="ck">x</span>,
+            <span class="co">exit</span>.<span class="ck">y</span> - <span class="co">guest</span>.<span class="ck">y</span>
+        );
+        <span class="ck">if</span> (<span class="co">dist</span> &lt; <span class="co">bestDist</span>) {
+            <span class="co">bestDist</span> = <span class="co">dist</span>;
+            <span class="co">best</span>     = <span class="co">exit</span>;
+        }
+    }
+    <span class="cf">return</span> <span class="co">best</span>;
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept"><code style="color:var(--blue-lt)">Math.hypot(dx, dy)</code> is shorthand for Pythagoras same result as <code style="color:var(--blue-lt)">Math.sqrt(dx*dx+dy*dy)</code> but cleaner. <code style="color:var(--blue-lt)">Infinity</code> is a special JS value any real distance will be less than it, so the first exit always wins initially.</div>
+
+<div class="box box-tip">The blue ring on the simulation shows the rescue radius around each guest in water. Bigger radius = more generous rescue zone!</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply Set Rescue Radius!</button>
+`+nav(7),
+    onApply(){
+      const r=parseInt(document.getElementById('rescueRadius')?.value)||60;
+      sim.rescueRadius=r;
+      addLog('📏 Rescue radius set to '+r+' units','info');
+      setOutput('Rescue radius: '+r+' ring shown on sim!');
+    }
+  },
+
+  // ── STEP 9: UI window in-game ──
+  {
+    title:"Add an In-Game UI Window",
+    tag:"STEP 09 UI API",
+    intro:`OpenRCT2 plugins can create real windows inside the game using the UI API. We'll add a small window showing live rescue stats saved count, drowned count, and a toggle button.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js — In-game window <span class="live-badge">JavaScript</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cf">function</span> <span class="cg">openStatsWindow</span>() {
+    <span class="ck">ui</span>.<span class="cg">openWindow</span>({
+        <span class="cs">title</span>:  <span class="cs">"🏊 Swim Rescue Stats"</span>,
+        <span class="cs">width</span>:  <span class="cn">200</span>,
+        <span class="cs">height</span>: <span class="cn">120</span>,
+        <span class="cs">widgets</span>: [
+            {
+                <span class="cs">type</span>:   <span class="cs">"label"</span>,
+                <span class="cs">text</span>:   <span class="cs">"Guests Saved: "</span> + <span class="co">savedCount</span>,
+                <span class="cs">x</span>: <span class="cn">10</span>, <span class="cs">y</span>: <span class="cn">30</span>,
+                <span class="cs">width</span>: <span class="cn">180</span>, <span class="cs">height</span>: <span class="cn">20</span>,
+            },
+            {
+                <span class="cs">type</span>:   <span class="cs">"button"</span>,
+                <span class="cs">text</span>:   <span class="cs">"Toggle Rescue"</span>,
+                <span class="cs">x</span>: <span class="cn">10</span>, <span class="cs">y</span>: <span class="cn">80</span>,
+                <span class="cs">width</span>: <span class="cn">120</span>, <span class="cs">height</span>: <span class="cn">20</span>,
+                <span class="cs">onClick</span>: <span class="cf">function</span>() {
+                    <span class="co">rescueEnabled</span> = !<span class="co">rescueEnabled</span>;
+                }
+            }
+        ]
+    });
+}</div>
+  </div>
+</div>
+
+<div class="box box-concept">The <code style="color:var(--blue-lt)">ui.openWindow()</code> call creates a real draggable window inside OpenRCT2. <code style="color:var(--blue-lt)">widgets</code> is an array of UI elements. The button's <code style="color:var(--blue-lt)">onClick</code> is a callback a function that runs when clicked. <code style="color:var(--blue-lt)">!</code> flips a boolean: <code style="color:var(--blue-lt)">!true === false</code>.</div>
+
+<button class="run-btn" onclick="doApply()">▶ Apply Add the UI Panel!</button>
+`+nav(8),
+    onApply(){
+      addLog('🖥 In-game stats window created via ui.openWindow()','info');
+      addLog('🔘 Toggle button connected to rescueEnabled var','info');
+      setOutput('UI window added — toggle rescue from inside the game!');
+    }
+  },
+
+  // ── STEP 10: Complete plugin ──
+  {
+    title:"Complete Plugin!",
+    tag:"STEP 10 FINISH",
+    intro:`You've built a complete OpenRCT2 plugin. Variables, objects, if statements, for loops, functions, try/catch, event subscriptions, and a UI window that's real JavaScript, the same language that runs every website on the internet.`,
+    body:()=>`
+<div class="code-area">
+  <div class="code-area-label">swim_rescue.js — Complete plugin <span class="live-badge">Done! 🎉</span></div>
+  <div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">swim_rescue.js</span></div>
+    <div class="code-pre"><span class="cc">// ════════════════════════════════════════</span>
+<span class="cc">//  OpenRCT2 — Swim Rescue Plugin v1.0</span>
+<span class="cc">//  Made at JVDesignStudio</span>
+<span class="cc">// ════════════════════════════════════════</span>
+
+<span class="ck">var</span> <span class="co">savedCount</span>   = <span class="cn">0</span>;
+<span class="ck">var</span> <span class="co">drownedCount</span> = <span class="cn">0</span>;
+<span class="ck">var</span> <span class="co">SWIM_SPEED</span>   = <span class="cn">1.5</span>;
+<span class="ck">var</span> <span class="co">rescueEnabled</span>= <span class="cn">true</span>;
+
+<span class="cf">function</span> <span class="cg">checkAllGuests</span>() {
+    <span class="ck">for</span> (<span class="ck">var</span> <span class="co">i</span> = <span class="cn">0</span>; <span class="co">i</span> &lt; <span class="ck">map</span>.<span class="cg">numGuests</span>; <span class="co">i</span>++) {
+        <span class="ck">var</span> <span class="co">g</span> = <span class="ck">map</span>.<span class="cg">getGuest</span>(<span class="co">i</span>);
+        <span class="ck">if</span> (!<span class="co">g</span>) <span class="ck">continue</span>;
+        <span class="ck">if</span> (<span class="co">g</span>.<span class="ck">isInWater</span> && <span class="co">rescueEnabled</span>) {
+            <span class="ck">try</span> {
+                <span class="cg">swimToNearestPath</span>(<span class="co">g</span>);
+                <span class="co">savedCount</span>++;
+            } <span class="ck">catch</span>(<span class="cr">e</span>) {
+                <span class="co">drownedCount</span>++;
+            }
+        }
+    }
+}
+
+<span class="cf">function</span> <span class="cg">main</span>() {
+    <span class="ck">context</span>.<span class="cg">subscribe</span>(<span class="cs">"interval.tick"</span>, <span class="cg">checkAllGuests</span>);
+    <span class="cg">openStatsWindow</span>();
+    <span class="ck">console</span>.<span class="cg">log</span>(<span class="cs">"Swim Rescue v1.0 loaded!"</span>);
+}
+
+<span class="ck">registerPlugin</span>({ <span class="cs">name</span>:<span class="cs">"Swim Rescue"</span>, <span class="cs">version</span>:<span class="cs">"1.0"</span>, <span class="cs">main</span>:<span class="cg">main</span> });</div>
+  </div>
+</div>
+
+<div class="box box-rescue">🎉 To use this for real: save it as <code style="color:var(--blue-lt)">swim_rescue.js</code>, drop it into <code style="color:var(--blue-lt)">Documents/OpenRCT2/plugin/</code>, enable plugins in OpenRCT2 settings, and load your park. Your guests will swim!</div>
+
+<div class="box box-tip">The concepts you used variables, objects, loops, functions, try/catch, event callbacks are the same ones used to build every website, app, and game in JavaScript.</div>
+
+<button class="run-btn" onclick="doApply()" style="background:linear-gradient(135deg,var(--blue),var(--purple));color:#04090f">🏊 Launch Full Rescue Simulation!</button>
+`+nav(9),
+    onApply(){
+      sim.swimSpeed=1.5;
+      sim.rescueRadius=60;
+      sim.rescueEnabled=true;
+      sim.detectionOn=true;
+      sim.tryCatchOn=true;
+      sim.loopOn=true;
+      sim.callbackOn=true;
+      // Spawn a bunch for the finale
+      for(let i=0;i<4;i++) setTimeout(()=>spawnGuest(), i*400);
+      addLog('🎉 Full Swim Rescue plugin active!','rescue');
+      addLog('🌊 Guests falling in — all being rescued!','rescue');
+      setOutput('🏊 Full plugin running — no guest left behind!');
+    }
+  },
+];
+
+/* ══════════════════════════════════════════════════════
+   STEP ENGINE
+══════════════════════════════════════════════════════ */
+let currentStep=0;
+const stepsDone=new Set();
+const TOTAL=STEPS.length;
+
+function nav(i){
+  return `<div class="step-nav">
+    <button class="btn-prev" onclick="goStep(${i-1})" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-next" onclick="goStep(${i+1})" ${i===TOTAL-1?'disabled':''}>Next Step →</button>
+  </div>`;
+}
+
+function goStep(i){
+  if(i<0||i>=TOTAL) return;
+  currentStep=i;
+  renderStep();
+  document.getElementById('stepBody').scrollTop=0;
+}
+
+function renderStep(){
+  const s=STEPS[currentStep];
+  document.getElementById('stepBody').innerHTML=`
+    <div class="step-num">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <p class="step-intro">${s.intro}</p>
+    ${s.body()}
+  `;
+  const tabs=document.getElementById('stepsTabs');
+  tabs.innerHTML=STEPS.map((_,i)=>`
+    <button class="tab-btn${i===currentStep?' active':''}${stepsDone.has(i)?' done':''}" onclick="goStep(${i})">${i+1}</button>
+  `).join('');
+  tabs.querySelector('.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
+  updateProgress();
+}
+
+function doApply(){
+  stepsDone.add(currentStep);
+  STEPS[currentStep].onApply();
+  updateProgress();
+  const btn=document.getElementById('runBtn')||document.querySelector('.run-btn');
+  if(btn){const o=btn.innerHTML;btn.innerHTML='✅ Applied!';setTimeout(()=>{if(btn)btn.innerHTML=o;},900);}
+  document.getElementById('liveStatus').textContent='Step '+(currentStep+1)+' applied ✓';
+}
+
+function updateProgress(){
+  const pct=Math.max(10,Math.round((stepsDone.size/TOTAL)*100));
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progDots').innerHTML=STEPS.map((_,i)=>
+    `<div class="prog-dot${stepsDone.has(i)?' done':i===currentStep?' active':''}"></div>`
+  ).join('');
+}
+
+// Mobile nav
+document.getElementById('navToggle').addEventListener('click',()=>{
+  document.getElementById('mobileNav').classList.toggle('open');
+});
+
+// Init
+window.addEventListener('resize',()=>{resizeCanvas();});
+resizeCanvas();
+renderStep();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
