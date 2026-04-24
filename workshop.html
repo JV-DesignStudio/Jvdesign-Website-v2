@@ -3,238 +3,833 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workshop Courses, Builders & Guides | JVDesignStudio</title>
-<meta name="description" content="Free interactive courses for building real games. Live code builders, 3D builders, Godot, MUGEN, Roblox. All free, all beginner-friendly, ages 8+.">
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=Lora:wght@400;600&display=swap" rel="stylesheet">
+<title>Workshop Courses, Guides & Behind the Scenes | JVDesignStudio</title>
+<meta name="description" content="Interactive courses, game-building guides, and behind-the-scenes articles. Godot, JavaScript, Python, MUGEN, Roblox. All free. All beginner-friendly.">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --beige:      #F0EAD6;
-  --tan:        #D2B48C;
-  --tan-dk:     #b8956a;
-  --rose:       #BC4749;
-  --rose-dk:    #9b3a3c;
-  --teal:       #70A3A7;
-  --teal-dk:    #4e7d80;
-  --charcoal:   #403B33;
-  --charcoal-lt:#5a5449;
-  --white:      #ffffff;
-  /* dark mode vars */
-  --bg-primary:   #F0EAD6;
-  --bg-secondary: #ffffff;
-  --bg-tertiary:  #e8dfc8;
-  --text-primary: #403B33;
-  --text-secondary:#5a5449;
-  --text-muted:   #8a8278;
-  --border-lt:    rgba(64,59,51,.08);
-  --card-bg:      #ffffff;
+
+
+
+        /* ══════════════════════════════════════
+           PALETTE & RESET
+        ══════════════════════════════════════ */
+        :root {
+            --beige:      #F0EAD6;
+            --tan:        #D2B48C;
+            --tan-dk:     #b8956a;
+            --rose:       #BC4749;
+            --rose-dk:    #9b3a3c;
+            --rose-lt:    #f5e0e0;
+            --teal:       #70A3A7;
+            --teal-dk:    #4e7d80;
+            --teal-lt:    #e0edef;
+            --charcoal:   #403B33;
+            --charcoal-lt:#5a5449;
+            --white:      #ffffff;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--beige);
+            color: var(--charcoal);
+            overflow-x: hidden;
+        }
+        a { text-decoration: none; color: inherit; }
+        img { display: block; max-width: 100%; }
+
+        /* ══════════════════════════════════════
+           SHARED COMPONENTS
+        ══════════════════════════════════════ */
+
+        /* Logo animation */
+        @keyframes logo-shift {
+            0%   { color: var(--tan); }
+            33%  { color: var(--rose); }
+            66%  { color: var(--teal); }
+            100% { color: var(--tan); }
+        }
+        .logo-name { animation: logo-shift 6s infinite alternate ease-in-out; font-weight: 800; }
+
+        /* Buttons */
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--rose); color: white;
+            font-weight: 700; border-radius: 14px;
+            padding: 15px 34px; font-size: 1.05rem;
+            box-shadow: 0 4px 0 var(--rose-dk);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+        }
+        .btn-primary:hover  { background: var(--rose-dk); transform: translateY(-2px); box-shadow: 0 6px 0 #7a2e2f; }
+        .btn-primary:active { transform: translateY(2px);  box-shadow: 0 2px 0 var(--rose-dk); }
+
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: 8px;
+            border: 2px solid var(--teal-dk); color: var(--teal-dk);
+            font-weight: 700; border-radius: 14px;
+            padding: 13px 32px; font-size: 1.05rem;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .btn-outline:hover { background: var(--teal-dk); color: white; transform: translateY(-2px); }
+
+        /* Section label pill */
+        .section-tag {
+            display: inline-block;
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+            text-transform: uppercase; color: white;
+            background: var(--teal-dk); border-radius: 999px;
+            padding: 5px 16px; margin-bottom: 14px; border: none;
+        }
+
+        /* Section title */
+        .section-title {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 900; color: var(--charcoal);
+            line-height: 1.15; opacity: 1;
+        }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity 0.55s ease, transform 0.55s ease;
+        }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* Card base */
+        .card {
+            background: white; border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(64,59,51,0.08);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(64,59,51,0.14); }
+
+        /* ══════════════════════════════════════
+           HEADER
+        ══════════════════════════════════════ */
+        .site-header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(64,59,51,0.08);
+            box-shadow: 0 2px 16px rgba(64,59,51,0.07);
+        }
+        .header-inner {
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 28px; height: 74px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-link {
+            display: flex; align-items: center; gap: 11px;
+            font-size: 1.4rem;
+        }
+        .logo-link img { height: 42px; width: auto; border-radius: 10px; }
+
+        .main-nav { display: flex; align-items: center; gap: 6px; }
+        .nav-link {
+            font-weight: 600; font-size: 0.9rem;
+            color: var(--charcoal-lt); padding: 8px 14px; border-radius: 8px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .nav-link:hover { color: var(--charcoal); background: var(--beige); }
+
+        /* Mobile nav toggle */
+        .nav-toggle {
+            display: none; background: none; border: none;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            font-size: 1.4rem; color: var(--charcoal);
+        }
+        .mobile-nav {
+            display: none; flex-direction: column;
+            background: white; border-top: 1px solid rgba(64,59,51,0.08);
+            padding: 12px 28px 20px; gap: 4px;
+        }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a {
+            font-weight: 600; color: var(--charcoal-lt);
+            padding: 10px 14px; border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .mobile-nav a:hover { background: var(--beige); color: var(--charcoal); }
+
+        @media (max-width: 768px) {
+            .desktop-nav { display: none; }
+            .nav-toggle   { display: block; }
+        }
+
+        /* ══════════════════════════════════════
+           HERO
+        ══════════════════════════════════════ */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            padding: 60px 28px;
+        }
+
+        /* Animated gradient background */
+        .hero-bg {
+            position: absolute; inset: 0; z-index: 0;
+            background: linear-gradient(
+                -45deg,
+                var(--beige) 0%,
+                #e8d5c0 20%,
+                #f0c8c8 40%,
+                #c8dfe0 60%,
+                #d4c5b0 80%,
+                var(--beige) 100%
+            );
+            background-size: 400% 400%;
+            animation: gradwave 18s ease-in-out infinite;
+        }
+        @keyframes gradwave {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating shape decorations */
+        .hero-shape {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            animation: float-shape var(--dur, 8s) var(--delay, 0s) ease-in-out infinite alternate;
+        }
+        @keyframes float-shape {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to   { transform: translate(var(--tx, 20px), var(--ty, -20px)) rotate(var(--rot, 15deg)); }
+        }
+
+        /* Floating emoji decorations */
+        .hero-emoji {
+            position: absolute;
+            font-size: var(--size, 2rem);
+            opacity: 0.18;
+            animation: float-emoji var(--dur, 7s) var(--delay, 0s) ease-in-out infinite alternate;
+            user-select: none; pointer-events: none;
+        }
+        @keyframes float-emoji {
+            from { transform: translateY(0) rotate(0deg); }
+            to   { transform: translateY(var(--ty, -18px)) rotate(var(--rot, 10deg)); }
+        }
+
+        .hero-content {
+            position: relative; z-index: 1;
+            max-width: 760px; text-align: center;
+        }
+        .hero-eyebrow {
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--rose);
+            margin-bottom: 18px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .hero-eyebrow::before, .hero-eyebrow::after {
+            content: ''; flex: 0 0 32px; height: 1.5px; background: var(--rose); opacity: 0.5;
+        }
+        .hero-title {
+            font-family: 'Fredoka', cursive;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 700; line-height: 1.05;
+            color: var(--charcoal);
+            margin-bottom: 22px;
+        }
+        .hero-title .accent { color: var(--rose); }
+        .hero-title .accent2 { color: var(--teal-dk); }
+
+        .hero-desc {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            color: var(--charcoal-lt); line-height: 1.7;
+            max-width: 560px; margin: 0 auto 36px;
+        }
+        .hero-buttons {
+            display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+        }
+
+        /* Scroll cue */
+        .scroll-cue {
+            position: absolute; bottom: 32px; left: 50%;
+            transform: translateX(-50%); z-index: 2;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            opacity: 0.5; animation: bounce-cue 2s ease-in-out infinite;
+        }
+        @keyframes bounce-cue {
+            0%,100% { transform: translateX(-50%) translateY(0); }
+            50%      { transform: translateX(-50%) translateY(6px); }
+        }
+        .scroll-cue span { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--charcoal); }
+        .scroll-cue svg  { color: var(--charcoal); }
+
+        /* ══════════════════════════════════════
+           CATEGORY STRIP
+        ══════════════════════════════════════ */
+        .category-strip {
+            background: var(--charcoal);
+            padding: 22px 28px;
+        }
+        .category-inner {
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: center;
+            gap: 12px; flex-wrap: wrap;
+        }
+        .category-pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(240,234,214,0.8);
+            font-size: 0.85rem; font-weight: 600;
+            padding: 8px 18px; border-radius: 999px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .category-pill:hover { background: var(--rose); color: white; border-color: var(--rose); }
+
+        /* ══════════════════════════════════════
+           FEATURED SECTION
+        ══════════════════════════════════════ */
+        .featured-section {
+            padding: 88px 28px;
+            background: var(--beige);
+        }
+        .section-header {
+            text-align: center; margin-bottom: 52px;
+        }
+        .featured-grid {
+            max-width: 1200px; margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+        }
+        .feat-card {
+            display: flex; flex-direction: column;
+        }
+        .feat-card-img {
+            position: relative; overflow: hidden;
+        }
+        .feat-card-img img {
+            width: 100%; height: 220px; object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .card:hover .feat-card-img img { transform: scale(1.05); }
+        .feat-card-badge {
+            position: absolute; top: 14px; left: 14px;
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em;
+            text-transform: uppercase; color: white;
+            padding: 4px 12px; border-radius: 999px;
+        }
+        .badge-book  { background: var(--rose); }
+        .badge-free  { background: #c47f00; }
+        .badge-game  { background: var(--teal-dk); }
+
+        .feat-card-body {
+            padding: 22px 24px 26px;
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .feat-card-title {
+            font-size: 1.2rem; font-weight: 800;
+            color: var(--charcoal); margin-bottom: 8px;
+        }
+        .feat-card-desc {
+            font-size: 0.9rem; color: #6b6460;
+            line-height: 1.55; flex: 1; margin-bottom: 18px;
+        }
+        .feat-card-cta {
+            font-weight: 700; font-size: 0.9rem;
+            color: var(--teal-dk);
+            display: inline-flex; align-items: center; gap: 4px;
+            transition: gap 0.2s;
+        }
+        .card:hover .feat-card-cta { gap: 8px; }
+
+        .see-all-wrap { text-align: center; margin-top: 48px; }
+
+        /* ══════════════════════════════════════
+           ABOUT STRIP
+        ══════════════════════════════════════ */
+        .about-strip {
+            background: var(--teal-dk);
+            padding: 72px 28px;
+            position: relative; overflow: hidden;
+        }
+        .about-strip::before {
+            content: '📚';
+            position: absolute; right: -20px; top: -20px;
+            font-size: 160px; opacity: 0.07;
+            transform: rotate(-15deg);
+            pointer-events: none;
+        }
+        .about-strip::after {
+            content: '🎲';
+            position: absolute; left: -10px; bottom: -20px;
+            font-size: 140px; opacity: 0.07;
+            transform: rotate(10deg);
+            pointer-events: none;
+        }
+        .about-inner {
+            max-width: 780px; margin: 0 auto; text-align: center;
+            position: relative; z-index: 1;
+        }
+        .about-inner .section-tag { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.8); }
+        .about-inner h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 900; color: white; margin-bottom: 18px; }
+        .about-inner p  { font-size: 1.05rem; color: rgba(255,255,255,0.8); line-height: 1.75; margin-bottom: 32px; }
+        .about-stats {
+            display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;
+            margin-bottom: 36px;
+        }
+        .stat { text-align: center; }
+        .stat-num { font-family: 'Fredoka', cursive; font-size: 2.4rem; font-weight: 700; color: white; line-height: 1; }
+        .stat-label { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+        .btn-about {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: white; color: var(--teal-dk);
+            font-weight: 700; border-radius: 14px;
+            padding: 14px 32px; font-size: 1rem;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .btn-about:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+        /* ══════════════════════════════════════
+           UPDATES
+        ══════════════════════════════════════ */
+        .updates-section {
+            padding: 88px 28px;
+            background: white;
+        }
+        .updates-grid {
+            max-width: 900px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .update-card {
+            background: var(--beige); border-radius: 18px;
+            padding: 28px 32px;
+            display: flex; gap: 28px; align-items: flex-start;
+            border-left: 4px solid var(--teal);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .update-card:hover { transform: translateX(4px); box-shadow: 0 8px 24px rgba(64,59,51,0.08); }
+        .update-card.rose  { border-color: var(--rose); }
+        .update-meta { flex: 0 0 140px; }
+        .update-date { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--teal-dk); margin-bottom: 6px; }
+        .update-card.rose .update-date { color: var(--rose); }
+        .update-title { font-size: 1.15rem; font-weight: 800; color: var(--charcoal); }
+        .update-body { flex: 1; }
+        .update-body p { font-size: 0.95rem; color: var(--charcoal-lt); line-height: 1.65; margin-bottom: 14px; }
+        .update-link { font-weight: 700; font-size: 0.9rem; color: var(--rose); transition: opacity 0.15s; }
+        .update-link:hover { opacity: 0.75; }
+
+        @media (max-width: 600px) {
+            .update-card { flex-direction: column; gap: 12px; }
+            .update-meta { flex: unset; }
+        }
+
+        /* ══════════════════════════════════════
+           MERCH SECTION
+        ══════════════════════════════════════ */
+        .merch-section {
+            padding: 88px 28px;
+            background: var(--tan);
+            position: relative; overflow: hidden;
+        }
+        .merch-section::before {
+            content: '🛍️';
+            position: absolute; right: 5%; top: 50%;
+            transform: translateY(-50%);
+            font-size: 200px; opacity: 0.08;
+            pointer-events: none;
+        }
+        .merch-inner {
+            max-width: 680px; margin: 0 auto; text-align: center;
+            position: relative; z-index: 1;
+        }
+        .merch-inner .section-tag { border-color: var(--charcoal); color: var(--charcoal); opacity: 0.7; }
+        .merch-inner h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: var(--charcoal); margin-bottom: 16px; }
+        .merch-inner p  { font-size: 1.05rem; color: var(--charcoal-lt); line-height: 1.7; margin-bottom: 32px; }
+
+        /* ══════════════════════════════════════
+           SOCIALS
+        ══════════════════════════════════════ */
+        .socials-section {
+            padding: 88px 28px;
+            background: var(--beige);
+            border-top: 2px solid rgba(64,59,51,0.06);
+        }
+        .socials-grid {
+            max-width: 1100px; margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .social-card {
+            background: white; border-radius: 18px;
+            padding: 26px 18px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(64,59,51,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .social-card:hover { transform: translateY(-5px); box-shadow: 0 14px 28px rgba(64,59,51,0.13); }
+        .social-card img { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; }
+        .social-platform { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal-dk); }
+        .social-name { font-size: 1rem; font-weight: 800; color: var(--charcoal); }
+        .social-desc { font-size: 0.78rem; color: #7a746c; line-height: 1.4; }
+        .social-arrow { font-size: 0.85rem; font-weight: 700; color: var(--rose); margin-top: 4px; }
+
+        /* Contact row */
+        .contact-row {
+            max-width: 680px; margin: 48px auto 0;
+            background: white; border-radius: 18px;
+            padding: 36px 32px; text-align: center;
+            box-shadow: 0 4px 20px rgba(64,59,51,0.07);
+        }
+        .contact-row h3 { font-size: 1.4rem; font-weight: 800; color: var(--charcoal); margin-bottom: 8px; }
+        .contact-row p  { font-size: 0.95rem; color: var(--charcoal-lt); margin-bottom: 24px; }
+        .contact-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .contact-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-weight: 700; font-size: 0.9rem; padding: 11px 22px;
+            border-radius: 10px; border: 2px solid;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .contact-btn:hover { transform: translateY(-2px); }
+        .contact-btn.email { border-color: var(--rose); color: var(--rose); }
+        .contact-btn.email:hover { background: var(--rose); color: white; }
+        .contact-btn.insta { border-color: var(--teal-dk); color: var(--teal-dk); }
+        .contact-btn.insta:hover { background: var(--teal-dk); color: white; }
+
+        /* ══════════════════════════════════════
+           ABOUT SECTION (bottom)
+        ══════════════════════════════════════ */
+        #about {
+            padding: 72px 28px;
+            background: var(--charcoal);
+            text-align: center;
+        }
+        #about .section-tag { border-color: rgba(240,234,214,0.3); color: rgba(240,234,214,0.7); }
+        #about h2 { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 900; color: var(--beige); margin-bottom: 16px; }
+        #about p  { font-size: 1rem; color: rgba(240,234,214,0.72); line-height: 1.8; max-width: 600px; margin: 0 auto; }
+
+        /* ══════════════════════════════════════
+           FOOTER
+        ══════════════════════════════════════ */
+        footer {
+            background: #2e2a24;
+            padding: 28px;
+            text-align: center;
+            color: rgba(240,234,214,0.35);
+            font-size: 0.82rem;
+        }
+        footer a { color: rgba(240,234,214,0.5); transition: color 0.15s; }
+        footer a:hover { color: rgba(240,234,214,0.85); }
+
+        /* ══════════════════════════════════════
+           RESPONSIVE TWEAKS
+        ══════════════════════════════════════ */
+        @media (max-width: 640px) {
+            .hero-buttons { flex-direction: column; align-items: center; }
+            .btn-primary, .btn-outline { width: 100%; max-width: 300px; justify-content: center; }
+            .about-stats { gap: 24px; }
+            .header-inner { padding: 0 18px; }
+        }
+    
+        
+
+    
+        /* ═══════════════════════════════════
+           SHARED: NAV + FOOTER  (v2 unified)
+        ═══════════════════════════════════ */
+        .site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,.08);box-shadow:0 2px 18px rgba(64,59,51,.08);}
+        .header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+        .logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;text-decoration:none;margin-right:auto;}
+        .logo-link img{height:36px;border-radius:8px;display:block;}
+        .logo-name{font-weight:800;}
+        .main-nav{display:flex;align-items:center;gap:2px;}
+        .nav-link{font-size:.83rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s;}
+        .nav-link:hover{background:#F0EAD6;color:#403B33;}
+        .nav-cta{background:#BC4749;color:#fff;font-weight:700;font-size:.83rem;padding:8px 16px;border-radius:10px;box-shadow:0 3px 0 #9b3a3c;text-decoration:none;white-space:nowrap;flex-shrink:0;margin-left:8px;transition:filter .15s,transform .1s;}
+        .nav-cta:hover{filter:brightness(1.08);transform:translateY(-1px);}
+        @media(max-width:860px){.main-nav,.nav-cta{display:none !important;}.nav-toggle{display:block !important;}}
+        .site-footer{background:#403B33;padding:52px 24px 28px;}
+        .footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+        .footer-brand{display:flex;flex-direction:column;gap:6px;}
+        .footer-logo{font-family:"Fredoka",cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+        .footer-tagline{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,234,214,.38);}
+        .footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+        .footer-links a{font-size:.82rem;font-weight:600;color:rgba(240,234,214,.5);text-decoration:none;padding:4px 9px;border-radius:6px;transition:color .15s,background .15s;}
+        .footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,.07);}
+        .footer-socials{display:flex;gap:24px;justify-content:center;}
+        .footer-socials a{font-size:.82rem;font-weight:700;color:rgba(240,234,214,.38);text-decoration:none;transition:color .15s;}
+        .footer-socials a:hover{color:rgba(240,234,214,.85);}
+        .footer-copy{font-size:.73rem;color:rgba(240,234,214,.2);border-top:1px solid rgba(255,255,255,.07);padding-top:18px;width:100%;}
+        /* ═══════════════════════════════════ */
+        
+        /* ═══════════════════════════════════
+           DARK MODE CSS VARIABLES
+        ═══════════════════════════════════ */
+        :root {
+            --bg-primary:    #F0EAD6;
+            --bg-secondary:  #ffffff;
+            --bg-tertiary:   #e8e0cc;
+            --text-primary:  #403B33;
+            --text-secondary:#5a5449;
+            --text-muted:    #8a8278;
+            --border:        #D2B48C;
+            --border-lt:     rgba(64,59,51,.08);
+            --header-bg:     rgba(255,255,255,.96);
+            --card-bg:       #ffffff;
+            --card-shadow:   0 5px 22px rgba(64,59,51,.07);
+        }
+        [data-theme="dark"] {
+            --bg-primary:    #1e1c18;
+            --bg-secondary:  #2a2720;
+            --bg-tertiary:   #322f27;
+            --text-primary:  #f0ead6;
+            --text-secondary:#c8bfaa;
+            --text-muted:    #7a7268;
+            --border:        #3a3830;
+            --border-lt:     rgba(240,234,214,.08);
+            --header-bg:     rgba(30,28,24,.97);
+            --card-bg:       #2a2720;
+            --card-shadow:   0 5px 22px rgba(0,0,0,.3);
+        }
+        /* Apply variables to body */
+        body { background-color: var(--bg-primary); color: var(--text-primary); }
+        /* Dark mode header */
+        [data-theme="dark"] .site-header { background: var(--header-bg) !important; border-color: var(--border-lt) !important; }
+        [data-theme="dark"] .nav-link { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .nav-link:hover { background: var(--bg-tertiary) !important; color: var(--text-primary) !important; }
+        [data-theme="dark"] .mobile-nav { background: var(--bg-secondary) !important; border-color: var(--border-lt) !important; }
+        [data-theme="dark"] .mobile-nav a { color: var(--text-secondary) !important; border-color: var(--border-lt) !important; }
+        [data-theme="dark"] .mobile-nav a:hover { background: var(--bg-tertiary) !important; }
+        /* Dark mode toggle button in header */
+        .theme-toggle {
+            background: none;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 5px 9px;
+            font-size: .9rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+            margin-left: 6px;
+        }
+        .theme-toggle:hover { background: var(--bg-tertiary); }
+
+        /* ═══════════════════════════════════════════════
+           DARK MODE — COMPREHENSIVE OVERRIDES
+        ═══════════════════════════════════════════════ */
+        [data-theme="dark"] .card                { background: var(--card-bg) !important; box-shadow: var(--card-shadow) !important; }
+        [data-theme="dark"] .feat-card-title     { color: var(--text-primary) !important; }
+        [data-theme="dark"] .feat-card-desc      { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .featured-section    { background: var(--bg-primary) !important; }
+        [data-theme="dark"] .updates-section     { background: var(--bg-secondary) !important; }
+        [data-theme="dark"] .update-card         { background: var(--bg-tertiary) !important; }
+        [data-theme="dark"] .update-title        { color: var(--text-primary) !important; }
+        [data-theme="dark"] .update-body p       { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .socials-section     { background: var(--bg-primary) !important; border-color: var(--border-lt) !important; }
+        [data-theme="dark"] .social-card         { background: var(--card-bg) !important; box-shadow: var(--card-shadow) !important; }
+        [data-theme="dark"] .social-name         { color: var(--text-primary) !important; }
+        [data-theme="dark"] .social-desc         { color: var(--text-muted) !important; }
+        [data-theme="dark"] .contact-row         { background: var(--card-bg) !important; box-shadow: var(--card-shadow) !important; }
+        [data-theme="dark"] .contact-row h3      { color: var(--text-primary) !important; }
+        [data-theme="dark"] .contact-row p       { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .section-tag         { border-color: var(--border) !important; color: var(--text-muted) !important; }
+        [data-theme="dark"] .section-header h2   { color: var(--text-primary) !important; }
+        [data-theme="dark"] .section-header p    { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .merch-section       { background: var(--bg-secondary) !important; }
+        [data-theme="dark"] .merch-inner h2      { color: var(--text-primary) !important; }
+        [data-theme="dark"] .merch-inner p       { color: var(--text-secondary) !important; }
+        [data-theme="dark"] .merch-inner .section-tag { color: var(--text-muted) !important; border-color: var(--border) !important; }
+        [data-theme="dark"] .category-bar        { background: #1a1814 !important; }
+        [data-theme="dark"] .hero-bg             {
+            background: linear-gradient(-45deg,#1e1c18 0%,#2a2418 25%,#281818 50%,#182020 60%,#221e18 80%,#1e1c18 100%) !important;
+            background-size: 400% 400% !important;
+        }
+        /* ═══════════════════════════════════ */
+    
+        /* ══ GAMES SECTION ══ */
+        .games-section { padding: 80px 24px; background: var(--charcoal); }
+        .games-section .section-tag { border-color: rgba(112,163,167,0.4); color: var(--teal); }
+        .games-section .section-title { color: white; }
+        .games-grid {
+            max-width: 1100px; margin: 48px auto 0;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 20px;
+        }
+        .game-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(240,234,214,0.1);
+            border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; text-decoration: none;
+        }
+        .game-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-color: rgba(112,163,167,0.35); }
+        .game-thumb { height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .game-emoji { font-size: 3rem; }
+        .game-badge { position: absolute; top: 12px; right: 12px; background: var(--rose); color: white; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+        .game-body { padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .game-tag { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); }
+        .game-title { font-size: 1.05rem; font-weight: 800; color: var(--beige); line-height: 1.2; }
+        .game-desc { font-size: 0.82rem; color: rgba(240,234,214,0.55); line-height: 1.55; flex: 1; }
+        .game-cta { font-size: 0.82rem; font-weight: 700; color: var(--teal); margin-top: 6px; }
+        .game-card:hover .game-cta { color: #9dd4d7; }
+        @media (max-width: 640px) { .games-grid { grid-template-columns: 1fr; } }
+
+    
+/* ═══ MOBILE NAV ═══ */
+.nav-toggle{
+  display:none;background:none;border:none;
+  padding:8px 12px;font-size:1.4rem;cursor:pointer;
+  color:var(--charcoal,#403B33);flex-shrink:0;
+  line-height:1;
 }
-[data-theme="dark"] {
-  --bg-primary:   #1e1c18;
-  --bg-secondary: #2a2720;
-  --bg-tertiary:  #322f27;
-  --text-primary: #f0ead6;
-  --text-secondary:#c8bfaa;
-  --text-muted:   #7a7268;
-  --border-lt:    rgba(240,234,214,.08);
-  --card-bg:      #2a2720;
+.mobile-nav{
+  position:absolute;top:100%;left:0;right:0;z-index:200;
+  background:#fff;
+  border-top:3px solid var(--rose,#BC4749);
+  box-shadow:0 8px 32px rgba(64,59,51,.18);
+  max-height:0;overflow:hidden;
+  transition:max-height .4s ease;
+  display:block;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);overflow-x:hidden;transition:background .2s,color .2s}
-a{text-decoration:none;color:inherit}
-img{display:block;max-width:100%}
+.mobile-nav.open{ max-height:calc(100vh - 68px); overflow-y:auto; }
+.mobile-nav a{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 24px;
+  font-size:1rem;font-weight:600;
+  color:var(--charcoal-lt,#5a5449);
+  border-bottom:1px solid rgba(64,59,51,.06);
+  transition:background .12s;
+  text-decoration:none;
+}
+.mobile-nav a:last-child{ border-bottom:none; }
+.mobile-nav a:hover{ background:var(--beige,#F0EAD6); color:var(--charcoal,#403B33); }
+@media(max-width:860px){
+  .main-nav,.nav-cta{ display:none!important; }
+  .nav-toggle{ display:block!important; }
+}
+@media(min-width:861px){
+  .mobile-nav{ display:none!important; }
+}
 
-/* ── HEADER ── */
-.site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(64,59,51,.08);box-shadow:0 2px 16px rgba(64,59,51,.07)}
-[data-theme="dark"] .site-header{background:rgba(30,28,24,.97) !important;border-color:var(--border-lt) !important}
-.header-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:68px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.logo-link{display:flex;align-items:center;gap:10px;font-size:1.3rem;flex-shrink:0}
-.logo-link img{height:38px;width:auto;border-radius:8px}
-@keyframes logo-shift{0%{color:var(--tan)}33%{color:var(--rose)}66%{color:var(--teal)}100%{color:var(--tan)}}
-.logo-name{animation:logo-shift 6s infinite alternate ease-in-out;font-weight:800}
-.main-nav{display:flex;align-items:center;gap:4px}
-.nav-link{font-weight:600;font-size:.83rem;color:var(--charcoal-lt);padding:7px 11px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
-.nav-link:hover{background:var(--beige);color:var(--charcoal)}
-[data-theme="dark"] .nav-link{color:var(--text-secondary) !important}
-[data-theme="dark"] .nav-link:hover{background:var(--bg-tertiary) !important;color:var(--text-primary) !important}
-.dark-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;padding:6px 8px;border-radius:8px;flex-shrink:0;line-height:1;color:var(--charcoal);transition:background .15s}
-.dark-btn:hover{background:rgba(0,0,0,.08)}
-[data-theme="dark"] .dark-btn{color:#F0EAD6}
-.nav-toggle{display:none;background:none;border:none;padding:8px 10px;font-size:1.4rem;cursor:pointer;color:var(--charcoal);flex-shrink:0;line-height:1;border-radius:8px}
-.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border-top:3px solid var(--rose);box-shadow:0 8px 32px rgba(64,59,51,.18);max-height:0;overflow:hidden;transition:max-height .4s ease;display:block}
-.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto}
-.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:var(--charcoal-lt);border-bottom:1px solid rgba(64,59,51,.06);transition:background .12s;text-decoration:none}
-.mobile-nav a:last-child{border-bottom:none}
-.mobile-nav a:hover{background:var(--beige);color:var(--charcoal)}
-[data-theme="dark"] .mobile-nav{background:var(--bg-secondary) !important;border-color:var(--border-lt) !important}
-[data-theme="dark"] .mobile-nav a{color:var(--text-secondary) !important;border-color:var(--border-lt) !important}
-[data-theme="dark"] .mobile-nav a:hover{background:var(--bg-tertiary) !important}
-@media(max-width:860px){.main-nav{display:none !important}.nav-toggle{display:block !important}}
-@media(min-width:861px){.mobile-nav{display:none !important}}
 
-/* ── REVEAL ── */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .5s ease,transform .5s ease}
-.reveal.visible{opacity:1;transform:none}
-
-/* ── HERO ── */
-.ws-hero{padding:72px 28px 60px;background:var(--beige);border-bottom:3px solid var(--tan)}
-[data-theme="dark"] .ws-hero{background:var(--bg-secondary) !important;border-color:var(--bg-tertiary) !important}
-.ws-hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center}
+/* ── WORKSHOP PAGE EXTRA ── */
+.ws-hero{padding:72px 28px 60px;background:var(--beige);border-bottom:3px solid var(--tan);}
+.ws-hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;}
 @media(max-width:680px){.ws-hero-inner{grid-template-columns:1fr;gap:20px}}
 .ws-kicker{font-size:.72rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-dk);margin-bottom:10px}
-.ws-title{font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:var(--text-primary);line-height:1;margin-bottom:14px}
+.ws-title{font-size:clamp(2.4rem,6vw,4rem);font-weight:900;color:var(--charcoal);line-height:1;margin-bottom:14px}
 .ws-title span{color:var(--rose)}
-.ws-sub{font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:440px}
-.ws-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.ws-pill{font-size:.72rem;font-weight:800;padding:6px 14px;border-radius:999px;letter-spacing:.03em;color:white;display:inline-flex;align-items:center;gap:5px}
-.ws-pill:nth-child(1){background:#c8b200;color:#1a1600}
-.ws-pill:nth-child(2){background:#4b8a2e}
-.ws-pill:nth-child(3){background:#649ad2}
-.ws-pill:nth-child(4){background:#00c853}
-.ws-pill:nth-child(5){background:#c9a84c;color:#1a1600}
-.ws-pill:nth-child(6){background:#c0392b}
-.ws-pill:nth-child(7){background:#e8631a}
-.ws-pill:nth-child(8){background:#478cbf}
-.ws-pill:nth-child(9){background:#2c7a4b}
-.ws-stat-grid{background:var(--card-bg);border-radius:16px;box-shadow:0 4px 20px rgba(64,59,51,.08);padding:20px 22px;min-width:200px}
-[data-theme="dark"] .ws-stat-grid{box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.ws-sub{font-size:1rem;color:var(--charcoal-lt);line-height:1.7;max-width:440px}
+.ws-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.ws-pill{font-size:.72rem;font-weight:800;padding:6px 14px;border-radius:999px;letter-spacing:.03em;color:white;border:none;display:inline-flex;align-items:center;gap:5px}
+        .ws-pill:nth-child(1){background:#478cbf}
+        .ws-pill:nth-child(2){background:#c8b200;color:#1a1600}
+        .ws-pill:nth-child(3){background:#4b8a2e}
+        .ws-pill:nth-child(4){background:#c0392b}
+        .ws-pill:nth-child(5){background:#e8631a}
+        .ws-pill:nth-child(6){background:#4e7d80}
+        .ws-pill:nth-child(7){background:#6b4fa0}
+        .ws-pill:nth-child(8){background:#2c7a4b}
+.ws-stat-grid{background:white;border-radius:16px;box-shadow:0 4px 20px rgba(64,59,51,.08);padding:20px 22px;min-width:200px}
 .ws-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(64,59,51,.07);font-size:.82rem}
-[data-theme="dark"] .ws-stat-row{border-color:var(--border-lt)}
 .ws-stat-row:last-child{border-bottom:none}
-.ws-stat-label{color:var(--text-secondary)}
+.ws-stat-label{color:var(--charcoal-lt)}
 .ws-stat-val{font-weight:800;color:var(--rose)}
 
-/* ── JUMP NAV ── */
-.jump-nav{background:var(--charcoal);padding:16px 28px}
-[data-theme="dark"] .jump-nav{background:#161410}
-.jump-inner{max-width:1100px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.jump-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(240,234,214,.8);font-size:.82rem;font-weight:600;padding:7px 16px;border-radius:999px;transition:background .2s,color .2s}
-.jump-pill:hover{background:var(--rose);color:white;border-color:var(--rose)}
+/* Course grid */
+.courses-section{padding:72px 28px;background:white}
+.courses-section.alt{background:var(--beige)}
+.courses-inner{max-width:1100px;margin:0 auto}
+.courses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:22px;margin-top:40px}
+.course-card{background:white;border-radius:18px;overflow:hidden;box-shadow:0 4px 20px rgba(64,59,51,.08);transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column;text-decoration:none;color:inherit}
+.course-card:hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(64,59,51,.14)}
+.course-thumb{height:160px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0}
+.course-thumb-emoji{font-size:4rem;z-index:1}
+.course-thumb-badge{position:absolute;top:12px;left:12px;font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:6px;color:white;z-index:2}
+.course-body{padding:20px 22px;flex:1;display:flex;flex-direction:column;gap:6px}
+.course-tag{font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--teal-dk)}
+.course-title{font-size:1.1rem;font-weight:900;color:var(--charcoal);line-height:1.2}
+.course-desc{font-size:.82rem;color:var(--charcoal-lt);line-height:1.6;flex:1}
+.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.course-chip{font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(64,59,51,.06)}
+.course-cta{margin-top:12px;font-size:.85rem;font-weight:800;color:var(--rose);display:inline-flex;align-items:center;gap:5px;transition:gap .15s}
+.course-card:hover .course-cta{gap:9px}
 
-/* ── SECTION SHELL ── */
-.ws-section{padding:72px 28px}
-.ws-section.alt{background:var(--beige)}
-[data-theme="dark"] .ws-section{background:var(--bg-primary)}
-[data-theme="dark"] .ws-section.alt{background:var(--bg-secondary)}
-.ws-inner{max-width:1100px;margin:0 auto}
-.ws-section-head{margin-bottom:36px}
-.ws-section-tag{display:inline-flex;align-items:center;gap:8px;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:white;background:var(--teal-dk);border-radius:999px;padding:5px 14px;margin-bottom:10px}
-.ws-section-title{font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:900;color:var(--text-primary);line-height:1.1;margin-bottom:8px}
-.ws-section-desc{font-size:.95rem;color:var(--text-secondary);line-height:1.65;max-width:560px}
 
-/* ── COURSE GRID ── */
-.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:22px;margin-top:32px}
 
-/* ── COURSE CARD (shared) ── */
-.c-card{display:flex;flex-direction:column;background:var(--card-bg);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(64,59,51,.08);transition:transform .22s,box-shadow .22s;text-decoration:none;color:inherit}
-.c-card:hover{transform:translateY(-6px);box-shadow:0 14px 40px rgba(64,59,51,.14)}
-[data-theme="dark"] .c-card{box-shadow:0 4px 20px rgba(0,0,0,.3)}
-[data-theme="dark"] .c-card:hover{box-shadow:0 14px 40px rgba(0,0,0,.5)}
-.c-thumb{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;flex-shrink:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center}
-.c-thumb img{width:100%;height:100%;object-fit:cover}
-.c-thumb-emoji{font-size:3.5rem;z-index:1;position:relative}
-.c-badge{position:absolute;top:11px;left:11px;font-size:.6rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px;z-index:2}
-.c-body{padding:20px 22px 22px;display:flex;flex-direction:column;flex:1}
-.c-label{font-size:.65rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--teal-dk);margin-bottom:6px}
-.c-title{font-family:'Lora',serif;font-size:1.05rem;font-weight:600;color:var(--text-primary);line-height:1.35;margin-bottom:8px}
-.c-desc{font-size:.84rem;color:var(--text-secondary);line-height:1.65;flex:1;margin-bottom:14px}
-.c-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.c-chips{display:flex;gap:6px;flex-wrap:wrap}
-.c-chip{font-size:.63rem;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(64,59,51,.06);color:var(--text-secondary)}
-[data-theme="dark"] .c-chip{background:rgba(240,234,214,.07)}
-.c-cta{font-size:.8rem;font-weight:800;display:inline-flex;align-items:center;gap:5px;transition:gap .15s;flex-shrink:0;color:var(--teal-dk)}
-.c-card:hover .c-cta{gap:9px}
+/* ── ARTICLE CARDS (behind the scenes) ── */
+.cat-section { padding: 52px 28px 24px; }
+.cat-header { max-width: 1100px; margin: 0 auto 28px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cat-label { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 5px; }
+.cat-title { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 900; color: var(--charcoal); line-height: 1.1; }
+.cat-count { font-size: .78rem; font-weight: 700; color: var(--charcoal-lt); flex-shrink: 0; }
+.cat-grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+.cat-divider { max-width: 1100px; margin: 40px auto 0; height: 1px; background: linear-gradient(90deg, transparent, var(--tan), transparent); }
+.feat-article-wrap { max-width: 1100px; margin: 0 auto; padding: 0 0 8px; }
 
-/* ── FEATURED ARTICLE (Arcane Citadel) ── */
-.feat-article{display:flex;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#1a1830,#2a1840);box-shadow:0 8px 40px rgba(0,0,0,.2);transition:transform .25s,box-shadow .25s;text-decoration:none;color:inherit;margin-bottom:28px}
-.feat-article:hover{transform:translateY(-4px);box-shadow:0 18px 50px rgba(0,0,0,.3)}
-.fa-img{flex:0 0 280px;min-height:220px;display:flex;align-items:center;justify-content:center;font-size:5rem;background:linear-gradient(135deg,#0e0a06,#1a0030)}
-.fa-body{flex:1;padding:32px 36px;display:flex;flex-direction:column;justify-content:center}
-.fa-badge{font-size:.63rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#c084fc;margin-bottom:10px}
-.fa-title{font-size:clamp(1.2rem,2.5vw,1.7rem);font-weight:900;color:white;line-height:1.3;margin-bottom:10px}
-.fa-desc{font-size:.9rem;color:rgba(240,234,214,.82);line-height:1.7;margin-bottom:18px}
-.fa-cta{font-size:.85rem;font-weight:700;color:var(--teal);display:inline-flex;align-items:center;gap:6px;transition:gap .15s}
-.feat-article:hover .fa-cta{gap:10px}
-@media(max-width:680px){.feat-article{flex-direction:column}.fa-img{flex:none;height:160px;min-height:160px}}
 
-/* ── SCHOOLS SECTION ── */
-.schools-section{padding:72px 28px;background:linear-gradient(135deg,#1a3028,#2a4a38)}
-.schools-inner{max-width:1100px;margin:0 auto}
-.schools-head{text-align:center;margin-bottom:48px}
-.schools-eyebrow{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(240,234,214,.7);border:1.5px solid rgba(240,234,214,.25);border-radius:999px;padding:5px 14px;margin-bottom:14px}
-.schools-title{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:900;color:white;margin-bottom:10px}
-.schools-desc{font-size:1rem;color:rgba(240,234,214,.75);line-height:1.7;max-width:540px;margin:0 auto}
-.schools-stats{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:52px}
-.ss-stat{text-align:center}
-.ss-val{font-size:2rem;font-weight:900;color:white;display:block}
-.ss-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(240,234,214,.5)}
-.pillars{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-bottom:52px}
-.pillar{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px}
-.pillar-icon{font-size:1.8rem;margin-bottom:10px}
-.pillar-title{font-size:.95rem;font-weight:800;color:white;margin-bottom:6px}
-.pillar-body{font-size:.84rem;color:rgba(240,234,214,.65);line-height:1.6}
-.schools-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.btn-schools-primary{display:inline-flex;align-items:center;gap:8px;background:white;color:var(--charcoal);font-weight:800;font-size:.95rem;padding:14px 28px;border-radius:12px;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 0 rgba(0,0,0,.15)}
-.btn-schools-primary:hover{transform:translateY(-2px);box-shadow:0 6px 0 rgba(0,0,0,.15)}
-.btn-schools-secondary{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);color:white;font-weight:700;font-size:.95rem;padding:13px 26px;border-radius:12px;transition:background .2s,transform .15s}
-.btn-schools-secondary:hover{background:rgba(255,255,255,.2);transform:translateY(-2px)}
 
-/* ── DOWNLOADS STRIP ── */
-.downloads-section{padding:56px 28px;background:var(--charcoal)}
-.downloads-inner{max-width:1100px;margin:0 auto}
-.dl-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
-.dl-label{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin-bottom:5px}
-.dl-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:white}
-.dl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.dl-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;transition:background .2s,transform .2s}
-.dl-card:hover{background:rgba(255,255,255,.09);transform:translateY(-3px)}
-.dl-icon{font-size:1.6rem;margin-bottom:4px}
-.dl-name{font-size:.95rem;font-weight:800;color:rgba(240,234,214,.9)}
-.dl-desc{font-size:.82rem;color:rgba(240,234,214,.5);line-height:1.55}
-.dl-cta{font-size:.78rem;font-weight:700;color:var(--teal);margin-top:4px}
+/* ── ARTICLE / BEHIND THE SCENES SECTION ── */
+.behind-section { padding: 64px 28px; background: var(--beige); }
+.behind-inner { max-width: 1100px; margin: 0 auto; }
+.behind-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+.behind-label { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--rose); margin-bottom: 5px; }
+.behind-title { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; color: var(--charcoal); line-height: 1.1; }
+.behind-count { font-size: .78rem; font-weight: 700; color: var(--charcoal-lt); flex-shrink: 0; }
+.behind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; margin-top: 20px; }
+.feat-wrap { margin-bottom: 8px; }
 
-/* ── BEHIND THE SCENES ── */
-.behind-section{padding:72px 28px;background:var(--beige)}
-[data-theme="dark"] .behind-section{background:var(--bg-secondary)}
-.behind-inner{max-width:1100px;margin:0 auto}
-.behind-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:32px}
-.behind-label{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--rose);margin-bottom:4px}
-.behind-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:900;color:var(--text-primary)}
-.behind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:22px}
 
-footer{background:var(--charcoal);color:rgba(240,234,214,.6);padding:28px;text-align:center;font-size:.82rem}
-footer a{color:rgba(240,234,214,.6)}
-footer a:hover{color:rgba(240,234,214,1)}
+        .articles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+        .article-card{background:white;border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(64,59,51,.08);transition:transform .22s,box-shadow .22s;display:flex;flex-direction:column;cursor:pointer}
+        .article-thumb{width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;flex-shrink:0}
+        .article-thumb-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem}
+        .article-tag-badge{position:absolute;top:12px;left:12px;font-size:.62rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:4px 11px;border-radius:999px;z-index:2}
+        .article-body{padding:20px 22px 22px;display:flex;flex-direction:column;flex:1}
+        .article-date{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tan-dk);margin-bottom:8px}
+        .article-title{font-family:'Lora',serif;font-size:1.1rem;font-weight:600;color:var(--charcoal);line-height:1.35;margin-bottom:10px}
+        .article-excerpt{font-size:.85rem;color:var(--charcoal-lt);line-height:1.7;flex:1;margin-bottom:16px}
+        .article-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .article-read-time{font-size:.72rem;font-weight:600;color:var(--charcoal-lt);display:flex;align-items:center;gap:4px}
+        .article-read-more{font-size:.8rem;font-weight:700;color:var(--teal-dk);display:inline-flex;align-items:center;gap:6px;transition:gap .15s,color .15s}
+        
+        /* ── FEATURED ARTICLE CARD ── */
+        .feat-article{grid-column:1/-1;display:flex;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#1a1830,#2a1840);box-shadow:0 8px 40px rgba(0,0,0,.18);transition:transform .25s,box-shadow .25s;cursor:pointer;text-decoration:none;color:inherit}
+        .feat-article:hover{transform:translateY(-4px);box-shadow:0 18px 50px rgba(0,0,0,.25)}
+        .feat-article-img{flex:0 0 320px;overflow:hidden;position:relative;background:linear-gradient(135deg,#0e0a06,#1a0030);min-height:260px;display:flex;align-items:center;justify-content:center}
+        .feat-article-img .fa-icon,.feat-article-img .cover-img + .fa-icon{width:100%;height:100%;min-height:260px;display:flex;align-items:center;justify-content:center;font-size:5rem;position:relative;z-index:1}
+        .feat-article-body{flex:1;padding:36px 40px;display:flex;flex-direction:column;justify-content:center}
+        .fa-badge{display:inline-flex;align-items:center;gap:6px;font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#c084fc;margin-bottom:12px}
+        .fa-title{font-size:clamp(1.3rem,3vw,1.8rem);font-weight:900;color:white;line-height:1.3;margin-bottom:12px}
+        .fa-desc{font-size:.92rem;color:rgba(240,234,214,.85);line-height:1.7;margin-bottom:20px}
+        .fa-cta{font-size:.88rem;font-weight:700;color:var(--teal);display:inline-flex;align-items:center;gap:6px;transition:gap .15s}
+        .feat-article:hover .fa-cta{gap:10px}
+        @media(max-width:700px){.feat-article{flex-direction:column}.feat-article-img{flex:none;height:200px;min-height:200px}}
+
+        /* Ensure featured card always renders fully */
+        .feat-article.reveal { opacity: 1 !important; transform: none !important; }
+        .feat-article.reveal.visible { opacity: 1; transform: none; }
 </style>
 </head>
 <body>
 
 <header class="site-header" id="siteHeader">
-  <div class="header-inner">
-    <a href="index.html" class="logo-link">
-      <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
-      <span class="logo-name">JVDesignStudio</span>
-    </a>
-            <nav class="main-nav">
+    <div class="header-inner">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+            <span class="logo-name">JVDesignStudio</span>
+        </a>
+        <nav class="main-nav">
             <a href="index.html" class="nav-link">Home</a>
             <a href="content_hub.html" class="nav-link">All Projects</a>
-            <a href="mobile-games.html" class="nav-link">📱 Mobile Games</a>
             <a href="workshop.html" class="nav-link">🔧 Workshop</a>
             <a href="search.html" class="nav-link">🔍 Search</a>
             <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
             <a href="devlog.html" class="nav-link">Dev Log</a>
             <a href="videos.html" class="nav-link">🎬 Videos</a>
         </nav>
-        <button class="dark-btn" id="darkBtn" aria-label="Toggle dark mode">🌙</button>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
-  </div>
-      <nav class="mobile-nav" id="mobileNav">
+    </div>
+    <nav class="mobile-nav" id="mobileNav">
         <a href="index.html">🏠 Home</a>
         <a href="content_hub.html">📦 All Projects</a>
-        <a href="mobile-games.html">📱 Mobile Games</a>
         <a href="workshop.html">🔧 Workshop</a>
         <a href="search.html">🔍 Search</a>
         <a href="freebies.html">🎁 Free Downloads</a>
@@ -247,590 +842,503 @@ footer a:hover{color:rgba(240,234,214,1)}
     </nav>
 </header>
 
-<!-- ═══════════════════════════════════════
-     HERO
-═══════════════════════════════════════ -->
 <section class="ws-hero">
-  <div class="ws-hero-inner">
-    <div>
-      <div class="ws-kicker">✦ JVDesignStudio Workshop</div>
-      <h1 class="ws-title">Learn to<br><span>Build</span><br>Real Things</h1>
-      <p class="ws-sub">Hands-on courses for building real games and projects from scratch. Pick a section and start everything is free, beginner-friendly, and designed for doing, not just watching.</p>
-      <div class="ws-pills">
-        <span class="ws-pill">⚡ JavaScript</span>
-        <span class="ws-pill">🐍 Python</span>
-        <span class="ws-pill">🏰 C++</span>
-        <span class="ws-pill">🎯 GML</span>
-        <span class="ws-pill">🧱 Three.js 3D</span>
-        <span class="ws-pill">⚔ MUGEN</span>
-        <span class="ws-pill">🎮 Godot 4</span>
-        <span class="ws-pill">🎭 Roblox</span>
-        <span class="ws-pill">🆓 All Free</span>
-      </div>
+    <div class="ws-hero-inner">
+        <div>
+            <div class="ws-kicker">✦ JVDesignStudio Workshop</div>
+            <h1 class="ws-title">Learn to<br><span>Build</span><br>Real Things</h1>
+            <p class="ws-sub">Interactive courses for building games, characters and accessories from scratch. Every course is free, beginner-friendly, and designed for doing not just reading.</p>
+            <div class="ws-pills">
+                <span class="ws-pill">🎮 Godot 4</span>
+                <span class="ws-pill">⚡ JavaScript</span>
+                <span class="ws-pill">🐍 Python</span>
+                <span class="ws-pill">⚔ MUGEN</span>
+                <span class="ws-pill">🎭 Roblox</span>
+                <span class="ws-pill">🏰 C++</span>
+                <span class="ws-pill">🎯 GML</span>
+                <span class="ws-pill">🆓 All Free</span>
+                <span class="ws-pill">👶 Ages 8+</span>
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;align-items:center;">
+            <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(64,59,51,.15);max-width:280px;">
+                <img src="The_Workshop.png" alt="The Workshop" style="width:100%;display:block;" onerror="this.parentElement.style.display='none'">
+            </div>
+            <div class="ws-stat-grid">
+                <div class="ws-stat-row"><span class="ws-stat-label">Courses</span><span class="ws-stat-val">15</span></div>
+                <div class="ws-stat-row"><span class="ws-stat-label">Live builders</span><span class="ws-stat-val">8</span></div>
+                <div class="ws-stat-row"><span class="ws-stat-label">Free downloads</span><span class="ws-stat-val">17+</span></div>
+                <div class="ws-stat-row"><span class="ws-stat-label">Price</span><span class="ws-stat-val">Free</span></div>
+            </div>
+        </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:16px;align-items:center">
-      <div style="border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(64,59,51,.15);max-width:280px">
-        <img src="The_Workshop.png" alt="The Workshop" style="width:100%;display:block" onerror="this.parentElement.style.display='none'">
-      </div>
-      <div class="ws-stat-grid">
-        <div class="ws-stat-row"><span class="ws-stat-label">Courses</span><span class="ws-stat-val">16</span></div>
-        <div class="ws-stat-row"><span class="ws-stat-label">Live code builders</span><span class="ws-stat-val">5</span></div>
-        <div class="ws-stat-row"><span class="ws-stat-label">3D builders</span><span class="ws-stat-val">3</span></div>
-        <div class="ws-stat-row"><span class="ws-stat-label">Free downloads</span><span class="ws-stat-val">17+</span></div>
-        <div class="ws-stat-row"><span class="ws-stat-label">Price</span><span class="ws-stat-val">Free</span></div>
-      </div>
-    </div>
-  </div>
 </section>
 
-<!-- ═══════════════════════════════════════
-     JUMP NAV
-═══════════════════════════════════════ -->
-<nav class="jump-nav" aria-label="Workshop sections">
-  <div class="jump-inner">
-    <a href="#live-builders" class="jump-pill">⚡ Live Code Builders</a>
-    <a href="#builders-3d" class="jump-pill">🧱 3D Builders</a>
-    <a href="#mugen" class="jump-pill">⚔ MUGEN</a>
-    <a href="#godot" class="jump-pill">🎮 Godot</a>
-    <a href="#other" class="jump-pill">🌐 Other Courses</a>
-    <a href="#articles" class="jump-pill">📖 Behind the Scenes</a>
-    <a href="#schools" class="jump-pill">🏫 For Schools</a>
-  </div>
-</nav>
-
-<!-- ═══════════════════════════════════════
-     1. LIVE CODE BUILDERS
-═══════════════════════════════════════ -->
-<section class="ws-section" id="live-builders">
-  <div class="ws-inner">
-    <div class="ws-section-head">
-      <div class="ws-section-tag">⚡ Live Code Builders</div>
-      <h2 class="ws-section-title">Write code. Watch it run. Right here.</h2>
-      <p class="ws-section-desc">Fill in real code step by step and your game updates live in the browser. No downloads, no setup. Ages 11+.</p>
+<section class="courses-section" id="courses">
+    <div class="courses-inner">
+        <div class="section-header reveal">
+            <span class="section-tag">✦ Interactive Courses</span>
+            <h2 class="section-title">Build Something Real</h2>
+            <p style="color:var(--charcoal);font-weight:600;margin-top:10px;font-size:1rem;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">
+                Hands-on courses where you make a real game or project. Pick one and start all free, all beginner-friendly.
+            </p>
+        </div>
+        <div class="courses-grid">
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <img src="How to GODOT.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#c8b200;color:#1a1600">JavaScript</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">JavaScript Platformer Builder. Build a Mario-Style Game Live in Your Browser</h3>
+                <p class="article-excerpt">Fill in the numbers gravity, jump force, enemies, health, attack range and watch your platformer update live. 10 steps, real JavaScript concepts, ages 11+.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">JavaScript · 10 Steps · Live Game</span>
+                    <a href="js-platformer-builder.html" class="article-read-more" style="color:#f7df1e">Start Building →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+               <img src="PythonCover.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#c49a20;color:#0d0f14">Python</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Python Game Builder. Build a Dodge & Collect Game Live in Your Browser</h3>
+                <p class="article-excerpt">Write real Python step by step and watch your game run right on the page. No downloads, no setup. 10 steps from blank screen to playable game. Ages 11+.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Python · 10 Steps · Live Preview</span>
+                    <a href="python-game-builder.html" class="article-read-more" style="color:#f7c948">Start Building →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#0a0e0c,#0d1f10)">
+                <div style="position:absolute;inset:0;background:linear-gradient(135deg,#0a0e0c,#0d1f10,#122b14);display:flex;align-items:center;justify-content:center;font-size:3.5rem;">🎢</div>
+                <span class="article-tag-badge tag-tutorial" style="background:#00c87a;color:#050e08;position:relative;z-index:2">Python · Modding</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">OpenRCT2 Modding with Python. Add Custom Shops &amp; Items to Your Park</h3>
+                <p class="article-excerpt">Learn real Python modding concepts dictionaries, lists, loops, functions by building custom stalls and menu items for OpenRCT2. Watch your park update live. 10 steps, ages 11+.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Python · 10 Steps · Live Park Preview</span>
+                    <a href="openrct2-modding-builder.html" class="article-read-more" style="color:#00c87a">Start Modding →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#04090f,#0c2a4a)">
+                <div style="position:absolute;inset:0;background:linear-gradient(135deg,#04090f,#0c2a4a,#0369a1);display:flex;align-items:center;justify-content:center;font-size:3.5rem;">🏊</div>
+                <span class="article-tag-badge tag-tutorial" style="background:#38bdf8;color:#04090f;position:relative;z-index:2">JavaScript · Plugin</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">OpenRCT2 Swim Rescue. Save Your Guests with a JavaScript Plugin</h3>
+                <p class="article-excerpt">Write a real OpenRCT2 plugin to detect guests falling into water, catch the exception, and make them swim to safety. try/catch, for loops, event subscriptions, UI windows. 10 steps, live simulation.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">JavaScript · 10 Steps · Live Simulation</span>
+                    <a href="openrct2-swim-rescue.html" class="article-read-more" style="color:#38bdf8">Start Rescuing →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+               <img src="TowerDefenceCover.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#649ad2;color:#fff">C++</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">C++ Tower Defence Builder. Design a Full Tower Defence Game Live in Your Browser</h3>
+                <p class="article-excerpt">20 steps grid, towers, enemies, 4 tower types, upgrades, boss waves and wave scaling. Real C++ concepts, ages 11+.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">C++ · 20 Steps · Live Game</span>
+                    <a href="cpp-tower-defence-builder.html" class="article-read-more" style="color:#649ad2">Start Building →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <img src="GmlCover.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#00c853;color:#fff">GML</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">GML Shooter Trainer. Write Code, Move, Shoot, Survive</h3>
+                <p class="article-excerpt">A 4-level coding game write GML-style code to move the player, use input, shoot bullets and survive enemy waves. Live code execution in the browser.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">GML · 4 Levels · Live Code</span>
+                    <a href="gml_shooter_trainer_project.html" class="article-read-more" style="color:#00c853">Start Training →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+              <img src="Scifirunner.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#38bdf8;color:#fff">JavaScript</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Sci-Fi Runner Builder. Build an Endless Runner with Live Controls</h3>
+                <p class="article-excerpt">A browser-based sci-fi endless runner with live controls for speed and spawn rate. Mouse-controlled player, dynamic obstacles, collision detection.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">JavaScript · Live Controls · PDF Guide</span>
+                    <a href="sci_fi_runner_builder.pdf" class="article-read-more" style="color:#38bdf8">View Guide →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#1a0a2e,#2a1550)">
+                 <img src="Muguen Cover.png" alt="Add Your Own MUGEN Stage Beginner Lesson" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.65"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/1a0a2e/9b6bff?text=Stage+Lesson'">
+                <span class="article-tag-badge tag-tutorial" style="background:#9b6bff;color:#fff;position:relative;z-index:2">Lesson</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Add Your Own Stage to MUGEN. A Beginner's Lesson from Scratch</h3>
+                <p class="article-excerpt">Never touched MUGEN before? This 7-step beginner lesson walks you through building a working stage with parallax scrolling and an animated torch. Includes a free starter pack (.def + placeholder art).</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Beginner · 7 Steps · Starter Pack</span>
+                    <a href="add-your-own-stage.html" class="article-read-more" style="color:#9b6bff">Start Lesson →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                 <img src="Muguen Cover.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#e8312b;">Course</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">MUGEN Workshop. Build Your Own Fighting Game Character from Scratch</h3>
+                <p class="article-excerpt">Three-part course MUGEN basics, Fighter Factory 3, and custom stage creation. Includes 10 downloadable files: guides, cheat sheets, project briefs, and a .DEF template.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Full Course · 10 Downloads</span>
+                    <a href="mugen-workshop.html" class="article-read-more" style="color:#f5635e">Start Course →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#0d0f1a,#1a0e08)">
+                 <img src="Muguen_Cover.png" alt="MUGEN AI Workshop" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/0d0f1a/e07828?text=AI+Workshop'">
+                <span class="article-tag-badge tag-tutorial" style="background:#e07828;color:#fff;position:relative;z-index:2">Workshop</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">MUGEN AI Workshop. Add CPU Intelligence to Your Character</h3>
+                <p class="article-excerpt">Learn how MUGEN's AI trigger system works. Add attack patterns, distance logic, difficulty scaling, and survival instincts. Free .CMD template and cheat sheet included.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Intermediate · Free Template</span>
+                    <a href="mugen-ai-workshop.html" class="article-read-more" style="color:#f5a050">Start Workshop →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <img src="Godot Templates.png" alt="Godot Engine Beginner's Guide"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial">Free Download</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Godot 4 Starter Templates. Four Complete Projects Ready to Build From</h3>
+                <p class="article-excerpt">Download a complete working Godot 4 game, open it, and start building. Platformer, Asteroids, Space Invaders, and Tower Defence each one ready to take apart.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Free Download · 4 Templates</span>
+                    <a href="godot_templates.html" class="article-read-more">Get Templates →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <img src="Roblox Cover.png" alt="Roblox Creator Journey"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial">Tutorial</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Roblox Creator Journey. Build Your Own Cosmetics from Scratch</h3>
+                <p class="article-excerpt">A step-by-step interactive guide to building t-shirts, clothing, and 3D accessories in Roblox Studio using free tools — no experience needed. Designed for ages 12+.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Tutorial · Interactive Course</span>
+                    <a href="roblox-creator-journey.html" class="article-read-more">Start Course →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                    <img src="How to GODOT.png"How To Godot"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial">Tutorial</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2025</div>
+                <h3 class="article-title">How To Godot.Build Your First Platformer from Scratch</h3>
+                <p class="article-excerpt">A step-by-step guide to building a 2D platformer in Godot Engine. Characters, coins, goals, and game logic written so a complete beginner can follow along.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 15 min read</span>
+                    <a href="godot_tutorial.html" class="article-read-more">Read →</a>
+                </div>
+            </div>
+        </div>
+            <a href="space_invaders_tutorial.html" class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <img src="Space Invaders.png" alt="Space Invaders Tutorial"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                <span class="article-tag-badge tag-tutorial">Tutorial · New</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Build Space Invaders from Scratch in Godot 4</h3>
+                <p class="article-excerpt">A full coding adventure for kids aged 8+. 11 chapters covering GDScript, scenes, signals, collisions, waves, and a complete playable game. Type every line yourself.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 45 min read</span>
+                    <span class="article-read-more">Start Building →</span>
+                </div>
+            </div>
+        </a>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#0d1f2d,#1a3a4a,#0d1f2d);position:relative;overflow:hidden;">
+                      <img src="Cannon.png" alt="Pirate Cannon Tutorial"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                </div>
+                <span class="article-tag-badge tag-tutorial" style="background:#c9a84c;color:#1a1600">Three.js · 3D</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Pirate Cannon Forge. Build a 3D Cannon Step by Step with Live Controls</h3>
+                <p class="article-excerpt">15 interactive steps barrel, muzzle, cascabel, trunnions, carriage, wheels and more. Adjust every dimension with sliders, see it update in real-time 3D, and export as OBJ. Fits inside your workshop space.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">15 Steps · Save &amp; Export</span>
+                    <a href="pirate-cannon-builder.html" class="article-read-more" style="color:#c9a84c">Start Forging →</a>
+                </div>
+            </div>
+        </div>
+            <div class="article-card reveal" data-cat="tutorial">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#0a1628,#132240,#1a3355);position:relative;overflow:hidden;">
+                          <img src="Ship.png" alt="Pirate Ship Tutorial"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/403B33/70A3A7?text=Workshop'">
+                </div>
+                <span class="article-tag-badge tag-tutorial" style="background:#d4a843;color:#0a1628">Three.js · 3D</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">2026</div>
+                <h3 class="article-title">Pirate Ship Shipyard. Build a Full 3D Galleon with 20 Interactive Steps</h3>
+                <p class="article-excerpt">Hull, masts, sails, cannons, crow's nest, rudder, anchor, figurehead, flags, rigging and more. Resize every part with sliders, animated ocean water, save your designs, and export as OBJ.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">Three.js · 20 Steps · Save &amp; Export</span>
+                    <a href="pirate-ship-builder.html" class="article-read-more" style="color:#d4a843">Set Sail →</a>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
-    <div class="course-grid">
-
-      <a href="js-platformer-builder.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="JSPlatformerCover.png"JavaScript Platformer Builder" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0a0f00,#181e00)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🕹️</div>')">
-          <span class="c-badge" style="background:#c8b200;color:#1a1600">JavaScript</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 10 Steps</div>
-          <div class="c-title">JavaScript Platformer Builder</div>
-          <p class="c-desc">Adjust gravity, jump force, enemies, health and attack range — watch your platformer update live. Real JavaScript concepts, ages 11+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">JavaScript</span><span class="c-chip">10 Steps</span><span class="c-chip">Live Game</span></div>
-            <span class="c-cta" style="color:#c8b200">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="python-game-builder.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="PythonCover.png" alt="Python Game Builder" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0d0f0a,#131a0a)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🐍</div>')">
-          <span class="c-badge" style="background:#4b8a2e;color:#fff">Python</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 10 Steps</div>
-          <div class="c-title">Python Game Builder</div>
-          <p class="c-desc">Write real Python step by step and watch your dodge &amp; collect game run on the page. No downloads, no setup. Ages 11+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Python</span><span class="c-chip">10 Steps</span><span class="c-chip">Live Preview</span></div>
-            <span class="c-cta" style="color:#4b8a2e">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="cpp-tower-defence-builder.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="TowerDefenceCover.png" alt="C++ Tower Defence Builder" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0a1628,#1a2e4a)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🏰</div>')">
-          <span class="c-badge" style="background:#649ad2;color:#fff">C++</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 20 Steps</div>
-          <div class="c-title">C++ Tower Defence Builder</div>
-          <p class="c-desc">Grid, towers, enemies, 4 tower types, upgrades, boss waves and wave scaling — all configured with real C++ concepts. Ages 11+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">C++</span><span class="c-chip">20 Steps</span><span class="c-chip">Live Game</span></div>
-            <span class="c-cta" style="color:#649ad2">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="gml_shooter_trainer_project.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="GmlCover.png" alt="GML Shooter Trainer" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#050e08,#0a1a0e)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🎯</div>')">
-          <span class="c-badge" style="background:#00c853;color:#fff">GML</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 4 Levels</div>
-          <div class="c-title">GML Shooter Trainer</div>
-          <p class="c-desc">Write GML-style code to move, shoot and survive. A 4-level coding game where you unlock the next level by writing working code. Ages 11+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">GML</span><span class="c-chip">4 Levels</span><span class="c-chip">Live Code</span></div>
-            <span class="c-cta" style="color:#00c853">Start Training →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="sci-fi-runner-builder.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="Scifirunner.png" alt="Sci-Fi Runner Builder" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#04090f,#0c2040)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🚀</div>')">
-          <span class="c-badge" style="background:#38bdf8;color:#04090f">JavaScript</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 10 Steps</div>
-          <div class="c-title">Sci-Fi Runner Builder</div>
-          <p class="c-desc">Build a browser-based sci-fi endless runner with live controls for speed and spawn rate. Mouse-controlled, dynamic obstacles, collision detection.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">JavaScript</span><span class="c-chip">10 Steps</span><span class="c-chip">PDF Guide</span></div>
-            <span class="c-cta" style="color:#38bdf8">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="openrct2-modding-builder.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#0a0e0c,#0d1f10);display:flex;align-items:center;justify-content:center">
-           <img src="ModdingRCT.png" alt="OpenRCT2 Modding with Python" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#04090f,#0c2040)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🚀</div>')">
-          <span class="c-badge" style="background:#00c87a;color:#050e08">Python · Modding</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 10 Steps</div>
-          <div class="c-title">OpenRCT2 Modding with Python</div>
-          <p class="c-desc">Learn real Python by building custom stalls and menu items for OpenRCT2. Dictionaries, lists, loops, functions watch your park update live.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Python</span><span class="c-chip">Modding</span><span class="c-chip">10 Steps</span></div>
-            <span class="c-cta" style="color:#00c87a">Start Modding →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="openrct2-swim-rescue.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#04090f,#0c2a4a);display:flex;align-items:center;justify-content:center">
-          <img src="Saving guests.png" alt="OpenRCT2 Swim Rescue" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🏊</div>')">
-          <span class="c-badge" style="background:#38bdf8;color:#04090f">JavaScript · Plugin</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Live Builder · 10 Steps</div>
-          <div class="c-title">OpenRCT2 Swim Rescue</div>
-          <p class="c-desc">Write a real OpenRCT2 plugin to detect guests falling into water and make them swim to safety. try/catch, for loops, event subscriptions, UI windows.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">JavaScript</span><span class="c-chip">Plugin</span><span class="c-chip">10 Steps</span></div>
-            <span class="c-cta" style="color:#38bdf8">Start Rescuing →</span>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
 </section>
 
-<!-- ═══════════════════════════════════════
-     2. 3D BUILDERS
-═══════════════════════════════════════ -->
-<section class="ws-section alt" id="builders-3d">
-  <div class="ws-inner">
-    <div class="ws-section-head">
-      <div class="ws-section-tag">🧱 3D Builders</div>
-      <h2 class="ws-section-title">Build in 3D. Adjust every part with sliders.</h2>
-      <p class="ws-section-desc">Step-by-step Three.js builders shape, size and rotate every component in real-time 3D, then export as OBJ. Ages 11+.</p>
-    </div>
-    <div class="course-grid">
-
-      <a href="pirate-ship-builder.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#0a1628,#132240,#1a3355);position:relative;overflow:hidden">
-          <img src="Ship.png" alt="Pirate Ship Builder" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>⛵</div>')">
-          <span class="c-badge" style="background:#d4a843;color:#0a1628">Three.js · 3D</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">3D Builder · 20 Steps</div>
-          <div class="c-title">Pirate Ship Shipyard</div>
-          <p class="c-desc">Hull, masts, sails, cannons, crow's nest, rudder, anchor, figurehead, flags and rigging. Animated ocean water, save your designs, export as OBJ.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Three.js</span><span class="c-chip">20 Steps</span><span class="c-chip">OBJ Export</span></div>
-            <span class="c-cta" style="color:#d4a843">Set Sail →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="pirate-cannon-builder.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#0d1f2d,#1a3a4a,#0d1f2d);position:relative;overflow:hidden">
-          <img src="Cannon.png" alt="Pirate Cannon Builder" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>💣</div>')">
-          <span class="c-badge" style="background:#c9a84c;color:#1a1600">Three.js · 3D</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">3D Builder · 15 Steps</div>
-          <div class="c-title">Pirate Cannon Forge</div>
-          <p class="c-desc">Barrel, muzzle, cascabel, trunnions, carriage and wheels 15 interactive steps. Adjust every dimension with sliders, see it update in real-time 3D, export as OBJ.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Three.js</span><span class="c-chip">15 Steps</span><span class="c-chip">OBJ Export</span></div>
-            <span class="c-cta" style="color:#c9a84c">Start Forging →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="steampunk-airship-builder.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#1a1208,#2e2010,#1a1208);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          <img src="steampunkship.png" alt="Steampunk Airship Builder" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>�</div>')">
-          <span class="c-badge" style="background:#c9a84c;color:#1a1600">Three.js · 3D</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">3D Builder · Steampunk</div>
-          <div class="c-title">Steampunk Airship Dockyard</div>
-          <p class="c-desc">Design a full steampunk airship with live 3D controls. Hull, propellers, engine, gondola, masts and rigging all adjustable with sliders. Save and load designs.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Three.js</span><span class="c-chip">3D</span><span class="c-chip">Save &amp; Load</span></div>
-            <span class="c-cta" style="color:#c9a84c">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════
-     3. MUGEN
-═══════════════════════════════════════ -->
-<section class="ws-section" id="mugen">
-  <div class="ws-inner">
-    <div class="ws-section-head">
-      <div class="ws-section-tag" style="background:#a01f1b">⚔ MUGEN</div>
-      <h2 class="ws-section-title">Build your own fighting game character.</h2>
-      <p class="ws-section-desc">Two courses covering everything from your first stage to a fully rigged MUGEN fighter. 10 free downloads included.</p>
-    </div>
-    <div class="course-grid">
-
-      <a href="mugen-workshop.html" class="c-card reveal">
-        <div class="c-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#1a0a2e,#2a1550)">
-          <img src="Muguen Cover.png" alt="MUGEN Workshop" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>⚔</div>')">
-          <span class="c-badge" style="background:#e8312b;color:#fff">Full Course</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Full Course · 3 Parts · 10 Downloads</div>
-          <div class="c-title">MUGEN Workshop</div>
-          <p class="c-desc">Three-part course MUGEN basics, Fighter Factory 3, and custom stage creation. Includes 10 downloadable files: guides, cheat sheets, project briefs, and a .DEF template.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">MUGEN</span><span class="c-chip">Fighter Factory 3</span><span class="c-chip">10 Downloads</span></div>
-            <span class="c-cta" style="color:#f5635e">Start Course →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="add-your-own-stage.html" class="c-card reveal">
-        <div class="c-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#1a0a2e,#2a1550)">
-          <img src="Muguen Cover.png" alt="Add Your Own Stage" style="opacity:.5;position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
-          <span class="c-badge" style="background:#9b6bff;color:#fff;position:relative;z-index:2">Beginner Lesson</span>
-          <div class="c-thumb-emoji" style="position:relative;z-index:1">🎭</div>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Beginner Lesson · 7 Steps</div>
-          <div class="c-title">Add Your Own Stage to MUGEN</div>
-          <p class="c-desc">Never touched MUGEN before? 7-step lesson walking you through building a working stage with parallax scrolling and an animated torch. Includes a free starter pack.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">MUGEN</span><span class="c-chip">7 Steps</span><span class="c-chip">Starter Pack</span></div>
-            <span class="c-cta" style="color:#9b6bff">Start Lesson →</span>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════
-     4. GODOT
-═══════════════════════════════════════ -->
-<section class="ws-section alt" id="godot">
-  <div class="ws-inner">
-    <div class="ws-section-head">
-      <div class="ws-section-tag" style="background:#478cbf">🎮 Godot 4</div>
-      <h2 class="ws-section-title">Build real games in Godot Engine.</h2>
-      <p class="ws-section-desc">Written guides, full tutorials and ready-to-open project templates. Ages 8+, no prior experience needed.</p>
-    </div>
-    <div class="course-grid">
-
-      <a href="space_invaders_tutorial.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="Space Invaders.png" alt="Build Space Invaders in Godot 4" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#020814,#0a1a3a)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>👾</div>')">
-          <span class="c-badge" style="background:#478cbf;color:#fff">New · Tutorial</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Full Tutorial · 11 Chapters</div>
-          <div class="c-title">Build Space Invaders in Godot 4</div>
-          <p class="c-desc">A full coding adventure for ages 8+. 11 chapters covering GDScript, scenes, signals, collisions, waves, and a complete playable game. Type every line yourself.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Godot 4</span><span class="c-chip">GDScript</span><span class="c-chip">11 Chapters</span></div>
-            <span class="c-cta" style="color:#478cbf">Start Building →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="godot_tutorial.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="How to GODOT.png" alt="How to Godot" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0a1628,#1a2640)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>⚙️</div>')">
-          <span class="c-badge" style="background:#478cbf;color:#fff">Tutorial</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Written Guide · 9 Modules</div>
-          <div class="c-title">How to Godot First Platformer</div>
-          <p class="c-desc">Build a complete 2D platformer in Godot Engine from scratch. Characters, coins, goals and game logic. Written so a complete beginner can follow along. Ages 10+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Godot 4</span><span class="c-chip">9 Modules</span><span class="c-chip">Free PDF</span></div>
-            <span class="c-cta" style="color:#478cbf">Read Guide →</span>
-          </div>
-        </div>
-      </a>
-
-      <a href="godot_templates.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="Godot Templates.png" alt="Godot 4 Starter Templates" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0a1420,#1a2a3a)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>📦</div>')">
-          <span class="c-badge" style="background:#2c7a4b;color:#fff">Free Download</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Download Pack · 4 Templates</div>
-          <div class="c-title">Godot 4 Starter Templates</div>
-          <p class="c-desc">Four complete working Godot 4 games ready to download and build from. Platformer, Asteroids, Space Invaders, Tower Defence open and start modding immediately.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Godot 4</span><span class="c-chip">4 Templates</span><span class="c-chip">Free</span></div>
-            <span class="c-cta" style="color:#2c7a4b">Get Templates →</span>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════
-     5. OTHER COURSES
-═══════════════════════════════════════ -->
-<section class="ws-section" id="other">
-  <div class="ws-inner">
-    <div class="ws-section-head">
-      <div class="ws-section-tag" style="background:#e8631a">🌐 Other Courses</div>
-      <h2 class="ws-section-title">Roblox, cosmetics and creator tools.</h2>
-      <p class="ws-section-desc">More ways to build and create including Roblox Studio and platform-specific creator journeys.</p>
-    </div>
-    <div class="course-grid">
-
-      <a href="roblox-creator-journey.html" class="c-card reveal">
-        <div class="c-thumb">
-          <img src="Roblox Cover.png" alt="Roblox Creator Journey" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#0d0020,#1a1040)';this.parentElement.insertAdjacentHTML('beforeend','<div class=\'c-thumb-emoji\'>🎭</div>')">
-          <span class="c-badge" style="background:#e8631a;color:#fff">Course</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">Interactive Course · Ages 12+</div>
-          <div class="c-title">Roblox Creator Journey</div>
-          <p class="c-desc">Step-by-step guide to building t-shirts, clothing and 3D accessories in Roblox Studio using free tools. No experience needed. Ages 12+.</p>
-          <div class="c-meta">
-            <div class="c-chips"><span class="c-chip">Roblox</span><span class="c-chip">Studio</span><span class="c-chip">Ages 12+</span></div>
-            <span class="c-cta" style="color:#e8631a">Start Course →</span>
-          </div>
-        </div>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════
-     6. BEHIND THE SCENES
-═══════════════════════════════════════ -->
+<!-- BEHIND THE SCENES -->
 <section class="behind-section" id="articles">
-  <div class="behind-inner">
-    <div class="behind-head reveal">
-      <div>
-        <div class="behind-label">📖 Behind the Scenes</div>
-        <div class="behind-title">How Things Were Made</div>
-      </div>
-      <span style="font-size:.78rem;font-weight:700;color:var(--text-muted)">5 articles</span>
+    <div class="behind-inner">
+        <div class="behind-header reveal">
+            <div>
+                <div class="behind-label">📖 Behind the Scenes</div>
+                <div class="behind-title">How Things Were Made</div>
+            </div>
+            <span class="behind-count">5 articles</span>
+        </div>
+        <div class="feat-wrap">
+            <a href="arcane_citadel_page.html" class="feat-article reveal" data-cat="gamedev">
+            <div class="feat-article-img">
+                <div class="fa-icon">🏰</div>
+            </div>
+            <div class="feat-article-body">
+                <span class="fa-badge">★ Featured · Game Dev</span>
+                <h2 class="fa-title">How Arcane Citadel Was Built. From Blank File to Boss Fight</h2>
+                <p class="fa-desc">A deep dive into building a roguelite tower defence entirely in HTML, CSS and vanilla JavaScript. No frameworks, no engines just a canvas element and 2,300 lines of code. Covers the spell system, wave spawning, procedural enemy scaling, and the particle effects that make it feel alive.</p>
+                <span class="fa-cta">Read the Full Breakdown →</span>
+            </div>
+        </a>
+        </div>
+        <div class="behind-grid">
+        <div class="article-card reveal" data-cat="gamedev">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#03000f,#0a0025,#150040);">🚀</div>
+                <span class="article-tag-badge tag-gamedev">Game Dev</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">March 2026</div>
+                <h3 class="article-title">Building VoidRush. A Neon Space Runner in Pure JS</h3>
+                <p class="article-excerpt">Three lanes, a fuel mechanic, a void entity with glowing tentacles, and a parallax starfield. How each system was designed and how they fit together to create tension.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 8 min read</span>
+                    <a href="voidrush.html" class="article-read-more">Read →</a>
+                </div>
+            </div>
+        </div>
+        <div class="article-card reveal" data-cat="gamedev">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#e8f2f3,#c4d8da);">💎</div>
+                <span class="article-tag-badge tag-gamedev">Game Dev</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">February 2026</div>
+                <h3 class="article-title">Designing a Match-3 Game. Cascades, Combos & Fever Mode</h3>
+                <p class="article-excerpt">The surprising complexity behind a "simple" puzzle game. Grid state management, cascade detection, combo multipliers, and why the fever mode timer changes everything.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 6 min read</span>
+                    <a href="gem_match.html" class="article-read-more">Read →</a>
+                </div>
+            </div>
+        </div>
+        <div class="article-card reveal" data-cat="bookmaking">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#ede8f5,#d8cfec);">🦊</div>
+                <span class="article-tag-badge tag-bookmaking">Book Making</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">January 2026</div>
+                <h3 class="article-title">Writing Lumo. From Invisible Struggles to a Purple Fox</h3>
+                <p class="article-excerpt">How a personal experience with anxiety became a children's picture book about quiet courage. The writing process, character design decisions, and why the Grumble-Grit is green.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 10 min read</span>
+                    <a href="lumo_and_the_grumble_grit.html" class="article-read-more">Read →</a>
+                </div>
+            </div>
+        </div>
+        <div class="article-card reveal" data-cat="design">
+            <div class="article-thumb">
+                <div class="article-thumb-ph" style="background:linear-gradient(135deg,#f5f0e8,#e8dfc8);">🌐</div>
+                <span class="article-tag-badge tag-design">Design</span>
+            </div>
+            <div class="article-body">
+                <div class="article-date">August 2025</div>
+                <h3 class="article-title">Designing JVDesignStudio.com 30 Pages, Zero Frameworks</h3>
+                <p class="article-excerpt">Why the whole site is hand-coded HTML and CSS. The colour system, component architecture, dark mode, and the decision to make every page a self-contained file.</p>
+                <div class="article-meta">
+                    <span class="article-read-time">⏱ 12 min read</span>
+                    <a href="devlog.html" class="article-read-more">Read →</a>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
-
-    <!-- Featured -->
-    <a href="arcane_citadel_page.html" class="feat-article reveal">
-      <div class="fa-img">🏰</div>
-      <div class="fa-body">
-        <div class="fa-badge">★ Featured · Game Dev</div>
-        <h2 class="fa-title">How Arcane Citadel Was Built. From Blank File to Boss Fight</h2>
-        <p class="fa-desc">A deep dive into building a roguelite tower defence entirely in HTML, CSS and vanilla JavaScript. No frameworks just a canvas element and 2,300 lines of code. Covers the spell system, wave spawning, procedural enemy scaling, and the particle effects that make it feel alive.</p>
-        <span class="fa-cta">Read the Full Breakdown →</span>
-      </div>
-    </a>
-
-    <div class="behind-grid">
-      <a href="voidrush.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#03000f,#0a0025,#150040);display:flex;align-items:center;justify-content:center">
-          <div class="c-thumb-emoji">🚀</div>
-          <span class="c-badge" style="background:var(--teal-dk);color:#fff">Game Dev</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">March 2026 · 8 min read</div>
-          <div class="c-title">Building VoidRush. A Neon Space Runner in Pure JS</div>
-          <p class="c-desc">Three lanes, a fuel mechanic, a void entity with glowing tentacles, and a parallax starfield. How each system was designed to create tension.</p>
-          <div class="c-meta"><span class="c-cta">Read →</span></div>
-        </div>
-      </a>
-      <a href="gem_match.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#e8f2f3,#c4d8da);display:flex;align-items:center;justify-content:center">
-          <div class="c-thumb-emoji">💎</div>
-          <span class="c-badge" style="background:var(--teal-dk);color:#fff">Game Dev</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">February 2026 · 6 min read</div>
-          <div class="c-title">Designing a Match-3 Game. Cascades, Combos &amp; Fever Mode</div>
-          <p class="c-desc">The surprising complexity behind a "simple" puzzle game grid state management, cascade detection, combo multipliers and the fever mode timer.</p>
-          <div class="c-meta"><span class="c-cta">Read →</span></div>
-        </div>
-      </a>
-      <a href="lumo_and_the_grumble_grit.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#ede8f5,#d8cfec);display:flex;align-items:center;justify-content:center">
-          <div class="c-thumb-emoji">🦊</div>
-          <span class="c-badge" style="background:#7c3aed;color:#fff">Book Making</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">January 2026 · 10 min read</div>
-          <div class="c-title">Writing Lumo. From Invisible Struggles to a Purple Fox</div>
-          <p class="c-desc">How a personal experience with anxiety became a children's picture book about quiet courage, and why the Grumble-Grit is green.</p>
-          <div class="c-meta"><span class="c-cta">Read →</span></div>
-        </div>
-      </a>
-      <a href="devlog.html" class="c-card reveal">
-        <div class="c-thumb" style="background:linear-gradient(135deg,#f5f0e8,#e8dfc8);display:flex;align-items:center;justify-content:center">
-          <div class="c-thumb-emoji">🌐</div>
-          <span class="c-badge" style="background:var(--charcoal);color:#fff">Design</span>
-        </div>
-        <div class="c-body">
-          <div class="c-label">August 2025 · 12 min read</div>
-          <div class="c-title">Designing JVDesignStudio.com Over 30 Pages, Zero Frameworks</div>
-          <p class="c-desc">Why the whole site is hand-coded HTML and CSS. The colour system, component architecture, dark mode and the decision to make every page a self-contained file.</p>
-          <div class="c-meta"><span class="c-cta">Read →</span></div>
-        </div>
-      </a>
-    </div>
-  </div>
 </section>
 
-<!-- ═══════════════════════════════════════
-     7. FOR SCHOOLS
-═══════════════════════════════════════ -->
-<section class="schools-section" id="schools">
-  <div class="schools-inner">
-    <div class="schools-head">
-      <span class="schools-eyebrow">✦ For Schools &amp; Teachers</span>
-      <h2 class="schools-title">Resources Built for the Classroom</h2>
-      <p class="schools-desc">Picture books on real topics, free browser games tied to the stories, and coding courses designed for doing — not just watching. All free. No account needed.</p>
+<!-- DOWNLOADS -->
+<section class="courses-section" id="resources">
+    <div class="courses-inner">
+        <div class="section-header reveal">
+            <span class="section-tag">✦ Free Downloads</span>
+            <h2 class="section-title">Everything is Free</h2>
+            <p style="color:var(--charcoal-lt);margin-top:10px;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
+                PDFs, cheat sheets, templates, project briefs. No account needed.
+            </p>
+        </div>
+        <div class="courses-grid" style="margin-top:32px">
+            <a href="freebies.html" class="course-card reveal">
+                <div class="course-thumb" style="background:linear-gradient(135deg,#1a2e1a,#2e4a2e);position:relative">
+                    <span style="font-size:4rem;z-index:1">🎁</span>
+                    <span class="course-thumb-badge" style="background:var(--teal-dk)">Free</span>
+                </div>
+                <div class="course-body">
+                    <div class="course-tag">Downloads Hub</div>
+                    <div class="course-title">All Free Downloads</div>
+                    <p class="course-desc">Godot templates, MUGEN guides, cheat sheets, colouring pages and project briefs all in one place.</p>
+                    <span class="course-cta">Get Everything →</span>
+                </div>
+            </a>
+            <a href="discovery_session.html" class="course-card reveal">
+                <div class="course-thumb" style="background:linear-gradient(135deg,#1a1428,#302048);position:relative;overflow:hidden">
+                    <img src="Discovery_Sessions.png" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+                    <span style="font-size:4rem;z-index:1;position:relative">🎤</span>
+                    <span class="course-thumb-badge" style="background:#9b6bff">Presentation</span>
+                </div>
+                <div class="course-body">
+                    <div class="course-tag">Discovery Session</div>
+                    <div class="course-title">Interactive Presentation</div>
+                    <p class="course-desc">A school-ready slideshow with live demos and clickable links to every project on the site.</p>
+                    <span class="course-cta">View Presentation →</span>
+                </div>
+            </a>
+        </div>
     </div>
-    <div class="schools-stats">
-      <div class="ss-stat"><span class="ss-val">5</span><span class="ss-label">Picture Books</span></div>
-      <div class="ss-stat"><span class="ss-val">10+</span><span class="ss-label">Free Games</span></div>
-      <div class="ss-stat"><span class="ss-val">16</span><span class="ss-label">Coding Courses</span></div>
-      <div class="ss-stat"><span class="ss-val">Free</span><span class="ss-label">Always</span></div>
-    </div>
-    <div class="pillars">
-      <div class="pillar">
-        <div class="pillar-icon">📚</div>
-        <div class="pillar-title">Books that tackle real topics</div>
-        <div class="pillar-body">Anxiety, fear, online safety, belonging and resilience themes children carry into school every day. Written to spark conversations, not avoid them.</div>
-      </div>
-      <div class="pillar">
-        <div class="pillar-icon">🎮</div>
-        <div class="pillar-title">Games tied to the stories</div>
-        <div class="pillar-body">Every major book has a free browser game built around its world. No downloads, no accounts playable on any school device in seconds.</div>
-      </div>
-      <div class="pillar">
-        <div class="pillar-icon">🔧</div>
-        <div class="pillar-title">Coding courses for beginners</div>
-        <div class="pillar-body">16 free courses in JavaScript, Python, C++, GML, Godot, MUGEN, Roblox. Each builds something real. Ages 8+, no prior experience needed.</div>
-      </div>
-      <div class="pillar">
-        <div class="pillar-icon">💻</div>
-        <div class="pillar-title">Works on any device</div>
-        <div class="pillar-body">All games and courses run in a standard browser. Tested on Chromebooks, iPads, Windows laptops and mobile. No software installation required.</div>
-      </div>
-      <div class="pillar">
-        <div class="pillar-icon">💰</div>
-        <div class="pillar-title">Completely free</div>
-        <div class="pillar-body">Every game, every course, every PDF. No subscriptions, no sign-up, no paywalls. Accessible to every school regardless of budget.</div>
-      </div>
-      <div class="pillar">
-        <div class="pillar-icon">👨‍🏫</div>
-        <div class="pillar-title">Discovery sessions available</div>
-        <div class="pillar-body">A ready-made interactive presentation covering books, games and coding designed to run in front of a class with minimal teacher input needed.</div>
-      </div>
-    </div>
-    <div class="schools-ctas">
-      <a href="discovery_session.html" class="btn-schools-primary">🖥️ View Discovery Session</a>
-      <a href="freebies.html" class="btn-schools-secondary">🎁 Free Downloads</a>
-      <a href="contact.html" class="btn-schools-secondary">✉️ Book a Session</a>
-    </div>
-  </div>
 </section>
 
-<!-- ═══════════════════════════════════════
-     DOWNLOADS STRIP
-═══════════════════════════════════════ -->
-<section class="downloads-section">
-  <div class="downloads-inner">
-    <div class="dl-head reveal">
-      <div>
-        <div class="dl-label">✦ Free Downloads</div>
-        <div class="dl-title">Everything is Free</div>
-      </div>
-    </div>
-    <div class="dl-grid">
-      <a href="freebies.html" class="dl-card reveal">
-        <div class="dl-icon">🎁</div>
-        <div class="dl-name">All Free Downloads</div>
-        <div class="dl-desc">Godot templates, MUGEN guides, cheat sheets, colouring pages and project briefs all in one place.</div>
-        <div class="dl-cta">Get Everything →</div>
-      </a>
-      <a href="discovery_session.html" class="dl-card reveal">
-        <div class="dl-icon">🖥️</div>
-        <div class="dl-name">Discovery Session Presentation</div>
-        <div class="dl-desc">A school-ready slideshow with live demos and clickable links. Runs in any browser, no login needed.</div>
-        <div class="dl-cta">Open Presentation →</div>
-      </a>
-      <a href="godot_templates.html" class="dl-card reveal">
-        <div class="dl-icon">📦</div>
-        <div class="dl-name">Godot 4 Templates</div>
-        <div class="dl-desc">Four complete Godot 4 projects ready to download and build from.</div>
-        <div class="dl-cta">Get Templates →</div>
-      </a>
-      <a href="mugen-workshop.html" class="dl-card reveal">
-        <div class="dl-icon">⚔</div>
-        <div class="dl-name">MUGEN Starter Pack</div>
-        <div class="dl-desc">Cheat sheets, project briefs, .DEF templates and guides. 10 files, all free.</div>
-        <div class="dl-cta">Get Pack →</div>
-      </a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <p>© 2026 JVDesignStudio &nbsp;·&nbsp; <a href="index.html">Home</a> &nbsp;·&nbsp; <a href="workshop.html">Workshop</a> &nbsp;·&nbsp; <a href="content_hub.html">All Projects</a> &nbsp;·&nbsp; <a href="contact.html">Contact</a> &nbsp;·&nbsp; <a href="ko-fi.com/jvdesignstudio" target="_blank" rel="noopener">☕ Ko-fi</a></p>
+<footer style="background:var(--charcoal);color:rgba(240,234,214,.6);padding:28px;text-align:center;font-size:.82rem">
+    <p>© 2026 JVDesignStudio &nbsp;·&nbsp; <a href="index.html" style="color:rgba(240,234,214,.6)">Home</a> &nbsp;·&nbsp; <a href="learn.html" style="color:rgba(240,234,214,.6)">Learn</a> &nbsp;·&nbsp; <a href="content_hub.html" style="color:rgba(240,234,214,.6)">All Projects</a> &nbsp;·&nbsp; <a href="contact.html" style="color:rgba(240,234,214,.6)">Contact</a></p>
 </footer>
 
 <script>
-/* ── Scroll reveal ── */
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const parent = entry.target.parentElement;
-      const siblings = [...parent.querySelectorAll('.reveal')];
-      const idx = siblings.indexOf(entry.target);
-      setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-      observer.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-/* ── Mobile nav ── */
+
+
+    /* ── Scroll reveal ── */
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const parent = entry.target.parentElement;
+                const siblings = [...parent.querySelectorAll('.reveal')];
+                const idx = siblings.indexOf(entry.target);
+                setTimeout(() => {
+                    entry.target.classList.add('visible');
+                }, Math.min(idx * 80, 400));
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    /* ── Mobile nav ── */
+    const navToggle = document.getElementById('navToggle') || document.querySelector('.nav-toggle');
+    const mobileNav = document.getElementById('mobileNav') || document.querySelector('.mobile-nav');
+    if (navToggle && mobileNav) {
+        navToggle.addEventListener('click', () => mobileNav.classList.toggle('open'));
+    }
+
+    /* ── Dark mode toggle ── */
+    function toggleTheme() {
+        const html = document.documentElement;
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        localStorage.setItem('jvds-theme', isDark ? 'light' : 'dark');
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+    }
+
+    /* ── Restore theme on load ── */
+    (function() {
+        const saved = localStorage.getItem('jvds-theme');
+        if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            // Update button once DOM is ready
+            const applyBtn = () => {
+                const btn = document.getElementById('themeToggle');
+                if (btn) btn.textContent = '☀️';
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applyBtn);
+            } else {
+                applyBtn();
+            }
+        }
+    })();
+
+
+
+/* ─── Mobile nav ─────────────────────────────── */
 (function(){
-  var btn = document.getElementById('navToggle');
-  var nav = document.getElementById('mobileNav');
+  var btn = document.getElementById('navToggle') || document.querySelector('.nav-toggle');
+  var nav = document.getElementById('mobileNav') || document.querySelector('.mobile-nav');
   if(!btn || !nav) return;
   function open(){ nav.classList.add('open'); btn.textContent='✕'; }
   function close(){ nav.classList.remove('open'); btn.textContent='☰'; }
@@ -840,19 +1348,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
 })();
 
-/* ── Dark mode ── */
-(function(){
-  var btn = document.getElementById('darkBtn');
-  var saved = localStorage.getItem('jvds-theme');
-  if (saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
-  if (btn) btn.textContent = (document.documentElement.getAttribute('data-theme') === 'dark') ? '☀️' : '🌙';
-  if (btn) btn.addEventListener('click', function(){
-    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('jvds-theme', isDark ? 'light' : 'dark');
-    btn.textContent = isDark ? '🌙' : '☀️';
-  });
-})();
+
+
 </script>
 </body>
 </html>
