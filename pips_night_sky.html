@@ -2,1171 +2,259 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pip's Night Sky | JVDesignStudio</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐢</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lora:ital@1&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pips_Night_Sky | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;800&display=swap" rel="stylesheet">
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  background:#0d1b2a;
-  font-family:'Fredoka',cursive;
-  color:#F0EAD6;
-  display:flex;flex-direction:column;align-items:center;
-  min-height:100vh;overflow-x:hidden;
-  user-select:none;
+:root {
+    --night-deep: #080f18;
+    --night-core: #0d1b2a;
+    --night-lt:   #1b263b;
+    --lantern:    #f5a623;
+    --moon:       #e8d5a0;
+    --beige:      #F0EAD6;
+    --glass:      rgba(255, 255, 255, 0.05);
 }
 
-/* ── HEADER ── */
-.hdr{
-  width:100%;background:rgba(13,27,42,0.97);
-  border-bottom:1px solid rgba(232,213,160,0.15);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;height:52px;flex-shrink:0;
-}
-.hdr-logo{font-size:1.05rem;font-weight:800;text-decoration:none;color:#D2B48C;}
-.hdr-btn{
-  background:#f5a623;color:#0d1b2a;border:none;border-radius:8px;
-  font-family:'Fredoka',cursive;font-weight:700;font-size:0.8rem;
-  padding:5px 13px;cursor:pointer;text-decoration:none;
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body, html { 
+    margin: 0; padding: 0; width: 100%; height: 100%; 
+    background: var(--night-deep); color: var(--beige);
+    font-family: 'Fredoka', sans-serif; overflow: hidden;
 }
 
-/* ── WRAP ── */
-.wrap{
-  display:flex;flex-direction:column;align-items:center;
-  width:100%;max-width:520px;padding:10px 10px 32px;
+/* ══ RESPONSIVE WRAPPER ══ */
+.app-shell {
+    width: 100%; max-width: 500px; height: 100dvh;
+    margin: 0 auto; display: flex; flex-direction: column;
+    position: relative; background: var(--night-core);
+    box-shadow: 0 0 100px rgba(0,0,0,0.5);
 }
 
-/* ── HUD ── */
-.hud{
-  width:100%;display:flex;gap:6px;align-items:stretch;
-  background:rgba(22,32,50,0.95);border:1.5px solid rgba(232,213,160,0.2);
-  border-radius:11px;padding:8px 12px;margin-bottom:8px;
+/* ══ HUD ══ */
+.hud-top {
+    padding: calc(env(safe-area-inset-top) + 15px) 20px 10px;
+    display: flex; justify-content: space-between; align-items: center; z-index: 10;
 }
-.hud-block{display:flex;flex-direction:column;align-items:center;flex:1;}
-.hud-lbl{font-size:0.52rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(232,213,160,.45);}
-.hud-val{font-size:1.05rem;font-weight:700;color:#f5a623;line-height:1.2;}
-
-/* progress bar */
-.prog-wrap{width:100%;margin-bottom:8px;}
-.prog-bar{
-  width:100%;height:6px;background:rgba(232,213,160,0.1);
-  border-radius:999px;overflow:hidden;
-}
-.prog-fill{
-  height:100%;background:linear-gradient(90deg,#f5a623,#ffd580);
-  border-radius:999px;transition:width 0.5s ease;
-}
-.prog-lbl{
-  font-size:0.62rem;color:rgba(232,213,160,0.5);
-  text-align:center;margin-top:3px;letter-spacing:.05em;
+.stat-group { display: flex; gap: 10px; }
+.pill {
+    background: var(--glass); border: 1px solid rgba(232,213,160,0.2);
+    padding: 6px 14px; border-radius: 100px; font-weight: 600;
 }
 
-/* ── CANVAS FRAME ── */
-.canvas-frame{
-  position:relative;width:100%;
-  border-radius:16px;overflow:hidden;
-  border:2.5px solid rgba(232,213,160,0.18);
-  box-shadow:0 0 60px rgba(245,166,35,.08),0 16px 48px rgba(0,0,0,.6);
-  cursor:crosshair;
-  touch-action:none;
+/* ══ GAME CANVAS ══ */
+.stage {
+    flex: 1; position: relative; overflow: hidden;
+    cursor: pointer; touch-action: none;
 }
-canvas{display:block;width:100%;}
+#starfield { position: absolute; inset: 0; z-index: 1; }
+#gameCanvas { position: absolute; inset: 0; z-index: 2; }
 
-/* ── OVERLAY ── */
-.overlay{
-  position:absolute;inset:0;z-index:20;
-  background:rgba(13,27,42,.92);backdrop-filter:blur(8px);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:24px;text-align:center;transition:opacity .35s;
+/* ══ INFO CARD ══ */
+.footer-card {
+    background: var(--night-lt); border-radius: 30px 30px 0 0;
+    padding: 25px 25px calc(env(safe-area-inset-bottom) + 20px);
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.3); z-index: 10;
 }
-.overlay.off{opacity:0;pointer-events:none;}
-.ov-emoji{font-size:3rem;margin-bottom:6px;}
-.ov-title{
-  font-size:clamp(1.5rem,5vw,2.2rem);font-weight:700;
-  color:#f5a623;line-height:1.1;margin-bottom:6px;
-}
-.ov-sub{
-  font-family:'Lora',serif;font-style:italic;
-  font-size:0.85rem;color:rgba(232,213,160,.75);
-  line-height:1.6;max-width:300px;margin-bottom:14px;
-}
-.ov-instructions{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-  margin-bottom:18px;width:100%;max-width:320px;
-}
-.ov-inst{
-  background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.2);
-  border-radius:10px;padding:8px;font-size:0.72rem;color:rgba(232,213,160,.8);
-  line-height:1.4;
-}
-.ov-inst b{color:#f5a623;display:block;margin-bottom:2px;}
-.btn-play{
-  background:#f5a623;color:#0d1b2a;border:none;border-radius:999px;
-  font-family:'Fredoka',cursive;font-weight:700;font-size:1rem;
-  padding:13px 36px;cursor:pointer;
-  box-shadow:0 4px 0 #c47f00,0 0 30px rgba(245,166,35,.4);
-  transition:transform .1s,filter .1s;
-}
-.btn-play:hover{filter:brightness(1.1);transform:translateY(-2px);}
-.btn-play:active{transform:translateY(2px);}
-.btn-ghost{
-  background:transparent;color:#e8d5a0;
-  border:1.5px solid rgba(232,213,160,.3);border-radius:999px;
-  font-family:'Fredoka',cursive;font-weight:600;font-size:0.85rem;
-  padding:8px 22px;cursor:pointer;margin-top:8px;
-  text-decoration:none;display:inline-block;transition:background .2s;
-}
-.btn-ghost:hover{background:rgba(232,213,160,.1);}
+.lvl-meta { color: var(--lantern); text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-bottom: 5px; }
+.const-name { font-size: 24px; font-weight: 700; margin-bottom: 15px; }
 
-/* constellation complete popup */
-.c-popup{
-  position:absolute;z-index:15;
-  background:rgba(13,27,42,.95);border:1.5px solid rgba(245,166,35,.5);
-  border-radius:14px;padding:14px 20px;text-align:center;
-  pointer-events:none;transition:opacity .5s,transform .5s;
-  max-width:220px;
-}
-.c-popup.hide{opacity:0;transform:translateY(-20px);}
-.cp-name{font-size:1.1rem;font-weight:700;color:#f5a623;margin-bottom:3px;}
-.cp-quote{
-  font-family:'Lora',serif;font-style:italic;
-  font-size:0.73rem;color:rgba(232,213,160,.8);line-height:1.5;
+.audio-toggle {
+    position: absolute; top: 80px; right: 20px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--glass); border: none; color: white;
+    cursor: pointer; z-index: 100;
 }
 
-/* score box */
-.score-box{
-  background:rgba(22,32,50,.9);border:1.5px solid rgba(245,166,35,.25);
-  border-radius:12px;padding:14px 24px;margin-bottom:14px;min-width:200px;
-}
-.sc-row{display:flex;justify-content:space-between;gap:18px;align-items:baseline;margin-bottom:4px;}
-.sc-lbl{font-size:0.65rem;color:rgba(232,213,160,.45);text-transform:uppercase;letter-spacing:.08em;}
-.sc-num{font-size:1.3rem;font-weight:700;color:#f5a623;}
-.sc-num.big{font-size:1.9rem;}
-.ov-quote{
-  font-family:'Lora',serif;font-style:italic;
-  font-size:0.8rem;color:rgba(232,213,160,.45);max-width:260px;line-height:1.5;
-  margin-bottom:14px;
-}
-
-/* controls hint */
-.controls{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;}
-.ctrl{
-  font-size:0.72rem;color:rgba(232,213,160,.3);
-  background:rgba(22,32,50,.7);border:1px solid rgba(232,213,160,.1);
-  border-radius:6px;padding:4px 10px;
-}
-
-/* shake */
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-.shake{animation:shake .3s ease;}
-
-/* ═══ MOBILE NAV ═══ */
-.nav-toggle{display:none;background:none;border:none;padding:8px 10px;font-size:1.4rem;cursor:pointer;color:inherit;flex-shrink:0;line-height:1;}
-.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--header-bg,#fff);border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:0;overflow:hidden;transition:max-height .4s ease;display:block;}
-.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto;}
-.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:var(--charcoal,#403B33);border-bottom:1px solid rgba(64,59,51,.08);transition:background .12s;text-decoration:none;}
-.mobile-nav a:hover{background:rgba(64,59,51,.05);}
-.mobile-nav a:last-child{border-bottom:none;}
-@media(max-width:860px){.main-nav,.nav-cta,.header-nav{display:none!important;}.nav-toggle{display:block!important;}}
-@media(min-width:861px){.mobile-nav{display:none!important;}}
+/* ══ PROGRESS ══ */
+.prog-container { height: 8px; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--lantern); width: 0%; transition: width 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
 </style>
 </head>
 <body>
-<header class="site-header" id="siteHeader">
-    <div class="header-inner">
-        <a href="index.html" class="logo-link">
-            <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
-            <span class="logo-name">JVDesignStudio</span>
-        </a>
-        <nav class="main-nav">
-            <a href="index.html" class="nav-link">Home</a>
-            <a href="content_hub.html" class="nav-link">All Projects</a>
-            <a href="workshop.html" class="nav-link">🔧 Workshop</a>
-            <a href="search.html" class="nav-link">🔍 Search</a>
-            <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
-            <a href="devlog.html" class="nav-link">Dev Log</a>
-            <a href="videos.html" class="nav-link">🎬 Videos</a>
-        </nav>
-        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
-    </div>
-    <nav class="mobile-nav" id="mobileNav">
-        <a href="index.html">🏠 Home</a>
-        <a href="content_hub.html">📦 All Projects</a>
-        <a href="workshop.html">🔧 Workshop</a>
-        <a href="search.html">🔍 Search</a>
-        <a href="freebies.html">🎁 Free Downloads</a>
-        <a href="devlog.html">📓 Dev Log</a>
-        <a href="videos.html">🎬 Videos</a>
-        <a href="about.html">👤 About</a>
-        <a href="contact.html">✉️ Contact</a>
-        <a href="newsletter.html">💌 Newsletter</a>
-        <a href="sitemap.html">🗺️ Sitemap</a>
-    </nav>
-</header>
 
-<div class="wrap">
-  <div class="hud">
-    <div class="hud-block"><span class="hud-lbl">Score</span><span class="hud-val" id="hudScore">0</span></div>
-    <div class="hud-block"><span class="hud-lbl">Best</span><span class="hud-val" id="hudBest">0</span></div>
-    <div class="hud-block"><span class="hud-lbl">Found</span><span class="hud-val" id="hudFound">0/0</span></div>
-    <div class="hud-block"><span class="hud-lbl">Stars ✨</span><span class="hud-val" id="hudStars">0</span></div>
-  </div>
-  <div class="prog-wrap">
-    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
-    <div class="prog-lbl" id="progLbl">Find all constellations to complete the night!</div>
-  </div>
-
-  <div class="canvas-frame" id="cframe">
-    <canvas id="gc"></canvas>
-
-    <!-- constellation complete popup -->
-    <div class="c-popup hide" id="cPopup">
-      <div class="cp-name" id="cpName">The Turtle</div>
-      <div class="cp-quote" id="cpQuote">"Pip was brave and true."</div>
+<div class="app-shell">
+    <button class="audio-toggle" onclick="audio.toggle()">🎵</button>
+    
+    <div class="hud-top">
+        <div style="font-size: 20px; font-weight: 700;">Pips_Sky</div>
+        <div class="stat-group">
+            <div class="pill">✨ <span id="star-total">0</span></div>
+        </div>
     </div>
 
-    <!-- START -->
-    <div class="overlay" id="ovStart">
-      <div class="ov-emoji">🐢</div>
-      <div class="ov-title">Pip's Night Sky</div>
-      <p class="ov-sub">"The dark wasn't scary. It felt just right. It held the stars safe and bright."</p>
-      <div class="ov-instructions">
-        <div class="ov-inst"><b>🌟 Find Stars</b>Click a glowing star to select it</div>
-        <div class="ov-inst"><b>🔗 Connect</b>Click the next star to draw a line</div>
-        <div class="ov-inst"><b>✨ Constellation</b>Connect all dots in the outline</div>
-        <div class="ov-inst"><b>🏮 Brave Light</b>Move your cursor to reveal dim stars</div>
-      </div>
-      <button class="btn-play" id="btnStart">🌙 Look at the Night →</button>
+    <div class="stage" id="stage">
+        <canvas id="starfield"></canvas>
+        <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- COMPLETE -->
-    <div class="overlay off" id="ovComplete">
-      <div class="ov-emoji">🌟</div>
-      <div class="ov-title">Night Complete!</div>
-      <div class="score-box">
-        <div class="sc-row"><span class="sc-lbl">Score</span><span class="sc-num big" id="dScore">0</span></div>
-        <div class="sc-row"><span class="sc-lbl">Best</span><span class="sc-num" id="dBest">0</span></div>
-        <div class="sc-row"><span class="sc-lbl">Constellations</span><span class="sc-num" id="dFound">0</span></div>
-      </div>
-      <p class="ov-quote">"Goodnight, brave explorer. Sleep under the stars. 🌙🐢"</p>
-      <button class="btn-play" id="btnRetry">↺ New Night Sky</button>
-      <a class="btn-ghost" href="Pip_and_the_night_sky.html">Read the Book</a>
+    <div class="footer-card">
+        <div class="lvl-meta" id="lvl-tag">Constellation 1</div>
+        <div class="const-name" id="const-name">Loading...</div>
+        <div class="prog-container"><div class="prog-fill" id="prog-bar"></div></div>
     </div>
-  </div>
-
-  <div class="controls">
-    <div class="ctrl">🌟 Move cursor to reveal stars</div>
-    <div class="ctrl">🔗 Click two stars to connect</div>
-    <div class="ctrl">⌫ Right-click / long-press to undo</div>
-  </div>
 </div>
 
 <script>
-(function(){
-'use strict';
+// ══ AUDIO ENGINE (Synthesized for zero-asset loading) ══
+const audio = {
+    ctx: null,
+    enabled: false,
+    init() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.enabled = true;
+    },
+    playPing(freq = 440) {
+        if(!this.enabled) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.5);
+    },
+    toggle() {
+        if(!this.ctx) this.init();
+        this.enabled = !this.enabled;
+        document.querySelector('.audio-toggle').textContent = this.enabled ? '🎵' : '🔇';
+    }
+};
 
-// ═══════════════════════════════════════
-// AUDIO
-// ═══════════════════════════════════════
-let audioCtx=null;
-function getAudio(){
-  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  return audioCtx;
-}
-function tone(freq,type,vol,dur,attack=0.01){
-  try{
-    const ac=getAudio(),o=ac.createOscillator(),g=ac.createGain();
-    o.connect(g);g.connect(ac.destination);
-    o.type=type;o.frequency.setValueAtTime(freq,ac.currentTime);
-    g.gain.setValueAtTime(0,ac.currentTime);
-    g.gain.linearRampToValueAtTime(vol,ac.currentTime+attack);
-    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
-    o.start(ac.currentTime);o.stop(ac.currentTime+dur+0.05);
-  }catch(e){}
-}
-function sndClick(){ tone(880,'sine',0.12,0.1); }
-function sndConnect(){ tone(660,'sine',0.15,0.12);setTimeout(()=>tone(880,'sine',0.1,0.1),80); }
-function sndUndo(){ tone(300,'sine',0.1,0.15,0.005); }
-function sndConstellation(){
-  [523,659,784,1047,1319,1568].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.2,0.3),i*80));
-}
-function sndComplete(){
-  [523,659,784,1047,1319,1568,2093].forEach((f,i)=>setTimeout(()=>tone(f,'sine',0.22,0.4),i*90));
-}
-function sndNewStar(){ tone(1200+Math.random()*400,'sine',0.08,0.18,0.005); }
-
-// ═══════════════════════════════════════
-// CONSTELLATIONS DATA
-// Each constellation: name, quote, stars (normalised 0-1 coords), edges (pairs of star indices)
-// ═══════════════════════════════════════
-const CONSTELLATIONS=[
-  {
-    name:'The Turtle',
-    emoji:'🐢',
-    quote:'"Pip was a turtle, brave and true, bold in the sunshine through and through."',
-    color:'#88ccff',
-    stars:[
-      [0.5,0.38],  // 0 head
-      [0.46,0.46], // 1 left front
-      [0.54,0.46], // 2 right front
-      [0.44,0.56], // 3 left back
-      [0.56,0.56], // 4 right back
-      [0.5,0.62],  // 5 tail
-    ],
-    edges:[[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[1,4],[2,3]]
-  },
-  {
-    name:'The Brave Light',
-    emoji:'🏮',
-    quote:'"I made this for you — your Brave Light. It stays with you and feels just right."',
-    color:'#f5a623',
-    stars:[
-      [0.5,0.28],  // 0 top
-      [0.43,0.36], // 1 tl
-      [0.57,0.36], // 2 tr
-      [0.4,0.48],  // 3 ml
-      [0.6,0.48],  // 4 mr
-      [0.43,0.58], // 5 bl
-      [0.57,0.58], // 6 br
-      [0.5,0.65],  // 7 bottom
-    ],
-    edges:[[0,1],[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[6,7],[1,2],[5,6]]
-  },
-  {
-    name:'The Firefly',
-    emoji:'✨',
-    quote:'"Tiny lights twinkled on the hill — fireflies dancing, bright and still."',
-    color:'#aaff88',
-    stars:[
-      [0.5,0.3],   // 0 body top
-      [0.5,0.42],  // 1 body mid
-      [0.5,0.54],  // 2 body bot
-      [0.38,0.36], // 3 left wing top
-      [0.35,0.46], // 4 left wing bot
-      [0.62,0.36], // 5 right wing top
-      [0.65,0.46], // 6 right wing bot
-    ],
-    edges:[[0,1],[1,2],[0,3],[3,4],[4,1],[0,5],[5,6],[6,1]]
-  },
-  {
-    name:'The Great Dark',
-    emoji:'🌌',
-    quote:'"The dark isn\'t empty," Dad said low. "It helps stars sparkle, shine, and glow."',
-    color:'#cc88ff',
-    stars:[
-      [0.3,0.28],  // 0
-      [0.5,0.22],  // 1 top
-      [0.7,0.28],  // 2
-      [0.75,0.48], // 3 right
-      [0.65,0.65], // 4
-      [0.5,0.7],   // 5 bottom
-      [0.35,0.65], // 6
-      [0.25,0.48], // 7 left
-    ],
-    edges:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]]
-  },
-  {
-    name:'Stardust',
-    emoji:'⭐',
-    quote:'"Dad, look!" said Pip. "That star so high — it\'s Stardust, up in the sky!"',
-    color:'#ffd580',
-    stars:[
-      [0.5,0.22],  // 0 top
-      [0.39,0.5],  // 1 left
-      [0.62,0.4],  // 2 upper right
-      [0.62,0.6],  // 3 lower right
-      [0.39,0.7],  // 4 lower left
-      [0.5,0.5],   // 5 centre
-    ],
-    edges:[[0,2],[2,4],[4,1],[1,3],[3,0],[0,5],[1,5],[2,5],[3,5],[4,5]]
-  },
-  {
-    name:'Dad\'s Hand',
-    emoji:'🤝',
-    quote:'"You did it," said Dad. "I\'m right nearby." They stood together under the sky."',
-    color:'#ffaa88',
-    stars:[
-      [0.5,0.65],  // 0 wrist
-      [0.38,0.52], // 1 pinky
-      [0.43,0.42], // 2 ring
-      [0.5,0.38],  // 3 middle (tallest)
-      [0.57,0.4],  // 4 index
-      [0.62,0.5],  // 5 thumb
-    ],
-    edges:[[0,1],[0,2],[0,4],[0,5],[1,2],[2,3],[3,4],[4,5]]
-  },
-  {
-    name:'The Moon',
-    emoji:'🌙',
-    quote:'"PiP felt a shiver — then smiled instead. The dark felt calm above his head."',
-    color:'#e8d5a0',
-    stars:[
-      [0.38,0.28], // 0 top of crescent
-      [0.32,0.38], // 1 left bulge
-      [0.33,0.5],  // 2 left mid
-      [0.38,0.6],  // 3 bottom
-      [0.5,0.56],  // 4 inner bottom
-      [0.55,0.45], // 5 inner mid
-      [0.5,0.34],  // 6 inner top
-    ],
-    edges:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0]]
-  },
-  {
-    name:'The Shadow',
-    emoji:'👤',
-    quote:'"That shadow is you when you spin. Shadows can\'t hurt — they copy your grin."',
-    color:'#aabbcc',
-    stars:[
-      [0.5,0.26],  // 0 head
-      [0.5,0.38],  // 1 neck
-      [0.42,0.44], // 2 left shoulder
-      [0.58,0.44], // 3 right shoulder
-      [0.5,0.56],  // 4 waist
-      [0.43,0.68], // 5 left foot
-      [0.57,0.68], // 6 right foot
-      [0.36,0.6],  // 7 left hand
-      [0.64,0.6],  // 8 right hand
-    ],
-    edges:[[0,1],[1,2],[1,3],[2,4],[3,4],[4,5],[4,6],[2,7],[3,8]]
-  },
+// ══ GAME DATA (Complex Shapes) ══
+const LEVELS = [
+    { name: "The Wandering Pip", seq: [0,1,2,3,4,0], stars: [[0.5, 0.2], [0.8, 0.4], [0.7, 0.8], [0.3, 0.8], [0.2, 0.4]] },
+    { name: "Celestial Shell", seq: [0,1,2,3,4,5,1], stars: [[0.5,0.1], [0.5,0.4], [0.2,0.5], [0.3,0.8], [0.7,0.8], [0.8,0.5]] },
+    { name: "The North Star", seq: [0,1,2,3,0,4,5], stars: [[0.5,0.5], [0.2,0.2], [0.8,0.2], [0.5,0.5], [0.5,0.8], [0.5,0.9]] }
 ];
 
-// ═══════════════════════════════════════
-// CANVAS + GAME STATE
-// ═══════════════════════════════════════
-const canvas=document.getElementById('gc');
-const ctx=canvas.getContext('2d');
-const cframe=document.getElementById('cframe');
-let GW=400, GH=560, scale=1;
+// ══ STATE ══
+let vault = { level: 0, stars: 0 };
+let currentIndex = 0;
+let lines = [];
 
-function resize(){
-  const cssW=cframe.clientWidth;
-  scale=cssW/GW;
-  const dpr=window.devicePixelRatio||1;
-  canvas.width=Math.round(GW*scale*dpr);
-  canvas.height=Math.round(GH*scale*dpr);
-  canvas.style.width=cssW+'px';
-  canvas.style.height=Math.round(GH*scale)+'px';
-  ctx.setTransform(scale*dpr,0,0,scale*dpr,0,0);
-}
-window.addEventListener('resize',()=>{resize();lanternX=GW/2;lanternY=GH*.75;});
+const gCanvas = document.getElementById('gameCanvas');
+const gCtx = gCanvas.getContext('2d');
+const sCanvas = document.getElementById('starfield');
+const sCtx = sCanvas.getContext('2d');
 
-// State
-let stars=[];       // all star objects on canvas
-let constellations=[];// active constellation puzzles
-let completed=[];   // completed constellation indices
-let selectedStar=null;
-let connections=[];  // drawn connection objects
-let lanternX=GW/2, lanternY=GH-80;
-let mouseX=GW/2, mouseY=GH/2;
-let score=0, best=0;
-let tick=0;
-let state='start';
-let bgStars=[];
-let sparks=[];
-let popups=[];
-
-// ═══════════════════════════════════════
-// GAME SETUP
-// ═══════════════════════════════════════
-function pickConstellations(){
-  // Pick 4-5 random constellations, arrange non-overlapping on sky
-  const shuffled=[...CONSTELLATIONS].sort(()=>Math.random()-.5);
-  const count=4+Math.floor(Math.random()*2); // 4 or 5
-  return shuffled.slice(0,count);
-}
-
-function buildStarField(){
-  bgStars=[];
-  for(let i=0;i<120;i++){
-    bgStars.push({
-      x:Math.random()*GW,
-      y:Math.random()*(GH*.85),
-      r:Math.random()*1.1+.2,
-      a:Math.random()*.6+.1,
-      da:(Math.random()*.005+.002)*(Math.random()<.5?1:-1),
-      twinkle:Math.random()*Math.PI*2
+function init() {
+    resize();
+    window.addEventListener('resize', resize);
+    
+    // Pointer Events for PC + Mobile
+    gCanvas.addEventListener('pointerdown', (e) => {
+        if(!audio.ctx) audio.init();
+        handleInput(e);
     });
-  }
+
+    drawStarfield();
+    loadLevel(vault.level);
 }
 
-function placeConstellations(picks){
-  // Divide sky into regions to avoid overlap
-  // Use a simple grid-based placement
-  const regions=[
-    {cx:0.22,cy:0.20,rx:0.16,ry:0.14},
-    {cx:0.78,cy:0.20,rx:0.16,ry:0.14},
-    {cx:0.5, cy:0.22,rx:0.16,ry:0.14},
-    {cx:0.22,cy:0.50,rx:0.16,ry:0.14},
-    {cx:0.78,cy:0.50,rx:0.16,ry:0.14},
-  ];
-  // Shuffle regions
-  regions.sort(()=>Math.random()-.5);
-
-  constellations=[];
-  stars=[];
-
-  picks.forEach((def,idx)=>{
-    if(idx>=regions.length) return;
-    const reg=regions[idx];
-    // Place stars relative to region centre
-    const baseIdx=stars.length; // first star index for this constellation
-    def.stars.forEach(([nx,ny],i)=>{
-      const sx=(nx-0.5)*reg.rx*2*GW + reg.cx*GW;
-      const sy=(ny-0.5)*reg.ry*2*GH + reg.cy*GH;
-      stars.push({
-        id:baseIdx+i, x:sx, y:sy,
-        r:4+Math.random()*2,
-        color:def.color,
-        constIdx:idx,
-        starIdx:i,
-        glow:Math.random()*.5+.5,
-        dg:.008+Math.random()*.01,
-        discovered:false,
-        sparkle:Math.random()*Math.PI*2,
-        revealRadius:115+Math.random()*45,
-      });
+function resize() {
+    const parent = document.getElementById('stage');
+    [gCanvas, sCanvas].forEach(c => {
+        c.width = parent.clientWidth * window.devicePixelRatio;
+        c.height = parent.clientHeight * window.devicePixelRatio;
     });
-    const cStars=Array.from({length:def.stars.length},(_,i)=>baseIdx+i);
+    drawStarfield();
+    render();
+}
 
-    constellations.push({
-      defIdx:CONSTELLATIONS.indexOf(def),
-      name:def.name,
-      emoji:def.emoji,
-      quote:def.quote,
-      color:def.color,
-      starIds:cStars,
-      edges:def.edges,
-      drawnEdges:[],   // edges the player has connected
-      complete:false,
+function drawStarfield() {
+    sCtx.clearRect(0,0,sCanvas.width,sCanvas.height);
+    const w = sCanvas.width; const h = sCanvas.height;
+    for(let i=0; i<100; i++) {
+        sCtx.fillStyle = `rgba(232, 213, 160, ${Math.random() * 0.5})`;
+        sCtx.beginPath();
+        sCtx.arc(Math.random()*w, Math.random()*h, Math.random()*2, 0, Math.PI*2);
+        sCtx.fill();
+    }
+}
+
+function loadLevel(idx) {
+    currentIndex = 0;
+    lines = [];
+    document.getElementById('const-name').textContent = LEVELS[idx].name;
+    document.getElementById('lvl-tag').textContent = `Constellation ${idx + 1}`;
+    updateUI();
+    render();
+}
+
+function handleInput(e) {
+    const rect = gCanvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+
+    const level = LEVELS[vault.level];
+    const targetIdx = level.seq[currentIndex + 1];
+    const target = level.stars[targetIdx];
+
+    const dist = Math.hypot(target[0] - x, target[1] - y);
+    if(dist < 0.1) {
+        lines.push([level.seq[currentIndex], targetIdx]);
+        currentIndex++;
+        audio.playPing(400 + (currentIndex * 50));
+        
+        if(currentIndex === level.seq.length - 1) {
+            finishLevel();
+        }
+        updateUI();
+        render();
+    }
+}
+
+function render() {
+    gCtx.clearRect(0,0,gCanvas.width,gCanvas.height);
+    const w = gCanvas.width; const h = gCanvas.height;
+    const level = LEVELS[vault.level];
+
+    // Draw active lines
+    gCtx.strokeStyle = '#f5a623';
+    gCtx.lineWidth = 5 * window.devicePixelRatio;
+    gCtx.shadowBlur = 20;
+    gCtx.shadowColor = '#f5a623';
+    
+    gCtx.beginPath();
+    lines.forEach(line => {
+        const p1 = level.stars[line[0]];
+        const p2 = level.stars[line[1]];
+        gCtx.moveTo(p1[0]*w, p1[1]*h);
+        gCtx.lineTo(p2[0]*w, p2[1]*h);
     });
-  });
-  completed=[];
-  connections=[];
-  selectedStar=null;
-}
+    gCtx.stroke();
+    gCtx.shadowBlur = 0;
 
-function startGame(){
-  score=0;
-  try{best=parseInt(localStorage.getItem('pip_best'))||0;}catch(e){best=0;}
-  buildStarField();
-  const picks=pickConstellations();
-  placeConstellations(picks);
-  state='playing';
-  lanternX=GW/2; lanternY=GH*.65; mouseX=GW/2; mouseY=GH*.65;
-  document.getElementById('ovStart').classList.add('off');
-  document.getElementById('ovComplete').classList.add('off');
-  updateHUD();
-}
-
-// ═══════════════════════════════════════
-// STAR DISCOVERY (lantern mechanic)
-// ═══════════════════════════════════════
-function updateDiscovery(){
-  stars.forEach(s=>{
-    const d=Math.hypot(s.x-lanternX,s.y-lanternY);
-    if(d<s.revealRadius && !s.discovered){
-      s.discovered=true;
-      sndNewStar();
-      spawnSparks(s.x,s.y,s.color,6);
-    }
-  });
-}
-
-// ═══════════════════════════════════════
-// CONNECTION LOGIC
-// ═══════════════════════════════════════
-function tryConnect(star){
-  if(!selectedStar){
-    selectedStar=star;
-    sndClick();
-    return;
-  }
-  if(selectedStar===star){
-    selectedStar=null;
-    return;
-  }
-  // Must be same constellation
-  if(selectedStar.constIdx!==star.constIdx){
-    selectedStar=star;
-    sndClick();
-    return;
-  }
-  const constObj=constellations[star.constIdx];
-  const a=selectedStar.starIdx, b=star.starIdx;
-
-  // Check if this edge exists in the definition
-  const edgeExists=constObj.edges.some(([ea,eb])=>(ea===a&&eb===b)||(ea===b&&eb===a));
-  if(!edgeExists){
-    // Wrong connection — shake and deselect
-    cframe.classList.remove('shake');void cframe.offsetWidth;cframe.classList.add('shake');
-    setTimeout(()=>cframe.classList.remove('shake'),300);
-    selectedStar=null;
-    return;
-  }
-
-  // Check if already drawn
-  const alreadyDrawn=constObj.drawnEdges.some(([ea,eb])=>(ea===a&&eb===b)||(ea===b&&eb===a));
-  if(alreadyDrawn){
-    selectedStar=star;
-    return;
-  }
-
-  // Draw the edge!
-  constObj.drawnEdges.push([a,b]);
-  connections.push({
-    from:{x:selectedStar.x,y:selectedStar.y},
-    to:{x:star.x,y:star.y},
-    color:constObj.color,
-    alpha:0,     // fade in
-    constIdx:star.constIdx,
-  });
-  sndConnect();
-  score+=10;
-  spawnSparks((selectedStar.x+star.x)/2,(selectedStar.y+star.y)/2,constObj.color,4);
-  selectedStar=star;
-
-  // Check constellation complete
-  if(constObj.drawnEdges.length===constObj.edges.length && !constObj.complete){
-    constObj.complete=true;
-    completed.push(star.constIdx);
-    score+=100;
-    sndConstellation();
-    const constStars=stars.filter(s=>s.constIdx===star.constIdx);
-    const centreSum=constStars.reduce((a,s)=>({x:a.x+s.x,y:a.y+s.y}),{x:0,y:0});
-    spawnBurst(centreSum, constStars.length, constObj.color);
-    showPopup(constObj);
-    selectedStar=null;
-    updateHUD(true);
-
-    // All done?
-    if(completed.length===constellations.length){
-      setTimeout(()=>endGame(),2200);
-    }
-  } else {
-    updateHUD(true);
-  }
-}
-
-function undoLast(){
-  if(!connections.length) return;
-  // Find the last connection for any incomplete constellation
-  for(let i=connections.length-1;i>=0;i--){
-    const conn=connections[i];
-    const constObj=constellations[conn.constIdx];
-    if(constObj.complete) continue; // can't undo completed ones
-    // remove from drawnEdges
-    const fromStar=stars.find(s=>s.constIdx===conn.constIdx&&Math.abs(s.x-conn.from.x)<1&&Math.abs(s.y-conn.from.y)<1);
-    const toStar=stars.find(s=>s.constIdx===conn.constIdx&&Math.abs(s.x-conn.to.x)<1&&Math.abs(s.y-conn.to.y)<1);
-    if(fromStar&&toStar){
-      const a=fromStar.starIdx,b=toStar.starIdx;
-      constObj.drawnEdges=constObj.drawnEdges.filter(([ea,eb])=>!((ea===a&&eb===b)||(ea===b&&eb===a)));
-    }
-    connections.splice(i,1);
-    score=Math.max(0,score-10);
-    sndUndo();
-    selectedStar=null;
-    updateHUD();
-    return;
-  }
-}
-
-// ═══════════════════════════════════════
-// POPUP
-// ═══════════════════════════════════════
-let popupTimer=null;
-function showPopup(constObj){
-  const pop=document.getElementById('cPopup');
-  document.getElementById('cpName').textContent=constObj.emoji+' '+constObj.name;
-  document.getElementById('cpQuote').textContent=constObj.quote;
-  pop.classList.remove('hide');
-  pop.style.left='50%';pop.style.top='40%';pop.style.transform='translate(-50%,-50%)';
-  if(popupTimer) clearTimeout(popupTimer);
-  popupTimer=setTimeout(()=>pop.classList.add('hide'),3000);
-}
-
-// ═══════════════════════════════════════
-// PARTICLES
-// ═══════════════════════════════════════
-function spawnSparks(x,y,col,n){
-  for(let i=0;i<n;i++){
-    const a=Math.random()*Math.PI*2, sp=1.5+Math.random()*3;
-    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,col,r:2+Math.random()*2,life:1,dl:.04+Math.random()*.03});
-  }
-}
-function spawnBurst(centre,count,col){
-  const cx=(typeof centre.x==='number'?centre.x:0)/count;
-  const cy=(typeof centre.y==='number'?centre.y:0)/count;
-  for(let i=0;i<30;i++){
-    const a=Math.random()*Math.PI*2, sp=2+Math.random()*5;
-    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,col,r:3+Math.random()*3,life:1,dl:.02+Math.random()*.02});
-  }
-}
-
-// ═══════════════════════════════════════
-// HUD
-// ═══════════════════════════════════════
-function updateHUD(pop){
-  best=Math.max(best,score);
-  const elScore=document.getElementById('hudScore');
-  elScore.textContent=score;
-  if(pop){elScore.style.color='#ffd580';setTimeout(()=>{elScore.style.color='#f5a623';},200);}
-  document.getElementById('hudBest').textContent=best;
-  document.getElementById('hudFound').textContent=completed.length+'/'+constellations.length;
-  // count discovered stars
-  const disc=stars.filter(s=>s.discovered).length;
-  document.getElementById('hudStars').textContent=disc;
-  const pct=constellations.length>0?Math.round(completed.length/constellations.length*100):0;
-  document.getElementById('progFill').style.width=pct+'%';
-  const remaining=constellations.length-completed.length;
-  document.getElementById('progLbl').textContent=
-    remaining===0?'All constellations found! ✨':
-    remaining===1?'Just one constellation left!':
-    remaining+' constellations to find';
-  try{localStorage.setItem('pip_best',best);}catch(e){}
-}
-
-function endGame(){
-  state='complete';
-  sndComplete();
-  document.getElementById('dScore').textContent=score;
-  document.getElementById('dBest').textContent=best;
-  document.getElementById('dFound').textContent=completed.length+' / '+constellations.length;
-  document.getElementById('ovComplete').classList.remove('off');
-}
-
-// ═══════════════════════════════════════
-// DRAWING
-// ═══════════════════════════════════════
-function drawBG(){
-  // Night sky gradient
-  const grad=ctx.createLinearGradient(0,0,0,GH);
-  grad.addColorStop(0,'#060d18');
-  grad.addColorStop(0.5,'#0d1b2a');
-  grad.addColorStop(0.75,'#111e2e');
-  grad.addColorStop(1,'#1a2615');
-  ctx.fillStyle=grad;
-  ctx.fillRect(0,0,GW,GH);
-
-  // Milky way band
-  const mw=ctx.createLinearGradient(0,GH*.1,GW,GH*.7);
-  mw.addColorStop(0,'transparent');
-  mw.addColorStop(0.3,'rgba(100,120,180,0.04)');
-  mw.addColorStop(0.5,'rgba(140,160,220,0.06)');
-  mw.addColorStop(0.7,'rgba(100,120,180,0.04)');
-  mw.addColorStop(1,'transparent');
-  ctx.fillStyle=mw;ctx.fillRect(0,0,GW,GH);
-
-  // Moon
-  const mx=GW*.83, my=GH*.09;
-  const moonGrad=ctx.createRadialGradient(mx-3,my-3,0,mx,my,22);
-  moonGrad.addColorStop(0,'rgba(240,225,180,0.95)');
-  moonGrad.addColorStop(0.6,'rgba(232,210,160,0.8)');
-  moonGrad.addColorStop(1,'rgba(210,185,120,0)');
-  ctx.fillStyle=moonGrad;ctx.beginPath();ctx.arc(mx,my,22,0,Math.PI*2);ctx.fill();
-  // Moon glow
-  const moonGlow=ctx.createRadialGradient(mx,my,0,mx,my,60);
-  moonGlow.addColorStop(0,'rgba(232,213,160,0.07)');moonGlow.addColorStop(1,'transparent');
-  ctx.fillStyle=moonGlow;ctx.beginPath();ctx.arc(mx,my,60,0,Math.PI*2);ctx.fill();
-  // Crater
-  ctx.fillStyle='rgba(180,155,100,0.18)';ctx.beginPath();ctx.arc(mx+7,my+5,5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(mx-5,my+8,3,0,Math.PI*2);ctx.fill();
-
-  // Background stars
-  bgStars.forEach(s=>{
-    s.twinkle+=s.da;
-    const a=s.a*(0.5+0.5*Math.sin(s.twinkle));
-    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-    ctx.fillStyle=`rgba(240,234,214,${a.toFixed(2)})`;ctx.fill();
-  });
-
-  // Lantern halo on ground
-  const lg=ctx.createRadialGradient(lanternX,lanternY,0,lanternX,lanternY,90);
-  lg.addColorStop(0,'rgba(245,166,35,0.18)');lg.addColorStop(1,'transparent');
-  ctx.fillStyle=lg;ctx.fillRect(0,0,GW,GH);
-
-  // Hills silhouette
-  ctx.beginPath();ctx.moveTo(0,GH);
-  ctx.bezierCurveTo(GW*.1,GH*.84,GW*.3,GH*.78,GW*.5,GH*.82);
-  ctx.bezierCurveTo(GW*.7,GH*.86,GW*.9,GH*.8,GW,GH*.82);
-  ctx.lineTo(GW,GH);ctx.closePath();
-  ctx.fillStyle='#141e10';ctx.fill();
-  // Lighter hill in front
-  ctx.beginPath();ctx.moveTo(0,GH);
-  ctx.bezierCurveTo(GW*.15,GH*.9,GW*.4,GH*.87,GW*.6,GH*.9);
-  ctx.bezierCurveTo(GW*.8,GH*.93,GW*.95,GH*.9,GW,GH*.91);
-  ctx.lineTo(GW,GH);ctx.closePath();
-  const hillG=ctx.createLinearGradient(0,GH*.87,0,GH);
-  hillG.addColorStop(0,'#1e2d1a');hillG.addColorStop(1,'#141e10');
-  ctx.fillStyle=hillG;ctx.fill();
-}
-
-function drawLanternGlow(){
-  // The moving lantern reveal circle
-  const r=110;
-  const lg=ctx.createRadialGradient(lanternX,lanternY,0,lanternX,lanternY,r);
-  lg.addColorStop(0,'rgba(245,166,35,0.12)');
-  lg.addColorStop(0.4,'rgba(245,166,35,0.04)');
-  lg.addColorStop(1,'transparent');
-  ctx.fillStyle=lg;
-  ctx.beginPath();ctx.arc(lanternX,lanternY,r,0,Math.PI*2);ctx.fill();
-}
-
-function drawConnections(){
-  connections.forEach(c=>{
-    if(c.alpha<1) c.alpha=Math.min(1,c.alpha+0.08);
-    ctx.save();
-    ctx.globalAlpha=c.alpha*.8;
-    ctx.beginPath();ctx.moveTo(c.from.x,c.from.y);ctx.lineTo(c.to.x,c.to.y);
-    ctx.strokeStyle=c.color;ctx.lineWidth=2;ctx.lineCap='round';
-    // Glow
-    ctx.shadowBlur=8;ctx.shadowColor=c.color;
-    ctx.stroke();
-    ctx.shadowBlur=0;ctx.restore();
-  });
-}
-
-function drawCompletedLabels(){
-  constellations.forEach(constObj=>{
-    if(!constObj.complete) return;
-    const cStars=constObj.starIds.map(id=>stars[id]);
-    const cx=cStars.reduce((a,s)=>a+s.x,0)/cStars.length;
-    const cy=cStars.reduce((a,s)=>a+s.y,0)/cStars.length - 28;
-    ctx.save();
-    ctx.font='bold 11px Fredoka,cursive';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    const pulse=0.75+0.25*Math.sin(tick*.04);
-    ctx.fillStyle=`rgba(255,220,100,${pulse.toFixed(2)})`;
-    ctx.shadowBlur=6;ctx.shadowColor=constObj.color;
-    ctx.fillText(constObj.emoji+' '+constObj.name, cx, cy);
-    ctx.restore();
-  });
-}
-
-function drawConstellationOutlines(){
-  // Draw faint dotted outlines of incomplete constellations (only near lantern)
-  constellations.forEach(constObj=>{
-    if(constObj.complete) return;
-    const cStars=constObj.starIds.map(id=>stars[id]);
-    // Only show outline hints when stars are nearby the lantern
-    const nearStars=cStars.filter(s=>Math.hypot(s.x-lanternX,s.y-lanternY)<160);
-    if(nearStars.length<2) return;
-
-    ctx.save();
-    ctx.setLineDash([4,8]);
-    ctx.strokeStyle=constObj.color;
-    ctx.lineWidth=1;
-    ctx.globalAlpha=0.15;
-    constObj.edges.forEach(([a,b])=>{
-      const sa=cStars[a],sb=cStars[b];
-      // Only hint edges near lantern
-      if(Math.hypot(sa.x-lanternX,sa.y-lanternY)<160||Math.hypot(sb.x-lanternX,sb.y-lanternY)<160){
-        ctx.beginPath();ctx.moveTo(sa.x,sa.y);ctx.lineTo(sb.x,sb.y);ctx.stroke();
-      }
+    // Draw Stars
+    level.stars.forEach((s, i) => {
+        const isActive = level.seq.slice(0, currentIndex + 1).includes(i);
+        gCtx.fillStyle = isActive ? '#f5a623' : 'rgba(232, 213, 160, 0.3)';
+        gCtx.beginPath();
+        gCtx.arc(s[0]*w, s[1]*h, 6 * window.devicePixelRatio, 0, Math.PI*2);
+        gCtx.fill();
     });
-    ctx.setLineDash([]);ctx.restore();
-  });
 }
 
-function drawStars(){
-  stars.forEach(s=>{
-    s.glow+=s.dg;
-    if(s.glow>1)s.dg=-Math.abs(s.dg);
-    if(s.glow<.3)s.dg=Math.abs(s.dg);
-    s.sparkle+=0.04;
-
-    // Visibility: only if discovered OR very close to lantern
-    const dist=Math.hypot(s.x-lanternX,s.y-lanternY);
-    // Stars have a tiny ambient glow even before discovered (gives player something to aim for)
-    const inLantern=dist<s.revealRadius;
-    if(!s.discovered && !inLantern) {
-      // Tiny ambient twinkle - very dim, just enough to notice
-      const ambientAlpha=0.08+0.05*Math.sin(s.sparkle);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r*.5,0,Math.PI*2);
-      ctx.fillStyle=`rgba(200,210,255,${ambientAlpha.toFixed(2)})`;ctx.fill();
-      return;
-    }
-    const visible=s.discovered||inLantern;
-    if(!visible) return;
-    const alpha=s.discovered?1:Math.max(0,(s.revealRadius-dist)/s.revealRadius);
-
-    const constObj=constellations[s.constIdx];
-    const isComplete=constObj&&constObj.complete;
-    const isSelected=selectedStar&&selectedStar.id===s.id;
-
-    ctx.save();
-    ctx.globalAlpha=alpha;
-
-    // Outer glow
-    // Soft outer glow
-    ctx.beginPath();ctx.arc(s.x,s.y,s.r*5,0,Math.PI*2);
-    ctx.fillStyle=isSelected?'rgba(255,255,200,0.25)':
-                  isComplete?'rgba(255,220,100,0.12)':'rgba(180,180,255,0.05)';
-    ctx.fill();
-
-    // Main star
-    const r=isSelected?s.r*1.5:s.r*(0.9+0.1*s.glow);
-    ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);
-    ctx.fillStyle=isComplete?s.color:(isSelected?'#ffffc0':s.color);
-    ctx.shadowBlur=isSelected?16:8;
-    ctx.shadowColor=s.color;
-    ctx.fill();
-    // White highlight
-    ctx.beginPath();ctx.arc(s.x-r*.3,s.y-r*.3,r*.3,0,Math.PI*2);
-    ctx.fillStyle='rgba(255,255,255,0.85)';ctx.shadowBlur=0;ctx.fill();
-
-    // Selection ring
-    if(isSelected){
-      ctx.beginPath();ctx.arc(s.x,s.y,r*2.2,0,Math.PI*2);
-      ctx.strokeStyle='rgba(255,255,200,0.6)';ctx.lineWidth=1.5;ctx.stroke();
-      // rotating dashes
-      ctx.save();ctx.translate(s.x,s.y);ctx.rotate(tick*.05);
-      ctx.setLineDash([4,6]);
-      ctx.beginPath();ctx.arc(0,0,r*3,0,Math.PI*2);
-      ctx.strokeStyle='rgba(255,255,200,0.3)';ctx.lineWidth=1;ctx.stroke();
-      ctx.setLineDash([]);ctx.restore();
-    }
-
-    // 4-point star sparkle for complete constellations
-    if(isComplete){
-      ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.sparkle*.5);
-      ctx.strokeStyle=s.color;ctx.lineWidth=1;ctx.globalAlpha=alpha*0.6;
-      for(let i=0;i<4;i++){
-        const a=(i/4)*Math.PI*2;
-        ctx.beginPath();ctx.moveTo(0,0);
-        ctx.lineTo(Math.cos(a)*(r+4+2*s.glow),Math.sin(a)*(r+4+2*s.glow));
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    ctx.restore();
-  });
+function updateUI() {
+    const prog = (currentIndex / (LEVELS[vault.level].seq.length - 1)) * 100;
+    document.getElementById('prog-bar').style.width = prog + '%';
+    document.getElementById('star-total').textContent = vault.stars;
 }
 
-function drawPip(){
-  const cx=lanternX, cy=lanternY;
-  const bob=Math.abs(Math.sin(tick*.04))*4;
-
-  // Pip body (simplified turtle drawn with canvas)
-  ctx.save();
-  ctx.translate(cx, cy-bob);
-
-  // Shadow
-  ctx.beginPath();ctx.ellipse(0,32,16,5,0,0,Math.PI*2);
-  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fill();
-
-  // Shell (green rounded shape)
-  const shellGrad=ctx.createRadialGradient(-2,-5,0,-2,-5,20);
-  shellGrad.addColorStop(0,'#5a9a5a');shellGrad.addColorStop(1,'#3d6b3d');
-  ctx.beginPath();ctx.ellipse(0,-2,16,14,0,0,Math.PI*2);
-  ctx.fillStyle=shellGrad;ctx.fill();
-  // Shell pattern
-  ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.ellipse(0,-2,9,8,0,0,Math.PI*2);ctx.stroke();
-
-  // Pink hood
-  ctx.save();ctx.translate(0,-14);
-  const hoodGrad=ctx.createRadialGradient(0,-4,0,0,-4,14);
-  hoodGrad.addColorStop(0,'#e8899a');hoodGrad.addColorStop(1,'#c46475');
-  ctx.beginPath();ctx.arc(0,0,11,Math.PI,0);ctx.lineTo(10,8);ctx.arc(0,8,10,0,Math.PI);ctx.closePath();
-  ctx.fillStyle=hoodGrad;ctx.fill();
-  ctx.restore();
-
-  // Head (small circle below hood)
-  ctx.beginPath();ctx.arc(0,-8,6,0,Math.PI*2);
-  const headGrad=ctx.createRadialGradient(-1,-9,0,-1,-9,6);
-  headGrad.addColorStop(0,'#5a9a5a');headGrad.addColorStop(1,'#3d6b3d');
-  ctx.fillStyle=headGrad;ctx.fill();
-  // Eyes
-  ctx.fillStyle='#1a1a1a';ctx.beginPath();ctx.arc(-2,-8.5,1.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(2,-8.5,1.5,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='white';ctx.beginPath();ctx.arc(-1.5,-9,0.6,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(2.5,-9,0.6,0,Math.PI*2);ctx.fill();
-  // Smile
-  ctx.strokeStyle='#2d4d2d';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,-6.5,2,0.2,Math.PI-.2);ctx.stroke();
-
-  // Gold star pin
-  ctx.fillStyle='#f5a623';ctx.beginPath();
-  for(let i=0;i<10;i++){
-    const r=i%2===0?4:2,a=(i/10)*Math.PI*2-Math.PI/2;
-    i===0?ctx.moveTo(Math.cos(a)*r-1,Math.sin(a)*r+2):ctx.lineTo(Math.cos(a)*r-1,Math.sin(a)*r+2);
-  }
-  ctx.closePath();ctx.fill();
-
-  // Arm holding lantern (right side)
-  ctx.strokeStyle='#3d6b3d';ctx.lineWidth=3;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(12,5);ctx.lineTo(22,14);ctx.stroke();
-
-  // Lantern
-  ctx.translate(22,14);
-  // Lantern glow
-  const lGlow=ctx.createRadialGradient(0,0,0,0,0,24);
-  lGlow.addColorStop(0,'rgba(245,166,35,0.5)');lGlow.addColorStop(1,'transparent');
-  ctx.fillStyle=lGlow;ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);ctx.fill();
-  // Lantern body
-  ctx.fillStyle='#8B6914';ctx.fillRect(-5,-8,10,14);
-  ctx.fillStyle='rgba(245,166,35,0.9)';ctx.fillRect(-3,-6,6,10);
-  // Handle
-  ctx.strokeStyle='#6b4f10';ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(0,-10,4,Math.PI,0);ctx.stroke();
-  // Flame pulse
-  const fp=0.7+0.3*Math.sin(tick*.18);
-  const flamG=ctx.createRadialGradient(0,-3,0,0,-3,6*fp);
-  flamG.addColorStop(0,'rgba(255,220,100,0.9)');flamG.addColorStop(1,'rgba(245,130,20,0)');
-  ctx.fillStyle=flamG;ctx.beginPath();ctx.ellipse(0,-3,4*fp,5*fp,0,0,Math.PI*2);ctx.fill();
-
-  ctx.restore();
+function finishLevel() {
+    vault.stars += 50;
+    setTimeout(() => {
+        vault.level = (vault.level + 1) % LEVELS.length;
+        loadLevel(vault.level);
+    }, 1000);
 }
 
-function drawParticles(){
-  sparks.forEach((s,i)=>{
-    ctx.beginPath();ctx.arc(s.x,s.y,s.r*s.life,0,Math.PI*2);
-    ctx.fillStyle=s.col;ctx.globalAlpha=s.life;ctx.fill();ctx.globalAlpha=1;
-  });
-  for(let i=sparks.length-1;i>=0;i--){
-    const s=sparks[i];s.x+=s.vx;s.y+=s.vy;s.vy+=.08;s.life-=s.dl;
-    if(s.life<=0)sparks.splice(i,1);
-  }
-}
-
-function drawAimLine(){
-  if(!selectedStar||state!=='playing') return;
-  ctx.save();
-  ctx.setLineDash([4,8]);
-  ctx.strokeStyle='rgba(255,255,200,0.25)';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(selectedStar.x,selectedStar.y);ctx.lineTo(mouseX,mouseY);
-  ctx.stroke();ctx.setLineDash([]);ctx.restore();
-}
-
-// ═══════════════════════════════════════
-// MAIN LOOP
-// ═══════════════════════════════════════
-function loop(){
-  requestAnimationFrame(loop);
-  tick++;
-  ctx.clearRect(0,0,GW,GH);
-
-  drawBG();
-  if(state==='playing'||state==='complete'){
-    updateDiscovery();
-    drawLanternGlow();
-    drawConstellationOutlines();
-    drawConnections();
-    drawAimLine();
-    drawStars();
-    drawCompletedLabels();
-    drawPip();
-    drawParticles();
-  } else {
-    drawPip();
-  }
-}
-
-// ═══════════════════════════════════════
-// INPUT
-// ═══════════════════════════════════════
-function getLogical(e){
-  const r=canvas.getBoundingClientRect();
-  const ex=e.touches?e.touches[0].clientX:e.clientX;
-  const ey=e.touches?e.touches[0].clientY:e.clientY;
-  return{lx:(ex-r.left)/r.width*GW, ly:(ey-r.top)/r.height*GH};
-}
-
-canvas.addEventListener('mousemove',e=>{
-  const{lx,ly}=getLogical(e);
-  mouseX=lx;mouseY=ly;
-  lanternX=lx;lanternY=ly;
-});
-
-canvas.addEventListener('click',e=>{
-  if(state!=='playing') return;
-  const{lx,ly}=getLogical(e);
-  // Find closest discovered star within tap radius
-  let closest=null,closestD=Infinity;
-  const tapR=28;
-  stars.forEach(s=>{
-    if(!s.discovered) return;
-    const d=Math.hypot(s.x-lx,s.y-ly);
-    if(d<tapR&&d<closestD){closestD=d;closest=s;}
-  });
-  if(closest) tryConnect(closest);
-});
-
-canvas.addEventListener('contextmenu',e=>{
-  e.preventDefault();
-  if(state==='playing') undoLast();
-});
-
-canvas.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  const{lx,ly}=getLogical(e);
-  mouseX=lx;mouseY=ly;
-  lanternX=lx;lanternY=ly;
-},{passive:false});
-canvas.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  const{lx,ly}=getLogical(e);
-  mouseX=lx;mouseY=ly;
-  lanternX=lx;lanternY=ly;
-},{passive:false});
-canvas.addEventListener('touchend',e=>{
-  e.preventDefault();
-  if(state!=='playing') return;
-  // Use the last known lantern position (updated by touchmove)
-  let closest=null,closestD=Infinity;
-  const tapR=40;
-  stars.forEach(s=>{
-    if(!s.discovered) return;
-    const d=Math.hypot(s.x-lanternX,s.y-lanternY);
-    if(d<tapR&&d<closestD){closestD=d;closest=s;}
-  });
-  if(closest) tryConnect(closest);
-},{passive:false});
-
-document.getElementById('btnStart').addEventListener('click',startGame);
-document.getElementById('btnRetry').addEventListener('click',()=>{
-  document.getElementById('ovComplete').classList.add('off');
-  startGame();
-});
-
-// ═══════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════
-try{best=parseInt(localStorage.getItem('pip_best'))||0;}catch(e){}
-resize();
-buildStarField();
-// Draw initial static scene before game starts
-requestAnimationFrame(loop);
-state='start';
-
-})();
-
-/* ─── Mobile nav ─── */
-(function(){
-  var btn=document.getElementById('navToggle');
-  var nav=document.getElementById('mobileNav');
-  if(!btn||!nav)return;
-  function open(){nav.classList.add('open');btn.textContent='✕';}
-  function close(){nav.classList.remove('open');btn.textContent='☰';}
-  btn.addEventListener('click',function(e){e.stopPropagation();nav.classList.contains('open')?close():open();});
-  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',close);});
-  document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target))close();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
-})();
+init();
 </script>
-
-<!-- ── FOOTER ── -->
-<footer style="background:#1a1612;border-top:1px solid rgba(240,234,214,.06);padding:20px 24px;text-align:center;">
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;">
-        <a href="index.html" style="font-size:.8rem;color:rgba(240,234,214,.35);text-decoration:none;transition:color .15s;">Home</a>
-        <a href="content_hub.html" style="font-size:.8rem;color:rgba(240,234,214,.35);text-decoration:none;">All Projects</a>
-        <a href="devlog.html" style="font-size:.8rem;color:rgba(240,234,214,.35);text-decoration:none;">Dev Log</a>
-        <a href="freebies.html" style="font-size:.8rem;color:rgba(240,234,214,.35);text-decoration:none;">Free Downloads</a>
-        <a href="contact.html" style="font-size:.8rem;color:rgba(240,234,214,.35);text-decoration:none;">Contact</a>
-    </div>
-    <p style="font-size:.75rem;color:rgba(240,234,214,.18);">© 2026 JVDesignStudio. All rights reserved.</p>
-</footer>
 </body>
 </html>
