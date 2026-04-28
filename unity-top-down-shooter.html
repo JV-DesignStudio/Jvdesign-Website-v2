@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<style>
 :root{
   --bg:#07080a; --bg2:#0d0f12; --bg3:#12151a;
   --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
@@ -60,7 +61,7 @@ a{text-decoration:none;color:inherit}
 .hero-stat-val{font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:.05em;color:var(--unity-lt)}
 
 /* MAIN */
-.main-layout{display:grid;grid-template-columns:1fr 520px;max-width:1400px;margin:0 auto;min-height:calc(100vh - 60px)}
+.main-layout{display:grid;grid-template-columns:1fr 400px;max-width:1400px;margin:0 auto;min-height:calc(100vh - 60px)}
 @media(max-width:960px){.main-layout{grid-template-columns:1fr}}
 
 /* STEPS */
@@ -209,7 +210,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     <div class="hero-preview">
       <div class="hero-preview-title">What you'll build</div>
       <div class="hero-stat"><span class="hero-stat-label">Player movement</span><span class="hero-stat-val">WASD</span></div>
-      <div class="hero-stat"><span class="hero-stat-label">Shooting</span><span class="hero-stat-val">Arrow Keys</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Shooting</span><span class="hero-stat-val">Space</span></div>
       <div class="hero-stat"><span class="hero-stat-label">Enemy AI</span><span class="hero-stat-val">Chases you</span></div>
       <div class="hero-stat"><span class="hero-stat-label">Wave spawner</span><span class="hero-stat-val">Coroutine</span></div>
       <div class="hero-stat"><span class="hero-stat-label">Scripts written</span><span class="hero-stat-val">3 files</span></div>
@@ -295,12 +296,11 @@ const ctx    = canvas.getContext('2d');
 
 function resizeCanvas(){
   const wrap = canvas.parentElement;
-  const w = wrap.clientWidth - 20;
-  const h = Math.min(wrap.clientHeight - 10, window.innerHeight - 220);
-  canvas.width  = Math.max(w, 300);
-  canvas.height = Math.max(h, 300);
-  game.player.x = canvas.width/2;
-  game.player.y = canvas.height/2;
+  const s = Math.min(wrap.clientWidth - 20, 460);
+  canvas.width  = s;
+  canvas.height = s;
+  game.player.x = s/2;
+  game.player.y = s/2;
 }
 window.addEventListener('resize', ()=>{ resizeCanvas(); });
 resizeCanvas();
@@ -344,26 +344,16 @@ function update(dt){
     game.player.y = Math.max(game.player.radius, Math.min(H-game.player.radius, game.player.y));
   }
 
-  // SHOOTING — arrow keys = direction (twin-stick style)
+  // SHOOTING
   if (game.shootEnabled){
     game.lastShot += dt / 60;
-    let sdx = 0, sdy = 0;
-    if (game.keys['ArrowUp'])    sdy = -1;
-    if (game.keys['ArrowDown'])  sdy =  1;
-    if (game.keys['ArrowLeft'])  sdx = -1;
-    if (game.keys['ArrowRight']) sdx =  1;
-    const slen = Math.sqrt(sdx*sdx + sdy*sdy);
-    if (slen > 0){
-      game.player.aimAngle = Math.atan2(sdy, sdx) + Math.PI/2;
-      if (game.lastShot > game.fireRate){
-        game.lastShot = 0;
-        game.bullets.push({
-          x: game.player.x, y: game.player.y,
-          vx: (sdx/slen) * game.bulletSpeed,
-          vy: (sdy/slen) * game.bulletSpeed,
-          life: 1
-        });
-      }
+    if (game.keys['Space'] && game.lastShot > game.fireRate){
+      game.lastShot = 0;
+      game.bullets.push({
+        x: game.player.x, y: game.player.y,
+        vx: 0, vy: -game.bulletSpeed,
+        life: 1
+      });
     }
   }
 
@@ -493,8 +483,8 @@ function draw(){
     ctx.fillText('Complete Step 1 to start', W/2, H/2-10);
     ctx.fillStyle = 'rgba(232,234,240,.2)';
     ctx.font = '11px JetBrains Mono, monospace';
-    ctx.fillText('WASD = Move   Arrow Keys = Shoot', W/2, H/2+14);
-    ctx.fillText('Hold arrow to aim and fire', W/2, H/2+30);
+    ctx.fillText('WASD or Arrow Keys to move', W/2, H/2+14);
+    ctx.fillText('SPACE to shoot', W/2, H/2+30);
     return;
   }
 
@@ -551,7 +541,6 @@ function draw(){
     const p = game.player;
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(p.aimAngle || -Math.PI/2);
 
     // Thruster glow
     ctx.shadowColor = '#5bc0f8';
@@ -573,7 +562,7 @@ function draw(){
     ctx.fill();
 
     // Engine glow
-    if (game.keys['KeyW']||game.keys['KeyS']||game.keys['KeyA']||game.keys['KeyD']){
+    if (game.keys['KeyW']||game.keys['ArrowUp']||game.keys['KeyS']||game.keys['ArrowDown']||game.keys['KeyA']||game.keys['ArrowLeft']||game.keys['KeyD']||game.keys['ArrowRight']){
       ctx.fillStyle = '#fb923c';
       ctx.shadowColor = '#fb923c';
       ctx.beginPath();
@@ -817,7 +806,7 @@ const STEPS = [
     onApply(){
       game.shootEnabled = true;
       game.fireRate = parseFloat(document.getElementById('fireRate')?.value)||0.25;
-      setOutput('✅ Shooting enabled! Hold Arrow Keys to shoot in any direction! Fire rate: ' + game.fireRate + 's');
+      setOutput('✅ Shooting enabled! Hold SPACE to fire. Fire rate: ' + game.fireRate + 's');
     }
   },
 
@@ -1084,7 +1073,7 @@ const STEPS = [
       game.shootEnabled = true;
       game.playerEnabled= true;
       game.waveTimer = 20;
-      setOutput('🎉 Complete game running! WASD move, Arrow Keys shoot directionally!');
+      setOutput('🎉 Complete game running! WASD move, SPACE shoot, survive the waves!');
     }
   },
 ];

@@ -3,284 +3,817 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JVDesignStudio Project Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Project Tracker — JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#1a1612;--bg2:#211d18;--bg3:#2a2520;
-  --text:#F0EAD6;--muted:rgba(240,234,214,.55);
-  --border:rgba(240,234,214,.08);
-  --teal:#70A3A7;--rose:#BC4749;--tan:#D2B48C;--charcoal:#403B33;
-  --done:#2ecc71;--done-bg:rgba(46,204,113,.1);
-  --prog:#f1c40f;--prog-bg:rgba(241,196,15,.1);
-  --todo:#e74c3c;--todo-bg:rgba(231,76,60,.08);
-  --idea:#9b59b6;--idea-bg:rgba(155,89,182,.1);
-  --broken:#e74c3c;--broken-bg:rgba(231,76,60,.15);
+  --bg:#1a1714; --bg2:#211e1b; --bg3:#2a2622; --bg4:#322e29;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --text:#f0ead6; --muted:rgba(240,234,214,.45); --muted2:rgba(240,234,214,.25);
+  --rose:#BC4749; --rose-dk:#9b3a3c; --rose-lt:#fdf0f0;
+  --teal:#70A3A7; --teal-lt:#9dc4c8;
+  --gold:#f5c842; --gold-lt:#fada7a;
+  --green:#22c55e; --green-lt:#4ade80;
+  --blue:#60a5fa; --blue-lt:#93c5fd;
+  --purple:#a78bfa; --purple-lt:#c4b5fd;
+  --orange:#fb923c;
+
+  /* Column colours */
+  --col-ideas:   #7c3aed;
+  --col-todo:    #0284c7;
+  --col-doing:   #d97706;
+  --col-review:  #dc2626;
+  --col-done:    #16a34a;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 60px}
-a{color:var(--teal);text-decoration:none}
-a:hover{text-decoration:underline}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
 
-.header{padding:32px 24px 24px;text-align:center;border-bottom:1px solid var(--border)}
-.header h1{font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:6px}
-.header p{font-size:.88rem;color:var(--muted);max-width:500px;margin:0 auto}
+/* ── HEADER ── */
+.header{position:sticky;top:0;z-index:200;background:rgba(26,23,20,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;gap:16px}
+.header-logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:.05em;margin-right:auto}
+.header-logo img{height:30px;border-radius:7px}
+.header-title{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.08em;color:var(--muted);border-left:1px solid var(--border);padding-left:16px}
+.btn{font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;transition:filter .15s,transform .1s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn-rose{background:var(--rose);color:#fff;box-shadow:0 3px 0 var(--rose-dk)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-sm{font-size:.72rem;padding:5px 10px;border-radius:6px}
 
-.tabs{display:flex;gap:6px;padding:20px 24px 0;max-width:1200px;margin:0 auto;flex-wrap:wrap}
-.tab{padding:8px 16px;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
-.tab:hover{border-color:rgba(240,234,214,.3);color:var(--text)}
-.tab.active{background:var(--teal);border-color:var(--teal);color:white}
+/* ── BOARD AREA ── */
+.board-wrap{padding:20px 20px 40px;min-height:calc(100vh - 58px);overflow-x:auto}
+.board{display:flex;gap:16px;align-items:flex-start;min-height:calc(100vh - 120px);width:max-content;min-width:100%}
 
-.panel{display:none;padding:20px 24px;max-width:1200px;margin:0 auto}
-.panel.active{display:block}
-.panel-title{font-family:'Fredoka',cursive;font-size:1.4rem;font-weight:700;color:white;margin-bottom:4px}
-.panel-sub{font-size:.82rem;color:var(--muted);margin-bottom:20px}
+/* ── COLUMN ── */
+.column{width:290px;flex-shrink:0;display:flex;flex-direction:column;gap:0;background:var(--bg2);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.column.drag-over{border-color:var(--gold);background:rgba(245,200,66,.05)}
+.col-header{padding:13px 14px 11px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border);cursor:default}
+.col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.col-title{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.06em;flex:1}
+.col-count{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.07);color:var(--muted)}
+.col-add{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:2px 4px;border-radius:5px;transition:color .15s,background .15s;line-height:1}
+.col-add:hover{color:var(--text);background:rgba(255,255,255,.08)}
+.col-cards{padding:10px 10px;display:flex;flex-direction:column;gap:8px;min-height:60px;flex:1}
 
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
-@media(max-width:500px){.card-grid{grid-template-columns:1fr}}
+/* ── CARD ── */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 13px;cursor:grab;transition:box-shadow .15s,transform .15s,border-color .15s;position:relative;user-select:none}
+.card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.4);transform:translateY(-1px)}
+.card.dragging{opacity:.4;cursor:grabbing}
+.card.drag-placeholder{background:rgba(255,255,255,.03);border:2px dashed rgba(255,255,255,.15);border-radius:10px;height:60px}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.card-tag{font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.card-title{font-size:.88rem;font-weight:800;color:var(--text);line-height:1.4;margin-bottom:6px}
+.card-desc{font-size:.75rem;color:var(--muted);line-height:1.55;margin-bottom:8px}
+.card-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.card-date{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted2)}
+.card-priority{font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.pri-high{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.2)}
+.pri-med{background:rgba(245,158,11,.12);color:#fcd34d;border:1px solid rgba(245,158,11,.18)}
+.pri-low{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.15)}
+.card-actions{position:absolute;top:8px;right:8px;display:none;gap:4px}
+.card:hover .card-actions{display:flex}
+.card-action-btn{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:.7rem;padding:3px 6px;cursor:pointer;transition:color .15s,background .15s}
+.card-action-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.card-comments{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:none;flex-direction:column;gap:5px}
+.card-comments.open{display:flex}
+.comment{background:var(--bg4);border-radius:6px;padding:7px 9px;font-size:.73rem;color:var(--muted);line-height:1.5;position:relative}
+.comment-meta{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--muted2);margin-bottom:3px}
+.comment-del{position:absolute;top:5px;right:6px;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.7rem;opacity:0;transition:opacity .15s}
+.comment:hover .comment-del{opacity:1}
+.comment-input-row{display:flex;gap:6px;margin-top:4px}
+.comment-input{flex:1;background:var(--bg4);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.75rem;padding:6px 9px;outline:none;resize:none;transition:border-color .15s}
+.comment-input:focus{border-color:var(--teal)}
+.comment-submit{background:var(--teal);color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:.7rem;font-weight:700;cursor:pointer;transition:filter .15s;flex-shrink:0}
+.comment-submit:hover{filter:brightness(1.1)}
 
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
-.card:hover{border-color:rgba(112,163,167,.3)}
-.card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.card-num{font-size:.65rem;font-weight:800;color:var(--muted);background:var(--bg3);padding:3px 8px;border-radius:6px;flex-shrink:0}
-.card-title{font-family:'Fredoka',cursive;font-size:1.05rem;font-weight:700;color:white;flex:1;min-width:0;line-height:1.25}
-.card-badge{font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;flex-shrink:0;white-space:nowrap}
-.badge-done{background:var(--done-bg);color:var(--done);border:1px solid rgba(46,204,113,.25)}
-.badge-prog{background:var(--prog-bg);color:var(--prog);border:1px solid rgba(241,196,15,.25)}
-.badge-todo{background:var(--todo-bg);color:var(--todo);border:1px solid rgba(231,76,60,.2)}
-.badge-idea{background:var(--idea-bg);color:var(--idea);border:1px solid rgba(155,89,182,.25)}
-.badge-broken{background:var(--broken-bg);color:var(--broken);border:1px solid rgba(231,76,60,.3);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+/* ── ADD COLUMN ── */
+.add-column-btn{width:260px;flex-shrink:0;background:rgba(255,255,255,.03);border:2px dashed rgba(255,255,255,.1);border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;color:var(--muted);font-weight:700;font-size:.85rem;transition:background .15s,border-color .15s,color .15s;align-self:flex-start}
+.add-column-btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:var(--text)}
 
-.card-meta{display:flex;flex-wrap:wrap;gap:5px}
-.meta-pill{font-size:.68rem;font-weight:600;color:var(--tan);background:rgba(210,180,140,.08);border:1px solid rgba(210,180,140,.15);padding:3px 9px;border-radius:999px}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.modal-title{font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:.04em;color:var(--text)}
+.modal-field{display:flex;flex-direction:column;gap:6px}
+.modal-label{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.modal-input,.modal-textarea,.modal-select{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;padding:10px 13px;outline:none;transition:border-color .2s;width:100%}
+.modal-input:focus,.modal-textarea:focus,.modal-select:focus{border-color:var(--teal)}
+.modal-textarea{resize:vertical;min-height:80px;line-height:1.55}
+.modal-select option{background:var(--bg3)}
+.modal-row{display:flex;gap:10px}
+.modal-row .modal-field{flex:1}
+.tag-input-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:text}
+.tag-input-row:focus-within{border-color:var(--teal)}
+.tag-pill{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;padding:3px 8px;border-radius:4px;display:flex;align-items:center;gap:5px;cursor:default}
+.tag-pill-del{background:none;border:none;color:inherit;cursor:pointer;font-size:.7rem;opacity:.6;padding:0 1px}
+.tag-pill-del:hover{opacity:1}
+.tag-input-bare{background:none;border:none;outline:none;color:var(--text);font-family:'Nunito',sans-serif;font-size:.82rem;min-width:80px;flex:1}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;padding-top:4px}
+.colour-row{display:flex;gap:8px;flex-wrap:wrap}
+.colour-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s,transform .15s}
+.colour-swatch:hover,.colour-swatch.selected{border-color:white;transform:scale(1.15)}
 
-.progress-row{display:flex;gap:12px;align-items:center}
-.progress-label{font-size:.68rem;font-weight:700;color:var(--muted);width:75px;flex-shrink:0;text-transform:uppercase;letter-spacing:.06em}
-.progress-track{flex:1;height:6px;background:var(--bg3);border-radius:99px;overflow:hidden}
-.progress-fill{height:100%;border-radius:99px;transition:width .6s}
-.progress-pct{font-size:.7rem;font-weight:800;width:36px;text-align:right;flex-shrink:0}
+/* ── SEARCH/FILTER BAR ── */
+.toolbar{display:flex;gap:10px;padding:12px 20px;border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;background:var(--bg2)}
+.toolbar-search{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.83rem;padding:7px 12px;outline:none;width:220px;transition:border-color .2s}
+.toolbar-search:focus{border-color:var(--teal)}
+.toolbar-filter{display:flex;gap:6px;flex-wrap:wrap}
+.filter-chip{font-size:.72rem;font-weight:700;padding:5px 11px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s}
+.filter-chip:hover,.filter-chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.stat-pill{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
 
-.card-note{font-size:.8rem;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:10px;margin-top:2px}
-.card-note strong{color:var(--text);font-weight:700}
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:.82rem;font-weight:700;color:var(--text);box-shadow:0 8px 30px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:transform .3s,opacity .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
 
-.summary-strip{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
-.summary-stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;flex-direction:column;align-items:center;min-width:80px}
-.summary-num{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:white}
-.summary-label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+/* ── EMPTY STATE ── */
+.col-empty{padding:16px 10px;text-align:center;color:var(--muted2);font-size:.75rem;border:2px dashed rgba(255,255,255,.06);border-radius:8px;display:none}
+.col-cards:empty + .col-empty,.col-cards.empty-vis + .col-empty{display:block}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>📋 JVDesignStudio Project Tracker</h1>
-  <p>Everything in one place — books, games, workshops, site pages, monetisation, and bugs.</p>
-</div>
-
-<div class="tabs" id="tabs">
-  <button class="tab active" data-tab="books">📚 Books</button>
-  <button class="tab" data-tab="games">🎮 Games</button>
-  <button class="tab" data-tab="workshops">🔧 Workshops</button>
-  <button class="tab" data-tab="pages">🌐 Site Pages</button>
-  <button class="tab" data-tab="money">💰 Monetisation</button>
-  <button class="tab" data-tab="bugs">🐛 Bugs</button>
-</div>
-
-<!-- ══ BOOKS ══ -->
-<div class="panel active" id="panel-books">
-  <div class="panel-title">📚 Children's Books</div>
-  <div class="panel-sub">10 projects  4 published, 1 in progress, 2 writing, 3 ideas</div>
-  <div class="summary-strip">
-    <div class="summary-stat"><div class="summary-num" style="color:var(--done)">4</div><div class="summary-label">Published</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">1</div><div class="summary-label">In Progress</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">2</div><div class="summary-label">Writing</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--idea)">3</div><div class="summary-label">Ideas</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--todo)">0</div><div class="summary-label">KDP Ready</div></div>
+<header class="header">
+  <div class="header-logo">
+    <img src="logo.png" alt="JV" onerror="this.onerror=null;this.style.display='none'">
+    JVDesignStudio
   </div>
-  <div class="card-grid" id="books-grid"></div>
-</div>
+  <span class="header-title">Project Tracker</span>
+  <button class="btn btn-ghost btn-sm" onclick="exportData()">📤 Export</button>
+  <button class="btn btn-ghost btn-sm" onclick="importData()">📥 Import</button>
+  <button class="btn btn-rose btn-sm" onclick="openCardModal()">+ New Card</button>
+</header>
 
-<!-- ══ GAMES ══ -->
-<div class="panel" id="panel-games">
-  <div class="panel-title">🎮 Browser Games</div>
-  <div class="panel-sub">16 games tracked  11 mobile-friendly, 2 desktop-only, 2 unintegrated</div>
-  <div class="summary-strip">
-    <div class="summary-stat"><div class="summary-num" style="color:var(--done)">14</div><div class="summary-label">Live</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--teal)">11</div><div class="summary-label">Mobile Hub</div></div>
-    <div class="summary-stat"><div class="summary-num" style="color:var(--prog)">2</div><div class="summary-label">Not Integrated</div></div>
+<div class="toolbar">
+  <input class="toolbar-search" type="text" id="searchInput" placeholder="🔍 Search cards…" oninput="filterCards()">
+  <div class="toolbar-filter" id="priorityFilters">
+    <span class="filter-chip active" data-filter="all" onclick="setPriorityFilter('all',this)">All</span>
+    <span class="filter-chip" data-filter="high" onclick="setPriorityFilter('high',this)">🔴 High</span>
+    <span class="filter-chip" data-filter="med" onclick="setPriorityFilter('med',this)">🟡 Med</span>
+    <span class="filter-chip" data-filter="low" onclick="setPriorityFilter('low',this)">🟢 Low</span>
   </div>
-  <div class="card-grid" id="games-grid"></div>
+  <div class="toolbar-right">
+    <span class="stat-pill" id="statTotal">0 cards</span>
+    <span class="stat-pill" id="statDone">0 done</span>
+  </div>
 </div>
 
-<!-- ══ WORKSHOPS ══ -->
-<div class="panel" id="panel-workshops">
-  <div class="panel-title">🔧 Workshops & Courses</div>
-  <div class="panel-sub">14 courses all live. 6 live builders, 3 Godot, 2 MUGEN, 2 misc.</div>
-  <div class="card-grid" id="workshops-grid"></div>
+<div class="board-wrap">
+  <div class="board" id="board"></div>
 </div>
 
-<!-- ══ SITE PAGES ══ -->
-<div class="panel" id="panel-pages">
-  <div class="panel-title">🌐 Site Pages & Infrastructure</div>
-  <div class="panel-sub">21 pages tracked. Newsletter is broken highest priority fix.</div>
-  <div class="card-grid" id="pages-grid"></div>
+<!-- ADD/EDIT CARD MODAL -->
+<div class="modal-overlay" id="cardModal">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">New Card</div>
+
+    <div class="modal-field">
+      <label class="modal-label">Title</label>
+      <input class="modal-input" id="cardTitle" placeholder="What needs doing?">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Description</label>
+      <textarea class="modal-textarea" id="cardDesc" placeholder="More details, links, notes…"></textarea>
+    </div>
+
+    <div class="modal-row">
+      <div class="modal-field">
+        <label class="modal-label">Column</label>
+        <select class="modal-select" id="cardColumn"></select>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Priority</label>
+        <select class="modal-select" id="cardPriority">
+          <option value="high">🔴 High</option>
+          <option value="med" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Due Date</label>
+      <input class="modal-input" id="cardDate" type="date">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Tags (press Enter to add)</label>
+      <div class="tag-input-row" id="tagInputRow" onclick="document.getElementById('tagInput').focus()">
+        <input class="tag-input-bare" id="tagInput" placeholder="e.g. workshop, urgent…" onkeydown="handleTagKey(event)">
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label">Tag Colour</label>
+      <div class="colour-row" id="colourRow">
+        <div class="colour-swatch selected" style="background:#7c3aed" data-col="#7c3aed" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#0284c7" data-col="#0284c7" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#d97706" data-col="#d97706" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#dc2626" data-col="#dc2626" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#16a34a" data-col="#16a34a" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#0891b2" data-col="#0891b2" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#be185d" data-col="#be185d" onclick="selectColour(this)"></div>
+        <div class="colour-swatch" style="background:#b45309" data-col="#b45309" onclick="selectColour(this)"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCardModal()">Cancel</button>
+      <button class="btn btn-rose" onclick="saveCard()">Save Card</button>
+    </div>
+  </div>
 </div>
 
-<!-- ══ MONETISATION ══ -->
-<div class="panel" id="panel-money">
-  <div class="panel-title">💰 Monetisation Channels</div>
-  <div class="panel-sub">7 channels — 2 live, 1 in progress, 3 not started, 1 broken.</div>
-  <div class="card-grid" id="money-grid"></div>
+<!-- ADD COLUMN MODAL -->
+<div class="modal-overlay" id="colModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">New Column</div>
+    <div class="modal-field">
+      <label class="modal-label">Column Name</label>
+      <input class="modal-input" id="colName" placeholder="e.g. In Review…">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Colour</label>
+      <div class="colour-row" id="colColourRow">
+        <div class="colour-swatch selected" style="background:#7c3aed" data-col="#7c3aed" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#0284c7" data-col="#0284c7" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#d97706" data-col="#d97706" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#dc2626" data-col="#dc2626" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#16a34a" data-col="#16a34a" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#0891b2" data-col="#0891b2" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#be185d" data-col="#be185d" onclick="selectColColour(this)"></div>
+        <div class="colour-swatch" style="background:#b45309" data-col="#b45309" onclick="selectColColour(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeColModal()">Cancel</button>
+      <button class="btn btn-rose" onclick="saveColumn()">Add Column</button>
+    </div>
+  </div>
 </div>
 
-<!-- ══ BUGS ══ -->
-<div class="panel" id="panel-bugs">
-  <div class="panel-title">🐛 Known Bugs & Tech Debt</div>
-  <div class="panel-sub">10 issues tracked. Newsletter is #1 priority.</div>
-  <div class="card-grid" id="bugs-grid"></div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ── TAB SWITCHING ──
-document.querySelectorAll('.tab').forEach(t => {
-  t.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+/* ══════════════════════════════════════
+   DATA MODEL
+══════════════════════════════════════ */
+const STORAGE_KEY = 'jvds-tracker-v2';
+
+let state = {
+  columns: [
+    { id: 'deploy',   title: '🚀 Deploy',          colour: '#f5c842' },
+    { id: 'fix',      title: '🔴 Needs Fixing',    colour: '#dc2626' },
+    { id: 'build',    title: '🔧 Needs Building',  colour: '#7c3aed' },
+    { id: 'live',     title: '🌐 Core Pages',      colour: '#16a34a' },
+    { id: 'workshop', title: '📚 Workshop',        colour: '#d97706' },
+    { id: 'games',    title: '🎮 Games',           colour: '#0284c7' },
+    { id: 'books',    title: '📖 Books',           colour: '#be185d' },
+    { id: 'done',     title: '✅ Done',            colour: '#404040' },
+  ],
+  cards: [
+    // ── READY TO DEPLOY ──
+    { id:'d1',  colId:'deploy', title:'workshop.html',                desc:'Grouped sections, dark mode fix, new RCT images, swim rescue card.',          tags:[{text:'Updated',col:'#f5c842'}],  priority:'high', date:'', comments:[] },
+    { id:'d2',  colId:'deploy', title:'search.html',                  desc:'Image support added to all 20 cards. BMC link, 2026 copyright.',              tags:[{text:'Updated',col:'#f5c842'}],  priority:'high', date:'', comments:[] },
+    { id:'d3',  colId:'deploy', title:'sitemap.html',                 desc:'Both OpenRCT2 courses added, page count 11.',                                  tags:[{text:'Updated',col:'#f5c842'}],  priority:'high', date:'', comments:[] },
+    { id:'d4',  colId:'deploy', title:'index.html',                   desc:'What is New - refreshed April 2026. Workshop grid updated, duplicate removed.',  tags:[{text:'Updated',col:'#f5c842'}],  priority:'high', date:'', comments:[] },
+    { id:'d5',  colId:'deploy', title:'openrct2-swim-rescue.html',    desc:'13 steps. Download section with v2.0 and v3.0 plugin files.',                  tags:[{text:'New',col:'#0284c7'}],      priority:'high', date:'', comments:[] },
+    { id:'d6',  colId:'deploy', title:'openrct2-modding-builder.html',desc:'12 steps. JSON save/load added as steps 11 & 12.',                             tags:[{text:'New',col:'#0284c7'}],      priority:'high', date:'', comments:[] },
+    { id:'d7',  colId:'deploy', title:'swim_rescue.js',               desc:'v3.0 simple teleport plugin. Tested on OpenRCT2 v0.5.0.',                      tags:[{text:'Plugin',col:'#16a34a'}],   priority:'high', date:'', comments:[] },
+    { id:'d8',  colId:'deploy', title:'swim_rescueV2.js',             desc:'v2.0 balloon state machine plugin with UI window.',                            tags:[{text:'Plugin',col:'#16a34a'}],   priority:'high', date:'', comments:[] },
+    { id:'d9',  colId:'deploy', title:'ModdingRCT.png',               desc:'Cover image for OpenRCT2 Python modding workshop card.',                       tags:[{text:'Asset',col:'#be185d'}],    priority:'med',  date:'', comments:[] },
+    { id:'d10', colId:'deploy', title:'Saving_guests.png',            desc:'Cover image for OpenRCT2 Swim Rescue workshop card.',                          tags:[{text:'Asset',col:'#be185d'}],    priority:'med',  date:'', comments:[] },
+    { id:'d11', colId:'deploy', title:'project-tracker.html',         desc:'This board! Kanban tracker with comments, drag/drop, persistent storage.',    tags:[{text:'New',col:'#0284c7'}],      priority:'med',  date:'', comments:[] },
+    { id:'d12', colId:'deploy', title:'about.html + 9 others',        desc:'Copyright 2025→2026 fixed across 10 pages.',                                   tags:[{text:'Updated',col:'#f5c842'}],  priority:'med',  date:'', comments:[] },
+    { id:'d13', colId:'deploy', title:'BMC links — 25 pages',         desc:'buymeacoffee.com/jv_designstudio added to footer of all 25 pages with Itch.io link.', tags:[{text:'Updated',col:'#f5c842'}], priority:'med', date:'', comments:[] },
+
+    // ── NEEDS FIXING ──
+    { id:'f1',  colId:'fix', title:'newsletter.html',         desc:'MISSING — linked in nav on every page but does not exist. Dead link for all visitors.', tags:[{text:'Broken',col:'#dc2626'},{text:'🔥 Priority',col:'#dc2626'}], priority:'high', date:'', comments:[] },
+    { id:'f2',  colId:'fix', title:'videos.html',             desc:'YouTube VIDEO_ID_1/2/3 placeholder IDs need replacing with real video IDs.',              tags:[{text:'Broken',col:'#dc2626'}],   priority:'high', date:'', comments:[] },
+    { id:'f3',  colId:'fix', title:'OG social sharing tags',  desc:'~40 pages missing og:title, og:image, og:description. Links look blank on Discord/social.', tags:[{text:'SEO',col:'#7c3aed'}],     priority:'med',  date:'', comments:[] },
+    { id:'f4',  colId:'fix', title:'little-steps.html',       desc:'DUPLICATE — both little-steps.html (388 lines, old) and little_steps.html (1411 lines, real) exist. Neither is linked from anywhere.', tags:[{text:'Duplicate',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+    { id:'f5',  colId:'fix', title:'cozy-cafe-match duplicates',desc:'Both cozy-cafe-match.html and cozy-cafe-match-game.html exist. Decide which is canonical and remove or redirect the other.', tags:[{text:'Duplicate',col:'#dc2626'}], priority:'low', date:'', comments:[] },
+    { id:'f6',  colId:'fix', title:'canonical tags missing',   desc:'Only ~10 pages have <link rel="canonical">. Should be on every page for SEO.',          tags:[{text:'SEO',col:'#7c3aed'}],      priority:'low',  date:'', comments:[] },
+    { id:'f7',  colId:'fix', title:'discovery_session.html',   desc:'No BMC link, no standard footer socials, no nav footer at all.',                        tags:[{text:'Inconsistent',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'f8',  colId:'fix', title:'little_steps.html',        desc:'Not linked from index, search, sitemap, or content hub. Game is floating unlinked.',    tags:[{text:'Unlinked',col:'#dc2626'}],  priority:'med',  date:'', comments:[] },
+
+    // ── NEEDS BUILDING ──
+    { id:'b1',  colId:'build', title:'newsletter.html',        desc:'Build a real page with email signup. Formspree is free and takes 5 mins. Dead link in every nav.', tags:[{text:'Page',col:'#7c3aed'},{text:'🔥 Priority',col:'#dc2626'}], priority:'high', date:'', comments:[] },
+    { id:'b2',  colId:'build', title:'gem_match.html',         desc:'Linked from index but page does not exist.',   tags:[{text:'Missing',col:'#dc2626'}],  priority:'high', date:'', comments:[] },
+    { id:'b3',  colId:'build', title:'crypt-crawlers.html',    desc:'Linked from index but page does not exist.',   tags:[{text:'Missing',col:'#dc2626'}],  priority:'high', date:'', comments:[] },
+    { id:'b4',  colId:'build', title:'echo_fruit_catch.html',  desc:'Linked from index but page does not exist.',   tags:[{text:'Missing',col:'#dc2626'}],  priority:'high', date:'', comments:[] },
+    { id:'b5',  colId:'build', title:'lumo_firefly_night.html',desc:'Linked from index but page does not exist.',   tags:[{text:'Missing',col:'#dc2626'}],  priority:'high', date:'', comments:[] },
+    { id:'b6',  colId:'build', title:'merch.html',             desc:'Linked from index but does not exist. Printify merch store needed.', tags:[{text:'Missing',col:'#dc2626'},{text:'Monetise',col:'#16a34a'}], priority:'med', date:'', comments:[] },
+    { id:'b7',  colId:'build', title:'faq.html',               desc:'Linked from some pages but does not exist.',  tags:[{text:'Missing',col:'#dc2626'}],  priority:'low',  date:'', comments:[] },
+    { id:'b8',  colId:'build', title:'next_book_projects.html',desc:'Linked from Echo page but does not exist.',   tags:[{text:'Missing',col:'#dc2626'}],  priority:'low',  date:'', comments:[] },
+    { id:'b9',  colId:'build', title:'Godot PDF on Gumroad',   desc:'Package existing Godot tutorial as paid PDF. Already written — just needs export and a Gumroad listing.', tags:[{text:'Monetise',col:'#16a34a'}], priority:'med', date:'', comments:[] },
+    { id:'b10', colId:'build', title:'Etsy printable packs',   desc:'Premium printable activity packs. Create PDFs, set up Etsy shop.',                    tags:[{text:'Monetise',col:'#16a34a'}], priority:'med',  date:'', comments:[] },
+    { id:'b11', colId:'build', title:'Amazon KDP — Lumo',      desc:'Complete artwork, format for KDP, set up author account, publish.',                   tags:[{text:'Book',col:'#be185d'}],     priority:'low',  date:'', comments:[] },
+    { id:'b12', colId:'build', title:'mobile-games.html',      desc:'Page referenced but missing.',                tags:[{text:'Missing',col:'#dc2626'}],  priority:'low',  date:'', comments:[] },
+    { id:'b13', colId:'build', title:'follow_along.html',       desc:'Page referenced but missing.',               tags:[{text:'Missing',col:'#dc2626'}],  priority:'low',  date:'', comments:[] },
+
+    // ── CORE SITE PAGES ──
+    { id:'l1',  colId:'live', title:'index.html',              desc:'Homepage — main landing page.',                           tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l2',  colId:'live', title:'about.html',              desc:'About J. Valentine.',                                     tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l3',  colId:'live', title:'contact.html',            desc:'Contact form page.',                                      tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l4',  colId:'live', title:'content_hub.html',        desc:'All projects hub.',                                       tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l5',  colId:'live', title:'search.html',             desc:'Site-wide search page.',                                  tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l6',  colId:'live', title:'sitemap.html',            desc:'Full site sitemap page.',                                 tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l7',  colId:'live', title:'freebies.html',           desc:'Free downloads page.',                                    tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l8',  colId:'live', title:'devlog.html',             desc:'Development log / blog.',                                 tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l9',  colId:'live', title:'press.html',              desc:'Press kit.',                                              tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l10', colId:'live', title:'learn.html',              desc:'Learn / courses hub.',                                    tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l11', colId:'live', title:'videos.html',             desc:'Videos page — has broken placeholder YouTube IDs.',       tags:[{text:'Core',col:'#16a34a'},{text:'Fix needed',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+    { id:'l12', colId:'live', title:'404.html',                desc:'Custom 404 error page.',                                  tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l13', colId:'live', title:'for-schools.html',        desc:'Schools and teachers page.',                              tags:[{text:'Core',col:'#16a34a'}],     priority:'low', date:'', comments:[] },
+    { id:'l14', colId:'live', title:'discovery_session.html',  desc:'Interactive discovery session presentation. Missing footer.', tags:[{text:'Core',col:'#16a34a'},{text:'Fix needed',col:'#dc2626'}], priority:'low', date:'', comments:[] },
+
+    // ── WORKSHOP ──
+    { id:'w1',  colId:'workshop', title:'workshop.html',                   desc:'Workshop hub. 4 sections: OpenRCT2, Game Builders, Engine Courses, Specialist.',  tags:[{text:'Hub',col:'#d97706'}],       priority:'low', date:'', comments:[] },
+    { id:'w2',  colId:'workshop', title:'openrct2-modding-builder.html',   desc:'OpenRCT2 Python Modding — 12 steps, live park preview.',                          tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w3',  colId:'workshop', title:'openrct2-swim-rescue.html',       desc:'OpenRCT2 Swim Rescue JS Plugin — 13 steps, download section.',                    tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w4',  colId:'workshop', title:'js-platformer-builder.html',      desc:'JavaScript Platformer Builder — 10 steps.',                                       tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w5',  colId:'workshop', title:'python-game-builder.html',        desc:'Python Game Builder — 10 steps.',                                                 tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w6',  colId:'workshop', title:'cpp-tower-defence-builder.html',  desc:'C++ Tower Defence — 20 steps.',                                                   tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w7',  colId:'workshop', title:'gml_shooter_trainer_project.html',desc:'GML Shooter Trainer — 4 levels of live code execution.',                          tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w8',  colId:'workshop', title:'sci-fi-runner-builder.html',      desc:'Sci-Fi Endless Runner Builder.',                                                   tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w9',  colId:'workshop', title:'godot_tutorial.html',             desc:'How to Godot 4 — full platformer guide.',                                         tags:[{text:'Guide',col:'#d97706'}],     priority:'low', date:'', comments:[] },
+    { id:'w10', colId:'workshop', title:'space_invaders_tutorial.html',    desc:'Build Space Invaders in Godot 4.',                                                 tags:[{text:'Guide',col:'#d97706'}],     priority:'low', date:'', comments:[] },
+    { id:'w11', colId:'workshop', title:'godot_templates.html',            desc:'Godot 4 Starter Templates — 4 downloadable projects.',                            tags:[{text:'Download',col:'#d97706'}],  priority:'low', date:'', comments:[] },
+    { id:'w12', colId:'workshop', title:'roblox-creator-journey.html',     desc:'Roblox Creator Journey — cosmetics course.',                                       tags:[{text:'Guide',col:'#d97706'}],     priority:'low', date:'', comments:[] },
+    { id:'w13', colId:'workshop', title:'mugen-workshop.html',             desc:'MUGEN Workshop — build your own fighter.',                                         tags:[{text:'Guide',col:'#d97706'}],     priority:'low', date:'', comments:[] },
+    { id:'w14', colId:'workshop', title:'add-your-own-stage.html',         desc:'MUGEN Add Your Own Stage — 7-step beginner lesson.',                              tags:[{text:'Guide',col:'#d97706'}],     priority:'low', date:'', comments:[] },
+    { id:'w15', colId:'workshop', title:'pirate-cannon-builder.html',      desc:'Pirate Cannon Forge — 15-step 3D builder with Three.js.',                         tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+    { id:'w16', colId:'workshop', title:'pirate-ship-builder.html',        desc:'Pirate Ship Shipyard — 20-step 3D builder.',                                       tags:[{text:'Live Builder',col:'#d97706'}], priority:'low', date:'', comments:[] },
+
+    // ── GAMES ──
+    { id:'g1',  colId:'games', title:'arcane_citadel_page.html',   desc:'Arcane Citadel game landing page.',                                  tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g2',  colId:'games', title:'arcane_citadel.html',        desc:'Arcane Citadel game itself (raw browser game file).',                tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g3',  colId:'games', title:'voidrush.html',              desc:'VoidRush game landing page.',                                        tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g4',  colId:'games', title:'cozy-cafe-match.html',       desc:'Cozy Cafe Match landing page. DUPLICATE — see fix column.',          tags:[{text:'Game',col:'#0284c7'},{text:'Duplicate',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+    { id:'g5',  colId:'games', title:'cozy-cafe-match-game.html',  desc:'Cozy Cafe Match game file. DUPLICATE — see fix column.',             tags:[{text:'Game',col:'#0284c7'},{text:'Duplicate',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+    { id:'g6',  colId:'games', title:'cozy_creatures.html',        desc:'Cozy Creatures: The Ultimate Snuggle.',                              tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g7',  colId:'games', title:'dungeon-delve.html',         desc:'Dungeon Delve hack & slash adventure.',                              tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g8',  colId:'games', title:'pip_star_connect.html',      desc:'Pip Star Connect puzzle game.',                                  tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g9',  colId:'games', title:'pips_night_sky.html',        desc:'Pip Night Sky constellation game.',                              tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g10', colId:'games', title:'stardust_collection.html',   desc:'Stardust Collector game.',                                           tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g11', colId:'games', title:'sky_high_squirt.html',       desc:'Sky High Squirt & Friends.',                                         tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g12', colId:'games', title:'call_of_the_cards.html',     desc:'Call of the Cards tabletop game page.',                              tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g13', colId:'games', title:'candy_kingdom.html',         desc:'Candy Kingdom Adventure game.',                                      tags:[{text:'Game',col:'#0284c7'}],   priority:'low', date:'', comments:[] },
+    { id:'g14', colId:'games', title:'little_steps.html',          desc:'Little Steps — Cosmic Journey. NOT linked from anywhere on the site.', tags:[{text:'Game',col:'#0284c7'},{text:'Unlinked',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+    { id:'g15', colId:'games', title:'little-steps.html',          desc:'Little Steps old version (388 lines). Duplicate — should be deleted.', tags:[{text:'Game',col:'#0284c7'},{text:'Duplicate',col:'#dc2626'}], priority:'med', date:'', comments:[] },
+
+    // ── BOOKS ──
+    { id:'bk1', colId:'books', title:'lumo_and_the_grumble_grit.html',      desc:'Lumo and the Grumble-Grit book page.',           tags:[{text:'Book',col:'#be185d'}],    priority:'low', date:'', comments:[] },
+    { id:'bk2', colId:'books', title:'Echo_and_the_moutain_of_choice.html', desc:'Echo and the Mountain of Choices book page.',    tags:[{text:'Book',col:'#be185d'}],    priority:'low', date:'', comments:[] },
+    { id:'bk3', colId:'books', title:'Echo_and_the_moutain_of_choices_1.html', desc:'Axos Adventure interactive story. SKIP FILE — do not include in any bulk edits.', tags:[{text:'Book',col:'#be185d'},{text:'Skip',col:'#404040'}], priority:'low', date:'', comments:[] },
+    { id:'bk4', colId:'books', title:'Elara.html',                          desc:'Elara and the Wire-Web Key book page.',          tags:[{text:'Book',col:'#be185d'}],    priority:'low', date:'', comments:[] },
+    { id:'bk5', colId:'books', title:'Pip_and_the_night_sky.html',          desc:'Pip and the Great Dark book page.',              tags:[{text:'Book',col:'#be185d'}],    priority:'low', date:'', comments:[] },
+    { id:'bk6', colId:'books', title:'Stardust.html',                       desc:'Stardust Cosmic Adventure book page.',       tags:[{text:'Book',col:'#be185d'}],    priority:'low', date:'', comments:[] },
+    { id:'bk7', colId:'books', title:'colouring-book.html',                 desc:'Free colouring kit download page.',             tags:[{text:'Book',col:'#be185d'},{text:'Freebie',col:'#16a34a'}], priority:'low', date:'', comments:[] },
+
+    // ── DONE ──
+    { id:'dn1', colId:'done', title:'OpenRCT2 Python Modding Workshop',  desc:'12-step live course with park preview. Deployed.',         tags:[{text:'Workshop',col:'#404040'}], priority:'low', date:'', comments:[] },
+    { id:'dn2', colId:'done', title:'OpenRCT2 Swim Rescue Workshop',     desc:'13-step JS plugin course with download section. Deployed.', tags:[{text:'Workshop',col:'#404040'}], priority:'low', date:'', comments:[] },
+    { id:'dn3', colId:'done', title:'Buy Me a Coffee — 25 pages',        desc:'Added BMC links to every footer with Itch.io link.',         tags:[{text:'Monetise',col:'#404040'}], priority:'low', date:'', comments:[] },
+    { id:'dn4', colId:'done', title:'Copyright 2025→2026',               desc:'Fixed across all 10 affected pages.',                        tags:[{text:'Fix',col:'#404040'}],      priority:'low', date:'', comments:[] },
+    { id:'dn5', colId:'done', title:'Workshop section grouping',         desc:'Split into 4 labelled sections with colour headers.',        tags:[{text:'Design',col:'#404040'}],   priority:'low', date:'', comments:[] },
+    { id:'dn6', colId:'done', title:'Search page image support',         desc:'20 entries now have cover images with fallback.',            tags:[{text:'Feature',col:'#404040'}],  priority:'low', date:'', comments:[] },
+    { id:'dn7', colId:'done', title:'Dark mode workshop card fix',        desc:'Added 16 CSS rules so card text is readable in dark mode.', tags:[{text:'Fix',col:'#404040'}],      priority:'low', date:'', comments:[] },
+  ],
+  nextId: 300,
+};
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+}
+
+/* ══════════════════════════════════════
+   RENDER
+══════════════════════════════════════ */
+let dragCard = null;
+let dragPlaceholder = null;
+let activeFilter = 'all';
+
+function render() {
+  const board = document.getElementById('board');
+  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  board.innerHTML = '';
+
+  state.columns.forEach(col => {
+    const cards = state.cards.filter(c => {
+      if (c.colId !== col.id) return false;
+      if (activeFilter !== 'all' && c.priority !== activeFilter) return false;
+      if (search && !c.title.toLowerCase().includes(search) && !c.desc.toLowerCase().includes(search) &&
+          !c.tags.some(t => t.text.toLowerCase().includes(search))) return false;
+      return true;
+    });
+
+    const colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.dataset.colId = col.id;
+
+    colEl.addEventListener('dragover', e => { e.preventDefault(); colEl.classList.add('drag-over'); insertPlaceholder(e, colEl.querySelector('.col-cards')); });
+    colEl.addEventListener('dragleave', e => { if (!colEl.contains(e.relatedTarget)) colEl.classList.remove('drag-over'); });
+    colEl.addEventListener('drop', e => { e.preventDefault(); colEl.classList.remove('drag-over'); dropCard(col.id, colEl.querySelector('.col-cards')); });
+
+    colEl.innerHTML = `
+      <div class="col-header">
+        <div class="col-dot" style="background:${col.colour}"></div>
+        <div class="col-title" style="color:${col.colour}">${col.title}</div>
+        <div class="col-count">${cards.length}</div>
+        <button class="col-add" title="Add card" onclick="openCardModal('${col.id}')">+</button>
+        ${col.id !== 'ideas' && col.id !== 'todo' && col.id !== 'doing' && col.id !== 'review' && col.id !== 'done' ?
+          `<button class="col-add" title="Delete column" onclick="deleteColumn('${col.id}')">×</button>` : ''}
+      </div>
+      <div class="col-cards" id="cards-${col.id}"></div>
+      <div class="col-empty">No cards here yet</div>`;
+
+    const cardsEl = colEl.querySelector('.col-cards');
+    if (cards.length === 0) cardsEl.classList.add('empty-vis');
+
+    cards.forEach(card => {
+      const cardEl = buildCard(card);
+      cardsEl.appendChild(cardEl);
+    });
+
+    board.appendChild(colEl);
   });
+
+  // Add column button
+  const addColBtn = document.createElement('div');
+  addColBtn.className = 'add-column-btn';
+  addColBtn.innerHTML = '+ Add Column';
+  addColBtn.onclick = () => document.getElementById('colModal').classList.add('open');
+  board.appendChild(addColBtn);
+
+  updateStats();
+  populateColumnSelect();
+}
+
+function buildCard(card) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.dataset.cardId = card.id;
+  el.draggable = true;
+
+  el.addEventListener('dragstart', e => { dragCard = card; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+  el.addEventListener('dragend', () => { el.classList.remove('dragging'); removePlaceholder(); });
+
+  const priClass = {high:'pri-high',med:'pri-med',low:'pri-low'}[card.priority] || 'pri-med';
+  const priLabel = {high:'High',med:'Medium',low:'Low'}[card.priority] || 'Med';
+  const tagsHtml = card.tags.map(t =>
+    `<span class="card-tag" style="background:${t.col}22;color:${t.col};border:1px solid ${t.col}44">${t.text}</span>`
+  ).join('');
+  const dateHtml = card.date ? `<span class="card-date">📅 ${card.date}</span>` : '';
+  const commentCount = card.comments.length;
+  const commentsHtml = card.comments.map((c,ci) => `
+    <div class="comment">
+      <div class="comment-meta">${c.date}</div>
+      <div>${escHtml(c.text)}</div>
+      <button class="comment-del" onclick="deleteComment('${card.id}',${ci})">✕</button>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="card-actions">
+      <button class="card-action-btn" onclick="openCardModal(null,'${card.id}')" title="Edit">✏️</button>
+      <button class="card-action-btn" onclick="deleteCard('${card.id}')" title="Delete">🗑</button>
+    </div>
+    ${tagsHtml ? `<div class="card-tags">${tagsHtml}</div>` : ''}
+    <div class="card-title">${escHtml(card.title)}</div>
+    ${card.desc ? `<div class="card-desc">${escHtml(card.desc)}</div>` : ''}
+    <div class="card-meta">
+      <span class="card-priority ${priClass}">${priLabel}</span>
+      ${dateHtml}
+      <button class="card-action-btn" style="margin-left:auto;display:inline-flex;align-items:center;gap:4px" onclick="toggleComments('${card.id}',this)">
+        💬 ${commentCount}
+      </button>
+    </div>
+    <div class="card-comments" id="comments-${card.id}">
+      ${commentsHtml}
+      <div class="comment-input-row">
+        <textarea class="comment-input" id="ci-${card.id}" rows="2" placeholder="Add a comment…"></textarea>
+        <button class="comment-submit" onclick="addComment('${card.id}')">Post</button>
+      </div>
+    </div>`;
+
+  return el;
+}
+
+/* ══════════════════════════════════════
+   DRAG AND DROP
+══════════════════════════════════════ */
+function insertPlaceholder(e, cardsEl) {
+  if (!dragCard) return;
+  removePlaceholder();
+  dragPlaceholder = document.createElement('div');
+  dragPlaceholder.className = 'card drag-placeholder';
+
+  const cards = [...cardsEl.querySelectorAll('.card:not(.dragging)')];
+  let inserted = false;
+  for (const c of cards) {
+    const box = c.getBoundingClientRect();
+    if (e.clientY < box.top + box.height / 2) {
+      cardsEl.insertBefore(dragPlaceholder, c);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) cardsEl.appendChild(dragPlaceholder);
+}
+
+function removePlaceholder() {
+  if (dragPlaceholder) { dragPlaceholder.remove(); dragPlaceholder = null; }
+}
+
+function dropCard(colId, cardsEl) {
+  if (!dragCard) return;
+  dragCard.colId = colId;
+
+  // Work out position from placeholder
+  const cards = [...cardsEl.querySelectorAll('.card:not(.dragging)')];
+  const phIdx = dragPlaceholder ? [...cardsEl.children].indexOf(dragPlaceholder) : cards.length;
+
+  // Reorder state.cards
+  const others = state.cards.filter(c => c.id !== dragCard.id);
+  const colCards = others.filter(c => c.colId === colId);
+  const beforeCard = cards[phIdx];
+  const insertIdx = beforeCard ? others.indexOf(others.find(c => c.id === beforeCard.dataset.cardId)) : others.length;
+
+  state.cards = state.cards.filter(c => c.id !== dragCard.id);
+  const globalIdx = insertIdx >= 0 ? insertIdx : state.cards.length;
+  state.cards.splice(globalIdx, 0, dragCard);
+
+  removePlaceholder();
+  dragCard = null;
+  save();
+  render();
+}
+
+/* ══════════════════════════════════════
+   CARD MODAL
+══════════════════════════════════════ */
+let editingCardId = null;
+let currentTags = [];
+let currentTagColour = '#7c3aed';
+
+function openCardModal(defaultColId, editId) {
+  editingCardId = editId || null;
+  currentTags = [];
+
+  const modal = document.getElementById('cardModal');
+  document.getElementById('modalTitle').textContent = editId ? 'Edit Card' : 'New Card';
+
+  if (editId) {
+    const card = state.cards.find(c => c.id === editId);
+    if (!card) return;
+    document.getElementById('cardTitle').value = card.title;
+    document.getElementById('cardDesc').value = card.desc;
+    document.getElementById('cardPriority').value = card.priority;
+    document.getElementById('cardDate').value = card.date || '';
+    document.getElementById('cardColumn').value = card.colId;
+    currentTags = [...card.tags];
+  } else {
+    document.getElementById('cardTitle').value = '';
+    document.getElementById('cardDesc').value = '';
+    document.getElementById('cardPriority').value = 'med';
+    document.getElementById('cardDate').value = '';
+    if (defaultColId) document.getElementById('cardColumn').value = defaultColId;
+  }
+
+  renderTagPills();
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('cardTitle').focus(), 100);
+}
+
+function closeCardModal() {
+  document.getElementById('cardModal').classList.remove('open');
+  editingCardId = null;
+  currentTags = [];
+}
+
+function saveCard() {
+  const title = document.getElementById('cardTitle').value.trim();
+  if (!title) { showToast('Please add a title!'); return; }
+
+  const colId = document.getElementById('cardColumn').value;
+  const priority = document.getElementById('cardPriority').value;
+  const date = document.getElementById('cardDate').value;
+  const desc = document.getElementById('cardDesc').value.trim();
+
+  if (editingCardId) {
+    const card = state.cards.find(c => c.id === editingCardId);
+    if (card) { Object.assign(card, { title, desc, colId, priority, date, tags: [...currentTags] }); }
+  } else {
+    state.cards.push({ id: 'c' + (++state.nextId), colId, title, desc, priority, date, tags: [...currentTags], comments: [] });
+  }
+
+  save(); render(); closeCardModal();
+  showToast(editingCardId ? '✅ Card updated!' : '✅ Card added!');
+}
+
+function deleteCard(id) {
+  if (!confirm('Delete this card?')) return;
+  state.cards = state.cards.filter(c => c.id !== id);
+  save(); render(); showToast('🗑 Card deleted');
+}
+
+/* ══════════════════════════════════════
+   TAGS
+══════════════════════════════════════ */
+function handleTagKey(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (val) { currentTags.push({ text: val, col: currentTagColour }); e.target.value = ''; renderTagPills(); }
+  }
+  if (e.key === 'Backspace' && !e.target.value && currentTags.length) {
+    currentTags.pop(); renderTagPills();
+  }
+}
+
+function renderTagPills() {
+  const row = document.getElementById('tagInputRow');
+  const input = document.getElementById('tagInput');
+  row.querySelectorAll('.tag-pill').forEach(p => p.remove());
+  currentTags.forEach((t, i) => {
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.style.cssText = `background:${t.col}22;color:${t.col};border:1px solid ${t.col}44`;
+    pill.innerHTML = `${escHtml(t.text)}<button class="tag-pill-del" onclick="removeTag(${i})">×</button>`;
+    row.insertBefore(pill, input);
+  });
+}
+
+function removeTag(i) { currentTags.splice(i, 1); renderTagPills(); }
+
+function selectColour(el) {
+  document.querySelectorAll('#colourRow .colour-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  currentTagColour = el.dataset.col;
+}
+
+/* ══════════════════════════════════════
+   COMMENTS
+══════════════════════════════════════ */
+function toggleComments(cardId, btn) {
+  const el = document.getElementById('comments-' + cardId);
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) document.getElementById('ci-' + cardId)?.focus();
+}
+
+function addComment(cardId) {
+  const input = document.getElementById('ci-' + cardId);
+  const text = input?.value?.trim();
+  if (!text) return;
+  const card = state.cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.comments.push({ text, date: new Date().toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) });
+  save(); render();
+  // Re-open comments section after re-render
+  setTimeout(() => { const el = document.getElementById('comments-' + cardId); if(el) el.classList.add('open'); }, 10);
+}
+
+function deleteComment(cardId, idx) {
+  const card = state.cards.find(c => c.id === cardId);
+  if (!card) return;
+  card.comments.splice(idx, 1);
+  save(); render();
+  setTimeout(() => { const el = document.getElementById('comments-' + cardId); if(el) el.classList.add('open'); }, 10);
+}
+
+/* ══════════════════════════════════════
+   COLUMNS
+══════════════════════════════════════ */
+let currentColColour = '#7c3aed';
+
+function saveColumn() {
+  const name = document.getElementById('colName').value.trim();
+  if (!name) { showToast('Please add a column name'); return; }
+  const id = 'col_' + Date.now();
+  state.columns.push({ id, title: name, colour: currentColColour });
+  save(); render(); closeColModal();
+  showToast('✅ Column added!');
+}
+
+function closeColModal() {
+  document.getElementById('colModal').classList.remove('open');
+  document.getElementById('colName').value = '';
+}
+
+function deleteColumn(id) {
+  if (!confirm('Delete this column and all its cards?')) return;
+  state.columns = state.columns.filter(c => c.id !== id);
+  state.cards = state.cards.filter(c => c.colId !== id);
+  save(); render(); showToast('🗑 Column deleted');
+}
+
+function selectColColour(el) {
+  document.querySelectorAll('#colColourRow .colour-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  currentColColour = el.dataset.col;
+}
+
+function populateColumnSelect() {
+  const sel = document.getElementById('cardColumn');
+  const current = sel.value;
+  sel.innerHTML = state.columns.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+  if (current) sel.value = current;
+}
+
+/* ══════════════════════════════════════
+   FILTER / SEARCH
+══════════════════════════════════════ */
+function filterCards() { render(); }
+
+function setPriorityFilter(val, el) {
+  activeFilter = val;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function updateStats() {
+  const total = state.cards.length;
+  const done = state.cards.filter(c => c.colId === 'done').length;
+  document.getElementById('statTotal').textContent = total + ' card' + (total !== 1 ? 's' : '');
+  document.getElementById('statDone').textContent = done + ' done';
+}
+
+/* ══════════════════════════════════════
+   EXPORT / IMPORT
+══════════════════════════════════════ */
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jvds-tracker-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  showToast('📤 Board exported!');
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        state = JSON.parse(ev.target.result);
+        save(); render();
+        showToast('📥 Board imported!');
+      } catch(err) { showToast('❌ Invalid file'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Close modals on overlay click
+document.getElementById('cardModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCardModal(); });
+document.getElementById('colModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeColModal(); });
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeCardModal(); closeColModal(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCardModal(); }
 });
 
-function badgeClass(s) {
-  s = (s||'').toLowerCase();
-  if (['done','live','shipped','complete','published'].includes(s)) return 'badge-done';
-  if (['in progress','writing','illustrating','building','fixing'].includes(s)) return 'badge-prog';
-  if (['not started','planned','to do','todo'].includes(s)) return 'badge-todo';
-  if (['idea','early idea','concept'].includes(s)) return 'badge-idea';
-  if (['broken','blocked','bug'].includes(s)) return 'badge-broken';
-  return 'badge-prog';
-}
-
-function progressBar(label, pct, color) {
-  const w = pct === '???' ? 0 : parseInt(pct);
-  return `<div class="progress-row">
-    <span class="progress-label">${label}</span>
-    <div class="progress-track"><div class="progress-fill" style="width:${w}%;background:${color}"></div></div>
-    <span class="progress-pct" style="color:${color}">${pct}</span>
-  </div>`;
-}
-
-function renderCards(gridId, cards) {
-  document.getElementById(gridId).innerHTML = cards.map((c,i) => `
-    <div class="card">
-      <div class="card-top">
-        <span class="card-num">${i+1}</span>
-        <span class="card-title">${c.title}</span>
-        <span class="card-badge ${badgeClass(c.status)}">${c.status}</span>
-      </div>
-      ${c.meta ? `<div class="card-meta">${c.meta.map(m=>`<span class="meta-pill">${m}</span>`).join('')}</div>` : ''}
-      ${c.progress ? c.progress.map(p => progressBar(p[0],p[1],p[2]||'#70A3A7')).join('') : ''}
-      ${c.note ? `<div class="card-note">${c.note}</div>` : ''}
-    </div>
-  `).join('');
-}
-
-// ══ DATA ══
-
-renderCards('books-grid', [
-  { title:'Lumo and the Grumble-Grit', status:'Published', meta:['Ages 4–8','Free PDF','On Site'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['Layout','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Live on site. Free PDF available. <strong>Next:</strong> Prep for Amazon KDP once artwork finalised.' },
-  { title:'Pip and the Night Sky', status:'Published', meta:['Ages 4–7','Free PDF','2 Games'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Two browser games built around this book (Star Connect + Night Sky).' },
-  { title:"Stardust's Cosmic Adventure", status:'Published', meta:['Ages 4–7','On Site','1 Game'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Stardust Collector browser game built around this book.' },
-  { title:'Elara and the Wire-Web Key', status:'Published', meta:['Ages 5–8','On Site'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','100%','#2ecc71'],['KDP','0%','#e74c3c']], note:'Live on site.' },
-  { title:'Echo and the Mountain of Choices', status:'In Progress', meta:['Ages 5–8','Teaser Live'], progress:[['Manuscript','100%','#2ecc71'],['Illustration','40%','#f1c40f'],['Layout','0%','#e74c3c'],['KDP','0%','#e74c3c']], note:'Manuscript done. <strong>Illustration in progress (40%).</strong> Free PDF planned for launch. Teaser page live.' },
-  { title:'The Seed That Waited', status:'Writing', meta:['Ages 4–7','Patience/Growth'], progress:[['Manuscript','55%','#f1c40f'],['Illustration','0%','#e74c3c']], note:'Working title. Patience and growth theme.' },
-  { title:'The Fox Who Forgot How to Play', status:'Writing', meta:['Ages 5–8','Play/Burnout'], progress:[['Manuscript','30%','#f1c40f'],['Illustration','0%','#e74c3c']], note:'Play and burnout theme.' },
-  { title:'Where Do Worries Go at Night?', status:'Early Idea', meta:['Ages 4–7','Anxiety/Comfort'], progress:[['Manuscript','10%','#9b59b6'],['Illustration','0%','#e74c3c']], note:'Very early. Anxiety and comfort theme.' },
-  { title:"The Crab Who Couldn't Let Go", status:'Early Idea', meta:['Ages 5–9','Letting Go'], progress:[['Manuscript','5%','#9b59b6'],['Illustration','0%','#e74c3c']], note:'Very early. Letting-go theme.' },
-  { title:'Secret Project', status:'Idea', meta:['TBD','Watch This Space'], note:'Mentioned on next_book_projects page. No details public yet.' },
-]);
-
-renderCards('games-grid', [
-  { title:'Sky High Squirt & Friends', status:'Live', meta:['📱 Mobile','Endless Bouncer','Featured on Hub','Tilt Controls','Shop','15 Achievements'], note:'Doodle-Jump-style. Character unlocks, coin shop, hats/skins/auras, daily streak. <strong>Featured</strong> on Mobile Games Hub.' },
-  { title:"Roar's Tiger Smash", status:'Live', meta:['📱 Mobile','Brick Breaker','Squirt Universe'], note:'Paddle/ball unlocks. Part of Sky High Squirt universe.' },
-  { title:'Biscuit Tin — Cozy Clicker', status:'Live', meta:['📱 Mobile','Idle Clicker','Cozy Universe'], note:'Same cozy universe as Cozy Cafe Match.' },
-  { title:'Cozy Cafe Match', status:'Live', meta:['📱 Mobile','Match-3','No Timer','Cozy'], note:'Gentle match-3. No cover image yet — uses emoji gradient placeholder.' },
-  { title:"Pip's Star Connect", status:'Live', meta:['📱 Mobile','Tap Puzzle','Book Tie-in'], note:'Was <strong>broken</strong> (truncated file) — fixed this session.' },
-  { title:"Pip's Night Sky", status:'Live', meta:['📱 Mobile','Exploration','Book Tie-in'], note:'Constellation puzzle tied to the Pip book.' },
-  { title:"Echo's Fruit Catch", status:'Live', meta:['📱 Mobile','Tilt Game','Ages 3+'], note:'Tilt phone to catch fruit. Made for young players.' },
-  { title:"Lumo's Firefly Shooter", status:'Live', meta:['📱 Mobile','Bubble Shooter'], note:'' },
-  { title:'Gem Match', status:'Live', meta:['📱 Mobile','Match-3','Timer','Leaderboard'], note:'The competitive match-3 (2 min timer, global leaderboard) vs Cozy Cafe\'s relaxed one.' },
-  { title:'VoidRush', status:'Live', meta:['📱 Mobile','Runner','Swipe Controls'], note:'Neon space runner.' },
-  { title:'Stardust Collector', status:'Live', meta:['📱 Mobile','Runner','Book Tie-in'], note:'Tied to the Stardust book.' },
-  { title:'Arcane Citadel', status:'Live', meta:['🖥 Desktop Only','Tower Defence','Roguelite'], note:'No touch handlers. Desktop only. Not on Mobile Hub.' },
-  { title:'Crypt Crawlers', status:'Live', meta:['🖥 Desktop Only','Dungeon Crawler','Keyboard'], note:'Desktop RPG. Not on Mobile Hub.' },
-  { title:'Little Steps', status:'Live', meta:['📱 Mobile','Endless Runner','Dream Sparks Currency'], note:'Temple Run style. Uses localStorage. Not on Mobile Hub yet.' },
-  { title:'Cozy Cafe Match (old version?)', status:'Not started', meta:['⚠️ Not Integrated','cozy-cafe-match.html'], note:'<strong>Check if duplicate or different game.</strong> File exists but not linked anywhere.' },
-  { title:'Dungeon Delve', status:'Not started', meta:['⚠️ Not Integrated','dungeon-delve.html'], note:'<strong>File exists in project but not linked from any page.</strong> Card game? Needs investigation.' },
-]);
-
-renderCards('workshops-grid', [
-  { title:'JavaScript Platformer Builder', status:'Live', meta:['JavaScript','10 Steps','Live Builder'], note:'Fill in values, game updates live.' },
-  { title:'Python Game Builder', status:'Live', meta:['Python','10 Steps','Live Builder'], note:'Dodge-and-collect game.' },
-  { title:'C++ Tower Defence Builder', status:'Live', meta:['C++','20 Steps','Live Builder'], note:'Grid, towers, enemies, waves, upgrades, boss scaling.' },
-  { title:'GML Shooter Trainer', status:'Live', meta:['GML/GameMaker','12 Levels','Live Code'], note:'GML-style live code execution. Green theme.' },
-  { title:'Sci-Fi Runner Builder', status:'Live', meta:['JavaScript','10 Steps','Cyan Theme'], note:'Lane-based runner.' },
-  { title:'MUGEN Workshop', status:'Live', meta:['MUGEN','3 Parts','10 Downloads'], note:'Basics, Fighter Factory 3, Stage creation.' },
-  { title:'Add Your Own Stage (MUGEN)', status:'Live', meta:['MUGEN','7 Steps','Starter Pack'], note:'<strong>NEW this session.</strong> Beginner lesson. Starter pack: .def + 2 PNGs.' },
-  { title:'Build Space Invaders', status:'Live', meta:['Godot 4','11 Chapters'], note:'Full Space Invaders clone.' },
-  { title:'Roblox Creator Journey', status:'Live', meta:['Roblox Studio','Multi-step'], note:'T-shirts, clothing, 3D accessories.' },
-  { title:'Godot 4 Starter Templates', status:'Live', meta:['Godot 4','4 Projects','Download'], note:'4 downloadable projects. <strong>⚠️ ZIP files may be missing from server.</strong>' },
-  { title:'Godot 4 Tutorial PDF', status:'Live', meta:['Godot 4','9 Modules','Free PDF'], note:'On freebies page too.' },
-  { title:'Pirate Ship Builder', status:'Live', meta:['JavaScript','⚠️ Not on Workshop Page'], note:'pirate-ship-builder.html exists but isn\'t linked from workshop.html.' },
-  { title:'Pirate Cannon Builder', status:'Live', meta:['JavaScript','⚠️ Not on Workshop Page'], note:'pirate-cannon-builder.html exists but isn\'t linked from workshop.html.' },
-]);
-
-renderCards('pages-grid', [
-  { title:'Homepage', status:'Live', meta:['index.html','Core'], note:'Mobile nav fix applied this session. Games count = 12.' },
-  { title:'Content Hub', status:'Live', meta:['content_hub.html','Core'], note:'Full catalogue. Dark mode toggle. All games/books/workshops.' },
-  { title:'Mobile Games Hub', status:'Live', meta:['mobile-games.html','Core'], note:'<strong>NEW this session.</strong> 11 mobile-friendly games. Phone-first layout.' },
-  { title:'Search', status:'Live', meta:['search.html','Core'], note:'All entries up to date.' },
-  { title:'Workshop Hub', status:'Live', meta:['workshop.html','Workshop'], note:'Stats: 13 courses, 6 live builders, 17+ downloads.' },
-  { title:'Free Downloads', status:'Live', meta:['freebies.html','Freebies'], note:'MUGEN starter pack added this session.' },
-  { title:'Videos', status:'Live', meta:['videos.html','Content'], note:'<strong>Rebuilt this session.</strong> No more iframe embeds — click-to-YouTube cards.' },
-  { title:'Dev Log', status:'Live', meta:['devlog.html','Content'], note:'25 entries. Latest: Sky High Squirt + Mobile Hub.' },
-  { title:'Newsletter', status:'Broken', meta:['newsletter.html','Studio','⚠️ HIGH PRIORITY'], note:'<strong>Shows alert("coming soon") instead of collecting emails.</strong> Needs real email service (Mailchimp / Buttondown / etc).' },
-  { title:'Discovery Session', status:'Live', meta:['discovery_session.html','Studio'], note:'Image fixes applied. Still has <strong>6 missing cover images</strong>.' },
-  { title:'For Schools', status:'Live', meta:['for-schools.html','Studio'], note:'Image fixes applied this session.' },
-  { title:'About', status:'Live', meta:['about.html','Studio'], note:'' },
-  { title:'Contact', status:'Live', meta:['contact.html','Studio'], note:'' },
-  { title:'Press Kit', status:'Live', meta:['press.html','Studio'], note:'' },
-  { title:'Merch', status:'Live', meta:['merch.html','Monetisation'], note:'Printify merch. <strong>Status unclear — needs review.</strong>' },
-  { title:'Sitemap (HTML)', status:'Live', meta:['sitemap.html','SEO'], note:'Updated with all new pages this session.' },
-  { title:'Sitemap (XML)', status:'Live', meta:['sitemap.xml','SEO'], note:'Updated with all new URLs this session.' },
-  { title:'Colouring Book', status:'Live', meta:['colouring-book.html','Freebies'], note:'References missing <strong>Colour In Pages.pdf</strong>.' },
-  { title:'Next Book Projects', status:'Live', meta:['next_book_projects.html','Content'], note:'6 books tracked with progress bars.' },
-  { title:'Learn', status:'Live', meta:['learn.html','Workshop'], note:'Alternative entry to workshop content.' },
-  { title:'404 Page', status:'Live', meta:['404.html','Core'], note:'' },
-]);
-
-renderCards('money-grid', [
-  { title:'Itch.io', status:'Live', meta:['joshhyyy.itch.io','Pay-what-you-want'], note:'<strong>Next:</strong> Add Sky High Squirt, Tiger Smash, Biscuit Tin, Cozy Cafe to Itch.' },
-  { title:'Ko-fi', status:'Live', meta:['Tip Jar','In Footers'], note:'Working. Tip jar linked in site footers.' },
-  { title:'Printify Merch', status:'In Progress', meta:['Character Merch','Lumo, Echo, Pip'], note:'<strong>Next:</strong> Expand with new character designs. merch.html exists.' },
-  { title:'Gumroad', status:'Not started', meta:['Paid PDFs','Godot Tutorial'], note:'<strong>Next:</strong> Package Godot 4 tutorial as paid PDF. Set pricing.' },
-  { title:'Etsy', status:'Not started', meta:['Printable Activity Packs'], note:'<strong>Next:</strong> Design and list premium printable activity packs.' },
-  { title:'Amazon KDP', status:'Not started', meta:['Self-Publishing','Picture Books'], note:'<strong>Blocked:</strong> Need book artwork complete first. Start with Lumo or Pip.' },
-  { title:'Newsletter / Email List', status:'Broken', meta:['⚠️ HIGHEST PRIORITY','Email Capture'], note:'<strong>Currently just shows an alert.</strong> Can\'t promote launches without an email list. Need Mailchimp, Buttondown, or similar.' },
-]);
-
-renderCards('bugs-grid', [
-  { title:'Newsletter signup broken', status:'Broken', meta:['newsletter.html','High Priority'], note:'Shows alert("coming soon") instead of collecting emails. <strong>Needs real email service integration.</strong>' },
-  { title:'7 missing cover images', status:'Not started', meta:['discovery_session, index, content_hub','Medium'], note:'CryptCrawlers_Cover, GodotTemplates_Cover, JSPlatformer_Cover, PythonBuilder_Cover, SpaceInvaders_Cover, WebsiteArticle_Cover — files don\'t exist on disk.' },
-  { title:'4 missing Godot template ZIPs', status:'Not started', meta:['godot_templates.html','Medium'], note:'asteroids_template.zip, platformer_template.zip, space_invaders_template.zip, tower_defence_template.zip — not on disk.' },
-  { title:'dungeon.def missing', status:'Not started', meta:['mugen-workshop.html','Low'], note:'Download link for dungeon.def template — file doesn\'t exist on server.' },
-  { title:'Colour In Pages.pdf missing', status:'Not started', meta:['colouring-book.html','Low'], note:'Download link broken — PDF not on disk.' },
-  { title:'YouTube VIDEO_ID placeholders', status:'Not started', meta:['index.html','Low'], note:'YouTube video section on homepage uses placeholder VIDEO_ID values needing replacement with real IDs.' },
-  { title:'Nav not consistent across pages', status:'In Progress', meta:['Various pages','Low'], note:'📱 Mobile link added to index + content_hub. Still missing from workshop, freebies, videos, devlog, about, etc.' },
-  { title:'Duplicate cozy-cafe files', status:'Not started', meta:['cozy-cafe-match.html','Low'], note:'cozy-cafe-match.html AND cozy-cafe-match-game.html both exist. Are they duplicates or different versions?' },
-  { title:'dungeon-delve.html orphaned', status:'Not started', meta:['dungeon-delve.html','Low'], note:'File exists in project but not linked from any page.' },
-  { title:'Google Analytics', status:'Done', meta:['All pages','Info'], note:'G-3JBXCCNY4C added across all pages. No action needed.' },
-]);
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+load();
+render();
 </script>
 </body>
 </html>
