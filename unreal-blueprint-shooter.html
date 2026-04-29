@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unreal Blueprint Top-Down Shooter — Learn Blueprints | JVDesignStudio</title>
+<meta name="description" content="Build a Nuclear Throne-style top-down shooter in Unreal Engine 5 using Blueprints. Learn nodes, events, variables, collision, AI, and HUD — 25 steps, live preview, no coding needed.">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080a; --bg2:#0c0e10; --bg3:#111417;
+  --border:rgba(255,255,255,.07);
+  --text:#e8eaf0; --muted:rgba(232,234,240,.4);
+  --ue:#e05a1e; --ue-lt:#f08050; --ue-dk:#a03808;
+  --bp:#4a90d9; --bp-lt:#7ab8f5;
+  --green:#4ade80; --red:#f87171; --gold:#f5c842;
+  --teal:#2dd4bf; --purple:#a78bfa;
+  /* Blueprint node colours */
+  --node-event:#b03030;
+  --node-func:#1a4a8a;
+  --node-macro:#2a6a2a;
+  --node-var:#5a3a8a;
+  --node-flow:#505050;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+
+.site-header{position:sticky;top:0;z-index:100;background:rgba(7,8,10,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.header-inner{max-width:1400px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo-link{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.05em}
+.logo-link img{height:32px;border-radius:7px}
+.btn-back{font-size:.8rem;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:color .15s,border-color .15s}
+.btn-back:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+.nav-toggle{display:none;background:none;border:none;padding:6px 8px;font-size:1.3rem;cursor:pointer;color:var(--text)}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:#07080a;border-top:2px solid var(--ue);box-shadow:0 8px 32px rgba(0,0,0,.8);max-height:0;overflow:hidden;transition:max-height .4s ease}
+.mobile-nav.open{max-height:80vh;overflow-y:auto}
+.mobile-nav a{display:flex;align-items:center;gap:10px;padding:13px 22px;font-size:.9rem;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border)}
+.mobile-nav a:hover{background:rgba(255,255,255,.04);color:var(--text)}
+@media(max-width:860px){.btn-back{display:none}.nav-toggle{display:block!important}}
+@media(min-width:861px){.mobile-nav{display:none!important}}
+
+.hero{padding:44px 24px 36px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(224,90,30,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(224,90,30,.04) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 100% at 50% 0%,black,transparent)}
+.hero-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;position:relative;z-index:1}
+@media(max-width:700px){.hero-inner{grid-template-columns:1fr}}
+.hero-tag{font-family:'JetBrains Mono',monospace;font-size:.63rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:10px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,6vw,3.8rem);line-height:.95;letter-spacing:.03em;color:white;margin-bottom:12px}
+.hero-title .hl{color:var(--ue)}
+.hero-sub{font-size:.92rem;color:var(--muted);line-height:1.7;max-width:480px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:4px 10px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.u{border-color:rgba(224,90,30,.3);color:var(--ue-lt);background:rgba(224,90,30,.07)}
+.pill.bp{border-color:rgba(74,144,217,.3);color:var(--bp-lt);background:rgba(74,144,217,.07)}
+.hero-cta{background:var(--ue);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.1em;padding:11px 26px;border-radius:10px;box-shadow:0 4px 0 var(--ue-dk);transition:transform .12s,filter .15s;display:inline-block;margin-top:16px}
+.hero-cta:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.hero-preview{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;min-width:200px}
+.hero-preview-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:10px}
+.hero-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.hero-stat:last-child{border-bottom:none}
+.hero-stat-label{color:var(--muted);font-size:.72rem}
+.hero-stat-val{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.05em;color:var(--ue-lt)}
+
+.main-layout{display:grid;grid-template-columns:1fr 400px;max-width:1400px;margin:0 auto;min-height:calc(100vh - 60px)}
+@media(max-width:960px){.main-layout{grid-template-columns:1fr}}
+
+.steps-panel{border-right:1px solid var(--border)}
+.steps-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2)}
+.steps-tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:12px 10px;font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--ue-lt);border-bottom-color:var(--ue)}
+.tab-btn.done::before{content:"✓ ";color:var(--green)}
+.step-body{padding:26px 30px;overflow-y:auto;max-height:calc(100vh - 120px)}
+@media(max-width:960px){.step-body{max-height:none}}
+@media(max-width:680px){.step-body{padding:18px 14px}}
+.step-num{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:5px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.85rem;letter-spacing:.04em;color:white;margin-bottom:9px;line-height:1}
+.step-intro{font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:18px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.8rem;line-height:1.6;display:flex;gap:9px;align-items:flex-start}
+.box-concept{background:rgba(224,90,30,.06);border:1px solid rgba(224,90,30,.2);color:rgba(232,234,240,.75)}
+.box-concept::before{content:"📖";flex-shrink:0}
+.box-tip{background:rgba(74,222,128,.06);border:1px solid rgba(74,222,128,.18);color:rgba(232,234,240,.75)}
+.box-tip::before{content:"💡";flex-shrink:0}
+.box-ue{background:rgba(74,144,217,.07);border:1px solid rgba(74,144,217,.22);color:rgba(232,234,240,.8)}
+.box-ue::before{content:"🔵";flex-shrink:0}
+.box-warn{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2);color:rgba(232,234,240,.75)}
+.box-warn::before{content:"⚠️";flex-shrink:0}
+.box-vs{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);color:rgba(232,234,240,.75)}
+.box-vs::before{content:"🆚";flex-shrink:0}
+
+/* BLUEPRINT NODE GRAPH AREA */
+.bp-area{margin:14px 0}
+.bp-area-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.bp-badge{color:var(--bp-lt);font-size:.56rem;padding:2px 7px;border-radius:4px;background:rgba(74,144,217,.1);border:1px solid rgba(74,144,217,.2)}
+.bp-live{color:var(--ue-lt);font-size:.56rem;padding:2px 7px;border-radius:4px;background:rgba(224,90,30,.1);border:1px solid rgba(224,90,30,.2)}
+.bp-graph{background:#1a1a2e;border:1px solid rgba(74,144,217,.15);border-radius:11px;overflow:hidden;position:relative}
+.bp-graph svg{display:block;width:100%}
+
+/* Node legend */
+.node-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* BLANKS */
+.blank{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:rgba(224,90,30,.7);border:1px solid rgba(224,90,30,.9);border-radius:5px;padding:2px 7px;width:var(--w,80px);text-align:center;outline:none;vertical-align:middle;transition:background .2s,box-shadow .2s}
+.blank:focus{background:var(--ue-lt);box-shadow:0 0 0 3px rgba(224,90,30,.35);color:#07080a}
+.blank-select{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:rgba(224,90,30,.7);border:1px solid rgba(224,90,30,.9);border-radius:5px;padding:2px 8px;vertical-align:middle;outline:none;cursor:pointer}
+
+.run-btn{width:100%;margin-top:12px;padding:13px;background:var(--ue);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.1em;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 0 var(--ue-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.run-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.run-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--ue-dk)}
+
+.step-nav{display:flex;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.btn-prev,.btn-next{flex:1;padding:11px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:.84rem;font-weight:800;cursor:pointer;border:none;transition:background .15s}
+.btn-prev{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-prev:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-next{background:rgba(224,90,30,.12);color:var(--ue-lt);border:1px solid rgba(224,90,30,.22)}
+.btn-next:hover:not(:disabled){background:rgba(224,90,30,.22)}
+.btn-prev:disabled,.btn-next:disabled{opacity:.3;cursor:default}
+
+.game-panel{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:60px;height:calc(100vh - 60px)}
+@media(max-width:960px){.game-panel{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-live{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--ue-lt)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--ue);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:10px}
+canvas{width:100%;border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 40px rgba(0,0,0,.8);display:block;image-rendering:pixelated}
+.game-hud{display:flex;gap:0;border-top:1px solid var(--border);flex-shrink:0}
+.hud-box{flex:1;padding:8px 12px;border-right:1px solid var(--border);text-align:center}
+.hud-box:last-child{border-right:none}
+.hud-val{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.05em}
+.hud-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+.output-bar{padding:8px 16px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.65rem;min-height:32px;color:var(--ue-lt)}
+
+.progress-strip{background:var(--bg2);border-top:1px solid var(--border);padding:9px 20px;display:flex;align-items:center;gap:14px;max-width:1400px;margin:0 auto;width:100%;position:sticky;bottom:0;z-index:50}
+.prog-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ue-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ue),var(--bp-lt));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;max-width:160px;justify-content:flex-end}
+.prog-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.prog-dot.done{background:var(--green)}.prog-dot.active{background:var(--ue);transform:scale(1.3)}
+
+.more-section{padding:52px 24px;max-width:1400px;margin:0 auto}
+.more-title{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:.04em;color:white;margin-bottom:20px}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.more-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:17px 19px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s,transform .2s}
+.more-card:hover{border-color:rgba(255,255,255,.15);transform:translateY(-3px)}
+.more-icon{font-size:1.5rem}
+.more-tag{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.more-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.04em;color:white}
+.more-cta{font-size:.76rem;font-weight:700;margin-top:auto}
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:22px;text-align:center;color:var(--muted);font-size:.76rem}
+footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/32x32/07080a/e05a1e?text=JV'">
+      JVDesignStudio
+    </a>
+    <a href="workshop.html" class="btn-back">← Workshop</a>
+    <button class="nav-toggle" id="navToggle">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="content_hub.html">📦 All Projects</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="search.html">🔍 Search</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="devlog.html">📓 Dev Log</a>
+    <a href="videos.html">🎬 Videos</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">JVDesignStudio · Unreal Workshop</div>
+      <h1 class="hero-title">Build a<br><span class="hl">Top-Down Shooter</span><br>in Blueprints</h1>
+      <p class="hero-sub">Learn <strong>Unreal Engine 5 Blueprints</strong> from scratch — no coding needed. Visual nodes, instant results. Nuclear Throne-style shooter built step by step.</p>
+      <div class="hero-pills">
+        <span class="pill u">Unreal Engine 5</span>
+        <span class="pill bp">Blueprints</span>
+        <span class="pill">25 Steps</span>
+        <span class="pill">No Coding</span>
+        <span class="pill">🆓 Free</span>
+      </div>
+      <a href="#builder" class="hero-cta">🎮 Start Building</a>
+    </div>
+    <div class="hero-preview">
+      <div class="hero-preview-title">What you'll build</div>
+      <div class="hero-stat"><span class="hero-stat-label">Player movement</span><span class="hero-stat-val">WASD</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Aim at mouse</span><span class="hero-stat-val">Cursor</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Shooting</span><span class="hero-stat-val">LMB / Space</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Enemy AI</span><span class="hero-stat-val">Chases you</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Wave spawner</span><span class="hero-stat-val">Set Timer</span></div>
+      <div class="hero-stat"><span class="hero-stat-label">Blueprints made</span><span class="hero-stat-val">5 BPs</span></div>
+    </div>
+  </div>
+</section>
+
+<div id="builder">
+<div class="main-layout">
+  <div class="steps-panel">
+    <div class="steps-tabs" id="stepsTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+  <div class="game-panel">
+    <div class="game-top">
+      <span class="game-top-title">🎮 Live Game Preview</span>
+      <span class="game-live"><span class="live-dot"></span><span id="liveStatus">Complete a step to start</span></span>
+    </div>
+    <div class="game-wrap"><canvas id="gameCanvas"></canvas></div>
+    <div class="game-hud">
+      <div class="hud-box"><div class="hud-val" id="hudScore" style="color:var(--ue-lt)">0</div><div class="hud-lbl">Score</div></div>
+      <div class="hud-box"><div class="hud-val" id="hudHealth" style="color:var(--green)">100</div><div class="hud-lbl">Health</div></div>
+      <div class="hud-box"><div class="hud-val" id="hudWave" style="color:var(--gold)">0</div><div class="hud-lbl">Wave</div></div>
+      <div class="hud-box"><div class="hud-val" id="hudEnemies" style="color:var(--red)">0</div><div class="hud-lbl">Enemies</div></div>
+    </div>
+    <div id="outputBar" class="output-bar">▶ Press Apply on each step to unlock game features</div>
+  </div>
+</div>
+</div>
+
+<div class="progress-strip">
+  <span class="prog-label">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:4%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<section class="more-section">
+  <div class="more-title">Keep Building</div>
+  <div class="more-grid">
+    <a href="unreal-top-down-shooter.html" class="more-card"><span class="more-icon">💻</span><span class="more-tag" style="color:#ce93d8">C++ · Unreal</span><span class="more-name">Unreal C++ Version</span><span class="more-cta" style="color:#ce93d8">Start →</span></a>
+    <a href="unity-top-down-shooter.html" class="more-card"><span class="more-icon">🎯</span><span class="more-tag" style="color:#5bc0f8">C# · Unity</span><span class="more-name">Unity Top-Down Shooter</span><span class="more-cta" style="color:#5bc0f8">Start →</span></a>
+    <a href="cpp-tower-defence-builder.html" class="more-card"><span class="more-icon">🏰</span><span class="more-tag" style="color:#4a9eff">C++ · Live Builder</span><span class="more-name">Tower Defence Builder</span><span class="more-cta" style="color:#4a9eff">Start →</span></a>
+    <a href="workshop.html" class="more-card"><span class="more-icon">🔧</span><span class="more-tag" style="color:#70A3A7">All Resources</span><span class="more-name">The Workshop</span><span class="more-cta" style="color:#70A3A7">Visit →</span></a>
+  </div>
+</section>
+<footer><p>© 2026 JVDesignStudio &nbsp;·&nbsp; <a href="workshop.html">Workshop</a> &nbsp;·&nbsp; <a href="learn.html">Learn</a> &nbsp;·&nbsp; <a href="contact.html">Contact</a> &nbsp;·&nbsp; <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a></p></footer>
+
+<script>
+/* ══════════════════════════════════════════════════
+   BLUEPRINT NODE RENDERER
+   Draws faithful UE5-style Blueprint node graphs as SVG
+══════════════════════════════════════════════════ */
+
+// Colour palette matching real UE5 Blueprint editor
+const NODE_COLORS = {
+  event:   { header:'#9e2b2b', body:'#2a1010', border:'#cc4444' },
+  func:    { header:'#1a4080', body:'#101828', border:'#3a70cc' },
+  macro:   { header:'#1a5020', body:'#101a10', border:'#3aaa50' },
+  var_set: { header:'#2a2a60', body:'#101018', border:'#5050bb' },
+  var_get: { header:'#1a5050', body:'#101818', border:'#30aaaa' },
+  branch:  { header:'#404040', body:'#181818', border:'#888888' },
+  cast:    { header:'#1a3050', body:'#101518', border:'#3060aa' },
+  print:   { header:'#205020', body:'#101810', border:'#40aa40' },
+  custom:  { header:'#502050', body:'#180e18', border:'#aa40aa' },
+  math:    { header:'#303030', body:'#141414', border:'#666666' },
+  widget:  { header:'#402010', body:'#180e08', border:'#aa5020' },
+};
+
+const PIN_COLORS = {
+  exec:    '#ffffff',
+  bool:    '#dd2244',
+  int:     '#44aaee',
+  float:   '#88ee44',
+  vec3:    '#eebb44',
+  rot:     '#aaccff',
+  actor:   '#ee6622',
+  object:  '#4488ee',
+  string:  '#ee44aa',
+  class:   '#ee9922',
+  any:     '#aaaaaa',
+};
+
+// Draw a complete Blueprint node graph onto an SVG string
+function makeBPGraph(w, h, nodes, wires) {
+  let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="background:#1a1a2e;font-family:'JetBrains Mono',monospace">`;
+
+  // Grid background
+  svg += `<defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M20,0 L0,0 0,20" fill="none" stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="${w}" height="${h}" fill="url(#grid)"/>`;
+
+  // Collect pin positions for wire drawing
+  const pinPos = {};
+
+  // Draw nodes
+  for (const node of nodes) {
+    const c = NODE_COLORS[node.type] || NODE_COLORS.func;
+    const nx = node.x, ny = node.y;
+    const nw = node.w || 180, nh = node.h || 90;
+    const hr = 24; // header height
+
+    // Shadow
+    svg += `<rect x="${nx+3}" y="${ny+3}" width="${nw}" height="${nh}" rx="6" fill="rgba(0,0,0,.5)"/>`;
+    // Body
+    svg += `<rect x="${nx}" y="${ny}" width="${nw}" height="${nh}" rx="6" fill="${c.body}" stroke="${c.border}" stroke-width="1.5"/>`;
+    // Header
+    svg += `<rect x="${nx}" y="${ny}" width="${nw}" height="${hr}" rx="6" fill="${c.header}"/>`;
+    svg += `<rect x="${nx}" y="${ny+hr-6}" width="${nw}" height="6" fill="${c.header}"/>`;
+    // Title
+    svg += `<text x="${nx+nw/2}" y="${ny+16}" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${escSVG(node.title)}</text>`;
+
+    // Subtitle
+    if (node.sub) {
+      svg += `<text x="${nx+nw/2}" y="${ny+hr+12}" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="8">${escSVG(node.sub)}</text>`;
+    }
+
+    // Pins
+    const leftPins  = node.pins?.filter(p => p.side === 'left')  || [];
+    const rightPins = node.pins?.filter(p => p.side === 'right') || [];
+    const pinStart  = hr + (node.sub ? 22 : 12);
+    const pinGap    = 18;
+
+    leftPins.forEach((p, i) => {
+      const py = ny + pinStart + i * pinGap;
+      const col = PIN_COLORS[p.type] || PIN_COLORS.any;
+      const isExec = p.type === 'exec';
+      // Pin socket
+      if (isExec) {
+        svg += `<polygon points="${nx-1},${py-5} ${nx+7},${py} ${nx-1},${py+5}" fill="${p.connected?col:'none'}" stroke="${col}" stroke-width="1.5"/>`;
+      } else {
+        svg += `<circle cx="${nx}" cy="${py}" r="4" fill="${p.connected?col:'none'}" stroke="${col}" stroke-width="1.5"/>`;
+      }
+      svg += `<text x="${nx+10}" y="${py+4}" fill="rgba(255,255,255,.75)" font-size="8">${escSVG(p.label||'')}</text>`;
+      if (p.id) pinPos[p.id] = { x: nx, y: py, col };
+    });
+
+    rightPins.forEach((p, i) => {
+      const py = ny + pinStart + i * pinGap;
+      const col = PIN_COLORS[p.type] || PIN_COLORS.any;
+      const isExec = p.type === 'exec';
+      if (isExec) {
+        svg += `<polygon points="${nx+nw+1},${py-5} ${nx+nw-7},${py} ${nx+nw+1},${py+5}" fill="${p.connected?col:'none'}" stroke="${col}" stroke-width="1.5"/>`;
+      } else {
+        svg += `<circle cx="${nx+nw}" cy="${py}" r="4" fill="${p.connected?col:'none'}" stroke="${col}" stroke-width="1.5"/>`;
+      }
+      const tw = (p.label||'').length * 5;
+      svg += `<text x="${nx+nw-10-tw}" y="${py+4}" fill="rgba(255,255,255,.75)" font-size="8">${escSVG(p.label||'')}</text>`;
+      if (p.id) pinPos[p.id] = { x: nx+nw, y: py, col };
+    });
+
+    // Value label inside node body
+    if (node.val) {
+      svg += `<text x="${nx+nw/2}" y="${ny+nh-8}" text-anchor="middle" fill="${c.border}" font-size="9" font-weight="bold">${escSVG(node.val)}</text>`;
+    }
+  }
+
+  // Draw wires (bezier curves)
+  for (const [fromId, toId, colOverride] of (wires||[])) {
+    const a = pinPos[fromId], b = pinPos[toId];
+    if (!a || !b) continue;
+    const col = colOverride || a.col || '#ffffff';
+    const cx = (a.x + b.x) / 2;
+    svg += `<path d="M${a.x},${a.y} C${cx},${a.y} ${cx},${b.y} ${b.x},${b.y}"
+      fill="none" stroke="${col}" stroke-width="2" opacity="0.85"/>`;
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+function escSVG(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══════════════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════════════ */
+const game = {
+  running:false, playerEnabled:false, aimEnabled:false,
+  shootEnabled:false, enemyEnabled:false, collisionEnabled:false,
+  waveEnabled:false, dashEnabled:false, hudEnabled:false,
+  screenShake:false, fxEnabled:false,
+  playerSpeed:3, bulletSpeed:9, enemySpeed:1.4, fireRate:0.22,
+  score:0, health:100, maxHealth:100, wave:0,
+  lastShot:0, waveTimer:0, dashCooldown:0, shakeTimer:0,
+  player:{ x:200, y:200, angle:0, radius:12 },
+  mouseX:200, mouseY:200,
+  bullets:[], enemies:[], particles:[], keys:{},
+};
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const s = Math.min(canvas.parentElement.clientWidth-20, 460);
+  canvas.width = canvas.height = s;
+  game.player.x = game.player.y = s/2;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+window.addEventListener('keydown', e => {
+  game.keys[e.code] = true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { game.keys[e.code] = false; });
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect(), sc = canvas.width/r.width;
+  game.mouseX = (e.clientX-r.left)*sc; game.mouseY = (e.clientY-r.top)*sc;
+});
+canvas.addEventListener('mousedown', e => { if(e.button===0) game.keys['LMB']=true; });
+canvas.addEventListener('mouseup',   e => { if(e.button===0) game.keys['LMB']=false; });
+
+let lastTime = 0;
+function gameLoop(ts){
+  const dt = Math.min((ts-lastTime)/16, 3); lastTime = ts;
+  update(dt); draw(); requestAnimationFrame(gameLoop);
+}
+
+function update(dt){
+  const W=canvas.width, H=canvas.height;
+  if(!game.running) return;
+  if(game.shakeTimer>0) game.shakeTimer-=dt;
+
+  if(game.playerEnabled){
+    let mx=0,my=0;
+    if(game.keys['KeyW']||game.keys['ArrowUp'])    my-=1;
+    if(game.keys['KeyS']||game.keys['ArrowDown'])  my+=1;
+    if(game.keys['KeyA']||game.keys['ArrowLeft'])  mx-=1;
+    if(game.keys['KeyD']||game.keys['ArrowRight']) mx+=1;
+    const len=Math.sqrt(mx*mx+my*my)||1;
+    if(mx||my){ game.player.x+=(mx/len)*game.playerSpeed*dt; game.player.y+=(my/len)*game.playerSpeed*dt; }
+    game.player.x=Math.max(game.player.radius,Math.min(W-game.player.radius,game.player.x));
+    game.player.y=Math.max(game.player.radius,Math.min(H-game.player.radius,game.player.y));
+  }
+  if(game.aimEnabled){
+    game.player.angle=Math.atan2(game.mouseY-game.player.y, game.mouseX-game.player.x);
+  }
+  if(game.dashEnabled){
+    if(game.dashCooldown>0) game.dashCooldown-=dt;
+    if(game.keys['ShiftLeft']&&game.dashCooldown<=0){
+      const dx=game.mouseX-game.player.x, dy=game.mouseY-game.player.y;
+      const l=Math.sqrt(dx*dx+dy*dy)||1;
+      game.player.x=Math.max(game.player.radius,Math.min(W-game.player.radius,game.player.x+(dx/l)*55));
+      game.player.y=Math.max(game.player.radius,Math.min(H-game.player.radius,game.player.y+(dy/l)*55));
+      game.dashCooldown=90;
+      spawnParticles(game.player.x,game.player.y,'#60a5fa',10);
+    }
+  }
+  if(game.shootEnabled){
+    game.lastShot+=dt/60;
+    if((game.keys['Space']||game.keys['LMB'])&&game.lastShot>game.fireRate){
+      game.lastShot=0;
+      game.bullets.push({x:game.player.x,y:game.player.y,vx:Math.cos(game.player.angle)*game.bulletSpeed,vy:Math.sin(game.player.angle)*game.bulletSpeed,life:1});
+      if(game.screenShake){game.shakeTimer=3;game.shakeAmt=2;}
+    }
+  }
+  game.bullets.forEach(b=>{b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=0.003*dt;});
+  game.bullets=game.bullets.filter(b=>b.life>0&&b.x>-10&&b.x<W+10&&b.y>-10&&b.y<H+10);
+
+  if(game.enemyEnabled){
+    game.enemies.forEach(e=>{
+      const dx=game.player.x-e.x, dy=game.player.y-e.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+      const spd=e.type==='tank'?game.enemySpeed*.6:e.type==='runner'?game.enemySpeed*1.6:game.enemySpeed;
+      if(d>2){e.x+=(dx/d)*spd*dt;e.y+=(dy/d)*spd*dt;}
+      e.angle+=0.04*dt;
+      if(e.damageTimer>0) e.damageTimer-=dt;
+    });
+    if(game.collisionEnabled){
+      game.bullets.forEach(b=>{
+        game.enemies.forEach(e=>{
+          if(e.dead)return;
+          const dx=b.x-e.x,dy=b.y-e.y;
+          if(Math.sqrt(dx*dx+dy*dy)<e.radius+5){
+            e.health--;b.life=0;
+            spawnParticles(e.x,e.y,e.colour,game.fxEnabled?8:3);
+            if(e.health<=0){e.dead=true;game.score+=e.type==='tank'?30:10;document.getElementById('hudScore').textContent=game.score;if(game.screenShake){game.shakeTimer=5;game.shakeAmt=4;}}
+          }
+        });
+      });
+      game.enemies.forEach(e=>{
+        if(e.dead)return;
+        const dx=e.x-game.player.x,dy=e.y-game.player.y;
+        if(Math.sqrt(dx*dx+dy*dy)<e.radius+game.player.radius){
+          if(!e.damageTimer||e.damageTimer<=0){
+            game.health=Math.max(0,game.health-(e.type==='tank'?12:5));
+            e.damageTimer=30;
+            document.getElementById('hudHealth').textContent=game.health;
+            document.getElementById('hudHealth').style.color=game.health>60?'var(--green)':game.health>30?'var(--gold)':'var(--red)';
+            if(game.screenShake){game.shakeTimer=7;game.shakeAmt=6;}
+          }
+        }
+      });
+      game.enemies=game.enemies.filter(e=>!e.dead);
+      document.getElementById('hudEnemies').textContent=game.enemies.length;
+    }
+  }
+  if(game.waveEnabled){
+    game.waveTimer-=dt;
+    if(game.waveTimer<=0&&game.enemies.length<10){
+      game.wave++;game.waveTimer=200;
+      document.getElementById('hudWave').textContent=game.wave;
+      const count=Math.min(2+game.wave,8);
+      const types=['grunt','runner','tank'];
+      const cols={grunt:'#f87171',runner:'#fb923c',tank:'#a78bfa'};
+      for(let i=0;i<count;i++){
+        const side=Math.floor(Math.random()*4);
+        let ex,ey;
+        if(side===0){ex=Math.random()*W;ey=-25;}
+        else if(side===1){ex=W+25;ey=Math.random()*H;}
+        else if(side===2){ex=Math.random()*W;ey=H+25;}
+        else{ex=-25;ey=Math.random()*H;}
+        const t=game.wave>=3?types[Math.floor(Math.random()*types.length)]:'grunt';
+        game.enemies.push({x:ex,y:ey,radius:t==='tank'?18:t==='runner'?10:14,health:t==='tank'?6:2,colour:cols[t],type:t,angle:0,damageTimer:0});
+      }
+      document.getElementById('hudEnemies').textContent=game.enemies.length;
+      setOutput('🌊 Wave '+game.wave+' — '+count+' enemies incoming!');
+    }
+  }
+  game.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=0.025*dt;p.vx*=0.94;p.vy*=0.94;});
+  game.particles=game.particles.filter(p=>p.life>0);
+}
+
+function spawnParticles(x,y,col,n=8){
+  for(let i=0;i<n;i++){const a=(Math.PI*2/n)*i+Math.random()*.5;game.particles.push({x,y,vx:Math.cos(a)*(2+Math.random()*3),vy:Math.sin(a)*(2+Math.random()*3),col,life:1,size:2+Math.random()*3});}
+}
+
+function spawnEnemies(count,typeOverride){
+  const W=canvas.width,H=canvas.height;
+  const cols={grunt:'#f87171',runner:'#fb923c',tank:'#a78bfa'};
+  for(let i=0;i<count;i++){
+    const side=Math.floor(Math.random()*4);
+    let ex,ey;
+    if(side===0){ex=Math.random()*W;ey=-25;}else if(side===1){ex=W+25;ey=Math.random()*H;}else if(side===2){ex=Math.random()*W;ey=H+25;}else{ex=-25;ey=Math.random()*H;}
+    const t=typeOverride||'grunt';
+    game.enemies.push({x:ex,y:ey,radius:t==='tank'?18:t==='runner'?10:14,health:t==='tank'?6:2,colour:cols[t],type:t,angle:0,damageTimer:0});
+  }
+  document.getElementById('hudEnemies').textContent=game.enemies.length;
+}
+
+function draw(){
+  const W=canvas.width,H=canvas.height;
+  ctx.save();
+  if(game.shakeTimer>0) ctx.translate((Math.random()-.5)*(game.shakeAmt||3),(Math.random()-.5)*(game.shakeAmt||3));
+
+  ctx.fillStyle='#060810';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(224,90,30,.04)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  if(!game.running){
+    ctx.fillStyle='rgba(224,90,30,.35)';ctx.font='bold 14px JetBrains Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('Complete Step 1 to start',W/2,H/2-10);
+    ctx.fillStyle='rgba(232,234,240,.2)';ctx.font='11px JetBrains Mono,monospace';
+    ctx.fillText('WASD to move  ·  Mouse to aim',W/2,H/2+14);
+    ctx.fillText('SPACE or LMB to shoot',W/2,H/2+30);
+    ctx.restore();return;
+  }
+
+  game.particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+  game.bullets.forEach(b=>{ctx.save();ctx.shadowColor='#e05a1e';ctx.shadowBlur=10;ctx.fillStyle='#f08050';ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();ctx.restore();});
+
+  game.enemies.forEach(e=>{
+    ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.angle);ctx.shadowColor=e.colour;ctx.shadowBlur=14;ctx.fillStyle=e.colour;
+    if(e.type==='tank'){ctx.beginPath();for(let i=0;i<6;i++){const a=(Math.PI/3)*i;ctx.lineTo(Math.cos(a)*e.radius,Math.sin(a)*e.radius);}ctx.closePath();ctx.fill();}
+    else if(e.type==='runner'){ctx.beginPath();ctx.moveTo(0,-e.radius);ctx.lineTo(e.radius*.8,e.radius);ctx.lineTo(-e.radius*.8,e.radius);ctx.closePath();ctx.fill();}
+    else{ctx.beginPath();ctx.moveTo(0,-e.radius);ctx.lineTo(e.radius*.7,0);ctx.lineTo(0,e.radius);ctx.lineTo(-e.radius*.7,0);ctx.closePath();ctx.fill();}
+    const mh=e.type==='tank'?6:2;
+    for(let h=0;h<e.health;h++){ctx.fillStyle='#fff';ctx.shadowBlur=0;ctx.beginPath();ctx.arc(-((mh-1)*3)+h*6,-e.radius-7,2,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+  });
+
+  if(game.playerEnabled){
+    const p=game.player;
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle+Math.PI/2);
+    ctx.shadowColor='#e05a1e';ctx.shadowBlur=22;ctx.fillStyle='rgba(224,90,30,.12)';ctx.beginPath();ctx.arc(0,0,p.radius+7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e05a1e';ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(0,-p.radius);ctx.lineTo(p.radius*.6,p.radius*.5);ctx.lineTo(0,p.radius*.2);ctx.lineTo(-p.radius*.6,p.radius*.5);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#aaa';ctx.shadowBlur=0;ctx.fillRect(-2,-p.radius-6,4,8);
+    const mv=game.keys['KeyW']||game.keys['KeyS']||game.keys['KeyA']||game.keys['KeyD']||game.keys['ArrowUp']||game.keys['ArrowDown']||game.keys['ArrowLeft']||game.keys['ArrowRight'];
+    if(mv){ctx.fillStyle='#fb923c';ctx.shadowColor='#fb923c';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(-4,p.radius*.3);ctx.lineTo(4,p.radius*.3);ctx.lineTo(0,p.radius+6+Math.random()*5);ctx.closePath();ctx.fill();}
+    ctx.restore();
+    const bw=44,bh=5;
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(p.x-bw/2,p.y+p.radius+6,bw,bh);
+    ctx.fillStyle=game.health>60?'#4ade80':game.health>30?'#f5c842':'#f87171';ctx.fillRect(p.x-bw/2,p.y+p.radius+6,bw*(game.health/game.maxHealth),bh);
+  }
+  if(game.dashEnabled){
+    const p=game.player,pct=1-Math.min(game.dashCooldown/90,1);
+    ctx.save();ctx.strokeStyle=pct>=1?'rgba(96,165,250,.7)':'rgba(96,165,250,.2)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.radius+14,-Math.PI/2,-Math.PI/2+Math.PI*2*pct);ctx.stroke();ctx.restore();
+  }
+
+  ctx.fillStyle='rgba(7,8,10,.7)';ctx.fillRect(0,0,W,26);
+  ctx.fillStyle='rgba(224,90,30,.7)';ctx.font='700 10px JetBrains Mono,monospace';
+  ctx.textAlign='left';ctx.fillText('SCORE: '+game.score,10,17);
+  ctx.textAlign='right';ctx.fillText('WAVE: '+game.wave,W-10,17);
+  ctx.restore();
+}
+function setOutput(msg){document.getElementById('outputBar').textContent=msg;}
+
+/* ══════════════════════════════════════════════════
+   STEP DATA — 25 Blueprint steps
+══════════════════════════════════════════════════ */
+const STEPS = [
+
+// ── STEP 1 ──────────────────────────────────────
+{
+  title:"Blueprint Actor & the Event Graph",
+  tag:"STEP 01 — BLUEPRINT ACTOR",
+  intro:`A <strong>Blueprint</strong> is a visual script attached to an Actor in Unreal. Open one and you see the <strong>Event Graph</strong> — a canvas of connected nodes. Every game object (player, enemy, bullet) gets its own Blueprint.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Event Graph — Your first Blueprint <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,130,
+    [
+      {type:'event',x:20,y:20,w:170,h:75,title:'Event BeginPlay',pins:[{side:'right',type:'exec',label:'',id:'bp1_out',connected:true}]},
+      {type:'print',x:230,y:20,w:200,h:75,title:'Print String',sub:'prints to screen',pins:[{side:'left',type:'exec',label:'',id:'bp1_in',connected:true},{side:'left',type:'string',label:'In String',id:'bp1_str',connected:false},{side:'right',type:'exec',label:'',id:'bp1_done'}],val:'"Hello, Unreal!"'},
+    ],
+    [['bp1_out','bp1_in','#ffffff']]
+  )}</div>
+  <div class="node-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#9e2b2b"></div>Event node</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#205020"></div>Function node</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffffff"></div>Exec wire (flow)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ee44aa"></div>String pin</div>
+  </div>
+</div>
+<div class="box box-ue">In UE5: right-click in the Content Browser → <strong>Blueprint Class</strong> → pick <strong>Character</strong> as the parent. Name it <strong>BP_TopDownCharacter</strong>. Double-click to open — you're in the Event Graph.</div>
+<div class="box box-concept">The <strong>white arrows</strong> are <strong>execution wires</strong> — they control order, like sentences in a script. When BeginPlay fires, it flows right through every connected node in sequence.</div>
+<div class="box box-vs"><strong>vs Unity:</strong> In Unity, Start() and Update() are methods you write in C#. In Blueprints, they're Event nodes you drag from a menu — no typing required.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Start the Engine!</button>
+`+nav(0),
+  onApply(){ game.running=true; setOutput('✅ Blueprint Actor loaded — Event Graph running! BeginPlay fired once.'); }
+},
+
+// ── STEP 2 ──────────────────────────────────────
+{
+  title:"Variables — Storing Data",
+  tag:"STEP 02 — VARIABLES",
+  intro:`In Blueprints, variables live in the <strong>My Variables</strong> panel on the left. Each has a <strong>type</strong>, a <strong>name</strong>, and an optional default value. Add a variable, tick <strong>Instance Editable</strong>, and it appears in the Details Panel in the editor.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Set Variable nodes — initialising values in BeginPlay <span class="bp-badge">Editable</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:10,y:40,w:160,h:70,title:'Event BeginPlay',pins:[{side:'right',type:'exec',label:'',id:'v_e',connected:true}]},
+      {type:'var_set',x:195,y:20,w:155,h:55,title:'Set Move Speed',pins:[{side:'left',type:'exec',label:'',id:'v_s1i',connected:true},{side:'left',type:'float',label:'Move Speed',id:'v_ms',connected:true},{side:'right',type:'exec',label:'',id:'v_s1o',connected:true}]},
+      {type:'var_set',x:375,y:20,w:130,h:55,title:'Set Health',pins:[{side:'left',type:'exec',label:'',id:'v_s2i',connected:true},{side:'left',type:'int',label:'Health',id:'v_hp',connected:true},{side:'right',type:'exec',label:'',id:'v_s2o'}]},
+      {type:'math',x:195,y:100,w:120,h:45,title:'Float Literal',val:'500',pins:[{side:'right',type:'float',label:'',id:'v_msv',connected:true}]},
+      {type:'math',x:375,y:100,w:100,h:45,title:'Int Literal',val:'100',pins:[{side:'right',type:'int',label:'',id:'v_hpv',connected:true}]},
+    ],
+    [['v_e','v_s1i','#fff'],['v_s1o','v_s2i','#fff'],['v_msv','v_ms','#88ee44'],['v_hpv','v_hp','#44aaee']]
+  )}</div>
+</div>
+<div class="code-area" style="margin:10px 0 4px">
+  <div class="bp-area-label">Tweak values <span class="bp-live">Live</span></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:#04060a;border:1px solid rgba(224,90,30,.12);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;align-items:center">
+    <label style="color:rgba(255,255,255,.5)">Move Speed: <input class="blank" id="moveSpeed" type="number" value="500" min="100" max="1200" style="--w:60px"></label>
+    <label style="color:rgba(255,255,255,.5)">Max Health: <input class="blank" id="maxHealth" type="number" value="100" min="50" max="300" style="--w:56px"></label>
+  </div>
+</div>
+<div class="box box-concept">Variable <strong>types</strong> in Blueprints: <strong>Float</strong> (decimals, green pin), <strong>Integer</strong> (whole numbers, blue pin), <strong>Boolean</strong> (true/false, red pin), <strong>String</strong> (text, pink pin), <strong>Vector</strong> (3D position, yellow pin). The pin colour tells you the type at a glance.</div>
+<div class="box box-tip">Tick <strong>"Instance Editable"</strong> on any variable to make it editable per-instance in the Details Panel — without touching the Blueprint. Great for tweaking enemy speed or health per-enemy type.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Set Variables!</button>
+`+nav(1),
+  onApply(){
+    game.playerSpeed=(parseFloat(document.getElementById('moveSpeed')?.value)||500)/100;
+    game.maxHealth=parseInt(document.getElementById('maxHealth')?.value)||100;
+    game.health=game.maxHealth;
+    game.playerEnabled=true;
+    document.getElementById('hudHealth').textContent=game.health;
+    setOutput('✅ Variables set! MoveSpeed='+game.playerSpeed.toFixed(1)+' — use WASD to move!');
+  }
+},
+
+// ── STEP 3 ──────────────────────────────────────
+{
+  title:"Event BeginPlay — Runs Once",
+  tag:"STEP 03 — BEGINPLAY",
+  intro:`<strong>Event BeginPlay</strong> fires <em>once</em> when the Actor enters the game. Use it for setup: adding input mapping contexts, spawning default weapons, starting music, or initialising variables.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">BeginPlay — Setup chain <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,140,
+    [
+      {type:'event',x:10,y:35,w:165,h:70,title:'Event BeginPlay',pins:[{side:'right',type:'exec',label:'',id:'bp_e',connected:true}]},
+      {type:'func',x:200,y:15,w:165,h:70,title:'Add Mapping Context',sub:'Enhanced Input',pins:[{side:'left',type:'exec',label:'',id:'bp_a',connected:true},{side:'left',type:'object',label:'Mapping Context',id:'bp_mc',connected:true},{side:'right',type:'exec',label:'',id:'bp_ao',connected:true}]},
+      {type:'var_get',x:200,y:100,w:135,h:40,title:'IMC_TopDown',pins:[{side:'right',type:'object',label:'',id:'bp_mcv',connected:true}]},
+      {type:'func',x:390,y:15,w:110,h:70,title:'Set Health',sub:'(self)',pins:[{side:'left',type:'exec',label:'',id:'bp_sh',connected:true},{side:'left',type:'int',label:'Max HP',id:'bp_mh',connected:false},{side:'right',type:'exec',label:'',id:'bp_sho'}]},
+    ],
+    [['bp_e','bp_a','#fff'],['bp_ao','bp_sh','#fff'],['bp_mcv','bp_mc','#4488ee']]
+  )}</div>
+</div>
+<div class="box box-concept">BeginPlay is called in this order: 1) the level loads, 2) all Actors are placed, 3) BeginPlay fires on each one. So by the time BeginPlay runs, other Actors you might reference already exist — it's safe to find and store references here.</div>
+<div class="box box-ue">In UE5 Enhanced Input: in BeginPlay, drag off the player controller → <strong>Get Enhanced Input Local Player Subsystem</strong> → <strong>Add Mapping Context</strong>. Set the variable to your IMC asset. Without this, no input works.</div>
+<div class="box box-tip">Right-click any empty space in the Event Graph → type "Begin" → select <strong>Event BeginPlay</strong>. You can only have <em>one</em> BeginPlay node per Blueprint — it's the single entry point for startup logic.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — BeginPlay Wired!</button>
+`+nav(2),
+  onApply(){ setOutput('✅ BeginPlay → Add Mapping Context → Set Health chain complete!'); }
+},
+
+// ── STEP 4 ──────────────────────────────────────
+{
+  title:"Event Tick — Runs Every Frame",
+  tag:"STEP 04 — EVENT TICK",
+  intro:`<strong>Event Tick</strong> fires <em>every frame</em> — about 60 times per second. It receives a <strong>Delta Seconds</strong> float: the time since the last frame. Always multiply movement by it to keep speed consistent regardless of frame rate.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Event Tick — Delta Seconds explained <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,145,
+    [
+      {type:'event',x:10,y:35,w:165,h:75,title:'Event Tick',sub:'runs ~60x/sec',pins:[{side:'right',type:'exec',label:'',id:'tk_e',connected:true},{side:'right',type:'float',label:'Delta Seconds',id:'tk_dt',connected:true}]},
+      {type:'math',x:205,y:15,w:130,h:55,title:'× (Multiply)',pins:[{side:'left',type:'float',label:'A',id:'tk_ma',connected:true},{side:'left',type:'float',label:'B',id:'tk_mb',connected:true},{side:'right',type:'float',label:'',id:'tk_mr',connected:true}],val:'MoveSpeed × dt'},
+      {type:'var_get',x:205,y:90,w:120,h:40,title:'Move Speed',pins:[{side:'right',type:'float',label:'',id:'tk_spd',connected:true}]},
+      {type:'func',x:360,y:15,w:140,h:75,title:'Add Movement Input',pins:[{side:'left',type:'exec',label:'',id:'tk_ami',connected:false},{side:'left',type:'float',label:'Scale',id:'tk_sc',connected:true},{side:'right',type:'exec',label:'',id:'tk_amo'}]},
+    ],
+    [['tk_dt','tk_ma','#88ee44'],['tk_spd','tk_mb','#88ee44'],['tk_mr','tk_sc','#88ee44']]
+  )}</div>
+</div>
+<div class="box box-concept"><strong>Delta Seconds</strong> at 60fps ≈ 0.016s. At 30fps ≈ 0.033s. Speed × Delta = <em>units per second</em>, not <em>per frame</em>. Without it: slow PCs move slower than fast PCs. With it: all players move identically.</div>
+<div class="box box-warn">Avoid heavy logic in Tick — it runs 60+ times per second. For things that only need to update occasionally (every second, or on an event), use <strong>Set Timer by Function Name</strong> instead. Saves CPU.</div>
+<div class="box box-tip">You can disable Tick on Actors that don't need it: in the Class Defaults, untick <strong>Start with Tick Enabled</strong>. Inactive enemies, pickups, and walls don't need to Tick — big performance win.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Tick Running!</button>
+`+nav(3),
+  onApply(){ setOutput('✅ Event Tick active — Delta Seconds keeps movement frame-rate independent!'); }
+},
+
+// ── STEP 5 ──────────────────────────────────────
+{
+  title:"Enhanced Input — Mapping Context",
+  tag:"STEP 05 — ENHANCED INPUT",
+  intro:`UE5 uses <strong>Enhanced Input</strong>. You create <strong>Input Actions</strong> (IA_Move, IA_Shoot) as assets in the Content Browser, then add them to an <strong>Input Mapping Context</strong> (IMC_TopDown) which maps physical keys to actions.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Input Action binding in the Event Graph <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,150,
+    [
+      {type:'event',x:10,y:15,w:180,h:80,title:'IA_Move (Triggered)',sub:'Enhanced Input Action',pins:[{side:'right',type:'exec',label:'',id:'ei_e',connected:true},{side:'right',type:'vec3',label:'Action Value',id:'ei_av',connected:true}]},
+      {type:'func',x:215,y:15,w:185,h:80,title:'Add Movement Input',sub:'(self)',pins:[{side:'left',type:'exec',label:'',id:'ei_a',connected:true},{side:'left',type:'vec3',label:'World Direction',id:'ei_wd',connected:true},{side:'left',type:'float',label:'Scale Value',id:'ei_sv',connected:false},{side:'right',type:'exec',label:'',id:'ei_ao'}]},
+      {type:'event',x:10,y:115,w:180,h:35,title:'IA_Shoot (Started)',pins:[{side:'right',type:'exec',label:'',id:'ei_se',connected:false}]},
+    ],
+    [['ei_e','ei_a','#fff'],['ei_av','ei_wd','#eebb44']]
+  )}</div>
+</div>
+<div class="box box-ue">In Content Browser: right-click → Input → <strong>Input Action</strong>. Set Value Type to <strong>Axis2D (Vector2D)</strong> for movement. Then right-click → Input → <strong>Input Mapping Context</strong>. Open it, add the IA_Move action, and bind WASD keys with modifiers.</div>
+<div class="box box-concept">Enhanced Input replaces the old GetAxis system. The advantage: players can <strong>remap controls</strong> at runtime, you can have multiple mapping contexts (gameplay vs menu vs vehicle), and you get trigger states (Started, Triggered, Completed) built-in.</div>
+<div class="box box-tip">Right-click in the Event Graph → search for your Input Action name (e.g. "IA_Move") → it appears as an event node. Drag the <strong>Action Value</strong> pin → <strong>Break Vector2D</strong> to get separate X and Y values.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Input Bound!</button>
+`+nav(4),
+  onApply(){ game.playerEnabled=true; setOutput('✅ Enhanced Input mapped — WASD / Arrow keys move the player!'); }
+},
+
+// ── STEP 6 ──────────────────────────────────────
+{
+  title:"Get Player Input — Reading Axes",
+  tag:"STEP 06 — INPUT AXES",
+  intro:`The <strong>IA_Move Action Value</strong> gives us a 2D vector. We <strong>Break</strong> it into X and Y, then feed each axis into <strong>Add Movement Input</strong> with a world direction. This is how WASD movement works.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Breaking input vector into X/Y axes <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'event',x:8,y:30,w:185,h:80,title:'IA_Move (Triggered)',pins:[{side:'right',type:'exec',label:'',id:'ax_e',connected:true},{side:'right',type:'vec3',label:'Action Value',id:'ax_av',connected:true}]},
+      {type:'func',x:215,y:10,w:140,h:50,title:'Break Vector2D',pins:[{side:'left',type:'vec3',label:'',id:'ax_bv',connected:true},{side:'right',type:'float',label:'X (right)',id:'ax_x',connected:true},{side:'right',type:'float',label:'Y (fwd)',id:'ax_y',connected:true}]},
+      {type:'func',x:375,y:10,w:135,h:50,title:'Add Mvmt Input',sub:'Right',pins:[{side:'left',type:'exec',label:'',id:'ax_ri',connected:true},{side:'left',type:'float',label:'Scale',id:'ax_rs',connected:true}]},
+      {type:'func',x:375,y:80,w:135,h:50,title:'Add Mvmt Input',sub:'Forward',pins:[{side:'left',type:'exec',label:'',id:'ax_fi',connected:false},{side:'left',type:'float',label:'Scale',id:'ax_fs',connected:true}]},
+    ],
+    [['ax_e','ax_ri','#fff'],['ax_av','ax_bv','#eebb44'],['ax_x','ax_rs','#88ee44'],['ax_y','ax_fs','#88ee44']]
+  )}</div>
+</div>
+<div class="box box-concept">The <strong>Break Vector2D</strong> node splits one pin into two. Similarly, <strong>Make Vector</strong> combines separate floats into a single vector pin. These "break" and "make" nodes exist for every struct type in Unreal.</div>
+<div class="box box-tip">For top-down, set the <strong>World Direction</strong> on the right Add Movement node to <code style="color:var(--ue-lt)">Get Actor Right Vector</code>, and the forward one to <code style="color:var(--ue-lt)">Get Actor Forward Vector</code>. This keeps movement relative to the camera.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Axes Reading!</button>
+`+nav(5),
+  onApply(){ game.playerEnabled=true; setOutput('✅ Input axes live! WASD drives AddMovementInput. Watch the engine glow!'); }
+},
+
+// ── STEP 7 ──────────────────────────────────────
+{
+  title:"Get Mouse World Location — Aim Point",
+  tag:"STEP 07 — MOUSE AIM",
+  intro:`For a top-down shooter the player aims at the cursor. We cast a line from the camera through the cursor position into the world and see where it hits the floor — that's our aim point.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Get mouse world position — deproject cursor to world <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:40,w:155,h:70,title:'Event Tick',pins:[{side:'right',type:'exec',label:'',id:'ma_e',connected:true}]},
+      {type:'func',x:185,y:15,w:195,h:80,title:'Get Hit Result Under Cursor',sub:'by Channel',pins:[{side:'left',type:'exec',label:'',id:'ma_a',connected:true},{side:'right',type:'exec',label:'',id:'ma_ao',connected:true},{side:'right',type:'bool',label:'bHit',id:'ma_hit',connected:true},{side:'right',type:'vec3',label:'Hit Location',id:'ma_loc',connected:true}]},
+      {type:'branch',x:400,y:15,w:110,h:70,title:'Branch',pins:[{side:'left',type:'exec',label:'',id:'ma_bi',connected:true},{side:'left',type:'bool',label:'Condition',id:'ma_bc',connected:true},{side:'right',type:'exec',label:'True',id:'ma_bt',connected:false}]},
+      {type:'var_set',x:185,y:115,w:175,h:40,title:'Set Aim Location',pins:[{side:'left',type:'exec',label:'',id:'ma_si',connected:false},{side:'left',type:'vec3',label:'Value',id:'ma_sv',connected:true}]},
+    ],
+    [['ma_e','ma_a','#fff'],['ma_ao','ma_bi','#fff'],['ma_hit','ma_bc','#dd2244'],['ma_loc','ma_sv','#eebb44']]
+  )}</div>
+</div>
+<div class="box box-ue">Node to use: right-click → search <strong>"Get Hit Result Under Cursor by Channel"</strong>. Set Channel to <strong>Visibility</strong>. This fires a ray from the screen into the world and returns what it hit — including the 3D location on the floor.</div>
+<div class="box box-concept">The <strong>Branch</strong> node is Blueprint's if/else. The <strong>Condition</strong> pin takes a Boolean — <code style="color:var(--ue-lt)">bHit</code> — and routes execution down the True or False path. We only update our aim if the cursor actually hit something.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Aim at Mouse!</button>
+`+nav(6),
+  onApply(){ game.aimEnabled=true; setOutput('✅ Mouse aim active — move cursor over the canvas, the ship rotates to face it!'); }
+},
+
+// ── STEP 8 ──────────────────────────────────────
+{
+  title:"Find Look at Rotation — Face the Mouse",
+  tag:"STEP 08 — LOOK AT",
+  intro:`Once we have the aim location, we use <strong>Find Look at Rotation</strong> to calculate the rotation needed to face that point. Then we set the Actor's rotation. Adding a <strong>RInterp To</strong> node makes it smooth.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Rotate character to face aim point <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'func',x:8,y:20,w:175,h:75,title:'Find Look at Rotation',pins:[{side:'left',type:'vec3',label:'Start',id:'la_s',connected:false},{side:'left',type:'vec3',label:'Target',id:'la_t',connected:true},{side:'right',type:'rot',label:'Return Value',id:'la_r',connected:true}]},
+      {type:'func',x:205,y:10,w:165,h:75,title:'RInterp To',sub:'smooth rotation',pins:[{side:'left',type:'rot',label:'Current',id:'ri_c',connected:false},{side:'left',type:'rot',label:'Target',id:'ri_t',connected:true},{side:'left',type:'float',label:'Speed',id:'ri_sp',connected:false},{side:'right',type:'rot',label:'',id:'ri_r',connected:true}],val:'Speed: 20'},
+      {type:'func',x:390,y:10,w:120,h:75,title:'Set Actor Rotation',pins:[{side:'left',type:'exec',label:'',id:'la_i',connected:false},{side:'left',type:'rot',label:'New Rotation',id:'la_nr',connected:true},{side:'right',type:'exec',label:'',id:'la_o'}]},
+      {type:'var_get',x:8,y:115,w:125,h:35,title:'Aim Location',pins:[{side:'right',type:'vec3',label:'',id:'la_tv',connected:true}]},
+    ],
+    [['la_r','ri_t','#aaccff'],['ri_r','la_nr','#aaccff'],['la_tv','la_t','#eebb44']]
+  )}</div>
+</div>
+<div class="box box-concept"><strong>Find Look at Rotation</strong> returns a <strong>Rotator</strong> (Pitch, Yaw, Roll). For a top-down game we only care about <strong>Yaw</strong> (left/right rotation). Use a <strong>Break Rotator</strong> → <strong>Make Rotator</strong> to zero out Pitch and Roll.</div>
+<div class="box box-tip"><strong>RInterp To</strong> smoothly moves from Current toward Target each frame at the given Speed. Speed 5 = lazy follow, Speed 20 = snappy. This makes aiming feel responsive rather than instant teleport.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Facing Mouse!</button>
+`+nav(7),
+  onApply(){ setOutput('✅ Find Look at Rotation → Set Actor Rotation — character faces cursor!'); }
+},
+
+// ── STEP 9 ──────────────────────────────────────
+{
+  title:"Branch Node — If/Else Logic",
+  tag:"STEP 09 — BRANCH",
+  intro:`<strong>Branch</strong> is Blueprint's if/else. Feed it a Boolean and execution flows down <strong>True</strong> or <strong>False</strong>. You can chain Branches for complex conditions — the AND and OR nodes combine Booleans before the Branch.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Branch + AND — fire only when all conditions met <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,165,
+    [
+      {type:'event',x:8,y:55,w:150,h:65,title:'Event Tick',pins:[{side:'right',type:'exec',label:'',id:'br_e',connected:true}]},
+      {type:'func',x:180,y:30,w:110,h:90,title:'AND Boolean',pins:[{side:'left',type:'bool',label:'A',id:'br_aa',connected:true},{side:'left',type:'bool',label:'B',id:'br_ab',connected:true},{side:'left',type:'bool',label:'C',id:'br_ac',connected:true},{side:'right',type:'bool',label:'',id:'br_and',connected:true}]},
+      {type:'branch',x:315,y:35,w:110,h:75,title:'Branch',pins:[{side:'left',type:'exec',label:'',id:'br_bi',connected:true},{side:'left',type:'bool',label:'Condition',id:'br_bc',connected:true},{side:'right',type:'exec',label:'True',id:'br_bt',connected:true},{side:'right',type:'exec',label:'False',id:'br_bf'}]},
+      {type:'func',x:445,y:20,w:70,h:40,title:'Fire Bullet',pins:[{side:'left',type:'exec',label:'',id:'br_fi',connected:true}]},
+      {type:'var_get',x:8,y:15,w:130,h:35,title:'Is Fire Pressed',pins:[{side:'right',type:'bool',label:'',id:'br_fp',connected:true}]},
+      {type:'func',x:8,y:65,w:145,h:35,title:'FireTimer ≥ FireRate',pins:[{side:'right',type:'bool',label:'',id:'br_fr',connected:true}]},
+      {type:'var_get',x:8,y:118,w:100,h:35,title:'Is Alive',pins:[{side:'right',type:'bool',label:'',id:'br_al',connected:true}]},
+    ],
+    [['br_e','br_bi','#fff'],['br_bt','br_fi','#fff'],['br_and','br_bc','#dd2244'],['br_fp','br_aa','#dd2244'],['br_fr','br_ab','#dd2244'],['br_al','br_ac','#dd2244']]
+  )}</div>
+</div>
+<div class="box box-concept"><strong>AND Boolean</strong> returns True only if <em>all</em> inputs are True. <strong>OR Boolean</strong> returns True if <em>any</em> input is True. Chain them to build complex conditions without deeply nested Branches.</div>
+<div class="box box-tip">You can collapse any selection of nodes into a <strong>collapsed graph</strong> or a <strong>Macro</strong> to keep your graph clean. Right-click a selection → <strong>Collapse Nodes</strong>. Great for the fire logic once it gets complex.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Branch Logic!</button>
+`+nav(8),
+  onApply(){ game.shootEnabled=true; setOutput('✅ Branch active — fires only when: button held AND timer ready AND alive!'); }
+},
+
+// ── STEP 10 ──────────────────────────────────────
+{
+  title:"Gate Node — Fire Rate Limiter",
+  tag:"STEP 10 — GATE",
+  intro:`The <strong>Gate</strong> node controls execution flow — it can be <em>opened</em> and <em>closed</em>. Combined with a <strong>Delay</strong>, it's the cleanest way to build a fire rate limiter: open the gate, fire, delay, then open again.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Gate + Delay — fire rate limiter pattern <span class="bp-badge">Editable</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:40,w:165,h:65,title:'IA_Shoot (Triggered)',pins:[{side:'right',type:'exec',label:'',id:'gt_e',connected:true}]},
+      {type:'macro',x:195,y:20,w:90,h:75,title:'Gate',pins:[{side:'left',type:'exec',label:'Enter',id:'gt_i',connected:true},{side:'left',type:'exec',label:'Open',id:'gt_op',connected:false},{side:'left',type:'exec',label:'Close',id:'gt_cl',connected:true},{side:'right',type:'exec',label:'Exit',id:'gt_x',connected:true}]},
+      {type:'custom',x:305,y:20,w:115,h:50,title:'Fire Bullet',sub:'Custom Event',pins:[{side:'left',type:'exec',label:'',id:'gt_fb',connected:true},{side:'right',type:'exec',label:'',id:'gt_fbo',connected:true}]},
+      {type:'func',x:305,y:90,w:130,h:50,title:'Delay',pins:[{side:'left',type:'exec',label:'',id:'gt_di',connected:true},{side:'left',type:'float',label:'Duration',id:'gt_dd',connected:false},{side:'right',type:'exec',label:'Completed',id:'gt_dc',connected:true}],val:'0.2'},
+      {type:'macro',x:455,y:90,w:55,h:50,title:'Open Gate',pins:[{side:'left',type:'exec',label:'',id:'gt_oi',connected:true}]},
+    ],
+    [['gt_e','gt_i','#fff'],['gt_x','gt_fb','#fff'],['gt_fbo','gt_di','#fff'],['gt_dc','gt_oi','#fff']]
+  )}</div>
+</div>
+<div class="code-area" style="margin:10px 0 4px">
+  <div class="bp-area-label">Tweak values <span class="bp-live">Live</span></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:#04060a;border:1px solid rgba(224,90,30,.12);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;align-items:center">
+    <label style="color:rgba(255,255,255,.5)">Fire Rate (sec): <input class="blank" id="fireRate" type="number" value="0.2" min="0.05" max="1.0" step="0.05" style="--w:56px"></label>
+  </div>
+</div>
+<div class="box box-concept">The <strong>Gate</strong> starts <em>closed</em> — execution enters but nothing exits. When you Open it, the next Enter pulse passes through as Exit. This is cleaner than a boolean + Branch for one-shot timing patterns.</div>
+<div class="box box-tip">The fire rate delay above controls how fast the player shoots in the preview — try lowering it to 0.05 for a rapid-fire machine gun feel!</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Fire Rate Set!</button>
+`+nav(9),
+  onApply(){
+    game.fireRate=parseFloat(document.getElementById('fireRate')?.value)||0.2;
+    setOutput('✅ Gate + Delay fire limiter — rate: '+game.fireRate+'s. SPACE or LMB to shoot!');
+  }
+},
+
+// ── STEP 11 ──────────────────────────────────────
+{
+  title:"Spawn Actor from Class — Bullets",
+  tag:"STEP 11 — SPAWN ACTOR",
+  intro:`<strong>Spawn Actor from Class</strong> is the Blueprint equivalent of creating a new object — for bullets, enemies, explosions, anything. You pass a class, a transform, and Unreal creates it in the world.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Spawn Actor from Class — firing a bullet <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'custom',x:8,y:30,w:125,h:65,title:'Fire Bullet',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'sa_e',connected:true}]},
+      {type:'func',x:155,y:10,w:185,h:90,title:'Spawn Actor from Class',pins:[{side:'left',type:'exec',label:'',id:'sa_i',connected:true},{side:'left',type:'class',label:'Class',id:'sa_cl',connected:true},{side:'left',type:'vec3',label:'Spawn Transform',id:'sa_tr',connected:true},{side:'right',type:'exec',label:'',id:'sa_o',connected:true},{side:'right',type:'actor',label:'Return Value',id:'sa_ret',connected:false}]},
+      {type:'var_get',x:8,y:110,w:115,h:35,title:'Bullet Class',sub:'(BP_Bullet)',pins:[{side:'right',type:'class',label:'',id:'sa_bcl',connected:true}]},
+      {type:'func',x:360,y:70,w:140,h:55,title:'Make Transform',pins:[{side:'left',type:'vec3',label:'Location',id:'sa_tl',connected:false},{side:'left',type:'rot',label:'Rotation',id:'sa_tr2',connected:false},{side:'right',type:'vec3',label:'',id:'sa_tm',connected:true}]},
+    ],
+    [['sa_e','sa_i','#fff'],['sa_bcl','sa_cl','#ee9922'],['sa_tm','sa_tr','#eebb44']]
+  )}</div>
+</div>
+<div class="box box-ue">Create a new Blueprint Class (parent: <strong>Actor</strong>), name it <strong>BP_Bullet</strong>. Add a <strong>Static Mesh Component</strong> (a small sphere) and a <strong>Projectile Movement Component</strong>. Back in BP_TopDownCharacter, make a variable of type <strong>BP_Bullet (class ref)</strong> and assign it.</div>
+<div class="box box-concept">The <strong>Class</strong> pin takes a class <em>reference</em> (the Blueprint itself), not an instance. Think of it like a cookie cutter — you pass the cutter shape, and SpawnActor stamps out a new cookie at the given position.</div>
+<div class="box box-tip">For the spawn transform, use <strong>Get Actor Transform</strong> + <strong>Get Forward Vector</strong> × 50 to place the bullet slightly in front of the muzzle, not inside the player's own collider.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Spawning Bullets!</button>
+`+nav(10),
+  onApply(){ setOutput('✅ Spawn Actor from Class — bullets spawning at muzzle, flying toward aim!'); }
+},
+
+// ── STEP 12 ──────────────────────────────────────
+{
+  title:"Projectile Movement Component",
+  tag:"STEP 12 — PROJECTILE",
+  intro:`Add a <strong>Projectile Movement Component</strong> to BP_Bullet. It handles velocity, gravity, and bouncing automatically — no manual movement in Tick needed. Just set the speed and let it fly.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">BP_Bullet — Projectile Movement Component setup <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:40,w:160,h:65,title:'Event BeginPlay',sub:'(in BP_Bullet)',pins:[{side:'right',type:'exec',label:'',id:'pm_e',connected:true}]},
+      {type:'func',x:190,y:15,w:175,h:75,title:'Set Initial Speed',sub:'Projectile Movement',pins:[{side:'left',type:'exec',label:'',id:'pm_i',connected:true},{side:'left',type:'float',label:'New Speed',id:'pm_spd',connected:true},{side:'right',type:'exec',label:'',id:'pm_o',connected:true}]},
+      {type:'func',x:385,y:15,w:125,h:55,title:'Set Velocity',sub:'Projectile',pins:[{side:'left',type:'exec',label:'',id:'pm_vi',connected:true},{side:'right',type:'exec',label:'',id:'pm_vo'}]},
+      {type:'math',x:190,y:115,w:170,h:40,title:'Float Literal',val:'1500',pins:[{side:'right',type:'float',label:'',id:'pm_spdv',connected:true}]},
+    ],
+    [['pm_e','pm_i','#fff'],['pm_o','pm_vi','#fff'],['pm_spdv','pm_spd','#88ee44']]
+  )}</div>
+</div>
+<div class="code-area" style="margin:10px 0 4px">
+  <div class="bp-area-label">Tweak values <span class="bp-live">Live</span></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:#04060a;border:1px solid rgba(224,90,30,.12);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;align-items:center">
+    <label style="color:rgba(255,255,255,.5)">Bullet Speed (UU/s): <input class="blank" id="bulletSpeed" type="number" value="1500" min="400" max="3000" style="--w:64px"></label>
+  </div>
+</div>
+<div class="box box-ue">In BP_Bullet's Components panel: click <strong>Add Component</strong> → search <strong>Projectile Movement</strong>. In its Details: set <strong>Initial Speed</strong> and <strong>Max Speed</strong> to the same value, set <strong>Projectile Gravity Scale</strong> to 0 (top-down = no gravity), tick <strong>Rotation Follows Velocity</strong>.</div>
+<div class="box box-tip">Set <strong>Initial Life Span</strong> on BP_Bullet (in Class Defaults → Actor → Initial Life Span) to 2.0 seconds. This auto-destroys bullets that miss — no memory leaks, no cleanup code needed.</div>
+<div class="box box-concept">Components are modular — the same Projectile Movement component can be added to arrows, missiles, grenades. Changing behaviour is swapping or configuring a component, not rewriting logic.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Bullets Flying!</button>
+`+nav(11),
+  onApply(){
+    game.bulletSpeed=(parseFloat(document.getElementById('bulletSpeed')?.value)||1500)/150;
+    setOutput('✅ Projectile Movement active! Bullets fire toward aim at '+document.getElementById('bulletSpeed').value+' UU/s');
+  }
+},
+
+// ── STEP 13 ──────────────────────────────────────
+{
+  title:"On Actor Begin Overlap — Collision",
+  tag:"STEP 13 — OVERLAP",
+  intro:`When BP_Bullet hits something, Unreal fires <strong>On Actor Begin Overlap</strong>. We use a <strong>Cast To</strong> node to check if the thing we hit is an enemy — and if so, deal damage.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">BP_Bullet overlap — detect and damage enemy <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:25,w:195,h:75,title:'On Actor Begin Overlap',sub:'(in BP_Bullet)',pins:[{side:'right',type:'exec',label:'',id:'ov_e',connected:true},{side:'right',type:'actor',label:'Other Actor',id:'ov_oa',connected:true}]},
+      {type:'cast',x:225,y:10,w:150,h:75,title:'Cast to BP_Enemy',pins:[{side:'left',type:'exec',label:'',id:'ov_ci',connected:true},{side:'left',type:'actor',label:'Object',id:'ov_co',connected:true},{side:'right',type:'exec',label:'Success',id:'ov_cs',connected:true},{side:'right',type:'exec',label:'Fail',id:'ov_cf'},{side:'right',type:'actor',label:'BP_Enemy',id:'ov_ce',connected:true}]},
+      {type:'func',x:392,y:10,w:120,h:55,title:'Apply Damage',pins:[{side:'left',type:'exec',label:'',id:'ov_di',connected:true},{side:'left',type:'actor',label:'Damaged Actor',id:'ov_da',connected:true},{side:'right',type:'exec',label:'',id:'ov_do',connected:true}]},
+      {type:'func',x:392,y:85,w:110,h:45,title:'Destroy Actor',sub:'(self = bullet)',pins:[{side:'left',type:'exec',label:'',id:'ov_dest',connected:true}]},
+    ],
+    [['ov_e','ov_ci','#fff'],['ov_cs','ov_di','#fff'],['ov_do','ov_dest','#fff'],['ov_oa','ov_co','#ee6622'],['ov_ce','ov_da','#ee6622']]
+  )}</div>
+</div>
+<div class="box box-ue">For overlaps to fire: on BP_Bullet's collision component set <strong>Collision Preset</strong> to <strong>OverlapAllDynamic</strong>. On BP_Enemy set to <strong>BlockAll</strong>. Both objects need generate overlap events ticked on.</div>
+<div class="box box-concept"><strong>Cast To</strong> checks if an Actor is a specific Blueprint type. If the cast <em>succeeds</em>, the Success execution pin fires and you get a typed reference on the right. If it fails (it's a wall, not an enemy), the Fail pin fires and you can handle that separately.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Collisions Active!</button>
+`+nav(12),
+  onApply(){ game.collisionEnabled=true; setOutput('✅ On Actor Begin Overlap — Cast To BP_Enemy — Apply Damage — Destroy Bullet!'); }
+},
+
+// ── STEP 14 ──────────────────────────────────────
+{
+  title:"Apply Damage & Event Any Damage",
+  tag:"STEP 14 — DAMAGE SYSTEM",
+  intro:`Unreal has a built-in damage pipeline. <strong>Apply Damage</strong> sends damage to an actor; if that actor has <strong>Event Any Damage</strong> in its Blueprint, it fires automatically. This keeps the sender and receiver decoupled.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">BP_Enemy — receiving damage and dying <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'event',x:8,y:20,w:175,h:75,title:'Event Any Damage',sub:'(in BP_Enemy)',pins:[{side:'right',type:'exec',label:'',id:'ad_e',connected:true},{side:'right',type:'float',label:'Damage',id:'ad_dmg',connected:true}]},
+      {type:'math',x:205,y:10,w:110,h:50,title:'− (Subtract)',pins:[{side:'left',type:'int',label:'A',id:'ad_ha',connected:true},{side:'left',type:'float',label:'B',id:'ad_hb',connected:true},{side:'right',type:'int',label:'',id:'ad_hr',connected:true}]},
+      {type:'var_set',x:335,y:10,w:115,h:50,title:'Set Health',pins:[{side:'left',type:'exec',label:'',id:'ad_si',connected:true},{side:'left',type:'int',label:'Health',id:'ad_sv',connected:true},{side:'right',type:'exec',label:'',id:'ad_so',connected:true}]},
+      {type:'branch',x:200,y:85,w:110,h:60,title:'Branch',sub:'Health ≤ 0?',pins:[{side:'left',type:'exec',label:'',id:'ad_bi',connected:true},{side:'left',type:'bool',label:'Cond',id:'ad_bc',connected:false},{side:'right',type:'exec',label:'True',id:'ad_bt',connected:true}]},
+      {type:'func',x:330,y:95,w:95,h:45,title:'Destroy Actor',sub:'(self)',pins:[{side:'left',type:'exec',label:'',id:'ad_di',connected:true}]},
+      {type:'var_get',x:8,y:80,w:90,h:35,title:'Health',pins:[{side:'right',type:'int',label:'',id:'ad_hv',connected:true}]},
+    ],
+    [['ad_e','ad_si','#fff'],['ad_so','ad_bi','#fff'],['ad_bt','ad_di','#fff'],['ad_hv','ad_ha','#44aaee'],['ad_dmg','ad_hb','#88ee44'],['ad_hr','ad_sv','#44aaee']]
+  )}</div>
+</div>
+<div class="box box-concept">The damage pipeline: Bullet → <strong>Apply Damage</strong>(Enemy, 1.0) → Unreal routes it → Enemy's <strong>Event Any Damage</strong> fires. The bullet doesn't know how the enemy handles damage. The enemy doesn't know what hit it. Clean separation.</div>
+<div class="box box-tip">For different damage types (fire, explosion, poison), use <strong>Apply Point Damage</strong> or <strong>Apply Radial Damage</strong> instead. These provide hit location and direction — useful for knock-back and directional effects.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Damage System!</button>
+`+nav(13),
+  onApply(){ game.enemyEnabled=true; spawnEnemies(3,'grunt'); game.wave=1; document.getElementById('hudWave').textContent=1; setOutput('✅ Apply Damage → Event Any Damage → subtract health → destroy when 0!'); }
+},
+
+// ── STEP 15 ──────────────────────────────────────
+{
+  title:"Custom Events — TakeDamage & OnDeath",
+  tag:"STEP 15 — CUSTOM EVENTS",
+  intro:`<strong>Custom Events</strong> are functions you define and call yourself. Use them to organise logic into named chunks — <strong>TakeDamage</strong>, <strong>OnDeath</strong>, <strong>SpawnPickup</strong>. You can also call them from <em>other</em> Blueprints.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Custom Events — organising enemy logic <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'custom',x:8,y:10,w:160,h:65,title:'On Death',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'ce_de',connected:true}]},
+      {type:'func',x:190,y:10,w:115,h:45,title:'Spawn Niagara',sub:'at Location',pins:[{side:'left',type:'exec',label:'',id:'ce_ni',connected:true},{side:'right',type:'exec',label:'',id:'ce_no',connected:true}]},
+      {type:'func',x:325,y:10,w:100,h:45,title:'Play Sound',sub:'at Location',pins:[{side:'left',type:'exec',label:'',id:'ce_si',connected:true},{side:'right',type:'exec',label:'',id:'ce_so',connected:true}]},
+      {type:'func',x:440,y:10,w:75,h:45,title:'Destroy',pins:[{side:'left',type:'exec',label:'',id:'ce_di',connected:true}]},
+      {type:'custom',x:8,y:100,w:175,h:55,title:'Grant Score',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'ce_ge',connected:true},{side:'right',type:'int',label:'Amount',id:'ce_ga',connected:false}]},
+      {type:'func',x:205,y:100,w:155,h:55,title:'Get Player Character',sub:'→ Cast → Add Score',pins:[{side:'left',type:'exec',label:'',id:'ce_gi',connected:true}]},
+    ],
+    [['ce_de','ce_ni','#fff'],['ce_no','ce_si','#fff'],['ce_so','ce_di','#fff'],['ce_ge','ce_gi','#fff']]
+  )}</div>
+</div>
+<div class="box box-ue">Right-click in the Event Graph → <strong>Add Custom Event</strong>. Give it a name. You can add <strong>input pins</strong> (like Amount for score) in the Details panel. Call it from anywhere in this Blueprint by typing its name in a function call node.</div>
+<div class="box box-concept">Custom Events can be called from <em>other</em> Blueprints too: get a reference to the Actor → drag off it → search for the event name. This is how the Game Mode tells the player they've won, or how a pickup gives the player a power-up.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Custom Events!</button>
+`+nav(14),
+  onApply(){ game.fxEnabled=true; setOutput('✅ Custom Events: OnDeath spawns particles + sound + destroy. Score granted to player!'); }
+},
+
+// ── STEP 16 ──────────────────────────────────────
+{
+  title:"Cast To — Checking Actor Types",
+  tag:"STEP 16 — CAST TO",
+  intro:`<strong>Cast To</strong> checks whether an Actor reference is a specific Blueprint type — like asking "are you an enemy?" You'll use it constantly: in overlaps, in loops, when getting references from the world.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Cast To — three common patterns <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'func',x:8,y:10,w:155,h:55,title:'Get Player Character',pins:[{side:'right',type:'actor',label:'Return',id:'ct_pc',connected:true}]},
+      {type:'cast',x:185,y:10,w:165,h:75,title:'Cast to BP_TopDownChar',pins:[{side:'left',type:'exec',label:'',id:'ct_ci',connected:false},{side:'left',type:'actor',label:'Object',id:'ct_co',connected:true},{side:'right',type:'exec',label:'Success',id:'ct_cs',connected:true},{side:'right',type:'actor',label:'As BP_TopDown',id:'ct_ca',connected:true}]},
+      {type:'func',x:370,y:10,w:140,h:55,title:'Add Score',sub:'(on player)',pins:[{side:'left',type:'exec',label:'',id:'ct_as',connected:true},{side:'left',type:'actor',label:'Target',id:'ct_at',connected:true}]},
+      {type:'event',x:8,y:110,w:195,h:50,title:'On Actor Begin Overlap',pins:[{side:'right',type:'exec',label:'',id:'ct_oe',connected:false},{side:'right',type:'actor',label:'Other Actor',id:'ct_oa',connected:false}]},
+    ],
+    [['ct_pc','ct_co','#ee6622'],['ct_cs','ct_as','#fff'],['ct_ca','ct_at','#ee6622']]
+  )}</div>
+</div>
+<div class="box box-concept">Cast To is like asking: "Is this Actor secretly a BP_TopDownCharacter?" If yes, the Success pin fires and you get a <strong>typed reference</strong> — you can now access all of that Blueprint's custom variables and functions. If no, the Fail pin fires.</div>
+<div class="box box-warn">Casting has a small performance cost. For high-frequency Tick logic, cache the cast result in a variable (Cast once in BeginPlay, store the typed reference). Casting every frame in a loop with many actors adds up.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Cast To Active!</button>
+`+nav(15),
+  onApply(){ setOutput('✅ Cast To — typed references unlocked. Player score updated correctly!'); }
+},
+
+// ── STEP 17 ──────────────────────────────────────
+{
+  title:"Arrays — Managing Enemy Lists",
+  tag:"STEP 17 — ARRAYS",
+  intro:`An <strong>Array</strong> is a list of values. Create an Array variable (e.g. <em>Active Enemies</em> of type BP_Enemy Object Reference) to track all living enemies — then you can count them, loop over them, and remove dead ones.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Array nodes — Add, Get, Remove, Length <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'func',x:8,y:10,w:130,h:50,title:'Add (Array)',sub:'Active Enemies',pins:[{side:'left',type:'exec',label:'',id:'ar_ai',connected:false},{side:'left',type:'actor',label:'New Item',id:'ar_an',connected:false},{side:'right',type:'exec',label:'',id:'ar_ao',connected:true}]},
+      {type:'func',x:160,y:10,w:130,h:50,title:'Length (Array)',sub:'Active Enemies',pins:[{side:'right',type:'int',label:'Return',id:'ar_len',connected:true}]},
+      {type:'func',x:310,y:10,w:100,h:50,title:'≤ (Int)',pins:[{side:'left',type:'int',label:'A',id:'ar_la',connected:true},{side:'left',type:'int',label:'B',id:'ar_lb',connected:false},{side:'right',type:'bool',label:'',id:'ar_cmp',connected:true}],val:'< Max'},
+      {type:'branch',x:425,y:10,w:85,h:50,title:'Branch',pins:[{side:'left',type:'exec',label:'',id:'ar_bi',connected:false},{side:'left',type:'bool',label:'',id:'ar_bc',connected:true},{side:'right',type:'exec',label:'T',id:'ar_bt',connected:false}]},
+      {type:'func',x:8,y:90,w:140,h:55,title:'Remove Index',sub:'Active Enemies',pins:[{side:'left',type:'exec',label:'',id:'ar_ri',connected:false},{side:'left',type:'int',label:'Index',id:'ar_rix',connected:false},{side:'right',type:'exec',label:'',id:'ar_ro'}]},
+      {type:'func',x:170,y:90,w:145,h:55,title:'Get (Array)',sub:'Active Enemies',pins:[{side:'left',type:'int',label:'Index',id:'ar_gi',connected:false},{side:'right',type:'actor',label:'Return',id:'ar_gr',connected:false}]},
+      {type:'func',x:330,y:90,w:85,h:55,title:'Clear Array',sub:'Active Enemies',pins:[{side:'left',type:'exec',label:'',id:'ar_ci',connected:false}]},
+    ],
+    [['ar_len','ar_la','#44aaee'],['ar_cmp','ar_bc','#dd2244']]
+  )}</div>
+</div>
+<div class="box box-concept">To make an Array variable: in My Variables, click the <strong>+</strong>, set type, then click the <strong>Variable Type</strong> dropdown and pick <strong>Array</strong> (grid icon). You'll see Array nodes appear when you drag from it: Add, Get, Set, Remove, Length, Contains, Find.</div>
+<div class="box box-tip">Use <strong>Remove Item</strong> (by value) rather than Remove Index when you have a reference to the thing you want to remove — no need to know its position in the array.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Arrays Active!</button>
+`+nav(16),
+  onApply(){ setOutput('✅ Array tracking '+game.enemies.length+' active enemies. Add/Remove/Length all wired!'); }
+},
+
+// ── STEP 18 ──────────────────────────────────────
+{
+  title:"For Each Loop — Iterating Enemies",
+  tag:"STEP 18 — FOR EACH LOOP",
+  intro:`<strong>For Each Loop</strong> visits every item in an Array one at a time. The <strong>Loop Body</strong> pin fires once per item; <strong>Completed</strong> fires when it's done. Essential for updating all enemies, checking proximity, or clearing dead actors.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">For Each Loop — update all active enemies <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,160,
+    [
+      {type:'event',x:8,y:40,w:150,h:65,title:'Event Tick',pins:[{side:'right',type:'exec',label:'',id:'fe_e',connected:true}]},
+      {type:'func',x:180,y:15,w:170,h:90,title:'For Each Loop',sub:'Active Enemies',pins:[{side:'left',type:'exec',label:'',id:'fe_i',connected:true},{side:'left',type:'actor',label:'Array',id:'fe_arr',connected:false},{side:'right',type:'exec',label:'Loop Body',id:'fe_lb',connected:true},{side:'right',type:'actor',label:'Array Element',id:'fe_el',connected:true},{side:'right',type:'exec',label:'Completed',id:'fe_done'}]},
+      {type:'cast',x:370,y:15,w:140,h:65,title:'Cast to BP_Enemy',pins:[{side:'left',type:'exec',label:'',id:'fe_ci',connected:true},{side:'left',type:'actor',label:'Object',id:'fe_co',connected:true},{side:'right',type:'exec',label:'Success',id:'fe_cs',connected:true},{side:'right',type:'actor',label:'Enemy',id:'fe_ce',connected:true}]},
+      {type:'func',x:370,y:100,w:140,h:50,title:'Is Valid?',sub:'(not destroyed)',pins:[{side:'left',type:'actor',label:'Object',id:'fe_vi',connected:false},{side:'right',type:'bool',label:'Is Valid',id:'fe_vr',connected:false}]},
+    ],
+    [['fe_e','fe_i','#fff'],['fe_lb','fe_ci','#fff'],['fe_el','fe_co','#ee6622']]
+  )}</div>
+</div>
+<div class="box box-concept">Always check <strong>Is Valid</strong> before using a stored reference inside a loop — an Actor might have been destroyed since it was added to the array. Invalid references will crash if you try to call functions on them.</div>
+<div class="box box-tip">To remove dead enemies from the array during a For Each Loop, collect them into a temporary <em>To Remove</em> array during the loop, then loop over <em>that</em> array and call Remove Item after. Never modify an array you're currently looping over.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Loop Active!</button>
+`+nav(17),
+  onApply(){ setOutput('✅ For Each Loop — iterating '+game.enemies.length+' enemies. Is Valid checked!'); }
+},
+
+// ── STEP 19 ──────────────────────────────────────
+{
+  title:"Select Node — Enemy Type Branching",
+  tag:"STEP 19 — SELECT NODE",
+  intro:`The <strong>Select</strong> node picks one output value from many based on an input — like a switch statement. Combined with an <strong>Enum</strong> variable for enemy type, it's a clean way to set different speeds, health, and colours per type.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Select + Enum — set speed based on enemy type <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,165,
+    [
+      {type:'var_get',x:8,y:30,w:120,h:40,title:'Enemy Type',sub:'(EEnemyType)',pins:[{side:'right',type:'int',label:'',id:'sel_et',connected:true}]},
+      {type:'func',x:155,y:10,w:175,h:130,title:'Select (Float)',sub:'by EEnemyType',pins:[{side:'left',type:'int',label:'Index',id:'sel_i',connected:true},{side:'left',type:'float',label:'Grunt',id:'sel_g',connected:false},{side:'left',type:'float',label:'Runner',id:'sel_r',connected:false},{side:'left',type:'float',label:'Tank',id:'sel_t',connected:false},{side:'right',type:'float',label:'Return',id:'sel_out',connected:true}],val:'300 / 550 / 160'},
+      {type:'func',x:350,y:40,w:155,h:65,title:'Set Max Walk Speed',sub:'Character Movement',pins:[{side:'left',type:'exec',label:'',id:'sel_si',connected:false},{side:'left',type:'float',label:'New Max Speed',id:'sel_spd',connected:true},{side:'right',type:'exec',label:'',id:'sel_so'}]},
+    ],
+    [['sel_et','sel_i','#44aaee'],['sel_out','sel_spd','#88ee44']]
+  )}</div>
+</div>
+<div class="box box-ue">To use Enum types: in Content Browser → right-click → Blueprint → <strong>Enumeration</strong>. Name it <strong>EEnemyType</strong>. Add entries: Grunt, Runner, Tank, Shooter. Then in BP_Enemy, create a variable of this enum type. The Select node's options auto-populate from the enum values.</div>
+<div class="box box-concept"><strong>Select</strong> is a pure data node — it has no execution pins. It just outputs the right value. Much cleaner than chaining multiple Branch nodes to pick a number. Use it whenever you need to pick one of N values based on a condition.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Enum Types!</button>
+`+nav(18),
+  onApply(){ setOutput('✅ Select node — Grunt/Runner/Tank get different speeds automatically!'); }
+},
+
+// ── STEP 20 ──────────────────────────────────────
+{
+  title:"Set Timer by Function Name — Wave Spawner",
+  tag:"STEP 20 — TIMER",
+  intro:`<strong>Set Timer by Function Name</strong> calls a function after N seconds — and can repeat. It's the Blueprint equivalent of a repeating coroutine. Perfect for wave spawning: call SpawnWave every 8 seconds forever.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Timer — repeating wave spawner <span class="bp-badge">Editable</span></div>
+  <div class="bp-graph">${makeBPGraph(520,165,
+    [
+      {type:'event',x:8,y:40,w:155,h:65,title:'Event BeginPlay',sub:'(BP_WaveSpawner)',pins:[{side:'right',type:'exec',label:'',id:'tm_e',connected:true}]},
+      {type:'func',x:185,y:15,w:200,h:95,title:'Set Timer by Fn Name',pins:[{side:'left',type:'exec',label:'',id:'tm_i',connected:true},{side:'left',type:'object',label:'Object',id:'tm_obj',connected:false},{side:'left',type:'string',label:'Function Name',id:'tm_fn',connected:false},{side:'left',type:'float',label:'Time',id:'tm_t',connected:true},{side:'left',type:'bool',label:'Looping',id:'tm_l',connected:false},{side:'right',type:'exec',label:'',id:'tm_o',connected:false}],val:'"SpawnWave" / Loop'},
+      {type:'math',x:8,y:125,w:145,h:40,title:'Wave Interval (sec)',val:'8',pins:[{side:'right',type:'float',label:'',id:'tm_tv',connected:true}]},
+      {type:'custom',x:395,y:50,w:110,h:65,title:'Spawn Wave',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'tm_sw',connected:true}]},
+    ],
+    [['tm_e','tm_i','#fff'],['tm_tv','tm_t','#88ee44']]
+  )}</div>
+</div>
+<div class="code-area" style="margin:10px 0 4px">
+  <div class="bp-area-label">Tweak values <span class="bp-live">Live</span></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;background:#04060a;border:1px solid rgba(224,90,30,.12);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;align-items:center">
+    <label style="color:rgba(255,255,255,.5)">Wave Interval (sec): <input class="blank" id="waveTime" type="number" value="8" min="2" max="20" style="--w:50px"></label>
+  </div>
+</div>
+<div class="box box-concept">Set the <strong>Looping</strong> pin to <em>True</em> and it repeats forever at the given interval. Store the returned <strong>Timer Handle</strong> in a variable if you need to cancel it later (e.g. stop spawning when the boss appears) using <strong>Clear and Invalidate Timer by Handle</strong>.</div>
+<div class="box box-tip">The <strong>Function Name</strong> pin takes an exact string matching a Custom Event or function in the same Blueprint. If you typo it, no error — it just silently doesn't fire. Use a <strong>Does Implement Interface</strong> check if you need reliability.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Wave Timer!</button>
+`+nav(19),
+  onApply(){
+    game.waveEnabled=true;
+    game.waveTimer=(parseFloat(document.getElementById('waveTime')?.value)||8)*12;
+    setOutput('✅ Set Timer → SpawnWave every '+(document.getElementById('waveTime').value||8)+'s — waves incoming!');
+  }
+},
+
+// ── STEP 21 ──────────────────────────────────────
+{
+  title:"Spawn Enemy at World Edge",
+  tag:"STEP 21 — SPAWN WAVE",
+  intro:`The <strong>SpawnWave</strong> function picks random spawn points around the edge of the arena using <strong>Random Float in Range</strong> and a <strong>Select</strong> to choose a side. Then it calls <strong>Spawn Actor from Class</strong> for each enemy.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">SpawnWave — pick edge, spawn enemy <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'custom',x:8,y:35,w:130,h:60,title:'Spawn Wave',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'sw_e',connected:true}]},
+      {type:'func',x:160,y:15,w:120,h:55,title:'Random Int Range',sub:'0 to 3 (side)',pins:[{side:'right',type:'int',label:'Return',id:'sw_side',connected:true}]},
+      {type:'func',x:160,y:90,w:140,h:55,title:'Random Float Range',sub:'(edge offset)',pins:[{side:'right',type:'float',label:'Return',id:'sw_off',connected:true}]},
+      {type:'func',x:300,y:15,w:155,h:80,title:'Select (Vector)',sub:'by side index',pins:[{side:'left',type:'int',label:'Index',id:'sw_si',connected:true},{side:'right',type:'vec3',label:'Spawn Loc',id:'sw_loc',connected:true}]},
+      {type:'func',x:300,y:110,w:165,h:50,title:'Spawn Actor from Class',sub:'BP_Enemy',pins:[{side:'left',type:'exec',label:'',id:'sw_spi',connected:true},{side:'left',type:'vec3',label:'Location',id:'sw_spl',connected:true},{side:'right',type:'exec',label:'',id:'sw_spo'}]},
+    ],
+    [['sw_e','sw_spi','#fff'],['sw_side','sw_si','#44aaee'],['sw_loc','sw_spl','#eebb44'],['sw_off','sw_spl','#eebb44']]
+  )}</div>
+</div>
+<div class="box box-tip">For the side selection: side 0 = top edge (random X, Y=-1000), side 1 = right (X=1000, random Y), etc. Use <strong>Get Actor Location</strong> on the player as the centre, then add offsets. This way the spawn area scales with level size.</div>
+<div class="box box-concept">Increment a <strong>Wave Number</strong> integer variable each time SpawnWave fires, then use it to calculate enemy count: <code style="color:var(--ue-lt)">2 + Wave Number</code>. Clamp with a <strong>Min/Max</strong> node so it never spawns 50 at once.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Spawn Wave!</button>
+`+nav(20),
+  onApply(){ setOutput('✅ SpawnWave — random edge positions, wave '+game.wave+' now active!'); }
+},
+
+// ── STEP 22 ──────────────────────────────────────
+{
+  title:"Dash Ability — LaunchCharacter",
+  tag:"STEP 22 — DASH",
+  intro:`Add a <strong>Dash</strong> on Shift: get the move direction, call <strong>Launch Character</strong> with a big velocity, then start a cooldown timer. The preview shows the blue cooldown arc and the dash burst.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Dash ability — LaunchCharacter + cooldown timer <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:30,w:175,h:65,title:'IA_Dash (Started)',sub:'Enhanced Input',pins:[{side:'right',type:'exec',label:'',id:'da_e',connected:true}]},
+      {type:'branch',x:205,y:15,w:115,h:65,title:'Branch',sub:'Dash Ready?',pins:[{side:'left',type:'exec',label:'',id:'da_bi',connected:true},{side:'left',type:'bool',label:'',id:'da_bc',connected:false},{side:'right',type:'exec',label:'True',id:'da_bt',connected:true}]},
+      {type:'func',x:340,y:15,w:165,h:65,title:'Launch Character',pins:[{side:'left',type:'exec',label:'',id:'da_li',connected:true},{side:'left',type:'vec3',label:'Launch Velocity',id:'da_lv',connected:false},{side:'right',type:'exec',label:'',id:'da_lo',connected:true}]},
+      {type:'func',x:340,y:100,w:165,h:50,title:'Set Timer by Fn Name',sub:'"OnDashReady" 1.5s',pins:[{side:'left',type:'exec',label:'',id:'da_ti',connected:true}]},
+    ],
+    [['da_e','da_bi','#fff'],['da_bt','da_li','#fff'],['da_lo','da_ti','#fff']]
+  )}</div>
+</div>
+<div class="box box-concept"><strong>Launch Character</strong> applies an instant velocity impulse. The <code style="color:var(--ue-lt)">bXY Override</code> parameter cancels existing horizontal velocity first — so the dash always feels snappy and doesn't stack with current momentum.</div>
+<div class="box box-tip">For the launch velocity: <strong>Get Last Movement Input Vector</strong> × DashDistance. If that vector is zero (player isn't pressing movement), fall back to <strong>Get Actor Forward Vector</strong> so the dash always goes somewhere useful.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — Dash Unlocked!</button>
+`+nav(21),
+  onApply(){ game.dashEnabled=true; setOutput('✅ Dash active! Hold Shift to dash toward cursor. Blue arc = cooldown.'); }
+},
+
+// ── STEP 23 ──────────────────────────────────────
+{
+  title:"Create Widget & Add to Viewport — HUD",
+  tag:"STEP 23 — WIDGET / HUD",
+  intro:`Unreal's UI is built with <strong>UMG Widget Blueprints</strong>. Design the layout visually (drag Text, ProgressBar, Image widgets), then in the Game Mode's BeginPlay: <strong>Create Widget</strong> → <strong>Add to Viewport</strong>.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Game Mode BeginPlay — create and show the HUD <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,155,
+    [
+      {type:'event',x:8,y:40,w:165,h:65,title:'Event BeginPlay',sub:'(BP_GameMode)',pins:[{side:'right',type:'exec',label:'',id:'wg_e',connected:true}]},
+      {type:'widget',x:195,y:15,w:160,h:75,title:'Create Widget',sub:'WBP_TopDownHUD',pins:[{side:'left',type:'exec',label:'',id:'wg_ci',connected:true},{side:'left',type:'object',label:'Owning Player',id:'wg_op',connected:false},{side:'right',type:'exec',label:'',id:'wg_co',connected:true},{side:'right',type:'actor',label:'Return Value',id:'wg_ret',connected:true}]},
+      {type:'func',x:375,y:15,w:135,h:55,title:'Add to Viewport',pins:[{side:'left',type:'exec',label:'',id:'wg_ai',connected:true},{side:'left',type:'actor',label:'Target',id:'wg_at',connected:true},{side:'right',type:'exec',label:'',id:'wg_ao',connected:true}]},
+      {type:'var_set',x:375,y:90,w:130,h:50,title:'Set HUD Reference',sub:'store for updates',pins:[{side:'left',type:'exec',label:'',id:'wg_si',connected:true},{side:'left',type:'actor',label:'Value',id:'wg_sv',connected:true}]},
+    ],
+    [['wg_e','wg_ci','#fff'],['wg_co','wg_ai','#fff'],['wg_ret','wg_at','#ee6622'],['wg_ret','wg_sv','#ee6622']]
+  )}</div>
+</div>
+<div class="box box-ue">In Content Browser: right-click → User Interface → <strong>Widget Blueprint</strong>. Name it <strong>WBP_TopDownHUD</strong>. Open it, switch to the <strong>Designer</strong> tab, and drag in TextBlocks for Score and Wave, and a ProgressBar for Health. Anchor them to the right corners.</div>
+<div class="box box-concept">Store the widget reference in a variable — you'll need it to update health and score later. The <strong>Return Value</strong> from Create Widget is the live widget instance; save it or you can't call functions on it.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — HUD Created!</button>
+`+nav(22),
+  onApply(){ game.hudEnabled=true; setOutput('✅ Create Widget → Add to Viewport — HUD now showing health, score, and wave!'); }
+},
+
+// ── STEP 24 ──────────────────────────────────────
+{
+  title:"Bind Widget — Updating Health & Score",
+  tag:"STEP 24 — BIND WIDGET",
+  intro:`To update the HUD, get the stored widget reference, drag off it, and call its <strong>Set Text</strong> or <strong>Set Percent</strong> functions. For live binding you can also use <strong>Property Bindings</strong> directly in the Widget Blueprint.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Update HUD — called whenever health or score changes <span class="bp-badge">Blueprint</span></div>
+  <div class="bp-graph">${makeBPGraph(520,165,
+    [
+      {type:'custom',x:8,y:15,w:135,h:60,title:'Update HUD',sub:'Custom Event',pins:[{side:'right',type:'exec',label:'',id:'bw_e',connected:true}]},
+      {type:'var_get',x:8,y:95,w:120,h:40,title:'HUD Reference',sub:'(WBP_TopDownHUD)',pins:[{side:'right',type:'actor',label:'',id:'bw_ref',connected:true}]},
+      {type:'func',x:165,y:10,w:160,h:55,title:'Set Health Percent',sub:'on HUD widget',pins:[{side:'left',type:'exec',label:'',id:'bw_hi',connected:true},{side:'left',type:'actor',label:'Target',id:'bw_ht',connected:true},{side:'left',type:'float',label:'Percent',id:'bw_hp',connected:true},{side:'right',type:'exec',label:'',id:'bw_ho',connected:true}]},
+      {type:'func',x:165,y:90,w:160,h:55,title:'Set Score Text',sub:'on HUD widget',pins:[{side:'left',type:'exec',label:'',id:'bw_si',connected:true},{side:'left',type:'actor',label:'Target',id:'bw_st',connected:true},{side:'left',type:'int',label:'Score',id:'bw_sc',connected:false},{side:'right',type:'exec',label:'',id:'bw_so'}]},
+      {type:'func',x:340,y:10,w:150,h:50,title:'/ (Divide)',sub:'Health / MaxHealth',pins:[{side:'right',type:'float',label:'Percent',id:'bw_div',connected:true}]},
+    ],
+    [['bw_e','bw_hi','#fff'],['bw_ho','bw_si','#fff'],['bw_ref','bw_ht','#ee6622'],['bw_ref','bw_st','#ee6622'],['bw_div','bw_hp','#88ee44']]
+  )}</div>
+</div>
+<div class="box box-ue">In WBP_TopDownHUD: select a ProgressBar → in Details, find <strong>Percent</strong> → click the <strong>Bind</strong> dropdown → <strong>Create Binding</strong>. This creates a function that runs every frame and feeds the value directly — no manual update calls needed.</div>
+<div class="box box-tip">Call <strong>Update HUD</strong> from anywhere: when the player takes damage, when they pick up an item, when score changes. Since it's a Custom Event on the player, any Blueprint with a player reference can trigger it.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply — HUD Updating!</button>
+`+nav(23),
+  onApply(){ game.screenShake=true; setOutput('✅ HUD bound — health bar and score update live. Screen shake on hit!'); }
+},
+
+// ── STEP 25 ──────────────────────────────────────
+{
+  title:"Complete Blueprint Game!",
+  tag:"STEP 25 — FINISH",
+  intro:`You've built five Blueprint classes covering every core UE5 Blueprint concept. Here's your complete project — every Blueprint and what it contains.`,
+  body:()=>`
+<div class="bp-area">
+  <div class="bp-area-label">Complete Blueprint project — 5 BPs, every concept covered <span class="bp-badge">Complete</span></div>
+  <div class="bp-graph">${makeBPGraph(520,230,
+    [
+      {type:'event',  x:10, y:10,  w:130,h:55, title:'BP_TopDownChar',sub:'(Character)',val:'WASD · Aim · Shoot · Dash'},
+      {type:'func',   x:155,y:10,  w:105,h:55, title:'BP_Bullet',sub:'(Actor)',val:'Projectile · Overlap'},
+      {type:'cast',   x:275,y:10,  w:105,h:55, title:'BP_Enemy',sub:'(Character)',val:'AI Chase · Damage'},
+      {type:'macro',  x:395,y:10,  w:115,h:55, title:'BP_WaveSpawner',sub:'(Actor)',val:'Timer · Spawn'},
+      {type:'widget', x:10, y:80,  w:115,h:55, title:'WBP_TopDownHUD',sub:'(Widget)',val:'Health · Score · Wave'},
+      {type:'custom', x:140,y:80,  w:120,h:55, title:'BP_GameMode',sub:'(GameMode)',val:'Rules · Restart'},
+      {type:'event',  x:10, y:155, w:500,h:65, title:'Concepts Covered',
+        sub:'Variables · Events · Branch · Gate · Arrays · Loops · Cast · Enum · Select · Timer · Widget · Damage',val:''},
+    ],
+    []
+  )}</div>
+</div>
+<div class="box box-ue">🎉 In UE5: create a new <strong>Third Person</strong> template project (it gives you a Character, Game Mode, and camera rig for free). Delete the ThirdPersonCharacter Blueprint and replace it with BP_TopDownCharacter. Switch the camera to a top-down spring arm.</div>
+<div class="box box-tip">Next steps: add a <strong>Niagara particle system</strong> for death explosions, a <strong>Data Table</strong> to define all wave configs as a spreadsheet, and a <strong>Main Menu</strong> level with a widget that loads the gameplay level. You have all the Blueprint skills to do it.</div>
+<div class="box box-concept">Stuck? Right-click anything in the Event Graph → <strong>Find References</strong> to see every place a variable or function is used. Use <strong>F9</strong> to set a breakpoint on any node and step through execution in PIE (Play In Editor) — Blueprint has a full visual debugger.</div>
+<button class="run-btn" onclick="doApply()" style="background:linear-gradient(135deg,var(--ue),var(--bp-lt))">🎮 Launch Full Game!</button>
+`+nav(24),
+  onApply(){
+    game.running=true; game.playerEnabled=true; game.aimEnabled=true;
+    game.shootEnabled=true; game.enemyEnabled=true; game.collisionEnabled=true;
+    game.waveEnabled=true; game.dashEnabled=true; game.hudEnabled=true;
+    game.screenShake=true; game.fxEnabled=true; game.waveTimer=30;
+    setOutput('🎉 All 5 Blueprints active! WASD move · Mouse aim · SPACE/LMB shoot · Shift dash!');
+  }
+},
+];
+
+/* ══════════════════════════════════════════
+   STEP ENGINE
+══════════════════════════════════════════ */
+let currentStep=0;
+const stepsDone=new Set();
+const TOTAL=STEPS.length;
+
+function nav(i){
+  return `<div class="step-nav">
+    <button class="btn-prev" onclick="goStep(${i-1})" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-next" onclick="goStep(${i+1})" ${i===TOTAL-1?'disabled':''}>Next Step →</button>
+  </div>`;
+}
+function goStep(i){
+  if(i<0||i>=TOTAL)return;
+  currentStep=i; renderStep();
+  document.getElementById('stepBody').scrollTop=0;
+}
+function renderStep(){
+  const s=STEPS[currentStep];
+  document.getElementById('stepBody').innerHTML=`
+    <div class="step-num">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <p class="step-intro">${s.intro}</p>
+    ${s.body()}
+  `;
+  const tabs=document.getElementById('stepsTabs');
+  tabs.innerHTML=STEPS.map((_,i)=>`
+    <button class="tab-btn${i===currentStep?' active':''}${stepsDone.has(i)?' done':''}" onclick="goStep(${i})">${i+1}</button>
+  `).join('');
+  tabs.querySelector('.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
+  updateProgress();
+}
+function doApply(){
+  stepsDone.add(currentStep);
+  STEPS[currentStep].onApply();
+  updateProgress();
+  document.querySelectorAll('.run-btn').forEach(btn=>{
+    const o=btn.innerHTML; btn.innerHTML='✅ Applied!';
+    setTimeout(()=>{btn.innerHTML=o;},900);
+  });
+  document.getElementById('liveStatus').textContent='Step '+(currentStep+1)+' applied ✓';
+}
+function updateProgress(){
+  const pct=Math.max(4,Math.round((stepsDone.size/TOTAL)*100));
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progDots').innerHTML=STEPS.map((_,i)=>
+    `<div class="prog-dot${stepsDone.has(i)?' done':i===currentStep?' active':''}"></div>`
+  ).join('');
+}
+document.getElementById('navToggle').addEventListener('click',()=>{
+  document.getElementById('mobileNav').classList.toggle('open');
+});
+resizeCanvas();
+renderStep();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
