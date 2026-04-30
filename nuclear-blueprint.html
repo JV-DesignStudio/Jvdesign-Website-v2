@@ -317,7 +317,7 @@ class BPC{
   _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
   _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
   _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
-  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const r=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+26+(n.sub?12:0)+r*19+4;if(x>n.x+5&&x<n.x+n.w-5&&y>vy&&y<vy+17)return n.id;}return null;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&y<vy+24;const inNode=x>n.x&&x<n.x+n.w&&y>n.y&&y<n.y+n.h;const belowPins=y>n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
   _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){// Detach wire and re-drag from its source pin
 const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}// Start drag snapped to actual pin position
 this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
@@ -1121,8 +1121,8 @@ pz:mkPZ([
   {id:'n2',type:'vset',title:'Set Health',x:174,y:14,w:122,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Value'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 50–200 (e.g. 100)',val:''}},
   {id:'n3',type:'vset',title:'Set MoveSpeed',x:316,y:14,w:130,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Value'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Speed 200–600 (e.g. 350)',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[
-  {id:'n2',ok:v=>parseInt(v)>=50&&parseInt(v)<=200},
-  {id:'n3',ok:v=>parseFloat(v)>=200&&parseFloat(v)<=600},
+  {id:'n2',ok:v=>v&&v.trim()!==''&&!isNaN(parseInt(v.trim()))&&parseInt(v.trim())>0},
+  {id:'n3',ok:v=>v&&v.trim()!==''&&!isNaN(parseFloat(v.trim()))&&parseFloat(v.trim())>0},
 ]),
 boxes:[{t:'box-c',tx:'Integer pins (blue) = whole numbers. Float pins (green) = decimals. The pin colour tells you the type instantly across the whole editor.'}],
 onApply(v){G.p.maxHp=parseInt(v['n2'])||100;G.p.hp=G.p.maxHp;G.p.speed=(parseFloat(v['n3'])||350)/110;G.f_player=true;updateHUD();sout('✅ HP='+v['n2']+' Speed='+v['n3']+' — WASD to move!');}
