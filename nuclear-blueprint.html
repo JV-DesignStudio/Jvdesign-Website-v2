@@ -83,13 +83,21 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .box-r::before{content:"🗺️"}
 
 /* BLUEPRINT CANVAS */
-.bp-outer{margin:10px 0;border-radius:10px;overflow:hidden;border:2px solid rgba(74,144,217,.17);position:relative}
+.bp-outer{margin:10px 0;border-radius:10px;overflow:visible;border:2px solid rgba(74,144,217,.17);position:relative}.bp-outer canvas{border-radius:8px}
 .bp-outer.wm{border-color:rgba(245,200,66,.22)}
 .bp-outer.shake{animation:bpshk .35s ease}
 @keyframes bpshk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .bp-canvas-wrap canvas{display:block;width:100%;background:#11111f;cursor:crosshair}
 .bp-hint{font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.05em;color:rgba(74,144,217,.48);padding:4px 11px;background:rgba(74,144,217,.04);border-top:1px solid rgba(74,144,217,.08)}
 .bp-hint.wm{color:rgba(245,200,66,.48);background:rgba(245,200,66,.04);border-color:rgba(245,200,66,.1)}
+.bp-valinput{position:absolute;z-index:50;background:#1a1a2e;border:2px solid #4a90d9;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.7);min-width:180px}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(74,144,217,.8);letter-spacing:.05em}
+.bp-valinput input{background:#0d0d1a;border:1px solid rgba(74,144,217,.4);border-radius:5px;color:#e8eaf0;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput input:focus{border-color:#4a90d9}
+.bp-valinput-btns{display:flex;gap:6px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bp-valinput-ok{background:#4a90d9;color:#fff}.bp-valinput-ok:hover{background:#5ba0e9}
+.bp-valinput-cancel{background:rgba(255,255,255,.08);color:rgba(232,234,240,.6)}.bp-valinput-cancel:hover{background:rgba(255,255,255,.14)}
 .bp-valinput{position:absolute;z-index:50;background:#1a1a2e;border:2px solid #4a90d9;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.7);min-width:180px}
 .bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(74,144,217,.8);letter-spacing:.05em}
 .bp-valinput input{background:#0d0d1a;border:1px solid rgba(74,144,217,.4);border-radius:5px;color:#e8eaf0;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:5px 8px;outline:none;width:100%}
@@ -317,7 +325,7 @@ class BPC{
   _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
   _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
   _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
-  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&y<vy+24;const inNode=x>n.x&&x<n.x+n.w&&y>n.y&&y<n.y+n.h;const belowPins=y>n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;if(inX&&y>vy-8&&y<vy+24)return n.id;if(inX&&x>n.x&&x<n.x+n.w&&y>n.y&&y<n.y+n.h&&y>n.y+22+(n.sub?12:0)+rows*19-4)return n.id;}return null;}
   _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){// Detach wire and re-drag from its source pin
 const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}// Start drag snapped to actual pin position
 this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
@@ -341,6 +349,24 @@ this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
     pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
     inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
     // Stop mousedown on popup propagating to canvas drag system
+    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
+  }
+  _showValInput(nodeId,e){
+    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
+    const old2=this.el.parentElement?.querySelector('.bp-valinput');if(old2)old2.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    const cr=outer.getBoundingClientRect();
+    const ex=e.clientX-cr.left,ey=e.clientY-cr.top;
+    const pop=document.createElement('div');pop.className='bp-valinput';
+    pop.style.left=Math.min(ex,cr.width-200)+'px';pop.style.top=(ey+10)+'px';
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v!==''){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    const cancel=()=>pop.remove();
+    pop.querySelector('.bp-valinput-ok').addEventListener('click',commit);
+    pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
     pop.addEventListener('mousedown',ev=>ev.stopPropagation());
   }
   _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
@@ -512,7 +538,7 @@ const G={
   keys:{},mx:200,my:200,
   // Flags
   f_player:false,f_aim:false,f_shoot:false,f_enemies:false,
-  f_collision:false,f_doors:false,f_chests:false,f_hud:false,f_fullGame:false,
+  f_collision:false,f_doors:false,f_chests:false,f_hud:false,f_fullGame:false,f_stepMutations:false,
 };
 
 // Floor tile noise
@@ -645,9 +671,11 @@ function update(dt){
         e.sTimer=(e.sTimer||0)-dt;
         if(e.sTimer<=0&&dist<200){e.sTimer=80;const ba=Math.atan2(dy,dx);G.eBullets.push({x:e.x,y:e.y,vx:Math.cos(ba)*5.5,vy:Math.sin(ba)*5.5,life:1,dmg:8,col:'#f472b6'});}
       } else {
-        const nx=e.x+(dx/dist)*e.spd*dt,ny=e.y+(dy/dist)*e.spd*dt;
-        if(!hitWall(nx,e.y,e.r))e.x=nx;
-        if(!hitWall(e.x,ny,e.r))e.y=ny;
+        if(dist>e.r+p.r+2){
+          const nx=e.x+(dx/dist)*e.spd*dt,ny=e.y+(dy/dist)*e.spd*dt;
+          if(!hitWall(nx,e.y,e.r))e.x=nx;
+          if(!hitWall(e.x,ny,e.r))e.y=ny;
+        }
       }
       e.x=Math.max(e.r+2,Math.min(CW-e.r-2,e.x));
       e.y=Math.max(e.r+2,Math.min(CH-e.r-2,e.y));
@@ -680,11 +708,17 @@ function update(dt){
       if(Math.sqrt(dx*dx+dy*dy)<p.r+3){b.life=0;if(!p.shield){p.hp-=b.dmg;shake(8,5);spawnParts(p.x,p.y,'#ff0000',5,3);updateHUD();if(p.hp<=0){p.hp=0;gameOver();}}}
     });
 
-    // Enemy contact damage
+    // Enemy contact damage + separation push
     room.enemies.forEach(e=>{
       if(e.dead)return;
-      if(Math.sqrt((e.x-p.x)**2+(e.y-p.y)**2)<e.r+p.r){
-        if(!e.dmgT||e.dmgT<=0){if(!p.shield){p.hp-=e.cDmg||5;e.dmgT=32;shake(8,5);spawnParts(p.x,p.y,'#ff0000',4,3);updateHUD();if(p.hp<=0){p.hp=0;gameOver();}}}
+      const cdx=e.x-p.x,cdy=e.y-p.y,cdist=Math.sqrt(cdx*cdx+cdy*cdy)||1;
+      const minDist=e.r+p.r;
+      if(cdist<minDist){
+        const push=(minDist-cdist)+1,nx=cdx/cdist,ny=cdy/cdist;
+        const ex2=e.x+nx*push,ey2=e.y+ny*push;
+        if(!hitWall(ex2,e.y,e.r))e.x=ex2;else e.x-=nx*push;
+        if(!hitWall(e.x,ey2,e.r))e.y=ey2;else e.y-=ny*push;
+        if(!e.dmgT||e.dmgT<=0){if(!p.shield){p.hp-=e.cDmg||5;e.dmgT=40;shake(8,5);spawnParts(p.x,p.y,'#ff0000',4,3);updateHUD();if(p.hp<=0){p.hp=0;gameOver();}}}
       }
     });
 
@@ -794,9 +828,10 @@ function loadNextRoom(){
   let{world,index}=G.room;
   index++;
   if(index>5){
-    if(world>=3){G.phase='win';return;}
+    if(world>3){G.phase='win';return;}
     world++;index=1;
-    // Mutation screen between worlds
+    // In Quick Play (or if step mutations are done), skip mutation screen
+    if(G.f_fullGame&&!G.f_stepMutations){loadRoom(world,index);return;}
     showMutationScreen();return;
   }
   loadRoom(world,index);
@@ -1270,8 +1305,8 @@ intro:`Connect IA_Shoot → Spawn Actor from Class. Wire Bullet Class Ref into C
 pz:mkPZ([
   {id:'n1',type:'event',title:'IA_Shoot (Triggered)',sub:'Enhanced Input',x:4,y:26,w:172,rp:[{id:'r1',type:'exec',label:''}]},
   {id:'n2',type:'func',title:'Spawn Actor from Class',x:200,y:5,w:170,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'cls',label:'Class'},{id:'l2t',type:'vec3',label:'Transform'}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2r',type:'actor',label:'Return Value'}]},
-  {id:'n3',type:'vget',title:'Bullet Class Ref',sub:'(assign in Details)',x:4,y:108,w:165,rp:[{id:'r3',type:'cls',label:''}],vf:{hint:'Type: BP_Bullet',val:''}},
-  {id:'n4',type:'func',title:'Get Actor Transform',sub:'self = muzzle pos',x:4,y:166,w:165,rp:[{id:'r4',type:'vec3',label:'Return Value'}]},
+  {id:'n3',type:'vget',title:'Bullet Class Ref',sub:'(assign in Details)',x:4,y:115,w:165,rp:[{id:'r3',type:'cls',label:''}],vf:{hint:'Type: BP_Bullet',val:''}},
+  {id:'n4',type:'func',title:'Get Actor Transform',sub:'self = muzzle pos',x:4,y:195,w:165,rp:[{id:'r4',type:'vec3',label:'Return Value'}]},
 ],[{f:'r1',t:'l2e'},{f:'r3',t:'l2c'},{f:'r4',t:'l2t'}],[
   {id:'n3',ok:v=>v.trim().toLowerCase().includes('bullet')},
 ]),
@@ -1347,7 +1382,7 @@ pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_EnemyShooter',x:6,y:34,w:158,rp:[{id:'r1',type:'exec',label:''}]},
   {id:'n2',type:'vset',title:'Set Health',x:186,y:12,w:115,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 3–10 (e.g. 4)',val:''}},
   {id:'n3',type:'vset',title:'Set FireRate',x:322,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Rate (secs)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Rate 0.8–3 (e.g. 1.5)',val:''}},
-  {id:'n4',type:'vset',title:'Set BulletDmg',x:460,y:12,w:76,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Dmg'}],vf:{hint:'5–15(e.g.8)',val:''}},
+  {id:'n4',type:'vset',title:'Set BulletDmg',x:456,y:12,w:82,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Dmg'}],vf:{hint:'5–15 (e.g.8)',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
   {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)<=15},{id:'n3',ok:v=>parseFloat(v)>=0.5&&parseFloat(v)<=4},{id:'n4',ok:v=>parseInt(v)>=3&&parseInt(v)<=20},
 ]),
@@ -1428,7 +1463,7 @@ extraHTML:`<div class="mut-grid" id="mg1">
   <div class="mut-card" onclick="pickMut('mg1','count_up','n2',25,this)"><div class="mut-icon">🔱</div><div class="mut-name">MORE BULLETS</div><div class="mut-desc">+2 bullets per shot</div></div>
 </div>`,
 boxes:[{t:'box-m',tx:'Damage Up synergises with slow-firing precise weapons. Rapid Fire synergises with single-bullet weapons. More Bullets synergises with wide-spread shotgun builds.'}],
-onApply(v){mut1=v['n2'];updateWpnCard();sout('✅ Mutation 1: '+mut1.replace('_',' ').toUpperCase()+' applied for the rest of the run!');}
+onApply(v){G.f_stepMutations=true;mut1=v['n2'];updateWpnCard();sout('✅ Mutation 1: '+mut1.replace('_',' ').toUpperCase()+' applied for the rest of the run!');}
 },
 
 {title:'Mutation — Survivor Perk',tag:'STEP 26 🧬 MUTATION 2',isW:true,
@@ -1501,7 +1536,7 @@ pz:mkPZ([
 ],[{f:'r1',t:'l2'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'},{f:'r2d',t:'l6'},{f:'r2d',t:'l7e'}],[
   {id:'n7',ok:v=>v.trim().length>=2},
 ]),
-extraHTML:`<div class="wpn-input-wrap"><div class="wpn-input-lbl">Or type your weapon name here:</div><input class="wpn-name-input" id="wpnNameInput" placeholder="e.g. Void Fang" oninput="startWPN.name=this.value;updateWpnCard()"></div>`,
+extraHTML:`<div class="wpn-input-wrap"><div class="wpn-input-lbl">Name your weapon (required to launch):</div><input class="wpn-name-input" id="wpnNameInput" placeholder="e.g. Void Fang" oninput="startWPN.name=this.value;updateWpnCard();if(activeInst){const n=activeInst.nodes?.find(n=>n.id==='n7');if(n&&n.vf){n.vf.val=this.value;activeInst._chk();activeInst.render();}}"></div>`,
 boxes:[
   {t:'box-w',tx:'Your weapon: '+Object.entries({Bullets:startWPN.bc,Spread:startWPN.sp+'°','Fire rate':startWPN.fr+'s',Speed:Math.round(startWPN.bs*100)+' UU/s',Damage:startWPN.dmg,Bounce:startWPN.bounce,Explosive:startWPN.explosive}).map(([k,v])=>k+': '+v).join(' · ')},
   {t:'box-t',tx:'3 worlds · 15 rooms · boss every 5th room · chest weapons · 2 mutations. Clear all rooms to win. Press Q to swap weapons. Fullscreen button for the best experience.'},
