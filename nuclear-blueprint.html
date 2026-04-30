@@ -57,7 +57,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .tb:hover{color:var(--text)}
 .tb.active{color:var(--ue-lt);border-bottom-color:var(--ue)}
 .tb.done::before{content:"✓ ";color:var(--green)}
-.tb.wpn.active{color: var(--gold);border-bottom-color:var(--gold)}
+.tb.wpn{}.tb.wpn.active{color:var(--gold);border-bottom-color:var(--gold)}
 .step-body{padding:20px 24px;overflow-y:auto;flex:1}
 @media(max-width:640px){.step-body{padding:14px 12px}}
 .step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:3px}
@@ -90,6 +90,14 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .bp-canvas-wrap canvas{display:block;width:100%;background:#11111f;cursor:crosshair}
 .bp-hint{font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.05em;color:rgba(74,144,217,.48);padding:4px 11px;background:rgba(74,144,217,.04);border-top:1px solid rgba(74,144,217,.08)}
 .bp-hint.wm{color:rgba(245,200,66,.48);background:rgba(245,200,66,.04);border-color:rgba(245,200,66,.1)}
+.bp-valinput{position:absolute;z-index:50;background:#1a1a2e;border:2px solid #4a90d9;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.7);min-width:180px}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(74,144,217,.8);letter-spacing:.05em}
+.bp-valinput input{background:#0d0d1a;border:1px solid rgba(74,144,217,.4);border-radius:5px;color:#e8eaf0;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput input:focus{border-color:#4a90d9}
+.bp-valinput-btns{display:flex;gap:6px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bp-valinput-ok{background:#4a90d9;color:#fff}.bp-valinput-ok:hover{background:#5ba0e9}
+.bp-valinput-cancel{background:rgba(255,255,255,.08);color:rgba(232,234,240,.6)}.bp-valinput-cancel:hover{background:rgba(255,255,255,.14)}
 .task-list{margin:7px 0;display:flex;flex-direction:column;gap:4px}
 .task-item{display:flex;align-items:center;gap:7px;font-size:.74rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
 .task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
@@ -185,7 +193,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 <header class="hdr">
   <div class="logo">⚡ Nuclear Blueprint</div>
   <div class="hdr-right">
-    <button class="quick-btn" onclick="quickPlay()">🎲 Quick Play Random Run</button>
+    <button class="quick-btn" onclick="quickPlay()">🎲 Quick Play — Random Run</button>
   </div>
 </header>
 
@@ -310,9 +318,31 @@ class BPC{
   _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
   _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
   _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const r=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+26+(n.sub?12:0)+r*19+4;if(x>n.x+5&&x<n.x+n.w-5&&y>vy&&y<vy+17)return n.id;}return null;}
-  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){const n=this.nodes.find(n=>n.id===vi);const v=prompt(n.vf.hint,n.vf.val||'');if(v!==null){n.vf.val=v;this._chk();this.render();}return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){// Detach wire and re-drag from its source pin
+  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){// Detach wire and re-drag from its source pin
 const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}// Start drag snapped to actual pin position
 this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
+  _showValInput(nodeId,e){
+    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
+    // Remove any existing popup
+    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    // Position near click
+    const cr=outer.getBoundingClientRect();
+    const ex=e.clientX-cr.left,ey=e.clientY-cr.top;
+    const pop=document.createElement('div');pop.className='bp-valinput';
+    pop.style.left=Math.min(ex,cr.width-200)+'px';
+    pop.style.top=(ey+10)+'px';
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v!==''){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    const cancel=()=>pop.remove();
+    pop.querySelector('.bp-valinput-ok').addEventListener('click',commit);
+    pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
+    // Stop mousedown on popup propagating to canvas drag system
+    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
+  }
   _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
   _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
   _cancel(){if(this.drag){this.drag=null;this.render();}}
@@ -1098,7 +1128,7 @@ boxes:[{t:'box-c',tx:'Integer pins (blue) = whole numbers. Float pins (green) = 
 onApply(v){G.p.maxHp=parseInt(v['n2'])||100;G.p.hp=G.p.maxHp;G.p.speed=(parseFloat(v['n3'])||350)/110;G.f_player=true;updateHUD();sout('✅ HP='+v['n2']+' Speed='+v['n3']+' — WASD to move!');}
 },
 
-{title:'Event Tick — Delta Seconds',tag:'STEP 03 TICK',isW:false,
+{title:'Event Tick Delta Seconds',tag:'STEP 03 TICK',isW:false,
 intro:`Connect Event Tick → Multiply (speed × delta) → Add Movement Input. Delta Seconds keeps movement frame-rate independent.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event Tick',sub:'~60x/sec',x:6,y:20,w:152,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Delta Seconds'}]},
@@ -1109,7 +1139,7 @@ boxes:[{t:'box-c',tx:'At 60fps Delta ≈ 0.016s. At 30fps ≈ 0.033s. Speed × D
 onApply(){sout('✅ Tick → Delta Seconds → Add Movement wired!');}
 },
 
-{title:'Enhanced Input — Mapping Context',tag:'STEP 04 INPUT',isW:false,
+{title:'Enhanced Input Mapping Context',tag:'STEP 04 INPUT',isW:false,
 intro:`Connect BeginPlay → Get Player Controller → Get Enhanced Input Subsystem → Add Mapping Context. Without this chain, no input works at all in UE5.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1118,7 +1148,7 @@ pz:mkPZ([
   {id:'n4',type:'func',title:'Add Mapping Context',x:215,y:108,w:168,lp:[{id:'l4e',type:'exec',label:''},{id:'l4s',type:'object',label:'Target'},{id:'l4m',type:'object',label:'Mapping Context'}],rp:[{id:'r4',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2p',t:'l3p'},{f:'r3',t:'l4s'}],[]),
 boxes:[{t:'box-u',tx:'Content Browser → Input → Input Mapping Context. Name it IMC_TopDown. Add WASD bindings for IA_Move. Without adding this context in BeginPlay, nothing responds to keyboard input.'}],
-onApply(){G.f_player=true;sout('✅ Mapping Context added — WASD active!');}
+onApply(){G.f_player=true;sout('✅ Mapping Context added WASD active!');}
 },
 
 {title:'IA_Move WASD Movement',tag:'STEP 05 MOVEMENT',isW:false,
@@ -1133,7 +1163,7 @@ boxes:[{t:'box-t',tx:'Set the World Direction on the right node to Get Actor Rig
 onApply(){G.f_player=true;sout('✅ WASD wired! Move around the arena.');}
 },
 
-{title:'Get Hit Under Cursor Aim Point',tag:'STEP 06 MOUSE AIM',isW:false,
+{title:'Get Hit Under Cursor — Aim Point',tag:'STEP 06 MOUSE AIM',isW:false,
 intro:`Connect Event Tick → Get Hit Result Under Cursor → Branch (bBlockingHit) → Set Aim Location. This gives the 3D world position of the mouse cursor.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event Tick',x:4,y:34,w:135,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1141,11 +1171,11 @@ pz:mkPZ([
   {id:'n3',type:'branch',title:'Branch',x:345,y:10,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'True'},{id:'r3f',type:'exec',label:'False'}]},
   {id:'n4',type:'vset',title:'Set Aim Location',x:158,y:128,w:155,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'vec3',label:'Value'}]},
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2h',t:'l3c'},{f:'r3t',t:'l4e'},{f:'r2l',t:'l4v'}],[]),
-boxes:[{t:'box-c',tx:'Branch is Blueprint\'s if/else. bBlockingHit is false when the cursor is off-screen — the Branch prevents writing a garbage aim position.'}],
+boxes:[{t:'box-c',tx:'Branch is Blueprint\'s if/else. bBlockingHit is false when the cursor is off-screen the Branch prevents writing a garbage aim position.'}],
 onApply(){G.f_aim=true;sout('✅ Mouse aim active — move cursor over arena, the ship rotates!');}
 },
 
-{title:'Find Look at Rotation Face Mouse',tag:'STEP 07 — ROTATION',isW:false,
+{title:'Find Look at Rotation Face Mouse',tag:'STEP 07 ROTATION',isW:false,
 intro:`Connect Find Look at Rotation → RInterp To → Set Actor Rotation. Type an interp speed for smooth rotation.`,
 pz:mkPZ([
   {id:'n1',type:'func',title:'Find Look at Rotation',x:4,y:16,w:165,lp:[{id:'l1s',type:'vec3',label:'Start'},{id:'l1t',type:'vec3',label:'Target'}],rp:[{id:'r1',type:'rot',label:'Return Value'}]},
@@ -1158,7 +1188,7 @@ onApply(){sout('✅ Find Look at Rotation → RInterp To → Set Rotation facing
 
 // ── WEAPON DESIGNER STEPS ──────────────────────────
 
-{title:'Weapon Designer Bullet Count',tag:'STEP 08 — 🔫 BULLETS',isW:true,
+{title:'Weapon Designer Bullet Count',tag:'STEP 08 🔫 BULLETS',isW:true,
 intro:`Design your starting weapon! Type how many bullets fire per shot. 1 = precise. 3 = burst. 8 = shotgun. This is what you spawn with better weapons come from room chests.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'On Weapon Init',x:8,y:34,w:145,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1169,7 +1199,7 @@ boxes:[{t:'box-w',tx:'You\'ll find 12 different weapons in chests during rooms s
 onApply(v){startWPN.bc=parseInt(v['n2'])||1;updateWpnCard();G.f_shoot=true;G.p.wpn0={...startWPN};sout('✅ Starting weapon: '+startWPN.bc+' bullet(s). Shoot with SPACE/LMB!');}
 },
 
-{title:'Weapon Designer — Spread Angle',tag:'STEP 09 — 🔫 SPREAD',isW:true,
+{title:'Weapon Designer Spread Angle',tag:'STEP 09 🔫 SPREAD',isW:true,
 intro:`Type the spread angle in degrees. 0 = laser precision. 15 = slightly forgiving. 40 = full shotgun. Pairs directly with bullet count.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'On Weapon Init',x:8,y:34,w:145,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1177,7 +1207,7 @@ pz:mkPZ([
   {id:'n3',type:'func',title:'Recalculate Bullet Vectors',x:366,y:12,w:165,lp:[{id:'l3e',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[{id:'n2',ok:v=>parseFloat(v)>=0&&parseFloat(v)<=45}],true),
 boxes:[{t:'box-w',tx:'0° + 1 bullet = sniper-style. 30° + 6 bullets = full shotgun. 10° + 3 bullets = burst rifle. Your choice shapes how the first few rooms feel before you find chest weapons.'}],
-onApply(v){startWPN.sp=parseFloat(v['n2'])||0;updateWpnCard();G.p.wpn0={...startWPN};sout('✅ Spread: '+startWPN.sp+'° — shooting is now live!');}
+onApply(v){startWPN.sp=parseFloat(v['n2'])||0;updateWpnCard();G.p.wpn0={...startWPN};sout('✅ Spread: '+startWPN.sp+'° shooting is now live!');}
 },
 
 {title:'Weapon Designer Fire Rate',tag:'STEP 10 🔫 FIRE RATE',isW:true,
@@ -1220,11 +1250,11 @@ pz:mkPZ([
   {id:'n2',type:'weapon',title:'Set Bounce',sub:'Weapon Modifier',x:180,y:10,w:155,lp:[{id:'l2e',type:'exec',label:''},{id:'l2b',type:'bool',label:'Bounce Enabled'}],rp:[{id:'r2',type:'exec',label:''}]},
   {id:'n3',type:'vget',title:'Bool Literal',sub:'true = bouncing ON',x:8,y:106,w:148,rp:[{id:'r3',type:'bool',label:''}],vf:{hint:'Type: true OR false',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r3',t:'l2b'}],[{id:'n3',ok:v=>v.toLowerCase()==='true'||v.toLowerCase()==='false'}],true),
-boxes:[{t:'box-w',tx:'Rooms have obstacles corners, pillars, walls. A bouncing bullet can hit the same enemy from behind a pillar. Low bullet count + high speed + bounce = corner-peeking sniper.'}],
+boxes:[{t:'box-w',tx:'Rooms have obstacles — corners, pillars, walls. A bouncing bullet can hit the same enemy from behind a pillar. Low bullet count + high speed + bounce = corner-peeking sniper.'}],
 onApply(v){startWPN.bounce=v['n3'].toLowerCase()==='true';updateWpnCard();G.p.wpn0={...startWPN};sout('✅ Bounce: '+(startWPN.bounce?'ON — bullets ricochet off walls!':'OFF'));}
 },
 
-{title:'Weapon Modifier — Explosive',tag:'STEP 14 — 🔫 EXPLOSIVE',isW:true,
+{title:'Weapon Modifier Explosive',tag:'STEP 14 🔫 EXPLOSIVE',isW:true,
 intro:`Type an explosion radius. 0 = off. 40 = small blast. 80 = room-clearing AOE. Explosive bullets deal splash damage to all enemies within the radius on impact.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'On Weapon Init',x:8,y:32,w:145,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1249,10 +1279,10 @@ boxes:[
   {t:'box-c',tx:'Spawn Actor from Class creates a new Actor at runtime. The Class pin takes the Blueprint reference like a cookie cutter stamping out a new instance at the given location.'},
   {t:'box-t',tx:'Drag the Return Value to set bullet velocity or damage right after spawning, before it flies off thats how the fire direction gets applied.'},
 ],
-onApply(){G.f_shoot=true;G.p.wpn0={...startWPN};sout('✅ Weapon firing! SPACE or LMB shoot with YOUR designed weapon!');}
+onApply(){G.f_shoot=true;G.p.wpn0={...startWPN};sout('✅ Weapon firing! SPACE or LMB — shoot with YOUR designed weapon!');}
 },
 
-{title:'Room Walls Obstacle Collision',tag:'STEP 16 ROOM WALLS',isW:false,
+{title:'Room Walls — Obstacle Collision',tag:'STEP 16 — ROOM WALLS',isW:false,
 intro:`Connect BeginPlay → Build Room Layout → Spawn Obstacles. Wire the Room Template variable into Build Room. Type "1" for the first world template.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_Room',x:6,y:34,w:148,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1266,11 +1296,11 @@ boxes:[
   {t:'box-r',tx:'Rooms are chosen from 7 templates: corner pillars, central block, L-shape, side pillars, cross, corridor, scattered boxes. Boss rooms are always open. Each run randomises the layout per room.'},
   {t:'box-c',tx:'Bullets collide with walls. Enemies pathfind around them. Some templates heavily favour explosive AOE; others favour sniping from behind cover.'},
 ],
-onApply(){G.f_enemies=true;loadRoom(1,1);sout('✅ Room layout active walls + enemies loaded. Clear the room!');}
+onApply(){G.f_enemies=true;loadRoom(1,1);sout('✅ Room layout active — walls + enemies loaded. Clear the room!');}
 },
 
 {title:'Enemy Class Grunt',tag:'STEP 17 GRUNT',isW:false,
-intro:`Wire BeginPlay → Set Health → Set Speed → Set ContactDamage in BP_EnemyGrunt. Grunts are the basic enemy — diamond shape, medium everything.`,
+intro:`Wire BeginPlay → Set Health → Set Speed → Set ContactDamage in BP_EnemyGrunt. Grunts are the basic enemy diamond shape, medium everything.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_EnemyGrunt',x:6,y:34,w:155,rp:[{id:'r1',type:'exec',label:''}]},
   {id:'n2',type:'vset',title:'Set Health',x:183,y:12,w:118,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 3–15 (e.g. 4)',val:''}},
@@ -1279,7 +1309,7 @@ pz:mkPZ([
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
   {id:'n2',ok:v=>parseInt(v)>=2&&parseInt(v)<=20},{id:'n3',ok:v=>parseFloat(v)>=0.5&&parseFloat(v)<=5},{id:'n4',ok:v=>parseInt(v)>=1&&parseInt(v)<=15},
 ]),
-boxes:[{t:'box-c',tx:'Grunts (red diamonds) are the bread-and-butter enemy. They scale with world number by World 3 they\'re significantly tougher. Tune HP against your starting weapon\'s DPS.'}],
+boxes:[{t:'box-c',tx:'Grunts (red diamonds) are the bread-and-butter enemy. They scale with world number by World 3 theyre significantly tougher. Tune HP against your starting weapons DPS.'}],
 onApply(){sout('✅ Grunt stats set they appear in every room from World 1!');}
 },
 
@@ -1293,7 +1323,7 @@ pz:mkPZ([
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
   {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)<=6},{id:'n3',ok:v=>parseFloat(v)>=2&&parseFloat(v)<=5},
 ]),
-boxes:[{t:'box-c',tx:'Runners (orange triangles) change the pressure of a room dramatically. 3 runners + 2 grunts feels chaotic. Balance them so missing a runner costs you but theyre not impossibly fast.'}],
+boxes:[{t:'box-c',tx:'Runners (orange triangles) change the pressure of a room dramatically. 3 runners + 2 grunts feels chaotic. Balance them so missing a runner costs you — but theyre not impossibly fast.'}],
 onApply(){sout('✅ Runner set appear from Room 1-2 onward. Fast!');}
 },
 
@@ -1307,7 +1337,7 @@ pz:mkPZ([
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
   {id:'n2',ok:v=>parseInt(v)>=5&&parseInt(v)<=40},{id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=5&&parseInt(v)<=25},
 ]),
-boxes:[{t:'box-c',tx:'Tanks (purple hexagons) force resource decisions you need to commit many bullets to kill one. Explosive rounds or the Rocket Launcher found in chests makes tanks trivial.'}],
+boxes:[{t:'box-c',tx:'Tanks (purple hexagons) force resource decisions — you need to commit many bullets to kill one. Explosive rounds or the Rocket Launcher found in chests makes tanks trivial.'}],
 onApply(){sout('✅ Tank set appear from World 2. High HP forces commitment!');}
 },
 
@@ -1335,11 +1365,11 @@ pz:mkPZ([
 ],[{f:'r1e',t:'l2e'},{f:'r1a',t:'l2o'},{f:'r2s',t:'l3e'},{f:'r2en',t:'l3a'},{f:'r3',t:'l4e'}],[
   {id:'n3',ok:v=>parseFloat(v)>0},
 ]),
-boxes:[{t:'box-c',tx:'Cast to BP_Enemy fails when the bullet hits a wall — the Fail exec fires. Leave it unconnected unless you need special wall-hit behaviour (like a spark effect).'}],
+boxes:[{t:'box-c',tx:'Cast to BP_Enemy fails when the bullet hits a wall the Fail exec fires. Leave it unconnected unless you need special wall-hit behaviour (like a spark effect).'}],
 onApply(){G.f_collision=true;sout('✅ Collision live! Bullets damage enemies. Shoot to clear the room!');}
 },
 
-{title:'Door System — Room Complete',tag:'STEP 22 DOOR SYSTEM',isW:false,
+{title:'Door System Room Complete',tag:'STEP 22 DOOR SYSTEM',isW:false,
 intro:`Connect On Enemy Died → Check All Enemies Dead → Branch → Open Door. When all enemies are gone, the exit door glows green and can be entered.`,
 pz:mkPZ([
   {id:'n1',type:'custom',title:'On Enemy Died',sub:'Custom Event',x:4,y:34,w:148,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1349,7 +1379,7 @@ pz:mkPZ([
   {id:'n5',type:'func',title:'Open Exit Door',x:475,y:96,w:58,lp:[{id:'l5',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2c',t:'l3a'},{f:'r3',t:'l4c'},{f:'r4t',t:'l5'}],[]),
 boxes:[
-  {t:'box-r',tx:'The exit door is always in the right wall of each room. It\'s a glowing green portal when open. Walk into it to trigger the room transition to the next room.'},
+  {t:'box-r',tx:'The exit door is always in the right wall of each room. Its a glowing green portal when open. Walk into it to trigger the room transition to the next room.'},
   {t:'box-t',tx:'Press Q in-game to swap between your two weapon slots. Slot 2 stays empty until you find a chest weapon then you carry two.'},
 ],
 onApply(){G.f_doors=true;sout('✅ Door system active! Clear enemies → door glows green → walk into it!');}
@@ -1381,12 +1411,12 @@ pz:mkPZ([
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2w',t:'l3w'},{f:'r3t',t:'l4e'}],[]),
 boxes:[
   {t:'box-r',tx:'The 12 weapons in the pool: Rusty Pistol, Shotgun, Machine Gun, Sniper Rifle, Rocket Launcher, Bouncer, Homing Launcher, Plasma Cannon, Crossbow, Laser Rifle, Grenade Pistol, Dual SMGs.'},
-  {t:'box-t',tx:'You have 2 weapon slots. Press Q to swap. When both slots are filled, picking up a new weapon asks which slot to replace. The choice is immediate — no going back.'},
+  {t:'box-t',tx:'You have 2 weapon slots. Press Q to swap. When both slots are filled, picking up a new weapon asks which slot to replace. The choice is immediate no going back.'},
 ],
 onApply(){G.f_chests=true;sout('✅ Chest system active! Walk over the gold chest in rooms to find weapons.');}
 },
 
-{title:'Mutation Choose After Each World',tag:'STEP 25 🧬 MUTATION 1',isW:true,
+{title:'Mutation — Choose After Each World',tag:'STEP 25 🧬 MUTATION 1',isW:true,
 intro:`After clearing World 1, you choose a permanent upgrade. Pick one card it auto-fills the Blueprint. This mutation lasts the entire run.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'On World Complete',x:4,y:32,w:148,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1401,7 +1431,7 @@ boxes:[{t:'box-m',tx:'Damage Up synergises with slow-firing precise weapons. Rap
 onApply(v){mut1=v['n2'];updateWpnCard();sout('✅ Mutation 1: '+mut1.replace('_',' ').toUpperCase()+' applied for the rest of the run!');}
 },
 
-{title:'Mutation Survivor Perk',tag:'STEP 26 🧬 MUTATION 2',isW:true,
+{title:'Mutation — Survivor Perk',tag:'STEP 26 🧬 MUTATION 2',isW:true,
 intro:`After World 2, choose a survivor perk. These affect your character, not your weapon. One of these could save your life in World 3.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'On World Complete',x:4,y:32,w:148,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1412,7 +1442,7 @@ extraHTML:`<div class="mut-grid" id="mg2">
   <div class="mut-card" onclick="pickMut('mg2','shield','n2',26,this)"><div class="mut-icon">🛡️</div><div class="mut-name">SHIELD</div><div class="mut-desc">Absorb 1 hit every 10s</div></div>
   <div class="mut-card" onclick="pickMut('mg2','lifesteal','n2',26,this)"><div class="mut-icon">🩸</div><div class="mut-name">LIFESTEAL</div><div class="mut-desc">+3 HP per enemy killed</div></div>
 </div>`,
-boxes:[{t:'box-m',tx:'Speed Boost lets you dodge enemy bullets critical in Shooter-heavy rooms. Shield absorbs burst damage. Lifesteal rewards aggressive play — kill faster, heal faster.'}],
+boxes:[{t:'box-m',tx:'Speed Boost lets you dodge enemy bullets — critical in Shooter-heavy rooms. Shield absorbs burst damage. Lifesteal rewards aggressive play — kill faster, heal faster.'}],
 onApply(v){mut2=v['n2'];if(mut2==='speed_boost')G.p.speedMult=1.45;if(mut2==='lifesteal')G.p.lifesteal=true;updateWpnCard();sout('✅ Mutation 2: '+mut2.replace('_',' ').toUpperCase()+'!');}
 },
 
@@ -1425,13 +1455,13 @@ pz:mkPZ([
   {id:'n4',type:'func',title:'Start Pattern Timer',x:348,y:108,w:185,lp:[{id:'l4',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3'},{f:'r3c',t:'l4'}],[{id:'n2',ok:v=>parseFloat(v)>=1&&parseFloat(v)<=5}]),
 boxes:[
-  {t:'box-c',tx:'The boss is always in an open room (no obstacles). It spawns at the top-centre. Pattern 1: chase player. Pattern 2: circle-strafe at range. Pattern 3: pick a direction and charge — dodge sideways!'},
+  {t:'box-c',tx:'The boss is always in an open room (no obstacles). It spawns at the top-centre. Pattern 1: chase player. Pattern 2: circle-strafe at range. Pattern 3: pick a direction and charge dodge sideways!'},
   {t:'box-t',tx:'The boss fires a 5-bullet spread every second. After the boss dies, score 500 pts and advance to the next world. Boss HP scales with world number.'},
 ],
 onApply(v){sout('✅ Boss patterns wired! HP mult: '+v['n2']+'x. Kill the boss to advance worlds!');}
 },
 
-{title:'HUD Health, Weapon & Minimap',tag:'STEP 28 HUD',isW:false,
+{title:'HUD — Health, Weapon & Minimap',tag:'STEP 28 — HUD',isW:false,
 intro:`Connect Update HUD → Set Health Percent → Set Weapon Name → Set Room Text. Wire the HUD Reference to each node. Type max HP.`,
 pz:mkPZ([
   {id:'n1',type:'custom',title:'Update HUD',sub:'Custom Event',x:4,y:34,w:128,rp:[{id:'r1',type:'exec',label:''}]},
@@ -1443,7 +1473,7 @@ pz:mkPZ([
 boxes:[
   {t:'box-t',tx:'The in-game HUD also shows a mini World-Room display (W1-R3) and score. A small minimap in the top-left shows your current location. Fully visible when you apply this step.'},
 ],
-onApply(){G.f_hud=true;updateHUD();sout('✅ HUD live health, weapon slot, room number, score!');}
+onApply(){G.f_hud=true;updateHUD();sout('✅ HUD live — health, weapon slot, room number, score!');}
 },
 
 {title:'Death Screen & High Score',tag:'STEP 29 DEATH',isW:false,
@@ -1454,12 +1484,12 @@ pz:mkPZ([
   {id:'n3',type:'func',title:'Show Death Screen',x:306,y:6,w:155,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:''}]},
   {id:'n4',type:'func',title:'Enable Restart Input',x:306,y:96,w:155,lp:[{id:'l4e',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseFloat(v)>=0.5&&parseFloat(v)<=5}]),
-boxes:[{t:'box-t',tx:'Press R or click the canvas to restart after death. You keep your weapon design but start at World 1 Room 1 true roguelite permadeath.'}],
+boxes:[{t:'box-t',tx:'Press R or click the canvas to restart after death. You keep your weapon design but start at World 1 Room 1 — true roguelite permadeath.'}],
 onApply(v){sout('✅ Death screen: shows after '+v['n2']+'s. R or click to restart!');}
 },
 
 {title:'Name Your Weapon Launch!',tag:'STEP 30 🚀 LAUNCH',isW:true,
-intro:`Connect Game Start → Sequence → Enable All Systems. Then type your weapon name and hit Launch your full 15-room roguelite is ready!`,
+intro:`Connect Game Start → Sequence → Enable All Systems. Then type your weapon name and hit Launch — your full 15-room roguelite is ready!`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_GameMode',x:4,y:30,w:152,rp:[{id:'r1',type:'exec',label:''}]},
   {id:'n2',type:'macro',title:'Sequence',x:178,y:8,w:95,lp:[{id:'l2',type:'exec',label:'In'}],rp:[{id:'r2a',type:'exec',label:'Player'},{id:'r2b',type:'exec',label:'Enemies'},{id:'r2c',type:'exec',label:'Doors'},{id:'r2d',type:'exec',label:'HUD'}]},
