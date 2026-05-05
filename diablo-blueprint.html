@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hellfire Descent Blueprint — Build Your Own ARPG | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06040a;--bg2:#0a0812;
+  --border:rgba(255,255,255,.07);
+  --text:#f0dfc0;--muted:rgba(240,223,192,.38);
+  --blood:#c83030;--blood-lt:#e84040;--blood-dk:#700808;
+  --amber:#c87820;--amber-lt:#f0a030;--amber-dk:#6a3a00;
+  --gold:#d4a520;--gold-lt:#f5c840;
+  --purple:#8050c0;--purple-lt:#b080e8;
+  --green:#4ade80;--blue:#4a90d9;--teal:#2dd4bf;
+  --gun-col:#5a9ed9;--melee-col:#c87820;--wand-col:#9060c8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+.hdr{position:sticky;top:0;z-index:90;background:rgba(6,4,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid rgba(200,80,32,.2);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em;color:var(--amber-lt)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--blood),#700808);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--blood-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.2);transform:translateY(-1px)}
+
+.hero{padding:28px 18px 20px;border-bottom:1px solid rgba(200,80,32,.12);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(200,80,32,.014) 0,rgba(200,80,32,.014) 1px,transparent 1px,transparent 12px),repeating-linear-gradient(-45deg,rgba(200,80,32,.014) 0,rgba(200,80,32,.014) 1px,transparent 1px,transparent 12px)}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;position:relative;z-index:1}
+@media(max-width:640px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--amber-lt);margin-bottom:7px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,6vw,3.8rem);line-height:.9;letter-spacing:.03em;color:#fff;margin-bottom:7px}
+.hero-title .hl{color:var(--blood-lt)}
+.hero-desc{font-size:.86rem;color:var(--muted);line-height:1.72;max-width:440px}
+.hero-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.54rem;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.blood{border-color:rgba(200,50,50,.3);color:var(--blood-lt);background:rgba(200,50,50,.06)}
+.pill.gun{border-color:rgba(90,158,217,.3);color:#7ab8f5;background:rgba(90,158,217,.06)}
+.pill.wand{border-color:rgba(144,96,200,.3);color:#c090f0;background:rgba(144,96,200,.06)}
+/* hero card */
+.wpn-card{background:rgba(255,255,255,.03);border:1px solid rgba(212,165,32,.18);border-radius:12px;padding:13px 16px;min-width:190px}
+.wpn-card-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.wpn-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.05em;color:#fff;margin-bottom:5px}
+.wpn-stat{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.72rem}
+.wpn-stat:last-child{border:none}
+.wpn-stat-l{color:var(--muted)}
+.wpn-stat-r{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:.68rem}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 52px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+/* STEPS LEFT */
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 7px;font-family:'JetBrains Mono',monospace;font-size:.48rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}
+.tb.active{color:var(--amber-lt);border-bottom-color:var(--amber)}
+.tb.done::before{content:"⚔ ";color:var(--green);font-size:.45rem}
+.tb.gun-t.active{color:#7ab8f5;border-bottom-color:var(--gun-col)}
+.tb.melee-t.active{color:var(--amber-lt);border-bottom-color:var(--melee-col)}
+.tb.wand-t.active{color:#c090f0;border-bottom-color:var(--wand-col)}
+.step-body{padding:20px 24px;overflow-y:auto;flex:1}
+@media(max-width:640px){.step-body{padding:14px 12px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+.step-tag.def{color:var(--blood-lt)}.step-tag.gun{color:#7ab8f5}.step-tag.melee{color:var(--amber-lt)}.step-tag.wand{color:#c090f0}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.04em;color:#fff;margin-bottom:6px;line-height:1}
+.step-intro{font-size:.83rem;color:var(--muted);line-height:1.73;margin-bottom:10px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:8px;padding:9px 12px;margin:6px 0;font-size:.76rem;line-height:1.6;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0}
+.box-c{background:rgba(200,80,32,.05);border:1px solid rgba(200,80,32,.16);color:rgba(240,223,192,.7)}.box-c::before{content:"📜"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(240,223,192,.7)}.box-t::before{content:"💡"}
+.box-d{background:rgba(200,50,50,.06);border:1px solid rgba(200,50,50,.18);color:rgba(240,223,192,.8)}.box-d::before{content:"🔥"}
+.box-gun{background:rgba(90,158,217,.05);border:1px solid rgba(90,158,217,.2);color:rgba(240,223,192,.8)}.box-gun::before{content:"🔫"}
+.box-melee{background:rgba(200,120,32,.05);border:1px solid rgba(200,120,32,.2);color:rgba(240,223,192,.8)}.box-melee::before{content:"⚔"}
+.box-wand{background:rgba(144,80,200,.05);border:1px solid rgba(144,80,200,.2);color:rgba(240,223,192,.8)}.box-wand::before{content:"🪄"}
+.box-r{background:rgba(212,165,32,.05);border:1px solid rgba(212,165,32,.18);color:rgba(240,223,192,.8)}.box-r::before{content:"💰"}
+
+/* BLUEPRINT ENGINE */
+.bp-outer{margin:10px 0;border-radius:10px;overflow:hidden;border:2px solid rgba(74,144,217,.17);position:relative}
+.bp-outer.gun-t{border-color:rgba(90,158,217,.25)}
+.bp-outer.melee-t{border-color:rgba(200,120,32,.25)}
+.bp-outer.wand-t{border-color:rgba(144,80,200,.25)}
+.bp-outer.shake{animation:bpshk .35s ease}
+@keyframes bpshk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.bp-canvas-wrap canvas{display:block;width:100%;background:#0c0818;cursor:crosshair}
+.bp-hint{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.05em;color:rgba(74,144,217,.48);padding:4px 11px;background:rgba(74,144,217,.04);border-top:1px solid rgba(74,144,217,.08)}
+.bp-hint.gun-t{color:rgba(90,158,217,.5)}.bp-hint.melee-t{color:rgba(200,120,32,.5)}.bp-hint.wand-t{color:rgba(144,80,200,.5)}
+.bp-valinput{position:absolute;z-index:50;background:#100818;border:2px solid var(--amber);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.8);min-width:180px}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:rgba(200,120,32,.85);letter-spacing:.05em}
+.bp-valinput input{background:#06040a;border:1px solid rgba(200,120,32,.4);border-radius:5px;color:#f0dfc0;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput input:focus{border-color:var(--amber-lt)}
+.bp-valinput-btns{display:flex;gap:6px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bp-valinput-ok{background:var(--amber);color:#06040a}.bp-valinput-ok:hover{background:var(--amber-lt)}
+.bp-valinput-cancel{background:rgba(255,255,255,.08);color:rgba(240,223,192,.6)}.bp-valinput-cancel:hover{background:rgba(255,255,255,.13)}
+.task-list{margin:7px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.74rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+/* WEAPON POOL CARDS */
+.wpn-pool{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:9px 0}
+.wpn-card-sm{padding:8px 10px;border-radius:7px;border:1.5px solid rgba(255,255,255,.06);background:rgba(0,0,0,.25);cursor:pointer;transition:all .18s}
+.wpn-card-sm:hover{transform:translateY(-1px)}
+.wpn-card-sm.sel{border-width:2px}
+.wpn-card-sm.gun-t.sel{background:rgba(90,158,217,.1);border-color:var(--gun-col)}
+.wpn-card-sm.melee-t.sel{background:rgba(200,120,32,.08);border-color:var(--melee-col)}
+.wpn-card-sm.wand-t.sel{background:rgba(144,80,200,.08);border-color:var(--wand-col)}
+.wc-tag{font-family:'JetBrains Mono',monospace;font-size:.48rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.wc-tag.gun-t{color:#7ab8f5}.wc-tag.melee-t{color:var(--amber-lt)}.wc-tag.wand-t{color:#c090f0}
+.wc-name{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#fff;margin-bottom:2px}
+.wc-stats{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--muted);line-height:1.5}
+
+/* BUTTONS */
+.run-btn{width:100%;margin-top:9px;padding:11px;background:linear-gradient(135deg,var(--blood),#700808);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--blood-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+.step-nav{display:flex;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(200,120,32,.11);color:var(--amber-lt);border:1px solid rgba(200,120,32,.2)}.btn-n:hover:not(:disabled){background:rgba(200,120,32,.2)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* GAME RIGHT — exactly matching Nuclear's pattern */
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px)}
+@media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-l{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.54rem;color:var(--amber-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--blood-lt);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.fs-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-btn:hover{background:rgba(255,255,255,.11);color:var(--text)}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:7px;display:flex;align-items:center;justify-content:center}
+#gc{border-radius:10px;box-shadow:0 0 0 1px rgba(200,80,32,.08),0 8px 36px rgba(0,0,0,.9);display:block;max-width:100%;max-height:100%;cursor:crosshair}
+.wpn-bar{display:flex;align-items:center;gap:8px;padding:5px 12px;border-top:1px solid var(--border);flex-shrink:0;background:rgba(0,0,0,.2)}
+.wpn-bar-l{font-family:'JetBrains Mono',monospace;font-size:.46rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.wpn-name-display{font-family:'Bebas Neue',sans-serif;font-size:.85rem;flex:1}
+.wpn-stats-display{font-family:'JetBrains Mono',monospace;font-size:.54rem;color:var(--muted)}
+.game-hud{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);flex-shrink:0}
+.hb{padding:5px 7px;border-right:1px solid var(--border);text-align:center}
+.hb:last-child{border-right:none}
+.hv{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.04em}
+.hl{font-family:'JetBrains Mono',monospace;font-size:.44rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.56rem;min-height:26px;color:var(--amber-lt);flex-shrink:0}
+
+/* FULLSCREEN */
+.fs-overlay{position:fixed;inset:0;z-index:500;background:#06040a;display:none;flex-direction:column;align-items:center}
+.fs-overlay.open{display:flex}
+.fs-hdr{position:fixed;top:0;left:0;right:0;height:50px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,4,10,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(200,80,32,.12);z-index:10}
+.fs-hud-row{display:flex;gap:16px;align-items:center}
+.fs-hi{text-align:center}
+.fs-hv{font-family:'Bebas Neue',sans-serif;font-size:1.2rem}
+.fs-hl{font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fs-sep{width:1px;height:26px;background:rgba(200,80,32,.14)}
+.fs-close{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:5px 13px;border-radius:5px;cursor:pointer}
+.fs-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:50px 0 26px;width:100%}
+#gcFS{display:block;cursor:crosshair}
+.fs-foot{position:fixed;bottom:0;left:0;right:0;height:26px;padding:4px 16px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--amber-lt);background:rgba(6,4,10,.92);border-top:1px solid rgba(200,80,32,.08)}
+footer{text-align:center;padding:20px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.54rem;color:var(--muted)}
+footer a{color:var(--amber-lt);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">JVDesignStudio / Workshop</div>
+  <div class="hdr-right">
+    <div class="live-wrap"><div class="live-dot"></div>LIVE</div>
+    <button class="quick-btn" onclick="quickPlay()">⚔ Quick Descent</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">Blueprint Builder · Hellfire Descent · Isometric ARPG</div>
+      <h1 class="hero-title"><span class="hl">HELLFIRE</span> DESCENT</h1>
+      <p class="hero-desc">Design your hero's starting weapon — a random crossbow, a legendary blade, or a chaos wand. Then storm isometric dungeons, collect ground loot drops, grow in power.</p>
+      <div class="hero-pills">
+        <span class="pill blood">Isometric ARPG</span>
+        <span class="pill gun">🔫 Random Guns</span>
+        <span class="pill">⚔ Random Melee</span>
+        <span class="pill wand">🪄 Random Wands</span>
+        <span class="pill">Ground Loot</span>
+        <span class="pill">30 Steps</span>
+      </div>
+    </div>
+    <div class="wpn-card">
+      <div class="wpn-card-title">⚔ Your Hero</div>
+      <div class="wpn-name" id="hw-name">??? UNKNOWN</div>
+      <div class="wpn-stat"><span class="wpn-stat-l">HP</span><span class="wpn-stat-r" id="hw-hp">???</span></div>
+      <div class="wpn-stat"><span class="wpn-stat-l">Weapon Type</span><span class="wpn-stat-r" id="hw-wtype">???</span></div>
+      <div class="wpn-stat"><span class="wpn-stat-l">Weapon</span><span class="wpn-stat-r" id="hw-wpn">???</span></div>
+      <div class="wpn-stat"><span class="wpn-stat-l">Damage</span><span class="wpn-stat-r" id="hw-dmg">???</span></div>
+      <div class="wpn-stat"><span class="wpn-stat-l">Special</span><span class="wpn-stat-r" id="hw-spec" style="color:var(--purple-lt)">none</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+  <div class="game-col">
+    <div class="game-top">
+      <div class="game-top-l">⚔ Hellfire Descent · Isometric View</div>
+      <div class="game-top-r">
+        <button class="fs-btn" onclick="openFS()">⛶ Fullscreen</button>
+      </div>
+    </div>
+    <div class="game-wrap"><canvas id="gc"></canvas></div>
+    <div class="wpn-bar">
+      <span class="wpn-bar-l">Weapon</span>
+      <span id="wpnIcon" style="font-size:1rem">⚔</span>
+      <span class="wpn-name-display" id="wpnName">— no weapon —</span>
+      <span class="wpn-stats-display" id="wpnStats"></span>
+    </div>
+    <div class="game-hud">
+      <div class="hb"><div class="hv" id="hudHP" style="color:var(--blood-lt)">—</div><div class="hl">HP</div></div>
+      <div class="hb"><div class="hv" id="hudLvl" style="color:var(--gold)">1</div><div class="hl">Level</div></div>
+      <div class="hb"><div class="hv" id="hudFloor" style="color:var(--purple-lt)">1</div><div class="hl">Floor</div></div>
+      <div class="hb"><div class="hv" id="hudGold" style="color:var(--gold)">0</div><div class="hl">Gold</div></div>
+      <div class="hb"><div class="hv" id="hudKills" style="color:var(--blood-lt)">0</div><div class="hl">Kills</div></div>
+    </div>
+    <div class="obar" id="obar">⚔ Complete the blueprint steps — or press Quick Descent to begin</div>
+  </div>
+</div>
+
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-hdr">
+    <div class="fs-hud-row">
+      <div class="fs-hi"><div class="fs-hv" id="fsHP" style="color:var(--blood-lt)">—</div><div class="fs-hl">HP</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsLvl" style="color:var(--gold)">1</div><div class="fs-hl">Lvl</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsFloor" style="color:var(--purple-lt)">1</div><div class="fs-hl">Floor</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsGold" style="color:var(--gold)">0</div><div class="fs-hl">Gold</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsKills" style="color:var(--blood-lt)">0</div><div class="fs-hl">Kills</div></div>
+    </div>
+    <button class="fs-close" onclick="closeFS()">✕ Close [Esc]</button>
+  </div>
+  <div class="fs-canvas-wrap"><canvas id="gcFS"></canvas></div>
+  <div class="fs-foot" id="fsFoot">⚔ WASD to move · Click to attack · H for potion</div>
+</div>
+
+<footer><p>© 2026 JVDesignStudio · <a href="workshop.html">Workshop</a> · <a href="contact.html">Contact</a></p></footer>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════
+   WEAPON POOLS — 3 types, all randomised
+═══════════════════════════════════════════ */
+const GUN_POOL=[
+  {name:'Hand Crossbow',  dmg:8,  range:180,fireRate:.35,spread:0,  projSpd:7, col:'#c0c8d8',special:null,       pierce:false},
+  {name:'Heavy Crossbow', dmg:16, range:240,fireRate:.9, spread:0,  projSpd:9, col:'#d0d8e8',special:'knockback',pierce:false},
+  {name:'Repeating Bow',  dmg:5,  range:160,fireRate:.22,spread:4,  projSpd:6, col:'#b0c890',special:null,       pierce:false},
+  {name:'Poison Dart',    dmg:4,  range:200,fireRate:.28,spread:0,  projSpd:5, col:'#60c040',special:'poison',   pierce:false},
+  {name:'Hell Cannon',    dmg:28, range:150,fireRate:1.6,spread:8,  projSpd:10,col:'#e04020',special:'explosive',pierce:false},
+  {name:'Elven Longbow',  dmg:11, range:300,fireRate:.55,spread:0,  projSpd:12,col:'#90d870',special:null,       pierce:true},
+  {name:'Triple Shot',    dmg:7,  range:180,fireRate:.45,spread:0,  projSpd:7, col:'#c0b880',special:'triple',   pierce:false},
+  {name:'Shadow Bolt',    dmg:14, range:220,fireRate:.6, spread:0,  projSpd:8, col:'#8050c0',special:'slow',     pierce:false},
+  {name:'Iron Musket',    dmg:22, range:260,fireRate:1.2,spread:0,  projSpd:14,col:'#a0a8b0',special:null,       pierce:true},
+  {name:'Scatter Shot',   dmg:6,  range:120,fireRate:.5, spread:0,  projSpd:7, col:'#d0a060',special:'scatter',  pierce:false},
+];
+const MELEE_POOL=[
+  {name:'Rusty Dagger',  dmg:6,  reach:40,atkSpd:.22,sweep:45, col:'#a8a8b8',special:null},
+  {name:'Short Sword',   dmg:9,  reach:55,atkSpd:.32,sweep:70, col:'#c0c8d8',special:null},
+  {name:'Broad Sword',   dmg:14, reach:60,atkSpd:.45,sweep:80, col:'#b0b8c8',special:null},
+  {name:'War Axe',       dmg:18, reach:52,atkSpd:.6, sweep:55, col:'#907050',special:'armour_break'},
+  {name:'Battle Axe',    dmg:24, reach:55,atkSpd:.85,sweep:60, col:'#806040',special:'armour_break'},
+  {name:'Mace',          dmg:12, reach:46,atkSpd:.42,sweep:65, col:'#a09080',special:'stun'},
+  {name:'War Hammer',    dmg:20, reach:48,atkSpd:.75,sweep:70, col:'#888090',special:'stun'},
+  {name:'Rapier',        dmg:8,  reach:70,atkSpd:.18,sweep:25, col:'#a0c0e0',special:'pierce'},
+  {name:'Halberd',       dmg:16, reach:80,atkSpd:.65,sweep:90, col:'#708060',special:'sweep'},
+  {name:'Greatsword',    dmg:22, reach:72,atkSpd:.8, sweep:110,col:'#c0c8d8',special:'sweep'},
+  {name:'Hell Blade',    dmg:30, reach:65,atkSpd:.9, sweep:85, col:'#dd3020',special:'fire'},
+  {name:'Shadowfang',    dmg:13, reach:50,atkSpd:.28,sweep:55, col:'#503860',special:'lifesteal'},
+];
+const WAND_POOL=[
+  {name:'Apprentice Wand',dmg:10,range:200,castTime:.5, projSpd:6, aoeR:0,  col:'#8080ff',special:null,    elem:'arcane'},
+  {name:'Fire Staff',     dmg:14,range:180,castTime:.6, projSpd:7, aoeR:30, col:'#f06020',special:'burn',  elem:'fire'},
+  {name:'Ice Shard Wand', dmg:9, range:220,castTime:.4, projSpd:8, aoeR:0,  col:'#60c0ff',special:'freeze',elem:'ice'},
+  {name:'Lightning Rod',  dmg:18,range:250,castTime:.7, projSpd:14,aoeR:20, col:'#f0f060',special:'chain', elem:'lightning'},
+  {name:'Chaos Wand',     dmg:20,range:160,castTime:.8, projSpd:5, aoeR:50, col:'#c040c0',special:'random',elem:'chaos'},
+  {name:'Bone Staff',     dmg:12,range:200,castTime:.5, projSpd:7, aoeR:0,  col:'#d0c0b0',special:'pierce',elem:'necro'},
+  {name:'Poison Orb',     dmg:8, range:140,castTime:.45,projSpd:4, aoeR:40, col:'#40c020',special:'poison',elem:'nature'},
+  {name:'Holy Symbol',    dmg:11,range:200,castTime:.5, projSpd:8, aoeR:0,  col:'#f0d040',special:'heal',  elem:'holy'},
+  {name:'Void Sceptre',   dmg:25,range:280,castTime:1.0,projSpd:10,aoeR:0,  col:'#400080',special:'drain', elem:'void'},
+  {name:'Storm Wand',     dmg:16,range:220,castTime:.6, projSpd:9, aoeR:35, col:'#80c0ff',special:'chain', elem:'lightning'},
+];
+const WPN_TYPE_COL={gun:'#7ab8f5',melee:'#f0a030',wand:'#c090f0'};
+const WPN_TYPE_ICON={gun:'🔫',melee:'⚔',wand:'🪄'};
+
+/* ═══════════════════════════════════════════
+   BLUEPRINT CANVAS ENGINE
+═══════════════════════════════════════════ */
+const PC={exec:'#fff',bool:'#dd4444',int:'#44aaee',float:'#88ee44',vec3:'#eebb44',actor:'#ee8833',object:'#4488ee',string:'#ee55aa',any:'#aaa'};
+const NS={
+  event:{h:'#3a1010',b:'#120808',e:'#cc4020'},
+  func:{h:'#142030',b:'#080e18',e:'#3070c0'},
+  vset:{h:'#1e1408',b:'#0c0804',e:'#906828'},
+  vget:{h:'#101828',b:'#080810',e:'#3050a8'},
+  branch:{h:'#282828',b:'#101010',e:'#888'},
+  math:{h:'#181818',b:'#0c0c0c',e:'#555'},
+  custom:{h:'#200e18',b:'#0c0608',e:'#904858'},
+  gun:{h:'#0e1e30',b:'#060c12',e:'#2870b0'},
+  melee:{h:'#281408',b:'#100804',e:'#a06828'},
+  wand:{h:'#180820',b:'#080610',e:'#7038b0'},
+  loot:{h:'#201808',b:'#0c0c04',e:'#908028'},
+};
+class BPC{
+  constructor(el,defs,rW,rV,onDone){
+    this.el=el;this.defs=defs;this.rW=rW;this.rV=rV;this.onDone=onDone;
+    this.wires=[];this.pins={};this.drag=null;this.done=false;this.vals={};
+    this.DPR=Math.min(window.devicePixelRatio||1,2);
+    this.cv=document.createElement('canvas');this.cx=this.cv.getContext('2d');
+    el.appendChild(this.cv);
+    this.nodes=defs.map(d=>({...d,lp:d.lp||[],rp:d.rp||[],vf:d.vf||null,w:d.w||155}));
+    this.nodes.forEach(n=>{const r=Math.max(n.lp.length,n.rp.length,1);n.h=26+(n.sub?12:0)+r*19+(n.vf?25:0)+12;});
+    this.cv.addEventListener('mousedown',e=>this._dn(e));
+    this._mmv=e=>this._mv(e);this._mup=e=>this._up(e);
+    document.addEventListener('mousemove',this._mmv);document.addEventListener('mouseup',this._mup);
+    ['touchstart','touchmove','touchend'].forEach(t=>this.cv.addEventListener(t,e=>{e.preventDefault();const m=t==='touchend'?'up':t==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
+    this._resize();window.addEventListener('resize',()=>this._resize());
+    this.render();
+  }
+  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
+  _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
+  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
+  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;if(x>n.x+4&&x<n.x+n.w-4&&y>vy-8&&y<vy+24)return n.id;}return null;}
+  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showVal(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const src=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[src];this.drag={pid:src,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
+  _showVal(nid,e){
+    const n=this.nodes.find(n=>n.id===nid);if(!n?.vf)return;
+    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    const cr=outer.getBoundingClientRect();
+    const pop=document.createElement('div');pop.className='bp-valinput';
+    pop.style.left=Math.min(e.clientX-cr.left,cr.width-200)+'px';pop.style.top=(e.clientY-cr.top+10)+'px';
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    pop.querySelector('.bp-valinput-ok').onclick=commit;
+    pop.querySelector('.bp-valinput-cancel').onclick=()=>pop.remove();
+    inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')pop.remove();};
+    pop.onmousedown=ev=>ev.stopPropagation();
+  }
+  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
+  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
+  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt2=this.pins[t];if(!pf||!pt2||pf.side!=='right'||pt2.side!=='left')return this._err();const ok=pf.type===pt2.type||pf.type==='any'||pt2.type==='any'||(pf.type==='exec'&&pt2.type==='exec');if(!ok)return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
+  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
+  _chk(){
+    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
+    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
+    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
+    const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);
+    if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);
+    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
+    else if(!(wOk&&vOk))this.done=false;
+  }
+  render(){
+    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
+    cx.fillStyle='#0c0818';cx.fillRect(0,0,540,H);
+    cx.strokeStyle='rgba(180,100,20,.03)';cx.lineWidth=1;
+    for(let x=0;x<540;x+=20){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+    for(let y=0;y<H;y+=20){cx.beginPath();cx.moveTo(0,y);cx.lineTo(540,y);cx.stroke();}
+    this.pins={};
+    this.nodes.forEach(n=>this._node(cx,n));
+    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
+    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
+  }
+  _node(cx,n){
+    const st=NS[n.type]||NS.func,HDR=22,GAP=19;
+    const rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
+    cx.fillStyle='rgba(0,0,0,.4)';this._rr(cx,x+3,y+3,w,h,6);cx.fill();
+    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,6);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
+    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,6);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
+    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
+    if(n.sub){cx.fillStyle='rgba(255,255,255,.26)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
+    if(n.vf){
+      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
+      cx.fillStyle='rgba(0,0,0,.5)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
+      cx.strokeStyle=n.vf.val?'#88ee44':'rgba(200,120,32,.6)';cx.lineWidth=1;cx.stroke();
+      cx.fillStyle=n.vf.val?'#88ee44':'rgba(220,130,40,.85)';
+      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
+      cx.fillText(n.vf.val?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint),x+w/2,vy+10);
+      cx.fillStyle='rgba(255,255,255,.13)';cx.font='6.5px JetBrains Mono,monospace';
+      cx.fillText(n.vf.val?'✓ set':'▼ click to type',x+w/2,vy+20);
+    }
+    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
+    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.55)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
+    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.55)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
+    cx.textAlign='left';
+  }
+  _pin(cx,x,y,col,exec,conn,side){cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}cx.fillStyle=col+'28';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();}
+  _wire(cx,x1,y1,x2,y2,col,dash){const mx=(x1+x2)/2;cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=dash?0:6;if(dash){cx.setLineDash([5,4]);cx.globalAlpha=.45;}cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(mx,y1,mx,y2,x2,y2);cx.stroke();cx.restore();}
+  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
+}
+let UID=0;
+function mkPZ(defs,rW,rV,onDone,theme=''){
+  const uid=++UID;const hasW=rW.length>0,hasV=rV.length>0;
+  const html=`<div class="bp-outer${theme?' '+theme:''}" id="bpo-${uid}"><div class="bp-canvas-wrap" id="bpcw-${uid}"></div>
+    <div class="bp-hint${theme?' '+theme:''}">🖱 Drag output → input pin${hasV?' · Click amber fields to type':''}</div></div>
+    <div class="task-list">${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wires</div>`:''}
+    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the amber fields</div>`:''}</div>`;
+  return{uid,html,init(cb){const el=document.getElementById('bpcw-'+uid);if(!el)return;const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);});bp.uid=uid;return bp;}};
+}
+
+/* ═══════════════════════════════════════════
+   GAME ENGINE — Isometric ARPG
+═══════════════════════════════════════════ */
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+let CW=420,CH=380;
+
+function resizeGame(){
+  const wrap=canvas.parentElement;
+  const s=Math.min(wrap.clientWidth-14,wrap.clientHeight||420,500);
+  CW=s;CH=Math.round(s*.88);canvas.width=CW;canvas.height=CH;
+}
+window.addEventListener('resize',resizeGame);
+
+/* ISO helpers */
+const TILE=36;
+const MAP_W=20,MAP_H=20;
+function iso(tx,ty){return{x:CW/2+(tx-ty)*(TILE/2)-G.camX,y:CH*.28+(tx+ty)*(TILE/4)-G.camY};}
+function walkable(x,y){return x>=0&&y>=0&&x<MAP_W&&y<MAP_H&&G.map[y]?.[x]===0;}
+function rng(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function sout(m){const o=document.getElementById('obar');if(o)o.textContent=m;const f=document.getElementById('fsFoot');if(f)f.textContent=m;}
+
+const G={
+  phase:'title',
+  hero:{x:7,y:7,hp:80,maxHp:80,armour:3,xp:0,xpNext:100,level:1,gold:0,kills:0,potions:3,
+        name:'???',atkTimer:0,atkAlpha:0,atkAngle:0,facing:0,weapon:null,weaponType:null},
+  floor:1,map:[],enemies:[],drops:[],chests:[],particles:[],stairs:null,
+  keys:{},mx:0,my:0,camX:0,camY:0,
+  f_move:false,f_attack:false,f_enemies:false,f_loot:false,f_chests:false,f_stairs:false,
+  shakeT:0,shakeA:0,animF:0,
+};
+
+function genMap(){
+  G.map=[];
+  for(let y=0;y<MAP_H;y++){G.map[y]=[];for(let x=0;x<MAP_W;x++)G.map[y][x]=1;}
+  for(let y=2;y<MAP_H-2;y++)for(let x=2;x<MAP_W-2;x++)G.map[y][x]=0;
+  for(let i=0;i<4+G.floor;i++){
+    const ox=3+rng(0,MAP_W-7),oy=3+rng(0,MAP_H-7);
+    for(let y=oy;y<oy+rng(1,3)&&y<MAP_H-3;y++)for(let x=ox;x<ox+rng(1,3)&&x<MAP_W-3;x++)G.map[y][x]=1;
+  }
+  let sx,sy,t=0;do{sx=3+rng(0,13);sy=3+rng(0,13);t++;}while((!walkable(sx,sy)||Math.abs(sx-7)+Math.abs(sy-7)<5)&&t<60);
+  G.stairs={x:sx,y:sy};
+}
+
+const EDEFS=[
+  {name:'Fallen',   col:'#a03820',sz:10,hp:18,atk:5, spd:.038,xp:12,gold:[1,4]},
+  {name:'Skeleton', col:'#c0b8a8',sz:11,hp:28,atk:7, spd:.03, xp:20,gold:[2,6]},
+  {name:'Goatman',  col:'#806040',sz:14,hp:48,atk:11,spd:.028,xp:38,gold:[4,10]},
+  {name:'Soul',     col:'#5040a0',sz:9, hp:14,atk:5, spd:.055,xp:10,gold:[1,3]},
+  {name:'Succubus', col:'#c04080',sz:11,hp:32,atk:9, spd:.045,xp:30,gold:[5,12]},
+  {name:'StoneDemon',col:'#607080',sz:16,hp:85,atk:17,spd:.02,xp:75,gold:[8,20]},
+];
+const BDEFS=[
+  {name:'Lich King',  col:'#7050a0',sz:22,hp:250,atk:22,spd:.025,xp:400,gold:[30,60]},
+  {name:'Dungeon Wyrm',col:'#405020',sz:26,hp:320,atk:18,spd:.022,xp:500,gold:[40,70]},
+  {name:'DIABLO',     col:'#cc2020',sz:30,hp:500,atk:30,spd:.028,xp:800,gold:[60,100]},
+];
+
+function spawnFloor(){
+  G.enemies=[];G.drops=[];G.chests=[];G.particles=[];
+  genMap();
+  const isBoss=G.floor%5===0&&G.f_stairs;
+  const pool=EDEFS.slice(0,Math.min(3+Math.floor(G.floor/2),EDEFS.length));
+  const cnt=isBoss?1:(4+G.floor*2);
+  for(let i=0;i<cnt;i++){
+    let ex,ey,t=0;do{ex=rng(2,MAP_W-3);ey=rng(2,MAP_H-3);t++;}while((!walkable(ex,ey)||Math.abs(ex-G.hero.x)+Math.abs(ey-G.hero.y)<4)&&t<60);
+    const base=isBoss?BDEFS[Math.min(Math.floor(G.floor/5)-1,BDEFS.length-1)]:pick(pool);
+    const sc=1+G.floor*.07;
+    G.enemies.push({...base,hp:Math.round(base.hp*sc),maxHp:Math.round(base.hp*sc),atk:Math.round(base.atk*(1+G.floor*.05)),x:ex,y:ey,dead:false,dmgT:0,mvT:0,angle:0});
+  }
+  for(let i=0;i<2+Math.floor(G.floor/2);i++){
+    let cx2,cy2,t=0;do{cx2=rng(2,MAP_W-3);cy2=rng(2,MAP_H-3);t++;}while((!walkable(cx2,cy2)||Math.abs(cx2-G.hero.x)+Math.abs(cy2-G.hero.y)<3)&&t<40);
+    G.chests.push({x:cx2,y:cy2,open:false});
+  }
+  const sp=iso(G.hero.x,G.hero.y);G.camX=sp.x-CW/2;G.camY=sp.y-CH/2;
+}
+
+function spark(x,y,col,n=8,spd=2.5){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2;G.particles.push({x,y,vx:Math.cos(a)*spd*(0.5+Math.random()),vy:Math.sin(a)*spd*(0.5+Math.random()),col,l:1,s:2+Math.random()*3,proj:false});}}
+function shake(a,d){G.shakeT=d;G.shakeA=a;}
+
+function fireWeapon(sx,sy){
+  if(!G.f_attack||!G.hero.weapon)return;
+  const h=G.hero;if(h.atkTimer>0)return;
+  const sp=iso(h.x,h.y);
+  const ang=Math.atan2(sy-sp.y,sx-sp.x);
+  h.atkAngle=ang;h.atkAlpha=1;h.facing=ang;
+  const w=h.weapon,wt=h.weaponType;
+  if(wt==='gun'){
+    h.atkTimer=w.fireRate*60;
+    fireProj(sp.x,sp.y,ang,w);
+    if(w.special==='triple'){fireProj(sp.x,sp.y,ang-.2,w);fireProj(sp.x,sp.y,ang+.2,w);}
+    if(w.special==='scatter'){for(let i=0;i<5;i++)fireProj(sp.x,sp.y,ang+(Math.random()-.5)*.8,w);}
+  }else if(wt==='melee'){
+    h.atkTimer=w.atkSpd*60;
+    const sweepR=(w.sweep||70)*Math.PI/180;
+    G.enemies.forEach(e=>{
+      if(e.dead)return;
+      const ep=iso(e.x,e.y);const dx=ep.x-sp.x,dy=ep.y-sp.y;
+      if(Math.sqrt(dx*dx+dy*dy)>w.reach+e.sz)return;
+      let df=Math.atan2(dy,dx)-ang;
+      while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;
+      if(Math.abs(df)<sweepR/2)hurtEnemy(e,w.dmg+rng(0,4));
+    });
+    spark(sp.x+Math.cos(ang)*40,sp.y+Math.sin(ang)*28,w.col||'#f0a030',6,2);
+    G.chests.forEach(ch=>{if(ch.open)return;const cp=iso(ch.x,ch.y);if(Math.sqrt((cp.x-sx)**2+(cp.y-sy)**2)<52)openChest(ch);});
+  }else if(wt==='wand'){
+    h.atkTimer=w.castTime*60;
+    fireProj(sp.x,sp.y,ang,w);
+    if(w.special==='heal'){h.hp=Math.min(h.maxHp,h.hp+10);sout('✦ Heal pulse! +10 HP');}
+  }
+  shake(3,3);
+}
+
+function fireProj(x,y,ang,w){
+  const spread=(w.spread||0)*(Math.PI/180);
+  const a=ang+(Math.random()-.5)*spread;
+  G.particles.push({x,y,vx:Math.cos(a)*(w.projSpd||7),vy:Math.sin(a)*(w.projSpd||7),
+    col:w.col||'#fff',l:1,life:1,s:5,proj:true,dmg:w.dmg+rng(0,3),
+    pierce:w.pierce||false,range:w.range||200,dist:0,aoeR:w.aoeR||0});
+}
+
+function hurtEnemy(e,dmg){
+  const d=Math.max(1,dmg);e.hp-=d;e.dmgT=14;
+  const ep=iso(e.x,e.y);spark(ep.x,ep.y,'#ff3030',5,2.5);shake(3,2);
+  if(e.hp<=0)killEnemy(e);
+}
+
+function killEnemy(e){
+  e.dead=true;G.hero.kills++;G.hero.xp+=e.xp;G.hero.gold+=rng(e.gold[0],e.gold[1]);
+  if(G.hero.xp>=G.hero.xpNext)levelUp();
+  const ep=iso(e.x,e.y);spark(ep.x,ep.y,e.col,14,3.5);
+  if(G.f_loot&&Math.random()<.38)dropWeapon(e.x,e.y);
+  if(Math.random()<.22){const gold=rng(2,10);G.hero.gold+=gold;G.drops.push({x:e.x+.3+Math.random()*.4,y:e.y+.3+Math.random()*.4,type:'gold',gold,col:'#d4a520',picked:false,bobP:Math.random()*Math.PI*2});}
+  updateHUD();sout('💀 '+e.name+' slain! '+G.hero.xp+'/'+G.hero.xpNext+' XP');
+}
+
+function levelUp(){
+  const h=G.hero;h.level++;h.xp-=h.xpNext;h.xpNext=Math.round(h.xpNext*1.6);
+  h.maxHp+=10;h.hp=h.maxHp;h.armour++;
+  const sp=iso(h.x,h.y);spark(sp.x,sp.y,'#f5c840',20,4);
+  sout('⬆ LEVEL UP! Lv.'+h.level+' — +10 HP, +1 Armour!');updateHUD();
+}
+
+function dropWeapon(tx,ty){
+  const r=Math.random();
+  let pool,wtype;
+  if(r<.34){pool=GUN_POOL;wtype='gun';}else if(r<.67){pool=MELEE_POOL;wtype='melee';}else{pool=WAND_POOL;wtype='wand';}
+  const w={...pick(pool)};const a=Math.random()*Math.PI*2,d=.4+Math.random()*.6;
+  G.drops.push({x:tx+Math.cos(a)*d,y:ty+Math.sin(a)*d,weapon:w,weaponType:wtype,
+    col:WPN_TYPE_COL[wtype],type:'weapon',picked:false,bobP:Math.random()*Math.PI*2});
+}
+
+function openChest(ch){
+  if(ch.open)return;ch.open=true;
+  dropWeapon(ch.x,ch.y);dropWeapon(ch.x,ch.y);
+  G.hero.gold+=rng(8,24);
+  const cp=iso(ch.x,ch.y);spark(cp.x,cp.y,'#d4a520',16,4);
+  sout('📦 Chest! 2 weapon drops + gold!');updateHUD();
+}
+
+function pickupDrop(d){
+  d.picked=true;
+  if(d.type==='gold'){G.hero.gold+=d.gold;sout('💰 +'+d.gold+' gold!');}
+  else if(d.type==='weapon'&&d.weapon){
+    G.hero.weapon={...d.weapon};G.hero.weaponType=d.weaponType;
+    updateWeaponBar();sout('✅ Equipped: '+d.weapon.name+' ['+d.weaponType.toUpperCase()+']');
+  }
+  updateHUD();
+}
+
+/* ── UPDATE ── */
+let lastT=0;
+function loop(ts){
+  const dt=Math.min((ts-lastT)/16,3);lastT=ts;
+  G.animF++;if(G.shakeT>0)G.shakeT-=dt;
+  update(dt);gameDraw();syncFS();
+  requestAnimationFrame(loop);
+}
+
+function update(dt){
+  if(G.phase!=='playing')return;
+  const h=G.hero;
+  if(G.f_move){
+    let dx=0,dy=0;
+    if(G.keys['KeyW']||G.keys['ArrowUp']){dx+=1;dy-=1;}
+    if(G.keys['KeyS']||G.keys['ArrowDown']){dx-=1;dy+=1;}
+    if(G.keys['KeyA']||G.keys['ArrowLeft']){dx-=1;dy-=1;}
+    if(G.keys['KeyD']||G.keys['ArrowRight']){dx+=1;dy+=1;}
+    if(dx||dy){
+      const len=Math.sqrt(dx*dx+dy*dy),spd=2.2*dt*.06;
+      const nx=h.x+dx/len*spd,ny=h.y+dy/len*spd;
+      if(walkable(Math.round(nx),Math.round(h.y)))h.x=nx;
+      if(walkable(Math.round(h.x),Math.round(ny)))h.y=ny;
+      h.x=Math.max(.5,Math.min(MAP_W-1.5,h.x));h.y=Math.max(.5,Math.min(MAP_H-1.5,h.y));
+    }
+  }
+  if(h.atkTimer>0)h.atkTimer-=dt;
+  if(h.atkAlpha>0)h.atkAlpha-=dt*.07;
+
+  if(G.f_enemies){
+    G.enemies.forEach(e=>{
+      if(e.dead)return;if(e.dmgT>0)e.dmgT-=dt;
+      e.angle=Math.atan2(h.y-e.y,h.x-e.x);e.mvT-=dt;
+      if(e.mvT<0){
+        const spd=e.spd*dt;
+        const nx=e.x+Math.cos(e.angle)*spd,ny=e.y+Math.sin(e.angle)*spd;
+        if(walkable(Math.round(nx),Math.round(e.y)))e.x=nx;
+        if(walkable(Math.round(e.x),Math.round(ny)))e.y=ny;
+        e.mvT=.3+Math.random()*.2;
+      }
+      const dd=Math.sqrt((h.x-e.x)**2+(h.y-e.y)**2);
+      if(dd<0.7){h.hp-=Math.max(1,e.atk-h.armour+rng(-2,2))*dt*.07;shake(4,3);if(h.hp<=0){h.hp=0;G.phase='dead';sout('💀 Slain on floor '+G.floor+' · '+h.kills+' kills');}}
+    });
+  }
+
+  G.particles.forEach(p=>{
+    if(!p.proj)return;
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
+    p.dist+=Math.sqrt(p.vx*p.vx+p.vy*p.vy)*dt;
+    if(p.dist>=(p.range||200)){p.life=0;return;}
+    G.enemies.forEach(e=>{
+      if(e.dead||p.life<=0)return;
+      const ep=iso(e.x,e.y);
+      if(Math.sqrt((p.x-ep.x)**2+(p.y-ep.y)**2)<e.sz+8){
+        hurtEnemy(e,p.dmg);
+        if(p.aoeR>0){G.enemies.forEach(e2=>{if(e2.dead||e2===e)return;const ep2=iso(e2.x,e2.y);if(Math.sqrt((ep.x-ep2.x)**2+(ep.y-ep2.y)**2)<p.aoeR)hurtEnemy(e2,Math.round(p.dmg*.6));});spark(p.x,p.y,p.col,10,3);}
+        if(!p.pierce)p.life=0;
+      }
+    });
+    G.chests.forEach(ch=>{if(ch.open||p.life<=0)return;const cp=iso(ch.x,ch.y);if(Math.sqrt((p.x-cp.x)**2+(p.y-cp.y)**2)<26){openChest(ch);p.life=0;}});
+  });
+
+  if(G.f_loot){
+    G.drops.forEach(d=>{
+      if(d.picked)return;
+      const dp=iso(d.x,d.y),hp2=iso(h.x,h.y);
+      if(Math.abs(dp.x-hp2.x)<24&&Math.abs(dp.y-hp2.y)<18)pickupDrop(d);
+    });
+    G.drops=G.drops.filter(d=>!d.picked);
+  }
+
+  if(G.f_stairs&&G.stairs&&Math.round(h.x)===G.stairs.x&&Math.round(h.y)===G.stairs.y){
+    G.floor++;G.hero.x=7;G.hero.y=7;spawnFloor();sout('🔻 Floor '+G.floor+'! Descending...');
+  }
+
+  G.particles.forEach(p=>{if(!p.proj){p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=.025*dt;p.vx*=.88;p.vy*=.88;}});
+  G.particles=G.particles.filter(p=>p.proj?p.life>0:p.l>0);
+
+  const tp=iso(h.x,h.y);G.camX+=(tp.x-CW/2-G.camX)*.13*dt;G.camY+=(tp.y-CH/2-G.camY)*.13*dt;
+  updateHUD();
+}
+
+/* ── DRAW ── */
+function gameDraw(){
+  const cx=ctx,W=CW,H=CH;
+  cx.save();
+  if(G.shakeT>0)cx.translate((Math.random()-.5)*G.shakeA,(Math.random()-.5)*G.shakeA);
+
+  // Background
+  cx.fillStyle='#080412';cx.fillRect(0,0,W,H);
+
+  if(G.phase==='title'){
+    const g=cx.createRadialGradient(W/2,H/2,10,W/2,H/2,W*.7);
+    g.addColorStop(0,'#1a0808');g.addColorStop(1,'#080412');
+    cx.fillStyle=g;cx.fillRect(0,0,W,H);
+    cx.strokeStyle='rgba(200,80,32,.15)';cx.lineWidth=1;cx.strokeRect(10,10,W-20,H-20);
+    cx.fillStyle='#e03030';cx.font='bold 30px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('HELLFIRE DESCENT',W/2,H/2-24);
+    cx.fillStyle='#c87820';cx.font='13px Georgia,serif';cx.fillText('Isometric ARPG • Random Guns • Melee • Wands',W/2,H/2+4);
+    cx.fillStyle='rgba(240,200,150,.4)';cx.font='11px monospace';cx.fillText('Press Quick Descent or complete the steps',W/2,H/2+26);
+    cx.textAlign='left';cx.textBaseline='alphabetic';
+    cx.restore();return;
+  }
+  if(G.phase==='dead'||G.phase==='win'){
+    cx.fillStyle=G.phase==='win'?'rgba(5,15,5,.88)':'rgba(20,5,5,.85)';cx.fillRect(0,0,W,H);
+    cx.fillStyle=G.phase==='win'?'#40c060':'#dd2020';cx.font='bold 28px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText(G.phase==='win'?'VICTORY!':'YOU DIED',W/2,H/2-18);
+    cx.fillStyle='rgba(240,200,100,.6)';cx.font='10px monospace';
+    cx.fillText('Floor '+G.floor+' · Lv.'+G.hero.level+' · '+G.hero.kills+' kills · '+G.hero.gold+' gold',W/2,H/2+8);
+    cx.fillText('Click or Quick Descent to try again',W/2,H/2+26);
+    cx.textAlign='left';cx.textBaseline='alphabetic';cx.restore();return;
+  }
+
+  // Tiles
+  const hx=Math.round(G.hero.x),hy=Math.round(G.hero.y),vis=10;
+  for(let d=0;d<MAP_W+MAP_H;d++){
+    for(let ty=Math.max(0,hy-vis);ty<Math.min(MAP_H,hy+vis);ty++){
+      const tx=d-ty;if(tx<0||tx>=MAP_W)continue;
+      const tile=G.map[ty]?.[tx];if(tile===undefined)continue;
+      const sp=iso(tx,ty);const tw=TILE/2,th=TILE/4;
+      cx.beginPath();cx.moveTo(sp.x,sp.y-th);cx.lineTo(sp.x+tw,sp.y);cx.lineTo(sp.x,sp.y+th);cx.lineTo(sp.x-tw,sp.y);cx.closePath();
+      if(tile===1){
+        const wH=TILE*.38;
+        cx.fillStyle='#201828';cx.fill();
+        cx.beginPath();cx.moveTo(sp.x-tw,sp.y);cx.lineTo(sp.x-tw,sp.y+wH);cx.lineTo(sp.x,sp.y+th+wH);cx.lineTo(sp.x,sp.y+th);cx.closePath();cx.fillStyle='#130e18';cx.fill();
+        cx.beginPath();cx.moveTo(sp.x+tw,sp.y);cx.lineTo(sp.x+tw,sp.y+wH);cx.lineTo(sp.x,sp.y+th+wH);cx.lineTo(sp.x,sp.y+th);cx.closePath();cx.fillStyle='#110c16';cx.fill();
+        cx.beginPath();cx.moveTo(sp.x,sp.y-th);cx.lineTo(sp.x+tw,sp.y);cx.lineTo(sp.x,sp.y+th);cx.lineTo(sp.x-tw,sp.y);cx.closePath();cx.fillStyle='#201828';cx.fill();
+        cx.strokeStyle='rgba(180,100,20,.05)';cx.lineWidth=.4;cx.stroke();
+      }else{
+        const v=(tx+ty)%2;cx.fillStyle=v?'#140e1c':'#110b18';cx.fill();
+        cx.strokeStyle='rgba(100,60,160,.06)';cx.lineWidth=.35;cx.stroke();
+      }
+    }
+  }
+
+  // Drops — glow orbs
+  G.drops.forEach(d=>{
+    const sp=iso(d.x,d.y);const bob=Math.sin(G.animF*.06+d.bobP)*3;
+    const grd=cx.createRadialGradient(sp.x,sp.y+bob,2,sp.x,sp.y+bob,18);
+    grd.addColorStop(0,d.col+'90');grd.addColorStop(1,'transparent');
+    cx.fillStyle=grd;cx.beginPath();cx.arc(sp.x,sp.y+bob,18,0,Math.PI*2);cx.fill();
+    cx.fillStyle=d.col;cx.beginPath();cx.arc(sp.x,sp.y+bob,5,0,Math.PI*2);cx.fill();
+    cx.strokeStyle='rgba(255,255,255,.35)';cx.lineWidth=1.5;cx.stroke();
+  });
+
+  // Chests
+  G.chests.forEach(ch=>{
+    if(ch.open)return;
+    const sp=iso(ch.x,ch.y);
+    cx.fillStyle='#3a2808';cx.fillRect(sp.x-13,sp.y-8,26,16);
+    cx.strokeStyle='#c8a030';cx.lineWidth=1.5;cx.strokeRect(sp.x-13,sp.y-8,26,16);
+    cx.fillStyle='#c8a030';cx.fillRect(sp.x-4,sp.y-3,8,6);
+    const grd=cx.createRadialGradient(sp.x,sp.y,2,sp.x,sp.y,24);
+    grd.addColorStop(0,'rgba(200,160,48,.22)');grd.addColorStop(1,'transparent');
+    cx.fillStyle=grd;cx.beginPath();cx.arc(sp.x,sp.y,24,0,Math.PI*2);cx.fill();
+  });
+
+  // Stairs
+  if(G.stairs&&G.f_stairs){
+    const sp=iso(G.stairs.x,G.stairs.y);
+    const grd=cx.createRadialGradient(sp.x,sp.y,3,sp.x,sp.y,20);
+    grd.addColorStop(0,'rgba(128,80,200,.55)');grd.addColorStop(1,'transparent');
+    cx.fillStyle=grd;cx.beginPath();cx.arc(sp.x,sp.y,20,0,Math.PI*2);cx.fill();
+    cx.fillStyle='rgba(160,100,255,.85)';cx.font='16px serif';cx.textAlign='center';cx.textBaseline='middle';
+    cx.fillText('▼',sp.x,sp.y);cx.textAlign='left';cx.textBaseline='alphabetic';
+  }
+
+  // Enemies
+  G.enemies.forEach(e=>{
+    if(e.dead)return;
+    const sp=iso(e.x,e.y);
+    cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(sp.x,sp.y+3,e.sz*.8,e.sz*.35,0,0,Math.PI*2);cx.fill();
+    cx.fillStyle=e.dmgT>10?'#fff':e.col;cx.beginPath();cx.arc(sp.x,sp.y-e.sz*.4,e.sz*.65,0,Math.PI*2);cx.fill();
+    cx.strokeStyle=e.col+'88';cx.lineWidth=1.2;cx.stroke();
+    const bw=e.sz*2.2,bx=sp.x-e.sz*1.1,by=sp.y-e.sz*1.4-7;
+    cx.fillStyle='rgba(0,0,0,.65)';cx.fillRect(bx,by,bw,4);
+    cx.fillStyle=e.hp/e.maxHp>.5?'#40a050':'#cc3030';cx.fillRect(bx,by,bw*(e.hp/e.maxHp),4);
+  });
+
+  // Hero
+  const hp=iso(G.hero.x,G.hero.y);
+  cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(hp.x,hp.y+3,10,5,0,0,Math.PI*2);cx.fill();
+  const wcol=WPN_TYPE_COL[G.hero.weaponType]||'#f0a030';
+  if(G.hero.weaponType){cx.strokeStyle=wcol+'70';cx.lineWidth=2.5;cx.beginPath();cx.arc(hp.x,hp.y-8,13,0,Math.PI*2);cx.stroke();}
+  cx.fillStyle='#c87820';cx.beginPath();cx.arc(hp.x,hp.y-8,10,0,Math.PI*2);cx.fill();
+  cx.strokeStyle='rgba(255,220,100,.5)';cx.lineWidth=1.5;cx.stroke();
+  cx.strokeStyle='rgba(255,255,255,.65)';cx.lineWidth=2;
+  cx.beginPath();cx.moveTo(hp.x,hp.y-8);cx.lineTo(hp.x+Math.cos(G.hero.facing)*11,hp.y-8+Math.sin(G.hero.facing)*11);cx.stroke();
+  if(G.hero.atkAlpha>0){
+    const w=G.hero.weapon;
+    const sweepR=G.hero.weaponType==='melee'?(w?.sweep||70)*Math.PI/180:Math.PI*.28;
+    const reach=G.hero.weaponType==='melee'?(w?.reach||50):60;
+    cx.save();cx.globalAlpha=G.hero.atkAlpha*.55;
+    cx.strokeStyle=wcol;cx.lineWidth=2.5;
+    cx.beginPath();cx.arc(hp.x,hp.y-8,reach,G.hero.atkAngle-sweepR/2,G.hero.atkAngle+sweepR/2);cx.stroke();
+    cx.fillStyle=wcol+'18';cx.beginPath();cx.moveTo(hp.x,hp.y-8);cx.arc(hp.x,hp.y-8,reach,G.hero.atkAngle-sweepR/2,G.hero.atkAngle+sweepR/2);cx.closePath();cx.fill();
+    cx.restore();
+  }
+  cx.fillStyle='rgba(0,0,0,.55)';cx.fillRect(hp.x-12,hp.y+2,24,4);
+  cx.fillStyle=G.hero.hp/G.hero.maxHp>.5?'#40c060':'#e04040';cx.fillRect(hp.x-12,hp.y+2,24*(G.hero.hp/G.hero.maxHp),4);
+
+  // Projectiles
+  G.particles.forEach(p=>{
+    if(p.proj){
+      cx.globalAlpha=(p.life||1)*.9;
+      const grd=cx.createRadialGradient(p.x,p.y,1,p.x,p.y,p.s*2);
+      grd.addColorStop(0,p.col+'ff');grd.addColorStop(1,p.col+'00');
+      cx.fillStyle=grd;cx.beginPath();cx.arc(p.x,p.y,p.s*2,0,Math.PI*2);cx.fill();
+    }else{cx.globalAlpha=p.l*.9;cx.fillStyle=p.col;cx.beginPath();cx.arc(p.x,p.y,p.s,0,Math.PI*2);cx.fill();}
+  });
+  cx.globalAlpha=1;
+
+  // XP bar
+  cx.fillStyle='rgba(0,0,0,.4)';cx.fillRect(8,H-5,W-16,5);
+  cx.fillStyle='#d4a520';cx.fillRect(8,H-5,(W-16)*(G.hero.xp/G.hero.xpNext),5);
+
+  // Minimap
+  const ms=3,ox=W-7,oy=7;
+  cx.fillStyle='rgba(0,0,0,.55)';cx.fillRect(ox-MAP_W*ms-4,oy-4,MAP_W*ms+8,MAP_H*ms+8);
+  for(let ty=0;ty<MAP_H;ty++)for(let tx=0;tx<MAP_W;tx++){
+    const t=G.map[ty]?.[tx];
+    cx.fillStyle=t===0?'#302040':t===1?'#0a0810':'#050308';
+    cx.fillRect(ox-MAP_W*ms+tx*ms,oy+ty*ms,ms-1,ms-1);
+  }
+  G.enemies.forEach(e=>{if(!e.dead){cx.fillStyle='#cc3030';cx.fillRect(ox-MAP_W*ms+e.x*ms,oy+e.y*ms,ms,ms);}});
+  G.drops.forEach(d=>{cx.fillStyle=d.col;cx.fillRect(ox-MAP_W*ms+d.x*ms,oy+d.y*ms,ms,ms);});
+  if(G.stairs&&G.f_stairs){cx.fillStyle='#8060c0';cx.fillRect(ox-MAP_W*ms+G.stairs.x*ms,oy+G.stairs.y*ms,ms,ms);}
+  cx.fillStyle='#f0a030';cx.fillRect(ox-MAP_W*ms+G.hero.x*ms-1,oy+G.hero.y*ms-1,ms+2,ms+2);
+
+  cx.restore();
+}
+
+function updateHUD(){
+  const h=G.hero;
+  const set=(id,v,col)=>{const el=document.getElementById(id);if(el){el.textContent=v;if(col)el.style.color=col;}};
+  const hpPct=h.hp/h.maxHp;
+  const hpCol=hpPct>.6?'var(--green)':hpPct>.3?'var(--amber-lt)':'var(--blood-lt)';
+  set('hudHP',Math.ceil(h.hp)+'/'+h.maxHp,hpCol);set('hudLvl',h.level);set('hudFloor',G.floor);set('hudGold',h.gold);set('hudKills',h.kills);
+  set('fsHP',Math.ceil(h.hp),hpCol);set('fsLvl',h.level);set('fsFloor',G.floor);set('fsGold',h.gold);set('fsKills',h.kills);
+  set('hw-hp',Math.ceil(h.hp)+'/'+h.maxHp);
+  if(h.weapon){set('hw-wtype',h.weaponType.toUpperCase());set('hw-wpn',h.weapon.name);set('hw-dmg',h.weapon.dmg+' dmg');set('hw-spec',h.weapon.special||h.weapon.elem||'none');set('hw-name',h.name);}
+}
+function updateWeaponBar(){
+  const h=G.hero;if(!h.weapon){return;}
+  const icon=document.getElementById('wpnIcon');if(icon){icon.textContent=WPN_TYPE_ICON[h.weaponType];icon.style.color=WPN_TYPE_COL[h.weaponType];}
+  const nm=document.getElementById('wpnName');if(nm){nm.textContent=h.weapon.name;nm.style.color=WPN_TYPE_COL[h.weaponType];}
+  const st=document.getElementById('wpnStats');if(st)st.textContent=h.weapon.dmg+'dmg'+(h.weapon.special?' ['+h.weapon.special+']':h.weapon.elem?' ['+h.weapon.elem+']':'');
+}
+
+/* Input */
+window.addEventListener('keydown',e=>{
+  G.keys[e.code]=true;
+  if(['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+  if(e.code==='KeyH'){const h=G.hero;if(h.potions>0){h.potions--;h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*.4));sout('🧪 Potion! +'+Math.round(h.maxHp*.4)+' HP');updateHUD();}else sout('No potions!');}
+  if(e.code==='Escape')closeFS();
+});
+window.addEventListener('keyup',e=>G.keys[e.code]=false);
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),sc=CW/r.width;G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;});
+canvas.addEventListener('click',e=>{
+  if(G.phase==='dead'||G.phase==='win'){quickPlay();return;}
+  const r=canvas.getBoundingClientRect(),sc=CW/r.width;
+  fireWeapon((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);
+  // Chest click
+  const t={x:G.mx,y:G.my};
+  G.chests.forEach(ch=>{if(!ch.open){const cp=iso(ch.x,ch.y);if(Math.sqrt((t.x-cp.x)**2+(t.y-cp.y)**2)<36)openChest(ch);}});
+});
+
+/* Fullscreen */
+const canvasFS=document.getElementById('gcFS');
+const ctxFS=canvasFS?.getContext('2d');
+function syncFS(){
+  if(!document.getElementById('fsOverlay').classList.contains('open'))return;
+  const w=canvasFS.parentElement?.clientWidth-20||560;
+  canvasFS.width=w;canvasFS.height=Math.round(w*.88);
+  if(ctxFS)ctxFS.drawImage(canvas,0,0,canvasFS.width,canvasFS.height);
+}
+function openFS(){document.getElementById('fsOverlay').classList.add('open');}
+function closeFS(){document.getElementById('fsOverlay').classList.remove('open');}
+canvasFS?.addEventListener('click',e=>{const r=canvasFS.getBoundingClientRect(),sc=CW/canvasFS.width;fireWeapon((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);});
+
+/* Quick Play */
+function quickPlay(){
+  const names=['Aldric Hellbane','Mira Curseborn','Kael Voidwalker','Isolde Dawnbreak','Dex Shadowfang'];
+  const r=Math.random();let pool,wtype;
+  if(r<.34){pool=GUN_POOL;wtype='gun';}else if(r<.67){pool=MELEE_POOL;wtype='melee';}else{pool=WAND_POOL;wtype='wand';}
+  const w={...pick(pool)};
+  G.hero={x:7,y:7,hp:80,maxHp:80,armour:3,xp:0,xpNext:100,level:1,gold:0,kills:0,potions:3,
+    name:pick(names),atkTimer:0,atkAlpha:0,atkAngle:0,facing:0,weapon:w,weaponType:wtype};
+  G.floor=1;G.phase='playing';
+  G.f_move=true;G.f_attack=true;G.f_enemies=true;G.f_loot=true;G.f_chests=true;G.f_stairs=true;
+  spawnFloor();updateHUD();updateWeaponBar();
+  sout('⚔ '+G.hero.name+' spawns with '+w.name+' ['+wtype.toUpperCase()+']. WASD+Click!');
+  go(STEPS.length-1);
+}
+
+/* ═══════════════════════════════════════════
+   STEPS — 30 total
+═══════════════════════════════════════════ */
+function nav(i){const T=STEPS.length;return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →</button></div>`;}
+
+const STEPS=[
+// ── SETUP ──
+{title:'Event BeginPlay',tag:'STEP 01 · SETUP',tc:'def',
+intro:`Connect <strong>Event BeginPlay</strong> → <strong>Print String</strong>. The dungeon engine's first heartbeat.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:16,y:28,w:152,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Print String',sub:'Hellfire: Ready',x:200,y:28,w:160,lp:[{id:'l1',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l1'}],[]),
+boxes:[{t:'box-c',tx:'BeginPlay fires once when the game starts and flows right through every connected node — the starting fuse for all three weapon systems: guns, melee, and wands.'}],
+onApply(){sout('✅ Engine started! Work through steps to build all three weapon types.');}},
+
+// ── HERO STATS ──
+{title:'Hero Stats — HP & Armour',tag:'STEP 02 · HERO',tc:'def',
+intro:`Connect BeginPlay → Set MaxHP → Set Armour. Type your hero's starting defensive stats.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'vset',title:'Set MaxHP',x:175,y:12,w:112,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 60–150 (e.g. 80)',val:''}},{id:'n3',type:'vset',title:'Set Armour',x:307,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Armour'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Armour 0–8 (e.g. 3)',val:''}},{id:'n4',type:'vset',title:'Set Level=1',x:445,y:12,w:93,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=30&&parseInt(v)<=200},{id:'n3',ok:v=>parseInt(v)>=0&&parseInt(v)<=15}]),
+boxes:[{t:'box-c',tx:'Armour reduces incoming damage every hit. 5 armour vs a 9-damage hit = 4 actual damage. Against a 2-damage hit — still takes minimum 1.'}],
+onApply(v){G.hero.maxHp=parseInt(v['n2'])||80;G.hero.hp=G.hero.maxHp;G.hero.armour=parseInt(v['n3'])||3;updateHUD();sout('✅ HP='+v['n2']+' Armour='+v['n3']+'.');}},
+
+// ── MOVEMENT ──
+{title:'WASD — Isometric Movement',tag:'STEP 03 · MOVEMENT',tc:'def',
+intro:`Connect IA_Move → Multiply by Speed → Add Movement Input. WASD maps to the four isometric diagonal directions.`,
+pz:mkPZ([{id:'n1',type:'event',title:'IA_Move (WASD)',x:4,y:26,w:155,rp:[{id:'r1e',type:'exec',label:''},{id:'r1v',type:'vec3',label:'Axis'}]},{id:'n2',type:'math',title:'× Speed × Delta',x:180,y:8,w:132,lp:[{id:'l2a',type:'vec3',label:'Dir'},{id:'l2b',type:'float',label:'Speed'}],rp:[{id:'r2',type:'vec3',label:'Velocity'}],vf:{hint:'Speed 200–400 (e.g. 280)',val:''}},{id:'n3',type:'func',title:'Add Movement Input',x:333,y:8,w:160,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vec3',label:'World Dir'}],rp:[{id:'r3',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1v',t:'l2a'},{f:'r2',t:'l3v'}],[{id:'n2',ok:v=>parseFloat(v)>=80&&parseFloat(v)<=600}]),
+boxes:[{t:'box-c',tx:'W moves northeast, S moves southwest, A moves northwest, D moves southeast — matching the isometric tile grid. Players pick it up in seconds.'}],
+onApply(){G.f_move=true;G.phase='playing';G.hero.x=7;G.hero.y=7;spawnFloor();updateHUD();sout('✅ WASD active! Walk around the dungeon.');}},
+
+// ── GUN STEPS ──
+{title:'Gun System — Projectile Fire',tag:'STEP 04 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
+intro:`Connect On LMB → Get Cursor Direction → Spawn Projectile with Velocity → Set Lifetime. Guns fire physical bolts toward the cursor.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'gun',title:'Spawn Projectile',x:337,y:8,w:145,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Dir'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3p',type:'object',label:'Proj'}],vf:{hint:'Proj speed 500–1200',val:''}},{id:'n4',type:'gun',title:'Set Lifetime',x:504,y:8,w:34,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'object',label:'Proj'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3e',t:'l4e'},{f:'r3p',t:'l4p'}],[{id:'n3',ok:v=>parseFloat(v)>=200&&parseFloat(v)<=2000}],'gun-t'),
+boxes:[{t:'box-gun',tx:'Gun Pool (10): Hand Crossbow · Heavy Crossbow · Repeating Bow · Poison Dart · Hell Cannon · Elven Longbow · Triple Shot · Shadow Bolt · Iron Musket · Scatter Shot. Each has unique damage, fire rate, range, spread and special.'}],
+onApply(){G.f_attack=true;sout('✅ Gun projectiles active! Click to fire.');}},
+
+{title:'Gun Stats — Damage & Fire Rate',tag:'STEP 05 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
+intro:`Connect BeginPlay → Set GunDamage → Set FireRate → Set ProjectileRange. Type your starting crossbow stats.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'gun',title:'Set Gun Damage',x:175,y:12,w:125,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 5–30 (e.g. 8)',val:''}},{id:'n3',type:'gun',title:'Set Fire Rate',x:320,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cooldown'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Rate 0.2–1.5 (e.g. 0.35)',val:''}},{id:'n4',type:'gun',title:'Set Range',x:458,y:12,w:80,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Range'}],vf:{hint:'Range 100–300',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=2&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=2},{id:'n4',ok:v=>parseInt(v)>=60&&parseInt(v)<=400}],'gun-t'),
+boxes:[{t:'box-gun',tx:'Fire rate is cooldown between shots — lower = faster. Hand Crossbow: 8dmg, 0.35s = fast. Hell Cannon: 28dmg, 1.6s = devastating. The tradeoff defines the weapon\'s whole character.'}],
+onApply(v){const w={...GUN_POOL[0]};w.dmg=parseInt(v['n2'])||8;w.fireRate=parseFloat(v['n3'])||.35;w.range=parseInt(v['n4'])||180;if(!G.hero.weapon){G.hero.weapon=w;G.hero.weaponType='gun';updateWeaponBar();}updateHUD();sout('✅ Gun: '+v['n2']+'dmg, '+v['n3']+'s rate, '+v['n4']+'px range!');}},
+
+{title:'Gun Specials — Pierce & Explosive',tag:'STEP 06 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
+intro:`Connect On Proj Hit → Branch (pierce?) → Continue Travel or Destroy. Connect AoE explosion for Hell Cannon. Type the explosion radius.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On Proj Hit Enemy',x:4,y:28,w:150,rp:[{id:'r1e',type:'exec',label:''},{id:'r1p',type:'object',label:'Proj'},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:175,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'pierce'},{id:'r2b',type:'exec',label:'explosive'},{id:'r2c',type:'exec',label:'triple'}]},{id:'n3',type:'gun',title:'AoE Explosion',x:341,y:4,w:130,lp:[{id:'l3e',type:'exec',label:''},{id:'l3r',type:'float',label:'Radius'}],vf:{hint:'AoE radius (e.g. 30)',val:''}},{id:'n4',type:'gun',title:'Continue Travel',x:341,y:70,w:130,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2b',t:'l3e'},{f:'r2a',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=5&&parseFloat(v)<=100}],'gun-t'),
+boxes:[{t:'box-gun',tx:'Pierce: bolt continues hitting enemies behind the first target. Best in corridors. Explosive: AoE blast at hit point — use Hell Cannon. Triple Shot fires 3 bolts at ±12°. Scatter Shot fires 5 bolts in a cone.'}],
+onApply(){sout('✅ Gun specials wired!');}},
+
+{title:'Gun Loot Drop — Blue Orbs',tag:'STEP 07 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
+intro:`Guns drop as BLUE glowing orbs at 38% chance on kill. Walk over to auto-equip. Connect On Overlap → Compare DPS → Auto-Equip if Better.`,
+pz:mkPZ([{id:'n1',type:'loot',title:'On Gun Drop\nOverlap Hero',x:4,y:28,w:152,rp:[{id:'r1e',type:'exec',label:''},{id:'r1w',type:'object',label:'Weapon Data'}]},{id:'n2',type:'gun',title:'Get Gun DPS\n(dmg/fireRate)',x:177,y:8,w:145,lp:[{id:'l2w',type:'object',label:'Gun'}],rp:[{id:'r2n',type:'float',label:'New DPS'},{id:'r2o',type:'float',label:'Old DPS'}]},{id:'n3',type:'math',title:'> Greater',x:342,y:8,w:100,lp:[{id:'l3a',type:'float',label:'A'},{id:'l3b',type:'float',label:'B'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:462,y:8,w:76,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'gun-t'),
+boxes:[{t:'box-gun',tx:'Gun drops glow blue. Gun, melee, and wand drops all share the 38% drop chance — each kill might give any weapon type. Blue = gun, amber = melee, purple = wand. Minimap shows coloured dots.'}],
+onApply(){G.f_loot=true;sout('✅ Gun drops active! Blue orbs = guns. Walk over to equip.');}},
+
+// ── MELEE STEPS ──
+{title:'Melee System — Sweep Arc',tag:'STEP 08 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
+intro:`Connect On LMB → Get Cursor Angle → Sweep Arc Hit Detection → Apply Damage to Each Hit Actor. Melee swings a cone arc in the click direction.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Angle',x:169,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2a',type:'float',label:'Angle'}]},{id:'n3',type:'melee',title:'Sweep Arc\nHit Detection',x:334,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'float',label:'Angle'},{id:'l3r',type:'float',label:'Reach'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3h',type:'object',label:'Hit Actors'}],vf:{hint:'Reach 40–90 (e.g. 55)',val:''}},{id:'n4',type:'melee',title:'Apply Dmg Each',x:504,y:8,w:34,lp:[{id:'l4e',type:'exec',label:''},{id:'l4a',type:'object',label:'Actors'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2a',t:'l3a'},{f:'r3e',t:'l4e'},{f:'r3h',t:'l4a'}],[{id:'n3',ok:v=>parseInt(v)>=20&&parseInt(v)<=120}],'melee-t'),
+boxes:[{t:'box-melee',tx:'Melee Pool (12): Rusty Dagger · Short Sword · Broad Sword · War Axe · Battle Axe · Mace · War Hammer · Rapier · Halberd · Greatsword · Hell Blade · Shadowfang. Reach is arc radius. Sweep angle is how wide the arc cuts.'}],
+onApply(){G.f_attack=true;sout('✅ Melee sweep active! Click to swing.');}},
+
+{title:'Melee Stats — Damage & Speed',tag:'STEP 09 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
+intro:`Connect BeginPlay → Set MeleeDamage → Set AttackSpeed → Set SweepAngle. Type your starting blade stats.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'melee',title:'Set Melee Damage',x:175,y:12,w:132,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 6–35 (e.g. 12)',val:''}},{id:'n3',type:'melee',title:'Set Attack Speed',x:327,y:12,w:128,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cooldown'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Cooldown 0.2–0.9 (e.g. 0.4)',val:''}},{id:'n4',type:'melee',title:'Set Sweep Angle',x:475,y:12,w:63,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Sweep 25–120°',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=15&&parseInt(v)<=130}],'melee-t'),
+boxes:[{t:'box-melee',tx:'Fast weapons (dagger 0.2s) feel frenetic. Slow weapons (greatsword 0.8s) feel weighty. Wide sweep (90°+) hits groups. Narrow (25°) requires aim but can have massive reach. Design the tradeoff.'}],
+onApply(v){const w={...MELEE_POOL[1]};w.dmg=parseInt(v['n2'])||12;w.atkSpd=parseFloat(v['n3'])||.4;w.sweep=parseInt(v['n4'])||70;if(!G.hero.weapon){G.hero.weapon=w;G.hero.weaponType='melee';updateWeaponBar();}G.f_attack=true;updateHUD();sout('✅ Melee: '+v['n2']+'dmg, '+v['n3']+'s speed, '+v['n4']+'° sweep!');}},
+
+{title:'Melee Specials — Stun, Armour Break',tag:'STEP 10 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
+intro:`Connect On Melee Hit → Switch on Special → Apply Effect. Wire the stun duration for Mace/Hammer and armour reduction for Axe.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On Melee Hit',x:4,y:28,w:135,rp:[{id:'r1e',type:'exec',label:''},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:159,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'stun'},{id:'r2b',type:'exec',label:'armour_break'},{id:'r2c',type:'exec',label:'lifesteal'},{id:'r2d',type:'exec',label:'fire'}]},{id:'n3',type:'melee',title:'Apply Stun\n(freeze)',x:327,y:4,w:128,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'float',label:'Dur (secs)'}],vf:{hint:'Stun secs (e.g. 1.2)',val:''}},{id:'n4',type:'melee',title:'Reduce Armour\n(−3)',x:327,y:76,w:128,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2a',t:'l3e'},{f:'r2b',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)<=3}],'melee-t'),
+boxes:[{t:'box-melee',tx:'Stun (Mace/War Hammer): enemy freezes. Armour Break (War/Battle Axe): reduce armour by 3. Lifesteal (Shadowfang): restore HP on hit. Fire (Hell Blade): burn DoT. Pierce (Rapier): arc hits behind target too.'}],
+onApply(v){sout('✅ Melee specials active! Stun: '+v['n3']+'s.');}},
+
+{title:'Melee Loot Drop — Amber Orbs',tag:'STEP 11 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
+intro:`Melee weapons drop as AMBER orbs. Auto-equip if higher DPS (damage ÷ attack speed). Walk over to pick up.`,
+pz:mkPZ([{id:'n1',type:'loot',title:'On Melee Drop\nOverlap Hero',x:4,y:28,w:152,rp:[{id:'r1e',type:'exec',label:''},{id:'r1w',type:'object',label:'Weapon'}]},{id:'n2',type:'melee',title:'Get Melee DPS\n(dmg/atkSpd)',x:177,y:8,w:145,lp:[{id:'l2w',type:'object',label:'Weapon'}],rp:[{id:'r2n',type:'float',label:'New DPS'},{id:'r2o',type:'float',label:'Old DPS'}]},{id:'n3',type:'math',title:'> Greater',x:342,y:8,w:100,lp:[{id:'l3a',type:'float',label:'A'},{id:'l3b',type:'float',label:'B'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:462,y:8,w:76,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'melee-t'),
+boxes:[{t:'box-melee',tx:'Rapier (8dmg, 0.18s) = 44 DPS. Greatsword (22dmg, 0.8s) = 27 DPS. Speed wins DPS despite lower raw damage. The amber glow on the ground tells you a melee weapon dropped.'}],
+onApply(){sout('✅ Melee drops active! Amber orbs = melee weapons.');}},
+
+// ── WAND STEPS ──
+{title:'Wand System — Magic Orb',tag:'STEP 12 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
+intro:`Connect On LMB → Get Direction → Spawn Magic Orb → Set Element + Speed + AoE. Wands fire slow elemental orbs that explode.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'wand',title:'Spawn Magic Orb',x:337,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Dir'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3p',type:'object',label:'Orb'}],vf:{hint:'Orb speed 300–700',val:''}},{id:'n4',type:'wand',title:'Set Element\nMaterial',x:505,y:8,w:33,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'object',label:'Orb'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3e',t:'l4e'},{f:'r3p',t:'l4p'}],[{id:'n3',ok:v=>parseFloat(v)>=100&&parseFloat(v)<=1200}],'wand-t'),
+boxes:[{t:'box-wand',tx:'Wand Pool (10): Apprentice Wand · Fire Staff · Ice Shard · Lightning Rod · Chaos Wand · Bone Staff · Poison Orb · Holy Symbol · Void Sceptre · Storm Wand. Elements: arcane, fire, ice, lightning, chaos, necro, nature, holy, void.'}],
+onApply(){G.f_attack=true;sout('✅ Wand orbs active! Purple glowing projectile.');}},
+
+{title:'Wand Stats — Damage, Cast & AoE',tag:'STEP 13 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
+intro:`Connect BeginPlay → Set WandDamage → Set CastTime → Set AoERadius. AoE 0 = single target. AoE 30+ = area blast.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'wand',title:'Set Wand Damage',x:175,y:12,w:130,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 8–28 (e.g. 12)',val:''}},{id:'n3',type:'wand',title:'Set Cast Time',x:325,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cooldown'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Cast 0.4–1.0 (e.g. 0.5)',val:''}},{id:'n4',type:'wand',title:'Set AoE Radius',x:465,y:12,w:73,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'AoE 0–60 (e.g. 0)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)<=40},{id:'n3',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=0&&parseInt(v)<=80}],'wand-t'),
+boxes:[{t:'box-wand',tx:'AoE 0 = pure single target, max damage. AoE 50 = Chaos Wand — room-clearing but deals 60% damage to secondary targets. Cast time vs fire rate feels similar but wands also have AoE and elemental effects.'}],
+onApply(v){const w={...WAND_POOL[0]};w.dmg=parseInt(v['n2'])||12;w.castTime=parseFloat(v['n3'])||.5;w.aoeR=parseInt(v['n4'])||0;if(!G.hero.weapon){G.hero.weapon=w;G.hero.weaponType='wand';updateWeaponBar();}updateHUD();sout('✅ Wand: '+v['n2']+'dmg, '+v['n3']+'s cast, AoE '+v['n4']+'px!');}},
+
+{title:'Wand Elements — Status Effects',tag:'STEP 14 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
+intro:`Connect On Orb Hit → Switch on Element → Apply Status Effect. Each element does something unique: burn, freeze, chain, poison, drain, heal.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On Orb Hit',x:4,y:28,w:130,rp:[{id:'r1e',type:'exec',label:''},{id:'r1el',type:'string',label:'Element'}]},{id:'n2',type:'func',title:'Switch on Element',x:154,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'fire'},{id:'r2b',type:'exec',label:'ice'},{id:'r2c',type:'exec',label:'lightning'},{id:'r2d',type:'exec',label:'void'}]},{id:'n3',type:'wand',title:'Apply Burn DoT\n3dmg × 4 ticks',x:319,y:4,w:130,lp:[{id:'l3',type:'exec',label:''}]},{id:'n4',type:'wand',title:'Apply Freeze\n1.5 secs',x:319,y:58,w:130,lp:[{id:'l4',type:'exec',label:''}]},{id:'n5',type:'wand',title:'Chain Lightning\n+2 enemies',x:319,y:112,w:130,lp:[{id:'l5',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1el',t:'l2s'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'}],[],'wand-t'),
+boxes:[{t:'box-wand',tx:'Fire → Burn (3 dmg × 4 ticks). Ice → Freeze (1.5s no movement). Lightning → Chain (70% dmg to 2 nearest). Poison → DoT (2 dmg × 6 ticks). Holy → heal 10 HP on cast. Void → steal 8 HP from target.'}],
+onApply(){sout('✅ Elemental effects wired!');}},
+
+{title:'Wand Loot Drop — Purple Orbs',tag:'STEP 15 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
+intro:`Wands drop as PURPLE glowing orbs. Score = damage ÷ castTime × (1 + aoeR/40). Walk over to auto-equip if better.`,
+pz:mkPZ([{id:'n1',type:'loot',title:'On Wand Drop\nOverlap Hero',x:4,y:28,w:152,rp:[{id:'r1e',type:'exec',label:''},{id:'r1w',type:'object',label:'Wand'}]},{id:'n2',type:'wand',title:'Get Wand Score',x:177,y:8,w:145,lp:[{id:'l2w',type:'object',label:'Wand'}],rp:[{id:'r2n',type:'float',label:'New Score'},{id:'r2o',type:'float',label:'Old Score'}]},{id:'n3',type:'math',title:'> Greater',x:342,y:8,w:100,lp:[{id:'l3a',type:'float',label:'A'},{id:'l3b',type:'float',label:'B'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:462,y:8,w:76,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'wand-t'),
+boxes:[{t:'box-wand',tx:'Wands share the 38% drop chance with guns and melee. Any enemy kill can drop any weapon type — you might find a Chaos Wand on floor 2 and switch from melee entirely.'}],
+onApply(){sout('✅ Wand drops active! Purple orbs = wands.');}},
+
+// ── DUNGEON SYSTEMS ──
+{title:'Enemy Spawn — Floor Population',tag:'STEP 16 · ENEMIES',tc:'def',
+intro:`Connect On Floor Load → For Loop → Get Random Walkable Tile → Spawn Enemy. Type the base enemy count — floor scales it up.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Floor Load',x:4,y:28,w:142,rp:[{id:'r1e',type:'exec',label:''}]},{id:'n2',type:'func',title:'For Loop\n0→Count',x:166,y:8,w:125,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'int',label:'Count'}],rp:[{id:'r2e',type:'exec',label:'Loop Body'}],vf:{hint:'Base count (e.g. 5)',val:''}},{id:'n3',type:'func',title:'Get Random\nWalkable Tile',x:311,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3p',type:'vec3',label:'Pos'}]},{id:'n4',type:'func',title:'Spawn Enemy\nAt Location',x:480,y:8,w:58,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'vec3',label:'Pos'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r3e',t:'l4e'},{f:'r3p',t:'l4p'}],[{id:'n2',ok:v=>parseInt(v)>=2&&parseInt(v)<=20}]),
+boxes:[{t:'box-c',tx:'Enemy pool: Floor 1–2: Fallen, Skeleton. Floor 3–4: Goatman, Soul. Floor 5–6: Succubus, Stone Demon. Boss floors (every 5th): Lich King → Dungeon Wyrm → Diablo. Each scales in HP and ATK per floor.'}],
+onApply(v){G.f_enemies=true;sout('✅ Enemies spawning! '+v['n2']+' base per floor.');}},
+
+{title:'Enemy AI — Chase Player',tag:'STEP 17 · ENEMIES',tc:'def',
+intro:`Connect Event Tick → Normalize Direction toward Hero → Add Movement × Speed. Every enemy always moves toward the player every tick.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event Tick',sub:'BP_Enemy',x:4,y:22,w:130,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Delta'}]},{id:'n2',type:'func',title:'Get Hero\nLocation',x:154,y:8,w:140,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2l',type:'vec3',label:'Loc'}]},{id:'n3',type:'math',title:'Normalize\n(Target−Self)',x:314,y:8,w:128,lp:[{id:'l3t',type:'vec3',label:'Target'},{id:'l3s',type:'vec3',label:'Self'}],rp:[{id:'r3',type:'vec3',label:'Dir'}]},{id:'n4',type:'func',title:'Add Movement\n× Speed × Delta',x:463,y:8,w:75,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'vec3',label:'Dir'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2l',t:'l3t'},{f:'r3',t:'l4v'}],[]),
+boxes:[{t:'box-c',tx:'Basic chase AI is deceptively deadly in numbers. 10 enemies filling a corridor from all sides — your weapon choice decides if you survive. Guns thin the herd at range. Wand AoE clears clusters. Melee for when they close in.'}],
+onApply(){sout('✅ Enemy AI active!');}},
+
+{title:'Enemy Scaling — Depth Difficulty',tag:'STEP 18 · ENEMIES',tc:'def',
+intro:`Connect Floor × 0.07 + 1 → Multiply Base Stats. Enemy HP and ATK scale ×7% per floor. Floor 10 = nearly double floor 1.`,
+pz:mkPZ([{id:'n1',type:'vget',title:'Get Floor',x:4,y:20,w:105,rp:[{id:'r1',type:'int',label:''}]},{id:'n2',type:'math',title:'× 0.07',x:129,y:6,w:90,lp:[{id:'l2a',type:'int',label:'Floor'},{id:'l2b',type:'float',label:'0.07'}],rp:[{id:'r2',type:'float',label:'Bonus'}]},{id:'n3',type:'math',title:'+ 1.0',x:239,y:6,w:86,lp:[{id:'l3a',type:'float',label:'1'},{id:'l3b',type:'float',label:'Bonus'}],rp:[{id:'r3',type:'float',label:'Mult'}]},{id:'n4',type:'math',title:'× BaseHP',x:345,y:6,w:110,lp:[{id:'l4a',type:'int',label:'BaseHP'},{id:'l4b',type:'float',label:'Mult'}],rp:[{id:'r4',type:'int',label:'ScaledHP'}]},{id:'n5',type:'vset',title:'Set Enemy HP',x:475,y:6,w:63,lp:[{id:'l5e',type:'exec',label:''},{id:'l5v',type:'int',label:'HP'}]}],[{f:'r1',t:'l2a'},{f:'r2',t:'l3b'},{f:'r3',t:'l4b'},{f:'r4',t:'l5v'}],[]),
+boxes:[{t:'box-d',tx:'A Fallen at floor 1 = 18HP. At floor 10 = 18×1.7 = 31HP. Stone Demon at floor 8 = 85×1.56 = 133HP. Your gear from drops and your level must outpace this — that\'s the ARPG loop.'}],
+onApply(){sout('✅ Enemy scaling wired!');}},
+
+{title:'Ground Loot — All Three Types Drop',tag:'STEP 19 · LOOT',tc:'def',
+intro:`Connect On Kill → Roll Drop Chance (38%) → Branch → Roll Weapon Type (gun/melee/wand 33% each) → Spawn Ground Orb.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Enemy Killed',x:4,y:30,w:142,rp:[{id:'r1e',type:'exec',label:''}]},{id:'n2',type:'func',title:'Random Float\n0–1',x:166,y:10,w:118,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2f',type:'float',label:'Roll'}]},{id:'n3',type:'math',title:'< 0.38',x:304,y:10,w:102,lp:[{id:'l3a',type:'float',label:'Roll'},{id:'l3b',type:'float',label:'0.38'}],rp:[{id:'r3',type:'bool',label:'Drop?'}]},{id:'n4',type:'branch',title:'Branch',x:426,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Drop!'},{id:'r4f',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2f',t:'l3a'},{f:'r3',t:'l4c'}],[]),
+boxes:[{t:'box-r',tx:'After branching, roll weapon type: 0–0.33 → gun (blue glow), 0.34–0.66 → melee (amber), 0.67–1.0 → wand (purple). Every drop is a mini discovery. Three runs in a row can give completely different weapon combinations.'}],
+onApply(){G.f_loot=true;sout('✅ Three-type ground drops active! Blue=gun, Amber=melee, Purple=wand.');}},
+
+{title:'Treasure Chests — Double Loot',tag:'STEP 20 · LOOT',tc:'def',
+intro:`Chests scatter 2 weapon drops + gold when struck by any attack or clicked. Connect On Chest Hit → Spawn 2 Random Drops + Gold.`,
+pz:mkPZ([{id:'n1',type:'event',title:'On Chest Hit\n(attack/click)',x:4,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'branch',title:'Branch\n!IsOpen',x:179,y:10,w:100,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:'!Open'}],rp:[{id:'r2t',type:'exec',label:'Open'},{id:'r2f',type:'exec',label:'Skip'}]},{id:'n3',type:'func',title:'Spawn 2 Random\nWeapon Drops',x:300,y:10,w:155,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:''}]},{id:'n4',type:'loot',title:'Spawn Gold\nDrop',x:475,y:10,w:63,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r3',t:'l4e'}],[]),
+boxes:[{t:'box-c',tx:'Chest drops guarantee one non-duplicate weapon type pair — e.g. a gun and a wand. Never two of the same type from one chest. A chest mid-floor can completely change the rest of your run.'}],
+onApply(){G.f_chests=true;sout('✅ Chests active! Shoot or melee them to explode loot.');}},
+
+{title:'XP & Level Up',tag:'STEP 21 · PROGRESSION',tc:'def',
+intro:`Connect On Enemy Killed → Add XP → Branch (XP ≥ Threshold) → Level Up. Each level: +10 MaxHP, +1 Armour, threshold ×1.6.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Enemy Killed',x:4,y:28,w:142,rp:[{id:'r1e',type:'exec',label:''},{id:'r1x',type:'int',label:'XP'}]},{id:'n2',type:'math',title:'+ Add XP',x:166,y:10,w:100,lp:[{id:'l2a',type:'int',label:'Total'},{id:'l2b',type:'int',label:'Gain'}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2x',type:'int',label:'New Total'}]},{id:'n3',type:'math',title:'>= Threshold',x:286,y:10,w:120,lp:[{id:'l3a',type:'int',label:'XP'},{id:'l3b',type:'int',label:'Thresh'}],rp:[{id:'r3',type:'bool',label:'LvlUp?'}]},{id:'n4',type:'branch',title:'Branch',x:426,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Lvl Up!'},{id:'r4f',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1x',t:'l2b'},{f:'r2e',t:'l4e'},{f:'r2x',t:'l3a'},{f:'r3',t:'l4c'}],[]),
+boxes:[{t:'box-c',tx:'XP bar fills at the bottom of the screen. Level up triggers a gold particle burst. Each level gives +10 MaxHP, +1 Armour. Fallen gives 12xp, Stone Demon 75xp, Bosses 400–800xp. First level at 100xp.'}],
+onApply(){sout('✅ XP system active! Watch the gold bar at the bottom of the screen.');}},
+
+{title:'Health Potion (H key)',tag:'STEP 22 · SURVIVAL',tc:'def',
+intro:`Connect IA_Potion (H) → Branch potions > 0 → Heal % of MaxHP. Type the percentage. You start with 3 potions.`,
+pz:mkPZ([{id:'n1',type:'event',title:'IA_Potion (H)',x:4,y:28,w:135,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'math',title:'> 0\nPotions > 0',x:159,y:10,w:108,lp:[{id:'l2a',type:'int',label:'Potions'},{id:'l2b',type:'int',label:'0'}],rp:[{id:'r2',type:'bool',label:''}]},{id:'n3',type:'branch',title:'Branch',x:287,y:10,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:''}],rp:[{id:'r3t',type:'exec',label:'Drink'},{id:'r3f',type:'exec',label:'Empty'}]},{id:'n4',type:'func',title:'Heal % MaxHP',x:407,y:10,w:131,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'float',label:'Percent'}],vf:{hint:'Heal % 0.3–0.6 (e.g. 0.4)',val:''}}],[{f:'r1',t:'l3e'},{f:'r2',t:'l3c'},{f:'r3t',t:'l4e'}],[{id:'n4',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=0.9}]),
+boxes:[{t:'box-t',tx:'Potion timing is the biggest skill expression in ARPGs. Using one too early wastes it. Too late and you\'re dead. Three starting potions plus floor drops creates genuine resource tension.'}],
+onApply(v){sout('✅ Potions active! H to drink — restores '+Math.round(parseFloat(v['n4'])*100)+'% HP.');}},
+
+{title:'Stairs — Descend to Next Floor',tag:'STEP 23 · DUNGEON',tc:'def',
+intro:`Walk over the purple ▼ glyph to descend. Connect On Stairs Overlap → Increment Floor → Reload Level. Your equipped weapon carries over.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Stairs Overlap',x:4,y:28,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Increment Floor\nSave Inventory',x:172,y:8,w:155,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2f',type:'int',label:'New Floor'}]},{id:'n3',type:'func',title:'Load Next Floor\n(Procedural)',x:347,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3f',type:'int',label:'Floor'}],rp:[{id:'r3',type:'exec',label:''}]},{id:'n4',type:'func',title:'Spawn Hero\nat Start',x:515,y:8,w:23,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2f',t:'l3f'},{f:'r3',t:'l4e'}],[]),
+boxes:[{t:'box-r',tx:'Inventory persists between floors — your current equipped weapon carries over. HP does NOT restore. Boss floors (5, 10, 15...) use larger open rooms. Stairs glyph is always placed at least 6 tiles from hero spawn.'}],
+onApply(){G.f_stairs=true;sout('✅ Stairs active! Find the purple ▼ glyph to descend.');}},
+
+{title:'Procedural Map — BSP Generation',tag:'STEP 24 · DUNGEON',tc:'def',
+intro:`Connect On Floor Load → BSP Split → Carve Rooms → Connect Corridors → Place Obstacles. Every floor is a unique layout.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Floor Load',x:4,y:28,w:140,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'BSP Split\nDungeon Grid',x:164,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2r',type:'object',label:'Rooms'}]},{id:'n3',type:'func',title:'Carve Rooms\n+ Corridors',x:329,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3r',type:'object',label:'Rooms'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3m',type:'object',label:'Map Grid'}]},{id:'n4',type:'func',title:'Place Pillars\n+ Props',x:497,y:8,w:41,lp:[{id:'l4e',type:'exec',label:''},{id:'l4m',type:'object',label:'Map'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2r',t:'l3r'},{f:'r3e',t:'l4e'},{f:'r3m',t:'l4m'}],[]),
+boxes:[{t:'box-c',tx:'BSP: split the dungeon grid at 40–60% randomly, recurse until minimum room size (~4×4), connect siblings with L-corridors. Every run = different layout. Same seed = same dungeon (useful for sharing runs).'}],
+onApply(){sout('✅ Procedural BSP map generation wired!');}},
+
+{title:'Camera Shake — Hit Impact',tag:'STEP 25 · POLISH',tc:'def',
+intro:`Connect On Damage Applied → Scale Shake by Damage → Play Camera Shake. Type the shake duration. Makes every hit feel visceral.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Damage Applied',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'}]},{id:'n2',type:'math',title:'Clamp\nDmg/8→0.1–2',x:172,y:10,w:120,lp:[{id:'l2v',type:'float',label:'Dmg/8'}],rp:[{id:'r2',type:'float',label:'Scale'}]},{id:'n3',type:'func',title:'Play Camera Shake',x:312,y:10,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3s',type:'float',label:'Scale'},{id:'l3d',type:'float',label:'Duration'}],vf:{hint:'Duration secs (e.g. 0.12)',val:''}},{id:'n4',type:'func',title:'Spawn Blood\nParticles',x:480,y:10,w:58,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1d',t:'l2v'},{f:'r2',t:'l3s'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=0.05&&parseFloat(v)<=0.5}]),
+boxes:[{t:'box-t',tx:'Combat impact formula: fast animation + number popup + screen shake + blood spark = satisfying kill. All four must fire on every hit. Remove any one and the combat feels weak regardless of weapon type.'}],
+onApply(v){shake(5,8);sout('✅ Camera shake active — '+v['n3']+'s duration. See it when enemies are hit!');}},
+
+{title:'Boss Floor — Every 5th Floor',tag:'STEP 26 · BOSS',tc:'def',
+intro:`Connect Floor % 5 == 0 → Spawn Boss. Bosses drop guaranteed triple loot on death — one weapon from each pool.`,
+pz:mkPZ([{id:'n1',type:'vget',title:'Get Floor',x:4,y:20,w:105,rp:[{id:'r1',type:'int',label:''}]},{id:'n2',type:'math',title:'% 5',x:129,y:6,w:82,lp:[{id:'l2a',type:'int',label:'Floor'},{id:'l2b',type:'int',label:'5'}],rp:[{id:'r2',type:'int',label:'Rem'}]},{id:'n3',type:'math',title:'== 0',x:231,y:6,w:82,lp:[{id:'l3a',type:'int',label:'Rem'},{id:'l3b',type:'int',label:'0'}],rp:[{id:'r3',type:'bool',label:'Boss?'}]},{id:'n4',type:'branch',title:'Branch',x:333,y:6,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Boss!'},{id:'r4f',type:'exec',label:'Normal'}]},{id:'n5',type:'func',title:'Spawn Boss\n+ HP Bar',x:453,y:6,w:85,lp:[{id:'l5',type:'exec',label:''}]}],[{f:'r1',t:'l2a'},{f:'r2',t:'l3a'},{f:'r3',t:'l4c'},{f:'r4t',t:'l5'}],[]),
+boxes:[{t:'box-d',tx:'Boss sequence: Floor 5 = Lich King (250HP purple). Floor 10 = Dungeon Wyrm (320HP green). Floor 15+ = Diablo (500HP blood red). Diablo drops a gun, melee weapon AND wand on death — the game\'s biggest loot event.'}],
+onApply(){sout('✅ Boss floors active! Something terrible waits every 5 floors...');}},
+
+{title:'Minimap — Weapon Drop Tracking',tag:'STEP 27 · UI',tc:'def',
+intro:`The minimap (top-right) shows enemies (red), weapon drops (gun=blue, melee=amber, wand=purple), chests (gold) and stairs (purple glyph). Connect reveal logic.`,
+pz:mkPZ([{id:'n1',type:'event',title:'Event Tick',x:4,y:22,w:128,rp:[{id:'r1e',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Visible Tiles\n(radius 7)',x:152,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2t',type:'object',label:'Tiles'}]},{id:'n3',type:'func',title:'Mark Revealed\n+ Add Enemy Dots',x:320,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3t',type:'object',label:'Tiles'}],rp:[{id:'r3',type:'exec',label:''}]},{id:'n4',type:'func',title:'Add Loot Dots\n(3 colours)',x:488,y:8,w:50,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2t',t:'l3t'},{f:'r3',t:'l4e'}],[]),
+boxes:[{t:'box-r',tx:'Minimap is already active in the game — see it top-right. Amber dot = you. Red = enemy. Coloured dots = weapon drops. Gold = chest. Purple = stairs. The three weapon colours teach the player to identify drops at a glance.'}],
+onApply(){sout('✅ Minimap wired! Watch the top-right for coloured weapon drop dots.');}},
+
+{title:'Damage Numbers — ARPG Dopamine',tag:'STEP 28 · POLISH',tc:'def',
+intro:`Connect On Damage Applied → Spawn Floating Text Widget → Float Up → Fade. White = normal, yellow = critical. These numbers are the signature feel of the genre.`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Damage Applied',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'},{id:'r1c',type:'bool',label:'isCrit'}]},{id:'n2',type:'branch',title:'Branch\n(isCrit)',x:173,y:10,w:100,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:''}],rp:[{id:'r2t',type:'exec',label:'Crit'},{id:'r2f',type:'exec',label:'Normal'}]},{id:'n3',type:'func',title:'Spawn Yellow\nCrit Number',x:293,y:8,w:138,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'float',label:'Dmg'}]},{id:'n4',type:'func',title:'Spawn White\nNormal Number',x:293,y:78,w:138,lp:[{id:'l4e',type:'exec',label:''},{id:'l4d',type:'float',label:'Dmg'}]}],[{f:'r1e',t:'l2e'},{f:'r1c',t:'l2c'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'},{f:'r1d',t:'l3d'},{f:'r1d',t:'l4d'}],[]),
+boxes:[{t:'box-c',tx:'Floating numbers float up 60px over 0.8 seconds then fade. Crits are 1.5× larger. The numbers are the reward for every click — without them the combat feels muted no matter how good the weapons are.'}],
+onApply(){sout('✅ Damage numbers wired!');}},
+
+{title:'Critical Hit System',tag:'STEP 29 · COMBAT',tc:'def',
+intro:`Connect On Calculate Damage → Random Float → Less Than CritChance → Branch → Multiply × 2. Type the crit chance (0–1).`,
+pz:mkPZ([{id:'n1',type:'custom',title:'On Calc Damage',x:4,y:28,w:142,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'BaseDmg'}]},{id:'n2',type:'func',title:'Random Float\n0–1',x:166,y:10,w:118,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2f',type:'float',label:'Roll'}]},{id:'n3',type:'math',title:'< CritChance',x:304,y:10,w:118,lp:[{id:'l3a',type:'float',label:'Roll'},{id:'l3b',type:'float',label:'Chance'}],rp:[{id:'r3',type:'bool',label:'Crit?'}],vf:{hint:'Crit chance 0–1 (e.g.0.15)',val:''}},{id:'n4',type:'branch',title:'Branch',x:442,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'CRIT!'},{id:'r4f',type:'exec',label:'Normal'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2f',t:'l3a'},{f:'r3',t:'l4c'}],[{id:'n3',ok:v=>parseFloat(v)>=0&&parseFloat(v)<=1}]),
+boxes:[{t:'box-c',tx:'15% crit × 2× multiplier = 30% average damage increase. The yellow number twice the size of a normal hit is one of the best moments in an ARPG — even when you mathematically expect it to happen.'}],
+onApply(v){sout('✅ Critical hits active! '+Math.round(parseFloat(v['n3'])*100)+'% chance.');}},
+
+{title:'Descend Into Hell ⚔',tag:'STEP 30 · LAUNCH',tc:'def',
+intro:`All three weapon systems are live. Guns fire bolts, melee sweeps arcs, wands blast elemental orbs. Loot drops in all three colours. Hit <strong>Begin Descent</strong> or press <strong>Quick Descent</strong> in the header.`,
+pz:null,launchBtn:true,
+boxes:[
+  {t:'box-gun',tx:'Guns: WASD + left click fires toward cursor. 10 weapons with unique range, fire rate, spread and specials (pierce, explosive, triple, scatter).'},
+  {t:'box-melee',tx:'Melee: left click sweeps an arc. Wide sweep clears groups. Narrow + long reach = precision. Specials: stun, armour break, lifesteal, fire.'},
+  {t:'box-wand',tx:'Wands: slower magic orbs with AoE blasts and elemental effects. Fire, ice, lightning chain, poison DoT, void drain, holy heal.'},
+  {t:'box-r',tx:'Starting weapon is random each run (gun, melee or wand). Loot drops from all three types as you play. Every run feels different from the first click — that\'s the replayability.'},
+],
+onApply(){quickPlay();}},
+];
+
+/* ═══════════════════════════════════════════
+   STEP RENDERER
+═══════════════════════════════════════════ */
+let curStep=0;const bpInsts={};
+
+function go(i){
+  if(i<0||i>=STEPS.length)return;
+  curStep=i;renderStep(i);
+  document.querySelectorAll('.tb').forEach((el,j)=>el.classList.toggle('active',j===i));
+  document.getElementById('stepBody').scrollTop=0;
+}
+
+function renderStep(i){
+  const s=STEPS[i];
+  const body=document.getElementById('stepBody');
+  let html=`<div class="step-tag ${s.tc||'def'}">${s.tag}</div>`;
+  html+=`<div class="step-title">${s.title}</div>`;
+  html+=`<p class="step-intro">${s.intro}</p>`;
+  if(s.pz)html+=s.pz.html;
+  (s.boxes||[]).forEach(b=>{html+=`<div class="box ${b.t}">${b.tx}</div>`;});
+  if(s.launchBtn)html+=`<button class="run-btn" onclick="quickPlay()">⚔ BEGIN DESCENT</button>`;
+  html+=nav(i);
+  body.innerHTML=html;
+  if(s.pz){
+    const inst=s.pz.init(vals=>{
+      document.querySelectorAll('.tb')[i].classList.add('done');
+      s.onApply&&s.onApply(vals);
+    });
+    if(inst)bpInsts[i]=inst;
+  }
+}
+
+function buildTabs(){
+  const tabs=document.getElementById('stepTabs');
+  tabs.innerHTML=STEPS.map((s,i)=>`<button class="tb${s.tabCls?' '+s.tabCls:''}${i===0?' active':''}" onclick="go(${i})">${i+1}</button>`).join('');
+}
+
+buildTabs();go(0);
+resizeGame();requestAnimationFrame(loop);
+</script>
+</body>
+</html>

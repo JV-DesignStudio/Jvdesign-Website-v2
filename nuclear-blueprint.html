@@ -465,7 +465,7 @@ const WEAPONS_POOL=[
 ];
 
 // Student's designed starting weapon
-const startWPN={name:'???',bc:1,sp:0,fr:0.25,bs:9,dmg:2,bounce:false,explosive:false,homing:false,col:'#f5c842'};
+let startWPN={name:'???',bc:1,sp:0,fr:0.25,bs:9,dmg:2,bounce:false,explosive:false,homing:false,col:'#f5c842'};
 let mut1=null,mut2=null;
 
 function updateWpnCard(){
@@ -619,11 +619,12 @@ window.addEventListener('keydown',e=>{
   G.keys[e.code]=true;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
   if(e.code==='KeyQ'&&G.phase==='playing'){G.p.activeSlot=G.p.activeSlot===0?1:0;updateHUD();}
-  if(e.code==='KeyR'&&(G.phase==='dead'||G.phase==='win'))startGame();
+  if(e.code==='KeyR'&&G.phase==='dead')startGame();
   if(e.code==='Escape')closeFS();
 });
 window.addEventListener('keyup',e=>G.keys[e.code]=false);
 canvas.addEventListener('mousemove',e=>{
+  if(fsOpen)return; // fullscreen canvas handles coords when open
   const r=canvas.getBoundingClientRect(),sc=CW/r.width;
   G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;
   if(G.phase==='mutation'&&G.mutCards){
@@ -632,11 +633,16 @@ canvas.addEventListener('mousemove',e=>{
   }
 });
 canvas.addEventListener('mousedown',e=>{
+  if(fsOpen)return;
   if(!e.button){
     G.keys['LMB']=true;
-    if(G.phase==='mutation'&&G.mutCards){
+    if(G.phase==='mutation'&&G.mutCards&&G.mutCards.length){
+      const r=canvas.getBoundingClientRect();
+      const sc=CW/r.width;
+      const mx=(e.clientX-r.left)*sc;
+      const my=(e.clientY-r.top)*sc;
       G.mutCards.forEach((c,i)=>{
-        if(G.mx>c.x&&G.mx<c.x+c.w&&G.my>c.y&&G.my<c.y+c.h){
+        if(mx>c.x&&mx<c.x+c.w&&my>c.y&&my<c.y+c.h){
           pickMutationInGame(c.id);
         }
       });
@@ -644,7 +650,7 @@ canvas.addEventListener('mousedown',e=>{
   }
 });
 canvas.addEventListener('mouseup',e=>{if(!e.button)G.keys['LMB']=false;});
-canvas.addEventListener('click',()=>{if(G.phase==='dead'||G.phase==='win')startGame();});
+canvas.addEventListener('click',()=>{if(G.phase==='dead')startGame();});
 
 /* ── GAME LOOP ── */
 let lastT=0;
@@ -746,7 +752,7 @@ function update(dt){
       if(e.type==='boss'){
         const enraged=e.hp/e.maxHp<0.5;
         const spdMult=enraged?1.6:1;
-        const bW=Math.min(e.world||1,3);
+        const bW=e.world||1; // uncapped for forever scaling
 
         // Phase timer
         e.pTimer=(e.pTimer||0)-dt;
@@ -852,7 +858,7 @@ function update(dt){
           G.bloodDecals.push({x:e.x+(Math.random()-.5)*8,y:e.y+(Math.random()-.5)*8,r:3+Math.random()*5,a:.55});
           if(G.bloodDecals.length>50)G.bloodDecals.shift();
           if(b.explosive){spawnParts(b.x,b.y,'#ff6600',18,5);shake(10,6);room.enemies.forEach(e2=>{if(e2.dead)return;if(Math.sqrt((b.x-e2.x)**2+(b.y-e2.y)**2)<b.exR)e2.hp-=Math.ceil(b.dmg*.6);});}
-          if(e.hp<=0){e.dead=true;G.score+=e.type==='boss'?500:e.type==='tank'?40:e.type==='shooter'?25:e.type==='runner'?12:8;if(e.type==='boss'){sndBossDie();setBGMIntensity(false);}else sndEnemyDie();if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+3);shake(5,3);updateHUD();}
+          if(e.hp<=0){e.dead=true;G.score+=e.type==='boss'?500:e.type==='tank'?40:e.type==='shooter'?25:e.type==='runner'?12:8;if(e.type==='boss'){sndBossDie();setBGMIntensity(false);}else sndEnemyDie();if(p.lifesteal)p.hp=Math.min(p.maxHp,p.hp+(p.lifestealAmt||3));shake(5,3);updateHUD();}
         }
       });
     });
@@ -931,7 +937,7 @@ function updateHUD(){
   document.getElementById('hudHP').style.color=p.hp>60?'var(--green)':p.hp>30?'var(--gold)':'var(--red)';
   const w=wpn();
   document.getElementById('hudAmmo').textContent='∞';
-  document.getElementById('hudRoom').textContent=G.room.world+'-'+G.room.index;
+  const _w=G.room.world,_i=G.room.index;document.getElementById('hudRoom').textContent=_w+'-'+_i+(_w>3?' ∞':'');
   document.getElementById('hudScore').textContent=G.score;
   document.getElementById('hudWpn').textContent=w?(w.name.length>10?w.name.split(' ').map(s=>s[0]).join(''):w.name):'—';
   // Sync FS HUD
@@ -984,10 +990,8 @@ function loadNextRoom(){
   let{world,index}=G.room;
   index++;
   if(index>5){
-    if(world>3){G.phase='win';sndWin();stopBGM();return;}
     world++;index=1;
-    // In Quick Play (or if step mutations are done), skip mutation screen
-    if(G.f_fullGame&&!G.f_stepMutations){loadRoom(world,index);return;}
+    // Always show mutation picker between worlds
     showMutationScreen();return;
   }
   loadRoom(world,index);
@@ -1028,9 +1032,11 @@ function openChest(ch){sndChest();
 
 function showMutationScreen(){
   G.phase='mutation';
-  G.mutPick=G.room.world; // 1 = after world1 (weapon mut), 2 = after world2 (perk mut)
   G.mutHover=-1;
-  sout('🧬 World '+G.room.world+' complete! Choose a mutation to continue.');
+  const w=G.room.world;
+  // World 1 end = weapon mutation, World 2 end = perk, World 3+ alternate
+  G.mutPick=w%2===1?1:2;
+  sout('🧬 World '+w+' complete! Choose '+(G.mutPick===1?'a weapon mutation':'a survivor perk')+' — keep going!');
 }
 
 // Mutation card definitions for in-canvas picker
@@ -1050,16 +1056,19 @@ G.mutCards=[];  // set each frame for hit-testing
 function gameOver(){sndGameOver();stopBGM();G.phase='dead';sout('💀 You died! Score: '+G.score+' — click canvas or press R to restart');}
 
 function startGame(){startBGM();
-  // Reset
+  // Reset gameplay state but preserve perk values set before this call
   G.bullets=[];G.eBullets=[];G.particles=[];G.bloodDecals=[];G.score=0;G.lastShot=0;G.shakeTimer=0;
-  G.p.hp=G.p.maxHp;G.p.shield=false;G.p.activeSlot=0;
+  G.p.hp=G.p.maxHp;G.p.activeSlot=0;
   G.p.wpn0={...startWPN};G.p.wpn1=null;
-  G.p.speedMult=1;G.p.lifesteal=false;
-  // Apply mutations
-  if(mut1==='firerate_up'){}// applied inline
-  if(mut2==='speed_boost')G.p.speedMult=1.45;
-  if(mut2==='lifesteal')G.p.lifesteal=true;
-  if(mut2==='shield'){G.p.shield=true;G.p.shieldTimer=999999;}
+  // Only reset perks if not already set externally (quick play sets them first)
+  if(!G.p._perksApplied){
+    G.p.speedMult=1;G.p.lifesteal=false;G.p.lifestealAmt=3;
+    G.p.shield=false;G.p.shieldTimer=0;
+    if(mut2==='speed_boost')G.p.speedMult=1.45;
+    if(mut2==='lifesteal'){G.p.lifesteal=true;G.p.lifestealAmt=3;}
+    if(mut2==='shield'){G.p.shield=true;G.p.shieldTimer=999999;}
+  }
+  G.p._perksApplied=false; // consume the flag
   G.phase='playing';
   loadRoom(1,1);
   updateHUD();
@@ -1207,7 +1216,7 @@ function gameDraw(){
   if(room.transitioning){ctx.fillStyle='rgba(0,0,0,'+Math.min(1,(30-room.transTimer)/30)+')';ctx.fillRect(0,0,W,H);}
 
   if(G.phase==='dead')drawDead();
-  if(G.phase==='win')drawWin();
+  // win phase removed — game runs forever
 
   // Mini-map top-left
   if(G.f_hud&&G.phase==='playing'){
@@ -1344,9 +1353,14 @@ if(fsCanvas){
   fsCanvas.addEventListener('mousedown',e=>{
     if(!e.button){
       G.keys['LMB']=true;
-      if(G.phase==='mutation'&&G.mutCards){
+      if(G.phase==='mutation'&&G.mutCards&&G.mutCards.length){
+        // Recalculate coords fresh from event — don't rely on G.mx/G.my
+        const r=fsCanvas.getBoundingClientRect();
+        const sc=CW/r.width;
+        const mx=(e.clientX-r.left)*sc;
+        const my=(e.clientY-r.top)*sc;
         G.mutCards.forEach((c,i)=>{
-          if(G.mx>c.x&&G.mx<c.x+c.w&&G.my>c.y&&G.my<c.y+c.h){
+          if(mx>c.x&&mx<c.x+c.w&&my>c.y&&my<c.y+c.h){
             pickMutationInGame(c.id);
           }
         });
@@ -1354,7 +1368,18 @@ if(fsCanvas){
     }
   });
   fsCanvas.addEventListener('mouseup',e=>{if(!e.button)G.keys['LMB']=false;});
-  fsCanvas.addEventListener('click',()=>{if(G.phase==='dead'||G.phase==='win')startGame();});
+  fsCanvas.addEventListener('click',e=>{
+    if(G.phase==='dead'){startGame();return;}
+    if(G.phase==='mutation'&&G.mutCards&&G.mutCards.length){
+      const r=fsCanvas.getBoundingClientRect();
+      const sc=CW/r.width;
+      const mx=(e.clientX-r.left)*sc;
+      const my=(e.clientY-r.top)*sc;
+      G.mutCards.forEach(c=>{
+        if(mx>c.x&&mx<c.x+c.w&&my>c.y&&my<c.y+c.h) pickMutationInGame(c.id);
+      });
+    }
+  });
 }
 function syncFS(){
   if(!fsOpen||!fsCtx||!fsCanvas)return;
@@ -1379,17 +1404,95 @@ function toggleMute(){
   if(bg)bg.gain.value=muted?0.18:0;
   if(btn)btn.textContent=muted?'🔊 Sound':'🔇 Muted';
 }
-function quickPlay(){getAudio();
-  const rw=randWpn();
-  Object.assign(startWPN,rw,{name:randName()});
+function quickPlay(){
+  getAudio();
+
+  // ── Randomise all 37 step values ─────────────────────────────────────────
+
+  // Step 2: HP + Speed
+  const qpHp=80+Math.floor(Math.random()*121); // 80-200
+  const qpSpd=200+Math.floor(Math.random()*401); // 200-600
+  G.p.maxHp=qpHp;G.p.hp=qpHp;
+  G.p.speed=qpSpd/110;
+
+  // Steps 8-14: weapon design — pick random base then randomise values
+  const qpBc=1+Math.floor(Math.random()*8);      // 1-8 bullets
+  const qpSp=Math.floor(Math.random()*46);        // 0-45 deg spread
+  const qpFr=0.05+Math.random()*0.95;             // 0.05-1.0s fire rate
+  const qpBs=(200+Math.floor(Math.random()*1801))/100; // 200-2000 UU/s
+  const qpDmg=1+Math.floor(Math.random()*10);     // 1-10 dmg
+  const qpBounce=Math.random()<0.3;               // 30% chance bounce
+  const qpExR=Math.random()<0.25?(10+Math.floor(Math.random()*71)):0; // 25% explosive
+
+  startWPN.bc=qpBc;
+  startWPN.sp=qpSp;
+  startWPN.fr=qpFr;
+  startWPN.bs=qpBs;
+  startWPN.dmg=qpDmg;
+  startWPN.bounce=qpBounce;
+  startWPN.explosive=qpExR>0;
+  startWPN.exR=qpExR;
+  startWPN.name=randName();
+
+  // Step 25: Mutation 1 (weapon)
   mut1=['damage_up','firerate_up','count_up'][Math.floor(Math.random()*3)];
+
+  // Step 26: Mutation 2 (perk)
   mut2=['speed_boost','shield','lifesteal'][Math.floor(Math.random()*3)];
+
+  // Steps 27-29: Apply weapon mutation with random multiplier
+  if(mut1==='damage_up'){
+    const m=1.1+Math.random()*1.9; // 1.1-3.0
+    startWPN.dmg=Math.round(startWPN.dmg*m);
+  } else if(mut1==='firerate_up'){
+    const m=0.3+Math.random()*0.65; // 0.3-0.95
+    startWPN.fr=Math.max(0.04,startWPN.fr*m);
+  } else if(mut1==='count_up'){
+    const add=1+Math.floor(Math.random()*6); // 1-6
+    startWPN.bc=Math.min(startWPN.bc+add,12);
+  }
+
+  // Commit weapon first
+  G.p.wpn0={...startWPN};G.p.wpn1=null;
   updateWpnCard();
+
+  // Steps 30-32: Apply survivor perk — stored so startGame doesn't wipe them
+  G.p.speedMult=1;G.p.lifesteal=false;G.p.lifestealAmt=3;G.p.shield=false;G.p.shieldTimer=0;
+  if(mut2==='speed_boost'){
+    const m=1.1+Math.random()*0.9; // 1.1-2.0
+    G.p.speedMult=m;
+  } else if(mut2==='shield'){
+    const t=6+Math.floor(Math.random()*15); // 6-20s
+    G.p.shield=true;G.p.shieldTimer=t*60;
+  } else if(mut2==='lifesteal'){
+    const h=2+Math.floor(Math.random()*6); // 2-7 HP
+    G.p.lifesteal=true;G.p.lifestealAmt=h;
+  }
+  G.p._perksApplied=true; // tell startGame not to reset these
+
+  // Enable all systems (all 37 steps complete)
   G.f_player=true;G.f_aim=true;G.f_shoot=true;G.f_enemies=true;
-  G.f_collision=true;G.f_doors=true;G.f_chests=true;G.f_hud=true;G.f_fullGame=true;
-  G.p.maxHp=100;G.p.hp=100;
+  G.f_collision=true;G.f_doors=true;G.f_chests=true;G.f_hud=true;
+  G.f_fullGame=true;G.f_stepMutations=false;
+
+  // Build sout summary
+  const mutLabel={damage_up:'DMG x'+startWPN.dmg,firerate_up:'Rapid Fire',count_up:'x'+startWPN.bc+' Bullets'};
+  const perkLabel={speed_boost:'Speed Boost',shield:'Shield',lifesteal:'Lifesteal'};
+  const wpnDesc=[
+    startWPN.name,
+    startWPN.bc+'B',
+    startWPN.sp+'° spread',
+    (startWPN.fr*1000|0)+'ms',
+    startWPN.dmg+'dmg',
+    startWPN.bounce?'BOUNCE':'',
+    startWPN.explosive?'EXPLOSIVE':'',
+    '| W.Mut: '+mutLabel[mut1],
+    '| Perk picked between worlds',
+  ].filter(Boolean).join(' · ');
+
   startGame();openFS();
-  sout('🎲 Random run: '+startWPN.name+' — 3 worlds, 15 rooms. Survive!');
+  sout('🎲 '+wpnDesc);
+  sout('Choose your perk between worlds. 3 worlds · 15 rooms. Survive!');
 }
 
 /* ════════════════════════════════════════════════════════
@@ -2007,29 +2110,45 @@ window.continueMutation=function(){G.phase='playing';loadRoom(G.room.world+1,1);
 
 window.pickMutationInGame=function(id){sndMutation();
   const w=G.mutPick;
+  const nextWorld=G.room.world+1;
+
   if(w===1){
+    // Weapon mutation — upgrade active weapon, stack on repeat picks
     mut1=id;
+    const wpn=G.p.wpn0;
+    if(wpn){
+      if(id==='damage_up')wpn.dmg=Math.round((wpn.dmg||1)*1.6);
+      if(id==='firerate_up')wpn.fr=Math.max(0.04,(wpn.fr||0.2)*0.65);
+      if(id==='count_up')wpn.bc=Math.min((wpn.bc||1)+2,16);
+      startWPN={...wpn};
+    }
     G.f_stepMutations=true;
     updateWpnCard();
-    // Sync step 25 card UI if visible
     const mg=document.getElementById('mg1');
     if(mg){mg.querySelectorAll('.mut-card').forEach(c=>c.classList.remove('sel'));const match=[...mg.querySelectorAll('.mut-card')].find(c=>c.getAttribute('onclick')&&c.getAttribute('onclick').includes("'"+id+"'"));if(match)match.classList.add('sel');}
-    // Auto-complete step 25 in mutActive
     if(mutActive[25]){const n=mutActive[25].nodes?.find(n=>n.id==='n2');if(n&&n.vf){n.vf.val=id;mutActive[25]._chk();mutActive[25].render();}}
-    sout('🧬 Mutation: '+id.replace(/_/g,' ').toUpperCase()+' — entering World 2!');
+    sout('🧬 '+id.replace(/_/g,' ').toUpperCase()+' — weapon upgraded! World '+nextWorld+'!');
   } else {
+    // Perk — stacks each time picked
     mut2=id;
-    if(id==='speed_boost')G.p.speedMult=1.45;
-    if(id==='lifesteal')G.p.lifesteal=true;
-    if(id==='shield'){G.p.shield=true;G.p.shieldTimer=999999;}
-    // Sync step 26 card UI
+    if(id==='speed_boost'){
+      G.p.speedMult=Math.min((G.p.speedMult||1)+0.35,3.0);
+    }
+    if(id==='lifesteal'){
+      G.p.lifesteal=true;
+      G.p.lifestealAmt=Math.min((G.p.lifestealAmt||0)+3,20);
+    }
+    if(id==='shield'){
+      G.p.shield=true;
+      G.p.shieldTimer=Math.max(G.p.shieldTimer||0,15*60);
+    }
     const mg=document.getElementById('mg2');
     if(mg){mg.querySelectorAll('.mut-card').forEach(c=>c.classList.remove('sel'));const match=[...mg.querySelectorAll('.mut-card')].find(c=>c.getAttribute('onclick')&&c.getAttribute('onclick').includes("'"+id+"'"));if(match)match.classList.add('sel');}
     if(mutActive[26]){const n=mutActive[26].nodes?.find(n=>n.id==='n2');if(n&&n.vf){n.vf.val=id;mutActive[26]._chk();mutActive[26].render();}}
-    sout('🧬 Perk: '+id.replace(/_/g,' ').toUpperCase()+' — entering World 3!');
+    sout('🧬 '+id.replace(/_/g,' ').toUpperCase()+' stacked! World '+nextWorld+'!');
   }
   G.phase='playing';
-  loadRoom(G.room.world+1,1);
+  loadRoom(nextWorld,1);
 };
 
 resizeGame();renderStep();requestAnimationFrame(loop);
