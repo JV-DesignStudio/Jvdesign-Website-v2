@@ -341,7 +341,16 @@ function renderSetup(){
       <textarea class="form-textarea" data-qi="${i}" data-field="fact" rows="2" placeholder="Share a fun fact to help students learn from the mistake...">${esc(q.fact)}</textarea>
     </div>`).join("")}
     <div id="setupError"></div>
-    <button class="btn-primary btn-block" id="launchBtn" style="font-size:1.1rem;padding:18px">🎯 Launch Quiz for Students</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-teal" id="previewBtn" style="flex:1;min-width:140px;font-size:1rem">👁️ Preview Quiz</button>
+      <button class="btn-primary" id="linkBtn" style="flex:2;min-width:200px;font-size:1rem">🔗 Get Student Link</button>
+    </div>
+    <div id="linkPanel" style="display:none;margin-top:16px;background:var(--teal-lt);border:2px solid var(--teal-dk);border-radius:14px;padding:20px 22px">
+      <p style="font-family:'Fredoka',cursive;font-size:16px;color:var(--teal-dk);margin-bottom:10px">✅ Quiz ready! Share this link with your students:</p>
+      <input id="studentUrl" readonly style="width:100%;background:white;border:1.5px solid var(--teal-dk);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'Inter',sans-serif;color:var(--charcoal);margin-bottom:10px">
+      <button class="btn-teal btn-block" id="copyLinkBtn">📋 Copy Link</button>
+      <p id="linkCopyConfirm" style="display:none;text-align:center;margin-top:8px;font-size:13px;font-weight:600;color:var(--teal-dk)">✓ Copied! Send that link to your students.</p>
+    </div>
   </div>`;
 }
 
@@ -482,7 +491,15 @@ function bindEvents(){
     app.querySelectorAll("[data-field]").forEach(el=>{
       el.addEventListener("input",e=>{ss.questions[parseInt(e.target.dataset.qi)][e.target.dataset.field]=e.target.value;});
     });
-    app.querySelector("#launchBtn")?.addEventListener("click",launchQuiz);
+    app.querySelector("#previewBtn")?.addEventListener("click",()=>launchQuiz(true));
+    app.querySelector("#linkBtn")?.addEventListener("click",()=>launchQuiz(false));
+    app.querySelector("#copyLinkBtn")?.addEventListener("click",()=>{
+      const url=app.querySelector("#studentUrl")?.value;
+      if(url) navigator.clipboard.writeText(url).then(()=>{
+        const c=app.querySelector("#linkCopyConfirm");if(c)c.style.display="block";
+        setTimeout(()=>{const d=app.querySelector("#linkCopyConfirm");if(d)d.style.display="none";},3000);
+      });
+    });
   }
   if(state.view==="name"){
     const inp=app.querySelector("#nameInput"),btn=app.querySelector("#startBtn");
@@ -513,7 +530,7 @@ function bindEvents(){
   }
 }
 
-function launchQuiz(){
+function launchQuiz(preview){
   const {title,questions}=ss;
   if(!title.trim()){showErr("Please give your quiz a title.");return;}
   for(let i=0;i<questions.length;i++){
@@ -522,8 +539,26 @@ function launchQuiz(){
       showErr(`Question ${i+1} is incomplete — fill in the question and all four answers.`);return;
     }
   }
-  state.quizData={title,questions:JSON.parse(JSON.stringify(questions))};
-  state.view="name";render();
+  const quizData={title,questions:JSON.parse(JSON.stringify(questions))};
+  const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(quizData))));
+  const studentUrl=window.location.href.split('?')[0]+'?q='+encoded;
+
+  if(preview){
+    // Teacher wants to play through it themselves
+    history.replaceState(null,'',window.location.pathname+'?q='+encoded);
+    state.quizData=quizData;
+    state.view="name";
+    render();
+  } else {
+    // Just show the link — teacher stays on setup
+    const panel=document.getElementById("linkPanel");
+    const input=document.getElementById("studentUrl");
+    if(panel&&input){
+      input.value=studentUrl;
+      panel.style.display="block";
+      panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+  }
 }
 function showErr(msg){const el=document.getElementById("setupError");if(el)el.innerHTML=`<div class="error-box">⚠️ ${esc(msg)}</div>`;}
 function startGame(){state.qIdx=0;state.answers=[];state.view="game";prepQ();}
@@ -538,6 +573,21 @@ function nextQ(){
   if(state.qIdx+1>=state.quizData.questions.length){state.view="results";render();}
   else{state.qIdx++;prepQ();}
 }
+
+// On load — if URL has ?q= param, decode quiz and go straight to name screen
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const q=params.get('q');
+  if(q){
+    try{
+      const quizData=JSON.parse(decodeURIComponent(escape(atob(q))));
+      if(quizData&&quizData.title&&quizData.questions){
+        state.quizData=quizData;
+        state.view="name";
+      }
+    }catch(e){ /* bad param — stay on setup */ }
+  }
+})();
 
 document.getElementById("navToggle").addEventListener("click",()=>{
   document.getElementById("mobileNav").classList.toggle("open");
