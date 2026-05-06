@@ -334,9 +334,10 @@ function init() {
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(vp.clientWidth||800, vp.clientHeight||600);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(1); // Keep at 1 so canvas CSS size === pixel size for reliable raycasting on mobile
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.domElement.style.display = 'block';
   vp.appendChild(renderer.domElement);
 
   raycaster = new THREE.Raycaster();
@@ -606,6 +607,7 @@ function setupEvents() {
       // Initiate move drag on touch
       if (currentTool === 'move') {
         const rect = canvas.getBoundingClientRect();
+        // Use rect dimensions (CSS size) for normalised coords — matches how mouse events work
         pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
@@ -619,9 +621,14 @@ function setupEvents() {
           raycaster.ray.intersectPlane(movePlane, target);
           moveOffset.subVectors(mesh.position, target);
           moveOffset.y = 0;
+        } else {
+          deselectBlock();
         }
       }
     } else if (e.touches.length === 2) {
+      // Cancel any move drag if second finger added
+      isMoveDrag = false;
+      movePlane = null;
       lastTouchDist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -635,12 +642,11 @@ function setupEvents() {
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
-      const tx = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
-      const ty = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
 
-      // Move drag on touch
+      // Move drag — must check FIRST before any camera movement
       if (isMoveDrag && selectedBlock && movePlane) {
-        pointer.x = tx; pointer.y = ty;
+        pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
         const target = new THREE.Vector3();
         if (raycaster.ray.intersectPlane(movePlane, target)) {
@@ -650,9 +656,10 @@ function setupEvents() {
         }
         lastTouchX = touch.clientX;
         lastTouchY = touch.clientY;
-        return;
+        return; // block camera orbit entirely
       }
 
+      // Camera orbit (only when NOT in move drag)
       const dx = touch.clientX - lastTouchX;
       const dy = touch.clientY - lastTouchY;
       camTheta -= dx * 0.008;
@@ -823,6 +830,9 @@ function updateGhost() {
     }
     window.ghost.position.set(px, py + 0.5, pz);
     window.ghost.material.color.set(new THREE.Color(currentColour));
+    // Sync shape in case it changed since last frame
+    window.ghost.geometry.dispose();
+    window.ghost.geometry = makeGeometry(currentShape, 1, 1, 1);
     window.ghost.visible = true;
   } else {
     window.ghost.visible = false;
@@ -892,6 +902,11 @@ function setShape(shape) {
   currentShape = shape;
   document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('selected'));
   document.querySelector(`[data-shape="${shape}"]`).classList.add('selected');
+  // Rebuild ghost to match new shape
+  if (window.ghost) {
+    window.ghost.geometry.dispose();
+    window.ghost.geometry = makeGeometry(shape, 1, 1, 1);
+  }
 }
 
 function buildColourPalette() {
