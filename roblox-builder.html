@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Builder | JVDesignStudio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧱</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#1a1a2e;--panel:#16213e;--panel2:#0f3460;
+  --accent:#e94560;--accent2:#f5a623;--accent3:#00d4aa;
+  --text:#f0f0f0;--muted:#8892a4;--border:rgba(255,255,255,.08);
+  --grid:32px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+
+/* ── SITE HEADER ── */
+.site-header{position:relative;z-index:100;background:rgba(15,15,30,.98);border-bottom:2px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
+.site-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1.1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.site-logo img{height:28px;border-radius:6px;}
+.site-back{font-size:.75rem;font-weight:700;color:var(--muted);padding:5px 12px;border-radius:7px;border:1px solid var(--border);text-decoration:none;transition:color .15s,border-color .15s;}
+.site-back:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
+.site-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:600;color:var(--accent2);}
+
+/* ── MAIN LAYOUT ── */
+#app{display:grid;grid-template-columns:220px 1fr 200px;height:calc(100vh - 52px - 36px);}
+
+/* ── LEFT PANEL ── */
+#left-panel{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-section{padding:12px;}
+.panel-title{font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+
+/* TOOLS */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.tool-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border-radius:10px;border:2px solid transparent;background:rgba(255,255,255,.04);cursor:pointer;transition:all .15s;font-size:.65rem;font-weight:700;color:var(--muted);letter-spacing:.03em;}
+.tool-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
+.tool-btn.active{background:rgba(233,69,96,.12);border-color:var(--accent);color:var(--accent);}
+.tool-btn .ico{font-size:1.4rem;}
+
+/* COLOURS */
+.colour-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px;}
+.colour-swatch{aspect-ratio:1;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s;}
+.colour-swatch:hover{transform:scale(1.1);}
+.colour-swatch.selected{border-color:white;transform:scale(1.1);}
+.custom-colour{display:flex;align-items:center;gap:6px;margin-top:4px;}
+.custom-colour input[type=color]{width:36px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;}
+.custom-colour span{font-size:.72rem;color:var(--muted);}
+
+/* SHAPES */
+.shape-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
+.shape-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);cursor:pointer;font-size:.58rem;font-weight:700;color:var(--muted);transition:all .15s;}
+.shape-btn:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.shape-btn.selected{border-color:var(--accent3);color:var(--accent3);background:rgba(0,212,170,.08);}
+.shape-btn .sico{font-size:1.2rem;}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:4px 12px;}
+
+/* ── VIEWPORT ── */
+#viewport{position:relative;overflow:hidden;background:#1a1a2e;}
+#viewport canvas{display:block;}
+.vp-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:.68rem;color:rgba(255,255,255,.25);letter-spacing:.05em;pointer-events:none;white-space:nowrap;}
+.vp-toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(15,15,30,.95);border:1px solid var(--accent);border-radius:8px;padding:7px 18px;font-size:.8rem;font-weight:700;color:var(--accent2);pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+.vp-toast.show{opacity:1;}
+.crosshair{position:absolute;top:50%;left:50%;width:16px;height:16px;transform:translate(-50%,-50%);pointer-events:none;opacity:.4;}
+.crosshair::before,.crosshair::after{content:'';position:absolute;background:white;}
+.crosshair::before{width:1px;height:100%;left:50%;transform:translateX(-50%);}
+.crosshair::after{height:1px;width:100%;top:50%;transform:translateY(-50%);}
+
+/* ── RIGHT PANEL ── */
+#right-panel{background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+
+/* BLOCK PROPERTIES */
+.prop-row{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;}
+.prop-label{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.prop-input{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:.8rem;font-family:'Inter',sans-serif;width:100%;}
+.prop-input:focus{outline:none;border-color:var(--accent3);}
+.prop-slider{width:100%;accent-color:var(--accent);}
+.prop-val{font-size:.72rem;color:var(--accent2);font-weight:700;text-align:right;}
+
+/* ACTION BUTTONS */
+.action-btn{width:100%;padding:9px 12px;border-radius:9px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:600;letter-spacing:.02em;transition:all .15s;margin-bottom:6px;}
+.btn-primary{background:var(--accent);color:white;box-shadow:0 3px 0 #9b1a30;}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{background:rgba(255,255,255,.12);}
+.btn-success{background:var(--accent3);color:#0f3460;box-shadow:0 3px 0 #008866;}
+.btn-success:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn-warn{background:var(--accent2);color:#1a1a2e;box-shadow:0 3px 0 #c07a00;}
+.btn-warn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+
+/* SAVE SLOTS */
+.save-slots{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;}
+.save-slot{padding:8px 6px;border-radius:8px;border:1px dashed var(--border);background:rgba(255,255,255,.02);cursor:pointer;font-size:.65rem;color:var(--muted);text-align:center;transition:all .15s;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.save-slot:hover{border-color:var(--accent3);color:var(--accent3);}
+.save-slot.filled{border-style:solid;border-color:rgba(0,212,170,.3);color:var(--text);background:rgba(0,212,170,.05);}
+.save-slot .slot-name{font-weight:700;font-size:.7rem;}
+.save-slot .slot-count{font-size:.6rem;color:var(--muted);}
+
+/* STATS */
+.stats-row{display:flex;justify-content:space-between;margin-bottom:6px;}
+.stat-item{text-align:center;}
+.stat-val{font-family:'Fredoka',cursive;font-size:1.3rem;font-weight:700;color:var(--accent2);}
+.stat-lab{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── FOOTER ── */
+.site-footer{height:36px;background:rgba(10,10,20,.98);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:20px;flex-shrink:0;}
+.site-footer a{font-size:.7rem;color:rgba(255,255,255,.3);text-decoration:none;transition:color .15s;}
+.site-footer a:hover{color:rgba(255,255,255,.7);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;min-width:300px;max-width:380px;width:90%;}
+.modal h3{font-family:'Fredoka',cursive;font-size:1.3rem;color:var(--accent2);margin-bottom:16px;}
+.modal-input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:9px;padding:10px 14px;color:var(--text);font-size:.95rem;font-family:'Inter',sans-serif;margin-bottom:12px;}
+.modal-input:focus{outline:none;border-color:var(--accent3);}
+.modal-btns{display:flex;gap:8px;}
+.modal-btns button{flex:1;padding:10px;border-radius:9px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.95rem;font-weight:600;}
+.modal-ok{background:var(--accent);color:white;}
+.modal-cancel{background:rgba(255,255,255,.08);color:var(--text);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;}
+  #left-panel{flex-direction:row;overflow-x:auto;height:auto;border-right:none;border-bottom:1px solid var(--border);}
+  #left-panel .panel-section{min-width:160px;flex-shrink:0;}
+  #right-panel{flex-direction:row;overflow-x:auto;height:auto;border-left:none;border-top:1px solid var(--border);}
+  #right-panel .panel-section{min-width:180px;flex-shrink:0;}
+  #app{height:calc(100vh - 52px - 36px);}
+}
+</style>
+</head>
+<body>
+
+<!-- SITE HEADER -->
+<header class="site-header">
+  <a href="index.html" class="site-logo">
+    <img src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/28x28/1a1a2e/e94560?text=JV'">
+    JVDesignStudio
+  </a>
+  <span class="site-title">🧱 Block Builder</span>
+  <a href="workshop.html" class="site-back">← Workshop</a>
+</header>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="panel-section">
+      <div class="panel-title">Tools</div>
+      <div class="tools">
+        <button class="tool-btn active" data-tool="add" onclick="setTool('add')"><span class="ico">➕</span>Add</button>
+        <button class="tool-btn" data-tool="paint" onclick="setTool('paint')"><span class="ico">🎨</span>Paint</button>
+        <button class="tool-btn" data-tool="move" onclick="setTool('move')"><span class="ico">✋</span>Move</button>
+        <button class="tool-btn" data-tool="resize" onclick="setTool('resize')"><span class="ico">⬛</span>Resize</button>
+        <button class="tool-btn" data-tool="delete" onclick="setTool('delete')"><span class="ico">🗑️</span>Delete</button>
+        <button class="tool-btn" data-tool="select" onclick="setTool('select')"><span class="ico">🖱️</span>Select</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Colour</div>
+      <div class="colour-grid" id="colourGrid"></div>
+      <div class="custom-colour">
+        <input type="color" id="customColour" value="#e94560" oninput="setCustomColour(this.value)">
+        <span>Custom colour</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Shape</div>
+      <div class="shape-grid" id="shapeGrid">
+        <div class="shape-btn selected" data-shape="box" onclick="setShape('box')"><span class="sico">⬛</span>Block</div>
+        <div class="shape-btn" data-shape="cylinder" onclick="setShape('cylinder')"><span class="sico">🛢️</span>Cylinder</div>
+        <div class="shape-btn" data-shape="sphere" onclick="setShape('sphere')"><span class="sico">🔵</span>Sphere</div>
+        <div class="shape-btn" data-shape="cone" onclick="setShape('cone')"><span class="sico">🔺</span>Cone</div>
+        <div class="shape-btn" data-shape="wedge" onclick="setShape('wedge')"><span class="sico">📐</span>Wedge</div>
+        <div class="shape-btn" data-shape="flat" onclick="setShape('flat')"><span class="sico">▬</span>Plate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEWPORT -->
+  <div id="viewport">
+    <div class="crosshair"></div>
+    <div class="vp-toast" id="toast"></div>
+    <div class="vp-hint">Left-click: place/act &nbsp;·&nbsp; Right-drag: orbit &nbsp;·&nbsp; Scroll: zoom &nbsp;·&nbsp; Middle-drag: pan</div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="panel-section">
+      <div class="panel-title">Stats</div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-val" id="blockCount">0</div><div class="stat-lab">Blocks</div></div>
+        <div class="stat-item"><div class="stat-val" id="colourCount">0</div><div class="stat-lab">Colours</div></div>
+        <div class="stat-item"><div class="stat-val" id="shapeCount">0</div><div class="stat-lab">Shapes</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section" id="propPanel" style="display:none;">
+      <div class="panel-title">Selected Block</div>
+      <div class="prop-row">
+        <div class="prop-label">Width</div>
+        <input type="range" class="prop-slider" id="propW" min="0.5" max="8" step="0.5" value="1" oninput="updateProp('w',this.value)">
+        <div class="prop-val" id="propWVal">1</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Height</div>
+        <input type="range" class="prop-slider" id="propH" min="0.5" max="8" step="0.5" value="1" oninput="updateProp('h',this.value)">
+        <div class="prop-val" id="propHVal">1</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Depth</div>
+        <input type="range" class="prop-slider" id="propD" min="0.5" max="8" step="0.5" value="1" oninput="updateProp('d',this.value)">
+        <div class="prop-val" id="propDVal">1</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Rotate Y</div>
+        <input type="range" class="prop-slider" id="propRot" min="0" max="315" step="45" value="0" oninput="updateProp('rot',this.value)">
+        <div class="prop-val" id="propRotVal">0°</div>
+      </div>
+      <button class="action-btn btn-warn" onclick="duplicateSelected()">📋 Duplicate</button>
+      <button class="action-btn btn-secondary" style="color:#e94560;border-color:rgba(233,69,96,.3);" onclick="deleteSelected()">🗑️ Delete</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Your Creation</div>
+      <button class="action-btn btn-primary" onclick="openNameModal()">✏️ Name It</button>
+      <button class="action-btn btn-success" onclick="saveSlotOpen()">💾 Save</button>
+      <button class="action-btn btn-secondary" onclick="exportOBJ()">⬇️ Export OBJ</button>
+      <button class="action-btn btn-secondary" onclick="clearAll()">🔄 Clear All</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Saved Builds</div>
+      <div class="save-slots" id="saveSlots"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Quick Builds</div>
+      <button class="action-btn btn-secondary" onclick="quickBuild('sword')">⚔️ Sword</button>
+      <button class="action-btn btn-secondary" onclick="quickBuild('house')">🏠 House</button>
+      <button class="action-btn btn-secondary" onclick="quickBuild('tower')">🗼 Tower</button>
+      <button class="action-btn btn-secondary" onclick="quickBuild('car')">🚗 Car</button>
+    </div>
+  </div>
+</div>
+
+<!-- SITE FOOTER -->
+<footer class="site-footer">
+  <a href="index.html">🏠 Home</a>
+  <a href="workshop.html">🔧 Workshop</a>
+  <a href="roblox-creator-journey.html">📚 Roblox Guide</a>
+  <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+</footer>
+
+<!-- MODAL: Name -->
+<div class="modal-overlay" id="nameModal">
+  <div class="modal">
+    <h3>🏷️ Name Your Build</h3>
+    <input class="modal-input" id="buildNameInput" placeholder="My Epic Creation" maxlength="32">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('nameModal')">Cancel</button>
+      <button class="modal-ok" onclick="saveName()">Save Name ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Save -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h3>💾 Save to Slot</h3>
+    <div class="save-slots" id="modalSaveSlots"></div>
+    <div class="modal-btns" style="margin-top:8px;">
+      <button class="modal-cancel" onclick="closeModal('saveModal')" style="width:100%;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let scene, camera, renderer, raycaster, pointer;
+let blocks = []; // {mesh, data:{x,y,z,w,h,d,colour,shape,rot}}
+let currentTool = 'add';
+let currentColour = '#e94560';
+let currentShape = 'box';
+let selectedBlock = null;
+let buildName = 'My Build';
+let toastTimer = null;
+
+// Orbit controls state
+let isRightDrag = false, isMidDrag = false;
+let prevMX = 0, prevMY = 0;
+let camTheta = 0.6, camPhi = 0.8, camDist = 18;
+let camTarget = new THREE.Vector3(0, 1, 0);
+
+// Grid & snap
+const GRID = 1;
+const COLOURS = [
+  '#e94560','#f5a623','#f9f900','#00d4aa','#5bc0f8',
+  '#9b59b6','#ff6b6b','#ffd93d','#6bcb77','#4d96ff',
+  '#ff922b','#f06595','#ffffff','#aaaaaa','#403B33',
+];
+
+// ═══════════════════════════════════════════════════════
+// THREE SETUP
+// ═══════════════════════════════════════════════════════
+function init() {
+  const vp = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+  scene.fog = new THREE.FogExp2(0x1a1a2e, 0.025);
+
+  camera = new THREE.PerspectiveCamera(45, (vp.clientWidth||800)/(vp.clientHeight||600), 0.1, 200);
+  updateCamera();
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(vp.clientWidth||800, vp.clientHeight||600);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  vp.appendChild(renderer.domElement);
+
+  raycaster = new THREE.Raycaster();
+  pointer = new THREE.Vector2();
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
+  sun.position.set(10, 20, 10);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 2048;
+  sun.shadow.mapSize.height = 2048;
+  sun.shadow.camera.near = 0.1;
+  sun.shadow.camera.far = 100;
+  sun.shadow.camera.left = -20;
+  sun.shadow.camera.right = 20;
+  sun.shadow.camera.top = 20;
+  sun.shadow.camera.bottom = -20;
+  scene.add(sun);
+  scene.add(new THREE.DirectionalLight(0x5bc0f8, 0.3).position.set(-10, 5, -8) && new THREE.DirectionalLight(0x5bc0f8, 0.3));
+
+  // Ground grid
+  const gridHelper = new THREE.GridHelper(40, 40, 0x2a2a4a, 0x222235);
+  scene.add(gridHelper);
+
+  // Ground plane (invisible, for raycasting)
+  const groundGeo = new THREE.PlaneGeometry(80, 80);
+  const groundMat = new THREE.MeshStandardMaterial({ visible: false });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = 0;
+  ground.receiveShadow = true;
+  ground.userData.isGround = true;
+  scene.add(ground);
+
+  // Ghost block (placement preview)
+  window.ghost = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ color: 0xe94560, transparent: true, opacity: 0.4, depthWrite: false })
+  );
+  window.ghost.visible = false;
+  scene.add(window.ghost);
+
+  // Highlight outline
+  window.highlight = new THREE.Mesh(
+    new THREE.BoxGeometry(1.05, 1.05, 1.05),
+    new THREE.MeshBasicMaterial({ color: 0xffd93d, wireframe: true })
+  );
+  window.highlight.visible = false;
+  scene.add(window.highlight);
+
+  setupEvents();
+  buildColourPalette();
+  renderSaveSlots();
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = (vp.clientWidth||800) / (vp.clientHeight||600);
+    camera.updateProjectionMatrix();
+    renderer.setSize(vp.clientWidth||800, vp.clientHeight||600);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════
+function updateCamera() {
+  const x = camTarget.x + camDist * Math.sin(camPhi) * Math.sin(camTheta);
+  const y = camTarget.y + camDist * Math.cos(camPhi);
+  const z = camTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta);
+  camera.position.set(x, y, z);
+  camera.lookAt(camTarget);
+}
+
+// ═══════════════════════════════════════════════════════
+// GEOMETRY HELPERS
+// ═══════════════════════════════════════════════════════
+function makeGeometry(shape, w, h, d) {
+  switch(shape) {
+    case 'cylinder': return new THREE.CylinderGeometry(w*0.5, w*0.5, h, 16);
+    case 'sphere':   return new THREE.SphereGeometry(Math.min(w,h,d)*0.5, 16, 12);
+    case 'cone':     return new THREE.ConeGeometry(w*0.5, h, 12);
+    case 'wedge': {
+      // Custom wedge via BufferGeometry
+      const hw=w/2, hh=h/2, hd=d/2;
+      const verts = new Float32Array([
+        -hw,-hh,-hd,  hw,-hh,-hd,  hw,hh,-hd,  -hw,hh,-hd, // back face (rect)
+        -hw,-hh, hd,  hw,-hh, hd,                            // front bottom edge
+      ]);
+      const idx = [0,1,2, 0,2,3, 0,4,5, 0,5,1, 3,2,1, 3,1,5, 3,5,4, 3,4,0, 1,5,2, 5,2, /* fix */ 5,3,2];
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      geo.setIndex([0,2,1, 0,3,2, 0,4,5, 0,5,1, 0,1,5, 0,5,4, 2,3,5, 3,4,5, 1,2,5]);
+      geo.computeVertexNormals();
+      return geo;
+    }
+    case 'flat':     return new THREE.BoxGeometry(w, h*0.3, d);
+    default:         return new THREE.BoxGeometry(w, h, d);
+  }
+}
+
+function snap(v) { return Math.round(v / GRID) * GRID; }
+
+// ═══════════════════════════════════════════════════════
+// BLOCK MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentShape, rot=0) {
+  const geo = makeGeometry(shape, w, h, d);
+  const mat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(colour),
+    roughness: 0.55,
+    metalness: 0.1,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(x, y + h/2, z);
+  mesh.rotation.y = rot * Math.PI / 180;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = { w, h, d, colour, shape, rot, isBlock: true };
+  scene.add(mesh);
+  blocks.push(mesh);
+  updateStats();
+  return mesh;
+}
+
+function deleteBlock(mesh) {
+  scene.remove(mesh);
+  mesh.geometry.dispose();
+  mesh.material.dispose();
+  blocks = blocks.filter(b => b !== mesh);
+  if (selectedBlock === mesh) {
+    selectedBlock = null;
+    window.highlight.visible = false;
+    document.getElementById('propPanel').style.display = 'none';
+  }
+  updateStats();
+}
+
+function selectBlock(mesh) {
+  selectedBlock = mesh;
+  window.highlight.position.copy(mesh.position);
+  window.highlight.scale.set(
+    (mesh.userData.w||1) * 1.05,
+    (mesh.userData.h||1) * 1.05,
+    (mesh.userData.d||1) * 1.05
+  );
+  window.highlight.visible = true;
+
+  const pp = document.getElementById('propPanel');
+  pp.style.display = 'block';
+  document.getElementById('propW').value = mesh.userData.w || 1;
+  document.getElementById('propH').value = mesh.userData.h || 1;
+  document.getElementById('propD').value = mesh.userData.d || 1;
+  document.getElementById('propRot').value = mesh.userData.rot || 0;
+  document.getElementById('propWVal').textContent = mesh.userData.w || 1;
+  document.getElementById('propHVal').textContent = mesh.userData.h || 1;
+  document.getElementById('propDVal').textContent = mesh.userData.d || 1;
+  document.getElementById('propRotVal').textContent = (mesh.userData.rot || 0) + '°';
+}
+
+function deselectBlock() {
+  selectedBlock = null;
+  window.highlight.visible = false;
+  document.getElementById('propPanel').style.display = 'none';
+}
+
+function updateProp(prop, val) {
+  if (!selectedBlock) return;
+  const d = selectedBlock.userData;
+  if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
+  if (prop === 'h') { d.h = parseFloat(val); document.getElementById('propHVal').textContent = val; }
+  if (prop === 'd') { d.d = parseFloat(val); document.getElementById('propDVal').textContent = val; }
+  if (prop === 'rot') { d.rot = parseFloat(val); document.getElementById('propRotVal').textContent = val + '°'; }
+
+  const newGeo = makeGeometry(d.shape, d.w, d.h, d.d);
+  selectedBlock.geometry.dispose();
+  selectedBlock.geometry = newGeo;
+  selectedBlock.rotation.y = d.rot * Math.PI / 180;
+  selectedBlock.position.y = d.h / 2 + (selectedBlock.position.y - selectedBlock.userData.prevY || 0);
+  selectedBlock.userData.prevY = d.h / 2;
+  selectBlock(selectedBlock); // refresh highlight
+}
+
+function duplicateSelected() {
+  if (!selectedBlock) return;
+  const d = selectedBlock.userData;
+  addBlock(
+    selectedBlock.position.x + 1.2,
+    selectedBlock.position.y - d.h/2,
+    selectedBlock.position.z,
+    d.w, d.h, d.d, d.colour, d.shape, d.rot
+  );
+  toast('Block duplicated!');
+}
+
+function deleteSelected() {
+  if (!selectedBlock) return;
+  deleteBlock(selectedBlock);
+  toast('Block deleted');
+}
+
+// ═══════════════════════════════════════════════════════
+// QUICK BUILDS
+// ═══════════════════════════════════════════════════════
+function quickBuild(type) {
+  clearAll(true);
+  if (type === 'sword') {
+    addBlock(0,0,0,0.5,6,0.5,'#aaaaaa','box'); // blade
+    addBlock(0,0,0,2,0.4,0.4,'#c9a84c','box');  // guard at y=0
+    addBlock(0,-3,0,0.6,1.5,0.6,'#6b4a2a','cylinder'); // handle
+    buildName = 'My Sword';
+  } else if (type === 'house') {
+    addBlock(0,0,0,6,3,5,'#e8d5b0','box');       // walls
+    addBlock(0,3,0,7,1.5,6,'#e94560','wedge');  // roof wedge approx
+    addBlock(0,0,2.6,1.5,2,0.2,'#6b4a2a','box'); // door
+    addBlock(-1.5,1,2.6,1,1,0.2,'#5bc0f8','box'); // window
+    addBlock(1.5,1,2.6,1,1,0.2,'#5bc0f8','box');
+    buildName = 'My House';
+  } else if (type === 'tower') {
+    for(let i=0;i<5;i++) addBlock(0,i*2,0,3,2,3,'#aaaaaa','box');
+    addBlock(0,10,0,3.5,0.5,3.5,'#555555','box'); // battlement base
+    for(let i=-1;i<=1;i+=2){
+      addBlock(i*1.2,10.5,0,0.5,1,3.5,'#555555','box');
+      addBlock(0,10.5,i*1.2,3.5,1,0.5,'#555555','box');
+    }
+    buildName = 'My Tower';
+  } else if (type === 'car') {
+    addBlock(0,0,0,4,1,2,'#e94560','box');    // body
+    addBlock(0,1,0,2.5,0.8,1.8,'#f5a623','box'); // cabin
+    addBlock(-1.2,-0.3,-1.1,0.8,0.8,0.8,'#222','cylinder'); // wheel FL
+    addBlock(1.2,-0.3,-1.1,0.8,0.8,0.8,'#222','cylinder');
+    addBlock(-1.2,-0.3,1.1,0.8,0.8,0.8,'#222','cylinder');
+    addBlock(1.2,-0.3,1.1,0.8,0.8,0.8,'#222','cylinder');
+    buildName = 'My Car';
+  }
+  document.getElementById('buildNameInput').value = buildName;
+  toast('Quick build loaded!');
+  updateStats();
+}
+
+// ═══════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════
+function setupEvents() {
+  const canvas = renderer.domElement;
+  const vp = document.getElementById('viewport');
+
+  // Mouse events
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+
+  // Touch events
+  let lastTouchDist = 0;
+  let lastTouchX = 0, lastTouchY = 0;
+  let touchMoved = false;
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    touchMoved = false;
+    if (e.touches.length === 1) {
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+    } else if (e.touches.length === 2) {
+      lastTouchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    touchMoved = true;
+    if (e.touches.length === 1) {
+      const dx = e.touches[0].clientX - lastTouchX;
+      const dy = e.touches[0].clientY - lastTouchY;
+      camTheta -= dx * 0.008;
+      camPhi = Math.max(0.1, Math.min(Math.PI * 0.9, camPhi + dy * 0.008));
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+      updateCamera();
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      camDist = Math.max(3, Math.min(60, camDist - (dist - lastTouchDist) * 0.05));
+      lastTouchDist = dist;
+      updateCamera();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (!touchMoved && e.changedTouches.length === 1) {
+      const touch = e.changedTouches[0];
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+      handleAction();
+    }
+  }, { passive: false });
+}
+
+let mouseButton = -1;
+
+function onMouseDown(e) {
+  mouseButton = e.button;
+  if (e.button === 0) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    handleAction();
+  }
+  if (e.button === 1 || e.button === 2) {
+    isRightDrag = e.button === 2;
+    isMidDrag = e.button === 1;
+    prevMX = e.clientX;
+    prevMY = e.clientY;
+  }
+}
+
+function onMouseMove(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  if (isRightDrag) {
+    const dx = e.clientX - prevMX;
+    const dy = e.clientY - prevMY;
+    camTheta -= dx * 0.006;
+    camPhi = Math.max(0.05, Math.min(Math.PI * 0.9, camPhi + dy * 0.006));
+    updateCamera();
+  }
+  if (isMidDrag) {
+    const dx = e.clientX - prevMX;
+    const dy = e.clientY - prevMY;
+    const right = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    camera.getWorldDirection(new THREE.Vector3());
+    right.crossVectors(camera.getWorldDirection(new THREE.Vector3()), new THREE.Vector3(0,1,0)).normalize();
+    camTarget.addScaledVector(right, -dx * 0.02);
+    camTarget.y += dy * 0.02;
+    updateCamera();
+  }
+  prevMX = e.clientX;
+  prevMY = e.clientY;
+
+  // Ghost preview
+  if (currentTool === 'add') updateGhost();
+
+  document.addEventListener('mouseup', () => { isRightDrag = false; isMidDrag = false; }, { once: true });
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  camDist = Math.max(3, Math.min(60, camDist + e.deltaY * 0.02));
+  updateCamera();
+}
+
+function updateGhost() {
+  raycaster.setFromCamera(pointer, camera);
+  const targets = [...blocks, ...scene.children.filter(c => c.userData.isGround)];
+  const hits = raycaster.intersectObjects(targets);
+  if (hits.length > 0) {
+    const hit = hits[0];
+    let px, py, pz;
+    if (hit.object.userData.isGround) {
+      px = snap(hit.point.x);
+      py = 0;
+      pz = snap(hit.point.z);
+    } else {
+      // Place on top of hit block
+      const n = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
+      px = snap(hit.object.position.x + n.x * 0.5);
+      py = hit.object.position.y + (hit.object.userData.h||1)/2 * Math.sign(n.y + 0.01);
+      pz = snap(hit.object.position.z + n.z * 0.5);
+      if (Math.abs(n.y) > 0.5) py = snap(py);
+    }
+    window.ghost.position.set(px, py + 0.5, pz);
+    window.ghost.material.color.set(new THREE.Color(currentColour));
+    window.ghost.visible = true;
+  } else {
+    window.ghost.visible = false;
+  }
+}
+
+function handleAction() {
+  raycaster.setFromCamera(pointer, camera);
+  const blockHits = raycaster.intersectObjects(blocks);
+  const groundHits = raycaster.intersectObjects(scene.children.filter(c => c.userData.isGround));
+
+  if (currentTool === 'add') {
+    let px, py, pz;
+    if (blockHits.length > 0) {
+      const hit = blockHits[0];
+      const n = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
+      const b = hit.object;
+      px = snap(b.position.x + n.x);
+      pz = snap(b.position.z + n.z);
+      if (Math.abs(n.y) > 0.5 && n.y > 0) {
+        py = (b.position.y - (b.userData.h||1)/2) + (b.userData.h||1);
+      } else {
+        py = b.position.y - (b.userData.h||1)/2;
+      }
+    } else if (groundHits.length > 0) {
+      px = snap(groundHits[0].point.x);
+      py = 0;
+      pz = snap(groundHits[0].point.z);
+    } else return;
+    addBlock(px, py, pz);
+    toast('Block added!');
+
+  } else if (currentTool === 'paint') {
+    if (blockHits.length > 0) {
+      blockHits[0].object.material.color.set(new THREE.Color(currentColour));
+      blockHits[0].object.userData.colour = currentColour;
+      toast('Painted!');
+    }
+
+  } else if (currentTool === 'delete') {
+    if (blockHits.length > 0) {
+      deleteBlock(blockHits[0].object);
+      toast('Block removed');
+    }
+
+  } else if (currentTool === 'select' || currentTool === 'resize' || currentTool === 'move') {
+    if (blockHits.length > 0) {
+      selectBlock(blockHits[0].object);
+    } else {
+      deselectBlock();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+  window.ghost.visible = false;
+  if (tool !== 'select' && tool !== 'resize' && tool !== 'move') deselectBlock();
+}
+
+function setShape(shape) {
+  currentShape = shape;
+  document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`[data-shape="${shape}"]`).classList.add('selected');
+}
+
+function buildColourPalette() {
+  const grid = document.getElementById('colourGrid');
+  COLOURS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'colour-swatch' + (c === currentColour ? ' selected' : '');
+    sw.style.background = c;
+    sw.title = c;
+    sw.onclick = () => {
+      currentColour = c;
+      document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+    };
+    grid.appendChild(sw);
+  });
+}
+
+function setCustomColour(val) {
+  currentColour = val;
+  document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function updateStats() {
+  document.getElementById('blockCount').textContent = blocks.length;
+  const colours = new Set(blocks.map(b => b.userData.colour)).size;
+  const shapes = new Set(blocks.map(b => b.userData.shape)).size;
+  document.getElementById('colourCount').textContent = colours;
+  document.getElementById('shapeCount').textContent = shapes;
+}
+
+function clearAll(silent=false) {
+  [...blocks].forEach(b => { scene.remove(b); b.geometry.dispose(); b.material.dispose(); });
+  blocks = [];
+  deselectBlock();
+  updateStats();
+  if (!silent) toast('Cleared!');
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════════════════
+function openNameModal() {
+  document.getElementById('buildNameInput').value = buildName;
+  document.getElementById('nameModal').classList.add('open');
+}
+function saveName() {
+  buildName = document.getElementById('buildNameInput').value.trim() || 'My Build';
+  closeModal('nameModal');
+  toast('Named: ' + buildName);
+}
+function saveSlotOpen() {
+  renderModalSaveSlots();
+  document.getElementById('saveModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function getSlots() {
+  try { return JSON.parse(localStorage.getItem('jvds_builder_saves') || '[]'); } catch { return []; }
+}
+function setSlots(slots) { localStorage.setItem('jvds_builder_saves', JSON.stringify(slots)); }
+
+function saveToSlot(idx) {
+  const slots = getSlots();
+  while (slots.length <= idx) slots.push(null);
+  slots[idx] = {
+    name: buildName,
+    date: new Date().toLocaleDateString(),
+    count: blocks.length,
+    blocks: blocks.map(b => ({
+      x: b.position.x, y: b.position.y - (b.userData.h||1)/2,
+      z: b.position.z,
+      w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
+      colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0
+    }))
+  };
+  setSlots(slots);
+  renderSaveSlots();
+  closeModal('saveModal');
+  toast('Saved to slot ' + (idx+1) + '!');
+}
+
+function loadSlot(idx) {
+  const slots = getSlots();
+  const slot = slots[idx];
+  if (!slot) return;
+  clearAll(true);
+  buildName = slot.name;
+  slot.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+  toast('Loaded: ' + buildName);
+}
+
+function renderSaveSlots() {
+  const slots = getSlots();
+  const container = document.getElementById('saveSlots');
+  container.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const slot = slots[i];
+    const el = document.createElement('div');
+    el.className = 'save-slot' + (slot ? ' filled' : '');
+    el.innerHTML = slot
+      ? `<div class="slot-name">${slot.name}</div><div class="slot-count">${slot.count} blocks · ${slot.date}</div>`
+      : `<div>Slot ${i+1}</div><div style="font-size:.6rem">Empty</div>`;
+    el.onclick = () => slot ? loadSlot(i) : null;
+    container.appendChild(el);
+  }
+}
+
+function renderModalSaveSlots() {
+  const slots = getSlots();
+  const container = document.getElementById('modalSaveSlots');
+  container.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const slot = slots[i];
+    const el = document.createElement('div');
+    el.className = 'save-slot' + (slot ? ' filled' : '');
+    el.innerHTML = slot
+      ? `<div class="slot-name">Overwrite ${slot.name}</div><div class="slot-count">${slot.count} blocks</div>`
+      : `<div>Save to Slot ${i+1}</div>`;
+    el.onclick = () => saveToSlot(i);
+    container.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT OBJ
+// ═══════════════════════════════════════════════════════
+function exportOBJ() {
+  let obj = `# JVDesignStudio Block Builder — ${buildName}\n`;
+  let vOffset = 1;
+  blocks.forEach((mesh, mi) => {
+    const geo = mesh.geometry.clone();
+    geo.applyMatrix4(mesh.matrixWorld);
+    const pos = geo.attributes.position;
+    obj += `\no block_${mi+1}\n`;
+    for (let i = 0; i < pos.count; i++) {
+      obj += `v ${pos.getX(i).toFixed(3)} ${pos.getY(i).toFixed(3)} ${pos.getZ(i).toFixed(3)}\n`;
+    }
+    const idx = geo.index;
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
+        obj += `f ${idx.getX(i)+vOffset} ${idx.getX(i+1)+vOffset} ${idx.getX(i+2)+vOffset}\n`;
+      }
+    }
+    vOffset += pos.count;
+    geo.dispose();
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([obj], { type: 'text/plain' }));
+  a.download = buildName.replace(/\s+/g,'_') + '.obj';
+  a.click();
+  toast('Exported ' + buildName + '.obj!');
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMATE
+// ═══════════════════════════════════════════════════════
+function animate() {
+  requestAnimationFrame(animate);
+  // Keep highlight on selected block
+  if (selectedBlock && window.highlight.visible) {
+    window.highlight.position.copy(selectedBlock.position);
+    window.highlight.rotation.copy(selectedBlock.rotation);
+  }
+  renderer.render(scene, camera);
+}
+
+// ── CLOSE MODALS ON OVERLAY CLICK ──
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ── START ──
+document.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    init();
+    toast('Welcome! Click the grid to start building 🧱');
+  }));
+});
+</script>
+</body>
+</html>
