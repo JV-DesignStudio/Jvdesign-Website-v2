@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Character Designer | JVDesignStudio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧑‍🎨</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--panel:#161c27;--panel2:#1c2535;--panel3:#222f45;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#ef4444;
+  --blue:#3b82f6;--purple:#8b5cf6;
+  --text:#e8edf8;--muted:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+html{height:100%;}
+body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
+
+/* HEADER */
+.site-header{height:46px;background:rgba(8,10,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;z-index:100;}
+.site-logo{display:flex;align-items:center;gap:7px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.site-logo img{height:26px;border-radius:5px;}
+.site-title{font-family:'Fredoka',cursive;font-size:.95rem;font-weight:600;color:var(--accent);}
+.site-back{font-size:.62rem;font-weight:700;color:var(--muted);padding:4px 9px;border-radius:6px;border:1px solid var(--border2);text-decoration:none;}
+.site-back:hover{color:var(--text);}
+
+/* APP */
+#app{flex:1;display:flex;min-height:0;}
+
+/* LEFT: PARTS PANEL */
+#parts-panel{width:190px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+/* CENTRE: PREVIEW */
+#preview-area{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);gap:12px;padding:16px;overflow:hidden;}
+#char-canvas{image-rendering:pixelated;image-rendering:crisp-edges;border-radius:12px;}
+.pose-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.pose-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--panel);cursor:pointer;font-size:.62rem;font-family:'Fredoka',cursive;font-weight:600;color:var(--muted);transition:all .12s;}
+.pose-btn:hover{color:var(--text);background:var(--panel2);}
+.pose-btn.on{background:rgba(244,114,182,.15);border-color:var(--accent);color:var(--accent);}
+.bg-row{display:flex;gap:5px;align-items:center;}
+.bg-opt{width:24px;height:24px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .1s;flex-shrink:0;}
+.bg-opt:hover{transform:scale(1.1);}
+.bg-opt.on{border-color:white;transform:scale(1.1);}
+.canvas-label{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+
+/* RIGHT: ACTIONS */
+#actions-panel{width:170px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
+
+/* PANEL COMMON */
+.ps{padding:8px;}
+.pt{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.pdiv{height:1px;background:var(--border);margin:3px 0;}
+
+/* PART SELECTOR */
+.part-tabs{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1;}
+.part-tab{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:all .12s;user-select:none;}
+.part-tab:hover{background:rgba(255,255,255,.04);}
+.part-tab.on{background:rgba(244,114,182,.12);border-left:3px solid var(--accent);}
+.part-tab .pt-icon{font-size:1rem;flex-shrink:0;}
+.part-tab .pt-name{font-size:.6rem;font-weight:700;color:var(--text);}
+.part-tab .pt-val{font-size:.5rem;color:var(--muted);margin-top:1px;}
+
+/* VARIANT PICKER */
+.variant-section{padding:8px;}
+.variant-title{font-family:'Fredoka',cursive;font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:8px;}
+.variant-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px;}
+.var-btn{aspect-ratio:1;border-radius:8px;border:2px solid var(--border2);background:var(--panel2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:all .12s;position:relative;}
+.var-btn:hover{border-color:var(--border2);background:var(--panel3);}
+.var-btn.on{border-color:var(--accent);background:rgba(244,114,182,.1);}
+.var-btn .vb-label{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:.38rem;color:var(--muted);}
+.var-btn.on .vb-label{color:var(--accent);}
+
+/* COLOUR PICKER */
+.colour-section{padding:0 8px 8px;}
+.colour-swatches{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;}
+.csw{width:22px;height:22px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform .1s;flex-shrink:0;}
+.csw:hover{transform:scale(1.1);}
+.csw.on{border-color:white;transform:scale(1.1);}
+input[type=color].cpick{width:28px;height:22px;border:none;border-radius:5px;cursor:pointer;padding:0;background:none;flex-shrink:0;}
+
+/* SAVE SLOTS */
+.slot-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
+.save-slot{border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .12s;overflow:hidden;}
+.save-slot:hover{border-color:var(--accent3);}
+.save-slot.filled{border-style:solid;border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.04);}
+.ss-thumb{width:100%;image-rendering:pixelated;}
+.ss-name{font-size:.5rem;color:var(--muted);text-align:center;padding:0 3px;}
+.ss-empty{font-size:.6rem;color:var(--muted);}
+
+/* ACTION BUTTONS */
+.ab{width:100%;padding:6px 6px;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;margin-bottom:4px;transition:all .12s;}
+.ab-p{background:var(--accent);color:white;box-shadow:0 2px 0 #be185d;}
+.ab-p:hover{filter:brightness(1.1);}
+.ab-s{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border2);}
+.ab-s:hover{background:rgba(255,255,255,.09);}
+.ab-g{background:var(--accent3);color:#000;box-shadow:0 2px 0 #059669;}
+.ab-g:hover{filter:brightness(1.1);}
+
+/* SIZE SELECTOR */
+.size-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;}
+.size-chip{font-size:.5rem;padding:3px 7px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s;}
+.size-chip:hover,.size-chip.on{background:var(--blue);color:white;border-color:var(--blue);}
+
+/* BOTTOM BAR (mobile) */
+#bottom-bar{display:none;flex-direction:column;background:var(--panel);border-top:1px solid var(--border2);flex-shrink:0;}
+.bb-tabs{display:flex;overflow-x:auto;}
+.bb-tab{flex-shrink:0;padding:5px 10px;font-size:.52rem;text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;border-bottom:2px solid transparent;font-family:inherit;white-space:nowrap;}
+.bb-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.bb-content{overflow-x:auto;padding:5px 8px;}
+.bb-panel{display:none;gap:6px;align-items:flex-start;}
+.bb-panel.on{display:flex;}
+
+/* FOOTER */
+.site-footer{height:28px;background:rgba(8,10,18,.98);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0;}
+.site-footer a{font-size:.55rem;color:rgba(255,255,255,.2);text-decoration:none;}
+.site-footer a:hover{color:rgba(255,255,255,.5);}
+
+/* TOAST */
+#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);padding:5px 14px;border-radius:7px;font-size:.7rem;z-index:900;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+
+@media(max-width:699px){
+  #parts-panel,#actions-panel{display:none!important;}
+  #bottom-bar{display:flex!important;}
+  #preview-area{padding:8px;}
+}
+@media(min-width:700px) and (max-width:899px){
+  #parts-panel{width:160px;}
+  #actions-panel{width:145px;}
+  .variant-grid{grid-template-columns:repeat(3,1fr);}
+}
+@media(min-width:700px){#bottom-bar{display:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="site-logo">
+    <img src="logo.png" alt="JV" onerror="this.onerror=null;this.src='https://placehold.co/26x26/0d1117/f472b6?text=JV'">
+    JVDesignStudio
+  </a>
+  <span class="site-title">🧑‍🎨 Character Designer</span>
+  <a href="workshop.html" class="site-back">← Workshop</a>
+</header>
+
+<div id="app">
+
+  <!-- LEFT: PARTS -->
+  <div id="parts-panel">
+    <div class="ps" style="flex-shrink:0;">
+      <div class="pt">Body Parts</div>
+    </div>
+    <div class="part-tabs" id="partTabs"></div>
+    <div class="pdiv"></div>
+    <div class="variant-section" id="variantSection">
+      <div class="variant-title" id="variantTitle">Select a part</div>
+      <div class="variant-grid" id="variantGrid"></div>
+    </div>
+    <div class="colour-section">
+      <div class="pt">Colour</div>
+      <div class="colour-swatches" id="colourSwatches"></div>
+      <input type="color" class="cpick" id="customColour" oninput="setPartColour(this.value)">
+    </div>
+  </div>
+
+  <!-- CENTRE: PREVIEW -->
+  <div id="preview-area">
+    <div class="canvas-label">Preview</div>
+    <canvas id="char-canvas" width="192" height="192"></canvas>
+    <div class="bg-row">
+      <span class="canvas-label">BG:</span>
+      <div id="bgOpts"></div>
+    </div>
+    <div class="pose-row" id="poseRow"></div>
+  </div>
+
+  <!-- RIGHT: ACTIONS -->
+  <div id="actions-panel">
+    <div class="ps">
+      <div class="pt">Export Size</div>
+      <div class="size-chips" id="sizeChips"></div>
+      <button class="ab ab-p" onclick="exportPNG()">⬇ Export PNG</button>
+      <button class="ab ab-g" onclick="exportSpriteSheet()">⬇ Sprite Sheet</button>
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Character Name</div>
+      <input type="text" id="charName" value="My Character" style="width:100%;padding:4px 7px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:inherit;outline:none;margin-bottom:5px;">
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Saved Characters</div>
+      <div class="slot-grid" id="saveSlots"></div>
+      <button class="ab ab-s" onclick="saveCharacter()">💾 Save</button>
+      <button class="ab ab-s" onclick="randomCharacter()">🎲 Random</button>
+      <button class="ab ab-s" onclick="resetCharacter()">🔄 Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR (mobile) -->
+<div id="bottom-bar">
+  <div class="bb-tabs" id="bbTabs"></div>
+  <div class="bb-content">
+    <div class="bb-panel on" id="bb-parts">
+      <div id="bbVariantGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;min-width:260px;"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:100px;">
+        <div class="pt" style="margin-bottom:3px;">Colour</div>
+        <div class="colour-swatches" id="bbColourSwatches" style="flex-wrap:wrap;max-width:130px;"></div>
+        <input type="color" class="cpick" id="bbCustomColour" oninput="setPartColour(this.value)">
+      </div>
+    </div>
+    <div class="bb-panel" id="bb-pose">
+      <div id="bbPoseRow" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div id="bbBgOpts" style="display:flex;gap:4px;"></div>
+      </div>
+    </div>
+    <div class="bb-panel" id="bb-export">
+      <button class="ab ab-p" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="exportPNG()">⬇ PNG</button>
+      <button class="ab ab-g" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="exportSpriteSheet()">⬇ Sheet</button>
+      <button class="ab ab-s" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="saveCharacter()">💾 Save</button>
+      <button class="ab ab-s" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="randomCharacter()">🎲 Random</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <a href="index.html">🏠 Home</a>
+  <a href="workshop.html">🔧 Workshop</a>
+  <a href="pixel-studio.html">🎨 Pixel Studio</a>
+  <a href="level-designer.html">🗺️ Levels</a>
+  <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CANVAS SIZE
+// ══════════════════════════════════════════════════
+const BASE = 192; // internal canvas size
+const SIZES = [
+  {label:'64px',  px:64},
+  {label:'128px', px:128},
+  {label:'256px', px:256},
+  {label:'512px', px:512},
+];
+let exportSize = 128;
+
+// ══════════════════════════════════════════════════
+// COLOUR PALETTES
+// ══════════════════════════════════════════════════
+const SKIN_COLS  = ['#FDDBB4','#F4C28B','#D4956A','#A0614A','#7B4336','#4A2C1A'];
+const HAIR_COLS  = ['#1a1a1a','#3d2314','#7b4a1e','#c8860f','#e8c44a','#d4d4d4','#f472b6','#6366f1','#10b981','#ef4444'];
+const CLOTH_COLS = ['#ef4444','#f97316','#f59e0b','#10b981','#3b82f6','#8b5cf6','#f472b6','#1e1e2e','#e5e7eb','#6b7280'];
+const EYE_COLS   = ['#1a1a1a','#3b2a1a','#2a4a8a','#1a6a3a','#8a6a2a','#6a2a8a','#2a8a8a'];
+const GENERIC_COLS = [...CLOTH_COLS];
+
+// ══════════════════════════════════════════════════
+// PART DEFINITIONS — drawn as canvas shapes
+// ══════════════════════════════════════════════════
+// Each part has variants, each variant is a draw function
+// All draw functions receive (ctx, colour, cx, cy, scale, pose)
+// cx, cy = centre of character feet, scale = BASE/192
+
+const PARTS = [
+  {
+    id:'body', name:'Body', icon:'🫀', colours:CLOTH_COLS,
+    defaultColour:'#3b82f6', defaultVariant:0,
+    variants:[
+      {name:'Normal',    fn:drawBodyNormal},
+      {name:'Wide',      fn:drawBodyWide},
+      {name:'Slim',      fn:drawBodySlim},
+      {name:'Armoured',  fn:drawBodyArmour},
+      {name:'Dress',     fn:drawBodyDress},
+      {name:'Robe',      fn:drawBodyRobe},
+    ]
+  },
+  {
+    id:'legs', name:'Legs', icon:'🦵', colours:CLOTH_COLS,
+    defaultColour:'#1e1e2e', defaultVariant:0,
+    variants:[
+      {name:'Normal',    fn:drawLegsNormal},
+      {name:'Wide',      fn:drawLegsWide},
+      {name:'Skirt',     fn:drawLegsSkirt},
+      {name:'Shorts',    fn:drawLegsShorts},
+      {name:'Armour',    fn:drawLegsArmour},
+      {name:'None',      fn:drawLegsNone},
+    ]
+  },
+  {
+    id:'head', name:'Head', icon:'🗣️', colours:SKIN_COLS,
+    defaultColour:'#FDDBB4', defaultVariant:0,
+    variants:[
+      {name:'Round',     fn:drawHeadRound},
+      {name:'Square',    fn:drawHeadSquare},
+      {name:'Oval',      fn:drawHeadOval},
+      {name:'Cat',       fn:drawHeadCat},
+      {name:'Robot',     fn:drawHeadRobot},
+      {name:'Helmet',    fn:drawHeadHelmet},
+    ]
+  },
+  {
+    id:'eyes', name:'Eyes', icon:'👀', colours:EYE_COLS,
+    defaultColour:'#1a1a1a', defaultVariant:0,
+    variants:[
+      {name:'Dots',      fn:drawEyesDots},
+      {name:'Round',     fn:drawEyesRound},
+      {name:'Angry',     fn:drawEyesAngry},
+      {name:'Sleepy',    fn:drawEyesSleepy},
+      {name:'Shades',    fn:drawEyesShades},
+      {name:'Cyclops',   fn:drawEyesCyclops},
+    ]
+  },
+  {
+    id:'mouth', name:'Mouth', icon:'👄', colours:['#cc3333','#ff6b6b','#1a1a1a','#fff','#f59e0b'],
+    defaultColour:'#cc3333', defaultVariant:0,
+    variants:[
+      {name:'Smile',     fn:drawMouthSmile},
+      {name:'Grin',      fn:drawMouthGrin},
+      {name:'Frown',     fn:drawMouthFrown},
+      {name:'Serious',   fn:drawMouthStraight},
+      {name:'Open',      fn:drawMouthOpen},
+      {name:'None',      fn:drawMouthNone},
+    ]
+  },
+  {
+    id:'hair', name:'Hair', icon:'💇', colours:HAIR_COLS,
+    defaultColour:'#3d2314', defaultVariant:0,
+    variants:[
+      {name:'Short',     fn:drawHairShort},
+      {name:'Long',      fn:drawHairLong},
+      {name:'Spiky',     fn:drawHairSpiky},
+      {name:'Bun',       fn:drawHairBun},
+      {name:'Mohawk',    fn:drawHairMohawk},
+      {name:'None',      fn:drawHairNone},
+    ]
+  },
+  {
+    id:'hat', name:'Hat', icon:'🎩', colours:GENERIC_COLS,
+    defaultColour:'#1e1e2e', defaultVariant:6,
+    variants:[
+      {name:'Cap',       fn:drawHatCap},
+      {name:'Top Hat',   fn:drawHatTop},
+      {name:'Beanie',    fn:drawHatBeanie},
+      {name:'Crown',     fn:drawHatCrown},
+      {name:'Horns',     fn:drawHatHorns},
+      {name:'Halo',      fn:drawHatHalo},
+      {name:'None',      fn:drawHatNone},
+    ]
+  },
+  {
+    id:'weapon', name:'Weapon', icon:'⚔️', colours:['#aaaaaa','#c8a850','#cc3333','#3b82f6','#10b981','#f59e0b'],
+    defaultColour:'#aaaaaa', defaultVariant:6,
+    variants:[
+      {name:'Sword',     fn:drawWeaponSword},
+      {name:'Staff',     fn:drawWeaponStaff},
+      {name:'Bow',       fn:drawWeaponBow},
+      {name:'Wand',      fn:drawWeaponWand},
+      {name:'Shield',    fn:drawWeaponShield},
+      {name:'Gun',       fn:drawWeaponGun},
+      {name:'None',      fn:drawWeaponNone},
+    ]
+  },
+];
+
+// Draw order for layering (bottom to top)
+const DRAW_ORDER = ['legs','body','weapon','head','eyes','mouth','hair','hat'];
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let state = {}; // {partId: {variant, colour}}
+let currentPart = 'body';
+let currentPose = 'idle';
+let bgColour = 'transparent';
+let saveSlots = JSON.parse(localStorage.getItem('jvds_chars')||'[]');
+let canvas, cctx;
+
+const POSES = [
+  {id:'idle',   label:'🧍 Idle'},
+  {id:'jump',   label:'🦘 Jump'},
+  {id:'run',    label:'🏃 Run'},
+  {id:'crouch', label:'🦆 Crouch'},
+  {id:'attack', label:'⚔️ Attack'},
+];
+
+const BG_OPTIONS = [
+  {val:'transparent', style:'repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/12px 12px'},
+  {val:'#1a2a4a', style:'#1a2a4a'},
+  {val:'#1a3a2a', style:'#1a3a2a'},
+  {val:'#2a1a3a', style:'#2a1a3a'},
+  {val:'#ffffff', style:'#ffffff'},
+  {val:'#111', style:'#111'},
+];
+
+// ══════════════════════════════════════════════════
+// DRAW FUNCTIONS — Body parts
+// All use: ctx, colour, cx (feet centre X), cy (feet Y), s (scale 1=normal), pose
+// BASE canvas is 192x192, character is ~160px tall
+// ══════════════════════════════════════════════════
+function rnd(x,y,w,h,r,ctx,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.roundRect(x,y,w,h,r||0); ctx.fill();
+}
+
+// ── BODY ──
+function drawBodyNormal(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  rnd(bx,by,bw,bh,6,ctx,col);
+}
+function drawBodyWide(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  rnd(bx-s*4,by,bw+s*8,bh,8,ctx,col);
+}
+function drawBodySlim(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  rnd(bx+s*4,by,bw-s*8,bh,6,ctx,col);
+}
+function drawBodyArmour(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  rnd(bx,by,bw,bh,4,ctx,col);
+  // Chest plate
+  ctx.fillStyle=lighten(col,40); rnd(bx+s*4,by+s*4,bw-s*8,s*14,3,ctx,lighten(col,40));
+  // Shoulder pads
+  rnd(bx-s*4,by-s*2,s*12,s*10,4,ctx,lighten(col,20));
+  rnd(bx+bw-s*8,by-s*2,s*12,s*10,4,ctx,lighten(col,20));
+}
+function drawBodyDress(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(bx,by); ctx.lineTo(bx+bw,by);
+  ctx.lineTo(bx+bw+s*10,by+bh); ctx.lineTo(bx-s*10,by+bh);
+  ctx.closePath(); ctx.fill();
+}
+function drawBodyRobe(ctx,col,cx,cy,s,pose){
+  const [bx,by,bw,bh] = poseBody(cx,cy,s,pose);
+  rnd(bx-s*6,by,bw+s*12,bh+s*10,8,ctx,col);
+  ctx.fillStyle=lighten(col,30); rnd(cx-s*3,by,s*6,bh+s*10,4,ctx,lighten(col,30));
+}
+function poseBody(cx,cy,s,pose){
+  const bw=s*32, bh=s*36;
+  let bx=cx-bw/2, by=cy-s*90;
+  if(pose==='crouch'){by+=s*16;}
+  if(pose==='jump'){by-=s*14;}
+  return [bx,by,bw,bh];
+}
+
+// ── LEGS ──
+function drawLegsNormal(ctx,col,cx,cy,s,pose){
+  const lw=s*12, lh=s*38;
+  let lx=cx-s*16, rx=cx+s*4, ly=cy-s*54;
+  if(pose==='run'){rnd(lx,ly-s*8,lw,lh*.6,4,ctx,col);rnd(rx,ly,lw,lh*.8,4,ctx,col);}
+  else if(pose==='crouch'){rnd(lx,ly+s*16,lw,lh*.5,4,ctx,col);rnd(rx,ly+s*16,lw,lh*.5,4,ctx,col);}
+  else if(pose==='jump'){rnd(lx,ly+s*6,lw*0.9,lh*.7,4,ctx,col);rnd(rx+s*4,ly+s*6,lw*0.9,lh*.7,4,ctx,col);}
+  else{rnd(lx,ly,lw,lh,4,ctx,col);rnd(rx,ly,lw,lh,4,ctx,col);}
+  // Feet
+  ctx.fillStyle=darken(col,20);
+  rnd(lx-s*2,cy-s*6,lw+s*4,s*10,5,ctx,darken(col,20));
+  rnd(rx-s*2,cy-s*6,lw+s*4,s*10,5,ctx,darken(col,20));
+}
+function drawLegsWide(ctx,col,cx,cy,s,pose){
+  const lw=s*16, lh=s*38;
+  let lx=cx-s*19, rx=cx+s*3, ly=cy-s*54;
+  if(pose==='crouch'){ly+=s*16;}
+  rnd(lx,ly,lw,lh,5,ctx,col); rnd(rx,ly,lw,lh,5,ctx,col);
+  ctx.fillStyle=darken(col,20);
+  rnd(lx-s*2,cy-s*6,lw+s*4,s*10,5,ctx,darken(col,20));
+  rnd(rx-s*2,cy-s*6,lw+s*4,s*10,5,ctx,darken(col,20));
+}
+function drawLegsSkirt(ctx,col,cx,cy,s,pose){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(cx-s*20,cy-s*54); ctx.lineTo(cx+s*20,cy-s*54);
+  ctx.lineTo(cx+s*28,cy-s*14); ctx.lineTo(cx-s*28,cy-s*14);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle=darken(col,15);
+  rnd(cx-s*14,cy-s*14,s*10,s*14,3,ctx,darken(col,15));
+  rnd(cx+s*4,cy-s*14,s*10,s*14,3,ctx,darken(col,15));
+}
+function drawLegsShorts(ctx,col,cx,cy,s,pose){
+  rnd(cx-s*18,cy-s*54,s*36,s*18,5,ctx,col);
+  ctx.fillStyle=darken(col,25);
+  rnd(cx-s*14,cy-s*36,s*10,s*36,4,ctx,darken(col,25));
+  rnd(cx+s*4,cy-s*36,s*10,s*36,4,ctx,darken(col,25));
+}
+function drawLegsArmour(ctx,col,cx,cy,s,pose){
+  rnd(cx-s*14,cy-s*54,s*12,s*38,4,ctx,col);
+  rnd(cx+s*2,cy-s*54,s*12,s*38,4,ctx,col);
+  ctx.fillStyle=lighten(col,25);
+  rnd(cx-s*16,cy-s*42,s*14,s*14,3,ctx,lighten(col,25));
+  rnd(cx+s*2,cy-s*42,s*14,s*14,3,ctx,lighten(col,25));
+}
+function drawLegsNone(ctx,col,cx,cy,s,pose){}
+
+// ── HEAD ──
+function drawHeadRound(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fill();
+}
+function drawHeadSquare(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  rnd(hx-hr,hy-hr,hr*2,hr*2,8,ctx,col);
+}
+function drawHeadOval(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(hx,hy,hr*.8,hr,0,0,Math.PI*2); ctx.fill();
+}
+function drawHeadCat(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=col;
+  drawTri(ctx,hx-hr*.5,hy-hr,hx-hr*.8,hy-hr-s*12,hx-hr*.1,hy-hr,col);
+  drawTri(ctx,hx+hr*.5,hy-hr,hx+hr*.1,hy-hr,hx+hr*.8,hy-hr-s*12,col);
+  ctx.fillStyle=lighten(col,40);
+  drawTri(ctx,hx-hr*.55,hy-hr+s*2,hx-hr*.72,hy-hr-s*8,hx-hr*.2,hy-hr+s*2,lighten(col,40));
+  drawTri(ctx,hx+hr*.55,hy-hr+s*2,hx+hr*.2,hy-hr+s*2,hx+hr*.72,hy-hr-s*8,lighten(col,40));
+}
+function drawHeadRobot(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  rnd(hx-hr,hy-hr,hr*2,hr*2,4,ctx,col);
+  ctx.fillStyle=darken(col,30); rnd(hx-hr,hy-hr,hr*2,s*6,2,ctx,darken(col,30));
+  ctx.fillStyle=lighten(col,40); ctx.fillRect(hx-hr+s*4,hy+s*2,hr*2-s*8,s*4);
+}
+function drawHeadHelmet(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr] = poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fill();
+  rnd(hx-hr,hy,hr*2,hr,0,ctx,col);
+  ctx.fillStyle=lighten(col,30); rnd(hx-hr*.5,hy-hr*.7,hr,hr*.5,3,ctx,lighten(col,30));
+}
+function poseHead(cx,cy,s,pose){
+  let hx=cx, hy=cy-s*110, hr=s*26;
+  if(pose==='crouch'){hy+=s*22;}
+  if(pose==='jump'){hy-=s*14;}
+  if(pose==='attack'){hx+=s*6;}
+  return[hx,hy,hr];
+}
+
+// ── EYES ──
+function drawEyesDots(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.arc(hx-s*8,hy,s*4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(hx+s*8,hy,s*4,0,Math.PI*2);ctx.fill();
+}
+function drawEyesRound(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.arc(hx-s*8,hy,s*7,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(hx+s*8,hy,s*7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.arc(hx-s*8,hy,s*4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(hx+s*8,hy,s*4,0,Math.PI*2);ctx.fill();
+}
+function drawEyesAngry(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.arc(hx-s*8,hy,s*5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(hx+s*8,hy,s*5,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=s*2.5; ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(hx-s*16,hy-s*8);ctx.lineTo(hx-s*2,hy-s*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(hx+s*16,hy-s*8);ctx.lineTo(hx+s*2,hy-s*2);ctx.stroke();
+}
+function drawEyesSleepy(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  ctx.strokeStyle=col; ctx.lineWidth=s*3; ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(hx-s*8,hy+s*2,s*5,Math.PI,0);ctx.stroke();
+  ctx.beginPath();ctx.arc(hx+s*8,hy+s*2,s*5,Math.PI,0);ctx.stroke();
+}
+function drawEyesShades(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  rnd(hx-s*16,hy-s*6,s*14,s*10,4,ctx,col);
+  rnd(hx+s*2,hy-s*6,s*14,s*10,4,ctx,col);
+  ctx.strokeStyle=darken(col,20); ctx.lineWidth=s*2;
+  ctx.beginPath();ctx.moveTo(hx-s*2,hy-s*2);ctx.lineTo(hx+s*2,hy-s*2);ctx.stroke();
+}
+function drawEyesCyclops(ctx,col,cx,cy,s,pose){
+  const [hx,hy]=poseEyes(cx,cy,s,pose);
+  ctx.fillStyle='white';
+  ctx.beginPath();ctx.ellipse(hx,hy,s*12,s*8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.arc(hx,hy,s*5,0,Math.PI*2);ctx.fill();
+}
+function poseEyes(cx,cy,s,pose){
+  let ex=cx, ey=cy-s*114;
+  if(pose==='crouch'){ey+=s*22;}
+  if(pose==='jump'){ey-=s*14;}
+  if(pose==='attack'){ex+=s*6;}
+  return[ex,ey];
+}
+
+// ── MOUTH ──
+function drawMouthSmile(ctx,col,cx,cy,s,pose){
+  const [mx,my]=poseMouth(cx,cy,s,pose);
+  ctx.strokeStyle=col; ctx.lineWidth=s*2.5; ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(mx,my-s*3,s*8,0.2,Math.PI-.2);ctx.stroke();
+}
+function drawMouthGrin(ctx,col,cx,cy,s,pose){
+  const [mx,my]=poseMouth(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(mx,my-s*4,s*10,0.1,Math.PI-.1);ctx.fill();
+  ctx.fillStyle='white'; rnd(mx-s*7,my-s*6,s*14,s*4,2,ctx,'white');
+}
+function drawMouthFrown(ctx,col,cx,cy,s,pose){
+  const [mx,my]=poseMouth(cx,cy,s,pose);
+  ctx.strokeStyle=col; ctx.lineWidth=s*2.5; ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(mx,my+s*5,s*8,Math.PI+.2,-.2);ctx.stroke();
+}
+function drawMouthStraight(ctx,col,cx,cy,s,pose){
+  const [mx,my]=poseMouth(cx,cy,s,pose);
+  ctx.strokeStyle=col; ctx.lineWidth=s*2.5; ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(mx-s*8,my);ctx.lineTo(mx+s*8,my);ctx.stroke();
+}
+function drawMouthOpen(ctx,col,cx,cy,s,pose){
+  const [mx,my]=poseMouth(cx,cy,s,pose);
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.ellipse(mx,my,s*7,s*5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='white'; rnd(mx-s*5,my-s*1,s*10,s*3,2,ctx,'white');
+}
+function drawMouthNone(){}
+function poseMouth(cx,cy,s,pose){
+  let mx=cx, my=cy-s*96;
+  if(pose==='crouch'){my+=s*22;}
+  if(pose==='jump'){my-=s*14;}
+  if(pose==='attack'){mx+=s*6;}
+  return[mx,my];
+}
+
+// ── HAIR ──
+function drawHairShort(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(hx,hy,hr+s*2,Math.PI,0);ctx.fill();
+  rnd(hx-hr-s*2,hy,s*10,hr*.7,3,ctx,col);
+  rnd(hx+hr-s*8,hy,s*10,hr*.7,3,ctx,col);
+}
+function drawHairLong(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(hx,hy,hr+s*2,Math.PI,0);ctx.fill();
+  rnd(hx-hr-s*2,hy,s*12,hr*2,5,ctx,col);
+  rnd(hx+hr-s*10,hy,s*12,hr*2,5,ctx,col);
+  rnd(hx-hr*.4,hy+hr,hr*.8,hr*1.5,3,ctx,col);
+}
+function drawHairSpiky(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(hx,hy,hr+s*2,Math.PI,0);ctx.fill();
+  for(let i=0;i<5;i++){
+    const ax=hx-hr+i*(hr*.5);
+    drawTri(ctx,ax,hy-hr,ax+s*4,hy-hr-s*14-i*s*3,ax+s*8,hy-hr,col);
+  }
+}
+function drawHairBun(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(hx,hy,hr+s*2,Math.PI,0);ctx.fill();
+  ctx.beginPath();ctx.arc(hx,hy-hr-s*8,s*12,0,Math.PI*2);ctx.fill();
+}
+function drawHairMohawk(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col;
+  for(let i=0;i<3;i++) rnd(hx-s*4,hy-hr-i*s*8,s*8,s*12,3,ctx,col);
+  ctx.beginPath();ctx.arc(hx,hy,hr,Math.PI*.6,Math.PI*.4,true);ctx.fill();
+}
+function drawHairNone(){}
+
+// ── HAT ──
+function drawHatCap(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  rnd(hx-hr-s*4,hy-s*4,hr*2+s*8,s*8,3,ctx,col);
+  rnd(hx-hr*.7,hy-hr-s*10,hr*1.4,s*20,5,ctx,col);
+}
+function drawHatTop(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  rnd(hx-hr-s*6,hy-s*4,hr*2+s*12,s*8,2,ctx,col);
+  rnd(hx-hr*.6,hy-hr-s*24,hr*1.2,s*28,3,ctx,col);
+}
+function drawHatBeanie(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.arc(hx,hy,hr+s*2,Math.PI,0);ctx.fill();
+  rnd(hx-hr-s*2,hy-s*4,hr*2+s*4,s*10,3,ctx,darken(col,20));
+  ctx.beginPath();ctx.arc(hx,hy-hr,s*6,0,Math.PI*2);
+  ctx.fillStyle=lighten(col,20);ctx.fill();
+}
+function drawHatCrown(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  rnd(hx-hr*.8,hy-hr-s*4,hr*1.6,s*24,0,ctx,col);
+  [-.7,-.2,.2,.7].forEach(off=>{
+    const tx=hx+hr*off;
+    drawTri(ctx,tx,hy-hr-s*4,tx,hy-hr-s*22,tx+s*6,hy-hr-s*4,col);
+  });
+  ctx.fillStyle='#ef4444';
+  [-s*10,0,s*10].forEach(ox=>{ ctx.beginPath();ctx.arc(hx+ox,hy-hr-s*16,s*4,0,Math.PI*2);ctx.fill(); });
+}
+function drawHatHorns(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  drawTri(ctx,hx-hr*.6,hy-hr,hx-hr*.8,hy-hr-s*22,hx-hr*.2,hy-hr,col);
+  drawTri(ctx,hx+hr*.6,hy-hr,hx+hr*.2,hy-hr,hx+hr*.8,hy-hr-s*22,col);
+}
+function drawHatHalo(ctx,col,cx,cy,s,pose){
+  const [hx,hy,hr]=poseHead(cx,cy,s,pose);
+  ctx.strokeStyle=col; ctx.lineWidth=s*4;
+  ctx.beginPath();ctx.ellipse(hx,hy-hr-s*8,hr*.8,s*6,0,0,Math.PI*2);ctx.stroke();
+}
+function drawHatNone(){}
+
+// ── WEAPON ──
+function drawWeaponSword(ctx,col,cx,cy,s,pose){
+  const wx=cx+s*30, wy=cy-s*80;
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(pose==='attack'?-0.5:0.3);
+  rnd(-s*3,-s*50,s*6,s*70,2,ctx,col);
+  rnd(-s*12,-s*14,s*24,s*6,2,ctx,darken(col,20));
+  rnd(-s*4,-s*60,s*8,s*12,4,ctx,lighten(col,30));
+  ctx.restore();
+}
+function drawWeaponStaff(ctx,col,cx,cy,s,pose){
+  const wx=cx+s*28, wy=cy-s*20;
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(0.1);
+  rnd(-s*3,s*0-s*110,s*6,s*110,3,ctx,col);
+  ctx.beginPath();ctx.arc(0,-s*110,s*10,0,Math.PI*2);
+  ctx.fillStyle=lighten(col,50);ctx.fill();
+  ctx.restore();
+}
+function drawWeaponBow(ctx,col,cx,cy,s,pose){
+  const wx=cx+s*28, wy=cy-s*60;
+  ctx.save(); ctx.translate(wx,wy);
+  ctx.strokeStyle=col; ctx.lineWidth=s*4; ctx.lineCap='round';
+  ctx.beginPath();ctx.arc(0,0,s*28,-.9,.9);ctx.stroke();
+  ctx.strokeStyle=lighten(col,40); ctx.lineWidth=s*1.5;
+  ctx.beginPath();ctx.moveTo(s*20,-s*26);ctx.lineTo(s*20,s*26);ctx.stroke();
+  ctx.restore();
+}
+function drawWeaponWand(ctx,col,cx,cy,s,pose){
+  const wx=cx+s*28, wy=cy-s*70;
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(pose==='attack'?-0.4:0.2);
+  rnd(-s*2.5,-s*50,s*5,s*65,2,ctx,col);
+  ctx.fillStyle=lighten(col,60);
+  ctx.beginPath();ctx.arc(0,-s*52,s*8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.6)';
+  ctx.beginPath();ctx.arc(0,-s*52,s*4,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawWeaponShield(ctx,col,cx,cy,s,pose){
+  const wx=cx-s*32, wy=cy-s*80;
+  ctx.save(); ctx.translate(wx,wy);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(0,-s*28);ctx.lineTo(s*18,-s*16);ctx.lineTo(s*18,s*14);
+  ctx.lineTo(0,s*28);ctx.lineTo(-s*18,s*14);ctx.lineTo(-s*18,-s*16);
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle=darken(col,30);ctx.lineWidth=s*3;
+  ctx.beginPath();ctx.moveTo(0,-s*20);ctx.lineTo(0,s*20);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-s*14,-s*4);ctx.lineTo(s*14,-s*4);ctx.stroke();
+  ctx.restore();
+}
+function drawWeaponGun(ctx,col,cx,cy,s,pose){
+  const wx=cx+s*26, wy=cy-s*70;
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(pose==='attack'?-0.2:0);
+  rnd(-s*4,-s*8,s*28,s*14,4,ctx,col);
+  rnd(s*20,-s*12,s*8,s*8,2,ctx,darken(col,20));
+  rnd(-s*2,s*6,s*12,s*10,3,ctx,darken(col,15));
+  ctx.restore();
+}
+function drawWeaponNone(){}
+
+// ── HELPERS ──
+function drawTri(ctx,x1,y1,x2,y2,x3,y3,col){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x3,y3);ctx.closePath();ctx.fill();
+}
+function lighten(hex,amt){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,r+amt);g=Math.min(255,g+amt);b=Math.min(255,b+amt);
+  return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+function darken(hex,amt){ return lighten(hex,-amt); }
+
+// ══════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════
+function renderCharacter(){
+  const size = BASE;
+  cctx.clearRect(0,0,size,size);
+
+  // Background
+  if(bgColour==='transparent'){
+    cctx.fillStyle='rgba(0,0,0,0)';
+  } else {
+    cctx.fillStyle=bgColour;
+    cctx.fillRect(0,0,size,size);
+  }
+
+  const cx = size/2;
+  const cy = size - 16;
+  const s = 1;
+
+  // Draw in layer order
+  DRAW_ORDER.forEach(partId=>{
+    const part = PARTS.find(p=>p.id===partId);
+    if(!part) return;
+    const ps = state[partId];
+    const variant = part.variants[ps.variant];
+    if(variant && variant.fn){
+      variant.fn(cctx, ps.colour, cx, cy, s, currentPose);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// STATE HELPERS
+// ══════════════════════════════════════════════════
+function initState(){
+  PARTS.forEach(p=>{
+    state[p.id]={variant:p.defaultVariant, colour:p.defaultColour};
+  });
+}
+
+function randomCharacter(){
+  PARTS.forEach(p=>{
+    const vi = Math.floor(Math.random()*p.variants.length);
+    const ci = Math.floor(Math.random()*p.colours.length);
+    state[p.id]={variant:vi, colour:p.colours[ci]};
+  });
+  renderCharacter();
+  buildPartTabs();
+  const part = PARTS.find(p=>p.id===currentPart);
+  buildVariants(part);
+  buildColours(part);
+}
+
+function resetCharacter(){
+  initState();
+  renderCharacter();
+  buildPartTabs();
+  const part = PARTS.find(p=>p.id===currentPart);
+  buildVariants(part);
+  buildColours(part);
+}
+
+function setPartColour(col){
+  state[currentPart].colour=col;
+  document.getElementById('customColour').value=col;
+  document.getElementById('bbCustomColour').value=col;
+  document.querySelectorAll('.csw,.bb-csw').forEach(s=>s.classList.toggle('on',s.dataset.col===col));
+  renderCharacter();
+  updatePartTab(currentPart);
+}
+
+// ══════════════════════════════════════════════════
+// UI BUILD
+// ══════════════════════════════════════════════════
+function buildPartTabs(){
+  const tabs=document.getElementById('partTabs');
+  tabs.innerHTML='';
+  PARTS.forEach(part=>{
+    const ps=state[part.id];
+    const varName=part.variants[ps.variant].name;
+    const tab=document.createElement('div');
+    tab.className='part-tab'+(part.id===currentPart?' on':'');
+    tab.id='ptab-'+part.id;
+    tab.innerHTML=`<span class="pt-icon">${part.icon}</span><div><div class="pt-name">${part.name}</div><div class="pt-val">${varName}</div></div><div style="width:12px;height:12px;border-radius:3px;background:${ps.colour};flex-shrink:0;border:1px solid rgba(255,255,255,.2);"></div>`;
+    tab.onclick=()=>selectPart(part.id);
+    tabs.appendChild(tab);
+  });
+
+  // Mobile tabs
+  const bbTabs=document.getElementById('bbTabs');
+  bbTabs.innerHTML='';
+  PARTS.forEach(part=>{
+    const btn=document.createElement('button');
+    btn.className='bb-tab'+(part.id===currentPart?' on':'');
+    btn.id='bbtab-'+part.id;
+    btn.innerHTML=`${part.icon} ${part.name}`;
+    btn.onclick=()=>selectPart(part.id);
+    bbTabs.appendChild(btn);
+  });
+  // Add pose & export tabs
+  ['🧍 Pose','⬇ Export'].forEach((label,i)=>{
+    const btn=document.createElement('button');
+    btn.className='bb-tab';
+    btn.innerHTML=label;
+    btn.onclick=()=>{ document.querySelectorAll('.bb-tab').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); document.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on')); document.getElementById(i===0?'bb-pose':'bb-export').classList.add('on'); };
+    bbTabs.appendChild(btn);
+  });
+}
+
+function updatePartTab(partId){
+  const part=PARTS.find(p=>p.id===partId);
+  const ps=state[partId];
+  const tab=document.getElementById('ptab-'+partId);
+  if(tab) tab.querySelector('.pt-val').textContent=part.variants[ps.variant].name;
+}
+
+function selectPart(partId){
+  currentPart=partId;
+  document.querySelectorAll('.part-tab').forEach(t=>t.classList.toggle('on',t.id==='ptab-'+partId));
+  document.querySelectorAll('.bb-tab[id^="bbtab-"]').forEach(t=>t.classList.toggle('on',t.id==='bbtab-'+partId));
+  document.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('bb-parts').classList.add('on');
+  const part=PARTS.find(p=>p.id===partId);
+  document.getElementById('variantTitle').textContent=part.name;
+  buildVariants(part);
+  buildColours(part);
+}
+
+function buildVariants(part){
+  ['variantGrid','bbVariantGrid'].forEach(gid=>{
+    const grid=document.getElementById(gid);
+    if(!grid) return;
+    grid.innerHTML='';
+    part.variants.forEach((v,i)=>{
+      const btn=document.createElement('div');
+      btn.className='var-btn'+(i===state[part.id].variant?' on':'');
+      btn.innerHTML=`<span style="font-size:.7rem;font-family:'JetBrains Mono',monospace;color:${i===state[part.id].variant?'var(--accent)':'var(--muted)'};">${v.name}</span>`;
+      btn.onclick=()=>{
+        state[part.id].variant=i;
+        renderCharacter();
+        buildVariants(part);
+        updatePartTab(part.id);
+      };
+      grid.appendChild(btn);
+    });
+  });
+}
+
+function buildColours(part){
+  ['colourSwatches','bbColourSwatches'].forEach(cid=>{
+    const container=document.getElementById(cid);
+    if(!container) return;
+    container.innerHTML='';
+    part.colours.forEach(col=>{
+      const sw=document.createElement('div');
+      sw.className='csw'+(col===state[part.id].colour?' on':'');
+      sw.style.background=col;
+      sw.dataset.col=col;
+      sw.onclick=()=>setPartColour(col);
+      container.appendChild(sw);
+    });
+  });
+  document.getElementById('customColour').value=state[part.id].colour;
+  document.getElementById('bbCustomColour').value=state[part.id].colour;
+}
+
+function buildPoseRow(){
+  ['poseRow','bbPoseRow'].forEach(rid=>{
+    const row=document.getElementById(rid);
+    if(!row) return;
+    row.innerHTML='';
+    POSES.forEach(p=>{
+      const btn=document.createElement('button');
+      btn.className='pose-btn'+(p.id===currentPose?' on':'');
+      btn.textContent=p.label;
+      btn.onclick=()=>{
+        currentPose=p.id;
+        document.querySelectorAll('.pose-btn').forEach(b=>b.classList.toggle('on',b.textContent===p.label));
+        renderCharacter();
+      };
+      row.appendChild(btn);
+    });
+  });
+}
+
+function buildBgRow(){
+  ['bgOpts','bbBgOpts'].forEach(rid=>{
+    const row=document.getElementById(rid);
+    if(!row) return;
+    row.innerHTML='';
+    BG_OPTIONS.forEach(bg=>{
+      const opt=document.createElement('div');
+      opt.className='bg-opt'+(bg.val===bgColour?' on':'');
+      opt.style.background=bg.style;
+      opt.onclick=()=>{
+        bgColour=bg.val;
+        canvas.style.background=bg.style;
+        document.querySelectorAll('.bg-opt').forEach(o=>o.classList.toggle('on',o.style.background===bg.style));
+        renderCharacter();
+      };
+      row.appendChild(opt);
+    });
+  });
+}
+
+function buildSizeChips(){
+  const row=document.getElementById('sizeChips');
+  SIZES.forEach(sz=>{
+    const btn=document.createElement('button');
+    btn.className='size-chip'+(sz.px===exportSize?' on':'');
+    btn.textContent=sz.label;
+    btn.onclick=()=>{
+      exportSize=sz.px;
+      document.querySelectorAll('.size-chip').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+    };
+    row.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════════════
+// SAVE SLOTS
+// ══════════════════════════════════════════════════
+function saveCharacter(){
+  const name=document.getElementById('charName').value.trim()||'Character';
+  // Render thumbnail
+  const thumb=document.createElement('canvas');
+  thumb.width=BASE; thumb.height=BASE;
+  const tctx=thumb.getContext('2d');
+  tctx.drawImage(canvas,0,0);
+  while(saveSlots.length<4) saveSlots.push(null);
+  // Find first empty or overwrite last
+  let slot=saveSlots.findIndex(s=>!s);
+  if(slot<0) slot=0;
+  saveSlots[slot]={name,state:JSON.parse(JSON.stringify(state)),thumb:thumb.toDataURL(),pose:currentPose};
+  localStorage.setItem('jvds_chars',JSON.stringify(saveSlots));
+  renderSaveSlots();
+  showToast('Saved to slot '+(slot+1)+'!');
+}
+
+function renderSaveSlots(){
+  const container=document.getElementById('saveSlots');
+  container.innerHTML='';
+  for(let i=0;i<4;i++){
+    const slot=saveSlots[i];
+    const el=document.createElement('div');
+    el.className='save-slot'+(slot?' filled':'');
+    if(slot){
+      el.innerHTML=`<img src="${slot.thumb}" class="ss-thumb"><div class="ss-name">${slot.name}</div>`;
+      el.onclick=()=>{
+        state=JSON.parse(JSON.stringify(slot.state));
+        currentPose=slot.pose||'idle';
+        document.getElementById('charName').value=slot.name;
+        renderCharacter(); buildPartTabs();
+        const part=PARTS.find(p=>p.id===currentPart);
+        buildVariants(part); buildColours(part);
+        buildPoseRow();
+        showToast('Loaded: '+slot.name);
+      };
+    } else {
+      el.innerHTML=`<span class="ss-empty">Slot ${i+1}</span>`;
+    }
+    container.appendChild(el);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════
+function exportPNG(){
+  const name=document.getElementById('charName').value.trim()||'character';
+  const ec=document.createElement('canvas');
+  ec.width=exportSize; ec.height=exportSize;
+  const ectx=ec.getContext('2d');
+  ectx.imageSmoothingEnabled=false;
+  ectx.drawImage(canvas,0,0,exportSize,exportSize);
+  const a=document.createElement('a');
+  a.href=ec.toDataURL('image/png');
+  a.download=name.replace(/\s+/g,'_').toLowerCase()+'.png';
+  a.click();
+  showToast('Exported '+exportSize+'px PNG!');
+}
+
+function exportSpriteSheet(){
+  const name=document.getElementById('charName').value.trim()||'character';
+  const cols=POSES.length, px=exportSize;
+  const ec=document.createElement('canvas');
+  ec.width=px*cols; ec.height=px;
+  const ectx=ec.getContext('2d');
+  ectx.imageSmoothingEnabled=false;
+  const savedPose=currentPose;
+  POSES.forEach((pose,i)=>{
+    currentPose=pose.id;
+    renderCharacter();
+    ectx.drawImage(canvas,i*px,0,px,px);
+  });
+  currentPose=savedPose;
+  renderCharacter();
+  // Label
+  ectx.fillStyle='rgba(255,255,255,.5)';
+  ectx.font='bold 10px sans-serif';
+  POSES.forEach((pose,i)=>{
+    ectx.fillText(pose.id,i*px+4,px-4);
+  });
+  const a=document.createElement('a');
+  a.href=ec.toDataURL('image/png');
+  a.download=name.replace(/\s+/g,'_').toLowerCase()+'_sheet.png';
+  a.click();
+  showToast('Sprite sheet exported!');
+}
+
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2200);
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  canvas=document.getElementById('char-canvas');
+  cctx=canvas.getContext('2d');
+  initState();
+  buildPartTabs();
+  buildPoseRow();
+  buildBgRow();
+  buildSizeChips();
+  renderSaveSlots();
+  const firstPart=PARTS[0];
+  document.getElementById('variantTitle').textContent=firstPart.name;
+  buildVariants(firstPart);
+  buildColours(firstPart);
+  canvas.style.background=BG_OPTIONS[0].style;
+  renderCharacter();
+});
+</script>
+</body>
+</html>
