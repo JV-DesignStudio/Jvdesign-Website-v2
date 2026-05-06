@@ -169,14 +169,18 @@
             </div>
         </div>
 
-        <div class="nl-form reveal">
-            <!-- Mailchimp / ConvertKit embed goes here — using mailto fallback for now -->
-            <input class="nl-input" type="text" placeholder="Your first name (optional)">
-            <input class="nl-input" type="email" placeholder="Your email address" required>
-            <button class="nl-submit" onclick="alert('Newsletter signup coming soon! For now, follow on Instagram for all updates.')">💌 Subscribe — It\'s Free</button>
-            <p class="nl-note">No spam. Unsubscribe any time. Usually 1–2 emails per month.</p>
+        <div class="nl-form reveal" id="nlForm">
+            <input class="nl-input" id="nlName" type="text" placeholder="Your first name (optional)" autocomplete="given-name">
+            <input class="nl-input" id="nlEmail" type="email" placeholder="Your email address" required autocomplete="email">
+            <button class="nl-submit" id="nlBtn" onclick="handleSignup(event)">💌 Subscribe It's Free</button>
+            <p class="nl-note" id="nlNote">No spam. Unsubscribe any time. Usually 1–2 emails per month.</p>
             <div class="nl-divider">or follow on social instead</div>
             <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-ig-nl">📸 Follow @jv_design.studio on Instagram</a>
+        </div>
+        <div id="nlSuccess" style="display:none;text-align:center;padding:28px 0;">
+            <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+            <p style="font-size:1.1rem;font-weight:800;color:white;margin-bottom:8px;">You're in!</p>
+            <p style="font-size:.88rem;color:rgba(240,234,214,.6);">Thanks for subscribing. You'll hear from me when something worth sharing happens.</p>
         </div>
     </div>
 </section>
@@ -264,6 +268,44 @@ document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 })();
 const _revObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');_revObs.unobserve(e.target);}});},{threshold:0.07});
 document.querySelectorAll('.reveal').forEach(el=>_revObs.observe(el));
+</script>
+<script>
+// ── Newsletter signup → Google Sheets ──────────────────────────────────
+// Replace the URL below with your Apps Script deployment URL
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyvDKFIhP51LMvcrP_JIPcCA0azEVaTaxTAh7qvRlKO3ki8dObI14KjDPrXmZgdxNkgKw/exec';
+
+async function handleSignup(e) {
+    e.preventDefault();
+    const email = document.getElementById('nlEmail').value.trim();
+    const name  = document.getElementById('nlName').value.trim();
+    const btn   = document.getElementById('nlBtn');
+    const note  = document.getElementById('nlNote');
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        note.textContent = '⚠️ Please enter a valid email address.';
+        note.style.color = '#f5a0a0';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name, date: new Date().toISOString() })
+        });
+        document.getElementById('nlForm').style.display = 'none';
+        document.getElementById('nlSuccess').style.display = 'block';
+    } catch (err) {
+        note.textContent = '⚠️ Something went wrong — please try again.';
+        note.style.color = '#f5a0a0';
+        btn.disabled = false;
+        btn.textContent = "💌 Subscribe — It's Free";
+    }
+}
 </script>
 </body>
 </html>
