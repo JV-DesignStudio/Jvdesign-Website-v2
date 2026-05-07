@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Story Editor | JVDesignStudio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--panel:#161c27;--panel2:#1c2535;--panel3:#232f45;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --accent:#6366f1;--accent2:#f59e0b;--accent3:#10b981;--accent4:#ef4444;
+  --text:#e8edf8;--muted:#64748b;
+  --node-dialogue:#1e3a5f;--node-choice:#2d1f4e;--node-end:#3a1a1a;--node-start:#1a3a1a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;touch-action:none;user-select:none;}
+body{display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+.site-header{height:46px;background:rgba(8,10,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;z-index:200;}
+.site-logo{display:flex;align-items:center;gap:7px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.site-logo img{height:26px;border-radius:5px;}
+.site-title{font-family:'Fredoka',cursive;font-size:.95rem;font-weight:600;color:var(--accent2);}
+.site-back{font-size:.62rem;font-weight:700;color:var(--muted);padding:4px 9px;border-radius:6px;border:1px solid var(--border2);text-decoration:none;}
+.site-back:hover{color:var(--text);}
+
+/* ── APP ── */
+#app{flex:1;display:flex;min-height:0;}
+
+/* ── LEFT PANEL ── */
+#left-panel{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:10;}
+
+/* ── CANVAS ── */
+#canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:var(--bg);}
+#canvas-area::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
+#story-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+
+/* ── RIGHT PANEL ── */
+#right-panel{width:260px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:10;}
+#right-panel-scroll{flex:1;overflow-y:auto;}
+
+/* ── PANEL COMMON ── */
+.ps{padding:10px;}
+.pt{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.pdiv{height:1px;background:var(--border);margin:2px 0;}
+
+/* ── NODES LIST ── */
+.node-list{flex:1;overflow-y:auto;}
+.node-list-item{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.node-list-item:hover{background:rgba(255,255,255,.03);}
+.node-list-item.on{background:rgba(99,102,241,.1);border-left:3px solid var(--accent);}
+.nli-icon{font-size:.85rem;flex-shrink:0;}
+.nli-name{font-size:.6rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nli-type{font-size:.48rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── ADD BUTTONS ── */
+.add-btns{display:flex;flex-direction:column;gap:4px;padding:8px;}
+.add-btn{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;font-size:.65rem;color:var(--muted);transition:all .12s;font-family:'Inter',sans-serif;width:100%;text-align:left;}
+.add-btn:hover{color:var(--text);}
+.add-btn.dialogue:hover{border-color:#6366f1;background:rgba(99,102,241,.06);}
+.add-btn.choice:hover{border-color:#8b5cf6;background:rgba(139,92,246,.06);}
+.add-btn.end:hover{border-color:#ef4444;background:rgba(239,68,68,.06);}
+.add-btn .ab-ico{font-size:1rem;}
+
+/* ── CHARACTERS ── */
+.char-list{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
+.char-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;transition:all .12s;}
+.char-item:hover{background:rgba(255,255,255,.05);}
+.char-item.on{background:rgba(99,102,241,.1);border-color:var(--accent);}
+.ci-avatar{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
+.ci-name{font-size:.62rem;font-weight:600;flex:1;}
+.ci-del{font-size:.6rem;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:2px 4px;}
+.ci-del:hover{color:var(--accent4);}
+.add-char-row{display:flex;gap:4px;margin-top:5px;}
+.add-char-input{flex:1;padding:4px 7px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.62rem;font-family:'Inter',sans-serif;outline:none;}
+.add-char-btn{padding:4px 8px;border-radius:5px;border:none;background:var(--accent);color:white;cursor:pointer;font-size:.6rem;font-family:'Inter',sans-serif;}
+
+/* ── ACTION BUTTONS ── */
+.ab{width:100%;padding:7px 8px;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;margin-bottom:4px;transition:all .12s;}
+.ab-p{background:var(--accent);color:white;}
+.ab-p:hover{filter:brightness(1.1);}
+.ab-s{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border2);}
+.ab-s:hover{background:rgba(255,255,255,.09);}
+.ab-g{background:var(--accent3);color:#000;}
+.ab-g:hover{filter:brightness(1.1);}
+.ab-r{background:rgba(239,68,68,.1);color:var(--accent4);border:1px solid rgba(239,68,68,.3);}
+
+/* ── CANVAS NODES ── */
+.story-node{position:absolute;border-radius:12px;border:2px solid rgba(255,255,255,.12);cursor:grab;transition:box-shadow .15s;min-width:180px;max-width:220px;}
+.story-node:active{cursor:grabbing;}
+.story-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.25);}
+.story-node.type-start{background:var(--node-start);border-color:rgba(16,185,129,.3);}
+.story-node.type-dialogue{background:var(--node-dialogue);border-color:rgba(99,102,241,.25);}
+.story-node.type-choice{background:var(--node-choice);border-color:rgba(139,92,246,.25);}
+.story-node.type-end{background:var(--node-end);border-color:rgba(239,68,68,.25);}
+.node-header{display:flex;align-items:center;gap:6px;padding:7px 10px 5px;border-bottom:1px solid rgba(255,255,255,.08);}
+.node-type-badge{font-size:.42rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;}
+.badge-start{background:rgba(16,185,129,.2);color:#10b981;}
+.badge-dialogue{background:rgba(99,102,241,.2);color:#818cf8;}
+.badge-choice{background:rgba(139,92,246,.2);color:#a78bfa;}
+.badge-end{background:rgba(239,68,68,.2);color:#f87171;}
+.node-char{font-size:.7rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.node-body{padding:7px 10px;}
+.node-text{font-size:.65rem;color:rgba(255,255,255,.75);line-height:1.5;max-height:56px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
+.node-choices{display:flex;flex-direction:column;gap:3px;margin-top:6px;}
+.node-choice-item{font-size:.58rem;color:rgba(255,255,255,.6);padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.06);border-left:2px solid rgba(139,92,246,.4);}
+.node-footer{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-top:1px solid rgba(255,255,255,.06);}
+.node-id{font-size:.45rem;color:var(--muted);}
+.node-connect-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;border:2px solid rgba(255,255,255,.1);transition:all .12s;}
+.node-connect-dot:hover{background:var(--accent);border-color:var(--accent);transform:scale(1.3);}
+.node-connect-dot.out{background:rgba(99,102,241,.4);border-color:var(--accent);}
+
+/* ── EDIT PANEL ── */
+.edit-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:.72rem;line-height:1.7;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.55rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.field input,.field textarea,.field select{width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-family:'Inter',sans-serif;font-size:.78rem;outline:none;resize:vertical;transition:border-color .15s;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);}
+.field textarea{min-height:70px;line-height:1.6;}
+.choices-edit{display:flex;flex-direction:column;gap:5px;margin-bottom:6px;}
+.choice-edit-row{display:flex;gap:4px;align-items:center;}
+.choice-edit-row input{flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;font-family:'Inter',sans-serif;outline:none;}
+.choice-edit-row input:focus{border-color:var(--accent);}
+.choice-connects-to{font-size:.55rem;color:var(--muted);padding:3px 6px;border-radius:5px;background:var(--panel2);white-space:nowrap;flex-shrink:0;}
+.del-choice{width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.del-choice:hover{color:var(--accent4);}
+.add-choice-btn{font-size:.6rem;padding:4px 8px;border-radius:5px;border:1px dashed var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s;display:flex;align-items:center;gap:4px;}
+.add-choice-btn:hover{border-color:var(--accent);color:var(--accent);}
+.connects-to-list{display:flex;flex-direction:column;gap:3px;}
+.connect-item{display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:6px;background:var(--panel3);font-size:.6rem;}
+.connect-item select{flex:1;padding:2px 5px;border-radius:4px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-size:.6rem;outline:none;}
+.connect-item button{width:18px;height:18px;border-radius:3px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.6rem;}
+
+/* ── SVG ARROWS ── */
+#arrow-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
+
+/* ── TOOLBAR ── */
+#toolbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(22,28,39,.95);border:1px solid var(--border2);border-radius:12px;padding:6px 10px;z-index:20;backdrop-filter:blur(12px);}
+.toolbar-btn{padding:5px 10px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-size:.6rem;font-family:'Fredoka',cursive;font-weight:600;transition:all .12s;white-space:nowrap;}
+.toolbar-btn:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.toolbar-btn.on{background:rgba(99,102,241,.15);border-color:var(--accent);color:var(--accent);}
+
+/* ── PREVIEW MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel2);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(480px,94vw);max-height:80vh;display:flex;flex-direction:column;}
+.modal h3{font-family:'Fredoka',cursive;font-size:1.1rem;color:var(--accent2);margin-bottom:14px;flex-shrink:0;}
+.preview-scene{flex:1;overflow-y:auto;background:var(--bg);border-radius:10px;padding:14px;}
+.preview-char-name{font-family:'Fredoka',cursive;font-size:.9rem;color:var(--accent2);margin-bottom:4px;}
+.preview-text{font-size:.82rem;line-height:1.7;color:var(--text);margin-bottom:12px;}
+.preview-choices{display:flex;flex-direction:column;gap:6px;}
+.preview-choice{padding:8px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;font-size:.78rem;color:var(--text);transition:all .12s;text-align:left;font-family:'Inter',sans-serif;}
+.preview-choice:hover{background:rgba(99,102,241,.15);border-color:var(--accent);}
+.preview-end{font-family:'Fredoka',cursive;font-size:.85rem;color:var(--muted);text-align:center;padding:16px;}
+.modal-btns{display:flex;gap:8px;margin-top:12px;flex-shrink:0;}
+.m-btn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.85rem;}
+.m-ok{background:var(--accent);color:white;}
+.m-cancel{background:rgba(255,255,255,.08);color:var(--text);}
+
+/* ── BOTTOM BAR (mobile) ── */
+#bottom-bar{display:none;flex-direction:column;background:var(--panel);border-top:1px solid var(--border2);flex-shrink:0;}
+.bb-tabs{display:flex;}
+.bb-tab{flex:1;padding:5px 2px;font-size:.52rem;text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;}
+.bb-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.bb-content{padding:6px 8px;overflow-x:auto;}
+.bb-panel{display:none;gap:6px;align-items:flex-start;}
+.bb-panel.on{display:flex;}
+
+/* ── FOOTER ── */
+.site-footer{height:28px;background:rgba(8,10,18,.98);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0;}
+.site-footer a{font-size:.55rem;color:rgba(255,255,255,.2);text-decoration:none;}
+.site-footer a:hover{color:rgba(255,255,255,.5);}
+
+/* ── SAVE SLOTS ── */
+.slot-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
+.save-slot{border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .12s;padding:5px;width:100%;font-family:'Inter',sans-serif;}
+.save-slot:hover{border-color:var(--accent3);background:rgba(16,185,129,.04);}
+.save-slot.filled{border-style:solid;border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.04);}
+.ss-name{font-size:.52rem;font-weight:700;color:var(--text);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px;}
+.ss-meta{font-size:.44rem;color:var(--muted);text-align:center;}
+.ss-empty{font-size:.55rem;color:var(--muted);}
+
+/* TOAST */
+#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);padding:5px 14px;border-radius:7px;font-size:.7rem;z-index:900;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
+
+@media(max-width:699px){
+  #left-panel,#right-panel{display:none!important;}
+  #bottom-bar{display:flex!important;}
+  #toolbar{bottom:60px;}
+}
+@media(min-width:700px) and (max-width:999px){
+  #left-panel{width:180px;}
+  #right-panel{width:210px;}
+}
+@media(min-width:700px){#bottom-bar{display:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="index.html" class="site-logo">
+    <img src="logo.png" alt="JV" onerror="this.onerror=null;this.src='https://placehold.co/26x26/0d1117/6366f1?text=JV'">
+    JVDesignStudio
+  </a>
+  <span class="site-title">📖 Story Editor</span>
+  <a href="workshop.html" class="site-back">← Workshop</a>
+</header>
+
+<div id="app">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="ps" style="flex-shrink:0;">
+      <div class="pt">Add Node</div>
+      <div class="add-btns" style="padding:0;">
+        <button class="add-btn dialogue" onclick="addNode('dialogue')"><span class="ab-ico">💬</span> Dialogue — character speaks</button>
+        <button class="add-btn choice" onclick="addNode('choice')"><span class="ab-ico">🔀</span> Choice — player decides</button>
+        <button class="add-btn end" onclick="addNode('end')"><span class="ab-ico">🏁</span> End — story finishes</button>
+      </div>
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps" style="flex-shrink:0;">
+      <div class="pt">Characters</div>
+      <div class="char-list" id="charList"></div>
+      <div class="add-char-row">
+        <input class="add-char-input" id="newCharName" placeholder="Name..." maxlength="20" onkeydown="if(event.key==='Enter')addCharacter()">
+        <button class="add-char-btn" onclick="addCharacter()">+</button>
+      </div>
+    </div>
+    <div class="pdiv"></div>
+    <div class="node-list" id="nodeList"></div>
+    <div class="pdiv"></div>
+    <div class="ps" style="flex-shrink:0;">
+      <button class="ab ab-p" onclick="openPreview()">▶ Preview Story</button>
+      <button class="ab ab-g" onclick="exportJSON()">📄 Export JSON</button>
+      <button class="ab ab-s" onclick="exportScript()">📝 Export Script</button>
+      <div class="pt" style="margin-top:6px;">Story Name</div>
+      <input type="text" id="storyNameInput" value="My Story" maxlength="32" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;" oninput="storyName=this.value">
+      <div class="pt">Saved Stories</div>
+      <div style="font-size:.48rem;color:var(--muted);margin-bottom:4px;">Tap empty = save · Tap filled = load · Long-press = overwrite</div>
+      <div class="slot-grid" id="saveSlots"></div>
+      <button class="ab ab-r" onclick="clearStory()">🗑 New Story</button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="canvas-area" id="canvasArea">
+    <svg id="arrow-svg"></svg>
+    <div id="story-canvas"></div>
+    <div id="toolbar">
+      <button class="toolbar-btn" onclick="zoomCanvas(-0.15)">− Zoom</button>
+      <span style="font-size:.55rem;color:var(--muted);padding:0 4px;" id="zoomLabel">100%</span>
+      <button class="toolbar-btn" onclick="zoomCanvas(0.15)">+ Zoom</button>
+      <button class="toolbar-btn" onclick="fitView()">⌂ Fit</button>
+      <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectMode()">🔗 Connect</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div id="right-panel-scroll">
+      <div id="editPanel">
+        <div class="edit-empty">← Select a node to edit it<br><br>Drag nodes around the canvas.<br>Use <strong>Connect</strong> mode to link them.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR (mobile) -->
+<div id="bottom-bar">
+  <div class="bb-tabs">
+    <button class="bb-tab on" onclick="bbTab(0,this)">Add</button>
+    <button class="bb-tab" onclick="bbTab(1,this)">Edit</button>
+    <button class="bb-tab" onclick="bbTab(2,this)">Preview</button>
+    <button class="bb-tab" onclick="bbTab(3,this)">Export</button>
+  </div>
+  <div class="bb-content">
+    <div class="bb-panel on" id="bb0">
+      <button class="add-btn dialogue" onclick="addNode('dialogue')" style="flex-shrink:0;"><span class="ab-ico">💬</span>Dialogue</button>
+      <button class="add-btn choice" onclick="addNode('choice')" style="flex-shrink:0;"><span class="ab-ico">🔀</span>Choice</button>
+      <button class="add-btn end" onclick="addNode('end')" style="flex-shrink:0;"><span class="ab-ico">🏁</span>End</button>
+      <button class="toolbar-btn" onclick="toggleConnectMode()" style="flex-shrink:0;">🔗 Connect</button>
+    </div>
+    <div class="bb-panel" id="bb1">
+      <div id="bbEditPanel" style="font-size:.6rem;color:var(--muted);">Select a node on the canvas</div>
+    </div>
+    <div class="bb-panel" id="bb2">
+      <button class="ab ab-p" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="openPreview()">▶ Preview</button>
+    </div>
+    <div class="bb-panel" id="bb3">
+      <button class="ab ab-g" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="exportJSON()">JSON</button>
+      <button class="ab ab-s" style="margin:0;padding:6px 10px;font-size:.7rem;" onclick="exportScript()">Script</button>
+      <div id="bbSaveSlots" style="display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;"></div>
+      <button class="ab ab-r" style="margin:0;padding:6px 10px;font-size:.7rem;flex-shrink:0;" onclick="clearStory()">New</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <a href="index.html">🏠 Home</a>
+  <a href="workshop.html">🔧 Workshop</a>
+  <a href="character-designer.html">🧑‍🎨 Characters</a>
+  <a href="gdd-builder.html">📋 GDD</a>
+  <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+</footer>
+
+<div id="toast"></div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <h3>▶ Story Preview</h3>
+    <div class="preview-scene" id="previewScene"></div>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeModal('previewModal')">Close</button>
+      <button class="m-ok" onclick="restartPreview()">↺ Restart</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let nodes = [];   // {id, type, x, y, char, text, choices:[{text,to}], to}
+let chars = [];   // {name, colour, emoji}
+let selectedNode = null;
+let connectMode = false;
+let connectFrom = null;
+let canvasOffset = {x:0, y:0};
+let canvasScale = 1;
+let isDraggingNode = false;
+let isPanningCanvas = false;
+let dragStartX = 0, dragStartY = 0;
+let dragNodeStartX = 0, dragNodeStartY = 0;
+let panStartX = 0, panStartY = 0;
+let storyName = 'My Story';
+let nextId = 1;
+
+const CHAR_COLOURS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#f97316','#14b8a6'];
+const CHAR_EMOJIS  = ['🧑','👸','🧙','🤖','🦊','🐉','👾','🧝'];
+
+// ══════════════════════════════════════════════════
+// DEFAULT STORY
+// ══════════════════════════════════════════════════
+function loadDefaultStory() {
+  chars = [
+    {name:'Hero',    colour:'#6366f1', emoji:'🧑'},
+    {name:'Wizard',  colour:'#f59e0b', emoji:'🧙'},
+    {name:'Narrator',colour:'#64748b', emoji:'📖'},
+  ];
+  nodes = [
+    {id:'n1', type:'start',    x:60,  y:120, char:'Narrator', text:'You step into the dark forest. A mysterious figure blocks your path.', choices:[], to:'n2'},
+    {id:'n2', type:'dialogue', x:320, y:80,  char:'Wizard',   text:"Halt! Before you pass, you must answer my riddle. Are you brave enough?", choices:[], to:'n3'},
+    {id:'n3', type:'choice',   x:580, y:80,  char:'Hero',     text:'What do you say?', choices:[
+      {text:"I'll answer your riddle!", to:'n4'},
+      {text:"Step aside, old man.", to:'n5'},
+      {text:"Umm... what's the riddle?", to:'n4'},
+    ], to:null},
+    {id:'n4', type:'dialogue', x:840, y:40,  char:'Wizard',   text:"Excellent! The riddle is: I have cities but no houses. I have mountains but no trees. I have water but no fish. What am I?", choices:[], to:'n6'},
+    {id:'n5', type:'dialogue', x:840, y:160, char:'Wizard',   text:"How rude! You shall not pass today!", choices:[], to:'n7'},
+    {id:'n6', type:'choice',   x:1100,y:40,  char:'Hero',     text:'You think carefully...', choices:[
+      {text:'A map!', to:'n8'},
+      {text:'A painting!', to:'n9'},
+    ], to:null},
+    {id:'n7', type:'end',      x:1100,y:160, char:'Narrator', text:'The wizard blocks your path. Game Over!', choices:[], to:null},
+    {id:'n8', type:'dialogue', x:1360,y:0,   char:'Wizard',   text:"Correct! You are wise. You may pass. 🌟", choices:[], to:'n10'},
+    {id:'n9', type:'dialogue', x:1360,y:100, char:'Wizard',   text:"Close... but no. The answer is a map. Try again tomorrow.", choices:[], to:'n7'},
+    {id:'n10',type:'end',      x:1620,y:0,   char:'Narrator', text:'You step past the wizard and into the forest. Adventure awaits! ✨', choices:[], to:null},
+  ];
+  nextId = 11;
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS TRANSFORM
+// ══════════════════════════════════════════════════
+function applyTransform() {
+  const sc = document.getElementById('story-canvas');
+  sc.style.transform = `translate(${canvasOffset.x}px,${canvasOffset.y}px) scale(${canvasScale})`;
+  sc.style.transformOrigin = '0 0';
+  document.getElementById('zoomLabel').textContent = Math.round(canvasScale*100)+'%';
+  drawArrows();
+}
+
+function zoomCanvas(delta) {
+  canvasScale = Math.max(0.3, Math.min(2, canvasScale + delta));
+  applyTransform();
+}
+
+function fitView() {
+  if (!nodes.length) return;
+  const area = document.getElementById('canvas-area');
+  const aw = area.clientWidth, ah = area.clientHeight;
+  const xs = nodes.map(n=>n.x), ys = nodes.map(n=>n.y);
+  const minX=Math.min(...xs)-20, maxX=Math.max(...xs)+240;
+  const minY=Math.min(...ys)-20, maxY=Math.max(...ys)+120;
+  const sw = maxX-minX, sh = maxY-minY;
+  canvasScale = Math.max(0.3, Math.min(1.2, Math.min(aw/sw, ah/sh)*0.9));
+  canvasOffset.x = (aw - sw*canvasScale)/2 - minX*canvasScale;
+  canvasOffset.y = (ah - sh*canvasScale)/2 - minY*canvasScale;
+  applyTransform();
+}
+
+// ══════════════════════════════════════════════════
+// RENDER NODES
+// ══════════════════════════════════════════════════
+function renderAll() {
+  renderNodes();
+  renderNodeList();
+  renderCharList();
+  drawArrows();
+}
+
+function renderNodes() {
+  const sc = document.getElementById('story-canvas');
+  sc.innerHTML = '';
+  nodes.forEach(node => {
+    const el = createNodeEl(node);
+    sc.appendChild(el);
+  });
+}
+
+function createNodeEl(node) {
+  const el = document.createElement('div');
+  el.className = `story-node type-${node.type}${selectedNode===node.id?' selected':''}`;
+  el.style.left = node.x + 'px';
+  el.style.top  = node.y + 'px';
+  el.dataset.id = node.id;
+
+  const ch = chars.find(c=>c.name===node.char) || {colour:'#64748b',emoji:'❓'};
+  const typeLabels = {start:'Start',dialogue:'Dialogue',choice:'Choice',end:'End'};
+  const badgeClass = {start:'badge-start',dialogue:'badge-dialogue',choice:'badge-choice',end:'badge-end'};
+
+  let choicesHTML = '';
+  if (node.type === 'choice' && node.choices.length) {
+    choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">↳ ${c.text||'…'}</div>`).join('')}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="node-header">
+      <span style="font-size:.85rem;">${ch.emoji}</span>
+      <span class="node-char" style="color:${ch.colour}">${node.char||'?'}</span>
+      <span class="node-type-badge ${badgeClass[node.type]}">${typeLabels[node.type]}</span>
+    </div>
+    <div class="node-body">
+      <div class="node-text">${node.text || '<em style="opacity:.4">No text yet…</em>'}</div>
+      ${choicesHTML}
+    </div>
+    <div class="node-footer">
+      <span class="node-id">#${node.id}</span>
+      <div class="node-connect-dot${node.type!=='end'?' out':''}" data-id="${node.id}" title="Connect to next"></div>
+    </div>
+  `;
+
+  // Drag
+  setupNodeDrag(el, node);
+  // Click to select
+  el.addEventListener('pointerdown', e => {
+    if (e.target.classList.contains('node-connect-dot')) {
+      e.stopPropagation();
+      handleConnectDot(node.id);
+      return;
+    }
+    selectNode(node.id);
+  });
+
+  return el;
+}
+
+function setupNodeDrag(el, node) {
+  let startX, startY, startNX, startNY, moved;
+
+  el.addEventListener('pointerdown', e => {
+    if (connectMode) return;
+    if (e.target.classList.contains('node-connect-dot')) return;
+    e.stopPropagation();
+    moved = false;
+    startX = e.clientX; startY = e.clientY;
+    startNX = node.x; startNY = node.y;
+    el.setPointerCapture(e.pointerId);
+
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp, {once:true});
+
+    function onMove(ev) {
+      const dx = (ev.clientX - startX) / canvasScale;
+      const dy = (ev.clientY - startY) / canvasScale;
+      if (Math.abs(dx)+Math.abs(dy) > 3) moved = true;
+      node.x = startNX + dx;
+      node.y = startNY + dy;
+      el.style.left = node.x + 'px';
+      el.style.top  = node.y + 'px';
+      drawArrows();
+    }
+    function onUp() {
+      el.removeEventListener('pointermove', onMove);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+// ARROWS
+// ══════════════════════════════════════════════════
+function drawArrows() {
+  const svg = document.getElementById('arrow-svg');
+  svg.innerHTML = `<defs><marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="rgba(99,102,241,.6)"/></marker></defs>`;
+
+  const NWIDTH = 200, NHEADER = 32;
+
+  nodes.forEach(node => {
+    const drawArrow = (fromId, toId, colour='rgba(99,102,241,.5)', label='') => {
+      const from = nodes.find(n=>n.id===fromId);
+      const to   = nodes.find(n=>n.id===toId);
+      if (!from||!to) return;
+
+      const fx = (from.x + NWIDTH) * canvasScale + canvasOffset.x;
+      const fy = (from.y + NHEADER) * canvasScale + canvasOffset.y;
+      const tx = to.x * canvasScale + canvasOffset.x;
+      const ty = (to.y + NHEADER) * canvasScale + canvasOffset.y;
+
+      const mx = (fx+tx)/2;
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',`M${fx},${fy} C${mx},${fy} ${mx},${ty} ${tx},${ty}`);
+      path.setAttribute('stroke',colour);
+      path.setAttribute('stroke-width','2');
+      path.setAttribute('fill','none');
+      path.setAttribute('marker-end','url(#ah)');
+      path.setAttribute('opacity','0.7');
+      svg.appendChild(path);
+
+      if (label) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+        text.setAttribute('x', mx);
+        text.setAttribute('y', (fy+ty)/2 - 4);
+        text.setAttribute('fill','rgba(255,255,255,.35)');
+        text.setAttribute('font-size','10');
+        text.setAttribute('text-anchor','middle');
+        text.textContent = label.length > 16 ? label.slice(0,14)+'…' : label;
+        svg.appendChild(text);
+      }
+    };
+
+    if (node.type === 'choice') {
+      node.choices.forEach((c,i) => {
+        if (c.to) drawArrow(node.id, c.to, CHOICE_COLS[i%CHOICE_COLS.length], c.text);
+      });
+    } else if (node.to) {
+      drawArrow(node.id, node.to);
+    }
+  });
+}
+
+const CHOICE_COLS = ['rgba(139,92,246,.7)','rgba(236,72,153,.7)','rgba(245,158,11,.7)','rgba(16,185,129,.7)'];
+
+// ══════════════════════════════════════════════════
+// SELECT & EDIT
+// ══════════════════════════════════════════════════
+function selectNode(id) {
+  selectedNode = id;
+  renderAll();
+  buildEditPanel();
+}
+
+function buildEditPanel() {
+  const panel = document.getElementById('editPanel');
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node) { panel.innerHTML = '<div class="edit-empty">← Select a node to edit it</div>'; return; }
+
+  const ch = chars.find(c=>c.name===node.char);
+  const allNodeOpts = nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===node.to?'selected':''}>${n.id} — ${n.char}: ${(n.text||'').slice(0,20)}</option>`).join('');
+
+  let typeSpecific = '';
+  if (node.type === 'choice') {
+    const choiceRows = node.choices.map((c,i)=>`
+      <div class="choice-edit-row">
+        <input type="text" value="${c.text||''}" placeholder="Choice text..." oninput="updateChoice(${i},'text',this.value)">
+        <select onchange="updateChoice(${i},'to',this.value)" style="width:100px;padding:3px 5px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.58rem;outline:none;">
+          <option value="">→ none</option>
+          ${nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===c.to?'selected':''}>${n.id}</option>`).join('')}
+        </select>
+        <button class="del-choice" onclick="removeChoice(${i})">✕</button>
+      </div>
+    `).join('');
+    typeSpecific = `
+      <div class="field">
+        <label>Choices (up to 4)</label>
+        <div class="choices-edit" id="choicesEdit">${choiceRows}</div>
+        ${node.choices.length<4?`<button class="add-choice-btn" onclick="addChoice()">+ Add Choice</button>`:''}
+      </div>
+    `;
+  } else if (node.type !== 'end') {
+    typeSpecific = `
+      <div class="field">
+        <label>Connects to</label>
+        <select onchange="updateNodeField('to',this.value)" style="width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;outline:none;">
+          <option value="">— none —</option>
+          ${allNodeOpts}
+        </select>
+      </div>
+    `;
+  }
+
+  panel.innerHTML = `
+    <div class="ps">
+      <div class="pt">Edit Node — #${node.id}</div>
+      <div class="field">
+        <label>Character</label>
+        <select onchange="updateNodeField('char',this.value)" style="width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;outline:none;">
+          ${chars.map(c=>`<option value="${c.name}" ${c.name===node.char?'selected':''}>${c.emoji} ${c.name}</option>`).join('')}
+          <option value="Narrator" ${node.char==='Narrator'?'selected':''}>📖 Narrator</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>${node.type==='choice'?'Prompt / Context':'Dialogue Text'}</label>
+        <textarea oninput="updateNodeField('text',this.value)" placeholder="What does this character say?">${node.text||''}</textarea>
+      </div>
+      ${typeSpecific}
+      <button class="ab ab-r" style="margin-top:6px;" onclick="deleteNode('${node.id}')">🗑 Delete Node</button>
+    </div>
+  `;
+}
+
+function updateNodeField(field, value) {
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node) return;
+  node[field] = value;
+  renderAll();
+  buildEditPanel();
+}
+
+function updateChoice(i, field, value) {
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node||!node.choices[i]) return;
+  node.choices[i][field] = value;
+  drawArrows();
+  const el = document.querySelector(`.story-node[data-id="${node.id}"]`);
+  if (el) el.replaceWith(createNodeEl(node));
+}
+
+function addChoice() {
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node||node.choices.length>=4) return;
+  node.choices.push({text:'', to:''});
+  buildEditPanel();
+}
+
+function removeChoice(i) {
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node) return;
+  node.choices.splice(i,1);
+  buildEditPanel(); drawArrows();
+}
+
+// ══════════════════════════════════════════════════
+// CONNECT MODE
+// ══════════════════════════════════════════════════
+function toggleConnectMode() {
+  connectMode = !connectMode;
+  connectFrom = null;
+  const btn = document.getElementById('connectBtn');
+  btn.classList.toggle('on', connectMode);
+  btn.textContent = connectMode ? '✓ Connecting…' : '🔗 Connect';
+  document.getElementById('story-canvas').style.cursor = connectMode ? 'crosshair' : 'default';
+  showToast(connectMode ? 'Click a node to start, then click the target' : 'Connect mode off');
+}
+
+function handleConnectDot(id) {
+  if (!connectMode) { toggleConnectMode(); connectFrom = id; showToast('Now click the destination node'); return; }
+  if (!connectFrom) { connectFrom = id; showToast('Now click the destination node dot'); return; }
+  if (connectFrom === id) { connectFrom = null; return; }
+  // Connect from → to
+  const from = nodes.find(n=>n.id===connectFrom);
+  if (from) {
+    if (from.type === 'choice' && from.choices.length > 0) {
+      // Connect last unconnected choice
+      const empty = from.choices.find(c=>!c.to);
+      if (empty) empty.to = id; else from.choices[from.choices.length-1].to = id;
+    } else {
+      from.to = id;
+    }
+  }
+  connectFrom = null;
+  renderAll();
+  if (selectedNode === from?.id) buildEditPanel();
+  showToast('Connected!');
+}
+
+// ══════════════════════════════════════════════════
+// ADD / DELETE NODES
+// ══════════════════════════════════════════════════
+function addNode(type) {
+  const area = document.getElementById('canvas-area');
+  const cx = (area.clientWidth/2  - canvasOffset.x) / canvasScale - 100;
+  const cy = (area.clientHeight/2 - canvasOffset.y) / canvasScale - 40;
+  const id = 'n' + nextId++;
+  const defaultChar = chars[0]?.name || 'Narrator';
+  nodes.push({id, type, x:cx+Math.random()*40-20, y:cy+Math.random()*40-20, char:defaultChar, text:'', choices: type==='choice'?[{text:'',to:''},{text:'',to:''}]:[], to:null});
+  selectNode(id);
+  renderAll();
+  showToast(`${type} node added`);
+}
+
+function deleteNode(id) {
+  nodes = nodes.filter(n=>n.id!==id);
+  // Remove references
+  nodes.forEach(n=>{
+    if(n.to===id) n.to=null;
+    n.choices?.forEach(c=>{if(c.to===id)c.to='';});
+  });
+  selectedNode = null;
+  renderAll();
+  document.getElementById('editPanel').innerHTML='<div class="edit-empty">Node deleted. Select another node.</div>';
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS PAN
+// ══════════════════════════════════════════════════
+function setupCanvasPan() {
+  const area = document.getElementById('canvas-area');
+  let startPX, startPY, startOX, startOY, moved;
+
+  area.addEventListener('pointerdown', e => {
+    if (e.target.closest('.story-node')) return;
+    if (e.target.closest('#toolbar')) return;
+    startPX=e.clientX; startPY=e.clientY;
+    startOX=canvasOffset.x; startOY=canvasOffset.y;
+    moved=false;
+    area.setPointerCapture(e.pointerId);
+
+    area.addEventListener('pointermove', onMove);
+    area.addEventListener('pointerup', onUp, {once:true});
+
+    function onMove(ev) {
+      const dx=ev.clientX-startPX, dy=ev.clientY-startPY;
+      if(Math.abs(dx)+Math.abs(dy)>4) moved=true;
+      canvasOffset.x=startOX+dx; canvasOffset.y=startOY+dy;
+      applyTransform();
+    }
+    function onUp(ev) {
+      area.removeEventListener('pointermove',onMove);
+      if (!moved && !connectMode) {
+        selectedNode=null;
+        renderAll();
+        document.getElementById('editPanel').innerHTML='<div class="edit-empty">← Select a node to edit it<br><br>Drag nodes around the canvas.<br>Use <strong>Connect</strong> mode to link them.</div>';
+      }
+    }
+  });
+
+  area.addEventListener('wheel', e=>{e.preventDefault(); zoomCanvas(e.deltaY<0?0.1:-0.1);},{passive:false});
+
+  // Touch pinch zoom
+  let lastDist = 0;
+  area.addEventListener('touchstart', e=>{
+    if(e.touches.length===2) lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+  },{passive:true});
+  area.addEventListener('touchmove', e=>{
+    if(e.touches.length===2){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      zoomCanvas((d-lastDist)*0.005); lastDist=d;
+    }
+  },{passive:true});
+}
+
+// ══════════════════════════════════════════════════
+// NODE LIST & CHAR LIST
+// ══════════════════════════════════════════════════
+function renderNodeList() {
+  const list = document.getElementById('nodeList');
+  list.innerHTML = '';
+  const icons = {start:'🟢',dialogue:'💬',choice:'🔀',end:'🏁'};
+  nodes.forEach(node=>{
+    const el=document.createElement('div');
+    el.className='node-list-item'+(node.id===selectedNode?' on':'');
+    el.innerHTML=`<span class="nli-icon">${icons[node.type]||'●'}</span><div><div class="nli-name">${node.char}: ${(node.text||'…').slice(0,24)}</div><div class="nli-type">${node.type} · #${node.id}</div></div>`;
+    el.onclick=()=>selectNode(node.id);
+    list.appendChild(el);
+  });
+}
+
+function renderCharList() {
+  const list=document.getElementById('charList');
+  list.innerHTML='';
+  chars.forEach((c,i)=>{
+    const el=document.createElement('div');
+    el.className='char-item';
+    el.innerHTML=`<div class="ci-avatar" style="background:${c.colour}22;">${c.emoji}</div><span class="ci-name" style="color:${c.colour}">${c.name}</span><button class="ci-del" onclick="removeChar(${i})">✕</button>`;
+    list.appendChild(el);
+  });
+}
+
+function addCharacter() {
+  const inp=document.getElementById('newCharName');
+  const name=inp.value.trim();
+  if(!name||chars.find(c=>c.name===name)) return;
+  const i=chars.length%CHAR_COLOURS.length;
+  chars.push({name, colour:CHAR_COLOURS[i], emoji:CHAR_EMOJIS[i]});
+  inp.value='';
+  renderCharList();
+  showToast('Character added: '+name);
+}
+
+function removeChar(i) {
+  chars.splice(i,1);
+  renderCharList();
+}
+
+// ══════════════════════════════════════════════════
+// PREVIEW
+// ══════════════════════════════════════════════════
+let previewNode = null;
+
+function openPreview() {
+  const start = nodes.find(n=>n.type==='start') || nodes[0];
+  if(!start){showToast('Add some nodes first!');return;}
+  previewNode = start.id;
+  renderPreviewScene();
+  document.getElementById('previewModal').classList.add('open');
+}
+
+function restartPreview() {
+  const start = nodes.find(n=>n.type==='start') || nodes[0];
+  if(start) previewNode=start.id;
+  renderPreviewScene();
+}
+
+function renderPreviewScene() {
+  const scene=document.getElementById('previewScene');
+  const node=nodes.find(n=>n.id===previewNode);
+  if(!node){scene.innerHTML='<div class="preview-end">Story not found.</div>';return;}
+  const ch=chars.find(c=>c.name===node.char)||{colour:'#64748b',emoji:'📖',name:node.char||'?'};
+
+  if(node.type==='end'){
+    scene.innerHTML=`<div class="preview-end">${ch.emoji} ${ch.name}<br><br>"${node.text||'The End.'}"<br><br>— The End —</div>`;
+    return;
+  }
+
+  const choicesHTML = node.type==='choice' && node.choices.length
+    ? `<div class="preview-choices">${node.choices.filter(c=>c.text).map(c=>`<button class="preview-choice" onclick="previewGo('${c.to}')">${c.text}</button>`).join('')}</div>`
+    : node.to ? `<div class="preview-choices"><button class="preview-choice" onclick="previewGo('${node.to}')">Continue →</button></div>` : '<div class="preview-end">The End.</div>';
+
+  scene.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:1.4rem;">${ch.emoji}</span>
+      <span class="preview-char-name" style="color:${ch.colour}">${ch.name}</span>
+    </div>
+    <div class="preview-text">${node.text||'…'}</div>
+    ${choicesHTML}
+  `;
+}
+
+function previewGo(toId) {
+  if(!toId){document.getElementById('previewScene').innerHTML='<div class="preview-end">— The End —</div>';return;}
+  previewNode=toId;
+  renderPreviewScene();
+}
+
+// ══════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════
+function exportJSON() {
+  const data={
+    meta:{name:storyName, creator:'JVDesignStudio Story Editor', site:'jvdesignstudio.co.uk', exported:new Date().toISOString()},
+    characters:chars,
+    nodes:nodes.map(n=>({id:n.id,type:n.type,char:n.char,text:n.text,choices:n.choices,to:n.to}))
+  };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=(storyName.replace(/\s+/g,'_')||'story')+'.json';
+  a.click();
+  showToast('JSON exported!');
+}
+
+function exportScript() {
+  let script=`STORY: ${storyName}\nCreated with JVDesignStudio Story Editor — jvdesignstudio.co.uk\n${'='.repeat(50)}\n\n`;
+  // Walk from start
+  const visited=new Set();
+  const queue=[nodes.find(n=>n.type==='start')?.id||nodes[0]?.id];
+  while(queue.length){
+    const id=queue.shift();
+    if(!id||visited.has(id)) continue;
+    visited.add(id);
+    const node=nodes.find(n=>n.id===id);
+    if(!node) continue;
+    script+=`[${node.type.toUpperCase()} — #${node.id}]\n`;
+    if(node.char) script+=`${node.char}:\n`;
+    script+=`"${node.text||'…'}"\n`;
+    if(node.type==='choice'&&node.choices.length){
+      node.choices.forEach((c,i)=>{script+=`  ${i+1}. "${c.text||'…'}" → #${c.to||'?'}\n`;if(c.to)queue.push(c.to);});
+    } else if(node.to){
+      script+=`  → #${node.to}\n`;
+      queue.push(node.to);
+    }
+    script+='\n';
+  }
+  // Any unvisited
+  nodes.filter(n=>!visited.has(n.id)).forEach(node=>{
+    script+=`[${node.type.toUpperCase()} — #${node.id}]\n${node.char}:\n"${node.text||'…'}"\n\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([script],{type:'text/plain'}));
+  a.download=(storyName.replace(/\s+/g,'_')||'story')+'_script.txt';
+  a.click();
+  showToast('Script exported!');
+}
+
+// ══════════════════════════════════════════════════
+// SAVE / LOAD
+// ══════════════════════════════════════════════════
+function getSlots(){ try{return JSON.parse(localStorage.getItem('jvds_story_slots')||'[]');}catch{return[];} }
+function setSlots(s){ localStorage.setItem('jvds_story_slots',JSON.stringify(s)); }
+
+function renderSaveSlots(){
+  ['saveSlots','bbSaveSlots'].forEach(cid=>{
+    const container=document.getElementById(cid);
+    if(!container) return;
+    const slots=getSlots();
+    const isMobile=cid==='bbSaveSlots';
+    container.innerHTML='';
+    for(let i=0;i<4;i++){
+      const slot=slots[i];
+      const el=document.createElement(isMobile?'button':'button');
+      el.className='save-slot'+(slot?' filled':'');
+      if(isMobile) el.style.cssText='flex-shrink:0;min-width:70px;min-height:44px;';
+      if(slot){
+        el.innerHTML=`<div class="ss-name">${slot.name}</div><div class="ss-meta">${slot.nodeCount} nodes · ${slot.date}</div>`;
+        el.title='Click to load · Long-press to overwrite';
+        // Click = load, right-click/long-press = save
+        let pressTimer;
+        el.addEventListener('pointerdown',()=>{ pressTimer=setTimeout(()=>saveToSlot(i),600); });
+        el.addEventListener('pointerup',()=>{ clearTimeout(pressTimer); });
+        el.addEventListener('click',()=>loadFromSlot(i));
+        el.addEventListener('contextmenu',e=>{e.preventDefault();saveToSlot(i);});
+      } else {
+        el.innerHTML=`<div class="ss-empty">Slot ${i+1}</div><div class="ss-meta">tap to save</div>`;
+        el.onclick=()=>saveToSlot(i);
+      }
+      container.appendChild(el);
+    }
+  });
+}
+
+function saveToSlot(idx){
+  const slots=getSlots();
+  while(slots.length<=idx) slots.push(null);
+  slots[idx]={
+    name:storyName,
+    nodeCount:nodes.length,
+    date:new Date().toLocaleDateString(),
+    data:{storyName,nodes:JSON.parse(JSON.stringify(nodes)),chars:JSON.parse(JSON.stringify(chars)),nextId}
+  };
+  setSlots(slots);
+  renderSaveSlots();
+  showToast(`Saved to slot ${idx+1}: ${storyName}`);
+}
+
+function loadFromSlot(idx){
+  const slots=getSlots();
+  const slot=slots[idx];
+  if(!slot) return;
+  const d=slot.data;
+  storyName=d.storyName||'My Story';
+  nodes=d.nodes||[];
+  chars=d.chars||[];
+  nextId=d.nextId||1;
+  selectedNode=null;
+  renderAll();
+  fitView();
+  document.getElementById('editPanel').innerHTML='<div class="edit-empty">Loaded: '+storyName+'</div>';
+  showToast('Loaded: '+storyName);
+}
+
+function saveStory(){ saveToSlot(findFirstEmptyOrLast()); }
+function loadStory(){ /* replaced by slots */ }
+
+function findFirstEmptyOrLast(){
+  const slots=getSlots();
+  const empty=slots.findIndex(s=>!s);
+  return empty>=0?empty:3;
+}
+
+function clearStory() {
+  if(!confirm('Start a new story? This will clear everything.')) return;
+  nodes=[]; chars=[]; nextId=1; selectedNode=null;
+  renderAll();
+  document.getElementById('editPanel').innerHTML='<div class="edit-empty">← Add your first node!</div>';
+  showToast('New story started');
+}
+
+// ══════════════════════════════════════════════════
+// MOBILE TABS
+// ══════════════════════════════════════════════════
+function bbTab(i,btn) {
+  document.querySelectorAll('.bb-tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('bb'+i).classList.add('on');
+  if(i===1) {
+    const ep=document.getElementById('editPanel').cloneNode(true);
+    document.getElementById('bbEditPanel').innerHTML='';
+    document.getElementById('bbEditPanel').appendChild(ep);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// MODAL / TOAST
+// ══════════════════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity=1;
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2200);
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  loadDefaultStory();
+  setupCanvasPan();
+  renderAll();
+  renderSaveSlots();
+  setTimeout(fitView, 100);
+});
+</script>
+</body>
+</html>

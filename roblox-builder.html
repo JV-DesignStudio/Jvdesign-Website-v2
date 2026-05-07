@@ -238,6 +238,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
         <input type="range" class="prop-slider" id="propRot" min="0" max="315" step="45" value="0" oninput="updateProp('rot',this.value)">
         <div class="prop-val" id="propRotVal">0°</div>
       </div>
+      <div class="prop-row">
+        <div class="prop-label">Move Up / Down</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+          <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="moveBlockY(1)">⬆ Up</button>
+          <div class="prop-val" id="propYVal" style="min-width:28px;">0</div>
+          <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="moveBlockY(-1)">⬇ Down</button>
+        </div>
+      </div>
       <button class="action-btn btn-warn" onclick="duplicateSelected()">📋 Duplicate</button>
       <button class="action-btn btn-secondary" style="color:#e94560;border-color:rgba(233,69,96,.3);" onclick="deleteSelected()">🗑️ Delete</button>
     </div>
@@ -503,6 +511,17 @@ function selectBlock(mesh) {
   document.getElementById('propHVal').textContent = mesh.userData.h || 1;
   document.getElementById('propDVal').textContent = mesh.userData.d || 1;
   document.getElementById('propRotVal').textContent = (mesh.userData.rot || 0) + '°';
+  const yBase = Math.round(mesh.position.y - (mesh.userData.h||1)/2);
+  document.getElementById('propYVal').textContent = yBase;
+}
+
+function moveBlockY(dir) {
+  if (!selectedBlock) return;
+  selectedBlock.position.y += dir;
+  window.highlight.position.copy(selectedBlock.position);
+  const yBase = Math.round(selectedBlock.position.y - (selectedBlock.userData.h||1)/2);
+  document.getElementById('propYVal').textContent = yBase;
+  toast(dir > 0 ? '⬆ Moved up' : '⬇ Moved down');
 }
 
 function deselectBlock() {
