@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Story Editor | JVDesignStudio</title>
+<meta property="og:title" content="Story Editor — JVDesignStudio">
+<meta property="og:description" content="Write branching dialogue trees and RPG conversations. Node-based editor, 4 save slots, preview, export JSON for Godot or Unity.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/Story_Editor_Cover.png">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/story-editor.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -35,7 +42,7 @@ body{display:flex;flex-direction:column;}
 /* ── CANVAS ── */
 #canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:var(--bg);}
 #canvas-area::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
-#story-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#story-canvas{position:absolute;top:0;left:0;width:0;height:0;overflow:visible;}
 
 /* ── RIGHT PANEL ── */
 #right-panel{width:260px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:10;}
@@ -88,7 +95,7 @@ body{display:flex;flex-direction:column;}
 .ab-r{background:rgba(239,68,68,.1);color:var(--accent4);border:1px solid rgba(239,68,68,.3);}
 
 /* ── CANVAS NODES ── */
-.story-node{position:absolute;border-radius:12px;border:2px solid rgba(255,255,255,.12);cursor:grab;transition:box-shadow .15s;min-width:180px;max-width:220px;}
+.story-node{position:absolute;border-radius:12px;border:2px solid rgba(255,255,255,.12);cursor:grab;transition:box-shadow .15s;min-width:180px;max-width:220px;touch-action:none;}
 .story-node:active{cursor:grabbing;}
 .story-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.25);}
 .story-node.type-start{background:var(--node-start);border-color:rgba(16,185,129,.3);}
@@ -244,12 +251,13 @@ body{display:flex;flex-direction:column;}
       <div class="pt">Saved Stories</div>
       <div style="font-size:.48rem;color:var(--muted);margin-bottom:4px;">Tap empty = save · Tap filled = load · Long-press = overwrite</div>
       <div class="slot-grid" id="saveSlots"></div>
-      <button class="ab ab-r" onclick="clearStory()">🗑 New Story</button>
+      <button class="ab ab-s" onclick="newPage()">📄 New Page</button>
+      <button class="ab ab-r" onclick="clearStory()">🗑 Clear All</button>
     </div>
   </div>
 
   <!-- CANVAS -->
-  <div id="canvas-area" id="canvasArea">
+  <div id="canvas-area">
     <svg id="arrow-svg"></svg>
     <div id="story-canvas"></div>
     <div id="toolbar">
@@ -257,6 +265,7 @@ body{display:flex;flex-direction:column;}
       <span style="font-size:.55rem;color:var(--muted);padding:0 4px;" id="zoomLabel">100%</span>
       <button class="toolbar-btn" onclick="zoomCanvas(0.15)">+ Zoom</button>
       <button class="toolbar-btn" onclick="fitView()">⌂ Fit</button>
+      <button class="toolbar-btn" onclick="autoLayout()">⚡ Auto Layout</button>
       <button class="toolbar-btn" id="connectBtn" onclick="toggleConnectMode()">🔗 Connect</button>
     </div>
   </div>
@@ -355,23 +364,23 @@ function loadDefaultStory() {
     {name:'Narrator',colour:'#64748b', emoji:'📖'},
   ];
   nodes = [
-    {id:'n1', type:'start',    x:60,  y:120, char:'Narrator', text:'You step into the dark forest. A mysterious figure blocks your path.', choices:[], to:'n2'},
-    {id:'n2', type:'dialogue', x:320, y:80,  char:'Wizard',   text:"Halt! Before you pass, you must answer my riddle. Are you brave enough?", choices:[], to:'n3'},
-    {id:'n3', type:'choice',   x:580, y:80,  char:'Hero',     text:'What do you say?', choices:[
+    {id:'n1', type:'start',    x:40,   y:40,  char:'Narrator', text:'You step into the dark forest. A mysterious figure blocks your path.', choices:[], to:'n2'},
+    {id:'n2', type:'dialogue', x:300,  y:40,  char:'Wizard',   text:"Halt! Before you pass, you must answer my riddle. Are you brave enough?", choices:[], to:'n3'},
+    {id:'n3', type:'choice',   x:560,  y:40,  char:'Hero',     text:'What do you say?', choices:[
       {text:"I'll answer your riddle!", to:'n4'},
       {text:"Step aside, old man.", to:'n5'},
       {text:"Umm... what's the riddle?", to:'n4'},
     ], to:null},
-    {id:'n4', type:'dialogue', x:840, y:40,  char:'Wizard',   text:"Excellent! The riddle is: I have cities but no houses. I have mountains but no trees. I have water but no fish. What am I?", choices:[], to:'n6'},
-    {id:'n5', type:'dialogue', x:840, y:160, char:'Wizard',   text:"How rude! You shall not pass today!", choices:[], to:'n7'},
-    {id:'n6', type:'choice',   x:1100,y:40,  char:'Hero',     text:'You think carefully...', choices:[
+    {id:'n4', type:'dialogue', x:820,  y:0,   char:'Wizard',   text:"Excellent! The riddle is: I have cities but no houses. Mountains but no trees. Water but no fish. What am I?", choices:[], to:'n6'},
+    {id:'n5', type:'dialogue', x:820,  y:160, char:'Wizard',   text:"How rude! You shall not pass today!", choices:[], to:'n7'},
+    {id:'n6', type:'choice',   x:1080, y:0,   char:'Hero',     text:'You think carefully...', choices:[
       {text:'A map!', to:'n8'},
       {text:'A painting!', to:'n9'},
     ], to:null},
-    {id:'n7', type:'end',      x:1100,y:160, char:'Narrator', text:'The wizard blocks your path. Game Over!', choices:[], to:null},
-    {id:'n8', type:'dialogue', x:1360,y:0,   char:'Wizard',   text:"Correct! You are wise. You may pass. 🌟", choices:[], to:'n10'},
-    {id:'n9', type:'dialogue', x:1360,y:100, char:'Wizard',   text:"Close... but no. The answer is a map. Try again tomorrow.", choices:[], to:'n7'},
-    {id:'n10',type:'end',      x:1620,y:0,   char:'Narrator', text:'You step past the wizard and into the forest. Adventure awaits! ✨', choices:[], to:null},
+    {id:'n7', type:'end',      x:1080, y:160, char:'Narrator', text:'The wizard blocks your path. Game Over!', choices:[], to:null},
+    {id:'n8', type:'dialogue', x:1340, y:0,   char:'Wizard',   text:"Correct! You are wise. You may pass. 🌟", choices:[], to:'n10'},
+    {id:'n9', type:'dialogue', x:1340, y:160, char:'Wizard',   text:"Close... but no. The answer is a map. Try again tomorrow.", choices:[], to:'n7'},
+    {id:'n10',type:'end',      x:1600, y:0,   char:'Narrator', text:'You step past the wizard and into the forest. Adventure awaits! ✨', choices:[], to:null},
   ];
   nextId = 11;
 }
@@ -457,49 +466,59 @@ function createNodeEl(node) {
     </div>
   `;
 
-  // Drag
+  // Drag + select (select only fires if not a drag)
   setupNodeDrag(el, node);
-  // Click to select
+
+  return el;
+}
+
+const GRID = 20; // snap grid size
+function snap(v){ return Math.round(v/GRID)*GRID; }
+
+function setupNodeDrag(el, node) {
+  let startX, startY, startNX, startNY, wasDrag = false;
+
   el.addEventListener('pointerdown', e => {
+    // Connect dot click
     if (e.target.classList.contains('node-connect-dot')) {
       e.stopPropagation();
       handleConnectDot(node.id);
       return;
     }
-    selectNode(node.id);
-  });
-
-  return el;
-}
-
-function setupNodeDrag(el, node) {
-  let startX, startY, startNX, startNY, moved;
-
-  el.addEventListener('pointerdown', e => {
-    if (connectMode) return;
-    if (e.target.classList.contains('node-connect-dot')) return;
+    if (connectMode) {
+      handleConnectDot(node.id);
+      return;
+    }
     e.stopPropagation();
-    moved = false;
+    e.preventDefault();
+
+    // Select immediately (safe - just toggles CSS class, no DOM rebuild)
+    selectNode(node.id);
+
+    wasDrag = false;
     startX = e.clientX; startY = e.clientY;
     startNX = node.x; startNY = node.y;
     el.setPointerCapture(e.pointerId);
 
-    el.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerup', onUp, {once:true});
-
     function onMove(ev) {
       const dx = (ev.clientX - startX) / canvasScale;
       const dy = (ev.clientY - startY) / canvasScale;
-      if (Math.abs(dx)+Math.abs(dy) > 3) moved = true;
-      node.x = startNX + dx;
-      node.y = startNY + dy;
+      if (Math.abs(dx) + Math.abs(dy) > 4) wasDrag = true;
+      if (!wasDrag) return;
+      node.x = snap(startNX + dx);
+      node.y = snap(startNY + dy);
       el.style.left = node.x + 'px';
       el.style.top  = node.y + 'px';
       drawArrows();
     }
-    function onUp() {
+
+    function onUp(ev) {
       el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
     }
+
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
   });
 }
 
@@ -562,7 +581,14 @@ const CHOICE_COLS = ['rgba(139,92,246,.7)','rgba(236,72,153,.7)','rgba(245,158,1
 // ══════════════════════════════════════════════════
 function selectNode(id) {
   selectedNode = id;
-  renderAll();
+  // Just toggle selected class - do NOT rebuild DOM
+  document.querySelectorAll('.story-node').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  // Update node list highlight
+  document.querySelectorAll('.node-list-item').forEach(el => {
+    el.classList.toggle('on', el.dataset.id === id);
+  });
   buildEditPanel();
 }
 
@@ -718,8 +744,53 @@ function deleteNode(id) {
 }
 
 // ══════════════════════════════════════════════════
-// CANVAS PAN
+// AUTO LAYOUT — arranges nodes in a clean left-to-right tree
 // ══════════════════════════════════════════════════
+function autoLayout(){
+  if(!nodes.length) return;
+  const HGAP=260, VGAP=140;
+  // BFS from start node
+  const start=nodes.find(n=>n.type==='start')||nodes[0];
+  const visited=new Map(); // id -> {col, row}
+  const queue=[{id:start.id, col:0, row:0}];
+  const colRows={}; // track next free row per col
+  visited.set(start.id,{col:0,row:0});
+  colRows[0]=1;
+  while(queue.length){
+    const {id,col}=queue.shift();
+    const node=nodes.find(n=>n.id===id);
+    if(!node) continue;
+    const nextCol=col+1;
+    if(!colRows[nextCol]) colRows[nextCol]=0;
+    const nexts=node.type==='choice'
+      ? node.choices.map(c=>c.to).filter(Boolean)
+      : node.to ? [node.to] : [];
+    nexts.forEach(nid=>{
+      if(!visited.has(nid)){
+        const row=colRows[nextCol]||0;
+        visited.set(nid,{col:nextCol,row});
+        colRows[nextCol]=(colRows[nextCol]||0)+1;
+        queue.push({id:nid,col:nextCol});
+      }
+    });
+  }
+  // Place any unvisited nodes below the main flow
+  let orphanRow=Math.max(...Object.values(colRows))+1;
+  nodes.forEach(n=>{
+    if(!visited.has(n.id)){
+      visited.set(n.id,{col:0,row:orphanRow++});
+    }
+  });
+  // Apply positions with snap
+  nodes.forEach(n=>{
+    const pos=visited.get(n.id)||{col:0,row:0};
+    n.x=snap(pos.col*HGAP+40);
+    n.y=snap(pos.row*VGAP+40);
+  });
+  renderAll();
+  setTimeout(fitView,50);
+  showToast('Layout applied!');
+}
 function setupCanvasPan() {
   const area = document.getElementById('canvas-area');
   let startPX, startPY, startOX, startOY, moved;
@@ -776,6 +847,7 @@ function renderNodeList() {
   nodes.forEach(node=>{
     const el=document.createElement('div');
     el.className='node-list-item'+(node.id===selectedNode?' on':'');
+    el.dataset.id = node.id;
     el.innerHTML=`<span class="nli-icon">${icons[node.type]||'●'}</span><div><div class="nli-name">${node.char}: ${(node.text||'…').slice(0,24)}</div><div class="nli-type">${node.type} · #${node.id}</div></div>`;
     el.onclick=()=>selectNode(node.id);
     list.appendChild(el);
@@ -983,12 +1055,23 @@ function findFirstEmptyOrLast(){
   return empty>=0?empty:3;
 }
 
+function newPage() {
+  // Adds a fresh blank dialogue node to the current story
+  addNode('dialogue');
+  showToast('New node added');
+}
+
 function clearStory() {
-  if(!confirm('Start a new story? This will clear everything.')) return;
+  if(!confirm('Clear everything and start a new story?')) return;
   nodes=[]; chars=[]; nextId=1; selectedNode=null;
-  renderAll();
+  const sc=document.getElementById('story-canvas');
+  sc.innerHTML='';
+  document.getElementById('arrow-svg').innerHTML='';
+  renderNodeList();
+  renderCharList();
+  renderSaveSlots();
   document.getElementById('editPanel').innerHTML='<div class="edit-empty">← Add your first node!</div>';
-  showToast('New story started');
+  showToast('Story cleared');
 }
 
 // ══════════════════════════════════════════════════
