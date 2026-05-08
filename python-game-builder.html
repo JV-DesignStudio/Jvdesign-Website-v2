@@ -189,17 +189,87 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 .ce-swatch.active{border-color:var(--py);transform:scale(1.1)}
 .ce-swatch-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none}
 .ce-swatch:hover .ce-swatch-label{opacity:1}
+
+/* ── MOBILE RESPONSIVE PATCH ──────────────────────────── */
+@media(max-width:600px){
+  /* Inputs: bigger touch targets */
+  .blank{min-width:52px;padding:5px 8px;font-size:.8rem;}
+  /* Code blocks: wrap long lines */
+  .code-pre{font-size:.68rem;white-space:pre-wrap;word-break:break-word;padding:10px 12px;}
+  /* Run button: full-width, larger */
+  .run-btn{padding:15px;font-size:1.1rem;}
+  /* Step nav buttons */
+  .btn-prev,.btn-next{padding:12px 8px;font-size:.8rem;}
+  /* Step body padding */
+  .step-body{padding:16px 12px;}
+  /* Tab buttons: scrollable row stays usable */
+  .tab-btn{padding:10px 10px;font-size:.58rem;}
+  /* Hero: hide stat panel that overflows */
+  .hero-preview{display:none;}
+  /* Canvas: scale to viewport */
+  canvas{max-width:100%;height:auto;}
+  .canvas-wrap{padding:8px;}
+  /* Hint text */
+  .game-hint{font-size:.5rem;padding:6px 12px;}
+  /* Section padding */
+  .hero{padding:28px 16px 22px;}
+  /* Boxes */
+  .box{font-size:.78rem;padding:9px 11px;}
+  /* Step title */
+  .step-title{font-size:1.5rem;}
+}
+@media(max-width:400px){
+  .blank{min-width:42px;font-size:.75rem;}
+  .code-pre{font-size:.62rem;}
+  .tab-btn{padding:8px 7px;font-size:.52rem;}
+}
+/* ─────────────────────────────────────────────────────── */
+
+
+/* ── MOBILE D-PAD ─────────────────────────────────────────── */
+.mob-dpad-wrap{
+  display:none;justify-content:center;align-items:center;
+  gap:10px;padding:10px 12px 14px;
+  border-top:1px solid var(--border);
+  background:rgba(0,0,0,.28);flex-shrink:0;
+}
+@media(max-width:860px){.mob-dpad-wrap{display:flex;}}
+.mob-dpad{
+  display:grid;
+  grid-template-columns:50px 50px 50px;
+  grid-template-rows:50px 50px 50px;
+  gap:4px;
+}
+.mob-dpad-btn{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;font-size:1.15rem;
+  cursor:pointer;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+  transition:background .1s,transform .1s;
+}
+.mob-dpad-btn:active,.mob-dpad-btn.pressed{
+  background:rgba(255,255,255,.22);transform:scale(.9);
+}
+.mob-dpad-blank{background:transparent;border:none;}
+.mob-dpad-fire{
+  width:50px;height:50px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;cursor:pointer;user-select:none;
+  touch-action:none;
+  transition:background .1s,transform .1s;
+}
+.mob-dpad-fire:active,.mob-dpad-fire.pressed{transform:scale(.9);}
+.mob-dpad-hint{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.46rem;color:var(--muted);
+  text-align:center;line-height:1.7;
+  letter-spacing:.03em;max-width:70px;
+}
+/* ─────────────────────────────────────────────────────────── */
+
 </style>
-    <meta property="og:type"        content="website">
-    <meta property="og:url"         content="https://jvdesignstudio.co.uk/python-game-builder.html">
-    <meta property="og:title"       content="Build a Python Game Dodge & Collect | JVDesignStudio">
-    <meta property="og:description" content="Fill in the numbers, make the decisions, and watch your game run live. Build a dodge and collect game. Ages 11+. Free.">
-    <meta property="og:image"       content="https://jvdesignstudio.co.uk/logo.png">
-    <meta property="og:site_name"   content="JVDesignStudio">
-    <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="Build a Python Game Dodge & Collect | JVDesignStudio">
-    <meta name="twitter:description" content="Fill in the numbers, make the decisions, and watch your game run live. Build a dodge and collect game. Ages 11+. Free.">
-    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/logo.png">
 </head>
 <body>
 
@@ -216,6 +286,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
         <a href="index.html">🏠 Home</a>
         <a href="content_hub.html">📦 All Projects</a>
         <a href="workshop.html">🔧 Workshop</a>
+        <a href="dev-tools.html">🛠️ Dev Tools</a>
         <a href="search.html">🔍 Search</a>
         <a href="freebies.html">🎁 Free Downloads</a>
         <a href="devlog.html">📓 Dev Log</a>
@@ -749,6 +820,22 @@ goTo(0);
   btn.addEventListener('click',e=>{e.stopPropagation();nav.classList.toggle('open');btn.textContent=nav.classList.contains('open')?'✕':'☰';});
   nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{ nav.classList.remove('open'); btn.textContent='☰'; }));
   document.addEventListener('click',e=>{if(!nav.contains(e.target)&&!btn.contains(e.target)) nav.classList.remove('open');});
+})();
+</script>
+<script>
+/* ── MOBILE D-PAD ── */
+(function(){
+  document.querySelectorAll('.mob-dpad-btn[data-key],.mob-dpad-fire[data-key]').forEach(function(btn){
+    var key=btn.dataset.key;
+    function press(e){e.preventDefault();keysHeld[key]=true;btn.classList.add('pressed');}
+    function release(e){e.preventDefault();keysHeld[key]=false;btn.classList.remove('pressed');}
+    btn.addEventListener('touchstart',press,{passive:false});
+    btn.addEventListener('touchend',release,{passive:false});
+    btn.addEventListener('touchcancel',release,{passive:false});
+    btn.addEventListener('mousedown',press);
+    btn.addEventListener('mouseup',release);
+    btn.addEventListener('mouseleave',release);
+  });
 })();
 </script>
 </body>

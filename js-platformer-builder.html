@@ -205,6 +205,50 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 }
 /* ─────────────────────────────────────────────────────── */
 
+
+/* ── MOBILE D-PAD ─────────────────────────────────────────── */
+.mob-dpad-wrap{
+  display:none;justify-content:center;align-items:center;
+  gap:10px;padding:10px 12px 14px;
+  border-top:1px solid var(--border);
+  background:rgba(0,0,0,.28);flex-shrink:0;
+}
+@media(max-width:860px){.mob-dpad-wrap{display:flex;}}
+.mob-dpad{
+  display:grid;
+  grid-template-columns:50px 50px 50px;
+  grid-template-rows:50px 50px 50px;
+  gap:4px;
+}
+.mob-dpad-btn{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;font-size:1.15rem;
+  cursor:pointer;user-select:none;-webkit-user-select:none;
+  touch-action:none;
+  transition:background .1s,transform .1s;
+}
+.mob-dpad-btn:active,.mob-dpad-btn.pressed{
+  background:rgba(255,255,255,.22);transform:scale(.9);
+}
+.mob-dpad-blank{background:transparent;border:none;}
+.mob-dpad-fire{
+  width:50px;height:50px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;cursor:pointer;user-select:none;
+  touch-action:none;
+  transition:background .1s,transform .1s;
+}
+.mob-dpad-fire:active,.mob-dpad-fire.pressed{transform:scale(.9);}
+.mob-dpad-hint{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.46rem;color:var(--muted);
+  text-align:center;line-height:1.7;
+  letter-spacing:.03em;max-width:70px;
+}
+/* ─────────────────────────────────────────────────────────── */
+
 </style>
 </head>
 <body>
@@ -278,6 +322,21 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     </div>
     <div class="canvas-wrap">
       <canvas id="gc" width="360" height="400"></canvas>
+    </div>
+    <!-- Mobile d-pad -->
+    <div class="mob-dpad-wrap">
+      <div class="mob-dpad">
+        <div class="mob-dpad-blank"></div>
+        <button class="mob-dpad-btn" data-key="ArrowUp"    aria-label="Jump">↑</button>
+        <div class="mob-dpad-blank"></div>
+        <button class="mob-dpad-btn" data-key="ArrowLeft"  aria-label="Left">←</button>
+        <div class="mob-dpad-blank"></div>
+        <button class="mob-dpad-btn" data-key="ArrowRight" aria-label="Right">→</button>
+        <div class="mob-dpad-blank"></div>
+        <button class="mob-dpad-btn" data-key="r"          aria-label="Restart" style="font-size:.7rem;letter-spacing:.05em;">R</button>
+        <div class="mob-dpad-blank"></div>
+      </div>
+      <div class="mob-dpad-hint">D-pad<br>to play</div>
     </div>
     <div class="game-hint">← → Move &nbsp;|&nbsp; ↑ or Space = Jump &nbsp;|&nbsp; Stomp enemies from above &nbsp;|&nbsp; R = Restart</div>
   </div>
@@ -1097,6 +1156,22 @@ goTo(0);
   btn.addEventListener('click', e => { e.stopPropagation(); nav.classList.toggle('open'); btn.textContent = nav.classList.contains('open') ? '✕' : '☰'; });
   nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { nav.classList.remove('open'); btn.textContent = '☰'; }));
   document.addEventListener('click', e => { if (!nav.contains(e.target) && !btn.contains(e.target)) nav.classList.remove('open'); });
+})();
+</script>
+<script>
+/* ── MOBILE D-PAD ── */
+(function(){
+  document.querySelectorAll('.mob-dpad-btn[data-key],.mob-dpad-fire[data-key]').forEach(function(btn){
+    var key=btn.dataset.key;
+    function press(e){e.preventDefault();keys[key]=true;btn.classList.add('pressed');}
+    function release(e){e.preventDefault();keys[key]=false;btn.classList.remove('pressed');}
+    btn.addEventListener('touchstart',press,{passive:false});
+    btn.addEventListener('touchend',release,{passive:false});
+    btn.addEventListener('touchcancel',release,{passive:false});
+    btn.addEventListener('mousedown',press);
+    btn.addEventListener('mouseup',release);
+    btn.addEventListener('mouseleave',release);
+  });
 })();
 </script>
 </body>
