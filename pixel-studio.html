@@ -340,10 +340,16 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
     <div class="ps" style="margin-top:auto;">
       <button class="ab ab-p" onclick="exportPNG()">⬇ Export PNG</button>
       <button class="ab ab-g" onclick="exportSheet()">⬇ Spritesheet</button>
+      <div class="pdiv" style="margin:4px 0;"></div>
+      <button class="ab ab-s" onclick="triggerImportPNG()">⬆ Import PNG</button>
+      <button class="ab ab-s" onclick="openImportSheet()">⬆ Import Sheet</button>
+      <div class="pdiv" style="margin:4px 0;"></div>
       <button class="ab ab-s" onclick="saveProject()">💾 Save</button>
       <button class="ab ab-s" onclick="loadProject()">📂 Load</button>
       <button class="ab ab-r" onclick="confirmClear()">🗑 Clear</button>
     </div>
+    <input type="file" id="importPNGInput" accept="image/*" style="display:none;" onchange="handleImportPNG(this)">
+    <input type="file" id="importSheetInput" accept="image/*" style="display:none;" onchange="handleImportSheet(this)">
   </div>
 
   <!-- CANVAS -->
@@ -462,6 +468,46 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
     <canvas id="preview-canvas" width="128" height="128"></canvas>
     <div class="modal-btns" style="margin-top:8px;">
       <button class="m-cancel" onclick="closeModal('gifModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT SHEET MODAL -->
+<div class="modal-overlay" id="importSheetModal">
+  <div class="modal" style="max-width:360px;">
+    <h3>⬆ Import Spritesheet</h3>
+    <p>Set the size of each frame in the sheet. Frames are read left-to-right, top-to-bottom.</p>
+    <canvas id="importPreviewCanvas" style="width:100%;max-height:140px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/8px 8px;display:block;margin-bottom:10px;image-rendering:pixelated;"></canvas>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div>
+        <div style="font-size:.5rem;color:var(--muted);margin-bottom:3px;">FRAME WIDTH (px)</div>
+        <input id="sheetFW" type="number" min="1" max="512" value="16" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:inherit;" oninput="updateSheetPreview()">
+      </div>
+      <div>
+        <div style="font-size:.5rem;color:var(--muted);margin-bottom:3px;">FRAME HEIGHT (px)</div>
+        <input id="sheetFH" type="number" min="1" max="512" value="16" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:inherit;" oninput="updateSheetPreview()">
+      </div>
+    </div>
+    <div id="sheetInfo" style="font-size:.55rem;color:var(--accent2);margin-bottom:10px;min-height:1.2em;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+      <div>
+        <div style="font-size:.5rem;color:var(--muted);margin-bottom:3px;">IMPORT AS</div>
+        <select id="sheetImportMode" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.6rem;font-family:inherit;">
+          <option value="frames">Separate Frames</option>
+          <option value="layer">Single Layer (frame 1 only)</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.5rem;color:var(--muted);margin-bottom:3px;">RESIZE CANVAS</div>
+        <select id="sheetResizeMode" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.6rem;font-family:inherit;">
+          <option value="yes">Yes — fit frame size</option>
+          <option value="no">No — keep current</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="m-cancel" onclick="closeModal('importSheetModal')">Cancel</button>
+      <button class="m-ok" onclick="confirmImportSheet()">Import</button>
     </div>
   </div>
 </div>
@@ -603,24 +649,31 @@ function renderAll(){
     layers.forEach((_,li)=>{
       const id=frames[currentFrame-1][li];
       if(!id||!layers[li].visible) return;
-      const tmp=document.createElement('canvas');
-      tmp.width=cW;tmp.height=cH;
-      tmp.getContext('2d').putImageData(id,0,0);
-      onionCtx.globalAlpha=0.28;
-      onionCtx.drawImage(tmp,0,0,pw,ph);
+      for(let y=0;y<cH;y++) for(let x=0;x<cW;x++){
+        const i=(y*cW+x)*4, a=id.data[i+3];
+        if(a===0) continue;
+        onionCtx.globalAlpha=(a/255)*0.28;
+        onionCtx.fillStyle='rgb('+id.data[i]+','+id.data[i+1]+','+id.data[i+2]+')';
+        onionCtx.fillRect(x*zoomLevel,y*zoomLevel,zoomLevel,zoomLevel);
+      }
       onionCtx.globalAlpha=1;
     });
   }
 
-  // Layers
+  // Layers — draw each pixel directly at zoom scale to avoid smoothing bleed
   layers.forEach((_,li)=>{
     if(!layers[li].visible) return;
     const id=frames[currentFrame][li];
     if(!id) return;
-    const tmp=document.createElement('canvas');
-    tmp.width=cW;tmp.height=cH;
-    tmp.getContext('2d').putImageData(id,0,0);
-    mainCtx.drawImage(tmp,0,0,pw,ph);
+    for(let y=0;y<cH;y++){
+      for(let x=0;x<cW;x++){
+        const i=(y*cW+x)*4;
+        const a=id.data[i+3];
+        if(a===0) continue;
+        mainCtx.fillStyle='rgba('+id.data[i]+','+id.data[i+1]+','+id.data[i+2]+','+(a/255)+')';
+        mainCtx.fillRect(x*zoomLevel,y*zoomLevel,zoomLevel,zoomLevel);
+      }
+    }
   });
 
   if(showGrid&&zoomLevel>=4) drawGrid();
@@ -1013,6 +1066,177 @@ function exportGIF(){
     pctx.drawImage(flattenFrame(fi),0,0,pc.width,pc.height);
     fi=(fi+1)%frames.length;
   },1000/fps);
+}
+
+// ══════════════════════════════════════════════
+// IMPORT PNG / SPRITESHEET
+// ══════════════════════════════════════════════
+let _importSheetImg = null;
+
+function triggerImportPNG(){
+  const inp = document.getElementById('importPNGInput');
+  inp.value = '';
+  inp.click();
+}
+
+function handleImportPNG(input){
+  const file = input.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    // Clamp to max canvas size
+    const w = Math.min(128, img.naturalWidth);
+    const h = Math.min(128, img.naturalHeight);
+    // Resize canvas to match image
+    cW = w; cH = h;
+    frames = frames.map(f => f.map(() => new ImageData(cW, cH)));
+    autoZoom();
+    resizeCanvases();
+    // Draw image into current layer pixel-perfect (no smoothing)
+    const tmp = document.createElement('canvas');
+    tmp.width = w; tmp.height = h;
+    const tctx = tmp.getContext('2d');
+    tctx.imageSmoothingEnabled = false;
+    tctx.drawImage(img, 0, 0, w, h);
+    frames[currentFrame][currentLayer] = tctx.getImageData(0, 0, w, h);
+    renderLayerList(); renderFrameList(); renderAll();
+    URL.revokeObjectURL(url);
+    showToast('Imported ' + w + '×' + h + ' PNG ✓');
+    // Update custom size inputs
+    const cw = document.getElementById('custW'), ch = document.getElementById('custH');
+    if(cw) cw.value = w; if(ch) ch.value = h;
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('on'));
+  };
+  img.onerror = () => { showToast('Failed to load image'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+function openImportSheet(){
+  const inp = document.getElementById('importSheetInput');
+  inp.value = '';
+  inp.click();
+}
+
+function handleImportSheet(input){
+  const file = input.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    _importSheetImg = img;
+    // Auto-guess frame size from canvas current size
+    const fw = document.getElementById('sheetFW');
+    const fh = document.getElementById('sheetFH');
+    fw.value = cW; fh.value = cH;
+    updateSheetPreview();
+    document.getElementById('importSheetModal').classList.add('open');
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = () => { showToast('Failed to load image'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+function updateSheetPreview(){
+  if(!_importSheetImg) return;
+  const fw = Math.max(1, parseInt(document.getElementById('sheetFW').value)||16);
+  const fh = Math.max(1, parseInt(document.getElementById('sheetFH').value)||16);
+  const iw = _importSheetImg.naturalWidth, ih = _importSheetImg.naturalHeight;
+  const cols = Math.floor(iw / fw), rows = Math.floor(ih / fh);
+  const total = cols * rows;
+
+  // Draw preview with grid overlay
+  const pc = document.getElementById('importPreviewCanvas');
+  // Scale to fit preview box (~300px wide, 140px tall max)
+  const scaleW = Math.min(1, 300 / iw), scaleH = Math.min(1, 140 / ih);
+  const sc = Math.min(scaleW, scaleH);
+  pc.width = Math.round(iw * sc);
+  pc.height = Math.round(ih * sc);
+  const pctx = pc.getContext('2d');
+  pctx.imageSmoothingEnabled = false;
+  pctx.clearRect(0, 0, pc.width, pc.height);
+  pctx.drawImage(_importSheetImg, 0, 0, pc.width, pc.height);
+  // Grid lines
+  pctx.strokeStyle = 'rgba(233,69,96,0.7)';
+  pctx.lineWidth = 1;
+  for(let c = 0; c <= cols; c++){
+    pctx.beginPath(); pctx.moveTo(c * fw * sc, 0); pctx.lineTo(c * fw * sc, pc.height); pctx.stroke();
+  }
+  for(let r = 0; r <= rows; r++){
+    pctx.beginPath(); pctx.moveTo(0, r * fh * sc); pctx.lineTo(pc.width, r * fh * sc); pctx.stroke();
+  }
+
+  const info = document.getElementById('sheetInfo');
+  if(total < 1){
+    info.textContent = '⚠ Frame size larger than image — no frames found';
+    info.style.color = 'var(--accent)';
+  } else {
+    info.textContent = `${iw}×${ih}px image → ${cols} col × ${rows} row = ${total} frame${total!==1?'s':''}`;
+    info.style.color = 'var(--accent2)';
+  }
+}
+
+function confirmImportSheet(){
+  if(!_importSheetImg){ closeModal('importSheetModal'); return; }
+  const fw = Math.max(1, parseInt(document.getElementById('sheetFW').value)||16);
+  const fh = Math.max(1, parseInt(document.getElementById('sheetFH').value)||16);
+  const iw = _importSheetImg.naturalWidth, ih = _importSheetImg.naturalHeight;
+  const cols = Math.floor(iw / fw), rows = Math.floor(ih / fh);
+  const total = cols * rows;
+  if(total < 1){ showToast('No frames found — check frame size'); return; }
+
+  const mode = document.getElementById('sheetImportMode').value;
+  const doResize = document.getElementById('sheetResizeMode').value === 'yes';
+
+  // Draw full sheet onto an offscreen canvas
+  const src = document.createElement('canvas');
+  src.width = iw; src.height = ih;
+  const sctx = src.getContext('2d');
+  sctx.imageSmoothingEnabled = false;
+  sctx.drawImage(_importSheetImg, 0, 0);
+
+  if(doResize){
+    cW = Math.min(128, fw);
+    cH = Math.min(128, fh);
+    frames = frames.map(f => f.map(() => new ImageData(cW, cH)));
+    autoZoom(); resizeCanvases();
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('on'));
+  }
+
+  const targetW = Math.min(128, fw), targetH = Math.min(128, fh);
+
+  if(mode === 'layer'){
+    // Just import first frame into current layer
+    const id = sctx.getImageData(0, 0, targetW, targetH);
+    frames[currentFrame][currentLayer] = id;
+  } else {
+    // Import each cell as a separate frame on the current layer
+    // Replace existing frames with imported ones (preserve extra frames if any)
+    const needed = total;
+    // Add frames until we have enough
+    while(frames.length < needed){
+      frames.push(layers.map(() => null));
+    }
+    // Remove extras? No — just overwrite the first `total` frames
+    for(let i = 0; i < total; i++){
+      const col = i % cols, row = Math.floor(i / cols);
+      const sx = col * fw, sy = row * fh;
+      // Extract cell
+      const cellCanvas = document.createElement('canvas');
+      cellCanvas.width = targetW; cellCanvas.height = targetH;
+      const cctx = cellCanvas.getContext('2d');
+      cctx.imageSmoothingEnabled = false;
+      cctx.drawImage(src, sx, sy, fw, fh, 0, 0, targetW, targetH);
+      if(!frames[i]) frames[i] = layers.map(() => null);
+      frames[i][currentLayer] = cctx.getImageData(0, 0, targetW, targetH);
+    }
+    currentFrame = 0;
+  }
+
+  _importSheetImg = null;
+  closeModal('importSheetModal');
+  renderLayerList(); renderFrameList(); renderAll();
+  showToast('Imported ' + total + ' frame' + (total!==1?'s':'') + ' ✓');
 }
 
 // ══════════════════════════════════════════════
