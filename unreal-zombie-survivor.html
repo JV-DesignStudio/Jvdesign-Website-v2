@@ -59,9 +59,9 @@ a{text-decoration:none;color:inherit}
 .sc-r{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:.66rem}
 
 /* MAIN LAYOUT */
-.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 52px)}
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 160px);align-items:start}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}}
-.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:600px}
 .step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
 .step-tabs::-webkit-scrollbar{display:none}
 .tb{flex-shrink:0;padding:10px 7px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
@@ -140,7 +140,7 @@ a{text-decoration:none;color:inherit}
 .wbuy-desc{font-size:.58rem;color:var(--muted);margin-top:2px;line-height:1.3}
 
 /* GAME COL */
-.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px)}
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px);min-height:500px}
 @media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
 .game-top{padding:6px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .game-top-l{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -500,11 +500,11 @@ const WEAPONS={
 };
 // Wall buy layout: which weapon at which position
 const WALL_BUYS=[
-  {wpn:'smg',    x:.08, y:.35},
-  {wpn:'shotgun',x:.08, y:.65},
-  {wpn:'ak',     x:.92, y:.35},
-  {wpn:'sniper', x:.92, y:.65},
-  {wpn:'lmg',    x:.5,  y:.04},
+  {wpn:'smg',    x:.14, y:.5 },  // left corridor centre
+  {wpn:'shotgun',x:.86, y:.5 },  // right corridor centre
+  {wpn:'ak',     x:.5,  y:.14},  // top corridor centre
+  {wpn:'sniper', x:.5,  y:.86},  // bottom corridor centre
+  {wpn:'lmg',    x:.19, y:.19},  // top-left corner (reachable via left/top corridors)
 ];
 const BOX_POOL=['shotgun','ak','sniper','lmg','rocket','wonder','smg'];
 const BOX_COST=950;
@@ -514,30 +514,30 @@ const BOX_COST=950;
 ═══════════════════════════════════════════ */
 const canvas=document.getElementById('gc');
 const ctx=canvas.getContext('2d');
-let CW=400,CH=400;
+let CW=650,CH=650;
 
 function resizeGame(){
   const wrap=document.getElementById('gameWrap');
   if(!wrap)return;
-  const pad=12;
-  const availW=wrap.clientWidth-pad;
-  const availH=wrap.clientHeight-pad;
-  // Use the larger of width or height, capped so it fits both dimensions
-  const s=Math.max(Math.min(availW,availH||availW),280);
+  const availW=wrap.clientWidth||wrap.offsetWidth||400;
+  const availH=wrap.clientHeight||wrap.offsetHeight||0;
+  const s=Math.max(availH>120?Math.min(availW-12,availH-12):availW-12,320);
   CW=s;CH=s;
   canvas.width=CW;canvas.height=CH;
-  // Reposition box after resize
-  if(G)G.boxAnim.x=CW*.65,G.boxAnim.y=CH*.5;
-  if(G&&G.f_barricades&&G.barricades.length)buildBars();
+  canvas.style.width=CW+'px';canvas.style.height=CH+'px';
+  if(typeof G!=='undefined'){
+    G.boxAnim.x=CW*.5;G.boxAnim.y=CH*.5;
+    if(G.f_barricades&&G.barricades.length)buildBars();
+  }
 }
-window.addEventListener('resize',resizeGame);resizeGame();
+window.addEventListener('resize',()=>requestAnimationFrame(resizeGame));
 
 const G={
   phase:'title',
   p:{x:200,y:200,r:11,hp:100,maxHp:100,angle:0,
      wpn:'pistol',ammo:12,reloading:false,reloadT:0},
   points:0,kills:0,round:1,bestRound:0,
-  zombies:[],bullets:[],particles:[],
+  zombies:[],bullets:[],particles:[],walls:[],
   barricades:[],
   lastShot:0,shakeT:0,shakeAmt:0,
   roundActive:false,zombiesLeft:0,
@@ -598,6 +598,18 @@ bindCtrl('mb-',false);
 bindCtrl('fs-',true);
 
 function tryBuy(){
+  // Barricade repair — free, always available when near a damaged barricade
+  if(G.f_barricades&&G.promptBuy.repairIdx>=0){
+    const b=G.barricades[G.promptBuy.repairIdx];
+    if(b){
+      const wasDestroyed=b.destroyed;
+      b.hp=wasDestroyed?35:Math.min(100,b.hp+40);
+      b.destroyed=false;
+      spawnPtcl(b.x+b.w/2,b.y+b.h/2,'#4ade80',6);
+      sout('🔨 Barricade '+(wasDestroyed?'rebuilt':'repaired')+'! ('+Math.round(b.hp)+'hp)');
+      return;
+    }
+  }
   if(!G.f_wallbuy&&!G.f_box)return;
   const px=G.p.x/CW,py=G.p.y/CH;
   // Check wall buys
@@ -645,37 +657,123 @@ function startGame(){
   G.zombies=[];G.bullets=[];G.particles=[];
   G.round=1;G.kills=0;G.points=0;
   G.lastShot=0;G.interRound=false;G.roundActive=false;
-  G.boxAnim={active:false,timer:0,x:CW*.65,y:CH*.5,idx:0,result:null};
-  if(G.f_barricades)buildBars();
-  spawnRound();updateHUD();
+  G.boxAnim={active:false,timer:0,x:CW*.5,y:CH*.5,idx:0,result:null};
+  G.walls=[];buildBars(); // always build map geometry
+  spawnRound();updateHUD();sout('🧟 Round 1! WASD=move · Click=shoot · E near planks=repair barricade · E near wall sign=buy weapon');
+}
+
+/* MAP GEOMETRY
+   Outer boundary = full canvas edge (drawn as thick walls)
+   4 doorways cut into the outer wall — each has a barricade the player can defend
+   Inner safe zone = central room 30%–70% of map
+   Corridors connect outer wall gaps to the inner room
+   Solid walls block movement outside corridors
+   Wall buys sit on corridor walls
+   Mystery box is in the centre room
+*/
+function getMap(){
+  const W=CW,H=CH,T=Math.round(W*.032); // wall thickness (thinner = more playable space)
+  const iL=Math.round(W*.22),iR=Math.round(W*.78); // inner room wider: 22%–78%
+  const iT=Math.round(H*.22),iB=Math.round(H*.78); // inner room taller: 22%–78%
+  const gHalf=Math.round(W*.115); // wider doorways (11.5% each side = 23% opening)
+  const cx=W/2,cy=H/2;
+  // Static solid walls (player + zombie collision, never destroyed)
+  // Outer top wall: two segments either side of top-centre gap
+  const walls=[
+    // Top outer wall — left segment
+    {x:0,         y:0,   w:cx-gHalf, h:T},
+    // Top outer wall — right segment
+    {x:cx+gHalf,  y:0,   w:W-(cx+gHalf), h:T},
+    // Bottom outer wall — left segment
+    {x:0,         y:H-T, w:cx-gHalf, h:T},
+    // Bottom outer wall — right segment
+    {x:cx+gHalf,  y:H-T, w:W-(cx+gHalf), h:T},
+    // Left outer wall — top segment
+    {x:0,y:0,    w:T,h:cy-gHalf},
+    // Left outer wall — bottom segment
+    {x:0,y:cy+gHalf,w:T,h:H-(cy+gHalf)},
+    // Right outer wall — top segment
+    {x:W-T,y:0,  w:T,h:cy-gHalf},
+    // Right outer wall — bottom segment
+    {x:W-T,y:cy+gHalf,w:T,h:H-(cy+gHalf)},
+    // Inner room — top wall, left segment
+    {x:iL,y:iT,w:cx-gHalf-iL,h:T},
+    // Inner room — top wall, right segment
+    {x:cx+gHalf,y:iT,w:iR-(cx+gHalf),h:T},
+    // Inner room — bottom wall, left segment
+    {x:iL,y:iB,w:cx-gHalf-iL,h:T},
+    // Inner room — bottom wall, right segment
+    {x:cx+gHalf,y:iB,w:iR-(cx+gHalf),h:T},
+    // Inner room — left wall, top segment
+    {x:iL,y:iT,w:T,h:cy-gHalf-iT},
+    // Inner room — left wall, bottom segment
+    {x:iL,y:cy+gHalf,w:T,h:iB-(cy+gHalf)},
+    // Inner room — right wall, top segment
+    {x:iR,y:iT,w:T,h:cy-gHalf-iT},
+    // Inner room — right wall, bottom segment
+    {x:iR,y:cy+gHalf,w:T,h:iB-(cy+gHalf)},
+    // Corridor side walls (close off areas that aren't corridors)
+    // Top-left corner filler (seals NW quadrant diagonals)
+    {x:T,  y:T,  w:iL-T,    h:iT-T},
+    // Top-right corner filler
+    {x:iR+T,y:T, w:W-T-(iR+T),h:iT-T},
+    // Bottom-left corner filler
+    {x:T,  y:iB+T,w:iL-T,   h:H-T-(iB+T)},
+    // Bottom-right corner filler
+    {x:iR+T,y:iB+T,w:W-T-(iR+T),h:H-T-(iB+T)},
+  ];
+  // Doorways: 4 gaps in outer wall, each gets a barricade
+  // Top door: cx-gHalf .. cx+gHalf, y=0..T
+  // Bottom door: same x, y=H-T..H
+  // Left door: x=0..T, cy-gHalf..cy+gHalf
+  // Right door: x=W-T..W, same y
+  const bT=Math.round(T*1.6); // barricade thickness (slightly thicker than wall)
+  const barricades=[
+    // Top doorway barricade
+    {x:cx-gHalf, y:0,   w:gHalf*2, h:bT, hp:100, door:'top'},
+    // Bottom doorway barricade
+    {x:cx-gHalf, y:H-bT,w:gHalf*2, h:bT, hp:100, door:'bottom'},
+    // Left doorway barricade
+    {x:0,   y:cy-gHalf, w:bT, h:gHalf*2, hp:100, door:'left'},
+    // Right doorway barricade
+    {x:W-bT,y:cy-gHalf, w:bT, h:gHalf*2, hp:100, door:'right'},
+    // Inner room top door barricade
+    {x:cx-gHalf,y:iT,   w:gHalf*2, h:bT, hp:100, door:'inner-top'},
+    // Inner room bottom door barricade
+    {x:cx-gHalf,y:iB-bT,w:gHalf*2, h:bT, hp:100, door:'inner-bottom'},
+    // Inner room left door barricade
+    {x:iL,   y:cy-gHalf,w:bT, h:gHalf*2, hp:100, door:'inner-left'},
+    // Inner room right door barricade
+    {x:iR-bT,y:cy-gHalf,w:bT, h:gHalf*2, hp:100, door:'inner-right'},
+  ];
+  return {walls,barricades,iL,iR,iT,iB,T,gHalf,cx,cy};
 }
 
 function buildBars(){
-  G.barricades=[
-    {x:CW*.18,y:CH*.22,w:CW*.14,h:9,hp:100},
-    {x:CW*.56,y:CH*.22,w:CW*.14,h:9,hp:100},
-    {x:CW*.18,y:CH*.72,w:CW*.14,h:9,hp:100},
-    {x:CW*.56,y:CH*.72,w:CW*.14,h:9,hp:100},
-    {x:CW*.44,y:CH*.09,w:9,h:CH*.18,hp:100},
-    {x:CW*.44,y:CH*.64,w:9,h:CH*.18,hp:100},
-  ];
+  const m=getMap();
+  G.walls=m.walls;
+  G.barricades=m.barricades;
+  G._map=m;
 }
 
 function spawnRound(){
   G.roundActive=true;
   const n=Math.min(4+G.round*2,30);
   G.zombiesLeft=n;
+  const cx=CW/2,cy=CH/2;
+  // Spawn just outside each of the 4 outer doorways so zombies funnel through
+  const spawnPts=[
+    ()=>({x:cx+(Math.random()-.5)*CW*.12, y:-18}),          // top door
+    ()=>({x:cx+(Math.random()-.5)*CW*.12, y:CH+18}),        // bottom door
+    ()=>({x:-18, y:cy+(Math.random()-.5)*CH*.12}),           // left door
+    ()=>({x:CW+18, y:cy+(Math.random()-.5)*CH*.12}),         // right door
+  ];
   for(let i=0;i<n;i++){
-    const side=Math.floor(Math.random()*4);
-    let zx,zy;
-    if(side===0){zx=Math.random()*CW;zy=-14;}
-    else if(side===1){zx=CW+14;zy=Math.random()*CH;}
-    else if(side===2){zx=Math.random()*CW;zy=CH+14;}
-    else{zx=-14;zy=Math.random()*CH;}
+    const sp=spawnPts[i%4]();
     const big=G.round>3&&Math.random()<.15;
     const runner=G.round>5&&Math.random()<.2;
     const maxHp=(big?200:50)+G.round*12;
-    G.zombies.push({x:zx,y:zy,hp:maxHp,maxHp,
+    G.zombies.push({x:sp.x,y:sp.y,hp:maxHp,maxHp,
       spd:(runner?1.8:.72)+G.round*.05,r:big?13:runner?7:9,
       hit:0,big,runner,pts:big?200:runner?150:100});
   }
@@ -699,7 +797,7 @@ function update(dt){
     if(G.keys['KeyD']||G.keys['ArrowRight'])mx=1;
     const len=Math.hypot(mx,my)||1;
     if(mx||my){
-      const spd=2.6*dt;
+      const spd=3.2*dt;
       let nx=p.x+mx/len*spd,ny=p.y+my/len*spd;
       if(!hitBar(nx,p.y,p.r))p.x=nx;
       if(!hitBar(p.x,ny,p.r))p.y=ny;
@@ -741,7 +839,10 @@ function update(dt){
     b.x+=b.vx;b.y+=b.vy;b.life--;
     if(b.life<=0||b.x<-10||b.x>CW+10||b.y<-10||b.y>CH+10){G.bullets.splice(i,1);continue;}
     let stopped=false;
-    for(const bar of G.barricades){if(b.x>bar.x&&b.x<bar.x+bar.w&&b.y>bar.y&&b.y<bar.y+bar.h){G.bullets.splice(i,1);stopped=true;break;}}
+    // Stop on static walls
+    if(G.walls){for(const w2 of G.walls){if(b.x>w2.x&&b.x<w2.x+w2.w&&b.y>w2.y&&b.y<w2.y+w2.h){G.bullets.splice(i,1);stopped=true;break;}}}
+    if(stopped)continue;
+    // Bullets pass through barricades — only stop on solid walls
     if(stopped)continue;
   }
 
@@ -751,14 +852,20 @@ function update(dt){
     const dx=p.x-z.x,dy=p.y-z.y,dist=Math.hypot(dx,dy);
     if(dist>.5){
       let nx=z.x+dx/dist*z.spd*dt,ny=z.y+dy/dist*z.spd*dt;
-      if(!hitBar(nx,z.y,z.r-2))z.x=nx;
-      if(!hitBar(z.x,ny,z.r-2))z.y=ny;
+      if(!hitBarZombie(nx,z.y,z.r-2))z.x=nx;
+      if(!hitBarZombie(z.x,ny,z.r-2))z.y=ny;
     }
-    // Damage barricades
+    // Damage barricades (only inner ones slow zombies; outer ones face zombie paths)
     for(let bi=G.barricades.length-1;bi>=0;bi--){
       const bar=G.barricades[bi];
       if(z.x+z.r>bar.x&&z.x-z.r<bar.x+bar.w&&z.y+z.r>bar.y&&z.y-z.r<bar.y+bar.h){
-        bar.hp-=.07*dt;if(bar.hp<=0){G.barricades.splice(bi,1);spawnPtcl(bar.x+bar.w/2,bar.y,'#c84',4);}
+        const dmgRate=bar.door&&bar.door.startsWith('inner')?0.05:0.09;
+        bar.hp-=dmgRate*dt;
+        if(bar.hp<=0){
+          bar.hp=0;bar.destroyed=true;
+          spawnPtcl(bar.x+bar.w/2,bar.y+bar.h/2,'#c84',6);
+          sout('💥 Barricade down! Walk up and press E to rebuild.');
+        }
       }
     }
     // Hit player
@@ -819,9 +926,22 @@ function update(dt){
     sout('💀 Died on Round '+G.round+'. '+G.kills+' kills. Click to restart.');
   }
 
-  // Wall buy proximity prompt
-  G.promptBuy={active:false,buyIdx:-1,label:''};
-  if(G.f_wallbuy){
+  // Proximity prompts — barricade repair, wall buy, mystery box
+  G.promptBuy={active:false,buyIdx:-1,label:'',repairIdx:-1};
+  // Barricade repair check (highest priority — always available)
+  if(G.f_barricades){
+    const REPAIR_RANGE=CW*.1;
+    for(let i=0;i<G.barricades.length;i++){
+      const b=G.barricades[i];
+      const bCx=b.x+b.w/2,bCy=b.y+b.h/2;
+      if(Math.hypot(G.p.x-bCx,G.p.y-bCy)<REPAIR_RANGE&&(b.hp<100||b.destroyed)){
+        G.promptBuy={active:true,buyIdx:-88,repairIdx:i,
+          label:`[E] ${b.destroyed?'Rebuild':'Repair'} barricade${b.destroyed?'':' ('+Math.round(b.hp)+'hp)'} — FREE`};
+        break;
+      }
+    }
+  }
+  if(!G.promptBuy.active&&G.f_wallbuy){
     const px2=G.p.x/CW,py2=G.p.y/CH;
     for(let i=0;i<WALL_BUYS.length;i++){
       const wb=WALL_BUYS[i];
@@ -829,7 +949,7 @@ function update(dt){
         const w2=WEAPONS[wb.wpn];
         const isSame=G.p.wpn===wb.wpn;
         const cost=isSame?Math.floor(w2.cost*.4)||200:w2.cost;
-        G.promptBuy={active:true,buyIdx:i,label:`[E] ${isSame?'Refill ammo':'Buy '+w2.name} — ${cost} pts`};
+        G.promptBuy={active:true,buyIdx:i,repairIdx:-1,label:`[E] ${isSame?'Refill ammo':'Buy '+w2.name} — ${cost} pts`};
         break;
       }
     }
@@ -837,7 +957,7 @@ function update(dt){
     if(!G.promptBuy.active&&G.f_box&&!G.boxAnim.active){
       const bx=G.boxAnim.x/CW,by=G.boxAnim.y/CH;
       if(Math.hypot(G.p.x/CW-bx,G.p.y/CH-by)*CW<50){
-        G.promptBuy={active:true,buyIdx:-99,label:`[E] Mystery Box — ${BOX_COST} pts`};
+        G.promptBuy={active:true,buyIdx:-99,repairIdx:-1,label:`[E] Mystery Box — ${BOX_COST} pts`};
       }
     }
   }
@@ -845,9 +965,23 @@ function update(dt){
   updateHUD();
 }
 
+// Player only hits static walls — can walk through barricades freely
 function hitBar(x,y,r){
-  if(!G.f_barricades)return false;
-  for(const b of G.barricades){if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;}
+  if(G.f_arena&&G.walls){
+    for(const b of G.walls){if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;}
+  }
+  return false;
+}
+// Zombies hit both walls AND barricades
+function hitBarZombie(x,y,r){
+  if(G.f_arena&&G.walls){
+    for(const b of G.walls){if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;}
+  }
+  if(G.f_barricades){
+    for(const b of G.barricades){
+      if(!b.destroyed&&x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;
+    }
+  }
   return false;
 }
 function spawnPtcl(x,y,col,n){
@@ -863,21 +997,122 @@ function draw(){
   if(!G.f_arena){drawTitle();ctx.restore();return;}
 
   const W=CW,H=CH;
-  // Floor
-  const gr=ctx.createLinearGradient(0,0,W,H);gr.addColorStop(0,'#16140e');gr.addColorStop(1,'#0c0a08');
-  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=1;
-  for(let gx=0;gx<W;gx+=22){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-  for(let gy=0;gy<H;gy+=22){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=3;ctx.strokeRect(2,2,W-4,H-4);
+  const m=G._map||getMap(); // use cached map or compute
 
-  // Barricades
+  // ── Background (unreachable corners = very dark) ──
+  ctx.fillStyle='#0a0804';ctx.fillRect(0,0,W,H);
+
+  // ── Corridor floors ──
+  const corridorCol='#1a1710';
+  ctx.fillStyle=corridorCol;
+  // Top corridor
+  ctx.fillRect(W/2-m.gHalf,m.T,m.gHalf*2,m.iT-m.T);
+  // Bottom corridor
+  ctx.fillRect(W/2-m.gHalf,m.iB+m.T,m.gHalf*2,H-m.T-(m.iB+m.T));
+  // Left corridor
+  ctx.fillRect(m.T,H/2-m.gHalf,m.iL-m.T,m.gHalf*2);
+  // Right corridor
+  ctx.fillRect(m.iR+m.T,H/2-m.gHalf,W-m.T-(m.iR+m.T),m.gHalf*2);
+
+  // ── Inner room floor ──
+  const innerGr=ctx.createLinearGradient(m.iL,m.iT,m.iR,m.iB);
+  innerGr.addColorStop(0,'#201e16');innerGr.addColorStop(1,'#18160e');
+  ctx.fillStyle=innerGr;ctx.fillRect(m.iL,m.iT,m.iR-m.iL,m.iB-m.iT);
+
+  // ── Floor tile grid (corridors + inner room only) ──
+  ctx.strokeStyle='rgba(255,255,255,.028)';ctx.lineWidth=1;
+  const tSize=Math.round(W/18);
+  for(let gx=0;gx<W;gx+=tSize){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(let gy=0;gy<H;gy+=tSize){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  // ── Static walls ──
+  if(G.walls){
+    G.walls.forEach(w2=>{
+      // Wall body
+      ctx.fillStyle='#2a2520';ctx.fillRect(w2.x,w2.y,w2.w,w2.h);
+      // Brick texture lines
+      ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1;
+      const bw=Math.round(tSize*.7),bh=Math.round(m.T*.45);
+      if(w2.w>=w2.h){
+        // Horizontal wall — draw horizontal brick rows
+        for(let by=w2.y;by<w2.y+w2.h;by+=bh){
+          const offset=(Math.floor((by-w2.y)/bh)%2)*Math.round(bw*.5);
+          for(let bx=w2.x+offset;bx<w2.x+w2.w;bx+=bw){
+            ctx.strokeRect(bx,by,bw,bh);
+          }
+        }
+      } else {
+        // Vertical wall — draw vertical brick columns
+        for(let bx=w2.x;bx<w2.x+w2.w;bx+=bh){
+          const offset=(Math.floor((bx-w2.x)/bh)%2)*Math.round(bw*.5);
+          for(let by=w2.y+offset;by<w2.y+w2.h;by+=bw){
+            ctx.strokeRect(bx,by,bh,bw);
+          }
+        }
+      }
+      // Wall top highlight
+      ctx.fillStyle='rgba(255,255,255,.06)';
+      if(w2.w>=w2.h){ctx.fillRect(w2.x,w2.y,w2.w,2);}
+      else{ctx.fillRect(w2.x,w2.y,2,w2.h);}
+    });
+  }
+
+  // Barricades (boarded-up doorways)
   if(G.f_barricades){
     G.barricades.forEach(b=>{
       const pct=b.hp/100;
-      ctx.fillStyle=`rgba(139,90,40,${.4+pct*.5})`;ctx.fillRect(b.x,b.y,b.w,b.h);
-      ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(b.x,b.y-5,Math.max(b.w,b.h),3);
-      ctx.fillStyle=pct>.5?'#4ade80':'#f5c842';ctx.fillRect(b.x,b.y-5,Math.max(b.w,b.h)*pct,3);
+      const horiz=b.w>=b.h;
+      // Destroyed barricade = rubble on floor (still visible, player can rebuild)
+      if(b.destroyed){
+        ctx.fillStyle='rgba(100,70,30,.35)';ctx.fillRect(b.x,b.y,b.w,b.h);
+        ctx.strokeStyle='rgba(245,200,66,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+        ctx.strokeRect(b.x+1,b.y+1,b.w-2,b.h-2);ctx.setLineDash([]);
+        ctx.fillStyle='rgba(245,200,66,.55)';ctx.font=`bold ${W*.024}px JetBrains Mono,monospace`;
+        ctx.textAlign='center';ctx.fillText('[E] Rebuild',b.x+b.w/2,b.y+b.h/2+4);
+        return;
+      }
+      // Wood plank base
+      ctx.fillStyle=`rgba(${Math.round(120+35*pct)},${Math.round(70+20*pct)},${Math.round(30+10*pct)},${.7+pct*.25})`;
+      ctx.fillRect(b.x,b.y,b.w,b.h);
+      // Plank lines
+      ctx.strokeStyle=`rgba(0,0,0,${.4+pct*.2})`;ctx.lineWidth=1.5;
+      if(horiz){
+        const planks=3;const ph=b.h/planks;
+        for(let pi=0;pi<planks;pi++){ctx.strokeRect(b.x+1,b.y+pi*ph,b.w-2,ph);}
+        // Nails
+        ctx.fillStyle='rgba(180,180,160,.8)';
+        for(let pi=0;pi<planks;pi++){
+          ctx.beginPath();ctx.arc(b.x+b.w*.2,b.y+pi*ph+ph*.5,2,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(b.x+b.w*.8,b.y+pi*ph+ph*.5,2,0,Math.PI*2);ctx.fill();
+        }
+      } else {
+        const planks=3;const pw=b.w/planks;
+        for(let pi=0;pi<planks;pi++){ctx.strokeRect(b.x+pi*pw,b.y+1,pw,b.h-2);}
+        ctx.fillStyle='rgba(180,180,160,.8)';
+        for(let pi=0;pi<planks;pi++){
+          ctx.beginPath();ctx.arc(b.x+pi*pw+pw*.5,b.y+b.h*.2,2,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(b.x+pi*pw+pw*.5,b.y+b.h*.8,2,0,Math.PI*2);ctx.fill();
+        }
+      }
+      // Damage cracks overlay
+      if(pct<.7){
+        ctx.strokeStyle=`rgba(0,0,0,${.5*(1-pct)})`;ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(b.x+b.w*.3,b.y);ctx.lineTo(b.x+b.w*.25,b.y+b.h);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(b.x+b.w*.65,b.y);ctx.lineTo(b.x+b.w*.7,b.y+b.h);ctx.stroke();
+      }
+      // HP bar above (horizontal bars) or to-left (vertical)
+      const barLen=Math.max(b.w,b.h);
+      ctx.fillStyle='rgba(0,0,0,.6)';
+      if(horiz){ctx.fillRect(b.x,b.y-6,barLen,4);}
+      else{ctx.fillRect(b.x-6,b.y,4,barLen);}
+      ctx.fillStyle=pct>.6?'#4ade80':pct>.3?'#f5c842':'#f87171';
+      if(horiz){ctx.fillRect(b.x,b.y-6,barLen*pct,4);}
+      else{ctx.fillRect(b.x-6,b.y,4,barLen*pct);}
+      // Glow when healthy
+      if(pct>.8){
+        ctx.strokeStyle=`rgba(74,222,128,${(pct-.8)*1.5})`;ctx.lineWidth=1.5;
+        ctx.strokeRect(b.x,b.y,b.w,b.h);
+      }
     });
   }
 
@@ -1004,10 +1239,13 @@ function draw(){
     // Buy prompt
     if(G.promptBuy.active){
       const lbl=G.promptBuy.label;
-      const tw=ctx.measureText(lbl).width+20;
-      ctx.fillStyle='rgba(245,200,66,.9)';ctx.fillRect(W/2-tw/2,H-38,tw,22);
-      ctx.fillStyle='#111';ctx.font=`bold ${W*.028}px JetBrains Mono,monospace`;ctx.textAlign='center';
-      ctx.fillText(lbl,W/2,H-22);
+      const isRepair=G.promptBuy.repairIdx>=0;
+      ctx.font=`bold ${W*.026}px JetBrains Mono,monospace`;ctx.textAlign='center';
+      const tw=ctx.measureText(lbl).width+22;
+      ctx.fillStyle=isRepair?'rgba(74,222,128,.88)':'rgba(245,200,66,.88)';
+      ctx.beginPath();ctx.roundRect(W/2-tw/2,H-40,tw,22,4);ctx.fill();
+      ctx.fillStyle='#0a1a0a';
+      ctx.fillText(lbl,W/2,H-24);
     }
   }
 
@@ -1373,7 +1611,18 @@ function updateProg(){
 G.bestRound=parseInt(localStorage.getItem('bz_best')||'0');
 updateCard();
 if(window.location.hash)parseHash();else loadProgress();
-resizeGame();renderStep();requestAnimationFrame(loop);
+renderStep();
+// Defer resize until layout has fully painted, then start the loop
+function initGame(){
+  resizeGame();
+  // Second frame ensures game-col height is measured correctly
+  requestAnimationFrame(()=>{resizeGame();requestAnimationFrame(loop);});
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',initGame);
+}else{
+  requestAnimationFrame(initGame);
+}
 </script>
 </body>
 </html>
