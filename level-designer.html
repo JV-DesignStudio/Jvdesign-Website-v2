@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Level Designer | JVDesignStudio</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#128506;&#65039;</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
+
 :root{
   --bg:#0f1117;--panel:#161b27;--panel2:#1c2333;--panel3:#222d40;
   --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.12);
@@ -32,9 +33,9 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 #left-panel{width:168px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 
 /* CANVAS AREA */
-#canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:#0a0c12;display:flex;align-items:center;justify-content:center;cursor:crosshair;}
-#level-canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
-#cursor-canvas{position:absolute;pointer-events:none;image-rendering:pixelated;}
+#canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:#0a0c12;display:flex;align-items:center;justify-content:center;cursor:none;}
+#level-canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
+#cursor-canvas{position:absolute;top:0;left:0;pointer-events:none;image-rendering:pixelated;}
 
 /* RIGHT PANEL */
 #right-panel{width:168px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;}
@@ -148,6 +149,7 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 #play-header{height:44px;background:rgba(0,0,0,.6);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08);}
 #play-title{font-family:'Fredoka',cursive;font-size:1rem;color:var(--accent3);}
 #play-stats{font-size:.62rem;color:var(--muted);flex:1;}
+#canvas-wrap{position:relative;line-height:0;flex-shrink:0;}
 #play-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
 #play-canvas{image-rendering:pixelated;image-rendering:crisp-edges;}
 #play-dpad{position:absolute;bottom:16px;left:16px;display:none;width:144px;height:96px;}
@@ -185,17 +187,23 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 .share-url{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--accent2);font-size:.55rem;font-family:'JetBrains Mono',monospace;outline:none;word-break:break-all;resize:none;}
 @media(max-width:699px){#play-dpad,#jump-btn{display:flex!important;}}
 
+
 </style>
-</head>
 <body>
 
 <header class="site-header">
   <a href="index.html" class="site-logo">
     <img src="logo.png" alt="JV" onerror="this.onerror=null;this.src='https://placehold.co/26x26/0f1117/3b82f6?text=JV'">
-    JVDesignStudio
+    <span>JVDesignStudio</span>
   </a>
-  <span class="site-title">🗺️ Level Designer</span>
-  <a href="workshop.html" class="site-back">← Workshop</a>
+  <div class="header-mid">
+    <input type="text" class="level-name-input" id="levelName" value="My Level" maxlength="40">
+    <button class="hdr-btn play" onclick="openPlayMode()">&#9654; Play</button>
+    <button class="hdr-btn ai"   onclick="openAICritic()">&#10022; Critic</button>
+    <button class="hdr-btn"      onclick="openShare()">&#128279; Share</button>
+    <button class="hdr-btn"      onclick="showHotkeys()">? Keys</button>
+  </div>
+  <a href="workshop.html" class="hdr-btn">&#8592; Workshop</a>
 </header>
 
 <div id="app">
@@ -204,149 +212,302 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
   <div id="left-panel">
     <div class="ps">
       <div class="pt">Tools</div>
-      <div class="tool-grid">
-        <div class="tb on" data-tool="draw" onclick="setTool('draw')"><span class="ico">✏️</span>Draw</div>
-        <div class="tb" data-tool="erase" onclick="setTool('erase')"><span class="ico">🧹</span>Erase</div>
-        <div class="tb" data-tool="fill" onclick="setTool('fill')"><span class="ico">🪣</span>Fill</div>
-        <div class="tb" data-tool="pick" onclick="setTool('pick')"><span class="ico">💧</span>Pick</div>
-        <div class="tb" data-tool="rect" onclick="setTool('rect')"><span class="ico">▭</span>Rect</div>
-        <div class="tb" data-tool="line" onclick="setTool('line')"><span class="ico">╱</span>Line</div>
-        <div class="tb" data-tool="move" onclick="setTool('move')"><span class="ico">✋</span>Pan</div>
-        <div class="tb" data-tool="select" onclick="setTool('select')"><span class="ico">⬚</span>Select</div>
+      <div class="tool-grid" id="toolGrid">
+        <div class="tb on" data-tool="draw"   onclick="setTool('draw')"  ><span class="ico">&#9999;&#65039;</span>Draw<span class="kbd">D</span></div>
+        <div class="tb"    data-tool="erase"  onclick="setTool('erase')" ><span class="ico">&#129529;</span>Erase<span class="kbd">E</span></div>
+        <div class="tb"    data-tool="fill"   onclick="setTool('fill')"  ><span class="ico">&#129695;</span>Fill<span class="kbd">F</span></div>
+        <div class="tb"    data-tool="pick"   onclick="setTool('pick')"  ><span class="ico">&#128167;</span>Pick<span class="kbd">G</span></div>
+        <div class="tb"    data-tool="rect"   onclick="setTool('rect')"  ><span class="ico">&#9645;</span>Rect<span class="kbd">R</span></div>
+        <div class="tb"    data-tool="line"   onclick="setTool('line')"  ><span class="ico">/</span>Line<span class="kbd">L</span></div>
+        <div class="tb"    data-tool="move"   onclick="setTool('move')"  ><span class="ico">&#9995;</span>Pan<span class="kbd">M</span></div>
+        <div class="tb"    data-tool="select" onclick="setTool('select')"><span class="ico">&#11036;</span>Select<span class="kbd">S</span></div>
+        <div class="tb"    data-tool="path"   onclick="setTool('path')"  ><span class="ico">&#128256;</span>Path<span class="kbd">P</span></div>
+        <div class="tb"    data-tool="stamp"  onclick="setTool('stamp')" ><span class="ico">&#128278;</span>Stamp<span class="kbd">T</span></div>
+      </div>
+      <div id="rectModeRow" style="display:none;gap:3px;margin-top:4px;">
+        <button class="rm-btn on" id="rmOutline" onclick="setRectMode('outline')">Outline</button>
+        <button class="rm-btn"    id="rmFilled"  onclick="setRectMode('filled')">Filled</button>
       </div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
-      <div class="pt">Tiles <span class="pt-action" onclick="document.getElementById('tilesetInput').click()" title="Import spritesheet">⊕ Import</span><input type="file" id="tilesetInput" accept="image/*" style="display:none" onchange="importTileset(this)"></div>
+      <div class="pt">Tiles <span class="pt-action" onclick="document.getElementById('tilesetInput').click()">+ Import</span><input type="file" id="tilesetInput" accept="image/*" style="display:none" onchange="importTileset(this)"></div>
+      <div class="tile-cat-tabs" id="tileCatTabs"></div>
       <div class="tile-palette" id="tilePalette"></div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
       <div class="pt">View</div>
       <div class="zoom-row">
-        <button class="z-btn" onclick="changeZoom(-1)">−</button>
-        <div class="z-val" id="zoomVal">2×</div>
+        <button class="z-btn" onclick="changeZoom(-1)">&#8722;</button>
+        <span class="z-val" id="zoomVal">2x</span>
         <button class="z-btn" onclick="changeZoom(1)">+</button>
-        <button class="z-btn" onclick="resetView()" title="Fit">⌂</button>
-        <button class="z-btn" onclick="toggleGrid()" id="gridBtn" style="color:var(--accent3);" title="Grid">⊞</button>
+        <button class="z-btn" onclick="resetView()" title="Fit">&#8962;</button>
+        <button class="z-btn" onclick="toggleGrid()" id="gridBtn" style="color:var(--accent3);">&#8862;</button>
+        <button class="z-btn" onclick="toggleViewport()" id="vpBtn" title="Viewport marker">VP</button>
       </div>
-      <div style="margin-top:5px;font-size:.5rem;color:var(--muted);" id="posInfo">x:— y:—</div>
+      <div style="margin-top:4px;font-size:.5rem;color:var(--muted);" id="posInfo">x:- y:-</div>
     </div>
-    <div class="pdiv"></div><div class="ps"><div class="pt">Background</div><div class="theme-grid" id="themeGrid"></div></div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Background</div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
     <div class="pdiv"></div>
     <div class="ps" style="margin-top:auto;">
-      <button class="ab ab-p" onclick="exportPNG()">🖼 Export PNG</button>
-      <button class="ab ab-g" onclick="exportJSON()">📄 Export JSON</button><button class="ab ab-s" onclick="document.getElementById('importJsonInput').click()">📂 Import JSON<input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(this)"></button>
-      <button class="ab ab-s" onclick="saveLevel()">💾 Save</button>
-      <button class="ab ab-s" onclick="loadLevel()">📂 Load</button>
-      <button class="ab ab-r" onclick="confirmClear()">🆕 New Level</button>
+      <button class="ab ab-p" onclick="exportPNG()">Export PNG</button>
+      <button class="ab ab-g" onclick="exportJSON()">Export JSON</button>
+      <button class="ab ab-s" onclick="document.getElementById('importJsonInput').click()">Import JSON<input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(this)"></button>
+      <button class="ab ab-u" onclick="undo()" id="undoBtn">Undo</button>
+      <button class="ab ab-u" onclick="redo()" id="redoBtn" style="opacity:.35;">Redo</button>
+      <button class="ab ab-r" onclick="confirmClear()">New Level</button>
     </div>
   </div>
 
   <!-- CANVAS -->
   <div id="canvas-area">
-    <div id="canvas-wrap" style="position:relative;line-height:0;flex-shrink:0;">
-      <canvas id="level-canvas" style="touch-action:none;display:block;"></canvas>
-      <canvas id="cursor-canvas" style="position:absolute;top:0;left:0;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
+    <div id="sel-toolbar">
+      <span class="sel-label" id="selLabel">0x0</span>
+      <button class="sel-btn sel-cut"   onclick="selCut()">Cut</button>
+      <button class="sel-btn sel-copy"  onclick="selCopy()">Copy</button>
+      <button class="sel-btn sel-paste" onclick="selPaste()" id="pasteBtn" style="opacity:.4;">Paste</button>
+      <button class="sel-btn sel-stamp" onclick="saveStamp()">Stamp</button>
+      <button class="sel-btn sel-del"   onclick="selDelete()">Del</button>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="level-canvas" style="touch-action:none;"></canvas>
+      <canvas id="cursor-canvas" style="position:absolute;top:0;left:0;pointer-events:none;image-rendering:pixelated;"></canvas>
+      <canvas id="path-canvas"   style="position:absolute;top:0;left:0;pointer-events:none;z-index:12;image-rendering:pixelated;"></canvas>
+    </div>
+    <div id="vp-marker"></div>
+    <div id="minimap">
+      <canvas id="minimap-canvas" width="96" height="48" style="display:block;image-rendering:pixelated;"></canvas>
+      <div style="font-size:.38rem;color:var(--muted);text-align:center;padding:1px 3px;">minimap</div>
     </div>
   </div>
 
   <!-- RIGHT PANEL -->
   <div id="right-panel">
     <div class="ps">
-      <div class="pt">Level Size</div>
+      <div class="pt">Grid Size</div>
       <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px;" id="sizeRow"></div>
       <div style="display:flex;gap:3px;align-items:center;margin-top:4px;">
-        <input type="number" id="custW" value="32" min="8" max="128" style="width:34px;padding:2px 3px;border-radius:3px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.55rem;font-family:inherit;">
-        <span style="font-size:.5rem;color:var(--muted);">×</span>
-        <input type="number" id="custH" value="16" min="8" max="64" style="width:34px;padding:2px 3px;border-radius:3px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.55rem;font-family:inherit;">
-        <button onclick="applyCustomSize()" style="font-size:.5rem;padding:2px 5px;border-radius:3px;border:none;background:var(--accent3);color:#000;cursor:pointer;">OK</button>
+        <input type="number" id="custW" value="32" min="8" max="128" style="width:34px;padding:2px 4px;border-radius:3px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.52rem;font-family:inherit;">
+        <span style="font-size:.48rem;color:var(--muted);">x</span>
+        <input type="number" id="custH" value="16" min="8" max="64"  style="width:34px;padding:2px 4px;border-radius:3px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.52rem;font-family:inherit;">
+        <button onclick="applyCustomSize()" style="font-size:.48rem;padding:3px 6px;border-radius:3px;border:none;background:var(--accent3);color:#000;cursor:pointer;font-family:inherit;">OK</button>
       </div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
       <div class="pt">Layers</div>
       <div id="layerList"></div>
-      <div style="display:flex;gap:3px;margin-top:4px;">
-        <button class="ab ab-s" style="font-size:.55rem;padding:3px;" onclick="addLayer()">+ Add</button>
-        <button class="ab ab-s" style="font-size:.55rem;padding:3px;color:var(--accent4);" onclick="deleteLayer()">🗑</button>
+      <div style="display:flex;gap:3px;margin-top:5px;">
+        <button class="ab ab-s" style="font-size:.52rem;padding:3px;margin:0;" onclick="addLayer()">+ Add</button>
+        <button class="ab ab-s" style="font-size:.52rem;padding:3px;margin:0;" onclick="dupeLayer()">Dupe</button>
+        <button class="ab ab-s" style="font-size:.52rem;padding:3px;margin:0;color:var(--accent4);" onclick="deleteLayer()">Del</button>
       </div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
       <div class="pt">Selected Tile</div>
-      <div id="tileInfo" style="font-size:.55rem;color:var(--muted);line-height:1.7;">None selected</div>
+      <div id="tileInfo" style="font-size:.54rem;color:var(--muted);line-height:1.7;">None</div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
-      <div class="pt">Level Name</div>
-      <input type="text" id="levelName" value="My Level" style="width:100%;padding:4px 7px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:inherit;outline:none;">
+      <div class="pt">Tile Properties</div>
+      <div class="prop-row"><span class="prop-label">Value</span><input class="prop-input" id="propValue" type="number" placeholder="e.g. 10"></div>
+      <div class="prop-row"><span class="prop-label">Tag</span><input class="prop-input" id="propTag" type="text" placeholder="e.g. door_a" maxlength="20"></div>
+      <div class="prop-row"><span class="prop-label">Note</span><input class="prop-input" id="propNote" type="text" placeholder="Any note" maxlength="40"></div>
+      <button class="ab ab-s" style="font-size:.55rem;padding:3px 6px;margin-top:2px;" onclick="applyTileProps()">Apply to cursor pos</button>
     </div>
-    <div class="pdiv"></div><div class="ps"><div class="pt">Tile Properties <span style="font-size:.36rem;color:var(--muted2);">(placed tile)</span></div><div class="prop-row"><span class="prop-label">Value</span><input class="prop-input" id="propValue" type="number" placeholder="e.g. 10"></div><div class="prop-row"><span class="prop-label">Tag</span><input class="prop-input" id="propTag" type="text" placeholder="e.g. door_a" maxlength="20"></div><div class="prop-row"><span class="prop-label">Note</span><input class="prop-input" id="propNote" type="text" placeholder="Any note" maxlength="40"></div><button class="ab ab-s" style="font-size:.55rem;padding:3px 6px;margin-top:2px;" onclick="applyTileProps()">Apply to cursor pos</button></div><div class="pdiv"></div><div class="ps"><div class="pt">Stamps <span class="pt-action" onclick="clearStamps()">Clear all</span></div><div class="stamp-grid" id="stampGrid"></div><div id="stampEmpty" style="font-size:.48rem;color:var(--muted);text-align:center;padding:6px 0;">Select region → Save Stamp</div></div><div class="pdiv"></div><div class="ps"><div class="pt">History</div><div id="undo-history"></div></div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Stamps <span class="pt-action" onclick="clearStamps()">Clear all</span></div>
+      <div class="stamp-grid" id="stampGrid"></div>
+      <div id="stampEmpty" style="font-size:.48rem;color:var(--muted);text-align:center;padding:6px 0;">Select region then Save Stamp</div>
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Save Slots</div>
+      <div id="saveSlots"></div>
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">History</div>
+      <div id="undo-history"></div>
+    </div>
     <div class="pdiv"></div>
     <div class="ps">
       <div class="pt">Stats</div>
-      <div id="statsBox" style="font-size:.5rem;color:var(--muted);line-height:1.8;"></div>
+      <div id="statsBox" style="font-size:.56rem;color:var(--muted);line-height:1.8;"></div>
     </div>
-    <div class="pdiv"></div><div class="ps"><div class="pt">Background</div><div class="theme-grid" id="themeGrid"></div></div>
     <div class="pdiv"></div>
     <div class="ps" style="margin-top:auto;">
-      <button class="ab ab-p" onclick="exportPNG()">🖼 PNG</button>
-      <button class="ab ab-g" onclick="exportJSON()">📄 JSON</button>
+      <button class="ab ab-p" onclick="exportPNG()">PNG</button>
+      <button class="ab ab-g" onclick="exportJSON()">JSON</button>
     </div>
   </div>
 </div>
 
-<!-- BOTTOM BAR (mobile) -->
+<!-- BOTTOM BAR -->
 <div id="bottom-bar">
   <div class="bb-tabs">
     <button class="bb-tab on" onclick="bbTab(0,this)">Tools</button>
-    <button class="bb-tab" onclick="bbTab(1,this)">Tiles</button>
-    <button class="bb-tab" onclick="bbTab(2,this)">Layers</button>
-    <button class="bb-tab" onclick="bbTab(3,this)">Export</button>
+    <button class="bb-tab"    onclick="bbTab(1,this)">Tiles</button>
+    <button class="bb-tab"    onclick="bbTab(2,this)">Layers</button>
+    <button class="bb-tab"    onclick="bbTab(3,this)">File</button>
   </div>
   <div class="bb-content">
     <div class="bb-panel on" id="bb0">
-      <div style="display:flex;gap:4px;">
-        <div class="tb on" data-tool="draw" onclick="setTool('draw')" style="padding:5px 7px;"><span class="ico">✏️</span></div>
-        <div class="tb" data-tool="erase" onclick="setTool('erase')" style="padding:5px 7px;"><span class="ico">🧹</span></div>
-        <div class="tb" data-tool="fill" onclick="setTool('fill')" style="padding:5px 7px;"><span class="ico">🪣</span></div>
-        <div class="tb" data-tool="rect" onclick="setTool('rect')" style="padding:5px 7px;"><span class="ico">▭</span></div>
-        <div class="tb" data-tool="move" onclick="setTool('move')" style="padding:5px 7px;"><span class="ico">✋</span></div>
-      </div>
-      <button class="z-btn" onclick="changeZoom(-1)">−</button>
+      <div class="tb on" data-tool="draw"   onclick="setTool('draw')"   style="padding:5px 8px;flex-shrink:0;"><span class="ico">Draw</span></div>
+      <div class="tb"    data-tool="erase"  onclick="setTool('erase')"  style="padding:5px 8px;flex-shrink:0;"><span class="ico">Erase</span></div>
+      <div class="tb"    data-tool="fill"   onclick="setTool('fill')"   style="padding:5px 8px;flex-shrink:0;"><span class="ico">Fill</span></div>
+      <div class="tb"    data-tool="rect"   onclick="setTool('rect')"   style="padding:5px 8px;flex-shrink:0;"><span class="ico">Rect</span></div>
+      <div class="tb"    data-tool="move"   onclick="setTool('move')"   style="padding:5px 8px;flex-shrink:0;"><span class="ico">Pan</span></div>
+      <div class="tb"    data-tool="select" onclick="setTool('select')" style="padding:5px 8px;flex-shrink:0;"><span class="ico">Sel</span></div>
+      <div class="tb"    data-tool="path"   onclick="setTool('path')"   style="padding:5px 8px;flex-shrink:0;"><span class="ico">Path</span></div>
+      <div style="width:1px;background:var(--border);height:28px;flex-shrink:0;"></div>
+      <button class="z-btn" onclick="changeZoom(-1)">-</button>
       <button class="z-btn" onclick="changeZoom(1)">+</button>
-      <button class="z-btn" onclick="toggleGrid()">⊞</button>
-      <button class="z-btn" onclick="resetView()">⌂</button>
+      <button class="z-btn" onclick="toggleGrid()">Grid</button>
+      <button class="z-btn" onclick="resetView()">Fit</button>
+      <button class="z-btn" onclick="undo()">Undo</button>
+      <button class="z-btn" onclick="redo()">Redo</button>
+      <button class="hdr-btn play" style="padding:3px 8px;font-size:.52rem;" onclick="openPlayMode()">Play</button>
+      <button class="hdr-btn ai"   style="padding:3px 8px;font-size:.52rem;" onclick="openAICritic()">AI</button>
     </div>
     <div class="bb-panel" id="bb1">
-      <div class="tile-palette" id="bbTilePalette" style="grid-template-columns:repeat(8,1fr);width:100%;"></div>
+      <div style="display:flex;flex-direction:column;gap:3px;width:100%;">
+        <div class="tile-cat-tabs" id="bbTileCatTabs" style="flex-wrap:nowrap;overflow-x:auto;"></div>
+        <div class="tile-palette" id="bbTilePalette" style="grid-template-columns:repeat(10,1fr);"></div>
+      </div>
     </div>
     <div class="bb-panel" id="bb2">
-      <div id="bbLayerList" style="display:flex;gap:4px;overflow-x:auto;"></div>
-      <button class="ab ab-s" style="font-size:.55rem;padding:3px 6px;white-space:nowrap;" onclick="addLayer()">+ Layer</button>
+      <div id="bbLayerList" style="display:flex;gap:4px;overflow-x:auto;align-items:center;"></div>
+      <button class="ab ab-s" style="font-size:.5rem;padding:3px 7px;margin:0;white-space:nowrap;" onclick="addLayer()">+ Layer</button>
     </div>
-    <div class="bb-panel" id="bb3">
-      <button class="ab ab-p" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="exportPNG()">PNG</button>
-      <button class="ab ab-g" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="exportJSON()">JSON</button>
-      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="saveLevel()">Save</button>
-      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="loadLevel()">Load</button>
-      <button class="ab ab-r" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="confirmClear()">New</button>
+    <div class="bb-panel" id="bb3" style="flex-wrap:wrap;gap:3px;">
+      <button class="ab ab-p" style="margin:0;padding:4px 8px;font-size:.6rem;width:auto;" onclick="exportPNG()">PNG</button>
+      <button class="ab ab-g" style="margin:0;padding:4px 8px;font-size:.6rem;width:auto;" onclick="exportJSON()">JSON</button>
+      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.6rem;width:auto;" onclick="quickSave()">Save</button>
+      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.6rem;width:auto;" onclick="quickLoad()">Load</button>
+      <button class="ab ab-r" style="margin:0;padding:4px 8px;font-size:.6rem;width:auto;" onclick="confirmClear()">New</button>
     </div>
   </div>
 </div>
 
 <footer class="site-footer">
-  <a href="index.html">🏠 Home</a>
-  <a href="workshop.html">🔧 Workshop</a>
-  <a href="pixel-studio.html">🎨 Pixel Studio</a>
-  <a href="gdd-builder.html">📋 GDD Builder</a>
-  <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+  <a href="index.html">Home</a>
+  <a href="workshop.html">Workshop</a>
+  <a href="pixel-studio.html">Pixel Studio</a>
+  <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">Support</a>
 </footer>
 
 <div id="toast"></div>
 
+<!-- PLAY OVERLAY -->
+<div id="play-overlay">
+  <div id="play-header">
+    <span id="play-title">Play Mode</span>
+    <span id="play-stats">Coins: 0 | Lives: 3</span>
+    <button class="hdr-btn" onclick="closePlayMode()">Exit</button>
+    <button class="hdr-btn" onclick="restartPlay()">Restart</button>
+  </div>
+  <div id="play-canvas-wrap">
+    <canvas id="play-canvas"></canvas>
+    <div id="play-msg"></div>
+  </div>
+  <div id="play-dpad">
+    <div class="dpad-btn" id="dpad-left"  ontouchstart="dpadDown('left')"  ontouchend="dpadUp('left')">L</div>
+    <div class="dpad-btn" id="dpad-up"    ontouchstart="dpadDown('up')"    ontouchend="dpadUp('up')">U</div>
+    <div class="dpad-btn" id="dpad-right" ontouchstart="dpadDown('right')" ontouchend="dpadUp('right')">R</div>
+  </div>
+  <div id="jump-btn" ontouchstart="dpadDown('up')" ontouchend="dpadUp('up')">Jump</div>
+</div>
+
+<!-- AI PANEL -->
+<div id="ai-panel">
+  <div class="ai-box">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="ai-box-title">AI Level Critic</div>
+      <button class="hdr-btn" style="margin-left:auto;" onclick="closeAIPanel()">Close</button>
+    </div>
+    <div id="ai-response" class="ai-response"><span style="color:var(--muted);font-size:.62rem;">Click Analyse to get AI feedback on your level.</span></div>
+    <div style="display:flex;gap:8px;">
+      <button class="ab ab-u" style="margin:0;flex:1;" onclick="runAICritic()">Analyse Level</button>
+      <button class="ab ab-s" style="margin:0;width:80px;font-size:.65rem;" onclick="closeAIPanel()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE PANEL -->
+<div id="share-panel">
+  <div class="share-box">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-family:'Fredoka',cursive;font-size:1.1rem;color:var(--accent2);">Share Level</div>
+      <button class="hdr-btn" style="margin-left:auto;" onclick="closeShare()">Close</button>
+    </div>
+    <div style="font-size:.6rem;color:var(--muted);line-height:1.6;">Your level is encoded in this URL. Share it with anyone.</div>
+    <textarea id="shareUrl" class="share-url" rows="4" readonly onclick="this.select()"></textarea>
+    <div style="display:flex;gap:8px;">
+      <button class="ab ab-p" style="margin:0;flex:1;" onclick="copyShareUrl()">Copy URL</button>
+      <button class="ab ab-s" style="margin:0;width:80px;font-size:.65rem;" onclick="closeShare()">Close</button>
+    </div>
+    <div style="font-size:.46rem;color:var(--muted2);">Large levels produce very long URLs. Use JSON export for big levels.</div>
+  </div>
+</div>
+
+<!-- HOTKEY OVERLAY -->
+<div id="hotkey-overlay" onclick="if(event.target===this)closeHotkeys()">
+  <div class="hk-box">
+    <div class="hk-title">Keyboard Shortcuts</div>
+    <div class="hk-grid">
+      <div class="hk-section">Tools</div>
+      <div class="hk-row"><span class="hk-key">D</span><span class="hk-desc">Draw</span></div>
+      <div class="hk-row"><span class="hk-key">E</span><span class="hk-desc">Erase</span></div>
+      <div class="hk-row"><span class="hk-key">F</span><span class="hk-desc">Flood fill</span></div>
+      <div class="hk-row"><span class="hk-key">G</span><span class="hk-desc">Colour pick</span></div>
+      <div class="hk-row"><span class="hk-key">R</span><span class="hk-desc">Rectangle</span></div>
+      <div class="hk-row"><span class="hk-key">L</span><span class="hk-desc">Line</span></div>
+      <div class="hk-row"><span class="hk-key">M</span><span class="hk-desc">Pan tool</span></div>
+      <div class="hk-row"><span class="hk-key">Space+drag</span><span class="hk-desc">Pan (any tool)</span></div>
+      <div class="hk-row"><span class="hk-key">Right-drag</span><span class="hk-desc">Pan (any tool)</span></div>
+      <div class="hk-row"><span class="hk-key">S</span><span class="hk-desc">Select</span></div>
+      <div class="hk-row"><span class="hk-key">P</span><span class="hk-desc">Enemy path</span></div>
+      <div class="hk-row"><span class="hk-key">T</span><span class="hk-desc">Stamp</span></div>
+      <div class="hk-section">Edit</div>
+      <div class="hk-row"><span class="hk-key">Ctrl+Z</span><span class="hk-desc">Undo</span></div>
+      <div class="hk-row"><span class="hk-key">Ctrl+Y</span><span class="hk-desc">Redo</span></div>
+      <div class="hk-row"><span class="hk-key">Ctrl+C</span><span class="hk-desc">Copy</span></div>
+      <div class="hk-row"><span class="hk-key">Ctrl+X</span><span class="hk-desc">Cut</span></div>
+      <div class="hk-row"><span class="hk-key">Ctrl+V</span><span class="hk-desc">Paste</span></div>
+      <div class="hk-row"><span class="hk-key">Del</span><span class="hk-desc">Delete selection</span></div>
+      <div class="hk-row"><span class="hk-key">Right-click</span><span class="hk-desc">Erase tile</span></div>
+      <div class="hk-section">View</div>
+      <div class="hk-row"><span class="hk-key">+ / -</span><span class="hk-desc">Zoom</span></div>
+      <div class="hk-row"><span class="hk-key">Scroll</span><span class="hk-desc">Zoom wheel</span></div>
+      <div class="hk-row"><span class="hk-key">?</span><span class="hk-desc">This screen</span></div>
+      <div class="hk-row"><span class="hk-key">Esc</span><span class="hk-desc">Close panels</span></div>
+    </div>
+    <div style="text-align:center;margin-top:14px;"><button class="ab ab-s" style="width:auto;padding:6px 20px;margin:0;" onclick="closeHotkeys()">Close</button></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Are you sure?</div>
+    <div class="modal-msg"   id="modal-msg"></div>
+    <div class="modal-btns">
+      <button class="modal-btn modal-cancel"  onclick="closeModal()">Cancel</button>
+      <button class="modal-btn modal-confirm" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script>
+
 'use strict';
 
 const TILE_CATS=[
@@ -421,6 +582,7 @@ let enemyPaths={},pendingPath=[],tileProps={};
 let stamps=[],activeStamp=null;
 let tilesetImage=null,tilesetCols=0,tilesetRows=0;
 let canvas,cursorCanvas,pathCanvas,ctx,cursorCtx,pathCtx;
+let spaceHeld=false;
 let longPressTimer=null,autosaveTimer=null;
 let lastCursorCell={x:-1,y:-1};
 
@@ -690,15 +852,20 @@ function setupEvents(){
     return[Math.floor((src.clientX-rect.left)/(TS*zoomLevel)),Math.floor((src.clientY-rect.top)/(TS*zoomLevel))];
   }
   function pointerDown(e){
-    e.preventDefault();const[x,y]=getCellCoords(e);const right=e.button===2;
-    if(e.touches&&e.touches.length===1)longPressTimer=setTimeout(()=>{setTool('erase');showToast('Erase mode');longPressTimer=null;},500);
+    e.preventDefault();const[x,y]=getCellCoords(e);
+    const right=e.button===2;
+    // Right-click always pans (no erase on right-click drag — use erase tool)
+    if(right||e.button===1||currentTool==='move'||spaceHeld){
+      const src=e.touches?e.touches[0]:e;panStart={x:src.clientX,y:src.clientY};panOrigin={...panOffset};return;
+    }
+    if(e.touches&&e.touches.length===1)longPressTimer=setTimeout(()=>{setTool('erase');showToast('Erase mode (long-press)');longPressTimer=null;},500);
     if(e.touches&&e.touches.length===2){isPainting=false;const t0=e.touches[0],t1=e.touches[1];panStart={x:(t0.clientX+t1.clientX)/2,y:(t0.clientY+t1.clientY)/2};panOrigin={...panOffset};return;}
-    if(currentTool==='move'||e.button===1){const src=e.touches?e.touches[0]:e;panStart={x:src.clientX,y:src.clientY};panOrigin={...panOffset};return;}
     if(currentTool==='path'){handlePathClick(x,y);return;}
     if(currentTool==='stamp'){if(activeStamp!=null&&stamps[activeStamp])placeStamp(stamps[activeStamp],x,y);else showToast('Select a stamp from the right panel first');return;}
-    isPainting=true;const tile=right?0:currentTile;
-    if(currentTool==='draw'||currentTool==='erase'){pushUndo('Draw '+getTile(tile).label);setCell(x,y,currentTool==='erase'?0:tile);renderAll();updateStats();}
-    else if(currentTool==='fill'){pushUndo('Fill');floodFill(x,y,right?0:tile);renderAll();updateStats();isPainting=false;}
+    isPainting=true;const tile=currentTile;
+    if(currentTool==='draw'){pushUndo('Draw '+getTile(tile).label);setCell(x,y,tile);renderAll();updateStats();}
+    else if(currentTool==='erase'){pushUndo('Erase');setCell(x,y,0);renderAll();updateStats();}
+    else if(currentTool==='fill'){pushUndo('Fill');floodFill(x,y,tile);renderAll();updateStats();isPainting=false;}
     else if(currentTool==='pick'){const t=getCell(x,y);if(t>0){currentTile=t;updateTileSelection();setTool('draw');}isPainting=false;}
     else if(currentTool==='line'){pushUndo('Line');snapshot=new Int16Array(layers[currentLayer].data);lineStart=[x,y];}
     else if(currentTool==='rect'){pushUndo('Rect');snapshot=new Int16Array(layers[currentLayer].data);rectStart=[x,y];}
@@ -711,17 +878,52 @@ function setupEvents(){
     if(!e.touches&&e.buttons===0){isPainting=false;panStart=null;}
     const src=e.touches?(e.touches.length>1?{clientX:(e.touches[0].clientX+e.touches[1].clientX)/2,clientY:(e.touches[0].clientY+e.touches[1].clientY)/2}:e.touches[0]):e;
     const rect=c.getBoundingClientRect();
-    const cx=Math.floor((src.clientX-rect.left)/(TS*zoomLevel));
-    const cy=Math.floor((src.clientY-rect.top)/(TS*zoomLevel));
+    // Raw pixel position within the canvas element
+    const rawX=src.clientX-rect.left;
+    const rawY=src.clientY-rect.top;
+    const cx=Math.floor(rawX/(TS*zoomLevel));
+    const cy=Math.floor(rawY/(TS*zoomLevel));
     document.getElementById('posInfo').textContent='x:'+cx+' y:'+cy;
     lastCursorCell={x:cx,y:cy};
+
+    // Draw cursor overlay
     cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
-    if(cx>=0&&cy>=0&&cx<gridW&&cy<gridH){
-      cursorCtx.strokeStyle='rgba(255,220,50,.75)';cursorCtx.lineWidth=2;cursorCtx.strokeRect(cx*TS*zoomLevel+1,cy*TS*zoomLevel+1,TS*zoomLevel-2,TS*zoomLevel-2);
-      if(currentTool==='draw'){const t=getTile(currentTile);cursorCtx.globalAlpha=0.4;if(t.color!=='transparent'){cursorCtx.fillStyle=t.color;cursorCtx.fillRect(cx*TS*zoomLevel,cy*TS*zoomLevel,TS*zoomLevel,TS*zoomLevel);}cursorCtx.globalAlpha=1;}
-      if(currentTool==='stamp'&&activeStamp!=null&&stamps[activeStamp]){const s=stamps[activeStamp];cursorCtx.globalAlpha=0.5;s.data.forEach((row,ry)=>row.forEach((t,rx)=>{const tile=getTile(t);if(!tile||t===0||tile.color==='transparent')return;cursorCtx.fillStyle=tile.color;cursorCtx.fillRect((cx+rx)*TS*zoomLevel,(cy+ry)*TS*zoomLevel,TS*zoomLevel,TS*zoomLevel);}));cursorCtx.globalAlpha=1;}
+    if(panStart){
+      // panning — show grabbing hand, no tile highlight
+    } else if(cx>=0&&cy>=0&&cx<gridW&&cy<gridH){
+      const sz=TS*zoomLevel;
+      const tx=cx*sz, ty=cy*sz;
+
+      // Tile highlight (colour preview for draw tool)
+      if(currentTool==='draw'){
+        const t=getTile(currentTile);
+        if(t.color!=='transparent'){cursorCtx.globalAlpha=0.35;cursorCtx.fillStyle=t.color;cursorCtx.fillRect(tx,ty,sz,sz);cursorCtx.globalAlpha=1;}
+      }
+      if(currentTool==='erase'){
+        cursorCtx.globalAlpha=0.3;cursorCtx.fillStyle='#ef4444';cursorCtx.fillRect(tx,ty,sz,sz);cursorCtx.globalAlpha=1;
+      }
+      if(currentTool==='stamp'&&activeStamp!=null&&stamps[activeStamp]){
+        const s=stamps[activeStamp];cursorCtx.globalAlpha=0.5;
+        s.data.forEach((row,ry)=>row.forEach((t,rx)=>{const tile=getTile(t);if(!tile||t===0||tile.color==='transparent')return;cursorCtx.fillStyle=tile.color;cursorCtx.fillRect((cx+rx)*sz,(cy+ry)*sz,sz,sz);}));
+        cursorCtx.globalAlpha=1;
+      }
+
+      // Tile border
+      cursorCtx.strokeStyle='rgba(255,220,50,.9)';cursorCtx.lineWidth=1.5;cursorCtx.setLineDash([]);
+      cursorCtx.strokeRect(tx+1,ty+1,sz-2,sz-2);
+
+      // Crosshair lines through centre of hovered tile
+      const mx=tx+sz/2, my=ty+sz/2;
+      cursorCtx.strokeStyle='rgba(255,255,255,0.55)';cursorCtx.lineWidth=1;cursorCtx.setLineDash([3,3]);
+      cursorCtx.beginPath();cursorCtx.moveTo(mx,0);cursorCtx.lineTo(mx,cursorCanvas.height);cursorCtx.stroke();
+      cursorCtx.beginPath();cursorCtx.moveTo(0,my);cursorCtx.lineTo(cursorCanvas.width,my);cursorCtx.stroke();
+      cursorCtx.setLineDash([]);
     }
-    if(panStart){panOffset.x=panOrigin.x+(src.clientX-panStart.x);panOffset.y=panOrigin.y+(src.clientY-panStart.y);document.getElementById('canvas-wrap').style.transform='translate('+panOffset.x+'px,'+panOffset.y+'px)';updateViewportMarker();return;}
+    if(panStart){
+      panOffset.x=panOrigin.x+(src.clientX-panStart.x);panOffset.y=panOrigin.y+(src.clientY-panStart.y);
+      document.getElementById('canvas-wrap').style.transform='translate('+panOffset.x+'px,'+panOffset.y+'px)';
+      updateViewportMarker();return;
+    }
     if(!isPainting)return;
     const right=(e.buttons||0)===2,tile=right?0:currentTile;
     if(currentTool==='draw'||currentTool==='erase'){setCell(cx,cy,currentTool==='erase'?0:tile);renderAll();updateStats();}
@@ -730,7 +932,9 @@ function setupEvents(){
     else if(currentTool==='select'&&selRect){selRect.w=cx-selRect.x+1;selRect.h=cy-selRect.y+1;updateSelToolbar();renderAll();}
   }
   function pointerUp(e){
-    e.preventDefault();if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}panStart=null;
+    e.preventDefault();if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+    if(panStart){panStart=null;return;}
+    panStart=null;
     if(!isPainting){isPainting=false;return;}
     const src=e.changedTouches?e.changedTouches[0]:e;const rect=c.getBoundingClientRect();
     const x=Math.floor((src.clientX-rect.left)/(TS*zoomLevel));const y=Math.floor((src.clientY-rect.top)/(TS*zoomLevel));
@@ -748,6 +952,7 @@ function setupEvents(){
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     if(e.key==='Escape'){closeHotkeys();closeAIPanel();closeShare();cancelPath();return;}
     if(e.key==='?'){showHotkeys();return;}
+    if(e.code==='Space'&&!spaceHeld){e.preventDefault();spaceHeld=true;return;}
     if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){undo();return;}
     if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){redo();return;}
     if((e.ctrlKey||e.metaKey)&&e.key==='c'){selCopy();return;}
@@ -757,6 +962,9 @@ function setupEvents(){
     const m={d:'draw',e:'erase',f:'fill',g:'pick',r:'rect',l:'line',m:'move',s:'select',p:'path',t:'stamp'};
     if(m[e.key])setTool(m[e.key]);
     if(e.key==='+'||e.key==='=')changeZoom(1);if(e.key==='-')changeZoom(-1);
+  });
+  document.addEventListener('keyup',e=>{
+    if(e.code==='Space'){spaceHeld=false;}
   });
   window.addEventListener('resize',()=>{autoZoom();resizeCanvases();renderAll();updateViewportMarker();});
 }
@@ -921,7 +1129,8 @@ const GRAV=0.55,JUMP=-10,SPEED=3.2,TS_P=24;
 function openPlayMode(){
   let spawnX=2,spawnY=gridH-4;
   outer:for(let li=0;li<layers.length;li++)for(let y=0;y<gridH;y++)for(let x=0;x<gridW;x++)if(layers[li].data[idx(x,y)]===21){spawnX=x;spawnY=y;break outer;}
-  playState={px:spawnX*TS_P+TS_P/4,py:spawnY*TS_P,pvx:0,pvy:0,onGround:false,coins:0,lives:3,dead:false,won:false,enemies:buildEnemies(),pickups:buildPickups(),camX:0,frameCount:0,keys:{left:false,right:false},lastCheckpoint:null};
+  // Spawn player centred on their tile, shifted up so they sit ON top of it not inside it
+  playState={px:spawnX*TS_P,py:(spawnY-1)*TS_P,pvx:0,pvy:0,onGround:false,coins:0,lives:3,dead:false,won:false,enemies:buildEnemies(),pickups:buildPickups(),camX:0,frameCount:0,keys:{left:false,right:false,up:false},lastCheckpoint:{x:spawnX*TS_P,y:(spawnY-1)*TS_P}};
   const overlay=document.getElementById('play-overlay');overlay.classList.add('show');
   const pc=document.getElementById('play-canvas');const area=document.getElementById('play-canvas-wrap');
   const vwTiles=Math.min(gridW,20);
@@ -939,13 +1148,47 @@ function buildPickups(){
   const list=[];layers.forEach(layer=>{for(let y=0;y<gridH;y++)for(let x=0;x<gridW;x++){if([12,13].includes(layer.data[idx(x,y)]))list.push({x:x*TS_P,y:y*TS_P,collected:false});}});return list;
 }
 const playKeyState={};
-function setupPlayKeys(){playKeyState.kd=e=>{if(playState)setPlayKey(e.code,true);};playKeyState.ku=e=>{if(playState)setPlayKey(e.code,false);};document.addEventListener('keydown',playKeyState.kd);document.addEventListener('keyup',playKeyState.ku);}
+function setupPlayKeys(){
+  playKeyState.kd=e=>{
+    if(!playState)return;
+    // Prevent browser scroll on game keys
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+    setPlayKey(e.code,true);
+  };
+  playKeyState.ku=e=>{if(playState)setPlayKey(e.code,false);};
+  document.addEventListener('keydown',playKeyState.kd);
+  document.addEventListener('keyup',playKeyState.ku);
+}
 function removePlayKeys(){document.removeEventListener('keydown',playKeyState.kd);document.removeEventListener('keyup',playKeyState.ku);}
-function setPlayKey(code,val){if(!playState)return;if(code==='ArrowLeft'||code==='KeyA')playState.keys.left=val;if(code==='ArrowRight'||code==='KeyD')playState.keys.right=val;if((code==='ArrowUp'||code==='KeyW'||code==='Space')&&val&&playState.onGround)playState.pvy=JUMP;}
+function setPlayKey(code,val){
+  if(!playState)return;
+  if(code==='ArrowLeft'||code==='KeyA')playState.keys.left=val;
+  if(code==='ArrowRight'||code==='KeyD')playState.keys.right=val;
+  if((code==='ArrowUp'||code==='KeyW'||code==='Space')&&val){
+    if(playState.onGround){playState.pvy=JUMP;}
+  }
+}
 function dpadDown(dir){if(!playState)return;if(dir==='left')playState.keys.left=true;if(dir==='right')playState.keys.right=true;if(dir==='up'&&playState.onGround)playState.pvy=JUMP;}
 function dpadUp(dir){if(!playState)return;if(dir==='left')playState.keys.left=false;if(dir==='right')playState.keys.right=false;}
-function isSolid(wx,wy){const tx=Math.floor(wx/TS_P),ty=Math.floor(wy/TS_P);if(ty>=gridH)return true;if(tx<0||ty<0||tx>=gridW)return false;for(let li=0;li<layers.length;li++){const t=getTile(layers[li].data[idx(tx,ty)]);if(t&&t.solid)return true;}return false;}
-function getTileTypeAt(wx,wy){const tx=Math.floor(wx/TS_P),ty=Math.floor(wy/TS_P);if(tx<0||ty<0||tx>=gridW||ty>=gridH)return null;for(let li=layers.length-1;li>=0;li--){const t=layers[li].data[idx(tx,ty)];if(t){const ti=getTile(t);if(ti)return ti.type;}}return null;}
+function isSolid(wx,wy){
+  const tx=Math.floor(wx/TS_P),ty=Math.floor(wy/TS_P);
+  if(ty>=gridH)return true;
+  if(tx<0||ty<0||tx>=gridW)return false;
+  for(let li=0;li<layers.length;li++){
+    const t=getTile(layers[li].data[idx(tx,ty)]);
+    if(t&&t.solid&&(t.type==='terrain'||t.type==='object'||t.type==='decor'))return true;
+  }
+  return false;
+}
+function getTileTypeAt(wx,wy){
+  const tx=Math.floor(wx/TS_P),ty=Math.floor(wy/TS_P);
+  if(tx<0||ty<0||tx>=gridW||ty>=gridH)return null;
+  for(let li=layers.length-1;li>=0;li--){
+    const t=layers[li].data[idx(tx,ty)];
+    if(t){const ti=getTile(t);if(ti&&ti.type==='hazard')return 'hazard';}
+  }
+  return null;
+}
 function playLoop(){if(!playState)return;updatePlay();drawPlay();playAF=requestAnimationFrame(playLoop);}
 function updatePlay(){
   const s=playState;if(s.dead||s.won)return;s.frameCount++;
@@ -1019,97 +1262,14 @@ function closeHotkeys(){document.getElementById('hotkey-overlay').classList.remo
 let _mc=null;
 function openModal(title,msg,onConfirm){document.getElementById('modal-title').textContent=title;document.getElementById('modal-msg').textContent=msg;_mc=onConfirm;document.getElementById('modal-confirm-btn').onclick=()=>{closeModal();if(_mc)_mc();};document.getElementById('modal-overlay').classList.add('show');}
 function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
-document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 function confirmClear(){openModal('Start new level?','All layers and paths will be cleared.',()=>{addDefaultTerrain();enemyPaths={};tileProps={};undoStack=[];redoStack=[];updateUndoRedoBtns();renderUndoHistory();document.getElementById('levelName').value='My Level';showToast('Fresh level started!');});}
 function bbTab(i,btn){document.querySelectorAll('.bb-tab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById('bb'+i).classList.add('on');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2600);}
 
-document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(init)));
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+  requestAnimationFrame(()=>requestAnimationFrame(init));
+});
 </script>
-
-
-<!-- PLAY OVERLAY -->
-<div id="play-overlay">
-  <div id="play-header">
-    <span id="play-title">▶ Play Mode</span>
-    <span id="play-stats">Coins: 0 | Lives: 3</span>
-    <button class="hdr-btn" onclick="closePlayMode()">✕ Exit</button>
-    <button class="hdr-btn" onclick="restartPlay()">↺ Restart</button>
-  </div>
-  <div id="play-canvas-wrap">
-    <canvas id="play-canvas"></canvas>
-    <div id="play-msg"></div>
-  </div>
-  <div id="play-dpad">
-    <div class="dpad-btn" id="dpad-left"  ontouchstart="dpadDown('left')"  ontouchend="dpadUp('left')">◀</div>
-    <div class="dpad-btn" id="dpad-up"    ontouchstart="dpadDown('up')"    ontouchend="dpadUp('up')">▲</div>
-    <div class="dpad-btn" id="dpad-right" ontouchstart="dpadDown('right')" ontouchend="dpadUp('right')">▶</div>
-  </div>
-  <div id="jump-btn" ontouchstart="dpadDown('up')" ontouchend="dpadUp('up')">🆙</div>
-</div>
-<!-- AI PANEL -->
-<div id="ai-panel">
-  <div class="ai-box">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div class="ai-box-title">✦ AI Level Critic</div>
-      <button class="hdr-btn" style="margin-left:auto;" onclick="closeAIPanel()">✕</button>
-    </div>
-    <div id="ai-response" class="ai-response"><span style="color:var(--muted);font-size:.62rem;">Click Analyse to get AI feedback on your level design.</span></div>
-    <div style="display:flex;gap:8px;">
-      <button class="ab ab-u" style="margin:0;flex:1;" onclick="runAICritic()">✦ Analyse Level</button>
-      <button class="ab ab-s" style="margin:0;width:80px;font-size:.65rem;" onclick="closeAIPanel()">Close</button>
-    </div>
-  </div>
-</div>
-<!-- SHARE PANEL -->
-<div id="share-panel">
-  <div class="share-box">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div style="font-family:'Fredoka',cursive;font-size:1.1rem;color:var(--accent2);">🔗 Share Level</div>
-      <button class="hdr-btn" style="margin-left:auto;" onclick="closeShare()">✕</button>
-    </div>
-    <div style="font-size:.6rem;color:var(--muted);line-height:1.6;">Your level is encoded in this URL. Share it with anyone — they open it directly in their browser.</div>
-    <textarea id="shareUrl" class="share-url" rows="4" readonly onclick="this.select()"></textarea>
-    <div style="display:flex;gap:8px;">
-      <button class="ab ab-p" style="margin:0;flex:1;" onclick="copyShareUrl()">⎘ Copy URL</button>
-      <button class="ab ab-s" style="margin:0;width:80px;font-size:.65rem;" onclick="closeShare()">Close</button>
-    </div>
-    <div style="font-size:.46rem;color:var(--muted2);">⚠ Large levels produce very long URLs. Use JSON export for big levels.</div>
-  </div>
-</div>
-<!-- HOTKEY OVERLAY -->
-<div id="hotkey-overlay" onclick="if(event.target===this)closeHotkeys()">
-  <div class="hk-box">
-    <div class="hk-title">⌨ Keyboard Shortcuts</div>
-    <div class="hk-grid">
-      <div class="hk-section">Tools</div>
-      <div class="hk-row"><span class="hk-key">D</span><span class="hk-desc">Draw</span></div>
-      <div class="hk-row"><span class="hk-key">E</span><span class="hk-desc">Erase</span></div>
-      <div class="hk-row"><span class="hk-key">F</span><span class="hk-desc">Flood fill</span></div>
-      <div class="hk-row"><span class="hk-key">G</span><span class="hk-desc">Colour pick</span></div>
-      <div class="hk-row"><span class="hk-key">R</span><span class="hk-desc">Rectangle</span></div>
-      <div class="hk-row"><span class="hk-key">L</span><span class="hk-desc">Line</span></div>
-      <div class="hk-row"><span class="hk-key">M</span><span class="hk-desc">Pan</span></div>
-      <div class="hk-row"><span class="hk-key">S</span><span class="hk-desc">Select</span></div>
-      <div class="hk-row"><span class="hk-key">P</span><span class="hk-desc">Enemy path</span></div>
-      <div class="hk-row"><span class="hk-key">T</span><span class="hk-desc">Stamp</span></div>
-      <div class="hk-section">Edit</div>
-      <div class="hk-row"><span class="hk-key">Ctrl+Z</span><span class="hk-desc">Undo</span></div>
-      <div class="hk-row"><span class="hk-key">Ctrl+Y</span><span class="hk-desc">Redo</span></div>
-      <div class="hk-row"><span class="hk-key">Ctrl+C</span><span class="hk-desc">Copy selection</span></div>
-      <div class="hk-row"><span class="hk-key">Ctrl+X</span><span class="hk-desc">Cut selection</span></div>
-      <div class="hk-row"><span class="hk-key">Ctrl+V</span><span class="hk-desc">Paste</span></div>
-      <div class="hk-row"><span class="hk-key">Del</span><span class="hk-desc">Delete selection</span></div>
-      <div class="hk-row"><span class="hk-key">Right-click</span><span class="hk-desc">Erase tile</span></div>
-      <div class="hk-section">View</div>
-      <div class="hk-row"><span class="hk-key">+ / −</span><span class="hk-desc">Zoom</span></div>
-      <div class="hk-row"><span class="hk-key">Scroll</span><span class="hk-desc">Zoom wheel</span></div>
-      <div class="hk-row"><span class="hk-key">?</span><span class="hk-desc">This screen</span></div>
-      <div class="hk-row"><span class="hk-key">Esc</span><span class="hk-desc">Close panels</span></div>
-    </div>
-    <div style="text-align:center;margin-top:14px;"><button class="ab ab-s" style="width:auto;padding:6px 20px;margin:0;" onclick="closeHotkeys()">Close</button></div>
-  </div>
-</div>
-
 </body>
 </html>
