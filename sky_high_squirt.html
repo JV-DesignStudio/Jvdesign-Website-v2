@@ -1,6 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sky High Squirt &amp; Friends</title>
@@ -299,6 +303,34 @@
     text-align: center;
   }
   .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+  /* ── TOUCH BUTTONS ── */
+  .touch-controls {
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    left: 0; right: 0;
+    justify-content: space-between;
+    padding: 0 16px;
+    pointer-events: none;
+    z-index: 200;
+  }
+  .touch-btn {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    border: 2px solid rgba(255,255,255,0.25);
+    color: white;
+    font-size: 2rem;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: all;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .touch-btn:active { background: rgba(255,255,255,0.28); }
+  @media (pointer: coarse) { .touch-controls { display: flex; } }
 
   /* ----- Shop ----- */
   .shop-header {
@@ -643,6 +675,10 @@
 
 <div id="wrap">
   <canvas id="game" width="420" height="700"></canvas>
+</div>
+<div class="touch-controls" id="touchControls">
+  <button class="touch-btn" id="btnLeft" aria-label="Move left">&#9664;</button>
+  <button class="touch-btn" id="btnRight" aria-label="Move right">&#9654;</button>
 </div>
 
 <div class="hud">
@@ -1192,6 +1228,24 @@ window.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
 });
+
+/* ---------- On-screen touch buttons ---------- */
+(function() {
+  const btnL = document.getElementById('btnLeft');
+  const btnR = document.getElementById('btnRight');
+  if (!btnL || !btnR) return;
+  function press(k)  { keys[k] = true; }
+  function release(k){ keys[k] = false; }
+  ['touchstart','mousedown'].forEach(ev => {
+    btnL.addEventListener(ev, e => { e.preventDefault(); press('left');  }, { passive: false });
+    btnR.addEventListener(ev, e => { e.preventDefault(); press('right'); }, { passive: false });
+  });
+  ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev => {
+    btnL.addEventListener(ev, e => { e.preventDefault(); release('left');  }, { passive: false });
+    btnR.addEventListener(ev, e => { e.preventDefault(); release('right'); }, { passive: false });
+  });
+})();
+
 /* ---------- Tilt controls ----------
    Uses DeviceOrientationEvent.gamma (left/right tilt in degrees).
    iOS 13+ requires permission via user gesture.
@@ -2528,5 +2582,5 @@ function jvdsCloseStrip(){
   document.getElementById('jvdsTab').classList.remove('hidden');
 }
 </script>
-</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script></body>
 </html>

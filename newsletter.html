@@ -1,6 +1,10 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stay in the Loop | JVDesignStudio</title>
@@ -122,6 +126,10 @@
 <body>
 
 <header class="site-header" id="siteHeader">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
     <div class="header-inner">
         <a href="index.html" class="logo-link">
             <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
@@ -179,14 +187,20 @@
             </div>
         </div>
 
-        <div class="nl-form reveal">
-            <input class="nl-input" id="nlName" type="text" placeholder="Your first name (optional)" aria-label="Your first name (optional)">
-            <input class="nl-input" id="nlEmail" type="email" placeholder="Your email address" required aria-label="Your email address">
-            <button class="nl-submit" id="nlBtn" onclick="handleNewsletterSubmit()">💌 Subscribe — It's Free</button>
+        <!-- Newsletter form — Buttondown integration
+             Sign up free at buttondown.email then replace YOUR-USERNAME below -->
+        <form class="nl-form reveal" id="nlForm"
+              action="https://buttondown.email/api/emails/embed-subscribe/YOUR-USERNAME"
+              method="post" target="popupwindow"
+              onsubmit="return handleNewsletterSubmit(event)">
+            <input type="hidden" name="embed" value="1">
+            <input class="nl-input" id="nlName" name="metadata__name" type="text" placeholder="Your first name (optional)" aria-label="Your first name (optional)">
+            <input class="nl-input" id="nlEmail" name="email" type="email" placeholder="Your email address" required aria-label="Your email address">
+            <button class="nl-submit" id="nlBtn" type="submit">💌 Subscribe — It's Free</button>
             <p class="nl-note">No spam. Unsubscribe any time. Usually 1–2 emails per month.</p>
             <div class="nl-divider">or follow on social instead</div>
             <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-ig-nl" rel="noopener noreferrer">📸 Follow @jv_design.studio on Instagram</a>
-        </div>
+        </form>
     </div>
 </section>
 
@@ -236,7 +250,7 @@
             <a href="contact.html">Contact</a>
             <a href="newsletter.html">Newsletter</a>
             <a href="search.html">Search</a>
-            <a href="sitemap.html">Sitemap</a>
+            <a href="videos.html">Videos</a><a href="sitemap.html">Sitemap</a>
         </nav>
         <nav class="footer-socials">
             <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
@@ -268,36 +282,36 @@ const _revObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isInte
 document.querySelectorAll('.reveal').forEach(el=>_revObs.observe(el));
 
 /* ── Newsletter form handler ── */
-function handleNewsletterSubmit(){
+function handleNewsletterSubmit(e){
   var email = document.getElementById('nlEmail').value.trim();
   var name  = document.getElementById('nlName').value.trim();
   var btn   = document.getElementById('nlBtn');
+  var form  = document.getElementById('nlForm');
 
   if(!email || !email.includes('@') || !email.includes('.')){
     document.getElementById('nlEmail').focus();
     document.getElementById('nlEmail').style.borderColor = '#BC4749';
-    return;
+    e.preventDefault(); return false;
   }
 
-  /* ── TO CONNECT A REAL SERVICE ──────────────────────────
-     Replace this block with your Mailchimp / ConvertKit /
-     EmailOctopus embed or API call.
-     The email + name values are ready to use above.
-  ── ────────────────────────────────────────────────────── */
-
-  /* Fallback: open mailto so the signup isn't lost */
-  var subject = encodeURIComponent('Newsletter signup' + (name ? ' — ' + name : ''));
-  var body    = encodeURIComponent('Email: ' + email + (name ? '\nName: ' + name : '') + '\n\n(Submitted via jvdesignstudio.co.uk/newsletter)');
-  window.location.href = 'mailto:hello@jvdesignstudio.co.uk?subject=' + subject + '&body=' + body;
-
-  /* Show success state */
-  btn.textContent = '✅ Thank you! Check your inbox.';
+  /* Show success immediately */
+  btn.textContent = '✅ Subscribed! Welcome aboard.';
   btn.style.background = '#2d7a4a';
   btn.style.boxShadow  = '0 4px 0 #1a5c34';
   btn.disabled = true;
   document.getElementById('nlEmail').disabled = true;
   document.getElementById('nlName').disabled  = true;
+
+  /* If Buttondown username not yet set, fall back to mailto */
+  if(form.action.includes('YOUR-USERNAME')){
+    e.preventDefault();
+    var subject = encodeURIComponent('Newsletter signup' + (name ? ' — ' + name : ''));
+    var body = encodeURIComponent('Email: ' + email + (name ? '\nName: ' + name : '') + '\n\n(via jvdesignstudio.co.uk/newsletter)');
+    window.open('mailto:hello@jvdesignstudio.co.uk?subject=' + subject + '&body=' + body);
+    return false;
+  }
+  return true; /* let Buttondown handle the POST */
 }
 </script>
-</body>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script></body>
 </html>
