@@ -575,6 +575,66 @@ const TAG_EMOJIS = {
 
 const POSTS = [
 
+    // ── 32 · Space Rocket Builder ────────────────────────────────────────────
+    {
+        id: 32,
+        date: '18 May 2026',
+        tag: 'process',
+        emoji: '🚀',
+        title: 'Space Rocket Builder A 15-Step 3D Workshop With Three.js',
+        excerpt: 'Built a fully interactive 3D rocket builder from scratch — nosecone types, fin styles, side boosters, engine clusters, payload fairing, and a live launch animation. No game engine, just Three.js in the browser.',
+        url: 'rocket-builder.html',
+        content: `The Space Rocket Builder started with one question: what 3D subject gives students the most meaningful choices across the fewest steps? A rocket is perfect. Every major part — nosecone, body, fins, boosters, engine bell — is structurally distinct, visually obvious, and maps cleanly to a geometry type in Three.js. Students can see their decisions immediately in 3D and understand why each part exists.
+
+The 15 steps cover: rocket name, nosecone type (cone, ogive, blunt), body height and diameter, primary and secondary colour, fin style (delta, swept, grid), fin count, side boosters, booster size, engine count (1, 3, or 5 nozzle cluster), payload fairing toggle, stripe decal, engine glow colour, and the final launch.
+
+Three.js geometry breakdown: CylinderGeometry for the body, boosters, engine bells, and stripes; ConeGeometry for the nosecone and booster nose caps; ExtrudeGeometry with a custom Shape for delta and swept fins; BoxGeometry bars arranged in a group for grid fins; SphereGeometry for the ogive tip and blunt nose cap; TorusGeometry for the interstage ring between body and engine section.
+
+Orbit controls are custom — no OrbitControls import, just spherical coordinate maths tracking deltaX and deltaY from mouse drag and touch. Pinch zoom is handled by watching the distance between two touch points. The launch animation increments a Y offset each frame and animates the engine flame meshes with sin waves so they flicker.
+
+The mobile story was thought through from the start. Everything that detects touch uses pointer:coarse media queries rather than screen width, so an iPad Pro in landscape (1366px wide) still gets the touch layout. The orbit and pinch controls work the same as on desktop.`,
+    },
+
+    // ── 31 · Mobile Workshop Audit & Fixes ──────────────────────────────────
+    {
+        id: 31,
+        date: '18 May 2026',
+        tag: 'update',
+        emoji: '📱',
+        title: 'Mobile Workshop Audit Every Builder Now Playable on Touch',
+        excerpt: 'Audited all 16 workshop pages for touch and mobile. Six were broken or degraded — Race Builder was completely unplayable without a keyboard. All fixed.',
+        url: 'workshop.html',
+        content: `The question was simple: can every workshop page be completed on just a mobile? The answer before this update was no. Six pages had real problems, three of which were blocking.
+
+Race Builder had no touch input at all — the car is controlled entirely with Arrow keys and WASD. A full D-pad was added: steer left, steer right, throttle, brake, restart. Each button fires touchstart and touchend to set and clear entries in the existing KEYS object, so the car input system needed zero changes.
+
+C++ Tower Defence had two issues. First, the canvas was mouse-click only — no touchstart handler. Second, tower upgrades were right-click only, which has no mobile equivalent. The fix adds a long-press pattern: touchstart starts a 480ms timer, touchend cancels it if it fires first (short tap = place tower), and the timer callback fires the upgrade if it completes. Standard mobile pattern for context-menu replacement.
+
+Roblox Block Builder and the Platformer and Python builders all had D-pads or touch layouts that were hidden behind max-width breakpoints instead of pointer:coarse. An iPad Pro in landscape is 1366px wide — wider than most desktop breakpoints — so the touch UI was being suppressed on the exact device that needed it most. Swapping to @media(pointer:coarse) fixed all three.
+
+Character Designer had touch drawing already wired (the getXY helper handles both mouse and touch events), but every UI button — colour swatches, toolbar controls, zoom buttons, arch selectors — was too small to tap reliably. A pointer:coarse media query block enlarges all of them to a minimum 28px tap target.
+
+The two workshop builders that were already fine: the Pirate Cannon and Ship builders (Three.js orbit + pinch already in place) and the OpenRCT2 builders (step-by-step text content, no interactive canvas).`,
+    },
+
+    // ── 30 · Dungeon Delve Fix ───────────────────────────────────────────────
+    {
+        id: 30,
+        date: '18 May 2026',
+        tag: 'games',
+        emoji: '⚔️',
+        title: 'Dungeon Delve Equip and Combat Fix A CSS Specificity Bug',
+        excerpt: 'Equipping an item in Dungeon Delve left the screen blank. Killing an enemy did nothing. Root cause: inline styles set by showScreen() overriding the hidden class at higher specificity.',
+        url: 'dungeon-delve.html',
+        content: `The bug report was clear: press Equip after finding an item and the screen goes blank. Kill an enemy and nothing happens. Both felt like the overlay wasn't being dismissed, but the fix wasn't obvious.
+
+The showScreen() function works by setting display styles directly on elements as inline styles — el.style.display = 'flex' to show, el.style.display = 'none' to hide. Inline styles have a specificity of ~1000, which overrides any class rule. The hidden class uses display:none as a class rule, which sits at specificity ~10. So when the equip or combat code tried to dismiss an overlay by calling classList.add('hidden'), the inline display:none from showScreen() was still there — but so was the inline display:flex that had shown the overlay. The class rule never won the specificity fight.
+
+The fix was to make every dismissal path call showScreen('game') rather than manually toggling classes or setting display. showScreen() clears the inline style on each overlay element and restores the game screen properly, so there's no conflict between inline and class rules.
+
+Four functions needed updating: equipLoot(), enemyDefeated(), combatFlee(), and closeShop(). Each one had been calling classList.add('hidden') or style.display = 'none' on its specific overlay rather than delegating to showScreen(). One-line change each, and the entire game flow — loot, combat, shop — works cleanly again.`,
+    },
+
     // ── 28 · Blueprint Clicker ───────────────────────────────────────────────
     {
         id: 28,

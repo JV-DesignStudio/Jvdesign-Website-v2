@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Builder — Design Your Own Launch Vehicle | JVDesignStudio</title>
+<meta name="description" content="Design and build your own 3D rocket step by step. Choose nosecone, body, boosters, fins and engine bells — then launch it. Ages 10+. Free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/rocket-builder.html">
+<meta property="og:title" content="Rocket Builder — Design Your Own Launch Vehicle | JVDesignStudio">
+<meta property="og:description" content="Design and build your own 3D rocket step by step. Choose nosecone, body, boosters, fins and engine bells — then launch it. Ages 10+. Free.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rocket Builder — Design Your Own Launch Vehicle | JVDesignStudio">
+<meta name="twitter:description" content="Design and build your own 3D rocket step by step. Free.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#07090f;--bg2:#0c0e18;--bg3:#131624;
+  --border:rgba(255,255,255,.07);
+  --text:#e8eef8;--muted:rgba(232,238,248,.38);
+  --acc:#e8543a;--acc-lt:#ff7a5c;--acc-dk:#b03020;
+  --blue:#38bdf8;--green:#4ade80;--orange:#fb923c;--purple:#a78bfa;--gold:#f5c842;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* NAV */
+.hdr{position:sticky;top:0;z-index:90;background:rgba(7,9,15,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),#b03020);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* HERO */
+.hero{padding:28px 18px 20px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(232,84,58,.07) 1px,transparent 1px);background-size:28px 28px}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;position:relative;z-index:1}
+@media(max-width:640px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:7px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,7vw,4rem);line-height:.92;letter-spacing:.03em;color:#fff;margin-bottom:9px}
+.hero-title .hl{color:var(--acc)}
+.hero-desc{font-size:.86rem;color:var(--muted);line-height:1.72;max-width:440px}
+.hero-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.56rem;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.r{border-color:rgba(232,84,58,.35);color:var(--acc-lt);background:rgba(232,84,58,.07)}
+
+/* SPEC CARD */
+.spec-card{background:rgba(255,255,255,.03);border:1px solid rgba(232,84,58,.18);border-radius:12px;padding:13px 16px;min-width:190px}
+.spec-title{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin-bottom:8px}
+.spec-name{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.05em;color:#fff;margin-bottom:5px}
+.spec-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.72rem}
+.spec-row:last-child{border:none}
+.spec-l{color:var(--muted)}
+.spec-r{font-family:'JetBrains Mono',monospace;color:var(--acc);font-size:.68rem}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 54px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+/* STEPS */
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 9px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}
+.tb.active{color:var(--acc-lt);border-bottom-color:var(--acc)}
+.tb.done::before{content:"✓ ";color:var(--green)}
+.step-body{padding:20px 24px;overflow-y:auto;flex:1}
+@media(max-width:640px){.step-body{padding:14px 12px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:.04em;color:#fff;margin-bottom:6px;line-height:1}
+.step-intro{font-size:.83rem;color:var(--muted);line-height:1.75;margin-bottom:11px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:8px;padding:9px 12px;margin:6px 0;font-size:.76rem;line-height:1.58;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(232,84,58,.05);border:1px solid rgba(232,84,58,.16);color:rgba(232,238,248,.7)}
+.box-c::before{content:"📖"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(232,238,248,.7)}
+.box-t::before{content:"💡"}
+.box-r{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);color:rgba(232,238,248,.8)}
+.box-r::before{content:"🚀"}
+
+/* OPTION PICKER */
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:10px 0}
+.opt-btn{padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--bg2);cursor:pointer;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;color:var(--muted);text-align:center;transition:all .15s;line-height:1.3}
+.opt-btn:hover{border-color:rgba(232,84,58,.4);color:var(--text);background:var(--bg3)}
+.opt-btn.sel{border-color:var(--acc);color:var(--acc-lt);background:rgba(232,84,58,.08)}
+.opt-icon{font-size:1.4rem;display:block;margin-bottom:4px}
+
+/* COLOUR PICKERS */
+.swatch-row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.swatch{width:32px;height:32px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff;transform:scale(1.18)}
+.custom-colour{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:.75rem;color:var(--muted)}
+.custom-colour input[type=color]{width:36px;height:36px;border:2px solid var(--border);border-radius:7px;cursor:pointer;padding:2px;background:var(--bg2)}
+
+/* SLIDER ROW */
+.slider-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.slider-row:last-child{border:none}
+.slider-lbl{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.05em}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--acc-lt);min-width:40px;text-align:right}
+input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
+
+/* TASK LIST */
+.task-list{margin:7px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.74rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+/* NAME INPUT */
+.name-input{width:100%;background:var(--bg2);border:1px solid rgba(232,84,58,.3);border-radius:8px;color:var(--acc-lt);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;padding:9px 13px;outline:none;transition:border-color .2s;margin:8px 0}
+.name-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(232,84,58,.12)}
+.name-input::placeholder{color:var(--muted);font-size:1rem}
+
+/* BUTTONS */
+.run-btn{width:100%;margin-top:9px;padding:11px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+.step-nav{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(232,84,58,.12);color:var(--acc-lt);border:1px solid rgba(232,84,58,.22)}
+.btn-n:hover:not(:disabled){background:rgba(232,84,58,.2)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* 3D PANEL */
+.scene-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:54px;height:calc(100vh - 54px)}
+@media(max-width:1080px){.scene-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.scene-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scene-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scene-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.scene-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+#rocketCanvas{display:block;width:100%;height:100%;touch-action:none}
+.scene-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:6px;pointer-events:none;white-space:nowrap}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;min-height:26px;color:var(--acc-lt);flex-shrink:0}
+
+/* PROGRESS */
+.prog-bar{background:var(--bg2);border-top:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:11px;position:sticky;bottom:0;z-index:50;max-width:1440px;margin:0 auto;width:100%}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--acc-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--orange));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:3px;flex-wrap:wrap;max-width:200px;justify-content:flex-end;flex-shrink:0}
+.pd{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.pd.done{background:var(--green)}.pd.active{background:var(--acc);transform:scale(1.35)}
+
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:16px;text-align:center;color:var(--muted);font-size:.7rem}
+footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">🚀 Rocket Builder</div>
+  <div class="hdr-right">
+    <a href="workshop.html" class="back-link">← Workshop</a>
+    <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">JVDesignStudio · 3D Workshop</div>
+      <h1 class="hero-title">Rocket<br><span class="hl">Builder</span></h1>
+      <p class="hero-desc">Design your own launch vehicle step by step in 3D. Choose the nosecone, body, boosters, fins and engine bells — then watch it lift off.</p>
+      <div class="hero-pills">
+        <span class="pill r">Three.js</span>
+        <span class="pill r">3D</span>
+        <span class="pill">15 Steps</span>
+        <span class="pill">Boosters</span>
+        <span class="pill">Launch!</span>
+        <span class="pill">🆓 Free</span>
+      </div>
+    </div>
+    <div class="spec-card" id="specCard">
+      <div class="spec-title">Your Rocket</div>
+      <div class="spec-name" id="sName">UNNAMED</div>
+      <div class="spec-row"><span class="spec-l">Nosecone</span><span class="spec-r" id="sNose">—</span></div>
+      <div class="spec-row"><span class="spec-l">Height</span><span class="spec-r" id="sHeight">—</span></div>
+      <div class="spec-row"><span class="spec-l">Boosters</span><span class="spec-r" id="sBoosters">—</span></div>
+      <div class="spec-row"><span class="spec-l">Fins</span><span class="spec-r" id="sFins">—</span></div>
+      <div class="spec-row"><span class="spec-l">Engines</span><span class="spec-r" id="sEngines">—</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="layout">
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+  <div class="scene-col">
+    <div class="scene-top">
+      <span class="scene-top-l">🛸 Live 3D Preview</span>
+      <div class="scene-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus">Apply Step 1 to begin</span></div>
+      </div>
+    </div>
+    <div class="scene-wrap">
+      <canvas id="rocketCanvas"></canvas>
+      <div class="scene-hint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
+    </div>
+    <div class="obar" id="obar">▶ Choose a nosecone to start building</div>
+  </div>
+</div>
+
+<div class="prog-bar">
+  <span class="prog-lbl">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<footer><p>© 2026 JVDesignStudio · <a href="workshop.html">Workshop</a> · <a href="contact.html">Contact</a></p></footer>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════
+   THREE.JS SCENE
+═══════════════════════════════ */
+const canvas = document.getElementById('rocketCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x07090f);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x07090f, 20, 60);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 3, 12);
+
+// Lights
+const ambient = new THREE.AmbientLight(0x334466, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.4);
+sun.position.set(5, 10, 6);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4466aa, 0.4);
+fill.position.set(-6, 2, -4);
+scene.add(fill);
+const engineGlow = new THREE.PointLight(0xff5500, 0, 3);
+scene.add(engineGlow);
+
+// Stars background
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 1500; i++) {
+    verts.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.12 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+// Ground pad
+const padGeo = new THREE.CylinderGeometry(2, 2, 0.15, 32);
+const padMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3a, roughness: 0.9 });
+const pad = new THREE.Mesh(padGeo, padMat);
+pad.position.y = -0.075;
+pad.receiveShadow = true;
+scene.add(pad);
+
+/* ═══════════════════════════════
+   ROCKET STATE
+═══════════════════════════════ */
+const R = {
+  name: 'UNNAMED',
+  nosecone: 'cone',      // cone | ogive | blunt
+  bodyHeight: 3,         // 2–5
+  bodyRadius: 0.35,      // 0.25–0.55
+  primaryCol: '#e8543a',
+  secondaryCol: '#ffffff',
+  finStyle: 'delta',     // delta | swept | grid
+  finCount: 4,           // 3 | 4
+  boosters: 0,           // 0 | 2 | 4
+  boosterSize: 0.6,      // 0.4–0.9
+  engineCount: 1,        // 1 | 3 | 5
+  fairing: 'none',       // none | standard | xl
+  stripeOn: false,
+  stripeCol: '#ffffff',
+  glowCol: '#ff6600',
+  launched: false,
+  launchY: 0,
+};
+
+let rocketGroup = null;
+let exhaustParticles = [];
+
+function hexToThree(hex) {
+  return new THREE.Color(hex);
+}
+
+function buildRocket() {
+  if (rocketGroup) scene.remove(rocketGroup);
+  exhaustParticles = [];
+  rocketGroup = new THREE.Group();
+  rocketGroup.position.y = R.launchY;
+
+  const pMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.primaryCol), roughness: 0.35, metalness: 0.55 });
+  const sMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.4, metalness: 0.45 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2a, roughness: 0.6, metalness: 0.3 });
+  const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.8 });
+
+  const bh = R.bodyHeight;
+  const br = R.bodyRadius;
+  const baseY = 0;
+
+  // Body
+  const bodyGeo = new THREE.CylinderGeometry(br, br, bh, 24);
+  const body = new THREE.Mesh(bodyGeo, pMat);
+  body.position.y = baseY + bh / 2;
+  body.castShadow = true;
+  rocketGroup.add(body);
+
+  // Stripe band on body
+  if (R.stripeOn) {
+    const stripGeo = new THREE.CylinderGeometry(br + 0.005, br + 0.005, 0.22, 24);
+    const stripMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.stripeCol), roughness: 0.4, metalness: 0.5 });
+    const strip = new THREE.Mesh(stripGeo, stripMat);
+    strip.position.y = baseY + bh * 0.35;
+    rocketGroup.add(strip);
+  }
+
+  // Nosecone
+  const noseBase = baseY + bh;
+  if (R.nosecone === 'cone') {
+    const noseH = bh * 0.55;
+    const noseGeo = new THREE.ConeGeometry(br, noseH, 24);
+    const nose = new THREE.Mesh(noseGeo, sMat);
+    nose.position.y = noseBase + noseH / 2;
+    nose.castShadow = true;
+    rocketGroup.add(nose);
+  } else if (R.nosecone === 'ogive') {
+    const noseH = bh * 0.65;
+    const noseGeo = new THREE.ConeGeometry(br, noseH, 24);
+    noseGeo.translate(0, 0, 0);
+    const nose = new THREE.Mesh(noseGeo, sMat);
+    nose.position.y = noseBase + noseH / 2;
+    nose.castShadow = true;
+    rocketGroup.add(nose);
+    // Ogive shape — add rounded tip cap
+    const tipGeo = new THREE.SphereGeometry(br * 0.18, 10, 10);
+    const tip = new THREE.Mesh(tipGeo, sMat);
+    tip.position.y = noseBase + noseH;
+    rocketGroup.add(tip);
+    // Shoulder fairing
+    const shGeo = new THREE.CylinderGeometry(br * 1.06, br, noseH * 0.18, 24);
+    const sh = new THREE.Mesh(shGeo, sMat);
+    sh.position.y = noseBase + noseH * 0.09;
+    rocketGroup.add(sh);
+  } else { // blunt
+    const noseH = bh * 0.28;
+    const noseGeo = new THREE.CylinderGeometry(br * 0.55, br, noseH, 24);
+    const nose = new THREE.Mesh(noseGeo, sMat);
+    nose.position.y = noseBase + noseH / 2;
+    nose.castShadow = true;
+    rocketGroup.add(nose);
+    const capGeo = new THREE.SphereGeometry(br * 0.55, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+    const cap = new THREE.Mesh(capGeo, sMat);
+    cap.position.y = noseBase + noseH;
+    rocketGroup.add(cap);
+  }
+
+  // Payload fairing
+  if (R.fairing !== 'none') {
+    const fH = R.fairing === 'xl' ? bh * 0.7 : bh * 0.45;
+    const fR = br * (R.fairing === 'xl' ? 1.28 : 1.18);
+    const fGeo = new THREE.CylinderGeometry(br * 0.1, fR, fH, 16);
+    const fMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.5, metalness: 0.4, transparent: true, opacity: 0.85 });
+    const fairing = new THREE.Mesh(fGeo, fMat);
+    fairing.position.y = noseBase + fH / 2;
+    rocketGroup.add(fairing);
+  }
+
+  // Engine area - interstage ring
+  const ringGeo = new THREE.TorusGeometry(br, 0.04, 8, 24);
+  const ring = new THREE.Mesh(ringGeo, darkMat);
+  ring.position.y = baseY + 0.3;
+  ring.rotation.x = Math.PI / 2;
+  rocketGroup.add(ring);
+
+  // Engine bells
+  const enginePositions = [];
+  if (R.engineCount === 1) {
+    enginePositions.push([0, 0]);
+  } else if (R.engineCount === 3) {
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      enginePositions.push([Math.cos(a) * br * 0.45, Math.sin(a) * br * 0.45]);
+    }
+  } else { // 5
+    enginePositions.push([0, 0]);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      enginePositions.push([Math.cos(a) * br * 0.55, Math.sin(a) * br * 0.55]);
+    }
+  }
+
+  const bellR = R.engineCount > 1 ? br * 0.28 : br * 0.42;
+  enginePositions.forEach(([ex, ez]) => {
+    const bellGeo = new THREE.CylinderGeometry(bellR * 1.5, bellR * 0.7, 0.35, 16);
+    const bell = new THREE.Mesh(bellGeo, exhaustMat);
+    bell.position.set(ex, baseY - 0.18, ez);
+    rocketGroup.add(bell);
+    // Nozzle throat
+    const throatGeo = new THREE.CylinderGeometry(bellR * 0.7, bellR * 0.7, 0.08, 12);
+    const throat = new THREE.Mesh(throatGeo, darkMat);
+    throat.position.set(ex, baseY - 0.38, ez);
+    rocketGroup.add(throat);
+  });
+
+  // Fins
+  const finAngles = [];
+  for (let i = 0; i < R.finCount; i++) finAngles.push((i / R.finCount) * Math.PI * 2);
+  const finMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.4, metalness: 0.55, side: THREE.DoubleSide });
+
+  finAngles.forEach(angle => {
+    let finMesh;
+    if (R.finStyle === 'delta') {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(0, bh * 0.5);
+      shape.lineTo(br * 2.2, 0);
+      shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
+      finMesh = new THREE.Mesh(geo, finMat);
+      finMesh.position.y = baseY;
+    } else if (R.finStyle === 'swept') {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.lineTo(br * 0.8, bh * 0.42);
+      shape.lineTo(br * 2.0, bh * 0.42);
+      shape.lineTo(br * 2.0, 0);
+      shape.closePath();
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
+      finMesh = new THREE.Mesh(geo, finMat);
+      finMesh.position.y = baseY;
+    } else { // grid
+      const gGroup = new THREE.Group();
+      const barMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.5, metalness: 0.5 });
+      const gW = br * 1.8, gH = bh * 0.38, gD = 0.06;
+      [-gH * 0.33, 0, gH * 0.33].forEach(gy => {
+        const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gD, gW), barMat);
+        g.position.set(gW * 0.5 + br, gy + baseY + gH * 0.5, 0);
+        gGroup.add(g);
+      });
+      [-gW * 0.33, 0, gW * 0.33].forEach(gx => {
+        const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gH, gD), barMat);
+        g.position.set(gx + gW * 0.5 + br, baseY + gH * 0.5, 0);
+        gGroup.add(g);
+      });
+      gGroup.rotation.y = angle;
+      rocketGroup.add(gGroup);
+      return;
+    }
+
+    finMesh.castShadow = true;
+    const wrapper = new THREE.Group();
+    wrapper.add(finMesh);
+    wrapper.rotation.y = angle;
+    rocketGroup.add(wrapper);
+  });
+
+  // Side boosters
+  if (R.boosters > 0) {
+    const bsr = R.boosterSize * 0.16;
+    const bsh = bh * R.boosterSize * 0.72;
+    const bDist = br + bsr * 2.5;
+    const boosterAngles = [];
+    for (let i = 0; i < R.boosters; i++) boosterAngles.push((i / R.boosters) * Math.PI * 2);
+
+    boosterAngles.forEach(a => {
+      const bx = Math.cos(a) * bDist;
+      const bz = Math.sin(a) * bDist;
+
+      const bBody = new THREE.Mesh(new THREE.CylinderGeometry(bsr, bsr, bsh, 16), pMat.clone());
+      bBody.position.set(bx, baseY + bsh / 2, bz);
+      bBody.castShadow = true;
+      rocketGroup.add(bBody);
+
+      const bNose = new THREE.Mesh(new THREE.ConeGeometry(bsr, bsh * 0.35, 16), sMat.clone());
+      bNose.position.set(bx, baseY + bsh + bsh * 0.175, bz);
+      rocketGroup.add(bNose);
+
+      const bBell = new THREE.Mesh(new THREE.CylinderGeometry(bsr * 1.4, bsr * 0.7, 0.22, 12), exhaustMat.clone());
+      bBell.position.set(bx, baseY - 0.11, bz);
+      rocketGroup.add(bBell);
+
+      // Strut connecting booster to main body
+      const strutLen = bDist - br - bsr;
+      const strutGeo = new THREE.CylinderGeometry(0.025, 0.025, strutLen, 6);
+      const strut = new THREE.Mesh(strutGeo, darkMat);
+      strut.rotation.z = Math.PI / 2;
+      strut.position.set((bx + Math.cos(a) * br) / 2, baseY + bsh * 0.55, (bz + Math.sin(a) * br) / 2);
+      strut.rotation.set(0, a + Math.PI / 2, Math.PI / 2);
+      rocketGroup.add(strut);
+    });
+  }
+
+  // Exhaust flame (visible when launched)
+  if (R.launched) {
+    const glowColor = new THREE.Color(R.glowCol);
+    engineGlow.color = glowColor;
+    engineGlow.intensity = 2.5;
+    engineGlow.position.y = baseY - 0.6 + R.launchY;
+
+    enginePositions.forEach(([ex, ez]) => {
+      for (let i = 0; i < 3; i++) {
+        const fh = 0.3 + Math.random() * 0.5;
+        const fGeo = new THREE.ConeGeometry(bellR * (0.6 + Math.random() * 0.6), fh, 8);
+        const fMat = new THREE.MeshBasicMaterial({ color: glowColor, transparent: true, opacity: 0.6 + Math.random() * 0.3 });
+        const flame = new THREE.Mesh(fGeo, fMat);
+        flame.position.set(ex, baseY - 0.45 - fh / 2, ez);
+        flame.rotation.x = Math.PI;
+        rocketGroup.add(flame);
+        exhaustParticles.push({ mesh: flame, baseY: baseY - 0.45 - fh / 2, phase: Math.random() * Math.PI * 2 });
+      }
+    });
+  } else {
+    engineGlow.intensity = 0;
+  }
+
+  scene.add(rocketGroup);
+  updateSpecCard();
+}
+
+/* ═══════════════════════════════
+   ORBIT CONTROLS
+═══════════════════════════════ */
+let orbit = { theta: 0.3, phi: 1.1, radius: 12, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(4, Math.min(24, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + R.bodyHeight / 2 + 1;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, R.bodyHeight / 2, 0);
+}
+
+canvas.addEventListener('mousedown', e => { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', () => { orbit.dragging = false; });
+window.addEventListener('mousemove', e => {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', e => { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+
+let pinchDist0 = 0;
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
+  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', () => { orbit.dragging = false; });
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && orbit.dragging) {
+    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
+    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
+    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    orbit.radius *= pinchDist0 / d;
+    pinchDist0 = d;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+/* ═══════════════════════════════
+   RESIZE + RENDER LOOP
+═══════════════════════════════ */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+
+  // Auto-slow rotate when not dragging
+  if (!orbit.dragging) orbit.theta += 0.003;
+  updateCamera();
+
+  // Animate flames
+  exhaustParticles.forEach(p => {
+    p.mesh.position.y = p.baseY + R.launchY - Math.abs(Math.sin(frame * 0.12 + p.phase)) * 0.15;
+    p.mesh.material.opacity = 0.5 + Math.sin(frame * 0.18 + p.phase) * 0.3;
+    const s = 0.85 + Math.sin(frame * 0.14 + p.phase) * 0.15;
+    p.mesh.scale.setScalar(s);
+  });
+
+  // Launch animation
+  if (R.launched && R.launchY < 80) {
+    R.launchY += 0.07;
+    if (rocketGroup) rocketGroup.position.y = R.launchY;
+    if (R.launchY > 3) { scene.fog.near = 20 - R.launchY * 0.2; }
+    engineGlow.position.y = R.launchY - 0.6;
+    orbit.phi = Math.max(0.5, orbit.phi - 0.003);
+  }
+
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ═══════════════════════════════
+   SPEC CARD
+═══════════════════════════════ */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = R.name || 'UNNAMED';
+  document.getElementById('sNose').textContent = {cone:'Cone',ogive:'Ogive',blunt:'Blunt'}[R.nosecone] || '—';
+  document.getElementById('sHeight').textContent = R.bodyHeight ? R.bodyHeight.toFixed(1)+'m' : '—';
+  document.getElementById('sBoosters').textContent = R.boosters || '—';
+  document.getElementById('sFins').textContent = R.finCount + '× ' + R.finStyle;
+  document.getElementById('sEngines').textContent = R.engineCount + ' engine' + (R.engineCount > 1 ? 's' : '');
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* ═══════════════════════════════
+   STEPS
+═══════════════════════════════ */
+let currentStep = 0;
+const stepDone = new Array(15).fill(false);
+
+function nav(i) {
+  const T = STEPS.length;
+  return `<div class="step-nav">
+    <button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →</button>
+  </div>`;
+}
+
+function opts(id, options, currentVal, onChange) {
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" onclick="(${onChange})('${o.val}',this)">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" onclick="(${onChange})('${c}',this)"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" oninput="(${onChange})(this.value,null)">
+  </div>`;
+}
+
+function selectOpt(val, el, field, rebuild) {
+  R[field] = val;
+  el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+  if (el) el.classList.add('sel');
+  if (rebuild) buildRocket();
+}
+
+function selectSwatch(col, el, field) {
+  R[field] = col;
+  el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+  if (el) el.classList.add('sel');
+  buildRocket();
+}
+
+const STEPS = [
+
+/* 1 */ {
+  title: 'Name Your Rocket',
+  tag: 'STEP 01 · IDENTITY',
+  intro: `Every rocket needs a name. <strong>NASA, SpaceX, ESA</strong> — they all name their launch vehicles. Saturn V. Falcon 9. Ariane 6. What will yours be called?`,
+  boxes: [
+    { t:'box-c', tx:'Rocket names often reflect power, place, or mythology. Saturn V was named after the Roman god. Falcon after the Millennium Falcon. Name yours something that means something to you.' },
+    { t:'box-t', tx:'Keep it under 12 characters — it looks best on the spec card.' },
+  ],
+  tasks: ['Enter a rocket name', 'Press Apply to lock it in'],
+  html() { return `<input class="name-input" id="rocketName" maxlength="14" placeholder="E.G. NOVA-7" value="${R.name==='UNNAMED'?'':R.name}">` + nav(0); },
+  onApply() { R.name = document.getElementById('rocketName')?.value?.trim().toUpperCase() || 'NOVA'; buildRocket(); sout('🚀 ' + R.name + ' is registered. Now choose a nosecone shape.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */ {
+  title: 'Nosecone Shape',
+  tag: 'STEP 02 · AERODYNAMICS',
+  intro: `The nosecone cuts through the atmosphere. Different shapes work best at different speeds. <strong>Cone</strong> is classic. <strong>Ogive</strong> is more aerodynamic. <strong>Blunt</strong> is used on crew capsules.`,
+  boxes: [
+    { t:'box-c', tx:'Real rockets use <em>von Kármán ogives</em> — mathematically optimised curves. The Falcon 9 uses a conic section. The Dragon capsule uses a blunt body to create a shock wave that deflects heat during re-entry.' },
+    { t:'box-t', tx:'For maximum style points, try Ogive — it adds a shoulder fairing that looks very professional.' },
+  ],
+  tasks: ['Choose a nosecone', 'See how it changes the silhouette'],
+  html() {
+    const o = `(function(v,el){R.nosecone=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('nose', [
+      { val:'cone',  icon:'🔺', label:'Cone' },
+      { val:'ogive', icon:'🚀', label:'Ogive' },
+      { val:'blunt', icon:'🛸', label:'Blunt Cap' },
+    ], R.nosecone, o) + nav(1);
+  },
+  onApply() { buildRocket(); sout('Nosecone: ' + R.nosecone + '. Looking good!'); document.getElementById('liveStatus').textContent = 'Nosecone set!'; }
+},
+
+/* 3 */ {
+  title: 'Body Height',
+  tag: 'STEP 03 · SCALE',
+  intro: `How <strong>tall</strong> is your rocket? A small sounding rocket might be 8m. Saturn V was 111m. Taller rockets carry more fuel and reach higher orbits — but need bigger engines.`,
+  boxes: [
+    { t:'box-c', tx:'The <strong>mass ratio</strong> of a rocket (fuel mass vs total mass) determines how high it can go. More body height = more fuel capacity. The Tsiolkovsky rocket equation governs all of this.' },
+    { t:'box-t', tx:'Try Medium first — it balances well visually with boosters and fins.' },
+  ],
+  tasks: ['Pick a body height', 'Notice how the fin and booster positions adapt'],
+  html() {
+    const o = `(function(v,el){R.bodyHeight=parseFloat(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('height', [
+      { val:'2.2', icon:'📦', label:'Compact' },
+      { val:'3.2', icon:'🚀', label:'Medium' },
+      { val:'4.4', icon:'🏢', label:'Tall' },
+      { val:'5.5', icon:'🌕', label:'Heavy' },
+    ], String(R.bodyHeight), o) + nav(2);
+  },
+  onApply() { buildRocket(); sout('Body height: ' + R.bodyHeight + 'm equivalent.'); document.getElementById('liveStatus').textContent = 'Height set!'; }
+},
+
+/* 4 */ {
+  title: 'Body Diameter',
+  tag: 'STEP 04 · GIRTH',
+  intro: `A wider body holds more fuel, but creates more <strong>aerodynamic drag</strong>. Falcon 9's core is 3.7m wide. SLS is 8.4m. Your choice affects how the fins and boosters look attached.`,
+  boxes: [
+    { t:'box-c', tx:'Wider rockets are called <em>wide-body launchers</em>. They\'re often used for heavy cargo where drag is less important than payload mass.' },
+  ],
+  tasks: ['Set the body diameter'],
+  html() {
+    const o = `(function(v,el){R.bodyRadius=parseFloat(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('diam', [
+      { val:'0.26', icon:'🖊️', label:'Slim' },
+      { val:'0.35', icon:'🚀', label:'Standard' },
+      { val:'0.46', icon:'🛢️', label:'Wide' },
+    ], String(R.bodyRadius), o) + nav(3);
+  },
+  onApply() { buildRocket(); sout('Body diameter adjusted.'); document.getElementById('liveStatus').textContent = 'Diameter set!'; }
+},
+
+/* 5 */ {
+  title: 'Primary Colour',
+  tag: 'STEP 05 · LIVERY',
+  intro: `The main body colour. <strong>White</strong> reflects sunlight and keeps fuel tanks cool. NASA's SLS is white. SpaceX's Falcon 9 is white. But your rocket can be any colour you want.`,
+  boxes: [
+    { t:'box-c', tx:'Rockets are painted white not just for looks — white paint reflects solar radiation, stopping liquid hydrogen or oxygen tanks from boiling off before launch.' },
+    { t:'box-t', tx:'Pick a bold colour — you\'ll add a contrasting secondary in the next step.' },
+  ],
+  tasks: ['Choose a primary colour'],
+  html() {
+    const o = `(function(c,el){R.primaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return swatchRow('pc', ['#e8543a','#f5c842','#38bdf8','#4ade80','#a78bfa','#fb923c','#ffffff','#1a1a2a'], R.primaryCol, o) + nav(4);
+  },
+  onApply() { buildRocket(); sout('Primary colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 6 */ {
+  title: 'Secondary Colour',
+  tag: 'STEP 06 · CONTRAST',
+  intro: `The secondary colour appears on the <strong>nosecone, fins, and engine bells</strong>. A contrasting colour makes your rocket look more designed and intentional.`,
+  boxes: [
+    { t:'box-t', tx:'Classic combos: white body + black nosecone (Ariane 5). Red body + white fins. Or match them for a clean monochrome look.' },
+  ],
+  tasks: ['Choose a secondary colour'],
+  html() {
+    const o = `(function(c,el){R.secondaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return swatchRow('sc', ['#ffffff','#1a1a2a','#e8543a','#f5c842','#38bdf8','#4ade80','#a78bfa','#c0c0c0'], R.secondaryCol, o) + nav(5);
+  },
+  onApply() { buildRocket(); sout('Secondary colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 7 */ {
+  title: 'Fin Style',
+  tag: 'STEP 07 · STABILITY',
+  intro: `Fins keep the rocket flying <strong>straight</strong>. Without them, it would tumble. Different shapes give different handling characteristics and visual personality.`,
+  boxes: [
+    { t:'box-c', tx:'<strong>Delta fins</strong> are the simplest — a triangle. <strong>Swept fins</strong> are angled back to reduce drag at high speed. <strong>Grid fins</strong> (like Falcon 9) fold out and can steer the rocket during descent.' },
+    { t:'box-t', tx:'Grid fins look the most technical and futuristic. Swept fins look the most "classic rocket".' },
+  ],
+  tasks: ['Choose a fin style', 'See how they attach to the body'],
+  html() {
+    const o = `(function(v,el){R.finStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('fins', [
+      { val:'delta',  icon:'▲', label:'Delta' },
+      { val:'swept',  icon:'◁', label:'Swept' },
+      { val:'grid',   icon:'⊞', label:'Grid Fins' },
+    ], R.finStyle, o) + nav(6);
+  },
+  onApply() { buildRocket(); sout('Fins: ' + R.finStyle + ' style applied.'); document.getElementById('liveStatus').textContent = 'Fins added!'; }
+},
+
+/* 8 */ {
+  title: 'Fin Count',
+  tag: 'STEP 08 · SYMMETRY',
+  intro: `<strong>3 fins</strong> is the lightest and fastest option — most model rockets use 3. <strong>4 fins</strong> gives more stability and a more symmetrical look. Real rockets often use 4.`,
+  boxes: [
+    { t:'box-c', tx:'3 fins give a 120° symmetry. 4 fins give 90° symmetry. More fins = more drag but more stability at low speeds. Most high-power rockets use 3 to reduce weight.' },
+  ],
+  tasks: ['Choose 3 or 4 fins'],
+  html() {
+    const o = `(function(v,el){R.finCount=parseInt(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('fc', [
+      { val:'3', icon:'🔱', label:'3 Fins' },
+      { val:'4', icon:'✚', label:'4 Fins' },
+    ], String(R.finCount), o) + nav(7);
+  },
+  onApply() { buildRocket(); sout('Fin count: ' + R.finCount + '.'); document.getElementById('liveStatus').textContent = 'Fins set!'; }
+},
+
+/* 9 */ {
+  title: 'Side Boosters',
+  tag: 'STEP 09 · THRUST',
+  intro: `<strong>Boosters</strong> are additional rockets strapped to the core. They provide extra thrust at launch and then separate. Falcon Heavy has 2 side boosters. SLS has 2 solid rocket boosters.`,
+  boxes: [
+    { t:'box-c', tx:'Side boosters dramatically increase lift capacity. They burn out first and are then jettisoned, reducing weight at the point where the core rocket takes over.' },
+    { t:'box-r', tx:'SpaceX even lands their Falcon 9 boosters back on their launch pads — the most iconic rocket moment of the 2010s.' },
+  ],
+  tasks: ['Choose how many boosters to add'],
+  html() {
+    const o = `(function(v,el){R.boosters=parseInt(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('boosters', [
+      { val:'0', icon:'⬛', label:'None' },
+      { val:'2', icon:'⚡', label:'2 Boosters' },
+      { val:'4', icon:'💥', label:'4 Boosters' },
+    ], String(R.boosters), o) + nav(8);
+  },
+  onApply() { buildRocket(); sout(R.boosters ? '💥 ' + R.boosters + ' boosters attached!' : 'No boosters — lean and clean.'); document.getElementById('liveStatus').textContent = 'Boosters set!'; }
+},
+
+/* 10 */ {
+  title: 'Booster Size',
+  tag: 'STEP 10 · PROPORTIONS',
+  intro: `Set how large your boosters are relative to the main body. <strong>Small</strong> boosters are strap-on solid rockets. <strong>Large</strong> boosters are full liquid fuel cores — like Falcon Heavy's.`,
+  boxes: [
+    { t:'box-t', tx:'Skip this step if you chose no boosters. If you have 4 boosters and make them large, your rocket will look impressively chunky.' },
+  ],
+  tasks: ['Adjust booster size'],
+  html() {
+    return `<div style="padding:8px 0"><div class="slider-row">
+      <span class="slider-lbl">Booster Size</span>
+      <input type="range" min="4" max="10" step="1" value="${Math.round(R.boosterSize*10)}"
+        oninput="R.boosterSize=this.value/10;document.getElementById('bsVal').textContent=(this.value/10).toFixed(1)+'×';buildRocket()">
+      <span class="slider-val" id="bsVal">${R.boosterSize.toFixed(1)}×</span>
+    </div></div>` + nav(9);
+  },
+  onApply() { buildRocket(); sout('Booster size: ' + R.boosterSize.toFixed(1) + '×'); document.getElementById('liveStatus').textContent = 'Boosters sized!'; }
+},
+
+/* 11 */ {
+  title: 'Engine Count',
+  tag: 'STEP 11 · POWER',
+  intro: `How many engines in the main core? <strong>1 engine</strong> is simple and powerful. <strong>3</strong> is like Falcon 9 (Merlin 1D centre cluster). <strong>5</strong> is like New Shepard's approach — raw cluster power.`,
+  boxes: [
+    { t:'box-c', tx:'The Falcon 9 Full Thrust has 9 Merlin engines in a Octaweb pattern. Starship has 33 Raptor engines. More engines = more redundancy — if one fails, the mission can still continue.' },
+    { t:'box-t', tx:'5 engines only really looks right on a wide body. Try Wide diameter from Step 4 before selecting 5.' },
+  ],
+  tasks: ['Choose engine count', 'See the engine bells at the base'],
+  html() {
+    const o = `(function(v,el){R.engineCount=parseInt(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('eng', [
+      { val:'1', icon:'🔵', label:'Single' },
+      { val:'3', icon:'🔵🔵🔵', label:'Triple' },
+      { val:'5', icon:'⚙️', label:'5-Engine' },
+    ], String(R.engineCount), o) + nav(10);
+  },
+  onApply() { buildRocket(); sout(R.engineCount + ' engine' + (R.engineCount>1?'s':'')+' installed.'); document.getElementById('liveStatus').textContent = 'Engines set!'; }
+},
+
+/* 12 */ {
+  title: 'Payload Fairing',
+  tag: 'STEP 12 · PAYLOAD',
+  intro: `The <strong>payload fairing</strong> is the nose shell that protects cargo during ascent. It splits and falls away once above the atmosphere. Standard for satellites. XL for large space telescopes.`,
+  boxes: [
+    { t:'box-c', tx:'Fairing costs millions and SpaceX actually catches them with nets on ships to reuse them. The fairing protects satellites from aerodynamic forces and heating during the first few minutes of flight.' },
+  ],
+  tasks: ['Add a payload fairing or leave bare'],
+  html() {
+    const o = `(function(v,el){R.fairing=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('fairing', [
+      { val:'none',     icon:'❌', label:'None' },
+      { val:'standard', icon:'📦', label:'Standard' },
+      { val:'xl',       icon:'🏛️', label:'XL Fairing' },
+    ], R.fairing, o) + nav(11);
+  },
+  onApply() { buildRocket(); sout(R.fairing==='none' ? 'No fairing — raw payload.' : 'Payload fairing: ' + R.fairing + '.'); document.getElementById('liveStatus').textContent = 'Payload set!'; }
+},
+
+/* 13 */ {
+  title: 'Stripe Decal',
+  tag: 'STEP 13 · MARKINGS',
+  intro: `Add a <strong>colour stripe</strong> around the body — a classic rocket marking used to break up large surfaces and identify different sections of the fuel tank.`,
+  boxes: [
+    { t:'box-t', tx:'The Saturn V had black rollout stripes. Ariane 5 has a red band. Pick a contrasting stripe colour for best effect.' },
+  ],
+  tasks: ['Toggle stripe on/off', 'Choose a stripe colour'],
+  html() {
+    const o = `(function(c,el){R.stripeCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return `<div style="display:flex;align-items:center;gap:10px;margin:10px 0">
+      <span style="font-size:.82rem;color:var(--muted)">Stripe:</span>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.82rem;color:var(--text)">
+        <input type="checkbox" ${R.stripeOn?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="R.stripeOn=this.checked;buildRocket()">
+        Show stripe band
+      </label>
+    </div>` + swatchRow('stc', ['#ffffff','#f5c842','#38bdf8','#4ade80','#e8543a','#1a1a2a','#a78bfa','#fb923c'], R.stripeCol, o) + nav(12);
+  },
+  onApply() { buildRocket(); sout(R.stripeOn ? '🎨 Stripe added in ' + R.stripeCol : 'No stripe — clean body.'); document.getElementById('liveStatus').textContent = 'Markings set!'; }
+},
+
+/* 14 */ {
+  title: 'Engine Glow',
+  tag: 'STEP 14 · EXHAUST',
+  intro: `Choose the colour of your <strong>engine exhaust flame</strong>. Kerosene engines burn orange-yellow. Hydrogen engines burn nearly invisible blue-white. Ion drives glow blue-violet.`,
+  boxes: [
+    { t:'box-c', tx:'Rocket exhaust colours depend entirely on propellant. LOX/kerosene = orange. LOX/hydrogen = blue-white, almost invisible. Methalox (Raptor) = tight blue diamond shocks. Ion drives = electric purple-blue glow.' },
+    { t:'box-t', tx:'The glow appears when you launch in Step 15!' },
+  ],
+  tasks: ['Pick an exhaust glow colour'],
+  html() {
+    const o = `(function(c,el){R.glowCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');})`;
+    return swatchRow('gc', ['#ff6600','#ffcc00','#88ccff','#ffffff','#ff88ff','#44ffaa','#ff3300','#6666ff'], R.glowCol, o) + nav(13);
+  },
+  onApply() { sout('Exhaust colour set. Ready to launch!'); document.getElementById('liveStatus').textContent = 'Glow ready!'; }
+},
+
+/* 15 */ {
+  title: 'Launch!',
+  tag: 'STEP 15 · LIFTOFF',
+  intro: `<strong>All systems are go.</strong> Your rocket is fully designed. Hit the launch button to ignite the engines and watch it lift off.`,
+  boxes: [
+    { t:'box-r', tx: '3… 2… 1… Ignition! The engines fire, the clamps release, and your rocket climbs into the void.' },
+    { t:'box-c', tx: 'A complete launch vehicle needs: nosecone (aerodynamics), body (fuel/structure), fins (stability), engines (thrust), and a payload. You\'ve built all of them.' },
+    { t:'box-t', tx: 'Hit Quick Build in the header to reset and try a completely different design.' },
+  ],
+  tasks: ['Press Launch and watch it go!'],
+  html() {
+    return `<div style="text-align:center;padding:12px 0">
+      <div style="font-size:3rem;margin-bottom:10px">🚀</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:8px">${R.name || 'YOUR ROCKET'}</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:18px;line-height:1.7">All systems nominal.<br>Ready for launch.</div>
+    </div>
+    <button class="run-btn" style="background:var(--acc);font-size:1.1rem;padding:14px" onclick="launch()">🔥 IGNITION — LAUNCH!</button>` + nav(14);
+  },
+  onApply() { launch(); }
+},
+
+];
+
+function launch() {
+  R.launched = true;
+  R.launchY = 0;
+  buildRocket();
+  sout('🚀 IGNITION! ' + (R.name || 'ROCKET') + ' is lifting off!');
+  document.getElementById('liveStatus').textContent = 'LIFTOFF! 🚀';
+  document.getElementById('sceneHint').textContent = 'Drag to follow the rocket';
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const tabs = document.querySelectorAll('.tb');
+  if (tabs[i]) tabs[i].scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map((t,ti) => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  if (s.html && !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" onclick="applyStep(${currentStep})">▶ Apply to Rocket</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.tb').forEach((t, i) => t.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+  const tabs = document.querySelectorAll('.tb');
+  if (tabs[i]) tabs[i].classList.add('done');
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.querySelectorAll('.pd').forEach((d, i) => {
+    d.classList.toggle('done', stepDone[i]);
+    d.classList.toggle('active', i === currentStep);
+  });
+}
+
+function quickBuild() {
+  R.name = 'NOVA-7'; R.nosecone = 'ogive'; R.bodyHeight = 3.2; R.bodyRadius = 0.35;
+  R.primaryCol = '#e8543a'; R.secondaryCol = '#ffffff'; R.finStyle = 'swept'; R.finCount = 4;
+  R.boosters = 2; R.boosterSize = 0.7; R.engineCount = 3; R.fairing = 'standard';
+  R.stripeOn = true; R.stripeCol = '#f5c842'; R.glowCol = '#ff6600';
+  R.launched = false; R.launchY = 0;
+  buildRocket();
+  sout('⚡ Quick build: NOVA-7 is ready. Press Launch at Step 15!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+}
+
+function init() {
+  const tabsEl = document.getElementById('stepTabs');
+  STEPS.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tb' + (i === 0 ? ' active' : '');
+    btn.textContent = `${(i+1).toString().padStart(2,'0')} ${s.title.split(' ')[0]}`;
+    btn.onclick = () => go(i);
+    tabsEl.appendChild(btn);
+  });
+
+  const dotsEl = document.getElementById('progDots');
+  STEPS.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'pd' + (i === 0 ? ' active' : '');
+    d.title = 'Step ' + (i + 1);
+    d.onclick = () => go(i);
+    d.style.cursor = 'pointer';
+    dotsEl.appendChild(d);
+  });
+
+  buildRocket();
+  renderStep();
+  updateSpecCard();
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+</body>
+</html>
