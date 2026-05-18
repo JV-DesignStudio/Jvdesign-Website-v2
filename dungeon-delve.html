@@ -520,7 +520,7 @@ function showScreen(name) {
   ['title-screen','game-screen','combat-screen','shop-screen','loot-screen','end-screen'].forEach(id => {
     const el = $(id);
     if (id === name+'-screen') { el.style.display = 'flex'; el.classList.remove('hidden'); }
-    else { if (el.classList.contains('overlay')) el.classList.add('hidden'); else el.style.display = 'none'; }
+    else { if (el.classList.contains('overlay')) { el.style.display = ''; el.classList.add('hidden'); } else el.style.display = 'none'; }
   });
   if (name === 'game') $('game-screen').style.display = 'flex';
 }
@@ -858,7 +858,7 @@ function enemyDefeated() {
   }
 
   currentEnemy = null;
-  $('combat-screen').classList.add('hidden');
+  showScreen('game');
   renderMap();
   renderHUD();
 }
@@ -904,7 +904,7 @@ function combatFlee() {
   if (Math.random() < 0.5+player.speed*0.05) {
     combatLog.push('You escaped!');
     currentEnemy = null;
-    $('combat-screen').classList.add('hidden');
+    showScreen('game');
     renderMap();
     renderHUD();
   } else {
@@ -949,7 +949,7 @@ function buyItem(item) {
 }
 
 function closeShop() {
-  $('shop-screen').classList.add('hidden');
+  showScreen('game');
   renderHUD();
 }
 
@@ -974,11 +974,12 @@ function showLoot() {
 
 function equipLoot() {
   const l = currentLoot;
+  if (!l) return;
   if (l.stat==='hp') { player.maxHp+=l.value; player.hp+=l.value; }
   else if (l.stat==='atk') player.atk+=l.value;
   else if (l.stat==='def') player.def+=l.value;
   currentLoot = null;
-  $('loot-screen').classList.add('hidden');
+  showScreen('game');
   renderMap();
   renderHUD();
 }

@@ -174,6 +174,15 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 
 footer{background:var(--bg2);border-top:1px solid var(--border);padding:16px;text-align:center;color:var(--muted);font-size:.7rem}
 footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--text)}
+
+/* ── TOUCH D-PAD ── */
+.touch-dpad{display:none;justify-content:center;align-items:center;gap:18px;padding:10px 16px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.3);flex-shrink:0}
+@media(pointer:coarse){.touch-dpad{display:flex}}
+.dpad-cluster{display:flex;gap:8px;align-items:center}
+.dpad-btn{width:58px;height:58px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;font-size:1.3rem;color:var(--text);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;transition:background .1s,transform .1s,border-color .1s}
+.dpad-btn.pressed{background:rgba(245,196,0,.2);border-color:rgba(245,196,0,.5);transform:scale(.9)}
+.dpad-restart{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(245,196,0,.1);border:1px solid rgba(245,196,0,.3);font-size:.65rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;color:var(--acc-lt);cursor:pointer;touch-action:none;transition:background .1s,transform .1s}
+.dpad-restart.pressed{background:rgba(245,196,0,.28);transform:scale(.9)}
 </style>
 </head>
 <body>
@@ -239,6 +248,17 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--text
       <div class="hb"><div class="hv" id="hudTime" style="color:var(--orange)">0.0</div><div class="hl2">Time (s)</div></div>
     </div>
     <div class="obar" id="obar">▶ Wire up your car stats to start racing</div>
+    <div class="touch-dpad">
+      <div class="dpad-cluster">
+        <button class="dpad-btn" data-key="ArrowLeft"  aria-label="Steer left">←</button>
+        <button class="dpad-btn" data-key="ArrowRight" aria-label="Steer right">→</button>
+      </div>
+      <button class="dpad-restart" data-key="r" aria-label="Restart">RESTART</button>
+      <div class="dpad-cluster">
+        <button class="dpad-btn" data-key="ArrowUp"   aria-label="Throttle">▲</button>
+        <button class="dpad-btn" data-key="ArrowDown" aria-label="Brake">▼</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1128,6 +1148,21 @@ function init(){
 }
 
 init();
+
+// Touch D-pad
+(function(){
+  document.querySelectorAll('.dpad-btn[data-key],.dpad-restart[data-key]').forEach(function(btn){
+    var key=btn.dataset.key;
+    function press(e){e.preventDefault();KEYS[key]=true;btn.classList.add('pressed');}
+    function release(e){e.preventDefault();KEYS[key]=false;btn.classList.remove('pressed');}
+    btn.addEventListener('touchstart',press,{passive:false});
+    btn.addEventListener('touchend',release,{passive:false});
+    btn.addEventListener('touchcancel',release,{passive:false});
+    btn.addEventListener('mousedown',press);
+    btn.addEventListener('mouseup',release);
+    btn.addEventListener('mouseleave',release);
+  });
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script></body>
 </html>
