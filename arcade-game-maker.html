@@ -195,8 +195,44 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .mission-text{font-size:.7rem;color:rgba(167,139,250,.85);line-height:1.4;}
 .mission-text strong{color:var(--purple-lt);}
 
-@media(max-width:900px){.studio-panel{width:300px;}}
-@media(max-width:720px){.studio{flex-direction:column;overflow-y:auto;}.studio-panel{width:100%;max-height:55vh;}.studio-viewport{min-height:340px;}#game-container canvas{max-width:100%!important;height:auto!important;}}
+/* GAME WRAP + TOUCH CONTROLS */
+.game-wrap{position:relative;flex-shrink:0;width:100%;max-width:640px;}
+#game-container{width:100%;}
+.touch-controls{position:absolute;bottom:0;left:0;right:0;height:90px;display:none;justify-content:space-between;align-items:center;padding:0 14px 6px;pointer-events:none;z-index:20;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);}
+.tc-side{display:flex;gap:10px;pointer-events:auto;}
+.tc-btn{width:62px;height:62px;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(10,8,22,.6);backdrop-filter:blur(8px);color:rgba(255,255,255,.9);font-size:1.35rem;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;transition:background .07s,border-color .07s,transform .07s;font-family:'Inter',sans-serif;}
+.tc-btn:active{background:rgba(124,58,237,.7);border-color:rgba(167,139,250,.9);transform:scale(.88);}
+.tc-btn.tc-pressed{background:rgba(124,58,237,.7)!important;border-color:rgba(167,139,250,.9)!important;transform:scale(.88)!important;}
+.tc-fire{background:rgba(239,68,68,.4);border-color:rgba(239,68,68,.55);}
+.tc-fire:active,.tc-fire.tc-pressed{background:rgba(239,68,68,.85)!important;border-color:rgba(248,113,113,.9)!important;}
+.tc-jump{background:rgba(34,197,94,.28);border-color:rgba(34,197,94,.5);}
+.tc-jump:active,.tc-jump.tc-pressed{background:rgba(34,197,94,.75)!important;border-color:rgba(74,222,128,.9)!important;}
+
+/* PANEL FAB (mobile only) */
+.panel-fab{position:fixed;bottom:18px;right:18px;z-index:400;width:50px;height:50px;border-radius:50%;background:var(--purple);border:2px solid rgba(167,139,250,.5);color:white;font-size:1.3rem;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 28px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;transition:background .15s;}
+.panel-fab:active{background:#5b21b6;}
+
+@media(max-width:900px){.studio-panel{width:280px;}}
+@media(max-width:768px){
+  body{overflow:hidden;}
+  .studio{flex-direction:column;}
+  .studio-viewport{flex:1;min-height:0;padding:6px 4px 4px;overflow:hidden;}
+  .studio-panel{
+    position:fixed;bottom:0;left:0;right:0;width:100%;max-height:75vh;
+    z-index:300;border-radius:18px 18px 0 0;border-right:none;
+    border-top:2px solid rgba(124,58,237,.45);
+    box-shadow:0 -8px 48px rgba(0,0,0,.75);
+    transform:translateY(102%);
+    transition:transform .32s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;
+  }
+  .studio-panel.panel-open{transform:translateY(0);}
+  .panel-fab{display:flex!important;}
+  .touch-controls{display:flex!important;}
+  .controls-hint{display:none;}
+  .mission-strip{display:none;}
+  #engine-branding{display:none;}
+}
 </style>
 </head>
 <body>
@@ -596,7 +632,19 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
     <!-- VIEWPORT -->
     <div class="studio-viewport">
         <span id="engine-branding">JV Engine v0.1 // Ready</span>
-        <div id="game-container"></div>
+        <div class="game-wrap" id="gameWrap">
+            <div id="game-container"></div>
+            <div class="touch-controls" id="touchControls">
+                <div class="tc-side" id="tc-lr">
+                    <button class="tc-btn" id="tc-left"  data-action="left"  aria-label="Left">◀</button>
+                    <button class="tc-btn" id="tc-right" data-action="right" aria-label="Right">▶</button>
+                </div>
+                <div class="tc-side" id="tc-actions">
+                    <button class="tc-btn tc-jump" id="tc-up"   data-action="up"   aria-label="Jump / Thrust">▲</button>
+                    <button class="tc-btn tc-fire" id="tc-fire" data-action="fire" aria-label="Shoot">●</button>
+                </div>
+            </div>
+        </div>
         <div id="controlsHint" class="controls-hint">Controls: LEFT/RIGHT rotate · UP thrust · SPACE shoot</div>
         <div class="mission-strip">
             <span style="font-size:1rem;">🎯</span>
@@ -605,6 +653,7 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
     </div>
 </div>
 
+<button class="panel-fab" id="panelFab" aria-label="Open settings">⚙</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -614,6 +663,9 @@ const liveConfig = {
     spawnDelay:1100, enemySpeed:150, gravity:600, jumpForce:450,
     pointsPerKill:10, obstacleSpeed:220
 };
+
+// ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
+const touchInput = { left:false, right:false, up:false, fire:false };
 
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
 let customSpriteDataUrl = null;
@@ -835,6 +887,7 @@ function onGenreChange() {
     document.getElementById('jumpGroup').style.cssText = showJump ? 'display:flex;flex-direction:column;gap:4px;' : 'display:none;';
     document.getElementById('controlsHint').textContent = CONTROLS[g];
     document.getElementById('missionText').innerHTML = MISSIONS[g];
+    updateTouchLayout(g);
 
     // Adjust default speed per template
     const defaults = { SHOOTER:200, PLATFORMER:200, DODGE:250, BREAKER:300, RUNNER:200 };
@@ -870,8 +923,15 @@ function compileAndBootEngine() {
     if (currentPhaserGame) { currentPhaserGame.destroy(true); document.getElementById('game-container').innerHTML=''; }
 
     currentPhaserGame = new Phaser.Game({
-        type: Phaser.AUTO, width: GW, height: GH,
-        parent: 'game-container', backgroundColor: '#05030f',
+        type: Phaser.AUTO,
+        parent: 'game-container',
+        backgroundColor: '#05030f',
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            width: GW,
+            height: GH,
+        },
         physics: { default:'arcade', arcade:{ debug:false } },
         scene: getScene(data)
     });
@@ -932,12 +992,13 @@ function sceneShooter(data) {
         }
         update(time) {
             const {left,right,up} = this.cursors;
-            if (left.isDown)       this.actor.setAngularVelocity(-liveConfig.rotateSpeed);
-            else if (right.isDown) this.actor.setAngularVelocity(liveConfig.rotateSpeed);
-            else                   this.actor.setAngularVelocity(0);
-            if (up.isDown) this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.speed, this.actor.body.acceleration);
-            else           this.actor.setAcceleration(0);
-            if (this.fireKey.isDown && time > this.lastFired) {
+            const tL=touchInput.left, tR=touchInput.right, tU=touchInput.up;
+            if (left.isDown||tL)       this.actor.setAngularVelocity(-liveConfig.rotateSpeed);
+            else if (right.isDown||tR) this.actor.setAngularVelocity(liveConfig.rotateSpeed);
+            else                       this.actor.setAngularVelocity(0);
+            if (up.isDown||tU) this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.speed, this.actor.body.acceleration);
+            else               this.actor.setAcceleration(0);
+            if ((this.fireKey.isDown||touchInput.fire) && time > this.lastFired) {
                 const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(7,20);
                 b.rotation=this.actor.rotation;
                 this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.bulletSpeed, b.body.velocity);
@@ -979,10 +1040,10 @@ function scenePlatformer(data) {
         update() {
             this.actor.body.setGravityY(liveConfig.gravity);
             const {left,right,up} = this.cursors;
-            if (left.isDown)       this.actor.setVelocityX(-liveConfig.speed);
-            else if (right.isDown) this.actor.setVelocityX(liveConfig.speed);
-            else                   this.actor.setVelocityX(0);
-            if (up.isDown && this.actor.body.blocked.down) { this.actor.setVelocityY(-liveConfig.jumpForce); GameAudio.play('jump'); }
+            if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
+            else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
+            else                                     this.actor.setVelocityX(0);
+            if ((up.isDown||touchInput.up) && this.actor.body.blocked.down) { this.actor.setVelocityY(-liveConfig.jumpForce); GameAudio.play('jump'); }
             this.surviveTimer+=16;
             if (this.surviveTimer>2000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score'); }
         }
@@ -1020,9 +1081,9 @@ function sceneDodge(data) {
         }
         update() {
             const {left,right} = this.cursors;
-            if (left.isDown)       this.actor.setVelocityX(-liveConfig.speed);
-            else if (right.isDown) this.actor.setVelocityX(liveConfig.speed);
-            else                   this.actor.setVelocityX(0);
+            if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
+            else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
+            else                                     this.actor.setVelocityX(0);
             [...this.hazards.getChildren(),...this.stars.getChildren()].forEach(o=>{ if(o.y>GH+20) o.destroy(); });
         }
     };
@@ -1073,9 +1134,9 @@ function sceneBreaker(data) {
         }
         update() {
             const {left,right} = this.cursors;
-            if (left.isDown)       this.paddle.setVelocityX(-liveConfig.speed);
-            else if (right.isDown) this.paddle.setVelocityX(liveConfig.speed);
-            else                   this.paddle.setVelocityX(0);
+            if (left.isDown||touchInput.left)       this.paddle.setVelocityX(-liveConfig.speed);
+            else if (right.isDown||touchInput.right) this.paddle.setVelocityX(liveConfig.speed);
+            else                                     this.paddle.setVelocityX(0);
             this.paddle.x = Phaser.Math.Clamp(this.paddle.x, 50, GW-50);
             if (this.ball.y > GH+20) { GameAudio.play('hit'); this.scene.restart(); }
         }
@@ -1113,7 +1174,7 @@ function sceneRunner(data) {
         update() {
             this.actor.body.setGravityY(liveConfig.gravity);
             const onGround = this.actor.body.blocked.down;
-            if ((this.spaceKey.isDown || this.upKey.isDown) && onGround) {
+            if ((this.spaceKey.isDown || this.upKey.isDown || touchInput.up) && onGround) {
                 this.actor.setVelocityY(-liveConfig.jumpForce);
                 GameAudio.play('jump');
             }
@@ -1247,6 +1308,72 @@ function generateShareLink() {
     navigator.clipboard.writeText(url).then(()=>showToast('Share link copied!')).catch(()=>prompt('Copy this link:',url));
 }
 
+// ── TOUCH CONTROLS ───────────────────────────────────────────────────────────
+function setupTouchControls() {
+    ['left','right','up','fire'].forEach(action => {
+        const btn = document.getElementById('tc-'+action);
+        if (!btn) return;
+        const press = (v) => { touchInput[action]=v; btn.classList.toggle('tc-pressed',v); };
+        btn.addEventListener('pointerdown',  e => { e.preventDefault(); press(true);  }, {passive:false});
+        btn.addEventListener('pointerup',    e => { press(false); });
+        btn.addEventListener('pointerleave', e => { press(false); });
+        btn.addEventListener('pointercancel',e => { press(false); });
+    });
+
+    // Panel FAB — slide panel up/down on mobile
+    const fab   = document.getElementById('panelFab');
+    const panel = document.querySelector('.studio-panel');
+    if (fab && panel) {
+        fab.addEventListener('click', () => {
+            const open = panel.classList.toggle('panel-open');
+            fab.textContent = open ? '✕' : '⚙';
+        });
+        document.addEventListener('pointerdown', e => {
+            if (panel.classList.contains('panel-open')
+                && !panel.contains(e.target) && e.target !== fab) {
+                panel.classList.remove('panel-open');
+                fab.textContent = '⚙';
+            }
+        }, {capture:true});
+    }
+
+    // Show controls on any touch-capable device regardless of screen width
+    if (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) {
+        document.getElementById('touchControls').style.display = 'flex';
+        if (fab) fab.style.display = 'flex';
+    }
+}
+
+function updateTouchLayout(genre) {
+    const up    = document.getElementById('tc-up');
+    const fire  = document.getElementById('tc-fire');
+    const lr    = document.getElementById('tc-lr');
+
+    const showLR   = genre !== 'RUNNER';
+    const showUp   = ['SHOOTER','PLATFORMER','RUNNER'].includes(genre);
+    const showFire = genre === 'SHOOTER';
+
+    if (lr)   lr.style.display   = showLR   ? '' : 'none';
+    if (up)   up.style.display   = showUp   ? '' : 'none';
+    if (fire) fire.style.display = showFire ? '' : 'none';
+
+    // Runner: tap the game canvas itself to jump
+    const wrap = document.getElementById('gameWrap');
+    if (wrap) {
+        if (genre === 'RUNNER') {
+            wrap.addEventListener('pointerdown', _runnerTap, {passive:false});
+        } else {
+            wrap.removeEventListener('pointerdown', _runnerTap);
+        }
+    }
+}
+function _runnerTap(e) {
+    if (e.target.closest('.tc-btn')) return;
+    e.preventDefault();
+    touchInput.up = true;
+    setTimeout(() => { touchInput.up = false; }, 130);
+}
+
 // ── WORKSHOP ─────────────────────────────────────────────────────────────────
 function openWorkshop(toolSrc) {
     document.getElementById('wkOverlay').classList.add('open');
@@ -1273,6 +1400,7 @@ function showWorkshopBadge(msg) {
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
+    setupTouchControls();
     onGenreChange();
     document.getElementById('studioRoot').classList.add('genre-SHOOTER');
     const params=new URLSearchParams(location.search), enc=params.get('game');
