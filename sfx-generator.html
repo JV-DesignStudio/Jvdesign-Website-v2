@@ -210,6 +210,7 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
     <button class="act-btn act-play" id="playBtn" onclick="previewCurrent()">▶ Preview Sound</button>
     <button class="act-btn act-rand" onclick="randomise()">🎲 Randomise</button>
     <button class="act-btn act-dl" onclick="downloadCurrent()">⬇ Download WAV</button>
+    <button class="act-btn" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;border-color:#7c3aed;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
   </div>
 
   <!-- HISTORY -->
@@ -654,6 +655,32 @@ function downloadCurrent(){
     a.click();
     addToHistory(cat, variant, name);
     showToast(`Downloaded: jvds_${name}.wav`);
+  });
+}
+
+function sendToGameMaker(){
+  if(currentCat===null||currentVariant===null){showToast('Pick a category and variant first!');return;}
+  const variant=VARIANTS[currentCat][currentVariant];
+  const cat=CATEGORIES.find(c=>c.id===currentCat);
+  showToast('Sending to Game Maker…');
+  const sr=44100, dur=3;
+  const offline=new OfflineAudioContext(1,sr*dur,sr);
+  const {dest}=applyTweaks(offline,null);
+  variant.fn(offline,dest,0.02);
+  offline.startRendering().then(buf=>{
+    const data=buf.getChannelData(0);
+    let end=data.length;
+    for(let i=data.length-1;i>0;i--){if(Math.abs(data[i])>0.001){end=i+Math.ceil(sr*0.05);break;}}
+    end=Math.min(end,data.length);
+    const trimmed=data.slice(0,end);
+    const wav=makeWav(trimmed,sr);
+    const b64=btoa(String.fromCharCode(...new Uint8Array(wav)));
+    const dataUrl='data:audio/wav;base64,'+b64;
+    localStorage.setItem('jvds_sfx_last',JSON.stringify({
+      dataUrl, cat:currentCat, variant:currentVariant,
+      name:`${cat.name} — ${variant.name}`
+    }));
+    showToast('Sent to Game Maker ✓ — Sounds tab → ⬇ Studio to assign it');
   });
 }
 
