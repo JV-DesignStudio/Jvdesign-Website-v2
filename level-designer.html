@@ -273,6 +273,8 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
       <button class="ab ab-p" onclick="exportPNG()">Export PNG</button>
       <button class="ab ab-g" onclick="exportJSON()">Export JSON</button>
       <button class="ab ab-s" onclick="document.getElementById('importJsonInput').click()">Import JSON<input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(this)"></button>
+      <div class="pdiv" style="margin:4px 0;"></div>
+      <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
       <button class="ab ab-u" onclick="undo()" id="undoBtn">Undo</button>
       <button class="ab ab-u" onclick="redo()" id="redoBtn" style="opacity:.35;">Redo</button>
       <button class="ab ab-r" onclick="confirmClear()">New Level</button>
@@ -1116,6 +1118,18 @@ function exportPNG(){
   const name=document.getElementById('levelName').value||'my_level';const a=document.createElement('a');a.href=ec.toDataURL('image/png');a.download=name.replace(/\s+/g,'_')+'.png';a.click();showToast('PNG exported!');
 }
 
+function sendToGameMaker(){
+  const data=getLevelData();
+  try{
+    localStorage.setItem('jvds_level_autosave',JSON.stringify({
+      name:data.meta.name,gridW:data.meta.width,gridH:data.meta.height,
+      themeId:data.meta.theme,
+      layers:data.layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:Array.from(l.data)})),
+      enemyPaths,tileProps,ts:Date.now()
+    }));
+    showToast('Sent to Game Maker ✓ — open Arcade Game Maker → Assets → From Level Designer');
+  }catch(e){showToast('Export failed — try Export JSON instead');}
+}
 function getLevelData(){return{meta:{name:document.getElementById('levelName').value||'My Level',width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
 function exportJSON(){const data=getLevelData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.meta.name.replace(/\s+/g,'_')||'level')+'.json';a.click();showToast('JSON exported!');}
 function importJSON(input){

@@ -211,6 +211,7 @@ input[type=range].kn{width:100%;accent-color:var(--accent);height:3px;}
   <div class="beat-indicator" id="beatIndicator"></div>
   <div class="t-sep"></div>
   <button class="t-btn ab-p" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;background:var(--accent3);color:#000;" onclick="exportWAV()">⬇ WAV</button>
+  <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
   <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="saveProject()">💾 Save</button>
   <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="loadProject()">📂 Load</button>
 </div>
@@ -865,6 +866,34 @@ function closePianoRoll(){ document.getElementById('piano-modal').classList.remo
 // ══════════════════════════════════════════
 // EXPORT WAV
 // ══════════════════════════════════════════
+function sendToGameMaker(){
+  if(!tracks.length){showToast('Add some tracks first!');return;}
+  showToast('Rendering for Game Maker…');
+  const totalBeats=steps/4;
+  const duration=totalBeats*(60/bpm)*2;
+  const sr=44100;
+  const offline=new OfflineAudioContext(2,Math.ceil(sr*duration),sr);
+  const secPerStep=(60/bpm)/4;
+  for(let loop=0;loop<2;loop++){
+    for(let s=0;s<steps;s++){
+      const t_start=(loop*steps+s)*secPerStep;
+      tracks.forEach((_,ti)=>{
+        if(!grid[ti]||!grid[ti][s]||!grid[ti][s].on||tracks[ti].muted) return;
+        renderNote(offline,ti,t_start,secPerStep*0.9,s);
+      });
+    }
+  }
+  offline.startRendering().then(buf=>{
+    const wav=bufferToWav(buf);
+    const bytes=new Uint8Array(wav);
+    let binary='';
+    for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+    const dataUrl='data:audio/wav;base64,'+btoa(binary);
+    localStorage.setItem('jvds_music_last',JSON.stringify({dataUrl,bpm,name:'Sound Studio Track'}));
+    showToast('Sent to Game Maker ✓ — Sounds tab → Import Music');
+  });
+}
+
 function exportWAV(){
   showToast('Rendering audio…');
   const totalBeats = steps/4;

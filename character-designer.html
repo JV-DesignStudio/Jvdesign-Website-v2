@@ -316,6 +316,7 @@ input[type=color].fpick{width:21px;height:18px;border:none;border-radius:3px;cur
       <input type="text" id="charName" value="My Character" style="width:100%;padding:4px 5px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.56rem;font-family:inherit;outline:none;margin-bottom:4px;">
       <div class="slot-grid" id="saveSlots"></div>
       <button class="ab ab-s" onclick="saveCharacter()">&#x1F4BE; Save</button>
+      <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;margin-top:2px;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
@@ -685,6 +686,13 @@ function buildPoseRow(){const row=document.getElementById('poseRow');row.innerHT
 function buildBgRow(){const row=document.getElementById('bgOpts');row.innerHTML='';BG_OPTIONS.forEach(bg=>{const opt=document.createElement('div');opt.className='bg-opt'+(bg.val===charBg?' on':'');opt.style.background=bg.style;opt.addEventListener('click',()=>{charBg=bg.val;charCanvas.style.background=bg.style;document.querySelectorAll('.bg-opt').forEach(o=>o.classList.toggle('on',o===opt));renderCharacter();});row.appendChild(opt);});}
 function randomCharacter(){tpl().parts.forEach(p=>{charState[p.id]={variant:Math.floor(Math.random()*p.variants.length),colour:p.colours[Math.floor(Math.random()*p.colours.length)]};});activeArchetype=null;renderCharacter();buildAll();}
 function resetCharacter(){initCharState();renderCharacter();buildAll();}
+function sendToGameMaker(){
+  try{
+    const dataUrl=charCanvas.toDataURL('image/png');
+    localStorage.setItem('jvds_sprite_player',dataUrl);
+    showToast('Sent to Game Maker ✓ — open Arcade Game Maker → Assets → Import from Character Designer');
+  }catch(e){showToast('Export failed');}
+}
 function saveCharacter(){const name=document.getElementById('charName').value.trim()||'Character';const thumb=document.createElement('canvas');thumb.width=BASE;thumb.height=BASE;thumb.getContext('2d').drawImage(charCanvas,0,0);while(saveSlots.length<4) saveSlots.push(null);let slot=saveSlots.findIndex(s=>!s);if(slot<0) slot=0;saveSlots[slot]={name,template:currentTemplate,state:JSON.parse(JSON.stringify(charState)),thumb:thumb.toDataURL(),pose:currentPose};localStorage.setItem('jvds_chars',JSON.stringify(saveSlots));renderSaveSlots();showToast('Saved to slot '+(slot+1)+'!');}
 function renderSaveSlots(){const c=document.getElementById('saveSlots');c.innerHTML='';for(let i=0;i<4;i++){const slot=saveSlots[i],el=document.createElement('div');el.className='save-slot'+(slot?' filled':'');if(slot){el.innerHTML='<img loading="lazy" src="'+slot.thumb+'" class="ss-thumb"><div class="ss-name">'+slot.name+'</div>';el.addEventListener('click',()=>{if(slot.template&&slot.template!==currentTemplate){const btn=document.querySelector('.tpl-'+slot.template);if(btn) switchTemplate(slot.template,btn);}charState=JSON.parse(JSON.stringify(slot.state));currentPose=slot.pose||'idle';document.getElementById('charName').value=slot.name;renderCharacter();buildAll();showToast('Loaded: '+slot.name);});}else el.innerHTML='<span class="ss-empty">Slot '+(i+1)+'</span>';c.appendChild(el);}}
 

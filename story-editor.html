@@ -254,6 +254,7 @@ body{display:flex;flex-direction:column;}
       <button class="ab ab-p" onclick="openPreview()">▶ Preview Story</button>
       <button class="ab ab-g" onclick="exportJSON()">📄 Export JSON</button>
       <button class="ab ab-s" onclick="exportScript()">📝 Export Script</button>
+      <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
       <div class="pt" style="margin-top:6px;">Story Name</div>
       <input type="text" id="storyNameInput" value="My Story" maxlength="32" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;" oninput="storyName=this.value">
       <div class="pt">Saved Stories</div>
@@ -942,6 +943,18 @@ function previewGo(toId) {
 // ══════════════════════════════════════════════════
 // EXPORT
 // ══════════════════════════════════════════════════
+function sendToGameMaker(){
+  if(!nodes.length){showToast('Add some story nodes first!');return;}
+  const startNode=nodes.find(n=>n.type==='start')||nodes[0];
+  localStorage.setItem('jvds_story_last',JSON.stringify({
+    title:storyName||'My Game',
+    intro:startNode?startNode.text||'':'',
+    chars,
+    nodes:nodes.map(n=>({id:n.id,type:n.type,char:n.char,text:n.text,choices:n.choices,to:n.to}))
+  }));
+  showToast('Sent to Game Maker ✓ — story title & intro will appear in your game');
+}
+
 function exportJSON() {
   const data={
     meta:{name:storyName, creator:'JVDesignStudio Story Editor', site:'jvdesignstudio.co.uk', exported:new Date().toISOString()},
