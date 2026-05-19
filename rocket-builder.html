@@ -21,7 +21,6 @@
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 <style>
 :root{
   --bg:#07090f;--bg2:#0c0e18;--bg3:#131624;
@@ -34,7 +33,7 @@
 html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
 
 /* ── APP GRID ── */
-#app{display:grid;grid-template-columns:370px 1fr;grid-template-rows:54px 1fr;height:100vh}
+#app{display:grid;grid-template-columns:340px 1fr 240px;grid-template-rows:54px 1fr;height:100vh}
 
 /* ── HEADER ── */
 .hdr{grid-column:1/-1;background:rgba(7,9,15,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:90;position:relative}
@@ -145,6 +144,23 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
 .run-btn{width:100%;margin-top:8px;padding:10px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:5px}
 .run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
 
+/* ── RIGHT BAR ── */
+#rightbar{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+#rightbar::-webkit-scrollbar{width:3px}
+#rightbar::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.rb-section{background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.rb-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(232,84,58,.14)}
+.rb-row{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:24px}
+.rb-row label{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex-shrink:0;width:48px}
+.rb-row input[type=color]{width:26px;height:22px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--bg2);flex-shrink:0}
+.rb-row input[type=range]{flex:1;accent-color:var(--acc);min-width:0;height:16px;cursor:pointer}
+.rb-row select{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:.62rem;padding:2px 3px;cursor:pointer;font-family:'Nunito',sans-serif;min-width:0}
+.rv{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt);min-width:28px;text-align:right;flex-shrink:0}
+.rb-toggle{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.52rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rb-toggle input[type=checkbox]{accent-color:var(--acc);flex-shrink:0;width:13px;height:13px}
+.preset-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.6rem;font-weight:700;padding:5px 3px;border-radius:6px;cursor:pointer;transition:all .15s;text-align:center;width:100%}
+.preset-btn:hover{background:rgba(232,84,58,.1);border-color:rgba(232,84,58,.35);color:var(--text)}
+
 /* ── MOBILE ── */
 @media(max-width:860px){
   html,body{overflow:auto;height:auto}
@@ -154,13 +170,13 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
   .slist{min-height:60px}
   .cpan{max-height:36vh}
   #viewport{min-height:320px;height:56vw;max-height:520px}
+  #rightbar{display:none}
 }
 @media(max-width:480px){
   .logo{font-size:1rem}
   .quick-btn{font-size:.78rem;padding:6px 12px}
   #viewport{min-height:260px;height:50vw;max-height:420px}
   .cpan{max-height:40vh}
-  input[type=range]{height:28px}
   .snav button{padding:10px 6px;font-size:.75rem}
 }
 </style>
@@ -174,7 +190,7 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
     <div class="logo">🚀 Rocket Builder</div>
     <div class="hdr-right">
       <a href="workshop.html" class="back-link">← Workshop</a>
-      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⬇ Export 3D</button>
+      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⬇ Export OBJ</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -215,6 +231,175 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
       </div>
     </div>
     <div class="obar" id="obar">▶ Choose a nosecone to start building</div>
+  </div>
+
+  <!-- RIGHT BAR — live quick controls -->
+  <div id="rightbar">
+
+    <div class="rb-section">
+      <div class="rb-title">🎨 Colors</div>
+      <div class="rb-row">
+        <label>Primary</label>
+        <input type="color" id="rb-prim" value="#e8543a" oninput="R.primaryCol=this.value;buildRocket()">
+      </div>
+      <div class="rb-row">
+        <label>Secondary</label>
+        <input type="color" id="rb-sec" value="#ffffff" oninput="R.secondaryCol=this.value;buildRocket()">
+      </div>
+      <div class="rb-row">
+        <label>Stripe</label>
+        <input type="color" id="rb-stripe-col" value="#ffffff" oninput="R.stripeCol=this.value;buildRocket()">
+      </div>
+      <div class="rb-row">
+        <label>Exhaust</label>
+        <input type="color" id="rb-glow" value="#ff6600" oninput="R.glowCol=this.value">
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">📐 Shape</div>
+      <div class="rb-row">
+        <label>Height</label>
+        <input type="range" min="2.2" max="5.5" step="0.1" value="3" id="rb-h"
+          oninput="R.bodyHeight=parseFloat(this.value);document.getElementById('rb-hv').textContent=parseFloat(this.value).toFixed(1)+'m';buildRocket()">
+        <span class="rv" id="rb-hv">3.0m</span>
+      </div>
+      <div class="rb-row">
+        <label>Radius</label>
+        <input type="range" min="0.26" max="0.46" step="0.02" value="0.35" id="rb-r"
+          oninput="R.bodyRadius=parseFloat(this.value);document.getElementById('rb-rv').textContent=parseFloat(this.value).toFixed(2);buildRocket()">
+        <span class="rv" id="rb-rv">0.35</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔺 Nose &amp; Fairing</div>
+      <div class="rb-row">
+        <label>Nose</label>
+        <select id="rb-nose" onchange="R.nosecone=this.value;buildRocket()">
+          <option value="cone">Cone</option>
+          <option value="ogive">Ogive</option>
+          <option value="blunt">Blunt</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Nose Len</label>
+        <input type="range" min="4" max="20" step="1" value="10" id="rb-nosescale"
+          oninput="R.noseconeScale=this.value/10;document.getElementById('rb-nsv').textContent=(this.value/10).toFixed(1)+'×';buildRocket()">
+        <span class="rv" id="rb-nsv">1.0×</span>
+      </div>
+      <div class="rb-row">
+        <label>Fairing</label>
+        <select id="rb-fair" onchange="R.fairing=this.value;buildRocket()">
+          <option value="none">None</option>
+          <option value="standard">Standard</option>
+          <option value="xl">XL</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔧 Details</div>
+      <div class="rb-row">
+        <label>Windows</label>
+        <select id="rb-win" onchange="R.windowStyle=this.value;buildRocket()">
+          <option value="none">None</option>
+          <option value="porthole">Portholes</option>
+          <option value="row">Row</option>
+          <option value="rect">Rect</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Win ×</label>
+        <input type="range" min="1" max="8" step="1" value="2" id="rb-wincount"
+          oninput="R.windowCount=parseInt(this.value);document.getElementById('rb-wcv').textContent=this.value;buildRocket()">
+        <span class="rv" id="rb-wcv">2</span>
+      </div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-stripe-on" onchange="R.stripeOn=this.checked;buildRocket()">
+        Stripe band
+      </label>
+      <div class="rb-row">
+        <label>Stripe Y</label>
+        <input type="range" min="10" max="85" step="5" value="35" id="rb-stripepos"
+          oninput="R.stripePos=this.value/100;document.getElementById('rb-spv').textContent=this.value+'%';buildRocket()">
+        <span class="rv" id="rb-spv">35%</span>
+      </div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-legs" onchange="R.landingLegs=this.checked;buildRocket()">
+        Landing legs
+      </label>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">▲ Fins</div>
+      <div class="rb-row">
+        <label>Style</label>
+        <select id="rb-finstyle" onchange="R.finStyle=this.value;buildRocket()">
+          <option value="delta">Delta</option>
+          <option value="swept">Swept</option>
+          <option value="grid">Grid</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Count</label>
+        <select id="rb-fincount" onchange="R.finCount=parseInt(this.value);buildRocket()">
+          <option value="3">3 Fins</option>
+          <option value="4">4 Fins</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Fin Size</label>
+        <input type="range" min="3" max="20" step="1" value="10" id="rb-finscale"
+          oninput="R.finScale=this.value/10;document.getElementById('rb-fsv').textContent=(this.value/10).toFixed(1)+'×';buildRocket()">
+        <span class="rv" id="rb-fsv">1.0×</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🚀 Propulsion</div>
+      <div class="rb-row">
+        <label>Engines</label>
+        <select id="rb-eng" onchange="R.engineCount=parseInt(this.value);buildRocket()">
+          <option value="1">1 — Single</option>
+          <option value="3">3 — Triple</option>
+          <option value="5">5 — Cluster</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Boosters</label>
+        <select id="rb-boost" onchange="R.boosters=parseInt(this.value);buildRocket()">
+          <option value="0">None</option>
+          <option value="2">2 Boosters</option>
+          <option value="4">4 Boosters</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Boost ×</label>
+        <input type="range" min="4" max="10" step="1" value="6" id="rb-bs"
+          oninput="R.boosterSize=this.value/10;document.getElementById('rb-bsv').textContent=(this.value/10).toFixed(1)+'×';buildRocket()">
+        <span class="rv" id="rb-bsv">0.6×</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🎨 Livery Presets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <button class="preset-btn" onclick="applyPreset('nasa')">🚀 NASA</button>
+        <button class="preset-btn" onclick="applyPreset('spacex')">⚫ SpaceX</button>
+        <button class="preset-btn" onclick="applyPreset('soviet')">🔴 Soviet</button>
+        <button class="preset-btn" onclick="applyPreset('saturn')">🌕 Saturn V</button>
+        <button class="preset-btn" onclick="applyPreset('ariane')">🔵 Ariane</button>
+        <button class="preset-btn" onclick="applyPreset('fire')">🔥 Firestorm</button>
+        <button class="preset-btn" onclick="applyPreset('stealth')">🌑 Stealth</button>
+        <button class="preset-btn" onclick="applyPreset('aurora')">🌌 Aurora</button>
+      </div>
+    </div>
+
+    <div style="padding:4px 2px">
+      <button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" onclick="launch()">🔥 LAUNCH</button>
+    </div>
+
   </div>
 
 </div>
@@ -293,6 +478,11 @@ const R = {
   landingLegs: false,
   launched: false,
   launchY: 0,
+  // extended customisation
+  finScale: 1.0,
+  stripePos: 0.35,
+  noseconeScale: 1.0,
+  windowCount: 2,
 };
 
 let rocketGroup = null;
@@ -302,23 +492,96 @@ function hexToThree(hex) {
   return new THREE.Color(hex);
 }
 
+/* ═══════════════════════════════
+   OBJ EXPORT
+═══════════════════════════════ */
 function downloadRocket() {
   if (!rocketGroup) { sout('Build your rocket first!'); return; }
+  rocketGroup.updateMatrixWorld(true);
+
   const name = (R.name && R.name !== 'UNNAMED' ? R.name : 'rocket').replace(/\s+/g, '-').toLowerCase();
-  sout('⏳ Preparing 3D export…');
-  const exporter = new THREE.GLTFExporter();
-  exporter.parse(rocketGroup, function(result) {
-    const blob = new Blob([result], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name + '-rocket.glb';
-    link.click();
-    URL.revokeObjectURL(url);
-    sout('✅ ' + link.download + ' downloaded — open in Blender, Godot, Windows 3D Viewer or Unity!');
-  }, { binary: true });
+  sout('⏳ Preparing OBJ export…');
+
+  let obj = '# ' + R.name + ' — JV Rocket Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '-rocket.mtl\n';
+  let mtl = '# Materials for ' + R.name + '\n# jvdesignstudio.co.uk\n';
+
+  const matMap = {};
+  let matIdx = 0;
+  let vOff = 1; // OBJ is 1-indexed
+  let meshIdx = 0;
+
+  rocketGroup.traverse(function(node) {
+    if (!node.isMesh) return;
+
+    // --- material ---
+    const col = node.material.color ? node.material.color : new THREE.Color(0x888888);
+    const hex = col.getHexString();
+    if (!matMap[hex]) {
+      const mName = 'm' + (matIdx++);
+      matMap[hex] = mName;
+      mtl += '\nnewmtl ' + mName + '\n';
+      mtl += 'Kd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\n';
+      mtl += 'Ka 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
+      if (node.material.transparent) {
+        mtl += 'd ' + (node.material.opacity != null ? node.material.opacity : 1).toFixed(4) + '\n';
+      }
+    }
+
+    // --- geometry ---
+    const g = node.geometry.clone();
+    g.applyMatrix4(node.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+
+    const pos = g.attributes.position;
+    const nor = g.attributes.normal;
+    const idx = g.index;
+    const n = pos.count;
+
+    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
+
+    for (let i = 0; i < n; i++) {
+      obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
+    }
+    for (let i = 0; i < n; i++) {
+      obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
+    }
+
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
+        const a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    } else {
+      for (let i = 0; i < n; i += 3) {
+        const a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    }
+    vOff += n;
+  });
+
+  // Download .obj
+  const objBlob = new Blob([obj], { type: 'text/plain' });
+  const objUrl = URL.createObjectURL(objBlob);
+  const la = document.createElement('a');
+  la.href = objUrl; la.download = name + '-rocket.obj'; la.click();
+  URL.revokeObjectURL(objUrl);
+
+  // Download .mtl (slight delay so browser doesn't block second download)
+  setTimeout(function() {
+    const mtlBlob = new Blob([mtl], { type: 'text/plain' });
+    const mtlUrl = URL.createObjectURL(mtlBlob);
+    const lb = document.createElement('a');
+    lb.href = mtlUrl; lb.download = name + '-rocket.mtl'; lb.click();
+    URL.revokeObjectURL(mtlUrl);
+  }, 300);
+
+  sout('✅ ' + name + '-rocket.obj + .mtl downloaded! Open in Blender: File → Import → Wavefront (.obj)');
 }
 
+/* ═══════════════════════════════
+   BUILD ROCKET
+═══════════════════════════════ */
 function buildRocket() {
   if (rocketGroup) scene.remove(rocketGroup);
   exhaustParticles = [];
@@ -346,30 +609,27 @@ function buildRocket() {
     const stripGeo = new THREE.CylinderGeometry(br + 0.005, br + 0.005, 0.22, 24);
     const stripMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.stripeCol), roughness: 0.4, metalness: 0.5 });
     const strip = new THREE.Mesh(stripGeo, stripMat);
-    strip.position.y = baseY + bh * 0.35;
+    strip.position.y = baseY + bh * R.stripePos;
     rocketGroup.add(strip);
   }
 
-  // Payload fairing (barrel section on top of body, nosecone sits above it)
+  // Payload fairing
   const noseBase = baseY + bh;
-  let noseLift = 0; // how much to push the nosecone up due to fairing
+  let noseLift = 0;
   if (R.fairing !== 'none') {
     const fH = R.fairing === 'xl' ? bh * 0.55 : bh * 0.32;
     const fR = br * (R.fairing === 'xl' ? 1.32 : 1.2);
     const fMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.45, metalness: 0.4 });
-    // Bottom transition ring: body radius → fairing radius
     const transGeo = new THREE.CylinderGeometry(fR, br, fH * 0.2, 20);
     const trans = new THREE.Mesh(transGeo, fMat);
     trans.position.y = noseBase + fH * 0.1;
     trans.castShadow = true;
     rocketGroup.add(trans);
-    // Main fairing barrel
     const barrelGeo = new THREE.CylinderGeometry(fR, fR, fH * 0.8, 20);
     const barrel = new THREE.Mesh(barrelGeo, fMat);
     barrel.position.y = noseBase + fH * 0.2 + fH * 0.4;
     barrel.castShadow = true;
     rocketGroup.add(barrel);
-    // Seam line
     const seamGeo = new THREE.TorusGeometry(fR, 0.025, 6, 24);
     const seamMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8 });
     const seam = new THREE.Mesh(seamGeo, seamMat);
@@ -379,10 +639,11 @@ function buildRocket() {
     noseLift = fH;
   }
 
-  // Nosecone (sits above fairing if present)
+  // Nosecone
   const effectiveNoseBase = noseBase + noseLift;
+  const nsc = Math.max(0.4, R.noseconeScale); // nosecone length scale
   if (R.nosecone === 'cone') {
-    const noseH = bh * 0.55;
+    const noseH = bh * 0.55 * nsc;
     const noseGeo = new THREE.ConeGeometry(R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
@@ -390,7 +651,7 @@ function buildRocket() {
     rocketGroup.add(nose);
   } else if (R.nosecone === 'ogive') {
     const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
-    const noseH = bh * 0.65;
+    const noseH = bh * 0.65 * nsc;
     const noseGeo = new THREE.ConeGeometry(noseR, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
@@ -406,7 +667,7 @@ function buildRocket() {
     rocketGroup.add(sh);
   } else { // blunt
     const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
-    const noseH = bh * 0.28;
+    const noseH = bh * 0.28 * nsc;
     const noseGeo = new THREE.CylinderGeometry(noseR * 0.55, noseR, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
@@ -443,7 +704,7 @@ function buildRocket() {
   }
 
   const bellR = R.engineCount > 1 ? br * 0.28 : br * 0.42;
-  enginePositions.forEach(([ex, ez]) => {
+  enginePositions.forEach(function([ex, ez]) {
     const bellGeo = new THREE.CylinderGeometry(bellR * 1.5, bellR * 0.7, 0.35, 16);
     const bell = new THREE.Mesh(bellGeo, exhaustMat);
     bell.position.set(ex, baseY - 0.18, ez);
@@ -459,30 +720,31 @@ function buildRocket() {
   for (let i = 0; i < R.finCount; i++) finAngles.push((i / R.finCount) * Math.PI * 2);
   const finMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.4, metalness: 0.55, side: THREE.DoubleSide });
 
-  finAngles.forEach(angle => {
+  const fs = Math.max(0.3, R.finScale); // fin size multiplier
+  finAngles.forEach(function(angle) {
     let finMesh;
     if (R.finStyle === 'delta') {
       const shape = new THREE.Shape();
-      shape.moveTo(0, 0); shape.lineTo(0, bh * 0.5); shape.lineTo(br * 2.2, 0); shape.closePath();
+      shape.moveTo(0, 0); shape.lineTo(0, bh * 0.5 * fs); shape.lineTo(br * 2.2 * fs, 0); shape.closePath();
       const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
       finMesh = new THREE.Mesh(geo, finMat);
       finMesh.position.y = baseY;
     } else if (R.finStyle === 'swept') {
       const shape = new THREE.Shape();
-      shape.moveTo(0, 0); shape.lineTo(br * 0.8, bh * 0.42); shape.lineTo(br * 2.0, bh * 0.42); shape.lineTo(br * 2.0, 0); shape.closePath();
+      shape.moveTo(0, 0); shape.lineTo(br * 0.8 * fs, bh * 0.42 * fs); shape.lineTo(br * 2.0 * fs, bh * 0.42 * fs); shape.lineTo(br * 2.0 * fs, 0); shape.closePath();
       const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.03, bevelEnabled: false });
       finMesh = new THREE.Mesh(geo, finMat);
       finMesh.position.y = baseY;
     } else { // grid
       const gGroup = new THREE.Group();
       const barMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.5, metalness: 0.5 });
-      const gW = br * 1.8, gH = bh * 0.38, gD = 0.06;
-      [-gH * 0.33, 0, gH * 0.33].forEach(gy => {
+      const gW = br * 1.8 * fs, gH = bh * 0.38 * fs, gD = 0.06;
+      [-gH * 0.33, 0, gH * 0.33].forEach(function(gy) {
         const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gD, gW), barMat);
         g.position.set(gW * 0.5 + br, gy + baseY + gH * 0.5, 0);
         gGroup.add(g);
       });
-      [-gW * 0.33, 0, gW * 0.33].forEach(gx => {
+      [-gW * 0.33, 0, gW * 0.33].forEach(function(gx) {
         const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gH, gD), barMat);
         g.position.set(gx + gW * 0.5 + br, baseY + gH * 0.5, 0);
         gGroup.add(g);
@@ -506,7 +768,7 @@ function buildRocket() {
     const boosterAngles = [];
     for (let i = 0; i < R.boosters; i++) boosterAngles.push((i / R.boosters) * Math.PI * 2);
 
-    boosterAngles.forEach(a => {
+    boosterAngles.forEach(function(a) {
       const bx = Math.cos(a) * bDist, bz = Math.sin(a) * bDist;
       const bBody = new THREE.Mesh(new THREE.CylinderGeometry(bsr, bsr, bsh, 16), pMat.clone());
       bBody.position.set(bx, baseY + bsh / 2, bz); bBody.castShadow = true; rocketGroup.add(bBody);
@@ -517,7 +779,6 @@ function buildRocket() {
       const strutLen = bDist - br - bsr;
       const strutGeo = new THREE.CylinderGeometry(0.025, 0.025, strutLen, 6);
       const strut = new THREE.Mesh(strutGeo, darkMat);
-      // Orient strut radially using quaternion so it actually connects body to booster
       const strutY = baseY + bsh * 0.6;
       const fromPt = new THREE.Vector3(Math.cos(a) * br, strutY, Math.sin(a) * br);
       const toPt   = new THREE.Vector3(bx, strutY, bz);
@@ -525,7 +786,6 @@ function buildRocket() {
       strut.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), strutDir);
       strut.position.copy(fromPt).lerp(toPt, 0.5);
       rocketGroup.add(strut);
-      // Second strut at different height for stability
       const strut2Geo = new THREE.CylinderGeometry(0.02, 0.02, strutLen, 6);
       const strut2 = new THREE.Mesh(strut2Geo, darkMat);
       const strut2Y = baseY + bsh * 0.2;
@@ -543,9 +803,11 @@ function buildRocket() {
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.75, emissive: new THREE.Color(0x224466), emissiveIntensity: 0.3 });
     const rimMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.5, metalness: 0.7 });
     const winHeights = [bh * 0.55, bh * 0.72];
-    const winAngles = R.windowStyle === 'row' ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : [0, Math.PI];
-    winHeights.forEach(wh => {
-      winAngles.forEach(wa => {
+    const wCount = Math.max(1, Math.min(8, R.windowCount));
+    const winAngles = [];
+    for (let i = 0; i < wCount; i++) winAngles.push((i / wCount) * Math.PI * 2);
+    winHeights.forEach(function(wh) {
+      winAngles.forEach(function(wa) {
         const wx = Math.cos(wa) * (br + 0.005);
         const wz = Math.sin(wa) * (br + 0.005);
         if (R.windowStyle === 'porthole' || R.windowStyle === 'row') {
@@ -582,7 +844,6 @@ function buildRocket() {
     for (let i = 0; i < legCount; i++) {
       const la = (i / legCount) * Math.PI * 2;
       const lx = Math.cos(la), lz = Math.sin(la);
-      // Main strut: diagonal from body base to ground
       const strutTopX = lx * br * 0.95, strutTopZ = lz * br * 0.95;
       const strutBotX = lx * (br + bh * 0.38), strutBotZ = lz * (br + bh * 0.38);
       const strutLen = Math.hypot(strutBotX - strutTopX, bh * 0.35, strutBotZ - strutTopZ);
@@ -594,12 +855,10 @@ function buildRocket() {
       const bot = new THREE.Vector3(strutBotX, baseY - bh * 0.35, strutBotZ);
       main.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bot.clone().sub(top).normalize());
       rocketGroup.add(main);
-      // Foot pad
       const footGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 10);
       const foot = new THREE.Mesh(footGeo, legMat);
       foot.position.set(strutBotX, baseY - bh * 0.35, strutBotZ);
       rocketGroup.add(foot);
-      // Cross brace
       const braceLen = bh * 0.22;
       const braceGeo = new THREE.CylinderGeometry(0.014, 0.014, braceLen, 6);
       const brace = new THREE.Mesh(braceGeo, legMat);
@@ -616,7 +875,7 @@ function buildRocket() {
     engineGlow.color = glowColor;
     engineGlow.intensity = 2.5;
     engineGlow.position.y = baseY - 0.6 + R.launchY;
-    enginePositions.forEach(([ex, ez]) => {
+    enginePositions.forEach(function([ex, ez]) {
       for (let i = 0; i < 3; i++) {
         const fh = 0.3 + Math.random() * 0.5;
         const fGeo = new THREE.ConeGeometry(bellR * (0.6 + Math.random() * 0.6), fh, 8);
@@ -634,6 +893,7 @@ function buildRocket() {
 
   scene.add(rocketGroup);
   updateSpecCard();
+  syncRightBar();
 }
 
 /* ═══════════════════════════════
@@ -650,24 +910,24 @@ function updateCamera() {
   camera.lookAt(0, R.bodyHeight / 2, 0);
 }
 
-canvas.addEventListener('mousedown', e => { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
-window.addEventListener('mouseup', () => { orbit.dragging = false; });
-window.addEventListener('mousemove', e => {
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
   if (!orbit.dragging) return;
   orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
   orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
   orbit.lastX = e.clientX; orbit.lastY = e.clientY;
 });
-canvas.addEventListener('wheel', e => { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
 
 let pinchDist0 = 0;
-canvas.addEventListener('touchstart', e => {
+canvas.addEventListener('touchstart', function(e) {
   if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
   if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
   e.preventDefault();
 }, { passive: false });
-canvas.addEventListener('touchend', () => { orbit.dragging = false; });
-canvas.addEventListener('touchmove', e => {
+canvas.addEventListener('touchend', function() { orbit.dragging = false; });
+canvas.addEventListener('touchmove', function(e) {
   if (e.touches.length === 1 && orbit.dragging) {
     orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
     orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
@@ -698,7 +958,7 @@ function animate() {
   if (!orbit.dragging) orbit.theta += 0.003;
   updateCamera();
 
-  exhaustParticles.forEach(p => {
+  exhaustParticles.forEach(function(p) {
     p.mesh.position.y = p.baseY + R.launchY - Math.abs(Math.sin(frame * 0.12 + p.phase)) * 0.15;
     p.mesh.material.opacity = 0.5 + Math.sin(frame * 0.18 + p.phase) * 0.3;
     const s = 0.85 + Math.sin(frame * 0.14 + p.phase) * 0.15;
@@ -733,12 +993,64 @@ function updateSpecCard() {
 function sout(m) { document.getElementById('obar').textContent = m; }
 
 /* ═══════════════════════════════
+   RIGHT BAR SYNC
+═══════════════════════════════ */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-prim', R.primaryCol);
+  sv('rb-sec', R.secondaryCol);
+  sv('rb-stripe-col', R.stripeCol);
+  sv('rb-glow', R.glowCol);
+  sv('rb-h', R.bodyHeight); st('rb-hv', parseFloat(R.bodyHeight).toFixed(1) + 'm');
+  sv('rb-r', R.bodyRadius); st('rb-rv', parseFloat(R.bodyRadius).toFixed(2));
+  sv('rb-nose', R.nosecone);
+  sv('rb-fair', R.fairing);
+  sv('rb-win', R.windowStyle);
+  sc('rb-stripe-on', R.stripeOn);
+  sc('rb-legs', R.landingLegs);
+  sv('rb-eng', R.engineCount);
+  sv('rb-boost', R.boosters);
+  sv('rb-bs', Math.round(R.boosterSize * 10)); st('rb-bsv', R.boosterSize.toFixed(1) + '×');
+  sv('rb-finstyle', R.finStyle);
+  sv('rb-fincount', R.finCount);
+  sv('rb-finscale', Math.round(R.finScale * 10)); st('rb-fsv', R.finScale.toFixed(1) + '×');
+  sv('rb-nosescale', Math.round(R.noseconeScale * 10)); st('rb-nsv', R.noseconeScale.toFixed(1) + '×');
+  sv('rb-stripepos', Math.round(R.stripePos * 100)); st('rb-spv', Math.round(R.stripePos * 100) + '%');
+  sv('rb-wincount', R.windowCount); st('rb-wcv', R.windowCount);
+}
+
+/* ═══════════════════════════════
+   LIVERY PRESETS
+═══════════════════════════════ */
+const PRESETS = {
+  nasa:    { primaryCol:'#f0ede8', secondaryCol:'#1a1a2a', stripeOn:false, stripeCol:'#1a1a2a', glowCol:'#88ccff', finStyle:'delta',  noseconeScale:1.0, finScale:1.0 },
+  spacex:  { primaryCol:'#1e1e22', secondaryCol:'#c0c8d0', stripeOn:false, stripeCol:'#ffffff', glowCol:'#88ccff', finStyle:'grid',   noseconeScale:1.2, finScale:0.9 },
+  soviet:  { primaryCol:'#cc2222', secondaryCol:'#c0c0c0', stripeOn:true,  stripeCol:'#f5c842', glowCol:'#ff6600', finStyle:'delta',  noseconeScale:0.9, finScale:1.1 },
+  saturn:  { primaryCol:'#f5f0e8', secondaryCol:'#1a1a2a', stripeOn:true,  stripeCol:'#1a1a2a', glowCol:'#ff8800', finStyle:'swept',  noseconeScale:0.8, finScale:1.2 },
+  ariane:  { primaryCol:'#e8e8ec', secondaryCol:'#ffffff', stripeOn:true,  stripeCol:'#38bdf8', glowCol:'#88ccff', finStyle:'swept',  noseconeScale:1.1, finScale:0.9 },
+  fire:    { primaryCol:'#e8543a', secondaryCol:'#f5c842', stripeOn:true,  stripeCol:'#ff2200', glowCol:'#ff3300', finStyle:'delta',  noseconeScale:1.0, finScale:1.3 },
+  stealth: { primaryCol:'#0d0d12', secondaryCol:'#1a2030', stripeOn:false, stripeCol:'#334455', glowCol:'#6666ff', finStyle:'swept',  noseconeScale:1.4, finScale:0.8 },
+  aurora:  { primaryCol:'#0d1b2a', secondaryCol:'#4ade80', stripeOn:true,  stripeCol:'#a78bfa', glowCol:'#44ffaa', finStyle:'delta',  noseconeScale:1.0, finScale:1.0 },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  Object.assign(R, p);
+  buildRocket();
+  const labels = { nasa:'NASA Classic', spacex:'SpaceX Dark', soviet:'Soviet Red', saturn:'Saturn V', ariane:'ESA Ariane', fire:'Firestorm', stealth:'Stealth Black', aurora:'Aurora' };
+  sout('🎨 ' + (labels[name] || name) + ' livery applied!');
+  document.getElementById('liveStatus').textContent = labels[name] || name;
+}
+
+/* ═══════════════════════════════
    STEPS
 ═══════════════════════════════ */
 let currentStep = 0;
 const stepDone = new Array(17).fill(false);
 
-// nav() now returns empty — prev/next are in the sidebar .snav
 function nav(i) { return ''; }
 
 function opts(id, options, currentVal, onChange) {
@@ -1064,7 +1376,7 @@ const STEPS = [
   intro: `Choose the colour of your <strong>engine exhaust flame</strong>. Kerosene engines burn orange-yellow. Hydrogen engines burn nearly invisible blue-white. Ion drives glow blue-violet.`,
   boxes: [
     { t:'box-c', tx:'Rocket exhaust colours depend entirely on propellant. LOX/kerosene = orange. LOX/hydrogen = blue-white, almost invisible. Methalox (Raptor) = tight blue diamond shocks. Ion drives = electric purple-blue glow.' },
-    { t:'box-t', tx:'The glow appears when you launch in Step 15!' },
+    { t:'box-t', tx:'The glow appears when you launch in Step 17!' },
   ],
   tasks: ['Pick an exhaust glow colour'],
   html() {
@@ -1081,7 +1393,7 @@ const STEPS = [
   boxes: [
     { t:'box-r', tx: '3… 2… 1… Ignition! The engines fire, the clamps release, and your rocket climbs into the void.' },
     { t:'box-c', tx: 'A complete launch vehicle needs: nosecone (aerodynamics), body (fuel/structure), fins (stability), engines (thrust), and a payload. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit <strong>⬇ Export 3D</strong> in the header to download your rocket as a <strong>.glb</strong> file — open it in Blender, Godot, Unity, or Windows 3D Viewer. Hit <strong>⚡ Quick Build</strong> to reset and try a completely different design.' },
+    { t:'box-t', tx: 'Hit <strong>⬇ Export OBJ</strong> in the header to download your rocket as a <strong>.obj</strong> file — open it in Blender, MeshLab, or any 3D app. Hit <strong>⚡ Quick Build</strong> to reset and try a completely different design.' },
   ],
   tasks: ['Press Launch and watch it go!'],
   html() {
@@ -1090,7 +1402,7 @@ const STEPS = [
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${R.name || 'YOUR ROCKET'}</div>
       <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for launch.</div>
     </div>
-    <button class="run-btn" style="font-size:1rem;padding:12px" onclick="launch()">🔥 IGNITION — LAUNCH!</button>`;
+    <button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">🔥 IGNITION — LAUNCH!</button>`;
   },
   onApply() { launch(); }
 },
@@ -1104,6 +1416,10 @@ function launch() {
   sout('🚀 IGNITION! ' + (R.name || 'ROCKET') + ' is lifting off!');
   document.getElementById('liveStatus').textContent = 'LIFTOFF! 🚀';
   document.getElementById('sceneHint').textContent = 'Drag to follow the rocket';
+  // Mark the launch step as done and tick it off
+  stepDone[STEPS.length - 1] = true;
+  updateProgress();
+  renderStep();
 }
 
 function go(i) {
@@ -1136,7 +1452,6 @@ function renderStep() {
     html += `<button class="run-btn" onclick="applyStep(${currentStep})">▶ Apply to Rocket</button>`;
   }
   body.innerHTML = html;
-  // Sync active state on step list
   document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
 }
 
@@ -1167,8 +1482,9 @@ function quickBuild() {
   R.stripeOn = true; R.stripeCol = '#f5c842'; R.glowCol = '#ff6600';
   R.windowStyle = 'porthole'; R.landingLegs = true;
   R.launched = false; R.launchY = 0;
+  R.finScale = 1.0; R.stripePos = 0.35; R.noseconeScale = 1.0; R.windowCount = 2;
   buildRocket();
-  sout('⚡ Quick build: NOVA-7 is ready. Press Launch at Step 15!');
+  sout('⚡ Quick build: NOVA-7 is ready. Press Launch at Step 17!');
   document.getElementById('liveStatus').textContent = 'Quick build active!';
 }
 
@@ -1188,6 +1504,7 @@ function init() {
   buildRocket();
   renderStep();
   updateSpecCard();
+  syncRightBar();
 }
 
 init();
