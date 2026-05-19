@@ -259,6 +259,17 @@ img { display: block; max-width: 100%; }
 .footer-links a:hover { color: var(--beige); background: rgba(255,255,255,0.07); }
 .footer-copy { font-size: 0.73rem; color: rgba(240,234,214,0.35); border-top: 1px solid rgba(255,255,255,0.07); padding-top: 18px; width: 100%; }
 
+/* ── Touch / mobile ── */
+@media(pointer:coarse) {
+    .book-card { -webkit-tap-highlight-color: transparent; }
+    .book-card.tapped { transform: translateY(-7px); box-shadow: 0 16px 40px rgba(64,59,51,0.16); }
+    .book-card.tapped .book-cover img { transform: scale(1.04); }
+    .book-card.tapped .book-cta { gap: 8px; }
+    /* bigger tap targets */
+    .book-cta { padding: 10px 0; }
+    .book-body { padding: 16px 16px 18px; }
+}
+
 /* ── Responsive ── */
 @media(max-width:600px) {
     .books-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -522,6 +533,22 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     document.addEventListener('click', e => { if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNav(); });
 })();
+</script>
+<script>
+/* Touch tap-to-activate on book cards */
+if (window.matchMedia('(pointer:coarse)').matches) {
+  document.querySelectorAll('.book-card').forEach(function(card) {
+    card.addEventListener('touchstart', function() {
+      document.querySelectorAll('.book-card.tapped').forEach(function(c) { if (c !== card) c.classList.remove('tapped'); });
+      card.classList.toggle('tapped');
+    }, { passive: true });
+  });
+  document.addEventListener('touchstart', function(e) {
+    if (!e.target.closest('.book-card')) {
+      document.querySelectorAll('.book-card.tapped').forEach(function(c) { c.classList.remove('tapped'); });
+    }
+  }, { passive: true });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script></body>
 </html>
