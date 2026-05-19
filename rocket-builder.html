@@ -21,6 +21,7 @@
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 <style>
 :root{
   --bg:#07090f;--bg2:#0c0e18;--bg3:#131624;
@@ -173,7 +174,7 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
     <div class="logo">🚀 Rocket Builder</div>
     <div class="hdr-right">
       <a href="workshop.html" class="back-link">← Workshop</a>
-      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">💾 Save PNG</button>
+      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⬇ Export 3D</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -302,13 +303,20 @@ function hexToThree(hex) {
 }
 
 function downloadRocket() {
-  renderer.render(scene, camera);
-  const link = document.createElement('a');
+  if (!rocketGroup) { sout('Build your rocket first!'); return; }
   const name = (R.name && R.name !== 'UNNAMED' ? R.name : 'rocket').replace(/\s+/g, '-').toLowerCase();
-  link.download = name + '-design.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-  sout('💾 Saved as ' + link.download);
+  sout('⏳ Preparing 3D export…');
+  const exporter = new THREE.GLTFExporter();
+  exporter.parse(rocketGroup, function(result) {
+    const blob = new Blob([result], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name + '-rocket.glb';
+    link.click();
+    URL.revokeObjectURL(url);
+    sout('✅ ' + link.download + ' downloaded — open in Blender, Godot, Windows 3D Viewer or Unity!');
+  }, { binary: true });
 }
 
 function buildRocket() {
@@ -1073,7 +1081,7 @@ const STEPS = [
   boxes: [
     { t:'box-r', tx: '3… 2… 1… Ignition! The engines fire, the clamps release, and your rocket climbs into the void.' },
     { t:'box-c', tx: 'A complete launch vehicle needs: nosecone (aerodynamics), body (fuel/structure), fins (stability), engines (thrust), and a payload. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit <strong>💾 Save PNG</strong> in the header to download an image of your rocket. Hit <strong>⚡ Quick Build</strong> to reset and try a completely different design.' },
+    { t:'box-t', tx: 'Hit <strong>⬇ Export 3D</strong> in the header to download your rocket as a <strong>.glb</strong> file — open it in Blender, Godot, Unity, or Windows 3D Viewer. Hit <strong>⚡ Quick Build</strong> to reset and try a completely different design.' },
   ],
   tasks: ['Press Launch and watch it go!'],
   html() {
