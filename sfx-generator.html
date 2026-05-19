@@ -674,8 +674,10 @@ function sendToGameMaker(){
     end=Math.min(end,data.length);
     const trimmed=data.slice(0,end);
     const wav=makeWav(trimmed,sr);
-    const b64=btoa(String.fromCharCode(...new Uint8Array(wav)));
-    const dataUrl='data:audio/wav;base64,'+b64;
+    const bytes=new Uint8Array(wav);
+    let binary='';
+    for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+    const dataUrl='data:audio/wav;base64,'+btoa(binary);
     localStorage.setItem('jvds_sfx_last',JSON.stringify({
       dataUrl, cat:currentCat, variant:currentVariant,
       name:`${cat.name} — ${variant.name}`
