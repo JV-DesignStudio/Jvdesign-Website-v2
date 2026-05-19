@@ -321,6 +321,36 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 <textarea id="levelDesignerGrid" placeholder="Paste tile array or use Assets → Level Designer"></textarea>
             </div>
 
+            <span class="sec-label">Theme &amp; Story</span>
+            <div class="asset-block" style="gap:7px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+                    <div>
+                        <div class="asset-block-title">Colour Theme</div>
+                        <div style="display:flex;gap:4px;align-items:center;margin-top:5px;flex-wrap:wrap;">
+                            <div id="paletteStrip" style="display:flex;gap:3px;flex-wrap:wrap;"></div>
+                            <span id="paletteName" style="font-size:.62rem;color:var(--muted);"></span>
+                        </div>
+                    </div>
+                    <span id="paletteBadge" class="bp-badge green" style="display:none;">✓</span>
+                </div>
+                <div class="asset-btns">
+                    <button class="asset-btn import" onclick="openWorkshop('colour-palette.html')">🎨 Design Palette</button>
+                    <button class="asset-btn import" onclick="importPaletteFromTool()">⬇ Import Last</button>
+                </div>
+            </div>
+            <div class="asset-block" style="gap:7px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div class="asset-block-title">Story / Intro</div>
+                    <span id="storyBadge" class="bp-badge cyan" style="display:none;">✓ Story</span>
+                </div>
+                <div id="storyTitlePreview" style="font-size:.74rem;font-weight:700;color:white;"></div>
+                <div id="storyPreview" style="font-size:.63rem;color:var(--muted);line-height:1.5;max-height:40px;overflow:hidden;"></div>
+                <div class="asset-btns">
+                    <button class="asset-btn import" onclick="openWorkshop('story-editor.html')">📝 Write Story</button>
+                    <button class="asset-btn import" onclick="importStoryFromEditor()">⬇ Import Last</button>
+                </div>
+            </div>
+
             <button class="btn-run" onclick="compileAndBootEngine()">▶ Run Game</button>
 
             <span class="sec-label">Save &amp; Share</span>
@@ -526,8 +556,17 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
                     <label class="toggle-switch"><input type="checkbox" id="sfxToggle" checked onchange="GameAudio.sfxEnabled=this.checked;"><span class="toggle-knob"></span></label>
                 </div>
                 <div class="toggle-row">
-                    <div><div class="toggle-label">Background Music</div><div class="toggle-sub">Chiptune loop</div></div>
+                    <div>
+                        <div class="toggle-label">Background Music</div>
+                        <div class="toggle-sub" id="musicImportName">Chiptune loop</div>
+                    </div>
                     <label class="toggle-switch"><input type="checkbox" id="musicToggle" onchange="GameAudio.setMusic(this.checked);"><span class="toggle-knob"></span></label>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <button class="asset-btn import" style="flex:1;" onclick="openWorkshop('sound-studio.html')">🎵 Compose in Sound Studio</button>
+                    <button class="asset-btn import" onclick="importMusicFromStudio()">⬇ Import</button>
+                    <button class="asset-btn clear" onclick="clearCustomMusic()" title="Clear custom music">✕</button>
+                    <span id="musicImportBadge" class="sound-custom-badge" style="display:none;">✓ Custom</span>
                 </div>
                 <div class="form-group">
                     <label for="volumeSlider">Volume</label>
@@ -618,10 +657,13 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
         </div>
         <div class="wk-tabs">
             <button class="wk-tab on" data-src="pixel-studio.html" onclick="switchWorkshopTool(this)">🎨 Pixel Art</button>
-            <button class="wk-tab" data-src="character-designer.html" onclick="switchWorkshopTool(this)">👾 Character Designer</button>
-            <button class="wk-tab" data-src="level-designer.html" onclick="switchWorkshopTool(this)">🗺 Level Designer</button>
-            <button class="wk-tab" data-src="sfx-generator.html" onclick="switchWorkshopTool(this)">💥 SFX Studio</button>
-            <span class="wk-step">Step 1 of 4: Make your assets → Step 2: Build → Step 3: Play!</span>
+            <button class="wk-tab" data-src="character-designer.html" onclick="switchWorkshopTool(this)">👾 Characters</button>
+            <button class="wk-tab" data-src="level-designer.html" onclick="switchWorkshopTool(this)">🗺 Levels</button>
+            <button class="wk-tab" data-src="sfx-generator.html" onclick="switchWorkshopTool(this)">💥 SFX</button>
+            <button class="wk-tab" data-src="sound-studio.html" onclick="switchWorkshopTool(this)">🎵 Music</button>
+            <button class="wk-tab" data-src="story-editor.html" onclick="switchWorkshopTool(this)">📝 Story</button>
+            <button class="wk-tab" data-src="colour-palette.html" onclick="switchWorkshopTool(this)">🎨 Palette</button>
+            <span class="wk-step">Create → Build → Play!</span>
         </div>
         <div class="wk-frame">
             <iframe id="wkIframe" src="" title="Workshop Tool" allow="autoplay *; clipboard-write *"></iframe>
@@ -667,6 +709,14 @@ const liveConfig = {
 // ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
 const touchInput = { left:false, right:false, up:false, fire:false };
 
+// ── GAME THEME (from Colour Palette tool) ────────────────────────────────────
+const gameTheme = { cols:[], name:'' };
+function themeInt(idx, fallback) {
+    const c = gameTheme.cols[idx];
+    return c ? parseInt(c.replace('#',''), 16) : fallback;
+}
+function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
+
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
 let customSpriteDataUrl = null;
 let customLevelMap = null;
@@ -689,6 +739,7 @@ const GameAudio = {
     sounds: { shoot:'laser', jump:'boing', hit:'boom', score:'coin' },
     customBuffers: { shoot:null, jump:null, hit:null, score:null },
     musicNodes: [], musicTimeout: null, musicStep: 0,
+    customMusic: null, _musicSource: null,
 
     getCtx() {
         if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -812,6 +863,7 @@ const GameAudio = {
 
     startMusic(style) {
         this.stopMusic();
+        if (this.customMusic) { this._playCustomMusic(); return; }
         const ac = this.getCtx();
         const patterns = {
             chiptune: { notes:[262,294,330,349,392,440,494,523], bpm:160, seq:[0,2,4,2,0,2,4,5,0,2,4,2,5,4,2,0] },
@@ -842,6 +894,22 @@ const GameAudio = {
     stopMusic() {
         if (this.musicTimeout) clearTimeout(this.musicTimeout);
         this.musicTimeout = null;
+        if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} this._musicSource = null; }
+    },
+
+    _playCustomMusic() {
+        const ac = this.getCtx();
+        fetch(this.customMusic)
+            .then(r => r.arrayBuffer())
+            .then(ab => ac.decodeAudioData(ab))
+            .then(buf => {
+                if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} }
+                const src = ac.createBufferSource(), g = ac.createGain();
+                src.buffer = buf; src.loop = true;
+                src.connect(g); g.connect(ac.destination);
+                g.gain.value = this.volume * 0.5;
+                src.start(); this._musicSource = src;
+            }).catch(() => {});
     }
 };
 
@@ -957,8 +1025,9 @@ function makeBaseScene(data) {
             this.load.image('block',  'https://labs.phaser.io/assets/sprites/block.png');
         }
         _makeScoreText() {
-            return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:'#a78bfa',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setDepth(10);
+            return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setDepth(10);
         }
+        _tint(sprite, idx, fallback) { sprite.setTint(themeInt(idx, fallback)); return sprite; }
         _flashScore(txt) {
             this.tweens.add({targets:txt,scaleX:1.25,scaleY:1.25,duration:70,yoyo:true,ease:'Power2'});
         }
@@ -976,6 +1045,7 @@ function sceneShooter(data) {
             this.bullets = this.physics.add.group();
             this.hazards = this.physics.add.group();
             this.actor = this.physics.add.sprite(GW/2, GH/2, 'player').setScale(0.9);
+            this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).setDrag(120);
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
                 const e=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
@@ -1027,6 +1097,7 @@ function scenePlatformer(data) {
                 this.platforms.create(tx,ty,'block').setDisplaySize(ts*sx,ts*sy).refreshBody();
             });
             this.actor = this.physics.add.sprite(72,GH*0.4,'player').setScale(0.7);
+            this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.platforms);
             this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
@@ -1060,6 +1131,7 @@ function sceneDodge(data) {
             this.hazards = this.physics.add.group();
             this.stars   = this.physics.add.group();
             this.actor = this.physics.add.sprite(GW/2, GH-40, 'player').setScale(0.7);
+            this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const x=Phaser.Math.Between(20,GW-20);
@@ -1126,10 +1198,11 @@ function sceneBreaker(data) {
         }
         _buildBricks() {
             const cols=8, rows=4, bw=68, bh=18, startY=48;
-            const colors=[0xe74c3c,0xe67e22,0xf1c40f,0x2ecc71];
+            const fallbacks=[0xe74c3c,0xe67e22,0xf1c40f,0x2ecc71];
+            const colors=fallbacks.map((f,i)=>themeInt(i,f));
             for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
                 const bx=40+c*(bw+4), by=startY+r*(bh+4);
-                const b=this.bricks.create(bx,by,'block').setDisplaySize(bw,bh).setTint(colors[r]).refreshBody();
+                this.bricks.create(bx,by,'block').setDisplaySize(bw,bh).setTint(colors[r]).refreshBody();
             }
         }
         update() {
@@ -1158,6 +1231,7 @@ function sceneRunner(data) {
             this.groundObj = ground;
             // Player
             this.actor = this.physics.add.sprite(100, GH-50, 'player').setScale(0.7);
+            this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.groundObj);
             // Obstacle spawner
@@ -1262,6 +1336,71 @@ function clearLevel() {
     document.getElementById('levelStatus').textContent='Using built-in default level';
     document.getElementById('levelStatus').className='asset-status none';
     showToast('Level cleared');
+}
+
+// ── MUSIC IMPORT FROM SOUND STUDIO ───────────────────────────────────────────
+function importMusicFromStudio() {
+    const raw = localStorage.getItem('jvds_music_last');
+    if (!raw) { showToast('Open Sound Studio → compose → 🕹️ Send to Game Maker'); return; }
+    try {
+        const d = JSON.parse(raw);
+        GameAudio.customMusic = d.dataUrl;
+        document.getElementById('musicImportName').textContent = d.name || 'Sound Studio Track';
+        document.getElementById('musicImportBadge').style.display = 'inline';
+        document.getElementById('musicToggle').checked = true;
+        GameAudio.setMusic(true);
+        showToast('Music imported! Toggle Background Music on to hear it.');
+    } catch(e) { showToast('Could not import music'); }
+}
+function clearCustomMusic() {
+    GameAudio.customMusic = null;
+    GameAudio.stopMusic();
+    document.getElementById('musicToggle').checked = false;
+    document.getElementById('musicImportBadge').style.display = 'none';
+    document.getElementById('musicImportName').textContent = '';
+    showToast('Custom music cleared — using built-in synth');
+}
+
+// ── STORY IMPORT FROM STORY EDITOR ───────────────────────────────────────────
+function importStoryFromEditor() {
+    const raw = localStorage.getItem('jvds_story_last');
+    if (!raw) { showToast('Open Story Editor → write story → 🕹️ Send to Game Maker'); return; }
+    try {
+        const d = JSON.parse(raw);
+        applyStory(d);
+        showToast(`Story "${d.title}" imported!`);
+    } catch(e) { showToast('Could not import story'); }
+}
+function applyStory(d) {
+    if (d.title) document.getElementById('gameTitle').value = d.title;
+    if (d.intro) document.getElementById('missionText').innerHTML = `<strong>Story:</strong> ${d.intro}`;
+    document.getElementById('storyPreview').textContent = d.intro || '';
+    document.getElementById('storyTitlePreview').textContent = d.title || '';
+    document.getElementById('storyBadge').style.display = 'inline';
+}
+
+// ── PALETTE IMPORT FROM COLOUR PALETTE ───────────────────────────────────────
+function importPaletteFromTool() {
+    const raw = localStorage.getItem('jvds_palette_last');
+    if (!raw) { showToast('Open Colour Palette → generate → 🕹️ Send to Game Maker'); return; }
+    try {
+        const d = JSON.parse(raw);
+        applyPalette(d);
+        showToast(`"${d.name}" palette applied!`);
+    } catch(e) { showToast('Could not import palette'); }
+}
+function applyPalette(d) {
+    gameTheme.cols = d.cols || [];
+    gameTheme.name = d.name || '';
+    const strip = document.getElementById('paletteStrip');
+    strip.innerHTML = '';
+    gameTheme.cols.forEach(c => {
+        const sw = document.createElement('span');
+        sw.style.cssText = `display:inline-block;width:22px;height:22px;border-radius:5px;background:${c};flex-shrink:0;`;
+        strip.appendChild(sw);
+    });
+    document.getElementById('paletteName').textContent = d.name || '';
+    document.getElementById('paletteBadge').style.display = 'inline';
 }
 
 // ── SFX IMPORT FROM SFX STUDIO ────────────────────────────────────────────────
@@ -1431,8 +1570,29 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 showToast('Level received from Workshop ✓');
             } catch(er) {}
         } else if (e.key === 'jvds_sfx_last' && e.newValue) {
-            showWorkshopBadge('✓ SFX ready! Close Workshop → Sounds tab → ⬇ Studio');
-            showToast('SFX received — go to Sounds tab to assign it');
+            showWorkshopBadge('✓ SFX ready! Sounds tab → ⬇ Studio to assign it');
+            showToast('SFX received — Sounds tab → ⬇ Studio');
+        } else if (e.key === 'jvds_music_last' && e.newValue) {
+            try {
+                const d = JSON.parse(e.newValue);
+                GameAudio.customMusic = d.dataUrl;
+                document.getElementById('musicImportName').textContent = d.name || 'Sound Studio Track';
+                document.getElementById('musicImportBadge').style.display = 'inline';
+                showWorkshopBadge('✓ Music ready! Enable Background Music in Sounds tab');
+                showToast('Music received from Sound Studio ✓');
+            } catch(er) {}
+        } else if (e.key === 'jvds_story_last' && e.newValue) {
+            try {
+                applyStory(JSON.parse(e.newValue));
+                showWorkshopBadge('✓ Story imported! Title & intro updated');
+                showToast('Story received from Story Editor ✓');
+            } catch(er) {}
+        } else if (e.key === 'jvds_palette_last' && e.newValue) {
+            try {
+                applyPalette(JSON.parse(e.newValue));
+                showWorkshopBadge('✓ Palette applied! Hit ▶ Run to see your colours');
+                showToast('Palette received from Colour Palette ✓');
+            } catch(er) {}
         }
     });
 });
