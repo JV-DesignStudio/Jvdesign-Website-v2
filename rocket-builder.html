@@ -173,6 +173,7 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
     <div class="logo">🚀 Rocket Builder</div>
     <div class="hdr-right">
       <a href="workshop.html" class="back-link">← Workshop</a>
+      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">💾 Save PNG</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -182,7 +183,7 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
     <div class="prog-section">
       <div class="prog-lbl">Build Progress</div>
       <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
-      <div class="prog-ct" id="progCt">0 / 15 steps</div>
+      <div class="prog-ct" id="progCt">0 / 17 steps</div>
     </div>
     <div class="slist" id="stepList"></div>
     <div class="cpan" id="stepBody"></div>
@@ -287,6 +288,8 @@ const R = {
   stripeOn: false,
   stripeCol: '#ffffff',
   glowCol: '#ff6600',
+  windowStyle: 'none',
+  landingLegs: false,
   launched: false,
   launchY: 0,
 };
@@ -296,6 +299,16 @@ let exhaustParticles = [];
 
 function hexToThree(hex) {
   return new THREE.Color(hex);
+}
+
+function downloadRocket() {
+  renderer.render(scene, camera);
+  const link = document.createElement('a');
+  const name = (R.name && R.name !== 'UNNAMED' ? R.name : 'rocket').replace(/\s+/g, '-').toLowerCase();
+  link.download = name + '-design.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  sout('💾 Saved as ' + link.download);
 }
 
 function buildRocket() {
@@ -329,52 +342,72 @@ function buildRocket() {
     rocketGroup.add(strip);
   }
 
-  // Nosecone
+  // Payload fairing (barrel section on top of body, nosecone sits above it)
   const noseBase = baseY + bh;
+  let noseLift = 0; // how much to push the nosecone up due to fairing
+  if (R.fairing !== 'none') {
+    const fH = R.fairing === 'xl' ? bh * 0.55 : bh * 0.32;
+    const fR = br * (R.fairing === 'xl' ? 1.32 : 1.2);
+    const fMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.45, metalness: 0.4 });
+    // Bottom transition ring: body radius → fairing radius
+    const transGeo = new THREE.CylinderGeometry(fR, br, fH * 0.2, 20);
+    const trans = new THREE.Mesh(transGeo, fMat);
+    trans.position.y = noseBase + fH * 0.1;
+    trans.castShadow = true;
+    rocketGroup.add(trans);
+    // Main fairing barrel
+    const barrelGeo = new THREE.CylinderGeometry(fR, fR, fH * 0.8, 20);
+    const barrel = new THREE.Mesh(barrelGeo, fMat);
+    barrel.position.y = noseBase + fH * 0.2 + fH * 0.4;
+    barrel.castShadow = true;
+    rocketGroup.add(barrel);
+    // Seam line
+    const seamGeo = new THREE.TorusGeometry(fR, 0.025, 6, 24);
+    const seamMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8 });
+    const seam = new THREE.Mesh(seamGeo, seamMat);
+    seam.rotation.x = Math.PI / 2;
+    seam.position.y = noseBase + fH * 0.2 + fH * 0.8;
+    rocketGroup.add(seam);
+    noseLift = fH;
+  }
+
+  // Nosecone (sits above fairing if present)
+  const effectiveNoseBase = noseBase + noseLift;
   if (R.nosecone === 'cone') {
     const noseH = bh * 0.55;
-    const noseGeo = new THREE.ConeGeometry(br, noseH, 24);
+    const noseGeo = new THREE.ConeGeometry(R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
-    nose.position.y = noseBase + noseH / 2;
+    nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
     rocketGroup.add(nose);
   } else if (R.nosecone === 'ogive') {
+    const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
     const noseH = bh * 0.65;
-    const noseGeo = new THREE.ConeGeometry(br, noseH, 24);
+    const noseGeo = new THREE.ConeGeometry(noseR, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
-    nose.position.y = noseBase + noseH / 2;
+    nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
     rocketGroup.add(nose);
-    const tipGeo = new THREE.SphereGeometry(br * 0.18, 10, 10);
+    const tipGeo = new THREE.SphereGeometry(noseR * 0.18, 10, 10);
     const tip = new THREE.Mesh(tipGeo, sMat);
-    tip.position.y = noseBase + noseH;
+    tip.position.y = effectiveNoseBase + noseH;
     rocketGroup.add(tip);
-    const shGeo = new THREE.CylinderGeometry(br * 1.06, br, noseH * 0.18, 24);
+    const shGeo = new THREE.CylinderGeometry(noseR * 1.06, noseR, noseH * 0.18, 24);
     const sh = new THREE.Mesh(shGeo, sMat);
-    sh.position.y = noseBase + noseH * 0.09;
+    sh.position.y = effectiveNoseBase + noseH * 0.09;
     rocketGroup.add(sh);
   } else { // blunt
+    const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
     const noseH = bh * 0.28;
-    const noseGeo = new THREE.CylinderGeometry(br * 0.55, br, noseH, 24);
+    const noseGeo = new THREE.CylinderGeometry(noseR * 0.55, noseR, noseH, 24);
     const nose = new THREE.Mesh(noseGeo, sMat);
-    nose.position.y = noseBase + noseH / 2;
+    nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
     rocketGroup.add(nose);
-    const capGeo = new THREE.SphereGeometry(br * 0.55, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+    const capGeo = new THREE.SphereGeometry(noseR * 0.55, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
     const cap = new THREE.Mesh(capGeo, sMat);
-    cap.position.y = noseBase + noseH;
+    cap.position.y = effectiveNoseBase + noseH;
     rocketGroup.add(cap);
-  }
-
-  // Payload fairing
-  if (R.fairing !== 'none') {
-    const fH = R.fairing === 'xl' ? bh * 0.7 : bh * 0.45;
-    const fR = br * (R.fairing === 'xl' ? 1.28 : 1.18);
-    const fGeo = new THREE.CylinderGeometry(br * 0.1, fR, fH, 16);
-    const fMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.5, metalness: 0.4, transparent: true, opacity: 0.85 });
-    const fairing = new THREE.Mesh(fGeo, fMat);
-    fairing.position.y = noseBase + fH / 2;
-    rocketGroup.add(fairing);
   }
 
   // Engine interstage ring
@@ -476,10 +509,97 @@ function buildRocket() {
       const strutLen = bDist - br - bsr;
       const strutGeo = new THREE.CylinderGeometry(0.025, 0.025, strutLen, 6);
       const strut = new THREE.Mesh(strutGeo, darkMat);
-      strut.rotation.set(0, a + Math.PI / 2, Math.PI / 2);
-      strut.position.set((bx + Math.cos(a) * br) / 2, baseY + bsh * 0.55, (bz + Math.sin(a) * br) / 2);
+      // Orient strut radially using quaternion so it actually connects body to booster
+      const strutY = baseY + bsh * 0.6;
+      const fromPt = new THREE.Vector3(Math.cos(a) * br, strutY, Math.sin(a) * br);
+      const toPt   = new THREE.Vector3(bx, strutY, bz);
+      const strutDir = toPt.clone().sub(fromPt).normalize();
+      strut.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), strutDir);
+      strut.position.copy(fromPt).lerp(toPt, 0.5);
       rocketGroup.add(strut);
+      // Second strut at different height for stability
+      const strut2Geo = new THREE.CylinderGeometry(0.02, 0.02, strutLen, 6);
+      const strut2 = new THREE.Mesh(strut2Geo, darkMat);
+      const strut2Y = baseY + bsh * 0.2;
+      const from2 = new THREE.Vector3(Math.cos(a) * br, strut2Y, Math.sin(a) * br);
+      const to2   = new THREE.Vector3(bx, strut2Y, bz);
+      const dir2  = to2.clone().sub(from2).normalize();
+      strut2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir2);
+      strut2.position.copy(from2).lerp(to2, 0.5);
+      rocketGroup.add(strut2);
     });
+  }
+
+  // Windows / Portholes
+  if (R.windowStyle !== 'none') {
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.75, emissive: new THREE.Color(0x224466), emissiveIntensity: 0.3 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.5, metalness: 0.7 });
+    const winHeights = [bh * 0.55, bh * 0.72];
+    const winAngles = R.windowStyle === 'row' ? [0, Math.PI / 2, Math.PI, Math.PI * 1.5] : [0, Math.PI];
+    winHeights.forEach(wh => {
+      winAngles.forEach(wa => {
+        const wx = Math.cos(wa) * (br + 0.005);
+        const wz = Math.sin(wa) * (br + 0.005);
+        if (R.windowStyle === 'porthole' || R.windowStyle === 'row') {
+          const rimGeo = new THREE.TorusGeometry(0.075, 0.018, 8, 18);
+          const rim = new THREE.Mesh(rimGeo, rimMat);
+          rim.position.set(wx, baseY + wh, wz);
+          rim.lookAt(wx * 5, baseY + wh, wz * 5);
+          rocketGroup.add(rim);
+          const glassGeo = new THREE.CircleGeometry(0.06, 16);
+          const glass = new THREE.Mesh(glassGeo, glassMat);
+          glass.position.set(wx, baseY + wh, wz);
+          glass.lookAt(wx * 5, baseY + wh, wz * 5);
+          rocketGroup.add(glass);
+        } else { // rect
+          const frameGeo = new THREE.BoxGeometry(0.06, 0.14, 0.01);
+          const frame = new THREE.Mesh(frameGeo, rimMat);
+          frame.position.set(wx, baseY + wh, wz);
+          frame.lookAt(wx * 5, baseY + wh, wz * 5);
+          rocketGroup.add(frame);
+          const rectGlassGeo = new THREE.PlaneGeometry(0.044, 0.11);
+          const rectGlass = new THREE.Mesh(rectGlassGeo, glassMat);
+          rectGlass.position.set(wx, baseY + wh, wz);
+          rectGlass.lookAt(wx * 5, baseY + wh, wz * 5);
+          rocketGroup.add(rectGlass);
+        }
+      });
+    });
+  }
+
+  // Landing Legs (Falcon 9 style)
+  if (R.landingLegs) {
+    const legCount = 4;
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.5, metalness: 0.6 });
+    for (let i = 0; i < legCount; i++) {
+      const la = (i / legCount) * Math.PI * 2;
+      const lx = Math.cos(la), lz = Math.sin(la);
+      // Main strut: diagonal from body base to ground
+      const strutTopX = lx * br * 0.95, strutTopZ = lz * br * 0.95;
+      const strutBotX = lx * (br + bh * 0.38), strutBotZ = lz * (br + bh * 0.38);
+      const strutLen = Math.hypot(strutBotX - strutTopX, bh * 0.35, strutBotZ - strutTopZ);
+      const mainGeo = new THREE.CylinderGeometry(0.022, 0.018, strutLen, 6);
+      const main = new THREE.Mesh(mainGeo, legMat);
+      const mid = new THREE.Vector3((strutTopX + strutBotX) / 2, baseY - bh * 0.175, (strutTopZ + strutBotZ) / 2);
+      main.position.copy(mid);
+      const top = new THREE.Vector3(strutTopX, baseY, strutTopZ);
+      const bot = new THREE.Vector3(strutBotX, baseY - bh * 0.35, strutBotZ);
+      main.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bot.clone().sub(top).normalize());
+      rocketGroup.add(main);
+      // Foot pad
+      const footGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 10);
+      const foot = new THREE.Mesh(footGeo, legMat);
+      foot.position.set(strutBotX, baseY - bh * 0.35, strutBotZ);
+      rocketGroup.add(foot);
+      // Cross brace
+      const braceLen = bh * 0.22;
+      const braceGeo = new THREE.CylinderGeometry(0.014, 0.014, braceLen, 6);
+      const brace = new THREE.Mesh(braceGeo, legMat);
+      brace.position.set(lx * (br + 0.05), baseY - bh * 0.08, lz * (br + 0.05));
+      const braceDir = new THREE.Vector3(lx, -0.55, lz).normalize();
+      brace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), braceDir);
+      rocketGroup.add(brace);
+    }
   }
 
   // Exhaust flame
@@ -608,7 +728,7 @@ function sout(m) { document.getElementById('obar').textContent = m; }
    STEPS
 ═══════════════════════════════ */
 let currentStep = 0;
-const stepDone = new Array(15).fill(false);
+const stepDone = new Array(17).fill(false);
 
 // nav() now returns empty — prev/next are in the sidebar .snav
 function nav(i) { return ''; }
@@ -888,8 +1008,51 @@ const STEPS = [
 },
 
 /* 14 */ {
+  title: 'Windows',
+  tag: 'STEP 14 · CREW COMPARTMENT',
+  intro: `Add <strong>windows</strong> to your rocket. Crew capsules and observation pods have portholes. Cargo rockets usually have none. Choose a style that matches your mission.`,
+  boxes: [
+    { t:'box-c', tx:'The Apollo command module had five windows. SpaceX Dragon has four. ISS has the Cupola — a seven-window dome. Every crewed spacecraft needs a view.' },
+    { t:'box-t', tx:'Portholes look great on wider bodies. Rectangular windows suit taller rockets with a more industrial look.' },
+  ],
+  tasks: ['Choose a window style (or none)'],
+  html() {
+    const o = `(function(v,el){R.windowStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRocket();})`;
+    return opts('win', [
+      { val:'none',     icon:'🚫', label:'None' },
+      { val:'porthole', icon:'🔵', label:'Portholes' },
+      { val:'row',      icon:'⊞',  label:'Row × 4' },
+      { val:'rect',     icon:'▬',  label:'Rect Windows' },
+    ], R.windowStyle, o);
+  },
+  onApply() { buildRocket(); sout(R.windowStyle === 'none' ? 'No windows — cargo rocket.' : 'Windows: ' + R.windowStyle + ' style added.'); document.getElementById('liveStatus').textContent = 'Windows set!'; }
+},
+
+/* 15 */ {
+  title: 'Landing Legs',
+  tag: 'STEP 15 · REUSABILITY',
+  intro: `Add <strong>Falcon 9-style landing legs</strong> to your rocket. Reusable rockets fold out their legs just before touchdown and land propulsively. SpaceX changed everything with this.`,
+  boxes: [
+    { t:'box-c', tx:'Falcon 9\'s four legs are made from carbon fibre and aluminium honeycomb. They deploy from the base of the first stage and extend outward for landing. Each leg spans about 18m.' },
+    { t:'box-r', tx:'The first successful Falcon 9 landing was on 21 December 2015 — the moment reusable orbital rockets became real.' },
+    { t:'box-t', tx:'Turn legs on for a reusable first-stage look. Leave off for a disposable or upper-stage rocket.' },
+  ],
+  tasks: ['Toggle landing legs on or off'],
+  html() {
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+      <span style="font-size:.82rem;color:var(--muted)">Landing Legs:</span>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
+        <input type="checkbox" ${R.landingLegs?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="R.landingLegs=this.checked;buildRocket()">
+        Deploy Falcon-style landing legs
+      </label>
+    </div>`;
+  },
+  onApply() { buildRocket(); sout(R.landingLegs ? '🦵 Landing legs deployed — ready to land!' : 'No landing legs — expendable configuration.'); document.getElementById('liveStatus').textContent = R.landingLegs ? 'Legs deployed!' : 'No legs'; }
+},
+
+/* 16 */ {
   title: 'Engine Glow',
-  tag: 'STEP 14 · EXHAUST',
+  tag: 'STEP 16 · EXHAUST',
   intro: `Choose the colour of your <strong>engine exhaust flame</strong>. Kerosene engines burn orange-yellow. Hydrogen engines burn nearly invisible blue-white. Ion drives glow blue-violet.`,
   boxes: [
     { t:'box-c', tx:'Rocket exhaust colours depend entirely on propellant. LOX/kerosene = orange. LOX/hydrogen = blue-white, almost invisible. Methalox (Raptor) = tight blue diamond shocks. Ion drives = electric purple-blue glow.' },
@@ -903,14 +1066,14 @@ const STEPS = [
   onApply() { sout('Exhaust colour set. Ready to launch!'); document.getElementById('liveStatus').textContent = 'Glow ready!'; }
 },
 
-/* 15 */ {
+/* 17 */ {
   title: 'Launch!',
-  tag: 'STEP 15 · LIFTOFF',
+  tag: 'STEP 17 · LIFTOFF',
   intro: `<strong>All systems are go.</strong> Your rocket is fully designed. Hit the launch button to ignite the engines and watch it lift off.`,
   boxes: [
     { t:'box-r', tx: '3… 2… 1… Ignition! The engines fire, the clamps release, and your rocket climbs into the void.' },
     { t:'box-c', tx: 'A complete launch vehicle needs: nosecone (aerodynamics), body (fuel/structure), fins (stability), engines (thrust), and a payload. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit Quick Build in the header to reset and try a completely different design.' },
+    { t:'box-t', tx: 'Hit <strong>💾 Save PNG</strong> in the header to download an image of your rocket. Hit <strong>⚡ Quick Build</strong> to reset and try a completely different design.' },
   ],
   tasks: ['Press Launch and watch it go!'],
   html() {
@@ -980,7 +1143,7 @@ function updateProgress() {
   const done = stepDone.filter(Boolean).length;
   const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
   document.getElementById('progFill').style.width = pct + '%';
-  document.getElementById('progCt').textContent = done + ' / ' + STEPS.length + ' steps';
+  document.getElementById('progCt').textContent = done + ' / 17 steps';
   document.querySelectorAll('.si').forEach((el, i) => {
     el.classList.toggle('done', stepDone[i]);
     el.classList.toggle('active', i === currentStep);
@@ -994,6 +1157,7 @@ function quickBuild() {
   R.primaryCol = '#e8543a'; R.secondaryCol = '#ffffff'; R.finStyle = 'swept'; R.finCount = 4;
   R.boosters = 2; R.boosterSize = 0.7; R.engineCount = 3; R.fairing = 'standard';
   R.stripeOn = true; R.stripeCol = '#f5c842'; R.glowCol = '#ff6600';
+  R.windowStyle = 'porthole'; R.landingLegs = true;
   R.launched = false; R.launchY = 0;
   buildRocket();
   sout('⚡ Quick build: NOVA-7 is ready. Press Launch at Step 15!');
