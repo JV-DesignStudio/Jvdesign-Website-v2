@@ -946,7 +946,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                     <div class="go-hiscore" id="goHiScore"></div>
                     <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
                     <button class="btn-run go-play" onclick="closeGameOver()">▶ Play Again</button>
-                    <div class="go-credit">Made with JVDesignStudio 🕹️</div>
+                    <a class="go-credit" href="https://jvdesignstudio.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">🕹️ Made with JVDesignStudio.com</a>
                 </div>
             </div>
 
@@ -2170,15 +2170,29 @@ function exportGame() {
     const gc = root.querySelector('#game-container'); if (gc) gc.innerHTML = '';
     // Hide the intro/go overlays in the export (they open programmatically)
     ['introOverlay','goOverlay'].forEach(id => { const el=root.querySelector('#'+id); if(el) el.classList.remove('show'); });
-    // Inject export-mode CSS — hides studio chrome, fills viewport
+    // Inject export-mode CSS — hides studio chrome, shows watermark, fills viewport
     const xStyle = document.createElement('style');
     xStyle.textContent = [
-        '.site-header,.studio-panel,.panel-fab,.wk-overlay,.mission-strip,.controls-hint,#engine-branding,.mobile-nav{display:none!important;}',
-        'body{overflow:hidden!important;}',
+        /* Hide studio-only UI — keep the game and branding */
+        '.studio-panel,.panel-fab,.wk-overlay,.mission-strip,.controls-hint,.mobile-nav{display:none!important;}',
+        /* Header: shrink to a slim watermark bar instead of hiding */
+        '.site-header{height:32px!important;background:rgba(10,10,18,.98)!important;border-bottom:1px solid rgba(124,58,237,.25)!important;}',
+        '.header-inner{padding:0 14px!important;}',
+        '.main-nav,.nav-toggle{display:none!important;}',
+        '.logo-name::after{content:" — Made with JVDesignStudio";font-size:.7rem;font-weight:500;opacity:.55;margin-left:6px;}',
+        /* Layout */
+        'body{overflow:hidden!important;height:100vh!important;}',
         '.studio{display:block!important;}',
-        '.studio-viewport{width:100vw!important;height:100vh!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;padding:0!important;}'
+        '.studio-viewport{width:100vw!important;height:calc(100vh - 32px)!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;padding:0!important;}',
+        /* Engine branding as a small badge under the canvas */
+        '#engine-branding{display:block!important;font-size:.58rem!important;opacity:.35!important;margin-top:4px!important;letter-spacing:.06em;}',
+        /* Game over credit link */
+        '.go-credit{opacity:.5!important;}'
     ].join('');
     root.querySelector('head').appendChild(xStyle);
+    // Replace logo link href so it points to the live site in the exported file
+    const logoLink = root.querySelector('.logo-link');
+    if (logoLink) { logoLink.href = 'https://jvdesignstudio.com'; logoLink.target = '_blank'; logoLink.rel = 'noopener'; }
     // Inject auto-boot script with baked config
     const cfg = {
         title:   _engineData.title,
