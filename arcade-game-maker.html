@@ -1695,15 +1695,32 @@ function _launchPhaserGame() {
     _sessionAchs.clear(); _sessionHits = 0; _sessionStartTime = Date.now();
     // Hide all power-up HUD badges
     ['Shield','X2','Speed'].forEach(t=>{ const el=document.getElementById('pu'+t); if(el) el.classList.remove('show'); });
-    if (currentPhaserGame) { currentPhaserGame.destroy(true); document.getElementById('game-container').innerHTML=''; }
-    currentPhaserGame = new Phaser.Game({
-        type: Phaser.AUTO,
-        parent: 'game-container',
-        backgroundColor: '#05030f',
-        scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
-        physics: { default:'arcade', arcade:{ debug:false } },
-        scene: getScene(data)
-    });
+
+    const _startGame = () => {
+        try {
+            currentPhaserGame = new Phaser.Game({
+                type: Phaser.AUTO,
+                parent: 'game-container',
+                backgroundColor: '#05030f',
+                scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
+                physics: { default:'arcade', arcade:{ debug:false } },
+                scene: getScene(data)
+            });
+        } catch(e) {
+            console.error('Phaser boot error:', e);
+            showToast('⚠️ Game engine failed to start — try refreshing');
+        }
+    };
+
+    if (currentPhaserGame) {
+        try { currentPhaserGame.destroy(true); } catch(e) {}
+        currentPhaserGame = null;
+        document.getElementById('game-container').innerHTML = '';
+        // Small delay so WebGL context fully releases before creating a new one
+        setTimeout(_startGame, 80);
+    } else {
+        _startGame();
+    }
 }
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
@@ -1718,29 +1735,37 @@ function getScene(data) {
 function makeBaseScene(data) {
     return class extends Phaser.Scene {
         preload() {
+            // CDN assets need crossOrigin = 'anonymous'; data URLs must NOT have it set
+            // (some browsers reject data URLs under anonymous CORS mode).
+            // Pattern: set crossOrigin only immediately before CDN load, then reset it.
             if (data.sprite) {
+                this.load.crossOrigin = null;
                 this.load.image('player', data.sprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('player', 'https://labs.phaser.io/assets/sprites/asteroids_ship.png');
+                this.load.crossOrigin = null;
             }
             if (data.enemySprite) {
                 this.load.image('enemy', data.enemySprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('enemy', 'https://labs.phaser.io/assets/sprites/ufo.png');
+                this.load.crossOrigin = null;
             }
             if (data.bulletSprite) {
                 this.load.image('laser', data.bulletSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('laser', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
+                this.load.crossOrigin = null;
             }
             if (data.blockSprite) {
                 this.load.image('block', data.blockSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
+                this.load.crossOrigin = null;
             }
             if (data.bgImage) {
                 this.load.image('bg_custom', data.bgImage);
@@ -3184,11 +3209,13 @@ function setupTouchControls() {
     // Pause/resume Phaser when tab is hidden/visible
     document.addEventListener('visibilitychange', () => {
         if (!currentPhaserGame) return;
-        if (document.hidden) {
-            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isActive()) s.scene.pause(); });
-        } else {
-            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isPaused()) s.scene.resume(); });
-        }
+        try {
+            if (document.hidden) {
+                currentPhaserGame.scene.scenes.forEach(s => { try { if (s.scene.isActive()) s.scene.pause(); } catch(e){} });
+            } else {
+                currentPhaserGame.scene.scenes.forEach(s => { try { if (s.scene.isPaused()) s.scene.resume(); } catch(e){} });
+            }
+        } catch(e) {}
     });
 }
 
