@@ -314,6 +314,34 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .pu-speed{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.4);color:#4ade80;}
 .pu-life{background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.4);color:#f87171;}
 
+/* ── EVENTS TAB ─────────────────────────────────────────────────────────── */
+#tab-btn-events{display:none;}
+#studioRoot.advanced-unlocked #tab-btn-events{display:block;}
+@keyframes tab-pulse{0%,100%{color:var(--muted);}50%{color:white;background:rgba(124,58,237,.3);}}
+.tab-btn.just-revealed{animation:tab-pulse 0.7s ease 4;}
+.evt-intro{font-size:.68rem;color:var(--muted);line-height:1.65;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.18);border-radius:8px;padding:8px 10px;}
+.evt-list{display:flex;flex-direction:column;gap:7px;}
+.evt-row{background:var(--panel2);border:1px solid var(--border2);border-radius:9px;padding:9px 10px 8px;display:flex;flex-direction:column;gap:6px;position:relative;}
+.evt-row.evt-disabled{opacity:.38;}
+.evt-half{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.evt-half+.evt-half{border-top:1px solid var(--border);padding-top:6px;}
+.evt-chip{font-size:.55rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:2px 6px;border-radius:4px;flex-shrink:0;}
+.evt-chip.when{background:rgba(56,189,248,.13);color:#7dd3fc;border:1px solid rgba(56,189,248,.22);}
+.evt-chip.then{background:rgba(52,211,153,.11);color:#6ee7b7;border:1px solid rgba(52,211,153,.2);}
+.evt-sel{flex:1;min-width:0;background:rgba(0,0,0,.4);border:1px solid var(--border2);color:var(--text);padding:4px 5px;border-radius:6px;font-size:.68rem;font-family:'Inter',sans-serif;cursor:pointer;}
+.evt-num{width:52px;background:rgba(0,0,0,.4);border:1px solid var(--border2);color:var(--text);padding:4px 5px;border-radius:6px;font-size:.68rem;text-align:center;font-family:'JetBrains Mono',monospace;}
+.evt-txt{flex:1;min-width:60px;background:rgba(0,0,0,.4);border:1px solid var(--border2);color:var(--text);padding:4px 6px;border-radius:6px;font-size:.68rem;}
+.evt-unit{font-size:.6rem;color:var(--muted);flex-shrink:0;}
+.evt-row-btns{position:absolute;top:6px;right:6px;display:flex;gap:2px;}
+.evt-ibtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 5px;border-radius:4px;line-height:1;transition:color .12s,background .12s;}
+.evt-ibtn:hover{color:var(--beige);background:rgba(255,255,255,.08);}
+.evt-ibtn.del:hover{color:#f87171;background:rgba(239,68,68,.1);}
+.btn-add-evt{width:100%;padding:9px;border-radius:8px;background:rgba(124,58,237,.08);border:1px dashed rgba(124,58,237,.3);color:var(--purple-lt);font-size:.74rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .14s;margin-top:2px;}
+.btn-add-evt:hover{background:rgba(124,58,237,.2);}
+.evt-empty{text-align:center;padding:22px 10px 14px;color:var(--muted);font-size:.72rem;line-height:1.8;}
+.evt-empty-icon{font-size:2rem;display:block;margin-bottom:6px;opacity:.45;}
+.evt-log{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:rgba(52,211,153,.65);min-height:16px;transition:opacity .4s;}
+
 @media(max-width:900px){.studio-panel{width:280px;}}
 @media(max-width:768px){
   body{overflow:hidden;}
@@ -373,6 +401,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             <button class="tab-btn"     onclick="switchTab('sounds',this)">🔊 Sounds</button>
             <button class="tab-btn"     onclick="switchTab('custom',this)">✏ Custom</button>
             <button class="tab-btn"     onclick="switchTab('code',this)">💻 Code</button>
+            <button class="tab-btn"     onclick="switchTab('events',this)" id="tab-btn-events">⚡ Events</button>
         </div>
 
         <!-- ── BUILD ── -->
@@ -1566,6 +1595,17 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
         </div>
     </div>
 
+    <!-- ── EVENTS TAB CONTENT ── -->
+    <div class="tab-content" id="tab-events">
+        <p class="evt-intro">⚡ <strong style="color:white;">Event Rules</strong> let you make things happen during gameplay — no coding needed. Each rule says <em>WHEN</em> something happens → <em>THEN</em> do something.</p>
+        <span class="sec-label" style="margin-top:4px;">Rules</span>
+        <div class="evt-list" id="evtList">
+            <div class="evt-empty"><span class="evt-empty-icon">⚡</span>No events yet.<br>Add a rule below — try "When score reaches 500 → Show message"!</div>
+        </div>
+        <button class="btn-add-evt" onclick="evtAdd()">＋ Add Event Rule</button>
+        <div class="evt-log" id="evtFiredLog" style="margin-top:8px;">— run game to see events fire —</div>
+    </div>
+
     <!-- WORKSHOP OVERLAY -->
     <div class="wk-overlay" id="wkOverlay">
         <div class="wk-header">
@@ -1701,7 +1741,9 @@ const liveConfig = {
     // Dodge options
     dodgeStarRatio:30,
     // Roguelike options
-    rogueRooms:6, rogueDensity:0.3, rogueStartHp:3
+    rogueRooms:6, rogueDensity:0.3, rogueStartHp:3,
+    // User-defined event rules (Events tab)
+    events: []
 };
 
 // ── GAME STATE (persists across scene restarts) ────────────────────────────────
@@ -1728,6 +1770,9 @@ let customLevelMap = null;
 let currentPhaserGame = null;
 let currentStory = null;   // imported from Story Editor
 let _engineData  = null;   // payload used for last boot (needed by export + replay)
+
+// ── EVENTS RUNTIME STATE ──────────────────────────────────────────────────────
+const _evtFired = new Set();   // IDs of one-shot rules that have already triggered this session
 
 // ── SESSION ACHIEVEMENTS ──────────────────────────────────────────────────────
 const _sessionAchs = new Set();
@@ -2261,6 +2306,15 @@ function compileAndBootEngine() {
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
     document.getElementById('engine-branding').textContent = `JV Engine v0.1 // ${data.title}`;
     _scheduleAutoSave();
+    // Reveal Events tab after first run (progressive disclosure)
+    if (!document.getElementById('studioRoot').classList.contains('advanced-unlocked')) {
+        document.getElementById('studioRoot').classList.add('advanced-unlocked');
+        localStorage.setItem('jv_events_unlocked','1');
+        setTimeout(() => {
+            const btn=document.getElementById('tab-btn-events');
+            if(btn){ btn.classList.add('just-revealed'); setTimeout(()=>btn.classList.remove('just-revealed'),3000); }
+        }, 900);
+    }
     // Show intro splash if story has been imported
     if (currentStory && currentStory.intro) {
         const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️'};
@@ -2277,8 +2331,9 @@ function _launchPhaserGame() {
     gameState.lives = liveConfig.lives;
     _updateHeartsDisplay(gameState.lives, liveConfig.lives);
     document.getElementById('goOverlay').classList.remove('show');
-    // Reset session tracking for achievements
+    // Reset session tracking for achievements + events
     _sessionAchs.clear(); _sessionHits = 0; _sessionStartTime = Date.now();
+    _evtFired.clear();
     // Hide all power-up HUD badges
     ['Shield','X2','Speed'].forEach(t=>{ const el=document.getElementById('pu'+t); if(el) el.classList.remove('show'); });
 
@@ -2469,6 +2524,8 @@ function makeBaseScene(data) {
             if (this.time) this.time.timeScale = spd;
             // Win condition
             if (score !== undefined) this._checkWin(score);
+            // User-defined event rules (Events tab)
+            _runEventsRuntime(this, score);
         }
         _initPowerUps() {
             // Pre-generate one texture per type so every spawn can reuse them
@@ -3688,6 +3745,169 @@ function sceneAsteroids(data) {
     };
 }
 
+// ── EVENTS RUNTIME ────────────────────────────────────────────────────────────
+// Called each frame from _tickBase — evaluates user-defined event rules
+function _runEventsRuntime(scene, score) {
+    if (!liveConfig.events || !liveConfig.events.length) return;
+    const hp      = scene._hp     !== undefined ? scene._hp     : gameState.lives;
+    const elapsed = (Date.now() - (_gameStartTime || Date.now())) / 1000;
+    const wave    = scene._wave   !== undefined ? scene._wave   :
+                    scene._floor  !== undefined ? scene._floor  : 1;
+    const sc      = score !== undefined ? score : (scene.pScore || 0);
+
+    liveConfig.events.forEach(evt => {
+        if (!evt.enabled || _evtFired.has(evt.id)) return;
+        const tv = parseFloat(evt.triggerVal) || 0;
+        let fire = false;
+        switch (evt.trigger) {
+            case 'score_reaches':  fire = sc      >= tv; break;
+            case 'timer_hits':     fire = elapsed >= tv; break;
+            case 'lives_drops_to': fire = hp      <= tv; break;
+            case 'wave_starts':    fire = wave    >= tv; break;
+            case 'on_start':       fire = true;          break;
+        }
+        if (!fire) return;
+        _evtFired.add(evt.id);
+        const av = evt.actionVal;
+        switch (evt.action) {
+            case 'show_message':
+                showToast(String(av || '📢 Event fired!'));
+                break;
+            case 'add_score':
+                scene.score = (scene.score || 0) + (parseFloat(av) || 100);
+                if (scene.scoreText && scene.scoreText.active) scene.scoreText.setText('Score: ' + scene.score);
+                showToast('🎯 +'+(parseFloat(av)||100)+' bonus points!');
+                break;
+            case 'spawn_powerup':
+                if (scene._spawnPu) { try { scene._spawnPu(); } catch(e){} }
+                break;
+            case 'set_speed':
+                liveConfig.speed = parseFloat(av) || 200;
+                showToast('⚡ Speed set to ' + liveConfig.speed + '!');
+                break;
+            case 'restore_hp':
+                if (scene._hp !== undefined && scene._hp < scene._maxHp) {
+                    scene._hp++; gameState.lives = Math.max(0, scene._hp);
+                    _updateHeartsDisplay(scene._hp, scene._maxHp);
+                } else if (gameState.lives < liveConfig.lives) {
+                    gameState.lives++; _updateHeartsDisplay(gameState.lives, liveConfig.lives);
+                }
+                showToast('❤️ Life restored by event!');
+                break;
+            case 'set_gravity':
+                liveConfig.gravity = parseFloat(av) || 600;
+                if (scene.physics) scene.physics.world.gravity.y = liveConfig.gravity;
+                showToast('🌍 Gravity → ' + liveConfig.gravity);
+                break;
+            case 'show_victory':
+                if (!scene._winTriggered) {
+                    scene._winTriggered = true;
+                    scene.time.delayedCall(300, () => showVictory(scene.score || 0));
+                }
+                break;
+            case 'game_over':
+                scene.time.delayedCall(300, () => showGameOver(scene.score || 0));
+                break;
+        }
+        _evtLogFlash(evt);
+    });
+}
+function _evtLogFlash(evt) {
+    const el = document.getElementById('evtFiredLog');
+    if (!el) return;
+    const tN = {score_reaches:'score ≥',timer_hits:'timer',lives_drops_to:'lives ≤',wave_starts:'wave ≥',on_start:'start'};
+    const aN = {show_message:'message',add_score:'+score',spawn_powerup:'power-up',set_speed:'speed',restore_hp:'+HP',set_gravity:'gravity',show_victory:'victory',game_over:'game over'};
+    el.textContent = `✓ [${tN[evt.trigger]||evt.trigger} ${evt.triggerVal||''}] → ${aN[evt.action]||evt.action}`;
+    el.style.opacity = '1';
+    clearTimeout(el._to);
+    el._to = setTimeout(() => { el.style.opacity = '0.3'; }, 2500);
+}
+
+// ── EVENTS TAB UI ─────────────────────────────────────────────────────────────
+let _evtIdCtr = 0;
+const EVT_TRIGGERS = [
+    { val:'score_reaches',  label:'Score reaches',   num:true,  unit:'pts' },
+    { val:'timer_hits',     label:'Timer hits',      num:true,  unit:'s'   },
+    { val:'lives_drops_to', label:'Lives drop to',   num:true,  unit:''    },
+    { val:'wave_starts',    label:'Wave / Floor ≥',  num:true,  unit:''    },
+    { val:'on_start',       label:'Game starts',     num:false, unit:''    },
+];
+const EVT_ACTIONS = [
+    { val:'show_message',  label:'Show message',     inp:'text',   ph:'Nice one!'    },
+    { val:'add_score',     label:'Add bonus score',  inp:'number', ph:'100'          },
+    { val:'spawn_powerup', label:'Spawn power-up',   inp:'none'                      },
+    { val:'set_speed',     label:'Set player speed', inp:'number', ph:'300'          },
+    { val:'restore_hp',    label:'Restore 1 HP',     inp:'none'                      },
+    { val:'set_gravity',   label:'Set gravity',      inp:'number', ph:'300'          },
+    { val:'show_victory',  label:'Trigger victory',  inp:'none'                      },
+    { val:'game_over',     label:'Trigger game over',inp:'none'                      },
+];
+function evtAdd() {
+    const id = 'e'+(++_evtIdCtr)+'_'+Date.now();
+    liveConfig.events.push({ id, trigger:'score_reaches', triggerVal:500, action:'show_message', actionVal:'', enabled:true });
+    _evtRenderAll(); _scheduleAutoSave();
+}
+function evtDelete(id) {
+    liveConfig.events = liveConfig.events.filter(e=>e.id!==id);
+    _evtFired.delete(id); _evtRenderAll(); _scheduleAutoSave();
+}
+function evtToggle(id) {
+    const e=liveConfig.events.find(e=>e.id===id);
+    if(e){ e.enabled=!e.enabled; _evtRenderAll(); _scheduleAutoSave(); }
+}
+function evtUpdate(id,key,val) {
+    const e=liveConfig.events.find(e=>e.id===id);
+    if(e){ e[key]=val; _scheduleAutoSave(); }
+}
+function evtRefreshRow(id) {
+    const e=liveConfig.events.find(ev=>ev.id===id);
+    if(!e) return;
+    const row=document.getElementById('evtrow_'+id); if(!row) return;
+    const tc=EVT_TRIGGERS.find(t=>t.val===e.trigger)||EVT_TRIGGERS[0];
+    const ac=EVT_ACTIONS.find(a=>a.val===e.action)  ||EVT_ACTIONS[0];
+    const show=(el,v)=>{ if(el) el.style.display=v?'':'none'; };
+    show(row.querySelector('.evt-trigval'),  tc.num);
+    show(row.querySelector('.evt-trigunit'), tc.num);
+    show(row.querySelector('.evt-actval-txt'),  ac.inp==='text');
+    show(row.querySelector('.evt-actval-num'),  ac.inp==='number');
+    show(row.querySelector('.evt-actval-none'), ac.inp==='none');
+}
+function _evtRowHTML(evt) {
+    const tc=EVT_TRIGGERS.find(t=>t.val===evt.trigger)||EVT_TRIGGERS[0];
+    const ac=EVT_ACTIONS.find(a=>a.val===evt.action)  ||EVT_ACTIONS[0];
+    const esc=s=>String(s||'').replace(/"/g,'&quot;');
+    const tOpts=EVT_TRIGGERS.map(t=>`<option value="${t.val}"${evt.trigger===t.val?' selected':''}>${t.label}</option>`).join('');
+    const aOpts=EVT_ACTIONS.map(a=>`<option value="${a.val}"${evt.action===a.val?' selected':''}>${a.label}</option>`).join('');
+    const id=evt.id;
+    return `<div class="evt-row${evt.enabled?'':' evt-disabled'}" id="evtrow_${id}">
+  <div class="evt-row-btns">
+    <button class="evt-ibtn" title="${evt.enabled?'Disable rule':'Enable rule'}" onclick="evtToggle('${id}')">${evt.enabled?'●':'○'}</button>
+    <button class="evt-ibtn del" title="Delete rule" onclick="evtDelete('${id}')">✕</button>
+  </div>
+  <div class="evt-half">
+    <span class="evt-chip when">WHEN</span>
+    <select class="evt-sel" onchange="evtUpdate('${id}','trigger',this.value);evtRefreshRow('${id}')">${tOpts}</select>
+    <input class="evt-num evt-trigval" type="number" value="${esc(evt.triggerVal)}" style="${tc.num?'':'display:none'}" onchange="evtUpdate('${id}','triggerVal',+this.value)">
+    <span class="evt-unit evt-trigunit" style="${tc.num?'':'display:none'}">${tc.unit}</span>
+  </div>
+  <div class="evt-half">
+    <span class="evt-chip then">THEN</span>
+    <select class="evt-sel" onchange="evtUpdate('${id}','action',this.value);evtRefreshRow('${id}')">${aOpts}</select>
+    <input class="evt-txt evt-actval-txt" type="text" placeholder="${ac.inp==='text'?esc(ac.ph||''):''}" value="${ac.inp==='text'?esc(evt.actionVal):''}" style="${ac.inp==='text'?'':'display:none'}" onchange="evtUpdate('${id}','actionVal',this.value)">
+    <input class="evt-num evt-actval-num" type="number" placeholder="${ac.inp==='number'?esc(ac.ph||'100'):''}" value="${ac.inp==='number'&&evt.actionVal!==''?esc(evt.actionVal):''}" style="${ac.inp==='number'?'':'display:none'}" onchange="evtUpdate('${id}','actionVal',+this.value)">
+    <span class="evt-unit evt-actval-none" style="${ac.inp==='none'?'':'display:none'}">—</span>
+  </div>
+</div>`;
+}
+function _evtRenderAll() {
+    const list=document.getElementById('evtList'); if(!list) return;
+    if(!liveConfig.events||!liveConfig.events.length) {
+        list.innerHTML='<div class="evt-empty"><span class="evt-empty-icon">⚡</span>No events yet.<br>Add a rule below — try "When score reaches 500 → Show message"!</div>';
+        return;
+    }
+    list.innerHTML=liveConfig.events.map(_evtRowHTML).join('');
+}
+
 // ── ASSET IMPORTS ─────────────────────────────────────────────────────────────
 function importSpriteFromPixelStudio() {
     const pre = localStorage.getItem('jvds_sprite_player');
@@ -4125,6 +4345,11 @@ function _syncCustomTabUI(cfg) {
     if(rrRange && cfg.rogueRooms) { rrRange.value=cfg.rogueRooms; rrRange.nextElementSibling.textContent=cfg.rogueRooms+' rooms'; }
     const denMap = {0.1:'Sparse',0.3:'Normal',0.5:'Dense',0.7:'Swarm'};
     document.querySelectorAll('#pillRogueDen .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(denMap[cfg.rogueDensity]||'Normal')));
+    // Events tab — restore rules and re-render
+    if (cfg.events && Array.isArray(cfg.events)) {
+        liveConfig.events = cfg.events.map(e=>Object.assign({},e));
+        _evtRenderAll();
+    }
 }
 
 function _applyLoadData(d) {
@@ -4611,6 +4836,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
     setupTouchControls();
     onGenreChange();
     renderSaveSlots();
+    // Restore advanced-mode unlock state from previous sessions
+    if (localStorage.getItem('jv_events_unlocked')) {
+        document.getElementById('studioRoot').classList.add('advanced-unlocked');
+    }
     document.getElementById('studioRoot').classList.add('genre-SHOOTER');
     const params=new URLSearchParams(location.search);
     const enc=params.get('game')||params.get('remix');
@@ -4663,6 +4892,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         if (e.key === '4') switchTab('sounds',      document.querySelectorAll('.tab-btn')[3]);
         if (e.key === '5') switchTab('custom',      document.querySelectorAll('.tab-btn')[4]);
         if (e.key === '6') switchTab('code',        document.querySelectorAll('.tab-btn')[5]);
+        if (e.key === '7') { const eb=document.getElementById('tab-btn-events'); if(eb&&eb.offsetParent) switchTab('events',eb); }
     });
 
     // ── Tutorial first run ────────────────────────────────────────────────────
