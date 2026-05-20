@@ -3362,11 +3362,10 @@ function sceneSnake(data) {
     };
 }
 
-// ── ROGUELIKE (Binding of Isaac style — real-time twin-stick) ──────────────────
+// ── ROGUELIKE (Binding of Isaac style — twin-stick dungeon crawler) ────────────
 function sceneRoguelike(data) {
     const Base = makeBaseScene(data);
-    const W = 16;       // wall thickness (px)
-    const DOOR_H = 52;  // door opening height
+    const W = 16, DOOR_H = 52;
     return class extends Base {
         create() {
             this.score=0; this._invincible=false;
@@ -3375,273 +3374,433 @@ function sceneRoguelike(data) {
             this._hp  = Math.max(1, liveConfig.rogueStartHp||liveConfig.lives||3);
             this._maxHp = this._hp;
             this._lastFired = 0;
+            // Loot / progression
+            this._keys  = 0;
+            this._gold  = 0;
+            this._weapon = { spread:1, rapidFire:false, piercing:false, damageLevel:1 };
+            // Boss state
+            this._boss=null; this._bossHp=0; this._bossMaxHp=0; this._bossPhase=1;
+            this._bossHpBar=null; this._bossHpText=null; this._bossShootTimer=null;
+            this._bossDashing=false;
 
             this._drawBg();
             this.scoreText = this._makeScoreText();
-            this._hpText   = this.add.text(GW-10,12,'',{fontSize:'14px',fill:'#f87171',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
+            this._hpText   = this.add.text(GW-10,12,'',{fontSize:'13px',fill:'#f87171',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
+            this._lootText = this.add.text(GW-10,28,'',{fontSize:'11px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(1,0).setDepth(10);
+            this._wpText   = this.add.text(10,GH-18,'',{fontSize:'10px',fill:'#a78bfa',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0,1).setDepth(10);
             this._roomText = this.add.text(GW/2,12,'',{fontSize:'11px',fill:themeHex(2,'#fbbf24'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(10);
 
-            // Input — WASD move, arrows shoot
             this.moveKeys  = this.input.keyboard.addKeys({up:'W',down:'S',left:'A',right:'D'});
             this.shootKeys = this.input.keyboard.createCursorKeys();
 
-            // Physics groups (created once; _buildRoom clears & refills them)
-            this.walls     = this.physics.add.staticGroup();
-            this._doorGrp  = this.physics.add.staticGroup();
-            this._obstacles= this.physics.add.staticGroup();
-            this.enemies   = this.physics.add.group();
-            this.bullets   = this.physics.add.group();
-            this.eBullets  = this.physics.add.group();
+            // Persistent physics groups
+            this.walls      = this.physics.add.staticGroup();
+            this._doorGrp   = this.physics.add.staticGroup();
+            this._obstacles = this.physics.add.staticGroup();
+            this.enemies    = this.physics.add.group();
+            this.bullets    = this.physics.add.group();
+            this.eBullets   = this.physics.add.group();
+            this._heartGrp  = this.physics.add.group();
+            this._chestGrp  = this.physics.add.group();
+            this._keyDropGrp= this.physics.add.group();
 
             // Player
-            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
+            this.actor = this.physics.add.sprite(GW/2,GH/2,'player');
             { const _s=Math.round(22*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.75),Math.round(_s*.75),true); }
             this._tint(this.actor,0,0xffffff);
             this.actor.setCollideWorldBounds(true); this.actor.body.allowGravity=false;
 
-            // Colliders — group references stay valid across _buildRoom cycles
+            // Colliders
             this.physics.add.collider(this.actor,   this.walls);
             this.physics.add.collider(this.actor,   this._doorGrp);
             this.physics.add.collider(this.actor,   this._obstacles);
             this.physics.add.collider(this.enemies, this.walls);
             this.physics.add.collider(this.enemies, this._obstacles);
-            this.physics.add.overlap(this.bullets,  this.walls,     (b)=>b.destroy());
-            this.physics.add.overlap(this.bullets,  this._obstacles,(b)=>b.destroy());
-            this.physics.add.overlap(this.bullets,  this.enemies,   (b,e)=>this._hitEnemy(b,e));
-            this.physics.add.overlap(this.eBullets, this.walls,     (b)=>b.destroy());
-            this.physics.add.overlap(this.eBullets, this._obstacles,(b)=>b.destroy());
-            this.physics.add.overlap(this.actor,    this.eBullets,  (_,b)=>{ b.destroy(); this._takeDamage(); });
-            this.physics.add.overlap(this.actor,    this.enemies,   ()=>this._takeDamage());
+            this.physics.add.overlap(this.bullets,  this.walls,      (b)=>{ if(!b.getData('piercing')) b.destroy(); });
+            this.physics.add.overlap(this.bullets,  this._obstacles, (b)=>{ if(!b.getData('piercing')) b.destroy(); });
+            this.physics.add.overlap(this.bullets,  this.enemies,    (b,e)=>this._hitEnemy(b,e));
+            this.physics.add.overlap(this.eBullets, this.walls,      (b)=>b.destroy());
+            this.physics.add.overlap(this.eBullets, this._obstacles, (b)=>b.destroy());
+            this.physics.add.overlap(this.actor,    this.eBullets,   (_,b)=>{ b.destroy(); this._takeDamage(); });
+            this.physics.add.overlap(this.actor,    this.enemies,    ()=>this._takeDamage());
+            // Loot collection
+            this.physics.add.overlap(this.actor, this._heartGrp, (_,h)=>{
+                const lbl=h.getData('lbl'); if(lbl&&lbl.active) lbl.destroy(); h.destroy();
+                if(this._hp<this._maxHp){ this._hp++; gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp); this._updateHud(); showToast('❤️ HP restored!'); GameAudio.play('score'); }
+            });
+            this.physics.add.overlap(this.actor, this._keyDropGrp, (_,k)=>{
+                if(k.getData('collected')) return; k.setData('collected',true);
+                const lbl=k.getData('lbl'); if(lbl&&lbl.active) lbl.destroy(); k.destroy();
+                this._keys++; this._updateHud(); showToast('🗝 Key collected!'); GameAudio.play('jump');
+            });
+            this.physics.add.overlap(this.actor, this._chestGrp, (_,c)=>{
+                if(c.getData('opened')) return;
+                const locked=c.getData('locked');
+                if(locked&&this._keys<=0){ if(!c.getData('msg')){ c.setData('msg',1); showToast('🗝 Need a key!'); } return; }
+                c.setData('opened',true);
+                if(locked) this._keys--;
+                const lbl=c.getData('lbl'); if(lbl&&lbl.active) lbl.destroy(); c.destroy();
+                this._openChestLoot(locked);
+            });
 
             this._buildRoom();
         }
 
+        // ── Room builder ─────────────────────────────────────────────────────────
         _buildRoom() {
-            // ── Clear previous room ──────────────────────────────────────────────
-            this.walls.clear(true,true);
-            this._doorGrp.clear(true,true);
-            this._obstacles.clear(true,true);
+            // Clear previous room objects
+            this.walls.clear(true,true); this._doorGrp.clear(true,true); this._obstacles.clear(true,true);
             this.enemies.clear(true,true);
             this.bullets.getChildren().slice().forEach(b=>b.destroy());
             this.eBullets.getChildren().slice().forEach(b=>b.destroy());
-            if (this._doorLabel)  { this._doorLabel.destroy();  this._doorLabel=null; }
-            if (this._floorRect)  { this._floorRect.destroy();  this._floorRect=null; }
-            this._enemyShootTimer && this._enemyShootTimer.remove(false);
-            this._roomCleared = false;
-            this._doorOpen    = false;
+            if(this._doorLabel){this._doorLabel.destroy();this._doorLabel=null;}
+            if(this._floorRect){this._floorRect.destroy();this._floorRect=null;}
+            this._heartGrp.getChildren().forEach(h=>{const l=h.getData('lbl');if(l&&l.active)l.destroy();}); this._heartGrp.clear(true,true);
+            this._chestGrp.getChildren().forEach(c=>{const l=c.getData('lbl');if(l&&l.active)l.destroy();}); this._chestGrp.clear(true,true);
+            this._keyDropGrp.getChildren().forEach(k=>{const l=k.getData('lbl');if(l&&l.active)l.destroy();}); this._keyDropGrp.clear(true,true);
+            this._enemyShootTimer&&this._enemyShootTimer.remove(false);
+            this._bossShootTimer &&this._bossShootTimer.remove(false);
+            if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
+            if(this._bossHpText&&this._bossHpText.active){this._bossHpText.destroy();this._bossHpText=null;}
+            this._boss=null; this._roomCleared=false; this._doorOpen=false;
 
-            // ── Floor backdrop ───────────────────────────────────────────────────
-            this._floorRect = this.add.rectangle(GW/2, GH/2, GW-W*2, GH-W*2, themeInt(3,0x0f172a)).setDepth(-1);
+            // Floor & walls
+            this._floorRect=this.add.rectangle(GW/2,GH/2,GW-W*2,GH-W*2,themeInt(3,0x0f172a)).setDepth(-1);
+            const wCol=themeInt(2,0x1e293b);
+            const mw=(x,y,w,h)=>this.walls.create(x,y,'block').setDisplaySize(w,h).setTint(wCol).refreshBody();
+            mw(GW/2,W/2,GW,W); mw(GW/2,GH-W/2,GW,W); mw(W/2,GH/2,W,GH);
+            const sH=GH/2-DOOR_H/2-W;
+            mw(GW-W/2,W+sH/2,W,sH); mw(GW-W/2,GH-W-sH/2,W,sH);
+            this._doorGrp.create(GW-W/2,GH/2,'block').setDisplaySize(W,DOOR_H).setTint(themeInt(0,0x7c3aed)).refreshBody();
 
-            // ── Walls ────────────────────────────────────────────────────────────
-            const wCol = themeInt(2,0x1e293b);
-            const mw = (x,y,w,h) => this.walls.create(x,y,'block').setDisplaySize(w,h).setTint(wCol).refreshBody();
-            mw(GW/2,    W/2,   GW, W);            // top
-            mw(GW/2, GH-W/2,   GW, W);            // bottom
-            mw(  W/2, GH/2,    W, GH);            // left
-            // Right wall with door gap
-            const sideH = GH/2 - DOOR_H/2 - W;
-            mw(GW-W/2,         W + sideH/2,    W, sideH); // upper right
-            mw(GW-W/2, GH - W - sideH/2,       W, sideH); // lower right
-
-            // ── Door (closed) ────────────────────────────────────────────────────
-            this._doorGrp.create(GW-W/2, GH/2, 'block')
-                .setDisplaySize(W, DOOR_H).setTint(themeInt(0,0x7c3aed)).refreshBody();
-
-            // ── Cover obstacles ──────────────────────────────────────────────────
-            const obCount = Phaser.Math.Between(2,4);
-            const obCol = themeInt(1,0x334155);
-            for (let i=0;i<obCount;i++) {
-                const ox=Phaser.Math.Between(W+70,GW-W-70), oy=Phaser.Math.Between(W+60,GH-W-60);
-                const ow=Phaser.Math.Between(28,68), oh=Phaser.Math.Between(20,44);
-                this._obstacles.create(ox,oy,'block').setDisplaySize(ow,oh).setTint(obCol).refreshBody();
+            // Obstacles
+            const obCol=themeInt(1,0x334155);
+            for(let i=0;i<Phaser.Math.Between(2,4);i++){
+                const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
+                this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
             }
 
-            // ── Enemies ──────────────────────────────────────────────────────────
-            const dens = liveConfig.rogueDensity || 0.3;
-            const eCount = Math.max(1, Math.round((2+this._floor*1.4)*dens));
-            for (let i=0;i<eCount;i++) {
-                const ex=Phaser.Math.Between(W+50,GW-W-50), ey=Phaser.Math.Between(W+50,GH-W-50);
-                const e=this.enemies.create(ex,ey,'enemy');
-                e.setDisplaySize(22,22); e.body.setSize(18,18,true);
-                e.setTint(themeInt(1,0xef4444)); e.body.allowGravity=false;
-            }
+            // Determine room type
+            const isBossRoom = (this._room===this._roomsPerFloor-1);
+            this._isBossRoom = isBossRoom;
 
-            // ── Enemy ranged attack (floor 2+) ───────────────────────────────────
-            if (this._floor >= 2) {
-                const fireInterval = Math.max(800, 2000-this._floor*80);
-                this._enemyShootTimer = this.time.addEvent({delay:fireInterval,loop:true,callback:this._enemyFire,callbackScope:this});
+            if (isBossRoom) {
+                this._spawnBoss();
+                this._roomText.setText(`⚔️ FLOOR ${this._floor} BOSS`);
+                this._roomText.setStyle({fill:'#f87171'});
+            } else {
+                this._roomText.setStyle({fill:themeHex(2,'#fbbf24')});
+                this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor}`);
+                // Normal enemies
+                const dens=liveConfig.rogueDensity||0.3;
+                const eCount=Math.max(1,Math.round((2+this._floor*1.4)*dens));
+                for(let i=0;i<eCount;i++){
+                    const e=this.enemies.create(Phaser.Math.Between(W+50,GW-W-50),Phaser.Math.Between(W+50,GH-W-50),'enemy');
+                    e.setDisplaySize(22,22); e.body.setSize(18,18,true);
+                    e.setTint(themeInt(1,0xef4444)); e.body.allowGravity=false;
+                }
+                if(this._floor>=2){
+                    const fi=Math.max(800,2000-this._floor*80);
+                    this._enemyShootTimer=this.time.addEvent({delay:fi,loop:true,callback:this._enemyFire,callbackScope:this});
+                }
+                // Heart pickup when hurt
+                if(this._hp<this._maxHp&&Math.random()<0.4){
+                    const hx=Phaser.Math.Between(W+60,GW-W-60),hy=Phaser.Math.Between(W+60,GH-W-60);
+                    const h=this._heartGrp.create(hx,hy,'block').setDisplaySize(16,16).setTint(0xf87171);
+                    h.body.allowGravity=false;
+                    h.setData('lbl',this.add.text(hx,hy,'❤️',{fontSize:'13px'}).setOrigin(0.5).setDepth(6));
+                }
             }
-
-            // ── Heart pickup (spawn in ~40% of rooms when player is hurt) ────────
-            if (!this._heartGrp) {
-                this._heartGrp = this.physics.add.group();
-                this.physics.add.overlap(this.actor, this._heartGrp, (_,h)=>{
-                    const lbl=h.getData('lbl'); if(lbl&&lbl.active) lbl.destroy();
-                    h.destroy();
-                    if (this._hp < this._maxHp) {
-                        this._hp++;
-                        gameState.lives = Math.max(0, this._hp);
-                        _updateHeartsDisplay(this._hp, this._maxHp);
-                        this._updateHud();
-                        showToast('❤️ HP restored!');
-                        GameAudio.play('score');
-                    }
-                });
-            }
-            // Destroy any leftover labels before clearing group
-            this._heartGrp.getChildren().forEach(h=>{ const l=h.getData('lbl'); if(l&&l.active) l.destroy(); });
-            this._heartGrp.clear(true,true);
-            if (this._hp < this._maxHp && Math.random() < 0.4) {
-                const hx=Phaser.Math.Between(W+60,GW-W-60), hy=Phaser.Math.Between(W+60,GH-W-60);
-                const h=this._heartGrp.create(hx,hy,'block').setDisplaySize(16,16).setTint(0xf87171);
-                h.body.allowGravity=false;
-                const lbl=this.add.text(hx,hy,'❤️',{fontSize:'13px'}).setOrigin(0.5).setDepth(6);
-                h.setData('lbl',lbl);
-            }
-
-            // ── Reset player to left entrance ────────────────────────────────────
-            this.actor.setPosition(W+30, GH/2);
-            this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor}`);
+            this.actor.setPosition(W+30,GH/2);
             this._updateHud();
         }
 
-        _enemyFire() {
-            if (!this.scene||!this.scene.isActive()) return;
-            const alive = this.enemies.getChildren().filter(e=>e.active);
-            if (!alive.length) return;
-            const shooter = alive[Phaser.Math.Between(0,alive.length-1)];
-            const dx=this.actor.x-shooter.x, dy=this.actor.y-shooter.y;
-            const mag=Math.sqrt(dx*dx+dy*dy)||1;
-            const b=this.eBullets.create(shooter.x,shooter.y,'laser').setDisplaySize(8,8);
-            b.body.setSize(7,7,true); b.body.allowGravity=false;
-            b.setTint(0xef4444); b.setVelocity(dx/mag*(140+this._floor*15), dy/mag*(140+this._floor*15));
+        // ── Boss ─────────────────────────────────────────────────────────────────
+        _spawnBoss() {
+            this._bossMaxHp=this._bossHp=6+this._floor*4; this._bossPhase=1; this._bossDashing=false;
+            const bs=Math.round(48*(liveConfig.playerScale||1));
+            this._boss=this.enemies.create(GW/2,GH/3,'enemy');
+            this._boss.setDisplaySize(bs,bs); this._boss.body.setSize(Math.round(bs*.8),Math.round(bs*.8),true);
+            this._boss.setTint(0x7c3aed); this._boss.body.allowGravity=false;
+            this._boss.setData('isBoss',true);
+            // HP bar
+            this._bossHpBar=this.add.graphics().setDepth(12);
+            this._bossHpText=this.add.text(GW/2,20,`👑 BOSS — HP ${this._bossHp}/${this._bossMaxHp}`,{fontSize:'11px',fill:'#c084fc',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(0.5,0).setDepth(12);
+            this._drawBossBar();
+            // Boss shoot timer
+            const si=Math.max(700,1800-this._floor*100);
+            this._bossShootTimer=this.time.addEvent({delay:si,loop:true,callback:this._bossAttack,callbackScope:this});
+            this.cameras.main.shake(380,0.018);
+            showToast(`⚔️ BOSS! Floor ${this._floor} Guardian`);
+            GameAudio.play('hit');
+        }
+        _drawBossBar() {
+            if(!this._bossHpBar||!this._bossHpBar.active) return;
+            this._bossHpBar.clear();
+            const bx=90,by=18,bw=GW-180,bh=7;
+            this._bossHpBar.fillStyle(0x1e1b4b,1); this._bossHpBar.fillRect(bx,by,bw,bh);
+            const r=Math.max(0,this._bossHp/this._bossMaxHp);
+            this._bossHpBar.fillStyle(r>0.5?0xa855f7:0xef4444,1);
+            this._bossHpBar.fillRect(bx,by,Math.round(bw*r),bh);
+        }
+        _bossAttack() {
+            if(!this.scene||!this.scene.isActive()||!this._boss||!this._boss.active) return;
+            const dx=this.actor.x-this._boss.x, dy=this.actor.y-this._boss.y, mag=Math.sqrt(dx*dx+dy*dy)||1;
+            const spd=180+this._floor*20;
+            if(this._bossPhase===1){
+                const b=this.eBullets.create(this._boss.x,this._boss.y,'laser').setDisplaySize(11,11);
+                b.body.setSize(10,10,true); b.body.allowGravity=false; b.setTint(0xa855f7);
+                b.setVelocity(dx/mag*spd,dy/mag*spd);
+            } else {
+                // Phase 2: 5-way spread
+                for(let i=-2;i<=2;i++){
+                    const a=Math.atan2(dy,dx)+i*0.2;
+                    const b=this.eBullets.create(this._boss.x,this._boss.y,'laser').setDisplaySize(10,10);
+                    b.body.setSize(9,9,true); b.body.allowGravity=false; b.setTint(0xef4444);
+                    b.setVelocity(Math.cos(a)*(spd*1.2),Math.sin(a)*(spd*1.2));
+                }
+            }
+        }
+        _hitBoss(bullet, boss) {
+            if(!bullet.getData('piercing')) bullet.destroy();
+            this._burst(boss.x,boss.y,0xa855f7);
+            this._bossHp--; GameAudio.play('hit');
+            this.cameras.main.shake(70,0.007);
+            this.tweens.add({targets:boss,alpha:0.25,duration:70,yoyo:true});
+            if(this._bossHpText&&this._bossHpText.active) this._bossHpText.setText(`👑 BOSS — HP ${this._bossHp}/${this._bossMaxHp}`);
+            this._drawBossBar();
+            // Phase 2
+            if(this._bossPhase===1&&this._bossHp<=Math.ceil(this._bossMaxHp/2)){
+                this._bossPhase=2; boss.setTint(0xef4444);
+                if(this._bossShootTimer) this._bossShootTimer.delay=Math.max(450,this._bossShootTimer.delay*0.6);
+                this.cameras.main.shake(280,0.02); showToast('💀 PHASE 2!');
+            }
+            if(this._bossHp<=0) this._killBoss(boss);
+        }
+        _killBoss(boss) {
+            this._bossShootTimer&&this._bossShootTimer.remove(false);
+            for(let i=0;i<3;i++) this._burst(boss.x+Phaser.Math.Between(-30,30),boss.y+Phaser.Math.Between(-30,30),[0xffd700,0xa855f7,0xef4444][i]);
+            boss.destroy(); this._boss=null;
+            if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
+            if(this._bossHpText&&this._bossHpText.active){this._bossHpText.destroy();this._bossHpText=null;}
+            const pts=500*this._floor; const goldR=30+this._floor*20;
+            this.score+=pts; this._gold+=goldR;
+            this.scoreText.setText('Score: '+this.score);
+            this._upgradeWeapon(); // guaranteed weapon upgrade on boss kill
+            showToast(`👑 BOSS DOWN! +${pts}pts 💰+${goldR}`);
+            GameAudio.play('score'); this.cameras.main.shake(500,0.025);
+            this._roomCleared=true;
+            this.time.delayedCall(700,()=>this._openDoor());
         }
 
+        // ── Enemy logic ──────────────────────────────────────────────────────────
+        _enemyFire() {
+            if(!this.scene||!this.scene.isActive()) return;
+            const alive=this.enemies.getChildren().filter(e=>e.active&&!e.getData('isBoss'));
+            if(!alive.length) return;
+            const src=alive[Phaser.Math.Between(0,alive.length-1)];
+            const dx=this.actor.x-src.x, dy=this.actor.y-src.y, mag=Math.sqrt(dx*dx+dy*dy)||1;
+            const b=this.eBullets.create(src.x,src.y,'laser').setDisplaySize(8,8);
+            b.body.setSize(7,7,true); b.body.allowGravity=false;
+            b.setTint(0xef4444); b.setVelocity(dx/mag*(140+this._floor*15),dy/mag*(140+this._floor*15));
+        }
         _hitEnemy(bullet, enemy) {
+            if(enemy.getData('isBoss')){ this._hitBoss(bullet,enemy); return; }
             this._burst(enemy.x,enemy.y,themeInt(1,0xef4444));
-            bullet.destroy(); enemy.destroy();
-            const pts = Math.max(1,10*this._floor) * (liveConfig.pointsPerKill||10);
-            this.score+=pts;
-            this.scoreText.setText('Score: '+this.score);
-            this._flashScore(this.scoreText);
-            GameAudio.play('score');
-            _achUnlock('first_blood');
-            if (!this.enemies.countActive(true) && !this._roomCleared) {
-                this._roomCleared=true;
-                this._openDoor();
+            if(!bullet.getData('piercing')) bullet.destroy();
+            enemy.destroy();
+            const pts=Math.max(1,10*this._floor)*(liveConfig.pointsPerKill||10)*this._weapon.damageLevel;
+            this.score+=pts; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
+            GameAudio.play('score'); _achUnlock('first_blood');
+            // Loot drops
+            this._gold+=Phaser.Math.Between(2,8); // auto gold
+            if(Math.random()<0.15) this._spawnKeyDrop(enemy.x,enemy.y);
+            this._updateHud();
+            if(!this.enemies.countActive(true)&&!this._roomCleared&&!this._isBossRoom){
+                this._roomCleared=true; this._openDoor();
+                if(Math.random()<0.65) this._spawnChest(); // chest after room clear
             }
         }
 
+        // ── Chest & loot ─────────────────────────────────────────────────────────
+        _spawnChest() {
+            const locked=Math.random()<0.28;
+            const cx=Phaser.Math.Between(W+90,GW-W-90), cy=Phaser.Math.Between(W+70,GH-W-70);
+            const c=this._chestGrp.create(cx,cy,'block').setDisplaySize(22,18);
+            c.body.allowGravity=false; c.setTint(locked?0x9333ea:0xd97706);
+            c.setData('locked',locked);
+            c.setData('lbl',this.add.text(cx,cy,locked?'🔒':'📦',{fontSize:'15px'}).setOrigin(0.5).setDepth(6));
+        }
+        _spawnKeyDrop(x,y) {
+            const k=this._keyDropGrp.create(x,y,'block').setDisplaySize(12,12).setTint(0xfbbf24);
+            k.body.allowGravity=false;
+            k.setData('lbl',this.add.text(x,y,'🗝',{fontSize:'12px'}).setOrigin(0.5).setDepth(6));
+        }
+        _openChestLoot(locked) {
+            GameAudio.play('score');
+            if(locked){ this._upgradeWeapon(); return; }
+            const r=Math.random();
+            if(r<0.35)      this._upgradeWeapon();
+            else if(r<0.55&&this._hp<this._maxHp){
+                this._hp=Math.min(this._maxHp,this._hp+1);
+                gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp);
+                showToast('❤️ +1 HP from chest!');
+            } else {
+                const g=Phaser.Math.Between(15,45); this._gold+=g;
+                showToast(`💰 +${g} gold from chest!`);
+            }
+            this._updateHud();
+        }
+        _upgradeWeapon() {
+            const w=this._weapon;
+            const opts=[];
+            if(w.spread===1)       opts.push('spread');
+            if(!w.rapidFire)       opts.push('rapid');
+            if(!w.piercing)        opts.push('pierce');
+            if(w.damageLevel<3)    opts.push('damage');
+            if(!opts.length){ const g=Phaser.Math.Between(25,60); this._gold+=g; showToast(`💰 Max weapon! +${g}g`); this._updateHud(); return; }
+            const pick=opts[Phaser.Math.Between(0,opts.length-1)];
+            switch(pick){
+                case 'spread':  w.spread=2;         showToast('⚔️ SPREAD SHOT!');   break;
+                case 'rapid':   w.rapidFire=true;   showToast('⚡ RAPID FIRE!');    break;
+                case 'pierce':  w.piercing=true;    showToast('🔮 PIERCING!');       break;
+                case 'damage':  w.damageLevel++;    showToast(`💥 DAMAGE ×${w.damageLevel}!`); break;
+            }
+            this._updateHud();
+        }
+
+        // ── Room transitions ─────────────────────────────────────────────────────
         _openDoor() {
-            // Remove closed-door physics body; show open arrow
-            this._doorGrp.clear(true,true);
-            GameAudio.play('jump');
-            showToast('Room clear! ➜ go right');
+            this._doorGrp.clear(true,true); GameAudio.play('jump');
+            showToast(this._isBossRoom?'⚔️ Floor complete! ➜':'Room clear! ➜ go right');
             this._doorLabel=this.add.text(GW-W-6,GH/2,'➜',{fontSize:'24px',fill:themeHex(0,'#4ade80'),fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,0.5).setDepth(8);
             this._doorOpen=true;
         }
-
         _nextRoom() {
-            if (!this._doorOpen) return;
-            this._doorOpen=false;
-            this._room++;
-            if (this._room >= this._roomsPerFloor) {
-                this._floor++;
-                this._room=0;
+            if(!this._doorOpen) return;
+            this._doorOpen=false; this._room++;
+            if(this._room>=this._roomsPerFloor){
+                this._floor++; this._room=0;
                 this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
-                const bonus=100*this._floor;
-                this.score+=bonus;
-                if (this._hp<this._maxHp) { this._hp++; }
+                const bonus=100*this._floor; this.score+=bonus;
+                if(this._hp<this._maxHp) this._hp++;
                 showToast(`🏆 Floor ${this._floor}! +${bonus} pts`);
                 GameAudio.play('score');
             }
             this.cameras.main.fadeOut(180,0,0,0);
-            this.time.delayedCall(200, ()=>{
-                this._buildRoom();
-                this.cameras.main.fadeIn(180,0,0,0);
-            });
+            this.time.delayedCall(200,()=>{ this._buildRoom(); this.cameras.main.fadeIn(180,0,0,0); });
         }
 
+        // ── Damage & HUD ─────────────────────────────────────────────────────────
         _takeDamage() {
-            if (this._invincible) return;
-            if (this._puShield) { this._puShield=false; _hidePuHud('shield'); if(liveConfig.screenShake) this.cameras.main.shake(100,0.006); return; }
-            this._invincible=true;
-            _sessionHits++;
+            if(this._invincible) return;
+            if(this._puShield){this._puShield=false;_hidePuHud('shield');if(liveConfig.screenShake)this.cameras.main.shake(100,0.006);return;}
+            this._invincible=true; _sessionHits++;
             GameAudio.play('hit');
-            if (liveConfig.screenShake) this.cameras.main.shake(200,0.012);
-            this._hp--;
-            gameState.lives=Math.max(0,this._hp);
-            _updateHeartsDisplay(this._hp, this._maxHp);
-            this._updateHud();
-            if (this._hp<=0) {
+            if(liveConfig.screenShake) this.cameras.main.shake(200,0.012);
+            this._hp--; gameState.lives=Math.max(0,this._hp);
+            _updateHeartsDisplay(this._hp,this._maxHp); this._updateHud();
+            if(this._hp<=0){
                 gameState.lives=liveConfig.lives;
-                this.time.delayedCall(200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); });
+                this.time.delayedCall(200,()=>{if(this.scene&&this.scene.isActive())showGameOver(this.score);});
             } else {
                 this.tweens.add({targets:this.actor,alpha:0.3,duration:90,yoyo:true,repeat:4,
-                    onComplete:()=>{ if(this.actor&&this.actor.active) this.actor.setAlpha(1); this._invincible=false; }});
+                    onComplete:()=>{if(this.actor&&this.actor.active){this.actor.setAlpha(1);this._invincible=false;}}});
             }
         }
-
         _updateHud() {
             this._hpText.setText('♥'.repeat(this._hp)+'♡'.repeat(Math.max(0,this._maxHp-this._hp)));
+            const keyStr=this._keys>0?` 🗝${this._keys}`:'';
+            const goldStr=this._gold>0?` 💰${this._gold}`:'';
+            this._lootText.setText(keyStr+goldStr);
+            const ups=[];
+            if(this._weapon.spread>1) ups.push('SPR');
+            if(this._weapon.rapidFire) ups.push('RAP');
+            if(this._weapon.piercing) ups.push('PIR');
+            if(this._weapon.damageLevel>1) ups.push('×'+this._weapon.damageLevel);
+            this._wpText.setText(ups.length?'⚔ '+ups.join(' '):'');
         }
 
-        _fireBullet(vx, vy) {
+        // ── Shooting ─────────────────────────────────────────────────────────────
+        _fireBullet(vx,vy) {
             const now=this.time.now;
-            const cd=Math.max(70,280-this._floor*8);
-            if (now-this._lastFired < cd) return;
+            const baseCd=this._weapon.rapidFire?130:270;
+            const cd=Math.max(55,baseCd-this._floor*6);
+            if(now-this._lastFired<cd) return;
             this._lastFired=now;
-            const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(10,8);
-            b.body.setSize(9,7,true); b.body.allowGravity=false;
-            b.setTint(themeInt(0,0xa78bfa));
-            b.setVelocity(vx*380, vy*380);
+            const spd=400;
+            const shoot=(dvx,dvy)=>{
+                const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(10,8);
+                b.body.setSize(9,7,true); b.body.allowGravity=false;
+                b.setTint(themeInt(0,0xa78bfa));
+                b.setVelocity(dvx*spd,dvy*spd);
+                if(this._weapon.piercing) b.setData('piercing',true);
+            };
+            if(this._weapon.spread>=2){
+                const a=Math.atan2(vy,vx), sp=0.26;
+                shoot(Math.cos(a-sp),Math.sin(a-sp));
+                shoot(vx,vy);
+                shoot(Math.cos(a+sp),Math.sin(a+sp));
+            } else { shoot(vx,vy); }
             GameAudio.play('score');
         }
 
+        // ── Update loop ──────────────────────────────────────────────────────────
         update() {
-            const mk=this.moveKeys;
-            const spd=liveConfig.speed||180;
+            const mk=this.moveKeys, spd=liveConfig.speed||180;
             let vx=0,vy=0;
-            if (mk.left.isDown ||touchInput.left)  vx=-spd;
-            else if (mk.right.isDown||touchInput.right) vx=spd;
-            if (mk.up.isDown   ||touchInput.up)    vy=-spd;
-            else if (mk.down.isDown||touchInput.down) vy=spd;
-            this.actor.setVelocity(vx, vy);
+            if(mk.left.isDown||touchInput.left)       vx=-spd;
+            else if(mk.right.isDown||touchInput.right) vx=spd;
+            if(mk.up.isDown||touchInput.up)            vy=-spd;
+            else if(mk.down.isDown||touchInput.down)   vy=spd;
+            this.actor.setVelocity(vx,vy);
 
-            // Arrow keys = shoot in that direction
             const sk=this.shootKeys;
-            if      (sk.left.isDown)  this._fireBullet(-1,0);
-            else if (sk.right.isDown) this._fireBullet(1,0);
-            else if (sk.up.isDown)    this._fireBullet(0,-1);
-            else if (sk.down.isDown)  this._fireBullet(0,1);
-            // Touch fire button = auto-aim nearest enemy (independent of keyboard — cooldown prevents double-fire)
-            if (touchInput.fire) {
+            if     (sk.left.isDown)  this._fireBullet(-1,0);
+            else if(sk.right.isDown) this._fireBullet(1,0);
+            else if(sk.up.isDown)    this._fireBullet(0,-1);
+            else if(sk.down.isDown)  this._fireBullet(0,1);
+            if(touchInput.fire){
                 const alive=this.enemies.getChildren().filter(e=>e.active);
-                if (alive.length) {
+                if(alive.length){
                     let best=alive[0],bestD=Infinity;
-                    alive.forEach(e=>{ const d=Phaser.Math.Distance.Between(this.actor.x,this.actor.y,e.x,e.y); if(d<bestD){bestD=d;best=e;} });
-                    const dx=best.x-this.actor.x, dy=best.y-this.actor.y, m=Math.sqrt(dx*dx+dy*dy)||1;
+                    alive.forEach(e=>{const d=Phaser.Math.Distance.Between(this.actor.x,this.actor.y,e.x,e.y);if(d<bestD){bestD=d;best=e;}});
+                    const dx=best.x-this.actor.x,dy=best.y-this.actor.y,m=Math.sqrt(dx*dx+dy*dy)||1;
                     this._fireBullet(dx/m,dy/m);
                 }
             }
 
-            // Enemy AI — chase player
+            // Enemy AI — chase + boss behaviour
             this.enemies.getChildren().forEach(e=>{
-                if (!e.active) return;
-                const dx=this.actor.x-e.x, dy=this.actor.y-e.y;
-                const m=Math.sqrt(dx*dx+dy*dy)||1;
-                const eSpd=(liveConfig.enemySpeed||100)*0.55;
-                e.setVelocity(dx/m*eSpd, dy/m*eSpd);
+                if(!e.active) return;
+                const dx=this.actor.x-e.x, dy=this.actor.y-e.y, m=Math.sqrt(dx*dx+dy*dy)||1;
+                if(e.getData('isBoss')){
+                    if(this._bossDashing) return;
+                    const bSpd=(55+this._floor*18)*(this._bossPhase===2?1.7:1);
+                    e.setVelocity(dx/m*bSpd,dy/m*bSpd);
+                    // Phase 2 dash
+                    if(this._bossPhase===2&&!this._bossDashing&&Math.random()<0.004){
+                        this._bossDashing=true; e.setVelocity(dx/m*420,dy/m*420);
+                        this.time.delayedCall(280,()=>{this._bossDashing=false;});
+                    }
+                } else {
+                    e.setVelocity(dx/m*(liveConfig.enemySpeed||100)*0.55, dy/m*(liveConfig.enemySpeed||100)*0.55);
+                }
             });
 
-            // Clean up bullets that left the room
-            [...this.bullets.getChildren(),...this.eBullets.getChildren()].forEach(b=>{
-                if (b.x<0||b.x>GW||b.y<0||b.y>GH) b.destroy();
+            // Sync loot drop labels
+            [...this._heartGrp.getChildren(),...this._keyDropGrp.getChildren()].forEach(obj=>{
+                const lbl=obj.getData('lbl'); if(lbl&&lbl.active){lbl.x=obj.x;lbl.y=obj.y;}
+            });
+            this._chestGrp.getChildren().forEach(c=>{
+                const lbl=c.getData('lbl'); if(lbl&&lbl.active){lbl.x=c.x;lbl.y=c.y;}
             });
 
-            // Trigger next room when player walks into open door
-            if (this._doorOpen && this.actor.x > GW - W - 22) this._nextRoom();
+            // Bullets OOB cleanup
+            [...this.bullets.getChildren(),...this.eBullets.getChildren()].forEach(b=>{if(b.x<0||b.x>GW||b.y<0||b.y>GH)b.destroy();});
+
+            // Room exit
+            if(this._doorOpen&&this.actor.x>GW-W-22) this._nextRoom();
         }
     };
 }
