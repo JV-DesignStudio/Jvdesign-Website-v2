@@ -156,8 +156,9 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .wk-hint{font-size:.63rem;color:var(--muted);flex:1;padding:0 10px;line-height:1.4;}
 .wk-close{background:rgba(239,68,68,.14);color:#f87171;border:1px solid rgba(239,68,68,.28);border-radius:8px;padding:6px 15px;font-size:.76rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:background .15s;}
 .wk-close:hover{background:rgba(239,68,68,.28);}
-.wk-tabs{display:flex;gap:5px;padding:9px 16px;background:rgba(0,0,0,.5);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;}
-.wk-tab{padding:7px 18px;font-size:.74rem;font-weight:700;border-radius:8px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:rgba(240,234,214,.48);cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.wk-tabs{display:flex;gap:5px;padding:9px 16px;background:rgba(0,0,0,.5);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.wk-tabs::-webkit-scrollbar{display:none;}
+.wk-tab{padding:8px 14px;min-height:38px;font-size:.74rem;font-weight:700;border-radius:8px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);color:rgba(240,234,214,.48);cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
 .wk-tab:hover{color:var(--beige);background:rgba(255,255,255,.09);}
 .wk-tab.on{background:rgba(124,58,237,.24);color:var(--purple-lt);border-color:rgba(124,58,237,.42);}
 .wk-step{font-size:.58rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;margin-left:auto;color:rgba(167,139,250,.45);white-space:nowrap;}
@@ -1695,15 +1696,32 @@ function _launchPhaserGame() {
     _sessionAchs.clear(); _sessionHits = 0; _sessionStartTime = Date.now();
     // Hide all power-up HUD badges
     ['Shield','X2','Speed'].forEach(t=>{ const el=document.getElementById('pu'+t); if(el) el.classList.remove('show'); });
-    if (currentPhaserGame) { currentPhaserGame.destroy(true); document.getElementById('game-container').innerHTML=''; }
-    currentPhaserGame = new Phaser.Game({
-        type: Phaser.AUTO,
-        parent: 'game-container',
-        backgroundColor: '#05030f',
-        scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
-        physics: { default:'arcade', arcade:{ debug:false } },
-        scene: getScene(data)
-    });
+
+    const _startGame = () => {
+        try {
+            currentPhaserGame = new Phaser.Game({
+                type: Phaser.AUTO,
+                parent: 'game-container',
+                backgroundColor: '#05030f',
+                scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
+                physics: { default:'arcade', arcade:{ debug:false } },
+                scene: getScene(data)
+            });
+        } catch(e) {
+            console.error('Phaser boot error:', e);
+            showToast('⚠️ Game engine failed to start — try refreshing');
+        }
+    };
+
+    if (currentPhaserGame) {
+        try { currentPhaserGame.destroy(true); } catch(e) {}
+        currentPhaserGame = null;
+        document.getElementById('game-container').innerHTML = '';
+        // Small delay so WebGL context fully releases before creating a new one
+        setTimeout(_startGame, 80);
+    } else {
+        _startGame();
+    }
 }
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
@@ -1718,29 +1736,37 @@ function getScene(data) {
 function makeBaseScene(data) {
     return class extends Phaser.Scene {
         preload() {
+            // CDN assets need crossOrigin = 'anonymous'; data URLs must NOT have it set
+            // (some browsers reject data URLs under anonymous CORS mode).
+            // Pattern: set crossOrigin only immediately before CDN load, then reset it.
             if (data.sprite) {
+                this.load.crossOrigin = null;
                 this.load.image('player', data.sprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('player', 'https://labs.phaser.io/assets/sprites/asteroids_ship.png');
+                this.load.crossOrigin = null;
             }
             if (data.enemySprite) {
                 this.load.image('enemy', data.enemySprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('enemy', 'https://labs.phaser.io/assets/sprites/ufo.png');
+                this.load.crossOrigin = null;
             }
             if (data.bulletSprite) {
                 this.load.image('laser', data.bulletSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('laser', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
+                this.load.crossOrigin = null;
             }
             if (data.blockSprite) {
                 this.load.image('block', data.blockSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
+                this.load.crossOrigin = null;
             }
             if (data.bgImage) {
                 this.load.image('bg_custom', data.bgImage);
@@ -3170,7 +3196,7 @@ function setupTouchControls() {
             if (panel.classList.contains('panel-open')
                 && !panel.contains(e.target) && e.target !== fab) {
                 panel.classList.remove('panel-open');
-                fab.textContent = '⚙';
+                fab.innerHTML = '⚙ Settings';
             }
         }, {capture:true});
     }
@@ -3184,11 +3210,13 @@ function setupTouchControls() {
     // Pause/resume Phaser when tab is hidden/visible
     document.addEventListener('visibilitychange', () => {
         if (!currentPhaserGame) return;
-        if (document.hidden) {
-            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isActive()) s.scene.pause(); });
-        } else {
-            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isPaused()) s.scene.resume(); });
-        }
+        try {
+            if (document.hidden) {
+                currentPhaserGame.scene.scenes.forEach(s => { try { if (s.scene.isActive()) s.scene.pause(); } catch(e){} });
+            } else {
+                currentPhaserGame.scene.scenes.forEach(s => { try { if (s.scene.isPaused()) s.scene.resume(); } catch(e){} });
+            }
+        } catch(e) {}
     });
 }
 
@@ -3198,8 +3226,8 @@ function updateTouchLayout(genre) {
     const lr    = document.getElementById('tc-lr');
 
     const showLR   = !['RUNNER','FLAPPY','PONG'].includes(genre);
-    const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE'].includes(genre);
-    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE'].includes(genre);
+    const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS'].includes(genre);
+    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS'].includes(genre);
 
     if (lr)   lr.style.display   = showLR   ? '' : 'none';
     if (up)   up.style.display   = showUp   ? '' : 'none';
