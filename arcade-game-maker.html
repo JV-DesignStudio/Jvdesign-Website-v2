@@ -195,6 +195,27 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 /* HEARTS DISPLAY */
 #heartsDisplay{position:absolute;top:6px;right:8px;font-size:1.1rem;z-index:50;pointer-events:none;line-height:1;letter-spacing:1px;}
 
+/* GAME OVER OVERLAY */
+.go-overlay{display:none;position:absolute;inset:0;background:rgba(5,3,15,.9);backdrop-filter:blur(6px);flex-direction:column;align-items:center;justify-content:center;z-index:200;border-radius:inherit;}
+.go-overlay.show{display:flex;}
+.go-box{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 36px;text-align:center;}
+.go-title{font-size:2.4rem;font-weight:900;font-family:'Fredoka',sans-serif;color:white;text-shadow:0 0 24px rgba(124,58,237,.6);letter-spacing:.04em;}
+.go-score{font-size:1.5rem;font-weight:800;color:var(--purple-lt);font-family:'JetBrains Mono',monospace;}
+.go-hiscore{font-size:.88rem;color:var(--amber);font-family:'JetBrains Mono',monospace;opacity:.8;}
+.go-newbest{font-size:1rem;font-weight:800;color:var(--amber);animation:go-pop .4s ease;}
+@keyframes go-pop{0%{transform:scale(.5);opacity:0;}60%{transform:scale(1.2);}100%{transform:scale(1);opacity:1;}}
+.go-play{font-size:1rem;padding:13px 36px;margin-top:6px;}
+.go-credit{font-size:.6rem;color:rgba(240,234,214,.25);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+
+/* INTRO OVERLAY */
+.intro-overlay{display:none;position:absolute;inset:0;background:rgba(5,3,15,.93);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;z-index:200;border-radius:inherit;}
+.intro-overlay.show{display:flex;}
+.intro-box{max-width:460px;display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 28px;text-align:center;}
+.intro-genre-icon{font-size:2.8rem;line-height:1;}
+.intro-game-title{font-size:2rem;font-weight:900;font-family:'Fredoka',sans-serif;color:white;line-height:1.2;}
+.intro-story{font-size:.88rem;color:rgba(240,234,214,.78);line-height:1.75;max-height:110px;overflow-y:auto;}
+.intro-start{font-size:1rem;padding:13px 40px;margin-top:6px;}
+
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel3);border:1px solid var(--border2);border-radius:10px;padding:9px 18px;font-size:.8rem;font-weight:700;color:var(--beige);box-shadow:0 8px 32px rgba(0,0,0,.5);transition:transform .25s ease;z-index:500;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
 .toast.show{transform:translateX(-50%) translateY(0);}
@@ -377,6 +398,8 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 <button class="btn-sm" onclick="loadFromBrowser()">📂 Load</button>
                 <button class="btn-sm purple" onclick="generateShareLink()">🔗 Share</button>
             </div>
+            <button class="btn-sm" style="width:100%;background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.25);font-size:.76rem;padding:10px;" onclick="exportGame()">⬇ Download Game as HTML</button>
+            <div id="hiscoreStrip" style="font-size:.63rem;color:var(--amber);font-family:'JetBrains Mono',monospace;text-align:center;min-height:14px;"></div>
         </div>
 
         <!-- ── BLUEPRINTS ── -->
@@ -904,6 +927,29 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
         <div class="game-wrap" id="gameWrap">
             <div id="game-container"></div>
             <div id="heartsDisplay"></div>
+
+            <!-- INTRO SPLASH -->
+            <div class="intro-overlay" id="introOverlay">
+                <div class="intro-box">
+                    <div class="intro-genre-icon" id="introIcon">🕹️</div>
+                    <div class="intro-game-title" id="introGameTitle">My Arcade Game</div>
+                    <div class="intro-story" id="introStoryText"></div>
+                    <button class="btn-run intro-start" onclick="closeIntro()">▶ Start Game</button>
+                </div>
+            </div>
+
+            <!-- GAME OVER -->
+            <div class="go-overlay" id="goOverlay">
+                <div class="go-box">
+                    <div class="go-title">GAME OVER</div>
+                    <div class="go-score" id="goScore">Score: 0</div>
+                    <div class="go-hiscore" id="goHiScore"></div>
+                    <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
+                    <button class="btn-run go-play" onclick="closeGameOver()">▶ Play Again</button>
+                    <div class="go-credit">Made with JVDesignStudio 🕹️</div>
+                </div>
+            </div>
+
             <div class="touch-controls" id="touchControls">
                 <div class="tc-side" id="tc-lr">
                     <button class="tc-btn" id="tc-left"  data-action="left"  aria-label="Left">◀</button>
@@ -956,6 +1002,8 @@ function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
 let customSpriteDataUrl = null;
 let customLevelMap = null;
 let currentPhaserGame = null;
+let currentStory = null;   // imported from Story Editor
+let _engineData  = null;   // payload used for last boot (needed by export + replay)
 
 const fallbackLevel = [
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -1212,6 +1260,10 @@ function onGenreChange() {
     document.getElementById('controlsHint').textContent = CONTROLS[g];
     document.getElementById('missionText').innerHTML = MISSIONS[g];
     updateTouchLayout(g);
+    // Update hi-score strip
+    const hi = parseInt(localStorage.getItem('jv_hi_'+g)||'0');
+    const hs = document.getElementById('hiscoreStrip');
+    if (hs) hs.textContent = hi > 0 ? '🏆 Best for this template: ' + hi : '';
     // Show/hide genre-specific Custom tab panels
     ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE'].forEach(genre => {
         const el = document.getElementById('custom-'+genre);
@@ -1247,25 +1299,38 @@ const GW = 640, GH = 400;
 
 function compileAndBootEngine() {
     const data = getPayload();
+    _engineData = data;
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
+    document.getElementById('engine-branding').textContent = `JV Engine v0.1 // ${data.title}`;
+    // Show intro splash if story has been imported
+    if (currentStory && currentStory.intro) {
+        const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍'};
+        document.getElementById('introIcon').textContent = ICONS[data.genre] || '🕹️';
+        document.getElementById('introGameTitle').textContent = currentStory.title || data.title;
+        document.getElementById('introStoryText').textContent = currentStory.intro;
+        document.getElementById('introOverlay').classList.add('show');
+    } else {
+        _launchPhaserGame();
+    }
+}
+function _launchPhaserGame() {
+    const data = _engineData;
     gameState.lives = liveConfig.lives;
     _updateHeartsDisplay(gameState.lives, liveConfig.lives);
-    document.getElementById('engine-branding').textContent = `JV Engine v0.1 // ${data.title}`;
+    document.getElementById('goOverlay').classList.remove('show');
     if (currentPhaserGame) { currentPhaserGame.destroy(true); document.getElementById('game-container').innerHTML=''; }
-
     currentPhaserGame = new Phaser.Game({
         type: Phaser.AUTO,
         parent: 'game-container',
         backgroundColor: '#05030f',
-        scale: {
-            mode: Phaser.Scale.FIT,
-            autoCenter: Phaser.Scale.CENTER_BOTH,
-            width: GW,
-            height: GH,
-        },
+        scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
         physics: { default:'arcade', arcade:{ debug:false } },
         scene: getScene(data)
     });
+}
+function closeIntro() {
+    document.getElementById('introOverlay').classList.remove('show');
+    _launchPhaserGame();
 }
 
 function getScene(data) {
@@ -1328,7 +1393,7 @@ function makeBaseScene(data) {
             if (gameState.lives <= 0) {
                 gameState.lives = liveConfig.lives;
                 this.time.delayedCall(180, () => {
-                    if (this.scene && this.scene.isActive()) this.scene.restart();
+                    if (this.scene && this.scene.isActive()) showGameOver(this.score || this.pScore || 0);
                 });
             } else if (actor && actor.active) {
                 this.tweens.add({targets:actor, alpha:0.25, duration:120, yoyo:true, repeat:5,
@@ -1847,7 +1912,7 @@ function sceneSnake(data) {
             _updateHeartsDisplay(gameState.lives,liveConfig.lives);
             if(gameState.lives<=0) {
                 gameState.lives=liveConfig.lives;
-                this.time.delayedCall(200,()=>{ if(this.scene&&this.scene.isActive()) this.scene.restart(); });
+                this.time.delayedCall(200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score||0); });
             } else {
                 this._snake=[{x:12,y:10},{x:11,y:10},{x:10,y:10}];
                 this._dir={x:1,y:0}; this._nextDir={x:1,y:0};
@@ -1989,6 +2054,7 @@ function importStoryFromEditor() {
     } catch(e) { showToast('Could not import story'); }
 }
 function applyStory(d) {
+    currentStory = d;
     if (d.title) document.getElementById('gameTitle').value = d.title;
     if (d.intro) document.getElementById('missionText').innerHTML = `<strong>Story:</strong> ${d.intro}`;
     document.getElementById('storyPreview').textContent = d.intro || '';
@@ -2062,6 +2128,88 @@ function generateShareLink() {
     const enc=btoa(encodeURIComponent(JSON.stringify({title:d.title,genre:d.genre,speed:d.speed,gravity:d.gravity,jump:d.jump,map:d.map})));
     const url=location.origin+location.pathname+'?game='+enc;
     navigator.clipboard.writeText(url).then(()=>showToast('Share link copied!')).catch(()=>prompt('Copy this link:',url));
+}
+
+// ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
+function showGameOver(score) {
+    const genre = _engineData ? _engineData.genre : 'SHOOTER';
+    const key   = 'jv_hi_' + genre;
+    const prev  = parseInt(localStorage.getItem(key) || '0');
+    const isNew = score > 0 && score > prev;
+    if (isNew) localStorage.setItem(key, score);
+    document.getElementById('goScore').textContent   = 'Score: ' + score;
+    document.getElementById('goHiScore').textContent = 'Best: ' + (isNew ? score : prev);
+    const badge = document.getElementById('goNewBest');
+    badge.style.display = isNew ? 'block' : 'none';
+    document.getElementById('goOverlay').classList.add('show');
+    // Refresh hi-score strip on panel
+    const hs = document.getElementById('hiscoreStrip');
+    if (hs) hs.textContent = '🏆 Best for this template: ' + (isNew ? score : prev);
+}
+function closeGameOver() {
+    document.getElementById('goOverlay').classList.remove('show');
+    _launchPhaserGame();
+}
+
+function exportGame() {
+    if (!_engineData) { showToast('Hit ▶ Run first, then export'); return; }
+    showToast('Preparing download…');
+    // Clone DOM so we can strip runtime elements
+    const root = document.documentElement.cloneNode(true);
+    // Clear the live Phaser canvas from the clone
+    const gc = root.querySelector('#game-container'); if (gc) gc.innerHTML = '';
+    // Hide the intro/go overlays in the export (they open programmatically)
+    ['introOverlay','goOverlay'].forEach(id => { const el=root.querySelector('#'+id); if(el) el.classList.remove('show'); });
+    // Inject export-mode CSS — hides studio chrome, fills viewport
+    const xStyle = document.createElement('style');
+    xStyle.textContent = [
+        '.site-header,.studio-panel,.panel-fab,.wk-overlay,.mission-strip,.controls-hint,#engine-branding,.mobile-nav{display:none!important;}',
+        'body{overflow:hidden!important;}',
+        '.studio{display:block!important;}',
+        '.studio-viewport{width:100vw!important;height:100vh!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;padding:0!important;}'
+    ].join('');
+    root.querySelector('head').appendChild(xStyle);
+    // Inject auto-boot script with baked config
+    const cfg = {
+        title:   _engineData.title,
+        genre:   _engineData.genre,
+        speed:   _engineData.speed,
+        gravity: _engineData.gravity,
+        jump:    _engineData.jump,
+        map:     _engineData.map,
+        sprite:  customSpriteDataUrl || null,
+        liveConfig: Object.assign({}, liveConfig),
+        theme:   { cols: gameTheme.cols.slice(), name: gameTheme.name },
+        story:   currentStory ? { title: currentStory.title, intro: currentStory.intro } : null
+    };
+    const boot = document.createElement('script');
+    boot.textContent = `(function(){var _c=${JSON.stringify(cfg)};
+window.addEventListener('DOMContentLoaded',function(){
+    Object.assign(liveConfig,_c.liveConfig);
+    gameTheme.cols=_c.theme.cols; gameTheme.name=_c.theme.name;
+    if(_c.sprite) customSpriteDataUrl=_c.sprite;
+    if(_c.map)    customLevelMap=_c.map;
+    if(_c.story)  currentStory=_c.story;
+    var $=function(id){return document.getElementById(id);};
+    if($('gameTitle'))  $('gameTitle').value=_c.title;
+    if($('genreMode'))  $('genreMode').value=_c.genre;
+    _engineData=_c;
+    gameState.lives=liveConfig.lives;
+    _updateHeartsDisplay(gameState.lives,liveConfig.lives);
+    if(typeof compileAndBootEngine==='function') compileAndBootEngine();
+    if(typeof setupTouchControls==='function')   setupTouchControls();
+    if(typeof updateTouchLayout==='function')     updateTouchLayout(_c.genre);
+},false);})();`;
+    root.querySelector('body').appendChild(boot);
+    // Serialise and download
+    const blob = new Blob(['<!DOCTYPE html>\n' + root.outerHTML], {type:'text/html;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = (_engineData.title || 'my-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    showToast('🎮 "' + _engineData.title + '" downloaded!');
 }
 
 // ── TOUCH CONTROLS ───────────────────────────────────────────────────────────
