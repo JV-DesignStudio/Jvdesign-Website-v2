@@ -182,6 +182,15 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .toggle-switch input:checked+.toggle-knob{background:var(--purple);}
 .toggle-switch input:checked+.toggle-knob::before{transform:translateX(16px);background:white;}
 
+/* PILLS (Custom tab) */
+.pill-row{display:flex;gap:5px;flex-wrap:wrap;}
+.pill{flex:1;min-width:0;padding:6px 8px;border-radius:7px;font-size:.68rem;font-weight:700;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:background .12s,color .12s,border-color .12s;font-family:'Inter',sans-serif;text-align:center;}
+.pill:hover{background:rgba(255,255,255,.1);color:var(--text);}
+.pill.active{background:rgba(124,58,237,.3);color:var(--purple-lt);border-color:var(--purple);}
+
+/* HEARTS DISPLAY */
+#heartsDisplay{position:absolute;top:6px;right:8px;font-size:1.1rem;z-index:50;pointer-events:none;line-height:1;letter-spacing:1px;}
+
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel3);border:1px solid var(--border2);border-radius:10px;padding:9px 18px;font-size:.8rem;font-weight:700;color:var(--beige);box-shadow:0 8px 32px rgba(0,0,0,.5);transition:transform .25s ease;z-index:500;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
 .toast.show{transform:translateX(-50%) translateY(0);}
@@ -269,6 +278,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             <button class="tab-btn"     onclick="switchTab('blueprints',this)">📋 Blueprints</button>
             <button class="tab-btn"     onclick="switchTab('assets',this)">🖼 Assets</button>
             <button class="tab-btn"     onclick="switchTab('sounds',this)">🔊 Sounds</button>
+            <button class="tab-btn"     onclick="switchTab('custom',this)">✏ Custom</button>
         </div>
 
         <!-- ── BUILD ── -->
@@ -645,6 +655,107 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
 
             <button class="btn-run" style="background:#7c3aed;box-shadow:0 3px 0 #5b21b6;" onclick="GameAudio.previewSlot('shoot');setTimeout(()=>GameAudio.previewSlot('jump'),300);setTimeout(()=>GameAudio.previewSlot('score'),600);">▶ Preview All Sounds</button>
         </div>
+
+        <!-- ── CUSTOM ── -->
+        <div class="tab-content" id="tab-custom">
+            <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;">
+                <div style="font-size:.7rem;font-weight:800;color:var(--purple-lt);margin-bottom:3px;">Customise Your Game</div>
+                <div style="font-size:.64rem;color:var(--muted);line-height:1.6;">Tweak lives, backgrounds, screen shake and genre-specific mechanics. Hit <strong style="color:white;">▶ Run</strong> to apply!</div>
+            </div>
+
+            <span class="sec-label">Player</span>
+            <div class="form-group">
+                <label>Lives</label>
+                <div class="pill-row" id="pillLives">
+                    <button class="pill" onclick="activePill('pillLives',this);liveConfig.lives=1;">1 Life</button>
+                    <button class="pill active" onclick="activePill('pillLives',this);liveConfig.lives=3;">3 Lives</button>
+                    <button class="pill" onclick="activePill('pillLives',this);liveConfig.lives=5;">5 Lives</button>
+                    <button class="pill" onclick="activePill('pillLives',this);liveConfig.lives=99;">∞</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Player Size</label>
+                <div class="range-row">
+                    <input type="range" min="0.4" max="2.0" step="0.1" value="1.0" oninput="liveConfig.playerScale=+this.value;this.nextElementSibling.textContent=Math.round(this.value*100)+'%';">
+                    <span class="range-val">100%</span>
+                </div>
+            </div>
+
+            <span class="sec-label">World</span>
+            <div class="form-group">
+                <label>Background Style</label>
+                <div class="pill-row" id="pillBg">
+                    <button class="pill active" onclick="activePill('pillBg',this);liveConfig.bgStyle='dark';">Dark</button>
+                    <button class="pill" onclick="activePill('pillBg',this);liveConfig.bgStyle='stars';">Stars</button>
+                    <button class="pill" onclick="activePill('pillBg',this);liveConfig.bgStyle='grid';">Grid</button>
+                    <button class="pill" onclick="activePill('pillBg',this);liveConfig.bgStyle='neon';">Neon</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="toggle-row">
+                    <div><div class="toggle-label">Screen Shake on Hit</div><div class="toggle-sub">Camera rumble when damaged</div></div>
+                    <label class="toggle-switch"><input type="checkbox" id="shakeToggle" checked onchange="liveConfig.screenShake=this.checked;"><span class="toggle-knob"></span></label>
+                </div>
+            </div>
+
+            <!-- SHOOTER -->
+            <div id="custom-SHOOTER">
+                <span class="sec-label">Shooter Options</span>
+                <div class="form-group">
+                    <label>Bullet Spread</label>
+                    <div class="pill-row" id="pillSpread">
+                        <button class="pill active" onclick="activePill('pillSpread',this);liveConfig.bulletSpread=1;">Single</button>
+                        <button class="pill" onclick="activePill('pillSpread',this);liveConfig.bulletSpread=2;">Double</button>
+                        <button class="pill" onclick="activePill('pillSpread',this);liveConfig.bulletSpread=3;">Triple</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Enemy Zigzag</div><div class="toggle-sub">Enemies swerve side to side</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="zigzagToggle" onchange="liveConfig.enemyZigzag=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLATFORMER -->
+            <div id="custom-PLATFORMER" style="display:none;">
+                <span class="sec-label">Platformer Options</span>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Double Jump</div><div class="toggle-sub">Press jump again mid-air</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="doubleJumpToggle" onchange="liveConfig.doubleJump=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RUNNER -->
+            <div id="custom-RUNNER" style="display:none;">
+                <span class="sec-label">Runner Options</span>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Double Jump</div><div class="toggle-sub">Press jump again mid-air</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="doubleJumpToggleRunner" onchange="liveConfig.doubleJump=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BREAKER -->
+            <div id="custom-BREAKER" style="display:none;">
+                <span class="sec-label">Breaker Options</span>
+                <div class="form-group">
+                    <label>Paddle Width</label>
+                    <div class="range-row">
+                        <input type="range" min="40" max="200" value="90" oninput="liveConfig.paddleW=+this.value;this.nextElementSibling.textContent=this.value+'px';">
+                        <span class="range-val">90px</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DODGE (no genre-specific extras, shares base options) -->
+            <div id="custom-DODGE" style="display:none;"></div>
+
+            <button class="btn-run" onclick="compileAndBootEngine();switchTab('build',document.querySelector('.tab-btn'));">▶ Run with Custom Settings</button>
+        </div>
     </div>
 
     <!-- WORKSHOP OVERLAY -->
@@ -676,6 +787,7 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
         <span id="engine-branding">JV Engine v0.1 // Ready</span>
         <div class="game-wrap" id="gameWrap">
             <div id="game-container"></div>
+            <div id="heartsDisplay"></div>
             <div class="touch-controls" id="touchControls">
                 <div class="tc-side" id="tc-lr">
                     <button class="tc-btn" id="tc-left"  data-action="left"  aria-label="Left">◀</button>
@@ -703,8 +815,14 @@ obstacle.velocityX = -<span class="c-num" id="bpROV">220</span></pre>
 const liveConfig = {
     speed:200, rotateSpeed:190, bulletSpeed:540, fireCooldown:180,
     spawnDelay:1100, enemySpeed:150, gravity:600, jumpForce:450,
-    pointsPerKill:10, obstacleSpeed:220
+    pointsPerKill:10, obstacleSpeed:220,
+    // Custom tab options
+    lives:3, playerScale:1.0, bgStyle:'dark', screenShake:true,
+    bulletSpread:1, doubleJump:false, paddleW:90, enemyZigzag:false
 };
+
+// ── GAME STATE (persists across scene restarts) ────────────────────────────────
+const gameState = { lives:3 };
 
 // ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
 const touchInput = { left:false, right:false, up:false, fire:false };
@@ -914,6 +1032,19 @@ const GameAudio = {
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+function activePill(groupId, btn) {
+    document.querySelectorAll('#'+groupId+' .pill').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+}
+function _updateHeartsDisplay(current, max) {
+    const el = document.getElementById('heartsDisplay');
+    if (!el) return;
+    if (max >= 99) { el.textContent = '❤ ∞'; return; }
+    let s = '';
+    for (let i=0;i<max;i++) s += i < current ? '❤' : '🖤';
+    el.textContent = s;
+}
+
 function syncN(nId, rId, vId) { const v=document.getElementById(nId).value; document.getElementById(rId).value=v; document.getElementById(vId).textContent=v; }
 function syncR(nId, rId, vId) { const v=document.getElementById(rId).value; document.getElementById(nId).value=v; document.getElementById(vId).textContent=v; }
 function setTxt(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
@@ -956,6 +1087,11 @@ function onGenreChange() {
     document.getElementById('controlsHint').textContent = CONTROLS[g];
     document.getElementById('missionText').innerHTML = MISSIONS[g];
     updateTouchLayout(g);
+    // Show/hide genre-specific Custom tab panels
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER'].forEach(genre => {
+        const el = document.getElementById('custom-'+genre);
+        if (el) el.style.display = genre === g ? '' : 'none';
+    });
 
     // Adjust default speed per template
     const defaults = { SHOOTER:200, PLATFORMER:200, DODGE:250, BREAKER:300, RUNNER:200 };
@@ -987,6 +1123,8 @@ const GW = 640, GH = 400;
 function compileAndBootEngine() {
     const data = getPayload();
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
+    gameState.lives = liveConfig.lives;
+    _updateHeartsDisplay(gameState.lives, liveConfig.lives);
     document.getElementById('engine-branding').textContent = `JV Engine v0.1 // ${data.title}`;
     if (currentPhaserGame) { currentPhaserGame.destroy(true); document.getElementById('game-container').innerHTML=''; }
 
@@ -1031,6 +1169,45 @@ function makeBaseScene(data) {
         _flashScore(txt) {
             this.tweens.add({targets:txt,scaleX:1.25,scaleY:1.25,duration:70,yoyo:true,ease:'Power2'});
         }
+        _drawBg() {
+            const style = liveConfig.bgStyle || 'dark';
+            if (style === 'stars') {
+                const g = this.add.graphics().setDepth(-1);
+                for (let i=0;i<90;i++) {
+                    const a = Math.random()*0.55+0.2;
+                    g.fillStyle(0xffffff, a);
+                    g.fillCircle(Math.random()*GW, Math.random()*GH, Math.random()*1.4+0.4);
+                }
+            } else if (style === 'grid') {
+                const g = this.add.graphics().setDepth(-1);
+                g.lineStyle(1, 0x334155, 0.4);
+                for (let x=0;x<=GW;x+=40) { g.beginPath(); g.moveTo(x,0); g.lineTo(x,GH); g.strokePath(); }
+                for (let y=0;y<=GH;y+=40) { g.beginPath(); g.moveTo(0,y); g.lineTo(GW,y); g.strokePath(); }
+            } else if (style === 'neon') {
+                const g = this.add.graphics().setDepth(-1);
+                const nc = themeInt(0, 0x7c3aed);
+                g.lineStyle(2, nc, 0.18);
+                for (let x=0;x<=GW;x+=60) { g.beginPath(); g.moveTo(x,0); g.lineTo(x,GH); g.strokePath(); }
+                for (let y=0;y<=GH;y+=40) { g.beginPath(); g.moveTo(0,y); g.lineTo(GW,y); g.strokePath(); }
+                g.lineStyle(1, 0x000000, 0.1);
+                for (let y=0;y<=GH;y+=4) { g.beginPath(); g.moveTo(0,y); g.lineTo(GW,y); g.strokePath(); }
+            }
+        }
+        _onHit(actor) {
+            if (this._invincible) return;
+            GameAudio.play('hit');
+            if (liveConfig.screenShake) this.cameras.main.shake(240, 0.013);
+            gameState.lives--;
+            _updateHeartsDisplay(gameState.lives, liveConfig.lives);
+            if (gameState.lives <= 0) {
+                gameState.lives = liveConfig.lives;
+                this.time.delayedCall(120, () => this.scene.restart());
+            } else {
+                this._invincible = true;
+                this.tweens.add({targets:actor, alpha:0.25, duration:120, yoyo:true, repeat:5,
+                    onComplete:()=>{ actor.setAlpha(1); this._invincible=false; }});
+            }
+        }
     };
 }
 
@@ -1038,13 +1215,14 @@ function sceneShooter(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.lastFired=0;
+            this.score=0; this.lastFired=0; this._invincible=false;
+            this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
             this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.bullets = this.physics.add.group();
             this.hazards = this.physics.add.group();
-            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player').setScale(0.9);
+            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player').setScale(0.9 * liveConfig.playerScale);
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).setDrag(120);
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
@@ -1058,7 +1236,16 @@ function sceneShooter(data) {
                 this._flashScore(this.scoreText);
                 GameAudio.play('score');
             });
-            this.physics.add.overlap(this.actor, this.hazards, ()=>{ GameAudio.play('hit'); this.scene.restart(); });
+            this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ e.destroy(); this._onHit(this.actor); });
+        }
+        _spawnBullets(spread) {
+            const offsets = spread===3 ? [-18,0,18] : spread===2 ? [-12,12] : [0];
+            offsets.forEach(deg => {
+                const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(7,20);
+                const rot = this.actor.rotation - Math.PI/2 + deg * Math.PI/180;
+                b.rotation = rot + Math.PI/2;
+                this.physics.velocityFromRotation(rot, liveConfig.bulletSpeed, b.body.velocity);
+            });
         }
         update(time) {
             const {left,right,up} = this.cursors;
@@ -1069,11 +1256,14 @@ function sceneShooter(data) {
             if (up.isDown||tU) this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.speed, this.actor.body.acceleration);
             else               this.actor.setAcceleration(0);
             if ((this.fireKey.isDown||touchInput.fire) && time > this.lastFired) {
-                const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(7,20);
-                b.rotation=this.actor.rotation;
-                this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.bulletSpeed, b.body.velocity);
+                this._spawnBullets(liveConfig.bulletSpread);
                 this.lastFired=time+liveConfig.fireCooldown;
                 GameAudio.play('shoot');
+            }
+            if (liveConfig.enemyZigzag) {
+                this.hazards.getChildren().forEach(e => {
+                    e.setVelocityX(Math.sin(time * 0.003 + e.x * 0.02) * 90);
+                });
             }
             this.bullets.getChildren().forEach(b=>{ if(b.y<-30||b.y>GH+30||b.x<-30||b.x>GW+30) b.destroy(); });
         }
@@ -1084,7 +1274,8 @@ function scenePlatformer(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0;
+            this.score=0; this._invincible=false; this._jumpsLeft=1; this._upWasDown=false;
+            this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
             this.hazards = this.physics.add.group();
@@ -1096,7 +1287,7 @@ function scenePlatformer(data) {
                 const tx=(idx%cols)*ts*sx+ts*sx/2, ty=Math.floor(idx/cols)*ts*sy+ts*sy/2;
                 this.platforms.create(tx,ty,'block').setDisplaySize(ts*sx,ts*sy).refreshBody();
             });
-            this.actor = this.physics.add.sprite(72,GH*0.4,'player').setScale(0.7);
+            this.actor = this.physics.add.sprite(72,GH*0.4,'player').setScale(0.7 * liveConfig.playerScale);
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.platforms);
@@ -1104,7 +1295,7 @@ function scenePlatformer(data) {
                 const h=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
                 h.setVelocityY(liveConfig.enemySpeed);
             }});
-            this.physics.add.collider(this.actor, this.hazards, ()=>{ GameAudio.play('hit'); this.scene.restart(); });
+            this.physics.add.collider(this.actor, this.hazards, ()=>{ this._onHit(this.actor); });
             this.physics.add.collider(this.hazards, this.platforms, h=>h.destroy());
             this.surviveTimer=0;
         }
@@ -1114,7 +1305,15 @@ function scenePlatformer(data) {
             if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
             else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
             else                                     this.actor.setVelocityX(0);
-            if ((up.isDown||touchInput.up) && this.actor.body.blocked.down) { this.actor.setVelocityY(-liveConfig.jumpForce); GameAudio.play('jump'); }
+            const onGround = this.actor.body.blocked.down;
+            if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
+            const upNow = up.isDown || touchInput.up;
+            if (upNow && !this._upWasDown && this._jumpsLeft > 0) {
+                this.actor.setVelocityY(-liveConfig.jumpForce);
+                this._jumpsLeft--;
+                GameAudio.play('jump');
+            }
+            this._upWasDown = upNow;
             this.surviveTimer+=16;
             if (this.surviveTimer>2000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score'); }
         }
@@ -1125,12 +1324,13 @@ function sceneDodge(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.difficulty=1;
+            this.score=0; this.difficulty=1; this._invincible=false;
+            this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
             this.hazards = this.physics.add.group();
             this.stars   = this.physics.add.group();
-            this.actor = this.physics.add.sprite(GW/2, GH-40, 'player').setScale(0.7);
+            this.actor = this.physics.add.sprite(GW/2, GH-40, 'player').setScale(0.7 * liveConfig.playerScale);
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
@@ -1149,7 +1349,7 @@ function sceneDodge(data) {
                 this.difficulty = 1+this.score*0.02;
                 GameAudio.play('score');
             });
-            this.physics.add.overlap(this.actor, this.hazards, ()=>{ GameAudio.play('hit'); this.scene.restart(); });
+            this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ e.destroy(); this._onHit(this.actor); });
         }
         update() {
             const {left,right} = this.cursors;
@@ -1165,12 +1365,15 @@ function sceneBreaker(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.wave=1;
+            this.score=0; this.wave=1; this._invincible=false;
+            this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
             // Paddle
-            this.paddle = this.physics.add.image(GW/2, GH-20, 'block').setDisplaySize(90,14);
+            const pw = liveConfig.paddleW || 90;
+            this.paddle = this.physics.add.image(GW/2, GH-20, 'block').setDisplaySize(pw, 14);
             this.paddle.setImmovable(true); this.paddle.body.allowGravity=false;
+            this._tint(this.paddle, 1, 0xa78bfa);
             // Ball
             this.ball = this.physics.add.image(GW/2, GH-50, 'laser').setDisplaySize(14,14);
             this.ball.setBounce(1).setCollideWorldBounds(true);
@@ -1211,7 +1414,7 @@ function sceneBreaker(data) {
             else if (right.isDown||touchInput.right) this.paddle.setVelocityX(liveConfig.speed);
             else                                     this.paddle.setVelocityX(0);
             this.paddle.x = Phaser.Math.Clamp(this.paddle.x, 50, GW-50);
-            if (this.ball.y > GH+20) { GameAudio.play('hit'); this.scene.restart(); }
+            if (this.ball.y > GH+20) { this._onHit(this.paddle); }
         }
     };
 }
@@ -1220,17 +1423,19 @@ function sceneRunner(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.surviveTimer=0;
+            this.score=0; this.surviveTimer=0; this._invincible=false;
+            this._jumpsLeft=1; this._upWasDown=false;
+            this._drawBg();
             this.scoreText = this._makeScoreText();
             this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.upKey    = this.input.keyboard.createCursorKeys().up;
             this.obstacles = this.physics.add.group();
             // Ground
-            const ground = this.add.rectangle(GW/2, GH-8, GW, 16, 0x334155);
+            const ground = this.add.rectangle(GW/2, GH-8, GW, 16, themeInt(2, 0x334155));
             this.physics.add.existing(ground, true);
             this.groundObj = ground;
             // Player
-            this.actor = this.physics.add.sprite(100, GH-50, 'player').setScale(0.7);
+            this.actor = this.physics.add.sprite(100, GH-50, 'player').setScale(0.7 * liveConfig.playerScale);
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.groundObj);
@@ -1239,19 +1444,22 @@ function sceneRunner(data) {
                 const h = Phaser.Math.Between(20,45);
                 const ob=this.obstacles.create(GW+20,GH-8-h/2,'block').setDisplaySize(22,h);
                 ob.setImmovable(true); ob.body.allowGravity=false;
+                ob.setTint(themeInt(1, 0xef4444));
                 ob.setVelocityX(-liveConfig.obstacleSpeed*(1+this.score*0.005));
             }});
-            this.physics.add.collider(this.actor, this.obstacles, ()=>{ GameAudio.play('hit'); this.scene.restart(); });
-            // Background decoration lines
-            for(let i=0;i<6;i++) this.add.rectangle(Phaser.Math.Between(0,GW), GH-8-Phaser.Math.Between(30,GH-60), 2, Phaser.Math.Between(10,40), 0x1e293b).setAlpha(0.5);
+            this.physics.add.collider(this.actor, this.obstacles, ()=>{ this._onHit(this.actor); });
         }
         update() {
             this.actor.body.setGravityY(liveConfig.gravity);
             const onGround = this.actor.body.blocked.down;
-            if ((this.spaceKey.isDown || this.upKey.isDown || touchInput.up) && onGround) {
+            if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
+            const upNow = this.spaceKey.isDown || this.upKey.isDown || touchInput.up;
+            if (upNow && !this._upWasDown && this._jumpsLeft > 0) {
                 this.actor.setVelocityY(-liveConfig.jumpForce);
+                this._jumpsLeft--;
                 GameAudio.play('jump');
             }
+            this._upWasDown = upNow;
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
             this.surviveTimer+=16;
             if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); }
