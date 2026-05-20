@@ -1958,38 +1958,57 @@ function toggleFullscreen() {
 }
 function takeScreenshot() {
     if (!currentPhaserGame) { showToast('Run the game first then take a screenshot'); return; }
-    const fname = (_engineData ? _engineData.title : 'game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '-screenshot.png';
-    try {
-        // Phaser renderer.snapshot() works even with WebGL (reads the preserved buffer)
-        currentPhaserGame.renderer.snapshot(img => {
+    const title = _engineData ? _engineData.title : 'game';
+    const fname = title.replace(/[^a-z0-9]/gi,'-').toLowerCase() + '-screenshot.png';
+
+    function _stamp(imgSrc) {
+        const tmp = new Image();
+        tmp.onload = () => {
+            const cvs = document.createElement('canvas');
+            cvs.width  = tmp.width;
+            cvs.height = tmp.height;
+            const ctx = cvs.getContext('2d');
+            ctx.drawImage(tmp, 0, 0);
+            // Watermark bar at bottom
+            const barH = Math.max(22, Math.round(tmp.height * 0.065));
+            ctx.fillStyle = 'rgba(10,8,22,0.72)';
+            ctx.fillRect(0, tmp.height - barH, tmp.width, barH);
+            const fs = Math.round(barH * 0.52);
+            ctx.font = `600 ${fs}px 'Inter', sans-serif`;
+            ctx.fillStyle = 'rgba(240,234,214,0.70)';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'left';
+            ctx.fillText('🕹️ ' + title, 8, tmp.height - barH/2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(167,139,250,0.80)';
+            ctx.fillText('jvdesignstudio.com', tmp.width - 8, tmp.height - barH/2);
             const a = document.createElement('a');
-            a.href = img.src;
+            a.href = cvs.toDataURL('image/png');
             a.download = fname;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             showToast('Screenshot saved! 📷');
-        });
+        };
+        tmp.src = imgSrc;
+    }
+
+    try {
+        currentPhaserGame.renderer.snapshot(img => _stamp(img.src));
     } catch(e) {
-        // Fallback to canvas.toDataURL
         const canvas = document.querySelector('#game-container canvas');
         if (!canvas) { showToast('No canvas found'); return; }
-        try {
-            const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = fname;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            showToast('Screenshot saved! 📷');
-        } catch(e2) { showToast('Screenshot failed — try refreshing and running the game first'); }
+        try { _stamp(canvas.toDataURL('image/png')); }
+        catch(e2) { showToast('Screenshot failed — try refreshing and running the game first'); }
     }
 }
 
 // ── EMBED CODE ────────────────────────────────────────────────────────────────
 function copyEmbedCode() {
     if (!_engineData) { showToast('Hit ▶ Run first, then copy embed code'); return; }
-    const shareData = { title:_engineData.title, genre:_engineData.genre, speed:_engineData.speed, gravity:_engineData.gravity, jump:_engineData.jump, map:_engineData.map, liveConfig:Object.assign({},liveConfig), theme:{cols:gameTheme.cols.slice(),name:gameTheme.name} };
     try {
-        const enc = btoa(encodeURIComponent(JSON.stringify(shareData)));
+        const d = _engineData;
+        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
         const url = location.origin + location.pathname + '?game=' + enc;
-        const embed = `<iframe src="${url}" width="660" height="440" style="border:none;border-radius:12px;" title="${_engineData.title}" allowfullscreen></iframe>`;
+        const embed = `<iframe src="${url}" width="660" height="440" style="border:none;border-radius:12px;" title="${d.title}" allowfullscreen></iframe>`;
         navigator.clipboard.writeText(embed).then(()=>showToast('Embed code copied! Paste into any webpage 🔗')).catch(()=>prompt('Copy embed code:',embed));
     } catch(e) { showToast('Could not generate embed code'); }
 }
@@ -2312,6 +2331,24 @@ function _launchPhaserGame() {
     };
 
     if (currentPhaserGame) {
+        // Save any in-progress score to the leaderboard before destroying
+        try {
+            const _genre = _engineData ? _engineData.genre : null;
+            if (_genre) {
+                currentPhaserGame.scene.getScenes(true).forEach(s => {
+                    const sc = s.score !== undefined ? s.score : (s.pScore || 0);
+                    if (sc > 0) {
+                        const lbKey = 'jv_lb_' + _genre;
+                        let board = [];
+                        try { board = JSON.parse(localStorage.getItem(lbKey) || '[]'); } catch(e) {}
+                        const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+                        board.push({ score: sc, date: dateStr });
+                        board.sort((a,b)=>b.score-a.score);
+                        localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
+                    }
+                });
+            }
+        } catch(e) {}
         try { currentPhaserGame.destroy(true); } catch(e) {}
         currentPhaserGame = null;
         document.getElementById('game-container').innerHTML = '';
@@ -2652,7 +2689,6 @@ function scenePlatformer(data) {
 
             // Camera follows player with slight horizontal lag for game-feel
             this.cameras.main.startFollow(this.actor, true, 0.1, 1);
-            this._initPowerUps();
         }
         _buildScrollBg() {
             const style = liveConfig.bgStyle || 'dark';
@@ -2741,7 +2777,6 @@ function scenePlatformer(data) {
             }
             // Cull enemies that scrolled far behind player
             this.hazards.getChildren().forEach(h=>{ if(h.x < camX-80) h.destroy(); });
-            this._syncPuLabels();
             // Fall pit death
             if (this.actor.y > GH+60) this._onHit(this.actor);
         }
@@ -2764,7 +2799,7 @@ function sceneDodge(data) {
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const x=Phaser.Math.Between(20,GW-20);
-                if (Math.random()<0.3) {
+                if (Math.random() < (liveConfig.dodgeStarRatio||30)/100) {
                     const s=this.stars.create(x,-20,'laser').setDisplaySize(16,16).setTint(0xffd700);
                     s.body.setSize(16,16); s.setVelocityY(liveConfig.enemySpeed*0.7); s.body.allowGravity=false;
                 } else {
@@ -3175,7 +3210,7 @@ function sceneSnake(data) {
             this.scoreText=this._makeScoreText();
             this.cursors=this.input.keyboard.createCursorKeys();
             this.spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-            this.C=20; this.COLS=Math.floor(GW/this.C); this.ROWS=Math.floor(GH/this.C);
+            this.C=liveConfig.snakeCellSize||20; this.COLS=Math.floor(GW/this.C); this.ROWS=Math.floor(GH/this.C);
             this._dir={x:1,y:0}; this._nextDir={x:1,y:0};
             this._snake=[{x:12,y:10},{x:11,y:10},{x:10,y:10}];
             this._food={x:16,y:10};
@@ -3195,8 +3230,12 @@ function sceneSnake(data) {
         _step() {
             this._dir={...this._nextDir};
             const {x:hx,y:hy}=this._snake[0];
-            const nx=hx+this._dir.x, ny=hy+this._dir.y;
-            if(nx<0||nx>=this.COLS||ny<0||ny>=this.ROWS) { this._die(); return; }
+            let nx=hx+this._dir.x, ny=hy+this._dir.y;
+            if (liveConfig.snakeWallWrap !== false) {
+                // Wrap edges (default ON)
+                nx = (nx + this.COLS) % this.COLS;
+                ny = (ny + this.ROWS) % this.ROWS;
+            } else if (nx<0||nx>=this.COLS||ny<0||ny>=this.ROWS) { this._die(); return; }
             if(this._snake.some(s=>s.x===nx&&s.y===ny))  { this._die(); return; }
             this._snake.unshift({x:nx,y:ny});
             if(nx===this._food.x&&ny===this._food.y) {
@@ -3245,7 +3284,6 @@ function sceneSnake(data) {
     };
 }
 
-// ── ASTEROIDS ─────────────────────────────────────────────────────────────────
 // ── ROGUELIKE (Binding of Isaac style — real-time twin-stick) ──────────────────
 function sceneRoguelike(data) {
     const Base = makeBaseScene(data);
@@ -3519,8 +3557,8 @@ function sceneAsteroids(data) {
             { const _s=Math.round(27*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setDrag(50).setMaxVelocity(400);
-            // Spawn initial wave
-            this._spawnWave(this._wave + 2);
+            // Spawn initial wave using configured asteroid count
+            this._spawnWave(liveConfig.asteroidCount || 6);
             // Overlaps
             this.physics.add.overlap(this.bullets, this.rocks, (b, r) => this._bulletHit(b, r));
             this.physics.add.overlap(this.actor,   this.rocks, (_, r) => { this._burst(r.x,r.y,themeInt(2,0xef4444)); r.destroy(); this._onHit(this.actor); });
@@ -3568,7 +3606,7 @@ function sceneAsteroids(data) {
                 const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! ☄️`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
                 this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:900,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
                 GameAudio.play('score');
-                this.time.delayedCall(600, ()=>this._spawnWave(this._wave+2));
+                this.time.delayedCall(600, ()=>this._spawnWave(Math.min(16,(liveConfig.asteroidCount||6)+this._wave-1)));
             }
         }
         update(time) {
@@ -4101,31 +4139,52 @@ function _applyLoadData(d) {
     showToast(`"${d.title}" loaded! ✓`);
 }
 
-function generateShareLink() {
-    if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link (too large)');
-    const d=getPayload();
-    const shareData = {
-        title:d.title, genre:d.genre, speed:d.speed, gravity:d.gravity, jump:d.jump, map:d.map,
-        liveConfig: Object.assign({}, liveConfig),
-        theme: { cols:gameTheme.cols.slice(), name:gameTheme.name }
-    };
+async function _shortenUrl(longUrl) {
     try {
-        const enc=btoa(encodeURIComponent(JSON.stringify(shareData)));
-        const url=location.origin+location.pathname+'?game='+enc;
-        navigator.clipboard.writeText(url).then(()=>showToast('Share link copied! 🔗')).catch(()=>prompt('Copy this link:',url));
-    } catch(e) {
-        showToast('Share link too large — try clearing level map or sprite');
-    }
+        const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(longUrl));
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.shorturl || null;
+    } catch(e) { return null; }
 }
 
-function generateRemixLink() {
+function _buildSharePayload(d) {
+    const genre = d.genre || 'SHOOTER';
+    let bestScore = 0;
+    try { const board=JSON.parse(localStorage.getItem('jv_lb_'+genre)||'[]'); bestScore=board.length?board[0].score:0; } catch(e){}
+    return { title:d.title, genre, speed:d.speed, gravity:d.gravity, jump:d.jump,
+             map:d.map, liveConfig:Object.assign({},liveConfig),
+             theme:{cols:gameTheme.cols.slice(),name:gameTheme.name},
+             bestScore };
+}
+
+async function generateShareLink() {
+    if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link (too large)');
+    const d = getPayload();
+    try {
+        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
+        const longUrl = location.origin + location.pathname + '?game=' + enc;
+        showToast('Shortening link… ⏳');
+        const short = await _shortenUrl(longUrl);
+        const finalUrl = short || longUrl;
+        navigator.clipboard.writeText(finalUrl)
+            .then(()=>showToast('🔗 Share link copied!' + (short ? ' (shortened)' : '')))
+            .catch(()=>prompt('Copy this link:', finalUrl));
+    } catch(e) { showToast('Share link too large — try clearing level map or sprite'); }
+}
+
+async function generateRemixLink() {
     if (customSpriteDataUrl) showToast('⚠️ Custom sprite not included in remix link');
     const d = getPayload();
-    const shareData = { title:d.title, genre:d.genre, speed:d.speed, gravity:d.gravity, jump:d.jump, map:d.map, liveConfig:Object.assign({},liveConfig), theme:{cols:gameTheme.cols.slice(),name:gameTheme.name} };
     try {
-        const enc = btoa(encodeURIComponent(JSON.stringify(shareData)));
-        const url = location.origin + location.pathname + '?remix=' + enc;
-        navigator.clipboard.writeText(url).then(()=>showToast('Remix link copied! Anyone who opens it can build on your game 🎮')).catch(()=>prompt('Copy remix link:',url));
+        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
+        const longUrl = location.origin + location.pathname + '?remix=' + enc;
+        showToast('Shortening link… ⏳');
+        const short = await _shortenUrl(longUrl);
+        const finalUrl = short || longUrl;
+        navigator.clipboard.writeText(finalUrl)
+            .then(()=>showToast('🎮 Remix link copied!' + (short ? ' (shortened)' : '')))
+            .catch(()=>prompt('Copy remix link:', finalUrl));
     } catch(e) { showToast('Remix link too large'); }
 }
 
@@ -4514,6 +4573,19 @@ window.addEventListener('DOMContentLoaded', ()=>{
             if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
             if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
             if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+            // Seed the creator's best score so recipients have a target to beat
+            if (d.bestScore > 0) {
+                try {
+                    const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
+                    let board = [];
+                    try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
+                    if (!board.some(e=>e.score===d.bestScore && e.date==='🏆 Creator')) {
+                        board.push({ score: d.bestScore, date: '🏆 Creator' });
+                        board.sort((a,b)=>b.score-a.score);
+                        localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
+                    }
+                } catch(e) {}
+            }
             onGenreChange();
             if(isRemix) {
                 // Remix: load settings but don't auto-boot — let user tweak first
