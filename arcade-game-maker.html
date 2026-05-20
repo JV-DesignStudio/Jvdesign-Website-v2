@@ -145,7 +145,7 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .asset-links{display:flex;flex-wrap:wrap;gap:5px;}
 .asset-link{font-size:.65rem;font-weight:700;padding:4px 9px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);transition:all .15s;}
 .asset-link:hover{color:var(--beige);background:rgba(255,255,255,.08);}
-.upload-input{display:none;}
+.upload-input{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
 
 /* WORKSHOP OVERLAY */
 .wk-overlay{position:fixed;inset:0;z-index:900;background:rgba(5,3,18,.94);backdrop-filter:blur(8px);display:none;flex-direction:column;}
@@ -3175,33 +3175,45 @@ function scenePong(data) {
             else if(down.isDown||this.spaceKey.isDown||touchInput.fire) this.pLeft.setVelocityY(liveConfig.speed);
             else                                                    this.pLeft.setVelocityY(0);
             this.pLeft.y=Phaser.Math.Clamp(this.pLeft.y,36,GH-36);
-            // AI paddle
-            const aiSpd=liveConfig.enemySpeed*1.4;
-            if(this.ball.y<this.pRight.y-4)      this.pRight.setVelocityY(-aiSpd);
-            else if(this.ball.y>this.pRight.y+4) this.pRight.setVelocityY(aiSpd);
-            else                                 this.pRight.setVelocityY(0);
+            // AI paddle — capped slower than ball so the player can actually score
+            // Ball Y speed ≈ bulletSpeed*0.45*0.55 ≈ 134px/s; AI capped at ~75% of that
+            const ballSpd = liveConfig.bulletSpeed * 0.45;
+            const aiSpd = Math.min(liveConfig.enemySpeed * 0.55, ballSpd * 0.72);
+            // AI only reacts when ball is in its half (gives player a fairer angle)
+            if (this.ball.body && this.ball.body.velocity.x > 0) {
+                if(this.ball.y<this.pRight.y-6)      this.pRight.setVelocityY(-aiSpd);
+                else if(this.ball.y>this.pRight.y+6) this.pRight.setVelocityY(aiSpd);
+                else                                 this.pRight.setVelocityY(0);
+            } else {
+                // Drift slowly back to centre when ball moves away
+                const mid = GH/2;
+                if (Math.abs(this.pRight.y-mid)>10) this.pRight.setVelocityY(this.pRight.y>mid ? -35 : 35);
+                else this.pRight.setVelocityY(0);
+            }
             this.pRight.y=Phaser.Math.Clamp(this.pRight.y,36,GH-36);
             // Ball out of bounds
             if(this.ball.x<0) {
+                if(this._gameEnded) return;
                 this.aScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
                 if(this.aScore>=5){
                     this._aSets++;
                     this._showWinMsg('AI WINS! 🤖');
-                    this.aScore=0; this.pScore=0;
-                    this.time.delayedCall(300,()=>this.scoreText.setText(this._pSets+'  :  '+this._aSets+' sets'));
-                    if(this._aSets>=2&&!this._gameEnded){ this._gameEnded=true; this.time.delayedCall(1200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
+                    GameAudio.play('hit');
+                    this.time.delayedCall(600,()=>{ this.aScore=0; this.pScore=0; this.scoreText.setText('Sets  '+this._pSets+' : '+this._aSets); });
+                    if(this._aSets>=2){ this._gameEnded=true; this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
                 } else GameAudio.play('hit');
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             } else if(this.ball.x>GW) {
+                if(this._gameEnded) return;
                 this.pScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
                 if(this.pScore>=5){
                     this._pSets++; this.score+=500;
                     this._showWinMsg('YOU WIN! 🎉');
-                    this.pScore=0; this.aScore=0;
-                    this.time.delayedCall(300,()=>this.scoreText.setText(this._pSets+'  :  '+this._aSets+' sets'));
-                    if(this._pSets>=2&&!this._gameEnded){ this._gameEnded=true; this.time.delayedCall(1200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
+                    GameAudio.play('score');
+                    this.time.delayedCall(600,()=>{ this.pScore=0; this.aScore=0; this.scoreText.setText('Sets  '+this._pSets+' : '+this._aSets); });
+                    if(this._pSets>=2){ this._gameEnded=true; this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
                 } else GameAudio.play('score');
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             }
