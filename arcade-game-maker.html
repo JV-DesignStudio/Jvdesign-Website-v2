@@ -243,7 +243,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .tc-jump:active,.tc-jump.tc-pressed{background:rgba(34,197,94,.75)!important;border-color:rgba(74,222,128,.9)!important;}
 
 /* PANEL FAB (mobile only) */
-.panel-fab{position:fixed;bottom:18px;right:18px;z-index:400;width:50px;height:50px;border-radius:50%;background:var(--purple);border:2px solid rgba(167,139,250,.5);color:white;font-size:1.3rem;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 28px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;transition:background .15s;}
+.panel-fab{position:fixed;bottom:18px;right:18px;z-index:400;height:44px;border-radius:22px;background:var(--purple);border:2px solid rgba(167,139,250,.5);color:white;font-size:.9rem;font-weight:800;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0 16px;gap:6px;box-shadow:0 4px 28px rgba(0,0,0,.6);-webkit-tap-highlight-color:transparent;transition:background .15s;font-family:'Inter',sans-serif;letter-spacing:.01em;}
 .panel-fab:active{background:#5b21b6;}
 
 @media(max-width:900px){.studio-panel{width:280px;}}
@@ -572,7 +572,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
             </div>
 
             <!-- ALL GENRES: Enemy/Item Spawner -->
-            <div class="bp-card" data-genre="SHOOTER PLATFORMER DODGE RUNNER">
+            <div class="bp-card" data-genre="SHOOTER PLATFORMER DODGE RUNNER INVADERS FLAPPY">
                 <div class="bp-head"><span class="bp-icon">👾</span><div><div class="bp-name">Enemy Spawner</div><div class="bp-sub">Timer-based spawning</div></div><span class="bp-badge amber">RESTART TO APPLY</span></div>
 <pre class="bp-code"><span class="c-fn">every</span>(<span class="c-num" id="bpSDL">1100</span>ms, <span class="c-kw">do</span>:)
   enemy = <span class="c-fn">spawn</span>(randomX, top)
@@ -969,7 +969,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
     </div>
 </div>
 
-<button class="panel-fab" id="panelFab" aria-label="Open settings">⚙</button>
+<button class="panel-fab" id="panelFab" aria-label="Open settings panel">⚙ Settings</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1258,7 +1258,7 @@ const MISSIONS = {
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
     const root = document.getElementById('studioRoot');
-    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER'].forEach(c => root.classList.remove('genre-'+c));
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE'].forEach(c => root.classList.remove('genre-'+c));
     root.classList.add('genre-'+g);
 
     const showGrav = ['PLATFORMER','RUNNER','FLAPPY'].includes(g);
@@ -1286,6 +1286,34 @@ function onGenreChange() {
         document.getElementById('playerSpeedRange').value = defaults[g];
         document.getElementById('speedVal').textContent = defaults[g];
     }
+    // ── Blueprint sync: update code-span numbers and slider values to match liveConfig ──
+    const spd = defaults[g] || liveConfig.speed;
+    // Update bp-code <span> numbers for speed in each genre's blueprint
+    const speedSpanMap = { SHOOTER:['bpSP'], PLATFORMER:['bpPS','bpPS2'], DODGE:['bpDS','bpDS2'], BREAKER:['bpBP'], PONG:['bpPPS'], SNAKE:[] };
+    (speedSpanMap[g] || []).forEach(id => setTxt(id, spd));
+    // Update all blueprint range sliders whose oninput writes liveConfig.speed
+    document.querySelectorAll('.bp-card input[type=range]').forEach(range => {
+        const oi = range.getAttribute('oninput') || '';
+        if (oi.includes('liveConfig.speed')) {
+            range.value = spd;
+            const tv = range.nextElementSibling;
+            if (tv && tv.classList.contains('tweak-val')) tv.textContent = spd;
+        }
+        // Also sync gravity/jump displays from current liveConfig
+        if (oi.includes('liveConfig.gravity')) {
+            range.value = liveConfig.gravity;
+            const tv = range.nextElementSibling;
+            if (tv && tv.classList.contains('tweak-val')) tv.textContent = liveConfig.gravity;
+        }
+        if (oi.includes('liveConfig.jumpForce')) {
+            range.value = liveConfig.jumpForce;
+            const tv = range.nextElementSibling;
+            if (tv && tv.classList.contains('tweak-val')) tv.textContent = liveConfig.jumpForce;
+        }
+    });
+    // Sync bp-code spans for gravity and jump
+    setTxt('bpGV', liveConfig.gravity); setTxt('bpFGV', liveConfig.gravity);
+    setTxt('bpJF', liveConfig.jumpForce); setTxt('bpRJF', liveConfig.jumpForce); setTxt('bpFJF', liveConfig.jumpForce);
 }
 
 function getPayload() {
@@ -1306,6 +1334,11 @@ function getPayload() {
 const GW = 640, GH = 400;
 
 function compileAndBootEngine() {
+    if (typeof Phaser === 'undefined') {
+        document.getElementById('engine-branding').textContent = '⚠️ Phaser failed to load — check connection & refresh';
+        showToast('⚠️ Phaser engine not loaded — check your internet connection');
+        return;
+    }
     const data = getPayload();
     _engineData = data;
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
@@ -1692,6 +1725,9 @@ function sceneFlappy(data) {
             // Pipe group
             this.pipes = this.physics.add.group();
             this.pipeTimer = this.time.addEvent({delay:Math.max(900,liveConfig.spawnDelay+400),loop:true,callback:this._spawnPipe,callbackScope:this});
+            // Delay the first pipe so player has time to get ready
+            this.pipeTimer.paused = true;
+            this.time.delayedCall(1800, () => { if (this.pipeTimer) this.pipeTimer.paused = false; });
             // Colliders
             this.physics.add.collider(this.actor,this._gnd,()=>this._onHit(this.actor));
             this.physics.add.collider(this.actor,this._ceil,()=>this._onHit(this.actor));
@@ -1731,7 +1767,7 @@ function sceneInvaders(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.lastFired=0; this._invincible=false;
+            this.score=0; this.lastFired=0; this._invincible=false; this._wave=1;
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
@@ -1756,7 +1792,13 @@ function sceneInvaders(data) {
                 b.destroy(); e.destroy();
                 this.score+=liveConfig.pointsPerKill;
                 this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
-                if(!this.enemies.countActive(true)) { this._buildFormation(); this.score+=100; }
+                if(!this.enemies.countActive(true)) {
+                    this._wave++;
+                    this._buildFormation(); this.score+=100;
+                    const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! 👾`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
+                    this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:1000,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
+                    GameAudio.play('score');
+                }
             });
             this.physics.add.overlap(this.actor,this.eBullets,(_,b)=>{ b.destroy(); this._onHit(this.actor); });
             this.physics.add.overlap(this.actor,this.enemies, ()=>this._onHit(this.actor));
@@ -1841,6 +1883,15 @@ function scenePong(data) {
             const vy=(Phaser.Math.Between(0,1)?1:-1)*spd*0.55;
             this.ball.setVelocity(vx,vy);
         }
+        _showWinMsg(msg) {
+            const col = msg.includes('YOU') ? themeHex(0,'#00d4aa') : '#f87171';
+            const txt = this.add.text(GW/2, GH/2-20, msg, {
+                fontSize:'30px', fill:col, fontFamily:"'Fredoka',sans-serif", fontStyle:'bold', stroke:'#000', strokeThickness:3
+            }).setOrigin(0.5).setDepth(30).setAlpha(0);
+            this.tweens.add({targets:txt, alpha:1, y:GH/2-36, duration:250, ease:'Back.Out',
+                onComplete:()=>{ this.tweens.add({targets:txt, alpha:0, y:GH/2-52, duration:600, delay:900, onComplete:()=>{ if(txt.active) txt.destroy(); }}); }});
+            GameAudio.play(msg.includes('YOU') ? 'score' : 'hit');
+        }
         update() {
             // Player paddle: UP = up, DOWN / SPACE / fire = down
             const {up,down}=this.cursors;
@@ -1858,13 +1909,14 @@ function scenePong(data) {
             if(this.ball.x<0) {
                 this.aScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
-                GameAudio.play('hit');
-                if(this.aScore>=5){this.aScore=0;this.pScore=0;this.scoreText.setText('0  :  0');}
+                if(this.aScore>=5){ this._showWinMsg('AI WINS! 🤖'); this.aScore=0; this.pScore=0; this.time.delayedCall(300,()=>this.scoreText.setText('0  :  0')); }
+                else GameAudio.play('hit');
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             } else if(this.ball.x>GW) {
                 this.pScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
-                GameAudio.play('score');
+                if(this.pScore>=5){ this._showWinMsg('YOU WIN! 🎉'); this.pScore=0; this.aScore=0; this.time.delayedCall(300,()=>this.scoreText.setText('0  :  0')); }
+                else GameAudio.play('score');
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             }
         }
@@ -2114,30 +2166,122 @@ function importSfxSlot(event) {
 
 // ── SAVE / LOAD / SHARE ───────────────────────────────────────────────────────
 function saveToBrowser() {
-    const d=getPayload();
-    localStorage.setItem('jv_arcade_game',JSON.stringify({...d,sprite:customSpriteDataUrl}));
-    showToast(`"${d.title}" saved!`);
+    const d = getPayload();
+    const saveData = {
+        ...d,
+        sprite: customSpriteDataUrl,
+        liveConfig: Object.assign({}, liveConfig),
+        theme: { cols: gameTheme.cols.slice(), name: gameTheme.name },
+        story: currentStory ? { title: currentStory.title, intro: currentStory.intro } : null,
+        sounds: Object.assign({}, GameAudio.sounds),
+        customBuffers: Object.assign({}, GameAudio.customBuffers),
+        customMusic: GameAudio.customMusic || null,
+        musicOn: document.getElementById('musicToggle').checked,
+        musicStyle: document.getElementById('musicStyle').value,
+        volume: parseInt(document.getElementById('volumeSlider').value)
+    };
+    try {
+        localStorage.setItem('jv_arcade_game', JSON.stringify(saveData));
+        showToast(`"${d.title}" saved! ✓`);
+    } catch(e) {
+        showToast('Save failed — game may be too large (sprites/audio)');
+    }
 }
+
+function _syncCustomTabUI(cfg) {
+    // Lives pills
+    const livesMap = {1:'1 Life',3:'3 Lives',5:'5 Lives',99:'∞'};
+    document.querySelectorAll('#pillLives .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(livesMap[cfg.lives]||'3 Lives')));
+    // Player scale
+    const scaleRange = document.querySelector('#tab-custom input[min="0.4"]');
+    if (scaleRange) { scaleRange.value=cfg.playerScale||1.0; scaleRange.nextElementSibling.textContent=Math.round((cfg.playerScale||1)*100)+'%'; }
+    // BG style pills
+    const bgMap = {dark:'Dark',stars:'Stars',grid:'Grid',neon:'Neon'};
+    document.querySelectorAll('#pillBg .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(bgMap[cfg.bgStyle]||'Dark')));
+    // Screen shake
+    const shk = document.getElementById('shakeToggle'); if(shk) shk.checked = cfg.screenShake!==false;
+    // Bullet spread
+    const spreadMap = {1:'Single',2:'Double',3:'Triple'};
+    document.querySelectorAll('#pillSpread .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(spreadMap[cfg.bulletSpread]||'Single')));
+    // Enemy zigzag
+    const zz = document.getElementById('zigzagToggle'); if(zz) zz.checked=!!cfg.enemyZigzag;
+    // Double jump
+    const dj  = document.getElementById('doubleJumpToggle');       if(dj)  dj.checked=!!cfg.doubleJump;
+    const djr = document.getElementById('doubleJumpToggleRunner'); if(djr) djr.checked=!!cfg.doubleJump;
+    // Paddle width
+    const pr = document.querySelector('#custom-BREAKER input[type=range]');
+    if(pr) { pr.value=cfg.paddleW||90; pr.nextElementSibling.textContent=(cfg.paddleW||90)+'px'; }
+    // Pipe gap
+    const pg = document.querySelector('#custom-FLAPPY input[type=range]');
+    if(pg) { pg.value=cfg.pipeGap||120; pg.nextElementSibling.textContent=(cfg.pipeGap||120)+'px'; }
+    // Pong AI pill
+    const aiMap = {80:'Easy',150:'Normal',260:'Hard',500:'Unbeatable'};
+    document.querySelectorAll('#pillAI .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(aiMap[cfg.enemySpeed]||'Normal')));
+    // Invaders bullet speed range
+    const ibr = document.querySelector('#custom-INVADERS input[type=range]');
+    if(ibr) { ibr.value=cfg.bulletSpeed||540; ibr.nextElementSibling.textContent=cfg.bulletSpeed||540; }
+    // Pong ball speed range
+    const pbr = document.querySelector('#custom-PONG input[type=range]');
+    if(pbr) { pbr.value=cfg.bulletSpeed||540; pbr.nextElementSibling.textContent=cfg.bulletSpeed||540; }
+}
+
 function loadFromBrowser() {
     try {
         const raw=localStorage.getItem('jv_arcade_game'); if(!raw){showToast('No saved game');return;}
         const d=JSON.parse(raw);
-        document.getElementById('gameTitle').value=d.title;
-        document.getElementById('genreMode').value=d.genre;
-        ['playerSpeed','playerSpeedRange','speedVal'].forEach((_,i)=>{ const ids=['playerSpeed','playerSpeedRange','speedVal']; document.getElementById(ids[i]).value=d.speed; if(i===2) document.getElementById(ids[i]).textContent=d.speed; });
+        // Basic settings
+        document.getElementById('gameTitle').value = d.title || 'My Arcade Game';
+        document.getElementById('genreMode').value = d.genre || 'SHOOTER';
+        document.getElementById('playerSpeed').value = d.speed; document.getElementById('playerSpeedRange').value = d.speed; document.getElementById('speedVal').textContent = d.speed;
         document.getElementById('gravityY').value=d.gravity; document.getElementById('gravityRange').value=d.gravity; document.getElementById('gravityVal').textContent=d.gravity;
         document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
         if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
         if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite');
+        // Full liveConfig restore
+        if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
+        // Theme
+        if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+        // Story
+        if(d.story) applyStory(d.story);
+        // SFX dropdowns
+        if(d.sounds) {
+            Object.assign(GameAudio.sounds, d.sounds);
+            ['shoot','jump','hit','score'].forEach(slot => {
+                const sel=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1));
+                if(sel && d.sounds[slot] && d.sounds[slot]!=='custom') sel.value=d.sounds[slot];
+            });
+        }
+        if(d.customBuffers) {
+            Object.assign(GameAudio.customBuffers, d.customBuffers);
+            ['shoot','jump','hit','score'].forEach(slot => {
+                if(d.customBuffers[slot]) { const b=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1)+'Badge'); if(b) b.style.display='inline'; }
+            });
+        }
+        // Music
+        if(d.customMusic) { GameAudio.customMusic=d.customMusic; document.getElementById('musicImportBadge').style.display='inline'; document.getElementById('musicImportName').textContent='Saved track'; }
+        if(d.musicStyle) document.getElementById('musicStyle').value=d.musicStyle;
+        if(d.musicOn) { document.getElementById('musicToggle').checked=true; GameAudio.setMusic(true); }
+        if(d.volume!==undefined) { GameAudio.volume=d.volume/100; document.getElementById('volumeSlider').value=d.volume; const rv=document.querySelector('#volumeSlider ~ .range-val'); if(rv) rv.textContent=d.volume+'%'; }
         onGenreChange(); compileAndBootEngine();
-        showToast(`"${d.title}" loaded!`);
-    } catch(e){showToast('Load failed');}
+        showToast(`"${d.title}" loaded! ✓`);
+    } catch(e){ showToast('Load failed'); }
 }
+
 function generateShareLink() {
+    if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link (too large)');
     const d=getPayload();
-    const enc=btoa(encodeURIComponent(JSON.stringify({title:d.title,genre:d.genre,speed:d.speed,gravity:d.gravity,jump:d.jump,map:d.map})));
-    const url=location.origin+location.pathname+'?game='+enc;
-    navigator.clipboard.writeText(url).then(()=>showToast('Share link copied!')).catch(()=>prompt('Copy this link:',url));
+    const shareData = {
+        title:d.title, genre:d.genre, speed:d.speed, gravity:d.gravity, jump:d.jump, map:d.map,
+        liveConfig: Object.assign({}, liveConfig),
+        theme: { cols:gameTheme.cols.slice(), name:gameTheme.name }
+    };
+    try {
+        const enc=btoa(encodeURIComponent(JSON.stringify(shareData)));
+        const url=location.origin+location.pathname+'?game='+enc;
+        navigator.clipboard.writeText(url).then(()=>showToast('Share link copied! 🔗')).catch(()=>prompt('Copy this link:',url));
+    } catch(e) {
+        showToast('Share link too large — try clearing level map or sprite');
+    }
 }
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
@@ -2254,7 +2398,7 @@ function setupTouchControls() {
     if (fab && panel) {
         fab.addEventListener('click', () => {
             const open = panel.classList.toggle('panel-open');
-            fab.textContent = open ? '✕' : '⚙';
+            fab.innerHTML = open ? '✕ Close' : '⚙ Settings';
         });
         document.addEventListener('pointerdown', e => {
             if (panel.classList.contains('panel-open')
@@ -2270,6 +2414,16 @@ function setupTouchControls() {
         document.getElementById('touchControls').style.display = 'flex';
         if (fab) fab.style.display = 'flex';
     }
+
+    // Pause/resume Phaser when tab is hidden/visible
+    document.addEventListener('visibilitychange', () => {
+        if (!currentPhaserGame) return;
+        if (document.hidden) {
+            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isActive()) s.scene.pause(); });
+        } else {
+            currentPhaserGame.scene.scenes.forEach(s => { if (s.scene.isPaused()) s.scene.resume(); });
+        }
+    });
 }
 
 function updateTouchLayout(genre) {
@@ -2342,6 +2496,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
             document.getElementById('gravityY').value=d.gravity||600; document.getElementById('gravityRange').value=d.gravity||600; document.getElementById('gravityVal').textContent=d.gravity||600;
             document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
             if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
+            if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
+            if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
             onGenreChange();
         } catch(e) {}
     }
