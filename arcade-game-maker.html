@@ -692,7 +692,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                 <div class="sound-row">
                     <span class="sound-event-icon">🔫</span>
                     <span class="sound-event">Shoot</span>
-                    <select class="sound-pick" id="sfxShoot" onchange="GameAudio.sounds.shoot=this.value;GameAudio.previewSlot('shoot');">
+                    <select class="sound-pick" id="sfxShoot" onchange="clearSfxCustom('shoot');GameAudio.sounds.shoot=this.value;GameAudio.previewSlot('shoot');">
                         <option value="laser">Laser Pew</option>
                         <option value="plasma">Plasma Shot</option>
                         <option value="zap">Electric Zap</option>
@@ -706,7 +706,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                 <div class="sound-row">
                     <span class="sound-event-icon">⬆️</span>
                     <span class="sound-event">Jump</span>
-                    <select class="sound-pick" id="sfxJump" onchange="GameAudio.sounds.jump=this.value;GameAudio.previewSlot('jump');">
+                    <select class="sound-pick" id="sfxJump" onchange="clearSfxCustom('jump');GameAudio.sounds.jump=this.value;GameAudio.previewSlot('jump');">
                         <option value="boing">Boing</option>
                         <option value="spring">Spring</option>
                         <option value="rocket">Rocket</option>
@@ -720,7 +720,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                 <div class="sound-row">
                     <span class="sound-event-icon">💥</span>
                     <span class="sound-event">Hit/Die</span>
-                    <select class="sound-pick" id="sfxHit" onchange="GameAudio.sounds.hit=this.value;GameAudio.previewSlot('hit');">
+                    <select class="sound-pick" id="sfxHit" onchange="clearSfxCustom('hit');GameAudio.sounds.hit=this.value;GameAudio.previewSlot('hit');">
                         <option value="boom">Boom</option>
                         <option value="crunch">Crunch</option>
                         <option value="buzz">Buzz</option>
@@ -733,7 +733,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                 <div class="sound-row">
                     <span class="sound-event-icon">⭐</span>
                     <span class="sound-event">Score</span>
-                    <select class="sound-pick" id="sfxScore" onchange="GameAudio.sounds.score=this.value;GameAudio.previewSlot('score');">
+                    <select class="sound-pick" id="sfxScore" onchange="clearSfxCustom('score');GameAudio.sounds.score=this.value;GameAudio.previewSlot('score');">
                         <option value="coin">Coin</option>
                         <option value="ding">Ding</option>
                         <option value="chime">Chime</option>
@@ -1197,6 +1197,14 @@ const GameAudio = {
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+// Clear a custom SFX buffer when user picks a built-in from the dropdown
+function clearSfxCustom(slot) {
+    GameAudio.customBuffers[slot] = null;
+    const id = 'sfx' + slot.charAt(0).toUpperCase() + slot.slice(1) + 'Badge';
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
 function activePill(groupId, btn) {
     document.querySelectorAll('#'+groupId+' .pill').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
@@ -1742,6 +1750,7 @@ function sceneInvaders(data) {
             // Timers
             this.moveTimer  = this.time.addEvent({delay:700,loop:true,callback:this._moveFormation,callbackScope:this});
             this.shootTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:this._enemyFire,callbackScope:this});
+            this.events.once('shutdown',()=>{ this.moveTimer&&this.moveTimer.remove(false); this.shootTimer&&this.shootTimer.remove(false); });
             // Overlaps
             this.physics.add.overlap(this.bullets,this.enemies,(b,e)=>{
                 b.destroy(); e.destroy();
@@ -1880,6 +1889,7 @@ function sceneSnake(data) {
             this._spawnFood();
             const delay=Math.max(60,Math.round(320-liveConfig.speed*0.8));
             this._moveTimer=this.time.addEvent({delay,loop:true,callback:this._step,callbackScope:this});
+            this.events.once('shutdown',()=>{ this._moveTimer&&this._moveTimer.remove(false); });
             this._draw();
         }
         _spawnFood() {
@@ -2039,7 +2049,7 @@ function clearCustomMusic() {
     GameAudio.stopMusic();
     document.getElementById('musicToggle').checked = false;
     document.getElementById('musicImportBadge').style.display = 'none';
-    document.getElementById('musicImportName').textContent = '';
+    document.getElementById('musicImportName').textContent = 'Chiptune loop';
     showToast('Custom music cleared — using built-in synth');
 }
 
@@ -2183,7 +2193,7 @@ function exportGame() {
         story:   currentStory ? { title: currentStory.title, intro: currentStory.intro } : null
     };
     const boot = document.createElement('script');
-    boot.textContent = `(function(){var _c=${JSON.stringify(cfg)};
+    boot.textContent = `(function(){window.__exportMode=true;var _c=${JSON.stringify(cfg)};
 window.addEventListener('DOMContentLoaded',function(){
     Object.assign(liveConfig,_c.liveConfig);
     gameTheme.cols=_c.theme.cols; gameTheme.name=_c.theme.name;
@@ -2264,10 +2274,10 @@ function updateTouchLayout(genre) {
     // Runner: tap the game canvas itself to jump
     const wrap = document.getElementById('gameWrap');
     if (wrap) {
+        // Always remove first to prevent duplicates when switching between tap-genres
+        wrap.removeEventListener('pointerdown', _runnerTap);
         if (genre === 'RUNNER' || genre === 'FLAPPY') {
             wrap.addEventListener('pointerdown', _runnerTap, {passive:false});
-        } else {
-            wrap.removeEventListener('pointerdown', _runnerTap);
         }
     }
 }
@@ -2304,6 +2314,7 @@ function showWorkshopBadge(msg) {
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
+    if (window.__exportMode) return; // exported game: injected boot script handles this
     setupTouchControls();
     onGenreChange();
     document.getElementById('studioRoot').classList.add('genre-SHOOTER');
