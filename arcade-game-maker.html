@@ -2295,6 +2295,24 @@ function getPayload() {
 // ── PHASER ENGINE ─────────────────────────────────────────────────────────────
 const GW = 640, GH = 400;
 
+// Convert a data URL to a Blob Object URL for reliable loading in Phaser's XHR loader.
+// Phaser 3's ImageFile runs data URLs through XHR → Blob → ObjectURL internally,
+// which can fail silently in some browsers. Doing it ourselves first is guaranteed.
+function _toBlobUrl(dataUrl) {
+    try {
+        const [header, b64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)[1];
+        const bytes = atob(b64);
+        const buf = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+        return URL.createObjectURL(new Blob([buf], {type: mime}));
+    } catch(e) {
+        return dataUrl; // fallback: return data URL unchanged
+    }
+}
+// Track blob URLs created each run so they can be revoked after Phaser loads them
+let _activeBlobUrls = [];
+
 function compileAndBootEngine() {
     if (typeof Phaser === 'undefined') {
         document.getElementById('engine-branding').textContent = '⚠️ Phaser failed to load — check connection & refresh';
@@ -2425,44 +2443,63 @@ function makeBaseScene(data) {
             ['player','enemy','laser','block','bg_custom'].forEach(k => {
                 if (this.textures.exists(k)) this.textures.remove(k);
             });
-            // CDN assets need crossOrigin = 'anonymous'; data URLs must NOT have it set
-            // (some browsers reject data URLs under anonymous CORS mode).
-            // Pattern: set crossOrigin only immediately before CDN load, then reset it.
-            if (data.sprite) {
+
+            // Helper: load a custom (data URL) asset via a Blob Object URL.
+            // This bypasses Phaser's XHR→Blob pipeline which can silently fail
+            // for data URLs in Firefox, Safari, and sandboxed environments.
+            const loadCustom = (key, dataUrl) => {
+                const blobUrl = _toBlobUrl(dataUrl);
+                if (blobUrl !== dataUrl) _activeBlobUrls.push(blobUrl); // track for revoke
                 this.load.crossOrigin = null;
-                this.load.image('player', data.sprite);
+                this.load.image(key, blobUrl);
+            };
+
+            // Revoke blob URLs after all assets finish loading to free memory
+            this.load.once('complete', () => {
+                _activeBlobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+                _activeBlobUrls = [];
+            });
+
+            // Log load errors so custom asset failures are visible in the console
+            this.load.on('loaderror', file => {
+                console.warn('[JV Engine] Failed to load asset:', file.key, file.src ? file.src.slice(0,60) : '');
+            });
+
+            // Player sprite
+            if (data.sprite) {
+                loadCustom('player', data.sprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('player', 'https://labs.phaser.io/assets/sprites/asteroids_ship.png');
                 this.load.crossOrigin = null;
             }
+            // Enemy sprite
             if (data.enemySprite) {
-                this.load.crossOrigin = null;
-                this.load.image('enemy', data.enemySprite);
+                loadCustom('enemy', data.enemySprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('enemy', 'https://labs.phaser.io/assets/sprites/ufo.png');
                 this.load.crossOrigin = null;
             }
+            // Bullet / projectile sprite
             if (data.bulletSprite) {
-                this.load.crossOrigin = null;
-                this.load.image('laser', data.bulletSprite);
+                loadCustom('laser', data.bulletSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('laser', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
                 this.load.crossOrigin = null;
             }
+            // Block / tile sprite
             if (data.blockSprite) {
-                this.load.crossOrigin = null;
-                this.load.image('block', data.blockSprite);
+                loadCustom('block', data.blockSprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
                 this.load.crossOrigin = null;
             }
+            // Background image
             if (data.bgImage) {
-                this.load.crossOrigin = null;
-                this.load.image('bg_custom', data.bgImage);
+                loadCustom('bg_custom', data.bgImage);
             }
         }
         _makeScoreText() {
@@ -4456,7 +4493,15 @@ function _applySpriteDataUrl(url, label) {
 // ── ENEMY SPRITE ──────────────────────────────────────────────────────────────
 function importEnemySprite() {
     const pre = localStorage.getItem('jvds_sprite_player');
-    if (pre) _applyEnemyDataUrl(pre, 'Enemy sprite'); else showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first');
+    if (pre) { _applyEnemyDataUrl(pre, 'Pixel Studio art'); return; }
+    try {
+        const raw=localStorage.getItem('jvds_pixel'); if(!raw) throw 0;
+        const {cW,cH,frames}=JSON.parse(raw);
+        const cvs=document.createElement('canvas'); cvs.width=cW; cvs.height=cH;
+        const ctx=cvs.getContext('2d');
+        (frames[0]||[]).forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); ctx.drawImage(t,0,0); });
+        _applyEnemyDataUrl(cvs.toDataURL('image/png'),`Pixel Art ${cW}×${cH}px`);
+    } catch(e) { showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first'); }
 }
 function importEnemyFromUpload(input) {
     const file=input.files[0]; if(!file) return;
@@ -4484,8 +4529,15 @@ function clearEnemySprite() {
 // ── BULLET SPRITE ─────────────────────────────────────────────────────────────
 function importBulletFromPixelStudio() {
     const pre = localStorage.getItem('jvds_sprite_player');
-    if (pre) _applyBulletDataUrl(pre, 'Pixel Studio art');
-    else showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first');
+    if (pre) { _applyBulletDataUrl(pre, 'Pixel Studio art'); return; }
+    try {
+        const raw=localStorage.getItem('jvds_pixel'); if(!raw) throw 0;
+        const {cW,cH,frames}=JSON.parse(raw);
+        const cvs=document.createElement('canvas'); cvs.width=cW; cvs.height=cH;
+        const ctx=cvs.getContext('2d');
+        (frames[0]||[]).forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); ctx.drawImage(t,0,0); });
+        _applyBulletDataUrl(cvs.toDataURL('image/png'),`Pixel Art ${cW}×${cH}px`);
+    } catch(e) { showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first'); }
 }
 function importBulletFromUpload(input) {
     const file=input.files[0]; if(!file) return;
@@ -4513,8 +4565,15 @@ function clearBulletSprite() {
 // ── BLOCK / TILE SPRITE ───────────────────────────────────────────────────────
 function importBlockFromPixelStudio() {
     const pre = localStorage.getItem('jvds_sprite_player');
-    if (pre) _applyBlockDataUrl(pre, 'Pixel Studio art');
-    else showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first');
+    if (pre) { _applyBlockDataUrl(pre, 'Pixel Studio art'); return; }
+    try {
+        const raw=localStorage.getItem('jvds_pixel'); if(!raw) throw 0;
+        const {cW,cH,frames}=JSON.parse(raw);
+        const cvs=document.createElement('canvas'); cvs.width=cW; cvs.height=cH;
+        const ctx=cvs.getContext('2d');
+        (frames[0]||[]).forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); ctx.drawImage(t,0,0); });
+        _applyBlockDataUrl(cvs.toDataURL('image/png'),`Pixel Art ${cW}×${cH}px`);
+    } catch(e) { showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first'); }
 }
 function importBlockFromUpload(input) {
     const file=input.files[0]; if(!file) return;
@@ -5354,6 +5413,24 @@ window.addEventListener('DOMContentLoaded', ()=>{
         document.getElementById('studioRoot').classList.add('advanced-unlocked');
     }
     document.getElementById('studioRoot').classList.add('genre-SHOOTER');
+
+    // ── Restore autosave (custom sprites & assets survive page refresh) ─────────
+    // Only restore if there's no ?game= or ?remix= query param (those take priority)
+    try {
+        if (!location.search.includes('game=') && !location.search.includes('remix=')) {
+            const _as = localStorage.getItem('jv_arcade_autosave');
+            if (_as) {
+                const _asd = JSON.parse(_as);
+                // Restore sprites silently (no toast)
+                if (_asd.sprite)       _applySpriteDataUrl(_asd.sprite, 'Saved sprite');
+                if (_asd.enemySprite)  _applyEnemyDataUrl(_asd.enemySprite, 'Saved enemy');
+                if (_asd.bulletSprite) _applyBulletDataUrl(_asd.bulletSprite, 'Saved bullet');
+                if (_asd.blockSprite)  _applyBlockDataUrl(_asd.blockSprite, 'Saved tile');
+                if (_asd.bgImage)      _applyBgDataUrl(_asd.bgImage, 'Saved background');
+            }
+        }
+    } catch(e) {}
+
     const params=new URLSearchParams(location.search);
     const enc=params.get('game')||params.get('remix');
     const isRemix=!!params.get('remix');
