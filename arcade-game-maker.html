@@ -733,6 +733,57 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
             </div>
 
             <div class="asset-block">
+                <div class="asset-block-title">Bullet / Projectile</div>
+                <div class="asset-preview-row">
+                    <div class="asset-thumb" id="bulletThumb"><div class="no-art">Default</div></div>
+                    <div class="asset-info">
+                        <div class="asset-info-name" id="bulletInfoName">Using default ball</div>
+                        <div class="asset-info-desc" id="bulletInfoDesc">Replaces all bullets, balls &amp; projectiles.</div>
+                    </div>
+                </div>
+                <div class="asset-btns">
+                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importBulletFromUpload(this)"></label>
+                    <button class="asset-btn clear" onclick="clearBulletSprite()">✕ Clear</button>
+                </div>
+                <div id="bulletStatus" class="asset-status none">No custom bullet loaded</div>
+            </div>
+
+            <div class="asset-block">
+                <div class="asset-block-title">Tile / Block <span style="font-size:.58rem;color:var(--muted);font-weight:400;">(platforms, pipes, obstacles, bricks)</span></div>
+                <div class="asset-preview-row">
+                    <div class="asset-thumb" id="blockThumb"><div class="no-art">Default</div></div>
+                    <div class="asset-info">
+                        <div class="asset-info-name" id="blockInfoName">Using default block</div>
+                        <div class="asset-info-desc" id="blockInfoDesc">Used for platforms, pipes, obstacles &amp; bricks.</div>
+                    </div>
+                </div>
+                <div class="asset-btns">
+                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importBlockFromUpload(this)"></label>
+                    <button class="asset-btn clear" onclick="clearBlockSprite()">✕ Clear</button>
+                </div>
+                <div id="blockStatus" class="asset-status none">No custom tile loaded</div>
+            </div>
+
+            <div class="asset-block">
+                <div class="asset-block-title">Background Image</div>
+                <div class="asset-preview-row">
+                    <div class="asset-thumb" id="bgThumb"><div class="no-art">Default</div></div>
+                    <div class="asset-info">
+                        <div class="asset-info-name" id="bgInfoName">Using style setting</div>
+                        <div class="asset-info-desc" id="bgInfoDesc">Stretches to fill the game canvas behind all other elements.</div>
+                    </div>
+                </div>
+                <div class="asset-btns">
+                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG/JPG<input type="file" accept="image/*" class="upload-input" onchange="importBgFromUpload(this)"></label>
+                    <button class="asset-btn clear" onclick="clearBgImage()">✕ Clear</button>
+                </div>
+                <div id="bgStatus" class="asset-status none">No custom background loaded</div>
+            </div>
+
+            <div class="asset-block">
                 <div class="asset-block-title">Level Map <span style="font-size:.58rem;color:var(--muted);font-weight:400;">(Platformer only)</span></div>
                 <div class="level-mini" id="levelMini"><div class="no-level">No level imported</div></div>
                 <div class="asset-info-desc" id="levelInfoDesc" style="font-size:.63rem;color:var(--muted);line-height:1.5;">Design in Level Designer, click Save, then import here.</div>
@@ -1145,6 +1196,9 @@ function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
 let customSpriteDataUrl = null;
 let customEnemyDataUrl  = null;
+let customBulletDataUrl = null;
+let customBlockDataUrl  = null;
+let customBgDataUrl     = null;
 let customLevelMap = null;
 let currentPhaserGame = null;
 let currentStory = null;   // imported from Story Editor
@@ -1601,7 +1655,10 @@ function getPayload() {
         jump: parseInt(document.getElementById('jumpForce').value) || 450,
         map: customGrid || customLevelMap || fallbackLevel,
         sprite: customSpriteDataUrl,
-        enemySprite: customEnemyDataUrl
+        enemySprite: customEnemyDataUrl,
+        bulletSprite: customBulletDataUrl,
+        blockSprite: customBlockDataUrl,
+        bgImage: customBgDataUrl
     };
 }
 
@@ -1673,9 +1730,21 @@ function makeBaseScene(data) {
                 this.load.crossOrigin = 'anonymous';
                 this.load.image('enemy', 'https://labs.phaser.io/assets/sprites/ufo.png');
             }
-            this.load.crossOrigin = 'anonymous';
-            this.load.image('laser',  'https://labs.phaser.io/assets/sprites/purple_ball.png');
-            this.load.image('block',  'https://labs.phaser.io/assets/sprites/block.png');
+            if (data.bulletSprite) {
+                this.load.image('laser', data.bulletSprite);
+            } else {
+                this.load.crossOrigin = 'anonymous';
+                this.load.image('laser', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
+            }
+            if (data.blockSprite) {
+                this.load.image('block', data.blockSprite);
+            } else {
+                this.load.crossOrigin = 'anonymous';
+                this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
+            }
+            if (data.bgImage) {
+                this.load.image('bg_custom', data.bgImage);
+            }
         }
         _makeScoreText() {
             return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setDepth(10);
@@ -1685,6 +1754,10 @@ function makeBaseScene(data) {
             this.tweens.add({targets:txt,scaleX:1.25,scaleY:1.25,duration:70,yoyo:true,ease:'Power2'});
         }
         _drawBg() {
+            // Custom background image (stretched to canvas; rendered beneath style overlays)
+            if (data.bgImage && this.textures.exists('bg_custom')) {
+                this.add.image(GW/2, GH/2, 'bg_custom').setDisplaySize(GW, GH).setDepth(-2);
+            }
             const style = liveConfig.bgStyle || 'dark';
             if (style === 'stars') {
                 const g = this.add.graphics().setDepth(-1);
@@ -2551,6 +2624,78 @@ function clearEnemySprite() {
     document.getElementById('enemyStatus').className='asset-status none';
     showToast('Enemy sprite cleared');
 }
+// ── BULLET SPRITE ─────────────────────────────────────────────────────────────
+function importBulletFromUpload(input) {
+    const file=input.files[0]; if(!file) return;
+    const r=new FileReader(); r.onload=e=>_applyBulletDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+}
+function _applyBulletDataUrl(url, label) {
+    customBulletDataUrl=url;
+    const th=document.getElementById('bulletThumb'); th.innerHTML='';
+    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
+    document.getElementById('bulletInfoName').textContent=label;
+    document.getElementById('bulletInfoDesc').textContent='Custom bullet ready — hit Run!';
+    document.getElementById('bulletStatus').textContent='✓ Bullet ready';
+    document.getElementById('bulletStatus').className='asset-status ok';
+    showToast('Bullet sprite imported! ▶ Hit Run');
+}
+function clearBulletSprite() {
+    customBulletDataUrl=null;
+    document.getElementById('bulletThumb').innerHTML='<div class="no-art">Default</div>';
+    document.getElementById('bulletInfoName').textContent='Using default ball';
+    document.getElementById('bulletInfoDesc').textContent='Replaces all bullets, balls & projectiles.';
+    document.getElementById('bulletStatus').textContent='No custom bullet loaded';
+    document.getElementById('bulletStatus').className='asset-status none';
+    showToast('Bullet sprite cleared');
+}
+// ── BLOCK / TILE SPRITE ───────────────────────────────────────────────────────
+function importBlockFromUpload(input) {
+    const file=input.files[0]; if(!file) return;
+    const r=new FileReader(); r.onload=e=>_applyBlockDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+}
+function _applyBlockDataUrl(url, label) {
+    customBlockDataUrl=url;
+    const th=document.getElementById('blockThumb'); th.innerHTML='';
+    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
+    document.getElementById('blockInfoName').textContent=label;
+    document.getElementById('blockInfoDesc').textContent='Custom tile ready — hit Run!';
+    document.getElementById('blockStatus').textContent='✓ Tile ready';
+    document.getElementById('blockStatus').className='asset-status ok';
+    showToast('Tile/block sprite imported! ▶ Hit Run');
+}
+function clearBlockSprite() {
+    customBlockDataUrl=null;
+    document.getElementById('blockThumb').innerHTML='<div class="no-art">Default</div>';
+    document.getElementById('blockInfoName').textContent='Using default block';
+    document.getElementById('blockInfoDesc').textContent='Used for platforms, pipes, obstacles & bricks.';
+    document.getElementById('blockStatus').textContent='No custom tile loaded';
+    document.getElementById('blockStatus').className='asset-status none';
+    showToast('Tile/block sprite cleared');
+}
+// ── BACKGROUND IMAGE ──────────────────────────────────────────────────────────
+function importBgFromUpload(input) {
+    const file=input.files[0]; if(!file) return;
+    const r=new FileReader(); r.onload=e=>_applyBgDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+}
+function _applyBgDataUrl(url, label) {
+    customBgDataUrl=url;
+    const th=document.getElementById('bgThumb'); th.innerHTML='';
+    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
+    document.getElementById('bgInfoName').textContent=label;
+    document.getElementById('bgInfoDesc').textContent='Custom background ready — hit Run!';
+    document.getElementById('bgStatus').textContent='✓ Background ready';
+    document.getElementById('bgStatus').className='asset-status ok';
+    showToast('Background imported! ▶ Hit Run');
+}
+function clearBgImage() {
+    customBgDataUrl=null;
+    document.getElementById('bgThumb').innerHTML='<div class="no-art">Default</div>';
+    document.getElementById('bgInfoName').textContent='Using style setting';
+    document.getElementById('bgInfoDesc').textContent='Stretches to fill the game canvas behind all other elements.';
+    document.getElementById('bgStatus').textContent='No custom background loaded';
+    document.getElementById('bgStatus').className='asset-status none';
+    showToast('Background cleared');
+}
 
 function clearSprite() {
     customSpriteDataUrl=null;
@@ -2692,7 +2837,10 @@ function saveToBrowser() {
         jump: d.jump,
         map: customLevelMap || null,          // null = no custom level; don't persist fallback
         sprite: customSpriteDataUrl,
-        enemySprite: customEnemyDataUrl,       // persist custom enemy sprite
+        enemySprite: customEnemyDataUrl,
+        bulletSprite: customBulletDataUrl,
+        blockSprite: customBlockDataUrl,
+        bgImage: customBgDataUrl,
         liveConfig: Object.assign({}, liveConfig),
         theme: { cols: gameTheme.cols.slice(), name: gameTheme.name },
         story: currentStory ? { title: currentStory.title, intro: currentStory.intro } : null,
@@ -2790,6 +2938,9 @@ function loadFromBrowser() {
         // Sprites
         if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite');
         if(d.enemySprite) _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite');
+        if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite');
+        if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
+        if(d.bgImage) _applyBgDataUrl(d.bgImage,'Saved background');
         // Full liveConfig restore
         if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
         // Theme
