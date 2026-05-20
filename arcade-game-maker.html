@@ -55,7 +55,7 @@ a{text-decoration:none;color:inherit;}
 
 /* TABS */
 .tab-bar{display:flex;flex-shrink:0;border-bottom:1px solid var(--border2);background:rgba(0,0,0,.3);}
-.tab-btn{flex:1;padding:9px 4px;font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:'JetBrains Mono',monospace;}
+.tab-btn{flex:1;padding:8px 2px;font-size:.58rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .tab-btn:hover{color:var(--text);}
 .tab-btn.on{color:var(--purple-lt);border-bottom-color:var(--purple);}
 
@@ -207,6 +207,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .go-newbest{font-size:1rem;font-weight:800;color:var(--amber);animation:go-pop .4s ease;}
 @keyframes go-pop{0%{transform:scale(.5);opacity:0;}60%{transform:scale(1.2);}100%{transform:scale(1);opacity:1;}}
 .go-play{font-size:1rem;padding:13px 36px;margin-top:6px;}
+#goWinBanner{font-size:.9rem;color:#4ade80;font-weight:700;animation:go-pop .5s ease;}
 .go-credit{font-size:.6rem;color:rgba(240,234,214,.25);margin-top:4px;font-family:'JetBrains Mono',monospace;}
 
 /* INTRO OVERLAY */
@@ -368,6 +369,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             <button class="tab-btn"     onclick="switchTab('assets',this)">🖼 Assets</button>
             <button class="tab-btn"     onclick="switchTab('sounds',this)">🔊 Sounds</button>
             <button class="tab-btn"     onclick="switchTab('custom',this)">✏ Custom</button>
+            <button class="tab-btn"     onclick="switchTab('code',this)">💻 Code</button>
         </div>
 
         <!-- ── BUILD ── -->
@@ -469,9 +471,8 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             <button class="btn-run" onclick="compileAndBootEngine()">▶ Run Game</button>
 
             <span class="sec-label">Save &amp; Share</span>
+            <div id="saveSlotList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px;"></div>
             <div class="save-row">
-                <button class="btn-sm" onclick="saveToBrowser()">💾 Save</button>
-                <button class="btn-sm" onclick="loadFromBrowser()">📂 Load</button>
                 <button class="btn-sm purple" onclick="generateShareLink()">🔗 Share</button>
                 <button class="btn-sm" onclick="generateRemixLink()" title="Share as a remixable template">🎮 Remix</button>
             </div>
@@ -666,7 +667,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
 
             <!-- ALL GENRES: Enemy/Item Spawner -->
             <div class="bp-card" data-genre="SHOOTER PLATFORMER DODGE RUNNER INVADERS FLAPPY">
-                <div class="bp-head"><span class="bp-icon">👾</span><div><div class="bp-name">Enemy Spawner</div><div class="bp-sub">Timer-based spawning</div></div><span class="bp-badge amber">RESTART TO APPLY</span></div>
+                <div class="bp-head"><span class="bp-icon">👾</span><div><div class="bp-name">Enemy Spawner</div><div class="bp-sub">Timer-based spawning</div></div><span class="bp-badge green">LIVE</span></div>
 <pre class="bp-code"><span class="c-fn">every</span>(<span class="c-num" id="bpSDL">1100</span>ms, <span class="c-kw">do</span>:)
   enemy = <span class="c-fn">spawn</span>(randomX, top)
   enemy.fallSpeed = <span class="c-num" id="bpES">150</span></pre>
@@ -674,7 +675,26 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     <div class="tweak-row"><span class="tweak-label">Spawn Delay (ms)</span><input type="range" min="300" max="4000" value="1100" oninput="liveConfig.spawnDelay=+this.value;setTxt('bpSDL',this.value);this.nextElementSibling.textContent=this.value;"><span class="tweak-val">1100</span></div>
                     <div class="tweak-row"><span class="tweak-label">Fall Speed</span><input type="range" min="30" max="400" value="150" oninput="liveConfig.enemySpeed=+this.value;setTxt('bpES',this.value);this.nextElementSibling.textContent=this.value;"><span class="tweak-val">150</span></div>
                 </div>
-                <div class="bp-explain">A game timer fires every N ms and drops an enemy at a random X. Lower delay = harder! Restart after changing the delay.</div>
+                <div class="bp-explain">A game timer fires every N ms and drops an enemy at a random X position. Drag the slider — the timer updates instantly while the game runs!</div>
+            </div>
+
+            <!-- ROGUELIKE -->
+            <div class="bp-card" data-genre="ROGUELIKE">
+                <div class="bp-head"><span class="bp-icon">⚔️</span><div><div class="bp-name">Grid Movement</div><div class="bp-sub">Step-based turn system</div></div><span class="bp-badge cyan">TURN-BASED</span></div>
+<pre class="bp-code"><span class="c-kw">if</span> (arrow pressed) {
+  nextX = player.x + dir.x
+  nextY = player.y + dir.y
+  <span class="c-kw">if</span> (enemy at nextX/Y) {
+    enemy.hp -= <span class="c-num">1</span>  <span class="c-comment">// bump attack!</span>
+  } <span class="c-kw">else</span> {
+    player.<span class="c-fn">moveTo</span>(nextX, nextY)
+  }
+}</pre>
+                <div class="bp-tweaks">
+                    <div class="tweak-row"><span class="tweak-label">Starting HP</span><input type="range" min="3" max="20" value="10" oninput="liveConfig.rogueStartHp=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">10</span></div>
+                    <div class="tweak-row"><span class="tweak-label">Enemy Density</span><input type="range" min="1" max="10" value="3" oninput="liveConfig.rogueDensity=+this.value/10;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">3</span></div>
+                </div>
+                <div class="bp-explain">Each key press moves exactly one grid cell. If an enemy is in that cell, you attack it. Enemies do the same back — this is "bump combat"! Descend stairs to the next floor.</div>
             </div>
 
             <!-- ALL: Score -->
@@ -1016,7 +1036,16 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
             </div>
 
             <!-- DODGE -->
-            <div id="custom-DODGE" style="display:none;"></div>
+            <div id="custom-DODGE" style="display:none;">
+                <span class="sec-label">Dodge Options</span>
+                <div class="form-group">
+                    <label>Star Ratio <span style="color:var(--muted);font-weight:400;">(% items that are collectible stars)</span></label>
+                    <div class="range-row">
+                        <input type="range" min="0" max="80" value="30" oninput="liveConfig.dodgeStarRatio=+this.value;this.nextElementSibling.textContent=this.value+'%';">
+                        <span class="range-val">30%</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- FLAPPY -->
             <div id="custom-FLAPPY" style="display:none;">
@@ -1064,12 +1093,475 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
             </div>
 
             <!-- SNAKE -->
-            <div id="custom-SNAKE" style="display:none;"></div>
+            <div id="custom-SNAKE" style="display:none;">
+                <span class="sec-label">Snake Options</span>
+                <div class="form-group">
+                    <label>Grid Cell Size</label>
+                    <div class="pill-row" id="pillSnakeCell">
+                        <button class="pill" onclick="activePill('pillSnakeCell',this);liveConfig.snakeCellSize=16;">Small (16px)</button>
+                        <button class="pill active" onclick="activePill('pillSnakeCell',this);liveConfig.snakeCellSize=20;">Normal (20px)</button>
+                        <button class="pill" onclick="activePill('pillSnakeCell',this);liveConfig.snakeCellSize=28;">Large (28px)</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Wall Wrap</div><div class="toggle-sub">Exit one side, enter the other</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="snakeWrapToggle" checked onchange="liveConfig.snakeWallWrap=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
+                </div>
+            </div>
 
             <!-- ASTEROIDS -->
-            <div id="custom-ASTEROIDS" style="display:none;"></div>
+            <div id="custom-ASTEROIDS" style="display:none;">
+                <span class="sec-label">Asteroids Options</span>
+                <div class="form-group">
+                    <label>Starting Rock Count</label>
+                    <div class="range-row">
+                        <input type="range" min="2" max="12" value="6" oninput="liveConfig.asteroidCount=+this.value;this.nextElementSibling.textContent=this.value+' rocks';">
+                        <span class="range-val">6 rocks</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROGUELIKE -->
+            <div id="custom-ROGUELIKE" style="display:none;">
+                <span class="sec-label">Roguelike Options</span>
+                <div class="form-group">
+                    <label>Room Count</label>
+                    <div class="range-row">
+                        <input type="range" min="3" max="12" value="6" oninput="liveConfig.rogueRooms=+this.value;this.nextElementSibling.textContent=this.value+' rooms';">
+                        <span class="range-val">6 rooms</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Enemy Density</label>
+                    <div class="pill-row" id="pillRogueDen">
+                        <button class="pill" onclick="activePill('pillRogueDen',this);liveConfig.rogueDensity=0.1;">Sparse</button>
+                        <button class="pill active" onclick="activePill('pillRogueDen',this);liveConfig.rogueDensity=0.3;">Normal</button>
+                        <button class="pill" onclick="activePill('pillRogueDen',this);liveConfig.rogueDensity=0.5;">Dense</button>
+                        <button class="pill" onclick="activePill('pillRogueDen',this);liveConfig.rogueDensity=0.7;">Swarm</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Starting HP</label>
+                    <div class="range-row">
+                        <input type="range" min="3" max="20" value="10" oninput="liveConfig.rogueStartHp=+this.value;this.nextElementSibling.textContent=this.value+'hp';">
+                        <span class="range-val">10hp</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── WIN CONDITION ── -->
+            <span class="sec-label">Win Condition</span>
+            <div class="form-group">
+                <label>How to Win</label>
+                <div class="pill-row" id="pillWinCond">
+                    <button class="pill active" onclick="activePill('pillWinCond',this);liveConfig.winCondition='none';document.getElementById('winTargetRow').style.display='none';">None</button>
+                    <button class="pill" onclick="activePill('pillWinCond',this);liveConfig.winCondition='score';document.getElementById('winTargetRow').style.display='';document.getElementById('winTargetLabel').textContent='Target Score';document.getElementById('winTargetRange').nextElementSibling.textContent=liveConfig.winTarget+' pts';">Score Target</button>
+                    <button class="pill" onclick="activePill('pillWinCond',this);liveConfig.winCondition='time';document.getElementById('winTargetRow').style.display='';document.getElementById('winTargetLabel').textContent='Survive for (seconds)';document.getElementById('winTargetRange').nextElementSibling.textContent=liveConfig.winTarget+'s';">Survive Time</button>
+                </div>
+            </div>
+            <div class="form-group" id="winTargetRow" style="display:none;">
+                <label id="winTargetLabel">Target Score</label>
+                <div class="range-row">
+                    <input type="range" min="50" max="2000" step="50" value="500" id="winTargetRange" oninput="liveConfig.winTarget=+this.value;this.nextElementSibling.textContent=liveConfig.winCondition==='time'?this.value+'s':this.value+' pts';">
+                    <span class="range-val">500 pts</span>
+                </div>
+            </div>
+
+            <!-- ── GAME SPEED ── -->
+            <span class="sec-label">Game Speed</span>
+            <div class="form-group">
+                <label>Speed Multiplier <span style="color:var(--muted);font-weight:400;">(changes physics &amp; timers live)</span></label>
+                <div class="pill-row" id="pillGameSpeed">
+                    <button class="pill" onclick="activePill('pillGameSpeed',this);liveConfig.gameSpeed=0.5;">0.5× Slow</button>
+                    <button class="pill active" onclick="activePill('pillGameSpeed',this);liveConfig.gameSpeed=1.0;">1× Normal</button>
+                    <button class="pill" onclick="activePill('pillGameSpeed',this);liveConfig.gameSpeed=1.5;">1.5× Fast</button>
+                    <button class="pill" onclick="activePill('pillGameSpeed',this);liveConfig.gameSpeed=2.0;">2× Turbo</button>
+                </div>
+            </div>
+
+            <!-- ── POWER-UPS ── -->
+            <span class="sec-label">Power-Ups</span>
+            <div class="form-group">
+                <div class="toggle-row">
+                    <div><div class="toggle-label">Enable Power-Ups</div><div class="toggle-sub">Collectibles drop during gameplay</div></div>
+                    <label class="toggle-switch"><input type="checkbox" id="powerUpToggle" checked onchange="liveConfig.powerUpEnabled=this.checked;"><span class="toggle-knob"></span></label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Which power-ups can spawn?</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px;">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:.68rem;cursor:pointer;"><input type="checkbox" id="puEnableShield" checked onchange="liveConfig.puShieldOn=this.checked;"> 🛡 Shield</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:.68rem;cursor:pointer;"><input type="checkbox" id="puEnableX2" checked onchange="liveConfig.puX2On=this.checked;"> 💎 Double Score</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:.68rem;cursor:pointer;"><input type="checkbox" id="puEnableSpeed" checked onchange="liveConfig.puSpeedOn=this.checked;"> ⚡ Speed Boost</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:.68rem;cursor:pointer;"><input type="checkbox" id="puEnableLife" checked onchange="liveConfig.puLifeOn=this.checked;"> ❤️ Extra Life</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Spawn Frequency</label>
+                <div class="range-row">
+                    <input type="range" min="3000" max="30000" step="1000" value="10000" oninput="liveConfig.powerUpFreq=+this.value;this.nextElementSibling.textContent=Math.round(this.value/1000)+'s';">
+                    <span class="range-val">10s</span>
+                </div>
+            </div>
 
             <button class="btn-run" onclick="compileAndBootEngine();switchTab('build',document.querySelector('.tab-btn'));">▶ Run with Custom Settings</button>
+        </div>
+
+        <!-- ── CODE VIEW ── -->
+        <div class="tab-content" id="tab-code">
+            <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;margin-bottom:8px;">
+                <div style="font-size:.7rem;font-weight:800;color:var(--purple-lt);margin-bottom:3px;">💻 How Your Game Actually Works</div>
+                <div style="font-size:.64rem;color:var(--muted);line-height:1.6;">This is the real Phaser 3 JavaScript powering your game. Change genre on the Build tab to see different code. Each section is what runs every frame!</div>
+            </div>
+            <div id="code-SHOOTER">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── SHOOTER — Core Loop (runs 60× per second) ──────────
+// Phaser 3 Arcade Physics Scene</span>
+
+<span class="c-kw">class</span> ShooterScene <span class="c-kw">extends</span> Phaser.Scene {
+
+  <span class="c-fn">create</span>() {
+    <span class="c-comment">// Spawn the player ship in the centre</span>
+    <span class="c-kw">this</span>.player = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 200, <span class="c-str">'player'</span>);
+    <span class="c-kw">this</span>.player.setDrag(180);        <span class="c-comment">// slows the ship down</span>
+    <span class="c-kw">this</span>.player.setMaxVelocity(400); <span class="c-comment">// speed cap</span>
+
+    <span class="c-comment">// Group to hold all bullet objects</span>
+    <span class="c-kw">this</span>.bullets = <span class="c-kw">this</span>.physics.add.<span class="c-fn">group</span>();
+
+    <span class="c-comment">// Enemy timer — fires every spawnDelay ms</span>
+    <span class="c-kw">this</span>.spawnTimer = <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+      delay: liveConfig.spawnDelay,
+      loop: <span class="c-kw">true</span>,
+      callback: <span class="c-kw">this</span>._spawnEnemy, callbackScope: <span class="c-kw">this</span>
+    });
+  }
+
+  <span class="c-fn">update</span>() {
+    <span class="c-comment">// Rotate ship left / right</span>
+    <span class="c-kw">if</span> (LEFT)  <span class="c-kw">this</span>.player.<span class="c-fn">setAngularVelocity</span>(-liveConfig.rotateSpeed);
+    <span class="c-kw">if</span> (RIGHT) <span class="c-kw">this</span>.player.<span class="c-fn">setAngularVelocity</span>(+liveConfig.rotateSpeed);
+    <span class="c-kw">else</span>       <span class="c-kw">this</span>.player.<span class="c-fn">setAngularVelocity</span>(0);
+
+    <span class="c-comment">// Thrust forward in the direction the ship faces</span>
+    <span class="c-kw">if</span> (UP) {
+      <span class="c-kw">this</span>.physics.velocityFromRotation(
+        <span class="c-kw">this</span>.player.rotation,
+        liveConfig.speed,
+        <span class="c-kw">this</span>.player.body.acceleration
+      );
+    }
+
+    <span class="c-comment">// Shoot a bullet on SPACE (with cooldown)</span>
+    <span class="c-kw">if</span> (SPACE &amp;&amp; canFire) {
+      <span class="c-kw">const</span> bullet = <span class="c-kw">this</span>.bullets.<span class="c-fn">create</span>(x, y, <span class="c-str">'laser'</span>);
+      <span class="c-kw">this</span>.physics.<span class="c-fn">velocityFromRotation</span>(
+        <span class="c-kw">this</span>.player.rotation,
+        liveConfig.bulletSpeed,
+        bullet.body.velocity
+      );
+    }
+  }
+}</pre></div>
+            <div id="code-PLATFORMER" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── PLATFORMER — Core Loop ──────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Enable gravity on the player</span>
+  <span class="c-kw">this</span>.player = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(100, 300, <span class="c-str">'player'</span>);
+  <span class="c-kw">this</span>.player.body.<span class="c-fn">setGravityY</span>(liveConfig.gravity);
+
+  <span class="c-comment">// Static platforms group (they don't move)</span>
+  <span class="c-kw">this</span>.platforms = <span class="c-kw">this</span>.physics.add.<span class="c-fn">staticGroup</span>();
+  <span class="c-kw">this</span>.physics.add.<span class="c-fn">collider</span>(<span class="c-kw">this</span>.player, <span class="c-kw">this</span>.platforms);
+}
+
+<span class="c-fn">update</span>() {
+  <span class="c-comment">// Horizontal movement</span>
+  <span class="c-kw">if</span>      (LEFT)  <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityX</span>(-liveConfig.speed);
+  <span class="c-kw">else if</span> (RIGHT) <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityX</span>(+liveConfig.speed);
+  <span class="c-kw">else</span>            <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityX</span>(0);
+
+  <span class="c-comment">// Jump only if touching the ground (onFloor)</span>
+  <span class="c-kw">if</span> (UP &amp;&amp; <span class="c-kw">this</span>.player.body.onFloor()) {
+    <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityY</span>(-liveConfig.jumpForce);
+  }
+
+  <span class="c-comment">// Double jump (if liveConfig.doubleJump is on)</span>
+  <span class="c-kw">if</span> (UP &amp;&amp; liveConfig.doubleJump &amp;&amp; !onFloor &amp;&amp; !usedDouble) {
+    <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityY</span>(-liveConfig.jumpForce * 0.85);
+    usedDouble = <span class="c-kw">true</span>;
+  }
+}</pre></div>
+            <div id="code-DODGE" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── DODGE — Core Loop ───────────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-kw">this</span>.player = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 340, <span class="c-str">'player'</span>);
+  <span class="c-kw">this</span>.items  = <span class="c-kw">this</span>.physics.add.<span class="c-fn">group</span>();
+
+  <span class="c-comment">// Spawn hazards + stars on a repeating timer</span>
+  <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+    delay: liveConfig.spawnDelay,
+    loop: <span class="c-kw">true</span>,
+    callback: () => {
+      <span class="c-kw">const</span> isStar = Math.<span class="c-fn">random</span>() &lt; liveConfig.dodgeStarRatio / 100;
+      <span class="c-kw">const</span> item = <span class="c-kw">this</span>.items.<span class="c-fn">create</span>(randomX, -20, isStar ? <span class="c-str">'star'</span> : <span class="c-str">'enemy'</span>);
+      item.isStar = isStar;
+      item.<span class="c-fn">setVelocityY</span>(liveConfig.enemySpeed);
+    }
+  });
+}
+
+<span class="c-fn">update</span>() {
+  <span class="c-comment">// Player only moves left and right</span>
+  <span class="c-kw">if</span>      (LEFT)  player.x -= liveConfig.speed * delta;
+  <span class="c-kw">else if</span> (RIGHT) player.x += liveConfig.speed * delta;
+
+  <span class="c-comment">// Items speed up over time with difficultyScale</span>
+  item.velocityY = liveConfig.enemySpeed
+    + score * liveConfig.difficultyScale * 0.2;
+}</pre></div>
+            <div id="code-BREAKER" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── BREAKER — Core Loop ─────────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Paddle (player-controlled)</span>
+  <span class="c-kw">this</span>.paddle = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 370, <span class="c-str">'block'</span>);
+  <span class="c-kw">this</span>.paddle.body.setImmovable(<span class="c-kw">true</span>); <span class="c-comment">// won't be pushed by ball</span>
+
+  <span class="c-comment">// Ball — starts stationary, launched on first input</span>
+  <span class="c-kw">this</span>.ball = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 350, <span class="c-str">'laser'</span>);
+  <span class="c-kw">this</span>.ball.setBounce(1); <span class="c-comment">// perfectly elastic</span>
+  <span class="c-kw">this</span>.ball.setCollideWorldBounds(<span class="c-kw">true</span>);
+
+  <span class="c-comment">// Brick grid — rows &amp; columns of static images</span>
+  <span class="c-kw">this</span>.bricks = <span class="c-kw">this</span>.physics.add.<span class="c-fn">staticGroup</span>();
+  <span class="c-kw">for</span> (<span class="c-kw">let</span> r=0; r&lt;4; r++) <span class="c-kw">for</span> (<span class="c-kw">let</span> c=0; c&lt;8; c++) {
+    <span class="c-kw">this</span>.bricks.<span class="c-fn">create</span>(70+c*75, 60+r*28, <span class="c-str">'block'</span>);
+  }
+
+  <span class="c-comment">// Ball bounces off bricks and destroys them</span>
+  <span class="c-kw">this</span>.physics.add.<span class="c-fn">collider</span>(<span class="c-kw">this</span>.ball, <span class="c-kw">this</span>.bricks,
+    (ball, brick) => {
+      brick.<span class="c-fn">destroy</span>();
+      score += liveConfig.pointsPerKill;
+    }
+  );
+}</pre></div>
+            <div id="code-RUNNER" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── RUNNER — Core Loop ──────────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Player is fixed on X; world scrolls past</span>
+  <span class="c-kw">this</span>.player = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(80, 300, <span class="c-str">'player'</span>);
+  <span class="c-kw">this</span>.player.body.<span class="c-fn">setGravityY</span>(liveConfig.gravity);
+
+  <span class="c-comment">// Obstacles scroll in from the right</span>
+  <span class="c-kw">this</span>.obstacles = <span class="c-kw">this</span>.physics.add.<span class="c-fn">group</span>();
+  <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+    delay: liveConfig.spawnDelay, loop: <span class="c-kw">true</span>,
+    callback: () => {
+      <span class="c-kw">const</span> obs = <span class="c-kw">this</span>.obstacles.<span class="c-fn">create</span>(680, 320, <span class="c-str">'block'</span>);
+      obs.<span class="c-fn">setVelocityX</span>(-liveConfig.obstacleSpeed);
+    }
+  });
+}
+
+<span class="c-fn">update</span>() {
+  <span class="c-comment">// Only one input: jump!</span>
+  <span class="c-kw">if</span> (SPACE &amp;&amp; <span class="c-kw">this</span>.player.body.onFloor()) {
+    <span class="c-kw">this</span>.player.body.<span class="c-fn">setVelocityY</span>(-liveConfig.jumpForce);
+  }
+  <span class="c-comment">// Score goes up every second you survive</span>
+  score += delta * 0.01;
+}</pre></div>
+            <div id="code-FLAPPY" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── FLAPPY BIRD — Core Loop ─────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-kw">this</span>.bird = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(100, 200, <span class="c-str">'player'</span>);
+  <span class="c-kw">this</span>.bird.body.<span class="c-fn">setGravityY</span>(liveConfig.gravity);
+
+  <span class="c-comment">// Pipes spawn every 2.2 seconds</span>
+  <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+    delay: 2200, loop: <span class="c-kw">true</span>,
+    callback: <span class="c-kw">this</span>._spawnPipes, callbackScope: <span class="c-kw">this</span>
+  });
+}
+
+<span class="c-fn">_spawnPipes</span>() {
+  <span class="c-kw">const</span> gapY  = Phaser.Math.<span class="c-fn">Between</span>(80, 280);
+  <span class="c-kw">const</span> half  = liveConfig.pipeGap / 2;
+
+  <span class="c-comment">// Top pipe (hangs down from ceiling)</span>
+  <span class="c-kw">this</span>.pipes.<span class="c-fn">create</span>(680, gapY - half - 100, <span class="c-str">'block'</span>)
+    .<span class="c-fn">setVelocityX</span>(-liveConfig.obstacleSpeed);
+
+  <span class="c-comment">// Bottom pipe (rises from floor)</span>
+  <span class="c-kw">this</span>.pipes.<span class="c-fn">create</span>(680, gapY + half + 100, <span class="c-str">'block'</span>)
+    .<span class="c-fn">setVelocityX</span>(-liveConfig.obstacleSpeed);
+}
+
+<span class="c-fn">update</span>() {
+  <span class="c-comment">// Tap = flap upward!</span>
+  <span class="c-kw">if</span> (SPACE) <span class="c-kw">this</span>.bird.body.<span class="c-fn">setVelocityY</span>(-liveConfig.jumpForce);
+}</pre></div>
+            <div id="code-INVADERS" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── SPACE INVADERS — Core Loop ──────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Build 5×4 enemy grid</span>
+  <span class="c-kw">this</span>.enemies = <span class="c-kw">this</span>.physics.add.<span class="c-fn">group</span>();
+  <span class="c-kw">for</span> (<span class="c-kw">let</span> r=0; r&lt;4; r++) {
+    <span class="c-kw">for</span> (<span class="c-kw">let</span> c=0; c&lt;5; c++) {
+      <span class="c-kw">this</span>.enemies.<span class="c-fn">create</span>(120 + c*90, 60 + r*42, <span class="c-str">'enemy'</span>);
+    }
+  }
+
+  <span class="c-comment">// Formation steps on a timer</span>
+  <span class="c-kw">this</span>.moveTimer = <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+    delay: 700, loop: <span class="c-kw">true</span>,
+    callback: <span class="c-kw">this</span>._stepFormation, callbackScope: <span class="c-kw">this</span>
+  });
+}
+
+<span class="c-fn">_stepFormation</span>() {
+  <span class="c-comment">// Move right; if any enemy hits edge → flip direction &amp; descend</span>
+  <span class="c-kw">this</span>.enemies.<span class="c-fn">getChildren</span>().<span class="c-fn">forEach</span>(e => e.x += direction * 18);
+  <span class="c-kw">if</span> (hitEdge) {
+    direction *= -1;
+    <span class="c-kw">this</span>.enemies.<span class="c-fn">getChildren</span>().<span class="c-fn">forEach</span>(e => e.y += 18);
+  }
+  <span class="c-comment">// Speed up as fewer enemies remain!</span>
+  <span class="c-kw">this</span>.moveTimer.delay = 700 / (1 + (20 - remaining) * 0.1);
+}</pre></div>
+            <div id="code-PONG" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── PONG — Core Loop ────────────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Two paddles + one ball</span>
+  <span class="c-kw">this</span>.paddle  = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(20, 200, <span class="c-str">'block'</span>);
+  <span class="c-kw">this</span>.aiPaddle= <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(620, 200, <span class="c-str">'block'</span>);
+  <span class="c-kw">this</span>.ball    = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 200, <span class="c-str">'laser'</span>);
+  <span class="c-kw">this</span>.ball.setBounce(1).setCollideWorldBounds(<span class="c-kw">true</span>);
+  <span class="c-kw">this</span>.ball.<span class="c-fn">setVelocity</span>(200, 150); <span class="c-comment">// launch!</span>
+}
+
+<span class="c-fn">update</span>() {
+  <span class="c-comment">// Player paddle — UP key moves up, SPACE moves down</span>
+  <span class="c-kw">if</span>      (UP)    <span class="c-kw">this</span>.paddle.body.<span class="c-fn">setVelocityY</span>(-liveConfig.speed);
+  <span class="c-kw">else if</span> (SPACE) <span class="c-kw">this</span>.paddle.body.<span class="c-fn">setVelocityY</span>(+liveConfig.speed);
+  <span class="c-kw">else</span>            <span class="c-kw">this</span>.paddle.body.<span class="c-fn">setVelocityY</span>(0);
+
+  <span class="c-comment">// AI paddle — slowly tracks the ball's Y</span>
+  <span class="c-kw">const</span> diff = <span class="c-kw">this</span>.ball.y - <span class="c-kw">this</span>.aiPaddle.y;
+  <span class="c-kw">this</span>.aiPaddle.body.<span class="c-fn">setVelocityY</span>(
+    Math.<span class="c-fn">sign</span>(diff) * Math.<span class="c-fn">min</span>(Math.<span class="c-fn">abs</span>(diff) * 4, liveConfig.enemySpeed)
+  );
+}</pre></div>
+            <div id="code-SNAKE" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── SNAKE — Core Loop ───────────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-kw">const</span> CELL = liveConfig.snakeCellSize; <span class="c-comment">// grid size in px</span>
+  <span class="c-kw">this</span>.snake = [{ x: 10, y: 10 }];      <span class="c-comment">// array of {x,y} cells</span>
+  <span class="c-kw">this</span>.dir   = { x: 1, y: 0 };          <span class="c-comment">// moving right</span>
+  <span class="c-kw">this</span>.food  = <span class="c-kw">this</span>._placeFood();
+
+  <span class="c-comment">// Move on a repeating timer (not every frame)</span>
+  <span class="c-kw">this</span>.moveTimer = <span class="c-kw">this</span>.time.<span class="c-fn">addEvent</span>({
+    delay: Math.<span class="c-fn">max</span>(60, 320 - liveConfig.speed * 0.8),
+    loop: <span class="c-kw">true</span>, callback: <span class="c-kw">this</span>._step, callbackScope: <span class="c-kw">this</span>
+  });
+}
+
+<span class="c-fn">_step</span>() {
+  <span class="c-comment">// New head = old head + direction</span>
+  <span class="c-kw">let</span> head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  <span class="c-comment">// Wall wrap (if enabled)</span>
+  <span class="c-kw">if</span> (liveConfig.snakeWallWrap) {
+    head.x = (head.x + cols) % cols;
+    head.y = (head.y + rows) % rows;
+  } <span class="c-kw">else if</span> (outOfBounds) {
+    <span class="c-fn">gameOver</span>(); <span class="c-kw">return</span>;
+  }
+
+  <span class="c-comment">// Ate food? Grow. Otherwise pop the tail.</span>
+  <span class="c-kw">if</span> (head.x === food.x &amp;&amp; head.y === food.y) {
+    score++; food = <span class="c-fn">placeFood</span>(); <span class="c-comment">// grow!</span>
+  } <span class="c-kw">else</span> {
+    snake.<span class="c-fn">pop</span>(); <span class="c-comment">// remove tail</span>
+  }
+  snake.<span class="c-fn">unshift</span>(head); <span class="c-comment">// add new head</span>
+}</pre></div>
+            <div id="code-ASTEROIDS" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── ASTEROIDS — Core Loop ───────────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-kw">this</span>.ship = <span class="c-kw">this</span>.physics.add.<span class="c-fn">image</span>(320, 200, <span class="c-str">'player'</span>);
+  <span class="c-kw">this</span>.ship.setDrag(40).setMaxVelocity(400);
+
+  <span class="c-comment">// Spawn starting asteroids</span>
+  <span class="c-kw">for</span> (<span class="c-kw">let</span> i = 0; i &lt; liveConfig.asteroidCount; i++) {
+    <span class="c-kw">this</span>._spawnRock(<span class="c-str">'large'</span>);
+  }
+}
+
+<span class="c-fn">_spawnRock</span>(size) {
+  <span class="c-kw">const</span> rock = rocks.<span class="c-fn">create</span>(randomEdgeX, randomEdgeY, <span class="c-str">'enemy'</span>);
+  rock.size = size;
+  rock.<span class="c-fn">setVelocity</span>(Phaser.Math.<span class="c-fn">Between</span>(-80,80), Phaser.Math.<span class="c-fn">Between</span>(-80,80));
+  rock.<span class="c-fn">setCollideWorldBounds</span>(<span class="c-kw">false</span>); <span class="c-comment">// wrap instead</span>
+}
+
+<span class="c-fn">_onBulletHit</span>(bullet, rock) {
+  bullet.<span class="c-fn">destroy</span>();
+  <span class="c-comment">// Split large → 2 medium, medium → 2 small, small → gone</span>
+  <span class="c-kw">if</span> (rock.size === <span class="c-str">'large'</span>)  { <span class="c-fn">spawnTwo</span>(<span class="c-str">'medium'</span>); score += 10; }
+  <span class="c-kw">if</span> (rock.size === <span class="c-str">'medium'</span>) { <span class="c-fn">spawnTwo</span>(<span class="c-str">'small'</span>);  score += 20; }
+  <span class="c-kw">if</span> (rock.size === <span class="c-str">'small'</span>)  {                        score += 30; }
+  rock.<span class="c-fn">destroy</span>();
+}</pre></div>
+            <div id="code-ROGUELIKE" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── ROGUELIKE — Turn-Based Core ─────────────────────────</span>
+
+<span class="c-fn">create</span>() {
+  <span class="c-comment">// Generate dungeon: BSP → rooms → corridors</span>
+  <span class="c-kw">this</span>.rooms = <span class="c-fn">generateRooms</span>(liveConfig.rogueRooms);
+  <span class="c-kw">this</span>.rooms.<span class="c-fn">forEach</span>((r, i) => {
+    <span class="c-kw">if</span> (i &lt; <span class="c-kw">this</span>.rooms.length - 1)
+      <span class="c-fn">connectWithCorridor</span>(r, <span class="c-kw">this</span>.rooms[i + 1]);
+  });
+
+  <span class="c-comment">// Spawn enemies based on density setting</span>
+  <span class="c-kw">this</span>.rooms.<span class="c-fn">forEach</span>(room => {
+    <span class="c-kw">if</span> (Math.<span class="c-fn">random</span>() &lt; liveConfig.rogueDensity)
+      <span class="c-fn">spawnEnemy</span>(room);
+  });
+
+  <span class="c-kw">this</span>.hp = liveConfig.rogueStartHp; <span class="c-comment">// player HP</span>
+}
+
+<span class="c-fn">_handleInput</span>(dir) {
+  <span class="c-kw">const</span> nx = player.gx + dir.x;
+  <span class="c-kw">const</span> ny = player.gy + dir.y;
+
+  <span class="c-kw">const</span> enemy = <span class="c-fn">enemyAt</span>(nx, ny);
+  <span class="c-kw">if</span> (enemy) {
+    enemy.hp -= 1;            <span class="c-comment">// BUMP ATTACK</span>
+    <span class="c-kw">if</span> (enemy.hp &lt;= 0) { enemy.<span class="c-fn">destroy</span>(); score += 10; }
+  } <span class="c-kw">else if</span> (<span class="c-fn">isWalkable</span>(nx, ny)) {
+    player.gx = nx; player.gy = ny; <span class="c-comment">// move</span>
+  }
+  <span class="c-fn">_enemyTurns</span>(); <span class="c-comment">// enemies move after player</span>
+}</pre></div>
+            <div style="margin-top:8px;padding:8px 10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:6px;">
+                <div style="font-size:.64rem;color:#34d399;font-weight:700;margin-bottom:3px;">💡 Try It Yourself</div>
+                <div style="font-size:.6rem;color:var(--muted);line-height:1.6;">All this code is inside <strong style="color:white;">arcade-game-maker.html</strong> — open it in a text editor to read the full source. Every scene is a Phaser 3 class that extends a shared base. Remix it freely!</div>
+            </div>
         </div>
     </div>
 
@@ -1123,10 +1615,11 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                 </div>
             </div>
 
-            <!-- GAME OVER -->
+            <!-- GAME OVER / VICTORY -->
             <div class="go-overlay" id="goOverlay">
                 <div class="go-box">
-                    <div class="go-title">GAME OVER</div>
+                    <div class="go-title" id="goTitle">GAME OVER</div>
+                    <div id="goWinBanner" style="display:none;font-size:.95rem;margin-bottom:4px;">🎉 You reached the goal!</div>
                     <div class="go-score" id="goScore">Score: 0</div>
                     <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
                     <div class="go-lb" id="goLeaderboard" style="display:none;"></div>
@@ -1192,7 +1685,22 @@ const liveConfig = {
     bulletSpread:1, doubleJump:false, paddleW:90, enemyZigzag:false,
     pipeGap:120,
     // Difficulty ramp
-    difficultyScale:1.0
+    difficultyScale:1.0,
+    // Game speed (physics + timer multiplier)
+    gameSpeed:1.0,
+    // Win condition: 'none' | 'score' | 'time'
+    winCondition:'none', winTarget:500,
+    // Power-ups
+    powerUpEnabled:true, powerUpFreq:10000,
+    puShieldOn:true, puX2On:true, puSpeedOn:true, puLifeOn:true,
+    // Snake options
+    snakeWallWrap:true, snakeCellSize:20,
+    // Asteroids options
+    asteroidCount:6,
+    // Dodge options
+    dodgeStarRatio:30,
+    // Roguelike options
+    rogueRooms:6, rogueDensity:0.3, rogueStartHp:10
 };
 
 // ── GAME STATE (persists across scene restarts) ────────────────────────────────
@@ -1490,10 +1998,10 @@ function copyEmbedCode() {
 
 // ── TEMPLATE PRESETS ──────────────────────────────────────────────────────────
 const PRESETS = {
-    easy:   { speed:150, enemySpeed:80,  spawnDelay:1600, bulletSpeed:420, obstacleSpeed:140, jumpForce:400, gravity:500, fireCooldown:300, difficultyScale:0.5, lives:5 },
-    normal: { speed:200, enemySpeed:150, spawnDelay:1100, bulletSpeed:540, obstacleSpeed:220, jumpForce:450, gravity:600, fireCooldown:180, difficultyScale:1.0, lives:3 },
-    hard:   { speed:280, enemySpeed:240, spawnDelay:700,  bulletSpeed:660, obstacleSpeed:320, jumpForce:500, gravity:800, fireCooldown:130, difficultyScale:2.0, lives:2 },
-    chaos:  { speed:420, enemySpeed:360, spawnDelay:400,  bulletSpeed:800, obstacleSpeed:480, jumpForce:600, gravity:1100,fireCooldown:80,  difficultyScale:3.0, lives:1 }
+    easy:   { speed:150, enemySpeed:80,  spawnDelay:1600, bulletSpeed:420, obstacleSpeed:140, jumpForce:400, gravity:500, fireCooldown:300, difficultyScale:0.5, lives:5, pointsPerKill:1  },
+    normal: { speed:200, enemySpeed:150, spawnDelay:1100, bulletSpeed:540, obstacleSpeed:220, jumpForce:450, gravity:600, fireCooldown:180, difficultyScale:1.0, lives:3, pointsPerKill:10 },
+    hard:   { speed:280, enemySpeed:240, spawnDelay:700,  bulletSpeed:660, obstacleSpeed:320, jumpForce:500, gravity:800, fireCooldown:130, difficultyScale:2.0, lives:2, pointsPerKill:25 },
+    chaos:  { speed:420, enemySpeed:360, spawnDelay:400,  bulletSpeed:800, obstacleSpeed:480, jumpForce:600, gravity:1100,fireCooldown:80,  difficultyScale:3.0, lives:1, pointsPerKill:50 }
 };
 function applyPreset(name) {
     const p = PRESETS[name]; if (!p) return;
@@ -1505,12 +2013,13 @@ function applyPreset(name) {
     // Sync blueprint sliders
     document.querySelectorAll('.bp-card input[type=range]').forEach(r => {
         const oi = r.getAttribute('oninput')||'';
-        if (oi.includes('liveConfig.speed'))      { r.value=p.speed;       if(r.nextElementSibling) r.nextElementSibling.textContent=p.speed; }
-        if (oi.includes('liveConfig.enemySpeed'))  { r.value=p.enemySpeed;  if(r.nextElementSibling) r.nextElementSibling.textContent=p.enemySpeed; }
-        if (oi.includes('liveConfig.bulletSpeed')) { r.value=p.bulletSpeed; if(r.nextElementSibling) r.nextElementSibling.textContent=p.bulletSpeed; }
-        if (oi.includes('liveConfig.spawnDelay'))  { r.value=p.spawnDelay;  if(r.nextElementSibling) r.nextElementSibling.textContent=p.spawnDelay; }
-        if (oi.includes('liveConfig.jumpForce'))   { r.value=p.jumpForce;   if(r.nextElementSibling) r.nextElementSibling.textContent=p.jumpForce; }
-        if (oi.includes('liveConfig.gravity'))     { r.value=p.gravity;     if(r.nextElementSibling) r.nextElementSibling.textContent=p.gravity; }
+        if (oi.includes('liveConfig.speed'))         { r.value=p.speed;         if(r.nextElementSibling) r.nextElementSibling.textContent=p.speed; }
+        if (oi.includes('liveConfig.enemySpeed'))    { r.value=p.enemySpeed;    if(r.nextElementSibling) r.nextElementSibling.textContent=p.enemySpeed; }
+        if (oi.includes('liveConfig.bulletSpeed'))   { r.value=p.bulletSpeed;   if(r.nextElementSibling) r.nextElementSibling.textContent=p.bulletSpeed; }
+        if (oi.includes('liveConfig.spawnDelay'))    { r.value=p.spawnDelay;    if(r.nextElementSibling) r.nextElementSibling.textContent=p.spawnDelay; }
+        if (oi.includes('liveConfig.jumpForce'))     { r.value=p.jumpForce;     if(r.nextElementSibling) r.nextElementSibling.textContent=p.jumpForce; }
+        if (oi.includes('liveConfig.gravity'))       { r.value=p.gravity;       if(r.nextElementSibling) r.nextElementSibling.textContent=p.gravity; }
+        if (oi.includes('liveConfig.pointsPerKill')) { r.value=p.pointsPerKill; if(r.nextElementSibling) r.nextElementSibling.textContent=p.pointsPerKill; }
     });
     // Sync lives pills
     const livesMap={'5 Lives':5,'3 Lives':3,'1 Life':1,'∞':99};
@@ -1701,6 +2210,11 @@ function onGenreChange() {
     // Sync bp-code spans for gravity and jump
     setTxt('bpGV', liveConfig.gravity); setTxt('bpFGV', liveConfig.gravity);
     setTxt('bpJF', liveConfig.jumpForce); setTxt('bpRJF', liveConfig.jumpForce); setTxt('bpFJF', liveConfig.jumpForce);
+    // Show matching code snippet in Code tab
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE'].forEach(genre => {
+        const el = document.getElementById('code-'+genre);
+        if (el) el.style.display = genre === g ? '' : 'none';
+    });
 }
 
 function getPayload() {
@@ -1758,6 +2272,7 @@ function _launchPhaserGame() {
 
     const _startGame = () => {
         try {
+            _gameStartTime = Date.now();
             currentPhaserGame = new Phaser.Game({
                 type: Phaser.AUTO,
                 parent: 'game-container',
@@ -1766,6 +2281,31 @@ function _launchPhaserGame() {
                 physics: { default:'arcade', arcade:{ debug:false } },
                 render: { preserveDrawingBuffer: true },
                 scene: getScene(data)
+            });
+            // Live game speed + win condition — runs every frame
+            currentPhaserGame.events.on('step', () => {
+                const spd = liveConfig.gameSpeed || 1.0;
+                try {
+                    const scenes = currentPhaserGame.scene.getScenes(true);
+                    scenes.forEach(s => {
+                        if (s.physics && s.physics.world) s.physics.world.timeScale = spd;
+                        if (s.time) s.time.timeScale = spd;
+                        // Win condition check
+                        if (!s._winTriggered && liveConfig.winCondition !== 'none') {
+                            const score = s.score !== undefined ? s.score : (s.pScore || 0);
+                            if (liveConfig.winCondition === 'score' && score >= liveConfig.winTarget) {
+                                s._winTriggered = true;
+                                setTimeout(() => showVictory(score), 80);
+                            } else if (liveConfig.winCondition === 'time') {
+                                const elapsed = (Date.now() - _gameStartTime) / 1000;
+                                if (elapsed >= liveConfig.winTarget) {
+                                    s._winTriggered = true;
+                                    setTimeout(() => showVictory(score), 80);
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {}
             });
         } catch(e) {
             console.error('Phaser boot error:', e);
@@ -1876,6 +2416,31 @@ function makeBaseScene(data) {
             }
         }
         // ── Power-ups ─────────────────────────────────────────────────────────
+        // ── Win condition check (called each frame from _tickBase) ────────────
+        _checkWin(score) {
+            if (this._winTriggered) return;
+            const wc = liveConfig.winCondition;
+            if (wc === 'none') return;
+            if (wc === 'score' && score >= liveConfig.winTarget) {
+                this._winTriggered = true;
+                this.time.delayedCall(80, () => showVictory(score));
+            } else if (wc === 'time') {
+                const elapsed = (Date.now() - (_gameStartTime||Date.now())) / 1000;
+                if (elapsed >= liveConfig.winTarget) {
+                    this._winTriggered = true;
+                    this.time.delayedCall(80, () => showVictory(score));
+                }
+            }
+        }
+        // ── Per-frame base tick (called from each scene's update) ─────────────
+        _tickBase(score) {
+            // Game speed: adjust physics world and timer time scale
+            const spd = liveConfig.gameSpeed || 1.0;
+            if (this.physics && this.physics.world) this.physics.world.timeScale = spd;
+            if (this.time) this.time.timeScale = spd;
+            // Win condition
+            if (score !== undefined) this._checkWin(score);
+        }
         _initPowerUps() {
             // Pre-generate one texture per type so every spawn can reuse them
             const puCols = { shield:0x38bdf8, x2:0xfbbf24, speed:0x4ade80, life:0xf87171 };
@@ -1888,7 +2453,8 @@ function makeBaseScene(data) {
             });
             this._puGroup = this.physics.add.group();
             this._puShield = false; this._puX2 = false; this._puSpeed = false;
-            this._puTimer = this.time.addEvent({ delay:10000, loop:true, callback:()=>this._spawnPu() });
+            const puDelay = () => liveConfig.powerUpFreq || 10000;
+            this._puTimer = this.time.addEvent({ delay:puDelay(), loop:true, callback:()=>{ if(liveConfig.powerUpEnabled!==false) this._spawnPu(); } });
             this.events.once('shutdown',()=>{ this._puTimer&&this._puTimer.remove(false); });
             if (this.actor) {
                 this.physics.add.overlap(this.actor, this._puGroup, (_,pu)=>this._collectPu(pu));
@@ -1896,7 +2462,11 @@ function makeBaseScene(data) {
         }
         _spawnPu() {
             if (!this.scene || !this.scene.isActive()) return;
-            const types = ['shield','x2','speed','life'];
+            // Filter by which types are enabled in Custom tab
+            const allTypes = ['shield','x2','speed','life'];
+            const flagMap = { shield:'puShieldOn', x2:'puX2On', speed:'puSpeedOn', life:'puLifeOn' };
+            const types = allTypes.filter(k => liveConfig[flagMap[k]] !== false);
+            if (!types.length) return;
             const t     = types[Phaser.Math.Between(0, types.length-1)];
             const icons = { shield:'🛡', x2:'💎', speed:'⚡', life:'❤️' };
             const x = Phaser.Math.Between(40, GW-40);
@@ -3231,25 +3801,16 @@ function importSfxSlot(event) {
 }
 
 // ── SAVE / LOAD / SHARE ───────────────────────────────────────────────────────
+const SLOT_KEYS = ['jv_arcade_slot_0','jv_arcade_slot_1','jv_arcade_slot_2'];
 let _autoSaveTimer = null;
-function _scheduleAutoSave() {
-    clearTimeout(_autoSaveTimer);
-    _autoSaveTimer = setTimeout(() => saveToBrowser(true), 2500);
-}
-function saveToBrowser(silent = false) {
+
+function _buildSaveData() {
     const d = getPayload();
-    const saveData = {
-        title: d.title,
-        genre: d.genre,
-        speed: d.speed,
-        gravity: d.gravity,
-        jump: d.jump,
-        map: customLevelMap || null,          // null = no custom level; don't persist fallback
-        sprite: customSpriteDataUrl,
-        enemySprite: customEnemyDataUrl,
-        bulletSprite: customBulletDataUrl,
-        blockSprite: customBlockDataUrl,
-        bgImage: customBgDataUrl,
+    return {
+        title: d.title, genre: d.genre, speed: d.speed, gravity: d.gravity, jump: d.jump,
+        map: customLevelMap || null,
+        sprite: customSpriteDataUrl, enemySprite: customEnemyDataUrl,
+        bulletSprite: customBulletDataUrl, blockSprite: customBlockDataUrl, bgImage: customBgDataUrl,
         liveConfig: Object.assign({}, liveConfig),
         theme: { cols: gameTheme.cols.slice(), name: gameTheme.name },
         story: currentStory ? { title: currentStory.title, intro: currentStory.intro } : null,
@@ -3258,14 +3819,71 @@ function saveToBrowser(silent = false) {
         customMusic: GameAudio.customMusic || null,
         musicOn: document.getElementById('musicToggle').checked,
         musicStyle: document.getElementById('musicStyle').value,
-        volume: parseInt(document.getElementById('volumeSlider').value)
+        volume: parseInt(document.getElementById('volumeSlider').value),
+        savedAt: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
     };
+}
+
+function saveToSlot(slotIdx, silent=false) {
     try {
-        localStorage.setItem('jv_arcade_game', JSON.stringify(saveData));
-        if (!silent) showToast(`"${d.title}" saved! ✓`);
+        const data = _buildSaveData();
+        localStorage.setItem(SLOT_KEYS[slotIdx], JSON.stringify(data));
+        renderSaveSlots();
+        if (!silent) showToast(`Slot ${slotIdx+1} saved — "${data.title}" ✓`);
     } catch(e) {
         if (!silent) showToast('Save failed — game may be too large (sprites/audio)');
     }
+}
+
+function loadFromSlot(slotIdx) {
+    try {
+        const raw = localStorage.getItem(SLOT_KEYS[slotIdx]);
+        if (!raw) { showToast(`Slot ${slotIdx+1} is empty`); return; }
+        _applyLoadData(JSON.parse(raw));
+    } catch(e) { console.error('loadFromSlot:', e); showToast('Load failed — save data may be corrupt'); }
+}
+
+function deleteSlot(slotIdx) {
+    localStorage.removeItem(SLOT_KEYS[slotIdx]);
+    renderSaveSlots();
+    showToast(`Slot ${slotIdx+1} cleared`);
+}
+
+function renderSaveSlots() {
+    const container = document.getElementById('saveSlotList');
+    if (!container) return;
+    const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️'};
+    container.innerHTML = SLOT_KEYS.map((key,i) => {
+        let d = null;
+        try { d = JSON.parse(localStorage.getItem(key)||'null'); } catch(e){}
+        if (d) {
+            return `<div style="display:flex;align-items:center;gap:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:5px 7px;">
+                <span style="font-size:.9rem;">${ICONS[d.genre]||'🕹️'}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:.65rem;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title||'Untitled'}</div>
+                    <div style="font-size:.58rem;color:var(--muted);">${d.savedAt||'Saved'}</div>
+                </div>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlot(${i})">💾</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="loadFromSlot(${i})">📂</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;color:#f87171;" onclick="deleteSlot(${i})">✕</button>
+            </div>`;
+        } else {
+            return `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:5px 7px;">
+                <span style="font-size:.9rem;opacity:.3;">💾</span>
+                <div style="flex:1;font-size:.62rem;color:var(--muted);">Slot ${i+1} — Empty</div>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlot(${i})">Save here</button>
+            </div>`;
+        }
+    }).join('');
+}
+
+// Legacy compat — called by autosave & keyboard shortcut 'S'
+function saveToBrowser(silent=false) { saveToSlot(0, silent); }
+function loadFromBrowser() { loadFromSlot(0); }
+
+function _scheduleAutoSave() {
+    clearTimeout(_autoSaveTimer);
+    _autoSaveTimer = setTimeout(() => saveToBrowser(true), 2500);
 }
 
 function _syncCustomTabUI(cfg) {
@@ -3310,74 +3928,103 @@ function _syncCustomTabUI(cfg) {
     // Pong ball speed range
     const pbr = document.querySelector('#custom-PONG input[type=range]');
     if(pbr) { pbr.value=cfg.bulletSpeed||540; pbr.nextElementSibling.textContent=cfg.bulletSpeed||540; }
+    // Game speed pills
+    const spdMap = {0.5:'0.5× Slow',1.0:'1× Normal',1.5:'1.5× Fast',2.0:'2× Turbo'};
+    document.querySelectorAll('#pillGameSpeed .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(spdMap[cfg.gameSpeed]||'1× Normal')));
+    // Win condition pills
+    const wcMap = {'none':'None','score':'Score Target','time':'Survive Time'};
+    document.querySelectorAll('#pillWinCond .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(wcMap[cfg.winCondition]||'None')));
+    const wtr = document.getElementById('winTargetRow');
+    if(wtr) { wtr.style.display = (cfg.winCondition && cfg.winCondition !== 'none') ? '' : 'none'; }
+    const wtRange = document.getElementById('winTargetRange');
+    if(wtRange && cfg.winTarget) { wtRange.value = cfg.winTarget; wtRange.nextElementSibling.textContent = cfg.winCondition==='time' ? cfg.winTarget+'s' : cfg.winTarget+' pts'; }
+    // Power-up toggle
+    const pu = document.getElementById('powerUpToggle'); if(pu) pu.checked = cfg.powerUpEnabled !== false;
+    const puf = document.querySelector('#tab-custom input[min="3000"]');
+    if(puf && cfg.powerUpFreq) { puf.value=cfg.powerUpFreq; puf.nextElementSibling.textContent=Math.round(cfg.powerUpFreq/1000)+'s'; }
+    // Per-type checkboxes
+    const puSh = document.getElementById('puEnableShield'); if(puSh) puSh.checked = cfg.puShieldOn !== false;
+    const puX2e = document.getElementById('puEnableX2');    if(puX2e) puX2e.checked = cfg.puX2On !== false;
+    const puSpe = document.getElementById('puEnableSpeed'); if(puSpe) puSpe.checked = cfg.puSpeedOn !== false;
+    const puLi  = document.getElementById('puEnableLife');  if(puLi)  puLi.checked  = cfg.puLifeOn  !== false;
+    // Snake options
+    const sw = document.getElementById('snakeWrapToggle'); if(sw) sw.checked = cfg.snakeWallWrap !== false;
+    const cellMap={16:'Small (16px)',20:'Normal (20px)',28:'Large (28px)'};
+    document.querySelectorAll('#pillSnakeCell .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(cellMap[cfg.snakeCellSize]||'Normal (20px)')));
+    // Asteroids count
+    const arc = document.querySelector('#custom-ASTEROIDS input[type=range]');
+    if(arc && cfg.asteroidCount) { arc.value=cfg.asteroidCount; arc.nextElementSibling.textContent=cfg.asteroidCount+' rocks'; }
+    // Dodge star ratio
+    const dsr = document.querySelector('#custom-DODGE input[type=range]');
+    if(dsr && cfg.dodgeStarRatio!==undefined) { dsr.value=cfg.dodgeStarRatio; dsr.nextElementSibling.textContent=cfg.dodgeStarRatio+'%'; }
+    // Roguelike
+    const rrRange = document.querySelector('#custom-ROGUELIKE input[type=range]');
+    if(rrRange && cfg.rogueRooms) { rrRange.value=cfg.rogueRooms; rrRange.nextElementSibling.textContent=cfg.rogueRooms+' rooms'; }
+    const denMap = {0.1:'Sparse',0.3:'Normal',0.5:'Dense',0.7:'Swarm'};
+    document.querySelectorAll('#pillRogueDen .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(denMap[cfg.rogueDensity]||'Normal')));
 }
 
-function loadFromBrowser() {
-    try {
-        const raw=localStorage.getItem('jv_arcade_game'); if(!raw){showToast('No saved game');return;}
-        const d=JSON.parse(raw);
-        // Basic settings
-        document.getElementById('gameTitle').value = d.title || 'My Arcade Game';
-        document.getElementById('genreMode').value = d.genre || 'SHOOTER';
-        document.getElementById('playerSpeed').value = d.speed; document.getElementById('playerSpeedRange').value = d.speed; document.getElementById('speedVal').textContent = d.speed;
-        document.getElementById('gravityY').value=d.gravity; document.getElementById('gravityRange').value=d.gravity; document.getElementById('gravityVal').textContent=d.gravity;
-        document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
-        // Level map — restore variable AND mini-preview
-        if(d.map && Array.isArray(d.map)) {
-            customLevelMap = d.map;
-            document.getElementById('levelDesignerGrid').value = JSON.stringify(d.map);
-            // Rebuild mini-preview (20×15 assumed if no stored dimensions)
-            const w=20, h=15, sc=Math.min(Math.floor(320/w),Math.floor(52/h),5);
-            const mini=document.getElementById('levelMini'); mini.innerHTML='';
-            const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
-            const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            ctx.fillStyle='#7c3aed';
-            d.map.forEach((v,i)=>{ if(!v) return; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
-            mini.appendChild(cvs);
-            document.getElementById('levelInfoDesc').textContent='Saved level · 20×15 tiles';
-            document.getElementById('levelStatus').textContent='✓ Level loaded';
-            document.getElementById('levelStatus').className='asset-status ok';
-        } else {
-            customLevelMap = null;
-            document.getElementById('levelDesignerGrid').value='';
-            document.getElementById('levelMini').innerHTML='<div class="no-level">No level imported</div>';
-            document.getElementById('levelStatus').textContent='Using built-in default level';
-            document.getElementById('levelStatus').className='asset-status none';
-        }
-        // Sprites
-        if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite');
-        if(d.enemySprite) _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite');
-        if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite');
-        if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
-        if(d.bgImage) _applyBgDataUrl(d.bgImage,'Saved background');
-        // Full liveConfig restore
-        if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
-        // Theme
-        if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
-        // Story
-        if(d.story) applyStory(d.story);
-        // SFX dropdowns
-        if(d.sounds) {
-            Object.assign(GameAudio.sounds, d.sounds);
-            ['shoot','jump','hit','score'].forEach(slot => {
-                const sel=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1));
-                if(sel && d.sounds[slot] && d.sounds[slot]!=='custom') sel.value=d.sounds[slot];
-            });
-        }
-        if(d.customBuffers) {
-            Object.assign(GameAudio.customBuffers, d.customBuffers);
-            ['shoot','jump','hit','score'].forEach(slot => {
-                if(d.customBuffers[slot]) { const b=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1)+'Badge'); if(b) b.style.display='inline'; }
-            });
-        }
-        // Music
-        if(d.customMusic) { GameAudio.customMusic=d.customMusic; document.getElementById('musicImportBadge').style.display='inline'; document.getElementById('musicImportName').textContent='Saved track'; }
-        if(d.musicStyle) document.getElementById('musicStyle').value=d.musicStyle;
-        if(d.musicOn) { document.getElementById('musicToggle').checked=true; GameAudio.setMusic(true); }
-        if(d.volume!==undefined) { GameAudio.volume=d.volume/100; document.getElementById('volumeSlider').value=d.volume; const rv=document.querySelector('#volumeSlider ~ .range-val'); if(rv) rv.textContent=d.volume+'%'; }
-        onGenreChange(); compileAndBootEngine();
-        showToast(`"${d.title}" loaded! ✓`);
-    } catch(e){ console.error('loadFromBrowser:', e); showToast('Load failed — save data may be corrupt'); }
+function _applyLoadData(d) {
+    // Basic settings
+    document.getElementById('gameTitle').value = d.title || 'My Arcade Game';
+    document.getElementById('genreMode').value = d.genre || 'SHOOTER';
+    document.getElementById('playerSpeed').value = d.speed; document.getElementById('playerSpeedRange').value = d.speed; document.getElementById('speedVal').textContent = d.speed;
+    document.getElementById('gravityY').value=d.gravity; document.getElementById('gravityRange').value=d.gravity; document.getElementById('gravityVal').textContent=d.gravity;
+    document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
+    // Level map — restore variable AND mini-preview
+    if(d.map && Array.isArray(d.map)) {
+        customLevelMap = d.map;
+        document.getElementById('levelDesignerGrid').value = JSON.stringify(d.map);
+        const w=20, h=15, sc=Math.min(Math.floor(320/w),Math.floor(52/h),5);
+        const mini=document.getElementById('levelMini'); mini.innerHTML='';
+        const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
+        const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
+        ctx.fillStyle='#7c3aed';
+        d.map.forEach((v,i)=>{ if(!v) return; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
+        mini.appendChild(cvs);
+        document.getElementById('levelInfoDesc').textContent='Saved level · 20×15 tiles';
+        document.getElementById('levelStatus').textContent='✓ Level loaded';
+        document.getElementById('levelStatus').className='asset-status ok';
+    } else {
+        customLevelMap = null;
+        document.getElementById('levelDesignerGrid').value='';
+        document.getElementById('levelMini').innerHTML='<div class="no-level">No level imported</div>';
+        document.getElementById('levelStatus').textContent='Using built-in default level';
+        document.getElementById('levelStatus').className='asset-status none';
+    }
+    // Sprites
+    if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite');
+    if(d.enemySprite) _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite');
+    if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite');
+    if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
+    if(d.bgImage) _applyBgDataUrl(d.bgImage,'Saved background');
+    // Full liveConfig restore
+    if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
+    // Theme
+    if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+    // Story
+    if(d.story) applyStory(d.story);
+    // SFX dropdowns
+    if(d.sounds) {
+        Object.assign(GameAudio.sounds, d.sounds);
+        ['shoot','jump','hit','score'].forEach(slot => {
+            const sel=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1));
+            if(sel && d.sounds[slot] && d.sounds[slot]!=='custom') sel.value=d.sounds[slot];
+        });
+    }
+    if(d.customBuffers) {
+        Object.assign(GameAudio.customBuffers, d.customBuffers);
+        ['shoot','jump','hit','score'].forEach(slot => {
+            if(d.customBuffers[slot]) { const b=document.getElementById('sfx'+slot.charAt(0).toUpperCase()+slot.slice(1)+'Badge'); if(b) b.style.display='inline'; }
+        });
+    }
+    // Music
+    if(d.customMusic) { GameAudio.customMusic=d.customMusic; document.getElementById('musicImportBadge').style.display='inline'; document.getElementById('musicImportName').textContent='Saved track'; }
+    if(d.musicStyle) document.getElementById('musicStyle').value=d.musicStyle;
+    if(d.musicOn) { document.getElementById('musicToggle').checked=true; GameAudio.setMusic(true); }
+    if(d.volume!==undefined) { GameAudio.volume=d.volume/100; document.getElementById('volumeSlider').value=d.volume; const rv=document.querySelector('#volumeSlider ~ .range-val'); if(rv) rv.textContent=d.volume+'%'; }
+    onGenreChange(); compileAndBootEngine();
+    showToast(`"${d.title}" loaded! ✓`);
 }
 
 function generateShareLink() {
@@ -3466,9 +4113,24 @@ function showGameOver(score) {
     if (hs) hs.textContent = board.length ? '🏆 Best: ' + board[0].score : '';
 }
 function closeGameOver() {
+    // Reset win/game-over display to defaults
+    const t = document.getElementById('goTitle');
+    const b = document.getElementById('goWinBanner');
+    if (t) t.textContent = 'GAME OVER';
+    if (b) b.style.display = 'none';
     document.getElementById('goOverlay').classList.remove('show');
     _launchPhaserGame();
 }
+
+// ── VICTORY SCREEN ────────────────────────────────────────────────────────────
+function showVictory(score) {
+    const t = document.getElementById('goTitle');
+    const b = document.getElementById('goWinBanner');
+    if (t) t.textContent = 'YOU WIN! 🏆';
+    if (b) b.style.display = '';
+    showGameOver(score);
+}
+let _gameStartTime = 0;
 
 function exportGame() {
     if (!_engineData) { showToast('Hit ▶ Run first, then export'); return; }
@@ -3762,6 +4424,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     if (window.__exportMode) return; // exported game: injected boot script handles this
     setupTouchControls();
     onGenreChange();
+    renderSaveSlots();
     document.getElementById('studioRoot').classList.add('genre-SHOOTER');
     const params=new URLSearchParams(location.search);
     const enc=params.get('game')||params.get('remix');
@@ -3800,6 +4463,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         if (e.key === '3') switchTab('assets',      document.querySelectorAll('.tab-btn')[2]);
         if (e.key === '4') switchTab('sounds',      document.querySelectorAll('.tab-btn')[3]);
         if (e.key === '5') switchTab('custom',      document.querySelectorAll('.tab-btn')[4]);
+        if (e.key === '6') switchTab('code',        document.querySelectorAll('.tab-btn')[5]);
     });
 
     // ── Tutorial first run ────────────────────────────────────────────────────
