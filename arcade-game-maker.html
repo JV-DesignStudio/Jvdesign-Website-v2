@@ -680,21 +680,19 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
 
             <!-- ROGUELIKE -->
             <div class="bp-card" data-genre="ROGUELIKE">
-                <div class="bp-head"><span class="bp-icon">⚔️</span><div><div class="bp-name">Grid Movement</div><div class="bp-sub">Step-based turn system</div></div><span class="bp-badge cyan">TURN-BASED</span></div>
-<pre class="bp-code"><span class="c-kw">if</span> (arrow pressed) {
-  nextX = player.x + dir.x
-  nextY = player.y + dir.y
-  <span class="c-kw">if</span> (enemy at nextX/Y) {
-    enemy.hp -= <span class="c-num">1</span>  <span class="c-comment">// bump attack!</span>
-  } <span class="c-kw">else</span> {
-    player.<span class="c-fn">moveTo</span>(nextX, nextY)
-  }
+                <div class="bp-head"><span class="bp-icon">⚔️</span><div><div class="bp-name">Twin-Stick Rooms</div><div class="bp-sub">Real-time BoI style</div></div><span class="bp-badge green">REAL-TIME</span></div>
+<pre class="bp-code"><span class="c-comment">// WASD = move, Arrow keys = shoot</span>
+<span class="c-kw">if</span> (enemies == <span class="c-num">0</span>) {
+  doorGrp.<span class="c-fn">clear</span>()  <span class="c-comment">// open door!</span>
+}
+<span class="c-kw">if</span> (player.x &gt; doorX) {
+  <span class="c-fn">_nextRoom</span>()     <span class="c-comment">// fade &amp; load</span>
 }</pre>
                 <div class="bp-tweaks">
                     <div class="tweak-row"><span class="tweak-label">Starting HP</span><input type="range" min="3" max="20" value="10" oninput="liveConfig.rogueStartHp=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">10</span></div>
                     <div class="tweak-row"><span class="tweak-label">Enemy Density</span><input type="range" min="1" max="10" value="3" oninput="liveConfig.rogueDensity=+this.value/10;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">3</span></div>
                 </div>
-                <div class="bp-explain">Each key press moves exactly one grid cell. If an enemy is in that cell, you attack it. Enemies do the same back — this is "bump combat"! Descend stairs to the next floor.</div>
+                <div class="bp-explain">Real-time twin-stick action. WASD to move, arrow keys to shoot. Kill all enemies to open the door on the right. Walk through to the next room. Enemies shoot back on floor 2+!</div>
             </div>
 
             <!-- ALL: Score -->
@@ -1707,7 +1705,7 @@ const liveConfig = {
 const gameState = { lives:3 };
 
 // ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
-const touchInput = { left:false, right:false, up:false, fire:false };
+const touchInput = { left:false, right:false, up:false, down:false, fire:false };
 
 // ── GAME THEME (from Colour Palette tool) ────────────────────────────────────
 const gameTheme = { cols:[], name:'' };
@@ -2560,11 +2558,13 @@ function sceneShooter(data) {
             this.fireKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.bullets = this.physics.add.group();
             this.hazards = this.physics.add.group();
-            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player').setScale(0.9 * liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
+            { const _s=Math.round(29*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).setDrag(120);
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
                 const e=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
+                e.setDisplaySize(26,26); e.body.setSize(22,22,true);
                 e.setVelocityY(liveConfig.enemySpeed);
                 e.body.allowGravity=false;
             }});
@@ -2625,49 +2625,44 @@ function sceneShooter(data) {
 
 function scenePlatformer(data) {
     const Base = makeBaseScene(data);
+    const WORLD_W = 3200;
     return class extends Base {
         create() {
             this.score=0; this._invincible=false; this._jumpsLeft=1; this._upWasDown=false;
+            this._bestX=80; this._nextEnemyX=480;
+            // Expand world + camera to full scrollable width
+            this.physics.world.setBounds(0, 0, WORLD_W, GH);
+            this.cameras.main.setBounds(0, 0, WORLD_W, GH);
+
             this._buildScrollBg();
-            this.scoreText = this._makeScoreText();
-            this.cursors = this.input.keyboard.createCursorKeys();
-            this.hazards = this.physics.add.group();
+            this.scoreText = this._makeScoreText().setScrollFactor(0);
+            this.cursors   = this.input.keyboard.createCursorKeys();
             this.platforms = this.physics.add.staticGroup();
-            const ts=32, cols=Math.floor(GW/ts), rows=Math.ceil(data.map.length/cols);
-            const sx=GW/(cols*ts), sy=GH/(rows*ts);
-            data.map.forEach((id,idx)=>{
-                if(!id) return;
-                const tx=(idx%cols)*ts*sx+ts*sx/2, ty=Math.floor(idx/cols)*ts*sy+ts*sy/2;
-                this.platforms.create(tx,ty,'block').setDisplaySize(ts*sx,ts*sy).refreshBody();
-            });
-            this.actor = this.physics.add.sprite(72,GH*0.4,'player').setScale(0.7 * liveConfig.playerScale);
+            this.hazards   = this.physics.add.group();
+            this._buildLevel();
+
+            this.actor = this.physics.add.sprite(80, GH - 80, 'player');
+            { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
+
             this.physics.add.collider(this.actor, this.platforms);
-            this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
-                const h=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
-                h.setVelocityY(liveConfig.enemySpeed); h.body.allowGravity=false;
-            }});
-            this.physics.add.collider(this.actor, this.hazards, ()=>{ this._onHit(this.actor); });
-            this.physics.add.collider(this.hazards, this.platforms, h=>h.destroy());
-            this.surviveTimer=0;
+            this.physics.add.collider(this.actor, this.hazards, ()=>this._onHit(this.actor));
+            this.physics.add.collider(this.hazards, this.platforms);
+
+            // Camera follows player with slight horizontal lag for game-feel
+            this.cameras.main.startFollow(this.actor, true, 0.1, 1);
+            this._initPowerUps();
         }
         _buildScrollBg() {
-            // Skip scroll layers if user has a custom bg image — just draw that
-            if (data.bgImage && this.textures.exists('bg_custom')) {
-                this.add.image(GW/2, GH/2, 'bg_custom').setDisplaySize(GW, GH).setDepth(-3);
-            }
             const style = liveConfig.bgStyle || 'dark';
-            // Draw a solid base colour
-            this.add.rectangle(0, 0, GW*2, GH*2, 0x05030f).setOrigin(0,0).setDepth(-3);
-
-            // Build two parallax scroll layers as Graphics → TileSprite textures
+            // Solid backdrop fixed to camera
+            this.add.rectangle(GW/2, GH/2, GW, GH, 0x05030f).setDepth(-3).setScrollFactor(0);
+            // Far star layer
             const g1 = this.add.graphics();
-            // Far layer: stars / small dots
             const col1 = themeInt(0, 0xa78bfa);
             for (let i=0;i<70;i++) {
-                const a = Math.random()*0.4+0.1;
-                g1.fillStyle(col1, a);
+                g1.fillStyle(col1, Math.random()*0.4+0.1);
                 g1.fillCircle(Math.random()*GW, Math.random()*GH, Math.random()*1.2+0.3);
             }
             if (style==='grid'||style==='neon') {
@@ -2677,31 +2672,50 @@ function scenePlatformer(data) {
                 for (let y=0;y<=GH;y+=80) { g1.beginPath(); g1.moveTo(0,y); g1.lineTo(GW,y); g1.strokePath(); }
             }
             g1.generateTexture('_ptfm_far', GW, GH); g1.destroy();
-
-            // Near layer: slightly larger decorative elements
+            // Near cloud/shape layer
             const g2 = this.add.graphics();
             const col2 = themeInt(1, 0x4ade80);
             for (let i=0;i<14;i++) {
                 g2.fillStyle(col2, Math.random()*0.18+0.05);
-                const rx=Math.random()*GW, ry=Math.random()*GH;
-                const rw=Phaser.Math.Between(30,90), rh=Phaser.Math.Between(12,24);
-                g2.fillRect(rx, ry, rw, rh);
+                g2.fillRect(Math.random()*GW, Math.random()*GH, Phaser.Math.Between(30,90), Phaser.Math.Between(12,24));
             }
             g2.generateTexture('_ptfm_near', GW, GH); g2.destroy();
-
-            this._bgFar  = this.add.tileSprite(0, 0, GW, GH, '_ptfm_far').setOrigin(0,0).setDepth(-2);
-            this._bgNear = this.add.tileSprite(0, 0, GW, GH, '_ptfm_near').setOrigin(0,0).setDepth(-1);
+            // Tile sprites fixed to camera — we drive parallax by offsetting tilePosition
+            this._bgFar  = this.add.tileSprite(0,0,GW,GH,'_ptfm_far').setOrigin(0,0).setDepth(-2).setScrollFactor(0);
+            this._bgNear = this.add.tileSprite(0,0,GW,GH,'_ptfm_near').setOrigin(0,0).setDepth(-1).setScrollFactor(0);
+            if (data.bgImage && this.textures.exists('bg_custom')) {
+                this.add.image(0,0,'bg_custom').setDisplaySize(GW,GH).setOrigin(0,0).setDepth(-3).setScrollFactor(0);
+            }
+        }
+        _buildLevel() {
+            const T=20, groundY=GH-T/2;
+            const tileCol=themeInt(2,0x334155), platCol=themeInt(1,0x4ade80);
+            // Ground with occasional gaps (gaps only after x=480)
+            let gx=0;
+            while (gx < WORLD_W) {
+                const segW=Phaser.Math.Between(90,220);
+                this.platforms.create(gx+segW/2, groundY, 'block').setDisplaySize(segW,T).setTint(tileCol).refreshBody();
+                gx += segW;
+                if (gx>480 && Math.random()<0.22) gx += Phaser.Math.Between(30,80);
+            }
+            // Floating platforms
+            for (let px=200; px<WORLD_W-80; px+=Phaser.Math.Between(100,180)) {
+                const py=Phaser.Math.Between(Math.round(GH*0.38), GH-70);
+                const pw=Phaser.Math.Between(60,150);
+                this.platforms.create(px, py, 'block').setDisplaySize(pw,T).setTint(platCol).refreshBody();
+            }
         }
         update() {
-            // Scroll the parallax layers at different rates
-            if (this._bgFar)  this._bgFar.tilePositionX  += 0.4;
-            if (this._bgNear) this._bgNear.tilePositionX += 1.1;
+            // Parallax: tile sprites fixed to cam, offset tilePosition proportional to scroll
+            const camX = this.cameras.main.scrollX;
+            if (this._bgFar)  this._bgFar.tilePositionX  = camX * 0.18;
+            if (this._bgNear) this._bgNear.tilePositionX = camX * 0.5;
 
             this.actor.body.setGravityY(liveConfig.gravity);
             const {left,right,up} = this.cursors;
-            if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
-            else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
-            else                                     this.actor.setVelocityX(0);
+            if (left.isDown||touchInput.left)        this.actor.setVelocityX(-liveConfig.speed);
+            else if (right.isDown||touchInput.right)  this.actor.setVelocityX(liveConfig.speed);
+            else                                      this.actor.setVelocityX(0);
             const onGround = this.actor.body.blocked.down;
             if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
             const upNow = up.isDown || touchInput.up;
@@ -2711,9 +2725,25 @@ function scenePlatformer(data) {
                 GameAudio.play('jump');
             }
             this._upWasDown = upNow;
-            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
-            this.surviveTimer+=16;
-            if (this.surviveTimer>2000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score'); }
+            // Score increases with rightward distance
+            if (this.actor.x > this._bestX) {
+                this._bestX = this.actor.x;
+                const dist = Math.floor((this._bestX - 80) / 50);
+                if (dist > this.score) { this.score=dist; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); }
+            }
+            // Spawn walking enemies ahead of the camera
+            while (this.actor.x + 600 > this._nextEnemyX && this._nextEnemyX < WORLD_W - 200) {
+                const h = this.hazards.create(this._nextEnemyX, GH-55, 'enemy');
+                h.setDisplaySize(24,24); h.body.setSize(20,20,true);
+                h.setVelocityX(-liveConfig.enemySpeed * 0.45); h.body.allowGravity=true;
+                h.body.setGravityY(liveConfig.gravity * 0.5);
+                this._nextEnemyX += Phaser.Math.Between(180, 420);
+            }
+            // Cull enemies that scrolled far behind player
+            this.hazards.getChildren().forEach(h=>{ if(h.x < camX-80) h.destroy(); });
+            this._syncPuLabels();
+            // Fall pit death
+            if (this.actor.y > GH+60) this._onHit(this.actor);
         }
     };
 }
@@ -2728,7 +2758,8 @@ function sceneDodge(data) {
             this.cursors = this.input.keyboard.createCursorKeys();
             this.hazards = this.physics.add.group();
             this.stars   = this.physics.add.group();
-            this.actor = this.physics.add.sprite(GW/2, GH-40, 'player').setScale(0.7 * liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(GW/2, GH-40, 'player');
+            { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
@@ -2738,6 +2769,7 @@ function sceneDodge(data) {
                     s.body.setSize(16,16); s.setVelocityY(liveConfig.enemySpeed*0.7); s.body.allowGravity=false;
                 } else {
                     const e=this.hazards.create(x,-20,'enemy');
+                    e.setDisplaySize(24,24); e.body.setSize(20,20,true);
                     e.setVelocityY(liveConfig.enemySpeed * this.difficulty); e.body.allowGravity=false;
                 }
             }});
@@ -2820,7 +2852,27 @@ function sceneBreaker(data) {
             else if (right.isDown||touchInput.right) this.paddle.setVelocityX(liveConfig.speed);
             else                                     this.paddle.setVelocityX(0);
             this.paddle.x = Phaser.Math.Clamp(this.paddle.x, 50, GW-50);
-            if (this.ball.y > GH+20) { this._onHit(this.paddle); }
+            if (!this._invincible && this.ball.active && this.ball.y > GH+20) this._ballLost();
+        }
+        _ballLost() {
+            this._invincible = true;
+            _sessionHits++;
+            GameAudio.play('hit');
+            if (liveConfig.screenShake) this.cameras.main.shake(240, 0.013);
+            gameState.lives--;
+            _updateHeartsDisplay(gameState.lives, liveConfig.lives);
+            if (gameState.lives <= 0) {
+                gameState.lives = liveConfig.lives;
+                this.time.delayedCall(180, () => { if (this.scene && this.scene.isActive()) showGameOver(this.score); });
+            } else {
+                // Reset ball above paddle so it doesn't re-trigger immediately
+                this.ball.setPosition(this.paddle.x, GH - 70);
+                const angle = Phaser.Math.Between(-160, -20) * Math.PI / 180;
+                const spd = 280 * (1 + this.wave * 0.1);
+                this.ball.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
+                showToast(`${gameState.lives} ${gameState.lives === 1 ? 'life' : 'lives'} left`);
+                this.time.delayedCall(400, () => { this._invincible = false; });
+            }
         }
     };
 }
@@ -2841,7 +2893,8 @@ function sceneRunner(data) {
             this.physics.add.existing(ground, true);
             this.groundObj = ground;
             // Player
-            this.actor = this.physics.add.sprite(100, GH-50, 'player').setScale(0.7 * liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(100, GH-50, 'player');
+            { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.groundObj);
@@ -2891,7 +2944,8 @@ function sceneFlappy(data) {
             const ceil = this.add.rectangle(GW/2,4,GW,8,themeInt(1,0x22c55e));
             this.physics.add.existing(ceil,true); this._ceil=ceil;
             // Player bird
-            this.actor = this.physics.add.sprite(100,GH/2,'player').setScale(0.5*liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(100,GH/2,'player');
+            { const _s=Math.round(18*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor,0,0xffd700);
             this.actor.body.setGravityY(liveConfig.gravity);
             this.actor.setCollideWorldBounds(false);
@@ -2950,7 +3004,8 @@ function sceneInvaders(data) {
             this.cursors = this.input.keyboard.createCursorKeys();
             this.fireKey  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             // Player
-            this.actor = this.physics.add.sprite(GW/2,GH-28,'player').setScale(0.7*liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(GW/2,GH-28,'player');
+            { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor,0,0x00d4aa);
             this.actor.setCollideWorldBounds(true); this.actor.body.allowGravity=false;
             // Bullets
@@ -2989,8 +3044,8 @@ function sceneInvaders(data) {
             const rows=3,cols=8,sw=60,sh=32,sx=50,sy=44;
             const rowCols=[0xe74c3c,0xf39c12,0x9b59b6];
             for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
-                const e=this.enemies.create(sx+c*sw,sy+r*sh,'enemy').setScale(0.55);
-                e.setTint(themeInt(r,rowCols[r])); e.body.allowGravity=false;
+                const e=this.enemies.create(sx+c*sw,sy+r*sh,'enemy').setDisplaySize(24,22);
+                e.body.setSize(22,20,true); e.setTint(themeInt(r,rowCols[r])); e.body.allowGravity=false;
             }
             this.moveTimer.delay=700;
         }
@@ -3191,240 +3246,259 @@ function sceneSnake(data) {
 }
 
 // ── ASTEROIDS ─────────────────────────────────────────────────────────────────
-// ── ROGUELIKE ──────────────────────────────────────────────────────────────────
+// ── ROGUELIKE (Binding of Isaac style — real-time twin-stick) ──────────────────
 function sceneRoguelike(data) {
     const Base = makeBaseScene(data);
+    const W = 16;       // wall thickness (px)
+    const DOOR_H = 52;  // door opening height
     return class extends Base {
         create() {
-            this.score=0; this._floor=1; this._moving=false;
+            this.score=0; this._invincible=false;
+            this._floor=1; this._room=0;
+            this._roomsPerFloor = Math.max(3, Math.round(liveConfig.rogueRooms||5));
+            this._hp  = Math.max(1, liveConfig.rogueStartHp||liveConfig.lives||3);
+            this._maxHp = this._hp;
+            this._lastFired = 0;
+
             this._drawBg();
             this.scoreText = this._makeScoreText();
-            this.cursors = this.input.keyboard.createCursorKeys();
-            this.wasd = this.input.keyboard.addKeys({up:'W',down:'S',left:'A',right:'D'});
-            this._TILE=32; this._cols=20; this._rows=15;
-            this._hp = liveConfig.lives; this._maxHp = liveConfig.lives;
-            this._hpText = this.add.text(GW-10, 12, '', {fontSize:'13px',fill:'#f87171',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
-            this._floorText = this.add.text(GW/2, 12, '', {fontSize:'12px',fill:themeHex(2,'#fbbf24'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(10);
-            this._genDungeon();
+            this._hpText   = this.add.text(GW-10,12,'',{fontSize:'14px',fill:'#f87171',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
+            this._roomText = this.add.text(GW/2,12,'',{fontSize:'11px',fill:themeHex(2,'#fbbf24'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(10);
+
+            // Input — WASD move, arrows shoot
+            this.moveKeys  = this.input.keyboard.addKeys({up:'W',down:'S',left:'A',right:'D'});
+            this.shootKeys = this.input.keyboard.createCursorKeys();
+
+            // Physics groups (created once; _buildRoom clears & refills them)
+            this.walls     = this.physics.add.staticGroup();
+            this._doorGrp  = this.physics.add.staticGroup();
+            this._obstacles= this.physics.add.staticGroup();
+            this.enemies   = this.physics.add.group();
+            this.bullets   = this.physics.add.group();
+            this.eBullets  = this.physics.add.group();
+
+            // Player
+            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
+            { const _s=Math.round(22*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.75),Math.round(_s*.75),true); }
+            this._tint(this.actor,0,0xffffff);
+            this.actor.setCollideWorldBounds(true); this.actor.body.allowGravity=false;
+
+            // Colliders — group references stay valid across _buildRoom cycles
+            this.physics.add.collider(this.actor,   this.walls);
+            this.physics.add.collider(this.actor,   this._doorGrp);
+            this.physics.add.collider(this.actor,   this._obstacles);
+            this.physics.add.collider(this.enemies, this.walls);
+            this.physics.add.collider(this.enemies, this._obstacles);
+            this.physics.add.overlap(this.bullets,  this.walls,     (b)=>b.destroy());
+            this.physics.add.overlap(this.bullets,  this._obstacles,(b)=>b.destroy());
+            this.physics.add.overlap(this.bullets,  this.enemies,   (b,e)=>this._hitEnemy(b,e));
+            this.physics.add.overlap(this.eBullets, this.walls,     (b)=>b.destroy());
+            this.physics.add.overlap(this.eBullets, this._obstacles,(b)=>b.destroy());
+            this.physics.add.overlap(this.actor,    this.eBullets,  (_,b)=>{ b.destroy(); this._takeDamage(); });
+            this.physics.add.overlap(this.actor,    this.enemies,   ()=>this._takeDamage());
+
+            this._buildRoom();
         }
 
-        _genDungeon() {
-            this._moving = false;
-            // Clear previous layer graphics
-            if (this._mapGfx) this._mapGfx.destroy();
-            this._enemies = []; this._items = [];
-            if (this._charSprite) this._charSprite.destroy();
-            if (this._enemyGrp) this._enemyGrp.clear(true, true);
-            if (this._itemGrp)  this._itemGrp.clear(true, true);
+        _buildRoom() {
+            // ── Clear previous room ──────────────────────────────────────────────
+            this.walls.clear(true,true);
+            this._doorGrp.clear(true,true);
+            this._obstacles.clear(true,true);
+            this.enemies.clear(true,true);
+            this.bullets.getChildren().slice().forEach(b=>b.destroy());
+            this.eBullets.getChildren().slice().forEach(b=>b.destroy());
+            if (this._doorLabel)  { this._doorLabel.destroy();  this._doorLabel=null; }
+            if (this._floorRect)  { this._floorRect.destroy();  this._floorRect=null; }
+            this._enemyShootTimer && this._enemyShootTimer.remove(false);
+            this._roomCleared = false;
+            this._doorOpen    = false;
 
-            const T=this._TILE, C=this._cols, R=this._rows;
-            this._grid = Array.from({length:C*R}, ()=>0); // 0=wall,1=floor,2=exit
+            // ── Floor backdrop ───────────────────────────────────────────────────
+            this._floorRect = this.add.rectangle(GW/2, GH/2, GW-W*2, GH-W*2, themeInt(3,0x0f172a)).setDepth(-1);
 
-            // Generate rooms
-            const rooms = [];
-            for (let attempt=0; attempt<40 && rooms.length<6; attempt++) {
-                const rw=Phaser.Math.Between(4,7), rh=Phaser.Math.Between(3,6);
-                const rx=Phaser.Math.Between(1, C-rw-1), ry=Phaser.Math.Between(1, R-rh-1);
-                const overlaps = rooms.some(rm=>rx<rm.x+rm.w+1&&rx+rw+1>rm.x&&ry<rm.y+rm.h+1&&ry+rh+1>rm.y);
-                if (!overlaps) rooms.push({x:rx,y:ry,w:rw,h:rh});
+            // ── Walls ────────────────────────────────────────────────────────────
+            const wCol = themeInt(2,0x1e293b);
+            const mw = (x,y,w,h) => this.walls.create(x,y,'block').setDisplaySize(w,h).setTint(wCol).refreshBody();
+            mw(GW/2,    W/2,   GW, W);            // top
+            mw(GW/2, GH-W/2,   GW, W);            // bottom
+            mw(  W/2, GH/2,    W, GH);            // left
+            // Right wall with door gap
+            const sideH = GH/2 - DOOR_H/2 - W;
+            mw(GW-W/2,         W + sideH/2,    W, sideH); // upper right
+            mw(GW-W/2, GH - W - sideH/2,       W, sideH); // lower right
+
+            // ── Door (closed) ────────────────────────────────────────────────────
+            this._doorGrp.create(GW-W/2, GH/2, 'block')
+                .setDisplaySize(W, DOOR_H).setTint(themeInt(0,0x7c3aed)).refreshBody();
+
+            // ── Cover obstacles ──────────────────────────────────────────────────
+            const obCount = Phaser.Math.Between(2,4);
+            const obCol = themeInt(1,0x334155);
+            for (let i=0;i<obCount;i++) {
+                const ox=Phaser.Math.Between(W+70,GW-W-70), oy=Phaser.Math.Between(W+60,GH-W-60);
+                const ow=Phaser.Math.Between(28,68), oh=Phaser.Math.Between(20,44);
+                this._obstacles.create(ox,oy,'block').setDisplaySize(ow,oh).setTint(obCol).refreshBody();
             }
-            rooms.forEach(rm => {
-                for (let cy=rm.y;cy<rm.y+rm.h;cy++) for(let cx=rm.x;cx<rm.x+rm.w;cx++) this._grid[cy*C+cx]=1;
-            });
-            // Connect with L-corridors
-            for (let i=1;i<rooms.length;i++) {
-                const a=rooms[i-1], b=rooms[i];
-                const ax=Math.floor(a.x+a.w/2), ay=Math.floor(a.y+a.h/2);
-                const bx=Math.floor(b.x+b.w/2), by=Math.floor(b.y+b.h/2);
-                let cx=ax, cy=ay;
-                while(cx!==bx){this._grid[cy*C+cx]=1;cx+=cx<bx?1:-1;}
-                while(cy!==by){this._grid[cy*C+cx]=1;cy+=cy<by?1:-1;}
-                this._grid[by*C+bx]=1;
+
+            // ── Enemies ──────────────────────────────────────────────────────────
+            const dens = liveConfig.rogueDensity || 0.3;
+            const eCount = Math.max(1, Math.round((2+this._floor*1.4)*dens));
+            for (let i=0;i<eCount;i++) {
+                const ex=Phaser.Math.Between(W+50,GW-W-50), ey=Phaser.Math.Between(W+50,GH-W-50);
+                const e=this.enemies.create(ex,ey,'enemy');
+                e.setDisplaySize(22,22); e.body.setSize(18,18,true);
+                e.setTint(themeInt(1,0xef4444)); e.body.allowGravity=false;
             }
-            // Place exit in last room
-            const last=rooms[rooms.length-1];
-            const ex=Math.floor(last.x+last.w/2), ey=Math.floor(last.y+last.h/2);
-            this._grid[ey*C+ex]=2; this._exitCell={x:ex,y:ey};
 
-            // Place player in first room
-            const first=rooms[0];
-            this._px=Math.floor(first.x+first.w/2); this._py=Math.floor(first.y+first.h/2);
+            // ── Enemy ranged attack (floor 2+) ───────────────────────────────────
+            if (this._floor >= 2) {
+                const fireInterval = Math.max(800, 2000-this._floor*80);
+                this._enemyShootTimer = this.time.addEvent({delay:fireInterval,loop:true,callback:this._enemyFire,callbackScope:this});
+            }
 
-            // Spawn enemies (skip player and exit cells)
-            const eDiff = this._floor;
-            rooms.slice(1).forEach(rm => {
-                for(let i=0;i<Phaser.Math.Between(1,2+eDiff);i++) {
-                    const ex2=Phaser.Math.Between(rm.x,rm.x+rm.w-1), ey2=Phaser.Math.Between(rm.y,rm.y+rm.h-1);
-                    if(ex2===this._px&&ey2===this._py) return;
-                    this._enemies.push({x:ex2,y:ey2,hp:1+Math.floor(eDiff*0.5),maxHp:1+Math.floor(eDiff*0.5),id:Math.random()});
-                }
-            });
-            // Scatter a few health items
-            rooms.forEach((rm,ri)=>{
-                if(ri===0||Math.random()>0.5) return;
-                this._items.push({x:rm.x+1,y:rm.y+1,type:'hp'});
-            });
-
-            // Build map graphics
-            this._mapGfx = this.add.graphics().setDepth(0);
-            this._drawMap();
-            // Sprites
-            this._enemyGrp = this.add.group();
-            this._itemGrp  = this.add.group();
-            this._rebuildSprites();
-            this._floorText.setText('Floor '+this._floor);
-            this._updateHpText();
+            // ── Reset player to left entrance ────────────────────────────────────
+            this.actor.setPosition(W+30, GH/2);
+            this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor}`);
+            this._updateHud();
         }
 
-        _drawMap() {
-            const T=this._TILE, C=this._cols, g=this._mapGfx;
-            g.clear();
-            const wallCol  = themeInt(2, 0x1e293b);
-            const floorCol = themeInt(3, 0x334155);
-            const exitCol  = themeInt(0, 0x7c3aed);
-            this._grid.forEach((v,i)=>{
-                const cx=(i%C)*T, cy=Math.floor(i/C)*T;
-                if(v===0) { g.fillStyle(wallCol,1); g.fillRect(cx,cy,T,T); g.fillStyle(0x000000,0.3); g.fillRect(cx,cy,T,2); g.fillRect(cx,cy,2,T); }
-                else if(v===1) { g.fillStyle(floorCol,1); g.fillRect(cx+1,cy+1,T-2,T-2); }
-                else if(v===2) { g.fillStyle(exitCol,1); g.fillRect(cx+4,cy+4,T-8,T-8); g.fillStyle(0xffd700,0.9); g.fillRect(cx+T/2-3,cy+T/2-3,6,6); }
-            });
+        _enemyFire() {
+            if (!this.scene||!this.scene.isActive()) return;
+            const alive = this.enemies.getChildren().filter(e=>e.active);
+            if (!alive.length) return;
+            const shooter = alive[Phaser.Math.Between(0,alive.length-1)];
+            const dx=this.actor.x-shooter.x, dy=this.actor.y-shooter.y;
+            const mag=Math.sqrt(dx*dx+dy*dy)||1;
+            const b=this.eBullets.create(shooter.x,shooter.y,'laser').setDisplaySize(8,8);
+            b.body.setSize(7,7,true); b.body.allowGravity=false;
+            b.setTint(0xef4444); b.setVelocity(dx/mag*(140+this._floor*15), dy/mag*(140+this._floor*15));
         }
 
-        _rebuildSprites() {
-            const T=this._TILE;
-            // Player sprite
-            if (this._charSprite) this._charSprite.destroy();
-            this._charSprite = this.add.image(this._px*T+T/2, this._py*T+T/2, 'player')
-                .setDisplaySize(T-4, T-4).setDepth(5).setTint(themeInt(0,0xa78bfa));
-            // Enemies
-            this._enemyGrp.clear(true,true);
-            this._enemies.forEach(en => {
-                const sp = this.add.image(en.x*T+T/2, en.y*T+T/2, 'enemy')
-                    .setDisplaySize(T-6,T-6).setDepth(4).setTint(themeInt(1,0xef4444));
-                sp._enId = en.id;
-                this._enemyGrp.add(sp);
-            });
-            // Items
-            this._itemGrp.clear(true,true);
-            this._items.forEach(it => {
-                const sp = this.add.image(it.x*T+T/2, it.y*T+T/2, 'laser')
-                    .setDisplaySize(T-12,T-12).setDepth(3).setTint(0xf87171);
-                sp._itRef = it;
-                this._itemGrp.add(sp);
-            });
+        _hitEnemy(bullet, enemy) {
+            this._burst(enemy.x,enemy.y,themeInt(1,0xef4444));
+            bullet.destroy(); enemy.destroy();
+            const pts = Math.max(1,10*this._floor) * (liveConfig.pointsPerKill||10);
+            this.score+=pts;
+            this.scoreText.setText('Score: '+this.score);
+            this._flashScore(this.scoreText);
+            GameAudio.play('score');
+            _achUnlock('first_blood');
+            if (!this.enemies.countActive(true) && !this._roomCleared) {
+                this._roomCleared=true;
+                this._openDoor();
+            }
         }
 
-        _updateHpText() {
-            const hearts = '♥'.repeat(this._hp) + '♡'.repeat(Math.max(0,this._maxHp-this._hp));
-            this._hpText.setText(hearts);
+        _openDoor() {
+            // Remove closed-door physics body; show open arrow
+            this._doorGrp.clear(true,true);
+            GameAudio.play('jump');
+            showToast('Room clear! ➜ go right');
+            this._doorLabel=this.add.text(GW-W-6,GH/2,'➜',{fontSize:'24px',fill:themeHex(0,'#4ade80'),fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,0.5).setDepth(8);
+            this._doorOpen=true;
         }
 
-        _tryMove(dx, dy) {
-            if (this._moving) return;
-            const nx=this._px+dx, ny=this._py+dy;
-            if(nx<0||ny<0||nx>=this._cols||ny>=this._rows) return;
-            const cell=this._grid[ny*this._cols+nx];
-            if(cell===0) return; // wall
-
-            // Bump combat
-            const en=this._enemies.find(e=>e.x===nx&&e.y===ny);
-            if(en) {
-                en.hp--;
+        _nextRoom() {
+            if (!this._doorOpen) return;
+            this._doorOpen=false;
+            this._room++;
+            if (this._room >= this._roomsPerFloor) {
+                this._floor++;
+                this._room=0;
+                this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
+                const bonus=100*this._floor;
+                this.score+=bonus;
+                if (this._hp<this._maxHp) { this._hp++; }
+                showToast(`🏆 Floor ${this._floor}! +${bonus} pts`);
                 GameAudio.play('score');
-                this._burst(nx*this._TILE+this._TILE/2, ny*this._TILE+this._TILE/2, themeInt(1,0xef4444));
-                if(en.hp<=0) {
-                    this._enemies = this._enemies.filter(e=>e!==en);
-                    this.score += (10 * this._floor * liveConfig.pointsPerKill);
-                    this.scoreText.setText('Score: '+this.score);
-                    this._flashScore(this.scoreText);
-                    _achUnlock('first_blood');
-                }
-                this._rebuildSprites();
-                return;
             }
-
-            // Move player
-            this._moving=true;
-            this._px=nx; this._py=ny;
-            const T=this._TILE;
-            this.tweens.add({
-                targets: this._charSprite,
-                x: nx*T+T/2, y: ny*T+T/2,
-                duration: 80, ease: 'Linear',
-                onComplete: () => {
-                    this._moving=false;
-                    // Pick up item
-                    const it=this._items.find(i=>i.x===nx&&i.y===ny);
-                    if(it) {
-                        this._items=this._items.filter(i=>i!==it);
-                        if(it.type==='hp'&&this._hp<this._maxHp) { this._hp++; this._updateHpText(); GameAudio.play('jump'); showToast('❤️ +1 HP'); }
-                        this._itemGrp.getChildren().filter(s=>s._itRef===it).forEach(s=>s.destroy());
-                    }
-                    // Enemy counter-move (simple: step towards player)
-                    this._enemyTurn();
-                    // Exit?
-                    if(this._exitCell&&this._px===this._exitCell.x&&this._py===this._exitCell.y) {
-                        this._floor++;
-                        showToast(`🗝️ Floor ${this._floor}! Descending…`);
-                        GameAudio.play('score');
-                        this.time.delayedCall(500, ()=>this._genDungeon());
-                    }
-                }
+            this.cameras.main.fadeOut(180,0,0,0);
+            this.time.delayedCall(200, ()=>{
+                this._buildRoom();
+                this.cameras.main.fadeIn(180,0,0,0);
             });
         }
 
-        _enemyTurn() {
-            const T=this._TILE;
-            this._enemies.forEach(en => {
-                // Only move every other turn at higher floors
-                if(this._floor<2&&Math.random()<0.4) return;
-                const dx=this._px-en.x, dy=this._py-en.y;
-                if(Math.abs(dx)+Math.abs(dy)>8) return; // too far, stay put
-                const moves = [];
-                if(dx!==0) moves.push({x:en.x+(dx>0?1:-1),y:en.y});
-                if(dy!==0) moves.push({x:en.x,y:en.y+(dy>0?1:-1)});
-                for(const m of moves) {
-                    const cell=this._grid[m.y*this._cols+m.x];
-                    if(cell===0) continue;
-                    if(m.x===this._px&&m.y===this._py) {
-                        // Attack player
-                        if (this._invincible) return;
-                        this._hp--;
-                        this._updateHpText();
-                        GameAudio.play('hit');
-                        if (liveConfig.screenShake) this.cameras.main.shake(180, 0.01);
-                        this._burst(this._px*T+T/2, this._py*T+T/2, 0xef4444);
-                        if(this._hp<=0) {
-                            this._invincible = true;
-                            this.time.delayedCall(220, () => {
-                                if (this.scene && this.scene.isActive()) showGameOver(this.score || 0);
-                            });
-                            return;
-                        }
-                        // Brief invincibility after taking a hit
-                        this._invincible = true;
-                        this.time.delayedCall(500, () => { this._invincible = false; });
-                    } else if(!this._enemies.some(e=>e!==en&&e.x===m.x&&e.y===m.y)) {
-                        en.x=m.x; en.y=m.y; break;
-                    }
-                }
-            });
-            this._rebuildSprites();
+        _takeDamage() {
+            if (this._invincible) return;
+            if (this._puShield) { this._puShield=false; _hidePuHud('shield'); if(liveConfig.screenShake) this.cameras.main.shake(100,0.006); return; }
+            this._invincible=true;
+            _sessionHits++;
+            GameAudio.play('hit');
+            if (liveConfig.screenShake) this.cameras.main.shake(200,0.012);
+            this._hp--;
+            gameState.lives=Math.max(0,this._hp);
+            _updateHeartsDisplay(this._hp, this._maxHp);
+            this._updateHud();
+            if (this._hp<=0) {
+                gameState.lives=liveConfig.lives;
+                this.time.delayedCall(200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); });
+            } else {
+                this.tweens.add({targets:this.actor,alpha:0.3,duration:90,yoyo:true,repeat:4,
+                    onComplete:()=>{ if(this.actor&&this.actor.active) this.actor.setAlpha(1); this._invincible=false; }});
+            }
+        }
+
+        _updateHud() {
+            this._hpText.setText('♥'.repeat(this._hp)+'♡'.repeat(Math.max(0,this._maxHp-this._hp)));
+        }
+
+        _fireBullet(vx, vy) {
+            const now=this.time.now;
+            const cd=Math.max(70,280-this._floor*8);
+            if (now-this._lastFired < cd) return;
+            this._lastFired=now;
+            const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(10,8);
+            b.body.setSize(9,7,true); b.body.allowGravity=false;
+            b.setTint(themeInt(0,0xa78bfa));
+            b.setVelocity(vx*380, vy*380);
+            GameAudio.play('score');
         }
 
         update() {
-            const {left,right,up,down} = this.cursors;
-            const w=this.wasd;
-            const L=Phaser.Input.Keyboard.JustDown(left)||Phaser.Input.Keyboard.JustDown(w.left)||touchInput.left;
-            const R=Phaser.Input.Keyboard.JustDown(right)||Phaser.Input.Keyboard.JustDown(w.right)||touchInput.right;
-            const U=Phaser.Input.Keyboard.JustDown(up)||Phaser.Input.Keyboard.JustDown(w.up)||touchInput.up;
-            const D=Phaser.Input.Keyboard.JustDown(down)||Phaser.Input.Keyboard.JustDown(w.down)||touchInput.fire;
-            if (!this._moving) {
-                if (L) { this._tryMove(-1,0); touchInput.left=false; }
-                else if (R) { this._tryMove(1,0); touchInput.right=false; }
-                else if (U) { this._tryMove(0,-1); touchInput.up=false; }
-                else if (D) { this._tryMove(0,1); touchInput.fire=false; }
+            const mk=this.moveKeys;
+            const spd=liveConfig.speed||180;
+            let vx=0,vy=0;
+            if (mk.left.isDown ||touchInput.left)  vx=-spd;
+            else if (mk.right.isDown||touchInput.right) vx=spd;
+            if (mk.up.isDown   ||touchInput.up)    vy=-spd;
+            else if (mk.down.isDown||touchInput.down) vy=spd;
+            this.actor.setVelocity(vx, vy);
+
+            // Arrow keys = shoot in that direction
+            const sk=this.shootKeys;
+            if      (sk.left.isDown)  this._fireBullet(-1,0);
+            else if (sk.right.isDown) this._fireBullet(1,0);
+            else if (sk.up.isDown)    this._fireBullet(0,-1);
+            else if (sk.down.isDown)  this._fireBullet(0,1);
+            // Touch fire button = shoot at nearest enemy
+            else if (touchInput.fire) {
+                const alive=this.enemies.getChildren().filter(e=>e.active);
+                if (alive.length) {
+                    let best=alive[0],bestD=Infinity;
+                    alive.forEach(e=>{ const d=Phaser.Math.Distance.Between(this.actor.x,this.actor.y,e.x,e.y); if(d<bestD){bestD=d;best=e;} });
+                    const dx=best.x-this.actor.x, dy=best.y-this.actor.y, m=Math.sqrt(dx*dx+dy*dy)||1;
+                    this._fireBullet(dx/m,dy/m);
+                }
             }
+
+            // Enemy AI — chase player
+            this.enemies.getChildren().forEach(e=>{
+                if (!e.active) return;
+                const dx=this.actor.x-e.x, dy=this.actor.y-e.y;
+                const m=Math.sqrt(dx*dx+dy*dy)||1;
+                const eSpd=(liveConfig.enemySpeed||100)*0.55;
+                e.setVelocity(dx/m*eSpd, dy/m*eSpd);
+            });
+
+            // Clean up bullets that left the room
+            [...this.bullets.getChildren(),...this.eBullets.getChildren()].forEach(b=>{
+                if (b.x<0||b.x>GW||b.y<0||b.y>GH) b.destroy();
+            });
+
+            // Trigger next room when player walks into open door
+            if (this._doorOpen && this.actor.x > GW - W - 22) this._nextRoom();
         }
     };
 }
@@ -3441,7 +3515,8 @@ function sceneAsteroids(data) {
             this.bullets  = this.physics.add.group();
             this.rocks    = this.physics.add.group();
             // Player ship (wraps screen edges)
-            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player').setScale(0.85 * liveConfig.playerScale);
+            this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
+            { const _s=Math.round(27*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setDrag(50).setMaxVelocity(400);
             // Spawn initial wave
@@ -4243,12 +4318,12 @@ function setupTouchControls() {
             touchInput.left  = dx < -DR;
             touchInput.right = dx >  DR;
             touchInput.up    = dy < -DR;
-            // Note: down not currently used by any genre via joystick
+            touchInput.down  = dy >  DR;
         }
         function _joyReset() {
             _joyId = -1;
             knob.style.transform = 'translate(-50%,-50%)';
-            touchInput.left = touchInput.right = touchInput.up = false;
+            touchInput.left = touchInput.right = touchInput.up = touchInput.down = false;
         }
         base.addEventListener('touchstart', e => {
             e.preventDefault();
