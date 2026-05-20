@@ -1997,6 +1997,7 @@ function sceneShooter(data) {
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
                 const e=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
                 e.setVelocityY(liveConfig.enemySpeed);
+                e.body.allowGravity=false;
             }});
             this.physics.add.overlap(this.bullets, this.hazards, (b,e)=>{
                 this._burst(e.x, e.y, themeInt(1,0xa78bfa));
@@ -2015,6 +2016,7 @@ function sceneShooter(data) {
             const offsets = spread===3 ? [-18,0,18] : spread===2 ? [-12,12] : [0];
             offsets.forEach(deg => {
                 const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(7,20);
+                b.body.setSize(7,20); b.body.allowGravity=false;
                 const rot = this.actor.rotation - Math.PI/2 + deg * Math.PI/180;
                 b.rotation = rot + Math.PI/2;
                 this.physics.velocityFromRotation(rot, liveConfig.bulletSpeed, b.body.velocity);
@@ -2029,6 +2031,8 @@ function sceneShooter(data) {
             else                       this.actor.setAngularVelocity(0);
             if (up.isDown||tU) this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, spd, this.actor.body.acceleration);
             else               this.actor.setAcceleration(0);
+            // Live spawn delay — update timer if slider changed
+            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             // Difficulty ramp: enemies speed up over time
             const ramp = 1 + (time/60000) * liveConfig.difficultyScale;
             if ((this.fireKey.isDown||touchInput.fire) && time > this.lastFired) {
@@ -2071,9 +2075,9 @@ function scenePlatformer(data) {
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.platforms);
-            this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
+            this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const h=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
-                h.setVelocityY(liveConfig.enemySpeed);
+                h.setVelocityY(liveConfig.enemySpeed); h.body.allowGravity=false;
             }});
             this.physics.add.collider(this.actor, this.hazards, ()=>{ this._onHit(this.actor); });
             this.physics.add.collider(this.hazards, this.platforms, h=>h.destroy());
@@ -2138,6 +2142,7 @@ function scenePlatformer(data) {
                 GameAudio.play('jump');
             }
             this._upWasDown = upNow;
+            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             this.surviveTimer+=16;
             if (this.surviveTimer>2000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score'); }
         }
@@ -2157,11 +2162,11 @@ function sceneDodge(data) {
             this.actor = this.physics.add.sprite(GW/2, GH-40, 'player').setScale(0.7 * liveConfig.playerScale);
             this._tint(this.actor, 0, 0xffffff);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
-            this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
+            this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const x=Phaser.Math.Between(20,GW-20);
                 if (Math.random()<0.3) {
                     const s=this.stars.create(x,-20,'laser').setDisplaySize(16,16).setTint(0xffd700);
-                    s.setVelocityY(liveConfig.enemySpeed*0.7); s.body.allowGravity=false;
+                    s.body.setSize(16,16); s.setVelocityY(liveConfig.enemySpeed*0.7); s.body.allowGravity=false;
                 } else {
                     const e=this.hazards.create(x,-20,'enemy');
                     e.setVelocityY(liveConfig.enemySpeed * this.difficulty); e.body.allowGravity=false;
@@ -2184,6 +2189,7 @@ function sceneDodge(data) {
             if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
             else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
             else                                     this.actor.setVelocityX(0);
+            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             [...this.hazards.getChildren(),...this.stars.getChildren()].forEach(o=>{ if(o.y>GH+20) o.destroy(); });
             this._syncPuLabels();
         }
@@ -2201,10 +2207,12 @@ function sceneBreaker(data) {
             // Paddle
             const pw = liveConfig.paddleW || 90;
             this.paddle = this.physics.add.image(GW/2, GH-20, 'block').setDisplaySize(pw, 14);
+            this.paddle.body.setSize(pw, 14);
             this.paddle.setImmovable(true); this.paddle.body.allowGravity=false;
             this._tint(this.paddle, 1, 0xa78bfa);
             // Ball
             this.ball = this.physics.add.image(GW/2, GH-50, 'laser').setDisplaySize(14,14);
+            this.ball.body.setSize(14,14);
             this.ball.setBounce(1).setCollideWorldBounds(true);
             this.ball.body.allowGravity=false; this.ball.body.checkCollision.down=false;
             const angle = Phaser.Math.Between(-160,-20) * Math.PI/180;
@@ -2269,9 +2277,10 @@ function sceneRunner(data) {
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.physics.add.collider(this.actor, this.groundObj);
             // Obstacle spawner
-            this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
+            this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const h = Phaser.Math.Between(20,45);
                 const ob=this.obstacles.create(GW+20,GH-8-h/2,'block').setDisplaySize(22,h);
+                ob.body.setSize(22,h);
                 ob.setImmovable(true); ob.body.allowGravity=false;
                 ob.setTint(themeInt(1, 0xef4444));
                 ob.setVelocityX(-liveConfig.obstacleSpeed*(1+this.score*0.005));
@@ -2289,6 +2298,7 @@ function sceneRunner(data) {
                 GameAudio.play('jump');
             }
             this._upWasDown = upNow;
+            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
             this.surviveTimer+=16;
             if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); }
@@ -2332,15 +2342,19 @@ function sceneFlappy(data) {
             const gapY=Phaser.Math.Between(60,GH-60-gap);
             const spd=-Math.max(120,liveConfig.obstacleSpeed);
             const tp=this.pipes.create(GW+30,gapY/2,'block').setDisplaySize(40,gapY);
+            tp.body.setSize(40,gapY);
             tp.setImmovable(true); tp.body.allowGravity=false; tp.setVelocityX(spd);
             tp.setTint(themeInt(1,0x22c55e)); tp._isTop=true; tp._scored=false;
             const bpH=GH-gapY-gap;
             const bp=this.pipes.create(GW+30,gapY+gap+bpH/2,'block').setDisplaySize(40,Math.max(4,bpH));
+            bp.body.setSize(40,Math.max(4,bpH));
             bp.setImmovable(true); bp.body.allowGravity=false; bp.setVelocityX(spd);
             bp.setTint(themeInt(1,0x22c55e));
         }
         update() {
+            if (this.pipeTimer && this.pipeTimer.delay !== Math.max(900, liveConfig.spawnDelay+400)) this.pipeTimer.delay = Math.max(900, liveConfig.spawnDelay+400);
             if (!this.actor.active) return;
+            this.actor.body.setGravityY(liveConfig.gravity);
             if (this.actor.y>GH+10||this.actor.y<-10) { this._onHit(this.actor); return; }
             const upNow=this.spaceKey.isDown||this.upKey.isDown||touchInput.up;
             if (upNow&&!this._upWasDown) { this.actor.setVelocityY(-liveConfig.jumpForce); GameAudio.play('jump'); }
@@ -2427,7 +2441,7 @@ function sceneInvaders(data) {
             const all=this.enemies.getChildren(); if(!all.length) return;
             const src=all[Phaser.Math.Between(0,all.length-1)];
             const b=this.eBullets.create(src.x,src.y+10,'laser').setDisplaySize(6,14).setTint(0xff5555);
-            b.setVelocityY(liveConfig.bulletSpeed*0.45); b.body.allowGravity=false;
+            b.body.setSize(6,14); b.setVelocityY(liveConfig.bulletSpeed*0.45); b.body.allowGravity=false;
         }
         update(time) {
             const {left,right}=this.cursors;
@@ -2436,9 +2450,10 @@ function sceneInvaders(data) {
             else                                    this.actor.setVelocityX(0);
             if((this.fireKey.isDown||touchInput.fire)&&time>this.lastFired) {
                 const b=this.bullets.create(this.actor.x,this.actor.y-16,'laser').setDisplaySize(6,14);
-                b.setTint(themeInt(0,0x00d4aa)); b.setVelocityY(-liveConfig.bulletSpeed); b.body.allowGravity=false;
+                b.body.setSize(6,14); b.setTint(themeInt(0,0x00d4aa)); b.setVelocityY(-liveConfig.bulletSpeed); b.body.allowGravity=false;
                 this.lastFired=time+liveConfig.fireCooldown; GameAudio.play('shoot');
             }
+            if (this.shootTimer && this.shootTimer.delay !== liveConfig.spawnDelay) this.shootTimer.delay = liveConfig.spawnDelay;
             this.bullets.getChildren().forEach(b=>{ if(b.y<-20) b.destroy(); });
             this.eBullets.getChildren().forEach(b=>{ if(b.y>GH+20) b.destroy(); });
             this._syncPuLabels();
@@ -2459,11 +2474,14 @@ function scenePong(data) {
             for(let y=0;y<GH;y+=20){g.beginPath();g.moveTo(GW/2,y);g.lineTo(GW/2,y+12);g.strokePath();}
             // Paddles
             this.pLeft  = this.physics.add.image(22,GH/2,'block').setDisplaySize(12,70);
+            this.pLeft.body.setSize(12,70);
             this.pRight = this.physics.add.image(GW-22,GH/2,'block').setDisplaySize(12,70);
+            this.pRight.body.setSize(12,70);
             [this.pLeft,this.pRight].forEach(p=>{p.setImmovable(true);p.body.allowGravity=false;p.setCollideWorldBounds(true);});
             this._tint(this.pLeft,0,0x00d4aa); this._tint(this.pRight,1,0xa78bfa);
             // Ball
             this.ball=this.physics.add.image(GW/2,GH/2,'laser').setDisplaySize(12,12);
+            this.ball.body.setSize(12,12);
             this.ball.setBounce(1).setCollideWorldBounds(true);
             this.ball.body.allowGravity=false;
             this.ball.body.checkCollision.left=false; this.ball.body.checkCollision.right=false;
@@ -2931,8 +2949,8 @@ function sceneAsteroids(data) {
             // Fire
             if ((this.fireKey.isDown||touchInput.fire) && time > this.lastFired) {
                 const b=this.bullets.create(this.actor.x, this.actor.y, 'laser').setDisplaySize(6,6);
-                this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.bulletSpeed, b.body.velocity);
-                b.body.allowGravity=false; this.lastFired=time+liveConfig.fireCooldown; GameAudio.play('shoot');
+                b.body.setSize(6,6); b.body.allowGravity=false;
+                this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.bulletSpeed, b.body.velocity); this.lastFired=time+liveConfig.fireCooldown; GameAudio.play('shoot');
             }
             this.bullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
             this._syncPuLabels();
