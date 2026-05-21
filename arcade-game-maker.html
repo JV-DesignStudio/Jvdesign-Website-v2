@@ -698,7 +698,7 @@ ai.speed = <span class="c-num" id="bpPAI">150</span>
                     <div class="tweak-row"><span class="tweak-label">Paddle Speed</span><input type="range" min="50" max="600" value="300" oninput="liveConfig.speed=+this.value;setTxt('bpPPS',this.value);document.getElementById('playerSpeed').value=this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">300</span></div>
                     <div class="tweak-row"><span class="tweak-label">AI Speed</span><input type="range" min="20" max="400" value="150" oninput="liveConfig.enemySpeed=+this.value;setTxt('bpPAI',this.value);this.nextElementSibling.textContent=this.value;"><span class="tweak-val">150</span></div>
                 </div>
-                <div class="bp-explain">First to 5 points wins a round! The AI always tracks the ball — crank up AI speed for an impossible opponent.</div>
+                <div class="bp-explain">First to 5 points wins a round! Use the <strong>Tune</strong> tab → AI Difficulty to switch between Easy / Normal / Hard / Unbeatable.</div>
             </div>
 
             <!-- SNAKE -->
@@ -1146,9 +1146,9 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                 <div class="form-group">
                     <label>AI Difficulty</label>
                     <div class="pill-row" id="pillAI">
-                        <button class="pill active" onclick="activePill('pillAI',this);liveConfig.enemySpeed=80;">Easy</button>
-                        <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=150;">Normal</button>
-                        <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=260;">Hard</button>
+                        <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=80;">Easy</button>
+                        <button class="pill active" onclick="activePill('pillAI',this);liveConfig.enemySpeed=150;">Normal</button>
+                        <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=280;">Hard</button>
                         <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=500;">Unbeatable</button>
                     </div>
                 </div>
@@ -3858,19 +3858,48 @@ function scenePong(data) {
                 this._chargeStart=0;
                 if(!this._charged && this._chargeGfx) this._chargeGfx.clear();
             }
-            // AI paddle — capped slower than ball so the player can actually score
-            // Ball Y speed ≈ bulletSpeed*0.45*0.55 ≈ 134px/s; AI capped at ~75% of that
-            const ballSpd = liveConfig.bulletSpeed * 0.45;
-            const aiSpd = Math.min(liveConfig.enemySpeed * 0.55, ballSpd * 0.72);
-            // AI only reacts when ball is in its half (gives player a fairer angle)
-            if (this.ball.body && this.ball.body.velocity.x > 0) {
-                if(this.ball.y<this.pRight.y-6)      this.pRight.setVelocityY(-aiSpd);
-                else if(this.ball.y>this.pRight.y+6) this.pRight.setVelocityY(aiSpd);
-                else                                 this.pRight.setVelocityY(0);
+            // ── AI paddle — tiered difficulty ────────────────────────────────
+            // enemySpeed tiers: ≤100 Easy · ≤200 Normal · ≤350 Hard · >350 Unbeatable
+            const _bFullSpd = liveConfig.bulletSpeed * 0.45; // ball launch speed
+            const _tier     = liveConfig.enemySpeed;
+            const _bvx = this.ball.body ? this.ball.body.velocity.x : 0;
+            const _bvy = this.ball.body ? this.ball.body.velocity.y : 0;
+            // Time for ball to travel from current X to AI paddle X (used for prediction)
+            const _tToAI = _bvx > 0 ? Math.max(0, (GW - 44 - this.ball.x)) / Math.max(_bvx, 1) : 0;
+
+            let _aiMaxSpd, _targetY, _deadzone;
+            if (_tier > 350) {
+                // Unbeatable: predict where ball will land, tightly locked
+                _aiMaxSpd = _bFullSpd * 1.25;
+                _deadzone = 2;
+                _targetY  = Phaser.Math.Clamp(this.ball.y + _bvy * _tToAI * 0.9, 36, GH - 36);
+            } else if (_tier > 200) {
+                // Hard: partial trajectory prediction, fast
+                _aiMaxSpd = _bFullSpd * 0.95;
+                _deadzone = 4;
+                _targetY  = this.ball.y + _bvy * _tToAI * 0.45;
+            } else if (_tier > 100) {
+                // Normal: tracks current ball Y at medium speed
+                _aiMaxSpd = _bFullSpd * 0.65;
+                _deadzone = 8;
+                _targetY  = this.ball.y;
             } else {
-                // Drift slowly back to centre when ball moves away
-                const mid = GH/2;
-                if (Math.abs(this.pRight.y-mid)>10) this.pRight.setVelocityY(this.pRight.y>mid ? -35 : 35);
+                // Easy: slow, loose, misses fast angles
+                _aiMaxSpd = _bFullSpd * 0.36;
+                _deadzone = 16;
+                _targetY  = this.ball.y;
+            }
+
+            if (this.ball.body && _bvx > 0) {
+                const _diff = _targetY - this.pRight.y;
+                if      (_diff < -_deadzone) this.pRight.setVelocityY(-_aiMaxSpd);
+                else if (_diff >  _deadzone) this.pRight.setVelocityY( _aiMaxSpd);
+                else                         this.pRight.setVelocityY(0);
+            } else {
+                // Drift back to centre when ball is moving away
+                const _mid = GH / 2, _driftSpd = Math.min(45, _aiMaxSpd * 0.28);
+                if (Math.abs(this.pRight.y - _mid) > 10)
+                    this.pRight.setVelocityY(this.pRight.y > _mid ? -_driftSpd : _driftSpd);
                 else this.pRight.setVelocityY(0);
             }
             this.pRight.y=Phaser.Math.Clamp(this.pRight.y,36,GH-36);
