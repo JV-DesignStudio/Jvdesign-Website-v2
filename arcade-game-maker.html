@@ -356,6 +356,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .evt-log{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:rgba(52,211,153,.65);min-height:16px;transition:opacity .4s;}
 
 @media(max-width:900px){.studio-panel{width:280px;}}
+@media(pointer:coarse){
+  .touch-controls{display:flex!important;}
+  .controls-hint{display:none;}
+}
 @media(max-width:768px){
   body{overflow:hidden;}
   .studio{flex-direction:column;}
@@ -488,8 +492,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                         <button class="btn-sm" id="tmTool_solid"   onclick="tmSetTool(1)" style="background:rgba(124,58,237,.35);color:#a78bfa;border-color:rgba(124,58,237,.5);">⬛ Solid</button>
                         <button class="btn-sm" id="tmTool_hazard"  onclick="tmSetTool(2)">🔴 Hazard</button>
                         <button class="btn-sm" id="tmTool_erase"   onclick="tmSetTool(0)">✕ Erase</button>
-                        <button class="btn-sm" id="tmTool_fill"    onclick="tmFill()" style="margin-left:auto;">🪣 Fill</button>
-                        <button class="btn-sm"                     onclick="tmClear()">🗑 Clear</button>
+                        <button class="btn-sm" id="tmTool_flood"   onclick="tmSetTool('flood')" title="Flood-fill connected region">🪣 Fill</button>
+                        <button class="btn-sm" id="tmBtn_undo"     onclick="tmUndo()" style="margin-left:auto;" title="Undo (Ctrl+Z)">↩</button>
+                        <button class="btn-sm" id="tmBtn_redo"     onclick="tmRedo()" title="Redo (Ctrl+Y)">↪</button>
+                        <button class="btn-sm"                     onclick="tmClear()" title="Clear all tiles">🗑</button>
                     </div>
                     <!-- Grid canvas -->
                     <canvas id="tilemapCanvas" width="322" height="242"
@@ -913,6 +919,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                 <div style="display:flex;align-items:center;gap:6px;">
                     <button class="asset-btn import" style="flex:1;" onclick="openWorkshop('sound-studio.html')">🎵 Compose in Sound Studio</button>
                     <button class="asset-btn import" onclick="importMusicFromStudio()">⬇ Import</button>
+                    <button class="asset-btn import" onclick="GameAudio.previewMusic()" title="Preview music">▶</button>
                     <button class="asset-btn clear" onclick="clearCustomMusic()" title="Clear custom music">✕</button>
                     <span id="musicImportBadge" class="sound-custom-badge" style="display:none;">✓ Custom</span>
                 </div>
@@ -946,6 +953,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <option value="pop">Quick Pop</option>
                         <option value="off">Off</option>
                     </select>
+                    <button class="sound-import-btn" onclick="GameAudio.previewSlot('shoot')" title="Preview">▶</button>
                     <button class="sound-import-btn" onclick="importSfxSlot('shoot')" title="Import last SFX from SFX Studio">⬇ Studio</button>
                     <span class="sound-custom-badge" id="sfxShootBadge" style="display:none;">✓ Custom</span>
                 </div>
@@ -960,6 +968,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <option value="float">Float</option>
                         <option value="off">Off</option>
                     </select>
+                    <button class="sound-import-btn" onclick="GameAudio.previewSlot('jump')" title="Preview">▶</button>
                     <button class="sound-import-btn" onclick="importSfxSlot('jump')" title="Import last SFX from SFX Studio">⬇ Studio</button>
                     <span class="sound-custom-badge" id="sfxJumpBadge" style="display:none;">✓ Custom</span>
                 </div>
@@ -973,6 +982,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <option value="buzz">Buzz</option>
                         <option value="off">Off</option>
                     </select>
+                    <button class="sound-import-btn" onclick="GameAudio.previewSlot('hit')" title="Preview">▶</button>
                     <button class="sound-import-btn" onclick="importSfxSlot('hit')" title="Import last SFX from SFX Studio">⬇ Studio</button>
                     <span class="sound-custom-badge" id="sfxHitBadge" style="display:none;">✓ Custom</span>
                 </div>
@@ -986,6 +996,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <option value="chime">Chime</option>
                         <option value="off">Off</option>
                     </select>
+                    <button class="sound-import-btn" onclick="GameAudio.previewSlot('score')" title="Preview">▶</button>
                     <button class="sound-import-btn" onclick="importSfxSlot('score')" title="Import last SFX from SFX Studio">⬇ Studio</button>
                     <span class="sound-custom-badge" id="sfxScoreBadge" style="display:none;">✓ Custom</span>
                 </div>
@@ -1118,6 +1129,29 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <button class="pill active" onclick="activePill('pillRunnerDensity',this);liveConfig.spawnDelay=1100;">Normal</button>
                         <button class="pill" onclick="activePill('pillRunnerDensity',this);liveConfig.spawnDelay=700;">Dense</button>
                         <button class="pill" onclick="activePill('pillRunnerDensity',this);liveConfig.spawnDelay=400;">Chaos</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Obstacle Mix</label>
+                    <div class="pill-row" id="pillRunnerObstMix">
+                        <button class="pill active" onclick="activePill('pillRunnerObstMix',this);liveConfig.runnerObstacleMix='standard';">Standard</button>
+                        <button class="pill" onclick="activePill('pillRunnerObstMix',this);liveConfig.runnerObstacleMix='overhead';">+ Overhead</button>
+                        <button class="pill" onclick="activePill('pillRunnerObstMix',this);liveConfig.runnerObstacleMix='mixed';">Mixed</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Coin Frequency</label>
+                    <div class="pill-row" id="pillRunnerCoins">
+                        <button class="pill" onclick="activePill('pillRunnerCoins',this);liveConfig.runnerCoinFreq=0;">None</button>
+                        <button class="pill" onclick="activePill('pillRunnerCoins',this);liveConfig.runnerCoinFreq=0.08;">Low</button>
+                        <button class="pill active" onclick="activePill('pillRunnerCoins',this);liveConfig.runnerCoinFreq=0.15;">Normal</button>
+                        <button class="pill" onclick="activePill('pillRunnerCoins',this);liveConfig.runnerCoinFreq=0.30;">Lots</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">Parallax Background</div><div class="toggle-sub">Layered scrolling sky &amp; ground</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="runnerParallaxToggle" checked onchange="liveConfig.runnerParallax=this.checked;"><span class="toggle-knob"></span></label>
                     </div>
                 </div>
             </div>
@@ -1955,6 +1989,8 @@ const liveConfig = {
     asteroidCount:6, asteroidSpeedMul:1.0, asteroidDrag:50, asteroidSaucer:true,
     // Dodge options
     dodgeStarRatio:30,
+    // Runner options
+    runnerObstacleMix:'standard', runnerCoinFreq:0.15, runnerParallax:true,
     // Shooter options
     maxEnemies:12, bossWaves:true,
     // Platformer options
@@ -2100,6 +2136,17 @@ const GameAudio = {
         this.sfxEnabled = true;
         this.play(event);
         this.sfxEnabled = saved;
+    },
+    previewMusic() {
+        // Play 3 seconds of the current music (custom or built-in style)
+        const wasOn = this.musicOn;
+        if (!wasOn) {
+            const style = document.getElementById('musicStyle')?.value || 'chiptune';
+            this.startMusic(style);
+            setTimeout(() => { if (!wasOn) this.stopMusic(); }, 3000);
+        } else {
+            showToast('Music is already playing!');
+        }
     },
 
     _osc(type, freq0, freq1, dur, vol) {
@@ -3829,31 +3876,46 @@ function sceneRunner(data) {
             this.physics.add.collider(this.actor, this.groundObj);
             // Coin group
             this._coinGrp = this.physics.add.group();
-            // Obstacle spawner — 3 types: low block, tall block, flying coin row
+            // Obstacle spawner — types controlled by liveConfig.runnerObstacleMix
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
-                const r=Math.random();
-                if(r<0.15){
-                    // Floating coin row (3 coins in a line, player jumps to collect)
-                    for(let i=0;i<3;i++){
+                const coinFreq = liveConfig.runnerCoinFreq !== undefined ? liveConfig.runnerCoinFreq : 0.15;
+                const mix      = liveConfig.runnerObstacleMix || 'standard';
+                const r = Math.random();
+                const spd = -liveConfig.obstacleSpeed * (1 + this.score * 0.005);
+                if (coinFreq > 0 && r < coinFreq) {
+                    // Floating coin row
+                    for (let i=0;i<3;i++) {
                         const c=this._coinGrp.create(GW+20+i*24, GH-80, 'block').setDisplaySize(10,10);
-                        c.body.allowGravity=false; c.setTint(0xfbbf24);
-                        c.setVelocityX(-liveConfig.obstacleSpeed*(1+this.score*0.005));
+                        c.body.allowGravity=false; c.setTint(0xfbbf24); c.setVelocityX(spd);
                     }
+                } else if (mix !== 'standard' && r > 0.75) {
+                    // Overhead ceiling hazard (requires slide to pass)
+                    const oh = Phaser.Math.Between(30, 50);
+                    const ob = this.obstacles.create(GW+20, oh/2, 'block').setDisplaySize(24, oh);
+                    ob.body.setSize(24,oh); ob.setImmovable(true); ob.body.allowGravity=false;
+                    ob.setTint(themeInt(2, 0xef4444)); ob.setData('overhead', true);
+                    ob.setVelocityX(spd);
+                } else if (mix === 'mixed' && r > 0.55) {
+                    // Gap pair — two blocks with a gap in the middle
+                    [GW+10, GW+60].forEach(bx => {
+                        const h = Phaser.Math.Between(24, 44);
+                        const ob = this.obstacles.create(bx, GH-8-h/2,'block').setDisplaySize(20,h);
+                        ob.body.setSize(20,h); ob.setImmovable(true); ob.body.allowGravity=false;
+                        ob.setTint(themeInt(1, 0xa78bfa)); ob.setVelocityX(spd);
+                    });
                 } else {
-                    // tall = requires jump/slide, low = requires jump, normal = jump
-                    const isTall=r<0.38;
+                    // Standard tall/normal block
+                    const isTall = r < (coinFreq + 0.23);
                     const h = isTall ? Phaser.Math.Between(50,70) : Phaser.Math.Between(20,38);
-                    const ob=this.obstacles.create(GW+20,GH-8-h/2,'block').setDisplaySize(22,h);
-                    ob.body.setSize(22,h);
-                    ob.setImmovable(true); ob.body.allowGravity=false;
+                    const ob = this.obstacles.create(GW+20, GH-8-h/2,'block').setDisplaySize(22,h);
+                    ob.body.setSize(22,h); ob.setImmovable(true); ob.body.allowGravity=false;
                     ob.setTint(isTall ? themeInt(0, 0x7c3aed) : themeInt(1, 0xef4444));
-                    ob.setData('tall', isTall);
-                    ob.setVelocityX(-liveConfig.obstacleSpeed*(1+this.score*0.005));
+                    ob.setData('tall', isTall); ob.setVelocityX(spd);
                 }
             }});
             this.physics.add.collider(this.actor, this.obstacles, (_,ob)=>{
-                // Tall obstacle: can slide under if crouching
-                if(ob.getData('tall') && this._sliding) return;
+                if (ob.getData('tall') && this._sliding) return;     // slide under tall blocks
+                if (ob.getData('overhead') && !this._sliding) return; // overhead only hits if upright
                 this._onHit(this.actor);
             });
             this.physics.add.overlap(this.actor, this._coinGrp, (_,c)=>{
@@ -5687,15 +5749,16 @@ function clearLevel() {
 // ── INLINE TILEMAP EDITOR ─────────────────────────────────────────────────────
 // 20 × 15 grid. Values: 0=empty, 1=solid platform, 2=hazard/spike
 const TM_COLS=20, TM_ROWS=15;
-let _tmData   = Array(TM_COLS*TM_ROWS).fill(0);
-let _tmTool   = 1;   // currently selected tile type
+let _tmData     = Array(TM_COLS*TM_ROWS).fill(0);
+let _tmTool     = 1;      // 0=erase 1=solid 2=hazard 'flood'=flood-fill
 let _tmPainting = false;
+let _tmHistory  = [];     // undo stack  (each entry is a full _tmData snapshot)
+let _tmFuture   = [];     // redo stack
 
 // Tile colours for the editor canvas
 const TM_COLORS = { 0:'#0a0c18', 1:'#7c3aed', 2:'#ef4444' };
 
 function _tmCanvas()  { return document.getElementById('tilemapCanvas'); }
-function _tmCtx()     { const c=_tmCanvas(); return c?c.getContext('2d'):null; }
 
 function tmRender() {
     const cvs=_tmCanvas(); if(!cvs) return;
@@ -5723,30 +5786,79 @@ function _tmCoord(e) {
     if(tx<0||tx>=TM_COLS||ty<0||ty>=TM_ROWS) return null;
     return tx+ty*TM_COLS;
 }
-function _tmPaint(idx) {
-    if(idx===null||idx===undefined) return;
-    _tmData[idx]=_tmTool;
-    tmRender(); _tmSync();
+function _tmPushHistory() {
+    _tmHistory.push(_tmData.slice());
+    if (_tmHistory.length > 60) _tmHistory.shift();
+    _tmFuture = []; // new action clears redo
 }
 function _tmSync() {
     customLevelMap=_tmData.slice();
     document.getElementById('levelDesignerGrid').value=JSON.stringify(customLevelMap);
 }
-function tmDown(e)  { _tmPainting=true; _tmPaint(_tmCoord(e)); }
-function tmMove(e)  { if(!_tmPainting) return; _tmPaint(_tmCoord(e)); }
-function tmUp()     { _tmPainting=false; }
-function tmTouchStart(e){ e.preventDefault(); _tmPainting=true; _tmPaint(_tmCoord(e.touches[0])); }
-function tmTouchMove(e) { e.preventDefault(); if(!_tmPainting) return; _tmPaint(_tmCoord(e.touches[0])); }
+// Stroke-based painting: push history once at stroke start, paint freely during move
+function tmDown(e) {
+    const idx = _tmCoord(e);
+    if (_tmTool === 'flood') { tmFloodFill(idx); return; }
+    _tmPainting = true; _tmPushHistory();
+    if (idx !== null) { _tmData[idx] = _tmTool; tmRender(); _tmSync(); }
+}
+function tmMove(e) {
+    if (!_tmPainting) return;
+    const idx = _tmCoord(e);
+    if (idx === null) return;
+    if (_tmData[idx] === _tmTool) return; // skip no-op cells
+    _tmData[idx] = _tmTool; tmRender(); _tmSync();
+}
+function tmUp()     { _tmPainting = false; }
+function tmTouchStart(e){ e.preventDefault(); tmDown(e.touches[0]); }
+function tmTouchMove(e) { e.preventDefault(); tmMove(e.touches[0]); }
 
 function tmSetTool(t) {
-    _tmTool=t;
-    [1,2,0].forEach(v=>{ const b=document.getElementById('tmTool_'+(v===1?'solid':v===2?'hazard':'erase')); if(b){ b.style.background=v===t?'rgba(124,58,237,.5)':''; b.style.color=v===t?'#a78bfa':''; } });
+    _tmTool = t;
+    const toolMap = {1:'solid', 2:'hazard', 0:'erase', flood:'flood'};
+    Object.entries(toolMap).forEach(([v, name]) => {
+        const b = document.getElementById('tmTool_'+name);
+        if (b) {
+            const active = String(v) === String(t);
+            b.style.background = active ? 'rgba(124,58,237,.5)' : '';
+            b.style.color      = active ? '#a78bfa' : '';
+            b.style.borderColor= active ? 'rgba(124,58,237,.6)' : '';
+        }
+    });
 }
-function tmFill() {
-    _tmData.fill(_tmTool); tmRender(); _tmSync();
-    showToast(_tmTool===0?'Canvas cleared':'Canvas filled');
+function tmFloodFill(idx) {
+    if (idx === null || idx === undefined) return;
+    const paintVal = typeof _tmTool === 'number' ? _tmTool : 1; // flood uses last numeric tool
+    const target = _tmData[idx];
+    if (target === paintVal) return; // nothing to fill
+    _tmPushHistory();
+    const q = [idx], visited = new Set([idx]);
+    while (q.length) {
+        const i = q.shift();
+        _tmData[i] = paintVal;
+        const x = i % TM_COLS, y = Math.floor(i / TM_COLS);
+        [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].forEach(([nx,ny]) => {
+            if (nx<0||nx>=TM_COLS||ny<0||ny>=TM_ROWS) return;
+            const ni = nx + ny * TM_COLS;
+            if (!visited.has(ni) && _tmData[ni] === target) { visited.add(ni); q.push(ni); }
+        });
+    }
+    tmRender(); _tmSync();
+}
+function tmUndo() {
+    if (!_tmHistory.length) { showToast('Nothing to undo'); return; }
+    _tmFuture.push(_tmData.slice());
+    _tmData = _tmHistory.pop();
+    tmRender(); _tmSync(); showToast('↩ Undo');
+}
+function tmRedo() {
+    if (!_tmFuture.length) { showToast('Nothing to redo'); return; }
+    _tmHistory.push(_tmData.slice());
+    _tmData = _tmFuture.pop();
+    tmRender(); _tmSync(); showToast('↪ Redo');
 }
 function tmClear() {
+    _tmPushHistory();
     _tmData.fill(0); tmRender(); _tmSync();
     showToast('Tilemap cleared');
 }
@@ -5872,9 +5984,21 @@ function _buildSaveData() {
     };
 }
 
+function _captureGameThumbnail() {
+    try {
+        const src = document.querySelector('#game-container canvas');
+        if (!src) return null;
+        const tmp = document.createElement('canvas');
+        tmp.width = 96; tmp.height = 60;
+        tmp.getContext('2d').drawImage(src, 0, 0, 96, 60);
+        return tmp.toDataURL('image/jpeg', 0.55);
+    } catch(e) { return null; }
+}
+
 function saveToSlot(slotIdx, silent=false) {
     try {
         const data = _buildSaveData();
+        data.thumbnail = _captureGameThumbnail(); // may be null if no game running
         localStorage.setItem(SLOT_KEYS[slotIdx], JSON.stringify(data));
         renderSaveSlots();
         if (!silent) showToast(`Slot ${slotIdx+1} saved — "${data.title}" ✓`);
@@ -5905,15 +6029,18 @@ function renderSaveSlots() {
         let d = null;
         try { d = JSON.parse(localStorage.getItem(key)||'null'); } catch(e){}
         if (d) {
-            return `<div style="display:flex;align-items:center;gap:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:5px 7px;">
-                <span style="font-size:.9rem;">${ICONS[d.genre]||'🕹️'}</span>
+            const thumbHtml = d.thumbnail
+                ? `<img src="${d.thumbnail}" style="width:52px;height:33px;object-fit:cover;border-radius:4px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);">`
+                : `<span style="font-size:1.1rem;flex-shrink:0;">${ICONS[d.genre]||'🕹️'}</span>`;
+            return `<div style="display:flex;align-items:center;gap:6px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:5px 7px;">
+                ${thumbHtml}
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:.65rem;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title||'Untitled'}</div>
-                    <div style="font-size:.58rem;color:var(--muted);">${d.savedAt||'Saved'}</div>
+                    <div style="font-size:.58rem;color:var(--muted);">${ICONS[d.genre]||'🕹️'} ${d.genre||''} · ${d.savedAt||'Saved'}</div>
                 </div>
-                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlot(${i})">💾</button>
-                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="loadFromSlot(${i})">📂</button>
-                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;color:#f87171;" onclick="deleteSlot(${i})">✕</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlot(${i})" title="Overwrite slot">💾</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="loadFromSlot(${i})" title="Load">📂</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;color:#f87171;" onclick="deleteSlot(${i})" title="Delete">✕</button>
             </div>`;
         } else {
             return `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:5px 7px;">
@@ -6624,6 +6751,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         if (e.key === 'r' || e.key === 'R') compileAndBootEngine();
         if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s') { e.preventDefault(); saveToBrowser(); }
+        if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z') { e.preventDefault(); tmUndo(); }
+        if ((e.ctrlKey||e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))) { e.preventDefault(); tmRedo(); }
         if (e.key === 'f' || e.key === 'F') toggleFullscreen();
         // P key is screenshot unless game is running (P key = pause handled inside game)
         if ((e.key === 'p' || e.key === 'P') && !currentPhaserGame) takeScreenshot();
