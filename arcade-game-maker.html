@@ -5109,15 +5109,15 @@ function importLevelFromDesigner() {
 }
 function _applyLevelData(data) {
     const bl=data.layers&&data.layers[0]; if(!bl||!bl.data) { showToast('No tile layer found'); return; }
-    customLevelMap=Array.from(bl.data).map(v=>v>0?1:0);
+    // Preserve solid (1) and hazard/spike (2) tile types — don't flatten to 0/1
+    customLevelMap=Array.from(bl.data).map(v=>Math.min(2,Math.max(0,v|0)));
     document.getElementById('levelDesignerGrid').value=JSON.stringify(customLevelMap);
     const w=data.gridW||20,h=data.gridH||15;
     const mini=document.getElementById('levelMini'); mini.innerHTML='';
     const sc=Math.min(Math.floor(320/w),Math.floor(52/h),5);
     const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
     const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
-    ctx.fillStyle='#7c3aed';
-    customLevelMap.forEach((v,i)=>{ if(!v) return; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
+    customLevelMap.forEach((v,i)=>{ if(!v) return; ctx.fillStyle=v===2?'#ef4444':'#7c3aed'; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
     mini.appendChild(cvs);
     document.getElementById('levelInfoDesc').textContent=`"${data.name||'Level'}" · ${w}×${h} tiles`;
     document.getElementById('levelStatus').textContent=`✓ Level loaded`;
@@ -5491,8 +5491,7 @@ function _applyLoadData(d) {
         const mini=document.getElementById('levelMini'); mini.innerHTML='';
         const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
         const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
-        ctx.fillStyle='#7c3aed';
-        d.map.forEach((v,i)=>{ if(!v) return; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
+        d.map.forEach((v,i)=>{ if(!v) return; ctx.fillStyle=v===2?'#ef4444':'#7c3aed'; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
         mini.appendChild(cvs);
         document.getElementById('levelInfoDesc').textContent='Saved level · 20×15 tiles';
         document.getElementById('levelStatus').textContent='✓ Level loaded';
@@ -5704,33 +5703,47 @@ function exportGame() {
     if (logoLink) { logoLink.href = 'https://jvdesignstudio.com'; logoLink.target = '_blank'; logoLink.rel = 'noopener'; }
     // Inject auto-boot script with baked config
     const cfg = {
-        title:       _engineData.title,
-        genre:       _engineData.genre,
-        speed:       _engineData.speed,
-        gravity:     _engineData.gravity,
-        jump:        _engineData.jump,
-        map:         _engineData.map,
-        sprite:      customSpriteDataUrl  || null,
-        enemySprite: customEnemyDataUrl   || null,
-        bulletSprite:customBulletDataUrl  || null,
-        blockSprite: customBlockDataUrl   || null,
-        bgImage:     customBgDataUrl      || null,
-        liveConfig:  Object.assign({}, liveConfig),
-        theme:       { cols: gameTheme.cols.slice(), name: gameTheme.name },
-        story:       currentStory ? { title: currentStory.title, intro: currentStory.intro } : null
+        title:            _engineData.title,
+        genre:            _engineData.genre,
+        speed:            _engineData.speed,
+        gravity:          _engineData.gravity,
+        jump:             _engineData.jump,
+        map:              _engineData.map,
+        sprite:           customSpriteDataUrl  || null,
+        spriteFrameCount: customSpriteFrameCount || 1,
+        spriteFrameW:     customSpriteFrameW     || 0,
+        enemySprite:      customEnemyDataUrl   || null,
+        bulletSprite:     customBulletDataUrl  || null,
+        blockSprite:      customBlockDataUrl   || null,
+        bgImage:          customBgDataUrl      || null,
+        liveConfig:       Object.assign({}, liveConfig),
+        theme:            { cols: gameTheme.cols.slice(), name: gameTheme.name },
+        story:            currentStory ? { title: currentStory.title, intro: currentStory.intro } : null,
+        sounds:           Object.assign({}, GameAudio.sounds),
+        customBuffers:    Object.assign({}, GameAudio.customBuffers),
+        customMusic:      GameAudio.customMusic || null,
+        musicOn:          document.getElementById('musicToggle').checked,
+        musicStyle:       document.getElementById('musicStyle').value,
+        volume:           parseInt(document.getElementById('volumeSlider').value)
     };
     const boot = document.createElement('script');
     boot.textContent = `(function(){window.__exportMode=true;var _c=${JSON.stringify(cfg)};
 window.addEventListener('DOMContentLoaded',function(){
     Object.assign(liveConfig,_c.liveConfig);
     gameTheme.cols=_c.theme.cols; gameTheme.name=_c.theme.name;
-    if(_c.sprite)       customSpriteDataUrl=_c.sprite;
-    if(_c.enemySprite)  customEnemyDataUrl=_c.enemySprite;
-    if(_c.bulletSprite) customBulletDataUrl=_c.bulletSprite;
-    if(_c.blockSprite)  customBlockDataUrl=_c.blockSprite;
-    if(_c.bgImage)      customBgDataUrl=_c.bgImage;
-    if(_c.map)          customLevelMap=_c.map;
-    if(_c.story)        currentStory=_c.story;
+    if(_c.sprite)            { customSpriteDataUrl=_c.sprite; customSpriteFrameCount=_c.spriteFrameCount||1; customSpriteFrameW=_c.spriteFrameW||0; }
+    if(_c.enemySprite)       customEnemyDataUrl=_c.enemySprite;
+    if(_c.bulletSprite)      customBulletDataUrl=_c.bulletSprite;
+    if(_c.blockSprite)       customBlockDataUrl=_c.blockSprite;
+    if(_c.bgImage)           customBgDataUrl=_c.bgImage;
+    if(_c.map)               customLevelMap=_c.map;
+    if(_c.story)             currentStory=_c.story;
+    if(_c.sounds)            Object.assign(GameAudio.sounds,_c.sounds);
+    if(_c.customBuffers)     Object.assign(GameAudio.customBuffers,_c.customBuffers);
+    if(_c.customMusic)       GameAudio.customMusic=_c.customMusic;
+    if(_c.volume!=null)      GameAudio.volume=_c.volume/100;
+    if(_c.musicOn)           GameAudio.setMusic(true);
+    if(_c.musicStyle){ var ms=document.getElementById('musicStyle'); if(ms) ms.value=_c.musicStyle; }
     var $=function(id){return document.getElementById(id);};
     if($('gameTitle'))  $('gameTitle').value=_c.title;
     if($('genreMode'))  $('genreMode').value=_c.genre;
