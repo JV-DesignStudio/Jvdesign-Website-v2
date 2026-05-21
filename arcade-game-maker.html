@@ -1152,6 +1152,12 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <button class="pill" onclick="activePill('pillAI',this);liveConfig.enemySpeed=500;">Unbeatable</button>
                     </div>
                 </div>
+                <div class="form-group">
+                    <div class="toggle-row">
+                        <div><div class="toggle-label">2-Player Mode</div><div class="toggle-sub">P1 ↑↓ arrows &nbsp;·&nbsp; P2 W/S keys &nbsp;·&nbsp; AI disabled</div></div>
+                        <label class="toggle-switch"><input type="checkbox" id="pong2pToggle" onchange="liveConfig.pong2Player=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
+                </div>
             </div>
 
             <!-- SNAKE -->
@@ -1794,7 +1800,7 @@ const liveConfig = {
     // Custom tab options
     lives:3, playerScale:1.0, bgStyle:'dark', screenShake:true,
     bulletSpread:1, doubleJump:false, paddleW:90, enemyZigzag:false,
-    pipeGap:120,
+    pipeGap:120, pong2Player:false,
     // Difficulty ramp
     difficultyScale:1.0,
     // Game speed (physics + timer multiplier)
@@ -3344,6 +3350,7 @@ function sceneBreaker(data) {
                 GameAudio.play('score');
                 if (hp <= 0) {
                     if (Math.random() < 0.22) this._dropPowerUp(brick.x, brick.y);
+                    this._burst(brick.x, brick.y, themeInt(brick.getData('row')||0, 0xfbbf24));
                     brick.destroy();
                     this.score += (liveConfig.pointsPerKill||10) * (brick.getData('maxHp')||1);
                     this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
@@ -3499,7 +3506,8 @@ function sceneRunner(data) {
                 this._onHit(this.actor);
             });
             this.physics.add.overlap(this.actor, this._coinGrp, (_,c)=>{
-                if(c.getData('col')) return; c.setData('col',true); c.destroy();
+                if(c.getData('col')) return; c.setData('col',true);
+                this._burst(c.x, c.y, 0xfbbf24); c.destroy();
                 this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score);
                 this._flashScore(this.scoreText); GameAudio.play('score'); _achUnlock('first_blood');
             });
@@ -3615,6 +3623,7 @@ function sceneFlappy(data) {
             this.pipes.getChildren().forEach(p=>{
                 if (p._isTop&&!p._scored&&p.x<this.actor.x) {
                     p._scored=true;
+                    this._burst(this.actor.x, this.actor.y, 0xffd700);
                     this._streak++; if(this._streak>this._bestStreak) this._bestStreak=this._streak;
                     this.score++; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
                     if(this._streak>0&&this._streak%5===0) showToast(`🔥 ${this._streak} streak!`);
@@ -3806,8 +3815,19 @@ function scenePong(data) {
             this.cursors=this.input.keyboard.createCursorKeys();
             this.spaceKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.leftKey=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+            // 2-player keys: W/S for right paddle
+            this.p2Up  =this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+            this.p2Down=this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
             // Score display
             this.scoreText=this.add.text(GW/2,10,'0  :  0',{fontSize:'18px',fill:themeHex(0,'#a78bfa'),fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(0.5,0).setDepth(10);
+            // Player labels (2P mode shows P1/P2; 1P shows YOU/AI)
+            this._p1Label=this.add.text(30,10,'',{fontSize:'9px',fill:'#00d4aa',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setDepth(10);
+            this._p2Label=this.add.text(GW-30,10,'',{fontSize:'9px',fill:'#a78bfa',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
+            this._updatePlayerLabels();
+        }
+        _updatePlayerLabels() {
+            if (this._p1Label) this._p1Label.setText(liveConfig.pong2Player ? 'P1 ↑↓' : 'YOU ↑↓');
+            if (this._p2Label) this._p2Label.setText(liveConfig.pong2Player ? 'P2 W/S' : 'AI');
         }
         _launchBall() {
             const spd=liveConfig.bulletSpeed*0.45;
@@ -3858,60 +3878,57 @@ function scenePong(data) {
                 this._chargeStart=0;
                 if(!this._charged && this._chargeGfx) this._chargeGfx.clear();
             }
-            // ── AI paddle — tiered difficulty ────────────────────────────────
-            // enemySpeed tiers: ≤100 Easy · ≤200 Normal · ≤350 Hard · >350 Unbeatable
-            const _bFullSpd = liveConfig.bulletSpeed * 0.45; // ball launch speed
-            const _tier     = liveConfig.enemySpeed;
-            const _bvx = this.ball.body ? this.ball.body.velocity.x : 0;
-            const _bvy = this.ball.body ? this.ball.body.velocity.y : 0;
-            // Time for ball to travel from current X to AI paddle X (used for prediction)
-            const _tToAI = _bvx > 0 ? Math.max(0, (GW - 44 - this.ball.x)) / Math.max(_bvx, 1) : 0;
-
-            let _aiMaxSpd, _targetY, _deadzone;
-            if (_tier > 350) {
-                // Unbeatable: predict where ball will land, tightly locked
-                _aiMaxSpd = _bFullSpd * 1.25;
-                _deadzone = 2;
-                _targetY  = Phaser.Math.Clamp(this.ball.y + _bvy * _tToAI * 0.9, 36, GH - 36);
-            } else if (_tier > 200) {
-                // Hard: partial trajectory prediction, fast
-                _aiMaxSpd = _bFullSpd * 0.95;
-                _deadzone = 4;
-                _targetY  = this.ball.y + _bvy * _tToAI * 0.45;
-            } else if (_tier > 100) {
-                // Normal: tracks current ball Y at medium speed
-                _aiMaxSpd = _bFullSpd * 0.65;
-                _deadzone = 8;
-                _targetY  = this.ball.y;
+            // ── Right paddle: 2-player or AI ────────────────────────────────
+            this._updatePlayerLabels();
+            if (liveConfig.pong2Player) {
+                // 2-player: W = up, S = down
+                if      (this.p2Up  && this.p2Up.isDown)   this.pRight.setVelocityY(-liveConfig.speed);
+                else if (this.p2Down && this.p2Down.isDown) this.pRight.setVelocityY( liveConfig.speed);
+                else                                        this.pRight.setVelocityY(0);
             } else {
-                // Easy: slow, loose, misses fast angles
-                _aiMaxSpd = _bFullSpd * 0.36;
-                _deadzone = 16;
-                _targetY  = this.ball.y;
-            }
-
-            if (this.ball.body && _bvx > 0) {
-                const _diff = _targetY - this.pRight.y;
-                if      (_diff < -_deadzone) this.pRight.setVelocityY(-_aiMaxSpd);
-                else if (_diff >  _deadzone) this.pRight.setVelocityY( _aiMaxSpd);
-                else                         this.pRight.setVelocityY(0);
-            } else {
-                // Drift back to centre when ball is moving away
-                const _mid = GH / 2, _driftSpd = Math.min(45, _aiMaxSpd * 0.28);
-                if (Math.abs(this.pRight.y - _mid) > 10)
-                    this.pRight.setVelocityY(this.pRight.y > _mid ? -_driftSpd : _driftSpd);
-                else this.pRight.setVelocityY(0);
+                // AI — tiered difficulty (enemySpeed: ≤100 Easy · ≤200 Normal · ≤350 Hard · >350 Unbeatable)
+                const _bFullSpd = liveConfig.bulletSpeed * 0.45;
+                const _tier     = liveConfig.enemySpeed;
+                const _bvx = this.ball.body ? this.ball.body.velocity.x : 0;
+                const _bvy = this.ball.body ? this.ball.body.velocity.y : 0;
+                const _tToAI = _bvx > 0 ? Math.max(0, (GW - 44 - this.ball.x)) / Math.max(_bvx, 1) : 0;
+                let _aiMaxSpd, _targetY, _deadzone;
+                if (_tier > 350) {
+                    _aiMaxSpd = _bFullSpd * 1.25; _deadzone = 2;
+                    _targetY  = Phaser.Math.Clamp(this.ball.y + _bvy * _tToAI * 0.9, 36, GH - 36);
+                } else if (_tier > 200) {
+                    _aiMaxSpd = _bFullSpd * 0.95; _deadzone = 4;
+                    _targetY  = this.ball.y + _bvy * _tToAI * 0.45;
+                } else if (_tier > 100) {
+                    _aiMaxSpd = _bFullSpd * 0.65; _deadzone = 8;
+                    _targetY  = this.ball.y;
+                } else {
+                    _aiMaxSpd = _bFullSpd * 0.36; _deadzone = 16;
+                    _targetY  = this.ball.y;
+                }
+                if (this.ball.body && _bvx > 0) {
+                    const _diff = _targetY - this.pRight.y;
+                    if      (_diff < -_deadzone) this.pRight.setVelocityY(-_aiMaxSpd);
+                    else if (_diff >  _deadzone) this.pRight.setVelocityY( _aiMaxSpd);
+                    else                         this.pRight.setVelocityY(0);
+                } else {
+                    const _mid = GH / 2, _driftSpd = Math.min(45, _aiMaxSpd * 0.28);
+                    if (Math.abs(this.pRight.y - _mid) > 10)
+                        this.pRight.setVelocityY(this.pRight.y > _mid ? -_driftSpd : _driftSpd);
+                    else this.pRight.setVelocityY(0);
+                }
             }
             this.pRight.y=Phaser.Math.Clamp(this.pRight.y,36,GH-36);
             this._tickBase(this.score);
             // Ball out of bounds
             if(this.ball.x<0) {
                 if(this._gameEnded) return;
+                this._burst(8, this.ball.y, 0xef4444);
                 this.aScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
                 if(this.aScore>=5){
                     this._aSets++;
-                    this._showWinMsg('AI WINS! 🤖');
+                    this._showWinMsg(liveConfig.pong2Player ? 'P2 WINS! 🎉' : 'AI WINS! 🤖');
                     GameAudio.play('hit');
                     this.time.delayedCall(600,()=>{ this.aScore=0; this.pScore=0; this.scoreText.setText('Sets  '+this._pSets+' : '+this._aSets); });
                     if(this._aSets>=2){ this._gameEnded=true; this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
@@ -3919,11 +3936,12 @@ function scenePong(data) {
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             } else if(this.ball.x>GW) {
                 if(this._gameEnded) return;
+                this._burst(GW-8, this.ball.y, 0x00d4aa);
                 this.pScore++;
                 this.scoreText.setText(this.pScore+'  :  '+this.aScore);
                 if(this.pScore>=5){
                     this._pSets++; this.score+=500;
-                    this._showWinMsg('YOU WIN! 🎉');
+                    this._showWinMsg(liveConfig.pong2Player ? 'P1 WINS! 🎉' : 'YOU WIN! 🎉');
                     GameAudio.play('score');
                     this.time.delayedCall(600,()=>{ this.pScore=0; this.aScore=0; this.scoreText.setText('Sets  '+this._pSets+' : '+this._aSets); });
                     if(this._pSets>=2){ this._gameEnded=true; this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
@@ -3993,6 +4011,9 @@ function sceneSnake(data) {
             }
             if(nx===this._food.x&&ny===this._food.y) {
                 const type=this._foodType||'normal';
+                // Burst at food pixel position (before _spawnFood moves it)
+                const _fx=this._food.x*this.C+this.C/2, _fy=this._food.y*this.C+this.C/2;
+                this._burst(_fx, _fy, type==='golden'?0xffd700:type==='poison'?0xef4444:0x4ade80);
                 if(type==='poison'){
                     // Poison: no grow, skip next step, shrink by 1
                     showToast('☠️ Poison!'); GameAudio.play('hit');
