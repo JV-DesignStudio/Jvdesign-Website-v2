@@ -223,6 +223,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .intro-game-title{font-size:2rem;font-weight:900;font-family:'Fredoka',sans-serif;color:white;line-height:1.2;}
 .intro-story{font-size:.88rem;color:rgba(240,234,214,.78);line-height:1.75;max-height:110px;overflow-y:auto;}
 .intro-start{font-size:1rem;padding:13px 40px;margin-top:6px;}
+@keyframes intro-blink{0%,100%{opacity:.35;}50%{opacity:1;}}
 
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel3);border:1px solid var(--border2);border-radius:10px;padding:9px 18px;font-size:.8rem;font-weight:700;color:var(--beige);box-shadow:0 8px 32px rgba(0,0,0,.5);transition:transform .25s ease;z-index:500;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;}
@@ -305,6 +306,27 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .go-achs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:380px;}
 .go-ach{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);border-radius:8px;padding:5px 10px;font-size:.68rem;font-weight:700;color:#fbbf24;font-family:'JetBrains Mono',monospace;animation:go-pop .4s ease;}
 
+/* INITIALS / NAME ENTRY */
+.go-name-row{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.go-name-label{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.go-initials-wrap{display:flex;align-items:center;gap:7px;}
+.go-initials{width:68px;padding:7px 10px;font-size:1.3rem;font-weight:900;font-family:'JetBrains Mono',monospace;text-align:center;text-transform:uppercase;letter-spacing:.25em;background:rgba(124,58,237,.14);border:2px solid rgba(124,58,237,.4);border-radius:8px;color:#fff;outline:none;}
+.go-initials:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.25);}
+.go-initials-save{padding:7px 14px;background:var(--purple);border:none;border-radius:8px;color:white;font-weight:800;font-size:.78rem;cursor:pointer;transition:background .15s;}
+.go-initials-save:hover{background:#6d28d9;}
+
+/* SPRITE EDITOR */
+.se-wrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;}
+.se-canvas-wrap{position:relative;flex-shrink:0;}
+#spriteEdCanvas{display:block;border-radius:6px;border:2px solid rgba(124,58,237,.35);cursor:crosshair;image-rendering:pixelated;}
+.se-palette{display:flex;flex-wrap:wrap;gap:5px;max-width:168px;}
+.se-swatch{width:24px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform .1s,border-color .1s;flex-shrink:0;position:relative;}
+.se-swatch:hover{transform:scale(1.15);}
+.se-swatch.active{border-color:#fff;transform:scale(1.18);}
+.se-swatch.se-eraser{background:linear-gradient(135deg,#1c2840 50%,#334155 50%);font-size:.7rem;display:flex;align-items:center;justify-content:center;}
+.se-swatch.se-custom{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);font-size:.68rem;display:flex;align-items:center;justify-content:center;}
+.se-tools{display:flex;flex-direction:column;gap:8px;}
+
 /* TOP-3 LEADERBOARD */
 .go-lb{display:flex;flex-direction:column;gap:5px;min-width:220px;background:rgba(0,0,0,.3);border-radius:10px;padding:10px 14px;}
 .go-lb-title{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--purple-lt);margin-bottom:2px;}
@@ -313,6 +335,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .go-lb-rank.gold{color:#fbbf24;}
 .go-lb-rank.silver{color:#94a3b8;}
 .go-lb-rank.bronze{color:#c8956c;}
+.go-lb-name{color:#a78bfa;font-weight:800;min-width:32px;letter-spacing:.05em;}
 .go-lb-score{flex:1;color:var(--text);font-weight:700;}
 .go-lb-date{color:var(--muted);font-size:.62rem;}
 .go-lb-new{color:#4ade80;font-size:.62rem;font-weight:800;}
@@ -809,6 +832,28 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                 <div id="spriteStatus" class="asset-status none">No custom sprite loaded</div>
             </div>
 
+            <!-- ── QUICK SPRITE EDITOR ── -->
+            <div class="asset-block" id="spriteEditorBlock">
+                <div class="asset-block-title">🎨 Quick Sprite Editor <span style="font-size:.58rem;color:var(--muted);font-weight:400;">8 × 8 pixels · no Workshop needed</span></div>
+                <div class="se-wrap">
+                    <div class="se-canvas-wrap">
+                        <canvas id="spriteEdCanvas" width="192" height="192"></canvas>
+                    </div>
+                    <div class="se-tools">
+                        <div class="se-palette" id="sePalette"></div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;">
+                            <button class="asset-btn" onclick="seSetEraser()" id="seEraserBtn" style="flex:1;min-width:60px;">⬜ Erase</button>
+                            <button class="asset-btn" onclick="seClear()" style="flex:1;min-width:50px;">✕ Clear</button>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                            <button class="asset-btn import" onclick="seApply('player')" style="flex:1;">✓ Use as Player</button>
+                            <button class="asset-btn import" onclick="seApply('enemy')"  style="flex:1;">✓ Use as Enemy</button>
+                        </div>
+                        <div style="font-size:.58rem;color:var(--muted);line-height:1.6;">Click or drag to paint. Right-click to erase a cell. Hit <strong style="color:var(--purple-lt);">▶ Run</strong> after applying to see your sprite in the game.</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="asset-block">
                 <div class="asset-block-title">Enemy Sprite</div>
                 <div class="asset-preview-row">
@@ -1002,7 +1047,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                 </div>
             </div>
 
-            <button class="btn-run" style="background:#7c3aed;box-shadow:0 3px 0 #5b21b6;" onclick="GameAudio.previewSlot('shoot');setTimeout(()=>GameAudio.previewSlot('jump'),300);setTimeout(()=>GameAudio.previewSlot('score'),600);">▶ Preview All Sounds</button>
+            <button class="btn-run" style="background:#7c3aed;box-shadow:0 3px 0 #5b21b6;" onclick="GameAudio.previewSlot('shoot');setTimeout(()=>GameAudio.previewSlot('jump'),300);setTimeout(()=>GameAudio.previewSlot('hit'),600);setTimeout(()=>GameAudio.previewSlot('score'),900);">▶ Preview All Sounds</button>
         </div>
 
         <!-- ── CUSTOM ── -->
@@ -1010,6 +1055,32 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
             <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;">
                 <div style="font-size:.7rem;font-weight:800;color:var(--purple-lt);margin-bottom:3px;">Customise Your Game</div>
                 <div style="font-size:.64rem;color:var(--muted);line-height:1.6;">Tweak lives, backgrounds, screen shake and genre-specific mechanics. Hit <strong style="color:white;">▶ Run</strong> to apply!</div>
+            </div>
+
+            <span class="sec-label">Colour Theme</span>
+            <div class="form-group">
+                <label>Game Colours <span style="color:var(--muted);font-weight:400;">— 4 slots used throughout all scenes</span></label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+                    <div style="display:flex;gap:6px;">
+                        <label title="Colour 1 — primary accent (player, score text, highlights)" style="position:relative;cursor:pointer;">
+                            <div id="themeSwatchPreview0" style="width:32px;height:32px;border-radius:7px;border:2px solid rgba(255,255,255,.15);background:#a78bfa;transition:transform .1s;" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform=''"></div>
+                            <input type="color" id="themeCol0" value="#a78bfa" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;" oninput="_setThemeCol(0,this.value)">
+                        </label>
+                        <label title="Colour 2 — secondary (platforms, enemies, pipes)" style="position:relative;cursor:pointer;">
+                            <div id="themeSwatchPreview1" style="width:32px;height:32px;border-radius:7px;border:2px solid rgba(255,255,255,.15);background:#4ade80;transition:transform .1s;" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform=''"></div>
+                            <input type="color" id="themeCol1" value="#4ade80" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;" oninput="_setThemeCol(1,this.value)">
+                        </label>
+                        <label title="Colour 3 — tertiary (tiles, ground, walls)" style="position:relative;cursor:pointer;">
+                            <div id="themeSwatchPreview2" style="width:32px;height:32px;border-radius:7px;border:2px solid rgba(255,255,255,.15);background:#334155;transition:transform .1s;" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform=''"></div>
+                            <input type="color" id="themeCol2" value="#334155" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;" oninput="_setThemeCol(2,this.value)">
+                        </label>
+                        <label title="Colour 4 — accent / bonus items" style="position:relative;cursor:pointer;">
+                            <div id="themeSwatchPreview3" style="width:32px;height:32px;border-radius:7px;border:2px solid rgba(255,255,255,.15);background:#fbbf24;transition:transform .1s;" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform=''"></div>
+                            <input type="color" id="themeCol3" value="#fbbf24" style="opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;" oninput="_setThemeCol(3,this.value)">
+                        </label>
+                    </div>
+                    <button class="asset-btn" style="font-size:.65rem;padding:5px 9px;" onclick="_resetThemeCols()">↺ Genre Default</button>
+                </div>
             </div>
 
             <span class="sec-label">Player</span>
@@ -1891,12 +1962,14 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
             </div>
 
             <!-- INTRO SPLASH -->
-            <div class="intro-overlay" id="introOverlay">
+            <div class="intro-overlay" id="introOverlay" tabindex="0" onclick="_introOverlayClick(event)" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();closeIntro();}">
                 <div class="intro-box">
                     <div class="intro-genre-icon" id="introIcon">🕹️</div>
                     <div class="intro-game-title" id="introGameTitle">My Arcade Game</div>
+                    <div class="intro-genre-sub" id="introGenreSub" style="font-size:.78rem;color:var(--purple-lt);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:-8px;"></div>
                     <div class="intro-story" id="introStoryText"></div>
                     <button class="btn-run intro-start" onclick="closeIntro()">▶ Start Game</button>
+                    <div id="introSpaceHint" style="font-size:.65rem;color:var(--muted);letter-spacing:.06em;animation:intro-blink 1.4s ease-in-out infinite;">PRESS SPACE OR CLICK TO START</div>
                 </div>
             </div>
 
@@ -1907,9 +1980,22 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     <div id="goWinBanner" style="display:none;font-size:.95rem;margin-bottom:4px;">🎉 You reached the goal!</div>
                     <div class="go-score" id="goScore">Score: 0</div>
                     <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
+                    <!-- Initials entry -->
+                    <div class="go-name-row" id="goNameRow">
+                        <div class="go-name-label">Enter Your Initials</div>
+                        <div class="go-initials-wrap">
+                            <input class="go-initials" id="goInitials" maxlength="3" placeholder="AAA" autocomplete="off" spellcheck="false"
+                                oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');"
+                                onkeydown="if(event.key==='Enter')_saveGoScore();">
+                            <button class="go-initials-save" onclick="_saveGoScore()">✓</button>
+                        </div>
+                    </div>
                     <div class="go-lb" id="goLeaderboard" style="display:none;"></div>
                     <div class="go-achs" id="goAchievements"></div>
-                    <button class="btn-run go-play" onclick="closeGameOver()">▶ Play Again</button>
+                    <div style="display:flex;gap:8px;margin-top:4px;">
+                        <button class="btn-run go-play" style="flex:2;" onclick="closeGameOver()">▶ Play Again</button>
+                        <button class="btn-run go-play" style="flex:1;background:#1e293b;box-shadow:0 3px 0 #0f172a;font-size:.78rem;" onclick="goNewGame()">↩ New Game</button>
+                    </div>
                     <div style="display:flex;gap:8px;margin-top:6px;">
                         <button class="btn-sm" style="flex:1;font-size:.7rem;" onclick="generateShareLink()">🔗 Share Score</button>
                         <button class="btn-sm" style="flex:1;font-size:.7rem;" onclick="showAllScores()">📊 All Scores</button>
@@ -2087,7 +2173,14 @@ function _clearUserCode() {
 const _ACH_TOAST = {
     first_blood:'🎯 First Blood', centurion:'💯 Centurion', high_roller:'💰 High Roller',
     survivor:'⏱ Survivor (60s)', untouchable:'🛡 Untouchable', wave_3:'👾 Wave 3 Clear',
-    power_up:'⚡ Power-Up!', speed_demon:'🚀 Speed Demon', goal_reached:'🏁 Goal Reached!'
+    power_up:'⚡ Power-Up!', speed_demon:'🚀 Speed Demon', goal_reached:'🏁 Goal Reached!',
+    // Genre-specific
+    snake_long:'🐍 Big Snake (20+)', snake_flawless:'🌟 Flawless Run',
+    pong_shutout:'🏓 Shutout!', pong_comeback:'💪 Comeback Win!',
+    invaders_perfect:'🛸 Perfect Wave', asteroids_chain:'🌌 3-Wave Chain', asteroids_ace:'⭐ Asteroid Ace (Wave 5)',
+    runner_survivor:'⏱ Runner Survivor (100s)', runner_centurion:'💯 Runner 1K',
+    plat_clean:'🧹 Flawless Platformer', shooter_combo10:'🔥 10× Combo!',
+    rogue_floor3:'⚔️ Floor 3 Reached!'
 };
 function _achUnlock(id) {
     if (!_sessionAchs.has(id)) {
@@ -2546,6 +2639,8 @@ function surpriseMe() {
         syncSlider('gravityRange','gravityY','gravityVal', liveConfig.gravity);
         syncSlider('jumpForceRange','jumpForce','jumpVal',  liveConfig.jumpForce);
     }
+    // Sync the entire Custom tab UI so pills, toggles, and sliders reflect the new values
+    _syncCustomTabUI(liveConfig);
     showToast('🎲 Randomised! Hit ▶ Run to see what you got!');
 }
 
@@ -2561,12 +2656,13 @@ function showAllScores() {
             const board = JSON.parse(localStorage.getItem('jv_lb_'+g)||'[]');
             if (!board.length) return;
             hasAny = true;
+            const fmt = e => `${e.name&&e.name!=='---'?`<span style="color:#a78bfa;font-weight:800;font-size:.7rem;">${e.name}</span> `:''}${e.score}`;
             html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08);">
                 <span style="width:24px;text-align:center;">${emojis[g]||'🎮'}</span>
                 <span style="flex:1;font-size:.75rem;color:#a89f94;">${g}</span>
-                <span style="font-weight:700;color:#ffd700;">${board[0].score}</span>
-                ${board[1]?`<span style="color:#94a3b8;font-size:.7rem;">· ${board[1].score}</span>`:''}
-                ${board[2]?`<span style="color:#64748b;font-size:.7rem;">· ${board[2].score}</span>`:''}
+                <span style="font-weight:700;color:#ffd700;">${fmt(board[0])}</span>
+                ${board[1]?`<span style="color:#94a3b8;font-size:.7rem;">· ${fmt(board[1])}</span>`:''}
+                ${board[2]?`<span style="color:#64748b;font-size:.7rem;">· ${fmt(board[2])}</span>`:''}
             </div>`;
         } catch(e){}
     });
@@ -2652,6 +2748,7 @@ function switchTab(name, btn) {
     document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('on'));
     document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('on'));
     document.getElementById('tab-'+name).classList.add('on');
+    if (name === 'assets') seInit(); // lazy-init sprite editor on first visit
     btn.classList.add('on');
 }
 
@@ -2713,6 +2810,13 @@ function onGenreChange() {
     // Apply genre default palette if no custom one has been imported
     if (gameTheme.cols.length === 0 && GENRE_PALETTES[g]) {
         gameTheme.cols = GENRE_PALETTES[g].slice();
+        // Sync colour-theme pickers to the new defaults
+        gameTheme.cols.forEach((hex, i) => {
+            const sw = document.getElementById('themeSwatchPreview' + i);
+            if (sw) sw.style.background = hex;
+            const inp = document.getElementById('themeCol' + i);
+            if (inp) inp.value = hex;
+        });
     }
     // Update hi-score strip from top-3 leaderboard
     try {
@@ -2832,16 +2936,26 @@ function compileAndBootEngine() {
             if(btn){ btn.classList.add('just-revealed'); setTimeout(()=>btn.classList.remove('just-revealed'),3000); }
         }, 900);
     }
-    // Show intro splash if story has been imported
-    if (currentStory && (currentStory.intro || currentStory.title)) {
-        const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️'};
-        document.getElementById('introIcon').textContent = ICONS[data.genre] || '🕹️';
-        document.getElementById('introGameTitle').textContent = currentStory.title || data.title;
-        document.getElementById('introStoryText').textContent = currentStory.intro || '';
-        document.getElementById('introOverlay').classList.add('show');
-    } else {
-        _launchPhaserGame();
-    }
+    // Always show title screen before launching
+    _showTitleScreen(data);
+}
+function _showTitleScreen(data) {
+    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️'};
+    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon'};
+    document.getElementById('introIcon').textContent       = ICONS[data.genre]  || '🕹️';
+    document.getElementById('introGameTitle').textContent  = data.title         || 'My Arcade Game';
+    document.getElementById('introGenreSub').textContent   = GENRES[data.genre] || data.genre;
+    const storyEl = document.getElementById('introStoryText');
+    storyEl.textContent = (currentStory && currentStory.intro) ? currentStory.intro : '';
+    storyEl.style.display = storyEl.textContent ? '' : 'none';
+    document.getElementById('introOverlay').classList.add('show');
+    // Focus the overlay so SPACE works immediately without clicking first
+    document.getElementById('introOverlay').focus();
+}
+function _introOverlayClick(e) {
+    // Don't dismiss if the actual Start button was clicked (it calls closeIntro itself)
+    if (e.target.closest('.btn-run')) return;
+    closeIntro();
 }
 function _launchPhaserGame() {
     const data = _engineData;
@@ -2969,7 +3083,7 @@ function makeBaseScene(data) {
     return class extends Phaser.Scene {
         preload() {
             // Remove stale cached textures so fresh assets always load correctly
-            ['player','enemy','laser','block','bg_custom'].forEach(k => {
+            ['player','enemy','laser','block','bg_custom','_run_far','_run_near','_ptfm_far','_ptfm_near'].forEach(k => {
                 if (this.textures.exists(k)) this.textures.remove(k);
             });
 
@@ -3296,6 +3410,7 @@ function sceneShooter(data) {
                 GameAudio.play('score');
                 if(mul>=2) showToast(`🔥 ${this._combo}× COMBO! +${Math.round(pts)}`);
                 if (this.score===liveConfig.pointsPerKill) _achUnlock('first_blood');
+                if (this._combo >= 10) _achUnlock('shooter_combo10');
             });
             this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; this._onHit(this.actor); });
             this.physics.add.overlap(this.actor, this._bossBullets, (_,b)=>{ if(!b||!b.active) return; b.destroy(); this._onHit(this.actor); });
@@ -3542,6 +3657,23 @@ function scenePlatformer(data) {
                 } else {
                     this.platforms.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(solidCol).refreshBody();
                 }
+            });
+            // Scatter coins above solid tiles (≈22% of valid spots — empty above, not spawn area)
+            const spawnIdx = Math.floor(this._tmSpawnY/TH)*TM_COLS + Math.floor(this._tmSpawnX/TW);
+            map.forEach((v,i) => {
+                if(v!==1) return;                                    // solid tile only
+                const above = i - TM_COLS;
+                if(above < 0 || map[above] !== 0) return;           // must have empty space above
+                if(Math.abs(i - spawnIdx) < 2) return;              // skip player spawn area
+                if(Math.random() > 0.22) return;                    // ~22% chance
+                const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH - TH*0.65;
+                const isGold = Math.random() < 0.15;
+                const c = this._coinGrp.create(tx, ty, 'block').setDisplaySize(isGold?12:9, isGold?12:9);
+                c.body.allowGravity = false;
+                c.setTint(isGold ? 0xffd700 : 0xfbbf24);
+                c.setData('gold', isGold);
+                // Gentle float animation
+                this.tweens.add({targets:c, y:ty-5, duration:700+Math.random()*300, yoyo:true, repeat:-1, ease:'Sine.easeInOut'});
             });
         }
         update() {
@@ -3858,6 +3990,7 @@ function sceneRunner(data) {
             this.score=0; this.surviveTimer=0; this._invincible=false;
             this._jumpsLeft=1; this._upWasDown=false;
             this._drawBg();
+            this._buildRunnerParallax();
             this.scoreText = this._makeScoreText();
             this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.upKey    = this.input.keyboard.createCursorKeys().up;
@@ -3889,10 +4022,11 @@ function sceneRunner(data) {
                         c.body.allowGravity=false; c.setTint(0xfbbf24); c.setVelocityX(spd);
                     }
                 } else if (mix !== 'standard' && r > 0.75) {
-                    // Overhead ceiling hazard (requires slide to pass)
-                    const oh = Phaser.Math.Between(30, 50);
-                    const ob = this.obstacles.create(GW+20, oh/2, 'block').setDisplaySize(24, oh);
-                    ob.body.setSize(24,oh); ob.setImmovable(true); ob.body.allowGravity=false;
+                    // Overhead ceiling hazard — hangs from top, duck to avoid
+                    const oh = Phaser.Math.Between(28, 44);
+                    const oy = GH - 56 - oh / 2;   // sits just above standing player height
+                    const ob = this.obstacles.create(GW+20, oy, 'block').setDisplaySize(38, oh);
+                    ob.body.setSize(38,oh); ob.setImmovable(true); ob.body.allowGravity=false;
                     ob.setTint(themeInt(2, 0xef4444)); ob.setData('overhead', true);
                     ob.setVelocityX(spd);
                 } else if (mix === 'mixed' && r > 0.55) {
@@ -3914,8 +4048,8 @@ function sceneRunner(data) {
                 }
             }});
             this.physics.add.collider(this.actor, this.obstacles, (_,ob)=>{
-                if (ob.getData('tall') && this._sliding) return;     // slide under tall blocks
-                if (ob.getData('overhead') && !this._sliding) return; // overhead only hits if upright
+                if (ob.getData('tall') && this._sliding) return;    // slide under tall blocks
+                if (ob.getData('overhead') && this._sliding) return; // duck under overhead hazards
                 this._onHit(this.actor);
             });
             this.physics.add.overlap(this.actor, this._coinGrp, (_,c)=>{
@@ -3955,8 +4089,38 @@ function sceneRunner(data) {
             this._coinGrp.getChildren().forEach(c=>{ if(c.x<-30) c.destroy(); });
             this.surviveTimer+=16;
             if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score); }
+            // Parallax scroll
+            if (this._runFar)  this._runFar.tilePositionX  += 0.6;
+            if (this._runNear) this._runNear.tilePositionX += 2.0;
             this._syncPuLabels();
             this._tickBase(this.score);
+        }
+        _buildRunnerParallax() {
+            if (liveConfig.runnerParallax === false) return;
+            // Far cloud layer
+            const g1 = this.add.graphics();
+            const fc = themeInt(0, 0xa78bfa);
+            for (let i = 0; i < 14; i++) {
+                g1.fillStyle(fc, Math.random() * 0.10 + 0.04);
+                g1.fillRect(
+                    Phaser.Math.Between(0, GW), Phaser.Math.Between(10, Math.round(GH * 0.55)),
+                    Phaser.Math.Between(40, 110), Phaser.Math.Between(7, 18)
+                );
+            }
+            g1.generateTexture('_run_far', GW, GH); g1.destroy();
+            // Near ground-detail layer
+            const g2 = this.add.graphics();
+            const nc = themeInt(1, 0x4ade80);
+            for (let i = 0; i < 10; i++) {
+                g2.fillStyle(nc, Math.random() * 0.14 + 0.05);
+                g2.fillRect(
+                    Phaser.Math.Between(0, GW), Phaser.Math.Between(Math.round(GH * 0.55), GH - 18),
+                    Phaser.Math.Between(18, 60), Phaser.Math.Between(5, 14)
+                );
+            }
+            g2.generateTexture('_run_near', GW, GH); g2.destroy();
+            this._runFar  = this.add.tileSprite(0, 0, GW, GH, '_run_far').setOrigin(0, 0).setDepth(-2);
+            this._runNear = this.add.tileSprite(0, 0, GW, GH, '_run_near').setOrigin(0, 0).setDepth(-1);
         }
     };
 }
@@ -4055,6 +4219,7 @@ function sceneInvaders(data) {
     return class extends Base {
         create() {
             this.score=0; this.lastFired=0; this._invincible=false; this._wave=1; this._invaded=false;
+            this._hitsAtWaveStart = 0; // for invaders_perfect tracking
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
@@ -4091,7 +4256,10 @@ function sceneInvaders(data) {
                 this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
                 if (this.score===liveConfig.pointsPerKill) _achUnlock('first_blood');
                 if(!this.enemies.countActive(true)) {
+                    // Perfect wave: cleared without taking a hit since wave started
+                    if (_sessionHits === this._hitsAtWaveStart) _achUnlock('invaders_perfect');
                     this._wave++;
+                    this._hitsAtWaveStart = _sessionHits; // reset baseline for next wave
                     if (this._wave >= 3) _achUnlock('wave_3');
                     this._buildFormation(); this.score+=100;
                     const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! 👾`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
@@ -4360,7 +4528,10 @@ function scenePong(data) {
                     this._showWinMsg(liveConfig.pong2Player ? 'P1 WINS! 🎉' : 'YOU WIN! 🎉');
                     GameAudio.play('score');
                     this.time.delayedCall(600,()=>{ this.pScore=0; this.aScore=0; this.scoreText.setText('Sets  '+this._pSets+' : '+this._aSets); });
-                    if(this._pSets>=2){ this._gameEnded=true; this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
+                    if(this._pSets>=2){ this._gameEnded=true;
+                        if (this._aSets === 0) _achUnlock('pong_shutout');
+                        if (this._aSets >= 1)  _achUnlock('pong_comeback');
+                        this.time.delayedCall(1400,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); }); }
                 } else GameAudio.play('score');
                 this.ball.setPosition(GW/2,GH/2); this._launchBall();
             }
@@ -4448,7 +4619,8 @@ function sceneSnake(data) {
                     this.score+=pts;
                     this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
                     if(type==='golden') showToast('⭐ Golden! +'+pts);
-                    this._moveTimer.delay=Math.max(60,this._moveTimer.delay-4);
+                    this._moveTimer.delay=Math.max(Math.round((liveConfig.snakeSpeed||160)*0.55), this._moveTimer.delay-4);
+                    if (this._snake.length >= 20) _achUnlock('snake_long');
                 }
                 this._spawnFood();
                 if(this._bonusFood){ this._bonusFood.ttl--; if(this._bonusFood.ttl<=0) this._bonusFood=null; }
@@ -4469,7 +4641,8 @@ function sceneSnake(data) {
                 gameState.lives=liveConfig.lives;
                 this.time.delayedCall(200,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score||0); });
             } else {
-                this._snake=[{x:12,y:10},{x:11,y:10},{x:10,y:10}];
+                const _rLen = Math.max(2, liveConfig.snakeStartLen||3);
+                this._snake = Array.from({length:_rLen}, (_,i) => ({x:12-i, y:10}));
                 this._dir={x:1,y:0}; this._nextDir={x:1,y:0};
                 this._spawnFood();
                 this.time.delayedCall(700,()=>{ this._invincible=false; });
@@ -4988,6 +5161,7 @@ function sceneRoguelike(data) {
             this._doorOpen=false; this._room++;
             if(this._room>=this._roomsPerFloor){
                 this._floor++; this._room=0;
+                if (this._floor >= 3) _achUnlock('rogue_floor3');
                 this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
                 const bonus=100*this._floor; this.score+=bonus;
                 if(this._hp<this._maxHp){ this._hp++; gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp); }
@@ -5288,6 +5462,8 @@ function sceneAsteroids(data) {
             // Check wave clear
             if (!this.rocks.countActive(true)) {
                 this._wave++;
+                if (this._wave >= 3) _achUnlock('asteroids_chain');
+                if (this._wave >= 5) _achUnlock('asteroids_ace');
                 this._waveText.setText('WAVE '+this._wave);
                 const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! ☄️`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
                 this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:900,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
@@ -5751,6 +5927,7 @@ function clearLevel() {
 const TM_COLS=20, TM_ROWS=15;
 let _tmData     = Array(TM_COLS*TM_ROWS).fill(0);
 let _tmTool     = 1;      // 0=erase 1=solid 2=hazard 'flood'=flood-fill
+let _tmLastTool = 1;      // last numeric tool — used as paint value for flood fill
 let _tmPainting = false;
 let _tmHistory  = [];     // undo stack  (each entry is a full _tmData snapshot)
 let _tmFuture   = [];     // redo stack
@@ -5815,6 +5992,7 @@ function tmTouchMove(e) { e.preventDefault(); tmMove(e.touches[0]); }
 
 function tmSetTool(t) {
     _tmTool = t;
+    if (typeof t === 'number') _tmLastTool = t; // remember for flood fill
     const toolMap = {1:'solid', 2:'hazard', 0:'erase', flood:'flood'};
     Object.entries(toolMap).forEach(([v, name]) => {
         const b = document.getElementById('tmTool_'+name);
@@ -5828,7 +6006,7 @@ function tmSetTool(t) {
 }
 function tmFloodFill(idx) {
     if (idx === null || idx === undefined) return;
-    const paintVal = typeof _tmTool === 'number' ? _tmTool : 1; // flood uses last numeric tool
+    const paintVal = _tmLastTool; // flood paints with last solid/hazard/erase tool selected
     const target = _tmData[idx];
     if (target === paintVal) return; // nothing to fill
     _tmPushHistory();
@@ -5940,6 +6118,53 @@ function applyPalette(d) {
     });
     document.getElementById('paletteName').textContent = d.name || '';
     document.getElementById('paletteBadge').style.display = 'inline';
+    // Sync the colour-theme pickers in the Custom tab
+    gameTheme.cols.forEach((hex, i) => {
+        const sw = document.getElementById('themeSwatchPreview' + i);
+        if (sw) sw.style.background = hex;
+        const inp = document.getElementById('themeCol' + i);
+        if (inp) inp.value = hex;
+    });
+}
+
+// ── COLOUR THEME PICKER ───────────────────────────────────────────────────────
+function _setThemeCol(idx, hex) {
+    gameTheme.cols[idx] = hex;
+    // Update the visible swatch
+    const sw = document.getElementById('themeSwatchPreview' + idx);
+    if (sw) sw.style.background = hex;
+    // Refresh the palette strip in the Build tab to stay in sync
+    const strip = document.getElementById('paletteStrip');
+    if (strip) {
+        strip.innerHTML = '';
+        gameTheme.cols.forEach(c => {
+            const s = document.createElement('span');
+            s.style.cssText = `display:inline-block;width:22px;height:22px;border-radius:5px;background:${c};flex-shrink:0;`;
+            strip.appendChild(s);
+        });
+    }
+}
+function _resetThemeCols() {
+    const genre = (document.getElementById('genreMode')||{}).value || 'SHOOTER';
+    const defaults = GENRE_PALETTES[genre] || GENRE_PALETTES['SHOOTER'];
+    gameTheme.cols = defaults.slice();
+    defaults.forEach((hex, i) => {
+        const sw = document.getElementById('themeSwatchPreview' + i);
+        if (sw) sw.style.background = hex;
+        const inp = document.getElementById('themeCol' + i);
+        if (inp) inp.value = hex;
+    });
+    // Refresh palette strip
+    const strip = document.getElementById('paletteStrip');
+    if (strip) {
+        strip.innerHTML = '';
+        gameTheme.cols.forEach(c => {
+            const s = document.createElement('span');
+            s.style.cssText = `display:inline-block;width:22px;height:22px;border-radius:5px;background:${c};flex-shrink:0;`;
+            strip.appendChild(s);
+        });
+    }
+    showToast('🎨 Colours reset to genre default');
 }
 
 // ── SFX IMPORT FROM SFX STUDIO ────────────────────────────────────────────────
@@ -6129,9 +6354,41 @@ function _syncCustomTabUI(cfg) {
     const sw = document.getElementById('snakeWrapToggle'); if(sw) sw.checked = cfg.snakeWallWrap !== false;
     const cellMap={16:'Small (16px)',20:'Normal (20px)',28:'Large (28px)'};
     document.querySelectorAll('#pillSnakeCell .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(cellMap[cfg.snakeCellSize]||'Normal (20px)')));
+    // Snake speed pills
+    const spdSnakeMap = {260:'Slow',160:'Normal',95:'Fast',55:'Turbo'};
+    document.querySelectorAll('#pillSnakeSpeed .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(spdSnakeMap[cfg.snakeSpeed]||'Normal')));
+    // Snake start length pills
+    const slMap={3:'3',6:'6',10:'10'};
+    document.querySelectorAll('#pillSnakeStartLen .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(slMap[cfg.snakeStartLen]||'3')));
+    // Snake food toggles
+    const spf=document.getElementById('snakePoisonFoodToggle'); if(spf) spf.checked=cfg.snakePoisonFood!==false;
+    const sgf=document.getElementById('snakeGoldenFoodToggle'); if(sgf) sgf.checked=cfg.snakeGoldenFood!==false;
+    // Runner options
+    const romMap={'standard':'Standard','overhead':'+ Overhead','mixed':'Mixed'};
+    document.querySelectorAll('#pillRunnerObstMix .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(romMap[cfg.runnerObstacleMix]||'Standard')));
+    const rpToggle=document.getElementById('runnerParallaxToggle'); if(rpToggle) rpToggle.checked=cfg.runnerParallax!==false;
+    // Runner coin frequency
+    const rcfMap={0:'None',0.08:'Low',0.15:'Normal',0.30:'Lots'};
+    document.querySelectorAll('#pillRunnerCoins .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(rcfMap[cfg.runnerCoinFreq]!==undefined?rcfMap[cfg.runnerCoinFreq]:'Normal')));
+    // Shooter: boss waves toggle
+    const bwt=document.getElementById('bossWavesToggle'); if(bwt) bwt.checked=cfg.bossWaves!==false;
+    // Invaders rows/cols
+    const irMap={2:'2',3:'3',4:'4'};
+    document.querySelectorAll('#pillInvaderRows .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(irMap[cfg.invaderRows]||'3')));
+    const icMap={5:'5',6:'6',8:'8',10:'10'};
+    document.querySelectorAll('#pillInvaderCols .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(icMap[cfg.invaderCols]||'8')));
+    const iuf=document.getElementById('invaderUfoToggle'); if(iuf) iuf.checked=cfg.invaderUfo!==false;
     // Asteroids count
     const arc = document.querySelector('#custom-ASTEROIDS input[type=range]');
     if(arc && cfg.asteroidCount) { arc.value=cfg.asteroidCount; arc.nextElementSibling.textContent=cfg.asteroidCount+' rocks'; }
+    // Asteroids saucer toggle
+    const ast=document.getElementById('asteroidSaucerToggle'); if(ast) ast.checked=cfg.asteroidSaucer!==false;
+    // Asteroids speed pills
+    const aspMap={0.5:'Slow',1.0:'Normal',1.7:'Fast',2.8:'Ludicrous'};
+    document.querySelectorAll('#pillAsteroidSpeed .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(aspMap[cfg.asteroidSpeedMul]||'Normal')));
+    // Breaker brick rows
+    const brMap={2:'2',4:'4',6:'6',8:'8'};
+    document.querySelectorAll('#pillBrickRows .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(brMap[cfg.brickRows]||'4')));
     // Dodge star ratio
     const dsr = document.querySelector('#custom-DODGE input[type=range]');
     if(dsr && cfg.dodgeStarRatio!==undefined) { dsr.value=cfg.dodgeStarRatio; dsr.nextElementSibling.textContent=cfg.dodgeStarRatio+'%'; }
@@ -6144,6 +6401,13 @@ function _syncCustomTabUI(cfg) {
     document.querySelectorAll('#pillRogueEnemyHp .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(ehpMap[cfg.rogueEnemyHpMul]||'Normal')));
     const bossMap = {0.5:'Easy',1.0:'Normal',1.8:'Hard',3.0:'Legendary'};
     document.querySelectorAll('#pillRogueBoss .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(bossMap[cfg.rogueBossMul]||'Normal')));
+    // Colour theme swatches — sync pickers to current gameTheme.cols
+    gameTheme.cols.forEach((hex, i) => {
+        const sw = document.getElementById('themeSwatchPreview' + i);
+        if (sw) sw.style.background = hex;
+        const inp = document.getElementById('themeCol' + i);
+        if (inp) inp.value = hex;
+    });
     // Events tab — restore rules and re-render
     if (cfg.events && Array.isArray(cfg.events)) {
         liveConfig.events = cfg.events.map(e=>Object.assign({},e));
@@ -6271,32 +6535,26 @@ async function generateRemixLink() {
 }
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
+let _goPendingScore = 0;
+let _goPendingGenre = 'SHOOTER';
+let _goScoreSaved   = false; // guard against double-save
+
 function showGameOver(score) {
     GameAudio.stopMusic();
-    const genre = _engineData ? _engineData.genre : 'SHOOTER';
-    const lbKey = 'jv_lb_' + genre;
+    _goPendingScore = score;
+    _goPendingGenre = _engineData ? _engineData.genre : 'SHOOTER';
 
-    // ── Top-3 leaderboard ────────────────────────────────────────────────────
-    let board = [];
-    try { board = JSON.parse(localStorage.getItem(lbKey) || '[]'); } catch(e) {}
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    board.push({ score, date: dateStr });
-    board.sort((a,b)=>b.score-a.score);
-    board = board.slice(0,3);
-    localStorage.setItem(lbKey, JSON.stringify(board));
-
-    const isNew = board[0].score === score && score > 0;
     document.getElementById('goScore').textContent = 'Score: ' + score;
-    document.getElementById('goNewBest').style.display = isNew ? 'block' : 'none';
 
-    const lb = document.getElementById('goLeaderboard');
-    if (lb && board.length) {
-        lb.style.display = '';
-        const ranks = ['🥇','🥈','🥉'];
-        const rankCls = ['gold','silver','bronze'];
-        lb.innerHTML = '<div class="go-lb-title">Top Scores — '+genre+'</div>' +
-            board.map((e,i)=>`<div class="go-lb-row"><span class="go-lb-rank ${rankCls[i]}">${ranks[i]}</span><span class="go-lb-score">${e.score}</span><span class="go-lb-date">${e.date}</span>${e.score===score&&i===0&&isNew?'<span class="go-lb-new">NEW!</span>':''}</div>`).join('');
+    // Pre-fill initials from last session, focus input
+    const savedInitials = localStorage.getItem('jv_initials') || '';
+    const initialsInput = document.getElementById('goInitials');
+    if (initialsInput) {
+        initialsInput.value = savedInitials;
+        // Reset name row visibility and save-guard
+        document.getElementById('goNameRow').style.display = '';
+        document.getElementById('goLeaderboard').style.display = 'none';
+        _goScoreSaved = false;
     }
 
     // ── Achievements ─────────────────────────────────────────────────────────
@@ -6306,17 +6564,37 @@ function showGameOver(score) {
     if (elapsed >= 60) _achUnlock('survivor');
     if (score >= 100)  _achUnlock('centurion');
     if (score >= 500)  _achUnlock('high_roller');
+    // Genre-specific end-of-game checks
+    const _goGenre = (document.getElementById('genreMode')||{}).value || '';
+    if (_goGenre === 'RUNNER') {
+        if (elapsed >= 100) _achUnlock('runner_survivor');
+        if (score >= 1000)  _achUnlock('runner_centurion');
+    }
+    if (_goGenre === 'PLATFORMER' && _sessionHits === 0) _achUnlock('plat_clean');
+    if (_goGenre === 'SNAKE' && _sessionHits === 0)      _achUnlock('snake_flawless');
 
     const ACH_LABELS = {
-        first_blood:  '🎯 First Blood',
-        centurion:    '💯 Centurion',
-        high_roller:  '💰 High Roller',
-        survivor:     '⏱ Survivor (60s)',
-        untouchable:  '🛡 Untouchable',
-        wave_3:       '👾 Wave 3 Clear',
-        power_up:     '⚡ Power-Up!',
-        speed_demon:  '🚀 Speed Demon',
-        goal_reached: '🏁 Goal Reached!'
+        first_blood:      '🎯 First Blood',
+        centurion:        '💯 Centurion',
+        high_roller:      '💰 High Roller',
+        survivor:         '⏱ Survivor (60s)',
+        untouchable:      '🛡 Untouchable',
+        wave_3:           '👾 Wave 3 Clear',
+        power_up:         '⚡ Power-Up!',
+        speed_demon:      '🚀 Speed Demon',
+        goal_reached:     '🏁 Goal Reached!',
+        snake_long:       '🐍 Big Snake (20+)',
+        snake_flawless:   '🌟 Flawless Run',
+        pong_shutout:     '🏓 Shutout!',
+        pong_comeback:    '💪 Comeback Win!',
+        invaders_perfect: '🛸 Perfect Wave',
+        asteroids_chain:  '🌌 3-Wave Chain',
+        asteroids_ace:    '⭐ Asteroid Ace (Wave 5)',
+        runner_survivor:  '⏱ Runner Survivor (100s)',
+        runner_centurion: '💯 Runner 1K',
+        plat_clean:       '🧹 Flawless Platformer',
+        shooter_combo10:  '🔥 10× Combo!',
+        rogue_floor3:     '⚔️ Floor 3 Reached!'
     };
     const achEl = document.getElementById('goAchievements');
     if (achEl) {
@@ -6325,11 +6603,61 @@ function showGameOver(score) {
     _sessionAchs.clear(); _sessionHits = 0; _sessionStartTime = Date.now();
 
     document.getElementById('goOverlay').classList.add('show');
+    // Auto-focus the initials input so player can type immediately
+    setTimeout(() => {
+        const inp = document.getElementById('goInitials');
+        if (inp) { inp.focus(); inp.select(); }
+    }, 80);
+}
+
+function _saveGoScore() {
+    if (_goScoreSaved) return;  // prevent double-save if ✓ and Play Again fire in sequence
+    _goScoreSaved = true;
+    const score  = _goPendingScore;
+    const genre  = _goPendingGenre;
+    const lbKey  = 'jv_lb_' + genre;
+    const inp    = document.getElementById('goInitials');
+    const name   = inp ? inp.value.toUpperCase().trim().slice(0, 3) || '---' : '---';
+    if (inp) localStorage.setItem('jv_initials', name);
+
+    // Save to leaderboard
+    let board = [];
+    try { board = JSON.parse(localStorage.getItem(lbKey) || '[]'); } catch(e) {}
+    const dateStr = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+    board.push({ score, date: dateStr, name });
+    board.sort((a, b) => b.score - a.score);
+    board = board.slice(0, 3);
+    localStorage.setItem(lbKey, JSON.stringify(board));
+
+    const isNew = board[0].score === score && score > 0;
+    document.getElementById('goNewBest').style.display = isNew ? 'block' : 'none';
+
+    // Render leaderboard
+    const lb = document.getElementById('goLeaderboard');
+    if (lb) {
+        lb.style.display = '';
+        const ranks = ['🥇','🥈','🥉'];
+        const rankCls = ['gold','silver','bronze'];
+        lb.innerHTML = '<div class="go-lb-title">Top Scores — ' + genre + '</div>' +
+            board.map((e, i) => `<div class="go-lb-row">
+                <span class="go-lb-rank ${rankCls[i]}">${ranks[i]}</span>
+                <span class="go-lb-name">${e.name||'---'}</span>
+                <span class="go-lb-score">${e.score}</span>
+                <span class="go-lb-date">${e.date}</span>
+                ${e.score===score && i===0 && isNew ? '<span class="go-lb-new">NEW!</span>' : ''}
+            </div>`).join('');
+    }
+    // Hide initials row, reveal leaderboard
+    document.getElementById('goNameRow').style.display = 'none';
     // Refresh hi-score strip
     const hs = document.getElementById('hiscoreStrip');
     if (hs) hs.textContent = board.length ? '🏆 Best: ' + board[0].score : '';
 }
+
 function closeGameOver() {
+    // Ensure score is saved even if player skips initials entry
+    const nameRow = document.getElementById('goNameRow');
+    if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
     // Reset win/game-over display to defaults
     const t = document.getElementById('goTitle');
     const b = document.getElementById('goWinBanner');
@@ -6337,6 +6665,23 @@ function closeGameOver() {
     if (b) b.style.display = 'none';
     document.getElementById('goOverlay').classList.remove('show');
     _launchPhaserGame();
+}
+
+function goNewGame() {
+    // Save score if not yet done, then stop the game and go back to the Build tab
+    const nameRow = document.getElementById('goNameRow');
+    if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
+    document.getElementById('goOverlay').classList.remove('show');
+    // Stop any running Phaser game cleanly
+    if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch(e){} currentPhaserGame = null; }
+    GameAudio.stopMusic();
+    // Reset game-over display defaults
+    const t = document.getElementById('goTitle'), b = document.getElementById('goWinBanner');
+    if (t) t.textContent = 'GAME OVER';
+    if (b) b.style.display = 'none';
+    // Switch to Build tab so they can change genre / settings
+    switchTab('build', document.querySelectorAll('.tab-btn')[0]);
+    showToast('↩ Pick a new game and hit ▶ Run!');
 }
 
 // ── VICTORY SCREEN ────────────────────────────────────────────────────────────
@@ -6349,9 +6694,9 @@ function showVictory(score) {
 }
 let _gameStartTime = 0;
 
-function exportGame() {
+async function exportGame() {
     if (!_engineData) { showToast('Hit ▶ Run first, then export'); return; }
-    showToast('Preparing download…');
+    showToast('⏳ Bundling Phaser for offline play…');
     // Clone DOM so we can strip runtime elements
     const root = document.documentElement.cloneNode(true);
     // Clear the live Phaser canvas from the clone
@@ -6445,6 +6790,25 @@ window.addEventListener('DOMContentLoaded',function(){
     const mLink = document.createElement('link');
     mLink.rel='manifest'; mLink.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
     root.querySelector('head').appendChild(mLink);
+    // Inline Phaser so the exported file works offline / without CDN
+    try {
+        const PHASER_CDN = 'https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js';
+        const resp = await fetch(PHASER_CDN);
+        if (resp.ok) {
+            const phaserSrc = await resp.text();
+            // Find the <script src="...phaser..."> tag in the clone and swap it for an inline block
+            const phaserScript = Array.from(root.querySelectorAll('script[src]'))
+                .find(s => s.src && s.src.includes('phaser'));
+            if (phaserScript) {
+                const inlinePhaser = document.createElement('script');
+                inlinePhaser.textContent = phaserSrc;
+                phaserScript.parentNode.replaceChild(inlinePhaser, phaserScript);
+            }
+        }
+    } catch(e) {
+        // CDN fetch failed (no network) — leave external tag so it still works online
+        console.warn('exportGame: could not inline Phaser, keeping CDN link', e);
+    }
     // Serialise and download
     const blob = new Blob(['<!DOCTYPE html>\n' + root.outerHTML], {type:'text/html;charset=utf-8'});
     const url  = URL.createObjectURL(blob);
@@ -6453,7 +6817,7 @@ window.addEventListener('DOMContentLoaded',function(){
     a.download = (_engineData.title || 'my-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.html';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    showToast('🎮 "' + _engineData.title + '" downloaded!');
+    showToast('🎮 "' + _engineData.title + '" downloaded — works offline!');
 }
 
 // ── TOUCH CONTROLS ───────────────────────────────────────────────────────────
@@ -6679,6 +7043,164 @@ function showWorkshopBadge(msg) {
     b._to = setTimeout(() => b.classList.remove('show'), 5000);
 }
 
+// ── SPRITE EDITOR ─────────────────────────────────────────────────────────────
+const SE_SIZE = 8;  // grid is 8 × 8 cells
+const SE_CELL = 24; // display px per cell (canvas is 192 × 192)
+let _sePixels   = Array(SE_SIZE * SE_SIZE).fill(null); // null = transparent
+let _seColor    = '#00d4aa';
+let _seErasing  = false;
+let _sePainting = false;
+
+const SE_PALETTE = [
+    '#00d4aa','#a78bfa','#f87171','#fbbf24',
+    '#4ade80','#38bdf8','#e879f9','#fb923c',
+    '#ffffff','#94a3b8','#1e293b','#000000'
+];
+
+function seInit() {
+    const cvs = document.getElementById('spriteEdCanvas');
+    if (!cvs || cvs._seReady) return;
+    cvs._seReady = true;
+
+    // Build palette
+    const pal = document.getElementById('sePalette');
+    if (pal) {
+        pal.innerHTML =
+            SE_PALETTE.map((c, i) =>
+                `<div class="se-swatch${i===0?' active':''}" style="background:${c};" onclick="sePickColor('${c}',this)" title="${c}"></div>`
+            ).join('') +
+            `<label class="se-swatch se-custom" title="Custom colour" style="cursor:pointer;font-size:.7rem;overflow:hidden;">
+                🎨<input type="color" value="#00d4aa" style="opacity:0;position:absolute;width:1px;height:1px;pointer-events:none;" oninput="sePickColorCustom(this.value,this.closest('.se-swatch'))">
+             </label>`;
+    }
+    seRender();
+
+    // Mouse events
+    cvs.addEventListener('mousedown',  e => { _sePainting = true; _seErasing = e.button === 2; sePaint(e); });
+    cvs.addEventListener('mousemove',  e => { if (_sePainting) sePaint(e); });
+    cvs.addEventListener('mouseup',    () => { _sePainting = false; _seErasing = false; });
+    cvs.addEventListener('mouseleave', () => { _sePainting = false; _seErasing = false; });
+    cvs.addEventListener('contextmenu',e => e.preventDefault());
+
+    // Touch events
+    cvs.addEventListener('touchstart', e => { e.preventDefault(); _sePainting = true; _seErasing = false; sePaintTouch(e); }, {passive:false});
+    cvs.addEventListener('touchmove',  e => { e.preventDefault(); if (_sePainting) sePaintTouch(e); }, {passive:false});
+    cvs.addEventListener('touchend',   () => _sePainting = false);
+}
+
+function sePaint(e) {
+    const cvs = document.getElementById('spriteEdCanvas');
+    const rect = cvs.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left)  / rect.width  * SE_SIZE);
+    const y = Math.floor((e.clientY - rect.top)   / rect.height * SE_SIZE);
+    if (x < 0 || x >= SE_SIZE || y < 0 || y >= SE_SIZE) return;
+    const idx = y * SE_SIZE + x;
+    const newCol = (_seErasing || _seEraseMode) ? null : _seColor;
+    if (_sePixels[idx] === newCol) return;
+    _sePixels[idx] = newCol;
+    seRender();
+}
+let _seEraseMode = false;
+function sePaintTouch(e) {
+    const t = e.touches[0];
+    const cvs = document.getElementById('spriteEdCanvas');
+    const rect = cvs.getBoundingClientRect();
+    const x = Math.floor((t.clientX - rect.left) / rect.width  * SE_SIZE);
+    const y = Math.floor((t.clientY - rect.top)  / rect.height * SE_SIZE);
+    if (x < 0 || x >= SE_SIZE || y < 0 || y >= SE_SIZE) return;
+    const idx = y * SE_SIZE + x;
+    _sePixels[idx] = _seEraseMode ? null : _seColor;
+    seRender();
+}
+
+function sePickColor(c, el) {
+    _seColor = c; _seEraseMode = false;
+    document.querySelectorAll('#sePalette .se-swatch').forEach(s => s.classList.remove('active'));
+    if (el) el.classList.add('active');
+    const eb = document.getElementById('seEraserBtn');
+    if (eb) eb.style.outline = '';
+}
+function sePickColorCustom(c, swatchEl) {
+    _seColor = c; _seEraseMode = false;
+    document.querySelectorAll('#sePalette .se-swatch').forEach(s => s.classList.remove('active'));
+    if (swatchEl) { swatchEl.classList.add('active'); swatchEl.style.background = c; }
+    const eb = document.getElementById('seEraserBtn');
+    if (eb) eb.style.outline = '';
+}
+function seSetEraser() {
+    _seEraseMode = !_seEraseMode;
+    const eb = document.getElementById('seEraserBtn');
+    if (eb) eb.style.outline = _seEraseMode ? '2px solid #a78bfa' : '';
+    if (_seEraseMode) document.querySelectorAll('#sePalette .se-swatch').forEach(s=>s.classList.remove('active'));
+}
+
+function seRender() {
+    const cvs = document.getElementById('spriteEdCanvas');
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+    const cw = W / SE_SIZE, ch = H / SE_SIZE;
+    // Checkerboard (transparent indicator)
+    for (let y = 0; y < SE_SIZE; y++) {
+        for (let x = 0; x < SE_SIZE; x++) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#1c2840' : '#111827';
+            ctx.fillRect(x * cw, y * ch, cw, ch);
+        }
+    }
+    // Pixels
+    _sePixels.forEach((col, i) => {
+        if (!col) return;
+        ctx.fillStyle = col;
+        ctx.fillRect((i % SE_SIZE) * cw, Math.floor(i / SE_SIZE) * ch, cw, ch);
+    });
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < SE_SIZE; i++) {
+        ctx.beginPath(); ctx.moveTo(i * cw, 0); ctx.lineTo(i * cw, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * ch); ctx.lineTo(W, i * ch); ctx.stroke();
+    }
+}
+
+function seClear() {
+    _sePixels = Array(SE_SIZE * SE_SIZE).fill(null);
+    seRender();
+    showToast('Canvas cleared');
+}
+
+function seApply(slot) {
+    if (_sePixels.every(p => p === null)) { showToast('Draw something first!'); return; }
+    // Render at 3× (24×24 px) for a crisp but recognisable sprite
+    const out = document.createElement('canvas');
+    const scale = 3;
+    out.width = out.height = SE_SIZE * scale;
+    const ctx = out.getContext('2d');
+    ctx.clearRect(0, 0, out.width, out.height);
+    _sePixels.forEach((col, i) => {
+        if (!col) return;
+        ctx.fillStyle = col;
+        ctx.fillRect((i % SE_SIZE) * scale, Math.floor(i / SE_SIZE) * scale, scale, scale);
+    });
+    const dataUrl = out.toDataURL('image/png');
+    if (slot === 'player') {
+        customSpriteDataUrl = dataUrl; customSpriteFrameCount = 1; customSpriteFrameW = 0;
+        const thumb = document.getElementById('spriteThumb');
+        if (thumb) thumb.innerHTML = `<img src="${dataUrl}" style="image-rendering:pixelated;width:100%;height:100%;object-fit:contain;">`;
+        document.getElementById('spriteInfoName').textContent = 'Quick Sprite (8×8)';
+        document.getElementById('spriteStatus').textContent = '✓ Sprite applied';
+        document.getElementById('spriteStatus').className = 'asset-status ok';
+        showToast('🎨 Player sprite applied — hit ▶ Run!');
+    } else {
+        customEnemyDataUrl = dataUrl;
+        const thumb = document.getElementById('enemyThumb');
+        if (thumb) thumb.innerHTML = `<img src="${dataUrl}" style="image-rendering:pixelated;width:100%;height:100%;object-fit:contain;">`;
+        document.getElementById('enemyInfoName').textContent = 'Quick Sprite (8×8)';
+        document.getElementById('enemyStatus').textContent = '✓ Enemy applied';
+        document.getElementById('enemyStatus').className = 'asset-status ok';
+        showToast('🎨 Enemy sprite applied — hit ▶ Run!');
+    }
+}
+
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
     if (window.__exportMode) return; // exported game: injected boot script handles this
@@ -6749,6 +7271,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        // SPACE dismisses intro title screen
+        if (e.key === ' ' && document.getElementById('introOverlay').classList.contains('show')) {
+            e.preventDefault(); closeIntro(); return;
+        }
+        // ENTER confirms initials on game-over
+        if (e.key === 'Enter' && document.getElementById('goOverlay').classList.contains('show')) {
+            _saveGoScore(); return;
+        }
         if (e.key === 'r' || e.key === 'R') compileAndBootEngine();
         if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s') { e.preventDefault(); saveToBrowser(); }
         if ((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z') { e.preventDefault(); tmUndo(); }
@@ -6768,6 +7298,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     // ── Tutorial first run ────────────────────────────────────────────────────
     setTimeout(tutInit, 1200); // slight delay so game boots first
     setTimeout(_tmInit, 100);  // init tilemap editor canvas
+    setTimeout(seInit,  150);  // init sprite editor canvas
 
     // Restore user code from localStorage
     (function() {
