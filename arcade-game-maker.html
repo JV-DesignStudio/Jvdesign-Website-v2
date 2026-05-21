@@ -471,8 +471,27 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             </div>
 
             <div class="form-group" id="levelMapGroup">
-                <label for="levelDesignerGrid">Level Map JSON <span style="color:rgba(240,234,214,.3);font-weight:400;">(Platformer only)</span></label>
-                <textarea id="levelDesignerGrid" placeholder="Paste tile array or use Assets → Level Designer"></textarea>
+                <label>Tilemap <span style="color:rgba(240,234,214,.3);font-weight:400;">(Platformer · Roguelike)</span></label>
+                <!-- Inline tilemap paint editor -->
+                <div style="background:rgba(0,0,0,.35);border:1px solid var(--border2);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;">
+                    <!-- Tool buttons -->
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+                        <button class="btn-sm" id="tmTool_solid"   onclick="tmSetTool(1)" style="background:rgba(124,58,237,.35);color:#a78bfa;border-color:rgba(124,58,237,.5);">⬛ Solid</button>
+                        <button class="btn-sm" id="tmTool_hazard"  onclick="tmSetTool(2)">🔴 Hazard</button>
+                        <button class="btn-sm" id="tmTool_erase"   onclick="tmSetTool(0)">✕ Erase</button>
+                        <button class="btn-sm" id="tmTool_fill"    onclick="tmFill()" style="margin-left:auto;">🪣 Fill</button>
+                        <button class="btn-sm"                     onclick="tmClear()">🗑 Clear</button>
+                    </div>
+                    <!-- Grid canvas -->
+                    <canvas id="tilemapCanvas" width="322" height="242"
+                        style="width:100%;cursor:crosshair;image-rendering:pixelated;border-radius:5px;border:1px solid rgba(255,255,255,.08);"
+                        onmousedown="tmDown(event)" onmousemove="tmMove(event)" onmouseup="tmUp()" onmouseleave="tmUp()"
+                        ontouchstart="tmTouchStart(event)" ontouchmove="tmTouchMove(event)" ontouchend="tmUp()">
+                    </canvas>
+                    <div style="font-size:.58rem;color:var(--muted);line-height:1.5;">Paint tiles above — solid (purple), hazard (red), or erase. Hit ▶ Run to play your level.</div>
+                </div>
+                <!-- Hidden textarea kept for JSON compatibility -->
+                <textarea id="levelDesignerGrid" style="display:none;" placeholder="Paste tile array or use Assets → Level Designer"></textarea>
             </div>
 
             <span class="sec-label">Theme &amp; Story</span>
@@ -880,7 +899,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <div class="toggle-label">Background Music</div>
                         <div class="toggle-sub" id="musicImportName">Chiptune loop</div>
                     </div>
-                    <label class="toggle-switch"><input type="checkbox" id="musicToggle" onchange="GameAudio.setMusic(this.checked);"><span class="toggle-knob"></span></label>
+                    <label class="toggle-switch"><input type="checkbox" id="musicToggle" checked onchange="GameAudio.setMusic(this.checked);"><span class="toggle-knob"></span></label>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
                     <button class="asset-btn import" style="flex:1;" onclick="openWorkshop('sound-studio.html')">🎵 Compose in Sound Studio</button>
@@ -2391,6 +2410,15 @@ function _launchPhaserGame() {
     _evtFired.clear();
     // Hide all power-up HUD badges
     ['Shield','X2','Speed'].forEach(t=>{ const el=document.getElementById('pu'+t); if(el) el.classList.remove('show'); });
+    // Genre-aware music style: pick a sensible default unless user already chose one
+    const _genreMusic = { SHOOTER:'space',PLATFORMER:'chiptune',DODGE:'action',BREAKER:'chiptune',
+                           RUNNER:'action',FLAPPY:'chiptune',INVADERS:'space',PONG:'chiptune',
+                           SNAKE:'chiptune',ASTEROIDS:'space',ROGUELIKE:'action' };
+    if (!GameAudio.customMusic) {
+        const _autoStyle = _genreMusic[data.genre] || 'chiptune';
+        const _sel = document.getElementById('musicStyle');
+        if (_sel && _sel.value !== _autoStyle) { _sel.value = _autoStyle; }
+    }
     // Auto-start music if the toggle is on (music should play during gameplay)
     if (document.getElementById('musicToggle').checked) {
         setTimeout(() => GameAudio.startMusic(document.getElementById('musicStyle').value), 250);
@@ -2697,6 +2725,16 @@ function makeBaseScene(data) {
         }
         _puSpeedMul() { return this._puSpeed ? 1.5 : 1.0; }
         _puScoreMul() { return this._puX2 ? 2 : 1; }
+        // ── Floating score / event popup text ─────────────────────────────────
+        _popText(x, y, text, col) {
+            const t = this.add.text(x, y, text, {
+                fontSize:'13px', fill: col||'#fbbf24',
+                fontFamily:"'JetBrains Mono',monospace", fontStyle:'bold',
+                stroke:'#000', strokeThickness:2
+            }).setOrigin(0.5).setDepth(22);
+            this.tweens.add({ targets:t, y:y-42, alpha:0, duration:750, ease:'Power2',
+                onComplete:()=>{ if(t.active) t.destroy(); } });
+        }
         // ── Sprite animation ─────────────────────────────────────────────────
         // Call after creating the player sprite to start frame animation if available
         _setupActorAnim(sprite) {
@@ -2921,9 +2959,13 @@ function scenePlatformer(data) {
             }
         }
         _buildLevel() {
+            // If a custom 20×15 tilemap has been painted, use it for a fixed-screen level
+            if (data.map && data.map.length === TM_COLS*TM_ROWS && data.map.some(v=>v>0)) {
+                this._buildFromTilemap(data.map); return;
+            }
+            // ── Procedural scrolling level ────────────────────────────────────
             const T=20, groundY=GH-T/2;
             const tileCol=themeInt(2,0x334155), platCol=themeInt(1,0x4ade80);
-            // Ground with occasional gaps (gaps only after x=480)
             let gx=0;
             while (gx < WORLD_W) {
                 const segW=Phaser.Math.Between(90,220);
@@ -2931,12 +2973,29 @@ function scenePlatformer(data) {
                 gx += segW;
                 if (gx>480 && Math.random()<0.22) gx += Phaser.Math.Between(30,80);
             }
-            // Floating platforms
             for (let px=200; px<WORLD_W-80; px+=Phaser.Math.Between(100,180)) {
                 const py=Phaser.Math.Between(Math.round(GH*0.38), GH-70);
                 const pw=Phaser.Math.Between(60,150);
                 this.platforms.create(px, py, 'block').setDisplaySize(pw,T).setTint(platCol).refreshBody();
             }
+        }
+        _buildFromTilemap(map) {
+            // Fixed 20×15 tilemap — resize world to fit canvas exactly
+            this.physics.world.setBounds(0, 0, GW, GH);
+            this.cameras.main.setBounds(0, 0, GW, GH);
+            const TW=Math.floor(GW/TM_COLS), TH=Math.floor(GH/TM_ROWS);
+            const solidCol=themeInt(2,0x334155), hazCol=0xef4444;
+            map.forEach((v,i) => {
+                if(!v) return;
+                const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
+                if(v===2) {
+                    // Hazard tile — use hazards group so the player can die
+                    const h=this.hazards.create(tx,ty,'block').setDisplaySize(TW-1,TH-1);
+                    h.setTint(hazCol); h.body.allowGravity=false;
+                } else {
+                    this.platforms.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(solidCol).refreshBody();
+                }
+            });
         }
         update() {
             // Parallax: tile sprites fixed to cam, offset tilePosition proportional to scroll
@@ -3900,6 +3959,8 @@ function sceneRoguelike(data) {
             if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
             if(this._bossHpText&&this._bossHpText.active){this._bossHpText.destroy();this._bossHpText=null;}
             this._boss=null; this._roomCleared=false; this._doorOpen=false;
+            // HP bar graphics — cleared + redrawn every frame for all multi-HP enemies
+            if (!this._hpBarGfx) this._hpBarGfx = this.add.graphics().setDepth(16).setScrollFactor(1);
 
             // Floor & walls
             this._floorRect=this.add.rectangle(GW/2,GH/2,GW-W*2,GH-W*2,themeInt(3,0x0f172a)).setDepth(-1);
@@ -3916,10 +3977,23 @@ function sceneRoguelike(data) {
             const isShopRoom  = (this._floor>=2 && this._room===this._roomsPerFloor-2 && !isBossRoom);
             this._isBossRoom  = isBossRoom;
             this._isShopRoom  = isShopRoom;
-            const obCount     = isShopRoom ? 0 : Phaser.Math.Between(2,4);
-            for(let i=0;i<obCount;i++){
-                const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
-                this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
+            // Use tilemap obstacle layout if painted (room 0 pattern repeats)
+            const hasCustomMap = data.map && data.map.length===TM_COLS*TM_ROWS && data.map.some(v=>v>0);
+            if (hasCustomMap && !isShopRoom && !isBossRoom) {
+                const TW=Math.floor(GW/TM_COLS), TH=Math.floor(GH/TM_ROWS);
+                data.map.forEach((v,i)=>{
+                    if(v!==1) return;
+                    const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
+                    // Only use interior tiles as obstacles (leave border for walls)
+                    if(tx>W+TW&&tx<GW-W-TW&&ty>W+TH&&ty<GH-W-TH)
+                        this._obstacles.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(obCol).refreshBody();
+                });
+            } else {
+                const obCount = isShopRoom ? 0 : Phaser.Math.Between(2,4);
+                for(let i=0;i<obCount;i++){
+                    const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
+                    this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
+                }
             }
 
             if (isBossRoom) {
@@ -4039,6 +4113,7 @@ function sceneRoguelike(data) {
             this._gold -= cost;
             const lbl = item.getData('lbl'); if(lbl&&lbl.active) lbl.destroy();
             item.destroy();
+            this._popText(item.x, item.y, '-'+cost+'g', '#f87171');
             const action = item.getData('action');
             switch(action) {
                 case 'weapon': this._upgradeWeapon(); break;
@@ -4070,6 +4145,12 @@ function sceneRoguelike(data) {
             const si=Math.max(700,1800-this._floor*100);
             this._bossShootTimer=this.time.addEvent({delay:si,loop:true,callback:this._bossAttack,callbackScope:this});
             this.cameras.main.shake(380,0.018);
+            // Boss intro text — big overlay that fades out
+            const _bi=this.add.text(GW/2,GH/2,'⚔️ BOSS',{fontSize:'52px',fill:'#f87171',fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:5}).setOrigin(0.5).setDepth(30).setAlpha(0);
+            const _bs=this.add.text(GW/2,GH/2+46,`Floor ${this._floor} Guardian`,{fontSize:'16px',fill:'#c084fc',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(30).setAlpha(0);
+            this.tweens.add({targets:[_bi,_bs],alpha:1,duration:180,ease:'Back.Out',onComplete:()=>{
+                this.tweens.add({targets:[_bi,_bs],alpha:0,y:'+=18',duration:500,delay:900,onComplete:()=>{if(_bi.active)_bi.destroy();if(_bs.active)_bs.destroy();}});
+            }});
             showToast(`⚔️ BOSS! Floor ${this._floor} Guardian`);
             GameAudio.play('hit');
         }
@@ -4170,6 +4251,7 @@ function sceneRoguelike(data) {
             enemy.destroy();
             const pts=Math.max(1,10*this._floor)*(liveConfig.pointsPerKill||10)*dmg;
             this.score+=pts; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
+            this._popText(enemy.x, enemy.y-10, '+'+pts, '#fbbf24');
             GameAudio.play('score'); _achUnlock('first_blood');
             // Loot drops — tanks and ghosts give more
             const goldBonus = (type==='tank'||type==='ghost') ? Phaser.Math.Between(8,20) : Phaser.Math.Between(2,8);
@@ -4385,6 +4467,21 @@ function sceneRoguelike(data) {
             this._shopItems.getChildren().forEach(s=>{
                 const l=s.getData('lbl'); if(l&&l.active){l.x=s.x;l.y=s.y-24;}
             });
+
+            // Enemy HP bars — drawn for every multi-HP enemy each frame
+            if (this._hpBarGfx) {
+                this._hpBarGfx.clear();
+                [...this.enemies.getChildren(),...this._ghosts.getChildren()].forEach(e=>{
+                    if(!e.active) return;
+                    const maxHp=e.getData('maxHp')||1; if(maxHp<=1) return;
+                    const hp=e.getData('hp')||0;
+                    const bw=Math.round(e.displayWidth*1.15), bx=e.x-bw/2, by=e.y-e.displayHeight/2-6;
+                    this._hpBarGfx.fillStyle(0x0f172a,0.85); this._hpBarGfx.fillRect(bx,by,bw,4);
+                    const pct=Math.max(0,hp/maxHp);
+                    this._hpBarGfx.fillStyle(pct>0.5?0x4ade80:pct>0.25?0xfbbf24:0xef4444,1);
+                    this._hpBarGfx.fillRect(bx,by,Math.round(bw*pct),4);
+                });
+            }
 
             // Bullets OOB cleanup
             [...this.bullets.getChildren(),...this.eBullets.getChildren()].forEach(b=>{if(b.x<0||b.x>GW||b.y<0||b.y>GH)b.destroy();});
@@ -4923,6 +5020,8 @@ function _applyLevelData(data) {
     document.getElementById('levelInfoDesc').textContent=`"${data.name||'Level'}" · ${w}×${h} tiles`;
     document.getElementById('levelStatus').textContent=`✓ Level loaded`;
     document.getElementById('levelStatus').className='asset-status ok';
+    // Sync external level into the inline tilemap editor
+    if(customLevelMap.length===TM_COLS*TM_ROWS) _tmLoadFromArray(customLevelMap);
     showToast(`Level imported! Switch to Platformer and ▶ Run`);
 }
 function clearLevel() {
@@ -4933,6 +5032,85 @@ function clearLevel() {
     document.getElementById('levelStatus').textContent='Using built-in default level';
     document.getElementById('levelStatus').className='asset-status none';
     showToast('Level cleared');
+}
+
+// ── INLINE TILEMAP EDITOR ─────────────────────────────────────────────────────
+// 20 × 15 grid. Values: 0=empty, 1=solid platform, 2=hazard/spike
+const TM_COLS=20, TM_ROWS=15;
+let _tmData   = Array(TM_COLS*TM_ROWS).fill(0);
+let _tmTool   = 1;   // currently selected tile type
+let _tmPainting = false;
+
+// Tile colours for the editor canvas
+const TM_COLORS = { 0:'#0a0c18', 1:'#7c3aed', 2:'#ef4444' };
+
+function _tmCanvas()  { return document.getElementById('tilemapCanvas'); }
+function _tmCtx()     { const c=_tmCanvas(); return c?c.getContext('2d'):null; }
+
+function tmRender() {
+    const cvs=_tmCanvas(); if(!cvs) return;
+    const ctx=cvs.getContext('2d');
+    const CW=Math.floor(cvs.width/TM_COLS), CH=Math.floor(cvs.height/TM_ROWS);
+    ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
+    _tmData.forEach((v,i)=>{
+        if(!v) return;
+        const tx=i%TM_COLS, ty=Math.floor(i/TM_COLS);
+        ctx.fillStyle=TM_COLORS[v]||'#7c3aed';
+        ctx.fillRect(tx*CW+1, ty*CH+1, CW-1, CH-1);
+    });
+    // Grid lines
+    ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=0.5;
+    for(let x=0;x<=TM_COLS;x++){ctx.beginPath();ctx.moveTo(x*CW,0);ctx.lineTo(x*CW,cvs.height);ctx.stroke();}
+    for(let y=0;y<=TM_ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CH);ctx.lineTo(cvs.width,y*CH);ctx.stroke();}
+}
+function _tmCoord(e) {
+    const cvs=_tmCanvas(); if(!cvs) return null;
+    const r=cvs.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(cvs.width/r.width);
+    const cy=(e.clientY-r.top)*(cvs.height/r.height);
+    const CW=cvs.width/TM_COLS, CH=cvs.height/TM_ROWS;
+    const tx=Math.floor(cx/CW), ty=Math.floor(cy/CH);
+    if(tx<0||tx>=TM_COLS||ty<0||ty>=TM_ROWS) return null;
+    return tx+ty*TM_COLS;
+}
+function _tmPaint(idx) {
+    if(idx===null||idx===undefined) return;
+    _tmData[idx]=_tmTool;
+    tmRender(); _tmSync();
+}
+function _tmSync() {
+    customLevelMap=_tmData.slice();
+    document.getElementById('levelDesignerGrid').value=JSON.stringify(customLevelMap);
+}
+function tmDown(e)  { _tmPainting=true; _tmPaint(_tmCoord(e)); }
+function tmMove(e)  { if(!_tmPainting) return; _tmPaint(_tmCoord(e)); }
+function tmUp()     { _tmPainting=false; }
+function tmTouchStart(e){ e.preventDefault(); _tmPainting=true; _tmPaint(_tmCoord(e.touches[0])); }
+function tmTouchMove(e) { e.preventDefault(); if(!_tmPainting) return; _tmPaint(_tmCoord(e.touches[0])); }
+
+function tmSetTool(t) {
+    _tmTool=t;
+    [1,2,0].forEach(v=>{ const b=document.getElementById('tmTool_'+(v===1?'solid':v===2?'hazard':'erase')); if(b){ b.style.background=v===t?'rgba(124,58,237,.5)':''; b.style.color=v===t?'#a78bfa':''; } });
+}
+function tmFill() {
+    _tmData.fill(_tmTool); tmRender(); _tmSync();
+    showToast(_tmTool===0?'Canvas cleared':'Canvas filled');
+}
+function tmClear() {
+    _tmData.fill(0); tmRender(); _tmSync();
+    showToast('Tilemap cleared');
+}
+function _tmLoadFromArray(arr) {
+    if(!arr||arr.length!==TM_COLS*TM_ROWS) return;
+    // Support both 0/1 and 0/1/2 maps
+    _tmData=arr.map(v=>Math.min(2,Math.max(0,v|0)));
+    tmRender(); _tmSync();
+}
+// Init the editor once the DOM is ready (called after DOMContentLoaded)
+function _tmInit() {
+    tmRender();
+    // If there's already a saved level, load it into the editor
+    if(customLevelMap&&customLevelMap.length===TM_COLS*TM_ROWS) _tmLoadFromArray(customLevelMap);
 }
 
 // ── MUSIC IMPORT FROM SOUND STUDIO ───────────────────────────────────────────
@@ -5026,7 +5204,8 @@ function _buildSaveData() {
     return {
         title: d.title, genre: d.genre, speed: d.speed, gravity: d.gravity, jump: d.jump,
         map: customLevelMap || null,
-        sprite: customSpriteDataUrl, enemySprite: customEnemyDataUrl,
+        sprite: customSpriteDataUrl, spriteFrameCount: customSpriteFrameCount||1, spriteFrameW: customSpriteFrameW||0,
+        enemySprite: customEnemyDataUrl,
         bulletSprite: customBulletDataUrl, blockSprite: customBlockDataUrl, bgImage: customBgDataUrl,
         liveConfig: Object.assign({}, liveConfig),
         theme: { cols: gameTheme.cols.slice(), name: gameTheme.name },
@@ -5210,6 +5389,7 @@ function _applyLoadData(d) {
         document.getElementById('levelInfoDesc').textContent='Saved level · 20×15 tiles';
         document.getElementById('levelStatus').textContent='✓ Level loaded';
         document.getElementById('levelStatus').className='asset-status ok';
+        if(customLevelMap.length===TM_COLS*TM_ROWS) _tmLoadFromArray(customLevelMap);
     } else {
         customLevelMap = null;
         document.getElementById('levelDesignerGrid').value='';
@@ -5218,7 +5398,7 @@ function _applyLoadData(d) {
         document.getElementById('levelStatus').className='asset-status none';
     }
     // Sprites
-    if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite');
+    if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite', d.spriteFrameCount||1, d.spriteFrameW||0);
     if(d.enemySprite) _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite');
     if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite');
     if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
@@ -5753,6 +5933,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
     // ── Tutorial first run ────────────────────────────────────────────────────
     setTimeout(tutInit, 1200); // slight delay so game boots first
+    setTimeout(_tmInit, 100);  // init tilemap editor canvas
 
     // Auto-import whenever a workshop tool writes an asset to localStorage
     window.addEventListener('storage', e => {
