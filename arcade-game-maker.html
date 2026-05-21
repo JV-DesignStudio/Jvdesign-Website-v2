@@ -2453,7 +2453,7 @@ function _launchPhaserGame() {
                                 s._winTriggered = true;
                                 setTimeout(() => showVictory(score), 80);
                             } else if (liveConfig.winCondition === 'time') {
-                                const elapsed = (Date.now() - _gameStartTime) / 1000;
+                                const elapsed = (Date.now() - (_gameStartTime||Date.now())) / 1000;
                                 if (elapsed >= liveConfig.winTarget) {
                                     s._winTriggered = true;
                                     setTimeout(() => showVictory(score), 80);
@@ -2721,6 +2721,7 @@ function makeBaseScene(data) {
                 this._puSpeed=true; _showPuHud('speed');
                 this.time.delayedCall(4000,()=>{ this._puSpeed=false; _hidePuHud('speed'); });
                 showToast('⚡ Speed Boost — 4 seconds!');
+                _achUnlock('speed_demon');
             }
         }
         _puSpeedMul() { return this._puSpeed ? 1.5 : 1.0; }
@@ -3002,6 +3003,7 @@ function scenePlatformer(data) {
             }
             // Store for actor placement in create()
             this._tmSpawnX=safeSpawnX; this._tmSpawnY=safeSpawnY;
+            this._isTilemapMode=true; // flag to skip scrolling-world enemy spawn
             map.forEach((v,i) => {
                 if(!v) return;
                 const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
@@ -3045,7 +3047,8 @@ function scenePlatformer(data) {
                 }
             }
             // Spawn walking enemies ahead of the camera (fast red variant after 800px)
-            while (this.actor.x + 600 > this._nextEnemyX && this._nextEnemyX < WORLD_W - 200) {
+            // Skip in tilemap mode: the world is fixed-size and there are no scrolling platforms
+            while (!this._isTilemapMode && this.actor.x + 600 > this._nextEnemyX && this._nextEnemyX < WORLD_W - 200) {
                 const isFast = this._bestX > 800 && Math.random() < 0.35;
                 const h = this.hazards.create(this._nextEnemyX, GH-55, 'enemy');
                 h.setDisplaySize(isFast?18:24, isFast?18:24); h.body.setSize(isFast?15:20, isFast?15:20, true);
@@ -3055,7 +3058,7 @@ function scenePlatformer(data) {
                 this._nextEnemyX += Phaser.Math.Between(isFast ? 120 : 180, 420);
             }
             // Spawn coins floating on platform level
-            while (this.actor.x + 700 > this._nextCoinX && this._nextCoinX < WORLD_W - 100) {
+            while (!this._isTilemapMode && this.actor.x + 700 > this._nextCoinX && this._nextCoinX < WORLD_W - 100) {
                 const isGold = Math.random() < 0.18;
                 const cy = Phaser.Math.Between(Math.round(GH*0.35), GH-90);
                 const c = this._coinGrp.create(this._nextCoinX, cy, 'block').setDisplaySize(isGold?13:10, isGold?13:10);
@@ -3182,13 +3185,17 @@ function sceneBreaker(data) {
             this.physics.add.collider(this.ball, this.paddle, ()=>{
                 const diff=this.ball.x-this.paddle.x;
                 this.ball.setVelocityX(diff*6);
-                this.ball.setVelocityY(-Math.abs(this.ball.body.velocity.y));
+                // Always ensure upward velocity — prevents ball stalling horizontally (vy=0 bug)
+                const vy = -Math.abs(this.ball.body.velocity.y);
+                this.ball.setVelocityY(vy < -30 ? vy : -(60 + Math.abs(diff) * 2));
                 GameAudio.play('jump');
             });
             this.physics.add.collider(this.ball, this.bricks, (ball,brick)=>{
                 const hp = (brick.getData('hp')||1) - 1;
                 brick.setData('hp', hp);
-                this.ball.setVelocityY(-this.ball.body.velocity.y);
+                // Ensure non-zero vertical velocity after brick bounce
+                const _bvy = this.ball.body.velocity.y;
+                this.ball.setVelocityY(Math.abs(_bvy) > 30 ? -_bvy : (_bvy <= 0 ? 80 : -80));
                 GameAudio.play('score');
                 if (hp <= 0) {
                     if (Math.random() < 0.22) this._dropPowerUp(brick.x, brick.y);
@@ -3479,7 +3486,7 @@ function sceneInvaders(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            this.score=0; this.lastFired=0; this._invincible=false; this._wave=1;
+            this.score=0; this.lastFired=0; this._invincible=false; this._wave=1; this._invaded=false;
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
@@ -3555,7 +3562,12 @@ function sceneInvaders(data) {
                 const step=liveConfig.enemySpeed*0.25;
                 all.forEach(e=>e.x+=this._dir*step);
                 if(all.some(e=>e.x<18||e.x>GW-18)) this._descend=true;
-                if(all.some(e=>e.y>GH-70)) this._onHit(this.actor);
+                // Enemies reaching the bottom = instant game over (classic Invaders rule)
+                if(all.some(e=>e.y>GH-70)&&!this._invaded){
+                    this._invaded=true; GameAudio.play('hit');
+                    if(liveConfig.screenShake) this.cameras.main.shake(420,0.02);
+                    this.time.delayedCall(380,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); });
+                }
             }
         }
         _enemyFire() {
@@ -5804,11 +5816,14 @@ function updateTouchLayout(genre) {
     // Joystick: hide for genres that only need tap-to-jump or no direction
     const showLR   = !['RUNNER','FLAPPY','PONG'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE'].includes(genre);
-    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE'].includes(genre);
+    // RUNNER uses fire for slide/duck; include it so the button appears
+    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER'].includes(genre);
 
     if (lr)   lr.style.display   = showLR   ? '' : 'none';
     if (up)   up.style.display   = showUp   ? '' : 'none';
     if (fire) fire.style.display = showFire ? '' : 'none';
+    // Label the fire/action button contextually so players know what it does
+    if (fire) fire.textContent = genre === 'RUNNER' ? '↓' : '●';
 
     // Runner/Flappy: tap canvas to jump; Snake: swipe canvas to steer
     const wrap = document.getElementById('gameWrap');
