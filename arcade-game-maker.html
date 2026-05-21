@@ -99,6 +99,11 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .bp-badge.cyan{background:rgba(0,212,170,.12);color:#34d399;border:1px solid rgba(0,212,170,.2);}
 .bp-code{background:rgba(0,0,0,.5);padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:.7rem;line-height:1.8;color:rgba(240,234,214,.75);border-bottom:1px solid var(--border);white-space:pre;}
 .c-kw{color:#c084fc;font-weight:700;}.c-fn{color:#60a5fa;}.c-num{color:#34d399;font-weight:700;background:rgba(52,211,153,.1);border-radius:3px;padding:0 2px;border-bottom:1px dashed rgba(52,211,153,.4);}.c-comment{color:rgba(240,234,214,.3);}
+.code-editor{width:100%;min-height:175px;background:#070a0f;border:1px solid rgba(124,58,237,.35);color:#a5f3fc;font-family:'JetBrains Mono',monospace;font-size:.68rem;line-height:1.65;padding:9px 11px;border-radius:8px;resize:vertical;tab-size:2;-moz-tab-size:2;}
+.code-editor:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,58,237,.15);}
+.code-status{font-family:'JetBrains Mono',monospace;font-size:.62rem;padding:4px 8px;border-radius:5px;min-height:20px;}
+.code-status.ok{color:#4ade80;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.18);}
+.code-status.err{color:#f87171;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);}
 .bp-tweaks{padding:9px 12px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);}
 .tweak-row{display:flex;align-items:center;gap:7px;}
 .tweak-label{font-size:.64rem;font-weight:700;color:var(--muted);white-space:nowrap;min-width:100px;}
@@ -1283,10 +1288,28 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
 
         <!-- ── CODE VIEW ── -->
         <div class="tab-content" id="tab-code">
-            <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;margin-bottom:8px;">
-                <div style="font-size:.7rem;font-weight:800;color:var(--purple-lt);margin-bottom:3px;">💻 How Your Game Actually Works</div>
-                <div style="font-size:.64rem;color:var(--muted);line-height:1.6;">This is the real Phaser 3 JavaScript powering your game. Change genre on the Build tab to see different code. Each section is what runs every frame!</div>
+            <!-- ── Live Code Editor ── -->
+            <span class="sec-label">💻 Custom Script</span>
+            <div style="font-size:.62rem;color:var(--muted);line-height:1.5;margin-bottom:5px;">Write Phaser 3 JS that runs inside your game. Define <code style="color:var(--cyan);background:rgba(0,212,170,.08);padding:1px 4px;border-radius:3px;">onCreate(scene)</code> and/or <code style="color:var(--cyan);background:rgba(0,212,170,.08);padding:1px 4px;border-radius:3px;">onUpdate(scene)</code> — all globals are available.</div>
+            <textarea id="customCodeEditor" class="code-editor" spellcheck="false" placeholder="// scene = active Phaser scene&#10;// All globals available: liveConfig, gameState, showToast...&#10;&#10;function onCreate(scene) {&#10;  // runs once when the game starts&#10;  showToast('Hello from custom code!');&#10;}&#10;&#10;function onUpdate(scene) {&#10;  // runs ~60× per second&#10;  // e.g. speed up when score passes 200:&#10;  if (scene.score > 200) liveConfig.speed = 400;&#10;}"></textarea>
+            <div id="codeStatus" class="code-status" style="margin-top:4px;"></div>
+            <div style="display:flex;gap:6px;margin-top:5px;">
+                <button class="btn-run" style="flex:2;padding:8px 10px;font-size:.82rem;" onclick="applyAndRunCode()">▶ Apply &amp; Run</button>
+                <button class="btn-sm" onclick="_clearUserCode()">✕ Clear</button>
             </div>
+            <div style="margin-top:7px;padding:7px 9px;background:rgba(0,212,170,.05);border:1px solid rgba(0,212,170,.12);border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.57rem;line-height:1.85;color:var(--muted);">
+                <strong style="color:var(--cyan);display:block;margin-bottom:2px;">Available inside your functions:</strong>
+                <code style="color:#a5f3fc;">scene.actor</code> — player sprite &nbsp;·&nbsp; <code style="color:#a5f3fc;">scene.score</code> — current score<br>
+                <code style="color:#a5f3fc;">scene.hazards</code> — enemy group &nbsp;·&nbsp; <code style="color:#a5f3fc;">scene.scoreText</code> — score label<br>
+                <code style="color:#a5f3fc;">liveConfig.speed</code> — player speed &nbsp;·&nbsp; <code style="color:#a5f3fc;">liveConfig.gravity</code> — gravity<br>
+                <code style="color:#a5f3fc;">gameState.lives</code> — lives &nbsp;·&nbsp; <code style="color:#a5f3fc;">showToast('msg')</code> — toast<br>
+                <code style="color:#a5f3fc;">showVictory(score)</code> — trigger win &nbsp;·&nbsp; <code style="color:#a5f3fc;">showGameOver(score)</code> — end
+            </div>
+            <!-- ── Reference (collapsible) ── -->
+            <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+                <button class="btn-sm" id="codeRefToggle" style="width:100%;text-align:left;" onclick="(function(b){const r=document.getElementById('codeRefBody');const open=r.style.display==='block';r.style.display=open?'none':'block';b.textContent=open?'▶ Show Reference Code':'▼ Hide Reference Code';})(this)">▶ Show Reference Code</button>
+                <div id="codeRefBody" style="display:none;margin-top:6px;">
+                <div style="font-size:.62rem;color:var(--muted);margin-bottom:5px;">Real Phaser 3 source powering your game — changes here have no effect (edit the textarea above instead).</div>
             <div id="code-SHOOTER">
 <pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── SHOOTER — Core Loop (runs 60× per second) ──────────
 // Phaser 3 Arcade Physics Scene</span>
@@ -1631,9 +1654,11 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
   <span class="c-fn">_enemyTurns</span>(); <span class="c-comment">// enemies move after player</span>
 }</pre></div>
             <div style="margin-top:8px;padding:8px 10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:6px;">
-                <div style="font-size:.64rem;color:#34d399;font-weight:700;margin-bottom:3px;">💡 Try It Yourself</div>
+                <div style="font-size:.64rem;color:#34d399;font-weight:700;margin-bottom:3px;">💡 Full Source</div>
                 <div style="font-size:.6rem;color:var(--muted);line-height:1.6;">All this code is inside <strong style="color:white;">arcade-game-maker.html</strong> — open it in a text editor to read the full source. Every scene is a Phaser 3 class that extends a shared base. Remix it freely!</div>
             </div>
+                </div><!-- /codeRefBody -->
+            </div><!-- /reference wrapper -->
         </div>
     </div>
 
@@ -1824,6 +1849,49 @@ const _evtFired = new Set();   // IDs of one-shot rules that have already trigge
 const _sessionAchs = new Set();
 let _sessionStartTime = 0;
 let _sessionHits = 0;
+// ── CUSTOM USER SCRIPT ───────────────────────────────────────────────────────
+let _userCode    = '';      // raw source text
+let _userCodeFns = null;    // { onCreate, onUpdate } compiled functions
+let _userCodeFirstRun = false; // flag: call onCreate on first step after boot
+
+function _compileUserCode(src) {
+    _userCode = src.trim();
+    if (!_userCode) { _userCodeFns = null; _setCodeStatus(''); return; }
+    try {
+        // Wrap in a Function so declarations are scoped; globals still visible
+        const factory = new Function(`
+            ${_userCode}
+            return {
+                onCreate: typeof onCreate !== 'undefined' ? onCreate : null,
+                onUpdate: typeof onUpdate !== 'undefined' ? onUpdate : null
+            };
+        `);
+        _userCodeFns = factory();
+        const has = [_userCodeFns.onCreate && 'onCreate', _userCodeFns.onUpdate && 'onUpdate'].filter(Boolean);
+        _setCodeStatus('✓ Compiled' + (has.length ? ' — ' + has.join(', ') + ' ready' : '') + '. Hit ▶ Apply & Run', 'ok');
+    } catch(e) {
+        _userCodeFns = null;
+        _setCodeStatus('✗ ' + e.message, 'err');
+    }
+}
+function _setCodeStatus(msg, cls) {
+    const el = document.getElementById('codeStatus'); if (!el) return;
+    el.textContent = msg; el.className = 'code-status' + (cls ? ' ' + cls : '');
+}
+function applyAndRunCode() {
+    const src = (document.getElementById('customCodeEditor') || {}).value || '';
+    _compileUserCode(src);
+    localStorage.setItem('jv_user_code', src);
+    _userCodeFirstRun = true;
+    compileAndBootEngine();
+}
+function _clearUserCode() {
+    const el = document.getElementById('customCodeEditor'); if (el) el.value = '';
+    _userCodeFns = null; _userCode = '';
+    _setCodeStatus('');
+    localStorage.removeItem('jv_user_code');
+}
+
 const _ACH_TOAST = {
     first_blood:'🎯 First Blood', centurion:'💯 Centurion', high_roller:'💰 High Roller',
     survivor:'⏱ Survivor (60s)', untouchable:'🛡 Untouchable', wave_3:'👾 Wave 3 Clear',
@@ -2410,6 +2478,8 @@ function compileAndBootEngine() {
     _engineData = data;
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
     document.getElementById('engine-branding').textContent = `JV Engine v0.1 // ${data.title}`;
+    // Always re-arm user script on any boot (including normal Run)
+    if (_userCodeFns) _userCodeFirstRun = true;
     _scheduleAutoSave();
     // Reveal Events tab after first run (progressive disclosure)
     if (!document.getElementById('studioRoot').classList.contains('advanced-unlocked')) {
@@ -2469,11 +2539,26 @@ function _launchPhaserGame() {
                 render: { preserveDrawingBuffer: true },
                 scene: getScene(data)
             });
-            // Live game speed + win condition — runs every frame
+            // Live game speed + win condition + user script — runs every frame
             currentPhaserGame.events.on('step', () => {
                 const spd = liveConfig.gameSpeed || 1.0;
                 try {
                     const scenes = currentPhaserGame.scene.getScenes(true);
+                    // ── User custom script hooks ──────────────────────────
+                    if (_userCodeFns && scenes.length) {
+                        if (_userCodeFirstRun) {
+                            _userCodeFirstRun = false;
+                            if (_userCodeFns.onCreate) {
+                                scenes.forEach(s => {
+                                    try { _userCodeFns.onCreate(s); }
+                                    catch(e) { _setCodeStatus('✗ onCreate: ' + e.message, 'err'); }
+                                });
+                            }
+                        }
+                        if (_userCodeFns.onUpdate) {
+                            scenes.forEach(s => { try { _userCodeFns.onUpdate(s); } catch(e) {} });
+                        }
+                    }
                     scenes.forEach(s => {
                         if (s.physics && s.physics.world) s.physics.world.timeScale = spd;
                         if (s.time) s.time.timeScale = spd;
@@ -5321,7 +5406,8 @@ function _buildSaveData() {
         musicOn: document.getElementById('musicToggle').checked,
         musicStyle: document.getElementById('musicStyle').value,
         volume: parseInt(document.getElementById('volumeSlider').value),
-        savedAt: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+        savedAt: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}),
+        userCode: _userCode || ''
     };
 }
 
@@ -5536,6 +5622,11 @@ function _applyLoadData(d) {
     if(d.musicStyle) document.getElementById('musicStyle').value=d.musicStyle;
     if(d.musicOn) { document.getElementById('musicToggle').checked=true; GameAudio.setMusic(true); }
     if(d.volume!==undefined) { GameAudio.volume=d.volume/100; document.getElementById('volumeSlider').value=d.volume; const rv=document.querySelector('#volumeSlider ~ .range-val'); if(rv) rv.textContent=d.volume+'%'; }
+    // Restore user script
+    if(d.userCode !== undefined) {
+        const ed = document.getElementById('customCodeEditor'); if(ed) ed.value = d.userCode || '';
+        _compileUserCode(d.userCode || '');
+    }
     onGenreChange(); compileAndBootEngine();
     showToast(`"${d.title}" loaded! ✓`);
 }
@@ -6066,6 +6157,15 @@ window.addEventListener('DOMContentLoaded', ()=>{
     // ── Tutorial first run ────────────────────────────────────────────────────
     setTimeout(tutInit, 1200); // slight delay so game boots first
     setTimeout(_tmInit, 100);  // init tilemap editor canvas
+
+    // Restore user code from localStorage
+    (function() {
+        const saved = localStorage.getItem('jv_user_code');
+        if (saved) {
+            const ed = document.getElementById('customCodeEditor');
+            if (ed) { ed.value = saved; _compileUserCode(saved); }
+        }
+    })();
 
     // Auto-import whenever a workshop tool writes an asset to localStorage
     window.addEventListener('storage', e => {
