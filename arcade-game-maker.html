@@ -240,13 +240,16 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 /* GAME WRAP + TOUCH CONTROLS */
 .game-wrap{position:relative;flex-shrink:0;width:100%;max-width:640px;}
 #game-container{width:100%;}
-/* Fullscreen — canvas scale is applied by _onFsChange() in JS */
+/* Fullscreen — JS sizes #game-container to fill screen; Phaser Scale.FIT letterboxes inside */
 #gameWrap:fullscreen,#gameWrap:-webkit-full-screen,#gameWrap:-moz-full-screen,#gameWrap:-ms-fullscreen{
     width:100vw!important;height:100vh!important;max-width:none!important;
-    background:#000!important;overflow:hidden!important;position:relative!important;
+    background:#000!important;overflow:hidden!important;position:fixed!important;
+    top:0!important;left:0!important;
 }
-#gameWrap:fullscreen #game-container,#gameWrap:-webkit-full-screen #game-container{
-    position:absolute!important;
+#gameWrap:fullscreen #game-container,#gameWrap:-webkit-full-screen #game-container,
+#gameWrap:-moz-full-screen #game-container,#gameWrap:-ms-fullscreen #game-container{
+    border:none!important;border-radius:0!important;box-shadow:none!important;
+    background:#000!important;display:block!important;
 }
 .touch-controls{position:absolute;bottom:0;left:0;right:0;height:106px;display:none;justify-content:space-between;align-items:flex-end;padding:0 14px 8px;pointer-events:none;z-index:20;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);}
 .tc-side{display:flex;gap:10px;pointer-events:auto;align-items:flex-end;}
@@ -2121,31 +2124,34 @@ function toggleFullscreen() {
         (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen).call(document);
     }
 }
-// Scale the Phaser canvas to fill the screen when entering/exiting fullscreen.
-// Phaser's Scale.FIT only fits within the parent; we must scale the container ourselves.
+// Resize the Phaser container so Scale.FIT can letterbox the canvas correctly.
 function _onFsChange() {
     const container = document.getElementById('game-container');
     if (!container) return;
     const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
                  || document.mozFullScreenElement || document.msFullscreenElement);
-    if (isFs) {
-        // Use screen dimensions — window.inner* may briefly lag the fullscreen transition
-        const sw = screen.width, sh = screen.height;
-        const scale = Math.min(sw / GW, sh / GH);
-        const ml = Math.round((sw - GW * scale) / 2);
-        const mt = Math.round((sh - GH * scale) / 2);
-        container.style.transform = `scale(${scale})`;
-        container.style.transformOrigin = 'top left';
-        container.style.left = ml + 'px';
-        container.style.top  = mt + 'px';
-    } else {
-        container.style.transform = '';
-        container.style.transformOrigin = '';
-        container.style.left = '';
-        container.style.top  = '';
-        // Tell Phaser to re-centre its canvas inside the now-normal container
-        if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
-    }
+
+    // Two rAFs: first lets the browser complete the fullscreen transition,
+    // second lets the layout engine reflow before Phaser reads offsetWidth/Height.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (isFs) {
+            // window.innerWidth/Height are CSS pixels — correct on all DPI settings.
+            const sw = window.innerWidth, sh = window.innerHeight;
+            // Expand the container to the full viewport so Phaser's Scale.FIT
+            // letterboxes at the correct size.
+            container.style.width    = sw + 'px';
+            container.style.height   = sh + 'px';
+            container.style.position = 'relative';
+            // Let Phaser recompute the canvas size inside the new container.
+            if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
+        } else {
+            // Restore container to flow layout; Phaser will re-fit naturally.
+            container.style.width    = '';
+            container.style.height   = '';
+            container.style.position = '';
+            if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
+        }
+    }));
 }
 ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
     .forEach(ev => document.addEventListener(ev, _onFsChange));
