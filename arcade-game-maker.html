@@ -1203,6 +1203,24 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                         <span class="range-val">3hp</span>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Enemy HP <span style="color:var(--muted);font-weight:400;">— how tough regular enemies are</span></label>
+                    <div class="pill-row" id="pillRogueEnemyHp">
+                        <button class="pill" onclick="activePill('pillRogueEnemyHp',this);liveConfig.rogueEnemyHpMul=0.5;">Easy ½×</button>
+                        <button class="pill active" onclick="activePill('pillRogueEnemyHp',this);liveConfig.rogueEnemyHpMul=1.0;">Normal</button>
+                        <button class="pill" onclick="activePill('pillRogueEnemyHp',this);liveConfig.rogueEnemyHpMul=2.0;">Hard 2×</button>
+                        <button class="pill" onclick="activePill('pillRogueEnemyHp',this);liveConfig.rogueEnemyHpMul=3.0;">Brutal 3×</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Boss Difficulty <span style="color:var(--muted);font-weight:400;">— HP &amp; aggression</span></label>
+                    <div class="pill-row" id="pillRogueBoss">
+                        <button class="pill" onclick="activePill('pillRogueBoss',this);liveConfig.rogueBossMul=0.5;">Easy</button>
+                        <button class="pill active" onclick="activePill('pillRogueBoss',this);liveConfig.rogueBossMul=1.0;">Normal</button>
+                        <button class="pill" onclick="activePill('pillRogueBoss',this);liveConfig.rogueBossMul=1.8;">Hard</button>
+                        <button class="pill" onclick="activePill('pillRogueBoss',this);liveConfig.rogueBossMul=3.0;">Legendary</button>
+                    </div>
+                </div>
             </div>
 
             <!-- ── WIN CONDITION ── -->
@@ -1766,6 +1784,8 @@ const liveConfig = {
     dodgeStarRatio:30,
     // Roguelike options
     rogueRooms:6, rogueDensity:0.3, rogueStartHp:3,
+    rogueEnemyHpMul:1.0,   // multiplier applied to every enemy's base HP
+    rogueBossMul:1.0,       // multiplier applied to boss HP
     // User-defined event rules (Events tab)
     events: []
 };
@@ -4089,14 +4109,17 @@ function sceneRoguelike(data) {
                 tank:     { hp:4, sz:32, tint:0x991b1b, alpha:1.0, grp:'enemies' },
             }[type] || { hp:1, sz:22, tint:0xef4444, alpha:1.0, grp:'enemies' };
 
+            // Apply enemy HP multiplier from Custom tab setting
+            const hp = Math.max(1, Math.round(cfg.hp * (liveConfig.rogueEnemyHpMul || 1.0)));
+
             const e = this[cfg.grp].create(x, y, 'enemy');
             e.setDisplaySize(cfg.sz, cfg.sz);
             e.body.setSize(Math.round(cfg.sz*.8), Math.round(cfg.sz*.8), true);
             e.setTint(cfg.tint).setAlpha(cfg.alpha);
             e.body.allowGravity = false;
             e.setData('type', type);
-            e.setData('hp', cfg.hp);
-            e.setData('maxHp', cfg.hp);
+            e.setData('hp', hp);
+            e.setData('maxHp', hp);
             e.setData('seed', Math.random() * 100); // for bat erratic offset
         }
 
@@ -4169,7 +4192,11 @@ function sceneRoguelike(data) {
 
         // ── Boss ─────────────────────────────────────────────────────────────────
         _spawnBoss() {
-            this._bossMaxHp=this._bossHp=6+this._floor*4; this._bossPhase=1; this._bossDashing=false;
+            const bossMul = liveConfig.rogueBossMul || 1.0;
+            // Boss HP scales with floor and difficulty multiplier
+            const baseHp = 6 + this._floor * 4;
+            this._bossMaxHp = this._bossHp = Math.max(2, Math.round(baseHp * bossMul));
+            this._bossPhase=1; this._bossDashing=false;
             const bs=Math.round(48*(liveConfig.playerScale||1));
             this._boss=this.enemies.create(GW/2,GH/3,'enemy');
             this._boss.setDisplaySize(bs,bs); this._boss.body.setSize(Math.round(bs*.8),Math.round(bs*.8),true);
@@ -4179,8 +4206,8 @@ function sceneRoguelike(data) {
             this._bossHpBar=this.add.graphics().setDepth(12);
             this._bossHpText=this.add.text(GW/2,20,`👑 BOSS — HP ${this._bossHp}/${this._bossMaxHp}`,{fontSize:'11px',fill:'#c084fc',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(0.5,0).setDepth(12);
             this._drawBossBar();
-            // Boss shoot timer
-            const si=Math.max(700,1800-this._floor*100);
+            // Boss shoot interval — harder settings fire faster
+            const si=Math.max(350, Math.round((1800-this._floor*100) / bossMul));
             this._bossShootTimer=this.time.addEvent({delay:si,loop:true,callback:this._bossAttack,callbackScope:this});
             this.cameras.main.shake(380,0.018);
             // Boss intro text — big overlay that fades out
@@ -4460,7 +4487,7 @@ function sceneRoguelike(data) {
                 const dx=this.actor.x-e.x, dy=this.actor.y-e.y, m=Math.sqrt(dx*dx+dy*dy)||1;
                 if(e.getData('isBoss')){
                     if(this._bossDashing) return;
-                    const bSpd=(55+this._floor*18)*(this._bossPhase===2?1.7:1);
+                    const bSpd=(55+this._floor*18)*(this._bossPhase===2?1.7:1)*(liveConfig.rogueBossMul||1.0);
                     e.setVelocity(dx/m*bSpd,dy/m*bSpd);
                     if(this._bossPhase===2&&!this._bossDashing&&Math.random()<0.004){
                         this._bossDashing=true; e.setVelocity(dx/m*420,dy/m*420);
@@ -5403,6 +5430,10 @@ function _syncCustomTabUI(cfg) {
     if(rrRange && cfg.rogueRooms) { rrRange.value=cfg.rogueRooms; rrRange.nextElementSibling.textContent=cfg.rogueRooms+' rooms'; }
     const denMap = {0.1:'Sparse',0.3:'Normal',0.5:'Dense',0.7:'Swarm'};
     document.querySelectorAll('#pillRogueDen .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(denMap[cfg.rogueDensity]||'Normal')));
+    const ehpMap = {0.5:'Easy ½×',1.0:'Normal',2.0:'Hard 2×',3.0:'Brutal 3×'};
+    document.querySelectorAll('#pillRogueEnemyHp .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(ehpMap[cfg.rogueEnemyHpMul]||'Normal')));
+    const bossMap = {0.5:'Easy',1.0:'Normal',1.8:'Hard',3.0:'Legendary'};
+    document.querySelectorAll('#pillRogueBoss .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(bossMap[cfg.rogueBossMul]||'Normal')));
     // Events tab — restore rules and re-render
     if (cfg.events && Array.isArray(cfg.events)) {
         liveConfig.events = cfg.events.map(e=>Object.assign({},e));
