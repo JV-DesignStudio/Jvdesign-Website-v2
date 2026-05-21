@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <link rel="manifest" href="/manifest.json">
@@ -146,6 +146,10 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 #studioRoot.genre-ASTEROIDS  .bp-card[data-genre~="ASTEROIDS"]{display:block;}
 #studioRoot.genre-RACING     .bp-card[data-genre~="RACING"]{display:block;}
 #studioRoot.genre-HOPPER     .bp-card[data-genre~="HOPPER"]{display:block;}
+#studioRoot.genre-BEAT       .bp-card[data-genre~="BEAT"]{display:block;}
+#studioRoot.genre-PUZZLE     .bp-card[data-genre~="PUZZLE"]{display:block;}
+#studioRoot.genre-RHYTHM     .bp-card[data-genre~="RHYTHM"]{display:block;}
+#studioRoot.genre-DEFENSE    .bp-card[data-genre~="DEFENSE"]{display:block;}
 .bp-card[data-genre~="ALL"]{display:block!important;}
 
 /* ASSETS */
@@ -492,6 +496,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                     <option value="ROGUELIKE">⚔️ Roguelike Dungeon</option>
                     <option value="RACING">🏎️ Top-Down Racing</option>
                     <option value="HOPPER">🐸 Endless Hopper</option>
+                    <option value="BEAT">👊 Beat 'em Up</option>
+                    <option value="PUZZLE">🧩 Puzzle</option>
+                    <option value="RHYTHM">🎵 Rhythm</option>
+                    <option value="DEFENSE">🗼 Tower Defense</option>
                 </select>
             </div>
 
@@ -623,6 +631,14 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
             <div style="display:flex;gap:6px;margin-top:2px;">
                 <button class="btn-sm" style="flex:1;" onclick="generateCoverArt()" title="Download a shareable game cover image">🖼 Cover Art</button>
                 <button class="btn-sm" style="flex:1;" id="speedRunBtn" onclick="toggleSpeedRun()" title="Speed run mode — timer starts on first input">⏱ Speed Run</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:2px;">
+                <button class="btn-sm" style="flex:1;" onclick="toggleStreamer()" title="Fullscreen score billboard for streaming">📺 Streamer</button>
+                <button class="btn-sm" style="flex:1;" onclick="openCustomAchModal()" title="Define your own achievements">🏅 Achievements+</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:2px;">
+                <button class="btn-sm" style="flex:1;" onclick="openCutsceneEditor()" title="Story beats shown before/after gameplay">🎬 Cutscene</button>
+                <button class="btn-sm" style="flex:1;" onclick="openBossDesigner()" title="Design boss HP phases and attack patterns">💀 Boss Design</button>
             </div>
             <div id="hiscoreStrip" style="font-size:.63rem;color:var(--amber);font-family:'JetBrains Mono',monospace;text-align:center;min-height:14px;"></div>
         </div>
@@ -881,6 +897,69 @@ velY = -BOUNCE * <span class="c-num">1.6</span>;</pre>
                 <div class="bp-explain">Toggle Moving Platforms, Crumble Platforms, and Spring Platforms in the Custom tab. Platform density controls how far apart each platform spawns.</div>
             </div>
 
+            <!-- BEAT blueprints -->
+            <div class="bp-card" data-genre="BEAT">
+                <div class="bp-head"><span class="bp-icon">👊</span><div><div class="bp-name">Combo System</div><div class="bp-sub">Chain hits for multipliers</div></div><span class="bp-badge amber">MECHANIC</span></div>
+<pre class="bp-code"><span class="c-comment">// Combo resets after 2.2s idle</span>
+<span class="c-kw">if</span> (hit) {
+  combo++;
+  score += <span class="c-num">100</span> * combo;
+  comboTimer = <span class="c-num">2200</span>;
+}</pre>
+                <div class="bp-explain">Punch enemies quickly to chain your combo. The multiplier grows with each hit but resets if you pause too long. Boss enemies appear every 3 waves and deal splash damage!</div>
+            </div>
+            <div class="bp-card" data-genre="BEAT">
+                <div class="bp-head"><span class="bp-icon">🌊</span><div><div class="bp-name">Wave Spawner</div><div class="bp-sub">Escalating enemy waves</div></div><span class="bp-badge red">ENEMIES</span></div>
+<pre class="bp-code"><span class="c-comment">// Each wave: count += 2, speed += 15</span>
+<span class="c-kw">const</span> wave = { count: <span class="c-num">4</span> + waveNum * <span class="c-num">2</span>,
+  speed: <span class="c-num">60</span> + waveNum * <span class="c-num">15</span>,
+  hp: <span class="c-num">1</span> + waveNum };
+<span class="c-comment">// Heavy: slower, 3× HP, 1.5× bounty</span></pre>
+                <div class="bp-explain">Grunts move fast and die in one hit. Heavies are slower but take multiple punches. Bosses appear at wave 3, 6, 9… with a visible HP bar.</div>
+            </div>
+
+            <!-- PUZZLE blueprints -->
+            <div class="bp-card" data-genre="PUZZLE">
+                <div class="bp-head"><span class="bp-icon">📦</span><div><div class="bp-name">Sokoban Push Logic</div><div class="bp-sub">One crate, one space ahead</div></div><span class="bp-badge cyan">LOGIC</span></div>
+<pre class="bp-code"><span class="c-comment">// Can only push if space beyond is clear</span>
+<span class="c-kw">if</span> (tile[nx][ny] === <span class="c-str">'crate'</span>) {
+  <span class="c-kw">if</span> (tile[nx+dx][ny+dy] !== <span class="c-str">'wall'</span>)
+    pushCrate(nx,ny,dx,dy);
+  <span class="c-kw">else return</span>; <span class="c-comment">// blocked</span>
+}</pre>
+                <div class="bp-explain">Classic Sokoban rules: you can push ONE crate at a time, only if the cell behind it is free. Crates on targets turn green. Push all crates onto targets to win!</div>
+            </div>
+
+            <!-- RHYTHM blueprints -->
+            <div class="bp-card" data-genre="RHYTHM">
+                <div class="bp-head"><span class="bp-icon">🎵</span><div><div class="bp-name">Note Timing Windows</div><div class="bp-sub">PERFECT / GOOD / MISS</div></div><span class="bp-badge purple">TIMING</span></div>
+<pre class="bp-code"><span class="c-comment">// Distance from hit line</span>
+<span class="c-kw">if</span>      (dist &lt; <span class="c-num">18</span>) judge(<span class="c-str">'PERFECT'</span>, <span class="c-num">100</span>);
+<span class="c-kw">else if</span> (dist &lt; <span class="c-num">36</span>) judge(<span class="c-str">'GOOD'</span>,    <span class="c-num">50</span>);
+<span class="c-kw">else</span>              judge(<span class="c-str">'MISS'</span>,     <span class="c-num">0</span>);</pre>
+                <div class="bp-explain">Hit notes as they reach the glowing target line. PERFECT (±18px) scores 100pts and builds your combo multiplier. 20 misses ends the run. Use the Music Sequencer to create your own patterns!</div>
+            </div>
+
+            <!-- DEFENSE blueprints -->
+            <div class="bp-card" data-genre="DEFENSE">
+                <div class="bp-head"><span class="bp-icon">🗼</span><div><div class="bp-name">Tower Placement</div><div class="bp-sub">Grid snapping · path check</div></div><span class="bp-badge cyan">BUILD</span></div>
+<pre class="bp-code"><span class="c-comment">// Press T, click grid to build</span>
+<span class="c-kw">if</span> (onPath) { reject(); <span class="c-kw">return</span>; }
+gold -= <span class="c-num">50</span>;
+towers.<span class="c-fn">push</span>({col, row, range:<span class="c-num">120</span>});</pre>
+                <div class="bp-explain">Press T to enter placement mode, then click any non-path cell to build a tower for 50 gold. Towers auto-shoot the closest enemy in range. Earn gold by clearing waves!</div>
+            </div>
+            <div class="bp-card" data-genre="DEFENSE">
+                <div class="bp-head"><span class="bp-icon">🏹</span><div><div class="bp-name">Auto-Targeting</div><div class="bp-sub">Nearest enemy in range</div></div><span class="bp-badge amber">AI</span></div>
+<pre class="bp-code"><span class="c-comment">// Fire every 900ms if enemy in range</span>
+enemies.<span class="c-fn">forEach</span>(e => {
+  <span class="c-kw">const</span> d = <span class="c-fn">dist</span>(tower, e);
+  <span class="c-kw">if</span> (d &lt; range) target = e;
+});
+<span class="c-kw">if</span> (target) <span class="c-fn">shoot</span>(target);</pre>
+                <div class="bp-explain">Each tower scans all enemies every 900ms and fires a bullet at the nearest one within its 120px range ring. Bullets travel at 220px/s and deal 1 damage. Watch the path to position towers effectively!</div>
+            </div>
+
             <!-- ALL: Score -->
             <div class="bp-card" data-genre="ALL">
                 <div class="bp-head"><span class="bp-icon">🏆</span><div><div class="bp-name">Score System</div><div class="bp-sub">Points on events</div></div><span class="bp-badge cyan">LIVE</span></div>
@@ -1067,7 +1146,8 @@ velY = -BOUNCE * <span class="c-num">1.6</span>;</pre>
                     <label class="toggle-switch"><input type="checkbox" id="musicToggle" checked onchange="GameAudio.setMusic(this.checked);"><span class="toggle-knob"></span></label>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
-                    <button class="asset-btn import" style="flex:1;" onclick="openWorkshop('sound-studio.html')">🎵 Compose in Sound Studio</button>
+                    <button class="asset-btn import" style="flex:1;" onclick="openMusicComposer()">🎼 Sequencer</button>
+                    <button class="asset-btn import" style="flex:1;" onclick="openWorkshop('sound-studio.html')">🎵 Studio</button>
                     <button class="asset-btn import" onclick="importMusicFromStudio()">⬇ Import</button>
                     <button class="asset-btn import" onclick="GameAudio.previewMusic()" title="Preview music">▶</button>
                     <button class="asset-btn clear" onclick="clearCustomMusic()" title="Clear custom music">✕</button>
@@ -2223,6 +2303,77 @@ velY = -BOUNCE * <span class="c-num">1.6</span>;</pre>
 
 <span class="c-comment">// Score = height gained</span>
 score = Math.<span class="c-fn">floor</span>((startY - player.y) / <span class="c-num">8</span>);</pre></div>
+            <div id="code-BEAT" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── BEAT 'EM UP — Combo Brawler ───────────────────────────</span>
+
+<span class="c-comment">// Z = normal punch, X = heavy punch (wider range)</span>
+<span class="c-fn">_doPunch</span>(range) {
+  <span class="c-kw">const</span> dir   = player.flipX ? -<span class="c-num">1</span> : <span class="c-num">1</span>;
+  <span class="c-kw">const</span> hitX  = player.x + dir * range;
+  enemies.<span class="c-fn">forEach</span>(e => {
+    <span class="c-kw">if</span> (Math.<span class="c-fn">abs</span>(e.x - hitX) &lt; range &amp;&amp;
+        Math.<span class="c-fn">abs</span>(e.y - player.y) &lt; <span class="c-num">32</span>)
+      <span class="c-fn">_hitEnemy</span>(e);
+  });
+}
+
+<span class="c-comment">// Combo = chain hits within 2.2s</span>
+combo++;
+score += <span class="c-num">100</span> * Math.<span class="c-fn">max</span>(<span class="c-num">1</span>, Math.<span class="c-fn">floor</span>(combo / <span class="c-num">3</span>));</pre></div>
+            <div id="code-PUZZLE" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── PUZZLE — Sokoban Push Logic ────────────────────────────</span>
+
+<span class="c-comment">// Tile types: 0=floor 1=wall 2=crate 3=target 4=crate-on-target</span>
+<span class="c-fn">_tryMove</span>(dx, dy) {
+  <span class="c-kw">const</span> nx = px + dx, ny = py + dy;
+  <span class="c-kw">if</span> (grid[ny][nx] === <span class="c-num">1</span>) <span class="c-kw">return</span>; <span class="c-comment">// wall</span>
+
+  <span class="c-kw">if</span> (grid[ny][nx] === <span class="c-num">2</span> || grid[ny][nx] === <span class="c-num">4</span>) {
+    <span class="c-comment">// Push crate — check cell beyond it</span>
+    <span class="c-kw">const</span> cx = nx+dx, cy = ny+dy;
+    <span class="c-kw">if</span> (grid[cy][cx] === <span class="c-num">1</span> || grid[cy][cx] === <span class="c-num">2</span>) <span class="c-kw">return</span>;
+    grid[cy][cx] = (grid[cy][cx]===<span class="c-num">3</span>) ? <span class="c-num">4</span> : <span class="c-num">2</span>;
+    grid[ny][nx] = (grid[ny][nx]===<span class="c-num">4</span>) ? <span class="c-num">3</span> : <span class="c-num">0</span>;
+  }
+  px = nx; py = ny; moves++;
+  <span class="c-comment">// Win check: no tile === 2 (un-placed crate)</span>
+  <span class="c-kw">if</span> (!grid.<span class="c-fn">flat</span>().<span class="c-fn">includes</span>(<span class="c-num">2</span>)) <span class="c-fn">winLevel</span>();
+}</pre></div>
+            <div id="code-RHYTHM" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── RHYTHM — 4-Lane Note Highway ──────────────────────────</span>
+
+<span class="c-comment">// Notes fall at 260px/s; hit window = ±36px</span>
+<span class="c-fn">_judge</span>(lane) {
+  <span class="c-kw">const</span> note = <span class="c-fn">closestNote</span>(lane);
+  <span class="c-kw">const</span> dist = Math.<span class="c-fn">abs</span>(note.y - HIT_Y);
+  <span class="c-kw">if</span>      (dist &lt; <span class="c-num">18</span>) { combo++; score += <span class="c-num">100</span> * combo; }
+  <span class="c-kw">else if</span> (dist &lt; <span class="c-num">36</span>) { combo++; score += <span class="c-num">50</span>; }
+  <span class="c-kw">else</span>               { combo = <span class="c-num">0</span>; misses++; }
+}
+
+<span class="c-comment">// Load from Music Sequencer pattern:</span>
+<span class="c-kw">if</span> (liveConfig.seqPattern)
+  <span class="c-fn">useSequencerPattern</span>(liveConfig.seqPattern);</pre></div>
+            <div id="code-DEFENSE" style="display:none;">
+<pre class="bp-code" style="white-space:pre-wrap;font-size:.6rem;line-height:1.7;"><span class="c-comment">// ── TOWER DEFENSE — Grid + Wave System ────────────────────</span>
+
+<span class="c-comment">// T key = placement mode; click = build tower</span>
+<span class="c-fn">_placeTower</span>(col, row) {
+  <span class="c-kw">if</span> (gold &lt; <span class="c-num">50</span> || onPath(col,row)) <span class="c-kw">return</span>;
+  gold -= <span class="c-num">50</span>;
+  towers.<span class="c-fn">push</span>({col, row, range: <span class="c-num">120</span>, rate: <span class="c-num">900</span>});
+}
+
+<span class="c-comment">// Enemy follows waypoints along pre-set path</span>
+<span class="c-fn">_moveEnemy</span>(e, dt) {
+  <span class="c-kw">const</span> next = path[e.pathIdx + <span class="c-num">1</span>];
+  e.<span class="c-fn">moveToward</span>(next, e.speed * dt);
+  <span class="c-kw">if</span> (e.<span class="c-fn">reached</span>(next)) e.pathIdx++;
+  <span class="c-kw">if</span> (e.pathIdx &gt;= path.length) { lives--; e.<span class="c-fn">destroy</span>(); }
+}
+
+<span class="c-comment">// Waves: each one adds 2 enemies + 8 speed</span>
+gold += <span class="c-num">30</span> + wave * <span class="c-num">10</span>; score += <span class="c-num">100</span> * wave;</pre></div>
             <div style="margin-top:8px;padding:8px 10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:6px;">
                 <div style="font-size:.64rem;color:#34d399;font-weight:700;margin-bottom:3px;">💡 Full Source</div>
                 <div style="font-size:.6rem;color:var(--muted);line-height:1.6;">All this code is inside <strong style="color:white;">arcade-game-maker.html</strong> — open it in a text editor to read the full source. Every scene is a Phaser 3 class that extends a shared base. Remix it freely!</div>
@@ -2318,6 +2469,65 @@ score = Math.<span class="c-fn">floor</span>((startY - player.y) / <span class="
                 </div>
             </div>
 
+            <!-- STREAMER MODE OVERLAY -->
+            <div id="streamerOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:#000;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+                <div style="font-size:.75rem;font-weight:800;letter-spacing:.2em;color:rgba(255,255,255,.3);text-transform:uppercase;" id="streamerGenre">SHOOTER</div>
+                <div style="font-family:'Fredoka',sans-serif;font-size:clamp(3rem,12vw,8rem);font-weight:700;color:white;line-height:1;text-shadow:0 0 40px var(--purple);" id="streamerScore">0</div>
+                <div style="font-size:.8rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;" id="streamerTitle">My Arcade Game</div>
+                <button onclick="toggleStreamer()" style="position:fixed;top:14px;right:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:8px;padding:5px 11px;font-size:.72rem;cursor:pointer;">✕ Exit</button>
+            </div>
+
+            <!-- MUSIC COMPOSER MODAL -->
+            <div id="musicComposerModal" style="display:none;position:fixed;inset:0;z-index:8100;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+                <div style="background:var(--panel2);border:1px solid var(--border2);border-radius:14px;padding:20px;width:min(520px,96vw);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.2rem;">🎼</span>
+                        <div style="font-size:.85rem;font-weight:800;color:white;flex:1;">Note Sequencer</div>
+                        <button onclick="closeMusicComposer()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div style="display:flex;gap:5px;">
+                            <button class="btn-sm" id="seqPlayBtn" onclick="seqTogglePlay()">▶ Play</button>
+                            <button class="btn-sm" onclick="seqClear()">🗑 Clear</button>
+                            <button class="btn-sm purple" onclick="seqSendToGame()">🕹 Use in Game</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--muted);">
+                            BPM <input type="range" id="seqBpm" min="60" max="240" value="120" style="width:80px;accent-color:var(--purple);" oninput="this.nextElementSibling.textContent=this.value;seqUpdateTiming();"> <span>120</span>
+                        </div>
+                    </div>
+                    <div id="seqGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;user-select:none;"></div>
+                    <div style="font-size:.6rem;color:var(--muted);line-height:1.5;">Click cells to toggle notes. Rows = pitches (C5→C4), columns = steps. Hit <strong style="color:white;">🕹 Use in Game</strong> to replace the background music with your sequence.</div>
+                </div>
+            </div>
+
+            <!-- CUSTOM ACHIEVEMENT CREATOR MODAL -->
+            <div id="customAchModal" style="display:none;position:fixed;inset:0;z-index:8100;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+                <div style="background:var(--panel2);border:1px solid var(--border2);border-radius:14px;padding:20px;width:min(420px,96vw);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span>🏅</span>
+                        <div style="font-size:.85rem;font-weight:800;color:white;flex:1;">Custom Achievements</div>
+                        <button onclick="closeCustomAchModal()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+                    </div>
+                    <div id="customAchList" style="display:flex;flex-direction:column;gap:6px;min-height:30px;"></div>
+                    <div style="background:var(--panel3);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="font-size:.68rem;font-weight:700;color:var(--purple-lt);">Add New Achievement</div>
+                        <input id="newAchLabel" type="text" placeholder="Label — e.g. Speed Demon" style="font-size:.78rem;" maxlength="40">
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <select id="newAchTrigger" style="flex:1;font-size:.75rem;">
+                                <option value="score">Score reaches</option>
+                                <option value="kills">Kills reach</option>
+                                <option value="laps">Laps reach</option>
+                                <option value="height">Height reaches</option>
+                                <option value="time">Survive (seconds)</option>
+                            </select>
+                            <input id="newAchTarget" type="number" value="100" min="1" style="width:70px;font-size:.78rem;" placeholder="Value">
+                        </div>
+                        <button class="btn-sm purple" onclick="addCustomAch()">+ Add Achievement</button>
+                    </div>
+                    <div style="font-size:.6rem;color:var(--muted);">Custom achievements fire automatically during gameplay. They appear in the Achievements showcase alongside built-in ones.</div>
+                </div>
+            </div>
+
             <!-- TUTORIAL OVERLAY -->
             <div id="tutOverlay" style="display:none;position:fixed;inset:0;z-index:7500;pointer-events:none;">
                 <div id="tutTooltip" style="position:absolute;background:var(--purple);color:white;border-radius:10px;padding:10px 14px;font-size:.75rem;font-weight:700;max-width:200px;line-height:1.45;box-shadow:0 4px 20px rgba(124,58,237,.5);pointer-events:all;">
@@ -2349,6 +2559,56 @@ score = Math.<span class="c-fn">floor</span>((startY - player.y) / <span class="
             <!-- SPEED RUN HUD -->
             <div id="speedRunHud" style="display:none;position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(0,0,0,.7);border:1px solid var(--amber);border-radius:8px;padding:3px 12px;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:var(--amber);pointer-events:none;">
                 ⏱ <span id="speedRunTime">0:00.000</span>
+            </div>
+
+            <!-- CUTSCENE EDITOR MODAL -->
+            <div id="cutsceneModal" style="display:none;position:fixed;inset:0;z-index:8200;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+                <div style="background:var(--panel2);border:1px solid var(--border2);border-radius:14px;padding:20px;width:min(560px,96vw);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.4rem;">🎬</span>
+                        <div style="flex:1;"><div style="font-weight:800;font-size:1rem;">Cutscene Editor</div><div style="font-size:.7rem;color:var(--muted);">Story beats shown before / after gameplay</div></div>
+                        <button class="btn-sm" onclick="closeCutsceneEditor()">✕</button>
+                    </div>
+                    <!-- When -->
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <label style="font-size:.72rem;color:var(--muted);min-width:42px;">Show:</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:.78rem;cursor:pointer;"><input type="radio" name="cutWhen" value="before" checked style="accent-color:var(--purple);"> Before game</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:.78rem;cursor:pointer;"><input type="radio" name="cutWhen" value="after" style="accent-color:var(--purple);"> After game</label>
+                    </div>
+                    <!-- Slides list -->
+                    <div id="cutSlideList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    <button class="btn-sm" onclick="cutAddSlide()" style="align-self:flex-start;">＋ Add Slide</button>
+                    <!-- Preview -->
+                    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;gap:8px;">
+                        <button class="btn-run" style="flex:1;padding:8px;" onclick="cutPreview()">▶ Preview</button>
+                        <button class="btn-run" style="flex:1;padding:8px;background:var(--green-dk);" onclick="cutSave()">💾 Save to Game</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOSS DESIGNER MODAL -->
+            <div id="bossDesignerModal" style="display:none;position:fixed;inset:0;z-index:8200;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+                <div style="background:var(--panel2);border:1px solid var(--border2);border-radius:14px;padding:20px;width:min(500px,96vw);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:1.4rem;">💀</span>
+                        <div style="flex:1;"><div style="font-weight:800;font-size:1rem;">Boss Designer</div><div style="font-size:.7rem;color:var(--muted);">Define phases, HP thresholds &amp; attack patterns</div></div>
+                        <button class="btn-sm" onclick="closeBossDesigner()">✕</button>
+                    </div>
+                    <!-- Global boss settings -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="form-group"><label>Boss HP</label><input type="number" id="bossHp" value="20" min="1" max="999" style="text-align:center;"></div>
+                        <div class="form-group"><label>Boss Scale</label><input type="number" id="bossScale" value="2.0" min="0.5" max="5" step="0.1" style="text-align:center;"></div>
+                        <div class="form-group"><label>Move Speed</label><input type="number" id="bossSpeed" value="80" min="10" max="400" style="text-align:center;"></div>
+                        <div class="form-group"><label>Score Reward</label><input type="number" id="bossReward" value="500" min="10" style="text-align:center;"></div>
+                    </div>
+                    <!-- Phases -->
+                    <div style="font-size:.72rem;font-weight:800;color:var(--purple-lt);letter-spacing:.08em;text-transform:uppercase;">Phases (HP thresholds)</div>
+                    <div id="bossPhaseList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    <button class="btn-sm" onclick="bossAddPhase()" style="align-self:flex-start;">＋ Add Phase</button>
+                    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;gap:8px;">
+                        <button class="btn-run" style="flex:1;padding:8px;background:var(--green-dk);" onclick="bossSave()">💾 Apply to Game</button>
+                    </div>
+                </div>
             </div>
 
             <!-- INTRO SPLASH -->
@@ -2485,6 +2745,10 @@ const liveConfig = {
     soundPack:'chiptune',
     // Speed run
     speedRun:false,
+    // Boss Designer
+    bossHp:15, bossScale:2.0, bossSpeed:50, bossReward:150, bossPhases:null,
+    // Cutscene
+    cutsceneSlides:null, cutsceneWhen:'before',
     // User-defined event rules (Events tab)
     events: []
 };
@@ -3162,7 +3426,11 @@ const CONTROLS = {
     ASTEROIDS: 'Controls: LEFT/RIGHT rotate · UP thrust · SPACE shoot asteroids',
     ROGUELIKE: 'Controls: WASD to move · Arrow keys to shoot · ● Fire = auto-aim (mobile)',
     RACING:    'Controls: LEFT/RIGHT steer · UP accelerate · DOWN brake · SPACE = Nitro boost',
-    HOPPER:   'Controls: LEFT/RIGHT to steer · Land on platforms to bounce upward · Don\'t fall!'
+    HOPPER:   'Controls: LEFT/RIGHT to steer · Land on platforms to bounce upward · Don\'t fall!',
+    BEAT:     'Controls: WASD move · Z or SPACE punch · Defeat all enemy waves!',
+    PUZZLE:   'Controls: WASD/Arrows to move · Push crates onto targets · R to reset level',
+    RHYTHM:   'Controls: A S D F keys · Hit notes as they reach the target line!',
+    DEFENSE:  'Controls: T = place tower mode · Click grid to build · SPACE = start wave'
 };
 const MISSIONS = {
     SHOOTER:  '<strong>Mission:</strong> Rotate, thrust and shoot down enemies. Try tweaking Bullet Speed in Blueprints!',
@@ -3177,7 +3445,11 @@ const MISSIONS = {
     ASTEROIDS: '<strong>Mission:</strong> Blast all asteroids! Large ones split into medium, medium into small. Clear the field to advance!',
     ROGUELIKE: '<strong>Mission:</strong> Twin-stick dungeon rooms! WASD to move, arrows to shoot. Kill all enemies to open the door. ❤️ hearts restore HP. Enemies shoot back on Floor 2+!',
     RACING:   '<strong>Mission:</strong> Complete laps as fast as possible! Hit ⚡ boost pads for a speed surge, avoid 🛢️ oil slicks, and beat the CPU opponents. Your best lap is saved to the leaderboard!',
-    HOPPER:  '<strong>Mission:</strong> Bounce upward on platforms — how high can you go? Land on 🟡 springs for mega bounce, avoid falling. Score = height reached!'
+    HOPPER:  '<strong>Mission:</strong> Bounce upward on platforms — how high can you go? Land on 🟡 springs for mega bounce, avoid falling. Score = height reached!',
+    BEAT:    "<strong>Mission:</strong> Beat 'em up brawler! Clear waves of grunts and heavies. Build combos for massive score multipliers. Boss appears every 3 waves!",
+    PUZZLE:  '<strong>Mission:</strong> Push all 📦 crates onto the 🎯 targets. Plan every move — a wrong push means starting over! Score = 1000 minus moves used.',
+    RHYTHM:  '<strong>Mission:</strong> Hit notes as they reach the target line! PERFECT timing = 100pts. Build combos to multiply your score. 20 misses = game over!',
+    DEFENSE: '<strong>Mission:</strong> Build towers to stop the enemy waves! Press T to enter tower placement mode, then click the grid. SPACE starts the next wave. Each wave cleared earns you gold for more towers!'
 };
 
 // Per-genre default colour palettes — applied only when no custom palette is loaded
@@ -3194,12 +3466,16 @@ const GENRE_PALETTES = {
     ASTEROIDS: ['#e2e8f0','#94a3b8','#fbbf24','#f87171'],
     ROGUELIKE: ['#7c3aed','#a78bfa','#fbbf24','#f87171'],
     RACING:    ['#f87171','#fbbf24','#334155','#00d4aa'],
-    HOPPER:   ['#4ade80','#fbbf24','#a78bfa','#f87171'],
+    HOPPER:  ['#4ade80','#fbbf24','#a78bfa','#f87171'],
+    BEAT:    ['#f87171','#fbbf24','#374151','#00d4aa'],
+    PUZZLE:  ['#38bdf8','#4ade80','#fbbf24','#a78bfa'],
+    RHYTHM:  ['#a78bfa','#f87171','#fbbf24','#00d4aa'],
+    DEFENSE: ['#00d4aa','#ef4444','#2d3748','#fbbf24'],
 };
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
     const root = document.getElementById('studioRoot');
-    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER'].forEach(c => root.classList.remove('genre-'+c));
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE'].forEach(c => root.classList.remove('genre-'+c));
     root.classList.add('genre-'+g);
 
     // Show racing or standard tilemap tools
@@ -3237,13 +3513,13 @@ function onGenreChange() {
         if (hs) hs.textContent = board.length ? '🏆 Best: '+board[0].score + (board[1]?' · '+board[1].score:'') + (board[2]?' · '+board[2].score:'') : '';
     } catch(e) {}
     // Show/hide genre-specific Custom tab panels
-    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER'].forEach(genre => {
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM'].forEach(genre => {
         const el = document.getElementById('custom-'+genre);
         if (el) el.style.display = genre === g ? '' : 'none';
     });
 
     // Adjust default speed per template
-    const defaults = { SHOOTER:200, PLATFORMER:200, DODGE:250, BREAKER:300, RUNNER:200, FLAPPY:180, INVADERS:200, PONG:300, SNAKE:200, ASTEROIDS:200, RACING:300, HOPPER:200 };
+    const defaults = { SHOOTER:200, PLATFORMER:200, DODGE:250, BREAKER:300, RUNNER:200, FLAPPY:180, INVADERS:200, PONG:300, SNAKE:200, ASTEROIDS:200, RACING:300, HOPPER:200, BEAT:200, PUZZLE:150, RHYTHM:150 };
     if (defaults[g]) {
         liveConfig.speed = defaults[g];
         document.getElementById('playerSpeed').value = defaults[g];
@@ -3279,7 +3555,7 @@ function onGenreChange() {
     setTxt('bpGV', liveConfig.gravity); setTxt('bpFGV', liveConfig.gravity);
     setTxt('bpJF', liveConfig.jumpForce); setTxt('bpRJF', liveConfig.jumpForce); setTxt('bpFJF', liveConfig.jumpForce);
     // Show matching code snippet in Code tab
-    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER'].forEach(genre => {
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE'].forEach(genre => {
         const el = document.getElementById('code-'+genre);
         if (el) el.style.display = genre === g ? '' : 'none';
     });
@@ -3356,8 +3632,8 @@ function compileAndBootEngine() {
     _runTransitionOut(()=>_showTitleScreen(data));
 }
 function _showTitleScreen(data) {
-    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️'};
-    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon'};
+    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼'};
+    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon',RACING:'Top-Down Racing',HOPPER:'Endless Hopper',BEAT:"Beat 'em Up",PUZZLE:'Puzzle',RHYTHM:'Rhythm',DEFENSE:'Tower Defense'};
     document.getElementById('introIcon').textContent       = ICONS[data.genre]  || '🕹️';
     document.getElementById('introGameTitle').textContent  = data.title         || 'My Arcade Game';
     document.getElementById('introGenreSub').textContent   = GENRES[data.genre] || data.genre;
@@ -3386,7 +3662,7 @@ function _launchPhaserGame() {
     // Genre-aware music style: pick a sensible default unless user already chose one
     const _genreMusic = { SHOOTER:'space',PLATFORMER:'chiptune',DODGE:'action',BREAKER:'chiptune',
                            RUNNER:'action',FLAPPY:'chiptune',INVADERS:'space',PONG:'chiptune',
-                           SNAKE:'chiptune',ASTEROIDS:'space',ROGUELIKE:'action',RACING:'action',HOPPER:'chiptune' };
+                           SNAKE:'chiptune',ASTEROIDS:'space',ROGUELIKE:'action',RACING:'action',HOPPER:'chiptune',BEAT:'action',PUZZLE:'chiptune',RHYTHM:'chiptune' };
     if (!GameAudio.customMusic) {
         const _autoStyle = _genreMusic[data.genre] || 'chiptune';
         const _sel = document.getElementById('musicStyle');
@@ -3488,12 +3764,45 @@ function _launchPhaserGame() {
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
     _updateLandscapeNudge(true);
-    _launchPhaserGame();
+    // Play 'before' cutscene if configured, then launch game
+    _maybeCutscene('before', () => _launchPhaserGame());
 }
 
 function getScene(data) {
-    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper };
+    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense };
     return scenes[data.genre] ? scenes[data.genre](data) : sceneShooter(data);
+}
+
+// ── Shared scene helpers — used by makeBaseScene AND standalone scenes ─────────
+// Call as _sceneCheckWin(this, score) or this._checkWin(score) (both work)
+function _sceneCheckWin(scene, score) {
+    if (scene._winTriggered) return;
+    const wc = liveConfig.winCondition;
+    if (wc === 'none') return;
+    if (wc === 'score' && score >= liveConfig.winTarget) {
+        scene._winTriggered = true;
+        scene.time.delayedCall(80, () => showVictory(score));
+    } else if (wc === 'time') {
+        const elapsed = (Date.now() - (_gameStartTime||Date.now())) / 1000;
+        if (elapsed >= liveConfig.winTarget) {
+            scene._winTriggered = true;
+            scene.time.delayedCall(80, () => showVictory(score));
+        }
+    }
+}
+function _sceneTickBase(scene, score) {
+    const spd = liveConfig.gameSpeed || 1.0;
+    if (scene.physics && scene.physics.world) scene.physics.world.timeScale = spd;
+    if (scene.time) scene.time.timeScale = spd;
+    if (_speedRunActive && !_speedRunStart) {
+        const k = scene.cursors;
+        if (k && (k.left.isDown||k.right.isDown||k.up.isDown||k.space?.isDown)||touchInput.left||touchInput.right||touchInput.up||touchInput.fire) {
+            _speedRunBegin();
+        }
+    }
+    if (score !== undefined) _sceneCheckWin(scene, score);
+    _checkCustomAchs(scene);
+    _runEventsRuntime(scene, score);
 }
 
 function makeBaseScene(data) {
@@ -3618,40 +3927,9 @@ function makeBaseScene(data) {
                 for (let y=0;y<=GH;y+=4) { g.beginPath(); g.moveTo(0,y); g.lineTo(GW,y); g.strokePath(); }
             }
         }
-        // ── Win condition check (called each frame from _tickBase) ────────────
-        _checkWin(score) {
-            if (this._winTriggered) return;
-            const wc = liveConfig.winCondition;
-            if (wc === 'none') return;
-            if (wc === 'score' && score >= liveConfig.winTarget) {
-                this._winTriggered = true;
-                this.time.delayedCall(80, () => showVictory(score));
-            } else if (wc === 'time') {
-                const elapsed = (Date.now() - (_gameStartTime||Date.now())) / 1000;
-                if (elapsed >= liveConfig.winTarget) {
-                    this._winTriggered = true;
-                    this.time.delayedCall(80, () => showVictory(score));
-                }
-            }
-        }
-        // ── Per-frame base tick (called from each scene's update) ─────────────
-        _tickBase(score) {
-            // Game speed: adjust physics world and timer time scale
-            const spd = liveConfig.gameSpeed || 1.0;
-            if (this.physics && this.physics.world) this.physics.world.timeScale = spd;
-            if (this.time) this.time.timeScale = spd;
-            // Speed run: start timer on first movement input
-            if (_speedRunActive && !_speedRunStart) {
-                const k = this.cursors;
-                if (k && (k.left.isDown||k.right.isDown||k.up.isDown||k.space?.isDown)||touchInput.left||touchInput.right||touchInput.up||touchInput.fire) {
-                    _speedRunBegin();
-                }
-            }
-            // Win condition
-            if (score !== undefined) this._checkWin(score);
-            // User-defined event rules (Events tab)
-            _runEventsRuntime(this, score);
-        }
+        // ── Win condition check + tick base — delegate to shared globals ────────
+        _checkWin(score) { _sceneCheckWin(this, score); }
+        _tickBase(score)  { _sceneTickBase(this, score); }
         _initPowerUps() {
             // Pre-generate one texture per type so every spawn can reuse them
             const puCols = { shield:0x38bdf8, x2:0xfbbf24, speed:0x4ade80, life:0xf87171 };
@@ -7252,7 +7530,7 @@ function deleteSlot(slotIdx) {
 function renderSaveSlots() {
     const container = document.getElementById('saveSlotList');
     if (!container) return;
-    const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸'};
+    const ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵'};
     container.innerHTML = SLOT_KEYS.map((key,i) => {
         let d = null;
         try { d = JSON.parse(localStorage.getItem(key)||'null'); } catch(e){}
@@ -7543,10 +7821,13 @@ function _buildSharePayload(d) {
     const genre = d.genre || 'SHOOTER';
     let bestScore = 0;
     try { const board=JSON.parse(localStorage.getItem('jv_lb_'+genre)||'[]'); bestScore=board.length?board[0].score:0; } catch(e){}
+    // Track how many times this has been forked
+    let forkCount = 0;
+    try { forkCount = parseInt(localStorage.getItem('jv_fork_count')||'0'); } catch(e){}
     return { title:d.title, genre, speed:d.speed, gravity:d.gravity, jump:d.jump,
              map:d.map, liveConfig:Object.assign({},liveConfig),
              theme:{cols:gameTheme.cols.slice(),name:gameTheme.name},
-             bestScore };
+             bestScore, forkCount };
 }
 
 async function generateShareLink() {
@@ -7654,12 +7935,14 @@ function showGameOver(score) {
     }
     _sessionAchs.clear(); _sessionHits = 0; _sessionStartTime = Date.now();
 
-    document.getElementById('goOverlay').classList.add('show');
-    // Auto-focus the initials input so player can type immediately
-    setTimeout(() => {
-        const inp = document.getElementById('goInitials');
-        if (inp) { inp.focus(); inp.select(); }
-    }, 80);
+    // Play 'after' cutscene before showing game over screen
+    _maybeCutscene('after', () => {
+        document.getElementById('goOverlay').classList.add('show');
+        setTimeout(() => {
+            const inp = document.getElementById('goInitials');
+            if (inp) { inp.focus(); inp.select(); }
+        }, 80);
+    });
 }
 
 function _saveGoScore() {
@@ -8514,14 +8797,23 @@ async function generateShareLink() {
         _openShareModal(finalUrl, d.title || 'My Game');
     } catch(e) { showToast('Share link too large — try clearing level map or sprite'); }
 }
-function _openShareModal(url, title) {
+function _openShareModal(url, title, forkCount) {
     _shareCurrentUrl = url;
+    const forks = forkCount || 0;
     document.getElementById('shareModalTitle').textContent = 'Share "' + title + '"';
     document.getElementById('shareUrlInput').value = url;
+    // Fork count badge
+    let forkEl = document.getElementById('shareModalForks');
+    if (!forkEl) {
+        forkEl = document.createElement('div');
+        forkEl.id = 'shareModalForks';
+        forkEl.style.cssText = 'font-size:.62rem;color:var(--muted);text-align:center;';
+        document.getElementById('shareQrImg').parentNode.appendChild(forkEl);
+    }
+    forkEl.textContent = forks > 0 ? `🍴 Remixed ${forks} time${forks===1?'':'s'}` : '';
     // QR code via free API
     const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=6&data=' + encodeURIComponent(url);
     document.getElementById('shareQrImg').src = qrUrl;
-    // Show/hide native share
     document.getElementById('shareNativeBtn').style.display = navigator.share ? '' : 'none';
     const m = document.getElementById('shareModal');
     m.style.display = 'flex';
@@ -8947,6 +9239,888 @@ function sceneHopper(data) {
     };
 }
 
+// ── BEAT 'EM UP ───────────────────────────────────────────────────────────────
+function sceneBeatEmUp(data) {
+    return class BeatScene extends Phaser.Scene {
+        constructor() { super({key:'BeatScene'}); }
+        preload() {
+            ['_bt_player','_bt_enemy','_bt_heavy','_bt_boss','_bt_punch'].forEach(k=>{ if(this.textures.exists(k)) this.textures.remove(k); });
+            if (data.sprite) {
+                const blobUrl = _toBlobUrl(data.sprite);
+                this.load.image('player', blobUrl);
+            }
+        }
+
+        create() {
+            // make.graphics (off-screen) so generateTexture works in WebGL + Canvas
+            const mkTex = (key, w, h, fn) => {
+                const g = this.make.graphics({x:0,y:0,add:false});
+                fn(g); g.generateTexture(key, w, h); g.destroy();
+            };
+            // Background fill — use rectangle directly (no texture needed)
+            const bgC = themeInt(2,0x1a1a2e);
+            this.add.rectangle(GW/2,GH/2,GW,GH,bgC,1).setDepth(0);
+            // Floor stripe
+            this.add.rectangle(GW/2,GH-22,GW,44,themeInt(0,0x374151),1).setDepth(1);
+            // Player sprite (if no custom)
+            if (!data.sprite) {
+                mkTex('_bt_player',24,32, g=>{
+                    g.fillStyle(themeInt(0,0x4ade80),1); g.fillRect(3,0,18,22);
+                    g.fillStyle(0xfbbf24,1); g.fillCircle(12,10,8);
+                });
+            }
+            // Enemy grunt
+            mkTex('_bt_enemy',24,32, g=>{
+                g.fillStyle(themeInt(1,0xef4444),1); g.fillRect(3,0,18,22);
+                g.fillStyle(0xf87171,1); g.fillCircle(12,10,8);
+            });
+            // Heavy enemy
+            mkTex('_bt_heavy',28,38, g=>{
+                g.fillStyle(0xa16207,1); g.fillRect(1,0,26,28); g.fillCircle(14,12,10);
+            });
+            // Boss
+            mkTex('_bt_boss',38,56, g=>{
+                g.fillStyle(0x7c3aed,1); g.fillRect(0,0,38,46); g.fillCircle(19,18,16);
+            });
+            // Punch flash
+            mkTex('_bt_punch',24,24, g=>{
+                g.fillStyle(0xfbbf24,1); g.fillStar(12,12,5,12,5);
+            });
+
+            // Background + floor already drawn as rectangles above
+
+            // Player
+            const ps = Math.round(24*(liveConfig.playerScale||1));
+            const pKey = data.sprite ? 'player' : '_bt_player';
+            this.actor = this.physics.add.sprite(100, GH-80, pKey).setDisplaySize(ps, Math.round(ps*1.3));
+            this.actor.body.allowGravity = false;
+            this.actor.setCollideWorldBounds(true);
+            this._hp = liveConfig.lives || 3;
+            this._maxHp = this._hp;
+            this._punching = false; this._punchTimer = 0;
+            this._invincible = false; this._combo = 0; this._comboTimer = 0;
+            this._killCount = 0;
+
+            // Groups
+            this.enemies   = this.physics.add.group();
+            this.punches   = this.physics.add.group();
+            this.score     = 0;
+
+            // HUD
+            const hs = {fontSize:'13px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3};
+            this.scoreText = this.add.text(10,10,'Score: 0',hs).setDepth(10).setScrollFactor(0);
+            this._hpText   = this.add.text(GW-10,10,'❤️'.repeat(this._hp),{fontSize:'14px'}).setOrigin(1,0).setDepth(10).setScrollFactor(0);
+            this._comboText= this.add.text(GW/2,50,'',{fontSize:'22px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:4}).setOrigin(0.5).setDepth(10).setScrollFactor(0).setVisible(false);
+            this._waveText = this.add.text(GW/2,GH/2,'',{fontSize:'36px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:5}).setOrigin(0.5).setDepth(12).setScrollFactor(0);
+
+            this.cursors  = this.input.keyboard.createCursorKeys(); // arrow fallback
+            this._wasdW   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+            this._wasdA   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+            this._wasdS   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+            this._wasdD   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+            this._punch1  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
+            this._punch2  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            this._wave    = 1; this._waveEnemiesLeft = 0; this._bossSpawned = false;
+            this._spawnWave(1);
+            _updateLandscapeNudge(true);
+        }
+
+        _checkWin(score) { _sceneCheckWin(this, score); }
+        _tickBase(score)  { _sceneTickBase(this, score); }
+
+        _spawnWave(wave) {
+            this._wave = wave;
+            this._waveText.setText('Wave '+wave+'!').setVisible(true).setAlpha(1);
+            this.tweens.add({targets:this._waveText,alpha:0,duration:1500,delay:600,onComplete:()=>this._waveText.setVisible(false)});
+            const count = Math.min(2+wave, 7);
+            this._waveEnemiesLeft = count;
+            for(let i=0;i<count;i++) {
+                this.time.delayedCall(i*600, ()=>{
+                    const side = Math.random()<0.5;
+                    const x = side ? GW+20 : -20;
+                    const isBoss  = wave >= 5 && i===count-1;
+                    const isHeavy = !isBoss && wave >= 3 && Math.random()<0.35;
+                    const eKey  = isBoss?'_bt_boss':isHeavy?'_bt_heavy':'_bt_enemy';
+                    const eSize = isBoss?[38,56]:isHeavy?[28,38]:[24,32];
+                    const e = this.enemies.create(x, GH-80, eKey).setDisplaySize(eSize[0]*((liveConfig.playerScale||1)), eSize[1]*(liveConfig.playerScale||1));
+                    e.body.allowGravity = false;
+                    const bossMaxHp = liveConfig.bossHp || 15;
+                    e.setData('hp', isBoss?bossMaxHp:isHeavy?4:1);
+                    e.setData('maxHp', isBoss?bossMaxHp:isHeavy?4:1);
+                    e.setData('speed', isBoss?(liveConfig.bossSpeed||50):isHeavy?65:90+Math.random()*40);
+                    e.setData('type', isBoss?'boss':isHeavy?'heavy':'grunt');
+                    if(isBoss) {
+                        // Boss HP bar
+                        const bar = this.add.graphics().setDepth(11).setScrollFactor(0);
+                        e.setData('hpBar', bar); this._bossSpawned=true;
+                    }
+                });
+            }
+            GameAudio.play('score');
+        }
+
+        _doPunch() {
+            if (this._punching) return;
+            this._punching = true; this._punchTimer = 320;
+            GameAudio.play('shoot');
+            const dir = this.actor.flipX ? -1 : 1;
+            const px = this.actor.x + dir*28, py = this.actor.y;
+            const punchHit = this.add.image(px,py,'_bt_punch').setDisplaySize(28,28).setDepth(6).setAlpha(0.85);
+            this.tweens.add({targets:punchHit,scaleX:1.5,scaleY:1.5,alpha:0,duration:220,onComplete:()=>punchHit.destroy()});
+            // Check enemies in range
+            this.enemies.getChildren().forEach(e=>{
+                if(Math.abs(e.x-px)<50 && Math.abs(e.y-py)<40) {
+                    this._hitEnemy(e);
+                }
+            });
+        }
+
+        _hitEnemy(e) {
+            const hp = (e.getData('hp')||1) - 1;
+            e.setData('hp', hp);
+            this._combo++; this._comboTimer = 2200;
+            GameAudio.play('hit');
+            if(liveConfig.screenShake) this.cameras.main.shake(80,0.008);
+            this.tweens.add({targets:e,alpha:0.3,duration:80,yoyo:true});
+            if (hp <= 0) {
+                this._killCount++;
+                this._waveEnemiesLeft--;
+                const bossReward = liveConfig.bossReward || 150;
+                const pts = ({grunt:10,heavy:30,boss:bossReward}[e.getData('type')]||10) * Math.max(1,Math.floor(this._combo/3));
+                this.score += pts;
+                this.scoreText.setText('Score: '+this.score);
+                const hpBar = e.getData('hpBar'); if(hpBar) hpBar.destroy();
+                this._burst(e.x, e.y, themeInt(3,0xfbbf24));
+                e.destroy();
+                _achUnlock('first_blood');
+                if(this._waveEnemiesLeft <= 0) this.time.delayedCall(1200, ()=>this._spawnWave(this._wave+1));
+            } else if (e.getData('type')==='boss') {
+                // Update boss HP bar
+                const bar = e.getData('hpBar');
+                const maxHp = e.getData('maxHp') || 15;
+                if (bar) {
+                    bar.clear();
+                    const bw=GW-40, bx=20, by=GH-20;
+                    bar.fillStyle(0x333333,0.8); bar.fillRect(bx,by-8,bw,10);
+                    bar.fillStyle(0x7c3aed,1); bar.fillRect(bx,by-8,Math.round(bw*(hp/maxHp)),10);
+                    bar.fillStyle(0xffffff,0.15); bar.fillRect(bx,by-8,bw,4);
+                }
+                // Boss Designer phase check
+                const phase = _getBossPhase(hp, maxHp);
+                if (phase && phase !== e.getData('_lastPhase')) {
+                    e.setData('_lastPhase', phase);
+                    e.setData('speed', (liveConfig.bossSpeed||50) * (phase.speed||1));
+                    if (phase.label) showToast('💀 ' + phase.label);
+                }
+            }
+        }
+
+        _burst(x,y,col) {
+            for(let i=0;i<6;i++) {
+                const p=this.add.rectangle(x,y,5,5,col,1).setDepth(7);
+                const angle=Math.random()*Math.PI*2;
+                this.tweens.add({targets:p,x:x+Math.cos(angle)*40,y:y+Math.sin(angle)*40,alpha:0,duration:350,onComplete:()=>p.destroy()});
+            }
+        }
+
+        update(time, delta) {
+            const dt = delta/1000;
+            const spd = liveConfig.speed||200;
+            const {left,right,up,down} = this.cursors;
+
+            // WASD + arrow keys both move the player
+            const goLeft  = left.isDown  || this._wasdA.isDown || touchInput.left;
+            const goRight = right.isDown || this._wasdD.isDown || touchInput.right;
+            const goUp    = up.isDown    || this._wasdW.isDown || touchInput.up;
+            const goDown  = down.isDown  || this._wasdS.isDown || touchInput.down;
+
+            if(goLeft)       { this.actor.setVelocityX(-spd); this.actor.setFlipX(true); }
+            else if(goRight) { this.actor.setVelocityX(spd);  this.actor.setFlipX(false); }
+            else               this.actor.setVelocityX(0);
+            if(goUp)         this.actor.setVelocityY(-spd*0.7);
+            else if(goDown)  this.actor.setVelocityY(spd*0.7);
+            else             this.actor.setVelocityY(0);
+            // Clamp to arena band via body.reset (keeps physics body in sync with sprite)
+            if (this.actor.y < GH-140) this.actor.body.reset(this.actor.x, GH-140);
+            if (this.actor.y > GH-50)  this.actor.body.reset(this.actor.x, GH-50);
+
+            // Punch input — Z or SPACE or fire button
+            if((Phaser.Input.Keyboard.JustDown(this._punch1)||Phaser.Input.Keyboard.JustDown(this._punch2)||touchInput.fire) && !this._punching) this._doPunch();
+            if(this._punching) { this._punchTimer-=delta; if(this._punchTimer<=0) this._punching=false; }
+
+            // Combo counter
+            if(this._comboTimer>0) {
+                this._comboTimer-=delta;
+                if(this._combo>1) { this._comboText.setText(this._combo+'× COMBO!').setVisible(true).setAlpha(1); }
+                if(this._comboTimer<=0) { this._combo=0; this.tweens.add({targets:this._comboText,alpha:0,duration:300,onComplete:()=>this._comboText.setVisible(false)}); }
+            }
+
+            // Enemy AI: walk toward player's Y band, then approach X
+            this.enemies.getChildren().forEach(e=>{
+                if(!e.active) return;
+                const targetY = this.actor.y + Phaser.Math.Between(-20,20);
+                const dy = targetY-e.y, dx = this.actor.x-e.x;
+                const spd2 = e.getData('speed')||90;
+                e.setVelocityX(Math.sign(dx)*spd2); e.setVelocityY(Math.sign(dy)*spd2*0.5);
+                // Clamp enemy y via body.reset
+                if (e.y < GH-140) e.body.reset(e.x, GH-140);
+                if (e.y > GH-50)  e.body.reset(e.x, GH-50);
+                e.setFlipX(dx<0);
+                // Enemy attacks player when close
+                if(Math.abs(dx)<32 && Math.abs(dy)<28 && !this._invincible) {
+                    this._invincible=true;
+                    this._hp = Math.max(0,this._hp-1);
+                    this._hpText.setText('❤️'.repeat(Math.max(0,this._hp)));
+                    GameAudio.play('hit');
+                    if(liveConfig.screenShake) this.cameras.main.shake(180,0.016);
+                    this.tweens.add({targets:this.actor,alpha:0.2,duration:100,yoyo:true,repeat:4,onComplete:()=>{this._invincible=false;this.actor.setAlpha(1);}});
+                    if(this._hp<=0) { this.time.delayedCall(500,()=>showGameOver(this.score)); return; }
+                    this.time.delayedCall(800,()=>this._invincible=false);
+                }
+            });
+            this._tickBase(this.score);
+        }
+        shutdown() { _updateLandscapeNudge(false); }
+    };
+}
+
+// ── PUZZLE / SOKOBAN ──────────────────────────────────────────────────────────
+function scenePuzzle(data) {
+    // Tile types: 0=floor 1=wall 2=crate 3=target 4=crate-on-target 5=player
+    const CELL = 32;
+    // Default level if no tilemap provided
+    const DEFAULT_MAP = [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,
+        1,0,0,1,0,0,0,3,0,0,0,0,0,1,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    ];
+
+    return class PuzzleScene extends Phaser.Scene {
+        constructor() { super({key:'PuzzleScene'}); }
+        preload() {}
+        create() {
+            // Use painted map or default
+            const raw = (data.map && data.map.length===300 && data.map.some(v=>v>0)) ? data.map : DEFAULT_MAP;
+            // Remap tilemap values: 1=wall,2=crate,3=target,5=player → puzzle values
+            this._map = raw.map(v => v===1?1:v===2?2:v===3?3:v===5?5:0);
+            this._origMap = this._map.slice();
+            this._moves = 0;
+            this.score  = 0;
+
+            // Find player start
+            let px=1, py=1;
+            this._map.forEach((v,i)=>{ if(v===5){px=i%20;py=Math.floor(i/20);} });
+            this._px=px; this._py=py;
+            // Remove player tile from map (player rendered separately)
+            this._map[py*20+px]=0;
+
+            // Colours
+            const COLS = {0:themeInt(2,0x1e293b),1:themeInt(2,0x0f172a),2:themeInt(0,0xf59e0b),3:themeInt(1,0x22c55e),4:themeInt(1,0x16a34a),5:themeInt(0,0x4ade80)};
+            const DARKCOLS = {0:0x0a0f1a,1:0x070a0f};
+
+            // Draw grid
+            this._tileGfx = this.add.graphics().setDepth(0);
+            this._drawTiles();
+
+            // Player visual
+            const pg = this.make.graphics({x:0,y:0,add:false});
+            pg.fillStyle(themeInt(0,0x4ade80),1);
+            pg.fillCircle(CELL/2, CELL/2, CELL/2-2);
+            pg.fillStyle(0xffffff,0.4); pg.fillCircle(CELL/2-4, CELL/2-5, 5);
+            pg.generateTexture('_pz_player', CELL, CELL); pg.destroy();
+            this._playerImg = this.add.image(px*CELL+CELL/2, py*CELL+CELL/2, '_pz_player').setDepth(2);
+
+            // HUD
+            const hs = {fontSize:'12px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3};
+            this._movesText = this.add.text(10,GH-20,'Moves: 0',hs).setScrollFactor(0).setDepth(10);
+            this._msgText   = this.add.text(GW/2,GH/2,'',{fontSize:'28px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:5}).setOrigin(0.5).setScrollFactor(0).setDepth(12).setVisible(false);
+            const resetBtn  = this.add.text(GW-10,GH-20,'↺ Reset',{fontSize:'11px',fill:'#a78bfa',fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,1).setScrollFactor(0).setDepth(10).setInteractive();
+            resetBtn.on('pointerdown',()=>this._reset());
+
+            this.cursors = this.input.keyboard.createCursorKeys();
+            this._lastKey = 0;
+            this._won = false;
+        }
+
+        _checkWin(score) { _sceneCheckWin(this, score); }
+        _tickBase(score)  { _sceneTickBase(this, score); }
+
+        _drawTiles() {
+            const g = this._tileGfx; g.clear();
+            const COLS = {
+                0: themeInt(2,0x1e293b), 1: 0x050810,
+                2: themeInt(0,0xf59e0b), 3: themeInt(1,0x22c55e),
+                4: themeInt(1,0x15803d)
+            };
+            for(let r=0;r<15;r++) for(let c=0;c<20;c++) {
+                const v = this._map[r*20+c];
+                const col = COLS[v] ?? COLS[0];
+                g.fillStyle(col,1); g.fillRect(c*32,r*32,32,32);
+                if(v===1) { g.fillStyle(0x000000,0.3); g.fillRect(c*32,r*32+28,32,4); g.fillRect(c*32+28,r*32,4,28); }
+                if(v===3||v===4) { g.lineStyle(2,0xffffff,0.2); g.strokeRect(c*32+4,r*32+4,24,24); }
+                if(v===2||v===4) { g.fillStyle(COLS[v],1); g.fillRoundedRect(c*32+3,r*32+3,26,26,5); g.fillStyle(0xffffff,0.15); g.fillRoundedRect(c*32+3,r*32+3,26,6,3); }
+                if(v===0) { g.fillStyle(0xffffff,0.03); g.fillRect(c*32,r*32,32,1); g.fillRect(c*32,r*32,1,32); }
+            }
+        }
+
+        _tryMove(dx, dy) {
+            if(this._won) return;
+            const nx=this._px+dx, ny=this._py+dy;
+            if(nx<0||nx>=20||ny<0||ny>=15) return;
+            const nv=this._map[ny*20+nx];
+            if(nv===1) return; // wall
+            if(nv===2||nv===4) {
+                // Push crate
+                const cx=nx+dx, cy=ny+dy;
+                if(cx<0||cx>=20||cy<0||cy>=15) return;
+                const cv=this._map[cy*20+cx];
+                if(cv===1||cv===2||cv===4) return; // blocked
+                this._map[cy*20+cx] = cv===3?4:2;
+                this._map[ny*20+nx] = nv===4?3:0;
+            }
+            this._px=nx; this._py=ny;
+            this._moves++;
+            this._movesText.setText('Moves: '+this._moves);
+            this.score = Math.max(0, 1000 - this._moves*5);
+            this._drawTiles();
+            this._playerImg.setPosition(nx*32+16, ny*32+16);
+            GameAudio.play('score');
+            // Check win: no remaining target tiles (all covered = value 4)
+            const targets = this._map.filter(v=>v===3).length;
+            if(targets===0 && !this._won) {
+                this._won=true;
+                this._msgText.setText('SOLVED! 🎉').setVisible(true);
+                GameAudio.play('shoot');
+                if(liveConfig.screenShake) this.cameras.main.shake(300,0.014);
+                _achUnlock('goal_reached');
+                this.time.delayedCall(1800,()=>showVictory(this.score));
+            }
+        }
+
+        _reset() {
+            this._map = this._origMap.slice();
+            let px=1,py=1;
+            this._map.forEach((v,i)=>{if(v===5){px=i%20;py=Math.floor(i/20);}});
+            this._map[py*20+px]=0;
+            this._px=px; this._py=py; this._moves=0; this._won=false;
+            this._movesText.setText('Moves: 0');
+            this._msgText.setVisible(false);
+            this._playerImg.setPosition(px*32+16,py*32+16);
+            this._drawTiles();
+            showToast('↺ Level reset');
+        }
+
+        update(time) {
+            if(this._won) return;
+            if(time - this._lastKey < 160) return;
+            const {left,right,up,down} = this.cursors;
+            if(left.isDown||touchInput.left)        { this._tryMove(-1,0); this._lastKey=time; }
+            else if(right.isDown||touchInput.right) { this._tryMove(1,0);  this._lastKey=time; }
+            else if(up.isDown||touchInput.up)       { this._tryMove(0,-1); this._lastKey=time; }
+            else if(down.isDown||touchInput.down)   { this._tryMove(0,1);  this._lastKey=time; }
+            this._tickBase(this.score);
+        }
+    };
+}
+
+// ── RHYTHM ────────────────────────────────────────────────────────────────────
+function sceneRhythm(data) {
+    const LANES   = 4;
+    const KEYS    = ['A','S','D','F'];   // actual keys — shown in-game
+    const LANE_W  = 60, LANE_GAP = 8;
+    const HIT_Y   = GH - 80;
+    const NOTE_SPD = 220; // px/s (slightly slower = more forgiving)
+    const BPM      = liveConfig.seqBpm || 120;
+    const NOTE_INTERVAL = 60000 / BPM / 2; // 8th notes
+    const PERFECT_WIN = 24, GOOD_WIN = 48; // wider windows for better feel
+    const GRACE_MS = 2000; // ignore misses for first 2 seconds
+
+    return class RhythmScene extends Phaser.Scene {
+        constructor() { super({key:'RhythmScene'}); }
+        preload() { ['_rhy_lane','_rhy_note','_rhy_hit'].forEach(k=>{ if(this.textures.exists(k)) this.textures.remove(k); }); }
+
+        create() {
+            const totalW = LANES*(LANE_W+LANE_GAP)-LANE_GAP;
+            const startX = (GW-totalW)/2;
+
+            // Background
+            this.add.rectangle(GW/2,GH/2,GW,GH,themeInt(2,0x0a0c18)).setDepth(0);
+
+            // Lane colours — one per lane from theme
+            const LANE_COLS = [
+                themeInt(0, 0xa78bfa), themeInt(1, 0xf87171),
+                themeInt(2, 0xfbbf24), themeInt(3, 0x4ade80)
+            ];
+
+            // Per-lane note textures with rounded corners
+            const NOTE_TEXTURES = LANE_COLS.map((col, l) => {
+                const ng = this.make.graphics({x:0,y:0,add:false});
+                ng.fillStyle(col, 1); ng.fillRoundedRect(0,0,LANE_W-6,32,8);
+                ng.fillStyle(0xffffff,0.25); ng.fillRoundedRect(2,2,LANE_W-10,10,4);
+                const key = '_rhy_note'+l;
+                ng.generateTexture(key, LANE_W-6, 32); ng.destroy();
+                return key;
+            });
+
+            // Hit zone targets
+            this._laneX = [];
+            this._noteTex = NOTE_TEXTURES;
+            for(let l=0;l<LANES;l++) {
+                const lx = startX + l*(LANE_W+LANE_GAP) + LANE_W/2;
+                this._laneX.push(lx);
+                // Lane track (subtle but visible)
+                this.add.rectangle(lx, GH/2, LANE_W-2, GH, LANE_COLS[l], 0.08).setDepth(1);
+                // Hit zone — solid coloured box at bottom
+                this.add.rectangle(lx, HIT_Y, LANE_W-6, 34, LANE_COLS[l], 0.25).setDepth(3);
+                const ring = this.add.graphics().setDepth(4);
+                ring.lineStyle(3, LANE_COLS[l], 0.9);
+                ring.strokeRoundedRect(lx-(LANE_W-6)/2, HIT_Y-17, LANE_W-6, 34, 8);
+                // Key label — large and bright
+                this.add.text(lx, HIT_Y+26, KEYS[l],
+                    {fontSize:'16px',fill:'#ffffff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3}
+                ).setOrigin(0.5,0).setDepth(5);
+            }
+
+            // Note group
+            this.notes = this.add.group();
+
+            // HUD
+            this.score = 0; this._combo = 0; this._miss = 0;
+            const hs = {fontSize:'14px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3};
+            this.scoreText = this.add.text(10,10,'Score: 0',hs).setDepth(10).setScrollFactor(0);
+            this._comboText= this.add.text(GW/2,GH-45,'',{fontSize:'16px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(10).setScrollFactor(0);
+            this._judgeTxt = this.add.text(GW/2,HIT_Y-44,'',{fontSize:'22px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:4}).setOrigin(0.5).setDepth(10).setScrollFactor(0).setAlpha(0);
+
+            // Input keys: A S D F  or arrows
+            this._laneKeys = [
+                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+            ];
+            this._flashRects = this._laneX.map((lx,l) => {
+                const r = this.add.rectangle(lx, GH/2, LANE_W-4, GH, themeInt(l,0xa78bfa), 0).setDepth(2);
+                return r;
+            });
+
+            // Note spawner: use sequencer pattern if available, else random
+            this._elapsed = 0;
+            this._noteTimer = NOTE_INTERVAL;
+            this._pattern = liveConfig.seqPattern || null;
+            this._patStep = 0;
+            _updateLandscapeNudge(true);
+        }
+
+        _checkWin(score) { _sceneCheckWin(this, score); }
+        _tickBase(score)  { _sceneTickBase(this, score); }
+
+        _spawnNote(lane) {
+            const lx = this._laneX[lane];
+            const note = this.add.rectangle(lx, -20, LANE_W-8, 28, themeInt(lane,0xa78bfa), 1).setDepth(4);
+            note.setData('lane', lane);
+            note.setData('y', -20);
+            this.notes.add(note);
+        }
+
+        _judge(lane) {
+            // Find closest note in this lane near HIT_Y
+            let closest = null, closestDist = 9999;
+            this.notes.getChildren().forEach(n => {
+                if(n.getData('lane')!==lane) return;
+                const d = Math.abs(n.y - HIT_Y);
+                if(d < closestDist) { closestDist=d; closest=n; }
+            });
+            if(!closest || closestDist > GOOD_WIN*2) {
+                // Only penalise after grace period has passed
+                if (this._elapsed > GRACE_MS) {
+                    this._miss++; this._combo=0;
+                    this._showJudge('MISS', 0xef4444);
+                } else {
+                    this._showJudge('WAIT...', 0x94a3b8);
+                }
+                return;
+            }
+            closest.destroy();
+            if(closestDist < PERFECT_WIN) {
+                this._combo++; this.score += 100 * Math.max(1,Math.floor(this._combo/5));
+                this._showJudge('PERFECT!', 0x00d4aa);
+                GameAudio.play('score');
+            } else {
+                this._combo++; this.score += 50;
+                this._showJudge('GOOD', 0xfbbf24);
+                GameAudio.play('jump');
+            }
+            this.scoreText.setText('Score: '+this.score);
+            this._comboText.setText(this._combo>1?this._combo+'× COMBO':'');
+        }
+
+        _showJudge(text, col) {
+            this._judgeTxt.setText(text).setColor('#'+col.toString(16).padStart(6,'0')).setAlpha(1);
+            this.tweens.add({targets:this._judgeTxt,alpha:0,y:this._judgeTxt.y-20,duration:500,
+                onComplete:()=>{ this._judgeTxt.setAlpha(0); this._judgeTxt.y=HIT_Y-44; }});
+        }
+
+        update(time, delta) {
+            const dt = delta/1000;
+            this._elapsed += delta;
+
+            // Spawn notes
+            this._noteTimer -= delta;
+            if(this._noteTimer <= 0) {
+                this._noteTimer = NOTE_INTERVAL;
+                if(this._pattern) {
+                    // Use sequencer pattern: each row = lane, each step = time slot
+                    for(let r=0;r<Math.min(4,this._pattern.length);r++) {
+                        if(this._pattern[r][this._patStep%8]) this._spawnNote(r);
+                    }
+                    this._patStep++;
+                } else {
+                    // Random: 1-2 notes per beat
+                    const numNotes = Math.random()<0.4?2:1;
+                    const lanes = Phaser.Math.Shuffle([0,1,2,3]).slice(0,numNotes);
+                    lanes.forEach(l=>this._spawnNote(l));
+                }
+            }
+
+            // Move notes down
+            this.notes.getChildren().slice().forEach(n => {
+                n.y += NOTE_SPD * dt;
+                if(n.y > GH + 40) {
+                    n.destroy();
+                    if (this._elapsed > GRACE_MS) {
+                        this._miss++; this._combo=0;
+                        this._comboText.setText('');
+                        if(this._miss >= 20) { this.time.delayedCall(200,()=>showGameOver(this.score)); }
+                    }
+                }
+            });
+
+            // Lane key input
+            this._laneKeys.forEach((key,l) => {
+                if(Phaser.Input.Keyboard.JustDown(key)) {
+                    this._judge(l);
+                    this._flashRects[l].setAlpha(0.15);
+                    this.tweens.add({targets:this._flashRects[l],alpha:0,duration:120});
+                    _speedRunBegin();
+                }
+            });
+
+            this._tickBase(this.score);
+        }
+        shutdown() { _updateLandscapeNudge(false); }
+    };
+}
+
+// ── TOWER DEFENSE ─────────────────────────────────────────────────────────────
+function sceneTowerDefense(data) {
+    const CELL   = 40;                        // grid cell size px
+    const COLS   = Math.floor(GW / CELL);     // ~16
+    const ROWS   = Math.floor(GH / CELL);     // ~11
+    const TOWER_COST = 50;
+    const TOWER_RANGE= 120;
+    const TOWER_RATE = 900; // ms between shots
+    // Pre-baked enemy path (column indices) — a simple S-curve from left to right
+    function _buildPath() {
+        const pts = [];
+        // Enter from left mid, snake down then across then up
+        const mid = Math.floor(ROWS/2);
+        // Horizontal run across top row
+        for(let c=0;c<COLS;c++) pts.push({col:c,row:1});
+        // Down
+        for(let r=1;r<=mid;r++) pts.push({col:COLS-2,row:r});
+        // Horizontal back
+        for(let c=COLS-2;c>=1;c--) pts.push({col:c,row:mid});
+        // Down again
+        for(let r=mid;r<=ROWS-2;r++) pts.push({col:2,row:r});
+        // Final run to exit
+        for(let c=2;c<COLS;c++) pts.push({col:c,row:ROWS-2});
+        return pts;
+    }
+
+    return class TDScene extends Phaser.Scene {
+        constructor() { super({key:'TDScene'}); }
+        preload() {}
+
+        create() {
+            this.score    = 0;
+            this._lives   = liveConfig.lives || 3;
+            this._gold    = 150;
+            this._wave    = 0;
+            this._waveActive = false;
+            this._towers  = [];       // {col,row,sprite,lastShot}
+            this._enemies = [];       // {sprite,hp,maxHp,hpBar,pathIdx,speed}
+            this._bullets = [];       // {sprite,target}
+            this._pathCells = new Set();
+            this._pathPts  = _buildPath();
+            this._pathPts.forEach(p => this._pathCells.add(p.col+','+p.row));
+            this._toPlace = false;    // placement mode
+
+            // ── Graphics ──
+            this._gfx = this.add.graphics().setDepth(0);
+            this._drawGrid();
+
+            // ── UI HUD ──
+            const hs = {fontSize:'13px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:2};
+            this._txtScore = this.add.text(8, 8,'Score: 0', hs).setDepth(20).setScrollFactor(0);
+            this._txtGold  = this.add.text(8,26,'💰 150',   hs).setDepth(20).setScrollFactor(0);
+            this._txtLives = this.add.text(8,44,'❤️ '+(this._lives), hs).setDepth(20).setScrollFactor(0);
+            this._txtWave  = this.add.text(GW/2,8,'Wave 0',  {...hs,fontSize:'14px'}).setOrigin(0.5,0).setDepth(20).setScrollFactor(0);
+            this._txtHint  = this.add.text(GW/2,GH-18,'[T] Place Tower  |  [SPACE] Start Wave', {...hs,fontSize:'11px'}).setOrigin(0.5,1).setDepth(20).setScrollFactor(0).setAlpha(0.7);
+
+            // ── Input ──
+            this._keyT     = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
+            this._keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            // Click to place tower
+            this.input.on('pointerdown', (ptr) => {
+                if (!this._toPlace) return;
+                const col = Math.floor(ptr.x / CELL);
+                const row = Math.floor(ptr.y / CELL);
+                this._placeTower(col, row);
+            });
+
+            // Hover ghost
+            this._ghost = this.add.rectangle(0, 0, CELL-4, CELL-4, 0x00d4aa, 0.35).setDepth(15).setVisible(false);
+            this.input.on('pointermove', (ptr) => {
+                if (!this._toPlace) { this._ghost.setVisible(false); return; }
+                const col = Math.floor(ptr.x/CELL), row = Math.floor(ptr.y/CELL);
+                this._ghost.setPosition(col*CELL+CELL/2, row*CELL+CELL/2).setVisible(true);
+            });
+
+            // ── Enemy / tower textures ──
+            const tg = this.make.graphics({x:0,y:0,add:false});
+            tg.fillStyle(themeInt(0,0x00d4aa),1); tg.fillRoundedRect(0,0,CELL-8,CELL-8,6);
+            tg.fillStyle(0xffffff,0.3); tg.fillTriangle(8,4, CELL-16,CELL/2-4, 8,CELL-12);
+            tg.generateTexture('_td_tower',CELL-8,CELL-8); tg.destroy();
+
+            const eg = this.make.graphics({x:0,y:0,add:false});
+            eg.fillStyle(themeInt(1,0xef4444),1); eg.fillCircle(10,10,10);
+            eg.fillStyle(0x000000,0.3); eg.fillCircle(10,10,5);
+            eg.generateTexture('_td_enemy',20,20); eg.destroy();
+
+            const bg = this.make.graphics({x:0,y:0,add:false});
+            bg.fillStyle(0xfbbf24,1); bg.fillCircle(4,4,4);
+            bg.generateTexture('_td_bullet',8,8); bg.destroy();
+
+            _updateLandscapeNudge(true);
+        }
+
+        _checkWin(score) { _sceneCheckWin(this, score); }
+        _tickBase(score)  { _sceneTickBase(this, score); }
+
+        _drawGrid() {
+            const g = this._gfx;
+            g.clear();
+            // Background
+            g.fillStyle(themeInt(2,0x0d1117),1); g.fillRect(0,0,GW,GH);
+            // Path
+            this._pathPts.forEach(p => {
+                g.fillStyle(0x2d3748,1); g.fillRect(p.col*CELL,p.row*CELL,CELL,CELL);
+            });
+            // Grid lines
+            g.lineStyle(1,0xffffff,0.04);
+            for(let c=0;c<=COLS;c++) { g.beginPath(); g.moveTo(c*CELL,0); g.lineTo(c*CELL,GH); g.strokePath(); }
+            for(let r=0;r<=ROWS;r++) { g.beginPath(); g.moveTo(0,r*CELL); g.lineTo(GW,r*CELL); g.strokePath(); }
+            // Path arrows/start/end markers
+            const s = this._pathPts[0], e = this._pathPts[this._pathPts.length-1];
+            g.fillStyle(0x22c55e,0.6); g.fillRect(s.col*CELL+4,s.row*CELL+4,CELL-8,CELL-8);
+            g.fillStyle(0xef4444,0.6); g.fillRect(e.col*CELL+4,e.row*CELL+4,CELL-8,CELL-8);
+        }
+
+        _placeTower(col, row) {
+            if (this._gold < TOWER_COST) {
+                this._flashText('Not enough gold!'); return;
+            }
+            if (this._pathCells.has(col+','+row)) {
+                this._flashText("Can't build on path!"); return;
+            }
+            if (this._towers.find(t=>t.col===col&&t.row===row)) {
+                this._flashText('Already built here!'); return;
+            }
+            if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
+            this._gold -= TOWER_COST;
+            const sp = this.add.image(col*CELL+CELL/2, row*CELL+CELL/2, '_td_tower').setDepth(5);
+            // Range ring
+            const rr = this.add.graphics().setDepth(4);
+            rr.lineStyle(1, 0x00d4aa, 0.25);
+            rr.strokeCircle(col*CELL+CELL/2, row*CELL+CELL/2, TOWER_RANGE);
+            this._towers.push({col,row,sprite:sp,rangeRing:rr,lastShot:0});
+            this._toPlace = false;
+            this._ghost.setVisible(false);
+            this._updateHUD();
+            GameAudio.play('score');
+        }
+
+        _flashText(msg) {
+            const t = this.add.text(GW/2, GH/2-20, msg, {fontSize:'16px',fill:'#ef4444',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(30);
+            this.tweens.add({targets:t, alpha:0, y:t.y-30, duration:1200, onComplete:()=>t.destroy()});
+        }
+
+        _startWave() {
+            if (this._waveActive) return;
+            this._wave++;
+            this._waveActive = true;
+            this._txtWave.setText('Wave ' + this._wave);
+            const count = 4 + this._wave * 2;
+            const speed = 60 + this._wave * 8;
+            const hp    = 3  + this._wave * 2;
+            let spawned = 0;
+            const spawnTimer = this.time.addEvent({
+                delay: 700,
+                repeat: count - 1,
+                callback: () => {
+                    this._spawnEnemy(hp, speed);
+                    spawned++;
+                    if (spawned >= count) spawnTimer.remove();
+                }
+            });
+        }
+
+        _spawnEnemy(hp, speed) {
+            const start = this._pathPts[0];
+            const sp = this.add.image(start.col*CELL+CELL/2, start.row*CELL+CELL/2, '_td_enemy').setDepth(8);
+            // HP bar bg
+            const hpBg = this.add.rectangle(sp.x, sp.y-14, 22, 4, 0x374151, 1).setDepth(9);
+            const hpBar= this.add.rectangle(sp.x-11, sp.y-14, 22, 4, 0x22c55e, 1).setOrigin(0,0.5).setDepth(10);
+            this._enemies.push({sprite:sp, hp, maxHp:hp, hpBg, hpBar, pathIdx:0, speed, _timer:0});
+        }
+
+        _updateHUD() {
+            this._txtScore.setText('Score: '+this.score);
+            this._txtGold .setText('💰 '+this._gold);
+            this._txtLives.setText('❤️ '+this._lives);
+        }
+
+        update(time, delta) {
+            const dt = delta / 1000;
+
+            // Key: T = place mode, SPACE = start wave
+            if (Phaser.Input.Keyboard.JustDown(this._keyT)) {
+                this._toPlace = !this._toPlace;
+                this._txtHint.setText(this._toPlace ? 'Click grid to place tower (cost: 50💰)' : '[T] Place Tower  |  [SPACE] Start Wave');
+            }
+            if (Phaser.Input.Keyboard.JustDown(this._keySpace)) {
+                this._startWave();
+                _speedRunBegin();
+            }
+
+            // ── Move enemies along path ──
+            const toRemove = [];
+            this._enemies.forEach(e => {
+                if (!e.sprite.active) return;
+                e._timer += delta;
+                const step = e.speed * dt;
+                if (e.pathIdx >= this._pathPts.length - 1) {
+                    // Reached end — drain a life
+                    this._lives--;
+                    this._updateHUD();
+                    e.sprite.destroy(); e.hpBg.destroy(); e.hpBar.destroy();
+                    toRemove.push(e);
+                    GameAudio.play('hit');
+                    if (this._lives <= 0) {
+                        setTimeout(()=>showGameOver(this.score), 300);
+                        return;
+                    }
+                    return;
+                }
+                const cur  = this._pathPts[e.pathIdx];
+                const next = this._pathPts[e.pathIdx+1];
+                const tx = next.col*CELL+CELL/2, ty = next.row*CELL+CELL/2;
+                const dx = tx - e.sprite.x, dy = ty - e.sprite.y;
+                const dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist < step + 2) {
+                    e.pathIdx++;
+                    e.sprite.setPosition(tx, ty);
+                } else {
+                    e.sprite.x += (dx/dist)*step;
+                    e.sprite.y += (dy/dist)*step;
+                }
+                // Sync HP bar
+                e.hpBg.setPosition(e.sprite.x, e.sprite.y - 14);
+                e.hpBar.setPosition(e.sprite.x - 11, e.sprite.y - 14);
+                e.hpBar.setSize((e.hp/e.maxHp)*22, 4);
+                e.hpBar.setFillStyle(e.hp/e.maxHp > 0.5 ? 0x22c55e : 0xf59e0b, 1);
+            });
+            toRemove.forEach(e => { const i = this._enemies.indexOf(e); if(i>-1) this._enemies.splice(i,1); });
+
+            // Check wave complete
+            if (this._waveActive && this._enemies.length === 0) {
+                this._waveActive = false;
+                this._gold += 30 + this._wave * 10;
+                this.score  += 100 * this._wave;
+                this._updateHUD();
+                this._flashText('Wave ' + this._wave + ' cleared! +' + (30+this._wave*10) + '💰');
+            }
+
+            // ── Towers shoot ──
+            this._towers.forEach(tower => {
+                if (time - tower.lastShot < TOWER_RATE) return;
+                // Find closest enemy in range
+                let target = null, closest = TOWER_RANGE+1;
+                const tx = tower.col*CELL+CELL/2, ty = tower.row*CELL+CELL/2;
+                this._enemies.forEach(e => {
+                    if (!e.sprite.active) return;
+                    const d = Phaser.Math.Distance.Between(tx,ty,e.sprite.x,e.sprite.y);
+                    if (d < closest) { closest=d; target=e; }
+                });
+                if (!target) return;
+                tower.lastShot = time;
+                // Spawn bullet
+                const bull = this.add.image(tx, ty, '_td_bullet').setDepth(12);
+                this._bullets.push({sprite:bull, target, speed:220});
+                GameAudio.play('shoot');
+            });
+
+            // ── Move bullets ──
+            const bullRemove = [];
+            this._bullets.forEach(b => {
+                if (!b.sprite.active) { bullRemove.push(b); return; }
+                if (!b.target.sprite.active) { b.sprite.destroy(); bullRemove.push(b); return; }
+                const dx = b.target.sprite.x - b.sprite.x, dy = b.target.sprite.y - b.sprite.y;
+                const d  = Math.sqrt(dx*dx+dy*dy);
+                if (d < 8) {
+                    // Hit
+                    b.target.hp--;
+                    b.sprite.destroy(); bullRemove.push(b);
+                    if (b.target.hp <= 0) {
+                        b.target.sprite.destroy(); b.target.hpBg.destroy(); b.target.hpBar.destroy();
+                        const idx = this._enemies.indexOf(b.target);
+                        if(idx>-1) this._enemies.splice(idx,1);
+                        this.score += 10;
+                        this._gold  += 5;
+                        this._updateHUD();
+                        // Burst
+                        for(let i=0;i<5;i++){
+                            const px=b.target.sprite.x+(Math.random()-.5)*18;
+                            const py=b.target.sprite.y+(Math.random()-.5)*18;
+                            const prt=this.add.circle(px,py,3,themeInt(1,0xef4444),1).setDepth(15);
+                            this.tweens.add({targets:prt,alpha:0,scaleX:0,scaleY:0,x:px+(Math.random()-.5)*30,y:py+(Math.random()-.5)*30,duration:300,onComplete:()=>prt.destroy()});
+                        }
+                    }
+                    return;
+                }
+                b.sprite.x += (dx/d)*b.speed*dt;
+                b.sprite.y += (dy/d)*b.speed*dt;
+            });
+            bullRemove.forEach(b => { const i=this._bullets.indexOf(b); if(i>-1) this._bullets.splice(i,1); });
+
+            this._tickBase(this.score);
+        }
+        shutdown() { _updateLandscapeNudge(false); }
+    };
+}
+
 // ── PLATFORMER 2-PLAYER CO-OP ─────────────────────────────────────────────────
 // Patches into the existing scenePlatformer after create() by wrapping _buildLevel
 // P2 spawns near P1, uses WASD keys; shared camera tracks leftmost player
@@ -9099,6 +10273,438 @@ function _initPuRateDefaults() {
     if (!liveConfig.puLifeRate)   liveConfig.puLifeRate   = 1.0;
 }
 
+// ── STREAMER MODE ────────────────────────────────────────────────────────────
+let _streamerOn = false;
+function toggleStreamer() {
+    _streamerOn = !_streamerOn;
+    const ov = document.getElementById('streamerOverlay');
+    if (!ov) return;
+    ov.style.display = _streamerOn ? 'flex' : 'none';
+    if (_streamerOn) {
+        const genre = document.getElementById('genreMode')?.value || 'SHOOTER';
+        const title = document.getElementById('gameTitle')?.value || 'My Arcade Game';
+        document.getElementById('streamerGenre').textContent = genre;
+        document.getElementById('streamerTitle').textContent = title;
+        _streamerTick();
+        showToast('📺 Streamer mode ON — score updates live');
+    }
+}
+function _streamerTick() {
+    if (!_streamerOn) return;
+    // Pull live score from the running Phaser scene
+    let score = 0;
+    try {
+        if (currentPhaserGame) {
+            const scene = currentPhaserGame.scene.getScenes(true)[0];
+            if (scene && scene.score !== undefined) score = scene.score;
+        }
+    } catch(e){}
+    const el = document.getElementById('streamerScore');
+    if (el) el.textContent = score.toLocaleString();
+    requestAnimationFrame(_streamerTick);
+}
+
+// ── MUSIC SEQUENCER ───────────────────────────────────────────────────────────
+const SEQ_STEPS  = 8;
+const SEQ_ROWS   = 8;
+// Frequencies: C5 D5 E5 G5 A5 C6  and lower octave row by row
+const SEQ_FREQS  = [523.25,587.33,659.25,698.46,783.99,880,987.77,1046.5];
+let _seqGrid     = Array(SEQ_ROWS).fill(null).map(()=>Array(SEQ_STEPS).fill(false));
+let _seqPlaying  = false;
+let _seqStep     = 0;
+let _seqTimer    = null;
+let _seqAudioCtx = null;
+
+function openMusicComposer() {
+    const m = document.getElementById('musicComposerModal');
+    if (!m) return;
+    m.style.display = 'flex';
+    _seqBuildGrid();
+}
+function closeMusicComposer() {
+    seqStop();
+    const m = document.getElementById('musicComposerModal');
+    if (m) m.style.display = 'none';
+}
+function _seqBuildGrid() {
+    const container = document.getElementById('seqGrid');
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.gridTemplateColumns = `repeat(${SEQ_STEPS}, 1fr)`;
+    const noteNames = ['C5','D5','E5','F5','G5','A5','B5','C6'];
+    for (let r = 0; r < SEQ_ROWS; r++) {
+        for (let s = 0; s < SEQ_STEPS; s++) {
+            const cell = document.createElement('div');
+            const on = _seqGrid[r][s];
+            cell.style.cssText = `height:30px;border-radius:4px;cursor:pointer;background:${on?'var(--purple)':'var(--panel3)'};border:1px solid var(--border2);transition:background .1s;position:relative;`;
+            if (s === 0) {
+                const lbl = document.createElement('span');
+                lbl.style.cssText = 'position:absolute;left:-26px;top:50%;transform:translateY(-50%);font-size:.55rem;color:var(--muted);width:22px;text-align:right;pointer-events:none;';
+                lbl.textContent = noteNames[r];
+                cell.appendChild(lbl);
+            }
+            cell.addEventListener('click', () => {
+                _seqGrid[r][s] = !_seqGrid[r][s];
+                cell.style.background = _seqGrid[r][s] ? 'var(--purple)' : 'var(--panel3)';
+            });
+            container.appendChild(cell);
+        }
+    }
+}
+function seqTogglePlay() {
+    if (_seqPlaying) seqStop(); else seqPlay();
+}
+function seqPlay() {
+    _seqPlaying = true;
+    document.getElementById('seqPlayBtn').textContent = '⏸ Pause';
+    if (!_seqAudioCtx) _seqAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    _seqStep = 0;
+    const bpm = parseInt(document.getElementById('seqBpm')?.value||'120');
+    const interval = (60/bpm)*1000/2; // 8th notes
+    _seqTimer = setInterval(_seqTick, interval);
+    _seqTick();
+}
+function seqStop() {
+    _seqPlaying = false;
+    clearInterval(_seqTimer); _seqTimer = null;
+    _seqStep = 0;
+    const btn = document.getElementById('seqPlayBtn');
+    if (btn) btn.textContent = '▶ Play';
+    // Highlight off
+    document.querySelectorAll('#seqGrid > div').forEach((c,i)=>{
+        const r=Math.floor(i/SEQ_STEPS), s=i%SEQ_STEPS;
+        c.style.background = _seqGrid[r][s] ? 'var(--purple)' : 'var(--panel3)';
+    });
+}
+function seqUpdateTiming() {
+    if (!_seqPlaying) return;
+    seqStop(); seqPlay();
+}
+function seqClear() {
+    _seqGrid = Array(SEQ_ROWS).fill(null).map(()=>Array(SEQ_STEPS).fill(false));
+    _seqBuildGrid();
+}
+function _seqTick() {
+    if (!_seqPlaying || !_seqAudioCtx) return;
+    const now = _seqAudioCtx.currentTime;
+    // Play all active notes in this step
+    for (let r = 0; r < SEQ_ROWS; r++) {
+        if (_seqGrid[r][_seqStep]) {
+            const osc = _seqAudioCtx.createOscillator();
+            const gain = _seqAudioCtx.createGain();
+            osc.type = window._soundPackType || 'square';
+            osc.frequency.value = SEQ_FREQS[SEQ_ROWS-1-r]; // top row = highest pitch
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now+0.18);
+            osc.connect(gain); gain.connect(_seqAudioCtx.destination);
+            osc.start(now); osc.stop(now+0.2);
+        }
+    }
+    // Highlight current column
+    document.querySelectorAll('#seqGrid > div').forEach((c,i)=>{
+        const r=Math.floor(i/SEQ_STEPS), s=i%SEQ_STEPS;
+        if (s === _seqStep)       c.style.background = 'var(--amber)';
+        else if (_seqGrid[r][s]) c.style.background = 'var(--purple)';
+        else                      c.style.background = 'var(--panel3)';
+    });
+    _seqStep = (_seqStep+1) % SEQ_STEPS;
+}
+function seqSendToGame() {
+    // Encode the grid pattern into liveConfig so GameAudio can use it
+    liveConfig.seqPattern = _seqGrid.map(r=>r.map(v=>v?1:0));
+    liveConfig.seqBpm     = parseInt(document.getElementById('seqBpm')?.value||'120');
+    // Patch GameAudio to use the sequencer instead of the built-in chiptune
+    if (typeof GameAudio !== 'undefined') {
+        GameAudio._useSequencer = true;
+        GameAudio._seqData      = liveConfig.seqPattern;
+        GameAudio._seqBpm       = liveConfig.seqBpm;
+        if (GameAudio._musicOn) { GameAudio.stopMusic(); GameAudio.startMusic('seq'); }
+    }
+    closeMusicComposer();
+    showToast('🎼 Sequencer pattern active — hit ▶ Run!');
+}
+
+// ── CUSTOM ACHIEVEMENTS ───────────────────────────────────────────────────────
+let _customAchs = [];   // [{id,label,trigger,target,unlocked}]
+try { _customAchs = JSON.parse(localStorage.getItem('jv_custom_achs')||'[]'); } catch(e){}
+
+function openCustomAchModal() {
+    const m = document.getElementById('customAchModal');
+    if (m) { m.style.display='flex'; _renderCustomAchs(); }
+}
+function closeCustomAchModal() {
+    const m = document.getElementById('customAchModal');
+    if (m) m.style.display = 'none';
+}
+function _renderCustomAchs() {
+    const list = document.getElementById('customAchList');
+    if (!list) return;
+    if (!_customAchs.length) { list.innerHTML='<div style="font-size:.68rem;color:var(--muted);text-align:center;padding:8px;">No custom achievements yet</div>'; return; }
+    list.innerHTML = _customAchs.map((a,i) => `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--panel3);border-radius:8px;padding:8px 10px;">
+            <span>${a.unlocked?'🏅':'🔒'}</span>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:.72rem;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.label}</div>
+                <div style="font-size:.6rem;color:var(--muted);">${a.trigger} ≥ ${a.target}</div>
+            </div>
+            <button onclick="_deleteCustomAch(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;">✕</button>
+        </div>`).join('');
+}
+function addCustomAch() {
+    const label   = document.getElementById('newAchLabel')?.value.trim();
+    const trigger = document.getElementById('newAchTrigger')?.value || 'score';
+    const target  = parseInt(document.getElementById('newAchTarget')?.value||'100');
+    if (!label) { showToast('Enter a label first'); return; }
+    const id = 'custom_' + Date.now();
+    _customAchs.push({id, label, trigger, target, unlocked:false});
+    _saveCustomAchs();
+    _renderCustomAchs();
+    document.getElementById('newAchLabel').value = '';
+    showToast('🏅 Achievement added!');
+}
+function _deleteCustomAch(i) {
+    _customAchs.splice(i,1);
+    _saveCustomAchs();
+    _renderCustomAchs();
+}
+function _saveCustomAchs() {
+    try { localStorage.setItem('jv_custom_achs', JSON.stringify(_customAchs)); } catch(e){}
+}
+// Called every tick from _tickBase to check custom achievement conditions
+function _checkCustomAchs(scene) {
+    if (!_customAchs.length) return;
+    _customAchs.forEach(a => {
+        if (a.unlocked) return;
+        let val = 0;
+        if      (a.trigger==='score')  val = scene.score || 0;
+        else if (a.trigger==='kills')  val = scene._killCount || 0;
+        else if (a.trigger==='laps')   val = scene._lap || scene._p2Lap || 0;
+        else if (a.trigger==='height') val = scene.score || 0; // hopper uses score=height
+        else if (a.trigger==='time')   val = scene._elapsed ? Math.floor(scene._elapsed/1000) : 0;
+        if (val >= a.target) {
+            a.unlocked = true;
+            _saveCustomAchs();
+            showToast('🏅 ' + a.label);
+            _persistAch(a.id);
+        }
+    });
+}
+
+// ── CUTSCENE EDITOR ──────────────────────────────────────────────────────────
+// Each slide: { char, text, bg }
+let _cutSlides = [];
+try { _cutSlides = JSON.parse(localStorage.getItem('jv_cutscenes')||'[]'); } catch(e){}
+
+function openCutsceneEditor() {
+    const m = document.getElementById('cutsceneModal');
+    if (!m) return;
+    m.style.display = 'flex';
+    _renderCutSlides();
+}
+function closeCutsceneEditor() {
+    const m = document.getElementById('cutsceneModal');
+    if (m) m.style.display = 'none';
+}
+function _renderCutSlides() {
+    const list = document.getElementById('cutSlideList');
+    if (!list) return;
+    if (!_cutSlides.length) {
+        list.innerHTML = '<div style="font-size:.68rem;color:var(--muted);text-align:center;padding:12px;">No slides yet — click ＋ Add Slide</div>';
+        return;
+    }
+    list.innerHTML = _cutSlides.map((s, i) => `
+        <div style="background:var(--panel3);border:1px solid var(--border2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:1.2rem;">${s.char||'🧑'}</span>
+                <div style="flex:1;font-size:.72rem;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.text||'(no text)'}</div>
+                <button onclick="_cutMoveSlide(${i},-1)" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;" title="Move up">▲</button>
+                <button onclick="_cutMoveSlide(${i},1)"  style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;" title="Move down">▼</button>
+                <button onclick="_cutDeleteSlide(${i})"  style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.9rem;">✕</button>
+            </div>
+            <input type="text" value="${s.char||''}" placeholder="Character emoji (e.g. 🧙)"
+                style="width:100%;font-size:.8rem;"
+                onchange="_cutSlides[${i}].char=this.value;_saveCuts();">
+            <textarea placeholder="Slide text / dialogue..."
+                style="width:100%;height:48px;font-size:.75rem;"
+                onchange="_cutSlides[${i}].text=this.value;_saveCuts();">${s.text||''}</textarea>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <label style="font-size:.68rem;color:var(--muted);">BG color:</label>
+                <input type="color" value="${s.bg||'#0a0c18'}" style="width:32px;height:24px;border:none;border-radius:4px;cursor:pointer;background:none;"
+                    onchange="_cutSlides[${i}].bg=this.value;_saveCuts();">
+            </div>
+        </div>`).join('');
+}
+function cutAddSlide() {
+    _cutSlides.push({char:'🧑', text:'', bg:'#0a0c18'});
+    _saveCuts();
+    _renderCutSlides();
+}
+function _cutDeleteSlide(i) { _cutSlides.splice(i,1); _saveCuts(); _renderCutSlides(); }
+function _cutMoveSlide(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= _cutSlides.length) return;
+    [_cutSlides[i], _cutSlides[j]] = [_cutSlides[j], _cutSlides[i]];
+    _saveCuts(); _renderCutSlides();
+}
+function _saveCuts() {
+    try { localStorage.setItem('jv_cutscenes', JSON.stringify(_cutSlides)); } catch(e){}
+}
+function cutSave() {
+    const when = document.querySelector('input[name="cutWhen"]:checked')?.value || 'before';
+    liveConfig.cutsceneSlides = _cutSlides.slice();
+    liveConfig.cutsceneWhen   = when;
+    _saveCuts();
+    closeCutsceneEditor();
+    showToast('🎬 Cutscene saved!');
+}
+function cutPreview() {
+    if (!_cutSlides.length) { showToast('Add at least one slide first'); return; }
+    _playCutscene(_cutSlides, () => showToast('🎬 Preview done!'));
+}
+
+// ── Cutscene Player (shown over game canvas) ──────────────────────────────────
+let _cutActive = false;
+function _playCutscene(slides, onDone) {
+    if (!slides || !slides.length) { if(onDone) onDone(); return; }
+    _cutActive = true;
+    let idx = 0;
+    // Overlay
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:8500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:background .4s;';
+    document.body.appendChild(ov);
+
+    function show(i) {
+        if (i >= slides.length) {
+            ov.style.opacity = '0';
+            ov.style.transition = 'opacity .5s';
+            setTimeout(()=>{ ov.remove(); _cutActive=false; if(onDone) onDone(); }, 500);
+            return;
+        }
+        const s = slides[i];
+        ov.style.background = s.bg || '#0a0c18';
+        ov.innerHTML = `
+            <div style="font-size:clamp(3rem,10vw,5rem);line-height:1;">${s.char||'🧑'}</div>
+            <div id="_cutText" style="font-family:'Fredoka',sans-serif;font-size:clamp(1rem,3vw,1.4rem);color:white;max-width:520px;text-align:center;padding:0 24px;line-height:1.6;min-height:48px;"></div>
+            <div style="font-size:.72rem;color:rgba(255,255,255,.35);letter-spacing:.08em;animation:intro-blink 1.4s ease-in-out infinite;">CLICK OR PRESS SPACE TO CONTINUE</div>`;
+        // Typewriter
+        let ci = 0;
+        const txt = s.text || '';
+        const el = document.getElementById('_cutText');
+        const tw = setInterval(()=>{
+            if (!el || ci >= txt.length) { clearInterval(tw); return; }
+            el.textContent += txt[ci++];
+        }, 28);
+        // Advance on click/space
+        const advance = (e) => {
+            if (e.type==='keydown' && e.key!==' ' && e.key!=='Enter') return;
+            clearInterval(tw);
+            ov.removeEventListener('click', advance);
+            document.removeEventListener('keydown', advance);
+            show(i + 1);
+        };
+        ov.addEventListener('click', advance);
+        document.addEventListener('keydown', advance);
+    }
+    show(0);
+}
+
+// Hook into game start/end to play cutscenes if configured
+function _maybeCutscene(when, cb) {
+    const slides = liveConfig.cutsceneSlides;
+    if (!slides || !slides.length || liveConfig.cutsceneWhen !== when) { if(cb) cb(); return; }
+    _playCutscene(slides, cb);
+}
+
+// ── BOSS DESIGNER ─────────────────────────────────────────────────────────────
+let _bossPhases = [
+    {hpPct:75, speed:1.2, attack:'spread', label:'75% HP — Enraged'},
+    {hpPct:50, speed:1.5, attack:'charge', label:'50% HP — Berserk'},
+    {hpPct:25, speed:2.0, attack:'laser',  label:'25% HP — Final Form'}
+];
+try { const b=JSON.parse(localStorage.getItem('jv_boss_design')||'{}'); if(b.phases) _bossPhases=b.phases; if(b.hp) liveConfig.bossHp=b.hp; } catch(e){}
+
+function openBossDesigner() {
+    const m = document.getElementById('bossDesignerModal');
+    if (!m) return;
+    // Load current values
+    document.getElementById('bossHp').value     = liveConfig.bossHp    || 20;
+    document.getElementById('bossScale').value  = liveConfig.bossScale  || 2.0;
+    document.getElementById('bossSpeed').value  = liveConfig.bossSpeed  || 80;
+    document.getElementById('bossReward').value = liveConfig.bossReward || 500;
+    m.style.display = 'flex';
+    _renderBossPhases();
+}
+function closeBossDesigner() {
+    const m = document.getElementById('bossDesignerModal');
+    if (m) m.style.display = 'none';
+}
+function _renderBossPhases() {
+    const list = document.getElementById('bossPhaseList');
+    if (!list) return;
+    if (!_bossPhases.length) {
+        list.innerHTML = '<div style="font-size:.68rem;color:var(--muted);text-align:center;padding:8px;">No phases defined</div>';
+        return;
+    }
+    const ATTACKS = ['spread','charge','laser','circle','summon','explode'];
+    list.innerHTML = _bossPhases.map((p,i)=>`
+        <div style="background:var(--panel3);border:1px solid var(--border2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:.9rem;font-weight:700;color:var(--red);">Phase ${i+1}</span>
+                <div style="flex:1;font-size:.68rem;color:var(--muted);">Triggers at ≤${p.hpPct}% HP</div>
+                <button onclick="_bossDeletePhase(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div class="form-group"><label>HP Threshold %</label>
+                    <input type="number" min="1" max="99" value="${p.hpPct}" style="text-align:center;"
+                        onchange="_bossPhases[${i}].hpPct=+this.value;_saveBoss();">
+                </div>
+                <div class="form-group"><label>Speed Mult</label>
+                    <input type="number" min="0.5" max="5" step="0.1" value="${p.speed}" style="text-align:center;"
+                        onchange="_bossPhases[${i}].speed=+this.value;_saveBoss();">
+                </div>
+            </div>
+            <div class="form-group"><label>Attack Pattern</label>
+                <select onchange="_bossPhases[${i}].attack=this.value;_saveBoss();">
+                    ${ATTACKS.map(a=>`<option value="${a}"${a===p.attack?' selected':''}>${a.charAt(0).toUpperCase()+a.slice(1)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group"><label>Phase Label (shown in HUD)</label>
+                <input type="text" value="${p.label||''}" placeholder="e.g. 'Berserk Mode!'"
+                    onchange="_bossPhases[${i}].label=this.value;_saveBoss();">
+            </div>
+        </div>`).join('');
+}
+function bossAddPhase() {
+    _bossPhases.push({hpPct:50, speed:1.5, attack:'spread', label:'New Phase'});
+    _saveBoss(); _renderBossPhases();
+}
+function _bossDeletePhase(i) { _bossPhases.splice(i,1); _saveBoss(); _renderBossPhases(); }
+function _saveBoss() {
+    try { localStorage.setItem('jv_boss_design', JSON.stringify({phases:_bossPhases,hp:liveConfig.bossHp,scale:liveConfig.bossScale})); } catch(e){}
+}
+function bossSave() {
+    liveConfig.bossHp     = parseInt(document.getElementById('bossHp')?.value||'20');
+    liveConfig.bossScale  = parseFloat(document.getElementById('bossScale')?.value||'2.0');
+    liveConfig.bossSpeed  = parseInt(document.getElementById('bossSpeed')?.value||'80');
+    liveConfig.bossReward = parseInt(document.getElementById('bossReward')?.value||'500');
+    liveConfig.bossPhases = _bossPhases.slice();
+    _saveBoss();
+    closeBossDesigner();
+    showToast('💀 Boss design applied!');
+}
+// Boss phase check — call from any scene's update when a boss enemy has taken damage
+// Returns the matching phase object (or null) so the scene can change behavior
+function _getBossPhase(hpCurrent, hpMax) {
+    const pct = (hpCurrent / hpMax) * 100;
+    const phases = liveConfig.bossPhases || _bossPhases;
+    // Sorted descending so highest threshold matches first (lower = more critical)
+    const sorted = phases.slice().sort((a,b)=>a.hpPct-b.hpPct);
+    for (const p of sorted) {
+        if (pct <= p.hpPct) return p;
+    }
+    return null;
+}
+
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
     if (window.__exportMode) return; // exported game: injected boot script handles this
@@ -9159,6 +10765,12 @@ window.addEventListener('DOMContentLoaded', ()=>{
             }
             onGenreChange();
             if(isRemix) {
+                // Increment the fork counter stored locally
+                try {
+                    const forkKey = 'jv_fork_count';
+                    const newCount = (parseInt(localStorage.getItem(forkKey)||'0')) + 1;
+                    localStorage.setItem(forkKey, newCount);
+                } catch(e){}
                 // Remix: load settings but don't auto-boot — let user tweak first
                 document.getElementById('gameTitle').value = '🎮 Remix of ' + (d.title||'Game');
                 showToast('🎮 Remix loaded! Tweak it and hit ▶ Run to make it yours');
