@@ -2868,7 +2868,9 @@ function sceneShooter(data) {
                 this.hazards.getChildren().forEach(e => e.setVelocityY(liveConfig.enemySpeed * ramp));
             }
             this.bullets.getChildren().forEach(b=>{ if(b.y<-30||b.y>GH+30||b.x<-30||b.x>GW+30) b.destroy(); });
+            this.hazards.getChildren().forEach(e=>{ if(e.y>GH+40) e.destroy(); });
             this._syncPuLabels();
+            this._tickBase(this.score);
         }
     };
 }
@@ -3066,6 +3068,7 @@ function scenePlatformer(data) {
             this._coinGrp.getChildren().forEach(c=>{ if(c.x < camX-60) c.destroy(); });
             // Fall pit death
             if (this.actor.y > GH+60) this._onHit(this.actor);
+            this._tickBase(this.score);
         }
     };
 }
@@ -3146,6 +3149,7 @@ function sceneDodge(data) {
                 this._shieldGfx.strokeCircle(this.actor.x,this.actor.y,20);
             } else if(this._shieldGfx&&!this._dodgeShield){ this._shieldGfx.clear(); }
             this._syncPuLabels();
+            this._tickBase(this.score);
         }
     };
 }
@@ -3265,6 +3269,7 @@ function sceneBreaker(data) {
                 const l=p.getData('lbl'); if(l&&l.active) l.setPosition(p.x, p.y-10);
                 if(p.y>GH+30){ if(l&&l.active) l.destroy(); p.destroy(); }
             });
+            this._tickBase(this.score);
         }
         _ballLost() {
             this._invincible = true;
@@ -3343,7 +3348,7 @@ function sceneRunner(data) {
             });
             this.physics.add.overlap(this.actor, this._coinGrp, (_,c)=>{
                 if(c.getData('col')) return; c.setData('col',true); c.destroy();
-                this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score);
+                this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score);
                 this._flashScore(this.scoreText); GameAudio.play('score'); _achUnlock('first_blood');
             });
             this._initPowerUps();
@@ -3376,8 +3381,9 @@ function sceneRunner(data) {
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
             this._coinGrp.getChildren().forEach(c=>{ if(c.x<-30) c.destroy(); });
             this.surviveTimer+=16;
-            if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score); }
+            if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score); }
             this._syncPuLabels();
+            this._tickBase(this.score);
         }
     };
 }
@@ -3418,7 +3424,7 @@ function sceneFlappy(data) {
             this.physics.add.overlap(this.actor,this.pipes,()=>{ this._streak=0; this._onHit(this.actor); });
             this.physics.add.overlap(this.actor,this._flCoins,(_,c)=>{
                 if(c.getData('col')) return; c.setData('col',true); c.destroy();
-                this.score+=liveConfig.pointsPerKill; this.scoreText.setText('Score: '+this.score);
+                this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score);
                 this._flashScore(this.scoreText); GameAudio.play('score');
             });
             this._initPowerUps();
@@ -3463,6 +3469,7 @@ function sceneFlappy(data) {
                 }
                 if (p.x<-60) p.destroy();
             });
+            this._tickBase(this.score);
         }
     };
 }
@@ -3596,6 +3603,7 @@ function sceneInvaders(data) {
             this.bullets.getChildren().forEach(b=>{ if(b.y<-20) b.destroy(); });
             this.eBullets.getChildren().forEach(b=>{ if(b.y>GH+20) b.destroy(); });
             this._syncPuLabels();
+            this._tickBase(this.score);
         }
     };
 }
@@ -3708,6 +3716,7 @@ function scenePong(data) {
                 else this.pRight.setVelocityY(0);
             }
             this.pRight.y=Phaser.Math.Clamp(this.pRight.y,36,GH-36);
+            this._tickBase(this.score);
             // Ball out of bounds
             if(this.ball.x<0) {
                 if(this._gameEnded) return;
@@ -3861,6 +3870,7 @@ function sceneSnake(data) {
             else if((right.isDown||touchInput.right)&&d.x===0)  this._nextDir={x:1,y:0};
             else if((up.isDown||touchInput.up)&&d.y===0)        this._nextDir={x:0,y:-1};
             else if((down.isDown||this.spaceKey.isDown||touchInput.fire)&&d.y===0) this._nextDir={x:0,y:1};
+            this._tickBase(this.score);
         }
     };
 }
@@ -4343,7 +4353,7 @@ function sceneRoguelike(data) {
                 this._floor++; this._room=0;
                 this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
                 const bonus=100*this._floor; this.score+=bonus;
-                if(this._hp<this._maxHp) this._hp++;
+                if(this._hp<this._maxHp){ this._hp++; gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp); }
                 showToast(`🏆 Floor ${this._floor}! +${bonus} pts`);
                 GameAudio.play('score');
             }
@@ -4421,7 +4431,7 @@ function sceneRoguelike(data) {
             else if(sk.up.isDown)    this._fireBullet(0,-1);
             else if(sk.down.isDown)  this._fireBullet(0,1);
             if(touchInput.fire){
-                const alive=this.enemies.getChildren().filter(e=>e.active);
+                const alive=[...this.enemies.getChildren(),...this._ghosts.getChildren()].filter(e=>e.active);
                 if(alive.length){
                     let best=alive[0],bestD=Infinity;
                     alive.forEach(e=>{const d=Phaser.Math.Distance.Between(this.actor.x,this.actor.y,e.x,e.y);if(d<bestD){bestD=d;best=e;}});
@@ -4504,6 +4514,7 @@ function sceneRoguelike(data) {
 
             // Room exit
             if(this._doorOpen&&this.actor.x>GW-W-22) this._nextRoom();
+            this._tickBase(this.score);
         }
     };
 }
@@ -4647,6 +4658,7 @@ function sceneAsteroids(data) {
             }
             this.bullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
             this._syncPuLabels();
+            this._tickBase(this.score);
         }
     };
 }
