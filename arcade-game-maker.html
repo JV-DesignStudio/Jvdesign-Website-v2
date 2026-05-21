@@ -2963,18 +2963,6 @@ function scenePlatformer(data) {
                 if (isGold) showToast('🪙 GOLD! +'+Math.round(pts));
             });
 
-            // End-goal flag — reach it to win!
-            if (this._goalZone) {
-                this.physics.add.overlap(this.actor, this._goalZone, () => {
-                    if (!this._winTriggered) {
-                        this._winTriggered = true;
-                        GameAudio.play('score');
-                        if (liveConfig.screenShake) this.cameras.main.shake(320, 0.016);
-                        _achUnlock('goal_reached');
-                        this.time.delayedCall(500, () => showVictory(this.score));
-                    }
-                });
-            }
             // Camera follows player with slight horizontal lag for game-feel
             this.cameras.main.startFollow(this.actor, true, 0.1, 1);
         }
@@ -3038,11 +3026,8 @@ function scenePlatformer(data) {
             const pole = this.add.rectangle(WORLD_W-120, groundY-52, 5, 104, 0xe8e8e8).setDepth(5);
             // Flag banner (theme colour)
             this.add.rectangle(WORLD_W-104, groundY-96, 32, 20, themeInt(3,0x22c55e)).setDepth(5);
-            // Invisible trigger zone the actor must touch
-            this._goalZone = this.physics.add.image(WORLD_W-120, groundY-60, 'block');
-            this._goalZone.setDisplaySize(56, 110).setAlpha(0);
-            this._goalZone.body.allowGravity = false;
-            this._goalZone.setImmovable(true);
+            // "GOAL!" label above the flag
+            this.add.text(WORLD_W-120, groundY-115, 'GOAL', {fontSize:'11px', fill:'#ffd700', fontFamily:"'Fredoka',sans-serif", fontStyle:'bold'}).setOrigin(0.5,1).setDepth(5);
         }
         _buildFromTilemap(map) {
             // Fixed 20×15 tilemap — resize world to fit canvas exactly
@@ -3131,6 +3116,15 @@ function scenePlatformer(data) {
             this._coinGrp.getChildren().forEach(c=>{ if(c.x < camX-60) c.destroy(); });
             // Fall pit death
             if (this.actor.y > GH+60) this._onHit(this.actor);
+            // End-goal flag — x-position check is more reliable than physics overlap
+            if (!this._isTilemapMode && !this._winTriggered && this.actor.x >= WORLD_W - 160) {
+                this._winTriggered = true;
+                GameAudio.play('score');
+                if (liveConfig.screenShake) this.cameras.main.shake(320, 0.016);
+                showToast('🏁 Goal!');
+                _achUnlock('goal_reached');
+                this.time.delayedCall(500, () => showVictory(this.score));
+            }
             this._tickBase(this.score);
         }
     };
