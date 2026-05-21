@@ -1824,7 +1824,18 @@ const _evtFired = new Set();   // IDs of one-shot rules that have already trigge
 const _sessionAchs = new Set();
 let _sessionStartTime = 0;
 let _sessionHits = 0;
-function _achUnlock(id) { _sessionAchs.add(id); }
+const _ACH_TOAST = {
+    first_blood:'🎯 First Blood', centurion:'💯 Centurion', high_roller:'💰 High Roller',
+    survivor:'⏱ Survivor (60s)', untouchable:'🛡 Untouchable', wave_3:'👾 Wave 3 Clear',
+    power_up:'⚡ Power-Up!', speed_demon:'🚀 Speed Demon', goal_reached:'🏁 Goal Reached!'
+};
+function _achUnlock(id) {
+    if (!_sessionAchs.has(id)) {
+        _sessionAchs.add(id);
+        const label = _ACH_TOAST[id];
+        if (label) showToast('🏅 ' + label);
+    }
+}
 
 const fallbackLevel = [
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2790,6 +2801,11 @@ function makeBaseScene(data) {
             if (liveConfig.screenShake) this.cameras.main.shake(240, 0.013);
             gameState.lives--;
             _updateHeartsDisplay(gameState.lives, liveConfig.lives);
+            // Low-HP warning: urgent double-beep when on last life
+            if (gameState.lives === 1) {
+                GameAudio._osc('sine', 220, 110, 0.12, 0.22);
+                setTimeout(() => GameAudio._osc('sine', 220, 110, 0.12, 0.22), 240);
+            }
             if (gameState.lives <= 0) {
                 gameState.lives = liveConfig.lives;
                 this.time.delayedCall(180, () => {
@@ -2947,6 +2963,18 @@ function scenePlatformer(data) {
                 if (isGold) showToast('🪙 GOLD! +'+Math.round(pts));
             });
 
+            // End-goal flag — reach it to win!
+            if (this._goalZone) {
+                this.physics.add.overlap(this.actor, this._goalZone, () => {
+                    if (!this._winTriggered) {
+                        this._winTriggered = true;
+                        GameAudio.play('score');
+                        if (liveConfig.screenShake) this.cameras.main.shake(320, 0.016);
+                        _achUnlock('goal_reached');
+                        this.time.delayedCall(500, () => showVictory(this.score));
+                    }
+                });
+            }
             // Camera follows player with slight horizontal lag for game-feel
             this.cameras.main.startFollow(this.actor, true, 0.1, 1);
         }
@@ -3003,6 +3031,18 @@ function scenePlatformer(data) {
                 const pw=Phaser.Math.Between(60,150);
                 this.platforms.create(px, py, 'block').setDisplaySize(pw,T).setTint(platCol).refreshBody();
             }
+            // ── End-goal flag ─────────────────────────────────────────────────
+            // Make sure there's solid ground to land on at the goal
+            this.platforms.create(WORLD_W-100, groundY, 'block').setDisplaySize(200,T).setTint(tileCol).refreshBody();
+            // Flagpole (white pole)
+            const pole = this.add.rectangle(WORLD_W-120, groundY-52, 5, 104, 0xe8e8e8).setDepth(5);
+            // Flag banner (theme colour)
+            this.add.rectangle(WORLD_W-104, groundY-96, 32, 20, themeInt(3,0x22c55e)).setDepth(5);
+            // Invisible trigger zone the actor must touch
+            this._goalZone = this.physics.add.image(WORLD_W-120, groundY-60, 'block');
+            this._goalZone.setDisplaySize(56, 110).setAlpha(0);
+            this._goalZone.body.allowGravity = false;
+            this._goalZone.setImmovable(true);
         }
         _buildFromTilemap(map) {
             // Fixed 20×15 tilemap — resize world to fit canvas exactly
@@ -3457,9 +3497,10 @@ function sceneFlappy(data) {
             this._initPowerUps();
         }
         _spawnPipe() {
-            const gap=liveConfig.pipeGap||120;
-            const gapY=Phaser.Math.Between(60,GH-60-gap);
-            const spd=-Math.max(120,liveConfig.obstacleSpeed);
+            // Difficulty ramp: gap narrows and speed rises with score
+            const baseGap = liveConfig.pipeGap || 120;
+            const gap = Math.max(65, baseGap - Math.floor(this.score * 1.4));
+            const spd = -Math.max(120, liveConfig.obstacleSpeed + Math.floor(this.score * 2.8));
             const tp=this.pipes.create(GW+30,gapY/2,'block').setDisplaySize(40,gapY);
             tp.body.setSize(40,gapY);
             tp.setImmovable(true); tp.body.allowGravity=false; tp.setVelocityX(spd);
@@ -5601,7 +5642,8 @@ function showGameOver(score) {
         untouchable:  '🛡 Untouchable',
         wave_3:       '👾 Wave 3 Clear',
         power_up:     '⚡ Power-Up!',
-        speed_demon:  '🚀 Speed Demon'
+        speed_demon:  '🚀 Speed Demon',
+        goal_reached: '🏁 Goal Reached!'
     };
     const achEl = document.getElementById('goAchievements');
     if (achEl) {
@@ -5782,26 +5824,32 @@ function setupTouchControls() {
         btn.addEventListener('pointercancel',e => { press(false); });
     });
 
-    // Pause button
+    // Pause button + P key
     const pauseBtn = document.getElementById('tc-pause');
-    if (pauseBtn) {
-        let _tcPaused = false;
-        pauseBtn.addEventListener('pointerdown', e => {
-            e.preventDefault();
-            if (!currentPhaserGame) return;
-            _tcPaused = !_tcPaused;
-            try {
-                currentPhaserGame.scene.scenes.forEach(s => {
-                    try {
-                        if (_tcPaused) { if (s.scene.isActive())  s.scene.pause();  }
-                        else           { if (s.scene.isPaused())  s.scene.resume(); }
-                    } catch(e) {}
-                });
-            } catch(e) {}
+    let _tcPaused = false;
+    function _togglePause() {
+        if (!currentPhaserGame) return;
+        _tcPaused = !_tcPaused;
+        try {
+            currentPhaserGame.scene.scenes.forEach(s => {
+                try {
+                    if (_tcPaused) { if (s.scene.isActive())  s.scene.pause();  }
+                    else           { if (s.scene.isPaused())  s.scene.resume(); }
+                } catch(ex) {}
+            });
+        } catch(ex) {}
+        if (pauseBtn) {
             pauseBtn.textContent = _tcPaused ? '▶' : '⏸';
             pauseBtn.style.background = _tcPaused ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.08)';
-        });
+        }
     }
+    if (pauseBtn) {
+        pauseBtn.addEventListener('pointerdown', e => { e.preventDefault(); _togglePause(); });
+    }
+    // P key to pause/resume (ignored when typing in inputs)
+    document.addEventListener('keydown', e => {
+        if (e.code === 'KeyP' && !e.target.matches('input,textarea,select')) _togglePause();
+    });
 
     // Panel FAB — slide panel up/down on mobile
     const fab   = document.getElementById('panelFab');
