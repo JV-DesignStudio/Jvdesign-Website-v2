@@ -64,7 +64,7 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 .tb .ico{font-size:1rem;line-height:1;}
 
 /* TILE PALETTE */
-.tile-palette{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;}
+.tile-palette{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
 .tile-btn{width:100%;aspect-ratio:1;border-radius:5px;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .1s;background:var(--panel2);}
 .tile-btn:hover{border-color:rgba(255,255,255,.2);}
 .tile-btn.on{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2);}
@@ -80,6 +80,13 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 /* SIZE BUTTONS */
 .size-btn{font-size:.5rem;padding:3px 6px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .12s;}
 .size-btn:hover,.size-btn.on{background:var(--accent3);color:#000;border-color:var(--accent3);}
+.size-btn.gm{border-color:var(--accent2);color:var(--accent2);}
+.size-btn.gm:hover,.size-btn.gm.on{background:var(--accent2);color:#000;border-color:var(--accent2);}
+/* HEADER BUTTONS */
+.hdr-btn{font-size:.55rem;padding:4px 9px;border-radius:5px;border:1px solid var(--border2);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;font-family:inherit;transition:all .12s;text-decoration:none;white-space:nowrap;}
+.hdr-btn:hover{background:rgba(255,255,255,.1);color:var(--text);}
+.hdr-btn.play{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.35);color:var(--accent3);}
+.hdr-btn.ai{background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3);color:#a78bfa;}
 
 /* ACTION BUTTONS */
 .ab{width:100%;padding:5px 6px;border-radius:6px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.75rem;font-weight:600;margin-bottom:3px;transition:all .12s;}
@@ -217,6 +224,7 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
     <button class="hdr-btn ai"   onclick="openAICritic()">&#10022; Critic</button>
     <button class="hdr-btn"      onclick="openShare()">&#128279; Share</button>
     <button class="hdr-btn"      onclick="showHotkeys()">? Keys</button>
+    <button class="hdr-btn" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;font-weight:700;border-color:#7c3aed;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
   </div>
   <a href="workshop.html" class="hdr-btn">&#8592; Workshop</a>
 </header>
@@ -242,6 +250,15 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
       <div id="rectModeRow" style="display:none;gap:3px;margin-top:4px;">
         <button class="rm-btn on" id="rmOutline" onclick="setRectMode('outline')">Outline</button>
         <button class="rm-btn"    id="rmFilled"  onclick="setRectMode('filled')">Filled</button>
+      </div>
+    </div>
+    <div class="pdiv"></div>
+    <div class="ps">
+      <div class="pt">Game Maker Tiles</div>
+      <div style="font-size:.48rem;color:var(--muted);line-height:1.7;">
+        ■ Solid tiles (Ground, Grass…) → Platform<br>
+        ▲ Hazard tiles (Spike, Lava) → Kills player<br>
+        ○ Other tiles (Coins, Enemies…) → Ignored
       </div>
     </div>
     <div class="pdiv"></div>
@@ -274,7 +291,7 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
       <button class="ab ab-g" onclick="exportJSON()">Export JSON</button>
       <button class="ab ab-s" onclick="document.getElementById('importJsonInput').click()">Import JSON<input type="file" id="importJsonInput" accept=".json" style="display:none" onchange="importJSON(this)"></button>
       <div class="pdiv" style="margin:4px 0;"></div>
-      <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
+      <div style="font-size:.46rem;color:var(--muted);text-align:center;padding:2px 0 4px;">🕹️ Use header button to send to Game Maker</div>
       <button class="ab ab-u" onclick="undo()" id="undoBtn">Undo</button>
       <button class="ab ab-u" onclick="redo()" id="redoBtn" style="opacity:.35;">Redo</button>
       <button class="ab ab-r" onclick="confirmClear()">New Level</button>
@@ -580,7 +597,7 @@ const BG_THEMES=[
 let currentTheme=BG_THEMES[0];
 
 const TILE_SIZE=24;
-const PRESETS=[{l:'16x8',w:16,h:8},{l:'32x16',w:32,h:16},{l:'48x20',w:48,h:20},{l:'64x24',w:64,h:24}];
+const PRESETS=[{l:'20×15 🕹',w:20,h:15},{l:'16x8',w:16,h:8},{l:'32x16',w:32,h:16},{l:'48x20',w:48,h:20},{l:'64x24',w:64,h:24}];
 
 let gridW=32,gridH=16,zoomLevel=2,showGrid=true,showViewport=false;
 let currentTool='draw',currentTile=1,currentCat='all',rectMode='outline';
@@ -669,7 +686,8 @@ function resizeGrid(w,h){
 function buildSizeButtons(){
   const row=document.getElementById('sizeRow');if(!row)return;row.innerHTML='';
   PRESETS.forEach(p=>{
-    const btn=document.createElement('button');btn.className='size-btn'+(p.w===gridW&&p.h===gridH?' on':'');btn.textContent=p.l;
+    const isGM=(p.w===20&&p.h===15);
+    const btn=document.createElement('button');btn.className='size-btn'+(isGM?' gm':'')+((p.w===gridW&&p.h===gridH)?' on':'');btn.textContent=p.l;
     btn.onclick=()=>{resizeGrid(p.w,p.h);document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.getElementById('custW').value=p.w;document.getElementById('custH').value=p.h;};
     row.appendChild(btn);
   });
@@ -1006,7 +1024,7 @@ function buildTilePalette(cat){
   ['tilePalette','bbTilePalette'].forEach(pid=>{
     const pal=document.getElementById(pid);if(!pal)return;pal.innerHTML='';
     filtered.forEach(t=>{
-      const btn=document.createElement('div');btn.className='tile-btn'+(t.id===currentTile?' on':'');btn.dataset.id=t.id;btn.title=t.label+' ['+t.type+']';
+      const _ev=t.type==='hazard'?2:t.solid?1:0;const btn=document.createElement('div');btn.className='tile-btn'+(t.id===currentTile?' on':'');btn.dataset.id=t.id;btn.title=t.label+' ['+t.type+'] → export: '+(_ev===2?'Hazard':_ev===1?'Platform':'Ignored');
       btn.style.background=t.color==='transparent'?'rgba(255,255,255,.04)':t.color;if(t.emoji)btn.textContent=t.emoji;
       btn.addEventListener('click',()=>{currentTile=t.id;updateTileSelection();setTool('draw');});pal.appendChild(btn);
     });
@@ -1119,16 +1137,33 @@ function exportPNG(){
 }
 
 function sendToGameMaker(){
-  const data=getLevelData();
-  try{
-    localStorage.setItem('jvds_level_autosave',JSON.stringify({
-      name:data.meta.name,gridW:data.meta.width,gridH:data.meta.height,
-      themeId:data.meta.theme,
-      layers:data.layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:Array.from(l.data)})),
-      enemyPaths,tileProps,ts:Date.now()
+  // Build ID→value lookup using TILES definitions
+  const tileVal = {};
+  TILES.forEach(t => {
+    tileVal[t.id] = t.type === 'hazard' ? 2 : t.solid ? 1 : 0;
+  });
+  // Prefer 'Platforms' or 'Terrain' layer, fall back to layer[0]
+  const srcLayer = layers.find(l => /platform|terrain/i.test(l.name)) || layers[0];
+  // Crop/pad to exactly 20×15 (arcade game maker format)
+  const TW = 20, TH = 15;
+  const arcadeMap = Array(TW * TH).fill(0);
+  for (let ty = 0; ty < Math.min(gridH, TH); ty++) {
+    for (let tx = 0; tx < Math.min(gridW, TW); tx++) {
+      const id = srcLayer.data[ty * gridW + tx] || 0;
+      arcadeMap[ty * TW + tx] = tileVal[id] !== undefined ? tileVal[id] : (id > 0 ? 1 : 0);
+    }
+  }
+  const hasTiles = arcadeMap.some(v => v > 0);
+  try {
+    localStorage.setItem('jvds_level_autosave', JSON.stringify({
+      name: document.getElementById('levelName').value || 'My Level',
+      gridW: TW, gridH: TH,
+      themeId: currentTheme.id,
+      layers: [{ name:'Platforms', visible:true, locked:false, data: arcadeMap }],
+      enemyPaths: {}, tileProps: {}, ts: Date.now()
     }));
-    showToast('Sent to Game Maker ✓ — open Arcade Game Maker → Assets → From Level Designer');
-  }catch(e){showToast('Export failed — try Export JSON instead');}
+    showToast(hasTiles ? '🕹️ Sent! Open Game Maker → Assets → ⬇ Import Last' : '⚠️ No solid tiles found — draw some platforms first!');
+  } catch(e) { showToast('Export failed — level may be too large'); }
 }
 function getLevelData(){return{meta:{name:document.getElementById('levelName').value||'My Level',width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
 function exportJSON(){const data=getLevelData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.meta.name.replace(/\s+/g,'_')||'level')+'.json';a.click();showToast('JSON exported!');}
