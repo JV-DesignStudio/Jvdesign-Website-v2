@@ -235,9 +235,14 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 /* GAME WRAP + TOUCH CONTROLS */
 .game-wrap{position:relative;flex-shrink:0;width:100%;max-width:640px;}
 #game-container{width:100%;}
-/* Fullscreen — scale canvas to fill screen */
-#gameWrap:fullscreen,#gameWrap:-webkit-full-screen,#gameWrap:-moz-full-screen,#gameWrap:-ms-fullscreen{width:100vw!important;height:100vh!important;max-width:none!important;background:#000;display:flex;align-items:center;justify-content:center;}
-#gameWrap:fullscreen canvas,#gameWrap:-webkit-full-screen canvas,#gameWrap:-moz-full-screen canvas,#gameWrap:-ms-fullscreen canvas{width:auto!important;height:100vh!important;max-width:100vw!important;object-fit:contain;}
+/* Fullscreen — canvas scale is applied by _onFsChange() in JS */
+#gameWrap:fullscreen,#gameWrap:-webkit-full-screen,#gameWrap:-moz-full-screen,#gameWrap:-ms-fullscreen{
+    width:100vw!important;height:100vh!important;max-width:none!important;
+    background:#000!important;overflow:hidden!important;position:relative!important;
+}
+#gameWrap:fullscreen #game-container,#gameWrap:-webkit-full-screen #game-container{
+    position:absolute!important;
+}
 .touch-controls{position:absolute;bottom:0;left:0;right:0;height:106px;display:none;justify-content:space-between;align-items:flex-end;padding:0 14px 8px;pointer-events:none;z-index:20;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 100%);}
 .tc-side{display:flex;gap:10px;pointer-events:auto;align-items:flex-end;}
 .tc-btn{width:62px;height:62px;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(10,8,22,.6);backdrop-filter:blur(8px);color:rgba(255,255,255,.9);font-size:1.35rem;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;transition:background .07s,border-color .07s,transform .07s;font-family:'Inter',sans-serif;}
@@ -1761,11 +1766,13 @@ function themeInt(idx, fallback) {
 function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
 
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
-let customSpriteDataUrl = null;
-let customEnemyDataUrl  = null;
-let customBulletDataUrl = null;
-let customBlockDataUrl  = null;
-let customBgDataUrl     = null;
+let customSpriteDataUrl   = null;
+let customSpriteFrameCount = 1;   // >1 when a multi-frame animated sprite is imported
+let customSpriteFrameW    = 0;    // width of each frame in the spritesheet
+let customEnemyDataUrl    = null;
+let customBulletDataUrl   = null;
+let customBlockDataUrl    = null;
+let customBgDataUrl       = null;
 let customLevelMap = null;
 let currentPhaserGame = null;
 let currentStory = null;   // imported from Story Editor
@@ -1996,6 +2003,34 @@ function toggleFullscreen() {
         (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen).call(document);
     }
 }
+// Scale the Phaser canvas to fill the screen when entering/exiting fullscreen.
+// Phaser's Scale.FIT only fits within the parent; we must scale the container ourselves.
+function _onFsChange() {
+    const container = document.getElementById('game-container');
+    if (!container) return;
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
+                 || document.mozFullScreenElement || document.msFullscreenElement);
+    if (isFs) {
+        // Use screen dimensions — window.inner* may briefly lag the fullscreen transition
+        const sw = screen.width, sh = screen.height;
+        const scale = Math.min(sw / GW, sh / GH);
+        const ml = Math.round((sw - GW * scale) / 2);
+        const mt = Math.round((sh - GH * scale) / 2);
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = 'top left';
+        container.style.left = ml + 'px';
+        container.style.top  = mt + 'px';
+    } else {
+        container.style.transform = '';
+        container.style.transformOrigin = '';
+        container.style.left = '';
+        container.style.top  = '';
+        // Tell Phaser to re-centre its canvas inside the now-normal container
+        if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
+    }
+}
+['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+    .forEach(ev => document.addEventListener(ev, _onFsChange));
 function takeScreenshot() {
     if (!currentPhaserGame) { showToast('Run the game first then take a screenshot'); return; }
     const title = _engineData ? _engineData.title : 'game';
@@ -2285,6 +2320,8 @@ function getPayload() {
         jump: parseInt(document.getElementById('jumpForce').value) || 450,
         map: customGrid || customLevelMap || fallbackLevel,
         sprite: customSpriteDataUrl,
+        spriteFrameCount: customSpriteFrameCount || 1,
+        spriteFrameW: customSpriteFrameW || 0,
         enemySprite: customEnemyDataUrl,
         bulletSprite: customBulletDataUrl,
         blockSprite: customBlockDataUrl,
@@ -2354,6 +2391,12 @@ function _launchPhaserGame() {
     _evtFired.clear();
     // Hide all power-up HUD badges
     ['Shield','X2','Speed'].forEach(t=>{ const el=document.getElementById('pu'+t); if(el) el.classList.remove('show'); });
+    // Auto-start music if the toggle is on (music should play during gameplay)
+    if (document.getElementById('musicToggle').checked) {
+        setTimeout(() => GameAudio.startMusic(document.getElementById('musicStyle').value), 250);
+    } else {
+        GameAudio.stopMusic();
+    }
 
     const _startGame = () => {
         try {
@@ -2453,11 +2496,30 @@ function makeBaseScene(data) {
                 this.load.crossOrigin = null;
                 this.load.image(key, blobUrl);
             };
+            const loadCustomSheet = (key, dataUrl, fw, fh) => {
+                const blobUrl = _toBlobUrl(dataUrl);
+                if (blobUrl !== dataUrl) _activeBlobUrls.push(blobUrl);
+                this.load.crossOrigin = null;
+                this.load.spritesheet(key, blobUrl, { frameWidth: fw, frameHeight: fh });
+            };
 
             // Revoke blob URLs after all assets finish loading to free memory
             this.load.once('complete', () => {
                 _activeBlobUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
                 _activeBlobUrls = [];
+                // Set up animation if a multi-frame player spritesheet was loaded
+                if (data.spriteFrameCount > 1 && this.textures.exists('player')) {
+                    try {
+                        if (!this.anims.exists('player_walk')) {
+                            this.anims.create({
+                                key: 'player_walk',
+                                frames: this.anims.generateFrameNumbers('player', { start:0, end:data.spriteFrameCount-1 }),
+                                frameRate: Math.min(12, data.spriteFrameCount * 3),
+                                repeat: -1
+                            });
+                        }
+                    } catch(e) {}
+                }
             });
 
             // Log load errors so custom asset failures are visible in the console
@@ -2465,8 +2527,10 @@ function makeBaseScene(data) {
                 console.warn('[JV Engine] Failed to load asset:', file.key, file.src ? file.src.slice(0,60) : '');
             });
 
-            // Player sprite
-            if (data.sprite) {
+            // Player sprite — use spritesheet loader when multi-frame animation is available
+            if (data.sprite && data.spriteFrameCount > 1 && data.spriteFrameW > 0) {
+                loadCustomSheet('player', data.sprite, data.spriteFrameW, data.spriteFrameW);
+            } else if (data.sprite) {
                 loadCustom('player', data.sprite);
             } else {
                 this.load.crossOrigin = 'anonymous';
@@ -2633,6 +2697,15 @@ function makeBaseScene(data) {
         }
         _puSpeedMul() { return this._puSpeed ? 1.5 : 1.0; }
         _puScoreMul() { return this._puX2 ? 2 : 1; }
+        // ── Sprite animation ─────────────────────────────────────────────────
+        // Call after creating the player sprite to start frame animation if available
+        _setupActorAnim(sprite) {
+            if (!sprite || !this.anims) return;
+            // The animation key is created in preload's load.once('complete') callback
+            if (this.anims.exists('player_walk')) {
+                try { sprite.anims.play('player_walk', true); } catch(e) {}
+            }
+        }
         // ── Particle burst ────────────────────────────────────────────────────
         _burst(x, y, col) {
             for (let i=0;i<8;i++) {
@@ -2687,7 +2760,7 @@ function sceneShooter(data) {
             this.hazards = this.physics.add.group();
             this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
             { const _s=Math.round(29*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff);
+            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).setDrag(120);
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
                 // 3 enemy types: normal, fast (red), tank (purple 2-hit)
@@ -2783,7 +2856,7 @@ function scenePlatformer(data) {
 
             this.actor = this.physics.add.sprite(80, GH - 80, 'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff);
+            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
 
             this.physics.add.collider(this.actor, this.platforms);
@@ -2938,7 +3011,7 @@ function sceneDodge(data) {
             this._shieldGfx = this.add.graphics().setDepth(5);
             this.actor = this.physics.add.sprite(GW/2, GH-40, 'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff);
+            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
                 const x=Phaser.Math.Between(20,GW-20);
@@ -3159,7 +3232,7 @@ function sceneRunner(data) {
             // Player
             this.actor = this.physics.add.sprite(100, GH-50, 'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff);
+            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.downKey = this.input.keyboard.createCursorKeys().down;
             this._sliding = false;
@@ -3252,7 +3325,7 @@ function sceneFlappy(data) {
             // Player bird
             this.actor = this.physics.add.sprite(100,GH/2,'player');
             { const _s=Math.round(18*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor,0,0xffd700);
+            this._tint(this.actor,0,0xffd700); this._setupActorAnim(this.actor);
             this.actor.body.setGravityY(liveConfig.gravity);
             this.actor.setCollideWorldBounds(false);
             // Pipe group + coins in gaps
@@ -3332,7 +3405,7 @@ function sceneInvaders(data) {
             // Player
             this.actor = this.physics.add.sprite(GW/2,GH-28,'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor,0,0x00d4aa);
+            this._tint(this.actor,0,0x00d4aa); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true); this.actor.body.allowGravity=false;
             // Bullets
             this.bullets  = this.physics.add.group();
@@ -3471,12 +3544,12 @@ function scenePong(data) {
             this.pRight.body.setSize(12,70);
             [this.pLeft,this.pRight].forEach(p=>{p.setImmovable(true);p.body.allowGravity=false;p.setCollideWorldBounds(true);});
             this._tint(this.pLeft,0,0x00d4aa); this._tint(this.pRight,1,0xa78bfa);
-            // Ball
+            // Ball — NO setCollideWorldBounds: we handle top/bottom manually so that
+            // left/right are open goals and ball.x < 0 / ball.x > GW triggers scoring.
             this.ball=this.physics.add.image(GW/2,GH/2,'laser').setDisplaySize(12,12);
             this.ball.body.setSize(12,12);
-            this.ball.setBounce(1).setCollideWorldBounds(true);
+            this.ball.setBounce(1);
             this.ball.body.allowGravity=false;
-            this.ball.body.checkCollision.left=false; this.ball.body.checkCollision.right=false;
             this._chargeGfx=this.add.graphics().setDepth(8);
             this._launchBall();
             // Colliders — power shot if _charged when hitting left paddle
@@ -3511,6 +3584,14 @@ function scenePong(data) {
             GameAudio.play(msg.includes('YOU') ? 'score' : 'hit');
         }
         update(time) {
+            // Manual top/bottom wall bounce (world bounds disabled so goals are open)
+            if (this.ball.body) {
+                if (this.ball.y <= 7)      this.ball.setVelocityY( Math.abs(this.ball.body.velocity.y));
+                if (this.ball.y >= GH - 7) this.ball.setVelocityY(-Math.abs(this.ball.body.velocity.y));
+                // Keep ball in play vertically (failsafe against tunnelling)
+                if (this.ball.y < 0)    this.ball.y = 7;
+                if (this.ball.y > GH)   this.ball.y = GH - 7;
+            }
             // Player paddle: UP = up, DOWN / SPACE / fire = down; HOLD LEFT = charge power shot
             const {up,down}=this.cursors;
             if(up.isDown||touchInput.up)                            this.pLeft.setVelocityY(-liveConfig.speed);
@@ -3744,17 +3825,19 @@ function sceneRoguelike(data) {
             this.walls      = this.physics.add.staticGroup();
             this._doorGrp   = this.physics.add.staticGroup();
             this._obstacles = this.physics.add.staticGroup();
-            this.enemies    = this.physics.add.group();
+            this.enemies    = this.physics.add.group();  // normal enemies (collide with walls/obstacles)
+            this._ghosts    = this.physics.add.group();  // ghost enemies (no obstacle collision)
             this.bullets    = this.physics.add.group();
             this.eBullets   = this.physics.add.group();
             this._heartGrp  = this.physics.add.group();
             this._chestGrp  = this.physics.add.group();
             this._keyDropGrp= this.physics.add.group();
+            this._shopItems = this.physics.add.group();
 
             // Player
             this.actor = this.physics.add.sprite(GW/2,GH/2,'player');
             { const _s=Math.round(22*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.75),Math.round(_s*.75),true); }
-            this._tint(this.actor,0,0xffffff);
+            this._tint(this.actor,0,0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true); this.actor.body.allowGravity=false;
 
             // Colliders
@@ -3763,13 +3846,19 @@ function sceneRoguelike(data) {
             this.physics.add.collider(this.actor,   this._obstacles);
             this.physics.add.collider(this.enemies, this.walls);
             this.physics.add.collider(this.enemies, this._obstacles);
+            // Ghosts collide with walls but NOT obstacles (they phase through blocks)
+            this.physics.add.collider(this._ghosts, this.walls);
             this.physics.add.overlap(this.bullets,  this.walls,      (b)=>{ if(!b.getData('piercing')) b.destroy(); });
             this.physics.add.overlap(this.bullets,  this._obstacles, (b)=>{ if(!b.getData('piercing')) b.destroy(); });
             this.physics.add.overlap(this.bullets,  this.enemies,    (b,e)=>this._hitEnemy(b,e));
+            this.physics.add.overlap(this.bullets,  this._ghosts,    (b,e)=>this._hitEnemy(b,e));
             this.physics.add.overlap(this.eBullets, this.walls,      (b)=>b.destroy());
             this.physics.add.overlap(this.eBullets, this._obstacles, (b)=>b.destroy());
             this.physics.add.overlap(this.actor,    this.eBullets,   (_,b)=>{ b.destroy(); this._takeDamage(); });
             this.physics.add.overlap(this.actor,    this.enemies,    ()=>this._takeDamage());
+            this.physics.add.overlap(this.actor,    this._ghosts,    ()=>this._takeDamage());
+            // Shop item purchase
+            this.physics.add.overlap(this.actor,    this._shopItems, (_,item)=>this._buyShopItem(item));
             // Loot collection
             this.physics.add.overlap(this.actor, this._heartGrp, (_,h)=>{
                 const lbl=h.getData('lbl'); if(lbl&&lbl.active) lbl.destroy(); h.destroy();
@@ -3797,7 +3886,7 @@ function sceneRoguelike(data) {
         _buildRoom() {
             // Clear previous room objects
             this.walls.clear(true,true); this._doorGrp.clear(true,true); this._obstacles.clear(true,true);
-            this.enemies.clear(true,true);
+            this.enemies.clear(true,true); this._ghosts.clear(true,true);
             this.bullets.getChildren().slice().forEach(b=>b.destroy());
             this.eBullets.getChildren().slice().forEach(b=>b.destroy());
             if(this._doorLabel){this._doorLabel.destroy();this._doorLabel=null;}
@@ -3805,6 +3894,7 @@ function sceneRoguelike(data) {
             this._heartGrp.getChildren().forEach(h=>{const l=h.getData('lbl');if(l&&l.active)l.destroy();}); this._heartGrp.clear(true,true);
             this._chestGrp.getChildren().forEach(c=>{const l=c.getData('lbl');if(l&&l.active)l.destroy();}); this._chestGrp.clear(true,true);
             this._keyDropGrp.getChildren().forEach(k=>{const l=k.getData('lbl');if(l&&l.active)l.destroy();}); this._keyDropGrp.clear(true,true);
+            this._shopItems.getChildren().slice().forEach(s=>{ const l=s.getData('lbl'); if(l&&l.active)l.destroy(); s.destroy(); });
             this._enemyShootTimer&&this._enemyShootTimer.remove(false);
             this._bossShootTimer &&this._bossShootTimer.remove(false);
             if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
@@ -3820,32 +3910,34 @@ function sceneRoguelike(data) {
             mw(GW-W/2,W+sH/2,W,sH); mw(GW-W/2,GH-W-sH/2,W,sH);
             this._doorGrp.create(GW-W/2,GH/2,'block').setDisplaySize(W,DOOR_H).setTint(themeInt(0,0x7c3aed)).refreshBody();
 
-            // Obstacles
+            // Obstacles (fewer in shop rooms for space)
             const obCol=themeInt(1,0x334155);
-            for(let i=0;i<Phaser.Math.Between(2,4);i++){
+            const isBossRoom  = (this._room===this._roomsPerFloor-1);
+            const isShopRoom  = (this._floor>=2 && this._room===this._roomsPerFloor-2 && !isBossRoom);
+            this._isBossRoom  = isBossRoom;
+            this._isShopRoom  = isShopRoom;
+            const obCount     = isShopRoom ? 0 : Phaser.Math.Between(2,4);
+            for(let i=0;i<obCount;i++){
                 const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
                 this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
             }
-
-            // Determine room type
-            const isBossRoom = (this._room===this._roomsPerFloor-1);
-            this._isBossRoom = isBossRoom;
 
             if (isBossRoom) {
                 this._spawnBoss();
                 this._roomText.setText(`⚔️ FLOOR ${this._floor} BOSS`);
                 this._roomText.setStyle({fill:'#f87171'});
+            } else if (isShopRoom) {
+                this._buildShop();
+                this._roomText.setStyle({fill:'#34d399'});
+                this._roomText.setText(`Floor ${this._floor}  🏪 Shop Room`);
             } else {
                 this._roomText.setStyle({fill:themeHex(2,'#fbbf24')});
                 this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor}`);
-                // Normal enemies
+                // Spawn mix of enemy types based on floor
                 const dens=liveConfig.rogueDensity||0.3;
                 const eCount=Math.max(1,Math.round((2+this._floor*1.4)*dens));
-                for(let i=0;i<eCount;i++){
-                    const e=this.enemies.create(Phaser.Math.Between(W+50,GW-W-50),Phaser.Math.Between(W+50,GH-W-50),'enemy');
-                    e.setDisplaySize(22,22); e.body.setSize(18,18,true);
-                    e.setTint(themeInt(1,0xef4444)); e.body.allowGravity=false;
-                }
+                for(let i=0;i<eCount;i++) this._spawnEnemyRandom();
+                // Enemy shooting on floor 2+
                 if(this._floor>=2){
                     const fi=Math.max(800,2000-this._floor*80);
                     this._enemyShootTimer=this.time.addEvent({delay:fi,loop:true,callback:this._enemyFire,callbackScope:this});
@@ -3859,6 +3951,106 @@ function sceneRoguelike(data) {
                 }
             }
             this.actor.setPosition(W+30,GH/2);
+            this._updateHud();
+        }
+
+        // ── Enemy spawning ───────────────────────────────────────────────────────
+        _spawnEnemyRandom() {
+            const floor=this._floor;
+            // Type pool — unlocks more variety on higher floors
+            const pool = ['normal','normal','normal'];
+            if(floor>=2) pool.push('slime','slime');
+            if(floor>=2) pool.push('bat');
+            if(floor>=3) pool.push('ghost','ghost');
+            if(floor>=3) pool.push('skeleton');
+            if(floor>=4) pool.push('tank');
+            const type=pool[Phaser.Math.Between(0,pool.length-1)];
+            this._spawnEnemy(type, Phaser.Math.Between(W+50,GW-W-50), Phaser.Math.Between(W+50,GH-W-50));
+        }
+        _spawnEnemy(type, x, y) {
+            const cfg = {
+                normal:   { hp:1, sz:22, tint:0xef4444, alpha:1.0, grp:'enemies' },
+                slime:    { hp:2, sz:20, tint:0x22c55e, alpha:1.0, grp:'enemies' },
+                bat:      { hp:1, sz:16, tint:0xf59e0b, alpha:1.0, grp:'enemies' },
+                skeleton: { hp:2, sz:22, tint:0xe2e8f0, alpha:1.0, grp:'enemies' },
+                ghost:    { hp:2, sz:22, tint:0x7c3aed, alpha:0.55, grp:'_ghosts' },
+                tank:     { hp:4, sz:32, tint:0x991b1b, alpha:1.0, grp:'enemies' },
+            }[type] || { hp:1, sz:22, tint:0xef4444, alpha:1.0, grp:'enemies' };
+
+            const e = this[cfg.grp].create(x, y, 'enemy');
+            e.setDisplaySize(cfg.sz, cfg.sz);
+            e.body.setSize(Math.round(cfg.sz*.8), Math.round(cfg.sz*.8), true);
+            e.setTint(cfg.tint).setAlpha(cfg.alpha);
+            e.body.allowGravity = false;
+            e.setData('type', type);
+            e.setData('hp', cfg.hp);
+            e.setData('maxHp', cfg.hp);
+            e.setData('seed', Math.random() * 100); // for bat erratic offset
+        }
+
+        // ── Shop room ────────────────────────────────────────────────────────────
+        _buildShop() {
+            // Mark room immediately clear (no enemies to kill)
+            this._roomCleared = true;
+            // Shop sign
+            this.add.text(GW/2, W+16, '🏪  SHOP  — walk into an item to buy', {
+                fontSize:'11px', fill:'#34d399', fontFamily:"'JetBrains Mono',monospace", fontStyle:'bold'
+            }).setOrigin(0.5,0).setDepth(8);
+
+            const items = [
+                { icon:'⚔️', label:'Weapon Up',  cost: 20, action: 'weapon' },
+                { icon:'❤️', label:'+1 HP',       cost: 15, action: 'hp'     },
+                { icon:'🔑', label:'Key',         cost: 10, action: 'key'    },
+                { icon:'🛡', label:'Shield',      cost: 25, action: 'shield' },
+            ];
+            // Only show items the player can potentially afford now or soon; max 3 on screen
+            const show = items.slice(0, 3);
+            const xs = [GW*0.25, GW*0.5, GW*0.75];
+            show.forEach((item, i) => {
+                const sx=xs[i], sy=GH/2;
+                const s = this._shopItems.create(sx, sy, 'block').setDisplaySize(26,26);
+                s.body.allowGravity = false;
+                s.setTint(0x34d399);
+                s.setData('action', item.action);
+                s.setData('cost',   item.cost);
+                s.setData('icon',   item.icon);
+                s.setData('bought', false);
+                // Label: icon + price
+                const lbl = this.add.text(sx, sy-24,
+                    `${item.icon} ${item.label}\n💰${item.cost}g`,
+                    { fontSize:'10px', fill:'#e2e8f0', fontFamily:"'JetBrains Mono',monospace", align:'center' }
+                ).setOrigin(0.5, 1).setDepth(8);
+                s.setData('lbl', lbl);
+            });
+            this._openDoor(); // door is open from the start — no enemies to clear
+        }
+        _buyShopItem(item) {
+            if (item.getData('bought')) return;
+            const cost = item.getData('cost');
+            if (this._gold < cost) {
+                if (!item.getData('msg')) {
+                    item.setData('msg', true);
+                    showToast(`💰 Need ${cost}g — you have ${this._gold}g`);
+                    this.time.delayedCall(2000, () => { if(item&&item.active) item.setData('msg', false); });
+                }
+                return;
+            }
+            item.setData('bought', true);
+            this._gold -= cost;
+            const lbl = item.getData('lbl'); if(lbl&&lbl.active) lbl.destroy();
+            item.destroy();
+            const action = item.getData('action');
+            switch(action) {
+                case 'weapon': this._upgradeWeapon(); break;
+                case 'hp':
+                    if(this._hp<this._maxHp){ this._hp++; } else { this._maxHp++; this._hp++; }
+                    gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp);
+                    showToast('❤️ HP up!'); GameAudio.play('score'); break;
+                case 'key':
+                    this._keys++; showToast('🔑 Key purchased!'); GameAudio.play('jump'); break;
+                case 'shield':
+                    this._puShield=true; showToast('🛡 Shield active!'); GameAudio.play('score'); break;
+            }
             this._updateHud();
         }
 
@@ -3953,19 +4145,42 @@ function sceneRoguelike(data) {
         }
         _hitEnemy(bullet, enemy) {
             if(enemy.getData('isBoss')){ this._hitBoss(bullet,enemy); return; }
-            this._burst(enemy.x,enemy.y,themeInt(1,0xef4444));
+            // Multi-HP enemies: flash on non-lethal hit
+            const dmg = this._weapon.damageLevel || 1;
+            const hp  = (enemy.getData('hp') || 1) - dmg;
+            enemy.setData('hp', Math.max(0, hp));
             if(!bullet.getData('piercing')) bullet.destroy();
+            if(hp > 0) {
+                // Took a hit but survived — flash white briefly
+                this.tweens.add({ targets:enemy, alpha:0.15, duration:55, yoyo:true });
+                GameAudio.play('hit'); return;
+            }
+            // Enemy dies
+            const type = enemy.getData('type') || 'normal';
+            this._burst(enemy.x,enemy.y,themeInt(1,0xef4444));
+            // Slime splits into two smaller (1-HP) copies on first death
+            if(type==='slime' && !enemy.getData('split')) {
+                for(let s=0;s<2;s++){
+                    const se=this.enemies.create(enemy.x+(s?14:-14),enemy.y+(s?-10:10),'enemy');
+                    se.setDisplaySize(11,11); se.body.setSize(9,9,true);
+                    se.setTint(0x4ade80); se.body.allowGravity=false;
+                    se.setData('type','slime'); se.setData('hp',1); se.setData('maxHp',1); se.setData('split',true);
+                }
+            }
             enemy.destroy();
-            const pts=Math.max(1,10*this._floor)*(liveConfig.pointsPerKill||10)*this._weapon.damageLevel;
+            const pts=Math.max(1,10*this._floor)*(liveConfig.pointsPerKill||10)*dmg;
             this.score+=pts; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
             GameAudio.play('score'); _achUnlock('first_blood');
-            // Loot drops
-            this._gold+=Phaser.Math.Between(2,8); // auto gold
+            // Loot drops — tanks and ghosts give more
+            const goldBonus = (type==='tank'||type==='ghost') ? Phaser.Math.Between(8,20) : Phaser.Math.Between(2,8);
+            this._gold += goldBonus;
             if(Math.random()<0.15) this._spawnKeyDrop(enemy.x,enemy.y);
             this._updateHud();
-            if(!this.enemies.countActive(true)&&!this._roomCleared&&!this._isBossRoom){
+            // Check room clear — ghosts + regular enemies both count
+            const anyAlive = this.enemies.countActive(true) + this._ghosts.countActive(true);
+            if(anyAlive===0 && !this._roomCleared && !this._isBossRoom){
                 this._roomCleared=true; this._openDoor();
-                if(Math.random()<0.65) this._spawnChest(); // chest after room clear
+                if(Math.random()<0.65) this._spawnChest();
             }
         }
 
@@ -4117,21 +4332,46 @@ function sceneRoguelike(data) {
                 }
             }
 
-            // Enemy AI — chase + boss behaviour
-            this.enemies.getChildren().forEach(e=>{
+            // Enemy AI — chase + boss behaviour + typed movement
+            const baseSpd = liveConfig.enemySpeed || 100;
+            const allEnemies = [...this.enemies.getChildren(), ...this._ghosts.getChildren()];
+            allEnemies.forEach(e=>{
                 if(!e.active) return;
                 const dx=this.actor.x-e.x, dy=this.actor.y-e.y, m=Math.sqrt(dx*dx+dy*dy)||1;
                 if(e.getData('isBoss')){
                     if(this._bossDashing) return;
                     const bSpd=(55+this._floor*18)*(this._bossPhase===2?1.7:1);
                     e.setVelocity(dx/m*bSpd,dy/m*bSpd);
-                    // Phase 2 dash
                     if(this._bossPhase===2&&!this._bossDashing&&Math.random()<0.004){
                         this._bossDashing=true; e.setVelocity(dx/m*420,dy/m*420);
                         this.time.delayedCall(280,()=>{this._bossDashing=false;});
                     }
                 } else {
-                    e.setVelocity(dx/m*(liveConfig.enemySpeed||100)*0.55, dy/m*(liveConfig.enemySpeed||100)*0.55);
+                    const type = e.getData('type') || 'normal';
+                    switch(type) {
+                        case 'slime':
+                            // Slow shamble
+                            e.setVelocity(dx/m*baseSpd*0.32, dy/m*baseSpd*0.32); break;
+                        case 'bat':
+                            // Fast + erratic sinusoidal weave
+                            const seed=e.getData('seed')||0;
+                            const nx=Math.sin(this.time.now*0.006+seed)*55;
+                            const ny=Math.cos(this.time.now*0.005+seed)*55;
+                            e.setVelocity(dx/m*baseSpd*0.95+nx, dy/m*baseSpd*0.95+ny); break;
+                        case 'skeleton':
+                            // Stay at medium range — back off if too close
+                            if(m < 100) e.setVelocity(-dx/m*baseSpd*0.5, -dy/m*baseSpd*0.5);
+                            else if(m > 180) e.setVelocity(dx/m*baseSpd*0.45, dy/m*baseSpd*0.45);
+                            else e.setVelocity(0,0); break;
+                        case 'ghost':
+                            // Floats through obstacles at medium speed
+                            e.setVelocity(dx/m*baseSpd*0.65, dy/m*baseSpd*0.65); break;
+                        case 'tank':
+                            // Very slow, unstoppable charge
+                            e.setVelocity(dx/m*baseSpd*0.28, dy/m*baseSpd*0.28); break;
+                        default:
+                            e.setVelocity(dx/m*baseSpd*0.55, dy/m*baseSpd*0.55);
+                    }
                 }
             });
 
@@ -4141,6 +4381,9 @@ function sceneRoguelike(data) {
             });
             this._chestGrp.getChildren().forEach(c=>{
                 const lbl=c.getData('lbl'); if(lbl&&lbl.active){lbl.x=c.x;lbl.y=c.y;}
+            });
+            this._shopItems.getChildren().forEach(s=>{
+                const l=s.getData('lbl'); if(l&&l.active){l.x=s.x;l.y=s.y-24;}
             });
 
             // Bullets OOB cleanup
@@ -4168,7 +4411,7 @@ function sceneAsteroids(data) {
             // Player ship (wraps screen edges)
             this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
             { const _s=Math.round(27*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff);
+            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setDrag(50).setMaxVelocity(400);
             // Shield gfx
             this._shieldGfx = this.add.graphics().setDepth(5);
@@ -4465,10 +4708,29 @@ function importSpriteFromPixelStudio() {
     try {
         const raw=localStorage.getItem('jvds_pixel'); if(!raw) throw 0;
         const {cW,cH,frames}=JSON.parse(raw);
-        const cvs=document.createElement('canvas'); cvs.width=cW; cvs.height=cH;
-        const ctx=cvs.getContext('2d');
-        (frames[0]||[]).forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); ctx.drawImage(t,0,0); });
-        _applySpriteDataUrl(cvs.toDataURL('image/png'),`Pixel Art ${cW}×${cH}px`);
+        const validFrames = (frames||[]).filter(f=>f&&f.length);
+        if (!validFrames.length) throw new Error('no frames');
+
+        if (validFrames.length === 1) {
+            // Single frame — just use it as a still image
+            const cvs=document.createElement('canvas'); cvs.width=cW; cvs.height=cH;
+            const ctx=cvs.getContext('2d');
+            validFrames[0].forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); ctx.drawImage(t,0,0); });
+            _applySpriteDataUrl(cvs.toDataURL('image/png'),`Pixel Art ${cW}×${cH}px`);
+        } else {
+            // Multi-frame — build a horizontal spritesheet for Phaser animation
+            const count = Math.min(validFrames.length, 8); // cap at 8 frames
+            const sheet = document.createElement('canvas'); sheet.width=cW*count; sheet.height=cH;
+            const sctx  = sheet.getContext('2d');
+            for (let fi=0; fi<count; fi++) {
+                const fc=document.createElement('canvas'); fc.width=cW; fc.height=cH;
+                const fctx=fc.getContext('2d');
+                validFrames[fi].forEach(ld=>{ if(!ld) return; const t=document.createElement('canvas'); t.width=cW;t.height=cH; t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0); fctx.drawImage(t,0,0); });
+                sctx.drawImage(fc, fi*cW, 0);
+            }
+            _applySpriteDataUrl(sheet.toDataURL('image/png'), `Animated ${cW}×${cH} × ${count}f`, count, cW);
+            showToast(`🎬 ${count}-frame animation imported! Hit ▶ Run`);
+        }
     } catch(e) { showToast('Open Pixel Studio → click 🕹️ Send to Game Maker first'); }
 }
 function importSpriteFromCharacterDesigner() {
@@ -4480,8 +4742,11 @@ function importSpriteFromUpload(input) {
     const file=input.files[0]; if(!file) return;
     const r=new FileReader(); r.onload=e=>_applySpriteDataUrl(e.target.result,file.name); r.readAsDataURL(file);
 }
-function _applySpriteDataUrl(url, label) {
-    customSpriteDataUrl=url;
+function _applySpriteDataUrl(url, label, frameCount, frameW) {
+    customSpriteDataUrl    = url;
+    // Multi-frame animation: caller passes frameCount/frameW; otherwise reset to still
+    customSpriteFrameCount = frameCount || 1;
+    customSpriteFrameW     = frameW     || 0;
     const th=document.getElementById('spriteThumb'); th.innerHTML='';
     const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
     document.getElementById('spriteInfoName').textContent=label;
@@ -4624,7 +4889,7 @@ function clearBgImage() {
 }
 
 function clearSprite() {
-    customSpriteDataUrl=null;
+    customSpriteDataUrl=null; customSpriteFrameCount=1; customSpriteFrameW=0;
     document.getElementById('spriteThumb').innerHTML='<div class="no-art">No sprite</div>';
     document.getElementById('spriteInfoName').textContent='Using default ship';
     document.getElementById('spriteInfoDesc').textContent='Import from Pixel Studio or Character Designer.';
@@ -5040,6 +5305,7 @@ async function generateRemixLink() {
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
 function showGameOver(score) {
+    GameAudio.stopMusic();
     const genre = _engineData ? _engineData.genre : 'SHOOTER';
     const lbKey = 'jv_lb_' + genre;
 
