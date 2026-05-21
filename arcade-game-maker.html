@@ -2892,7 +2892,7 @@ function scenePlatformer(data) {
             this._coinGrp  = this.physics.add.group();
             this._buildLevel();
 
-            this.actor = this.physics.add.sprite(80, GH - 80, 'player');
+            this.actor = this.physics.add.sprite(this._tmSpawnX||80, this._tmSpawnY||(GH-80), 'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
@@ -2900,6 +2900,8 @@ function scenePlatformer(data) {
             this.physics.add.collider(this.actor, this.platforms);
             // Stomp: landing on top of enemy kills it and bounces the player
             this.physics.add.collider(this.actor, this.hazards, (player, enemy) => {
+                // Spike tiles (from tilemap) can never be stomped — always damage the player
+                if (enemy.getData('isSpike')) { this._onHit(player); return; }
                 if (player.body.velocity.y > 40 && player.body.bottom <= enemy.body.center.y + 14) {
                     this._burst(enemy.x, enemy.y, 0xffd700); enemy.destroy();
                     this.actor.setVelocityY(-liveConfig.jumpForce * 0.55);
@@ -2985,13 +2987,27 @@ function scenePlatformer(data) {
             this.cameras.main.setBounds(0, 0, GW, GH);
             const TW=Math.floor(GW/TM_COLS), TH=Math.floor(GH/TM_ROWS);
             const solidCol=themeInt(2,0x334155), hazCol=0xef4444;
+            // Find a safe player spawn: first empty tile in the top half
+            let safeSpawnX=80, safeSpawnY=GH-80;
+            for(let row=1; row<TM_ROWS-1; row++) {
+                for(let col=1; col<TM_COLS-1; col++) {
+                    const idx=row*TM_COLS+col;
+                    if(map[idx]===0 && map[(row+1)*TM_COLS+col]!==0) {
+                        safeSpawnX=col*TW+TW/2; safeSpawnY=row*TH+TH/2; break;
+                    }
+                }
+                if(safeSpawnX!==80) break;
+            }
+            // Store for actor placement in create()
+            this._tmSpawnX=safeSpawnX; this._tmSpawnY=safeSpawnY;
             map.forEach((v,i) => {
                 if(!v) return;
                 const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
                 if(v===2) {
-                    // Hazard tile — use hazards group so the player can die
+                    // Hazard/spike tile — immovable, tagged so stomp is blocked
                     const h=this.hazards.create(tx,ty,'block').setDisplaySize(TW-1,TH-1);
-                    h.setTint(hazCol); h.body.allowGravity=false;
+                    h.setTint(hazCol); h.body.allowGravity=false; h.setImmovable(true);
+                    h.setData('isSpike', true);
                 } else {
                     this.platforms.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(solidCol).refreshBody();
                 }
@@ -5031,6 +5047,8 @@ function clearLevel() {
     document.getElementById('levelInfoDesc').textContent='Design in Level Designer, click Save, then import.';
     document.getElementById('levelStatus').textContent='Using built-in default level';
     document.getElementById('levelStatus').className='asset-status none';
+    // Also reset the inline tilemap editor canvas
+    _tmData.fill(0); tmRender();
     showToast('Level cleared');
 }
 
