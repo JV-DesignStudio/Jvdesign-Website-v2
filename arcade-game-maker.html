@@ -793,8 +793,8 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     </div>
                 </div>
                 <div class="asset-btns">
-                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
-                    <button class="asset-btn import" onclick="openWorkshop('character-designer.html')">👾 Design Character</button>
+                    <button class="asset-btn import" onclick="localStorage.setItem('jvds_import_slot','player');openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <button class="asset-btn import" onclick="localStorage.setItem('jvds_import_slot','player');openWorkshop('character-designer.html')">👾 Design Character</button>
                     <button class="asset-btn import" onclick="importSpriteFromPixelStudio()">⬇ Import Last</button>
                     <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importSpriteFromUpload(this)"></label>
                     <button class="asset-btn clear" onclick="clearSprite()">✕ Clear</button>
@@ -812,7 +812,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     </div>
                 </div>
                 <div class="asset-btns">
-                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <button class="asset-btn import" onclick="localStorage.setItem('jvds_import_slot','enemy');openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
                     <button class="asset-btn import" onclick="importEnemySprite()">⬇ Import Last</button>
                     <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importEnemyFromUpload(this)"></label>
                     <button class="asset-btn clear" onclick="clearEnemySprite()">✕ Clear</button>
@@ -830,7 +830,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     </div>
                 </div>
                 <div class="asset-btns">
-                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <button class="asset-btn import" onclick="localStorage.setItem('jvds_import_slot','bullet');openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
                     <button class="asset-btn import" onclick="importBulletFromPixelStudio()">⬇ Import Last</button>
                     <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importBulletFromUpload(this)"></label>
                     <button class="asset-btn clear" onclick="clearBulletSprite()">✕ Clear</button>
@@ -848,7 +848,7 @@ large=<span class="c-num">10</span>pts medium=<span class="c-num">20</span>pts s
                     </div>
                 </div>
                 <div class="asset-btns">
-                    <button class="asset-btn import" onclick="openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
+                    <button class="asset-btn import" onclick="localStorage.setItem('jvds_import_slot','block');openWorkshop('pixel-studio.html')">🎨 Make Pixel Art</button>
                     <button class="asset-btn import" onclick="importBlockFromPixelStudio()">⬇ Import Last</button>
                     <label class="asset-btn import" style="cursor:pointer;">📁 Upload PNG<input type="file" accept="image/*" class="upload-input" onchange="importBlockFromUpload(this)"></label>
                     <button class="asset-btn clear" onclick="clearBlockSprite()">✕ Clear</button>
@@ -2038,13 +2038,25 @@ const GameAudio = {
 
     _playBuffer(dataUrl) {
         const ac = this.getCtx();
-        fetch(dataUrl).then(r => r.arrayBuffer())
-            .then(ab => ac.decodeAudioData(ab))
-            .then(buf => {
+        // fetch() does not support data: URLs in Firefox/Safari — decode base64 directly.
+        const _decode = (ab) => {
+            ac.decodeAudioData(ab).then(buf => {
                 const src = ac.createBufferSource(), g = ac.createGain();
                 src.buffer = buf; src.connect(g); g.connect(ac.destination);
                 g.gain.value = this.volume; src.start();
             }).catch(() => {});
+        };
+        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+            try {
+                const b64  = dataUrl.split(',')[1];
+                const bin  = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                _decode(bytes.buffer);
+            } catch(e) {}
+        } else {
+            fetch(dataUrl).then(r => r.arrayBuffer()).then(_decode).catch(() => {});
+        }
     },
 
     // BACKGROUND MUSIC
@@ -2091,17 +2103,26 @@ const GameAudio = {
 
     _playCustomMusic() {
         const ac = this.getCtx();
-        fetch(this.customMusic)
-            .then(r => r.arrayBuffer())
-            .then(ab => ac.decodeAudioData(ab))
-            .then(buf => {
-                if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} }
-                const src = ac.createBufferSource(), g = ac.createGain();
-                src.buffer = buf; src.loop = true;
-                src.connect(g); g.connect(ac.destination);
-                g.gain.value = this.volume * 0.5;
-                src.start(); this._musicSource = src;
-            }).catch(() => {});
+        const _start = (buf) => {
+            if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} }
+            const src = ac.createBufferSource(), g = ac.createGain();
+            src.buffer = buf; src.loop = true;
+            src.connect(g); g.connect(ac.destination);
+            g.gain.value = this.volume * 0.5;
+            src.start(); this._musicSource = src;
+        };
+        const url = this.customMusic;
+        if (typeof url === 'string' && url.startsWith('data:')) {
+            try {
+                const b64  = url.split(',')[1];
+                const bin  = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                ac.decodeAudioData(bytes.buffer).then(_start).catch(() => {});
+            } catch(e) {}
+        } else {
+            fetch(url).then(r => r.arrayBuffer()).then(ab => ac.decodeAudioData(ab)).then(_start).catch(() => {});
+        }
     }
 };
 
@@ -2942,7 +2963,8 @@ function sceneShooter(data) {
                 const c=cfg[type];
                 const e=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
                 e.setDisplaySize(c.sz,c.sz); e.body.setSize(Math.round(c.sz*.85),Math.round(c.sz*.85),true);
-                e.setTint(c.col); e.setVelocityY(liveConfig.enemySpeed*c.spd);
+                if (!data.enemySprite) e.setTint(c.col);
+                e.setVelocityY(liveConfig.enemySpeed*c.spd);
                 e.body.allowGravity=false; e.setData('hp',c.hp); e.setData('pts',c.hp===2?3:c.spd>1?2:1);
             }});
             this.physics.add.overlap(this.bullets, this.hazards, (b,e)=>{
@@ -3194,7 +3216,7 @@ function scenePlatformer(data) {
                 const isFast = this._bestX > 800 && Math.random() < 0.35;
                 const h = this.hazards.create(this._nextEnemyX, GH-55, 'enemy');
                 h.setDisplaySize(isFast?18:24, isFast?18:24); h.body.setSize(isFast?15:20, isFast?15:20, true);
-                h.setTint(isFast ? 0xef4444 : themeInt(1, 0xa78bfa));
+                if (!data.enemySprite) h.setTint(isFast ? 0xef4444 : themeInt(1, 0xa78bfa));
                 h.setVelocityX(-liveConfig.enemySpeed * (isFast ? 0.8 : 0.45)); h.body.allowGravity=true;
                 h.body.setGravityY(liveConfig.gravity * 0.5);
                 this._nextEnemyX += Phaser.Math.Between(isFast ? 120 : 180, 420);
@@ -3261,7 +3283,7 @@ function sceneDodge(data) {
                     const isFast=this.difficulty>1.8&&Math.random()<0.3;
                     const e=this.hazards.create(x,-20,'enemy');
                     e.setDisplaySize(isFast?16:24,isFast?16:24); e.body.setSize(isFast?13:20,isFast?13:20,true);
-                    e.setTint(isFast?0xef4444:themeInt(1,0xa78bfa));
+                    if (!data.enemySprite) e.setTint(isFast?0xef4444:themeInt(1,0xa78bfa));
                     e.setVelocityY(liveConfig.enemySpeed * this.difficulty * (isFast?1.6:1)); e.body.allowGravity=false;
                 }
             }});
@@ -3704,7 +3726,7 @@ function sceneInvaders(data) {
             const rowCols=[0xe74c3c,0xf39c12,0x9b59b6];
             for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) {
                 const e=this.enemies.create(sx+c*sw,sy+r*sh,'enemy').setDisplaySize(24,22);
-                e.body.setSize(22,20,true); e.setTint(themeInt(r,rowCols[r])); e.body.allowGravity=false;
+                e.body.setSize(22,20,true); if (!data.enemySprite) e.setTint(themeInt(r,rowCols[r])); e.body.allowGravity=false;
             }
             this.moveTimer.delay=700;
         }
@@ -4376,7 +4398,7 @@ function sceneRoguelike(data) {
             const bs=Math.round(48*(liveConfig.playerScale||1));
             this._boss=this.enemies.create(GW/2,GH/3,'enemy');
             this._boss.setDisplaySize(bs,bs); this._boss.body.setSize(Math.round(bs*.8),Math.round(bs*.8),true);
-            this._boss.setTint(0x7c3aed); this._boss.body.allowGravity=false;
+            if (!data.enemySprite) this._boss.setTint(0x7c3aed); this._boss.body.allowGravity=false;
             this._boss.setData('isBoss',true);
             // HP bar
             this._bossHpBar=this.add.graphics().setDepth(12);
@@ -6103,6 +6125,26 @@ function _snakeSwipeEnd(e) {
     }
 }
 
+// ── ASSET IMPORT AUTO-ROUTING ────────────────────────────────────────────────
+// When the user opens Pixel Studio from a specific asset block, we record which
+// slot they came from in jvds_import_slot.  When the window regains focus (user
+// has returned from the studio), we auto-import to that slot so they never have
+// to hunt for the right "Import Last" button.
+window.addEventListener('focus', () => {
+    const slot = localStorage.getItem('jvds_import_slot');
+    if (!slot) return;
+    // Only fire if there is actually new art waiting
+    const artReady = localStorage.getItem('jvds_sprite_player');
+    if (!artReady) return;
+    localStorage.removeItem('jvds_import_slot');
+    const slotName = { player:'Player', enemy:'Enemy', bullet:'Bullet', block:'Tile/Block' }[slot] || slot;
+    showToast(`✅ Pixel Studio art → ${slotName} slot`);
+    if      (slot === 'player') importSpriteFromPixelStudio();
+    else if (slot === 'enemy')  importEnemySprite();
+    else if (slot === 'bullet') importBulletFromPixelStudio();
+    else if (slot === 'block')  importBlockFromPixelStudio();
+});
+
 // ── WORKSHOP ─────────────────────────────────────────────────────────────────
 function openWorkshop(toolSrc) {
     document.getElementById('wkOverlay').classList.add('open');
@@ -6198,9 +6240,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
     document.addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         if (e.key === 'r' || e.key === 'R') compileAndBootEngine();
-        if (e.key === 's' || e.key === 'S') saveToBrowser();
+        if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s') { e.preventDefault(); saveToBrowser(); }
         if (e.key === 'f' || e.key === 'F') toggleFullscreen();
-        if (e.key === 'p' || e.key === 'P') takeScreenshot();
+        // P key is screenshot unless game is running (P key = pause handled inside game)
+        if ((e.key === 'p' || e.key === 'P') && !currentPhaserGame) takeScreenshot();
         if (e.key === '1') switchTab('build',       document.querySelectorAll('.tab-btn')[0]);
         if (e.key === '2') switchTab('blueprints',  document.querySelectorAll('.tab-btn')[1]);
         if (e.key === '3') switchTab('assets',      document.querySelectorAll('.tab-btn')[2]);
