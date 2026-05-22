@@ -13478,6 +13478,31 @@ window.addEventListener('DOMContentLoaded', ()=>{
 })();
 </script>
 <script>
+// Mobile Reset/Restart Touch Handler Override
+document.getElementById('mrb-run')?.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  // Cleanly shut down the current Phaser engine instance if running
+  if (window._gameInstance) {
+    window._gameInstance.destroy(true);
+    window._gameInstance = null;
+  }
+  
+  // Re-boot the engine data configurations fresh
+  setTimeout(() => {
+    compileAndBootEngine();
+  }, 30);
+}, { passive: false });
+// Force game preview window to launch completely blank on initial boot
+window.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('game-container');
+  if (container) {
+    container.innerHTML = ''; // Wipes any static text overlays or stale canvasses
+  }
+  // Clear the memory engine cache structures
+  window._engineData = null; 
+});
 // ── SERVICE WORKER + PWA ──────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
