@@ -330,6 +330,33 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .tc-btn.tc-pressed{background:rgba(124,58,237,.75)!important;border-color:rgba(167,139,250,.9)!important;transform:scale(.86)!important;box-shadow:0 0 18px rgba(124,58,237,.5)!important;}
 .tc-fire{background:rgba(239,68,68,.42);border-color:rgba(239,68,68,.6);}
 .tc-fire:active,.tc-fire.tc-pressed{background:rgba(239,68,68,.88)!important;border-color:rgba(248,113,113,.95)!important;box-shadow:0 0 18px rgba(239,68,68,.5)!important;}
+/* ── Rhythm lane tap buttons ─────────────────────────────────────────────── */
+#rhythm-lanes{
+  position:absolute;bottom:0;left:0;right:0;height:80px;
+  display:none;flex-direction:row;z-index:18;
+  -webkit-tap-highlight-color:transparent;
+}
+.rhythm-lane-btn{
+  flex:1;height:100%;border:none;
+  background:rgba(10,8,22,.6);backdrop-filter:blur(8px);
+  border-top:3px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.75);font-size:1.05rem;font-weight:700;
+  font-family:'Fredoka',sans-serif;letter-spacing:.06em;
+  cursor:pointer;touch-action:none;user-select:none;
+  transition:background .07s,border-color .07s,transform .06s;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:auto;
+}
+.rhythm-lane-btn:not(:last-child){border-right:1px solid rgba(255,255,255,.08);}
+.rhythm-lane-btn.rl-pressed{transform:scaleY(.92);}
+.rhythm-lane-btn[data-lane="0"]{border-top-color:rgba(167,139,250,.7);}
+.rhythm-lane-btn[data-lane="1"]{border-top-color:rgba(248,113,113,.7);}
+.rhythm-lane-btn[data-lane="2"]{border-top-color:rgba(251,191,36,.7);}
+.rhythm-lane-btn[data-lane="3"]{border-top-color:rgba(0,212,170,.7);}
+.rhythm-lane-btn[data-lane="0"].rl-pressed{background:rgba(124,58,237,.55);}
+.rhythm-lane-btn[data-lane="1"].rl-pressed{background:rgba(239,68,68,.55);}
+.rhythm-lane-btn[data-lane="2"].rl-pressed{background:rgba(245,158,11,.55);}
+.rhythm-lane-btn[data-lane="3"].rl-pressed{background:rgba(0,212,170,.35);}
 /* Dynamic floating joystick — spawns wherever the finger lands */
 #tc-joy-zone{
   position:absolute;left:0;top:0;bottom:0;width:58%;
@@ -2079,21 +2106,21 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                 <!-- Drop rate -->
                 <div class="tweak-row" style="margin-bottom:6px;">
                     <span class="tweak-label">Drop Chance</span>
-                    <input type="range" min="0" max="1" step="0.05" value="0.4" oninput="liveConfig.lootDropRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';">
+                    <input id="lootDropRate" type="range" min="0" max="1" step="0.05" value="0.4" oninput="liveConfig.lootDropRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';">
                     <span class="tweak-val">40%</span>
                 </div>
                 <!-- Item mix -->
                 <div style="font-size:.64rem;color:var(--muted);margin:6px 0 3px;">Item mix (fractions, auto-normalised):</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
-                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">⭐ Coin</span><input type="range" min="0" max="1" step="0.05" value="0.55" oninput="liveConfig.lootCoinRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">55%</span></div>
-                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">💎 Gem</span><input type="range" min="0" max="1" step="0.05" value="0.25" oninput="liveConfig.lootGemRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">25%</span></div>
-                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">❤️ Heal</span><input type="range" min="0" max="0.5" step="0.05" value="0.12" oninput="liveConfig.lootHealRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">12%</span></div>
-                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">⚡ PU</span><input type="range" min="0" max="0.5" step="0.05" value="0.08" oninput="liveConfig.lootCustomPuRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">8%</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">⭐ Coin</span><input id="lootCoinRate" type="range" min="0" max="1" step="0.05" value="0.55" oninput="liveConfig.lootCoinRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">55%</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">💎 Gem</span><input id="lootGemRate" type="range" min="0" max="1" step="0.05" value="0.25" oninput="liveConfig.lootGemRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">25%</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">❤️ Heal</span><input id="lootHealRate" type="range" min="0" max="0.5" step="0.05" value="0.12" oninput="liveConfig.lootHealRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">12%</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:52px;">⚡ PU</span><input id="lootCustomPuRate" type="range" min="0" max="0.5" step="0.05" value="0.08" oninput="liveConfig.lootCustomPuRate=+this.value;this.nextElementSibling.textContent=Math.round(+this.value*100)+'%';"><span class="tweak-val">8%</span></div>
                 </div>
                 <!-- Item values -->
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;">
-                    <div class="tweak-row"><span class="tweak-label" style="width:60px;">Coin pts</span><input type="range" min="5" max="200" step="5" value="25" oninput="liveConfig.lootCoinValue=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">25</span></div>
-                    <div class="tweak-row"><span class="tweak-label" style="width:60px;">Gem pts</span><input type="range" min="25" max="500" step="25" value="100" oninput="liveConfig.lootGemValue=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">100</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:60px;">Coin pts</span><input id="lootCoinValue" type="range" min="5" max="200" step="5" value="25" oninput="liveConfig.lootCoinValue=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">25</span></div>
+                    <div class="tweak-row"><span class="tweak-label" style="width:60px;">Gem pts</span><input id="lootGemValue" type="range" min="25" max="500" step="25" value="100" oninput="liveConfig.lootGemValue=+this.value;this.nextElementSibling.textContent=this.value;"><span class="tweak-val">100</span></div>
                 </div>
                 <button onclick="openCustomPuDesigner()" style="width:100%;margin-top:10px;padding:7px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:8px;color:#a78bfa;font-size:.72rem;cursor:pointer;font-family:'Fredoka',sans-serif;">⚡ Design Custom Power-ups →</button>
             </div>
@@ -2928,6 +2955,14 @@ score += bumper.pts;
                     <span class="pb-lbl">RIGHT</span>
                 </div>
             </div>
+            <!-- Rhythm 4-lane tap buttons (shown only for RHYTHM genre on touch devices) -->
+            <div id="rhythm-lanes" aria-label="Rhythm lane buttons">
+                <button class="rhythm-lane-btn" data-lane="0" aria-label="Lane A">A</button>
+                <button class="rhythm-lane-btn" data-lane="1" aria-label="Lane S">S</button>
+                <button class="rhythm-lane-btn" data-lane="2" aria-label="Lane D">D</button>
+                <button class="rhythm-lane-btn" data-lane="3" aria-label="Lane F">F</button>
+            </div>
+
             <!-- Floating joystick — absolutely positioned at finger touch point -->
             <div class="joystick-wrap" id="tc-joystick" aria-label="Virtual joystick">
                 <div class="joystick-base"></div>
@@ -3063,7 +3098,7 @@ const liveConfig = {
 const gameState = { lives:3 };
 
 // ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
-const touchInput = { left:false, right:false, up:false, down:false, fire:false };
+const touchInput = { left:false, right:false, up:false, down:false, fire:false, lane0:false, lane1:false, lane2:false, lane3:false };
 
 // ── GAME THEME (from Colour Palette tool) ────────────────────────────────────
 const gameTheme = { cols:[], name:'' };
@@ -4001,6 +4036,8 @@ function _launchPhaserGame() {
     _evtFired.clear();
     // Clear loot items from any previous run
     _lootItems = [];
+    // Reset stale touch input so e.g. touchInput.fire=true doesn't auto-launch Pinball
+    Object.keys(touchInput).forEach(k => { touchInput[k] = false; });
     // Clear any stale error overlay from a previous run
     const _errOv = document.getElementById('gameErrorOverlay');
     if (_errOv) _errOv.style.display = 'none';
@@ -4063,8 +4100,10 @@ function _launchPhaserGame() {
                         }
                     }
                     scenes.forEach(s => {
-                        if (s.physics && s.physics.world) s.physics.world.timeScale = spd;
-                        if (s.time) s.time.timeScale = spd;
+                        if (!_hitStop._active) {
+                            if (s.physics && s.physics.world) s.physics.world.timeScale = spd;
+                            if (s.time) s.time.timeScale = spd;
+                        }
                         // Win condition check
                         if (!s._winTriggered && liveConfig.winCondition !== 'none') {
                             const score = s.score !== undefined ? s.score : (s.pScore || 0);
@@ -4157,8 +4196,10 @@ let _activeScene = null; // always points to the currently running Phaser scene
 function _sceneTickBase(scene, score) {
     _activeScene = scene;
     const spd = liveConfig.gameSpeed || 1.0;
-    if (scene.physics && scene.physics.world) scene.physics.world.timeScale = spd;
-    if (scene.time) scene.time.timeScale = spd;
+    if (!_hitStop._active) {
+        if (scene.physics && scene.physics.world) scene.physics.world.timeScale = spd;
+        if (scene.time) scene.time.timeScale = spd;
+    }
     if (_speedRunActive && !_speedRunStart) {
         const k = scene.cursors;
         if (k && (k.left.isDown||k.right.isDown||k.up.isDown||k.space?.isDown)||touchInput.left||touchInput.right||touchInput.up||touchInput.fire) {
@@ -8594,6 +8635,50 @@ function _syncCustomTabUI(cfg) {
         liveConfig.events = cfg.events.map(e=>Object.assign({},e));
         _evtRenderAll();
     }
+    // Loot section sync
+    const _lootTgl = document.getElementById('lootToggle');
+    if (_lootTgl) _lootTgl.checked = !!cfg.lootEnabled;
+    const _lootSliders = [
+        ['lootDropRate',   cfg.lootDropRate,    v => Math.round(v*100)+'%'],
+        ['lootCoinRate',   cfg.lootCoinRate,    v => Math.round(v*100)+'%'],
+        ['lootGemRate',    cfg.lootGemRate,     v => Math.round(v*100)+'%'],
+        ['lootHealRate',   cfg.lootHealRate,    v => Math.round(v*100)+'%'],
+        ['lootCustomPuRate',cfg.lootCustomPuRate,v => Math.round(v*100)+'%'],
+        ['lootCoinValue',  cfg.lootCoinValue,   v => String(v)],
+        ['lootGemValue',   cfg.lootGemValue,    v => String(v)],
+    ];
+    _lootSliders.forEach(([id, val, fmt]) => {
+        if (val == null) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = val;
+        const disp = el.nextElementSibling;
+        if (disp) disp.textContent = fmt(val);
+    });
+    // Juice section sync
+    const _setChk = (id, val) => { const el=document.getElementById(id); if(el) el.checked=!!val; };
+    _setChk('juiceEnabled',      cfg.juiceEnabled);
+    _setChk('juiceShakeToggle',  cfg.juiceShake);
+    _setChk('juiceHitStopToggle',cfg.juiceHitStop);
+    _setChk('juiceBurstToggle',  cfg.juiceBurst);
+    _setChk('juiceChromaToggle', cfg.juiceChroma);
+    _setChk('juiceZoomToggle',   cfg.juiceZoom);
+    _setChk('juiceComboToggle',  cfg.juiceComboFlash);
+    const _juiceSliders = [
+        ['juiceShakeSlider',   cfg.juiceShakeIntensity,  v => v+'px'],
+        ['juiceHitStopSlider', cfg.juiceHitStopMs,       v => v+'ms'],
+        ['juiceBurstSlider',   cfg.juiceBurstCount,      v => v+' pts'],
+    ];
+    _juiceSliders.forEach(([id, val, fmt]) => {
+        if (val == null) return;
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = val;
+        const disp = el.nextElementSibling;
+        if (disp) disp.textContent = fmt(val);
+    });
+    const _jBody = document.getElementById('juiceBody');
+    if (_jBody) _jBody.style.opacity = cfg.juiceEnabled !== false ? '1' : '.4';
 }
 
 function _applyLoadData(d) {
@@ -9130,6 +9215,27 @@ function setupTouchControls() {
         setupFlipZone('pb-zone-r', 'right');
     })();
 
+    // ── Rhythm lane buttons ───────────────────────────────────────────────────
+    document.querySelectorAll('.rhythm-lane-btn').forEach(btn => {
+        const lane = +btn.getAttribute('data-lane');
+        const key  = 'lane' + lane;
+        btn.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            try { btn.setPointerCapture(e.pointerId); } catch(_) {}
+            touchInput[key] = true;
+            btn.classList.add('rl-pressed');
+            if (navigator.vibrate) navigator.vibrate(7);
+        }, {passive: false});
+        const release = () => {
+            btn.classList.remove('rl-pressed');
+            // touchInput[key] is consumed by the scene's JustDown equivalent; clear it now
+            touchInput[key] = false;
+        };
+        btn.addEventListener('pointerup',     release);
+        btn.addEventListener('pointercancel', release);
+        btn.addEventListener('pointerleave',  release);
+    });
+
     // ── Action buttons (up / fire) ────────────────────────────────────────────
     ['up','fire'].forEach(action => {
         const btn = document.getElementById('tc-'+action);
@@ -9222,6 +9328,7 @@ function updateTouchLayout(genre) {
     const pbR     = document.getElementById('pb-zone-r');
 
     const isPinball = genre === 'PINBALL';
+    const isRhythm  = genre === 'RHYTHM';
     const isTouch   = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
 
     // Pinball gets its own split-screen flipper zones — hide everything else
@@ -9233,8 +9340,15 @@ function updateTouchLayout(genre) {
     // Reset active state when switching away
     if (!isPinball) { pbL && pbL.classList.remove('pb-zone-active'); pbR && pbR.classList.remove('pb-zone-active'); }
 
-    // Joystick zone: hide for tap-only genres, Tower Defense, and Pinball (has its own zones)
-    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL'].includes(genre);
+    // Rhythm gets 4-lane tap buttons
+    const rlEl = document.getElementById('rhythm-lanes');
+    if (rlEl) {
+        rlEl.style.display = (isRhythm && isTouch) ? 'flex' : 'none';
+        rlEl.style.pointerEvents = (isRhythm && isTouch) ? 'auto' : 'none';
+    }
+
+    // Joystick zone: hide for tap-only genres, Tower Defense, Pinball, and Rhythm
+    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER'].includes(genre);
     const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT'].includes(genre);
 
@@ -10776,9 +10890,12 @@ function sceneRhythm(data) {
                 }
             });
 
-            // Lane key input
+            // Lane key input (keyboard JustDown OR touch lane tap)
             this._laneKeys.forEach((key,l) => {
-                if(Phaser.Input.Keyboard.JustDown(key)) {
+                const tc = 'lane' + l;
+                const touched = !!touchInput[tc];
+                if (touched) touchInput[tc] = false; // consume immediately (JustDown equivalent)
+                if(Phaser.Input.Keyboard.JustDown(key) || touched) {
                     this._judge(l);
                     this._flashRects[l].setAlpha(0.15);
                     this.tweens.add({targets:this._flashRects[l],alpha:0,duration:120});
