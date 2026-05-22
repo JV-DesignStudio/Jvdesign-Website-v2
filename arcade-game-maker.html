@@ -554,6 +554,42 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .go-achs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:380px;}
 .go-ach{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);border-radius:8px;padding:5px 10px;font-size:.68rem;font-weight:700;color:#fbbf24;font-family:'JetBrains Mono',monospace;animation:go-pop .4s ease;}
 
+/* ── WIN CONFETTI ──────────────────────────────────────────── */
+.confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit;z-index:1;}
+.confetti-piece{position:absolute;top:-12px;animation:confetti-fall linear forwards;}
+@keyframes confetti-fall{0%{opacity:1;transform:translateY(0) rotate(0deg) scaleX(1);}80%{opacity:.85;}100%{opacity:0;transform:translateY(440px) rotate(660deg) scaleX(-1);}}
+
+/* ── GAME OVER TITLE GLITCH ─────────────────────────────────── */
+@keyframes go-glitch{
+  0%,94%,100%{text-shadow:0 0 24px rgba(124,58,237,.6);transform:none;}
+  96%{text-shadow:3px 0 0 #f87171,-3px 0 0 #38bdf8;transform:skewX(-7deg) translateX(2px);}
+  97%{text-shadow:-2px 0 0 #f87171,2px 0 0 #38bdf8;transform:skewX(5deg);}
+  98%{text-shadow:0 0 24px rgba(124,58,237,.6);transform:skewX(-1deg);}
+}
+.go-overlay:not(.win) .go-title{animation:go-glitch 5.5s ease-in-out infinite 0.5s;}
+
+/* ── TIME PLAYED ────────────────────────────────────────────── */
+.go-time{font-size:.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace;opacity:.8;}
+
+/* ── CONTROLS HINT KEY BADGES ───────────────────────────────── */
+.ctrl-key{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-bottom:2px solid rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--beige);font-style:normal;display:inline-block;line-height:1.5;vertical-align:middle;}
+
+/* ── BUTTON PRESS FEEDBACK ──────────────────────────────────── */
+.btn-run:not(:disabled):active{transform:translateY(2px)!important;box-shadow:0 1px 0 var(--green-dk)!important;}
+.btn-run.restarting:active{box-shadow:0 1px 0 #4c1d95!important;}
+.btn-sm:active{transform:scale(0.95) translateY(1px)!important;opacity:.82!important;}
+
+/* ── RANGE SLIDER STYLING ───────────────────────────────────── */
+input[type=range]{-webkit-appearance:none;appearance:none;height:5px;background:rgba(255,255,255,.1);border-radius:99px;outline:none;cursor:pointer;border:none;padding:0;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--purple-lt);cursor:pointer;box-shadow:0 0 0 3px rgba(124,58,237,.22);transition:box-shadow .12s,transform .1s;}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 0 5px rgba(124,58,237,.35);transform:scale(1.15);}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--purple-lt);cursor:pointer;border:none;box-shadow:0 0 0 3px rgba(124,58,237,.22);}
+input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);border-radius:99px;}
+
+/* ── TEXT SELECTION ─────────────────────────────────────────── */
+::selection{background:rgba(124,58,237,.4);color:#fff;}
+
+
 /* INITIALS / NAME ENTRY */
 .go-name-row{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .go-name-label{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
@@ -3103,11 +3139,13 @@ score += bumper.pts;
 
             <!-- GAME OVER / VICTORY -->
             <div class="go-overlay" id="goOverlay">
+                <div class="confetti-wrap" id="goConfettiWrap"></div>
                 <div class="go-box">
                     <div class="go-title" id="goTitle">GAME OVER</div>
                     <div id="goWinBanner" style="display:none;font-size:.95rem;margin-bottom:4px;">🎉 You reached the goal!</div>
                     <div id="goGrade" style="display:none;"></div>
                     <div class="go-score" id="goScore">Score: 0</div>
+                    <div class="go-time" id="goTime" style="display:none;"></div>
                     <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
                     <!-- Initials entry -->
                     <div class="go-name-row" id="goNameRow">
@@ -4005,6 +4043,24 @@ const _GENRE_DESCS = {
 };
 const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮'};
 
+// Format the controls hint text — wraps recognised key tokens in styled <kbd> badges
+function _formatControlsHint(text) {
+    const kw = s => `<kbd class="ctrl-key">${s}</kbd>`;
+    let o = text.replace(/^Controls:\s*/, '<span style="opacity:.55">Controls:</span> ');
+    // Multi-token sequences first (longest match wins)
+    o = o.replace(/\bLEFT\/RIGHT\b/g,  kw('←') + ' / ' + kw('→'));
+    o = o.replace(/\bUP\/DOWN\b/g,     kw('↑') + ' / ' + kw('↓'));
+    o = o.replace(/\bWASD\b/g,         kw('W') + kw('A') + kw('S') + kw('D'));
+    // Single uppercase key tokens
+    const singles = {LEFT:'←',RIGHT:'→',UP:'↑',DOWN:'↓',SPACE:'SPC',ENTER:'↵',SHIFT:'⇧',ESC:'ESC',TAB:'TAB'};
+    Object.entries(singles).forEach(([k,v]) => {
+        o = o.replace(new RegExp('\\b'+k+'\\b','g'), kw(v));
+    });
+    // Slash-separated single-letter keys: Z/X → <kbd>Z</kbd>/<kbd>X</kbd>
+    o = o.replace(/\b([A-Z])\/([A-Z])\b/g, (_,a,b) => kw(a)+'/'+kw(b));
+    return o;
+}
+
 function pickGenre(el, genre) {
     document.getElementById('genreMode').value = genre;
     document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('on'));
@@ -4183,7 +4239,7 @@ function onGenreChange() {
     // ASTEROIDS uses same rotation as SHOOTER — no extra groups needed
     document.getElementById('gravityGroup').style.cssText = showGrav ? 'display:flex;flex-direction:column;gap:4px;' : 'display:none;';
     document.getElementById('jumpGroup').style.cssText = showJump ? 'display:flex;flex-direction:column;gap:4px;' : 'display:none;';
-    document.getElementById('controlsHint').textContent = CONTROLS[g] || 'Controls: Arrow keys to move';
+    document.getElementById('controlsHint').innerHTML = _formatControlsHint(CONTROLS[g] || 'Controls: Arrow keys to move');
     document.getElementById('missionText').innerHTML = MISSIONS[g] || '<strong>Mission:</strong> Play and have fun!';
     updateTouchLayout(g);
     // Apply genre default palette if no custom one has been imported
@@ -4346,6 +4402,13 @@ function _showTitleScreen(data) {
     storyEl.textContent = (currentStory && currentStory.intro) ? currentStory.intro : '';
     storyEl.style.display = storyEl.textContent ? '' : 'none';
     document.getElementById('introOverlay').classList.add('show');
+    // Tint the intro box border/glow to match the genre's first palette colour
+    const _introBox = document.querySelector('.intro-box');
+    if (_introBox && gameTheme && gameTheme.cols && gameTheme.cols[0]) {
+        const _tc = gameTheme.cols[0];
+        _introBox.style.border = `1px solid ${_tc}55`;
+        _introBox.style.boxShadow = `0 0 48px ${_tc}22, 0 20px 60px rgba(0,0,0,.55)`;
+    }
     // Focus the overlay so SPACE works immediately without clicking first
     document.getElementById('introOverlay').focus();
 }
@@ -9430,14 +9493,24 @@ function showGameOver(score) {
         _gradeEl.style.animation = 'none';
         requestAnimationFrame(() => { _gradeEl.style.animation = ''; });
     }
-    // ── Score count-up animation ─────────────────────────────────────────────
+    // ── Time played display ──────────────────────────────────────────────────
+    const _timeEl = document.getElementById('goTime');
+    if (_timeEl) {
+        const _secs = Math.floor(elapsed);
+        const _mm = Math.floor(_secs/60).toString().padStart(2,'0');
+        const _ss = (_secs%60).toString().padStart(2,'0');
+        _timeEl.textContent = `⏱ ${_mm}:${_ss}`;
+        _timeEl.style.display = '';
+    }
+
+    // ── Score count-up animation (min 380ms so even low scores feel satisfying) ─
     const _scoreEl = document.getElementById('goScore');
     if (_scoreEl && score > 0) {
-        const _dur = Math.min(900, score * 0.6);
+        const _dur = Math.max(380, Math.min(1200, score * 0.9));
         const _start = performance.now();
         const _tick = (now) => {
             const t = Math.min(1, (now - _start) / _dur);
-            const eased = t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; // ease-in-out quad
+            const eased = t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
             _scoreEl.textContent = 'Score: ' + Math.round(eased * score);
             if (t < 1) requestAnimationFrame(_tick);
             else _scoreEl.textContent = 'Score: ' + score;
@@ -9513,9 +9586,13 @@ function closeGameOver() {
     const b = document.getElementById('goWinBanner');
     const g = document.getElementById('goGrade');
     const ov = document.getElementById('goOverlay');
-    if (t) t.textContent = 'GAME OVER';
-    if (b) b.style.display = 'none';
-    if (g) g.style.display = 'none';
+    const tm = document.getElementById('goTime');
+    const cw = document.getElementById('goConfettiWrap');
+    if (t)  t.textContent = 'GAME OVER';
+    if (b)  b.style.display = 'none';
+    if (g)  g.style.display = 'none';
+    if (tm) tm.style.display = 'none';
+    if (cw) cw.innerHTML = '';
     if (ov) { ov.classList.remove('show'); ov.classList.remove('win'); }
     _updateLandscapeNudge(true);
     _launchPhaserGame();
@@ -9538,9 +9615,12 @@ function goNewGame() {
     GameAudio.stopMusic();
     // Reset game-over display defaults
     const t = document.getElementById('goTitle'), b = document.getElementById('goWinBanner'), g2 = document.getElementById('goGrade');
-    if (t) t.textContent = 'GAME OVER';
-    if (b) b.style.display = 'none';
-    if (g2) g2.style.display = 'none';
+    const _cw2 = document.getElementById('goConfettiWrap'), _tm2 = document.getElementById('goTime');
+    if (t)    t.textContent = 'GAME OVER';
+    if (b)    b.style.display = 'none';
+    if (g2)   g2.style.display = 'none';
+    if (_tm2) _tm2.style.display = 'none';
+    if (_cw2) _cw2.innerHTML = '';
     // Switch to Build tab so they can change genre / settings
     _updateLandscapeNudge(false);
     switchTab('build', document.querySelectorAll('.tab-btn')[0]);
@@ -9548,6 +9628,25 @@ function goNewGame() {
 }
 
 // ── VICTORY SCREEN ────────────────────────────────────────────────────────────
+function _spawnConfetti() {
+    const wrap = document.getElementById('goConfettiWrap');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const cols = ['#fbbf24','#a78bfa','#4ade80','#f87171','#38bdf8','#fb923c','#fff'];
+    for (let i = 0; i < 72; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        const sz = 5 + Math.random() * 9;
+        const circle = Math.random() > 0.55;
+        const dur = (1.1 + Math.random() * 1.5).toFixed(2);
+        const delay = (Math.random() * 0.9).toFixed(2);
+        p.style.cssText = `left:${(Math.random()*105-2).toFixed(1)}%;width:${sz}px;height:${circle?sz:sz*1.7}px;background:${cols[i%cols.length]};border-radius:${circle?'50%':'2px'};animation-duration:${dur}s;animation-delay:${delay}s;opacity:${(.65+Math.random()*.35).toFixed(2)};`;
+        wrap.appendChild(p);
+    }
+    // Auto-clear after all pieces finish
+    setTimeout(() => { if (wrap) wrap.innerHTML = ''; }, 2800);
+}
+
 function showVictory(score) {
     const t = document.getElementById('goTitle');
     const b = document.getElementById('goWinBanner');
@@ -9555,6 +9654,8 @@ function showVictory(score) {
     if (t) t.textContent = 'YOU WIN! 🏆';
     if (b) b.style.display = '';
     if (ov) ov.classList.add('win');
+    // Confetti fires slightly after the overlay animates in
+    setTimeout(_spawnConfetti, 120);
     showGameOver(score);
 }
 let _gameStartTime = 0;
