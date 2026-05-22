@@ -11870,16 +11870,19 @@ function sceneTowerDefense(data) {
 
 // ── PINBALL ───────────────────────────────────────────────────────────────────
 function scenePinball(data) {
-    const BALL_R     = 9;
-    const GRAVITY    = 560;
-    const FLIPPER_LEN = 76;
-    const LF_X       = Math.round(GW * 0.365);  // 234
-    const RF_X       = Math.round(GW * 0.635);  // 406
-    const FL_Y       = GH - 82;
-    const LF_REST    =  26,  LF_ACT  = -30;
-    const RF_REST    = 154,  RF_ACT  = 210;
-    const FL_SPEED   = 460;   // degrees/second
-    const BUMPER_R   = 20;
+    const BALL_R      = 9;
+    const GRAVITY     = 520;
+    const FLIPPER_LEN = 86;
+    // Flippers closer to centre — smaller drain gap, easier to catch ball
+    const LF_X        = Math.round(GW * 0.415);   // ≈266
+    const RF_X        = Math.round(GW * 0.585);   // ≈374
+    const FL_Y        = GH - 76;                  // 324
+    const LF_REST     =  26;  const LF_ACT  = -32;
+    const RF_REST     = 154;  const RF_ACT  = 212;
+    const FL_SPEED    = 500;
+    const BUMPER_R    = 22;
+    // Generous hit zone — prevents fast balls tunnelling through
+    const TOUCH       = BALL_R + 17;              // 26 px
 
     return class PinballScene extends Phaser.Scene {
         constructor() { super({key:'PinballScene'}); }
@@ -11891,124 +11894,119 @@ function scenePinball(data) {
 
         create() {
             this.physics.world.gravity.y = GRAVITY;
-            this.physics.world.setBounds(26, -400, GW - 52, GH + 600);
+            this.physics.world.setBounds(26, -600, GW - 52, GH + 800);
             this.physics.world.setBoundsCollision(true, true, true, false);
 
             // Background table
             this.add.rectangle(GW/2, GH/2, GW,    GH, 0x060a18).setDepth(0);
             this.add.rectangle(GW/2, GH/2, GW-52, GH, 0x0c1a30).setDepth(0);
             const dg = this.add.graphics().setDepth(1);
-            dg.lineStyle(1, 0x1a3a6a, 0.35);
-            for (let y = 60; y < GH - 100; y += 52) dg.lineBetween(26, y, GW - 26, y);
+            dg.lineStyle(1, 0x1a3a6a, 0.3);
+            for (let y = 50; y < GH - 80; y += 56) dg.lineBetween(26, y, GW-26, y);
 
-            // Texture helper (try/catch so one bad texture never crashes create)
             const mkTex = (key, w, h, fn) => {
                 try {
                     const g = this.make.graphics({x:0,y:0,add:false});
                     fn(g); g.generateTexture(key, w, h); g.destroy();
-                } catch(e) { console.warn('mkTex', key, e); _gameError('Could not generate sprite: ' + key, e.message || '', false); }
+                } catch(e) { console.warn('mkTex', key, e); _gameError('Could not generate sprite: '+key, e.message||'', false); }
             };
 
             // Ball texture
             mkTex('_pb_ball', BALL_R*2+2, BALL_R*2+2, g => {
-                g.fillStyle(0xf0ede6, 1); g.fillCircle(BALL_R+1, BALL_R+1, BALL_R);
-                g.fillStyle(0xffffff, 0.6); g.fillCircle(BALL_R-2, BALL_R-2, 3);
+                g.fillStyle(0xf0ede6,1); g.fillCircle(BALL_R+1,BALL_R+1,BALL_R);
+                g.fillStyle(0xffffff,0.6); g.fillCircle(BALL_R-2,BALL_R-2,3);
             });
 
             // Bumper textures (5 colours)
-            const bumpCols = [0xef4444, 0x3b82f6, 0xfbbf24, 0xa78bfa, 0x10b981];
+            const bumpCols = [0xef4444,0x3b82f6,0xfbbf24,0xa78bfa,0x10b981];
             const bumpTex  = ['_pb_b0','_pb_b1','_pb_b2','_pb_b3','_pb_b4'];
-            bumpCols.forEach((col, i) => {
-                mkTex(bumpTex[i], BUMPER_R*2+4, BUMPER_R*2+4, g => {
-                    g.fillStyle(col, 1);          g.fillCircle(BUMPER_R+2, BUMPER_R+2, BUMPER_R+2);
-                    g.fillStyle(0xffffff, 0.22);  g.fillCircle(BUMPER_R+2, BUMPER_R+2, BUMPER_R*0.55);
-                    g.fillStyle(0xffffff, 0.45);  g.fillCircle(BUMPER_R-2, BUMPER_R-2, 4);
+            bumpCols.forEach((col,i) => {
+                mkTex(bumpTex[i], (BUMPER_R+2)*2, (BUMPER_R+2)*2, g => {
+                    g.fillStyle(col,1);         g.fillCircle(BUMPER_R+2,BUMPER_R+2,BUMPER_R+2);
+                    g.fillStyle(0xffffff,0.22); g.fillCircle(BUMPER_R+2,BUMPER_R+2,BUMPER_R*0.55);
+                    g.fillStyle(0xffffff,0.5);  g.fillCircle(BUMPER_R-1,BUMPER_R-1,4);
                 });
             });
 
             // Target texture
-            mkTex('_pb_tgt', 36, 18, g => {
-                g.fillStyle(0xfbbf24, 1); g.fillRoundedRect(0, 0, 36, 18, 5);
-                g.fillStyle(0xffffff, 0.3); g.fillRoundedRect(3, 3, 30, 7, 3);
+            mkTex('_pb_tgt', 40, 18, g => {
+                g.fillStyle(0xfbbf24,1); g.fillRoundedRect(0,0,40,18,5);
+                g.fillStyle(0xffffff,0.3); g.fillRoundedRect(3,3,34,7,3);
             });
 
-            // Bumper layout: centre top + 2 wings + 2 mid (landscape-friendly)
+            // 7 bumpers spread across ~78% of table width (was 5 crammed into 31%)
+            // Top row: far-left, centre, far-right   Mid row: mid-left, mid-right
+            // Lower row: lower-left, lower-right
             const bumpLayout = [
-                [GW/2,      GH*0.25, 0, 200],
-                [GW/2-100,  GH*0.38, 1, 100],
-                [GW/2+100,  GH*0.38, 1, 100],
-                [GW/2-52,   GH*0.52, 2, 150],
-                [GW/2+52,   GH*0.52, 2, 150],
+                [GW*0.22, GH*0.21, 0, 200],
+                [GW*0.50, GH*0.17, 1, 300],
+                [GW*0.78, GH*0.21, 0, 200],
+                [GW*0.34, GH*0.38, 2, 150],
+                [GW*0.66, GH*0.38, 2, 150],
+                [GW*0.43, GH*0.55, 3, 100],
+                [GW*0.57, GH*0.55, 3, 100],
             ];
             this._bumpers = this.physics.add.staticGroup();
-            bumpLayout.forEach(([bx, by, ti, pts]) => {
+            bumpLayout.forEach(([bx,by,ti,pts]) => {
                 const b = this._bumpers.create(bx, by, bumpTex[ti]);
                 b.setCircle(BUMPER_R+2, 0, 0);
                 b.refreshBody();
                 b.setData('pts', pts);
                 this.add.text(bx, by, ''+pts,
-                    {fontSize:'9px', fill:'#fff', fontFamily:"'Fredoka',sans-serif"})
+                    {fontSize:'8px',fill:'#fff',fontFamily:"'Fredoka',sans-serif"})
                     .setOrigin(0.5).setDepth(6);
             });
 
             // Ball
-            this.ball = this.physics.add.image(GW/2, GH * 0.11, '_pb_ball');
+            this.ball = this.physics.add.image(GW/2, GH*0.10, '_pb_ball');
             this.ball.setCircle(BALL_R, 0, 0);
             this.ball.setBounce(0.55);
-            this.ball.setMaxVelocity(720, 920);
+            this.ball.setMaxVelocity(760, 960);
             this.ball.setCollideWorldBounds(true);
             this.ball.setDepth(7);
 
-            // Bumper collision
-            this.physics.add.collider(this.ball, this._bumpers, (ball, bumper) => {
+            this.physics.add.collider(this.ball, this._bumpers, (ball,bumper) => {
                 this._hitBumper(ball, bumper);
             });
 
-            // Score targets (3 across top area)
+            // Score targets — 3 spread wider across top
             this._targets = this.physics.add.staticGroup();
-            [GW/2-110, GW/2, GW/2+110].forEach(tx => {
-                const t = this._targets.create(tx, 48, '_pb_tgt');
-                t.body.setSize(36, 18);
+            [GW*0.25, GW*0.50, GW*0.75].forEach(tx => {
+                const t = this._targets.create(tx, 44, '_pb_tgt');
+                t.body.setSize(40, 18);
                 t.refreshBody();
                 t.setData('pts', 500);
                 t.setData('active', true);
                 t.setDepth(5);
             });
-            this.physics.add.collider(this.ball, this._targets, (ball, tgt) => {
+            this.physics.add.collider(this.ball, this._targets, (ball,tgt) => {
                 if (!tgt.getData('active')) return;
-                tgt.setData('active', false);
-                tgt.setAlpha(0.25);
+                tgt.setData('active',false); tgt.setAlpha(0.25);
                 this.score += 500;
-                this.scoreText.setText('Score: ' + this.score);
-                this._popScore(tgt.x, tgt.y - 22, '+500');
+                this.scoreText.setText('Score: '+this.score);
+                this._popScore(tgt.x, tgt.y-22, '+500');
                 GameAudio.play('score');
-                // All targets hit?
                 if (this._targets.getChildren().every(t => !t.getData('active'))) {
                     this.score += 2000;
-                    this.scoreText.setText('Score: ' + this.score);
-                    this._popScore(GW/2, GH*0.55, '⭐ BONUS +2000!');
+                    this.scoreText.setText('Score: '+this.score);
+                    this._popScore(GW/2, GH*0.5, '⭐ BONUS +2000!');
                     GameAudio.play('levelUp');
-                    // Reset after 1.5s
                     this.time.delayedCall(1500, () => {
-                        this._targets.getChildren().forEach(t => {
-                            t.setData('active', true); t.setAlpha(1);
-                        });
+                        this._targets.getChildren().forEach(t => { t.setData('active',true); t.setAlpha(1); });
                     });
                 }
                 this._tickBase(this.score);
             });
 
-            // Guide rails (decorative angled lines at bottom corners)
+            // Guide rails
             const rg = this.add.graphics().setDepth(4);
-            rg.lineStyle(5, 0x2563eb, 0.7);
-            rg.lineBetween(26,         FL_Y - 55, LF_X + 6,  FL_Y + 14);
-            rg.lineBetween(GW - 26,    FL_Y - 55, RF_X - 6,  FL_Y + 14);
+            rg.lineStyle(6, 0x2563eb, 0.75);
+            rg.lineBetween(26,      FL_Y-68, LF_X+10, FL_Y+16);
+            rg.lineBetween(GW-26,   FL_Y-68, RF_X-10, FL_Y+16);
 
             // Flipper state
-            this._lfAngle  = LF_REST;
-            this._rfAngle  = RF_REST;
-            this._lfActive = false;
-            this._rfActive = false;
+            this._lfAngle = LF_REST; this._rfAngle = RF_REST;
+            this._lfActive = false;  this._rfActive = false;
             this._flipGfx  = this.add.graphics().setDepth(8);
 
             // Input
@@ -12019,134 +12017,124 @@ function scenePinball(data) {
             this._keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
             // HUD
-            this.score = 0;
-            this._lives = 3;
-            const hs = {fontSize:'15px', fill:'#fff', fontFamily:"'Fredoka',sans-serif", stroke:'#000', strokeThickness:2};
+            this.score = 0; this._lives = 3;
+            const hs = {fontSize:'15px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:2};
             this.scoreText  = this.add.text(10, 10, 'Score: 0', hs).setDepth(10).setScrollFactor(0);
-            this._livesText = this.add.text(GW-10, 10, '♥♥♥', hs).setOrigin(1, 0).setDepth(10).setScrollFactor(0);
-            this._msgText   = this.add.text(GW/2, GH/2, '',
-                {fontSize:'26px', fill:'#fbbf24', fontFamily:"'Fredoka',sans-serif", stroke:'#000', strokeThickness:4})
+            this._livesText = this.add.text(GW-10, 10, '♥♥♥', hs).setOrigin(1,0).setDepth(10).setScrollFactor(0);
+            this._msgText   = this.add.text(GW/2, GH*0.46, '',
+                {fontSize:'26px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:4})
                 .setOrigin(0.5).setDepth(15).setScrollFactor(0).setAlpha(0);
-            this.add.text(GW/2, GH - 18, 'Z/← Left Flip   X/→ Right Flip   SPACE Launch',
-                {fontSize:'9px', fill:'#4a7aad', fontFamily:"'Fredoka',sans-serif"})
+            this.add.text(GW/2, GH-16, 'Z/← Left Flip   X/→ Right Flip   SPACE Launch',
+                {fontSize:'9px',fill:'#4a7aad',fontFamily:"'Fredoka',sans-serif"})
                 .setOrigin(0.5).setDepth(10).setScrollFactor(0);
 
             this._drainCooldown = 0;
-            this._lastFlipHit   = 0;
+            this._lastFlipHit   = {L:0, R:0};  // per-side cooldown prevents shared stutter
             this._launched      = false;
 
             this._doLaunch = () => {
                 this._launched = true;
-                this.ball.setVelocity(
-                    Phaser.Math.Between(-120, 120),
-                    -Phaser.Math.Between(480, 580)
-                );
+                this.ball.setVelocity(Phaser.Math.Between(-80,80), -Phaser.Math.Between(480,580));
             };
             this._keySpace.once('down', this._doLaunch);
-
             _updateLandscapeNudge(true);
         }
 
-        _checkWin(score) { _sceneCheckWin(this, score); }
+        _checkWin(score)  { _sceneCheckWin(this, score); }
         _tickBase(score)  { _sceneTickBase(this, score); }
 
         _hitBumper(ball, bumper) {
-            const dx = ball.x - bumper.x, dy = ball.y - bumper.y;
-            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
-            const curSpd = Math.sqrt(ball.body.velocity.x**2 + ball.body.velocity.y**2);
-            const newSpd = Math.max(curSpd * 0.85 + 200, 400);
+            const dx = ball.x-bumper.x, dy = ball.y-bumper.y;
+            const dist = Math.sqrt(dx*dx+dy*dy)||1;
+            const curSpd = Math.sqrt(ball.body.velocity.x**2+ball.body.velocity.y**2);
+            const newSpd = Math.max(curSpd*0.85+220, 420);
             ball.setVelocity((dx/dist)*newSpd, (dy/dist)*newSpd);
-            const pts = bumper.getData('pts') || 100;
+            const pts = bumper.getData('pts')||100;
             this.score += pts;
-            this.scoreText.setText('Score: ' + this.score);
-            this.tweens.add({targets:bumper, alpha:0.15, duration:65, yoyo:true, onComplete:()=>bumper.setAlpha(1)});
-            this._popScore(bumper.x, bumper.y - 30, '+' + pts);
+            this.scoreText.setText('Score: '+this.score);
+            this.tweens.add({targets:bumper, alpha:0.2, duration:60, yoyo:true, onComplete:()=>bumper.setAlpha(1)});
+            this._popScore(bumper.x, bumper.y-32, '+'+pts);
             GameAudio.play('score');
-            _burst(bumper.x, bumper.y, themeInt(0, 0xa78bfa), 6);
-            _hitStop(35); _chromaFlash(0.3);
+            _burst(bumper.x, bumper.y, themeInt(0,0xa78bfa), 6);
+            _hitStop(30); _chromaFlash(0.25);
             this._tickBase(this.score);
         }
 
         _popScore(x, y, txt) {
             const t = this.add.text(x, y, txt,
-                {fontSize:'15px', fill:'#fbbf24', fontFamily:"'Fredoka',sans-serif", stroke:'#000', strokeThickness:3})
+                {fontSize:'15px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3})
                 .setOrigin(0.5).setDepth(13);
-            this.tweens.add({targets:t, y:y - 38, alpha:0, duration:750, onComplete:()=>t.destroy()});
+            this.tweens.add({targets:t, y:y-38, alpha:0, duration:750, onComplete:()=>t.destroy()});
         }
 
         _getFlipper(isLeft) {
             const pivX = isLeft ? LF_X : RF_X;
             const pivY = FL_Y;
             const rad  = Phaser.Math.DegToRad(isLeft ? this._lfAngle : this._rfAngle);
-            return {
-                pivX, pivY,
-                tipX: pivX + Math.cos(rad) * FLIPPER_LEN,
-                tipY: pivY + Math.sin(rad) * FLIPPER_LEN
-            };
+            return { pivX, pivY,
+                tipX: pivX + Math.cos(rad)*FLIPPER_LEN,
+                tipY: pivY + Math.sin(rad)*FLIPPER_LEN };
         }
 
         _drawFlippers() {
-            const g = this._flipGfx;
-            g.clear();
+            const g = this._flipGfx; g.clear();
             [true, false].forEach(isLeft => {
-                const {pivX, pivY, tipX, tipY} = this._getFlipper(isLeft);
+                const {pivX,pivY,tipX,tipY} = this._getFlipper(isLeft);
                 const active = isLeft ? this._lfActive : this._rfActive;
-                const col    = active ? 0x00e5ff : 0x60a5fa;
-                const dx = tipX - pivX, dy = tipY - pivY;
-                const len = Math.sqrt(dx*dx + dy*dy) || 1;
-                const nx = -dy/len, ny = dx/len;
-                const pw = 9, tw = 5;
-                g.fillStyle(col, 1);
+                const col = active ? 0x00e5ff : 0x60a5fa;
+                const dx=tipX-pivX, dy=tipY-pivY;
+                const len=Math.sqrt(dx*dx+dy*dy)||1;
+                const nx=-dy/len, ny=dx/len;
+                const pw=10, tw=5;
+                g.fillStyle(col,1);
                 g.fillPoints([
-                    {x: pivX + nx*pw, y: pivY + ny*pw},
-                    {x: tipX + nx*tw, y: tipY + ny*tw},
-                    {x: tipX - nx*tw, y: tipY - ny*tw},
-                    {x: pivX - nx*pw, y: pivY - ny*pw}
-                ], true);
-                g.fillStyle(0xffffff, 0.8);
-                g.fillCircle(pivX, pivY, 5);
+                    {x:pivX+nx*pw, y:pivY+ny*pw},
+                    {x:tipX+nx*tw, y:tipY+ny*tw},
+                    {x:tipX-nx*tw, y:tipY-ny*tw},
+                    {x:pivX-nx*pw, y:pivY-ny*pw}
+                ],true);
+                g.fillStyle(0xffffff,0.85); g.fillCircle(pivX,pivY,6);
             });
         }
 
         _checkFlipperBall(isLeft) {
-            const {pivX, pivY, tipX, tipY} = this._getFlipper(isLeft);
+            const {pivX,pivY,tipX,tipY} = this._getFlipper(isLeft);
             const active = isLeft ? this._lfActive : this._rfActive;
-            const bx = this.ball.x, by = this.ball.y;
-            const dx = tipX - pivX, dy = tipY - pivY;
-            const len2 = dx*dx + dy*dy;
-            let t = ((bx - pivX)*dx + (by - pivY)*dy) / len2;
-            t = Phaser.Math.Clamp(t, 0.05, 1);
-            const cx = pivX + t*dx, cy = pivY + t*dy;
-            const dist = Math.sqrt((bx - cx)**2 + (by - cy)**2);
-            const TOUCH = BALL_R + 11;
+            const bx=this.ball.x, by=this.ball.y;
+            const dx=tipX-pivX, dy=tipY-pivY;
+            const len2=dx*dx+dy*dy;
+            let t=((bx-pivX)*dx+(by-pivY)*dy)/len2;
+            t = Phaser.Math.Clamp(t, 0.02, 1.0);
+            const cx=pivX+t*dx, cy=pivY+t*dy;
+            const dist=Math.sqrt((bx-cx)**2+(by-cy)**2);
 
             if (dist < TOUCH) {
-                const now = this.time.now;
-                if (now - this._lastFlipHit < 80) return;
-                this._lastFlipHit = now;
+                // CRITICAL FIX: always push ball out BEFORE the cooldown check.
+                // Old code did this after — so on frame 2+ of contact the return
+                // fired first, separation never ran, and the ball sank through.
+                const nx = dist>0.01 ? (bx-cx)/dist : 0;
+                const ny = dist>0.01 ? (by-cy)/dist : -1;
+                this.ball.x = cx + nx*TOUCH;
+                this.ball.y = cy + ny*TOUCH;
 
-                // Separate ball from flipper surface
-                const nx = dist > 0.01 ? (bx - cx)/dist : 0;
-                const ny = dist > 0.01 ? (by - cy)/dist : -1;
-                this.ball.x = cx + nx * TOUCH;
-                this.ball.y = cy + ny * TOUCH;
+                const now = this.time.now;
+                const side = isLeft ? 'L' : 'R';
+                if (now - this._lastFlipHit[side] < 55) return;
+                this._lastFlipHit[side] = now;
 
                 if (active) {
-                    const spd = Math.max(520,
-                        Math.sqrt(this.ball.body.velocity.x**2 + this.ball.body.velocity.y**2) + 150);
-                    // Aim: near tip = sharper angle, near pivot = straighter up
-                    const launchDeg = isLeft
-                        ? -90 + t * 38     // left: up (−90°) to up-right (−52°)
-                        : -90 - t * 38;    // right: up (−90°) to up-left (−128°)
+                    const spd = Math.max(530, Math.sqrt(this.ball.body.velocity.x**2+this.ball.body.velocity.y**2)+160);
+                    const launchDeg = isLeft ? -90+t*42 : -90-t*42;
                     const rad = Phaser.Math.DegToRad(launchDeg);
                     this.ball.setVelocity(Math.cos(rad)*spd, Math.sin(rad)*spd);
+                    GameAudio.play('jump');
                 } else {
                     // Dead flipper — gentle reflect
                     const dot = this.ball.body.velocity.x*nx + this.ball.body.velocity.y*ny;
                     if (dot < 0) {
                         this.ball.setVelocity(
-                            this.ball.body.velocity.x - 1.5*dot*nx,
-                            this.ball.body.velocity.y - 1.5*dot*ny
+                            this.ball.body.velocity.x - 1.6*dot*nx,
+                            this.ball.body.velocity.y - 1.6*dot*ny
                         );
                     }
                 }
@@ -12155,56 +12143,59 @@ function scenePinball(data) {
 
         update(time, delta) {
             if (!this.ball || !this.ball.active) return;
-            const dt = delta / 1000;
+            const dt = delta/1000;
 
-            // Touch launch — fire button triggers ball launch when not yet launched
+            // Touch launch
             if (!this._launched && touchInput.fire) {
-                touchInput.fire = false; // consume so it doesn't re-trigger on next frame
+                touchInput.fire = false;
                 this._doLaunch();
             }
 
             // Flipper input
-            const leftDown  = this._keyZ.isDown    || this._keyLeft.isDown  || touchInput.left;
-            const rightDown = this._keyX.isDown    || this._keyRight.isDown || touchInput.right;
+            const leftDown  = this._keyZ.isDown  || this._keyLeft.isDown  || touchInput.left;
+            const rightDown = this._keyX.isDown  || this._keyRight.isDown || touchInput.right;
 
-            if (leftDown)  this._lfAngle = Math.max(this._lfAngle - FL_SPEED*dt, LF_ACT);
-            else           this._lfAngle = Math.min(this._lfAngle + FL_SPEED*dt, LF_REST);
-            if (rightDown) this._rfAngle = Math.min(this._rfAngle + FL_SPEED*dt, RF_ACT);
-            else           this._rfAngle = Math.max(this._rfAngle - FL_SPEED*dt, RF_REST);
+            if (leftDown)  this._lfAngle = Math.max(this._lfAngle-FL_SPEED*dt, LF_ACT);
+            else           this._lfAngle = Math.min(this._lfAngle+FL_SPEED*dt, LF_REST);
+            if (rightDown) this._rfAngle = Math.min(this._rfAngle+FL_SPEED*dt, RF_ACT);
+            else           this._rfAngle = Math.max(this._rfAngle-FL_SPEED*dt, RF_REST);
             this._lfActive = leftDown;
             this._rfActive = rightDown;
 
             this._drawFlippers();
+            // Check twice per frame — catches fast balls that could skip the hit zone
+            this._checkFlipperBall(true);
+            this._checkFlipperBall(false);
             this._checkFlipperBall(true);
             this._checkFlipperBall(false);
 
             // Drain check
-            if (this.ball.y > GH + 24 && this._drainCooldown <= 0) {
+            if (this.ball.y > GH+24 && this._drainCooldown<=0) {
                 this._drainCooldown = 2400;
                 this._lives--;
-                this._livesText.setText('♥'.repeat(Math.max(0, this._lives)) || '☆');
+                this._livesText.setText('♥'.repeat(Math.max(0,this._lives))||'☆');
                 if (this._lives <= 0) {
-                    this.time.delayedCall(350, () => showGameOver(this.score));
+                    this.time.delayedCall(350, ()=>showGameOver(this.score));
                     return;
                 }
                 this._msgText.setText('DRAIN!').setAlpha(1).setColor('#ef4444');
                 this.tweens.add({targets:this._msgText, alpha:0, duration:900, delay:300});
                 this.time.delayedCall(950, () => {
                     if (this.ball && this.ball.active) {
-                        this.ball.body.reset(GW/2, GH * 0.11);
-                        this.ball.setVelocity(0, 0);
+                        this.ball.body.reset(GW/2, GH*0.10);
+                        this.ball.setVelocity(0,0);
                         this._launched = false;
                         this._keySpace.once('down', this._doLaunch);
                     }
                 });
             }
-            if (this._drainCooldown > 0) this._drainCooldown -= delta;
+            if (this._drainCooldown>0) this._drainCooldown-=delta;
 
             // Score milestones
-            if (!this._m1k  && this.score >= 1000)  { this._m1k  = true; this._showMilestone('1,000! 🌟'); }
-            if (!this._m3k  && this.score >= 3000)  { this._m3k  = true; this._showMilestone('3,000! 🔥'); }
-            if (!this._m5k  && this.score >= 5000)  { this._m5k  = true; this._showMilestone('5,000! ⭐'); GameAudio.play('levelUp'); }
-            if (!this._m10k && this.score >= 10000) { this._m10k = true; this._showMilestone('10,000! 🏆'); GameAudio.play('levelUp'); }
+            if (!this._m1k  && this.score>=1000)  { this._m1k =true; this._showMilestone('1,000! 🌟'); }
+            if (!this._m3k  && this.score>=3000)  { this._m3k =true; this._showMilestone('3,000! 🔥'); }
+            if (!this._m5k  && this.score>=5000)  { this._m5k =true; this._showMilestone('5,000! ⭐'); GameAudio.play('levelUp'); }
+            if (!this._m10k && this.score>=10000) { this._m10k=true; this._showMilestone('10,000! 🏆'); GameAudio.play('levelUp'); }
 
             this._tickBase(this.score);
         }
