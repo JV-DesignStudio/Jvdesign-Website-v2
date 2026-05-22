@@ -7971,7 +7971,10 @@ function sceneRacing(data) {
             const baseGrip = { dry:this._grip, rain:Math.min(this._grip,0.55), ice:Math.min(this._grip,0.25), night:this._grip }[weather]||this._grip;
 
             // ── Nitro ────────────────────────────────────────────────────────
-            const spaceNow = Phaser.Input.Keyboard.JustDown(this.spaceKey);
+            // fire button (⚡) on touch: treat as one-shot nitro on button press
+            const fireTouched = touchInput.fire && !this._fireBtnWas;
+            this._fireBtnWas  = touchInput.fire;
+            const spaceNow = Phaser.Input.Keyboard.JustDown(this.spaceKey) || fireTouched;
             if(spaceNow && this._nitroCount>0 && !this._nitroActive) {
                 this._nitroActive=true; this._nitroTimer=2000; this._nitroCount--;
                 this._txtNitroCount.setText('⚡×'+this._nitroCount);
@@ -9569,15 +9572,17 @@ function updateTouchLayout(genre) {
 
     // Joystick zone: hide for tap-only genres, Tower Defense, Pinball, and Rhythm
     const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM'].includes(genre);
-    const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER'].includes(genre);
-    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT'].includes(genre);
+    const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER','DEFENSE'].includes(genre);
+    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT','RACING','DEFENSE'].includes(genre);
 
     if (joyZone) joyZone.style.display = showLR ? 'block' : 'none';
     if (joyWrap && !showLR) joyWrap.classList.remove('joy-active');
     if (lr)   lr.style.visibility = 'hidden';
     if (up)   up.style.display    = showUp   ? '' : 'none';
     if (fire) fire.style.display  = showFire ? '' : 'none';
-    if (fire) fire.textContent    = genre === 'RUNNER' ? '↓' : genre === 'BEAT' ? '👊' : '●';
+    // Per-genre button labels
+    if (fire) fire.textContent = genre === 'RUNNER' ? '↓' : genre === 'BEAT' ? '👊' : genre === 'RACING' ? '⚡' : genre === 'DEFENSE' ? '🏗' : '●';
+    if (up)   up.textContent   = genre === 'DEFENSE' ? '▶' : '▲';
 
     // Runner/Flappy: tap canvas to jump; Snake: swipe canvas to steer
     const wrap = document.getElementById('gameWrap');
@@ -11199,7 +11204,12 @@ function sceneTowerDefense(data) {
             this._txtGold  = this.add.text(8,26,'💰 150',   hs).setDepth(20).setScrollFactor(0);
             this._txtLives = this.add.text(8,44,'❤️ '+(this._lives), hs).setDepth(20).setScrollFactor(0);
             this._txtWave  = this.add.text(GW/2,8,'Wave 0',  {...hs,fontSize:'14px'}).setOrigin(0.5,0).setDepth(20).setScrollFactor(0);
-            this._txtHint  = this.add.text(GW/2,GH-18,'[T] Place Tower  |  [SPACE] Start Wave', {...hs,fontSize:'11px'}).setOrigin(0.5,1).setDepth(20).setScrollFactor(0).setAlpha(0.7);
+            const _tdIsTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+            const _tdHintKb  = '[T] Place Tower  |  [SPACE] Start Wave';
+            const _tdHintTch = 'Tap 🏗 to place mode  |  Tap ▶ to start wave';
+            this._hintDefault = _tdIsTouch ? _tdHintTch : _tdHintKb;
+            this._hintPlace   = _tdIsTouch ? 'Tap grid to place tower (50💰)' : 'Click grid to place tower (cost: 50💰)';
+            this._txtHint  = this.add.text(GW/2,GH-18, this._hintDefault, {...hs,fontSize:'11px'}).setOrigin(0.5,1).setDepth(20).setScrollFactor(0).setAlpha(0.7);
 
             // ── Input ──
             this._keyT     = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
@@ -11327,12 +11337,26 @@ function sceneTowerDefense(data) {
         update(time, delta) {
             const dt = delta / 1000;
 
-            // Key: T = place mode, SPACE = start wave
+            // Key: T = place mode, SPACE = start wave (keyboard)
             if (Phaser.Input.Keyboard.JustDown(this._keyT)) {
                 this._toPlace = !this._toPlace;
-                this._txtHint.setText(this._toPlace ? 'Click grid to place tower (cost: 50💰)' : '[T] Place Tower  |  [SPACE] Start Wave');
+                this._txtHint.setText(this._toPlace ? this._hintPlace : this._hintDefault);
             }
             if (Phaser.Input.Keyboard.JustDown(this._keySpace)) {
+                this._startWave();
+                _speedRunBegin();
+            }
+            // Touch: 🏗 button = toggle place mode, ▶ button = start wave
+            const tdFire = touchInput.fire && !this._tdFireWas;
+            this._tdFireWas = touchInput.fire;
+            if (tdFire) {
+                this._toPlace = !this._toPlace;
+                this._ghost.setVisible(false);
+                this._txtHint.setText(this._toPlace ? this._hintPlace : this._hintDefault);
+            }
+            const tdUp = touchInput.up && !this._tdUpWas;
+            this._tdUpWas = touchInput.up;
+            if (tdUp) {
                 this._startWave();
                 _speedRunBegin();
             }
