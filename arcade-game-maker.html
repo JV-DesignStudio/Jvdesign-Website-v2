@@ -296,6 +296,33 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
     border:none!important;border-radius:0!important;box-shadow:none!important;
     background:#000!important;display:block!important;
 }
+/* ── Pinball split-screen flipper zones ─────────────────────────────────── */
+.pb-flip-zone{
+  position:absolute;top:0;bottom:0;width:50%;
+  z-index:17;pointer-events:none;touch-action:none;
+  -webkit-tap-highlight-color:transparent;display:none;
+}
+#pb-zone-l{left:0;}
+#pb-zone-r{right:0;}
+.pb-flip-hint{
+  position:absolute;bottom:22px;
+  width:88px;height:88px;border-radius:50%;
+  background:rgba(124,58,237,.12);
+  border:2px solid rgba(167,139,250,.28);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  transition:background .08s,border-color .08s,transform .07s,box-shadow .08s;
+  pointer-events:none;user-select:none;
+}
+#pb-zone-l .pb-flip-hint{left:14px;}
+#pb-zone-r .pb-flip-hint{right:14px;}
+.pb-flip-hint .pb-icon{font-size:1.8rem;line-height:1;}
+.pb-flip-hint .pb-lbl{font-size:.58rem;color:rgba(167,139,250,.65);letter-spacing:.06em;font-family:'Fredoka',sans-serif;font-weight:700;}
+.pb-zone-active .pb-flip-hint{
+  background:rgba(124,58,237,.55);
+  border-color:rgba(167,139,250,.9);
+  transform:scale(.9);
+  box-shadow:0 0 22px rgba(124,58,237,.6);
+}
 .touch-controls{position:absolute;bottom:0;left:0;right:0;height:114px;display:none;justify-content:space-between;align-items:flex-end;padding:0 12px 10px;pointer-events:none;z-index:20;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 100%);}
 .tc-side{display:flex;gap:10px;pointer-events:auto;align-items:flex-end;}
 .tc-btn{width:68px;height:68px;border-radius:50%;border:2px solid rgba(255,255,255,.22);background:rgba(10,8,22,.65);backdrop-filter:blur(10px);color:rgba(255,255,255,.92);font-size:1.45rem;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;transition:background .08s,border-color .08s,transform .08s,box-shadow .08s;font-family:'Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.45);}
@@ -2887,6 +2914,20 @@ score += bumper.pts;
 
             <!-- Dynamic joystick zone (left 58% of game — touch anywhere to spawn joystick) -->
             <div id="tc-joy-zone" aria-hidden="true"></div>
+
+            <!-- Pinball split-screen flipper zones (shown only for PINBALL genre) -->
+            <div class="pb-flip-zone" id="pb-zone-l" aria-label="Left flipper">
+                <div class="pb-flip-hint">
+                    <span class="pb-icon">↙</span>
+                    <span class="pb-lbl">LEFT</span>
+                </div>
+            </div>
+            <div class="pb-flip-zone" id="pb-zone-r" aria-label="Right flipper">
+                <div class="pb-flip-hint">
+                    <span class="pb-icon">↘</span>
+                    <span class="pb-lbl">RIGHT</span>
+                </div>
+            </div>
             <!-- Floating joystick — absolutely positioned at finger touch point -->
             <div class="joystick-wrap" id="tc-joystick" aria-label="Virtual joystick">
                 <div class="joystick-base"></div>
@@ -3729,7 +3770,7 @@ const CONTROLS = {
     PUZZLE:   'Controls: WASD/Arrows to move · Push crates onto targets · R to reset level',
     RHYTHM:   'Controls: A S D F keys · Hit notes as they reach the target line!',
     DEFENSE:  'Controls: T = place tower mode · Click grid to build · SPACE = start wave',
-    PINBALL:  'Controls: Z / ← = Left flipper · X / → = Right flipper · SPACE = launch ball'
+    PINBALL:  'Controls: Z / ← = Left flipper · X / → = Right flipper · SPACE = launch ball · Mobile: tap left half / right half for flippers'
 };
 const MISSIONS = {
     SHOOTER:  '<strong>Mission:</strong> Rotate, thrust and shoot down enemies. Try tweaking Bullet Speed in Blueprints!',
@@ -9052,6 +9093,43 @@ function setupTouchControls() {
         zone.addEventListener('touchcancel', () => _joyReset(), {passive: true});
     })();
 
+    // ── Pinball split-screen flipper zones ───────────────────────────────────
+    // Each half of the screen is an independent flipper button that supports
+    // multi-touch so both flippers can be held simultaneously.
+    (function() {
+        function setupFlipZone(zoneId, inputKey) {
+            const zone = document.getElementById(zoneId);
+            if (!zone) return;
+            let _activePointers = new Set();
+
+            zone.addEventListener('pointerdown', e => {
+                e.preventDefault();
+                try { zone.setPointerCapture(e.pointerId); } catch(_) {}
+                _activePointers.add(e.pointerId);
+                touchInput[inputKey] = true;
+                zone.classList.add('pb-zone-active');
+                // Brief fire pulse so tapping also launches the ball
+                touchInput.fire = true;
+                setTimeout(() => { touchInput.fire = false; }, 80);
+                if (navigator.vibrate) navigator.vibrate(8);
+            }, {passive: false});
+
+            const release = e => {
+                _activePointers.delete(e.pointerId);
+                if (_activePointers.size === 0) {
+                    touchInput[inputKey] = false;
+                    zone.classList.remove('pb-zone-active');
+                }
+            };
+            zone.addEventListener('pointerup',     release);
+            zone.addEventListener('pointercancel', release);
+            zone.addEventListener('pointerleave',  release);
+        }
+
+        setupFlipZone('pb-zone-l', 'left');
+        setupFlipZone('pb-zone-r', 'right');
+    })();
+
     // ── Action buttons (up / fire) ────────────────────────────────────────────
     ['up','fire'].forEach(action => {
         const btn = document.getElementById('tc-'+action);
@@ -9140,24 +9218,32 @@ function updateTouchLayout(genre) {
     const lr      = document.getElementById('tc-lr');
     const joyZone = document.getElementById('tc-joy-zone');
     const joyWrap = document.getElementById('tc-joystick');
+    const pbL     = document.getElementById('pb-zone-l');
+    const pbR     = document.getElementById('pb-zone-r');
 
-    // Joystick zone: hide for tap-only genres AND Tower Defense (click-to-place; joy zone blocks touch)
-    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE'].includes(genre);
+    const isPinball = genre === 'PINBALL';
+    const isTouch   = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
+
+    // Pinball gets its own split-screen flipper zones — hide everything else
+    if (pbL) pbL.style.display = (isPinball && isTouch) ? 'block' : 'none';
+    if (pbR) pbR.style.display = (isPinball && isTouch) ? 'block' : 'none';
+    // Also enable pointer-events on the zones when shown
+    if (pbL) pbL.style.pointerEvents = (isPinball && isTouch) ? 'auto' : 'none';
+    if (pbR) pbR.style.pointerEvents = (isPinball && isTouch) ? 'auto' : 'none';
+    // Reset active state when switching away
+    if (!isPinball) { pbL && pbL.classList.remove('pb-zone-active'); pbR && pbR.classList.remove('pb-zone-active'); }
+
+    // Joystick zone: hide for tap-only genres, Tower Defense, and Pinball (has its own zones)
+    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER'].includes(genre);
-    // RUNNER uses fire for slide; PINBALL uses fire to launch the ball
-    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT','PINBALL'].includes(genre);
+    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT'].includes(genre);
 
-    // Show/hide the dynamic joy zone
     if (joyZone) joyZone.style.display = showLR ? 'block' : 'none';
     if (joyWrap && !showLR) joyWrap.classList.remove('joy-active');
-    if (lr)   lr.style.visibility = 'hidden'; // always a spacer; joy zone handles the left side
-    if (up)   up.style.display   = showUp   ? '' : 'none';
-    if (fire) fire.style.display = showFire ? '' : 'none';
-    // Label fire/action button contextually
-    if (fire) fire.textContent = genre === 'RUNNER' ? '↓'
-                               : genre === 'BEAT'   ? '👊'
-                               : genre === 'PINBALL' ? '🚀'
-                               : '●';
+    if (lr)   lr.style.visibility = 'hidden';
+    if (up)   up.style.display    = showUp   ? '' : 'none';
+    if (fire) fire.style.display  = showFire ? '' : 'none';
+    if (fire) fire.textContent    = genre === 'RUNNER' ? '↓' : genre === 'BEAT' ? '👊' : '●';
 
     // Runner/Flappy: tap canvas to jump; Snake: swipe canvas to steer
     const wrap = document.getElementById('gameWrap');
