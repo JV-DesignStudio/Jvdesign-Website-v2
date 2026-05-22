@@ -6635,6 +6635,9 @@ function sceneRoguelike(data) {
             this._boss=null; this._bossHp=0; this._bossMaxHp=0; this._bossPhase=1;
             this._bossHpBar=null; this._bossHpText=null; this._bossShootTimer=null;
             this._bossDashing=false;
+            this._cameFromRight=false; // which side player entered (true = returning from next room)
+            this._backLabel=null;
+            this._generateFloorPlan();
 
             this._drawBg();
             this.scoreText = this._makeScoreText();
@@ -6715,6 +6718,7 @@ function sceneRoguelike(data) {
             this.bullets.getChildren().slice().forEach(b=>b.destroy());
             this.eBullets.getChildren().slice().forEach(b=>b.destroy());
             if(this._doorLabel){this._doorLabel.destroy();this._doorLabel=null;}
+            if(this._backLabel){this._backLabel.destroy();this._backLabel=null;}
             if(this._floorRect){this._floorRect.destroy();this._floorRect=null;}
             this._heartGrp.getChildren().forEach(h=>{const l=h.getData('lbl');if(l&&l.active)l.destroy();}); this._heartGrp.clear(true,true);
             this._chestGrp.getChildren().forEach(c=>{const l=c.getData('lbl');if(l&&l.active)l.destroy();}); this._chestGrp.clear(true,true);
@@ -6732,34 +6736,60 @@ function sceneRoguelike(data) {
             this._floorRect=this.add.rectangle(GW/2,GH/2,GW-W*2,GH-W*2,themeInt(3,0x0f172a)).setDepth(-1);
             const wCol=themeInt(2,0x1e293b);
             const mw=(x,y,w,h)=>this.walls.create(x,y,'block').setDisplaySize(w,h).setTint(wCol).refreshBody();
-            mw(GW/2,W/2,GW,W); mw(GW/2,GH-W/2,GW,W); mw(W/2,GH/2,W,GH);
+            mw(GW/2,W/2,GW,W); mw(GW/2,GH-W/2,GW,W);
             const sH=GH/2-DOOR_H/2-W;
+            // Right door gap (always present — opens when room cleared)
             mw(GW-W/2,W+sH/2,W,sH); mw(GW-W/2,GH-W-sH/2,W,sH);
             this._doorGrp.create(GW-W/2,GH/2,'block').setDisplaySize(W,DOOR_H).setTint(themeInt(0,0x7c3aed)).refreshBody();
+            // Left door — gap when player can go back (room > 0), solid wall on room 0
+            if (this._room > 0) {
+                mw(W/2,W+sH/2,W,sH); mw(W/2,GH-W-sH/2,W,sH);
+                this._backLabel=this.add.text(W+8,GH/2,'←',{fontSize:'22px',fill:themeHex(2,'#64748b'),fontFamily:"'Fredoka',sans-serif"}).setOrigin(0,0.5).setDepth(8);
+            } else {
+                mw(W/2,GH/2,W,GH); // solid left wall on first room
+            }
 
-            // Obstacles (fewer in shop rooms for space)
-            const obCol=themeInt(1,0x334155);
-            const isBossRoom  = (this._room===this._roomsPerFloor-1);
-            const isShopRoom  = (this._floor>=2 && this._room===this._roomsPerFloor-2 && !isBossRoom);
+            // Room type from floor plan
+            const roomType    = this._floorPlan ? (this._floorPlan[this._room]||'combat') : 'combat';
+            const isBossRoom  = roomType==='boss';
+            const isShopRoom  = roomType==='shop';
+            const isTreasureRoom = roomType==='treasure';
             this._isBossRoom  = isBossRoom;
             this._isShopRoom  = isShopRoom;
-            // Use tilemap obstacle layout if painted (room 0 pattern repeats)
+
+            // Obstacles
+            const obCol=themeInt(1,0x334155);
+            const noObs = isShopRoom||isTreasureRoom;
             const hasCustomMap = data.map && data.map.length===TM_COLS*TM_ROWS && data.map.some(v=>v>0);
-            if (hasCustomMap && !isShopRoom && !isBossRoom) {
+            if (hasCustomMap && !noObs && !isBossRoom) {
                 const TW=Math.floor(GW/TM_COLS), TH=Math.floor(GH/TM_ROWS);
                 data.map.forEach((v,i)=>{
                     if(v!==1) return;
                     const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
-                    // Only use interior tiles as obstacles (leave border for walls)
                     if(tx>W+TW&&tx<GW-W-TW&&ty>W+TH&&ty<GH-W-TH)
                         this._obstacles.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(obCol).refreshBody();
                 });
-            } else {
-                const obCount = isShopRoom ? 0 : Phaser.Math.Between(2,4);
+            } else if (!noObs) {
+                const obCount = Phaser.Math.Between(2,5);
                 for(let i=0;i<obCount;i++){
                     const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
                     this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
                 }
+            }
+
+            // If returning from a future room — just mark cleared, open forward door, done
+            const returning = this._cameFromRight;
+            this._cameFromRight = false;
+            // Spawn position
+            this.actor.setPosition(returning ? GW-W-30 : W+30, GH/2);
+
+            if (returning) {
+                this._roomCleared=true;
+                this._roomText.setStyle({fill:themeHex(2,'#64748b')});
+                this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor} ✓`);
+                this._openDoor();
+                this._updateHud();
+                return;
             }
 
             if (isBossRoom) {
@@ -6769,20 +6799,21 @@ function sceneRoguelike(data) {
             } else if (isShopRoom) {
                 this._buildShop();
                 this._roomText.setStyle({fill:'#34d399'});
-                this._roomText.setText(`Floor ${this._floor}  🏪 Shop Room`);
+                this._roomText.setText(`Floor ${this._floor}  🏪 Shop`);
+            } else if (isTreasureRoom) {
+                this._buildTreasureRoom();
             } else {
+                // Combat room
                 this._roomText.setStyle({fill:themeHex(2,'#fbbf24')});
                 this._roomText.setText(`Floor ${this._floor}  ${this._room+1}/${this._roomsPerFloor}`);
-                // Spawn mix of enemy types based on floor
+                // More enemies — scales meaningfully now
                 const dens=liveConfig.rogueDensity||0.3;
-                const eCount=Math.max(1,Math.round((2+this._floor*1.4)*dens));
+                const eCount=Math.max(2,Math.round((4+this._floor*2.5)*dens));
                 for(let i=0;i<eCount;i++) this._spawnEnemyRandom();
-                // Enemy shooting on floor 2+
-                if(this._floor>=2){
-                    const fi=Math.max(800,2000-this._floor*80);
-                    this._enemyShootTimer=this.time.addEvent({delay:fi,loop:true,callback:this._enemyFire,callbackScope:this});
-                }
-                // Heart pickup when hurt
+                // Enemy shooting (floor 1 = slow, gets faster every floor)
+                const fi=Math.max(600,2200-this._floor*120);
+                this._enemyShootTimer=this.time.addEvent({delay:fi,loop:true,callback:this._enemyFire,callbackScope:this});
+                // Chance of heart drop when injured
                 if(this._hp<this._maxHp&&Math.random()<0.4){
                     const hx=Phaser.Math.Between(W+60,GW-W-60),hy=Phaser.Math.Between(W+60,GH-W-60);
                     const h=this._heartGrp.create(hx,hy,'block').setDisplaySize(16,16).setTint(0xf87171);
@@ -6790,20 +6821,18 @@ function sceneRoguelike(data) {
                     h.setData('lbl',this.add.text(hx,hy,'❤️',{fontSize:'13px'}).setOrigin(0.5).setDepth(6));
                 }
             }
-            this.actor.setPosition(W+30,GH/2);
             this._updateHud();
         }
 
         // ── Enemy spawning ───────────────────────────────────────────────────────
         _spawnEnemyRandom() {
             const floor=this._floor;
-            // Type pool — unlocks more variety on higher floors
-            const pool = ['normal','normal','normal'];
-            if(floor>=2) pool.push('slime','slime');
-            if(floor>=2) pool.push('bat');
-            if(floor>=3) pool.push('ghost','ghost');
-            if(floor>=3) pool.push('skeleton');
-            if(floor>=4) pool.push('tank');
+            // Type pool — unlocks more variety each floor
+            const pool = ['normal','normal','normal','normal'];
+            if(floor>=1) pool.push('slime');                    // slimes appear from the start
+            if(floor>=2) pool.push('slime','bat','bat');
+            if(floor>=3) pool.push('ghost','ghost','skeleton');
+            if(floor>=4) pool.push('tank','tank','ghost');
             const type=pool[Phaser.Math.Between(0,pool.length-1)];
             this._spawnEnemy(type, Phaser.Math.Between(W+50,GW-W-50), Phaser.Math.Between(W+50,GH-W-50));
         }
@@ -7086,10 +7115,62 @@ function sceneRoguelike(data) {
             this._updateHud();
         }
 
+        // ── Floor plan generation ────────────────────────────────────────────────
+        _generateFloorPlan() {
+            this._floorPlan = [];
+            const n = this._roomsPerFloor;
+            for(let i=0;i<n;i++){
+                if(i===n-1)                              this._floorPlan.push('boss');
+                else if(this._floor>=2&&i===n-2)         this._floorPlan.push('shop');
+                else if(i===0)                           this._floorPlan.push('combat'); // always start with combat
+                else                                     this._floorPlan.push(Math.random()<0.28?'treasure':'combat');
+            }
+        }
+
+        // ── Treasure room ────────────────────────────────────────────────────────
+        _buildTreasureRoom() {
+            this._roomCleared=true;
+            this._roomText.setStyle({fill:'#fbbf24'});
+            this._roomText.setText(`Floor ${this._floor}  ✨ Treasure Room`);
+            this.add.text(GW/2,W+18,'✨  TREASURE  ROOM',{
+                fontSize:'13px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold',
+                stroke:'#000',strokeThickness:2
+            }).setOrigin(0.5,0).setDepth(8);
+            // Random loot layout
+            const r=Math.random();
+            if(r<0.5){
+                this._spawnChestAt(GW*0.35,GH*0.45,true);  // locked
+                this._spawnChestAt(GW*0.65,GH*0.45,false);
+            } else if(r<0.8){
+                this._spawnChestAt(GW*0.25,GH*0.5,false);
+                this._spawnChestAt(GW*0.5, GH*0.5,false);
+                this._spawnChestAt(GW*0.75,GH*0.5,false);
+            } else {
+                this._spawnChestAt(GW*0.5,GH*0.42,true);   // single locked mega-chest
+            }
+            // Bonus heart if injured
+            if(this._hp<this._maxHp){
+                const hx=GW/2,hy=GH*0.68;
+                const h=this._heartGrp.create(hx,hy,'block').setDisplaySize(18,18).setTint(0xf87171);
+                h.body.allowGravity=false;
+                h.setData('lbl',this.add.text(hx,hy,'❤️',{fontSize:'15px'}).setOrigin(0.5).setDepth(6));
+            }
+            this._openDoor();
+            showToast('✨ Treasure Room! Grab the loot!');
+            GameAudio.play('jump');
+        }
+        _spawnChestAt(x,y,locked){
+            const c=this._chestGrp.create(x,y,'block').setDisplaySize(24,20);
+            c.body.allowGravity=false;
+            c.setTint(locked?0x9333ea:0xd97706);
+            c.setData('locked',locked);
+            c.setData('lbl',this.add.text(x,y,locked?'🔒':'📦',{fontSize:'17px'}).setOrigin(0.5).setDepth(6));
+        }
+
         // ── Room transitions ─────────────────────────────────────────────────────
         _openDoor() {
             this._doorGrp.clear(true,true); GameAudio.play('jump');
-            showToast(this._isBossRoom?'⚔️ Floor complete! ➜':'Room clear! ➜ go right');
+            if(!this._isBossRoom&&!this._isTreasureRoom) showToast('Room clear! ➜');
             this._doorLabel=this.add.text(GW-W-6,GH/2,'➜',{fontSize:'24px',fill:themeHex(0,'#4ade80'),fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,0.5).setDepth(8);
             this._doorOpen=true;
         }
@@ -7100,11 +7181,20 @@ function sceneRoguelike(data) {
                 this._floor++; this._room=0;
                 if (this._floor >= 3) _achUnlock('rogue_floor3');
                 this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
+                this._generateFloorPlan(); // fresh layout for the new floor
                 const bonus=100*this._floor; this.score+=bonus;
                 if(this._hp<this._maxHp){ this._hp++; gameState.lives=Math.max(0,this._hp); _updateHeartsDisplay(this._hp,this._maxHp); }
                 showToast(`🏆 Floor ${this._floor}! +${bonus} pts`);
                 GameAudio.play('score');
             }
+            this._cameFromRight=false;
+            this.cameras.main.fadeOut(180,0,0,0);
+            this.time.delayedCall(200,()=>{ this._buildRoom(); this.cameras.main.fadeIn(180,0,0,0); });
+        }
+        _prevRoom() {
+            if(this._room<=0) return;
+            this._room--;
+            this._cameFromRight=true;
             this.cameras.main.fadeOut(180,0,0,0);
             this.time.delayedCall(200,()=>{ this._buildRoom(); this.cameras.main.fadeIn(180,0,0,0); });
         }
@@ -7260,8 +7350,13 @@ function sceneRoguelike(data) {
             // Bullets OOB cleanup
             [...this.bullets.getChildren(),...this.eBullets.getChildren()].forEach(b=>{if(b.x<0||b.x>GW||b.y<0||b.y>GH)b.destroy();});
 
-            // Room exit
+            // Room exit — right (advance) or left (go back)
             if(this._doorOpen&&this.actor.x>GW-W-22) this._nextRoom();
+            if(this._room>0&&!this._transitioning&&this.actor.x<W+22) {
+                this._transitioning=true;
+                this._prevRoom();
+                this.time.delayedCall(400,()=>{this._transitioning=false;});
+            }
             this._tickBase(this.score);
         }
     };
