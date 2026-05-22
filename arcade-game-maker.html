@@ -626,6 +626,40 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 .evt-empty-icon{font-size:2rem;display:block;margin-bottom:6px;opacity:.45;}
 .evt-log{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:rgba(52,211,153,.65);min-height:16px;transition:opacity .4s;}
 
+/* ── GENRE PICKER ───────────────────────────────────────────────────────────── */
+.genre-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.genre-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:8px 5px 7px;cursor:pointer;text-align:center;transition:background .14s,border-color .14s,transform .1s,box-shadow .14s;display:flex;flex-direction:column;align-items:center;gap:3px;-webkit-tap-highlight-color:transparent;user-select:none;}
+.genre-card:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);transform:translateY(-1px);}
+.genre-card:active{transform:scale(.94);}
+.genre-card.on{background:rgba(124,58,237,.22);border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,58,237,.28),inset 0 1px 0 rgba(167,139,250,.12);}
+.gc-icon{font-size:1.45rem;line-height:1;}
+.gc-name{font-size:.57rem;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;}
+.genre-card.on .gc-name{color:var(--purple-lt);}
+/* Genre description */
+.genre-desc{font-size:.67rem;color:rgba(240,234,214,.4);line-height:1.55;min-height:16px;transition:opacity .2s;margin-top:1px;font-style:italic;}
+/* Step number badges */
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;background:var(--purple);color:white;border-radius:50%;font-size:.5rem;font-weight:900;margin-right:5px;flex-shrink:0;vertical-align:middle;line-height:1;}
+/* Autosave badge */
+#autosave-badge{font-size:.56rem;color:#4ade80;font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .4s;font-weight:700;margin-left:auto;}
+#autosave-badge.show{opacity:1;}
+/* Run button kbd chip */
+.run-kbd{font-size:.6rem;background:rgba(255,255,255,.18);border-radius:4px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.02em;margin-left:6px;vertical-align:middle;}
+/* Resume last game button */
+.btn-resume{width:100%;background:rgba(167,139,250,.12);color:var(--purple-lt);border:1px dashed rgba(124,58,237,.4);padding:9px 14px;border-radius:9px;font-weight:700;font-size:.78rem;cursor:pointer;transition:background .15s,border-color .15s;font-family:'Inter',sans-serif;text-align:center;letter-spacing:.01em;}
+.btn-resume:hover{background:rgba(124,58,237,.25);border-color:var(--purple);border-style:solid;}
+/* Shortcuts modal */
+.sk-grid{display:flex;flex-direction:column;gap:2px;}
+.sk-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.sk-row:last-child{border-bottom:none;}
+.sk-key{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-bottom:2px solid rgba(255,255,255,.08);border-radius:5px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:rgba(240,234,214,.9);flex-shrink:0;min-width:60px;text-align:center;}
+.sk-label{font-size:.72rem;color:rgba(240,234,214,.65);font-family:'Inter',sans-serif;}
+/* Mobile quick-run bar */
+#mobile-run-bar{display:none;align-items:center;gap:8px;background:rgba(8,6,18,.98);border-top:1px solid rgba(124,58,237,.28);padding:8px 12px;flex-shrink:0;width:100%;padding-bottom:max(8px,calc(env(safe-area-inset-bottom,0px) + 6px));}
+#mrb-genre{flex:1;font-size:.72rem;font-weight:700;color:var(--purple-lt);font-family:'Inter',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#mrb-run{background:var(--green);color:white;border:none;padding:9px 18px;border-radius:9px;font-weight:800;font-size:.82rem;cursor:pointer;box-shadow:0 3px 0 var(--green-dk);font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+#mrb-run.restarting{background:var(--purple);box-shadow:0 3px 0 #4c1d95;}
+#mrb-fs{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);border-radius:8px;padding:8px 10px;font-size:.88rem;cursor:pointer;-webkit-tap-highlight-color:transparent;flex-shrink:0;}
+
 @media(max-width:900px){.studio-panel{width:280px;}}
 @media(pointer:coarse){
   .touch-controls{display:flex!important;}
@@ -662,6 +696,13 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
   #gameWrap.idle{aspect-ratio:unset;min-height:180px;max-height:220px;}
   #idle-placeholder .idle-heading{font-size:1.15rem;}
   #idle-placeholder .idle-icon{font-size:1.5rem;}
+  /* Mobile run bar visible */
+  #mobile-run-bar{display:flex!important;}
+  /* Genre grid: 3 cols on mobile is fine, but bump card size */
+  .gc-icon{font-size:1.6rem;}
+  .gc-name{font-size:.6rem;}
+  /* Shortcuts modal not shown on mobile */
+  #shortcutsModal .sk-grid .sk-key{min-width:50px;}
 }
 </style>
 </head>
@@ -712,33 +753,55 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
         <!-- ── BUILD ── -->
         <div class="tab-content on" id="tab-build">
             <button class="btn-workshop" onclick="openWorkshop()">🛠 Create Your Assets — Open Workshop</button>
-            <span class="sec-label">Game Settings</span>
+            <span class="sec-label"><span class="step-num">1</span> Genre</span>
             <div class="form-group">
                 <label for="gameTitle">Game Title</label>
                 <input type="text" id="gameTitle" value="My Arcade Game">
             </div>
             <div class="form-group">
-                <label for="genreMode">Template</label>
-                <select id="genreMode" onchange="onGenreChange()">
-                    <option value="SHOOTER">🚀 Space Shooter</option>
-                    <option value="PLATFORMER">🏃 2D Platformer</option>
-                    <option value="DODGE">⬇️ Dodge &amp; Collect</option>
-                    <option value="BREAKER">🧱 Brick Breaker</option>
-                    <option value="RUNNER">🦕 Endless Runner</option>
-                    <option value="FLAPPY">🐦 Flappy Jump</option>
-                    <option value="INVADERS">👾 Space Invaders</option>
-                    <option value="PONG">🏓 Pong vs AI</option>
-                    <option value="SNAKE">🐍 Snake</option>
-                    <option value="ASTEROIDS">☄️ Asteroids</option>
-                    <option value="ROGUELIKE">⚔️ Roguelike Dungeon</option>
-                    <option value="RACING">🏎️ Top-Down Racing</option>
-                    <option value="HOPPER">🐸 Endless Hopper</option>
-                    <option value="BEAT">👊 Beat 'em Up</option>
-                    <option value="PUZZLE">🧩 Puzzle</option>
-                    <option value="RHYTHM">🎵 Rhythm</option>
-                    <option value="DEFENSE">🗼 Tower Defense</option>
-                    <option value="PINBALL">🔮 Pinball</option>
+                <label>Genre</label>
+                <div id="genre-picker" class="genre-grid">
+                    <div class="genre-card on" data-genre="SHOOTER"    onclick="pickGenre(this,'SHOOTER')"><span class="gc-icon">🚀</span><span class="gc-name">Shooter</span></div>
+                    <div class="genre-card"    data-genre="PLATFORMER" onclick="pickGenre(this,'PLATFORMER')"><span class="gc-icon">🏃</span><span class="gc-name">Platformer</span></div>
+                    <div class="genre-card"    data-genre="DODGE"      onclick="pickGenre(this,'DODGE')"><span class="gc-icon">⬇️</span><span class="gc-name">Dodge</span></div>
+                    <div class="genre-card"    data-genre="BREAKER"    onclick="pickGenre(this,'BREAKER')"><span class="gc-icon">🧱</span><span class="gc-name">Breaker</span></div>
+                    <div class="genre-card"    data-genre="RUNNER"     onclick="pickGenre(this,'RUNNER')"><span class="gc-icon">🦕</span><span class="gc-name">Runner</span></div>
+                    <div class="genre-card"    data-genre="FLAPPY"     onclick="pickGenre(this,'FLAPPY')"><span class="gc-icon">🐦</span><span class="gc-name">Flappy</span></div>
+                    <div class="genre-card"    data-genre="INVADERS"   onclick="pickGenre(this,'INVADERS')"><span class="gc-icon">👾</span><span class="gc-name">Invaders</span></div>
+                    <div class="genre-card"    data-genre="PONG"       onclick="pickGenre(this,'PONG')"><span class="gc-icon">🏓</span><span class="gc-name">Pong</span></div>
+                    <div class="genre-card"    data-genre="SNAKE"      onclick="pickGenre(this,'SNAKE')"><span class="gc-icon">🐍</span><span class="gc-name">Snake</span></div>
+                    <div class="genre-card"    data-genre="ASTEROIDS"  onclick="pickGenre(this,'ASTEROIDS')"><span class="gc-icon">☄️</span><span class="gc-name">Asteroids</span></div>
+                    <div class="genre-card"    data-genre="ROGUELIKE"  onclick="pickGenre(this,'ROGUELIKE')"><span class="gc-icon">⚔️</span><span class="gc-name">Roguelike</span></div>
+                    <div class="genre-card"    data-genre="RACING"     onclick="pickGenre(this,'RACING')"><span class="gc-icon">🏎️</span><span class="gc-name">Racing</span></div>
+                    <div class="genre-card"    data-genre="HOPPER"     onclick="pickGenre(this,'HOPPER')"><span class="gc-icon">🐸</span><span class="gc-name">Hopper</span></div>
+                    <div class="genre-card"    data-genre="BEAT"       onclick="pickGenre(this,'BEAT')"><span class="gc-icon">👊</span><span class="gc-name">Beat 'em Up</span></div>
+                    <div class="genre-card"    data-genre="PUZZLE"     onclick="pickGenre(this,'PUZZLE')"><span class="gc-icon">🧩</span><span class="gc-name">Puzzle</span></div>
+                    <div class="genre-card"    data-genre="RHYTHM"     onclick="pickGenre(this,'RHYTHM')"><span class="gc-icon">🎵</span><span class="gc-name">Rhythm</span></div>
+                    <div class="genre-card"    data-genre="DEFENSE"    onclick="pickGenre(this,'DEFENSE')"><span class="gc-icon">🗼</span><span class="gc-name">Defense</span></div>
+                    <div class="genre-card"    data-genre="PINBALL"    onclick="pickGenre(this,'PINBALL')"><span class="gc-icon">🔮</span><span class="gc-name">Pinball</span></div>
+                </div>
+                <!-- Hidden select kept for JS compatibility — all code reads genreMode.value -->
+                <select id="genreMode" style="display:none;" onchange="onGenreChange()">
+                    <option value="SHOOTER">Space Shooter</option>
+                    <option value="PLATFORMER">2D Platformer</option>
+                    <option value="DODGE">Dodge &amp; Collect</option>
+                    <option value="BREAKER">Brick Breaker</option>
+                    <option value="RUNNER">Endless Runner</option>
+                    <option value="FLAPPY">Flappy Jump</option>
+                    <option value="INVADERS">Space Invaders</option>
+                    <option value="PONG">Pong vs AI</option>
+                    <option value="SNAKE">Snake</option>
+                    <option value="ASTEROIDS">Asteroids</option>
+                    <option value="ROGUELIKE">Roguelike Dungeon</option>
+                    <option value="RACING">Top-Down Racing</option>
+                    <option value="HOPPER">Endless Hopper</option>
+                    <option value="BEAT">Beat 'em Up</option>
+                    <option value="PUZZLE">Puzzle</option>
+                    <option value="RHYTHM">Rhythm</option>
+                    <option value="DEFENSE">Tower Defense</option>
+                    <option value="PINBALL">Pinball</option>
                 </select>
+                <div id="genre-desc" class="genre-desc"></div>
             </div>
 
             <div class="form-group">
@@ -752,7 +815,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 <button class="btn-sm" style="width:100%;margin-top:6px;background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.3);" onclick="surpriseMe()">🎲 Surprise Me — randomise everything!</button>
             </div>
 
-            <span class="sec-label">Physics</span>
+            <span class="sec-label"><span class="step-num">2</span> Physics</span>
             <div class="form-group">
                 <label for="playerSpeed">Player Speed</label>
                 <div class="range-row">
@@ -820,7 +883,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 <textarea id="levelDesignerGrid" style="display:none;" placeholder="Paste tile array or use Assets → Level Designer"></textarea>
             </div>
 
-            <span class="sec-label">Theme &amp; Story</span>
+            <span class="sec-label"><span class="step-num">3</span> Theme &amp; Story</span>
             <div class="asset-block" style="gap:7px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
                     <div>
@@ -850,9 +913,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 </div>
             </div>
 
-            <button class="btn-run pulsing" id="runGameBtn" onclick="compileAndBootEngine()">▶ Run Game</button>
+            <div id="resumeWrap"></div>
+            <button class="btn-run pulsing" id="runGameBtn" onclick="compileAndBootEngine()">▶ Run Game <kbd class="run-kbd">[R]</kbd></button>
 
-            <span class="sec-label">Save &amp; Share</span>
+            <span class="sec-label" style="display:flex;align-items:center;">Save &amp; Share <span id="autosave-badge">● Auto-saved</span></span>
             <div id="saveSlotList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px;"></div>
             <div class="save-row">
                 <button class="btn-sm purple" onclick="generateShareLink()">🔗 Share</button>
@@ -2790,6 +2854,7 @@ score += bumper.pts;
     <div class="studio-viewport">
         <div class="vp-btn-row">
             <span id="engine-branding">JV Engine · Ready</span>
+            <button class="vp-btn" onclick="openShortcutsModal()" title="Keyboard shortcuts">⌨ Keys</button>
             <button class="vp-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">⛶ Full</button>
             <button class="vp-btn" onclick="takeScreenshot()" title="Screenshot (P)">📷 Shot</button>
         </div>
@@ -3124,6 +3189,12 @@ score += bumper.pts;
                 </div>
             </div>
         </div>
+        <!-- Mobile quick-run bar — persistent on mobile, hidden on desktop -->
+        <div id="mobile-run-bar">
+            <div id="mrb-genre">🚀 SHOOTER</div>
+            <button id="mrb-run" onclick="_mrbRun()">▶ Run Game</button>
+            <button id="mrb-fs" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+        </div>
         <div id="controlsHint" class="controls-hint">Controls: LEFT/RIGHT rotate · UP thrust · SPACE shoot</div>
         <div class="controls-hint" style="font-size:.62rem;opacity:.6;">Shortcuts: <kbd style="background:rgba(255,255,255,.09);padding:1px 5px;border-radius:3px;">R</kbd> Run &nbsp;<kbd style="background:rgba(255,255,255,.09);padding:1px 5px;border-radius:3px;">S</kbd> Save &nbsp;<kbd style="background:rgba(255,255,255,.09);padding:1px 5px;border-radius:3px;">F</kbd> Fullscreen &nbsp;<kbd style="background:rgba(255,255,255,.09);padding:1px 5px;border-radius:3px;">1-5</kbd> Tabs</div>
         <div class="mission-strip">
@@ -3149,6 +3220,29 @@ score += bumper.pts;
 
 <button class="panel-fab" id="panelFab" aria-label="Open settings panel">⚙ Settings</button>
 <div class="toast" id="toast"></div>
+
+<!-- Keyboard shortcuts modal -->
+<div id="shortcutsModal" style="display:none;position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--panel2);border:1px solid rgba(124,58,237,.35);border-radius:16px;padding:20px 22px;width:min(340px,100%);display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.25rem;">⌨️</span>
+            <div style="font-size:.9rem;font-weight:800;color:white;flex:1;">Keyboard Shortcuts</div>
+            <button onclick="closeShortcutsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:2px 6px;">✕</button>
+        </div>
+        <div class="sk-grid">
+            <div class="sk-row"><kbd class="sk-key">R</kbd><span class="sk-label">Run / Restart game</span></div>
+            <div class="sk-row"><kbd class="sk-key">F</kbd><span class="sk-label">Toggle fullscreen</span></div>
+            <div class="sk-row"><kbd class="sk-key">P</kbd><span class="sk-label">Pause game · Screenshot (no game)</span></div>
+            <div class="sk-row"><kbd class="sk-key">Ctrl S</kbd><span class="sk-label">Save to slot 1</span></div>
+            <div class="sk-row"><kbd class="sk-key">1 – 7</kbd><span class="sk-label">Switch Build → Events tabs</span></div>
+            <div class="sk-row"><kbd class="sk-key">Ctrl Z</kbd><span class="sk-label">Undo tilemap paint</span></div>
+            <div class="sk-row"><kbd class="sk-key">Ctrl Y</kbd><span class="sk-label">Redo tilemap paint</span></div>
+            <div class="sk-row"><kbd class="sk-key">Space</kbd><span class="sk-label">Skip intro screen</span></div>
+            <div class="sk-row"><kbd class="sk-key">Enter</kbd><span class="sk-label">Save initials on game over</span></div>
+        </div>
+        <button class="btn-sm purple" onclick="closeShortcutsModal()" style="margin-top:2px;">Got it</button>
+    </div>
+</div>
 
 <!-- PWA install banner (hidden until beforeinstallprompt fires) -->
 <div id="pwa-install-banner" role="banner" aria-live="polite">
@@ -3888,6 +3982,89 @@ function showToast(msg, type) {
     clearTimeout(t._to);
     t._to = setTimeout(() => t.classList.remove('show'), type === 'error' ? 4500 : 2800);
 }
+// ── GENRE PICKER ─────────────────────────────────────────────────────────────
+const _GENRE_DESCS = {
+    SHOOTER:   'Rotate, thrust & blast enemies across space.',
+    PLATFORMER:'Jump across platforms, dodge hazards, reach the end.',
+    DODGE:     'Sidestep falling objects — survive as long as you can.',
+    BREAKER:   'Bounce the ball, smash every block, clear the board.',
+    RUNNER:    'Sprint endlessly — duck, jump, and dodge obstacles.',
+    FLAPPY:    'Tap to flap — weave through a gauntlet of narrow gaps.',
+    INVADERS:  'Hold the line against endless waves of alien invaders.',
+    PONG:      'Out-reflect a relentless AI paddle to win.',
+    SNAKE:     'Grow longer, eat pellets, don\'t bite yourself.',
+    ASTEROIDS: 'Spin, thrust and detonate every rock in the field.',
+    ROGUELIKE: 'Explore dungeons, fight monsters, collect loot.',
+    RACING:    'Burn rubber — drift, use nitro, and cross the line first.',
+    HOPPER:    'Leap between platforms — go as high as you can.',
+    BEAT:      'Punch, kick and combo your way through enemy waves.',
+    PUZZLE:    'Slide and match tiles to clear the board.',
+    RHYTHM:    'Hit notes on beat — keep the multiplier alive.',
+    DEFENSE:   'Place towers, hold the path, stop every wave.',
+    PINBALL:   'Keep the ball alive — rack up combos and jackpots.',
+};
+const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮'};
+
+function pickGenre(el, genre) {
+    document.getElementById('genreMode').value = genre;
+    document.querySelectorAll('.genre-card').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    if (navigator.vibrate) navigator.vibrate(6);
+    onGenreChange();
+}
+function _syncGenrePicker() {
+    const g = document.getElementById('genreMode').value;
+    document.querySelectorAll('.genre-card').forEach(c => c.classList.toggle('on', c.dataset.genre === g));
+    const desc = document.getElementById('genre-desc');
+    if (desc) desc.textContent = _GENRE_DESCS[g] || '';
+    // Update mobile run bar genre label
+    const mrb = document.getElementById('mrb-genre');
+    if (mrb) mrb.textContent = (_GENRE_ICONS[g]||'🕹') + ' ' + g.charAt(0) + g.slice(1).toLowerCase();
+}
+
+// ── RESUME LAST SESSION ───────────────────────────────────────────────────────
+function _showResumeBtn() {
+    const wrap = document.getElementById('resumeWrap');
+    if (!wrap) return;
+    try {
+        const raw = localStorage.getItem('jv_arcade_autosave');
+        if (!raw) { wrap.innerHTML = ''; return; }
+        const d = JSON.parse(raw);
+        const icon = _GENRE_ICONS[d.genre] || '🕹';
+        wrap.innerHTML = `<button class="btn-resume" onclick="_resumeLastGame()" title="Reload your last session and jump straight in">${icon} Resume &mdash; &ldquo;${(d.title||'Untitled').replace(/"/g,'&quot;')}&rdquo;</button>`;
+    } catch(e) { wrap.innerHTML = ''; }
+}
+function _resumeLastGame() {
+    try {
+        const raw = localStorage.getItem('jv_arcade_autosave');
+        if (!raw) return;
+        _applyLoadData(JSON.parse(raw));
+        compileAndBootEngine();
+    } catch(e) { showToast('Could not restore last session', 'error'); }
+}
+
+// ── AUTOSAVE BADGE ────────────────────────────────────────────────────────────
+function _flashAutosaveBadge() {
+    const b = document.getElementById('autosave-badge');
+    if (!b) return;
+    b.classList.add('show');
+    clearTimeout(b._to);
+    b._to = setTimeout(() => b.classList.remove('show'), 2500);
+}
+
+// ── SHORTCUTS MODAL ───────────────────────────────────────────────────────────
+function openShortcutsModal()  { const m=document.getElementById('shortcutsModal'); if(m){m.style.display='flex';} }
+function closeShortcutsModal() { const m=document.getElementById('shortcutsModal'); if(m){m.style.display='none';} }
+
+// ── MOBILE RUN BAR ────────────────────────────────────────────────────────────
+function _mrbRun() {
+    const panel = document.getElementById('studioPanel');
+    const fab   = document.getElementById('panelFab');
+    if (panel) panel.classList.remove('panel-open');
+    if (fab)   fab.innerHTML = '⚙ Settings';
+    compileAndBootEngine();
+}
+
 // ── CENTRALIZED ERROR HANDLER ─────────────────────────────────────────────────
 function _gameError(msg, detail, fatal) {
     detail = detail || '';
@@ -3987,6 +4164,7 @@ const GENRE_PALETTES = {
 };
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
+    _syncGenrePicker(); // sync visual picker, genre description, mobile run bar
     const root = document.getElementById('studioRoot');
     ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL'].forEach(c => root.classList.remove('genre-'+c));
     root.classList.add('genre-'+g);
@@ -4130,9 +4308,15 @@ function compileAndBootEngine() {
     const _gw = document.getElementById('gameWrap');
     if (_gw) _gw.classList.remove('idle');
     const _rb = document.getElementById('runGameBtn');
-    if (_rb) _rb.classList.remove('pulsing');
+    if (_rb) { _rb.classList.remove('pulsing'); _rb.innerHTML = '↺ Restart <kbd class="run-kbd">[R]</kbd>'; }
     const _eb = document.getElementById('engine-branding');
     if (_eb) { _eb.textContent = `▶  ${data.title}`; _eb.classList.add('playing'); }
+    // Hide resume button once a game is running
+    const _rw = document.getElementById('resumeWrap');
+    if (_rw) _rw.innerHTML = '';
+    // Update mobile run bar
+    const _mrbRun2 = document.getElementById('mrb-run');
+    if (_mrbRun2) { _mrbRun2.textContent = '↺ Restart'; _mrbRun2.classList.add('restarting'); }
     // Always re-arm user script on any boot (including normal Run)
     if (_userCodeFns) _userCodeFirstRun = true;
     _scheduleAutoSave();
@@ -8713,7 +8897,7 @@ function _scheduleAutoSave() {
     clearTimeout(_autoSaveTimer);
     _autoSaveTimer = setTimeout(() => {
         // Write to hidden key so autosave never clobbers user-created slots
-        try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); } catch(e) {}
+        try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); _flashAutosaveBadge(); } catch(e) {}
     }, 2500);
 }
 
@@ -12531,6 +12715,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     setupTouchControls();
     onGenreChange();
     renderSaveSlots();
+    _showResumeBtn(); // show "Resume last session" if autosave exists
     // Restore advanced-mode unlock state from previous sessions
     if (localStorage.getItem('jv_events_unlocked')) {
         document.getElementById('studioRoot').classList.add('advanced-unlocked');
@@ -12608,6 +12793,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        // Escape closes any open modal
+        if (e.key === 'Escape') { closeShortcutsModal(); return; }
+        // ? opens shortcuts modal
+        if (e.key === '?') { openShortcutsModal(); return; }
         // SPACE dismisses intro title screen
         if (e.key === ' ' && document.getElementById('introOverlay').classList.contains('show')) {
             e.preventDefault(); closeIntro(); return;
