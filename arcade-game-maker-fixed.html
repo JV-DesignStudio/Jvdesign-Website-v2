@@ -25,11 +25,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Preload Phaser so it starts downloading immediately (high priority) -->
-<link rel="preload" href="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js" as="script" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js" as="script" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
 <style>
 :root{
     --bg:#0a0a12;--panel:#0f1521;--panel2:#161f30;--panel3:#1c2840;
@@ -790,6 +790,51 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
   /* Asset blocks more compact */
   .asset-block{padding:8px 10px;gap:6px;}
 }
+
+.genre-canvas-picker{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:12px;
+    width:100%;
+    max-width:640px;
+    margin-bottom:14px;
+}
+
+.genre-card{
+    background:rgba(255,255,255,.05);
+    border:2px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:16px 10px;
+    color:white;
+    cursor:pointer;
+    transition:.2s;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+}
+
+.genre-card span{
+    font-size:2rem;
+}
+
+.genre-card strong{
+    font-size:.8rem;
+}
+
+.genre-card:hover{
+    transform:translateY(-3px);
+    border-color:#a78bfa;
+    background:rgba(124,58,237,.2);
+}
+
+.genre-card.active{
+    background:rgba(124,58,237,.35);
+    border-color:#7c3aed;
+    box-shadow:0 0 18px rgba(124,58,237,.35);
+}
+
 </style>
 </head>
 <body>
@@ -2938,7 +2983,37 @@ score += bumper.pts;
     </div>
 
     <!-- VIEWPORT -->
-    <div class="studio-viewport">
+    
+<div id="genreCanvasPicker" class="genre-canvas-picker">
+
+    <button class="genre-card active" data-genre="SHOOTER">
+        <span>🚀</span>
+        <strong>Shooter</strong>
+    </button>
+
+    <button class="genre-card" data-genre="PLATFORMER">
+        <span>🏃</span>
+        <strong>Platformer</strong>
+    </button>
+
+    <button class="genre-card" data-genre="RACING">
+        <span>🏎️</span>
+        <strong>Racing</strong>
+    </button>
+
+    <button class="genre-card" data-genre="SNAKE">
+        <span>🐍</span>
+        <strong>Snake</strong>
+    </button>
+
+    <button class="genre-card" data-genre="PINBALL">
+        <span>🔮</span>
+        <strong>Pinball</strong>
+    </button>
+
+</div>
+
+<div class="studio-viewport">
         <div class="vp-btn-row">
             <span id="engine-branding">JV Engine · Ready</span>
             <button class="vp-btn" onclick="openShortcutsModal()" title="Keyboard shortcuts">⌨ Keys</button>
@@ -4466,7 +4541,6 @@ function compileAndBootEngine() {
     if (_speedRunActive) { const el=document.getElementById('speedRunTime'); if(el) el.textContent='0:00.000'; }
     // Transition + title screen
     _runTransitionOut(()=>_showTitleScreen(data));
-    
 }
 function _showTitleScreen(data) {
     const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮'};
@@ -13479,19 +13553,45 @@ window.addEventListener('DOMContentLoaded', ()=>{
 })();
 </script>
 <script>
-    // Bulletproof click-to-play hardware focus hook
-document.getElementById('game-container')?.addEventListener('mousedown', function() {
-  const canvas = this.querySelector('canvas');
-  if (canvas) {
-    canvas.setAttribute('tabindex', '0'); 
-    canvas.focus();
-  }
-});
-// ── SERVICE WORKER + PWA ──────────────────────────────────────────────────────//
-//
-//if ('serviceWorker' in navigator) {
-//  navigator.serviceWorker.register('/sw.js').catch(() => {});
-//}
+// Ultimate global event hijacking bypass
+(function() {
+  // 1. Force the intro overlay to be click-through so it never intercepts mouse events
+  const style = document.createElement('style');
+  style.innerHTML = '#introOverlay { pointer-events: none !important; }';
+  document.head.appendChild(style);
+
+  // 2. Kill the Spacebar from triggering page/UI activations globally
+  window.addEventListener('keydown', function(e) {
+    if (e.code === 'Space') {
+      const canvas = document.querySelector('#game-container canvas');
+      if (canvas) {
+        e.preventDefault();
+        canvas.setAttribute('tabindex', '0');
+        canvas.focus();
+        // Forward the spacebar directly to Phaser's internal registry
+        if (window.game && window.game.input && window.game.input.keyboard) {
+          window.game.input.keyboard.keydownHandler(e);
+        }
+      }
+    }
+  }, { capture: true, passive: false });
+
+  // 3. Force canvas focus the exact millisecond any mouse click goes down
+  window.addEventListener('mousedown', function(e) {
+    const container = document.getElementById('game-container');
+    if (container && container.contains(e.target)) {
+      const canvas = container.querySelector('canvas');
+      if (canvas) {
+        canvas.setAttribute('tabindex', '0');
+        canvas.focus();
+      }
+    }
+  }, true);
+})();
+// ── SERVICE WORKER + PWA ──────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 
 // ── INSTALL PROMPT ────────────────────────────────────────────────────────────
 let _pwaPrompt = null;
@@ -13535,6 +13635,41 @@ window.addEventListener('offline', () => {
 window.addEventListener('online', () => {
   showToast('✅ Back online!', 'success');
 });
+</script>
+<script>
+
+function setupGenreCanvasPicker(){
+
+    const cards = document.querySelectorAll('.genre-card');
+
+    cards.forEach(card => {
+
+        card.addEventListener('click', () => {
+
+            const genre = card.dataset.genre;
+
+            const dropdown = document.getElementById('genreMode');
+
+            if(dropdown){
+                dropdown.value = genre;
+            }
+
+            if(typeof onGenreChange === 'function'){
+                onGenreChange();
+            }
+
+            cards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+
+            if(typeof compileAndBootEngine === 'function'){
+                compileAndBootEngine();
+            }
+        });
+    });
+}
+
+window.addEventListener('DOMContentLoaded', setupGenreCanvasPicker);
+
 </script>
 </body>
 </html>
