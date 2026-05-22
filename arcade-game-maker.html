@@ -751,6 +751,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
                 <button class="btn-sm" style="flex:1;" onclick="copyEmbedCode()" title="Copy iframe embed code">&#60;/&#62; Embed</button>
             </div>
             <div style="display:flex;gap:6px;margin-top:2px;">
+                <button class="btn-sm" style="flex:1;" onclick="importGameFile()" title="Load a .json or .html game file">📥 Import File</button>
+                <input id="importFileInput" type="file" accept=".json,.html" style="display:none;" onchange="_onImportFileChange(this)">
+            </div>
+            <div style="display:flex;gap:6px;margin-top:2px;">
                 <button class="btn-sm" style="flex:1;" onclick="openAchModal()" title="View all achievements">🏅 Achievements</button>
                 <button class="btn-sm" style="flex:1;" onclick="startTutorial()" title="Quick tour of the maker">❓ Tour</button>
             </div>
@@ -3517,11 +3521,11 @@ function takeScreenshot() {
 }
 
 // ── EMBED CODE ────────────────────────────────────────────────────────────────
-function copyEmbedCode() {
+async function copyEmbedCode() {
     if (!_engineData) { showToast('Hit ▶ Run first, then copy embed code'); return; }
     try {
         const d = _engineData;
-        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
+        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
         const url = location.origin + location.pathname + '?game=' + enc;
         const embed = `<iframe src="${url}" width="660" height="440" style="border:none;border-radius:12px;" title="${d.title}" allowfullscreen></iframe>`;
         navigator.clipboard.writeText(embed).then(()=>showToast('Embed code copied! Paste into any webpage 🔗')).catch(()=>prompt('Copy embed code:',embed));
@@ -8362,7 +8366,7 @@ function importSfxSlot(event) {
 }
 
 // ── SAVE / LOAD / SHARE ───────────────────────────────────────────────────────
-const SLOT_KEYS = ['jv_arcade_slot_0','jv_arcade_slot_1','jv_arcade_slot_2'];
+const SLOT_KEYS = ['jv_arcade_slot_0','jv_arcade_slot_1','jv_arcade_slot_2','jv_arcade_slot_3','jv_arcade_slot_4'];
 let _autoSaveTimer = null;
 
 function _buildSaveData() {
@@ -8435,13 +8439,15 @@ function renderSaveSlots() {
             const thumbHtml = d.thumbnail
                 ? `<img src="${d.thumbnail}" style="width:52px;height:33px;object-fit:cover;border-radius:4px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);">`
                 : `<span style="font-size:1.1rem;flex-shrink:0;">${ICONS[d.genre]||'🕹️'}</span>`;
-            return `<div style="display:flex;align-items:center;gap:6px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:5px 7px;">
+            return `<div style="display:flex;align-items:center;gap:5px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:5px 7px;">
                 ${thumbHtml}
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:.65rem;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.title||'Untitled'}</div>
                     <div style="font-size:.58rem;color:var(--muted);">${ICONS[d.genre]||'🕹️'} ${d.genre||''} · ${d.savedAt||'Saved'}</div>
                 </div>
-                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlot(${i})" title="Overwrite slot">💾</button>
+                <button id="slotSaveBtn${i}" class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="saveToSlotConfirm(${i})" title="Overwrite slot (click twice to confirm)">💾</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="duplicateSlot(${i})" title="Duplicate to next empty slot">⎘</button>
+                <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="exportSlotJson(${i})" title="Download as JSON">↓</button>
                 <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;" onclick="loadFromSlot(${i})" title="Load">📂</button>
                 <button class="btn-sm" style="padding:2px 7px;font-size:.6rem;color:#f87171;" onclick="deleteSlot(${i})" title="Delete">✕</button>
             </div>`;
@@ -8453,6 +8459,101 @@ function renderSaveSlots() {
             </div>`;
         }
     }).join('');
+}
+
+function duplicateSlot(srcIdx) {
+    try {
+        const raw = localStorage.getItem(SLOT_KEYS[srcIdx]);
+        if (!raw) { showToast(`Slot ${srcIdx+1} is empty`); return; }
+        // Find first empty slot (skip source)
+        const destIdx = SLOT_KEYS.findIndex((k,i) => i !== srcIdx && !localStorage.getItem(k));
+        if (destIdx === -1) { showToast('No empty slot to copy into — delete one first', 'warn'); return; }
+        const d = JSON.parse(raw);
+        d.title = (d.title || 'Untitled') + ' (copy)';
+        d.savedAt = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+        localStorage.setItem(SLOT_KEYS[destIdx], JSON.stringify(d));
+        renderSaveSlots();
+        showToast(`Slot ${srcIdx+1} → Slot ${destIdx+1} copied ✓`, 'success');
+    } catch(e) { showToast('Duplicate failed', 'error'); }
+}
+
+function exportSlotJson(slotIdx) {
+    try {
+        const raw = localStorage.getItem(SLOT_KEYS[slotIdx]);
+        if (!raw) { showToast(`Slot ${slotIdx+1} is empty`); return; }
+        const d = JSON.parse(raw);
+        const blob = new Blob([JSON.stringify(d, null, 2)], {type:'application/json;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (d.title || 'arcade-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast(`"${d.title}" exported as JSON ✓`);
+    } catch(e) { showToast('Export failed', 'error'); }
+}
+
+// Two-step overwrite: first click shows confirm state, second click saves, auto-resets after 3s
+const _slotConfirmTimers = {};
+function saveToSlotConfirm(slotIdx) {
+    const raw = localStorage.getItem(SLOT_KEYS[slotIdx]);
+    if (!raw) { saveToSlot(slotIdx); return; } // empty slot — save immediately
+    const btnId = `slotSaveBtn${slotIdx}`;
+    const btn = document.getElementById(btnId);
+    if (!btn) { saveToSlot(slotIdx); return; }
+    if (btn.dataset.confirm === '1') {
+        // Second click — confirmed
+        clearTimeout(_slotConfirmTimers[slotIdx]);
+        btn.dataset.confirm = '';
+        btn.textContent = '💾';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        saveToSlot(slotIdx);
+    } else {
+        // First click — show confirm state
+        btn.dataset.confirm = '1';
+        btn.textContent = '✓?';
+        btn.style.color = '#fbbf24';
+        btn.style.borderColor = 'rgba(251,191,36,.5)';
+        clearTimeout(_slotConfirmTimers[slotIdx]);
+        _slotConfirmTimers[slotIdx] = setTimeout(() => {
+            btn.dataset.confirm = '';
+            btn.textContent = '💾';
+            btn.style.color = '';
+            btn.style.borderColor = '';
+        }, 3000);
+    }
+}
+
+function importGameFile() {
+    const input = document.getElementById('importFileInput');
+    if (input) input.click();
+}
+function _onImportFileChange(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            let d;
+            if (file.name.endsWith('.html')) {
+                // Extract baked config from exported HTML
+                const match = e.target.result.match(/window\.__exportMode=true;var _c=(\{.*?\});/s);
+                if (!match) throw new Error('No config found in HTML file');
+                d = JSON.parse(match[1]);
+                // HTML export uses flat structure — wrap to match save format
+                d.liveConfig = d.liveConfig || {};
+                d.title = d.title || 'Imported Game';
+            } else {
+                d = JSON.parse(e.target.result);
+            }
+            _applyLoadData(d);
+        } catch(err) {
+            _gameError('Import failed', err.message || 'Invalid file format', false);
+        }
+        input.value = ''; // reset so same file can be re-imported
+    };
+    reader.readAsText(file);
 }
 
 // Legacy compat — called by autosave & keyboard shortcut 'S'
@@ -8749,6 +8850,42 @@ function _applyLoadData(d) {
     showToast(`"${d.title}" loaded! ✓`, 'success');
 }
 
+// ── Payload compression helpers (CompressionStream, falls back to btoa) ──────
+async function _compressPayload(str) {
+    try {
+        const bytes = new TextEncoder().encode(str);
+        const cs = new CompressionStream('deflate-raw');
+        const writer = cs.writable.getWriter();
+        writer.write(bytes);
+        writer.close();
+        const arr = await new Response(cs.readable).arrayBuffer();
+        // base64url (no padding, URL-safe chars)
+        return btoa(String.fromCharCode(...new Uint8Array(arr)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    } catch(e) {
+        // Older browsers without CompressionStream — plain btoa fallback
+        return btoa(encodeURIComponent(str));
+    }
+}
+
+async function _decompressPayload(b64) {
+    try {
+        // Try CompressionStream decompression first (new format)
+        const b64std = b64.replace(/-/g, '+').replace(/_/g, '/');
+        const padding = (4 - (b64std.length % 4)) % 4;
+        const padded  = b64std + '='.repeat(padding);
+        const bytes   = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+        const ds = new DecompressionStream('deflate-raw');
+        const writer = ds.writable.getWriter();
+        writer.write(bytes);
+        writer.close();
+        return await new Response(ds.readable).text();
+    } catch(e) {
+        // Legacy format: btoa(encodeURIComponent(json))
+        return decodeURIComponent(atob(b64));
+    }
+}
+
 async function _shortenUrl(longUrl) {
     try {
         const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(longUrl));
@@ -8769,38 +8906,6 @@ function _buildSharePayload(d) {
              map:d.map, liveConfig:Object.assign({},liveConfig),
              theme:{cols:gameTheme.cols.slice(),name:gameTheme.name},
              bestScore, forkCount };
-}
-
-async function generateShareLink() {
-    if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link (too large)');
-    const d = getPayload();
-    try {
-        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
-        const longUrl = location.origin + location.pathname + '?game=' + enc;
-        showToast('Shortening link… ⏳');
-        const short = await _shortenUrl(longUrl);
-        const finalUrl = short || longUrl;
-        try {
-            await navigator.clipboard.writeText(finalUrl);
-            showToast('🔗 Share link copied!' + (short ? ' (shortened)' : ''), 'success');
-        } catch(e) { prompt('Copy this link:', finalUrl); }
-    } catch(e) { showToast('Share link too large — try clearing level map or sprite'); }
-}
-
-async function generateRemixLink() {
-    if (customSpriteDataUrl) showToast('⚠️ Custom sprite not included in remix link');
-    const d = getPayload();
-    try {
-        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
-        const longUrl = location.origin + location.pathname + '?remix=' + enc;
-        showToast('Shortening link… ⏳');
-        const short = await _shortenUrl(longUrl);
-        const finalUrl = short || longUrl;
-        try {
-            await navigator.clipboard.writeText(finalUrl);
-            showToast('🎮 Remix link copied!' + (short ? ' (shortened)' : ''), 'success');
-        } catch(e) { prompt('Copy remix link:', finalUrl); }
-    } catch(e) { showToast('Remix link too large'); }
 }
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
@@ -9850,14 +9955,28 @@ async function generateShareLink() {
     if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link');
     const d = getPayload();
     try {
-        const enc = btoa(encodeURIComponent(JSON.stringify(_buildSharePayload(d))));
+        showToast('Compressing…  ⏳');
+        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
         const longUrl = location.origin + location.pathname + '?game=' + enc;
-        showToast('Shortening link… ⏳');
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
         _openShareModal(finalUrl, d.title || 'My Game');
-    } catch(e) { showToast('Share link too large — try clearing level map or sprite'); }
+    } catch(e) { showToast('Share link failed — try clearing the level map', 'error'); }
 }
+
+async function generateRemixLink() {
+    if (customSpriteDataUrl) showToast('⚠️ Custom sprite not included in remix link');
+    const d = getPayload();
+    try {
+        showToast('Compressing…  ⏳');
+        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
+        const longUrl = location.origin + location.pathname + '?remix=' + enc;
+        const short = await _shortenUrl(longUrl);
+        const finalUrl = short || longUrl;
+        _openShareModal(finalUrl, d.title || 'My Game');
+    } catch(e) { showToast('Remix link failed — try clearing the level map', 'error'); }
+}
+
 function _openShareModal(url, title, forkCount) {
     _shareCurrentUrl = url;
     const forks = forkCount || 0;
@@ -12179,45 +12298,52 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const enc=params.get('game')||params.get('remix');
     const isRemix=!!params.get('remix');
     if (enc) {
-        try {
-            const d=JSON.parse(decodeURIComponent(atob(enc)));
-            document.getElementById('gameTitle').value=d.title||'My Arcade Game';
-            document.getElementById('genreMode').value=d.genre||'SHOOTER';
-            document.getElementById('playerSpeed').value=d.speed||200; document.getElementById('playerSpeedRange').value=d.speed||200; document.getElementById('speedVal').textContent=d.speed||200;
-            document.getElementById('gravityY').value=d.gravity||600; document.getElementById('gravityRange').value=d.gravity||600; document.getElementById('gravityVal').textContent=d.gravity||600;
-            document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
-            if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
-            if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
-            if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
-            // Seed the creator's best score so recipients have a target to beat
-            if (d.bestScore > 0) {
-                try {
-                    const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
-                    let board = [];
-                    try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
-                    if (!board.some(e=>e.score===d.bestScore && e.date==='🏆 Creator')) {
-                        board.push({ score: d.bestScore, date: '🏆 Creator' });
-                        board.sort((a,b)=>b.score-a.score);
-                        localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
-                    }
-                } catch(e) {}
-            }
-            onGenreChange();
-            if(isRemix) {
-                // Increment the fork counter stored locally
-                try {
-                    const forkKey = 'jv_fork_count';
-                    const newCount = (parseInt(localStorage.getItem(forkKey)||'0')) + 1;
-                    localStorage.setItem(forkKey, newCount);
-                } catch(e){}
-                // Remix: load settings but don't auto-boot — let user tweak first
-                document.getElementById('gameTitle').value = '🎮 Remix of ' + (d.title||'Game');
-                showToast('🎮 Remix loaded! Tweak it and hit ▶ Run to make it yours');
-                return; // skip auto-boot
-            }
-        } catch(e) {}
+        (async () => {
+            let loadedOk = false;
+            try {
+                const json = await _decompressPayload(enc);
+                const d=JSON.parse(json);
+                document.getElementById('gameTitle').value=d.title||'My Arcade Game';
+                document.getElementById('genreMode').value=d.genre||'SHOOTER';
+                document.getElementById('playerSpeed').value=d.speed||200; document.getElementById('playerSpeedRange').value=d.speed||200; document.getElementById('speedVal').textContent=d.speed||200;
+                document.getElementById('gravityY').value=d.gravity||600; document.getElementById('gravityRange').value=d.gravity||600; document.getElementById('gravityVal').textContent=d.gravity||600;
+                document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
+                if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
+                if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
+                if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+                // Seed the creator's best score so recipients have a target to beat
+                if (d.bestScore > 0) {
+                    try {
+                        const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
+                        let board = [];
+                        try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
+                        if (!board.some(e=>e.score===d.bestScore && e.date==='🏆 Creator')) {
+                            board.push({ score: d.bestScore, date: '🏆 Creator' });
+                            board.sort((a,b)=>b.score-a.score);
+                            localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
+                        }
+                    } catch(e) {}
+                }
+                onGenreChange();
+                loadedOk = true;
+                if(isRemix) {
+                    // Increment the fork counter stored locally
+                    try {
+                        const forkKey = 'jv_fork_count';
+                        const newCount = (parseInt(localStorage.getItem(forkKey)||'0')) + 1;
+                        localStorage.setItem(forkKey, newCount);
+                    } catch(e){}
+                    // Remix: load settings but don't auto-boot — let user tweak first
+                    document.getElementById('gameTitle').value = '🎮 Remix of ' + (d.title||'Game');
+                    showToast('🎮 Remix loaded! Tweak it and hit ▶ Run to make it yours');
+                    return; // skip auto-boot inside this IIFE
+                }
+            } catch(e) {}
+            compileAndBootEngine();
+        })();
+    } else {
+        compileAndBootEngine();
     }
-    compileAndBootEngine();
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
     document.addEventListener('keydown', e => {
