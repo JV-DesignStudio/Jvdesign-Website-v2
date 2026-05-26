@@ -1144,6 +1144,24 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                 </div>
             </div>
 
+            <!-- ── STORY ── -->
+            <span class="sec-label" style="cursor:pointer;" onclick="_toggleBuildStory()" id="buildStoryLabel">📖 Story <span id="buildStoryArrow" style="font-size:.7rem;margin-left:4px;color:var(--muted);">▶</span></span>
+            <div id="buildStoryBody" style="display:none;flex-direction:column;gap:7px;">
+                <div style="font-size:.63rem;color:var(--muted);line-height:1.5;">Add story text shown on the intro screen, victory, and game-over screens.</div>
+                <div>
+                    <label style="font-size:.64rem;color:var(--cyan);font-weight:700;display:block;margin-bottom:3px;">Game Intro (max 200 chars)</label>
+                    <textarea id="buildStoryIntroInput" maxlength="200" rows="2" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,212,170,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;resize:none;font-family:'Inter',sans-serif;" placeholder="Shown below the game title before play starts..." oninput="liveConfig.storyIntro=this.value;_syncBuildStoryBadge();_syncExtrasStoryInputs();"></textarea>
+                </div>
+                <div>
+                    <label style="font-size:.64rem;color:#4ade80;font-weight:700;display:block;margin-bottom:3px;">Win Message</label>
+                    <input id="buildStoryWinInput" type="text" maxlength="80" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(74,222,128,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;" placeholder="e.g. You saved the universe!" oninput="liveConfig.storyWin=this.value;_syncExtrasStoryInputs();">
+                </div>
+                <div>
+                    <label style="font-size:.64rem;color:#f87171;font-weight:700;display:block;margin-bottom:3px;">Lose Message</label>
+                    <input id="buildStoryLoseInput" type="text" maxlength="80" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(248,113,113,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;" placeholder="e.g. The darkness swallowed the land..." oninput="liveConfig.storyLose=this.value;_syncExtrasStoryInputs();">
+                </div>
+            </div>
+
             <div id="resumeWrap"></div>
             <button class="btn-run pulsing" id="runGameBtn" onclick="compileAndBootEngine()">▶ Run Game <kbd class="run-kbd">[R]</kbd></button>
 
@@ -1905,6 +1923,100 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                     <button class="pill" onclick="activePill('pillTransition',this);liveConfig.sceneTransition='fade';">Fade</button>
                     <button class="pill" onclick="activePill('pillTransition',this);liveConfig.sceneTransition='wipe';">Wipe</button>
                     <button class="pill" onclick="activePill('pillTransition',this);liveConfig.sceneTransition='pixelate';">Pixelate</button>
+                </div>
+            </div>
+
+            <!-- ── VISUAL THEME ── (universal) -->
+            <span class="sec-label">🎨 Theme</span>
+            <div class="form-group" style="padding:10px 12px 12px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);border-radius:10px;">
+                <div style="font-size:.66rem;color:var(--muted);margin-bottom:8px;">Changes the colour palette and emoji sprites across the entire game</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;" id="themePickerGrid">
+                    <button class="pill active" id="themePill-space"  onclick="_pickTheme('space')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🚀<span style="font-size:.58rem;color:var(--muted);">Space</span></button>
+                    <button class="pill"         id="themePill-ocean"  onclick="_pickTheme('ocean')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🌊<span style="font-size:.58rem;color:var(--muted);">Ocean</span></button>
+                    <button class="pill"         id="themePill-forest" onclick="_pickTheme('forest')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🌲<span style="font-size:.58rem;color:var(--muted);">Forest</span></button>
+                    <button class="pill"         id="themePill-castle" onclick="_pickTheme('castle')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🏰<span style="font-size:.58rem;color:var(--muted);">Castle</span></button>
+                    <button class="pill"         id="themePill-candy"  onclick="_pickTheme('candy')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🍬<span style="font-size:.58rem;color:var(--muted);">Candy</span></button>
+                    <button class="pill"         id="themePill-cyber"  onclick="_pickTheme('cyber')" style="display:flex;flex-direction:column;align-items:center;padding:6px 4px;gap:2px;font-size:.85rem;">🤖<span style="font-size:.58rem;color:var(--muted);">Cyber</span></button>
+                </div>
+            </div>
+
+            <!-- ── PARALLAX BACKGROUNDS ── (universal — scrolling genres only) -->
+            <span class="sec-label">🌌 Parallax Backgrounds</span>
+            <div class="form-group">
+                <div class="toggle-row">
+                    <div><div class="toggle-label">Parallax Layers</div><div class="toggle-sub">3 scrolling depth layers behind the game (Platformer, Runner, Flappy, Racing)</div></div>
+                    <label class="toggle-switch"><input type="checkbox" id="parallaxToggle" checked onchange="liveConfig.parallaxLayers=this.checked;"><span class="toggle-knob"></span></label>
+                </div>
+            </div>
+
+            <!-- ── STORY / DIALOGUE ── (universal) -->
+            <span class="sec-label">📖 Story &amp; Messages</span>
+            <div class="form-group" style="padding:10px 12px 12px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.18);border-radius:10px;">
+                <div style="font-size:.66rem;color:var(--muted);margin-bottom:8px;">Text shown on the intro screen, victory screen, and game-over screen</div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                    <div>
+                        <label style="font-size:.64rem;color:var(--cyan);font-weight:700;display:block;margin-bottom:3px;">Game Intro (shown before play)</label>
+                        <textarea id="storyIntroInput" maxlength="200" rows="2" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,212,170,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;resize:none;font-family:'Inter',sans-serif;" placeholder="e.g. The aliens have invaded Earth! Save the planet..." oninput="liveConfig.storyIntro=this.value;_syncStoryBadge();"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:.64rem;color:#4ade80;font-weight:700;display:block;margin-bottom:3px;">Win Message</label>
+                        <input id="storyWinInput" type="text" maxlength="80" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(74,222,128,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;" placeholder="e.g. You saved the universe!" oninput="liveConfig.storyWin=this.value;">
+                    </div>
+                    <div>
+                        <label style="font-size:.64rem;color:#f87171;font-weight:700;display:block;margin-bottom:3px;">Game Over Message</label>
+                        <input id="storyLoseInput" type="text" maxlength="80" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(248,113,113,.2);border-radius:6px;color:var(--text);font-size:.66rem;padding:5px 8px;" placeholder="e.g. The aliens won this time..." oninput="liveConfig.storyLose=this.value;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── ENEMY AI ── (genre-specific) -->
+            <div id="custom-enemyAI" style="display:none;">
+                <span class="sec-label">👾 Enemy Behaviour</span>
+                <div class="form-group">
+                    <label>AI Pattern <span style="color:var(--muted);font-weight:400;">— how enemies move and attack</span></label>
+                    <div class="pill-row" id="pillEnemyAI">
+                        <button class="pill active" onclick="activePill('pillEnemyAI',this);liveConfig.enemyAI='classic';_updateEnemyAIHint();" title="Classic falling enemies">🎯 Classic</button>
+                        <button class="pill"         onclick="activePill('pillEnemyAI',this);liveConfig.enemyAI='chaser';_updateEnemyAIHint();"  title="Homes in on the player">🏃 Chaser</button>
+                        <button class="pill"         onclick="activePill('pillEnemyAI',this);liveConfig.enemyAI='zigzag';_updateEnemyAIHint();"  title="Sinusoidal weaving movement">〰 Zigzag</button>
+                        <button class="pill"         onclick="activePill('pillEnemyAI',this);liveConfig.enemyAI='bomber';_updateEnemyAIHint();"  title="Dives at player when close">💣 Bomber</button>
+                        <button class="pill"         onclick="activePill('pillEnemyAI',this);liveConfig.enemyAI='tank';_updateEnemyAIHint();"    title="Slow, takes 3 hits, bigger">🛡 Tank</button>
+                    </div>
+                    <div id="enemyAIHint" style="font-size:.6rem;color:var(--muted);margin-top:5px;line-height:1.5;">Classic — enemies drop straight down at set speed.</div>
+                </div>
+            </div>
+
+            <!-- ── BOSS FIGHT ── (genre-specific) -->
+            <div id="custom-bossFight" style="display:none;">
+                <span class="sec-label">💀 Boss Fight</span>
+                <div class="form-group" style="padding:10px 12px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.22);border-radius:10px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                        <div style="font-size:.72rem;color:#f87171;font-weight:700;">Summon a powerful boss enemy at a score threshold</div>
+                        <label class="toggle-switch" style="flex-shrink:0;"><input type="checkbox" id="bossEnabledToggle" onchange="liveConfig.bossEnabled=this.checked;document.getElementById('bossFightBody').style.opacity=this.checked?'1':'.4';"><span class="toggle-knob"></span></label>
+                    </div>
+                    <div id="bossFightBody" style="opacity:.4;">
+                        <div class="form-group" style="margin-bottom:6px;">
+                            <label style="font-size:.64rem;">Appears at score</label>
+                            <div class="range-row">
+                                <input type="range" min="100" max="2000" step="100" value="500" id="bossScoreSlider" oninput="liveConfig.bossScore=+this.value;this.nextElementSibling.textContent=this.value+' pts';">
+                                <span class="range-val">500 pts</span>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:6px;">
+                            <label style="font-size:.64rem;">Boss HP</label>
+                            <div class="range-row">
+                                <input type="range" min="10" max="50" step="5" value="20" id="bossHpSlider" oninput="liveConfig.bossHpNew=+this.value;this.nextElementSibling.textContent=this.value+' HP';">
+                                <span class="range-val">20 HP</span>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:.64rem;">Boss Pattern</label>
+                            <div class="pill-row" id="pillBossBehaviour">
+                                <button class="pill active" onclick="activePill('pillBossBehaviour',this);liveConfig.bossBehaviour='sweep';">↔ Sweeper</button>
+                                <button class="pill"         onclick="activePill('pillBossBehaviour',this);liveConfig.bossBehaviour='chase';">🎯 Chaser</button>
+                                <button class="pill"         onclick="activePill('pillBossBehaviour',this);liveConfig.bossBehaviour='random';">🎲 Random</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -3509,6 +3621,7 @@ score += bumper.pts;
                     <div id="goWinBanner" style="display:none;font-size:.95rem;margin-bottom:4px;">🎉 You reached the goal!</div>
                     <div id="goGrade" style="display:none;"></div>
                     <div class="go-score" id="goScore">Score: 0</div>
+                    <div id="goStoryMsg" style="display:none;font-size:.72rem;color:var(--muted);text-align:center;margin:4px 0 0;font-style:italic;line-height:1.4;max-width:260px;"></div>
                     <div class="go-time" id="goTime" style="display:none;"></div>
                     <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
                     <!-- Initials entry -->
@@ -3953,7 +4066,17 @@ const liveConfig = {
     juiceBurst:     true,  juiceBurstCount: 10,
     juiceChroma:    true,
     juiceZoom:      false, juiceZoomScale: 1.06,
-    juiceComboFlash:true
+    juiceComboFlash:true,
+    // ── Visual Themes ─────────────────────────────────────────────
+    theme: 'space',
+    // ── Parallax Backgrounds ──────────────────────────────────────
+    parallaxLayers: true,
+    // ── Story / Dialogue ──────────────────────────────────────────
+    storyIntro: '', storyWin: '', storyLose: '',
+    // ── Enemy AI ──────────────────────────────────────────────────
+    enemyAI: 'classic',
+    // ── Boss Fight ────────────────────────────────────────────────
+    bossEnabled: false, bossScore: 500, bossHpNew: 20, bossBehaviour: 'sweep'
 };
 
 // Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
@@ -3980,6 +4103,19 @@ function themeInt(idx, fallback) {
     return c ? parseInt(c.replace('#',''), 16) : fallback;
 }
 function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
+
+// ── Visual Theme data ─────────────────────────────────────────────────────────
+function _themeData(theme) {
+    const themes = {
+        space:  { bg:0x0a0a18, bgHex:'#0a0a18', playerEmoji:'🚀', enemyEmoji:'👾', bulletEmoji:'💥', collectEmoji:'⭐', accentColor:0x7c3aed },
+        ocean:  { bg:0x042a3d, bgHex:'#042a3d', playerEmoji:'🐠', enemyEmoji:'🦑', bulletEmoji:'💧', collectEmoji:'🐚', accentColor:0x0891b2 },
+        forest: { bg:0x0d1a0d, bgHex:'#0d1a0d', playerEmoji:'🦊', enemyEmoji:'🍄', bulletEmoji:'🌿', collectEmoji:'🌰', accentColor:0x16a34a },
+        castle: { bg:0x1a1a22, bgHex:'#1a1a22', playerEmoji:'⚔️', enemyEmoji:'🐉', bulletEmoji:'✨', collectEmoji:'💎', accentColor:0xb45309 },
+        candy:  { bg:0x2a0a2a, bgHex:'#2a0a2a', playerEmoji:'🧁', enemyEmoji:'🍬', bulletEmoji:'⭐', collectEmoji:'🍭', accentColor:0xec4899 },
+        cyber:  { bg:0x000a00, bgHex:'#000a00', playerEmoji:'🤖', enemyEmoji:'💻', bulletEmoji:'⚡', collectEmoji:'🔋', accentColor:0x22c55e }
+    };
+    return themes[theme] || themes.space;
+}
 
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
 let customSpriteDataUrl   = null;
@@ -4891,6 +5027,12 @@ function onGenreChange() {
         const el = document.getElementById('custom-'+genre);
         if (el) el.style.display = genre === g ? '' : 'none';
     });
+    // Show/hide Enemy AI section (Shooter, Platformer, Invaders, Dodge, Roguelike)
+    const _aiEl = document.getElementById('custom-enemyAI');
+    if (_aiEl) _aiEl.style.display = ['SHOOTER','PLATFORMER','INVADERS','DODGE','ROGUELIKE'].includes(g) ? '' : 'none';
+    // Show/hide Boss Fight section (Shooter, Platformer, Invaders, Beat, Roguelike)
+    const _bossEl = document.getElementById('custom-bossFight');
+    if (_bossEl) _bossEl.style.display = ['SHOOTER','PLATFORMER','INVADERS','BEAT','ROGUELIKE'].includes(g) ? '' : 'none';
 
     // Adjust default speed per template
     const defaults = { SHOOTER:200, PLATFORMER:200, DODGE:250, BREAKER:300, RUNNER:200, FLAPPY:180, INVADERS:200, PONG:300, SNAKE:200, ASTEROIDS:200, RACING:300, HOPPER:200, BEAT:200, PUZZLE:150, RHYTHM:150 };
@@ -5036,8 +5178,10 @@ function _showTitleScreen(data) {
     document.getElementById('introGameTitle').textContent  = data.title         || 'My Arcade Game';
     document.getElementById('introGenreSub').textContent   = GENRES[data.genre] || data.genre;
     const storyEl = document.getElementById('introStoryText');
-    storyEl.textContent = (currentStory && currentStory.intro) ? currentStory.intro : '';
-    storyEl.style.display = storyEl.textContent ? '' : 'none';
+    // Prefer liveConfig.storyIntro if set, then fall back to imported story
+    const _introTxt = liveConfig.storyIntro || ((currentStory && currentStory.intro) ? currentStory.intro : '');
+    storyEl.textContent = _introTxt;
+    storyEl.style.display = _introTxt ? '' : 'none';
     document.getElementById('introOverlay').classList.add('show');
     // Tint the intro box border/glow to match the genre's first palette colour
     const _introBox = document.querySelector('.intro-box');
@@ -5810,6 +5954,9 @@ function makeBaseScene(data) {
             this.tweens.add({targets:txt,scaleX:1.25,scaleY:1.25,duration:70,yoyo:true,ease:'Power2'});
         }
         _drawBg() {
+            // Apply visual theme background colour
+            const _td = _themeData(liveConfig.theme || 'space');
+            this.cameras.main.setBackgroundColor(_td.bg);
             // Custom background image (stretched to canvas; rendered beneath style overlays)
             if (data.bgImage && this.textures.exists('bg_custom')) {
                 this.add.image(GW/2, GH/2, 'bg_custom').setDisplaySize(GW, GH).setDepth(-2);
@@ -5836,6 +5983,41 @@ function makeBaseScene(data) {
                 g.lineStyle(1, 0x000000, 0.1);
                 for (let y=0;y<=GH;y+=4) { g.beginPath(); g.moveTo(0,y); g.lineTo(GW,y); g.strokePath(); }
             }
+        }
+        // ── Parallax background layers (horizontal-scrolling genres) ─────────────
+        _initParallax() {
+            if (!liveConfig.parallaxLayers) return;
+            const td = _themeData(liveConfig.theme || 'space');
+            const col = td.accentColor;
+            this._parallax = [];
+            // Layer 1 — stars/dots, scrolls at 20% camera speed
+            const g1 = this.add.graphics().setDepth(-3).setScrollFactor(0);
+            g1.fillStyle(col, 0.15);
+            for (let i=0;i<60;i++) g1.fillCircle(Math.random()*GW*3-GW, Math.random()*GH, Math.random()*1.6+0.5);
+            this._parallax.push({ gfx:g1, factor:0.2, baseX:0 });
+            // Layer 2 — small shapes, scrolls at 50%
+            const g2 = this.add.graphics().setDepth(-3).setScrollFactor(0);
+            g2.fillStyle(col, 0.18);
+            for (let i=0;i<30;i++) {
+                const rx=Math.random()*GW*3-GW, ry=Math.random()*GH, sz=Math.random()*4+2;
+                if (i%2===0) g2.fillCircle(rx,ry,sz); else g2.fillRect(rx-sz/2,ry-sz/2,sz,sz);
+            }
+            this._parallax.push({ gfx:g2, factor:0.5, baseX:0 });
+            // Layer 3 — slightly larger shapes, scrolls at 80%
+            const g3 = this.add.graphics().setDepth(-3).setScrollFactor(0);
+            g3.fillStyle(col, 0.22);
+            for (let i=0;i<18;i++) {
+                const rx=Math.random()*GW*3-GW, ry=Math.random()*GH, sz=Math.random()*7+4;
+                if (i%3===0) g3.fillCircle(rx,ry,sz); else g3.fillRect(rx-sz/2,ry-sz/2,sz,sz);
+            }
+            this._parallax.push({ gfx:g3, factor:0.8, baseX:0 });
+        }
+        _updateParallax() {
+            if (!this._parallax || !this._parallax.length) return;
+            const camX = this.cameras.main.scrollX;
+            this._parallax.forEach(layer => {
+                layer.gfx.x = -(camX * layer.factor);
+            });
         }
         // ── Win condition check + tick base — delegate to shared globals ────────
         _checkWin(score) { _sceneCheckWin(this, score); }
@@ -5992,6 +6174,9 @@ function sceneShooter(data) {
             this.score=0; this.lastFired=0; this._invincible=false;
             this._combo=0; this._comboTimer=null;
             this._lastBossThresh=0; this._bossActive=false;
+            this._newBossActive=false; this._newBossTriggered=false;
+            this._newBossObj=null; this._newBossMaxHp=0;
+            this._bossHpBarFg=null; this._bossPhaseTimer=0; this._bossMode='sweep';
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
@@ -6004,10 +6189,22 @@ function sceneShooter(data) {
             this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).setDrag(120);
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
+                // Don't spawn regular enemies while boss fight is active
+                if (liveConfig.bossEnabled && this._newBossActive) return;
                 // Respect active enemy cap
                 if (this.hazards.countActive(true) >= (liveConfig.maxEnemies||12)) return;
                 // 3 enemy types: normal, fast (red), tank (purple 2-hit)
                 const r=Math.random();
+                const aiMode = liveConfig.enemyAI || 'classic';
+                // Tank AI mode — all enemies are tanks
+                if (aiMode === 'tank') {
+                    const e=this.hazards.create(Phaser.Math.Between(20,GW-20),-24,'enemy');
+                    const sz = 36;
+                    e.setDisplaySize(sz,sz); e.body.setSize(Math.round(sz*.85),Math.round(sz*.85),true);
+                    if (!data.enemySprite) e.setTint(0x9333ea);
+                    e.setScale(1.4); e.body.allowGravity=false; e.setData('hp',3); e.setData('pts',5);
+                    return;
+                }
                 const type=r<0.2?'fast':r<0.35?'tank':'normal';
                 const cfg={normal:{sz:26,spd:1,col:themeInt(1,0xa78bfa),hp:1},fast:{sz:18,spd:1.9,col:0xef4444,hp:1},tank:{sz:34,spd:0.55,col:0x9333ea,hp:2}};
                 const c=cfg[type];
@@ -6020,7 +6217,7 @@ function sceneShooter(data) {
             this.physics.add.overlap(this.bullets, this.hazards, (b,e)=>{
                 const hp=(e.getData('hp')||1)-1;
                 e.setData('hp',hp);
-                if(hp>0){ b.destroy(); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true}); return; }
+                if(hp>0){ b.destroy(); e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return; }
                 const ex = e.x, ey = e.y;
                 this._burst(ex, ey, themeInt(1,0xa78bfa));
                 b.destroy(); e.destroy();
@@ -6077,13 +6274,45 @@ function sceneShooter(data) {
                 this.lastFired=time+liveConfig.fireCooldown;
                 GameAudio.play('shoot');
             }
-            if (liveConfig.enemyZigzag) {
+            // ── Enemy AI movement ─────────────────────────────────────────────
+            const ai = liveConfig.enemyAI || 'classic';
+            const ax = this.actor ? this.actor.x : GW/2;
+            const ay = this.actor ? this.actor.y : GH/2;
+            if (ai === 'zigzag' || liveConfig.enemyZigzag) {
                 this.hazards.getChildren().forEach(e => {
-                    if (e.getData('isBoss')) return; // boss manages its own velocity
-                    e.setVelocityX(Math.sin(time * 0.003 + e.x * 0.02) * 90);
+                    if (e.getData('isBoss')) return;
+                    if (!e._phase) e._phase = Math.random() * Math.PI * 2;
+                    e.setVelocityX(Math.sin(time * 0.003 + e._phase) * 80);
                     e.setVelocityY(liveConfig.enemySpeed * ramp);
                 });
+            } else if (ai === 'chaser') {
+                this.hazards.getChildren().forEach(e => {
+                    if (e.getData('isBoss')) return;
+                    const spd = liveConfig.enemySpeed * ramp;
+                    e.setVelocityX(ax > e.x ? spd : -spd);
+                    e.setVelocityY(ay > e.y ? spd * 0.5 : -spd * 0.5);
+                });
+            } else if (ai === 'bomber') {
+                this.hazards.getChildren().forEach(e => {
+                    if (e.getData('isBoss')) return;
+                    const dist = Phaser.Math.Distance.Between(e.x, e.y, ax, ay);
+                    if (dist < 150) {
+                        const spd = liveConfig.enemySpeed * ramp * 2;
+                        e.setVelocityX(ax > e.x ? spd : -spd);
+                        e.setVelocityY(ay > e.y ? spd : -spd);
+                    } else {
+                        e.setVelocityX(0);
+                        e.setVelocityY(liveConfig.enemySpeed * ramp);
+                    }
+                });
+            } else if (ai === 'tank') {
+                this.hazards.getChildren().forEach(e => {
+                    if (e.getData('isBoss')) return;
+                    e.setVelocityX(0);
+                    e.setVelocityY(liveConfig.enemySpeed * ramp * 0.45);
+                });
             } else {
+                // classic
                 this.hazards.getChildren().forEach(e => {
                     if (e.getData('isBoss')) return;
                     e.setVelocityY(liveConfig.enemySpeed * ramp);
@@ -6092,8 +6321,23 @@ function sceneShooter(data) {
             this.bullets.getChildren().forEach(b=>{ if(b.y<-30||b.y>GH+30||b.x<-30||b.x>GW+30) b.destroy(); });
             this.hazards.getChildren().forEach(e=>{ if(e.y>GH+40) e.destroy(); });
             this._bossBullets.getChildren().forEach(b=>{ if(b.y>GH+30||b.x<-30||b.x>GW+30) b.destroy(); });
-            // Boss wave trigger — every 500 pts
-            if (liveConfig.bossWaves !== false && !this._bossActive) {
+            // ── Boss Fight System (liveConfig.bossEnabled) ────────────────────
+            if (liveConfig.bossEnabled && !this._newBossActive && !this._newBossTriggered) {
+                if (this.score >= (liveConfig.bossScore || 500)) {
+                    this._newBossTriggered = true;
+                    this._triggerNewBoss(time);
+                }
+            }
+            if (this._newBossActive && this._newBossObj && this._newBossObj.active) {
+                this._updateNewBoss(time);
+            }
+            // Boss health bar update — scale X from left edge
+            if (this._bossHpBarFg && this._newBossMaxHp > 0) {
+                const pct = Math.max(0, (this._newBossObj && this._newBossObj.active ? this._newBossObj.getData('hp') : 0) / this._newBossMaxHp);
+                this._bossHpBarFg.setScale(pct, 1);
+            }
+            // Legacy boss wave trigger — every 500 pts (only if new boss not also enabled)
+            if (liveConfig.bossWaves !== false && !liveConfig.bossEnabled && !this._bossActive) {
                 const thresh = Math.floor(this.score / 500);
                 if (thresh > this._lastBossThresh) { this._lastBossThresh = thresh; this._spawnBoss(); }
             }
@@ -6139,6 +6383,110 @@ function sceneShooter(data) {
                 }
             }});
         }
+        // ── New Boss Fight System ─────────────────────────────────────────────
+        _triggerNewBoss(time) {
+            // Flash warning text
+            const warnTxt = this.add.text(GW/2, GH/2, '⚠️ BOSS INCOMING!', {
+                fontSize:'28px', fill:'#ff4444', fontFamily:"'Fredoka',sans-serif",
+                fontStyle:'bold', stroke:'#000', strokeThickness:4
+            }).setOrigin(0.5).setDepth(30).setAlpha(0);
+            this.tweens.add({ targets:warnTxt, alpha:1, duration:300, yoyo:true, repeat:3,
+                onComplete:()=>{ if(warnTxt.active) warnTxt.destroy(); }
+            });
+            GameAudio.play('hit');
+            // Pause spawning for 2s then spawn boss
+            this.time.delayedCall(2000, ()=>{
+                if (!this.scene || !this.scene.isActive()) return;
+                this._spawnNewBoss();
+            });
+        }
+        _spawnNewBoss() {
+            this._newBossActive = true;
+            const hp = liveConfig.bossHpNew || 20;
+            this._newBossMaxHp = hp;
+            const bsz = 60;
+            const bx = GW / 2;
+            const boss = this.hazards.create(bx, -80, 'enemy');
+            boss.setScale(3); // 3× scale — about 90×90 with default enemy texture
+            boss.body.setSize(Math.round(bsz*.85), Math.round(bsz*.85), true);
+            if (!data.enemySprite) boss.setTint(0xff1111);
+            boss.body.allowGravity = false;
+            boss.setData('hp', hp); boss.setData('pts', 50); boss.setData('isBoss', true); boss.setData('isNewBoss', true);
+            this._newBossObj = boss;
+            this._bossPhaseTimer = (this.time && this.time.now) ? this.time.now : 0;
+            this._bossMode = (liveConfig.bossBehaviour === 'random') ? (Math.random() < 0.5 ? 'sweep' : 'chase') : (liveConfig.bossBehaviour || 'sweep');
+
+            // Boss health bar (background track + foreground fill)
+            const barBg = this.add.rectangle(20, 14, GW-40, 10, 0x330000).setScrollFactor(0).setDepth(25).setOrigin(0, 0.5);
+            this._bossHpBarFg = this.add.rectangle(20, 14, GW-40, 10, 0xff2222).setScrollFactor(0).setDepth(26).setOrigin(0, 0.5);
+            const bossLbl = this.add.text(GW/2, 24, '💀 BOSS', {fontSize:'9px',fill:'#fff',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(26).setScrollFactor(0);
+
+            // Boss shoot timer
+            const bShoot2 = this.time.addEvent({ delay:900, loop:true, callback:()=>{
+                if (!boss || !boss.active) { bShoot2.remove(false); return; }
+                if (boss.y < 50) return;
+                [-35, 0, 35].forEach(deg => {
+                    const b = this._bossBullets.create(boss.x, boss.y + 28, 'laser').setDisplaySize(11,11);
+                    b.setTint(0xff0000); b.body.allowGravity = false;
+                    this.physics.velocityFromAngle(90 + deg, 220, b.body.velocity);
+                });
+            }});
+
+            // Kill poll
+            const nKillPoll = this.time.addEvent({ delay:200, loop:true, callback:()=>{
+                if (!boss || !boss.active) {
+                    nKillPoll.remove(false); bShoot2.remove(false);
+                    if (this._newBossActive) {
+                        this._newBossActive = false;
+                        this._burst(GW/2, GH/2, 0xff2222);
+                        this._burst(GW/2-50, GH/2+30, 0xffd700);
+                        this._burst(GW/2+50, GH/2+30, 0xffd700);
+                        const defeat = this.add.text(GW/2, GH/2, 'BOSS DEFEATED! 🎉', {
+                            fontSize:'26px', fill:'#ffd700', fontFamily:"'Fredoka',sans-serif",
+                            fontStyle:'bold', stroke:'#000', strokeThickness:4
+                        }).setOrigin(0.5).setDepth(30);
+                        this.tweens.add({ targets:defeat, alpha:0, duration:2000, delay:1500,
+                            onComplete:()=>{ if(defeat.active) defeat.destroy(); }
+                        });
+                        barBg.destroy(); if(this._bossHpBarFg) this._bossHpBarFg.destroy(); if(bossLbl) bossLbl.destroy();
+                        const reward = (liveConfig.bossHpNew || 20) * 10;
+                        showToast(`💀 Boss defeated! +${reward} pts`);
+                        this.score += reward;
+                        this.scoreText.setText('Score: '+this.score);
+                        this._flashScore(this.scoreText);
+                        GameAudio.play('score');
+                        // Trigger victory if win condition is score-based
+                        this.time.delayedCall(2200, ()=>{ showVictory(this.score); });
+                    }
+                }
+            }});
+        }
+        _updateNewBoss(time) {
+            const boss = this._newBossObj;
+            if (!boss || !boss.active) return;
+            const ax = this.actor ? this.actor.x : GW/2;
+            const ay = this.actor ? this.actor.y : GH/2;
+            // Phase switch every 3 seconds for random/sweep modes
+            if (time - this._bossPhaseTimer > 3000) {
+                this._bossPhaseTimer = time;
+                if (liveConfig.bossBehaviour === 'random') {
+                    this._bossMode = this._bossMode === 'sweep' ? 'chase' : 'sweep';
+                }
+            }
+            // Move boss into arena first
+            if (boss.y < 80) { boss.setVelocityY(60); boss.setVelocityX(0); return; }
+            if (this._bossMode === 'sweep') {
+                // Side-to-side sweep
+                const swX = Math.sin(time * 0.001) * (GW * 0.35);
+                boss.setVelocityX((GW/2 + swX - boss.x) * 2);
+                boss.setVelocityY(Math.sin(time * 0.0008) * 30);
+            } else {
+                // Chase player
+                const spd = 90;
+                boss.setVelocityX(ax > boss.x ? spd : -spd);
+                boss.setVelocityY(ay > boss.y ? spd * 0.4 : -spd * 0.4);
+            }
+        }
     };
 }
 
@@ -6154,6 +6502,7 @@ function scenePlatformer(data) {
             this.cameras.main.setBounds(0, 0, WORLD_W, GH);
 
             this._buildScrollBg();
+            this._initParallax();
             this.scoreText = this._makeScoreText().setScrollFactor(0);
             this.cursors   = this.input.keyboard.createCursorKeys();
             this.platforms = this.physics.add.staticGroup();
@@ -6316,6 +6665,7 @@ function scenePlatformer(data) {
             const camX = this.cameras.main.scrollX;
             if (this._bgFar)  this._bgFar.tilePositionX  = camX * 0.18;
             if (this._bgNear) this._bgNear.tilePositionX = camX * 0.5;
+            this._updateParallax();
 
             this.actor.body.setGravityY(liveConfig.gravity);
             const {left,right,up} = this.cursors;
@@ -6636,6 +6986,7 @@ function sceneRunner(data) {
             this._jumpsLeft=1; this._upWasDown=false;
             this._drawBg();
             this._buildRunnerParallax();
+            this._initParallax();
             this.scoreText = this._makeScoreText();
             this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.upKey    = this.input.keyboard.createCursorKeys().up;
@@ -6737,6 +7088,7 @@ function sceneRunner(data) {
             // Parallax scroll
             if (this._runFar)  this._runFar.tilePositionX  += 0.6;
             if (this._runNear) this._runNear.tilePositionX += 2.0;
+            this._updateParallax();
             this._syncPuLabels();
             this._tickBase(this.score);
         }
@@ -6777,6 +7129,7 @@ function sceneFlappy(data) {
         create() {
             this.score=0; this._invincible=false; this._upWasDown=false;
             this._drawBg();
+            this._initParallax();
             this.scoreText = this._makeScoreText();
             this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.upKey    = this.input.keyboard.createCursorKeys().up;
@@ -6853,6 +7206,7 @@ function sceneFlappy(data) {
                 }
                 if (p.x<-60) p.destroy();
             });
+            this._updateParallax();
             this._tickBase(this.score);
         }
     };
@@ -6998,6 +7352,35 @@ function sceneInvaders(data) {
             if (this.shootTimer && this.shootTimer.delay !== liveConfig.spawnDelay) this.shootTimer.delay = liveConfig.spawnDelay;
             this.bullets.getChildren().forEach(b=>{ if(b.y<-20) b.destroy(); });
             this.eBullets.getChildren().forEach(b=>{ if(b.y>GH+20) b.destroy(); });
+            // ── Enemy AI overlay for invaders ─────────────────────────────────
+            const invAI = liveConfig.enemyAI || 'classic';
+            if (invAI !== 'classic') {
+                const ax = this.actor ? this.actor.x : GW/2;
+                const ay = this.actor ? this.actor.y : GH/2;
+                this.enemies.getChildren().forEach(e => {
+                    if (!e || !e.active) return;
+                    if (!e._phase) e._phase = Math.random() * Math.PI * 2;
+                    if (invAI === 'chaser') {
+                        const spd = liveConfig.enemySpeed * 0.3;
+                        e.x += (ax > e.x ? spd : -spd) * 0.016;
+                    } else if (invAI === 'zigzag') {
+                        e.x += Math.sin(time * 0.004 + e._phase) * 1.2;
+                    } else if (invAI === 'bomber') {
+                        const dist = Phaser.Math.Distance.Between(e.x, e.y, ax, ay);
+                        if (dist < 120) {
+                            e.setVelocityX(ax > e.x ? liveConfig.enemySpeed : -liveConfig.enemySpeed);
+                            e.setVelocityY(liveConfig.enemySpeed * 0.8);
+                        }
+                    } else if (invAI === 'tank') {
+                        if (!e.getData('tankInit')) {
+                            e.setData('tankInit', true);
+                            const curHp = e.getData('hp') || 1;
+                            if (curHp < 3) e.setData('hp', 3);
+                            e.setScale((e.scaleX || 1) * 1.4);
+                        }
+                    }
+                });
+            }
             this._syncPuLabels();
             this._tickBase(this.score);
         }
@@ -9458,6 +9841,56 @@ function applyStory(d) {
     document.getElementById('storyBadge').style.display = 'inline';
 }
 
+// ── VISUAL THEME PICKER ───────────────────────────────────────────────────────
+function _pickTheme(theme) {
+    liveConfig.theme = theme;
+    ['space','ocean','forest','castle','candy','cyber'].forEach(t => {
+        const btn = document.getElementById('themePill-' + t);
+        if (btn) btn.classList.toggle('active', t === theme);
+    });
+    showToast('🎨 Theme: ' + theme.charAt(0).toUpperCase() + theme.slice(1) + ' — press ▶ Run to apply');
+}
+
+// ── STORY HELPERS ─────────────────────────────────────────────────────────────
+function _toggleBuildStory() {
+    const body = document.getElementById('buildStoryBody');
+    const arrow = document.getElementById('buildStoryArrow');
+    if (!body) return;
+    const open = body.style.display === 'flex';
+    body.style.display = open ? 'none' : 'flex';
+    if (arrow) arrow.textContent = open ? '▶' : '▼';
+}
+function _syncBuildStoryBadge() { /* placeholder — badge managed by extras inputs */ }
+function _syncStoryBadge() { /* placeholder */ }
+function _syncExtrasStoryInputs() {
+    // Keep Build tab and Extras tab story inputs in sync
+    const bI = document.getElementById('buildStoryIntroInput');
+    const bW = document.getElementById('buildStoryWinInput');
+    const bL = document.getElementById('buildStoryLoseInput');
+    const eI = document.getElementById('storyIntroInput');
+    const eW = document.getElementById('storyWinInput');
+    const eL = document.getElementById('storyLoseInput');
+    if (bI && bI.value !== liveConfig.storyIntro) bI.value = liveConfig.storyIntro || '';
+    if (bW && bW.value !== liveConfig.storyWin)   bW.value = liveConfig.storyWin   || '';
+    if (bL && bL.value !== liveConfig.storyLose)  bL.value = liveConfig.storyLose  || '';
+    if (eI && eI.value !== liveConfig.storyIntro) eI.value = liveConfig.storyIntro || '';
+    if (eW && eW.value !== liveConfig.storyWin)   eW.value = liveConfig.storyWin   || '';
+    if (eL && eL.value !== liveConfig.storyLose)  eL.value = liveConfig.storyLose  || '';
+}
+
+// ── ENEMY AI HINT TEXT ────────────────────────────────────────────────────────
+function _updateEnemyAIHint() {
+    const hints = {
+        classic: 'Classic — enemies drop straight down at set speed.',
+        chaser:  'Chaser — enemy homes in on the player\'s position.',
+        zigzag:  'Zigzag — enemies weave side-to-side in a sine wave.',
+        bomber:  'Bomber — dives at the player when within 150 px.',
+        tank:    'Tank — slow but takes 3 hits; spawns 1.4× bigger.'
+    };
+    const el = document.getElementById('enemyAIHint');
+    if (el) el.textContent = hints[liveConfig.enemyAI] || '';
+}
+
 // ── PALETTE IMPORT FROM COLOUR PALETTE ───────────────────────────────────────
 function importPaletteFromTool() {
     const raw = localStorage.getItem('jvds_palette_last');
@@ -10128,6 +10561,13 @@ function showGameOver(score) {
 
     document.getElementById('goScore').textContent = 'Score: ' + score;
 
+    // Story win/lose message
+    const _goStoryEl = document.getElementById('goStoryMsg');
+    if (_goStoryEl) {
+        const _sm = (_goIsVictory ? liveConfig.storyWin : liveConfig.storyLose) || '';
+        _goStoryEl.textContent = _sm; _goStoryEl.style.display = _sm ? '' : 'none';
+    }
+
     // Pre-fill initials from last session, focus input
     const savedInitials = localStorage.getItem('jv_initials') || '';
     const initialsInput = document.getElementById('goInitials');
@@ -10319,6 +10759,8 @@ function closeGameOver() {
     if (tm) tm.style.display = 'none';
     if (cw) cw.innerHTML = '';
     if (ov) { ov.classList.remove('show'); ov.classList.remove('win'); }
+    const sm = document.getElementById('goStoryMsg');
+    if (sm) sm.style.display = 'none';
     _sessionKills = 0; _sessionPeakCombo = 0;
     _updateLandscapeNudge(true);
     _launchPhaserGame();
@@ -10389,8 +10831,11 @@ function showVictory(score) {
     if (ov) ov.classList.add('win');
     // Confetti fires slightly after the overlay animates in
     setTimeout(_spawnConfetti, 120);
+    _goIsVictory = true;
     showGameOver(score);
+    _goIsVictory = false;
 }
+let _goIsVictory = false;
 let _gameStartTime = 0;
 
 async function exportGame() {
