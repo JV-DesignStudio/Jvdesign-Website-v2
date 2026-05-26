@@ -308,7 +308,7 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 
 /* INTRO OVERLAY */
 .intro-overlay{display:none;position:absolute;inset:0;background:rgba(5,3,15,.93);backdrop-filter:blur(8px);flex-direction:column;align-items:center;justify-content:center;z-index:200;border-radius:inherit;overflow-y:auto;}
-.intro-overlay.show{display:flex;}
+.intro-overlay.show{display:flex;touch-action:pan-y;}
 .intro-overlay.show .intro-box{animation:intro-box-in .42s cubic-bezier(.2,1.3,.4,1) forwards;}
 .intro-overlay.show .intro-genre-icon{animation:intro-icon-bounce .5s cubic-bezier(.2,1.4,.4,1) .15s both, intro-icon-idle 2.2s ease-in-out 0.7s infinite;}
 @keyframes intro-icon-idle{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-7px) scale(1.06);}}
@@ -793,6 +793,19 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
   .tab-lbl{font-size:.42rem;}
   /* Asset blocks more compact */
   .asset-block{padding:8px 10px;gap:6px;}
+  /* Overlays must be full-screen on mobile — the scaled canvas is too small */
+  .go-overlay.show, .intro-overlay.show {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 7000 !important;
+    border-radius: 0 !important;
+    touch-action: pan-y !important;
+  }
+  .go-box { padding: 14px 20px; gap: 7px; max-height: 100vh; overflow-y: auto; }
+  .go-title { font-size: 1.8rem; }
+  .go-score { font-size: 1.2rem; }
+  #goGrade { width: 48px; height: 48px; font-size: 2rem; }
+  .go-play { font-size: .9rem; padding: 11px 20px; }
 }
 </style>
 </head>
@@ -4236,7 +4249,7 @@ function switchTab(name, btn) {
 }
 
 const CONTROLS = {
-    SHOOTER:  'Controls: LEFT/RIGHT rotate · UP thrust · SPACE shoot',
+    SHOOTER:  'Controls: Move with arrows · SPACE to shoot',
     PLATFORMER:'Controls: LEFT/RIGHT run · UP/SPACE jump · Scroll right — how far can you go?',
     DODGE:    'Controls: LEFT/RIGHT to dodge · Collect ⭐ avoid 👾',
     BREAKER:  'Controls: LEFT/RIGHT to move paddle · Don\'t miss the ball!',
@@ -4540,6 +4553,7 @@ function _launchPhaserGame() {
     const _startGame = () => {
         try {
             _gameStartTime = Date.now();
+            window._phaserGame = null;
             currentPhaserGame = new Phaser.Game({
                 type: Phaser.AUTO,
                 parent: 'game-container',
@@ -4549,6 +4563,7 @@ function _launchPhaserGame() {
                 render: { preserveDrawingBuffer: true },
                 scene: getScene(data)
             });
+            window._phaserGame = currentPhaserGame;
             // Live game speed + win condition + user script — runs every frame
             currentPhaserGame.events.on('step', (time, delta) => {
                 const spd = liveConfig.gameSpeed || 1.0;
@@ -5391,6 +5406,7 @@ function makeBaseScene(data) {
         }
         _onHit(actor) {
             if (this._invincible) return;
+            if (navigator.vibrate) { try { navigator.vibrate(60); } catch(e){} }
             if (this._puShield) {
                 this._puShield = false; _hidePuHud('shield');
                 if (liveConfig.screenShake) this.cameras.main.shake(120, 0.006);
@@ -5485,24 +5501,28 @@ function sceneShooter(data) {
             this._initPowerUps();
         }
         _spawnBullets(spread) {
-            const offsets = spread===3 ? [-18,0,18] : spread===2 ? [-12,12] : [0];
-            offsets.forEach(deg => {
-                const b=this.bullets.create(this.actor.x,this.actor.y,'laser').setDisplaySize(7,20);
+            const offsets = spread===3 ? [-14,0,14] : spread===2 ? [-10,10] : [0];
+            offsets.forEach(xOff => {
+                const b=this.bullets.create(this.actor.x+xOff*0.7, this.actor.y-10,'laser').setDisplaySize(7,20);
                 b.body.setSize(7,20); b.body.allowGravity=false;
-                const rot = this.actor.rotation - Math.PI/2 + deg * Math.PI/180;
-                b.rotation = rot + Math.PI/2;
-                this.physics.velocityFromRotation(rot, liveConfig.bulletSpeed, b.body.velocity);
+                b.setRotation(0);
+                b.setVelocity(xOff * liveConfig.bulletSpeed * 0.03, -liveConfig.bulletSpeed);
             });
         }
         update(time) {
-            const {left,right,up} = this.cursors;
-            const tL=touchInput.left, tR=touchInput.right, tU=touchInput.up;
+            const {left,right,up,down} = this.cursors;
+            const tL=touchInput.left, tR=touchInput.right, tU=touchInput.up, tD=touchInput.down;
             const spd = liveConfig.speed * this._puSpeedMul();
-            if (left.isDown||tL)       this.actor.setAngularVelocity(-liveConfig.rotateSpeed);
-            else if (right.isDown||tR) this.actor.setAngularVelocity(liveConfig.rotateSpeed);
-            else                       this.actor.setAngularVelocity(0);
-            if (up.isDown||tU) this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, spd, this.actor.body.acceleration);
-            else               this.actor.setAcceleration(0);
+            // Direct 4-way movement — much easier for all ages
+            let vx=0, vy=0;
+            if (left.isDown||tL)  vx=-spd;
+            if (right.isDown||tR) vx= spd;
+            if (up.isDown||tU)    vy=-spd;
+            if (down.isDown||tD)  vy= spd;
+            this.actor.setVelocity(vx, vy);
+            this.actor.setAngularVelocity(0);
+            this.actor.setAcceleration(0);
+            this.actor.setRotation(0); // always face up
             // Live spawn delay — update timer if slider changed
             if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             // Difficulty ramp: enemies speed up over time
@@ -9519,6 +9539,7 @@ function _shareGameScore() {
 }
 
 function showGameOver(score) {
+    if (navigator.vibrate) { try { navigator.vibrate([80, 40, 80]); } catch(e){} }
     _speedRunStop(score);
     GameAudio.stopMusic();
     _goPendingScore = score;
@@ -12032,9 +12053,14 @@ function sceneTowerDefense(data) {
     const CELL   = 40;                        // grid cell size px
     const COLS   = Math.floor(GW / CELL);     // ~16
     const ROWS   = Math.floor(GH / CELL);     // ~11
-    const TOWER_COST = 50;
-    const TOWER_RANGE= 120;
-    const TOWER_RATE = 900; // ms between shots
+    // Tower type definitions
+    const TOWER_TYPES = [
+        { id:'arrow',  label:'🏹 Arrow',  cost: 50,  range:120, rate: 900, dmg:1,   aoe:0,   slow:0,   color:0x00d4aa, desc:'Basic tower. Cheap and reliable.' },
+        { id:'sniper', label:'🎯 Sniper', cost: 100, range:210, rate:1800, dmg:3,   aoe:0,   slow:0,   color:0x60a5fa, desc:'Long range, high damage. Slow fire.' },
+        { id:'ice',    label:'❄️ Ice',    cost: 80,  range:100, rate:1100, dmg:1,   aoe:0,   slow:0.45,color:0x93c5fd, desc:'Slows enemies to 45% speed.' },
+        { id:'bomb',   label:'💥 Bomb',   cost: 120, range: 90, rate:1600, dmg:2,   aoe:45,  slow:0,   color:0xf97316, desc:'Hits all enemies in blast radius.' },
+    ];
+    let _selectedTowerIdx = 0; // which type is selected
     // Pre-baked enemy path (column indices) — a simple S-curve from left to right
     function _buildPath() {
         const pts = [];
@@ -12070,6 +12096,7 @@ function sceneTowerDefense(data) {
             this._pathPts  = _buildPath();
             this._pathPts.forEach(p => this._pathCells.add(p.col+','+p.row));
             this._toPlace = false;    // placement mode
+            this._selectedTowerType = TOWER_TYPES[0];
 
             // ── Graphics ──
             this._gfx = this.add.graphics().setDepth(0);
@@ -12082,8 +12109,8 @@ function sceneTowerDefense(data) {
             this._txtLives = this.add.text(8,44,'❤️ '+(this._lives), hs).setDepth(20).setScrollFactor(0);
             this._txtWave  = this.add.text(GW/2,8,'Wave 0',  {...hs,fontSize:'14px'}).setOrigin(0.5,0).setDepth(20).setScrollFactor(0);
             const _tdIsTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
-            const _tdHintKb  = '[T] Place Tower  |  [SPACE] Start Wave';
-            const _tdHintTch = 'Tap 🏗 to place mode  |  Tap ▶ to start wave';
+            const _tdHintKb  = '[T] Place tower  |  [SPACE] Start wave  |  Pick type below';
+            const _tdHintTch = 'Tap grid after picking tower type below  |  ▶ Start wave';
             this._hintDefault = _tdIsTouch ? _tdHintTch : _tdHintKb;
             this._hintPlace   = _tdIsTouch ? 'Tap grid to place tower (50💰)' : 'Click grid to place tower (cost: 50💰)';
             this._txtHint  = this.add.text(GW/2,GH-18, this._hintDefault, {...hs,fontSize:'11px'}).setOrigin(0.5,1).setDepth(20).setScrollFactor(0).setAlpha(0.7);
@@ -12122,7 +12149,26 @@ function sceneTowerDefense(data) {
             bg.fillStyle(0xfbbf24,1); bg.fillCircle(4,4,4);
             bg.generateTexture('_td_bullet',8,8); bg.destroy();
 
+            // Tower selector HUD (bottom right)
+            this._towerBtns = [];
+            TOWER_TYPES.forEach((tt, i) => {
+                const bx = GW - 36 - (TOWER_TYPES.length - 1 - i) * 62;
+                const by = GH - 32;
+                const tbg = this.add.rectangle(bx, by, 56, 28, 0x0d1117, 0.9).setDepth(25).setInteractive();
+                const lbl = this.add.text(bx, by, tt.label, {fontSize:'11px',fill:'#fff',fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5,0.5).setDepth(26);
+                tbg.on('pointerdown', () => { this._selectedTowerType = tt; _selectedTowerIdx = i; this._refreshTowerBtns(); });
+                this._towerBtns.push({bg:tbg, lbl, tt});
+            });
+            this._refreshTowerBtns();
             _updateLandscapeNudge(true);
+        }
+
+        _refreshTowerBtns() {
+            this._towerBtns.forEach((b, i) => {
+                const sel = (this._selectedTowerType && this._selectedTowerType.id === b.tt.id);
+                b.bg.setFillStyle(sel ? 0x7c3aed : 0x0d1117, sel ? 1 : 0.85);
+                b.bg.setStrokeStyle(sel ? 2 : 1, sel ? 0xa78bfa : 0x374151);
+            });
         }
 
         _checkWin(score) { _sceneCheckWin(this, score); }
@@ -12148,8 +12194,9 @@ function sceneTowerDefense(data) {
         }
 
         _placeTower(col, row) {
-            if (this._gold < TOWER_COST) {
-                this._flashText('Not enough gold!'); return;
+            const tt = this._selectedTowerType || TOWER_TYPES[0];
+            if (this._gold < tt.cost) {
+                this._flashText('Need ' + tt.cost + '💰!'); return;
             }
             if (this._pathCells.has(col+','+row)) {
                 this._flashText("Can't build on path!"); return;
@@ -12158,15 +12205,25 @@ function sceneTowerDefense(data) {
                 this._flashText('Already built here!'); return;
             }
             if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-            this._gold -= TOWER_COST;
-            const sp = this.add.image(col*CELL+CELL/2, row*CELL+CELL/2, '_td_tower').setDepth(5);
+            this._gold -= tt.cost;
+            // Draw tower with type colour
+            const tg2 = this.make.graphics({x:0,y:0,add:false});
+            tg2.fillStyle(tt.color, 1); tg2.fillRoundedRect(0,0,CELL-8,CELL-8,6);
+            tg2.fillStyle(0xffffff,0.3); tg2.fillTriangle(8,4,CELL-16,CELL/2-4,8,CELL-12);
+            const tKey = '_td_tower_'+tt.id;
+            if (!this.textures.exists(tKey)) { tg2.generateTexture(tKey,CELL-8,CELL-8); }
+            tg2.destroy();
+            const sp = this.add.image(col*CELL+CELL/2, row*CELL+CELL/2, this.textures.exists(tKey)?tKey:'_td_tower').setDepth(5);
+            // Tint if texture didn't generate
+            sp.setTint(tt.color);
             // Range ring
             const rr = this.add.graphics().setDepth(4);
-            rr.lineStyle(1, 0x00d4aa, 0.25);
-            rr.strokeCircle(col*CELL+CELL/2, row*CELL+CELL/2, TOWER_RANGE);
-            this._towers.push({col,row,sprite:sp,rangeRing:rr,lastShot:0});
+            rr.lineStyle(1, tt.color, 0.22);
+            rr.strokeCircle(col*CELL+CELL/2, row*CELL+CELL/2, tt.range);
+            this._towers.push({col, row, sprite:sp, rangeRing:rr, lastShot:0, type:tt});
             this._toPlace = false;
             this._ghost.setVisible(false);
+            this._txtHint.setText(this._hintDefault);
             this._updateHUD();
             GameAudio.play('score');
         }
@@ -12243,7 +12300,10 @@ function sceneTowerDefense(data) {
             this._enemies.forEach(e => {
                 if (!e.sprite.active) return;
                 e._timer += delta;
-                const step = e.speed * dt;
+                const _slowF = (e._slowUntil && e._slowUntil > this.time.now) ? (e._slowFactor||0.45) : 1;
+                if (e._slowUntil && e._slowUntil <= this.time.now) { e._slowFactor = 1; }
+                const step = e.speed * dt * _slowF;
+                if (_slowF < 1 && e.sprite.active) e.sprite.setTint(0x93c5fd); else if (e.sprite.active) e.sprite.clearTint();
                 if (e.pathIdx >= this._pathPts.length - 1) {
                     // Reached end — drain a life
                     this._lives--;
@@ -12288,20 +12348,20 @@ function sceneTowerDefense(data) {
 
             // ── Towers shoot ──
             this._towers.forEach(tower => {
-                if (time - tower.lastShot < TOWER_RATE) return;
-                // Find closest enemy in range
-                let target = null, closest = TOWER_RANGE+1;
-                const tx = tower.col*CELL+CELL/2, ty = tower.row*CELL+CELL/2;
+                const tt = tower.type || TOWER_TYPES[0];
+                if (time - tower.lastShot < tt.rate) return;
+                const twx = tower.col*CELL+CELL/2, twy = tower.row*CELL+CELL/2;
+                let target = null, closest = tt.range+1;
                 this._enemies.forEach(e => {
                     if (!e.sprite.active) return;
-                    const d = Phaser.Math.Distance.Between(tx,ty,e.sprite.x,e.sprite.y);
+                    const d = Phaser.Math.Distance.Between(twx,twy,e.sprite.x,e.sprite.y);
                     if (d < closest) { closest=d; target=e; }
                 });
                 if (!target) return;
                 tower.lastShot = time;
-                // Spawn bullet
-                const bull = this.add.image(tx, ty, '_td_bullet').setDepth(12);
-                this._bullets.push({sprite:bull, target, speed:220});
+                const bull = this.add.image(twx, twy, '_td_bullet').setDepth(12);
+                bull.setTint(tt.color);
+                this._bullets.push({sprite:bull, target, speed:220, dmg:tt.dmg||1, aoe:tt.aoe||0, slow:tt.slow||0});
                 GameAudio.play('shoot');
             });
 
@@ -12313,27 +12373,33 @@ function sceneTowerDefense(data) {
                 const dx = b.target.sprite.x - b.sprite.x, dy = b.target.sprite.y - b.sprite.y;
                 const d  = Math.sqrt(dx*dx+dy*dy);
                 if (d < 8) {
-                    // Hit
-                    b.target.hp--;
+                    const dmg = b.dmg||1, aoe = b.aoe||0, slow = b.slow||0;
+                    const hitPos = {x: b.target.sprite.x, y: b.target.sprite.y};
                     b.sprite.destroy(); bullRemove.push(b);
-                    if (b.target.hp <= 0) {
-                        b.target.sprite.destroy(); b.target.hpBg.destroy(); b.target.hpBar.destroy();
-                        const idx = this._enemies.indexOf(b.target);
-                        if(idx>-1) this._enemies.splice(idx,1);
-                        this.score += 10;
-                        this._gold  += 5;
-                        this._updateHUD();
-                        // Burst
-                        const _ex = b.target.sprite.x, _ey = b.target.sprite.y;
-                        for(let i=0;i<5;i++){
-                            const px=_ex+(Math.random()-.5)*18;
-                            const py=_ey+(Math.random()-.5)*18;
-                            const prt=this.add.circle(px,py,3,themeInt(1,0xef4444),1).setDepth(15);
-                            this.tweens.add({targets:prt,alpha:0,scaleX:0,scaleY:0,x:px+(Math.random()-.5)*30,y:py+(Math.random()-.5)*30,duration:300,onComplete:()=>prt.destroy()});
+                    const targets = aoe > 0
+                        ? this._enemies.filter(e => e.sprite.active && Phaser.Math.Distance.Between(hitPos.x, hitPos.y, e.sprite.x, e.sprite.y) <= aoe)
+                        : (b.target.sprite.active ? [b.target] : []);
+                    targets.forEach(tgt => {
+                        if (!tgt.sprite.active) return;
+                        if (slow > 0) { tgt._slowUntil = this.time.now + 2000; tgt._slowFactor = slow; }
+                        tgt.hp -= dmg;
+                        if (tgt.hp <= 0) {
+                            const ex = tgt.sprite.x, ey = tgt.sprite.y;
+                            tgt.sprite.destroy(); tgt.hpBg.destroy(); tgt.hpBar.destroy();
+                            const idx = this._enemies.indexOf(tgt);
+                            if(idx>-1) this._enemies.splice(idx,1);
+                            this.score += 10 * dmg;
+                            this._gold  += 5;
+                            this._updateHUD();
+                            for(let i=0;i<5;i++){
+                                const px=ex+(Math.random()-.5)*18,py=ey+(Math.random()-.5)*18;
+                                const pt=this.add.rectangle(px,py,4,4,0xfbbf24,1).setDepth(15);
+                                this.tweens.add({targets:pt,x:px+(Math.random()-.5)*30,y:py-20-Math.random()*20,alpha:0,duration:400,onComplete:()=>pt.destroy()});
+                            }
+                            _juiceKill(ex, ey, themeInt(1, 0xef4444));
+                            if (liveConfig.lootEnabled) _dropLoot(ex, ey);
                         }
-                        _juiceKill(_ex, _ey, themeInt(1, 0xef4444));
-                        if (liveConfig.lootEnabled) _dropLoot(_ex, _ey);
-                    }
+                    });
                     return;
                 }
                 b.sprite.x += (dx/d)*b.speed*dt;
@@ -13297,6 +13363,31 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 if (tb) tb.textContent = '☀️';
             }
         } catch(e) {}
+    })();
+    // Handle orientation change in standalone PWA mode
+    (function _initOrientationFix() {
+        function _onOrientationChange() {
+            setTimeout(() => {
+                // Tell Phaser to recalculate scale
+                if (window._phaserGame && window._phaserGame.scale) {
+                    window._phaserGame.scale.refresh();
+                }
+                // Also resize game-container to new dimensions
+                const container = document.getElementById('game-container');
+                if (container) {
+                    container.style.width  = '';
+                    container.style.height = '';
+                }
+            }, 300);
+        }
+        window.addEventListener('orientationchange', _onOrientationChange);
+        window.addEventListener('resize', _onOrientationChange);
+        // Unlock screen orientation in standalone mode
+        if (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+            if (screen.orientation && screen.orientation.unlock) {
+                try { screen.orientation.unlock(); } catch(e){}
+            }
+        }
     })();
     // Restore advanced-mode unlock state from previous sessions
     if (localStorage.getItem('jv_events_unlocked')) {
