@@ -1,64 +1,72 @@
-// ── JVDesignStudio Service Worker v5 ──────────────────────────────────────────
-// v5: full offline support for Arcade Game Maker PWA
-//   - Phaser engine (local file) added to precache
-//   - Workshop tools (pixel-studio, sfx-generator) precached
-//   - Stale-while-revalidate for the game maker so updates land silently
-//   - Cleaned up dead CDN cache entries (Phaser loads from local, not CDN)
-//   - Runtime font caching with longer TTL
-//   - postMessage update notification to open clients
+// ── JVDesignStudio Service Worker v6 ──────────────────────────────────────────
+// Full site offline support:
+//   • Precaches core pages + Phaser on install (~2 MB — fast)
+//   • Runtime-caches every page & image the user visits (grows as you browse)
+//   • Stale-while-revalidate for HTML — instant load + silent background update
+//   • Cache-first for images & assets — no re-downloading things you already have
+//   • Skips huge files (WAV, large PDFs, videos) — too big to cache usefully
+//   • offline.html fallback for any page not yet in cache
 
-const CACHE_VERSION = 'jvds-v5';
-const FONT_CACHE    = 'jvds-fonts-v5';
+const V           = 'v6';
+const CORE_CACHE  = `jvds-core-${V}`;
+const PAGE_CACHE  = `jvds-pages-${V}`;
+const IMAGE_CACHE = `jvds-images-${V}`;
+const FONT_CACHE  = `jvds-fonts-${V}`;
 
-// ── Everything needed to run the Arcade Game Maker completely offline ─────────
-const PRECACHE = [
-  // Shell & nav
+const ALL_CACHES = [CORE_CACHE, PAGE_CACHE, IMAGE_CACHE, FONT_CACHE];
+
+// ── Precached on install (always available offline from first visit) ───────────
+const CORE_PRECACHE = [
+  '/offline.html',          // fallback — must be first
   '/',
   '/index.html',
   '/manifest.json',
   '/logo.png',
 
-  // Arcade Game Maker + its engine
+  // Game Maker + engine
   '/arcade-game-maker.html',
-  '/phaser-arcade-physics.min.js',   // 1 MB — the game engine
+  '/phaser-arcade-physics.min.js',
 
-  // Workshop tools (opened inside the game maker as iframes)
+  // Workshop tools (opened as iframes inside game maker)
   '/pixel-studio.html',
   '/sfx-generator.html',
 
-  // Other main pages
+  // Main nav pages
   '/games.html',
   '/books.html',
   '/workshop.html',
   '/dev-tools.html',
   '/freebies.html',
   '/content_hub.html',
+  '/404.html',
 ];
 
-// ── Install: cache everything before the SW becomes active ────────────────────
+// ── File types too large / unsuitable to cache automatically ─────────────────
+const SKIP_EXTENSIONS = ['.wav', '.mp3', '.mp4', '.webm', '.ogg'];
+// PDFs over ~3 MB are skipped (smaller ones cache fine)
+const MAX_PDF_SIZE    = 3 * 1024 * 1024;
+// Images over 3 MB are skipped (most book covers are under that)
+const MAX_IMAGE_SIZE  = 3 * 1024 * 1024;
+
+// ── Install ────────────────────────────────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_VERSION)
-      .then(cache =>
-        // allSettled so one 404 never blocks the whole install
-        Promise.allSettled(PRECACHE.map(url => cache.add(url)))
-      )
+    caches.open(CORE_CACHE)
+      .then(cache => Promise.allSettled(CORE_PRECACHE.map(url => cache.add(url))))
       .then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: delete all caches from previous versions ────────────────────────
+// ── Activate: wipe caches from previous versions ──────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys
-          .filter(k => k !== CACHE_VERSION && k !== FONT_CACHE)
-          .map(k => caches.delete(k))
+        keys.filter(k => !ALL_CACHES.includes(k)).map(k => caches.delete(k))
       ))
       .then(() => {
         self.clients.claim();
-        // Tell all open tabs that a new version is active
+        // Tell all open tabs a new SW is active
         self.clients.matchAll({ type: 'window' }).then(clients =>
           clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }))
         );
@@ -66,101 +74,152 @@ self.addEventListener('activate', e => {
   );
 });
 
-// ── Fetch: serve requests with appropriate strategies ─────────────────────────
+// ── Fetch ──────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
-  const url = e.request.url;
+  const url  = new URL(e.request.url);
+  const path = url.pathname.toLowerCase();
+  const ext  = path.slice(path.lastIndexOf('.'));
 
-  // ── Google Fonts: cache-first, background revalidate ──────────────────────
-  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
-    e.respondWith(fontStrategy(e.request));
+  // ── Never intercept: analytics, tracking, sharing APIs ───────────────────
+  if (
+    url.hostname.includes('googletagmanager.com') ||
+    url.hostname.includes('google-analytics.com') ||
+    url.hostname.includes('is.gd') ||
+    url.hostname.includes('qrserver.com')
+  ) return;
+
+  // ── Skip audio and video (too large) ─────────────────────────────────────
+  if (SKIP_EXTENSIONS.includes(ext)) return;
+
+  // ── Google Fonts: cache-first ─────────────────────────────────────────────
+  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
+    e.respondWith(cacheFirst(e.request, FONT_CACHE, { opaque: true }));
     return;
   }
 
-  // ── Analytics / external tracking: pass through, never cache ──────────────
-  if (url.includes('googletagmanager.com') || url.includes('google-analytics.com') ||
-      url.includes('is.gd') || url.includes('qrserver.com')) {
-    return; // browser handles it normally
-  }
+  // ── Same-origin only beyond here ──────────────────────────────────────────
+  if (url.origin !== self.location.origin) return;
 
-  // ── Same-origin only beyond here ───────────────────────────────────────────
-  if (!url.startsWith(self.location.origin)) return;
-
-  // ── Phaser engine: cache-first (local versioned file, never changes) ───────
-  if (url.includes('phaser-arcade-physics')) {
-    e.respondWith(cacheFirst(e.request));
+  // ── Phaser engine & small JS files: cache-first ───────────────────────────
+  if (ext === '.js') {
+    e.respondWith(cacheFirst(e.request, CORE_CACHE));
     return;
   }
 
-  // ── Arcade Game Maker HTML: stale-while-revalidate ────────────────────────
-  // Serve cached copy instantly; update cache in background so next visit is
-  // fresh. Strip ?source=pwa so both the bare URL and PWA launch URL hit the
-  // same cache entry.
-  if (url.includes('arcade-game-maker')) {
-    const canonical = new Request(url.split('?')[0], e.request);
-    e.respondWith(staleWhileRevalidate(canonical));
+  // ── Images: cache-first, skip if too large ────────────────────────────────
+  if (['.png','.jpg','.jpeg','.gif','.webp','.svg','.ico'].includes(ext)) {
+    e.respondWith(imageStrategy(e.request));
     return;
   }
 
-  // ── Workshop tools: stale-while-revalidate ────────────────────────────────
-  if (url.includes('pixel-studio') || url.includes('sfx-generator')) {
-    e.respondWith(staleWhileRevalidate(e.request));
+  // ── PDFs: cache small ones on demand, skip large ─────────────────────────
+  if (ext === '.pdf') {
+    e.respondWith(pdfStrategy(e.request));
     return;
   }
 
-  // ── All other same-origin: network-first for HTML, cache-first for assets ──
-  const isHTML = e.request.headers.get('accept')?.includes('text/html');
-  e.respondWith(isHTML ? networkFirst(e.request) : cacheFirst(e.request));
+  // ── HTML pages: stale-while-revalidate (instant + silent updates) ─────────
+  // Strip query strings so ?source=pwa etc. all hit the same cache entry
+  if (ext === '.html' || ext === '' || path === '/') {
+    const canonical = new Request(url.origin + url.pathname, e.request);
+    e.respondWith(pageStrategy(canonical));
+    return;
+  }
+
+  // ── Everything else same-origin: cache-first ─────────────────────────────
+  e.respondWith(cacheFirst(e.request, PAGE_CACHE));
 });
 
-// ────────────────────────────────── Strategies ────────────────────────────────
+// ────────────────────────── Strategies ────────────────────────────────────────
 
-// Cache-first: serve from cache, fetch & store on miss
-function cacheFirst(request) {
-  return caches.open(CACHE_VERSION).then(cache =>
-    cache.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(res => {
-        if (res.ok) cache.put(request, res.clone());
-        return res;
-      }).catch(() => cached); // if both miss, return undefined (404 page)
-    })
-  );
-}
+// Stale-while-revalidate for pages
+// Returns cached copy immediately; fetches fresh copy in background for next time
+// Falls back to offline.html if page was never cached
+async function pageStrategy(request) {
+  const cache  = await caches.open(PAGE_CACHE);
+  const coreC  = await caches.open(CORE_CACHE);
+  const cached = await cache.match(request) || await coreC.match(request);
 
-// Network-first: try network, fall back to cache
-function networkFirst(request) {
-  return fetch(request)
+  const networkFetch = fetch(request)
     .then(res => {
-      if (res.ok) caches.open(CACHE_VERSION).then(c => c.put(request, res.clone()));
+      if (res.ok) cache.put(request, res.clone());
       return res;
     })
-    .catch(() => caches.match(request));
+    .catch(() => null);
+
+  if (cached) {
+    // Fire-and-forget background update
+    networkFetch.catch(() => {});
+    return cached;
+  }
+
+  // Not in cache — try network, show offline page on fail
+  const fresh = await networkFetch;
+  if (fresh) return fresh;
+
+  const offlinePage = await coreC.match('/offline.html');
+  return offlinePage || new Response('You are offline', {
+    status: 503,
+    headers: { 'Content-Type': 'text/plain' }
+  });
 }
 
-// Stale-while-revalidate: return cache immediately, refresh in background
-function staleWhileRevalidate(request) {
-  return caches.open(CACHE_VERSION).then(cache =>
-    cache.match(request).then(cached => {
-      const networkFetch = fetch(request).then(res => {
-        if (res.ok) cache.put(request, res.clone());
-        return res;
-      }).catch(() => {});
-      return cached || networkFetch;
-    })
-  );
+// Cache-first for assets (fonts, JS, etc.)
+async function cacheFirst(request, cacheName, options = {}) {
+  const cache  = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(request);
+    if (res.ok || (options.opaque && res.type === 'opaque')) {
+      cache.put(request, res.clone());
+    }
+    return res;
+  } catch (_) {
+    return cached || new Response('', { status: 503 });
+  }
 }
 
-// Font cache with long lifetime (1 year)
-function fontStrategy(request) {
-  return caches.open(FONT_CACHE).then(cache =>
-    cache.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(res => {
-        if (res.ok || res.type === 'opaque') cache.put(request, res.clone());
-        return res;
-      }).catch(() => cached);
-    })
-  );
+// Images: cache-first but skip responses over MAX_IMAGE_SIZE
+async function imageStrategy(request) {
+  const cache  = await caches.open(IMAGE_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      // Check Content-Length before caching — skip huge images
+      const len = parseInt(res.headers.get('content-length') || '0', 10);
+      if (len === 0 || len < MAX_IMAGE_SIZE) {
+        cache.put(request, res.clone());
+      }
+    }
+    return res;
+  } catch (_) {
+    return new Response('', { status: 503 });
+  }
+}
+
+// PDFs: cache small ones, let large ones pass through uncached
+async function pdfStrategy(request) {
+  const cache  = await caches.open(PAGE_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      const len = parseInt(res.headers.get('content-length') || '0', 10);
+      if (len === 0 || len < MAX_PDF_SIZE) {
+        cache.put(request, res.clone());
+      }
+    }
+    return res;
+  } catch (_) {
+    return new Response('PDF unavailable offline', { status: 503 });
+  }
 }
