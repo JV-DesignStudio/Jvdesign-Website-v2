@@ -14269,7 +14269,44 @@ document.getElementById('game-container')?.addEventListener('mousedown', functio
 // ── SERVICE WORKER + PWA ──────────────────────────────────────────────────────//
 
 if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => {
+      // Listen for a new SW becoming active (v5+ sends SW_UPDATED)
+      navigator.serviceWorker.addEventListener('message', e => {
+        if (e.data && e.data.type === 'SW_UPDATED') {
+          showToast('✅ Game Maker updated — changes load next visit', 'success');
+        }
+      });
+      // If a new SW is already waiting, prompt immediately
+      if (reg.waiting) {
+        showToast('✅ New version ready — reload to update');
+      }
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            showToast('✅ New version downloaded — reload to update');
+          }
+        });
+      });
+    })
+    .catch(() => {});
+  // Offline / online status indicator
+  const _setOnline = () => {
+    const bar = document.getElementById('mobile-run-bar');
+    if (!navigator.onLine && bar) {
+      const tag = document.getElementById('mrb-offline-tag') ||
+        Object.assign(document.createElement('span'), { id:'mrb-offline-tag', textContent:'📴 Offline', style:'font-size:.65rem;color:rgba(251,191,36,.9);margin-left:auto;flex-shrink:0;' });
+      if (!document.getElementById('mrb-offline-tag')) bar.appendChild(tag);
+    } else {
+      const tag = document.getElementById('mrb-offline-tag');
+      if (tag) tag.remove();
+    }
+  };
+  window.addEventListener('online',  _setOnline);
+  window.addEventListener('offline', _setOnline);
+  _setOnline();
 }
 
 // ── INSTALL PROMPT ────────────────────────────────────────────────────────────
