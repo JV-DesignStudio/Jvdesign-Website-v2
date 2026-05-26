@@ -4866,6 +4866,245 @@ function showToast(msg, type) {
     clearTimeout(t._to);
     t._to = setTimeout(() => t.classList.remove('show'), type === 'error' ? 4500 : 2800);
 }
+// ── COLLECTIBLES & SHOP HELPERS ───────────────────────────────────────────────
+function _toggleShopUpgrade(key) {
+    const idx = liveConfig.shopUpgrades.indexOf(key);
+    if (idx === -1) liveConfig.shopUpgrades.push(key);
+    else liveConfig.shopUpgrades.splice(idx, 1);
+}
+
+function _showShop(scene, onClose) {
+    const wrap = document.getElementById('gameWrap');
+    let overlay = document.getElementById('shopOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'shopOverlay';
+        overlay.style.cssText = 'position:absolute;inset:0;z-index:200;background:rgba(5,3,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;font-family:"Fredoka",sans-serif;';
+        wrap.appendChild(overlay);
+    }
+    const ups = liveConfig.shopUpgrades.length ? liveConfig.shopUpgrades : ['speed','health','damage','shield'];
+    const chosen = [...ups].sort(() => Math.random() - 0.5).slice(0, 3);
+    const COSTS  = {speed:15, health:20, damage:18, shield:25};
+    const ICONS  = {speed:'💨', health:'❤️', damage:'⚡', shield:'🛡️'};
+    const LABELS = {speed:'+Speed', health:'+1 Life', damage:'+Damage', shield:'10s Shield'};
+    overlay.innerHTML = `
+      <div style="font-size:1.4rem;color:#a78bfa;font-weight:700;">🛒 Upgrade Shop</div>
+      <div style="font-size:.8rem;color:rgba(240,234,214,.6);">${liveConfig.coinEmoji||'🪙'} Coins: <span id="shopCoinsDisplay">${scene._coins||0}</span></div>
+      <div id="shopCards" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">${chosen.map(u=>`
+        <div onclick="_buyUpgrade('${u}',${COSTS[u]||15},this)" style="cursor:pointer;background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:14px 18px;text-align:center;min-width:80px;transition:background .15s;">
+          <div style="font-size:1.6rem;">${ICONS[u]||'⭐'}</div>
+          <div style="font-size:.78rem;font-weight:700;color:#e8edf8;margin-top:4px;">${LABELS[u]||u}</div>
+          <div style="font-size:.7rem;color:#a78bfa;margin-top:2px;">${liveConfig.coinEmoji||'🪙'} ${COSTS[u]||15}</div>
+        </div>`).join('')}
+      </div>
+      <button onclick="_closeShop()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(240,234,214,.7);padding:8px 24px;border-radius:8px;font-size:.8rem;cursor:pointer;font-family:'Fredoka',sans-serif;">Skip →</button>`;
+    overlay.style.display = 'flex';
+    if (scene && scene.scene) scene.scene.pause();
+    window._shopOnClose = () => {
+        overlay.style.display = 'none';
+        if (scene && scene.scene) scene.scene.resume();
+        if (onClose) onClose();
+    };
+}
+
+function _buyUpgrade(key, cost, el) {
+    const scene = window._shopScene;
+    if (!scene) return;
+    const coins = scene._coins || 0;
+    if (coins < cost) { el.style.borderColor = '#ef4444'; return; }
+    scene._coins -= cost;
+    const disp = document.getElementById('shopCoinsDisplay');
+    if (disp) disp.textContent = scene._coins;
+    if (key === 'speed')  { liveConfig.speed = Math.min(600, (liveConfig.speed||200) + 30); }
+    if (key === 'damage') { liveConfig.bulletSpeed = Math.min(1000, (liveConfig.bulletSpeed||540) + 80); }
+    if (key === 'health') { if(scene._lives !== undefined) { scene._lives++; scene._updateHud && scene._updateHud(); } }
+    if (key === 'shield') { liveConfig.shieldActive = true; scene._shieldTimer = 600; }
+    el.style.background = 'rgba(34,197,94,.3)';
+    el.style.borderColor = '#22c55e';
+    el.onclick = null;
+    showToast('✅ ' + key + ' upgraded!', 'success');
+}
+
+function _closeShop() { if (window._shopOnClose) window._shopOnClose(); }
+
+// ── ACHIEVEMENT HELPERS ───────────────────────────────────────────────────────
+function _addAchievement() {
+    if (liveConfig.achievements.length >= 4) { showToast('Max 4 achievements'); return; }
+    const id = 'ach_' + Date.now();
+    liveConfig.achievements.push({ id, trigger:'score_reaches', value:500, message:'Amazing! 🌟', icon:'🏅', fired:false });
+    _renderAchievements();
+}
+
+function _removeAchievement(id) {
+    liveConfig.achievements = liveConfig.achievements.filter(a => a.id !== id);
+    _renderAchievements();
+    if (liveConfig.achievements.length < 4) document.getElementById('addAchieveBtn').style.display = '';
+}
+
+function _renderAchievements() {
+    const list = document.getElementById('achieveList');
+    if (!list) return;
+    list.innerHTML = liveConfig.achievements.map(a => `
+      <div style="background:var(--panel2);border:1px solid var(--border2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select style="flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px;font-size:.65rem;" onchange="liveConfig.achievements.find(x=>x.id==='${a.id}').trigger=this.value;">
+            <option value="score_reaches" ${a.trigger==='score_reaches'?'selected':''}>🏆 Score reaches</option>
+            <option value="wave_starts"   ${a.trigger==='wave_starts'?'selected':''}>🌊 Wave / Floor ≥</option>
+            <option value="combo_reaches" ${a.trigger==='combo_reaches'?'selected':''}>🔥 Combo reaches</option>
+            <option value="timer_hits"    ${a.trigger==='timer_hits'?'selected':''}>⏱ Timer hits (s)</option>
+          </select>
+          <input type="number" value="${a.value}" min="1" style="width:60px;text-align:center;background:rgba(0,0,0,.3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px;font-size:.65rem;" oninput="liveConfig.achievements.find(x=>x.id==='${a.id}').value=+this.value;">
+          <button onclick="_removeAchievement('${a.id}')" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.7rem;">✕</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select style="width:52px;background:rgba(0,0,0,.3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px;font-size:.9rem;text-align:center;" onchange="liveConfig.achievements.find(x=>x.id==='${a.id}').icon=this.value;">
+            ${['🏅','⭐','🔥','💎','🎯','🏆','🌟','💪'].map(ic=>`<option ${a.icon===ic?'selected':''}>${ic}</option>`).join('')}
+          </select>
+          <input type="text" value="${a.message}" maxlength="60" placeholder="You're a star! ⭐" style="flex:1;background:rgba(0,0,0,.3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:4px 6px;font-size:.65rem;" oninput="liveConfig.achievements.find(x=>x.id==='${a.id}').message=this.value;">
+        </div>
+      </div>`).join('');
+    document.getElementById('addAchieveBtn').style.display = liveConfig.achievements.length >= 4 ? 'none' : '';
+}
+
+function _checkAchievements(score, wave, combo, timer) {
+    if (!liveConfig.achievements || !liveConfig.achievements.length) return;
+    liveConfig.achievements.forEach(a => {
+        if (a.fired) return;
+        let met = false;
+        if (a.trigger === 'score_reaches' && score >= a.value) met = true;
+        if (a.trigger === 'wave_starts'   && wave  >= a.value) met = true;
+        if (a.trigger === 'combo_reaches' && combo >= a.value) met = true;
+        if (a.trigger === 'timer_hits'    && timer >= a.value) met = true;
+        if (!met) return;
+        a.fired = true;
+        _showAchievement(a.icon, a.message);
+    });
+}
+
+function _showAchievement(icon, message) {
+    let pop = document.getElementById('achievePopup');
+    if (!pop) {
+        pop = document.createElement('div');
+        pop.id = 'achievePopup';
+        pop.style.cssText = 'position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:300;background:linear-gradient(135deg,rgba(124,58,237,.96),rgba(0,212,170,.88));border-radius:12px;padding:10px 18px;display:none;align-items:center;gap:10px;font-family:"Fredoka",sans-serif;min-width:200px;box-shadow:0 4px 24px rgba(124,58,237,.55);';
+        document.getElementById('gameWrap').appendChild(pop);
+    }
+    pop.innerHTML = `<span style="font-size:1.8rem">${icon}</span><div><div style="font-size:.6rem;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase;">Achievement!</div><div style="font-size:.9rem;font-weight:700;color:white;">${message}</div></div>`;
+    pop.style.display = 'flex';
+    if (navigator.vibrate) navigator.vibrate([30,20,30]);
+    clearTimeout(pop._timer);
+    pop._timer = setTimeout(() => { pop.style.display = 'none'; }, 3200);
+}
+
+// ── AI PROMPT BUILDER ─────────────────────────────────────────────────────────
+function _aiBuildGame(desc) {
+    if (!desc || desc.trim().length < 5) { showToast('Tell me a bit more about your game! 😊'); return; }
+    const d = desc.toLowerCase();
+    if      (d.match(/space|shoot|alien|rocket|laser|bullet/))       _selectGenre('SHOOTER');
+    else if (d.match(/jump|platform|run and jump|mario|side.?scroll/)) _selectGenre('PLATFORMER');
+    else if (d.match(/snake|slither|worm/))                           _selectGenre('SNAKE');
+    else if (d.match(/race|car|driv|speed|track/))                    _selectGenre('RACING');
+    else if (d.match(/tower|defend|defence|defense|wave.*stop/))      _selectGenre('DEFENSE');
+    else if (d.match(/puzzle|match|block|swap|gem/))                  _selectGenre('PUZZLE');
+    else if (d.match(/rhythm|music|beat|tap.*note/))                  _selectGenre('RHYTHM');
+    else if (d.match(/pinball|flipper|ball.*bounce/))                 _selectGenre('PINBALL');
+    else if (d.match(/pong|paddle|tennis/))                           _selectGenre('PONG');
+    else if (d.match(/dodge|avoid|evade/))                            _selectGenre('DODGE');
+    else if (d.match(/runner|endless|run|obstacle/))                  _selectGenre('RUNNER');
+    else if (d.match(/flap|bird|fly.*gap/))                           _selectGenre('FLAPPY');
+    else if (d.match(/invad|space invad|formation/))                  _selectGenre('INVADERS');
+    else if (d.match(/rogue|dungeon|explore.*room/))                  _selectGenre('ROGUELIKE');
+    else if (d.match(/beat.*up|punch|kick|fight/))                    _selectGenre('BEAT');
+    else if (d.match(/break|brick|ball.*paddle/))                     _selectGenre('BREAKER');
+    if      (d.match(/fast|quick|speedy|rapid|zoom/))  { liveConfig.speed = 360; }
+    else if (d.match(/slow|chill|relax|easy|gentle/))  { liveConfig.speed = 130; }
+    else                                                { liveConfig.speed = 220; }
+    if      (d.match(/hard|difficult|challenge|brutal|extreme/)) { liveConfig.difficultyScale = 2.0; }
+    else if (d.match(/easy|kids|simple|beginner|young/))         { liveConfig.difficultyScale = 0.5; }
+    else                                                          { liveConfig.difficultyScale = 1.0; }
+    if      (d.match(/one life|one chance|hardcore|permadeath/)) liveConfig.lives = 1;
+    else if (d.match(/infinite|endless lives|no lives/))         liveConfig.lives = 99;
+    else if (d.match(/five lives|5 lives/))                      liveConfig.lives = 5;
+    if (d.match(/boss|final enemy|big bad|end.*boss/)) {
+        liveConfig.bossEnabled = true;
+        const tog = document.getElementById('bossEnabledToggle');
+        if (tog) { tog.checked = true; document.getElementById('bossFightBody') && (document.getElementById('bossFightBody').style.opacity = '1'); }
+    }
+    if      (d.match(/chase|follow|hunt|track/))      { liveConfig.enemyAI = 'chaser';  activePill('pillEnemyAI', document.querySelector('[onclick*="chaser"]')); }
+    else if (d.match(/zigzag|weav|dodge|tricky/))     { liveConfig.enemyAI = 'zigzag';  activePill('pillEnemyAI', document.querySelector('[onclick*="zigzag"]')); }
+    else if (d.match(/tank|tough|armour|strong foe/)) { liveConfig.enemyAI = 'tank';    activePill('pillEnemyAI', document.querySelector('[onclick*="tank"]')); }
+    else if (d.match(/bomb|dive|kamikaze/))            { liveConfig.enemyAI = 'bomber';  activePill('pillEnemyAI', document.querySelector('[onclick*="bomber"]')); }
+    if      (d.match(/ocean|sea|underwater|fish|aqua/))            _pickTheme('ocean');
+    else if (d.match(/forest|jungle|nature|tree|wood/))            _pickTheme('forest');
+    else if (d.match(/castle|knight|dragon|medieval|magic|sword/)) _pickTheme('castle');
+    else if (d.match(/candy|sweet|sugar|cupcake|dessert/))         _pickTheme('candy');
+    else if (d.match(/cyber|robot|neon|future|sci.?fi|tech/))      _pickTheme('cyber');
+    else                                                             _pickTheme('space');
+    if (desc.trim().length > 20) {
+        const intro = desc.slice(0, 160);
+        liveConfig.storyIntro = intro;
+        const si = document.getElementById('storyIntroInput') || document.getElementById('buildStoryIntroInput');
+        if (si) si.value = intro;
+    }
+    ['playerSpeedRange','playerSpeed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = liveConfig.speed; el.dispatchEvent(new Event('input',{bubbles:true})); }
+    });
+    showToast('✨ Game built from your description! Hit ▶ Run to play.');
+    setTimeout(() => compileAndBootEngine(), 400);
+}
+
+function _selectGenre(genreKey) {
+    const btn = document.querySelector(`.genre-card[data-genre="${genreKey}"]`);
+    if (btn) btn.click();
+}
+
+// ── PARTICLE SYSTEM ───────────────────────────────────────────────────────────
+function _spawnParticles(scene, x, y, opts) {
+    opts = opts || {};
+    const count = opts.count !== undefined ? opts.count : (liveConfig.particleCount || 12);
+    const style = opts.style || liveConfig.particleStyle || 'burst';
+    const colorKey = opts.color || liveConfig.particleColor || 'purple';
+    const sizeKey  = liveConfig.particleSize || 'medium';
+    const COLORS = { purple:0xa78bfa, red:0xef4444, green:0x4ade80, gold:0xfbbf24, blue:0x60a5fa };
+    const SIZES  = { small:3, medium:6, large:11 };
+    const sz = SIZES[sizeKey] || 6;
+    const isRainbow = colorKey === 'rainbow';
+    const baseColor = COLORS[colorKey] || 0xa78bfa;
+    for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.4;
+        const spd   = 55 + Math.random() * 130;
+        const col   = isRainbow ? Phaser.Display.Color.HSVToRGB(i / count, 0.9, 0.95).color : baseColor;
+        const g = scene.add.graphics();
+        if (style === 'star' || style === 'sparkle') {
+            g.fillStyle(col, 1);
+            g.fillPoints([
+                {x:0,y:-sz},{x:sz*0.3,y:-sz*0.3},{x:sz,y:0},{x:sz*0.3,y:sz*0.3},
+                {x:0,y:sz},{x:-sz*0.3,y:sz*0.3},{x:-sz,y:0},{x:-sz*0.3,y:-sz*0.3}
+            ], true);
+        } else {
+            g.fillStyle(col, 1).fillCircle(0, 0, sz * 0.5);
+        }
+        g.setPosition(x, y).setDepth(50);
+        scene.tweens.add({
+            targets: g,
+            x: x + Math.cos(angle) * spd,
+            y: y + Math.sin(angle) * spd,
+            alpha: 0,
+            scaleX: style === 'burst' ? 0.15 : 1.4,
+            scaleY: style === 'burst' ? 0.15 : 1.4,
+            duration: 380 + Math.random() * 220,
+            onComplete: () => { try { g.destroy(); } catch(_){} }
+        });
+    }
+    if (style === 'swirl') {
+        for (let i = 0; i < 3; i++) {
+            const ring = scene.add.graphics().lineStyle(2, isRainbow ? 0xfbbf24 : baseColor, 0.7).strokeCircle(0, 0, sz).setPosition(x, y).setDepth(49);
+            scene.tweens.add({ targets: ring, scaleX: 4 + i, scaleY: 4 + i, alpha: 0, duration: 300 + i * 100, onComplete: () => { try { ring.destroy(); } catch(_){} } });
+        }
+    }
+}
+
 // ── GENRE PICKER ─────────────────────────────────────────────────────────────
 const _GENRE_DESCS = {
     SHOOTER:   'Rotate, thrust & blast enemies across space.',
@@ -6346,9 +6585,25 @@ function sceneShooter(data) {
                 if(hp>0){ b.destroy(); e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return; }
                 const ex = e.x, ey = e.y;
                 this._burst(ex, ey, themeInt(1,0xa78bfa));
+                _spawnParticles(this, ex, ey);
                 b.destroy(); e.destroy();
                 _juiceKill(ex, ey, themeInt(0, 0xa78bfa));
                 if (liveConfig.lootEnabled) _dropLoot(ex, ey);
+                // Coin drop
+                if (liveConfig.coinsEnabled && Math.random() < 0.35) {
+                    const coin = this.add.text(ex, ey, liveConfig.coinEmoji||'🪙', {fontSize:'16px'}).setDepth(25);
+                    this.physics.add.existing(coin);
+                    coin.body.setVelocity((Math.random()-0.5)*60, -80);
+                    coin.body.setGravityY(200);
+                    this.physics.add.overlap(this.actor, coin, () => {
+                        this._coins++;
+                        this._coinHud.setText((liveConfig.coinEmoji||'🪙')+' ×'+this._coins);
+                        const ft = this.add.text(coin.x, coin.y-10, '+'+(liveConfig.coinEmoji||'🪙'), {fontSize:'12px',color:'#fbbf24'}).setDepth(26);
+                        this.tweens.add({targets:ft, y:ft.y-24, alpha:0, duration:500, onComplete:()=>ft.destroy()});
+                        coin.destroy();
+                    });
+                    this.tweens.add({targets:coin, angle:360, duration:800, repeat:-1});
+                }
                 this._combo++; if(this._comboTimer) this._comboTimer.remove(false);
                 this._comboTimer=this.time.delayedCall(2500,()=>{ this._combo=0; });
                 const mul=Math.min(4, 1+Math.floor(this._combo/3));
@@ -6367,6 +6622,10 @@ function sceneShooter(data) {
             this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; this._onHit(this.actor); });
             this.physics.add.overlap(this.actor, this._bossBullets, (_,b)=>{ if(!b||!b.active) return; b.destroy(); this._onHit(this.actor); });
             this._initPowerUps();
+            // Collectibles HUD
+            this._coins = 0;
+            this._coinHud = this.add.text(GW - 8, 8, '', {fontFamily:'Fredoka',fontSize:'14px',color:'#fbbf24',align:'right'}).setOrigin(1,0).setDepth(30);
+            window._shopScene = this;
         }
         _spawnBullets(spread) {
             const offsets = spread===3 ? [-14,0,14] : spread===2 ? [-10,10] : [0];
@@ -6468,6 +6727,7 @@ function sceneShooter(data) {
                 if (thresh > this._lastBossThresh) { this._lastBossThresh = thresh; this._spawnBoss(); }
             }
             this._syncPuLabels();
+            liveConfig._score = this.score; liveConfig._combo = this._combo || 0;
             this._tickBase(this.score);
         }
         _spawnBoss() {
@@ -6647,7 +6907,7 @@ function scenePlatformer(data) {
                 // Spike tiles (from tilemap) can never be stomped — always damage the player
                 if (enemy.getData('isSpike')) { this._onHit(player); return; }
                 if (player.body.velocity.y > 40 && player.body.bottom <= enemy.body.center.y + 14) {
-                    this._burst(enemy.x, enemy.y, 0xffd700); enemy.destroy();
+                    this._burst(enemy.x, enemy.y, 0xffd700); _spawnParticles(this, enemy.x, enemy.y); enemy.destroy();
                     this.actor.setVelocityY(-liveConfig.jumpForce * 0.55);
                     this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
                     this._bonusScore += (liveConfig.pointsPerKill||10) * this._puScoreMul();
@@ -6994,6 +7254,7 @@ function sceneBreaker(data) {
                     if (Math.random() < 0.22) this._dropPowerUp(brick.x, brick.y);
                     if (liveConfig.lootEnabled) _dropLoot(brick.x, brick.y);
                     this._burst(brick.x, brick.y, themeInt(brick.getData('row')||0, 0xfbbf24));
+                    _spawnParticles(this, brick.x, brick.y);
                     brick.destroy();
                     this.score += (liveConfig.pointsPerKill||10) * (brick.getData('maxHp')||1);
                     this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
@@ -7375,6 +7636,7 @@ function sceneInvaders(data) {
             // Overlaps
             this.physics.add.overlap(this.bullets,this.enemies,(b,e)=>{
                 this._burst(e.x,e.y,themeInt(1,0xa78bfa));
+                _spawnParticles(this, e.x, e.y);
                 b.destroy(); e.destroy();
                 const pts = liveConfig.pointsPerKill * this._puScoreMul();
                 this.score+=pts;
@@ -7508,6 +7770,7 @@ function sceneInvaders(data) {
                 });
             }
             this._syncPuLabels();
+            liveConfig._score = this.score; liveConfig._wave = this._wave || 0;
             this._tickBase(this.score);
         }
     };
@@ -12713,6 +12976,7 @@ function sceneBeatEmUp(data) {
                 this.scoreText.setText('Score: '+this.score);
                 const hpBar = e.getData('hpBar'); if(hpBar) hpBar.destroy();
                 this._burst(e.x, e.y, themeInt(3,0xfbbf24));
+                _spawnParticles(this, e.x, e.y);
                 _juiceKill(e.x, e.y, themeInt(3, 0xfbbf24));
                 if (liveConfig.lootEnabled) _dropLoot(e.x, e.y);
                 if (mul >= 2) _juiceText(e.x, e.y - 18, `${this._combo}× COMBO!`, '#fbbf24');
