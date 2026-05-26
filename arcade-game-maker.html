@@ -983,13 +983,6 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
         <div class="tab-content on" id="tab-build">
             <button class="btn-workshop" onclick="openWorkshop()">🛠 Create Your Assets — Open Workshop</button>
             <button class="btn-handbook" onclick="openHandbook()">📖 Open Creator's Handbook — Tips &amp; Help</button>
-            <!-- ── AI PROMPT BUILDER ── -->
-            <div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(0,212,170,.06));border:1px solid rgba(124,58,237,.28);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
-              <div style="font-family:'Fredoka',sans-serif;font-size:.95rem;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:6px;">🤖 Describe Your Game <span style="font-size:.58rem;background:rgba(124,58,237,.3);border-radius:4px;padding:1px 6px;color:rgba(167,139,250,.9);">AI fills settings</span></div>
-              <textarea id="aiPromptInput" rows="2" maxlength="250" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(124,58,237,.25);border-radius:8px;color:var(--text);font-size:.68rem;padding:7px 10px;resize:none;font-family:'Inter',sans-serif;line-height:1.5;" placeholder="e.g. A fast ocean shooter where fish enemies chase me and there's a big boss at the end..."></textarea>
-              <button onclick="_aiBuildGame(document.getElementById('aiPromptInput').value)" style="width:100%;padding:9px;background:linear-gradient(135deg,var(--purple),rgba(0,212,170,.7));border:none;border-radius:8px;color:white;font-weight:800;font-size:.82rem;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.02em;">✨ Build My Game!</button>
-            </div>
-
             <span class="sec-label"><span class="step-num">1</span> Pick Your Game 🎮</span>
             <div class="form-group">
                 <label for="gameTitle">Game Title</label>
@@ -1016,6 +1009,9 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     <div class="genre-card"    data-genre="RHYTHM"     onclick="pickGenre(this,'RHYTHM')"><span class="gc-icon">🎵</span><span class="gc-name">Rhythm</span></div>
                     <div class="genre-card"    data-genre="DEFENSE"    onclick="pickGenre(this,'DEFENSE')"><span class="gc-icon">🗼</span><span class="gc-name">Defense</span></div>
                     <div class="genre-card"    data-genre="PINBALL"    onclick="pickGenre(this,'PINBALL')"><span class="gc-icon">🔮</span><span class="gc-name">Pinball</span></div>
+                    <div class="genre-card"    data-genre="CLICKER"    onclick="pickGenre(this,'CLICKER')"><span class="gc-icon">👆</span><span class="gc-name">Clicker</span></div>
+                    <div class="genre-card"    data-genre="MEMORY"     onclick="pickGenre(this,'MEMORY')"><span class="gc-icon">🃏</span><span class="gc-name">Memory</span></div>
+                    <div class="genre-card"    data-genre="WAVESURVIVAL" onclick="pickGenre(this,'WAVESURVIVAL')"><span class="gc-icon">🌊</span><span class="gc-name">Wave Survival</span></div>
                 </div>
                 <!-- Hidden select kept for JS compatibility — all code reads genreMode.value -->
                 <select id="genreMode" style="display:none;" onchange="onGenreChange()">
@@ -1037,8 +1033,41 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     <option value="RHYTHM">Rhythm</option>
                     <option value="DEFENSE">Tower Defense</option>
                     <option value="PINBALL">Pinball</option>
+                    <option value="CLICKER">Clicker</option>
+                    <option value="MEMORY">Memory</option>
+                    <option value="WAVESURVIVAL">Wave Survival</option>
                 </select>
                 <div id="genre-desc" class="genre-desc"></div>
+            </div>
+
+            <!-- ── VISUAL LEVEL EDITOR ── -->
+            <div id="levelEditorSection" style="display:none;margin-top:8px;">
+              <span class="sec-label" style="margin-top:4px;">🗂️ Paint Your Platform Level</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;align-items:center;">
+                <span style="font-size:.7rem;color:var(--text-dim)">Tool:</span>
+                <div class="pill-row" id="pillTileTool">
+                  <button class="pill active" onclick="activePill('pillTileTool',this);window._tileTool='solid'" style="background:rgba(100,100,100,.4)">⬜ Platform</button>
+                  <button class="pill" onclick="activePill('pillTileTool',this);window._tileTool='spike'" style="background:rgba(239,68,68,.2)">🔺 Spike</button>
+                  <button class="pill" onclick="activePill('pillTileTool',this);window._tileTool='coin'" style="background:rgba(251,191,36,.2)">🪙 Coin</button>
+                  <button class="pill" onclick="activePill('pillTileTool',this);window._tileTool='goal'" style="background:rgba(74,222,128,.2)">⭐ Goal</button>
+                  <button class="pill" onclick="activePill('pillTileTool',this);window._tileTool='erase'" style="background:rgba(255,255,255,.05)">🧹 Erase</button>
+                </div>
+                <button onclick="_clearTileMap()" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);color:#fca5a5;padding:4px 10px;border-radius:8px;font-size:.72rem;cursor:pointer;margin-left:auto;">Clear All</button>
+              </div>
+              <label class="pill-row" style="gap:8px;margin:6px 0;">
+                <input type="checkbox" id="tileMapEnabledToggle" onchange="liveConfig.tileMapEnabled=this.checked">
+                <span style="font-size:.8rem;color:var(--text-dim)">Use my painted level (replaces auto-platforms)</span>
+              </label>
+              <canvas id="tileEditorCanvas" width="640" height="256"
+                style="width:100%;border-radius:10px;border:1px solid rgba(124,58,237,.3);cursor:crosshair;touch-action:none;display:block;background:#0d0d1a;"
+                onmousedown="_tileMouseDown(event)"
+                onmousemove="_tileMouseMove(event)"
+                onmouseup="_tilePainting=false"
+                ontouchstart="_tileTouchStart(event)"
+                ontouchmove="_tileTouchMove(event)"
+                ontouchend="_tilePainting=false">
+              </canvas>
+              <p style="font-size:.65rem;color:var(--text-dim);margin-top:4px;">Click or drag to paint tiles. Your level loads when you hit ▶ Run.</p>
             </div>
 
             <div class="form-group">
@@ -1954,6 +1983,29 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                     <div><div class="toggle-label">Parallax Layers</div><div class="toggle-sub">3 scrolling depth layers behind the game (Platformer, Runner, Flappy, Racing)</div></div>
                     <label class="toggle-switch"><input type="checkbox" id="parallaxToggle" checked onchange="liveConfig.parallaxLayers=this.checked;"><span class="toggle-knob"></span></label>
                 </div>
+            </div>
+
+            <!-- ── MULTI-LEVEL PROGRESSION ── -->
+            <div class="extras-section" id="custom-levels">
+              <div class="extras-header" onclick="toggleExtras('levelsBody')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;user-select:none;">
+                <span class="sec-label" style="margin:0;">🗺️ Multi-Level Progression</span><span class="extras-chevron" id="levelsChevron" style="color:var(--muted);font-size:.8rem;">▶</span>
+              </div>
+              <div class="extras-body" id="levelsBody" style="display:none">
+                <label class="pill-row" style="gap:8px;margin-bottom:8px;">
+                  <input type="checkbox" id="levelsEnabledToggle" onchange="liveConfig.levelsEnabled=this.checked;_renderLevelRows()">
+                  <span style="font-size:.8rem;color:var(--text-dim)">Enable multi-level mode</span>
+                </label>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="font-size:.75rem;color:var(--text-dim)">Levels:</span>
+                  <div class="pill-row" id="pillLevelCount">
+                    <button class="pill" onclick="liveConfig.levelCount=2;activePill('pillLevelCount',this);_renderLevelRows()">2</button>
+                    <button class="pill active" onclick="liveConfig.levelCount=3;activePill('pillLevelCount',this);_renderLevelRows()">3</button>
+                    <button class="pill" onclick="liveConfig.levelCount=4;activePill('pillLevelCount',this);_renderLevelRows()">4</button>
+                    <button class="pill" onclick="liveConfig.levelCount=5;activePill('pillLevelCount',this);_renderLevelRows()">5</button>
+                  </div>
+                </div>
+                <div id="levelRowsContainer" style="display:flex;flex-direction:column;gap:6px;"></div>
+              </div>
             </div>
 
             <!-- ── ACHIEVEMENTS ── (universal) -->
@@ -4164,6 +4216,21 @@ const liveConfig = {
     enemyAI: 'classic',
     // ── Boss Fight ────────────────────────────────────────────────
     bossEnabled: false, bossScore: 500, bossHpNew: 20, bossBehaviour: 'sweep',
+    // ── Multi-Level Progression ───────────────────────────────────
+    levelsEnabled: false,
+    levelCount: 3,
+    levelConfigs: [
+        { speed: 180, enemyCount: 5,  bgHex: '#0a0a12' },
+        { speed: 240, enemyCount: 8,  bgHex: '#0d0d1a' },
+        { speed: 300, enemyCount: 12, bgHex: '#0a0d14' },
+        { speed: 360, enemyCount: 16, bgHex: '#14080a' },
+        { speed: 420, enemyCount: 20, bgHex: '#080a14' },
+    ],
+    _currentLevel: 0,
+    // ── Visual Level Editor ───────────────────────────────────────
+    tileMapEnabled: false,
+    tileMap: [],
+    tileSize: 32,
     // ── Collectibles & Shop ───────────────────────────────────────
     coinsEnabled: true,
     coinEmoji: '🪙',
@@ -4540,6 +4607,113 @@ function activePill(groupId, btn) {
     document.querySelectorAll('#'+groupId+' .pill').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
 }
+
+// ── EXTRAS COLLAPSIBLE TOGGLE ─────────────────────────────────────────────────
+function toggleExtras(bodyId) {
+    const body    = document.getElementById(bodyId);
+    const chevron = document.getElementById(bodyId.replace('Body','Chevron'));
+    if (!body) return;
+    const open = body.style.display === 'none' || body.style.display === '';
+    body.style.display = open ? 'block' : 'none';
+    if (chevron) chevron.textContent = open ? '▼' : '▶';
+}
+
+// ── MULTI-LEVEL PROGRESSION ───────────────────────────────────────────────────
+function _renderLevelRows() {
+    const container = document.getElementById('levelRowsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const n = liveConfig.levelCount || 3;
+    for (let i = 0; i < n; i++) {
+        const cfg = liveConfig.levelConfigs[i] || { speed: 180 + i * 60, enemyCount: 5 + i * 3, bgHex: '#0a0a12' };
+        liveConfig.levelConfigs[i] = cfg;
+        const row = document.createElement('div');
+        row.style.cssText = 'background:rgba(255,255,255,.04);border-radius:8px;padding:8px 10px;font-size:.72rem;color:var(--text-dim);display:flex;flex-direction:column;gap:5px;';
+        row.innerHTML = `<div style="font-weight:700;color:#a78bfa;margin-bottom:2px;">Level ${i+1}</div>
+          <label>Speed <input type="range" min="80" max="500" value="${cfg.speed}" oninput="liveConfig.levelConfigs[${i}].speed=+this.value;this.nextElementSibling.textContent=this.value" style="width:110px;vertical-align:middle"> <span>${cfg.speed}</span></label>
+          <label>Enemies <input type="range" min="1" max="30" value="${cfg.enemyCount}" oninput="liveConfig.levelConfigs[${i}].enemyCount=+this.value;this.nextElementSibling.textContent=this.value" style="width:110px;vertical-align:middle"> <span>${cfg.enemyCount}</span></label>`;
+        container.appendChild(row);
+    }
+}
+
+function _advanceLevel(scene) {
+    liveConfig._currentLevel = (liveConfig._currentLevel || 0) + 1;
+    if (liveConfig._currentLevel >= (liveConfig.levelCount || 3)) {
+        // All levels done — show win
+        scene.scene.stop();
+        showToast('🏆 You completed all levels!');
+        return;
+    }
+    const nextCfg = liveConfig.levelConfigs[liveConfig._currentLevel] || {};
+    liveConfig.speed      = nextCfg.speed      || liveConfig.speed;
+    liveConfig.enemyCount = nextCfg.enemyCount || liveConfig.enemyCount;
+    // Flash level banner
+    const banner = document.createElement('div');
+    banner.textContent = `LEVEL ${liveConfig._currentLevel + 1}`;
+    banner.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-family:"Fredoka",sans-serif;font-weight:900;color:#a78bfa;background:rgba(0,0,0,.65);z-index:200;pointer-events:none;';
+    document.body.appendChild(banner);
+    setTimeout(() => banner.remove(), 1600);
+    // Restart scene with new config
+    setTimeout(() => {
+        try { scene.scene.restart(); } catch(e) {}
+    }, 1700);
+}
+
+// ── TILE EDITOR ───────────────────────────────────────────────────────────────
+window._tileTool    = 'solid';
+window._tilePainting = false;
+const TILE_COLS = 20, TILE_ROWS = 8, TILE_PX = 32;
+const TILE_COLORS = { solid:'#6b7280', spike:'#ef4444', coin:'#fbbf24', goal:'#4ade80' };
+
+function _tileXY(canvas, clientX, clientY) {
+    const r   = canvas.getBoundingClientRect();
+    const scaleX = TILE_COLS / r.width;
+    const scaleY = TILE_ROWS / r.height;
+    return {
+        col: Math.floor((clientX - r.left) * scaleX),
+        row: Math.floor((clientY - r.top)  * scaleY)
+    };
+}
+
+function _paintTile(col, row) {
+    if (col < 0 || col >= TILE_COLS || row < 0 || row >= TILE_ROWS) return;
+    liveConfig.tileMap = liveConfig.tileMap.filter(t => !(t.col === col && t.row === row));
+    if (window._tileTool !== 'erase') liveConfig.tileMap.push({ col, row, type: window._tileTool });
+    _drawTileEditor();
+}
+
+function _drawTileEditor() {
+    const canvas = document.getElementById('tileEditorCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Grid lines
+    ctx.strokeStyle = 'rgba(124,58,237,.15)';
+    ctx.lineWidth = 0.5;
+    for (let c = 0; c <= TILE_COLS; c++) { ctx.beginPath(); ctx.moveTo(c*TILE_PX,0); ctx.lineTo(c*TILE_PX,canvas.height); ctx.stroke(); }
+    for (let r = 0; r <= TILE_ROWS; r++) { ctx.beginPath(); ctx.moveTo(0,r*TILE_PX); ctx.lineTo(canvas.width,r*TILE_PX); ctx.stroke(); }
+    // Tiles
+    (liveConfig.tileMap || []).forEach(t => {
+        ctx.fillStyle = TILE_COLORS[t.type] || '#6b7280';
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(t.col*TILE_PX+1, t.row*TILE_PX+1, TILE_PX-2, TILE_PX-2);
+        ctx.globalAlpha = 1;
+        if (t.type !== 'solid') {
+            ctx.font = `${TILE_PX*.6}px serif`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff';
+            const icons = { spike:'▲', coin:'$', goal:'★' };
+            ctx.fillText(icons[t.type]||'', t.col*TILE_PX+TILE_PX/2, t.row*TILE_PX+TILE_PX*.72);
+        }
+    });
+}
+
+function _clearTileMap() { liveConfig.tileMap = []; _drawTileEditor(); }
+
+function _tileMouseDown(e) { window._tilePainting = true; const {col,row} = _tileXY(e.target,e.clientX,e.clientY); _paintTile(col,row); }
+function _tileMouseMove(e) { if (!window._tilePainting) return; const {col,row} = _tileXY(e.target,e.clientX,e.clientY); _paintTile(col,row); }
+function _tileTouchStart(e) { e.preventDefault(); window._tilePainting=true; const t=e.touches[0]; const {col,row}=_tileXY(e.target,t.clientX,t.clientY); _paintTile(col,row); }
+function _tileTouchMove(e)  { e.preventDefault(); if(!window._tilePainting) return; const t=e.touches[0]; const {col,row}=_tileXY(e.target,t.clientX,t.clientY); _paintTile(col,row); }
 
 // ── FULLSCREEN / SCREENSHOT ───────────────────────────────────────────────────
 function toggleFullscreen() {
@@ -4996,69 +5170,6 @@ function _showAchievement(icon, message) {
     pop._timer = setTimeout(() => { pop.style.display = 'none'; }, 3200);
 }
 
-// ── AI PROMPT BUILDER ─────────────────────────────────────────────────────────
-function _aiBuildGame(desc) {
-    if (!desc || desc.trim().length < 5) { showToast('Tell me a bit more about your game! 😊'); return; }
-    const d = desc.toLowerCase();
-    if      (d.match(/space|shoot|alien|rocket|laser|bullet/))       _selectGenre('SHOOTER');
-    else if (d.match(/jump|platform|run and jump|mario|side.?scroll/)) _selectGenre('PLATFORMER');
-    else if (d.match(/snake|slither|worm/))                           _selectGenre('SNAKE');
-    else if (d.match(/race|car|driv|speed|track/))                    _selectGenre('RACING');
-    else if (d.match(/tower|defend|defence|defense|wave.*stop/))      _selectGenre('DEFENSE');
-    else if (d.match(/puzzle|match|block|swap|gem/))                  _selectGenre('PUZZLE');
-    else if (d.match(/rhythm|music|beat|tap.*note/))                  _selectGenre('RHYTHM');
-    else if (d.match(/pinball|flipper|ball.*bounce/))                 _selectGenre('PINBALL');
-    else if (d.match(/pong|paddle|tennis/))                           _selectGenre('PONG');
-    else if (d.match(/dodge|avoid|evade/))                            _selectGenre('DODGE');
-    else if (d.match(/runner|endless|run|obstacle/))                  _selectGenre('RUNNER');
-    else if (d.match(/flap|bird|fly.*gap/))                           _selectGenre('FLAPPY');
-    else if (d.match(/invad|space invad|formation/))                  _selectGenre('INVADERS');
-    else if (d.match(/rogue|dungeon|explore.*room/))                  _selectGenre('ROGUELIKE');
-    else if (d.match(/beat.*up|punch|kick|fight/))                    _selectGenre('BEAT');
-    else if (d.match(/break|brick|ball.*paddle/))                     _selectGenre('BREAKER');
-    if      (d.match(/fast|quick|speedy|rapid|zoom/))  { liveConfig.speed = 360; }
-    else if (d.match(/slow|chill|relax|easy|gentle/))  { liveConfig.speed = 130; }
-    else                                                { liveConfig.speed = 220; }
-    if      (d.match(/hard|difficult|challenge|brutal|extreme/)) { liveConfig.difficultyScale = 2.0; }
-    else if (d.match(/easy|kids|simple|beginner|young/))         { liveConfig.difficultyScale = 0.5; }
-    else                                                          { liveConfig.difficultyScale = 1.0; }
-    if      (d.match(/one life|one chance|hardcore|permadeath/)) liveConfig.lives = 1;
-    else if (d.match(/infinite|endless lives|no lives/))         liveConfig.lives = 99;
-    else if (d.match(/five lives|5 lives/))                      liveConfig.lives = 5;
-    if (d.match(/boss|final enemy|big bad|end.*boss/)) {
-        liveConfig.bossEnabled = true;
-        const tog = document.getElementById('bossEnabledToggle');
-        if (tog) { tog.checked = true; document.getElementById('bossFightBody') && (document.getElementById('bossFightBody').style.opacity = '1'); }
-    }
-    if      (d.match(/chase|follow|hunt|track/))      { liveConfig.enemyAI = 'chaser';  activePill('pillEnemyAI', document.querySelector('[onclick*="chaser"]')); }
-    else if (d.match(/zigzag|weav|dodge|tricky/))     { liveConfig.enemyAI = 'zigzag';  activePill('pillEnemyAI', document.querySelector('[onclick*="zigzag"]')); }
-    else if (d.match(/tank|tough|armour|strong foe/)) { liveConfig.enemyAI = 'tank';    activePill('pillEnemyAI', document.querySelector('[onclick*="tank"]')); }
-    else if (d.match(/bomb|dive|kamikaze/))            { liveConfig.enemyAI = 'bomber';  activePill('pillEnemyAI', document.querySelector('[onclick*="bomber"]')); }
-    if      (d.match(/ocean|sea|underwater|fish|aqua/))            _pickTheme('ocean');
-    else if (d.match(/forest|jungle|nature|tree|wood/))            _pickTheme('forest');
-    else if (d.match(/castle|knight|dragon|medieval|magic|sword/)) _pickTheme('castle');
-    else if (d.match(/candy|sweet|sugar|cupcake|dessert/))         _pickTheme('candy');
-    else if (d.match(/cyber|robot|neon|future|sci.?fi|tech/))      _pickTheme('cyber');
-    else                                                             _pickTheme('space');
-    if (desc.trim().length > 20) {
-        const intro = desc.slice(0, 160);
-        liveConfig.storyIntro = intro;
-        const si = document.getElementById('storyIntroInput') || document.getElementById('buildStoryIntroInput');
-        if (si) si.value = intro;
-    }
-    ['playerSpeedRange','playerSpeed'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { el.value = liveConfig.speed; el.dispatchEvent(new Event('input',{bubbles:true})); }
-    });
-    showToast('✨ Game built from your description! Hit ▶ Run to play.');
-    setTimeout(() => compileAndBootEngine(), 400);
-}
-
-function _selectGenre(genreKey) {
-    const btn = document.querySelector(`.genre-card[data-genre="${genreKey}"]`);
-    if (btn) btn.click();
-}
-
 // ── PARTICLE SYSTEM ───────────────────────────────────────────────────────────
 function _spawnParticles(scene, x, y, opts) {
     opts = opts || {};
@@ -5325,8 +5436,12 @@ function onGenreChange() {
     const g = document.getElementById('genreMode').value;
     _syncGenrePicker(); // sync visual picker, genre description, mobile run bar
     const root = document.getElementById('studioRoot');
-    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL'].forEach(c => root.classList.remove('genre-'+c));
+    ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'].forEach(c => root.classList.remove('genre-'+c));
     root.classList.add('genre-'+g);
+
+    // Show/hide visual level editor (Platformer only)
+    const leSec = document.getElementById('levelEditorSection');
+    if (leSec) leSec.style.display = (g === 'PLATFORMER') ? 'block' : 'none';
 
     // Show racing or standard tilemap tools
     const isRacing = g === 'RACING';
@@ -5506,6 +5621,12 @@ function compileAndBootEngine() {
             if(btn){ btn.classList.add('just-revealed'); setTimeout(()=>btn.classList.remove('just-revealed'),3000); }
         }, 900);
     }
+    // Reset multi-level progression on each boot
+    liveConfig._currentLevel = 0;
+    if (liveConfig.levelsEnabled && liveConfig.levelConfigs && liveConfig.levelConfigs[0]) {
+        liveConfig.speed      = liveConfig.levelConfigs[0].speed;
+        liveConfig.enemyCount = liveConfig.levelConfigs[0].enemyCount;
+    }
     // Reset achievement fired state on each boot
     if (liveConfig.achievements) liveConfig.achievements.forEach(a => a.fired = false);
     // Reset speed run timer on each boot
@@ -5517,8 +5638,8 @@ function compileAndBootEngine() {
     
 }
 function _showTitleScreen(data) {
-    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮'};
-    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon',RACING:'Top-Down Racing',HOPPER:'Endless Hopper',BEAT:"Beat 'em Up",PUZZLE:'Puzzle',RHYTHM:'Rhythm',DEFENSE:'Tower Defense',PINBALL:'Pinball'};
+    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊'};
+    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon',RACING:'Top-Down Racing',HOPPER:'Endless Hopper',BEAT:"Beat 'em Up",PUZZLE:'Puzzle',RHYTHM:'Rhythm',DEFENSE:'Tower Defense',PINBALL:'Pinball',CLICKER:'Idle Clicker',MEMORY:'Card Memory',WAVESURVIVAL:'Wave Survival'};
     document.getElementById('introIcon').textContent       = ICONS[data.genre]  || '🕹️';
     document.getElementById('introGameTitle').textContent  = data.title         || 'My Arcade Game';
     document.getElementById('introGenreSub').textContent   = GENRES[data.genre] || data.genre;
@@ -5638,27 +5759,27 @@ function _launchPhaserGame() {
                             }
                         }
                     });
-                // Achievement check
-                try { _checkAchievements(liveConfig._score||0, liveConfig._wave||0, liveConfig._combo||0, liveConfig._timer||0); } catch(e){}
-                // Trail effect
-                if (liveConfig.trailEffect) {
-                    try {
-                        const _trailScenes = currentPhaserGame.scene.getScenes(true);
-                        _trailScenes.forEach(s => {
-                            if (s.actor && s.actor.active) {
-                                if (!s._trailFrame) s._trailFrame = 0;
-                                s._trailFrame++;
-                                if (s._trailFrame % 3 === 0) {
-                                    const td = _themeData ? _themeData(liveConfig.theme||'space') : null;
-                                    const col = td ? td.accentColor : 0xa78bfa;
-                                    const dot = s.add.graphics().fillStyle(col, 0.5).fillCircle(0, 0, 3).setPosition(s.actor.x, s.actor.y).setDepth(5);
-                                    s.tweens.add({ targets: dot, alpha: 0, scaleX: 0.3, scaleY: 0.3, duration: 350, onComplete: () => { try { dot.destroy(); } catch(_){} } });
+                    // Achievement check
+                    try { _checkAchievements(liveConfig._score||0, liveConfig._wave||0, liveConfig._combo||0, liveConfig._timer||0); } catch(e){}
+                    // Trail effect
+                    if (liveConfig.trailEffect) {
+                        try {
+                            const _trailScenes = currentPhaserGame.scene.getScenes(true);
+                            _trailScenes.forEach(s => {
+                                if (s.actor && s.actor.active) {
+                                    if (!s._trailFrame) s._trailFrame = 0;
+                                    s._trailFrame++;
+                                    if (s._trailFrame % 3 === 0) {
+                                        const td = _themeData ? _themeData(liveConfig.theme||'space') : null;
+                                        const col = td ? td.accentColor : 0xa78bfa;
+                                        const dot = s.add.graphics().fillStyle(col, 0.5).fillCircle(0, 0, 3).setPosition(s.actor.x, s.actor.y).setDepth(5);
+                                        s.tweens.add({ targets: dot, alpha: 0, scaleX: 0.3, scaleY: 0.3, duration: 350, onComplete: () => { try { dot.destroy(); } catch(_){} } });
+                                    }
                                 }
-                            }
-                        });
-                    } catch(_) {}
-                }
-            } catch(e) {}
+                            });
+                        } catch(_) {}
+                    }
+                } catch(e) {}
             });
         } catch(e) {
             _gameError('Game engine failed to start', e.message || String(e), true);
@@ -5700,8 +5821,330 @@ function closeIntro() {
     _maybeCutscene('before', () => _launchPhaserGame());
 }
 
+// ── CLICKER ───────────────────────────────────────────────────────────────────
+function sceneClicker(data) {
+    const Base = makeBaseScene(data);
+    return class extends Base {
+        create() {
+            liveConfig._score = liveConfig._score || 0;
+            let _autoRate = 0, _autoTimer = 0;
+            const td = _themeData(liveConfig.theme || 'space');
+
+            this._drawBg();
+
+            // Big click target
+            let _mult = 1;
+            const btn = this.add.text(GW/2, GH/2 - 30, td.playerEmoji || '👾', {
+                fontSize: '72px', fontFamily: 'serif'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+            btn.on('pointerdown', () => {
+                liveConfig._score += _mult + Math.floor(_autoRate / 2);
+                this.tweens.add({ targets: btn, scaleX: 1.25, scaleY: 1.25, duration: 60, yoyo: true });
+                _spawnParticles(this, GW/2, GH/2 - 30, { count: 6, style: 'burst' });
+            });
+
+            // HUD
+            const scoreTxt = this.add.text(10, 10, '', { fontSize:'16px', fill:'#a78bfa', fontFamily:'Fredoka One' });
+            const cpsTxt   = this.add.text(10, 32, '', { fontSize:'12px', fill:'rgba(167,139,250,.7)', fontFamily:'Inter' });
+
+            // Auto-clicker upgrade
+            let _autoCost = 10;
+            const autoBtn = this.add.text(GW/2, GH - 60, `🤖 Auto-click — Cost: ${_autoCost}`, {
+                fontSize: '13px', fill: '#4ade80', fontFamily: 'Inter', backgroundColor: 'rgba(0,0,0,.4)',
+                padding: { x: 10, y: 6 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            autoBtn.on('pointerdown', () => {
+                if (liveConfig._score >= _autoCost) {
+                    liveConfig._score -= _autoCost;
+                    _autoRate++;
+                    _autoCost = Math.floor(_autoCost * 1.8);
+                    autoBtn.setText(`🤖 Auto-click (${_autoRate}/s) — Cost: ${_autoCost}`);
+                    showToast('Auto-clicker upgraded! 🤖');
+                } else {
+                    showToast(`Need ${_autoCost} points!`);
+                }
+            });
+
+            // Multiplier upgrade
+            let _multCost = 50;
+            const multBtn = this.add.text(GW/2, GH - 30, `⚡ 2× Clicks — Cost: ${_multCost}`, {
+                fontSize: '13px', fill: '#fbbf24', fontFamily: 'Inter', backgroundColor: 'rgba(0,0,0,.4)',
+                padding: { x: 10, y: 6 }
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            multBtn.on('pointerdown', () => {
+                if (liveConfig._score >= _multCost) {
+                    liveConfig._score -= _multCost;
+                    _mult++;
+                    _multCost = Math.floor(_multCost * 2.5);
+                    multBtn.setText(`⚡ ${_mult+1}× Clicks — Cost: ${_multCost}`);
+                    showToast(`${_mult+1}× clicks unlocked! ⚡`);
+                } else {
+                    showToast(`Need ${_multCost} points!`);
+                }
+            });
+
+            this.events.on('step', (_, delta) => {
+                _autoTimer += delta;
+                if (_autoRate > 0 && _autoTimer >= 1000) {
+                    liveConfig._score += _autoRate;
+                    _autoTimer = 0;
+                }
+                liveConfig._score = liveConfig._score || 0;
+                scoreTxt.setText(`Score: ${liveConfig._score}`);
+                cpsTxt.setText(_autoRate > 0 ? `${_autoRate}/sec auto` : 'Click to score!');
+            });
+        }
+        update() {}
+    };
+}
+
+// ── MEMORY ────────────────────────────────────────────────────────────────────
+function sceneMemory(data) {
+    const Base = makeBaseScene(data);
+    return class extends Base {
+        create() {
+            this._drawBg();
+            const EMOJIS = ['🐱','🐶','🦊','🐸','🐼','🐯','🦁','🐻'];
+            const diff = liveConfig.difficulty || 'medium';
+            const COLS = diff === 'hard' ? 6 : diff === 'easy' ? 3 : 4;
+            const ROWS = diff === 'hard' ? 4 : diff === 'easy' ? 2 : 3;
+            const PAIRS = (COLS * ROWS) / 2;
+            let emojiPool = EMOJIS.slice(0, PAIRS);
+            let cards = [...emojiPool, ...emojiPool].sort(() => Math.random() - 0.5);
+
+            const CW = Math.floor((GW - 40) / COLS);
+            const CH = Math.floor((GH - 80) / ROWS);
+            const startX = 20 + CW / 2;
+            const startY = 60 + CH / 2;
+
+            let flipped = [], matched = [], _moves = 0, _locked = false;
+            let cardObjs = [];
+
+            const scoreTxt = this.add.text(GW/2, 18, 'Moves: 0', {
+                fontSize: '16px', fill: '#a78bfa', fontFamily: 'Fredoka One'
+            }).setOrigin(0.5);
+
+            const timeTxt = this.add.text(GW - 10, 18, '', {
+                fontSize: '13px', fill: 'rgba(167,139,250,.7)', fontFamily: 'Inter'
+            }).setOrigin(1, 0.5);
+
+            let _elapsed = 0;
+            this.events.on('step', (_, delta) => {
+                _elapsed += delta;
+                timeTxt.setText((_elapsed / 1000).toFixed(1) + 's');
+            });
+
+            cards.forEach((emoji, i) => {
+                const col = i % COLS;
+                const row = Math.floor(i / COLS);
+                const x = startX + col * CW;
+                const y = startY + row * CH;
+
+                const bg   = this.add.rectangle(x, y, CW - 6, CH - 6, 0x2d1b6e).setInteractive({ useHandCursor: true });
+                const back = this.add.rectangle(x, y, CW - 6, CH - 6, 0x3b21a8).setVisible(false);
+                const txt  = this.add.text(x, y, emoji, {
+                    fontSize: `${Math.min(CW, CH) * 0.5}px`, fontFamily: 'serif'
+                }).setOrigin(0.5).setVisible(false);
+
+                cardObjs.push({ bg, back, txt, emoji, index: i, revealed: false });
+
+                bg.on('pointerdown', () => {
+                    if (_locked) return;
+                    const card = cardObjs[i];
+                    if (card.revealed || matched.includes(i) || flipped.includes(i)) return;
+                    card.bg.setVisible(false);
+                    card.back.setVisible(true);
+                    card.txt.setVisible(true);
+                    flipped.push(i);
+                    if (flipped.length === 2) {
+                        _moves++;
+                        scoreTxt.setText(`Moves: ${_moves}`);
+                        _locked = true;
+                        const [a, b] = flipped;
+                        if (cardObjs[a].emoji === cardObjs[b].emoji) {
+                            matched.push(a, b);
+                            cardObjs[a].bg.setFillStyle(0x166534); cardObjs[b].bg.setFillStyle(0x166534);
+                            cardObjs[a].revealed = true; cardObjs[b].revealed = true;
+                            flipped = []; _locked = false;
+                            _spawnParticles(this, x, y, { count: 8, style: 'burst' });
+                            if (matched.length === cards.length) {
+                                liveConfig._score = Math.max(0, 1000 - _moves * 10);
+                                const t = (_elapsed / 1000).toFixed(1);
+                                showToast(`🏆 You won in ${_moves} moves & ${t}s! Score: ${liveConfig._score}`);
+                            }
+                        } else {
+                            this.time.delayedCall(900, () => {
+                                cardObjs[a].bg.setVisible(true); cardObjs[a].back.setVisible(false); cardObjs[a].txt.setVisible(false);
+                                cardObjs[b].bg.setVisible(true); cardObjs[b].back.setVisible(false); cardObjs[b].txt.setVisible(false);
+                                flipped = []; _locked = false;
+                            });
+                        }
+                    }
+                });
+            });
+
+            this.add.text(GW/2, 36, `${COLS}×${ROWS} Card Match`, {
+                fontSize: '11px', fill: 'rgba(167,139,250,.5)', fontFamily: 'Inter'
+            }).setOrigin(0.5);
+        }
+        update() {}
+    };
+}
+
+// ── WAVE SURVIVAL ─────────────────────────────────────────────────────────────
+function sceneWaveSurvival(data) {
+    const Base = makeBaseScene(data);
+    return class extends Base {
+        create() {
+            const td = _themeData(liveConfig.theme || 'space');
+            this._drawBg();
+
+            let _wave = 1, _hp = liveConfig.lives || 3, _score = 0;
+            let _enemies = [], _bullets = [], _waveClear = false;
+            let _betweenWaves = false;
+            const SPD = liveConfig.speed || 200;
+
+            // Player
+            const actor = this.add.text(GW/2, GH - 50, td.playerEmoji || '🚀', {
+                fontSize: '28px', fontFamily: 'serif'
+            }).setOrigin(0.5);
+            this.physics.add.existing(actor);
+            actor.body.setCollideWorldBounds(true);
+            actor.body.setSize(28, 28);
+
+            // HUD
+            const waveTxt  = this.add.text(GW/2, 12, 'Wave 1', { fontSize:'16px', fill:'#a78bfa', fontFamily:'Fredoka One' }).setOrigin(0.5);
+            const hpTxt    = this.add.text(10, 12, '', { fontSize:'14px', fill:'#ef4444', fontFamily:'Inter' });
+            const scoreTxt = this.add.text(GW - 10, 12, '', { fontSize:'14px', fill:'#4ade80', fontFamily:'Inter' }).setOrigin(1, 0);
+
+            const spawnWave = (w) => {
+                _enemies = []; _waveClear = false;
+                const count = Math.min(4 + w * 2, 20);
+                for (let i = 0; i < count; i++) {
+                    const ex = 40 + (i % 10) * ((GW - 80) / Math.min(count, 10));
+                    const ey = 50 + Math.floor(i / 10) * 60;
+                    const e = this.add.text(ex, ey, td.enemyEmoji || '👾', {
+                        fontSize: '22px', fontFamily: 'serif'
+                    }).setOrigin(0.5);
+                    this.physics.add.existing(e);
+                    e.body.setSize(22, 22);
+                    e._hp = 1 + Math.floor(w / 3);
+                    e._dx = (Math.random() > 0.5 ? 1 : -1) * (60 + w * 10);
+                    e._dy = 20 + w * 5;
+                    e._alive = true;
+                    _enemies.push(e);
+                }
+                waveTxt.setText(`Wave ${w}`);
+            };
+
+            spawnWave(1);
+
+            // Shoot
+            let _lastShot = 0;
+            const fireRate = liveConfig.fireRate || 400;
+            this._wsShoot = () => {
+                const now = Date.now();
+                if (now - _lastShot < fireRate) return;
+                _lastShot = now;
+                const b = this.add.text(actor.x, actor.y - 20, '•', {
+                    fontSize: '14px', fontFamily: 'serif', color: '#a78bfa'
+                }).setOrigin(0.5);
+                this.physics.add.existing(b);
+                b.body.setVelocityY(-420);
+                b.body.setSize(8, 8);
+                _bullets.push(b);
+            };
+
+            this._wsCursors = this.input.keyboard.createCursorKeys();
+            this._wsSpace   = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            this._wsActor   = actor;
+            this._wsEnemies = () => _enemies;
+            this._wsBullets = () => _bullets;
+            this._wsSetBullets = (v) => { _bullets = v; };
+            this._wsState   = { wave: () => _wave, hp: () => _hp, score: () => _score,
+                                betweenWaves: () => _betweenWaves, waveClear: () => _waveClear,
+                                setWave: (v) => { _wave = v; }, setHp: (v) => { _hp = v; },
+                                setScore: (v) => { _score = v; }, setBetween: (v) => { _betweenWaves = v; },
+                                setWaveClear: (v) => { _waveClear = v; } };
+            this._wsHpTxt    = hpTxt;
+            this._wsWaveTxt  = waveTxt;
+            this._wsScoreTxt = scoreTxt;
+            this._wsSpawnWave = spawnWave;
+            this._wsTd = td;
+            this._wsSPD = SPD;
+        }
+        update(_, delta) {
+            const st = this._wsState;
+            if (!st || st.betweenWaves()) return;
+
+            const actor = this._wsActor;
+            actor.body.setVelocityX(0);
+            if (this._wsCursors.left.isDown  || touchInput.left)  actor.body.setVelocityX(-this._wsSPD);
+            if (this._wsCursors.right.isDown || touchInput.right) actor.body.setVelocityX(this._wsSPD);
+            if (Phaser.Input.Keyboard.JustDown(this._wsSpace) || touchInput.fire) this._wsShoot();
+
+            const _enemies = this._wsEnemies();
+            _enemies.forEach(e => {
+                if (!e._alive || !e.active) return;
+                e.x += e._dx * delta / 1000;
+                e.y += e._dy * delta / 1000;
+                if (e.x < 20 || e.x > GW - 20) e._dx *= -1;
+                if (e.y > GH - 60) {
+                    e.destroy(); e._alive = false;
+                    st.setHp(st.hp() - 1);
+                    this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
+                    if (st.hp() <= 0) {
+                        showToast(`💀 Survived ${st.wave() - 1} waves! Score: ${st.score()}`);
+                        liveConfig._score = st.score();
+                        this.scene.stop(); return;
+                    }
+                }
+            });
+
+            let _bullets = this._wsBullets();
+            _bullets.forEach(b => {
+                if (!b.active) return;
+                if (b.y < -10) { b.destroy(); return; }
+                _enemies.forEach(e => {
+                    if (!e._alive || !e.active) return;
+                    const dx = Math.abs(b.x - e.x), dy = Math.abs(b.y - e.y);
+                    if (dx < 20 && dy < 20) {
+                        e._hp--;
+                        b.destroy();
+                        _spawnParticles(this, e.x, e.y, { count: 6, style: 'burst' });
+                        if (e._hp <= 0) {
+                            e.destroy(); e._alive = false;
+                            st.setScore(st.score() + 10 * st.wave());
+                            liveConfig._score = st.score();
+                        }
+                    }
+                });
+            });
+            this._wsSetBullets(_bullets.filter(b => b.active));
+
+            const alive = _enemies.filter(e => e._alive && e.active);
+            if (alive.length === 0 && !st.waveClear()) {
+                st.setWaveClear(true); st.setBetween(true);
+                st.setWave(st.wave() + 1);
+                st.setScore(st.score() + 50 * (st.wave() - 1));
+                liveConfig._score = st.score();
+                showToast(`✅ Wave ${st.wave() - 1} clear! Next wave in 2s...`);
+                this.time.delayedCall(2000, () => {
+                    st.setBetween(false);
+                    this._wsBullets().forEach(b => b.active && b.destroy()); this._wsSetBullets([]);
+                    this._wsSpawnWave(st.wave());
+                });
+            }
+
+            this._wsScoreTxt.setText(`Score: ${st.score()}`);
+            this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
+        }
+    };
+}
+
 function getScene(data) {
-    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense, PINBALL:scenePinball };
+    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense, PINBALL:scenePinball, CLICKER:sceneClicker, MEMORY:sceneMemory, WAVESURVIVAL:sceneWaveSurvival };
     return scenes[data.genre] ? scenes[data.genre](data) : sceneShooter(data);
 }
 
@@ -6726,6 +7169,13 @@ function sceneShooter(data) {
                 const thresh = Math.floor(this.score / 500);
                 if (thresh > this._lastBossThresh) { this._lastBossThresh = thresh; this._spawnBoss(); }
             }
+            // Multi-level progression: when levels enabled, pause spawner and advance on wave-clear
+            if (liveConfig.levelsEnabled && !this._levelAdvancing && !this.hazards.countActive(true)) {
+                this._levelAdvancing = true;
+                if (this.spawnTimer) this.spawnTimer.paused = true;
+                _advanceLevel(this);
+                return;
+            }
             this._syncPuLabels();
             liveConfig._score = this.score; liveConfig._combo = this._combo || 0;
             this._tickBase(this.score);
@@ -6967,6 +7417,10 @@ function scenePlatformer(data) {
             }
         }
         _buildLevel() {
+            // Batch 3: visual tile editor override (20×8 grid painted in the Build tab)
+            if (liveConfig.tileMapEnabled && liveConfig.tileMap && liveConfig.tileMap.length > 0) {
+                this._buildFromVisualTileMap(); return;
+            }
             // If a custom 20×15 tilemap has been painted, use it for a fixed-screen level
             if (data.map && data.map.length === TM_COLS*TM_ROWS && data.map.some(v=>v>0)) {
                 this._buildFromTilemap(data.map); return;
@@ -7045,6 +7499,44 @@ function scenePlatformer(data) {
                 // Gentle float animation
                 this.tweens.add({targets:c, y:ty-5, duration:700+Math.random()*300, yoyo:true, repeat:-1, ease:'Sine.easeInOut'});
             });
+        }
+        _buildFromVisualTileMap() {
+            // Visual level editor: 20×8 grid painted in Build tab
+            this.physics.world.setBounds(0, 0, GW, GH);
+            this.cameras.main.setBounds(0, 0, GW, GH);
+            this._isTilemapMode = true;
+            const TS = 32, COLS = 20, ROWS = 8;
+            const scaleX = GW / (COLS * TS);
+            const scaleY = GH / (ROWS * TS);
+            const tileW = TS * scaleX, tileH = TS * scaleY;
+            const solidCol = themeInt(2, 0x334155);
+            liveConfig.tileMap.forEach(t => {
+                const px = t.col * tileW + tileW / 2;
+                const py = t.row * tileH + tileH / 2;
+                if (t.type === 'solid') {
+                    const p = this.platforms.create(px, py, 'block');
+                    p.setDisplaySize(tileW - 2, tileH - 2).setTint(solidCol).refreshBody();
+                } else if (t.type === 'spike') {
+                    const h = this.hazards.create(px, py, 'block');
+                    h.setDisplaySize(tileW - 2, tileH - 2).setTint(0xef4444);
+                    h.body.allowGravity = false; h.setImmovable(true);
+                    h.setData('isSpike', true);
+                } else if (t.type === 'coin') {
+                    const c = this._coinGrp.create(px, py - tileH * 0.3, 'block');
+                    c.setDisplaySize(10, 10).setTint(0xfbbf24);
+                    c.body.allowGravity = false;
+                    this.tweens.add({ targets: c, y: c.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                } else if (t.type === 'goal') {
+                    // Goal flag
+                    this.add.rectangle(px, py, tileW - 2, tileH - 2, 0x22c55e, 0.5).setDepth(5);
+                    this.add.text(px, py, '★', { fontSize: '18px', color: '#ffd700' }).setOrigin(0.5).setDepth(6);
+                }
+            });
+            // Spawn player above first solid tile, or default position
+            let spawnX = 60, spawnY = GH - 60;
+            const firstSolid = liveConfig.tileMap.find(t => t.type === 'solid');
+            if (firstSolid) { spawnX = firstSolid.col * tileW + tileW / 2; spawnY = firstSolid.row * tileH - tileH; }
+            this._tmSpawnX = spawnX; this._tmSpawnY = spawnY;
         }
         update() {
             // Parallax: tile sprites fixed to cam, offset tilePosition proportional to scroll
@@ -7648,6 +8140,8 @@ function sceneInvaders(data) {
                     this._wave++;
                     this._hitsAtWaveStart = _sessionHits; // reset baseline for next wave
                     if (this._wave >= 3) _achUnlock('wave_3');
+                    // Multi-level progression check
+                    if (liveConfig.levelsEnabled) { _advanceLevel(this); return; }
                     this._buildFormation(); this.score+=100;
                     const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! 👾`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
                     this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:1000,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
@@ -13095,6 +13589,7 @@ function sceneBeatEmUp(data) {
                     this.time.delayedCall(800,()=>this._invincible=false);
                 }
             });
+            liveConfig._score = this.score; liveConfig._wave = this._wave || 0; liveConfig._combo = this._combo || 0;
             this._tickBase(this.score);
         }
         shutdown() { _updateLandscapeNudge(false); }
