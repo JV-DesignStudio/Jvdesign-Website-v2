@@ -109,10 +109,10 @@ a{text-decoration:none;color:inherit;}
 .mobile-nav a:hover{background:rgba(255,255,255,.05);color:var(--beige);}
 @media(max-width:860px){.main-nav{display:none!important;}.nav-toggle{display:block!important;}}
 @media(min-width:861px){.mobile-nav{display:none!important;}}
-/* Landscape nudge — shown on phones in portrait during gameplay */
-#landscape-nudge{display:none;position:fixed;inset:0;z-index:9999;background:#05030f;color:#e8edf8;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:'Fredoka',sans-serif;}
-#landscape-nudge span{font-size:3rem;}
-#landscape-nudge p{font-size:1.1rem;font-weight:600;text-align:center;color:rgba(240,234,214,.8);}
+/* Landscape nudge — small dismissible hint bar at top of canvas (not a blocker) */
+#landscape-nudge{display:none;position:absolute;top:0;left:0;right:0;z-index:50;background:rgba(5,3,15,.88);backdrop-filter:blur(8px);color:#e8edf8;align-items:center;gap:8px;padding:9px 14px;font-family:'Fredoka',sans-serif;font-size:.9rem;border-bottom:1px solid rgba(124,58,237,.3);animation:nudge-in .22s ease;}
+#landscape-nudge .nudge-close{margin-left:auto;background:none;border:none;color:rgba(240,234,214,.5);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;-webkit-tap-highlight-color:transparent;}
+@keyframes nudge-in{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:700px) and (orientation:portrait){
     #landscape-nudge.game-active{display:flex!important;}
 }
@@ -362,10 +362,11 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 #engine-branding{font-family:'Inter',sans-serif;font-size:.68rem;font-weight:600;color:rgba(167,139,250,.55);letter-spacing:.02em;margin-right:auto;}
 #engine-branding.playing{color:rgba(74,222,128,.75);}
 #game-container {
-    width: 800px;        /* Or your desired width */
-    height: 600px;       /* Or your desired height */
-    overflow: hidden;    /* Keeps the engine from spilling out */
-    display: block;      /* Ensures it is treated as a block element */
+    width: 100%;
+    /* aspect-ratio keeps the container sized to the 640×400 game — no fixed px height needed */
+    aspect-ratio: 1.6 / 1;
+    overflow: hidden;
+    display: block;
 }
 /* Idle viewport placeholder */
 #gameWrap.idle{aspect-ratio:1.6/1;}
@@ -388,7 +389,6 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 
 /* GAME WRAP + TOUCH CONTROLS */
 .game-wrap{position:relative;flex-shrink:0;width:100%;max-width:640px;}
-#game-container{width:100%;}
 /* Prevent browser scroll / pinch-zoom hijacking touch events during gameplay */
 #gameWrap,#game-container,#gameWrap canvas{touch-action:none;}
 /* Fullscreen — JS sizes #game-container to fill screen; Phaser Scale.FIT letterboxes inside */
@@ -855,6 +855,20 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
   .go-score { font-size: 1.2rem; }
   #goGrade { width: 48px; height: 48px; font-size: 2rem; }
   .go-play { font-size: .9rem; padding: 11px 20px; }
+}
+/* ── Portrait phone: optimise layout so canvas sits at top and controls below ── */
+@media(max-width:700px) and (orientation:portrait){
+  /* Align canvas to top so space below it is free for touch controls */
+  .studio-viewport{justify-content:flex-start!important;padding-top:2px!important;}
+  /* Game wrap: full width, no max-width cap (canvas uses aspect-ratio) */
+  .game-wrap{max-width:100%!important;}
+  /* Slightly smaller buttons in portrait — less canvas overlap */
+  .tc-btn{width:60px!important;height:60px!important;font-size:1.3rem!important;}
+  #tc-pause{width:44px!important;height:44px!important;font-size:.95rem!important;}
+  /* Slightly wider joystick zone so it's easier to grab in portrait */
+  #tc-joy-zone{width:62%!important;}
+  /* Mobile run bar compact */
+  #mobile-run-bar{padding:6px 10px;}
 }
 /* ── HANDBOOK MODAL ─────────────────────────────────────────────────────── */
 #handbookModal{display:none;position:fixed;inset:0;z-index:9500;background:rgba(5,3,15,.96);backdrop-filter:blur(10px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -3370,10 +3384,11 @@ score += bumper.pts;
                 </div>
             </div>
 
-            <!-- LANDSCAPE NUDGE (mobile portrait during gameplay) -->
+            <!-- LANDSCAPE NUDGE (small hint bar — not a blocker) -->
             <div id="landscape-nudge">
-                <span>📱↔️</span>
-                <p>Rotate your phone to<br><strong style="color:#a78bfa;">landscape</strong> for the best experience!</p>
+                <span style="font-size:1.2rem">📱</span>
+                <span>Landscape gives more room — or just keep playing!</span>
+                <button class="nudge-close" onclick="this.parentElement.classList.remove('game-active')" aria-label="Dismiss">✕</button>
             </div>
 
             <!-- CRT SCANLINE OVERLAY -->
@@ -4314,17 +4329,19 @@ function _onFsChange() {
             // window.innerWidth/Height are CSS pixels — correct on all DPI settings.
             const sw = window.innerWidth, sh = window.innerHeight;
             // Expand the container to the full viewport so Phaser's Scale.FIT
-            // letterboxes at the correct size.
-            container.style.width    = sw + 'px';
-            container.style.height   = sh + 'px';
-            container.style.position = 'relative';
+            // letterboxes at the correct size. Override aspect-ratio for fullscreen.
+            container.style.width       = sw + 'px';
+            container.style.height      = sh + 'px';
+            container.style.aspectRatio = 'unset';
+            container.style.position    = 'relative';
             // Let Phaser recompute the canvas size inside the new container.
             if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
         } else {
-            // Restore container to flow layout; Phaser will re-fit naturally.
-            container.style.width    = '';
-            container.style.height   = '';
-            container.style.position = '';
+            // Restore container to flow layout; aspect-ratio CSS takes over again.
+            container.style.width       = '';
+            container.style.height      = '';
+            container.style.aspectRatio = '';
+            container.style.position    = '';
             if (currentPhaserGame) { try { currentPhaserGame.scale.refresh(); } catch(e) {} }
         }
     }));
@@ -4985,6 +5002,13 @@ function compileAndBootEngine() {
     // Update mobile run bar
     const _mrbRun2 = document.getElementById('mrb-run');
     if (_mrbRun2) { _mrbRun2.textContent = '↺ Restart'; _mrbRun2.classList.add('restarting'); }
+    // Auto-close the editor panel on mobile so game is unobstructed
+    if (window.innerWidth <= 768) {
+        const _panel = document.getElementById('studioPanel');
+        const _fab   = document.getElementById('panelFab');
+        if (_panel) _panel.classList.remove('panel-open');
+        if (_fab)   _fab.innerHTML = '⚙ Settings';
+    }
     // Always re-arm user script on any boot (including normal Run)
     if (_userCodeFns) _userCodeFirstRun = true;
     _scheduleAutoSave();
@@ -10300,10 +10324,16 @@ function closeGameOver() {
     _launchPhaserGame();
 }
 
-// ── Landscape nudge: show when game is running on a portrait phone ────────────
+// ── Landscape nudge: show a brief dismissible hint when playing in portrait ───
 function _updateLandscapeNudge(active) {
     const el = document.getElementById('landscape-nudge');
-    if (el) el.classList.toggle('game-active', !!active);
+    if (!el) return;
+    el.classList.toggle('game-active', !!active);
+    clearTimeout(el._nudgeTimer);
+    if (active) {
+        // Auto-dismiss after 4 seconds — user can also tap ✕
+        el._nudgeTimer = setTimeout(() => el.classList.remove('game-active'), 4000);
+    }
 }
 
 function goNewGame() {
