@@ -8512,8 +8512,11 @@ function sceneShooter(data) {
             this._bossBullets.getChildren().forEach(b=>{ if(b.y>GH+30||b.x<-30||b.x>GW+30) b.destroy(); });
             // ── Boss Fight System (liveConfig.bossEnabled) ────────────────────
             if (liveConfig.bossEnabled && !this._newBossActive && !this._newBossTriggered) {
-                if (this.score >= (liveConfig.bossScore || 500)) {
+                // Dynamic threshold: boss re-appears every bossScore pts after the last one
+                const _bossThresh = (this._lastBossThresh || 0) + (liveConfig.bossScore || 500);
+                if (this.score >= _bossThresh) {
                     this._newBossTriggered = true;
+                    this._lastBossThresh = _bossThresh;
                     this._triggerNewBoss(time);
                 }
             }
@@ -8653,8 +8656,9 @@ function sceneShooter(data) {
                         this.scoreText.setText('Score: '+this.score);
                         this._flashScore(this.scoreText);
                         GameAudio.play('score');
-                        // Trigger victory if win condition is score-based
-                        this.time.delayedCall(2200, ()=>{ showVictory(this.score); });
+                        // Reset so boss can re-appear at the next score milestone
+                        this._newBossTriggered = false;
+                        showToast('💀 Boss slain! Next boss at ' + ((this._lastBossThresh||(liveConfig.bossScore||500)) + (liveConfig.bossScore||500)) + ' pts');
                     }
                 }
             }});
@@ -8705,6 +8709,7 @@ function scenePlatformer(data) {
             this.scoreText = this._makeScoreText().setScrollFactor(0);
             this.cursors   = this.input.keyboard.createCursorKeys();
             this.platforms = this.physics.add.staticGroup();
+            this._movPlats = this.physics.add.group(); // kinematic moving platforms
             this.hazards   = this.physics.add.group();
             this._coinGrp  = this.physics.add.group();
             this._buildLevel();
@@ -8715,6 +8720,7 @@ function scenePlatformer(data) {
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
 
             this.physics.add.collider(this.actor, this.platforms);
+            this.physics.add.collider(this.actor, this._movPlats);
             // Stomp: landing on top of enemy kills it and bounces the player
             this.physics.add.collider(this.actor, this.hazards, (player, enemy) => {
                 // Spike tiles (from tilemap) can never be stomped — always damage the player
@@ -8802,6 +8808,25 @@ function scenePlatformer(data) {
                 const py=Phaser.Math.Between(Math.round(GH*0.38), GH-70);
                 const pw=Phaser.Math.Between(60,150);
                 this.platforms.create(px, py, 'block').setDisplaySize(pw,T).setTint(platCol).refreshBody();
+            }
+            // Moving platforms — oscillate horizontally, use body.reset() to stay in sync
+            if (this._movPlats) {
+                const mpCol = themeInt(0, 0x00d4aa);
+                const mpCount = 3;
+                for (let mi = 0; mi < mpCount; mi++) {
+                    const mpx = Math.round(400 + mi * Math.floor((WORLD_W - 600) / mpCount));
+                    const mpy = Phaser.Math.Between(Math.round(GH * 0.38), GH - 90);
+                    const mpw = Phaser.Math.Between(80, 130);
+                    const mp = this._movPlats.create(mpx, mpy, 'block').setDisplaySize(mpw, T).setTint(mpCol);
+                    mp.body.allowGravity = false;
+                    mp.setImmovable(true);
+                    const range = Phaser.Math.Between(80, 150);
+                    this.tweens.add({
+                        targets: mp, x: mpx + range, duration: 1800 + mi * 600,
+                        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+                        onUpdate: () => { if (mp.active && mp.body) mp.body.reset(mp.x, mp.y); }
+                    });
+                }
             }
             // ── End-goal flag ─────────────────────────────────────────────────
             // Make sure there's solid ground to land on at the goal
@@ -9085,6 +9110,7 @@ function sceneBreaker(data) {
             this.ball = this.physics.add.image(GW/2, GH-50, 'laser').setDisplaySize(14,14);
             this.ball.body.setSize(14,14);
             this.ball.setBounce(1).setCollideWorldBounds(true);
+            this.physics.world.setBounds(0, 0, GW, GH, true, true, true, false); // open bottom so ball drains
             this.ball.body.allowGravity=false; this.ball.body.checkCollision.down=false;
             const angle = Phaser.Math.Between(-160,-20) * Math.PI/180;
             this.ball.setVelocity(Math.cos(angle)*280*(1+this.wave*0.1), Math.sin(angle)*280*(1+this.wave*0.1));
@@ -9420,6 +9446,7 @@ function sceneFlappy(data) {
             const baseGap = liveConfig.pipeGap || 120;
             const gap = Math.max(65, baseGap - Math.floor(this.score * 1.4));
             const spd = -Math.max(120, liveConfig.obstacleSpeed + Math.floor(this.score * 2.8));
+            const gapY = Phaser.Math.Between(50, GH - gap - 50);
             const tp=this.pipes.create(GW+30,gapY/2,'block').setDisplaySize(40,gapY);
             tp.body.setSize(40,gapY);
             tp.setImmovable(true); tp.body.allowGravity=false; tp.setVelocityX(spd);
@@ -9503,7 +9530,28 @@ function sceneInvaders(data) {
             this.physics.add.overlap(this.bullets,this.enemies,(b,e)=>{
                 this._burst(e.x,e.y,themeInt(1,0xa78bfa));
                 const ex = e.x, ey = e.y;
-                b.destroy(); e.destroy();
+                b.destroy();
+                // Multi-HP support: boss enemies set hp > 1; regular enemies fall through at hp=0
+                const _ehp = (e.getData('hp') || 1) - 1;
+                e.setData('hp', _ehp);
+                if (_ehp > 0) {
+                    // Hit but not killed — flash white, update boss HP bar
+                    e.setTint(0xffffff);
+                    this.time.delayedCall(80, () => { if (e.active) e.setTint(0xff2222); });
+                    const _hBar = e.getData('hpFg');
+                    const _hTxt = e.getData('hpTxt');
+                    const _mhp  = e.getData('maxHp') || 1;
+                    if (_hBar) { _hBar.width = Math.round(160 * (_ehp / _mhp)); }
+                    if (_hTxt) { _hTxt.setText('BOSS HP: ' + _ehp + '/' + _mhp); }
+                    GameAudio.play('hit');
+                    return;
+                }
+                // Enemy fully dead — clean up boss UI if present
+                const _hBg = e.getData('hpBg'); if (_hBg && _hBg.active) _hBg.destroy();
+                const _hBr = e.getData('hpFg'); if (_hBr && _hBr.active) _hBr.destroy();
+                const _hT  = e.getData('hpTxt'); if (_hT  && _hT.active)  _hT.destroy();
+                if (e.getData('isBoss')) { showToast('💀 Boss defeated! +300 pts'); this.score += 300; this.scoreText.setText('Score: '+this.score); GameAudio.play('levelUp'); }
+                e.destroy();
                 _triggerHaptic('kill');
                 _spawnPowerup(this, ex, ey);
                 const pts = liveConfig.pointsPerKill * this._puScoreMul();
@@ -9519,7 +9567,12 @@ function sceneInvaders(data) {
                     if (this._wave >= 3) _achUnlock('wave_3');
                     // Multi-level progression check
                     if (liveConfig.levelsEnabled) { _advanceLevel(this); return; }
-                    this._buildFormation(); this.score+=100;
+                    // Boss wave every 5th wave
+                    if (this._wave % 5 === 0) {
+                        this._spawnInvaderBoss(); this.score += 200;
+                    } else {
+                        this._buildFormation(); this.score += 100;
+                    }
                     const wt=this.add.text(GW/2,GH/2,`WAVE ${this._wave}! 👾`,{fontSize:'30px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
                     this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:1000,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
                     GameAudio.play('score');
@@ -9539,6 +9592,36 @@ function sceneInvaders(data) {
                 if(hp<=0){ bk.destroy(); } else { bk.setData('hp',hp); bk.setAlpha(0.28+hp*0.24); bk.refreshBody(); }
             });
             this._initPowerUps();
+        }
+        _spawnInvaderBoss() {
+            showToast('⚡ BOSS WAVE! Defeat the giant alien!');
+            GameAudio.play('levelUp');
+            const bossHp = Math.min(12, 3 + Math.floor(this._wave / 5) * 2);
+            const bx = GW / 2, by = 52;
+            const boss = this.enemies.create(bx, by, 'enemy').setDisplaySize(54, 50);
+            boss.body.setSize(50, 46, true);
+            boss.setTint(0xff2222);
+            boss.body.allowGravity = false;
+            boss.setData('hp', bossHp);
+            boss.setData('maxHp', bossHp);
+            boss.setData('isBoss', true);
+            // Strafe side-to-side
+            this.tweens.add({ targets: boss, x: GW - 80, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            // HP bar (fixed to camera)
+            const hpBg = this.add.rectangle(GW/2, 22, 164, 10, 0x333333, 0.85).setScrollFactor(0).setDepth(20);
+            const hpFg = this.add.rectangle(GW/2 - 82, 22, 160, 8, 0xff2222).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+            const hpTxt = this.add.text(GW/2, 32, 'BOSS HP: '+bossHp+'/'+bossHp, { fontSize:'9px', fill:'#fff', stroke:'#000', strokeThickness:2 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(22);
+            boss.setData('hpBg', hpBg);
+            boss.setData('hpFg', hpFg);
+            boss.setData('hpTxt', hpTxt);
+            // Boss shoots a 3-spread burst every 1.8s
+            this.time.addEvent({ delay: 1800, loop: true, callback: () => {
+                if (!boss.active) return;
+                [-28, 0, 28].forEach(ox => {
+                    const eb = this.eBullets.create(boss.x + ox, boss.y + 28, 'laser').setDisplaySize(8,14).setTint(0xff4444);
+                    eb.body.allowGravity = false; eb.setVelocityY(220);
+                });
+            }});
         }
         _buildFormation() {
             const rows=liveConfig.invaderRows||3, cols=liveConfig.invaderCols||8;
@@ -9729,9 +9812,12 @@ function scenePong(data) {
             }
             // Player paddle: UP = up, DOWN / SPACE / fire = down; HOLD LEFT = charge power shot
             const {up,down}=this.cursors;
-            if(up.isDown||touchInput.up)                            this.pLeft.setVelocityY(-liveConfig.speed);
-            else if(down.isDown||this.spaceKey.isDown||touchInput.fire) this.pLeft.setVelocityY(liveConfig.speed);
-            else                                                    this.pLeft.setVelocityY(0);
+            // W/S also move the player paddle in 1P mode (no conflict in 2P — pRight gets W/S below)
+            const _p1Up   = up.isDown   || touchInput.up   || (!liveConfig.pong2Player && this.p2Up.isDown);
+            const _p1Down = down.isDown || touchInput.down || this.spaceKey.isDown || (!liveConfig.pong2Player && this.p2Down.isDown);
+            if(_p1Up)        this.pLeft.setVelocityY(-liveConfig.speed);
+            else if(_p1Down) this.pLeft.setVelocityY(liveConfig.speed);
+            else             this.pLeft.setVelocityY(0);
             this.pLeft.y=Phaser.Math.Clamp(this.pLeft.y,36,GH-36);
             // Power shot charge: hold left arrow (or long hold fire on touch) to charge
             if(this.leftKey&&this.leftKey.isDown){
@@ -10083,7 +10169,7 @@ function sceneRoguelike(data) {
             this._bossShootTimer &&this._bossShootTimer.remove(false);
             if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
             if(this._bossHpText&&this._bossHpText.active){this._bossHpText.destroy();this._bossHpText=null;}
-            this._boss=null; this._roomCleared=false; this._doorOpen=false;
+            this._boss=null; this._roomCleared=false; this._doorOpen=false; this._roomSpawnDone=false; this._roomSpawnDone=false; this._roomSpawnDone=false;
             // HP bar graphics — cleared + redrawn every frame for all multi-HP enemies
             if (!this._hpBarGfx) this._hpBarGfx = this.add.graphics().setDepth(16).setScrollFactor(1);
 
@@ -10165,6 +10251,7 @@ function sceneRoguelike(data) {
                 const dens=liveConfig.rogueDensity||0.3;
                 const eCount=Math.max(2,Math.round((4+this._floor*2.5)*dens));
                 for(let i=0;i<eCount;i++) this._spawnEnemyRandom();
+                this._roomSpawnDone = true; // enemies placed — door-open check can now run
                 // Enemy shooting (floor 1 = slow, gets faster every floor)
                 const fi=Math.max(600,2200-this._floor*120);
                 this._enemyShootTimer=this.time.addEvent({delay:fi,loop:true,callback:this._enemyFire,callbackScope:this});
@@ -10417,7 +10504,7 @@ function sceneRoguelike(data) {
             this._updateHud();
             // Check room clear — ghosts + regular enemies both count
             const anyAlive = this.enemies.countActive(true) + this._ghosts.countActive(true);
-            if(anyAlive===0 && !this._roomCleared && !this._isBossRoom){
+            if(anyAlive===0 && this._roomSpawnDone && !this._roomCleared && !this._isBossRoom){
                 this._roomCleared=true; this._openDoor();
                 if(Math.random()<0.65) this._spawnChest();
             }
@@ -10814,8 +10901,10 @@ function sceneAsteroids(data) {
             for (let i=0; i<count; i++) {
                 // Spawn off-centre
                 const side = Phaser.Math.Between(0,3);
-                const x = side===0?0 : side===1?GW : Phaser.Math.Between(0,GW);
-                const y = side===2?0 : side===3?GH : Phaser.Math.Between(0,GH);
+                let x = side===0?0 : side===1?GW : Phaser.Math.Between(0,GW);
+                let y = side===2?0 : side===3?GH : Phaser.Math.Between(0,GH);
+                // Keep rocks at least 120px away from the player's start (centre)
+                if (Math.abs(x - GW/2) < 120 && Math.abs(y - GH/2) < 100) x = x < GW/2 ? 0 : GW;
                 this._spawnRock(x, y, 'large');
             }
         }
@@ -13664,7 +13753,7 @@ function updateTouchLayout(genre) {
     if (tcEl) tcEl.style.background = (isRhythm && isTouch) ? 'none' : '';
 
     // Joystick zone: hide for tap-only genres, Tower Defense, Pinball, and Rhythm
-    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM'].includes(genre);
+    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM','CLICKER','MEMORY','BREAKER'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER','DEFENSE'].includes(genre);
     const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT','RACING','DEFENSE'].includes(genre);
 
@@ -14977,7 +15066,19 @@ function sceneBeatEmUp(data) {
             GameAudio.play('hit');
             if(liveConfig.screenShake) this.cameras.main.shake(80,0.008);
             _shake(5, 80); _chromaFlash(0.4);
+            // Knockback — push enemy away from player on hit
+            const _kbDir = e.x >= this.actor.x ? 1 : -1;
+            e.setVelocityX(_kbDir * 280);
+            this.time.delayedCall(160, () => { if (e.active) e.setVelocityX(0); });
+            // Knockback — push enemy away from player on hit
+            const _kbDir = e.x >= this.actor.x ? 1 : -1;
+            e.setVelocityX(_kbDir * 280);
+            this.time.delayedCall(160, () => { if (e.active) e.setVelocityX(0); });
             this.tweens.add({targets:e,alpha:0.3,duration:80,yoyo:true});
+            // Hit indicator — show on damage, reddish for non-kill hits
+            if (hp > 0) {
+                if (typeof this._popText === 'function') this._popText(e.x, e.y - 14, 'HIT!', '#ef4444');
+            }
             if (hp <= 0) {
                 this._killCount++;
                 this._waveEnemiesLeft--;
@@ -15968,7 +16069,7 @@ function scenePinball(data) {
 
         create() {
             this.physics.world.gravity.y = GRAVITY;
-            this.physics.world.setBounds(26, -600, GW - 52, GH + 800);
+            this.physics.world.setBounds(14, -600, GW - 28, GH + 800);
             this.physics.world.setBoundsCollision(true, true, true, false);
 
             // Background table
@@ -16271,6 +16372,42 @@ function scenePinball(data) {
             if (!this._m5k  && this.score>=5000)  { this._m5k =true; this._showMilestone('5,000! ⭐'); GameAudio.play('levelUp'); }
             if (!this._m10k && this.score>=10000) { this._m10k=true; this._showMilestone('10,000! 🏆'); GameAudio.play('levelUp'); }
 
+            // Anti-stuck: if ball is launched but barely moving, give it a kick upward
+            if (this._launched) {
+                const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
+                const _bvy = this.ball.body ? Math.abs(this.ball.body.velocity.y) : 999;
+                if (_bvx + _bvy < 28) {
+                    this._stuckMs = (this._stuckMs || 0) + delta;
+                    if (this._stuckMs > 1800) {
+                        this.ball.setVelocity((Math.random()-0.5)*260, -300 - Math.random()*120);
+                        this._stuckMs = 0;
+                    }
+                } else { this._stuckMs = 0; }
+            }
+            // Anti-stuck: if ball is launched but barely moving, give it a kick upward
+            if (this._launched) {
+                const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
+                const _bvy = this.ball.body ? Math.abs(this.ball.body.velocity.y) : 999;
+                if (_bvx + _bvy < 28) {
+                    this._stuckMs = (this._stuckMs || 0) + delta;
+                    if (this._stuckMs > 1800) {
+                        this.ball.setVelocity((Math.random()-0.5)*260, -300 - Math.random()*120);
+                        this._stuckMs = 0;
+                    }
+                } else { this._stuckMs = 0; }
+            }
+            // Anti-stuck: if ball is launched but barely moving, give it a kick upward
+            if (this._launched) {
+                const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
+                const _bvy = this.ball.body ? Math.abs(this.ball.body.velocity.y) : 999;
+                if (_bvx + _bvy < 28) {
+                    this._stuckMs = (this._stuckMs || 0) + delta;
+                    if (this._stuckMs > 1800) {
+                        this.ball.setVelocity((Math.random()-0.5)*260, -300 - Math.random()*120);
+                        this._stuckMs = 0;
+                    }
+                } else { this._stuckMs = 0; }
+            }
             this._tickBase(this.score);
         }
 
@@ -16962,7 +17099,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
                     // Merge delta onto defaults so omitted fields use correct defaults
                     const _merged = Object.assign({}, _lcDefaults || {}, _dlc);
                     Object.assign(liveConfig, _merged);
-                    _syncCustomTabUI(_merged);
+                    try { _syncCustomTabUI(_merged); } catch(e) {} // non-critical: don't abort share load
                 }
                 // Support both old key (theme) and new short key (th)
                 const _dth = (d.th && d.th.c) ? {cols:d.th.c,name:d.th.n} : d.theme;
