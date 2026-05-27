@@ -26,6 +26,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Preload Phaser so it starts downloading immediately (high priority) -->
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Bangers&family=Press+Start+2P&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <script src="phaser-arcade-physics.min.js"></script>
@@ -997,6 +998,19 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                 <input type="text" id="gameTitle" value="My Arcade Game">
             </div>
             <div class="form-group">
+                <label>Tags <span style="color:var(--muted);font-weight:400;">— describe your game</span></label>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;" id="tagPills">
+                    <button class="pill" onclick="_toggleTag(this,'action')">Action</button>
+                    <button class="pill" onclick="_toggleTag(this,'puzzle')">Puzzle</button>
+                    <button class="pill" onclick="_toggleTag(this,'chill')">Chill</button>
+                    <button class="pill" onclick="_toggleTag(this,'hard')">Hard</button>
+                    <button class="pill" onclick="_toggleTag(this,'kids')">Kids</button>
+                    <button class="pill" onclick="_toggleTag(this,'retro')">Retro</button>
+                    <button class="pill" onclick="_toggleTag(this,'funny')">Funny</button>
+                    <button class="pill" onclick="_toggleTag(this,'scary')">Scary</button>
+                </div>
+            </div>
+            <div class="form-group">
                 <label>Genre</label>
                 <div id="genre-picker" class="genre-grid">
                     <div class="genre-card on" data-genre="SHOOTER"    onclick="pickGenre(this,'SHOOTER')"><span class="gc-icon">🚀</span><span class="gc-name">Shooter</span></div>
@@ -1162,11 +1176,13 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
             </div>
 
             <div id="resumeWrap"></div>
+            <div id="gamepadStatus" style="display:none;font-size:.58rem;color:#4ade80;text-align:center;padding:3px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);border-radius:5px;margin-bottom:3px;">🎮 Controller connected</div>
             <div style="display:flex;gap:5px;margin-bottom:4px;">
                 <button id="configUndoBtn" class="btn-sm" disabled onclick="_undoLiveConfig()" title="Undo last settings change (Ctrl+Shift+Z)" style="flex:1;font-size:.65rem;">↩ Undo</button>
                 <button id="configRedoBtn" class="btn-sm" disabled onclick="_redoLiveConfig()" title="Redo last settings change" style="flex:1;font-size:.65rem;">↪ Redo</button>
             </div>
             <button class="btn-run pulsing" id="runGameBtn" onclick="compileAndBootEngine()">▶ Run Game <kbd class="run-kbd">[R]</kbd></button>
+            <button class="btn-sm" id="hotReloadBtn" style="width:100%;margin-top:3px;background:rgba(34,197,94,.1);color:#4ade80;border-color:rgba(34,197,94,.25);display:none;" onclick="hotReloadConfig()" title="Apply current settings to running game without restarting">⚡ Apply Live (no restart)</button>
 
             <span class="sec-label" style="display:flex;align-items:center;">Save &amp; Share <span id="autosave-badge">● Auto-saved</span></span>
             <div id="saveSlotList" style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px;"></div>
@@ -1594,6 +1610,12 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                 <div id="spriteStatus" class="asset-status none">No custom sprite loaded</div>
             </div>
 
+            <!-- ── BUILT-IN SPRITE LIBRARY ── -->
+            <div class="asset-block">
+                <div class="asset-block-title">🎭 Built-in Sprites <span style="font-size:.58rem;color:var(--muted);font-weight:400;">— click to use as player sprite</span></div>
+                <div id="builtinSpriteGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:6px 0;"></div>
+            </div>
+
             <!-- ── QUICK SPRITE EDITOR ── -->
             <div class="asset-block" id="spriteEditorBlock">
                 <div class="asset-block-title">🎨 Quick Sprite Editor <span style="font-size:.58rem;color:var(--muted);font-weight:400;">8 × 8 pixels · supports animation frames</span></div>
@@ -1962,6 +1984,17 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                         <button class="asset-btn" style="font-size:.65rem;padding:5px 9px;" onclick="_resetThemeCols()">↺ Genre Default</button>
                     </div>
                 </div>
+                <span class="sec-label" style="margin-top:4px;">🔤 Game Font</span>
+                <div class="form-group">
+                    <div class="pill-row" id="pillGameFont" style="flex-wrap:wrap;">
+                        <button class="pill active" onclick="activePill('pillGameFont',this);liveConfig.gameFont='JetBrains';" style="font-family:'JetBrains Mono',monospace;">Mono</button>
+                        <button class="pill" onclick="activePill('pillGameFont',this);liveConfig.gameFont='Fredoka';" style="font-family:'Fredoka',sans-serif;">Fredoka</button>
+                        <button class="pill" onclick="activePill('pillGameFont',this);liveConfig.gameFont='Orbitron';" style="font-family:'Orbitron',sans-serif;font-size:.6rem;">Orbitron</button>
+                        <button class="pill" onclick="activePill('pillGameFont',this);liveConfig.gameFont='Bangers';" style="font-family:'Bangers',cursive;">Bangers</button>
+                        <button class="pill" onclick="activePill('pillGameFont',this);liveConfig.gameFont='PressStart';" style="font-family:'Press Start 2P',monospace;font-size:.45rem;">8-Bit</button>
+                        <button class="pill" onclick="activePill('pillGameFont',this);liveConfig.gameFont='Nunito';" style="font-family:'Nunito',sans-serif;">Nunito</button>
+                    </div>
+                </div>
                 <span class="sec-label" style="margin-top:4px;">🎨 Emoji Theme</span>
                 <div class="form-group" style="padding:10px 12px 12px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);border-radius:10px;">
                     <div style="font-size:.66rem;color:var(--muted);margin-bottom:8px;">Changes the colour palette and emoji sprites across the entire game</div>
@@ -2221,6 +2254,19 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                         <button class="pill" onclick="activePill('pillParticleSize',this);liveConfig.particleSize='small';">Small</button>
                         <button class="pill active" onclick="activePill('pillParticleSize',this);liveConfig.particleSize='medium';">Medium</button>
                         <button class="pill" onclick="activePill('pillParticleSize',this);liveConfig.particleSize='large';">Large</button>
+                    </div>
+                </div>
+                <span class="sec-label" style="margin-top:4px;">🎆 Particle Presets</span>
+                <div class="form-group">
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('fire')">🔥 Fire</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('confetti')">🎊 Confetti</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('sparkle')">✨ Sparkle</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('ice')">❄️ Ice</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('explosion')">💥 Explosion</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('stars')">🌟 Stars</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('bubble')">🫧 Bubble</button>
+                        <button class="btn-sm" style="font-size:.63rem;padding:3px 8px;" onclick="applyParticlePreset('smoke')">💨 Smoke</button>
                     </div>
                 </div>
                 <div class="form-group" style="flex-direction:row;align-items:center;justify-content:space-between;">
@@ -3854,7 +3900,9 @@ score += bumper.pts;
             <button class="vp-btn" onclick="openShortcutsModal()" title="Keyboard shortcuts">⌨ Keys</button>
             <button class="vp-btn" onclick="generateShareLink()" title="Share game">📤 Share</button>
             <button class="vp-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">⛶ Full</button>
-            <button class="vp-btn" onclick="takeScreenshot()" title="Screenshot (P)">📷 Shot</button>
+            <button class="vp-btn" onclick="toggleInspector()" id="inspectorBtn" title="Live debug inspector">🔍 Info</button>
+            <button class="vp-btn" onclick="togglePause()" id="pauseBtn" title="Pause game (P)">⏸ Pause</button>
+            <button class="vp-btn" onclick="takeScreenshot()" title="Screenshot">📷 Shot</button>
         </div>
         <div class="game-wrap idle" id="gameWrap">
             <!-- Idle placeholder — shown before first game run -->
@@ -4132,6 +4180,31 @@ score += bumper.pts;
             <!-- Countdown overlay -->
             <div id="countdownOverlay" style="display:none;position:absolute;inset:0;z-index:950;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);">
                 <div id="countdownNum" style="font-family:'Fredoka',sans-serif;font-size:6rem;font-weight:900;color:white;text-shadow:0 0 40px rgba(124,58,237,.9),0 4px 0 rgba(0,0,0,.5);transition:transform .15s,opacity .15s;transform:scale(1);opacity:1;pointer-events:none;user-select:none;">3</div>
+            </div>
+
+            <!-- ── PAUSE MENU OVERLAY ── -->
+            <div id="pauseMenu" style="display:none;position:absolute;inset:0;z-index:940;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+                <div style="background:var(--panel2);border:1px solid rgba(124,58,237,.35);border-radius:18px;padding:22px 28px;width:min(280px,90%);display:flex;flex-direction:column;gap:12px;align-items:center;box-shadow:0 8px 48px rgba(0,0,0,.6);">
+                    <div style="font-size:1.8rem;">⏸</div>
+                    <div id="pauseMenuTitle" style="font-family:'Fredoka',sans-serif;font-size:1.1rem;font-weight:800;color:white;text-align:center;">PAUSED</div>
+                    <button class="btn-run" style="width:100%;font-size:.85rem;" onclick="resumeGame()">▶ Resume</button>
+                    <button class="btn-run" style="width:100%;font-size:.85rem;background:#1e293b;box-shadow:0 3px 0 #0f172a;" onclick="closePauseAndRestart()">↺ Restart</button>
+                    <div style="width:100%;border-top:1px solid var(--border);padding-top:8px;">
+                        <div style="font-size:.65rem;color:var(--muted);margin-bottom:5px;text-align:center;">Volume</div>
+                        <input type="range" min="0" max="100" id="pauseVolumeSlider" style="width:100%;" value="50" oninput="GameAudio.volume=this.value/100;document.getElementById('volumeSlider').value=this.value;document.querySelector('#volumeSlider ~ .range-val').textContent=this.value+'%';">
+                    </div>
+                    <button class="btn-sm" style="width:100%;color:#f87171;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08);font-size:.75rem;" onclick="quitGame()">✕ Quit to Editor</button>
+                </div>
+            </div>
+
+            <!-- ── LIVE INSPECTOR ── -->
+            <div id="liveInspector" style="display:none;position:absolute;top:8px;right:8px;z-index:930;background:rgba(0,0,0,.78);border:1px solid rgba(0,212,170,.25);border-radius:8px;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:#4ade80;line-height:1.8;min-width:130px;pointer-events:none;">
+                <div id="inspFps" style="color:#fbbf24;font-weight:700;">FPS: --</div>
+                <div id="inspScore">Score: --</div>
+                <div id="inspLives">Lives: --</div>
+                <div id="inspPos">Pos: --</div>
+                <div id="inspVel">Vel: --</div>
+                <div id="inspScene" style="color:var(--muted);">Scene: --</div>
             </div>
 
             <!-- Dynamic joystick zone (left 58% of game — touch anywhere to spawn joystick) -->
@@ -4524,6 +4597,8 @@ const liveConfig = {
     crtEffect:false, sceneTransition:'none',
     // Sound pack
     soundPack:'chiptune',
+    gameFont:'JetBrains',
+    tags:[],
     // Speed run
     speedRun:false,
     // Boss Designer
@@ -5475,6 +5550,42 @@ const _TEMPLATES = {
     storyIntro:'Leap through the enchanted forest and reach the ancient tree!',
     storyWin:'You reached the ancient tree! 🌲', storyLose:'Lost in the forest...',
     difficultyScale:0.8, weatherEffect:'leaves',
+  },
+  ghost_maze: {
+    genre:'ROGUELIKE', theme:'castle', title:'Ghost Maze',
+    speed:170, lives:5, rogueRooms:8, rogueDensity:0.4, rogueStartHp:5,
+    coinsEnabled:true, coinEmoji:'💎', particleStyle:'sparkle', particleColor:'purple',
+    bossEnabled:true, bossHpNew:25, bossScore:400,
+    storyIntro:'Escape the haunted maze and defeat the ghost king!',
+    storyWin:'The ghost king is banished! 👻', storyLose:'Trapped forever...',
+    difficultyScale:1, weatherEffect:'none',
+  },
+  neon_wave: {
+    genre:'WAVESURVIVAL', theme:'cyber', title:'Neon Wave',
+    speed:260, lives:2, bgStyle:'neon',
+    waveScaling:3, wavePause:1500, waveClearBonus:true,
+    enemyAI:'zigzag', bossEnabled:true, bossHpNew:30, bossScore:500,
+    coinsEnabled:true, particleStyle:'swirl', particleColor:'purple',
+    storyIntro:'Waves of neon drones are charging the grid!',
+    storyWin:'Grid secured! 💻', storyLose:'System overloaded...',
+    difficultyScale:2, gameFont:'Orbitron',
+  },
+  candy_memory: {
+    genre:'MEMORY', theme:'candy', title:'Candy Match',
+    speed:200, lives:3,
+    storyIntro:'Match all the sweet candy pairs!',
+    storyWin:'All pairs found! 🍬', storyLose:'So many sweets...',
+    difficultyScale:0, particleStyle:'star', particleColor:'rainbow',
+  },
+  dino_runner: {
+    genre:'RUNNER', theme:'forest', title:'Dino Dash',
+    speed:300, lives:1,
+    runnerObstacleMix:'mixed', runnerCoinFreq:0.3, spawnDelay:800,
+    coinsEnabled:true, coinEmoji:'🦴', particleStyle:'burst', particleColor:'green',
+    doubleJump:true,
+    storyIntro:'A tiny dino sprints through the jungle — how far can you go?',
+    storyWin:'Legendary runner! 🦕', storyLose:'Bonk!',
+    difficultyScale:1.5, weatherEffect:'none',
   },
   space_survival: {
     genre:'WAVESURVIVAL', theme:'space', title:'Space Siege',
@@ -6512,6 +6623,154 @@ function _toBlobUrl(dataUrl) {
 // Track blob URLs created each run so they can be revoked after Phaser loads them
 let _activeBlobUrls = [];
 
+// ── LIVE INSPECTOR ────────────────────────────────────────────────────────────
+let _inspectorOn = false;
+let _inspectorInterval = null;
+
+function toggleInspector() {
+    _inspectorOn = !_inspectorOn;
+    const el = document.getElementById('liveInspector');
+    const btn = document.getElementById('inspectorBtn');
+    if (el) el.style.display = _inspectorOn ? 'block' : 'none';
+    if (btn) btn.style.background = _inspectorOn ? 'rgba(74,222,128,.2)' : '';
+    if (_inspectorOn) {
+        clearInterval(_inspectorInterval);
+        _inspectorInterval = setInterval(_updateInspector, 200);
+    } else {
+        clearInterval(_inspectorInterval);
+    }
+}
+
+function _updateInspector() {
+    if (!_inspectorOn || !currentPhaserGame) return;
+    try {
+        const fps = Math.round(currentPhaserGame.loop.actualFps || 0);
+        const scenes = currentPhaserGame.scene.getScenes(true);
+        const s = scenes[0];
+        const score = s ? (s.score !== undefined ? s.score : (s.pScore || 0)) : 0;
+        const lives = gameState.lives !== undefined ? gameState.lives : '?';
+        let px = '--', py = '--', vx = '--', vy = '--';
+        if (s && s.actor && s.actor.body) {
+            px = Math.round(s.actor.x); py = Math.round(s.actor.y);
+            vx = Math.round(s.actor.body.velocity.x); vy = Math.round(s.actor.body.velocity.y);
+        } else if (s && s.player && s.player.body) {
+            px = Math.round(s.player.x); py = Math.round(s.player.y);
+            vx = Math.round(s.player.body.velocity.x); vy = Math.round(s.player.body.velocity.y);
+        }
+        const sceneName = s ? (s.constructor.name || 'Scene') : '--';
+        const fpsEl = document.getElementById('inspFps');
+        if (fpsEl) { fpsEl.textContent = 'FPS: ' + fps; fpsEl.style.color = fps >= 55 ? '#4ade80' : fps >= 40 ? '#fbbf24' : '#f87171'; }
+        const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+        set('inspScore', 'Score: ' + score);
+        set('inspLives', 'Lives: ' + lives);
+        set('inspPos', 'Pos: ' + px + ', ' + py);
+        set('inspVel', 'Vel: ' + vx + ', ' + vy);
+        set('inspScene', sceneName);
+    } catch(e) {}
+}
+
+let _gamePaused = false;
+
+function _toggleTag(btn, tag) {
+    if (!liveConfig.tags) liveConfig.tags = [];
+    const idx = liveConfig.tags.indexOf(tag);
+    if (idx >= 0) {
+        liveConfig.tags.splice(idx, 1);
+        btn.classList.remove('active');
+    } else {
+        liveConfig.tags.push(tag);
+        btn.classList.add('active');
+    }
+}
+
+function hotReloadConfig() {
+    if (!currentPhaserGame) { showToast('Start the game first'); return; }
+    const data = getPayload();
+    // Sync the key live-readable config values
+    liveConfig.speed       = data.speed;
+    liveConfig.gravity     = data.gravity;
+    liveConfig.jumpForce   = data.jump;
+    liveConfig.spawnDelay  = data.spawnDelay || liveConfig.spawnDelay;
+    liveConfig.enemySpeed  = data.enemySpeed || liveConfig.enemySpeed;
+    liveConfig.gameSpeed   = data.gameSpeed  || liveConfig.gameSpeed;
+    liveConfig.lives       = data.lives      || liveConfig.lives;
+    liveConfig.difficultyScale = data.difficultyScale !== undefined ? data.difficultyScale : liveConfig.difficultyScale;
+    // Apply to running Phaser scenes
+    try {
+        currentPhaserGame.scene.getScenes(true).forEach(s => {
+            if (s.physics && s.physics.world) s.physics.world.gravity.y = liveConfig.gravity;
+        });
+    } catch(e) {}
+    showToast('⚡ Config applied live!');
+}
+
+function pauseGame() {
+    if (!currentPhaserGame || _gamePaused) return;
+    _gamePaused = true;
+    try {
+        currentPhaserGame.scene.getScenes(true).forEach(s => s.scene.pause());
+        GameAudio.stopMusic();
+    } catch(e) {}
+    const pm = document.getElementById('pauseMenu');
+    if (pm) {
+        pm.style.display = 'flex';
+        // Sync volume slider
+        const vol = document.getElementById('pauseVolumeSlider');
+        const main = document.getElementById('volumeSlider');
+        if (vol && main) vol.value = main.value;
+        // Show game title
+        const tEl = document.getElementById('pauseMenuTitle');
+        const gTitle = document.getElementById('gameTitle');
+        if (tEl && gTitle) tEl.textContent = (gTitle.value || 'PAUSED').toUpperCase();
+    }
+}
+
+function resumeGame() {
+    if (!currentPhaserGame || !_gamePaused) return;
+    _gamePaused = false;
+    const pm = document.getElementById('pauseMenu');
+    if (pm) pm.style.display = 'none';
+    try {
+        currentPhaserGame.scene.getScenes(false).forEach(s => {
+            if (s.scene.isPaused()) s.scene.resume();
+        });
+        if (document.getElementById('musicToggle').checked) {
+            GameAudio.startMusic(document.getElementById('musicStyle').value);
+        }
+    } catch(e) {}
+}
+
+function closePauseAndRestart() {
+    _gamePaused = false;
+    const pm = document.getElementById('pauseMenu');
+    if (pm) pm.style.display = 'none';
+    compileAndBootEngine();
+}
+
+function quitGame() {
+    _gamePaused = false;
+    const pm = document.getElementById('pauseMenu');
+    if (pm) pm.style.display = 'none';
+    if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch(e) {} currentPhaserGame = null; }
+    const gw = document.getElementById('gameWrap');
+    if (gw) gw.classList.add('idle');
+    const ph = document.getElementById('idle-placeholder');
+    if (ph) ph.style.display = '';
+    const rb = document.getElementById('runGameBtn');
+    if (rb) { rb.classList.add('pulsing'); rb.innerHTML = '▶ Run Game <kbd class="run-kbd">[R]</kbd>'; }
+    const eb = document.getElementById('engine-branding');
+    if (eb) { eb.textContent = 'JV Engine · Ready'; eb.classList.remove('playing'); }
+    showToast('Game stopped');
+}
+
+function togglePause() {
+    if (!currentPhaserGame) return;
+    const goVisible = document.getElementById('goOverlay')?.classList.contains('show');
+    const introVisible = document.getElementById('introOverlay')?.classList.contains('show');
+    if (goVisible || introVisible) return;
+    _gamePaused ? resumeGame() : pauseGame();
+}
+
 function compileAndBootEngine() {
     if (typeof Phaser === 'undefined') {
         document.getElementById('engine-branding').textContent = '⚠️ Phaser failed to load —check connection & refresh';
@@ -6528,6 +6787,8 @@ function compileAndBootEngine() {
     if (_gw) _gw.classList.remove('idle');
     const _rb = document.getElementById('runGameBtn');
     if (_rb) { _rb.classList.remove('pulsing'); _rb.innerHTML = '↺ Restart <kbd class="run-kbd">[R]</kbd>'; }
+    const _hrb = document.getElementById('hotReloadBtn'); if (_hrb) _hrb.style.display = '';
+    document.getElementById('pauseBtn') && (document.getElementById('pauseBtn').style.opacity='1');
     const _eb = document.getElementById('engine-branding');
     if (_eb) { _eb.textContent = `▶  ${data.title}`; _eb.classList.add('playing'); }
     // Hide resume button once a game is running
@@ -6570,6 +6831,8 @@ function compileAndBootEngine() {
     clearInterval(_speedRunInterval); _speedRunInterval = null;
     if (_speedRunActive) { const el=document.getElementById('speedRunTime'); if(el) el.textContent='0:00.000'; }
     // Transition + title screen
+    _gamePaused = false;
+    const _pmReset = document.getElementById('pauseMenu'); if (_pmReset) _pmReset.style.display='none';
     _runTransitionOut(()=>_showTitleScreen(data));
     
 }
@@ -6650,6 +6913,7 @@ function _launchPhaserGame() {
                 backgroundColor: '#05030f',
                 scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
                 physics: { default:'arcade', arcade:{ debug:false } },
+                input: { gamepad: true },
                 render: { preserveDrawingBuffer: true },
                 scene: getScene(data)
             });
@@ -6695,6 +6959,23 @@ function _launchPhaserGame() {
                             }
                         }
                     });
+                    // ── Gamepad input → global keys ──────────────────────────
+                    try {
+                        const gp = navigator.getGamepads ? navigator.getGamepads()[0] : null;
+                        if (gp) {
+                            const ax0 = gp.axes[0] || 0, ax1 = gp.axes[1] || 0;
+                            window._gpLeft  = ax0 < -0.3 || (gp.buttons[14] && gp.buttons[14].pressed);
+                            window._gpRight = ax0 >  0.3 || (gp.buttons[15] && gp.buttons[15].pressed);
+                            window._gpUp    = ax1 < -0.3 || (gp.buttons[12] && gp.buttons[12].pressed);
+                            window._gpDown  = ax1 >  0.3 || (gp.buttons[13] && gp.buttons[13].pressed);
+                            window._gpFire  = (gp.buttons[0] && gp.buttons[0].pressed) || (gp.buttons[2] && gp.buttons[2].pressed);
+                            window._gpStart = (gp.buttons[9] && gp.buttons[9].pressed);
+                            if (window._gpStart && !window._gpStartPrev) togglePause();
+                            window._gpStartPrev = window._gpStart;
+                        } else {
+                            window._gpLeft=window._gpRight=window._gpUp=window._gpDown=window._gpFire=false;
+                        }
+                    } catch(e) {}
                     // Achievement check
                     try { _checkAchievements(liveConfig._score||0, liveConfig._wave||0, liveConfig._combo||0, liveConfig._timer||0); } catch(e){}
                     // Trail effect
@@ -7751,7 +8032,9 @@ function makeBaseScene(data) {
             }
         }
         _makeScoreText() {
-            return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setDepth(10);
+            const _fontFamilyMap = {'JetBrains':"'JetBrains Mono',monospace",'Fredoka':"'Fredoka',sans-serif",'Orbitron':"'Orbitron',sans-serif",'Bangers':"'Bangers',cursive",'PressStart':"'Press Start 2P',monospace",'Nunito':"'Nunito',sans-serif"};
+            const _ff = _fontFamilyMap[liveConfig.gameFont] || "'JetBrains Mono',monospace";
+            return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:_ff,fontStyle:'bold'}).setDepth(10);
         }
         _tint(sprite, idx, fallback) { sprite.setTint(themeInt(idx, fallback)); return sprite; }
         _flashScore(txt) {
@@ -11841,6 +12124,85 @@ function importPaletteFromTool() {
         showToast(`"${d.name}" palette applied!`);
     } catch(e) { showToast('Could not import palette'); }
 }
+// ── BUILT-IN SPRITE LIBRARY ─────────────────────────────────────────────────
+const _BUILTIN_SPRITES = [
+    {key:'ship',    label:'Ship',    emoji:'🚀'},
+    {key:'knight',  label:'Knight', emoji:'⚔️'},
+    {key:'frog',    label:'Frog',   emoji:'🐸'},
+    {key:'robot',   label:'Robot',  emoji:'🤖'},
+    {key:'cat',     label:'Cat',    emoji:'🐱'},
+    {key:'dino',    label:'Dino',   emoji:'🦕'},
+    {key:'wizard',  label:'Wizard', emoji:'🧙'},
+    {key:'car',     label:'Car',    emoji:'🏎️'},
+    {key:'bird',    label:'Bird',   emoji:'🐦'},
+    {key:'skull',   label:'Skull',  emoji:'💀'},
+    {key:'gem',     label:'Gem',    emoji:'💎'},
+    {key:'star',    label:'Star',   emoji:'⭐'},
+    {key:'fire',    label:'Fire',   emoji:'🔥'},
+    {key:'bolt',    label:'Bolt',   emoji:'⚡'},
+    {key:'heart',   label:'Heart',  emoji:'❤️'},
+    {key:'dragon',  label:'Dragon', emoji:'🐉'},
+    {key:'alien',   label:'Alien',  emoji:'👾'},
+    {key:'ninja',   label:'Ninja',  emoji:'🥷'},
+];
+
+function _initBuiltinSprites() {
+    const grid = document.getElementById('builtinSpriteGrid');
+    if (!grid) return;
+    grid.innerHTML = _BUILTIN_SPRITES.map(sp => {
+        return `<button onclick="_applyBuiltinSprite('${sp.key}')" title="Use ${sp.label}" style="aspect-ratio:1;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.22);border-radius:8px;font-size:1.3rem;cursor:pointer;transition:all .15s;padding:4px;" onmouseover="this.style.borderColor='rgba(124,58,237,.6)';this.style.background='rgba(124,58,237,.25)'" onmouseout="this.style.borderColor='rgba(124,58,237,.22)';this.style.background='rgba(124,58,237,.12)'">${sp.emoji}</button>`;
+    }).join('');
+}
+
+function _applyBuiltinSprite(key) {
+    const sp = _BUILTIN_SPRITES.find(s => s.key === key);
+    if (!sp) return;
+    // Render emoji to a 64x64 canvas and use as sprite
+    const cvs = document.createElement('canvas');
+    cvs.width = cvs.height = 64;
+    const ctx = cvs.getContext('2d');
+    ctx.clearRect(0, 0, 64, 64);
+    ctx.font = '48px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sp.emoji, 32, 34);
+    const dataUrl = cvs.toDataURL();
+    customSpriteDataUrl = dataUrl;
+    customSpriteFrameCount = 1;
+    customSpriteFrameW = 0;
+    // Update the preview thumb
+    const thumb = document.getElementById('spriteThumb');
+    if (thumb) thumb.innerHTML = `<img src="${dataUrl}" style="width:48px;height:48px;image-rendering:pixelated;">`;
+    const infoName = document.getElementById('spriteInfoName');
+    if (infoName) infoName.textContent = sp.label + ' (built-in)';
+    const status = document.getElementById('spriteStatus');
+    if (status) { status.textContent = sp.label + ' sprite loaded'; status.className = 'asset-status custom'; }
+    showToast(sp.emoji + ' ' + sp.label + ' sprite applied — hit ▶ Run!');
+}
+
+function applyParticlePreset(name) {
+    _pushLcHistory();
+    const P = {
+        fire:      { particleStyle:'burst',   particleColor:'red',    particleCount:20, particleSize:'medium', trailEffect:true  },
+        confetti:  { particleStyle:'star',    particleColor:'rainbow',particleCount:24, particleSize:'medium', trailEffect:false },
+        sparkle:   { particleStyle:'sparkle', particleColor:'gold',   particleCount:16, particleSize:'small',  trailEffect:true  },
+        ice:       { particleStyle:'sparkle', particleColor:'blue',   particleCount:14, particleSize:'small',  trailEffect:true  },
+        explosion: { particleStyle:'burst',   particleColor:'red',    particleCount:30, particleSize:'large',  trailEffect:false },
+        stars:     { particleStyle:'star',    particleColor:'gold',   particleCount:18, particleSize:'medium', trailEffect:false },
+        bubble:    { particleStyle:'swirl',   particleColor:'blue',   particleCount:12, particleSize:'large',  trailEffect:false },
+        smoke:     { particleStyle:'swirl',   particleColor:'purple', particleCount:15, particleSize:'large',  trailEffect:true  },
+    }[name];
+    if (!P) return;
+    Object.assign(liveConfig, P);
+    // Sync UI pills
+    const styleMap = {burst:'💥 Burst',sparkle:'✨ Sparkle',star:'🌟 Star',swirl:'💫 Swirl'};
+    document.querySelectorAll('#pillParticleStyle .pill').forEach(p => p.classList.toggle('active', p.textContent.trim()===styleMap[P.particleStyle]));
+    const colorMap = {red:'🔴',gold:'🟡',blue:'🔵',rainbow:'🌈',purple:'🟣',green:'🟢'};
+    document.querySelectorAll('#pillParticleColor .pill').forEach(p => p.classList.toggle('active', p.textContent.trim()===colorMap[P.particleColor]));
+    document.querySelectorAll('#pillParticleSize .pill').forEach(p => p.classList.toggle('active', p.textContent.trim().toLowerCase()===P.particleSize));
+    showToast('Particle preset: ' + name);
+}
+
 function applyColourPreset(cols) {
     _pushLcHistory();
     if (!Array.isArray(cols) || cols.length < 4) return;
@@ -16557,7 +16919,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         if ((e.ctrlKey||e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))) { e.preventDefault(); tmRedo(); }
         if (e.key === 'f' || e.key === 'F') toggleFullscreen();
         // P key is screenshot unless game is running (P key = pause handled inside game)
-        if ((e.key === 'p' || e.key === 'P') && !currentPhaserGame) takeScreenshot();
+        if (e.key === 'p' || e.key === 'P') { if (currentPhaserGame) { togglePause(); } else { takeScreenshot(); } }
         if (e.key === '1') switchTab('build',       document.querySelectorAll('.tab-btn')[0]);
         if (e.key === '2') switchTab('blueprints',  document.querySelectorAll('.tab-btn')[1]);
         if (e.key === '3') switchTab('assets',      document.querySelectorAll('.tab-btn')[2]);
@@ -16568,8 +16930,17 @@ window.addEventListener('DOMContentLoaded', ()=>{
     });
 
     // ── Tutorial first run ────────────────────────────────────────────────────
-    _checkFirstVisit(); // shows tutorial on first visit, skips if already seen
-    setTimeout(() => { _pushLcHistory(); }, 500); // seed the undo history with initial state
+    _checkFirstVisit(); // shows tutorial on first visit
+    window.addEventListener('gamepadconnected', (e) => {
+        const el = document.getElementById('gamepadStatus');
+        if (el) { el.style.display='block'; el.textContent='🎮 '+e.gamepad.id.substring(0,30)+' connected'; }
+        showToast('🎮 Controller connected!');
+    });
+    window.addEventListener('gamepaddisconnected', () => {
+        const el = document.getElementById('gamepadStatus'); if (el) el.style.display='none';
+    });, skips if already seen
+    setTimeout(() => { _pushLcHistory(); }, 500); // seed the undo history
+    _initBuiltinSprites(); with initial state
     setTimeout(tutInit, 1200); // slight delay so game boots first
     setTimeout(_tmInit, 100);  // init tilemap editor canvas
     setTimeout(seInit,  150);  // init sprite editor canvas
