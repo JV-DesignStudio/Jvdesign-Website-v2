@@ -17002,27 +17002,39 @@ document.getElementById('game-container')?.addEventListener('mousedown', functio
     canvas.focus();
   }
 });
+// ── SW UPDATE BANNER ─────────────────────────────────────────────────────────
+function _showUpdateBanner() {
+    let b = document.getElementById('swUpdateBanner');
+    if (b) return; // already showing
+    b = document.createElement('div');
+    b.id = 'swUpdateBanner';
+    b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font-size:.82rem;font-weight:700;gap:12px;box-shadow:0 -3px 16px rgba(0,0,0,.4);';
+    b.innerHTML = '<span>🔄 New version available</span><button onclick="window.location.reload()" style="background:#fff;color:#7c3aed;border:none;border-radius:6px;padding:6px 16px;font-weight:800;cursor:pointer;font-size:.82rem;">Update Now</button>';
+    document.body.appendChild(b);
+}
+
 // ── SERVICE WORKER + PWA ──────────────────────────────────────────────────────//
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js')
     .then(reg => {
-      // Listen for a new SW becoming active (v5+ sends SW_UPDATED)
+      // When new SW activates, reload so fresh files are used
       navigator.serviceWorker.addEventListener('message', e => {
         if (e.data && e.data.type === 'SW_UPDATED') {
-          showToast('✅ Game Maker updated — changes load next visit', 'success');
+          if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+            window.location.reload();
+          } else {
+            _showUpdateBanner();
+          }
         }
       });
-      // If a new SW is already waiting, prompt immediately
-      if (reg.waiting) {
-        showToast('✅ New version ready — reload to update');
-      }
+      if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); }
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (!nw) return;
         nw.addEventListener('statechange', () => {
           if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            showToast('✅ New version downloaded — reload to update');
+            _showUpdateBanner();
           }
         });
       });

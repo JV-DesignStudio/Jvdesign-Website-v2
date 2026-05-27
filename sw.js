@@ -1,4 +1,4 @@
-// ── JVDesignStudio Service Worker v6 ──────────────────────────────────────────
+// ── JVDesignStudio Service Worker v7 ──────────────────────────────────────────
 // Full site offline support:
 //   • Precaches core pages + Phaser on install (~2 MB — fast)
 //   • Runtime-caches every page & image the user visits (grows as you browse)
@@ -7,7 +7,7 @@
 //   • Skips huge files (WAV, large PDFs, videos) — too big to cache usefully
 //   • offline.html fallback for any page not yet in cache
 
-const V           = 'v6';
+const V           = 'v7';
 const CORE_CACHE  = `jvds-core-${V}`;
 const PAGE_CACHE  = `jvds-pages-${V}`;
 const IMAGE_CACHE = `jvds-images-${V}`;
@@ -49,6 +49,11 @@ const MAX_PDF_SIZE    = 3 * 1024 * 1024;
 const MAX_IMAGE_SIZE  = 3 * 1024 * 1024;
 
 // ── Install ────────────────────────────────────────────────────────────────────
+// Allow main page to tell waiting SW to activate immediately
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CORE_CACHE)
@@ -134,36 +139,26 @@ self.addEventListener('fetch', e => {
 
 // ────────────────────────── Strategies ────────────────────────────────────────
 
-// Stale-while-revalidate for pages
-// Returns cached copy immediately; fetches fresh copy in background for next time
-// Falls back to offline.html if page was never cached
+// Network-first for pages — always fetches fresh when online, falls back to cache
+// This ensures critical bug fixes are picked up immediately on next visit
 async function pageStrategy(request) {
   const cache  = await caches.open(PAGE_CACHE);
   const coreC  = await caches.open(CORE_CACHE);
-  const cached = await cache.match(request) || await coreC.match(request);
 
-  const networkFetch = fetch(request)
-    .then(res => {
-      if (res.ok) cache.put(request, res.clone());
-      return res;
-    })
-    .catch(() => null);
-
-  if (cached) {
-    // Fire-and-forget background update
-    networkFetch.catch(() => {});
-    return cached;
+  try {
+    const res = await fetch(request);
+    if (res.ok) cache.put(request, res.clone());
+    return res;
+  } catch (_) {
+    // Offline — serve from cache
+    const cached = await cache.match(request) || await coreC.match(request);
+    if (cached) return cached;
+    const offlinePage = await coreC.match('/offline.html');
+    return offlinePage || new Response('You are offline', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
-
-  // Not in cache — try network, show offline page on fail
-  const fresh = await networkFetch;
-  if (fresh) return fresh;
-
-  const offlinePage = await coreC.match('/offline.html');
-  return offlinePage || new Response('You are offline', {
-    status: 503,
-    headers: { 'Content-Type': 'text/plain' }
-  });
 }
 
 // Cache-first for assets (fonts, JS, etc.)
