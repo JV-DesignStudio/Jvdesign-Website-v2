@@ -3938,7 +3938,7 @@ score += bumper.pts;
                     </div>
                     <div style="text-align:center;">
                         <img id="shareQrImg" src="" alt="QR Code" style="width:140px;height:140px;border-radius:8px;border:3px solid var(--purple);image-rendering:pixelated;background:#fff;">
-                        <div style="font-size:.6rem;color:var(--muted);margin-top:5px;">Scan to play on any device</div>
+                        <div style="font-size:.6rem;color:var(--muted);margin-top:5px;">Scan to open &amp; play on any device</div>
                     </div>
                     <div style="display:flex;gap:6px;">
                         <input id="shareUrlInput" type="text" readonly style="flex:1;font-size:.65rem;padding:6px 8px;border-radius:6px;" value="">
@@ -6851,6 +6851,7 @@ function _showTitleScreen(data) {
     }
     // Focus the overlay so SPACE works immediately without clicking first
     document.getElementById('introOverlay').focus();
+    if (window._shareAutoStart) { window._shareAutoStart = false; _autoCloseIntro(); }
 }
 function _introOverlayClick(e) {
     // Don't dismiss if the actual Start button was clicked (it calls closeIntro itself)
@@ -7057,8 +7058,12 @@ function _runCountdown(cb) {
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
     _updateLandscapeNudge(true);
-    // Play 'before' cutscene if configured, countdown, then launch game
     _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame()));
+}
+function _autoCloseIntro() {
+    const ov = document.getElementById('introOverlay');
+    if (!ov) return;
+    setTimeout(() => { if (ov.classList.contains('show')) closeIntro(); }, 800);
 }
 
 // ── CLICKER ───────────────────────────────────────────────────────────────────
@@ -12897,11 +12902,22 @@ function _buildSharePayload(d) {
     const genre = d.genre || 'SHOOTER';
     let bestScore = 0;
     try { const board=JSON.parse(localStorage.getItem('jv_lb_'+genre)||'[]'); bestScore=board.length?board[0].score:0; } catch(e){}
-    // Track how many times this has been forked
     let forkCount = 0;
     try { forkCount = parseInt(localStorage.getItem('jv_fork_count')||'0'); } catch(e){}
+    // Strip runtime state and large defaults to keep URL short
+    const _skip = new Set(['_score','_wave','_combo','_timer','_currentLevel',
+        '_puSpeed','_puShield','_puMagnet','_puDouble','_lootMagnet','_customPuScoreMul',
+        'achievements','customPowerUps','levelConfigs','events','cutsceneSlides','tileMap']);
+    const lc = {};
+    Object.entries(liveConfig).forEach(([k,v]) => {
+        if (_skip.has(k)) return;
+        if (Array.isArray(v) && v.length === 0) return;
+        lc[k] = v;
+    });
+    const isDefaultMap = !d.map || (Array.isArray(d.map) && d.map.every(v => v === 0));
     return { title:d.title, genre, speed:d.speed, gravity:d.gravity, jump:d.jump,
-             map:d.map, liveConfig:Object.assign({},liveConfig),
+             map: isDefaultMap ? null : d.map,
+             liveConfig: lc,
              theme:{cols:gameTheme.cols.slice(),name:gameTheme.name},
              bestScore, forkCount };
 }
@@ -14317,6 +14333,14 @@ function _openShareModal(url, title, forkCount, shortUrl) {
     _shareCurrentUrl = url;
     const forks = forkCount || 0;
     document.getElementById('shareModalTitle').textContent = 'Share "' + title + '"';
+    // Show URL length as a size hint
+    let sizeHint = document.getElementById('shareUrlSizeHint');
+    if (!sizeHint) {
+        sizeHint = document.createElement('div');
+        sizeHint.id = 'shareUrlSizeHint';
+        sizeHint.style.cssText = 'font-size:.58rem;color:var(--muted);margin-top:-6px;text-align:center;';
+        document.getElementById('shareUrlInput').parentNode.insertBefore(sizeHint, document.getElementById('shareUrlInput').parentNode.firstChild);
+    }
     document.getElementById('shareUrlInput').value = url;
     // Fork count badge
     let forkEl = document.getElementById('shareModalForks');
@@ -14346,6 +14370,12 @@ function _openShareModal(url, title, forkCount, shortUrl) {
             msg.textContent = '⚠️ URL too long for QR scan — use the Copy button to share';
         }
     }
+    if (sizeHint) {
+        const kb = (url.length / 1024).toFixed(1);
+        const ok = url.length < 3000;
+        sizeHint.textContent = (ok ? '✅' : '⚠️') + ' Link size: ' + kb + 'KB' + (ok ? ' — QR & SMS friendly' : ' — use Copy button');
+        sizeHint.style.color = ok ? '#4ade80' : '#fbbf24';
+    }
     document.getElementById('shareNativeBtn').style.display = navigator.share ? '' : 'none';
     const m = document.getElementById('shareModal');
     m.style.display = 'flex';
@@ -14354,7 +14384,11 @@ function _openShareModal(url, title, forkCount, shortUrl) {
 function closeShareModal() { document.getElementById('shareModal').style.display = 'none'; }
 function _copyShareUrl() {
     navigator.clipboard.writeText(_shareCurrentUrl)
-        .then(() => showToast('🔗 Link copied!', 'success'))
+        .then(() => {
+            showToast('🔗 Copied! Anyone with this link can open and play your game.', 'success');
+            const btn = document.querySelector('#shareModal .btn-sm.purple');
+            if (btn) { const orig=btn.textContent; btn.textContent='✅ Copied!'; setTimeout(()=>btn.textContent=orig, 2500); }
+        })
         .catch(() => { document.getElementById('shareUrlInput').select(); document.execCommand('copy'); showToast('🔗 Copied!', 'success'); });
 }
 async function _shareNative() {
@@ -16933,6 +16967,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 }
                 onGenreChange();
                 loadedOk = true;
+                if (!isRemix) window._shareAutoStart = true;
                 if(isRemix) {
                     // Increment the fork counter stored locally
                     try {
