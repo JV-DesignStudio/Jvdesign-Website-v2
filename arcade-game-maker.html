@@ -4936,6 +4936,9 @@ const fallbackLevel = [
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 ];
 
+// Snapshot of factory defaults — used to delta-encode share payloads
+const _lcDefaults = JSON.parse(JSON.stringify(liveConfig));
+
 // ── AUDIO ENGINE ─────────────────────────────────────────────────────────────
 const GameAudio = {
     ctx: null, volume: 0.5, sfxEnabled: true,
@@ -12904,22 +12907,24 @@ function _buildSharePayload(d) {
     try { const board=JSON.parse(localStorage.getItem('jv_lb_'+genre)||'[]'); bestScore=board.length?board[0].score:0; } catch(e){}
     let forkCount = 0;
     try { forkCount = parseInt(localStorage.getItem('jv_fork_count')||'0'); } catch(e){}
-    // Strip runtime state and large defaults to keep URL short
-    const _skip = new Set(['_score','_wave','_combo','_timer','_currentLevel',
+    // Delta-encode: only ship fields that differ from factory defaults
+    const _skipKeys = new Set(['_score','_wave','_combo','_timer','_currentLevel',
         '_puSpeed','_puShield','_puMagnet','_puDouble','_lootMagnet','_customPuScoreMul',
         'achievements','customPowerUps','levelConfigs','events','cutsceneSlides','tileMap']);
+    const defs = _lcDefaults || {};
     const lc = {};
     Object.entries(liveConfig).forEach(([k,v]) => {
-        if (_skip.has(k)) return;
-        if (Array.isArray(v) && v.length === 0) return;
+        if (_skipKeys.has(k)) return;
+        // Skip if identical to default (deep-compare via JSON)
+        try { if (JSON.stringify(v) === JSON.stringify(defs[k])) return; } catch(e) {}
         lc[k] = v;
     });
     const isDefaultMap = !d.map || (Array.isArray(d.map) && d.map.every(v => v === 0));
     return { title:d.title, genre, speed:d.speed, gravity:d.gravity, jump:d.jump,
              map: isDefaultMap ? null : d.map,
-             liveConfig: lc,
-             theme:{cols:gameTheme.cols.slice(),name:gameTheme.name},
-             bestScore, forkCount };
+             lc: lc,
+             th:{c:gameTheme.cols.slice(),n:gameTheme.name},
+             bs:bestScore,fk:forkCount };
 }
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
@@ -16950,16 +16955,26 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 document.getElementById('gravityY').value=d.gravity||600; document.getElementById('gravityRange').value=d.gravity||600; document.getElementById('gravityVal').textContent=d.gravity||600;
                 document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
                 if(d.map) document.getElementById('levelDesignerGrid').value=JSON.stringify(d.map);
-                if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
-                if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+                // Support both old key (liveConfig) and new short key (lc)
+                const _dlc = d.lc || d.liveConfig;
+                if (_dlc) {
+                    // Merge delta onto defaults so omitted fields use correct defaults
+                    const _merged = Object.assign({}, _lcDefaults || {}, _dlc);
+                    Object.assign(liveConfig, _merged);
+                    _syncCustomTabUI(_merged);
+                }
+                // Support both old key (theme) and new short key (th)
+                const _dth = (d.th && d.th.c) ? {cols:d.th.c,name:d.th.n} : d.theme;
+                if(_dth && _dth.cols && _dth.cols.length) applyPalette(_dth);
                 // Seed the creator's best score so recipients have a target to beat
-                if (d.bestScore > 0) {
+                if ((_bs||0) > 0) {
                     try {
                         const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
                         let board = [];
                         try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
-                        if (!board.some(e=>e.score===d.bestScore && e.date==='🏆 Creator')) {
-                            board.push({ score: d.bestScore, date: '🏆 Creator' });
+                        const _bs = d.bs !== undefined ? d.bs : (d.bestScore || 0);
+                if (_bs > 0 && !board.some(e=>e.score===_bs && e.date==='🏆 Creator')) {
+                            board.push({ score: _bs, date: '🏆 Creator' });
                             board.sort((a,b)=>b.score-a.score);
                             localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
                         }
