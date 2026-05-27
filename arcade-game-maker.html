@@ -3591,17 +3591,18 @@ score += bumper.pts;
         <div class="game-wrap idle" id="gameWrap">
             <!-- Idle placeholder — shown before first game run -->
             <div id="idle-placeholder">
-                <div class="idle-icon-row">
+                <div class="idle-icon-row" id="idleIconRow">
                     <span class="idle-icon" style="animation-delay:0s">🚀</span>
                     <span class="idle-icon" style="animation-delay:.3s">🏃</span>
                     <span class="idle-icon" style="animation-delay:.6s">🐸</span>
                     <span class="idle-icon" style="animation-delay:.9s">🏓</span>
                     <span class="idle-icon" style="animation-delay:1.2s">👾</span>
                     <span class="idle-icon" style="animation-delay:1.5s">🎵</span>
+                    <span class="idle-icon" style="animation-delay:1.8s">🌊</span>
                 </div>
                 <div class="idle-heading">Build it. Play it. 🎮</div>
-                <div class="idle-sub">Your game will appear here!</div>
-                <div class="idle-hint">👈 Pick a game type · Change the rules · Hit <strong>▶ Run Game</strong></div>
+                <div class="idle-sub" id="idleSub">Your game will appear here!</div>
+                <div class="idle-hint" id="idleHint">👈 Pick a game type · Change the rules · Hit <strong>▶ Run Game</strong></div>
             </div>
             <div id="game-container"></div>
             <div id="heartsDisplay"></div>
@@ -5328,10 +5329,13 @@ const _GENRE_DESCS = {
     BEAT:      'Punch, kick and combo your way through enemy waves.',
     PUZZLE:    'Slide and match tiles to clear the board.',
     RHYTHM:    'Hit notes on beat — keep the multiplier alive.',
-    DEFENSE:   'Place towers, hold the path, stop every wave.',
-    PINBALL:   'Keep the ball alive — rack up combos and jackpots.',
+    DEFENSE:      'Place towers, hold the path, stop every wave.',
+    PINBALL:      'Keep the ball alive — rack up combos and jackpots.',
+    CLICKER:      'Click the target to score — buy upgrades and rack up millions!',
+    MEMORY:       'Flip cards and find matching pairs before time runs out.',
+    WAVESURVIVAL: 'Survive endless waves of enemies — how long can you last?',
 };
-const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮'};
+const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'👊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊'};
 
 // Format the controls hint text — wraps recognised key tokens in styled <kbd> badges
 function _formatControlsHint(text) {
@@ -5584,6 +5588,32 @@ function _syncGenrePicker() {
     // Update mobile run bar genre label
     const mrb = document.getElementById('mrb-genre');
     if (mrb) mrb.textContent = (_GENRE_ICONS[g]||'🕹') + ' ' + g.charAt(0) + g.slice(1).toLowerCase();
+    // Update idle placeholder to reflect selected genre
+    _updateIdlePlaceholder(g);
+}
+function _updateIdlePlaceholder(genre) {
+    const icon = _GENRE_ICONS[genre] || '🕹️';
+    const NAMES = {
+        WAVESURVIVAL:'Wave Survival', ROGUELIKE:'Roguelike', PLATFORMER:'Platformer',
+        INVADERS:'Invaders', ASTEROIDS:'Asteroids', DEFENSE:'Defense', PINBALL:'Pinball',
+        CLICKER:'Clicker', MEMORY:'Memory', SHOOTER:'Shooter', RUNNER:'Runner',
+        BREAKER:'Breaker', FLAPPY:'Flappy', RACING:'Racing', HOPPER:'Hopper',
+        BEAT:"Beat 'em Up", PUZZLE:'Puzzle', RHYTHM:'Rhythm', SNAKE:'Snake',
+        DODGE:'Dodge', PONG:'Pong'
+    };
+    const name = NAMES[genre] || genre;
+    const sub  = document.getElementById('idleSub');
+    const hint = document.getElementById('idleHint');
+    if (sub)  sub.textContent  = icon + ' ' + name + ' ready — hit ▶ Run to play!';
+    if (hint) hint.style.display = 'none';
+    const row = document.getElementById('idleIconRow');
+    if (!row) return;
+    const allIcons = Object.values(_GENRE_ICONS);
+    const rest = allIcons.filter(i => i !== icon).sort(() => Math.random() - 0.5).slice(0, 6);
+    const pick = [icon, ...rest].sort(() => Math.random() - 0.5);
+    row.innerHTML = pick.map((em, i) =>
+        '<span class="idle-icon" style="animation-delay:' + (i * 0.25).toFixed(2) + 's">' + em + '</span>'
+    ).join('');
 }
 
 // ── RESUME LAST SESSION ───────────────────────────────────────────────────────
@@ -11908,6 +11938,24 @@ function showGameOver(score) {
         };
         requestAnimationFrame(_tick);
     }
+
+    // ── Eager NEW BEST check (before saving initials) ────────────────────────
+    try {
+        const _lbKeyEager = 'jv_lb_' + (_goPendingGenre || 'SHOOTER');
+        const _boardEager = JSON.parse(localStorage.getItem(_lbKeyEager) || '[]');
+        const _prevBestEager = _boardEager.length ? _boardEager[0].score : 0;
+        const _newBestEager = score > 0 && score > _prevBestEager;
+        const _nbEl = document.getElementById('goNewBest');
+        if (_nbEl) {
+            _nbEl.style.display = _newBestEager ? '' : 'none';
+            if (_newBestEager) {
+                // Pulse animation re-trigger
+                void _nbEl.offsetWidth;
+                _nbEl.style.animation = 'none';
+                requestAnimationFrame(() => { _nbEl.style.animation = ''; });
+            }
+        }
+    } catch(_e) {}
 
     // Play 'after' cutscene before showing game over screen
     _maybeCutscene('after', () => {
