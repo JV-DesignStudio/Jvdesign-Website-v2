@@ -3193,7 +3193,7 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                 <div class="form-group">
                     <label>Starting Lives</label>
                     <div class="range-row">
-                        <input type="range" min="1" max="9" value="3" id="startLivesSlider" oninput="liveConfig.startLives=+this.value;this.nextElementSibling.textContent=this.value;">
+                        <input type="range" min="1" max="9" value="3" id="startLivesSlider" oninput="liveConfig.startLives=+this.value;liveConfig.lives=+this.value;this.nextElementSibling.textContent=this.value;">
                         <span class="range-val">3</span>
                     </div>
                 </div>
@@ -4559,6 +4559,7 @@ const liveConfig = {
     speed:200, rotateSpeed:190, bulletSpeed:540, fireCooldown:180,
     spawnDelay:1100, enemySpeed:150, gravity:600, jumpForce:450,
     pointsPerKill:10, obstacleSpeed:220,
+    // Note: scoreMultiplier applied at runtime via liveConfig.scoreMultiplier
     // Custom tab options
     lives:3, playerScale:1.0, bgStyle:'dark', screenShake:true,
     bulletSpread:1, doubleJump:false, paddleW:90, enemyZigzag:false,
@@ -4669,7 +4670,24 @@ const liveConfig = {
     powerupsEnabled: false,
     powerupTypes: ['speed','shield','magnet','double'],
     weatherEffect: 'none',
-    hapticEnabled: true
+    hapticEnabled: true,
+    // ── Patch3 HUD/Combat/Camera extras ──────────────────────────────────
+    countdownEnabled: false,
+    startLives: 3,
+    playerColour: null,
+    playerSize: 1.0,
+    invincFrames: 90,
+    screenShakeCombat: true,
+    cameraZoom: 1.0,
+    hitFlash: true,
+    slowMoHit: false,
+    comboWindow: 1500,
+    scoreMultiplier: 1,
+    autoFire: false,
+    scoreStyle: 'default',
+    livesStyle: 'hearts',
+    scorePopups: true,
+    showTimer: false
 };
 
 // Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
@@ -6807,6 +6825,7 @@ function compileAndBootEngine() {
     if (_speedRunActive) { const el=document.getElementById('speedRunTime'); if(el) el.textContent='0:00.000'; }
     // Transition + title screen
     _gamePaused = false;
+    _cameraZoomApplied = false;
     const _pmReset = document.getElementById('pauseMenu'); if (_pmReset) _pmReset.style.display='none';
     _runTransitionOut(()=>_showTitleScreen(data));
     
@@ -7402,6 +7421,16 @@ function getScene(data) {
 
 // ── Shared scene helpers — used by makeBaseScene AND standalone scenes ─────────
 // Call as _sceneCheckWin(this, score) or this._checkWin(score) (both work)
+// Floating score popup (used when liveConfig.scorePopups is true)
+function _scorePopup(scene, pts, anchor) {
+    if (!scene || !scene.add) return;
+    const x = anchor ? anchor.x : GW/2;
+    const y = anchor ? anchor.y - 20 : GH/2;
+    const col = pts > 50 ? '#fbbf24' : pts > 20 ? '#a78bfa' : '#e2e8f0';
+    const t = scene.add.text(x, y, '+'+pts, {fontSize:'14px', fill:col, fontStyle:'bold', stroke:'#000', strokeThickness:2}).setOrigin(0.5).setDepth(20);
+    scene.tweens.add({ targets:t, y: y-36, alpha:0, duration:700, ease:'Power2', onComplete:()=>{ try{t.destroy();}catch(_){} } });
+}
+
 function _sceneCheckWin(scene, score) {
     if (scene._winTriggered) return;
     const wc = liveConfig.winCondition;
@@ -7427,8 +7456,13 @@ function _sceneCheckWin(scene, score) {
     }
 }
 let _activeScene = null; // always points to the currently running Phaser scene
+let _cameraZoomApplied = false;
 function _sceneTickBase(scene, score) {
     _activeScene = scene;
+    if (!_cameraZoomApplied && scene.cameras && liveConfig.cameraZoom && liveConfig.cameraZoom !== 1.0) {
+        scene.cameras.main.setZoom(liveConfig.cameraZoom);
+        _cameraZoomApplied = true;
+    }
     const spd = liveConfig.gameSpeed || 1.0;
     if (!_hitStop._active) {
         if (scene.physics && scene.physics.world) scene.physics.world.timeScale = spd;
@@ -8009,9 +8043,37 @@ function makeBaseScene(data) {
         _makeScoreText() {
             const _fontFamilyMap = {'JetBrains':"'JetBrains Mono',monospace",'Fredoka':"'Fredoka',sans-serif",'Orbitron':"'Orbitron',sans-serif",'Bangers':"'Bangers',cursive",'PressStart':"'Press Start 2P',monospace",'Nunito':"'Nunito',sans-serif"};
             const _ff = _fontFamilyMap[liveConfig.gameFont] || "'JetBrains Mono',monospace";
-            return this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:_ff,fontStyle:'bold'}).setDepth(10);
+            const _st = this.add.text(12,12,'Score: 0',{fontSize:'15px',fill:themeHex(0,'#a78bfa'),fontFamily:_ff,fontStyle:'bold'}).setDepth(10);
+            // Timer text (top-right, only shown when showTimer is on)
+            if (liveConfig.showTimer) {
+                this._timerText = this.add.text(GW-8, 12, '0:00', {fontSize:'13px', fill:'#94a3b8', fontFamily:_ff}).setOrigin(1,0).setDepth(10);
+                this._timerStart = Date.now();
+                this.time.addEvent({ delay:500, loop:true, callback:() => {
+                    if (!this._timerText || !this._timerText.active) return;
+                    const s = Math.floor((Date.now()-(this._timerStart||Date.now()))/1000);
+                    this._timerText.setText(Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60);
+                }});
+            }
+            return _st;
         }
         _tint(sprite, idx, fallback) { sprite.setTint(themeInt(idx, fallback)); return sprite; }
+        _applyPlayerColour(sprite) {
+            if (!sprite) return sprite;
+            if (liveConfig.playerColour) {
+                try { sprite.setTint(parseInt(liveConfig.playerColour.replace('#',''), 16)); } catch(e) {}
+            }
+            return sprite;
+        }
+        _addScore(n) {
+            // Apply scoreMultiplier; clamp to avoid 0 if multiplier is 0
+            const mul = liveConfig.scoreMultiplier || 1;
+            const pts = Math.max(1, Math.round(n * mul));
+            this.score = (this.score || 0) + pts;
+            if (this.scoreText) this.scoreText.setText('Score: ' + this.score);
+            this._flashScore && this._flashScore(this.scoreText);
+            if (liveConfig.scorePopups) _scorePopup(this, pts, this.actor || this.player);
+            return pts;
+        }
         _flashScore(txt) {
             this.tweens.add({targets:txt,scaleX:1.25,scaleY:1.25,duration:70,yoyo:true,ease:'Power2'});
         }
@@ -12543,6 +12605,22 @@ function _syncCustomTabUI(cfg) {
     const puSh = document.getElementById('puEnableShield'); if(puSh) puSh.checked = cfg.puShieldOn !== false;
     const puX2e = document.getElementById('puEnableX2');    if(puX2e) puX2e.checked = cfg.puX2On !== false;
     const puSpe = document.getElementById('puEnableSpeed'); if(puSpe) puSpe.checked = cfg.puSpeedOn !== false;
+    // ── Patch3 extras ─────────────────────────────────────────────────────
+    // Game font pills
+    if (cfg.gameFont) {
+        const fontMap = {'JetBrains':'Mono','Fredoka':'Fredoka','Orbitron':'Orbitron','Bangers':'Bangers','PressStart':'8-Bit','Nunito':'Nunito'};
+        document.querySelectorAll('#pillGameFont .pill').forEach(p => p.classList.toggle('active', p.textContent.trim() === (fontMap[cfg.gameFont] || 'Mono')));
+    }
+    // Tags
+    if (cfg.tags && Array.isArray(cfg.tags)) {
+        document.querySelectorAll('[onclick*="_toggleTag"]').forEach(btn => {
+            const tagMatch = btn.getAttribute('onclick').match(/_toggleTag(this,'(w+)')/);
+            if (tagMatch) btn.classList.toggle('active', cfg.tags.includes(tagMatch[1]));
+        });
+    }
+    // startLives slider
+    const _slvVal = cfg.startLives || cfg.lives;
+    if (_slvVal !== undefined) { const slr = document.getElementById('startLivesSlider'); if (slr) { slr.value = _slvVal; if (slr.nextElementSibling) slr.nextElementSibling.textContent = _slvVal; } }
     const puLi  = document.getElementById('puEnableLife');  if(puLi)  puLi.checked  = cfg.puLifeOn  !== false;
     // Drop-rate sliders
     (function() {
@@ -12732,7 +12810,12 @@ function _applyLoadData(d) {
     if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
     if(d.bgImage) _applyBgDataUrl(d.bgImage,'Saved background');
     // Full liveConfig restore
-    if(d.liveConfig) { Object.assign(liveConfig, d.liveConfig); _syncCustomTabUI(d.liveConfig); }
+    if(d.liveConfig) {
+        Object.assign(liveConfig, d.liveConfig);
+        // Sync lives from startLives if present
+        if (d.liveConfig.startLives) liveConfig.lives = d.liveConfig.startLives;
+        _syncCustomTabUI(d.liveConfig);
+    }
     // Theme
     if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
     // Story
@@ -13087,6 +13170,8 @@ function _updateLandscapeNudge(active) {
 }
 
 function goNewGame() {
+    // Guard: confirm before wiping config (only if game has been run)
+    if (_engineData && !confirm('Start a completely new game? Save to a slot first if needed!')) return;
     // Save score if not yet done, then stop the game and go back to the Build tab
     const nameRow = document.getElementById('goNameRow');
     if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
