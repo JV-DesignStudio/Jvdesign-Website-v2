@@ -12394,6 +12394,7 @@ function loadFromSlot(slotIdx) {
     try {
         const raw = localStorage.getItem(SLOT_KEYS[slotIdx]);
         if (!raw) { showToast(`Slot ${slotIdx+1} is empty`); return; }
+        window._shareAutoStart = true; // auto-dismiss intro so game boots directly
         _applyLoadData(JSON.parse(raw));
     } catch(e) { _gameError('Load failed — save data may be corrupt', e.message || '', false); }
 }
@@ -12819,6 +12820,9 @@ function _applyLoadData(d) {
         Object.assign(liveConfig, d.liveConfig);
         // Sync lives from startLives if present
         if (d.liveConfig.startLives) liveConfig.lives = d.liveConfig.startLives;
+        // Reset runtime state so game starts fresh (saves store config, not progress)
+        liveConfig._score = 0; liveConfig._wave = 0; liveConfig._combo = 0;
+        liveConfig._timer = 0; liveConfig._currentLevel = 0;
         _syncCustomTabUI(d.liveConfig);
     }
     // Theme
@@ -16964,13 +16968,13 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 const _dth = (d.th && d.th.c) ? {cols:d.th.c,name:d.th.n} : d.theme;
                 if(_dth && _dth.cols && _dth.cols.length) applyPalette(_dth);
                 // Seed the creator's best score so recipients have a target to beat
-                if ((_bs||0) > 0) {
+                const _bs = d.bs !== undefined ? d.bs : (d.bestScore || 0);
+                if (_bs > 0) {
                     try {
                         const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
                         let board = [];
                         try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
-                        const _bs = d.bs !== undefined ? d.bs : (d.bestScore || 0);
-                if (_bs > 0 && !board.some(e=>e.score===_bs && e.date==='🏆 Creator')) {
+                        if (!board.some(e=>e.score===_bs && e.date==='🏆 Creator')) {
                             board.push({ score: _bs, date: '🏆 Creator' });
                             board.sort((a,b)=>b.score-a.score);
                             localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
