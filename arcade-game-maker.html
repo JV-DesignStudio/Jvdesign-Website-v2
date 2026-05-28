@@ -5461,7 +5461,8 @@ async function copyEmbedCode() {
     try {
         const d = _engineData;
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const url = location.origin + location.pathname + '?game=' + enc;
+        const _base2 = location.href.split('?')[0].split('#')[0];
+        const url = _base2 + '?game=' + enc;
         const embed = `<iframe src="${url}" width="660" height="440" style="border:none;border-radius:12px;" title="${d.title}" allowfullscreen></iframe>`;
         navigator.clipboard.writeText(embed).then(()=>showToast('Embed code copied! Paste into any webpage 🔗')).catch(()=>prompt('Copy embed code:',embed));
     } catch(e) { showToast('Could not generate embed code'); }
@@ -12879,26 +12880,26 @@ function _applyLoadData(d) {
     document.getElementById('gravityY').value=d.gravity; document.getElementById('gravityRange').value=d.gravity; document.getElementById('gravityVal').textContent=d.gravity;
     document.getElementById('jumpForce').value=d.jump||450; document.getElementById('jumpForceRange').value=d.jump||450; document.getElementById('jumpVal').textContent=d.jump||450;
     // Level map — restore variable AND mini-preview
-    if(d.map && Array.isArray(d.map)) {
-        customLevelMap = d.map;
-        document.getElementById('levelDesignerGrid').value = JSON.stringify(d.map);
-        const w=20, h=15, sc=Math.min(Math.floor(320/w),Math.floor(52/h),5);
-        const mini=document.getElementById('levelMini'); mini.innerHTML='';
-        const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
-        const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
-        d.map.forEach((v,i)=>{ if(!v) return; ctx.fillStyle=v===2?'#ef4444':'#7c3aed'; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
-        mini.appendChild(cvs);
-        document.getElementById('levelInfoDesc').textContent='Saved level · 20×15 tiles';
-        document.getElementById('levelStatus').textContent='✓ Level loaded';
-        document.getElementById('levelStatus').className='asset-status ok';
-        if(customLevelMap.length===TM_COLS*TM_ROWS) _tmLoadFromArray(customLevelMap);
-    } else {
-        customLevelMap = null;
-        document.getElementById('levelDesignerGrid').value='';
-        document.getElementById('levelMini').innerHTML='<div class="no-level">No level imported</div>';
-        document.getElementById('levelStatus').textContent='Using built-in default level';
-        document.getElementById('levelStatus').className='asset-status none';
-    }
+    try {
+        if(d.map && Array.isArray(d.map)) {
+            customLevelMap = d.map;
+            document.getElementById('levelDesignerGrid').value = JSON.stringify(d.map);
+            const w=20, h=15, sc=Math.min(Math.floor(320/w),Math.floor(52/h),5);
+            const mini=document.getElementById('levelMini'); if(mini) mini.innerHTML='';
+            const cvs=document.createElement('canvas'); cvs.width=w*sc; cvs.height=h*sc;
+            const ctx=cvs.getContext('2d'); ctx.fillStyle='#0a0c18'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            d.map.forEach((v,i)=>{ if(!v) return; ctx.fillStyle=v===2?'#ef4444':'#7c3aed'; ctx.fillRect((i%w)*sc,Math.floor(i/w)*sc,sc-1,sc-1); });
+            if(mini) mini.appendChild(cvs);
+            const _ld=document.getElementById('levelInfoDesc'); if(_ld) _ld.textContent='Saved level \xB7 20\xD715 tiles';
+            const _ls=document.getElementById('levelStatus'); if(_ls){_ls.textContent='✓ Level loaded';_ls.className='asset-status ok';}
+            if(customLevelMap.length===TM_COLS*TM_ROWS) _tmLoadFromArray(customLevelMap);
+        } else {
+            customLevelMap = null;
+            const _lg=document.getElementById('levelDesignerGrid'); if(_lg) _lg.value='';
+            const _lm=document.getElementById('levelMini'); if(_lm) _lm.innerHTML='<div class="no-level">No level imported</div>';
+            const _ls2=document.getElementById('levelStatus'); if(_ls2){_ls2.textContent='Using built-in default level';_ls2.className='asset-status none';}
+        }
+    } catch(_e) {} // level map preview is non-critical — never abort the load
     // Sprites — each wrapped so a corrupt data-URL can't abort the rest
     try { if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite', d.spriteFrameCount||1, d.spriteFrameW||0); } catch(e) {}
     try { if(d.enemySprite)  _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite'); }  catch(e) {}
@@ -13423,14 +13424,20 @@ window.addEventListener('DOMContentLoaded',function(){
     var $=function(id){return document.getElementById(id);};
     if($('gameTitle'))  $('gameTitle').value=_c.title;
     if($('genreMode'))  $('genreMode').value=_c.genre;
+    // Sync speed/gravity/jump DOM inputs so getPayload() returns the exported values
+    if($('playerSpeed'))  { $('playerSpeed').value=_c.speed||200; $('playerSpeedRange').value=_c.speed||200; var sv=$('speedVal'); if(sv) sv.textContent=_c.speed||200; }
+    if($('gravityY'))     { $('gravityY').value=_c.gravity||600; $('gravityRange').value=_c.gravity||600; var gv=$('gravityVal'); if(gv) gv.textContent=_c.gravity||600; }
+    if($('jumpForce'))    { $('jumpForce').value=_c.jump||450; $('jumpForceRange').value=_c.jump||450; var jv=$('jumpVal'); if(jv) jv.textContent=_c.jump||450; }
     _engineData=_c;
     gameState.lives=liveConfig.lives;
     _updateHeartsDisplay(gameState.lives,liveConfig.lives);
+    if(typeof onGenreChange==='function')        onGenreChange();
     if(typeof compileAndBootEngine==='function') compileAndBootEngine();
     if(typeof setupTouchControls==='function')   setupTouchControls();
     if(typeof updateTouchLayout==='function')     updateTouchLayout(_c.genre);
 },false);})();`;
-    root.querySelector('body').appendChild(boot);
+    // Inject into <head> so __exportMode=true is set before the startup IIFE runs
+    root.querySelector('head').appendChild(boot);
     // Inject PWA manifest so exported game is installable
     const manifest = {
         name: _engineData.title, short_name: _engineData.title,
@@ -14406,7 +14413,9 @@ async function generateShareLink() {
     try {
         showToast('Compressing…  ⏳');
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const longUrl = location.origin + location.pathname + '?game=' + enc;
+        // Use location.href base so file:// URLs don't produce "null/..." prefixes
+        const _base = location.href.split('?')[0].split('#')[0];
+        const longUrl = _base + '?game=' + enc;
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
         _openShareModal(finalUrl, d.title || 'My Game', 0, short);
@@ -14419,7 +14428,8 @@ async function generateRemixLink() {
     try {
         showToast('Compressing…  ⏳');
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const longUrl = location.origin + location.pathname + '?remix=' + enc;
+        const _base = location.href.split('?')[0].split('#')[0];
+        const longUrl = _base + '?remix=' + enc;
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
         _openShareModal(finalUrl, d.title || 'My Game', 0, short);
@@ -17110,7 +17120,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
             } catch(e) {}
             compileAndBootEngine();
         })();
-    } else {
+    } else if (!window.__exportMode) {
+        // Normal studio load — boot immediately
+        // (Exported games set __exportMode=true in <head> and boot via DOMContentLoaded)
         compileAndBootEngine();
     }
 
