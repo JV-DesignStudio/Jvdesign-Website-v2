@@ -8721,7 +8721,6 @@ function scenePlatformer(data) {
 
             this.physics.add.collider(this.actor, this.platforms);
             this.physics.add.collider(this.actor, this._movPlats);
-            this.physics.add.collider(this.actor, this._movPlats);
             // Stomp: landing on top of enemy kills it and bounces the player
             this.physics.add.collider(this.actor, this.hazards, (player, enemy) => {
                 // Spike tiles (from tilemap) can never be stomped — always damage the player
@@ -9624,36 +9623,6 @@ function sceneInvaders(data) {
                 });
             }});
         }
-        _spawnInvaderBoss() {
-            showToast('⚡ BOSS WAVE! Defeat the giant alien!');
-            GameAudio.play('levelUp');
-            const bossHp = Math.min(12, 3 + Math.floor(this._wave / 5) * 2);
-            const bx = GW / 2, by = 52;
-            const boss = this.enemies.create(bx, by, 'enemy').setDisplaySize(54, 50);
-            boss.body.setSize(50, 46, true);
-            boss.setTint(0xff2222);
-            boss.body.allowGravity = false;
-            boss.setData('hp', bossHp);
-            boss.setData('maxHp', bossHp);
-            boss.setData('isBoss', true);
-            // Strafe side-to-side
-            this.tweens.add({ targets: boss, x: GW - 80, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-            // HP bar (fixed to camera)
-            const hpBg = this.add.rectangle(GW/2, 22, 164, 10, 0x333333, 0.85).setScrollFactor(0).setDepth(20);
-            const hpFg = this.add.rectangle(GW/2 - 82, 22, 160, 8, 0xff2222).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
-            const hpTxt = this.add.text(GW/2, 32, 'BOSS HP: '+bossHp+'/'+bossHp, { fontSize:'9px', fill:'#fff', stroke:'#000', strokeThickness:2 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(22);
-            boss.setData('hpBg', hpBg);
-            boss.setData('hpFg', hpFg);
-            boss.setData('hpTxt', hpTxt);
-            // Boss shoots a 3-spread burst every 1.8s
-            this.time.addEvent({ delay: 1800, loop: true, callback: () => {
-                if (!boss.active) return;
-                [-28, 0, 28].forEach(ox => {
-                    const eb = this.eBullets.create(boss.x + ox, boss.y + 28, 'laser').setDisplaySize(8,14).setTint(0xff4444);
-                    eb.body.allowGravity = false; eb.setVelocityY(220);
-                });
-            }});
-        }
         _buildFormation() {
             const rows=liveConfig.invaderRows||3, cols=liveConfig.invaderCols||8;
             const sw=Math.min(60, Math.floor((GW-80)/cols)), sh=32, sx=40, sy=44;
@@ -10200,7 +10169,7 @@ function sceneRoguelike(data) {
             this._bossShootTimer &&this._bossShootTimer.remove(false);
             if(this._bossHpBar&&this._bossHpBar.active){this._bossHpBar.destroy();this._bossHpBar=null;}
             if(this._bossHpText&&this._bossHpText.active){this._bossHpText.destroy();this._bossHpText=null;}
-            this._boss=null; this._roomCleared=false; this._doorOpen=false; this._roomSpawnDone=false; this._roomSpawnDone=false; this._roomSpawnDone=false;
+            this._boss=null; this._roomCleared=false; this._doorOpen=false; this._roomSpawnDone=false;
             // HP bar graphics — cleared + redrawn every frame for all multi-HP enemies
             if (!this._hpBarGfx) this._hpBarGfx = this.add.graphics().setDepth(16).setScrollFactor(1);
 
@@ -16399,30 +16368,6 @@ function scenePinball(data) {
             if (!this._m5k  && this.score>=5000)  { this._m5k =true; this._showMilestone('5,000! ⭐'); GameAudio.play('levelUp'); }
             if (!this._m10k && this.score>=10000) { this._m10k=true; this._showMilestone('10,000! 🏆'); GameAudio.play('levelUp'); }
 
-            // Anti-stuck: if ball is launched but barely moving, give it a kick upward
-            if (this._launched) {
-                const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
-                const _bvy = this.ball.body ? Math.abs(this.ball.body.velocity.y) : 999;
-                if (_bvx + _bvy < 28) {
-                    this._stuckMs = (this._stuckMs || 0) + delta;
-                    if (this._stuckMs > 1800) {
-                        this.ball.setVelocity((Math.random()-0.5)*260, -300 - Math.random()*120);
-                        this._stuckMs = 0;
-                    }
-                } else { this._stuckMs = 0; }
-            }
-            // Anti-stuck: if ball is launched but barely moving, give it a kick upward
-            if (this._launched) {
-                const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
-                const _bvy = this.ball.body ? Math.abs(this.ball.body.velocity.y) : 999;
-                if (_bvx + _bvy < 28) {
-                    this._stuckMs = (this._stuckMs || 0) + delta;
-                    if (this._stuckMs > 1800) {
-                        this.ball.setVelocity((Math.random()-0.5)*260, -300 - Math.random()*120);
-                        this._stuckMs = 0;
-                    }
-                } else { this._stuckMs = 0; }
-            }
             // Anti-stuck: if ball is launched but barely moving, give it a kick upward
             if (this._launched) {
                 const _bvx = this.ball.body ? Math.abs(this.ball.body.velocity.x) : 999;
