@@ -4687,7 +4687,10 @@ const liveConfig = {
     scoreStyle: 'default',
     livesStyle: 'hearts',
     scorePopups: true,
-    showTimer: false
+    showTimer: false,
+    // ── Rhythm game ──────────────────────────────────────────────────────────
+    rhythmSpeed: 260,   // note fall speed px/s (Slow=160, Normal=260, Fast=380, Expert=520)
+    rhythmLanes: 4      // active lane count (2, 3, or 4)
 };
 
 // Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
@@ -7070,84 +7073,219 @@ function sceneClicker(data) {
     const Base = makeBaseScene(data);
     return class extends Base {
         create() {
-            liveConfig._score = liveConfig._score || 0;
-            let _autoRate = 0, _autoTimer = 0;
+            // Reset score each fresh boot (don't carry over between sessions)
+            liveConfig._score = 0;
             const td = _themeData(liveConfig.theme || 'space');
-
             this._drawBg();
 
-            // Big click target
-            let _mult = 1, _clickN = 0;
-            const btn = this.add.text(GW/2, GH/2 - 30, td.playerEmoji || '👾', {
-                fontSize: '72px', fontFamily: 'serif'
-            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            // ── State ──────────────────────────────────────────────────────────
+            let _pts    = 0;   // current score / currency
+            let _cps    = 0;   // coins per second (auto)
+            let _mult   = 1;   // click power multiplier
+            let _crit   = 0;   // critical hit chance (0–1)
+            let _prestige = 1; // global earnings multiplier
+            let _clickN = 0, _autoMs = 0;
+            let _goldActive = false, _goldCooldown = 0;
 
-            btn.on('pointerdown', () => {
-                liveConfig._score += _mult + Math.floor(_autoRate / 2);
-                this.tweens.add({ targets: btn, scaleX: 1.25, scaleY: 1.25, duration: 60, yoyo: true });
-                // Throttle particles: spawn every 3rd click to keep framerate smooth
-                _clickN = (_clickN + 1) % 3;
-                if (_clickN === 0) _spawnParticles(this, GW/2, GH/2 - 30, { count: 5, style: 'burst' });
+            // ── Layout constants ───────────────────────────────────────────────
+            const BTN_Y0 = 195;   // y of first upgrade row
+            const BTN_H  = 36;    // row height
+            const BTN_GAP = 4;
+
+            // ── Big click target ───────────────────────────────────────────────
+            const CLICK_Y = 120;
+            const clickEmoji = liveConfig.clickEmoji || td.playerEmoji || '👾';
+            const clickBtn = this.add.text(GW/2, CLICK_Y, clickEmoji, {
+                fontSize: '80px', fontFamily: 'serif'
+            }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(5);
+
+            // Subtle glow ring behind click target
+            const ring = this.add.graphics().setDepth(4);
+            ring.fillStyle(0xa78bfa, 0.08);
+            ring.fillCircle(GW/2, CLICK_Y, 60);
+            ring.lineStyle(2, 0xa78bfa, 0.3);
+            ring.strokeCircle(GW/2, CLICK_Y, 62);
+
+            const _doClick = () => {
+                if (!clickBtn.active) return;
+                const isCrit = Math.random() < _crit;
+                const earned = Math.ceil((_mult + Math.floor(_cps * 0.1)) * _prestige * (isCrit ? 10 : 1));
+                _pts += earned;
+                liveConfig._score = _pts;
+                this.tweens.add({ targets: clickBtn, scaleX: 1.3, scaleY: 1.3, duration: 55, yoyo: true });
+                _clickN = (_clickN + 1) % 2;
+                if (_clickN === 0) _spawnParticles(this, GW/2, CLICK_Y, { count: isCrit ? 12 : 5, style: 'burst' });
+                if (isCrit) _juiceText(GW/2, CLICK_Y - 50, 'CRITICAL! +' + earned, '#fbbf24');
+                else        _juiceText(GW/2, CLICK_Y - 50, '+' + earned, '#a78bfa');
                 GameAudio.play('score');
-            });
+                _refreshUpgrades();
+            };
+            clickBtn.on('pointerdown', _doClick);
+            // Also accept space / touch fire for accessibility
+            this._ckKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-            // HUD
-            const scoreTxt = this.add.text(10, 10, '', { fontSize:'16px', fill:'#a78bfa', fontFamily:'Fredoka One' });
-            const cpsTxt   = this.add.text(10, 32, '', { fontSize:'12px', fill:'rgba(167,139,250,.7)', fontFamily:'Inter' });
+            // ── Score display ─────────────────────────────────────────────────
+            // Large coin icon + score centre-top
+            this.add.text(GW/2, 18, '💰', { fontSize:'22px', fontFamily:'serif' }).setOrigin(0.5).setDepth(10);
+            const scoreTxt = this.add.text(GW/2 + 18, 18, '0', {
+                fontSize:'24px', fontWeight:'800', fill:'#fbbf24', fontFamily:"'Fredoka One','Fredoka',sans-serif",
+                stroke:'#000', strokeThickness:3
+            }).setOrigin(0, 0.5).setDepth(10);
 
-            // Auto-clicker upgrade
-            let _autoCost = 10;
-            const autoBtn = this.add.text(GW/2, GH - 60, `🤖 Auto-click — Cost: ${_autoCost}`, {
-                fontSize: '13px', fill: '#4ade80', fontFamily: 'Inter', backgroundColor: 'rgba(0,0,0,.4)',
-                padding: { x: 10, y: 6 }
-            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            autoBtn.on('pointerdown', () => {
-                if (liveConfig._score >= _autoCost) {
-                    liveConfig._score -= _autoCost;
-                    _autoRate++;
-                    _autoCost = Math.floor(_autoCost * 1.8);
-                    autoBtn.setText(`🤖 Auto-click (${_autoRate}/s) — Cost: ${_autoCost}`);
-                    showToast('Auto-clicker upgraded! 🤖');
+            const cpsTxt = this.add.text(GW/2, 42, '', {
+                fontSize:'11px', fill:'rgba(255,255,255,.5)', fontFamily:'Inter'
+            }).setOrigin(0.5).setDepth(10);
+
+            // ── Separator line ────────────────────────────────────────────────
+            const sep = this.add.graphics().setDepth(6);
+            sep.fillStyle(0xffffff, 0.06);
+            sep.fillRect(10, BTN_Y0 - 10, GW - 20, 1);
+
+            // ── Upgrades ──────────────────────────────────────────────────────
+            const UPGRADES = [
+                { id:'auto',     icon:'🤖', label:'Auto-Clicker',  color:'#4ade80', baseCost:10,  scale:1.7,
+                  desc: () => `+${_cps}/sec`,
+                  canBuy: () => _pts >= _up.auto.cost,
+                  buy: () => { _pts -= _up.auto.cost; _cps += Math.ceil((_up.auto.level+1)*_prestige); _up.auto.level++; _up.auto.cost = Math.floor(_up.auto.cost*1.7); } },
+                { id:'power',    icon:'⚡', label:'Click Power',   color:'#a78bfa', baseCost:50,  scale:2.4,
+                  desc: () => `${_mult}× per click`,
+                  canBuy: () => _pts >= _up.power.cost,
+                  buy: () => { _pts -= _up.power.cost; _mult += Math.ceil(_up.power.level*0.5+1); _up.power.level++; _up.power.cost = Math.floor(_up.power.cost*2.4); } },
+                { id:'crit',     icon:'🎯', label:'Critical Hit',  color:'#f87171', baseCost:120, scale:2.8,
+                  desc: () => `${Math.round(_crit*100)}% chance for 10×`,
+                  canBuy: () => _pts >= _up.crit.cost,
+                  buy: () => { _pts -= _up.crit.cost; _crit = Math.min(0.75, _crit + 0.1); _up.crit.level++; _up.crit.cost = Math.floor(_up.crit.cost*2.8); } },
+                { id:'prestige', icon:'💎', label:'Mega Boost',    color:'#fbbf24', baseCost:500, scale:3.5,
+                  desc: () => `${_prestige}× all earnings`,
+                  canBuy: () => _pts >= _up.prestige.cost,
+                  buy: () => { _pts -= _up.prestige.cost; _prestige = Math.ceil(_prestige*2); _up.prestige.level++; _up.prestige.cost = Math.floor(_up.prestige.cost*3.5); } },
+                { id:'gold',     icon:'🌟', label:'Gold Rush',     color:'#00d4aa', baseCost:300, scale:3.0,
+                  desc: () => _up.gold.level > 0 ? (_goldCooldown > 0 ? `Cooldown ${Math.ceil(_goldCooldown/1000)}s` : 'READY — click to activate!') : 'Activate Gold Rush mode',
+                  canBuy: () => _pts >= _up.gold.cost,
+                  buy: () => {
+                    if (_up.gold.level === 0) { // first purchase unlocks ability
+                        _pts -= _up.gold.cost; _up.gold.level++; _up.gold.cost = 0;
+                    } else if (_goldCooldown <= 0 && !_goldActive) { // subsequent clicks = use ability
+                        _goldActive = true; _goldCooldown = 20000;
+                        showToast('🌟 Gold Rush! 5× earnings for 5 seconds!');
+                        _prestige *= 5;
+                        this.time.delayedCall(5000, () => { _prestige = Math.max(1, Math.floor(_prestige/5)); _goldActive = false; });
+                    }
+                  }
+                },
+            ];
+
+            // Upgrade state objects
+            const _up = {};
+            UPGRADES.forEach(u => { _up[u.id] = { level:0, cost: u.baseCost }; });
+
+            // Build upgrade row UI
+            const _upRows = {};
+            UPGRADES.forEach((u, i) => {
+                const y = BTN_Y0 + i * (BTN_H + BTN_GAP);
+                // Row background
+                const rowBg = this.add.rectangle(GW/2, y + BTN_H/2, GW - 20, BTN_H, 0x1a1040, 0.9)
+                    .setOrigin(0.5, 0.5).setDepth(7).setInteractive({ useHandCursor:true });
+                rowBg.setStrokeStyle(1, 0x3b21a8, 0.5);
+
+                // Icon
+                const iconTxt = this.add.text(18, y + BTN_H/2, u.icon, { fontSize:'18px', fontFamily:'serif' })
+                    .setOrigin(0, 0.5).setDepth(8);
+
+                // Label + description
+                const labelTxt = this.add.text(44, y + BTN_H/2 - 7, u.label, {
+                    fontSize:'12px', fill: u.color, fontFamily:"'Fredoka One','Fredoka',sans-serif"
+                }).setOrigin(0, 0.5).setDepth(8);
+
+                const descTxt = this.add.text(44, y + BTN_H/2 + 7, '', {
+                    fontSize:'10px', fill:'rgba(255,255,255,.5)', fontFamily:'Inter'
+                }).setOrigin(0, 0.5).setDepth(8);
+
+                // Cost badge (right side)
+                const costBadge = this.add.text(GW - 14, y + BTN_H/2, '', {
+                    fontSize:'12px', fill:'#fbbf24', fontFamily:'Inter', fontStyle:'bold',
+                    stroke:'#000', strokeThickness:2
+                }).setOrigin(1, 0.5).setDepth(8);
+
+                // Level pip
+                const levelTxt = this.add.text(GW - 68, y + BTN_H/2, '', {
+                    fontSize:'10px', fill:'rgba(255,255,255,.35)', fontFamily:'Inter'
+                }).setOrigin(1, 0.5).setDepth(8);
+
+                rowBg.on('pointerdown', () => {
+                    if (!u.canBuy()) { showToast(`Need 💰${_up[u.id].cost.toLocaleString()}!`); return; }
+                    u.buy();
+                    liveConfig._score = _pts;
                     GameAudio.play('score');
-                } else {
-                    showToast(`Need ${_autoCost} points!`);
-                }
+                    _spawnParticles(this, GW/2, y + BTN_H/2, { count:6, style:'burst' });
+                    _refreshUpgrades();
+                });
+                rowBg.on('pointerover',  () => rowBg.setFillStyle(0x2d1b6e, 0.95));
+                rowBg.on('pointerout',   () => rowBg.setFillStyle(0x1a1040, 0.9));
+
+                _upRows[u.id] = { rowBg, labelTxt, descTxt, costBadge, levelTxt, def:u };
             });
 
-            // Multiplier upgrade
-            let _multCost = 50;
-            const multBtn = this.add.text(GW/2, GH - 30, `⚡ 2× Clicks — Cost: ${_multCost}`, {
-                fontSize: '13px', fill: '#fbbf24', fontFamily: 'Inter', backgroundColor: 'rgba(0,0,0,.4)',
-                padding: { x: 10, y: 6 }
-            }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-            multBtn.on('pointerdown', () => {
-                if (liveConfig._score >= _multCost) {
-                    liveConfig._score -= _multCost;
-                    _mult++;
-                    _multCost = Math.floor(_multCost * 2.5);
-                    multBtn.setText(`⚡ ${_mult+1}× Clicks — Cost: ${_multCost}`);
-                    showToast(`${_mult+1}× clicks unlocked! ⚡`);
-                    GameAudio.play('score');
-                } else {
-                    showToast(`Need ${_multCost} points!`);
-                }
-            });
+            const _refreshUpgrades = () => {
+                UPGRADES.forEach(u => {
+                    const row = _upRows[u.id];
+                    const state = _up[u.id];
+                    const canAfford = u.canBuy();
+                    // Dim row when can't afford
+                    row.rowBg.setAlpha(canAfford ? 1 : 0.55);
+                    row.labelTxt.setAlpha(canAfford ? 1 : 0.6);
+                    row.descTxt.setText(u.desc());
+                    row.levelTxt.setText(state.level > 0 ? `Lv.${state.level}` : '');
+                    // Gold rush special case: if unlocked and ready, show "USE" instead of cost
+                    if (u.id === 'gold' && state.level > 0) {
+                        row.costBadge.setText(_goldCooldown > 0 ? '⏳' : _goldActive ? '✨' : '▶ USE').setFill(_goldActive ? '#fbbf24' : '#00d4aa');
+                    } else {
+                        row.costBadge.setText(state.level === 0 || u.id !== 'gold' ? `💰${state.cost.toLocaleString()}` : '');
+                    }
+                });
+            };
+            _refreshUpgrades();
 
+            // ── Milestone toasts ───────────────────────────────────────────────
+            const MILESTONES = [100, 500, 1000, 5000, 10000, 50000, 100000];
+            let _nextMilestone = 0;
+
+            // ── Update (uses scene update event — fires every frame) ───────────
             let _lastMilestone = 0;
-            this.events.on('step', (_, delta) => {
-                _autoTimer += delta;
-                if (_autoRate > 0 && _autoTimer >= 1000) {
-                    liveConfig._score += _autoRate;
-                    _autoTimer = 0;
+            this.events.on('update', (time, delta) => {
+                // Auto-clicker tick
+                _autoMs += delta;
+                if (_cps > 0 && _autoMs >= 1000) {
+                    const gained = Math.floor(_cps * _prestige * (_autoMs / 1000));
+                    _pts += gained;
+                    liveConfig._score = _pts;
+                    _autoMs = 0;
+                    _refreshUpgrades();
                 }
-                liveConfig._score = liveConfig._score || 0;
-                scoreTxt.setText(`Score: ${liveConfig._score}`);
-                cpsTxt.setText(_autoRate > 0 ? `${_autoRate}/sec auto` : 'Click to score!');
-                const _milestone = Math.floor(liveConfig._score / 100);
-                if (_milestone > _lastMilestone) {
-                    _lastMilestone = _milestone;
-                    GameAudio.play('score');
+                // Gold rush cooldown
+                if (_goldCooldown > 0) _goldCooldown = Math.max(0, _goldCooldown - delta);
+
+                // Score display
+                scoreTxt.setText(_pts.toLocaleString());
+                cpsTxt.setText(_cps > 0 ? `${(_cps * _prestige).toFixed(1)}/sec  ·  ${_mult}× click` : `${_mult}× per click`);
+
+                // Milestone celebration
+                const ms = MILESTONES[_nextMilestone];
+                if (ms && _pts >= ms) {
+                    _nextMilestone++;
+                    showToast(`🏆 Milestone: ${ms.toLocaleString()} coins!`);
+                    GameAudio.play('levelup');
+                    _spawnParticles(this, GW/2, CLICK_Y, { count:20, style:'burst' });
                 }
+                // Gold rush: update desc in case cooldown changed
+                if (_goldCooldown > 0 || _goldActive) _refreshUpgrades();
+
+                // Space / touch fire = click
+                if (Phaser.Input.Keyboard.JustDown(this._ckKey) || touchInput.fire) {
+                    if (touchInput.fire) touchInput.fire = false;
+                    _doClick();
+                }
+                this._tickBase(_pts);
             });
         }
         update() {}
@@ -7181,6 +7319,7 @@ function sceneMemory(data) {
             const startY = 60 + CH / 2;
 
             let flipped = [], matched = [], _moves = 0, _locked = false;
+            let _streak = 0, _streakBonus = 0;
             let cardObjs = [];
 
             const scoreTxt = this.add.text(GW/2, 18, 'Moves: 0', {
@@ -7191,8 +7330,19 @@ function sceneMemory(data) {
                 fontSize: '13px', fill: 'rgba(167,139,250,.7)', fontFamily: 'Inter'
             }).setOrigin(1, 0.5);
 
+            // Best score display
+            const _prevBest = liveConfig._memBest || 0;
+            const _bestTxt = this.add.text(10, 18, _prevBest > 0 ? `Best: ${_prevBest}` : '', {
+                fontSize: '11px', fill: 'rgba(167,139,250,.5)', fontFamily: 'Inter'
+            }).setOrigin(0, 0.5).setDepth(10);
+
+            // Streak toast text (hidden until streak)
+            const _streakTxt = this.add.text(GW/2, GH/2 - 20, '', {
+                fontSize: '16px', fill: '#fbbf24', fontFamily: "'Fredoka One',sans-serif", stroke: '#000', strokeThickness: 3
+            }).setOrigin(0.5).setDepth(12).setVisible(false);
+
             let _elapsed = 0;
-            this.events.on('step', (_, delta) => {
+            this.events.on('update', (_, delta) => {
                 _elapsed += delta;
                 timeTxt.setText((_elapsed / 1000).toFixed(1) + 's');
             });
@@ -7232,13 +7382,34 @@ function sceneMemory(data) {
                             flipped = []; _locked = false;
                             _spawnParticles(this, x, y, { count: 8, style: 'burst' });
                             GameAudio.play('score');
+                            // Match streak bonus
+                            _streak++;
+                            if (_streak >= 2) {
+                                const bonusPts = _streak * 50;
+                                if (_streakTxt) _streakTxt.setText(`🔥 ${_streak}× streak! +${bonusPts}`).setVisible(true);
+                                this.tweens.add({ targets: _streakTxt, alpha: 0, duration: 900, delay: 900, onComplete: () => { if (_streakTxt) { _streakTxt.setAlpha(1).setVisible(false); } } });
+                                _streakBonus += bonusPts;
+                            } else {
+                                if (_streakTxt) _streakTxt.setVisible(false);
+                            }
                             if (matched.length === cards.length) {
-                                liveConfig._score = Math.max(0, 1000 - _moves * 10);
-                                const t = (_elapsed / 1000).toFixed(1);
-                                showToast(`🏆 You won in ${_moves} moves & ${t}s! Score: ${liveConfig._score}`);
-                                GameAudio.play('score');
+                                const timeSecs = _elapsed / 1000;
+                                // Score: base 1000 per pair, minus 30 per wrong flip, minus 5 per second, plus streak bonus
+                                const wrongFlips = Math.max(0, _moves - PAIRS);
+                                const finalScore = Math.max(50, Math.round(PAIRS * 1000 - wrongFlips * 30 - timeSecs * 5) + _streakBonus);
+                                liveConfig._score = finalScore;
+                                const prev = liveConfig._memBest || 0;
+                                const isNew = finalScore > prev;
+                                if (isNew) { liveConfig._memBest = finalScore; }
+                                const t = timeSecs.toFixed(1);
+                                showToast(`🏆 ${_moves} moves · ${t}s · Score: ${finalScore}${isNew ? ' 🆕 BEST!' : ''}`);
+                                _spawnParticles(this, GW/2, GH/2, { count: 24, style: 'burst' });
+                                GameAudio.play('levelup');
+                                if (_bestTxt) _bestTxt.setText(`Best: ${Math.max(finalScore, prev)}`);
                             }
                         } else {
+                            _streak = 0;
+                            if (_streakTxt) _streakTxt.setVisible(false);
                             this.time.delayedCall(liveConfig.memoryFlipDelay || 900, () => {
                                 cardObjs[a].bg.setVisible(true); cardObjs[a].back.setVisible(false); cardObjs[a].txt.setVisible(false);
                                 cardObjs[b].bg.setVisible(true); cardObjs[b].back.setVisible(false); cardObjs[b].txt.setVisible(false);
@@ -7250,8 +7421,8 @@ function sceneMemory(data) {
                 });
             });
 
-            this.add.text(GW/2, 36, `${COLS}×${ROWS} Card Match`, {
-                fontSize: '11px', fill: 'rgba(167,139,250,.5)', fontFamily: 'Inter'
+            this.add.text(GW/2, 36, `${COLS}×${ROWS} · ${PAIRS} pairs · tap to flip`, {
+                fontSize: '10px', fill: 'rgba(167,139,250,.4)', fontFamily: 'Inter'
             }).setOrigin(0.5);
         }
         update() {}
@@ -7268,8 +7439,9 @@ function sceneWaveSurvival(data) {
             _initWeather(this);
 
             let _wave = 1, _hp = liveConfig.lives || 3, _score = 0;
-            let _enemies = [], _bullets = [], _waveClear = false;
+            let _enemies = [], _bullets = [], _drops = [], _waveClear = false;
             let _betweenWaves = false;
+            let _shieldActive = false, _rapidActive = false, _shieldTimer = null, _rapidTimer = null;
             const SPD = liveConfig.speed || 200;
 
             // Player
@@ -7280,42 +7452,88 @@ function sceneWaveSurvival(data) {
             actor.body.setCollideWorldBounds(true);
             actor.body.setSize(28, 28);
 
+            // Shield ring gfx
+            const _shieldGfx = this.add.graphics().setDepth(6);
+
             // HUD
-            const waveTxt  = this.add.text(GW/2, 12, 'Wave 1', { fontSize:'16px', fill:'#a78bfa', fontFamily:'Fredoka One' }).setOrigin(0.5);
-            const hpTxt    = this.add.text(10, 12, '', { fontSize:'14px', fill:'#ef4444', fontFamily:'Inter' });
-            const scoreTxt = this.add.text(GW - 10, 12, '', { fontSize:'14px', fill:'#4ade80', fontFamily:'Inter' }).setOrigin(1, 0);
+            const waveTxt  = this.add.text(GW/2, 12, 'Wave 1', { fontSize:'16px', fill:'#a78bfa', fontFamily:"'Fredoka One',sans-serif" }).setOrigin(0.5).setDepth(10);
+            const hpTxt    = this.add.text(10, 12, '', { fontSize:'14px', fill:'#ef4444', fontFamily:'Inter' }).setDepth(10);
+            const scoreTxt = this.add.text(GW - 10, 12, '', { fontSize:'14px', fill:'#4ade80', fontFamily:'Inter' }).setOrigin(1, 0).setDepth(10);
+            const buffTxt  = this.add.text(GW/2, 30, '', { fontSize:'11px', fill:'#60a5fa', fontFamily:'Inter' }).setOrigin(0.5).setDepth(10);
 
             const spawnWave = (w) => {
                 _enemies = []; _waveClear = false;
-                const count = Math.min(4 + w * (liveConfig.waveScaling || 2), 24);
-                for (let i = 0; i < count; i++) {
-                    const ex = 40 + (i % 10) * ((GW - 80) / Math.min(count, 10));
-                    const ey = 50 + Math.floor(i / 10) * 60;
-                    const e = this.add.text(ex, ey, td.enemyEmoji || '👾', {
-                        fontSize: '22px', fontFamily: 'serif'
+                const isBossWave = (w % 5 === 0);
+                waveTxt.setText(isBossWave ? `⚠️ BOSS WAVE ${w}!` : `Wave ${w}`);
+                waveTxt.setFill(isBossWave ? '#ef4444' : '#a78bfa');
+
+                if (isBossWave) {
+                    // Spawn a single large boss enemy in the middle
+                    const boss = this.add.text(GW/2, 60, '👹', {
+                        fontSize: '44px', fontFamily: 'serif'
                     }).setOrigin(0.5);
-                    this.physics.add.existing(e);
-                    e.body.setSize(22, 22);
-                    e._hp = 1 + Math.floor(w / 3);
-                    e._dx = (Math.random() > 0.5 ? 1 : -1) * (60 + w * 10);
-                    e._dy = 20 + w * 5;
-                    e._alive = true;
-                    _enemies.push(e);
+                    this.physics.add.existing(boss);
+                    boss.body.setSize(44, 44);
+                    boss._hp = 8 + w;
+                    boss._maxHp = boss._hp;
+                    boss._dx = (Math.random() > 0.5 ? 1 : -1) * (50 + w * 8);
+                    boss._dy = 12 + w * 3;
+                    boss._alive = true;
+                    boss._isBoss = true;
+                    _enemies.push(boss);
+                    // Boss HP bar
+                    boss._hpBg  = this.add.rectangle(GW/2, 90, 180, 10, 0x3b0000).setDepth(12);
+                    boss._hpFg  = this.add.rectangle(GW/2 - 89, 90, 180, 10, 0xef4444).setOrigin(0, 0.5).setDepth(13);
+                    boss._hpLbl = this.add.text(GW/2, 90, 'BOSS', { fontSize:'9px', fill:'#fff', fontFamily:'Inter' }).setOrigin(0.5).setDepth(14);
+                    showToast(`👹 BOSS WAVE ${w}! Defeat the boss!`);
+                    GameAudio.play('hit');
+                } else {
+                    const count = Math.min(4 + w * (liveConfig.waveScaling || 2), 24);
+                    for (let i = 0; i < count; i++) {
+                        const ex = 40 + (i % 10) * ((GW - 80) / Math.min(count, 10));
+                        const ey = 50 + Math.floor(i / 10) * 60;
+                        const isFast = w >= 3 && Math.random() < 0.25;
+                        const e = this.add.text(ex, ey, isFast ? (td.enemyEmoji2 || '💀') : (td.enemyEmoji || '👾'), {
+                            fontSize: isFast ? '16px' : '22px', fontFamily: 'serif'
+                        }).setOrigin(0.5);
+                        this.physics.add.existing(e);
+                        e.body.setSize(isFast ? 16 : 22, isFast ? 16 : 22);
+                        e._hp = 1 + Math.floor(w / 3);
+                        e._dx = (Math.random() > 0.5 ? 1 : -1) * (60 + w * 10) * (isFast ? 1.7 : 1);
+                        e._dy = (20 + w * 5) * (isFast ? 1.5 : 1);
+                        e._alive = true;
+                        _enemies.push(e);
+                    }
                 }
-                waveTxt.setText(`Wave ${w}`);
+            };
+
+            // Drop a powerup at a position
+            const _spawnDrop = (x, y) => {
+                const r = Math.random();
+                const type = r < 0.3 ? 'shield' : r < 0.55 ? 'rapid' : r < 0.75 ? 'life' : null;
+                if (!type) return;
+                const emoji = type === 'shield' ? '🛡' : type === 'rapid' ? '⚡' : '❤️';
+                const drop = this.add.text(x, y, emoji, { fontSize: '20px', fontFamily: 'serif' }).setOrigin(0.5).setDepth(8);
+                this.physics.add.existing(drop);
+                drop.body.setVelocityY(80);
+                drop.body.allowGravity = false;
+                drop.body.setSize(20, 20);
+                drop._type = type;
+                drop._alive = true;
+                _drops.push(drop);
             };
 
             spawnWave(1);
 
             // Shoot
             let _lastShot = 0;
-            const fireRate = liveConfig.fireRate || 400;
             this._wsShoot = () => {
                 const now = Date.now();
-                if (now - _lastShot < fireRate) return;
+                const fr = _rapidActive ? Math.floor((liveConfig.fireRate || 400) * 0.35) : (liveConfig.fireRate || 400);
+                if (now - _lastShot < fr) return;
                 _lastShot = now;
-                const b = this.add.text(actor.x, actor.y - 20, '•', {
-                    fontSize: '14px', fontFamily: 'serif', color: '#a78bfa'
+                const b = this.add.text(actor.x, actor.y - 20, _rapidActive ? '⚡' : '•', {
+                    fontSize: _rapidActive ? '12px' : '14px', fontFamily: 'serif', color: _rapidActive ? '#60a5fa' : '#a78bfa'
                 }).setOrigin(0.5);
                 this.physics.add.existing(b);
                 b.body.setVelocityY(-420);
@@ -7339,10 +7557,23 @@ function sceneWaveSurvival(data) {
             this._wsWaveTxt  = waveTxt;
             this._wsScoreTxt = scoreTxt;
             this._wsSpawnWave = spawnWave;
+            this._wsBuffTxt  = buffTxt;
+            this._wsShieldGfx= _shieldGfx;
+            this._wsDrops    = () => _drops;
+            this._wsSetDrops = (v) => { _drops = v; };
+            this._wsSpawnDrop= _spawnDrop;
+            this._wsShield       = () => _shieldActive;
+            this._wsRapid        = () => _rapidActive;
+            this._wsShieldTimer  = () => _shieldTimer;
+            this._wsRapidTimer   = () => _rapidTimer;
+            this._wsSetShield    = (v, timer) => { _shieldActive = v; if (timer !== undefined) _shieldTimer = timer; };
+            this._wsSetRapid     = (v, timer) => { _rapidActive  = v; if (timer !== undefined) _rapidTimer  = timer; };
             this._wsTd = td;
             this._wsSPD = SPD;
+            // Rapid fire modifies the shoot rate — wire it in
+            this._wsGetFireRate = () => _rapidActive ? Math.floor((liveConfig.fireRate || 400) * 0.35) : (liveConfig.fireRate || 400);
         }
-        update(_, delta) {
+        update(time, delta) {
             const st = this._wsState;
             if (!st || st.betweenWaves()) return;
 
@@ -7352,24 +7583,86 @@ function sceneWaveSurvival(data) {
             if (this._wsCursors.right.isDown || touchInput.right) actor.body.setVelocityX(this._wsSPD);
             if (Phaser.Input.Keyboard.JustDown(this._wsSpace) || touchInput.fire) this._wsShoot();
 
+            // Shield gfx
+            const shieldGfx = this._wsShieldGfx;
+            if (this._wsShield()) {
+                shieldGfx.clear();
+                shieldGfx.lineStyle(2, 0x60a5fa, 0.7 + Math.sin(time * 0.01) * 0.3);
+                shieldGfx.strokeCircle(actor.x, actor.y, 26);
+            } else { shieldGfx.clear(); }
+
+            // Buff label
+            const buffParts = [];
+            if (this._wsShield()) buffParts.push('🛡 Shield');
+            if (this._wsRapid())  buffParts.push('⚡ Rapid');
+            this._wsBuffTxt.setText(buffParts.join('  '));
+
             const _enemies = this._wsEnemies();
             _enemies.forEach(e => {
                 if (!e._alive || !e.active) return;
                 e.x += e._dx * delta / 1000;
                 e.y += e._dy * delta / 1000;
                 if (e.x < 20 || e.x > GW - 20) e._dx *= -1;
+                // Sync boss HP bar
+                if (e._isBoss && e._hpFg && e._hpFg.active) {
+                    e._hpBg.setPosition(GW/2, 90);
+                    e._hpFg.setPosition(GW/2 - 89, 90);
+                    e._hpFg.width = Math.round(180 * (e._hp / e._maxHp));
+                    e._hpLbl.setPosition(GW/2, 90);
+                    e._hpBg.setPosition(GW/2, e.y + 28);
+                    e._hpFg.setPosition(GW/2 - 89, e.y + 28);
+                    e._hpLbl.setPosition(GW/2, e.y + 28);
+                }
                 if (e.y > GH - 60) {
+                    if (e._isBoss) {
+                        if (e._hpBg && e._hpBg.active) e._hpBg.destroy();
+                        if (e._hpFg && e._hpFg.active) e._hpFg.destroy();
+                        if (e._hpLbl && e._hpLbl.active) e._hpLbl.destroy();
+                    }
                     e.destroy(); e._alive = false;
-                    st.setHp(st.hp() - 1);
+                    // Boss reaching the bottom = 3 HP damage
+                    const dmg = e._isBoss ? 3 : 1;
+                    st.setHp(Math.max(0, st.hp() - dmg));
                     GameAudio.play('hit');
                     this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
                     if (st.hp() <= 0) {
                         showToast(`💀 Survived ${st.wave() - 1} waves! Score: ${st.score()}`);
                         liveConfig._score = st.score();
-                        this.scene.stop(); return;
+                        showGameOver(st.score()); return;
                     }
                 }
             });
+
+            // Pickup drops (shield / rapid / life)
+            const _drops = this._wsDrops();
+            _drops.forEach(d => {
+                if (!d._alive || !d.active) return;
+                d.y += 80 * delta / 1000;
+                if (d.y > GH + 20) { d.destroy(); d._alive = false; return; }
+                const dx = Math.abs(d.x - actor.x), dy = Math.abs(d.y - actor.y);
+                if (dx < 24 && dy < 24) {
+                    d.destroy(); d._alive = false;
+                    if (d._type === 'shield') {
+                        const _st = this._wsShieldTimer();
+                        if (_st) _st.remove(false);
+                        showToast('🛡 Shield active for 5s!'); GameAudio.play('score');
+                        const t = this.time.delayedCall(5000, () => this._wsSetShield(false));
+                        this._wsSetShield(true, t);
+                    } else if (d._type === 'rapid') {
+                        const _rt = this._wsRapidTimer();
+                        if (_rt) _rt.remove(false);
+                        showToast('⚡ Rapid fire for 4s!'); GameAudio.play('score');
+                        const t = this.time.delayedCall(4000, () => this._wsSetRapid(false));
+                        this._wsSetRapid(true, t);
+                    } else if (d._type === 'life') {
+                        const maxHp = liveConfig.lives || 3;
+                        st.setHp(Math.min(maxHp + 2, st.hp() + 1));
+                        this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
+                        showToast('❤️ +1 Life!'); GameAudio.play('score');
+                    }
+                }
+            });
+            this._wsSetDrops(_drops.filter(d => d._alive && d.active));
 
             let _bullets = this._wsBullets();
             _bullets.forEach(b => {
@@ -7377,21 +7670,35 @@ function sceneWaveSurvival(data) {
                 if (b.y < -10) { b.destroy(); return; }
                 _enemies.forEach(e => {
                     if (!e._alive || !e.active) return;
+                    const hitR = e._isBoss ? 36 : 20;
                     const dx = Math.abs(b.x - e.x), dy = Math.abs(b.y - e.y);
-                    if (dx < 20 && dy < 20) {
+                    if (dx < hitR && dy < hitR) {
                         e._hp--;
                         b.destroy();
                         GameAudio.play('hit');
-                        _spawnParticles(this, e.x, e.y, { count: 6, style: 'burst' });
+                        _spawnParticles(this, e.x, e.y, { count: e._isBoss ? 10 : 6, style: 'burst' });
+                        // Update boss HP bar width
+                        if (e._isBoss && e._hpFg && e._hpFg.active) {
+                            e._hpFg.width = Math.round(180 * Math.max(0, e._hp / e._maxHp));
+                        }
                         if (e._hp <= 0) {
-                            _spawnPowerup(this, e.x, e.y);
+                            // Boss drops guaranteed powerup
+                            if (e._isBoss) {
+                                this._wsSpawnDrop(e.x, e.y);
+                                this._wsSpawnDrop(e.x + 30, e.y);
+                                if (e._hpBg && e._hpBg.active) e._hpBg.destroy();
+                                if (e._hpFg && e._hpFg.active) e._hpFg.destroy();
+                                if (e._hpLbl && e._hpLbl.active) e._hpLbl.destroy();
+                            } else if (Math.random() < 0.2) {
+                                this._wsSpawnDrop(e.x, e.y);
+                            }
                             _triggerHaptic('kill');
-                            const _wsPts = 10 * st.wave();
+                            const _wsPts = e._isBoss ? (100 * st.wave()) : (10 * st.wave());
                             const _wsEx = e.x, _wsEy = e.y;
                             e.destroy(); e._alive = false;
                             st.setScore(st.score() + _wsPts);
                             liveConfig._score = st.score();
-                            { const _pt=this.add.text(_wsEx,_wsEy-12,'+'+_wsPts,{fontSize:'13px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold',stroke:'#000',strokeThickness:2}).setOrigin(0.5).setDepth(22); this.tweens.add({targets:_pt,y:_wsEy-44,alpha:0,duration:750,onComplete:()=>{if(_pt.active)_pt.destroy();}}); }
+                            { const _pt=this.add.text(_wsEx,_wsEy-12,'+'+_wsPts,{fontSize:e._isBoss?'18px':'13px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold',stroke:'#000',strokeThickness:2}).setOrigin(0.5).setDepth(22); this.tweens.add({targets:_pt,y:_wsEy-44,alpha:0,duration:750,onComplete:()=>{if(_pt.active)_pt.destroy();}}); }
                         }
                     }
                 });
@@ -7401,11 +7708,21 @@ function sceneWaveSurvival(data) {
             const alive = _enemies.filter(e => e._alive && e.active);
             if (alive.length === 0 && !st.waveClear()) {
                 st.setWaveClear(true); st.setBetween(true);
-                st.setWave(st.wave() + 1);
-                st.setScore(st.score() + 50 * (st.wave() - 1));
+                const clearedWave = st.wave();
+                st.setWave(clearedWave + 1);
+                const bonus = 50 * clearedWave;
+                st.setScore(st.score() + bonus);
                 liveConfig._score = st.score();
                 GameAudio.play('score');
-                showToast(`✅ Wave ${st.wave() - 1} clear! Next wave in ${((liveConfig.wavePause||2000)/1000).toFixed(0)}s...`);
+                // Restore 1 HP every 3 waves as a reward
+                if (clearedWave % 3 === 0) {
+                    const maxHp = liveConfig.lives || 3;
+                    st.setHp(Math.min(maxHp + 2, st.hp() + 1));
+                    this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
+                    showToast(`✅ Wave ${clearedWave} clear! +${bonus} pts  ❤️ HP restored!`);
+                } else {
+                    showToast(`✅ Wave ${clearedWave} clear! +${bonus} pts  Next wave in ${((liveConfig.wavePause||2000)/1000).toFixed(0)}s...`);
+                }
                 this.time.delayedCall(liveConfig.wavePause || 2000, () => {
                     st.setBetween(false);
                     this._wsBullets().forEach(b => b.active && b.destroy()); this._wsSetBullets([]);
@@ -9075,10 +9392,16 @@ function sceneDodge(data) {
             this._initPowerUps();
         }
         update(time) {
-            const {left,right} = this.cursors;
-            if (left.isDown||touchInput.left)       this.actor.setVelocityX(-liveConfig.speed);
-            else if (right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
+            const {left,right,up,down} = this.cursors;
+            const spd = liveConfig.speed;
+            // Full 8-way movement — up/down/left/right + diagonals
+            if (left.isDown||touchInput.left)       this.actor.setVelocityX(-spd);
+            else if (right.isDown||touchInput.right) this.actor.setVelocityX(spd);
             else                                     this.actor.setVelocityX(0);
+            if (up.isDown||touchInput.up)            this.actor.setVelocityY(-spd);
+            else if (down.isDown||touchInput.down)   this.actor.setVelocityY(spd);
+            else                                     this.actor.setVelocityY(0);
+            this.actor.y = Phaser.Math.Clamp(this.actor.y, 20, GH - 20);
             if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             [...this.hazards.getChildren(),...this.stars.getChildren(),...this._dodgeItems.getChildren()].forEach(o=>{ if(o.y>GH+20) o.destroy(); });
             // Shield gfx
@@ -9101,6 +9424,13 @@ function sceneBreaker(data) {
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
+            // Best score display
+            const _brBest = liveConfig._breakerBest || 0;
+            this._bestText = this.add.text(10, 28, _brBest > 0 ? `Best: ${_brBest}` : '',
+                { fontSize:'10px', fill:'rgba(167,139,250,.5)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(0,0).setDepth(10);
+            // Wave counter
+            this._waveTxt = this.add.text(GW/2, 28, 'Wave 1',
+                { fontSize:'11px', fill:'rgba(167,139,250,.45)', fontFamily:"'Fredoka',sans-serif" }).setOrigin(0.5,0).setDepth(10);
             // Paddle
             const pw = liveConfig.paddleW || 90;
             this.paddle = this.physics.add.image(GW/2, GH-20, 'block').setDisplaySize(pw, 14);
@@ -9142,12 +9472,22 @@ function sceneBreaker(data) {
                     brick.destroy();
                     const bPts = (liveConfig.pointsPerKill||10) * (brick.getData('maxHp')||1);
                     this.score += bPts;
+                    liveConfig._score = this.score;
+                    if (this.score > (liveConfig._breakerBest || 0)) {
+                        liveConfig._breakerBest = this.score;
+                        if (this._bestText) this._bestText.setText('Best: '+this.score);
+                    }
                     if (typeof this._popText === 'function') this._popText(brick.x, brick.y - 10, '+' + bPts, '#fbbf24');
                     this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
                     if (this.bricks.countActive()===0) {
                         this.wave++;
                         this._buildBricks(); this.score += 50*this.wave;
                         this.scoreText.setText('Score: '+this.score);
+                        if (this._waveTxt) this._waveTxt.setText('Wave '+this.wave);
+                        if (this.score > (liveConfig._breakerBest || 0)) {
+                            liveConfig._breakerBest = this.score;
+                            if (this._bestText) this._bestText.setText('Best: '+this.score);
+                        }
                         const wt=this.add.text(GW/2,GH/2,`WAVE ${this.wave}! 🧱`,{fontSize:'28px',fill:themeHex(3,'#ffd700'),fontFamily:"'Fredoka',sans-serif",fontStyle:'bold',stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(20).setAlpha(0);
                         this.tweens.add({targets:wt,alpha:1,duration:200,onComplete:()=>{ this.tweens.add({targets:wt,alpha:0,duration:500,delay:900,onComplete:()=>{ if(wt.active)wt.destroy(); }}); }});
                         GameAudio.play('score');
@@ -9427,6 +9767,10 @@ function sceneFlappy(data) {
             this._flCoins = this.physics.add.group();
             this._streak = 0; this._bestStreak = 0;
             this._streakText = this.add.text(GW-8,28,'',{fontSize:'10px',fill:themeHex(3,'#ffd700'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(1,0).setDepth(10);
+            // Best score display (persistent via liveConfig._flappyBest)
+            const _flBest = liveConfig._flappyBest || 0;
+            this._bestText = this.add.text(10, 28, _flBest > 0 ? `Best: ${_flBest}` : '',
+                { fontSize:'10px', fill:'rgba(251,191,36,.6)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(0,0).setDepth(10);
             this.pipeTimer = this.time.addEvent({delay:Math.max(900,liveConfig.spawnDelay+400),loop:true,callback:this._spawnPipe,callbackScope:this});
             // Delay the first pipe so player has time to get ready
             this.pipeTimer.paused = true;
@@ -9480,6 +9824,11 @@ function sceneFlappy(data) {
                     this._burst(this.actor.x, this.actor.y, 0xffd700);
                     this._streak++; if(this._streak>this._bestStreak) this._bestStreak=this._streak;
                     this.score++; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
+                    // Update best score
+                    if (this.score > (liveConfig._flappyBest || 0)) {
+                        liveConfig._flappyBest = this.score;
+                        if (this._bestText) this._bestText.setText('Best: '+this.score).setFill('#fbbf24');
+                    }
                     if (typeof this._popText === 'function') this._popText(this.actor.x, this.actor.y - 14, '+1', '#fbbf24');
                     if(this._streak>0&&this._streak%5===0) showToast(`🔥 ${this._streak} streak!`);
                     if(this._streakText) this._streakText.setText(this._streak>1?`🔥×${this._streak}`:'');
@@ -9933,6 +10282,13 @@ function sceneSnake(data) {
             this._snake = Array.from({length:startLen}, (_,i)=>({x:12-i, y:10}));
             this._food={x:16,y:10}; this._foodType='normal'; this._bonusFood=null; this._skipNextStep=false;
             this._gfx=this.add.graphics().setDepth(1);
+            // Best score display
+            const _snBest = liveConfig._snakeBest || 0;
+            this._bestTxt = this.add.text(GW - 10, 28, _snBest > 0 ? `Best: ${_snBest}` : '',
+                { fontSize:'10px', fill:'rgba(251,191,36,.55)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(1,0).setDepth(10);
+            // Length display
+            this._lenTxt = this.add.text(10, 28, `Length: ${startLen}`,
+                { fontSize:'10px', fill:'rgba(167,139,250,.55)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(0,0).setDepth(10);
             this._spawnFood();
             const delay = Math.max(40, liveConfig.snakeSpeed||160);
             this._moveTimer=this.time.addEvent({delay,loop:true,callback:this._step,callbackScope:this});
@@ -9994,6 +10350,12 @@ function sceneSnake(data) {
                     const mult=type==='golden'?3:1;
                     const pts=(liveConfig.pointsPerKill||10)*mult;
                     this.score+=pts;
+                    liveConfig._score = this.score;
+                    if (this.score > (liveConfig._snakeBest || 0)) {
+                        liveConfig._snakeBest = this.score;
+                        if (this._bestTxt) this._bestTxt.setText('Best: '+this.score);
+                    }
+                    if (this._lenTxt) this._lenTxt.setText('Length: '+this._snake.length);
                     const _sfx=this._food.x*this.C+this.C/2, _sfy=this._food.y*this.C+this.C/2;
                     if (typeof this._popText === 'function') this._popText(_sfx, _sfy - 10, '+' + pts, type==='golden'?'#fbbf24':'#4ade80');
                     this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
@@ -10818,6 +11180,10 @@ function sceneAsteroids(data) {
             this.bullets  = this.physics.add.group();
             this.rocks    = this.physics.add.group();
             this._drops   = this.physics.add.group();
+            // Best score display
+            const _astBest = liveConfig._asteroidsBest || 0;
+            this._bestText = this.add.text(10, 28, _astBest > 0 ? `Best: ${_astBest}` : '',
+                { fontSize:'10px', fill:'rgba(167,139,250,.5)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(0,0).setDepth(10);
             // Player ship (wraps screen edges)
             this.actor = this.physics.add.sprite(GW/2, GH/2, 'player');
             { const _s=Math.round(27*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
@@ -10927,6 +11293,11 @@ function sceneAsteroids(data) {
             this._burst(r.x, r.y, themeInt(1,0xa78bfa));
             const pts = r._pts * this._puScoreMul();
             this.score += pts;
+            liveConfig._score = this.score;
+            if (this.score > (liveConfig._asteroidsBest || 0)) {
+                liveConfig._asteroidsBest = this.score;
+                if (this._bestText) this._bestText.setText('Best: '+this.score);
+            }
             if (typeof this._popText === 'function') this._popText(r.x, r.y - 10, '+' + Math.round(pts), '#fbbf24');
             this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
             GameAudio.play('score');
@@ -15484,11 +15855,11 @@ function scenePuzzle(data) {
 
 // ── RHYTHM ────────────────────────────────────────────────────────────────────
 function sceneRhythm(data) {
-    const LANES   = 4;
-    const KEYS    = ['A','S','D','F'];   // actual keys — shown in-game
+    const LANES   = Math.min(4, Math.max(1, liveConfig.rhythmLanes || 4));
+    const KEYS    = ['A','S','D','F'].slice(0, LANES);   // actual keys — shown in-game
     const LANE_W  = 60, LANE_GAP = 8;
     const HIT_Y   = GH - 80;
-    const NOTE_SPD = 220; // px/s (slightly slower = more forgiving)
+    const NOTE_SPD = liveConfig.rhythmSpeed || 260; // px/s — respects Custom tab speed setting
     const BPM      = liveConfig.seqBpm || 120;
     const NOTE_INTERVAL = 60000 / BPM / 2; // 8th notes
     const PERFECT_WIN = 24, GOOD_WIN = 48; // wider windows for better feel
@@ -15544,19 +15915,16 @@ function sceneRhythm(data) {
             this.notes = this.add.group();
 
             // HUD
-            this.score = 0; this._combo = 0; this._miss = 0;
+            this.score = 0; this._combo = 0; this._miss = 0; this._gameOverPending = false;
             const hs = {fontSize:'14px',fill:'#fff',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3};
             this.scoreText = this.add.text(10,10,'Score: 0',hs).setDepth(10).setScrollFactor(0);
             this._comboText= this.add.text(GW/2,GH-45,'',{fontSize:'16px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:3}).setOrigin(0.5).setDepth(10).setScrollFactor(0);
             this._judgeTxt = this.add.text(GW/2,HIT_Y-44,'',{fontSize:'22px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:4}).setOrigin(0.5).setDepth(10).setScrollFactor(0).setAlpha(0);
 
             // Input keys: A S D F  or arrows
-            this._laneKeys = [
-                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-                this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
-            ];
+            const _KC = Phaser.Input.Keyboard.KeyCodes;
+            const _ALL_KEYS = [_KC.A, _KC.S, _KC.D, _KC.F];
+            this._laneKeys = _ALL_KEYS.slice(0, LANES).map(k => this.input.keyboard.addKey(k));
             this._flashRects = this._laneX.map((lx,l) => {
                 const r = this.add.rectangle(lx, GH/2, LANE_W-4, GH, LANE_COLS[l], 0).setDepth(2);
                 return r;
@@ -15638,9 +16006,10 @@ function sceneRhythm(data) {
                     }
                     this._patStep++;
                 } else {
-                    // Random: 1-2 notes per beat
-                    const numNotes = Math.random()<0.4?2:1;
-                    const lanes = Phaser.Math.Shuffle([0,1,2,3]).slice(0,numNotes);
+                    // Random: 1-2 notes per beat (only from active lanes)
+                    const numNotes = Math.random()<0.4?Math.min(2,LANES):1;
+                    const lanePool = Array.from({length:LANES},(_,i)=>i);
+                    const lanes = Phaser.Math.Shuffle(lanePool).slice(0,numNotes);
                     lanes.forEach(l=>this._spawnNote(l));
                 }
             }
@@ -15653,7 +16022,10 @@ function sceneRhythm(data) {
                     if (this._elapsed > GRACE_MS) {
                         this._miss++; this._combo=0;
                         this._comboText.setText('');
-                        if(this._miss >= 20) { this.time.delayedCall(200,()=>showGameOver(this.score)); }
+                        if(this._miss >= 20 && !this._gameOverPending) {
+                            this._gameOverPending = true;
+                            this.time.delayedCall(200,()=>showGameOver(this.score));
+                        }
                     }
                 }
             });
