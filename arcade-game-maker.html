@@ -8721,6 +8721,7 @@ function scenePlatformer(data) {
 
             this.physics.add.collider(this.actor, this.platforms);
             this.physics.add.collider(this.actor, this._movPlats);
+            this.physics.add.collider(this.actor, this._movPlats);
             // Stomp: landing on top of enemy kills it and bounces the player
             this.physics.add.collider(this.actor, this.hazards, (player, enemy) => {
                 // Spike tiles (from tilemap) can never be stomped — always damage the player
@@ -9592,6 +9593,36 @@ function sceneInvaders(data) {
                 if(hp<=0){ bk.destroy(); } else { bk.setData('hp',hp); bk.setAlpha(0.28+hp*0.24); bk.refreshBody(); }
             });
             this._initPowerUps();
+        }
+        _spawnInvaderBoss() {
+            showToast('⚡ BOSS WAVE! Defeat the giant alien!');
+            GameAudio.play('levelUp');
+            const bossHp = Math.min(12, 3 + Math.floor(this._wave / 5) * 2);
+            const bx = GW / 2, by = 52;
+            const boss = this.enemies.create(bx, by, 'enemy').setDisplaySize(54, 50);
+            boss.body.setSize(50, 46, true);
+            boss.setTint(0xff2222);
+            boss.body.allowGravity = false;
+            boss.setData('hp', bossHp);
+            boss.setData('maxHp', bossHp);
+            boss.setData('isBoss', true);
+            // Strafe side-to-side
+            this.tweens.add({ targets: boss, x: GW - 80, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            // HP bar (fixed to camera)
+            const hpBg = this.add.rectangle(GW/2, 22, 164, 10, 0x333333, 0.85).setScrollFactor(0).setDepth(20);
+            const hpFg = this.add.rectangle(GW/2 - 82, 22, 160, 8, 0xff2222).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+            const hpTxt = this.add.text(GW/2, 32, 'BOSS HP: '+bossHp+'/'+bossHp, { fontSize:'9px', fill:'#fff', stroke:'#000', strokeThickness:2 }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(22);
+            boss.setData('hpBg', hpBg);
+            boss.setData('hpFg', hpFg);
+            boss.setData('hpTxt', hpTxt);
+            // Boss shoots a 3-spread burst every 1.8s
+            this.time.addEvent({ delay: 1800, loop: true, callback: () => {
+                if (!boss.active) return;
+                [-28, 0, 28].forEach(ox => {
+                    const eb = this.eBullets.create(boss.x + ox, boss.y + 28, 'laser').setDisplaySize(8,14).setTint(0xff4444);
+                    eb.body.allowGravity = false; eb.setVelocityY(220);
+                });
+            }});
         }
         _spawnInvaderBoss() {
             showToast('⚡ BOSS WAVE! Defeat the giant alien!');
@@ -15066,10 +15097,6 @@ function sceneBeatEmUp(data) {
             GameAudio.play('hit');
             if(liveConfig.screenShake) this.cameras.main.shake(80,0.008);
             _shake(5, 80); _chromaFlash(0.4);
-            // Knockback — push enemy away from player on hit
-            const _kbDir = e.x >= this.actor.x ? 1 : -1;
-            e.setVelocityX(_kbDir * 280);
-            this.time.delayedCall(160, () => { if (e.active) e.setVelocityX(0); });
             // Knockback — push enemy away from player on hit
             const _kbDir = e.x >= this.actor.x ? 1 : -1;
             e.setVelocityX(_kbDir * 280);
