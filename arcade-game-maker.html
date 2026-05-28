@@ -12646,14 +12646,15 @@ function _syncCustomTabUI(cfg) {
     if (diffRange && cfg.difficultyScale!==undefined) {
         diffRange.value = cfg.difficultyScale;
         const labels=['Off','Gentle','Normal','Fast','Intense','Extreme','CHAOS'];
-        diffRange.nextElementSibling.textContent = labels[cfg.difficultyScale*2]||cfg.difficultyScale;
+        const _dn = diffRange.nextElementSibling;
+        if (_dn) _dn.textContent = labels[cfg.difficultyScale*2]||cfg.difficultyScale;
     }
     // Lives pills
     const livesMap = {1:'1 Life',3:'3 Lives',5:'5 Lives',99:'∞'};
     document.querySelectorAll('#pillLives .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(livesMap[cfg.lives]||'3 Lives')));
     // Player scale
     const scaleRange = document.querySelector('#tab-custom input[min="0.4"]');
-    if (scaleRange) { scaleRange.value=cfg.playerScale||1.0; scaleRange.nextElementSibling.textContent=Math.round((cfg.playerScale||1)*100)+'%'; }
+    if (scaleRange) { scaleRange.value=cfg.playerScale||1.0; const _sn=scaleRange.nextElementSibling; if(_sn) _sn.textContent=Math.round((cfg.playerScale||1)*100)+'%'; }
     // BG style pills
     const bgMap = {dark:'Dark',stars:'Stars',grid:'Grid',neon:'Neon'};
     document.querySelectorAll('#pillBg .pill').forEach(p=>p.classList.toggle('active', p.textContent.trim()===(bgMap[cfg.bgStyle]||'Dark')));
@@ -12898,12 +12899,12 @@ function _applyLoadData(d) {
         document.getElementById('levelStatus').textContent='Using built-in default level';
         document.getElementById('levelStatus').className='asset-status none';
     }
-    // Sprites
-    if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite', d.spriteFrameCount||1, d.spriteFrameW||0);
-    if(d.enemySprite) _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite');
-    if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite');
-    if(d.blockSprite) _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite');
-    if(d.bgImage) _applyBgDataUrl(d.bgImage,'Saved background');
+    // Sprites — each wrapped so a corrupt data-URL can't abort the rest
+    try { if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite', d.spriteFrameCount||1, d.spriteFrameW||0); } catch(e) {}
+    try { if(d.enemySprite)  _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite'); }  catch(e) {}
+    try { if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite'); } catch(e) {}
+    try { if(d.blockSprite)  _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite'); } catch(e) {}
+    try { if(d.bgImage)      _applyBgDataUrl(d.bgImage,'Saved background'); }           catch(e) {}
     // Full liveConfig restore
     if(d.liveConfig) {
         Object.assign(liveConfig, d.liveConfig);
@@ -12912,12 +12913,12 @@ function _applyLoadData(d) {
         // Reset runtime state so game starts fresh (saves store config, not progress)
         liveConfig._score = 0; liveConfig._wave = 0; liveConfig._combo = 0;
         liveConfig._timer = 0; liveConfig._currentLevel = 0;
-        _syncCustomTabUI(d.liveConfig);
+        try { _syncCustomTabUI(d.liveConfig); } catch(e) {} // non-critical UI sync — never abort the load
     }
     // Theme
-    if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme);
+    try { if(d.theme && d.theme.cols && d.theme.cols.length) applyPalette(d.theme); } catch(e) {}
     // Story
-    if(d.story) applyStory(d.story);
+    try { if(d.story) applyStory(d.story); } catch(e) {}
     // SFX dropdowns
     if(d.sounds) {
         Object.assign(GameAudio.sounds, d.sounds);
@@ -12940,8 +12941,9 @@ function _applyLoadData(d) {
     // Restore user script
     if(d.userCode !== undefined) {
         const ed = document.getElementById('customCodeEditor'); if(ed) ed.value = d.userCode || '';
-        _compileUserCode(d.userCode || '');
+        try { _compileUserCode(d.userCode || ''); } catch(e) {}
     }
+    // These MUST always run — they boot the game engine
     onGenreChange(); compileAndBootEngine();
     showToast(`"${d.title}" loaded! ✓`, 'success');
 }
