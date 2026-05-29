@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoom Zoom! Build a Racing Game in Godot | JVDesignStudio</title>
+<meta name="description" content="Build your very own top-down racing game in Godot! A parent & child workshop — no experience needed. Start from zero, drive your car in 8 fun steps!">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0b10;
+  --bg2:#0f1018;
+  --bg3:#14161f;
+  --card:#1a1d2a;
+  --border:rgba(255,255,255,.08);
+  --text:#e8eaf2;
+  --muted:rgba(232,234,242,.4);
+  --accent:#ff6b35;
+  --accent2:#ffd166;
+  --green:#06d6a0;
+  --teal:#4dd9e0;
+  --pink:#ff70b8;
+  --purple:#a78bfa;
+  --blue:#60a5fa;
+  --red:#f87171;
+  --asphalt:#2a2d3a;
+  --road:#1e2030;
+  --stripe:#ffd166;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
+
+/* ── NAV ── */
+.nav{position:sticky;top:0;z-index:100;background:rgba(10,11,16,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.nav-logo{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent2);letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+.nav-logo span{font-size:1.3rem}
+.nav-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.nav-link{color:var(--muted);font-size:.8rem;font-weight:700;text-decoration:none;padding:5px 10px;border-radius:6px;transition:all .18s}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-link.active{color:var(--accent2)}
+
+/* ── HERO ── */
+.hero{position:relative;overflow:hidden;padding:40px 20px 36px;border-bottom:1px solid var(--border)}
+.hero-track{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.road-bg{position:absolute;bottom:0;left:0;right:0;height:140px;background:var(--road);opacity:.6}
+.lane-line{position:absolute;bottom:20px;height:6px;width:50px;background:var(--stripe);border-radius:3px;animation:zoom-in 2s linear infinite}
+@keyframes zoom-in{0%{transform:scaleX(.1) translateX(1200px);opacity:0}60%{opacity:1}100%{transform:scaleX(2) translateX(-400px);opacity:0}}
+.ll1{bottom:30px;animation-delay:0s}
+.ll2{bottom:30px;animation-delay:.5s}
+.ll3{bottom:30px;animation-delay:1s}
+.ll4{bottom:30px;animation-delay:1.5s}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.3);color:var(--accent);font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:12px}
+h1{font-family:'Fredoka One',cursive;font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;color:#fff;margin-bottom:10px}
+h1 em{color:var(--accent);font-style:normal}
+h1 strong{color:var(--accent2);font-style:normal}
+.hero-sub{font-size:1rem;color:var(--muted);max-width:540px;line-height:1.6;margin-bottom:20px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:12px;border:1px solid}
+.pill.p-age{color:var(--pink);border-color:rgba(255,112,184,.3);background:rgba(255,112,184,.08)}
+.pill.p-time{color:var(--teal);border-color:rgba(77,217,224,.3);background:rgba(77,217,224,.08)}
+.pill.p-tool{color:var(--green);border-color:rgba(6,214,160,.3);background:rgba(6,214,160,.08)}
+.pill.p-free{color:var(--accent2);border-color:rgba(255,209,102,.3);background:rgba(255,209,102,.08)}
+.hero-btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn-start{background:linear-gradient(135deg,var(--accent),#e05020);color:#fff;font-family:'Fredoka One',cursive;font-size:1.05rem;letter-spacing:.04em;padding:12px 28px;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 0 #a03010;transition:transform .12s,filter .15s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn-start:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.btn-start:active{transform:translateY(2px);box-shadow:0 2px 0 #a03010}
+.btn-outline{background:transparent;color:var(--text);font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;padding:12px 22px;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all .15s;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.btn-outline:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.05)}
+
+/* ── CAR PREVIEW SVG ── */
+.hero-car-wrap{flex-shrink:0}
+.hero-car-wrap svg{filter:drop-shadow(0 8px 32px rgba(255,107,53,.4))}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap{max-width:1100px;margin:0 auto;padding:20px 20px 0}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.progress-label{font-size:.8rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.progress-count{font-size:.8rem;font-weight:800;color:var(--accent2)}
+.progress-track{height:8px;background:var(--asphalt);border-radius:4px;overflow:hidden;position:relative}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .5s ease;width:0%}
+.step-dots{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.step-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--asphalt);font-size:.7rem;font-weight:900;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-family:'Fredoka One',cursive}
+.step-dot.done{background:var(--green);border-color:var(--green);color:#000}
+.step-dot.active{border-color:var(--accent2);color:var(--accent2);background:rgba(255,209,102,.1)}
+
+/* ── STEP LAYOUT ── */
+.workshop{max-width:1100px;margin:0 auto;padding:20px}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:20px;margin-bottom:18px;overflow:hidden;transition:border-color .2s}
+.step-card.active-step{border-color:rgba(255,209,102,.4);box-shadow:0 0 32px rgba(255,209,102,.06)}
+.step-card.completed{border-color:rgba(6,214,160,.25)}
+.step-card.locked{opacity:.45;pointer-events:none}
+.step-header{padding:20px 24px 16px;display:flex;align-items:flex-start;gap:16px;cursor:pointer;user-select:none}
+.step-num{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:1.3rem;flex-shrink:0;transition:all .2s}
+.step-num.sn-orange{background:rgba(255,107,53,.18);color:var(--accent);border:2px solid rgba(255,107,53,.3)}
+.step-num.sn-yellow{background:rgba(255,209,102,.15);color:var(--accent2);border:2px solid rgba(255,209,102,.25)}
+.step-num.sn-green{background:rgba(6,214,160,.15);color:var(--green);border:2px solid rgba(6,214,160,.25)}
+.step-num.sn-teal{background:rgba(77,217,224,.15);color:var(--teal);border:2px solid rgba(77,217,224,.25)}
+.step-num.sn-pink{background:rgba(255,112,184,.15);color:var(--pink);border:2px solid rgba(255,112,184,.25)}
+.step-num.sn-purple{background:rgba(167,139,250,.15);color:var(--purple);border:2px solid rgba(167,139,250,.25)}
+.step-num.sn-blue{background:rgba(96,165,250,.15);color:var(--blue);border:2px solid rgba(96,165,250,.25)}
+.step-num.sn-done{background:rgba(6,214,160,.25);color:var(--green);border:2px solid var(--green)}
+.step-title-wrap{flex:1}
+.step-emoji{font-size:1.4rem;margin-bottom:2px}
+.step-title{font-family:'Fredoka One',cursive;font-size:1.25rem;color:#fff;line-height:1.2}
+.step-blurb{font-size:.82rem;color:var(--muted);margin-top:3px;line-height:1.5}
+.step-status{font-size:.75rem;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0;align-self:flex-start;margin-top:4px}
+.ss-todo{background:rgba(255,255,255,.06);color:var(--muted)}
+.ss-active{background:rgba(255,209,102,.15);color:var(--accent2)}
+.ss-done{background:rgba(6,214,160,.15);color:var(--green)}
+
+.step-body{padding:0 24px 24px;display:none}
+.step-card.open .step-body{display:block}
+
+/* ── CONTENT ELEMENTS ── */
+.big-goal{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.2);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start}
+.big-goal-icon{font-size:1.8rem;flex-shrink:0;line-height:1}
+.big-goal-text strong{font-size:.9rem;color:var(--accent2);display:block;margin-bottom:3px}
+.big-goal-text p{font-size:.88rem;color:var(--muted);line-height:1.6}
+
+.callout{border-radius:12px;padding:14px 16px;margin:14px 0;display:flex;gap:10px;align-items:flex-start;font-size:.87rem;line-height:1.6}
+.callout-icon{font-size:1.1rem;flex-shrink:0;line-height:1.4}
+.callout.tip{background:rgba(6,214,160,.07);border:1px solid rgba(6,214,160,.25);color:#b2f0e0}
+.callout.info{background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.25);color:#bdd8ff}
+.callout.warn{background:rgba(255,209,102,.07);border:1px solid rgba(255,209,102,.25);color:#ffe5a0}
+.callout.parent{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.3);color:#d8cfff}
+.callout.fun{background:rgba(255,112,184,.07);border:1px solid rgba(255,112,184,.25);color:#ffd6ef}
+
+h3{font-family:'Fredoka One',cursive;font-size:1.05rem;color:#fff;margin:18px 0 8px}
+h3:first-child{margin-top:0}
+
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.steps-list li{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;line-height:1.6;color:var(--text)}
+.steps-list li .num-badge{width:24px;height:24px;border-radius:50%;background:var(--asphalt);border:2px solid var(--border);font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;font-family:'Fredoka One',cursive;color:var(--accent2)}
+
+/* ── CODE BLOCKS ── */
+.code-wrap{background:#0c0e16;border:1px solid rgba(255,255,255,.1);border-radius:12px;margin:12px 0;overflow:hidden}
+.code-label{background:var(--asphalt);padding:6px 14px;font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.code-label .dot{width:8px;height:8px;border-radius:50%}
+.dot-r{background:#f87171}.dot-y{background:#ffd166}.dot-g{background:#06d6a0}
+.code-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;overflow-x:auto;white-space:pre;color:#c9d1e0}
+.kw{color:#a78bfa}
+.fn{color:#60a5fa}
+.str{color:#ffd166}
+.num{color:#f87171}
+.cmt{color:#4a5568;font-style:italic}
+.var{color:#06d6a0}
+.prop{color:#f08050}
+
+/* ── INTERACTIVE BITS ── */
+.try-it{background:rgba(255,107,53,.06);border:2px dashed rgba(255,107,53,.3);border-radius:14px;padding:16px 18px;margin:16px 0}
+.try-it-header{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.try-it p{font-size:.86rem;color:var(--muted);line-height:1.6}
+
+.check-task{display:flex;align-items:center;gap:10px;font-size:.87rem;color:var(--muted);padding:8px 0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:color .15s;user-select:none}
+.check-task:last-child{border-bottom:none}
+.check-task:hover{color:var(--text)}
+.check-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);background:var(--asphalt);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;font-size:.75rem}
+.check-task.checked .check-box{background:var(--green);border-color:var(--green);color:#000}
+.check-task.checked{color:#fff}
+
+.scene-diagram{background:#0d0f18;border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.8;color:#7089b0}
+.scene-diagram .node{color:#e8eaf2}
+.scene-diagram .child{padding-left:20px;border-left:2px solid rgba(255,255,255,.07);margin-left:10px}
+.scene-diagram .icon{color:var(--accent2);margin-right:6px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+
+.mini-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px}
+.mini-card h4{font-family:'Fredoka One',cursive;font-size:.9rem;color:var(--accent2);margin-bottom:6px}
+.mini-card p{font-size:.82rem;color:var(--muted);line-height:1.5}
+
+/* ── CAR COLOUR PICKER ── */
+.colour-picker{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.colour-swatch{width:36px;height:36px;border-radius:10px;border:3px solid transparent;cursor:pointer;transition:all .18s;position:relative}
+.colour-swatch.selected{border-color:#fff;transform:scale(1.15)}
+.colour-swatch::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:rgba(0,0,0,.8);opacity:0;font-weight:900}
+.colour-swatch.selected::after{opacity:1}
+
+/* ── MINI RACING PREVIEW ── */
+.race-preview{background:#131520;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:16px 0}
+.race-canvas-wrap{position:relative;height:180px;overflow:hidden;background:radial-gradient(ellipse at center,#1a1e2e 0%,#0d0f18 100%)}
+canvas#raceDemo{position:absolute;inset:0;width:100%;height:100%}
+.race-controls{padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border)}
+.race-btn{font-family:'Fredoka One',cursive;font-size:.8rem;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;transition:all .15s}
+.race-btn.rb-green{background:var(--green);color:#000}
+.race-btn.rb-red{background:var(--red);color:#fff}
+.race-btn.rb-yellow{background:var(--accent2);color:#000}
+.race-btn.rb-muted{background:var(--asphalt);color:var(--muted);border:1px solid var(--border)}
+.race-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.race-label{font-size:.78rem;color:var(--muted);align-self:center;margin-left:auto}
+
+/* ── COMPLETE BUTTON ── */
+.step-complete-btn{width:100%;margin-top:20px;background:linear-gradient(135deg,var(--green),#04a07a);color:#000;font-family:'Fredoka One',cursive;font-size:1rem;letter-spacing:.04em;padding:13px;border-radius:12px;border:none;cursor:pointer;transition:filter .15s,transform .12s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 3px 0 #027a5a}
+.step-complete-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.step-complete-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #027a5a}
+.step-complete-btn:disabled{opacity:.45;pointer-events:none}
+
+/* ── FINISH BANNER ── */
+.finish-banner{display:none;background:linear-gradient(135deg,rgba(255,209,102,.12),rgba(255,107,53,.08));border:1px solid rgba(255,209,102,.3);border-radius:20px;padding:32px;text-align:center;margin:20px 0}
+.finish-banner.show{display:block}
+.finish-title{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--accent2);margin-bottom:8px}
+.finish-sub{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:500px;margin:0 auto 20px}
+.confetti-row{font-size:1.8rem;letter-spacing:.2em;margin-bottom:16px}
+
+/* ── FOOTER ── */
+.footer{border-top:1px solid var(--border);padding:24px 20px;text-align:center;margin-top:20px}
+.footer p{font-size:.78rem;color:var(--muted)}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+
+/* ── TOOLTIP ── */
+.tooltip{position:relative;display:inline-block;border-bottom:1px dashed rgba(255,209,102,.5);color:var(--accent2);cursor:help;font-weight:700}
+.tooltip .tt{visibility:hidden;opacity:0;background:#1a1d2a;border:1px solid var(--border);color:var(--text);font-size:.78rem;padding:8px 12px;border-radius:8px;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);white-space:nowrap;transition:opacity .18s;z-index:99;font-weight:400;pointer-events:none;max-width:220px;white-space:normal;text-align:center;line-height:1.4}
+.tooltip:hover .tt{visibility:visible;opacity:1}
+
+@media(max-width:700px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-car-wrap{display:none}
+  h1{font-size:1.8rem}
+  .step-header{padding:14px 16px 12px}
+  .step-body{padding:0 16px 18px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo"><span>🏎️</span> JVDesignStudio</div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">Home</a>
+    <a href="#" class="nav-link">All Projects</a>
+    <a href="#" class="nav-link">📱 Mobile</a>
+    <a href="#" class="nav-link active">🔧 Workshop</a>
+    <a href="#" class="nav-link">🔍 Search</a>
+    <a href="#" class="nav-link">🎁 Free Downloads</a>
+    <a href="#" class="nav-link">Dev Log</a>
+    <a href="#" class="nav-link">🎬 Videos</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-track">
+    <div class="road-bg"></div>
+    <div class="lane-line ll1"></div>
+    <div class="lane-line ll2"></div>
+    <div class="lane-line ll3"></div>
+    <div class="lane-line ll4"></div>
+  </div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">🔧 Godot Workshop · Parent &amp; Child</div>
+      <h1>Zoom Zoom! 🏁<br><em>Build a</em> <strong>Racing Game</strong></h1>
+      <p class="hero-sub">Make your very own top-down racing game together — from a blank screen to a working car you can drive! No coding experience needed. Every step is explained simply. 🚀</p>
+      <div class="hero-pills">
+        <span class="pill p-age">👶 Age 5+ with a grown-up</span>
+        <span class="pill p-time">⏱️ About 1 hour</span>
+        <span class="pill p-tool">🎮 Godot 4 (free!)</span>
+        <span class="pill p-free">✨ 8 fun steps</span>
+      </div>
+      <div class="hero-btns">
+        <a href="#step-1" class="btn-start">🟢 Let's Go!</a>
+        <a href="#what-is-godot" class="btn-outline">🤔 What is Godot?</a>
+      </div>
+    </div>
+    <div class="hero-car-wrap">
+      <!-- Cute top-down car SVG -->
+      <svg width="140" height="200" viewBox="0 0 140 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shadow -->
+        <ellipse cx="70" cy="185" rx="44" ry="10" fill="rgba(0,0,0,.4)"/>
+        <!-- Body -->
+        <rect x="20" y="60" width="100" height="120" rx="22" fill="#ff6b35"/>
+        <!-- Windscreen -->
+        <rect x="32" y="70" width="76" height="42" rx="10" fill="#1a2a4a" opacity=".9"/>
+        <!-- Rear window -->
+        <rect x="38" y="138" width="64" height="26" rx="8" fill="#1a2a4a" opacity=".7"/>
+        <!-- Hood -->
+        <rect x="28" y="52" width="84" height="18" rx="10" fill="#e05020"/>
+        <!-- Stripe -->
+        <rect x="62" y="60" width="16" height="120" rx="6" fill="#ffd166" opacity=".5"/>
+        <!-- Wheels FL -->
+        <rect x="8" y="70" width="22" height="36" rx="7" fill="#111"/>
+        <rect x="11" y="76" width="16" height="24" rx="4" fill="#333"/>
+        <!-- Wheels FR -->
+        <rect x="110" y="70" width="22" height="36" rx="7" fill="#111"/>
+        <rect x="113" y="76" width="16" height="24" rx="4" fill="#333"/>
+        <!-- Wheels RL -->
+        <rect x="8" y="134" width="22" height="36" rx="7" fill="#111"/>
+        <rect x="11" y="140" width="16" height="24" rx="4" fill="#333"/>
+        <!-- Wheels RR -->
+        <rect x="110" y="134" width="22" height="36" rx="7" fill="#111"/>
+        <rect x="113" y="140" width="16" height="24" rx="4" fill="#333"/>
+        <!-- Headlights -->
+        <rect x="30" y="54" width="22" height="10" rx="4" fill="#ffe97a" opacity=".9"/>
+        <rect x="88" y="54" width="22" height="10" rx="4" fill="#ffe97a" opacity=".9"/>
+        <!-- Number plate -->
+        <rect x="48" y="172" width="44" height="14" rx="4" fill="#eee"/>
+        <text x="70" y="183" text-anchor="middle" font-family="Fredoka One,cursive" font-size="9" fill="#333">JVDS</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">🏁 Workshop Progress</span>
+    <span class="progress-count" id="progressCount">0 / 8 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<!-- ════════════════════════════════════════
+     WHAT IS GODOT? (intro section)
+════════════════════════════════════════ -->
+<div class="workshop" id="what-is-godot" style="padding-top:10px;padding-bottom:0">
+  <div class="step-card open" style="border-color:rgba(77,217,224,.25)">
+    <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+      <div class="step-num sn-teal">🎮</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji"></div>
+        <div class="step-title">Before We Start — What is Godot?</div>
+        <div class="step-blurb">A quick hello for grown-ups and little coders alike!</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="two-col">
+        <div class="mini-card">
+          <h4>🧒 For the child</h4>
+          <p>Godot is like a magical toybox where you can build your own video games! We'll use it to make a racing car that you can actually drive. How cool is that?!</p>
+        </div>
+        <div class="mini-card">
+          <h4>👨‍👩‍👧 For the grown-up</h4>
+          <p>Godot 4 is a free, open-source game engine. This workshop uses GDScript (Python-like). Download from <strong>godotengine.org</strong> — it's about 40 MB and needs no installer.</p>
+        </div>
+      </div>
+      <div class="callout parent">
+        <span class="callout-icon">👨‍👩‍👧</span>
+        <div><strong>Grown-up note:</strong> Throughout this workshop, <strong style="color:#d8cfff">purple boxes like this one</strong> have tips just for you. The child can do most of the typing — just be there to read the instructions together and help when they get stuck!</div>
+      </div>
+      <div class="callout tip">
+        <span class="callout-icon">✅</span>
+        <div><strong>Make sure you have Godot 4 installed before you start!</strong> Go to <strong>godotengine.org</strong>, click Download, and grab the Standard version. It's free!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     STEPS
+════════════════════════════════════════ -->
+<div class="workshop" id="steps-area">
+
+<!-- ── STEP 1 ── -->
+<div class="step-card active-step open" id="step-1" data-step="1">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-orange" id="sn-1">1</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🆕</div>
+      <div class="step-title">Open Godot and Make a New Project</div>
+      <div class="step-blurb">Every game starts with a blank canvas — let's make one!</div>
+    </div>
+    <span class="step-status ss-active" id="ss-1">▶ Current</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a new Godot project called "My Racing Game" and open it up for the first time!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Hey, little coder!</strong> Imagine Godot is a big empty racing track. Right now there's nothing there — no cars, no road, nothing! We're going to build it all ourselves, step by step. You're going to be a game maker!</div>
+    </div>
+
+    <h3>What to do:</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Double-click the Godot icon to open it. You'll see the <strong>Project Manager</strong> — it's like a bookshelf of all your games.</li>
+      <li><span class="num-badge">2</span>Click the big button that says <strong>"New Project"</strong> (or "+ New").</li>
+      <li><span class="num-badge">3</span>In the <strong>Project Name</strong> box, type: <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:JetBrains Mono,monospace;color:var(--accent2)">My Racing Game</code></li>
+      <li><span class="num-badge">4</span>Click <strong>"Browse"</strong> and choose a folder to save it in. Your Desktop is perfect!</li>
+      <li><span class="num-badge">5</span>Make sure <strong>Renderer</strong> is set to <strong>Forward+ or Compatibility</strong> — either is fine for us.</li>
+      <li><span class="num-badge">6</span>Click the green <strong>"Create &amp; Edit"</strong> button. Godot will open!</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> The project folder must be empty — Godot will warn you if it isn't. Help the child choose a sensible location. The Compatibility renderer runs on more hardware if you're unsure.</div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>When Godot opens you'll see a big grey area in the middle (that's the <strong>Viewport</strong> — your game world!), a panel on the left (the <strong>Scene Tree</strong>), and lots of buttons at the top. Don't worry — we'll only use the bits we need!</div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Click around the Godot editor for 60 seconds. Can you find the <strong>FileSystem</strong> tab at the bottom? That's where your game files live!</p>
+    </div>
+
+    <div onclick="completeStep(1)" class="step-complete-btn" id="scb-1">✅ Done! I made my project! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 2 ── -->
+<div class="step-card locked" id="step-2" data-step="2">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-yellow" id="sn-2">2</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🗺️</div>
+      <div class="step-title">Make the Race Track</div>
+      <div class="step-blurb">Draw a road for your car to zoom around!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-2">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a new 2D scene, add a coloured background, and draw a simple race track using a TileMapLayer (or just a big colourful rectangle to start).</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Think of this step like drawing a race track on paper before you place any toy cars on it. We need a green field and a grey road!</div>
+    </div>
+
+    <h3>Create a new 2D Scene</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>At the top of the screen, click <strong>Scene → New Scene</strong>.</li>
+      <li><span class="num-badge">2</span>In the <strong>Scene</strong> panel on the left, click the <strong>"2D Scene"</strong> button. This adds a <span class="tooltip">Node2D<span class="tt">A Node2D is like a blank piece of paper — it holds everything in your 2D game world!</span></span> called "Node2D".</li>
+      <li><span class="num-badge">3</span>Right-click "Node2D" in the Scene panel and choose <strong>Rename</strong>. Call it <strong>Track</strong>.</li>
+    </ol>
+
+    <h3>Add a green background</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>With <strong>Track</strong> selected, click the <strong>"+" button</strong> (Add Child Node).</li>
+      <li><span class="num-badge">2</span>Search for <strong>ColorRect</strong> and double-click it to add it.</li>
+      <li><span class="num-badge">3</span>In the <strong>Inspector</strong> on the right, click <strong>Color</strong> and pick a nice green colour — that's our grass!</li>
+      <li><span class="num-badge">4</span>Set <strong>Size</strong> to <strong>x: 1152, y: 648</strong> (this fills the screen).</li>
+    </ol>
+
+    <h3>Add a grey road rectangle</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Add another <strong>ColorRect</strong> as a child of Track.</li>
+      <li><span class="num-badge">2</span>Make it dark grey (hex: <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">#444444</code>).</li>
+      <li><span class="num-badge">3</span>Set its size to <strong>x: 200, y: 648</strong> and position it in the centre: <strong>x: 476, y: 0</strong>. That's our first straight road!</li>
+      <li><span class="num-badge">4</span>Press <strong>Ctrl + S</strong> to save. Call the scene <strong>track.tscn</strong>.</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> For a more impressive track later, look into Godot's TileMapLayer — but a simple rectangle track is perfect for a first build. We can always make it fancier! The important thing is getting the car moving first.</div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div><strong>Quick trick:</strong> Can't see your rectangles? Press the <strong>"Frame Selected" button</strong> (or press <strong>F</strong> on keyboard) in the viewport to zoom to fit everything!</div>
+    </div>
+
+    <div onclick="completeStep(2)" class="step-complete-btn">✅ Track is ready! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 3 ── -->
+<div class="step-card locked" id="step-3" data-step="3">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-green" id="sn-3">3</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🚗</div>
+      <div class="step-title">Add Your Car!</div>
+      <div class="step-blurb">Every race needs a car — let's put one in the game!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-3">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a car scene using a CharacterBody2D node with a coloured rectangle as the car body. We'll make it look like a proper top-down car!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Right now our track has no cars — like an empty racing track! Let's build a car and park it on the road. Then next step we'll make it move! 🏎️</div>
+    </div>
+
+    <h3>Why a separate scene for the car?</h3>
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>In Godot, we put the car in its <em>own scene file</em>. That way we can use it in lots of different levels later — like having one toy car you can put on any track!</div>
+    </div>
+
+    <h3>Create the car scene</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Go to <strong>Scene → New Scene</strong>.</li>
+      <li><span class="num-badge">2</span>Click <strong>"Other Node"</strong> and search for <strong>CharacterBody2D</strong>. Add it! Rename it to <strong>Car</strong>.</li>
+      <li><span class="num-badge">3</span>Add a child node: <strong>ColorRect</strong>. Set size to <strong>x: 40, y: 72</strong>. Set position to <strong>x: -20, y: -36</strong> (this centres it on the car).</li>
+    </ol>
+
+    <h3>Choose your car colour! 🎨</h3>
+    <p style="font-size:.87rem;color:var(--muted);margin-bottom:10px">Pick a colour for your car below — remember what you pick and set it in Godot!</p>
+    <div class="colour-picker" id="carColourPicker">
+      <div class="colour-swatch selected" style="background:#ff6b35" data-colour="#ff6b35" onclick="pickColour(this)" title="Orange"></div>
+      <div class="colour-swatch" style="background:#f87171" data-colour="#f87171" onclick="pickColour(this)" title="Red"></div>
+      <div class="colour-swatch" style="background:#60a5fa" data-colour="#60a5fa" onclick="pickColour(this)" title="Blue"></div>
+      <div class="colour-swatch" style="background:#06d6a0" data-colour="#06d6a0" onclick="pickColour(this)" title="Green"></div>
+      <div class="colour-swatch" style="background:#ffd166" data-colour="#ffd166" onclick="pickColour(this)" title="Yellow"></div>
+      <div class="colour-swatch" style="background:#a78bfa" data-colour="#a78bfa" onclick="pickColour(this)" title="Purple"></div>
+      <div class="colour-swatch" style="background:#ff70b8" data-colour="#ff70b8" onclick="pickColour(this)" title="Pink"></div>
+      <div class="colour-swatch" style="background:#fff" data-colour="#ffffff" onclick="pickColour(this)" title="White"></div>
+    </div>
+    <p id="colourAdvice" style="font-size:.82rem;color:var(--accent2);margin-top:4px">✨ Great choice! Set your ColorRect's colour to <strong>#ff6b35</strong> in Godot.</p>
+
+    <h3>Add a CollisionShape2D</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Add a child to <strong>Car</strong>: search for <strong>CollisionShape2D</strong> and add it.</li>
+      <li><span class="num-badge">2</span>In the Inspector, click next to <strong>Shape</strong> and choose <strong>"New RectangleShape2D"</strong>.</li>
+      <li><span class="num-badge">3</span>Set the shape size to match your car: <strong>x: 40, y: 72</strong>.</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> The CollisionShape2D is the car's invisible "bumper" — it's what Godot uses to detect crashes. Without it, the car would pass through walls. The child doesn't need to fully understand this yet, just follow the steps!</div>
+    </div>
+
+    <h3>Your scene should look like this:</h3>
+    <div class="scene-diagram">
+<span class="node">📦 <span style="color:var(--teal)">Car</span> (CharacterBody2D)</span>
+<div class="child">
+  <span class="icon">🟧</span><span class="node">ColorRect</span> <span style="color:var(--muted);font-size:.75rem">← the car body you can see</span>
+</div>
+<div class="child">
+  <span class="icon">🔷</span><span class="node">CollisionShape2D</span> <span style="color:var(--muted);font-size:.75rem">← invisible bumper</span>
+</div>
+    </div>
+
+    <ol class="steps-list">
+      <li><span class="num-badge">4</span>Press <strong>Ctrl + S</strong> and save this scene as <strong>car.tscn</strong>.</li>
+    </ol>
+
+    <h3>Place the car on the track</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open your <strong>track.tscn</strong> scene (click it in the FileSystem at the bottom).</li>
+      <li><span class="num-badge">2</span>Drag <strong>car.tscn</strong> from the FileSystem into the viewport. It appears on screen!</li>
+      <li><span class="num-badge">3</span>Drag it to sit on your grey road.</li>
+      <li><span class="num-badge">4</span>Save with <strong>Ctrl + S</strong>.</li>
+    </ol>
+
+    <div onclick="completeStep(3)" class="step-complete-btn">✅ My car is on the track! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 4 ── -->
+<div class="step-card locked" id="step-4" data-step="4">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-teal" id="sn-4">4</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">⌨️</div>
+      <div class="step-title">Make the Car Move!</div>
+      <div class="step-blurb">Time to write your first code! Don't worry — it's just 15 lines.</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-4">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Write a GDScript that makes the car move with arrow keys (or WASD). By the end, you'll be able to press Play and drive!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Code is like giving instructions to your car. We're going to say: "When I press the UP key, move forwards!" It's like talking to your game! 🗣️🎮</div>
+    </div>
+
+    <h3>Add a script to the Car</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open your <strong>car.tscn</strong> scene.</li>
+      <li><span class="num-badge">2</span>Click the <strong>Car</strong> node in the Scene panel.</li>
+      <li><span class="num-badge">3</span>Click the scroll icon at the top (or right-click → <strong>Attach Script</strong>).</li>
+      <li><span class="num-badge">4</span>Leave everything as default and click <strong>Create</strong>. The script editor opens!</li>
+    </ol>
+
+    <h3>Type in this code</h3>
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> Let the child type this themselves, letter by letter — even if it takes a while! The act of typing code is part of learning. You can spell out words for them. Typos are normal; we'll fix them together!</div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;car.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">CharacterBody2D</span>
+
+<span class="cmt"># How fast the car goes</span>
+<span class="kw">var</span> <span class="var">speed</span> = <span class="num">300</span>
+
+<span class="cmt"># How fast the car turns</span>
+<span class="kw">var</span> <span class="var">turn_speed</span> = <span class="num">3.0</span>
+
+<span class="kw">func</span> <span class="fn">_physics_process</span>(<span class="var">delta</span>):
+	<span class="cmt"># Check if up/down arrow keys are pressed</span>
+	<span class="kw">var</span> <span class="var">drive</span> = <span class="fn">Input</span>.<span class="prop">get_axis</span>(<span class="str">"ui_down"</span>, <span class="str">"ui_up"</span>)
+
+	<span class="cmt"># Check if left/right arrow keys are pressed</span>
+	<span class="kw">var</span> <span class="var">steer</span> = <span class="fn">Input</span>.<span class="prop">get_axis</span>(<span class="str">"ui_left"</span>, <span class="str">"ui_right"</span>)
+
+	<span class="cmt"># Turn the car (only when moving)</span>
+	<span class="kw">if</span> <span class="var">drive</span> != <span class="num">0</span>:
+		<span class="prop">rotation</span> += <span class="var">steer</span> * <span class="var">turn_speed</span> * <span class="var">delta</span>
+
+	<span class="cmt"># Move the car forward/backward in the direction it faces</span>
+	<span class="var">velocity</span> = <span class="fn">Vector2</span>.<span class="prop">UP</span>.<span class="fn">rotated</span>(<span class="prop">rotation</span>) * <span class="var">drive</span> * <span class="var">speed</span>
+
+	<span class="cmt"># Actually move it!</span>
+	<span class="fn">move_and_slide</span>()</div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div><strong>Spaces or tabs?</strong> In GDScript, the lines under <code>func _physics_process</code> <em>must</em> be indented! Press <strong>Tab</strong> at the start of those lines. Godot will usually do this for you automatically.</div>
+    </div>
+
+    <h3>Press Play! 🟢</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Press <strong>Ctrl + S</strong> to save the script.</li>
+      <li><span class="num-badge">2</span>Click the <strong>▶ Play Scene</strong> button at the top (or press <strong>F6</strong>).</li>
+      <li><span class="num-badge">3</span>A game window opens — press the <strong>arrow keys</strong>!</li>
+    </ol>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div>🎉 IT MOVES! You just wrote code that makes a car drive! You are officially a Game Developer! High five! ✋</div>
+    </div>
+
+    <h3>What does each line mean?</h3>
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>var speed = 300</h4>
+        <p>This is like setting the car's top speed. Try changing 300 to 500 — is it faster? What about 100?</p>
+      </div>
+      <div class="mini-card">
+        <h4>var turn_speed = 3.0</h4>
+        <p>How quickly the car turns. A bigger number = spinny! A smaller number = more like a truck.</p>
+      </div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Change <strong>speed</strong> to <strong>600</strong> and play again. Whoa! Now try <strong>100</strong>. What feels best to you? Change it back to whatever feels fun!</p>
+    </div>
+
+    <div onclick="completeStep(4)" class="step-complete-btn">✅ My car drives! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 5 ── -->
+<div class="step-card locked" id="step-5" data-step="5">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-pink" id="sn-5">5</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">📸</div>
+      <div class="step-title">Add a Camera So We Can See!</div>
+      <div class="step-blurb">The camera follows the car wherever it goes!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-5">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Add a Camera2D to the car so the view follows it around the track!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Imagine a TV camera following a racing car — that's what we're making! The camera will always stay right behind our car so we can see where it's going! 📸</div>
+    </div>
+
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>car.tscn</strong>.</li>
+      <li><span class="num-badge">2</span>Click the <strong>Car</strong> node and add a child: search for <strong>Camera2D</strong> and add it.</li>
+      <li><span class="num-badge">3</span>In the Inspector, make sure <strong>"Enabled"</strong> is ticked ✓.</li>
+      <li><span class="num-badge">4</span>You can also tick <strong>"Position Smoothing → Enabled"</strong> to make the camera glide smoothly. It looks much better!</li>
+      <li><span class="num-badge">5</span>Set <strong>Zoom</strong> to <strong>x: 1.5, y: 1.5</strong> to zoom in a bit closer.</li>
+    </ol>
+
+    <h3>Your Car scene now looks like this:</h3>
+    <div class="scene-diagram">
+<span class="node">📦 <span style="color:var(--teal)">Car</span> (CharacterBody2D)</span>
+<div class="child">
+  <span class="icon">🟧</span><span class="node">ColorRect</span>
+</div>
+<div class="child">
+  <span class="icon">🔷</span><span class="node">CollisionShape2D</span>
+</div>
+<div class="child">
+  <span class="icon">📸</span><span class="node">Camera2D</span> <span style="color:var(--green)">← NEW!</span>
+</div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div>Press <strong>F6</strong> (Play Scene) and drive around. The camera should now follow the car. If the track disappears, make sure your track and car are in the same scene — drag car.tscn into track.tscn!</div>
+    </div>
+
+    <div onclick="completeStep(5)" class="step-complete-btn">✅ Camera is following my car! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 6 ── -->
+<div class="step-card locked" id="step-6" data-step="6">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-purple" id="sn-6">6</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">⏱️</div>
+      <div class="step-title">Add a Lap Timer!</div>
+      <div class="step-blurb">Every racing game needs a timer — let's count the seconds!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-6">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Add a Label to the screen that shows how many seconds the player has been driving. It counts up like a stopwatch!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Real racing games show a big timer so you can beat your own record. We're going to put one in our game — and then you can time yourself doing laps! ⏱️</div>
+    </div>
+
+    <h3>Add a CanvasLayer for the UI</h3>
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>A <span class="tooltip">CanvasLayer<span class="tt">CanvasLayer keeps buttons and text stuck to the screen — they don't move when the camera moves!</span></span> is like a sheet of glass on top of the game world. Anything we put in it stays on screen even when the car drives away!</div>
+    </div>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>track.tscn</strong>.</li>
+      <li><span class="num-badge">2</span>Add a child to <strong>Track</strong>: search for <strong>CanvasLayer</strong> and add it.</li>
+      <li><span class="num-badge">3</span>Add a child to <strong>CanvasLayer</strong>: search for <strong>Label</strong> and add it.</li>
+      <li><span class="num-badge">4</span>Rename the Label to <strong>TimerLabel</strong>.</li>
+      <li><span class="num-badge">5</span>In the Inspector, change the <strong>Text</strong> to <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">Time: 0.0</code></li>
+      <li><span class="num-badge">6</span>Set Position to about <strong>x: 20, y: 20</strong> — top left corner.</li>
+      <li><span class="num-badge">7</span>In the <strong>Theme Overrides → Font Sizes</strong> section, set the font size to <strong>32</strong>. Big and easy to read!</li>
+    </ol>
+
+    <h3>Add a script to the Track</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Click the <strong>Track</strong> node in the Scene panel.</li>
+      <li><span class="num-badge">2</span>Attach a script to it. Call it <strong>track.gd</strong>.</li>
+      <li><span class="num-badge">3</span>Type this code:</li>
+    </ol>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;track.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">Node2D</span>
+
+<span class="cmt"># How many seconds have passed</span>
+<span class="kw">var</span> <span class="var">elapsed</span> = <span class="num">0.0</span>
+
+<span class="kw">func</span> <span class="fn">_process</span>(<span class="var">delta</span>):
+	<span class="cmt"># Add the time since last frame</span>
+	<span class="var">elapsed</span> += <span class="var">delta</span>
+
+	<span class="cmt"># Update the timer label on screen</span>
+	<span class="var">$CanvasLayer</span>/<span class="var">TimerLabel</span>.<span class="prop">text</span> = <span class="str">"Time: "</span> + <span class="fn">str</span>(<span class="fn">snappedf</span>(<span class="var">elapsed</span>, <span class="num">0.1</span>))</div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div>The <code>$CanvasLayer/TimerLabel</code> part is the <em>path</em> to your Label node — like an address! Make sure your nodes are named exactly <strong>CanvasLayer</strong> and <strong>TimerLabel</strong>, otherwise it won't find them.</div>
+    </div>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> <code>delta</code> is the time (in seconds) since the last frame. Adding it up gives us total elapsed time — this is the standard game-loop pattern. <code>snappedf</code> rounds it to 1 decimal place so it doesn't scroll too fast.</div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Press Play! Do you see a timer in the top left? Drive your car around and watch the seconds tick up! Can you do a lap in under 10 seconds?</p>
+    </div>
+
+    <div onclick="completeStep(6)" class="step-complete-btn">✅ Timer is working! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 7 ── -->
+<div class="step-card locked" id="step-7" data-step="7">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-blue" id="sn-7">7</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🏁</div>
+      <div class="step-title">Add a Finish Line!</div>
+      <div class="step-blurb">You can't win a race without a finish line!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-7">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Place a finish line on the track. When the car crosses it, the timer stops and a "You Win!" message appears!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> A race with no finish line goes on forever — and that would be exhausting! We need a special magic line that knows when the car crosses it. In Godot we use an <strong>Area2D</strong> — it's an invisible detector! 🔍</div>
+    </div>
+
+    <h3>Create the Finish Line</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>track.tscn</strong>.</li>
+      <li><span class="num-badge">2</span>Add a child to <strong>Track</strong>: search for <strong>Area2D</strong>. Rename it <strong>FinishLine</strong>.</li>
+      <li><span class="num-badge">3</span>Add a child to <strong>FinishLine</strong>: <strong>CollisionShape2D</strong>. Set shape to <strong>RectangleShape2D</strong>, size <strong>x: 200, y: 20</strong>.</li>
+      <li><span class="num-badge">4</span>Add another child to <strong>FinishLine</strong>: <strong>ColorRect</strong>, size <strong>x: 200, y: 20</strong>, colour: white-and-black chequerboard. (Just use white for now — we'll say it's the finish line!)</li>
+      <li><span class="num-badge">5</span>Move <strong>FinishLine</strong> to sit across your road near the top.</li>
+    </ol>
+
+    <h3>Add a "You Win!" Label</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Add a child to <strong>CanvasLayer</strong>: a new <strong>Label</strong>. Rename it <strong>WinLabel</strong>.</li>
+      <li><span class="num-badge">2</span>Set the text to <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">🏁 YOU WIN!</code>.</li>
+      <li><span class="num-badge">3</span>Set font size to <strong>64</strong>. Position it in the centre of the screen (about <strong>x: 400, y: 280</strong>).</li>
+      <li><span class="num-badge">4</span>In the Inspector, set <strong>Visible</strong> to <strong>OFF</strong> (untick the eye icon). We'll turn it on with code!</li>
+    </ol>
+
+    <h3>Update track.gd to detect the finish</h3>
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;track.gd (updated)</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">Node2D</span>
+
+<span class="kw">var</span> <span class="var">elapsed</span> = <span class="num">0.0</span>
+<span class="kw">var</span> <span class="var">racing</span> = <span class="kw">true</span>   <span class="cmt"># is the race still going?</span>
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+	<span class="cmt"># Connect the finish line signal</span>
+	<span class="var">$FinishLine</span>.<span class="prop">body_entered</span>.<span class="fn">connect</span>(<span class="fn">_on_finish</span>)
+
+<span class="kw">func</span> <span class="fn">_process</span>(<span class="var">delta</span>):
+	<span class="kw">if</span> <span class="var">racing</span>:
+		<span class="var">elapsed</span> += <span class="var">delta</span>
+		<span class="var">$CanvasLayer</span>/<span class="var">TimerLabel</span>.<span class="prop">text</span> = <span class="str">"Time: "</span> + <span class="fn">str</span>(<span class="fn">snappedf</span>(<span class="var">elapsed</span>, <span class="num">0.1</span>))
+
+<span class="kw">func</span> <span class="fn">_on_finish</span>(<span class="var">body</span>):
+	<span class="kw">if</span> <span class="var">body</span>.<span class="prop">name</span> == <span class="str">"Car"</span>:
+		<span class="var">racing</span> = <span class="kw">false</span>
+		<span class="var">$CanvasLayer</span>/<span class="var">WinLabel</span>.<span class="prop">visible</span> = <span class="kw">true</span></div>
+    </div>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> The <code>body_entered</code> signal fires whenever a physics body enters the Area2D. We connect it in <code>_ready()</code> to our <code>_on_finish</code> function. This is a core Godot pattern — signals instead of polling!</div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Play the game and drive to the finish line! Does the "YOU WIN!" message appear? What's your best time? Try to beat it!</p>
+    </div>
+
+    <div onclick="completeStep(7)" class="step-complete-btn">✅ Finish line works! →</div>
+  </div>
+</div>
+
+<!-- ── STEP 8 ── -->
+<div class="step-card locked" id="step-8" data-step="8">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-orange" id="sn-8">8</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🎉</div>
+      <div class="step-title">Make It Your Own!</div>
+      <div class="step-blurb">Add your favourite colour, your name, and make it special!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-8">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Customise your game — change colours, add your name, adjust the speed, and share it with someone!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> You built a real game! Now it's time to make it <em>yours</em>. Change the colours, the speed, add your name — you're the game designer now! What would make your game even more fun?</div>
+    </div>
+
+    <h3>🎨 Things to customise</h3>
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>🏎️ Car changes</h4>
+        <p>Change the car's <strong>colour</strong> in car.tscn. Change <strong>speed</strong> and <strong>turn_speed</strong> in car.gd. Can you make it feel just right?</p>
+      </div>
+      <div class="mini-card">
+        <h4>🗺️ Track changes</h4>
+        <p>Add more <strong>ColorRect</strong> rectangles to make a bigger track with corners! Make the grass a different shade. Add some obstacles!</p>
+      </div>
+      <div class="mini-card">
+        <h4>📝 Add your name</h4>
+        <p>Add a new Label to the CanvasLayer that says your name and "presents:" at the top. Every great game has the maker's name on it!</p>
+      </div>
+      <div class="mini-card">
+        <h4>🔄 Restart button</h4>
+        <p>Add a Button node to the CanvasLayer. When clicked, call <code>get_tree().reload_current_scene()</code> to restart the race!</p>
+      </div>
+    </div>
+
+    <h3>🌟 Bonus challenges</h3>
+    <ul class="steps-list">
+      <li><span class="num-badge">⭐</span>Add a <strong>best time</strong> that saves between races. Hint: use a second Label!</li>
+      <li><span class="num-badge">⭐</span>Add a <strong>countdown: 3, 2, 1, GO!</strong> before the timer starts. Use a Timer node!</li>
+      <li><span class="num-badge">⭐</span>Add <strong>skid marks</strong>: when the car turns sharply, draw a line with a Line2D!</li>
+      <li><span class="num-badge">⭐</span>Make a <strong>second track</strong> scene that's harder — more corners, narrower road!</li>
+    </ul>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> Amazing work today! Your child now understands scenes, nodes, scripts, variables, signals, and physics — core Godot concepts. Next steps: look at Godot's free docs, YouTube channels like "GDQuest", and the Godot forums. You've given them a superpower! 🚀</div>
+    </div>
+
+    <!-- Checklist -->
+    <h3>✅ Final Checklist</h3>
+    <div id="finalChecklist">
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> My car can drive with arrow keys</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> The camera follows my car</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> A timer counts up on screen</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> The timer stops at the finish line</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> "YOU WIN!" appears when I finish</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> I changed the car to my favourite colour</div>
+      <div class="check-task" onclick="toggleCheck(this)"><div class="check-box"></div> I showed someone my game!</div>
+    </div>
+
+    <div onclick="completeStep(8)" class="step-complete-btn" id="scb-8">🏁 I finished my racing game! →</div>
+  </div>
+</div>
+
+<!-- FINISH BANNER -->
+<div class="finish-banner" id="finishBanner">
+  <div class="confetti-row">🏎️🏆🎉🏁✨</div>
+  <div class="finish-title">You Built a Racing Game!!</div>
+  <p class="finish-sub">You started with a completely empty screen and built a real, playable game in Godot. You wrote actual code, made a car move, added a camera, a timer, and a finish line. That is genuinely impressive — whatever your age!</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+    <a href="#step-1" class="btn-outline" onclick="resetAll()">🔄 Start Again</a>
+    <a href="#" class="btn-start">🎮 More Workshops →</a>
+  </div>
+</div>
+
+</div><!-- end .workshop -->
+
+<footer class="footer">
+  <p>🏎️ <a href="#">JVDesignStudio</a> · Zoom Zoom Racing Workshop · Made with ❤️ for little game developers everywhere</p>
+  <p style="margin-top:6px">Built in <strong>Godot 4</strong> · <a href="https://godotengine.org" target="_blank">godotengine.org</a> · Free &amp; Open Source</p>
+</footer>
+
+<script>
+// ─── STATE ───
+let completed = new Set();
+let totalSteps = 8;
+
+// ─── INIT DOTS ───
+function initDots() {
+  const c = document.getElementById('stepDots');
+  c.innerHTML = '';
+  for (let i = 1; i <= totalSteps; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot';
+    d.id = `dot-${i}`;
+    d.textContent = i;
+    d.onclick = () => {
+      const el = document.getElementById(`step-${i}`);
+      if (!el.classList.contains('locked')) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!el.classList.contains('open')) toggleCard(el);
+      }
+    };
+    c.appendChild(d);
+  }
+  updateUI();
+}
+
+// ─── TOGGLE CARD ───
+function toggleCard(card) {
+  if (card.classList.contains('locked')) return;
+  card.classList.toggle('open');
+}
+
+// ─── COMPLETE STEP ───
+function completeStep(n) {
+  completed.add(n);
+  updateUI();
+  // scroll to next
+  const next = document.getElementById(`step-${n + 1}`);
+  if (next) {
+    setTimeout(() => {
+      next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  } else {
+    // All done!
+    document.getElementById('finishBanner').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('finishBanner').scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  }
+}
+
+// ─── UPDATE UI ───
+function updateUI() {
+  const pct = (completed.size / totalSteps) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = `${completed.size} / ${totalSteps} steps`;
+
+  const colours = ['sn-orange','sn-yellow','sn-green','sn-teal','sn-pink','sn-purple','sn-blue','sn-orange'];
+
+  for (let i = 1; i <= totalSteps; i++) {
+    const card = document.getElementById(`step-${i}`);
+    const dot = document.getElementById(`dot-${i}`);
+    const sn = document.getElementById(`sn-${i}`);
+    const ss = document.getElementById(`ss-${i}`);
+
+    if (completed.has(i)) {
+      card.classList.remove('locked','active-step');
+      card.classList.add('completed');
+      dot.classList.remove('active');
+      dot.classList.add('done');
+      dot.textContent = '✓';
+      if (sn) { sn.className = 'step-num sn-done'; sn.textContent = '✓'; }
+      if (ss) { ss.className = 'step-status ss-done'; ss.textContent = '✅ Done'; }
+    } else if (i === getNextStep()) {
+      card.classList.remove('locked','completed');
+      card.classList.add('active-step');
+      if (!card.classList.contains('open')) card.classList.add('open');
+      dot.classList.add('active');
+      dot.classList.remove('done');
+      if (sn) { sn.className = `step-num ${colours[i-1]}`; sn.textContent = i; }
+      if (ss) { ss.className = 'step-status ss-active'; ss.textContent = '▶ Current'; }
+    } else if (i > getNextStep()) {
+      card.classList.add('locked');
+      card.classList.remove('active-step','completed');
+      if (card.classList.contains('open') && i !== 1) card.classList.remove('open');
+      dot.classList.remove('active','done');
+      if (sn) { sn.className = `step-num ${colours[i-1]}`; sn.textContent = i; }
+      if (ss) { ss.className = 'step-status ss-todo'; ss.textContent = '🔒 Locked'; }
+    }
+  }
+}
+
+function getNextStep() {
+  for (let i = 1; i <= totalSteps; i++) {
+    if (!completed.has(i)) return i;
+  }
+  return totalSteps + 1;
+}
+
+// ─── RESET ───
+function resetAll() {
+  completed.clear();
+  document.getElementById('finishBanner').classList.remove('show');
+  // reset step nums
+  const colours = ['sn-orange','sn-yellow','sn-green','sn-teal','sn-pink','sn-purple','sn-blue','sn-orange'];
+  for (let i = 1; i <= totalSteps; i++) {
+    const sn = document.getElementById(`sn-${i}`);
+    if (sn) { sn.className = `step-num ${colours[i-1]}`; sn.textContent = i; }
+  }
+  updateUI();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── COLOUR PICKER ───
+function pickColour(el) {
+  document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  const c = el.dataset.colour;
+  document.getElementById('colourAdvice').innerHTML =
+    `✨ Great choice! Set your ColorRect's colour to <strong>${c}</strong> in Godot.`;
+}
+
+// ─── CHECKLIST ───
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+}
+
+// ─── MINI RACE DEMO (canvas) ───
+// Little animated car on a demo track shown as a fun visual
+(function() {
+  // Only run if canvas is in DOM (step 4 area)
+  // This is a tiny proof-of-concept loop
+  const canvas = document.getElementById('raceDemo');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let running = false;
+  let carX = 0, carY = 0, carA = 0;
+  let speed = 0, targetSpeed = 0;
+  let steer = 0;
+  let keys = {};
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    carX = canvas.width / 2;
+    carY = canvas.height * 0.6;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function drawCar(x, y, angle, col) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    // body
+    ctx.fillStyle = col || '#ff6b35';
+    ctx.beginPath();
+    ctx.roundRect(-12, -20, 24, 40, 5);
+    ctx.fill();
+    // windscreen
+    ctx.fillStyle = '#1a3060';
+    ctx.beginPath();
+    ctx.roundRect(-9, -16, 18, 14, 3);
+    ctx.fill();
+    // wheels
+    ctx.fillStyle = '#222';
+    [[-14,-14],[-14,8],[14,-14],[14,8]].forEach(([wx,wy]) => {
+      ctx.fillRect(wx-4, wy-5, 8, 10);
+    });
+    ctx.restore();
+  }
+
+  function drawTrack() {
+    const w = canvas.width, h = canvas.height;
+    // grass
+    ctx.fillStyle = '#1a3020';
+    ctx.fillRect(0, 0, w, h);
+    // road
+    ctx.fillStyle = '#2a2d3a';
+    const rw = w * 0.35;
+    ctx.fillRect(w/2 - rw/2, 0, rw, h);
+    // lane markings
+    ctx.strokeStyle = '#ffd166';
+    ctx.setLineDash([20, 20]);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(w/2, 0);
+    ctx.lineTo(w/2, h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function loop() {
+    if (!running) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    drawTrack();
+
+    // AI movement
+    carX = w / 2 + Math.sin(Date.now() * 0.0008) * (w * 0.12);
+    carY = h / 2 + Math.cos(Date.now() * 0.0005) * (h * 0.25);
+    const dAngle = Math.cos(Date.now() * 0.0008) * 0.4;
+    drawCar(carX, carY, dAngle, '#ff6b35');
+
+    requestAnimationFrame(loop);
+  }
+
+  // Expose for buttons
+  window.startDemo = function() { running = true; loop(); };
+  window.stopDemo = function() { running = false; };
+
+  // Auto-start
+  running = true;
+  loop();
+})();
+
+// ─── BOOT ───
+initDots();
+</script>
+</body>
+</html>

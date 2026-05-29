@@ -1520,7 +1520,7 @@ velY = -BOUNCE * <span class="c-num">1.6</span>;</pre>
 <span class="c-kw">if</span>      (dist &lt; <span class="c-num">18</span>) judge(<span class="c-str">'PERFECT'</span>, <span class="c-num">100</span>);
 <span class="c-kw">else if</span> (dist &lt; <span class="c-num">36</span>) judge(<span class="c-str">'GOOD'</span>,    <span class="c-num">50</span>);
 <span class="c-kw">else</span>              judge(<span class="c-str">'MISS'</span>,     <span class="c-num">0</span>);</pre>
-                <div class="bp-explain">Hit notes as they reach the glowing target line. PERFECT (±18px) scores 100pts and builds your combo multiplier. 20 misses ends the run. Use the Music Sequencer to create your own patterns!</div>
+                <div class="bp-explain">Hit notes as they reach the glowing target line. PERFECT (±18px) scores 100pts and builds your combo multiplier. Miss too many notes and it's game over — configure the limit in the Rhythm Options panel. Use the Music Sequencer to create your own patterns!</div>
             </div>
 
             <!-- DEFENSE blueprints -->
@@ -1765,6 +1765,10 @@ score += bumper.pts; <span class="c-comment">// 100–200</span></pre>
                     <button class="asset-btn import" onclick="GameAudio.previewMusic()" title="Preview music">▶</button>
                     <button class="asset-btn clear" onclick="clearCustomMusic()" title="Clear custom music">✕</button>
                     <span id="musicImportBadge" class="sound-custom-badge" style="display:none;">✓ Custom</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+                    <button class="asset-btn import" style="flex:1;" onclick="document.getElementById('_audioFileInput').click()">📁 Upload MP3 / WAV</button>
+                    <input type="file" id="_audioFileInput" accept="audio/*" style="display:none;" onchange="uploadCustomAudio(this)">
                 </div>
                 <div class="form-group">
                     <label for="volumeSlider">Volume</label>
@@ -3990,7 +3994,7 @@ score += bumper.pts;
                         </div>
                     </div>
                     <div id="seqGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;user-select:none;"></div>
-                    <div style="font-size:.6rem;color:var(--muted);line-height:1.5;">Click cells to toggle notes. Rows = pitches (C5→C4), columns = steps. Hit <strong style="color:white;">🕹 Use in Game</strong> to replace the background music with your sequence.</div>
+                    <div style="font-size:.6rem;color:var(--muted);line-height:1.5;">Click cells to toggle notes. Columns = beat steps (8 per bar). Hit <strong style="color:white;">🕹 Use in Game</strong> to send to game. <strong style="color:#a78bfa;">Rhythm mode:</strong> rows 1–4 = lanes A S D F, rows 5–8 = audio pitches only.</div>
                 </div>
             </div>
 
@@ -4666,6 +4670,10 @@ const liveConfig = {
     particleCount: 12,
     particleSize: 'medium',
     trailEffect: false,
+    // ── Rhythm game ───────────────────────────────────────────────────
+    rhythmLanes: 4,      // 1–4 active lanes
+    rhythmSpeed: 260,    // note fall speed px/s
+    rhythmMisses: 30,    // misses before game over
     // ── New extras features ───────────────────────────────────────
     powerupsEnabled: false,
     powerupTypes: ['speed','shield','magnet','double'],
@@ -6444,7 +6452,7 @@ const MISSIONS = {
     HOPPER:  '<strong>Mission:</strong> Bounce upward on platforms — how high can you go? Land on 🟡 springs for mega bounce, avoid falling. Score = height reached!',
     BEAT:    "<strong>Mission:</strong> Beat 'em up brawler! Clear waves of grunts and heavies. Build combos for massive score multipliers. Boss appears every 3 waves!",
     PUZZLE:  '<strong>Mission:</strong> Push all 📦 crates onto the 🎯 targets. Plan every move — a wrong push means starting over! Score = 1000 minus moves used.',
-    RHYTHM:  '<strong>Mission:</strong> Hit notes as they reach the target line! PERFECT timing = 100pts. Build combos to multiply your score. 20 misses = game over!',
+    RHYTHM:  '<strong>Mission:</strong> Hit notes as they reach the target line! PERFECT timing = 100pts. Build combos to multiply your score. Miss too many = game over!',
     DEFENSE: '<strong>Mission:</strong> Build towers to stop the enemy waves! Press T to enter tower placement mode, then click the grid. SPACE starts the next wave. Each wave cleared earns you gold for more towers!',
     PINBALL: '<strong>Mission:</strong> Keep the ball alive with your flippers! Hit bumpers for points, pop all three targets for a 2000pt bonus. 3 lives — drain all 3 and it\'s game over!'
 };
@@ -6575,6 +6583,13 @@ function onGenreChange() {
     if (g === 'DEFENSE') { setTimeout(_tdBuildTowerEditor, 50); }
     // Update extras card grid visibility
     _updateExtraCards(g);
+    // Keep _engineData in sync so genre change is reflected when intro overlay launches
+    if (_engineData) {
+        _engineData.genre = g;
+        if (document.getElementById('introOverlay')?.classList.contains('show')) {
+            _showTitleScreen(_engineData);
+        }
+    }
 }
 
 function getPayload() {
@@ -6912,6 +6927,7 @@ function _launchPhaserGame() {
                 physics: { default:'arcade', arcade:{ debug:false } },
                 input: { gamepad: true },
                 render: { preserveDrawingBuffer: true },
+                disableVisibilityHandler: true,
                 scene: getScene(data)
             });
             window._phaserGame = currentPhaserGame;
@@ -10447,7 +10463,8 @@ function sceneRoguelike(data) {
             this.scoreText = this._makeScoreText();
             this._hpText   = this.add.text(GW-10,12,'',{fontSize:'13px',fill:'#f87171',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(1,0).setDepth(10);
             this._lootText = this.add.text(GW-10,28,'',{fontSize:'11px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(1,0).setDepth(10);
-            this._wpText   = this.add.text(10,GH-18,'',{fontSize:'10px',fill:'#a78bfa',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0,1).setDepth(10);
+            this._hudPanel = this.add.rectangle(GW/2,GH-2,GW-8,20,0x06060f,0.85).setOrigin(0.5,1).setDepth(9);
+            this._wpText   = this.add.text(GW/2,GH-4,'',{fontSize:'11px',fill:'#a78bfa',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,1).setDepth(10);
             this._roomText = this.add.text(GW/2,12,'',{fontSize:'11px',fill:themeHex(2,'#fbbf24'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(10);
 
             this.moveKeys  = this.input.keyboard.addKeys({up:'W',down:'S',left:'A',right:'D'});
@@ -10465,6 +10482,9 @@ function sceneRoguelike(data) {
             this._chestGrp  = this.physics.add.group();
             this._keyDropGrp= this.physics.add.group();
             this._shopItems = this.physics.add.group();
+            this._stairGrp  = this.physics.add.staticGroup(); // stair door blocker (top wall gap)
+            this._stairUpOpen  = false;
+            this._stairUpLabel = null;
 
             // Player
             this.actor = this.physics.add.sprite(GW/2,GH/2,'player');
@@ -10475,6 +10495,7 @@ function sceneRoguelike(data) {
             // Colliders
             this.physics.add.collider(this.actor,   this.walls);
             this.physics.add.collider(this.actor,   this._doorGrp);
+            this.physics.add.collider(this.actor,   this._stairGrp);
             this.physics.add.collider(this.actor,   this._obstacles);
             this.physics.add.collider(this.enemies, this.walls);
             this.physics.add.collider(this.enemies, this._obstacles);
@@ -10523,6 +10544,9 @@ function sceneRoguelike(data) {
             this.eBullets.getChildren().slice().forEach(b=>b.destroy());
             if(this._doorLabel){this._doorLabel.destroy();this._doorLabel=null;}
             if(this._backLabel){this._backLabel.destroy();this._backLabel=null;}
+            if(this._stairUpLabel){this._stairUpLabel.destroy();this._stairUpLabel=null;}
+            this._stairUpOpen=false;
+            if(this._stairGrp) this._stairGrp.clear(true,true);
             if(this._floorRect){this._floorRect.destroy();this._floorRect=null;}
             this._heartGrp.getChildren().forEach(h=>{const l=h.getData('lbl');if(l&&l.active)l.destroy();}); this._heartGrp.clear(true,true);
             this._chestGrp.getChildren().forEach(c=>{const l=c.getData('lbl');if(l&&l.active)l.destroy();}); this._chestGrp.clear(true,true);
@@ -10536,11 +10560,29 @@ function sceneRoguelike(data) {
             // HP bar graphics — cleared + redrawn every frame for all multi-HP enemies
             if (!this._hpBarGfx) this._hpBarGfx = this.add.graphics().setDepth(16).setScrollFactor(1);
 
+            // Room type — determined early so wall layout can react
+            const roomType    = this._floorPlan ? (this._floorPlan[this._room]||'combat') : 'combat';
+            const isBossRoom  = roomType==='boss';
+            const isShopRoom  = roomType==='shop';
+            const isTreasureRoom = roomType==='treasure';
+            this._isBossRoom  = isBossRoom;
+            this._isShopRoom  = isShopRoom;
+
             // Floor & walls
             this._floorRect=this.add.rectangle(GW/2,GH/2,GW-W*2,GH-W*2,themeInt(3,0x0f172a)).setDepth(-1);
             const wCol=themeInt(2,0x1e293b);
             const mw=(x,y,w,h)=>this.walls.create(x,y,'block').setDisplaySize(w,h).setTint(wCol).refreshBody();
-            mw(GW/2,W/2,GW,W); mw(GW/2,GH-W/2,GW,W);
+            // Top wall — split to create stair door gap in boss rooms on floor 2+
+            const needsUpStair = isBossRoom && this._floor >= 2;
+            if (needsUpStair) {
+                const tsW = (GW - DOOR_H) / 2;
+                mw(tsW/2, W/2, tsW, W);
+                mw(GW - tsW/2, W/2, tsW, W);
+                this._stairGrp.create(GW/2,W/2,'block').setDisplaySize(DOOR_H,W).setTint(themeInt(0,0x7c3aed)).refreshBody();
+            } else {
+                mw(GW/2,W/2,GW,W);
+            }
+            mw(GW/2,GH-W/2,GW,W);
             const sH=GH/2-DOOR_H/2-W;
             // Right door gap (always present — opens when room cleared)
             mw(GW-W/2,W+sH/2,W,sH); mw(GW-W/2,GH-W-sH/2,W,sH);
@@ -10552,14 +10594,6 @@ function sceneRoguelike(data) {
             } else {
                 mw(W/2,GH/2,W,GH); // solid left wall on first room
             }
-
-            // Room type from floor plan
-            const roomType    = this._floorPlan ? (this._floorPlan[this._room]||'combat') : 'combat';
-            const isBossRoom  = roomType==='boss';
-            const isShopRoom  = roomType==='shop';
-            const isTreasureRoom = roomType==='treasure';
-            this._isBossRoom  = isBossRoom;
-            this._isShopRoom  = isShopRoom;
 
             // Obstacles
             const obCol=themeInt(1,0x334155);
@@ -10817,7 +10851,10 @@ function sceneRoguelike(data) {
             showToast(`👑 BOSS DOWN! +${pts}pts 💰+${goldR}`);
             GameAudio.play('score'); this.cameras.main.shake(500,0.025);
             this._roomCleared=true;
-            this.time.delayedCall(700,()=>this._openDoor());
+            this.time.delayedCall(700,()=>{
+                this._openDoor();
+                if(this._floor>=2) this._openStairUp();
+            });
         }
 
         // ── Enemy logic ──────────────────────────────────────────────────────────
@@ -11003,6 +11040,27 @@ function sceneRoguelike(data) {
             this.cameras.main.fadeOut(180,0,0,0);
             this.time.delayedCall(200,()=>{ this._buildRoom(); this.cameras.main.fadeIn(180,0,0,0); });
         }
+        _openStairUp() {
+            // Remove the stair blocker and show the ⬆ label
+            if(this._stairGrp) this._stairGrp.clear(true,true);
+            this._stairUpLabel=this.add.text(GW/2,W+10,`⬆ Floor ${this._floor-1}`,{
+                fontSize:'14px',fill:'#60a5fa',fontFamily:"'Fredoka One',sans-serif",
+                stroke:'#000',strokeThickness:2
+            }).setOrigin(0.5,0).setDepth(8);
+            this._stairUpOpen=true;
+            showToast(`⬆ Staircase to Floor ${this._floor-1} above!`);
+        }
+        _goUpFloor() {
+            if(this._floor<=1) return;
+            this._floor--;
+            this._room=0;
+            this._roomsPerFloor=Math.max(3,Math.round(liveConfig.rogueRooms||5));
+            this._generateFloorPlan();
+            showToast(`⬆ Floor ${this._floor}!`);
+            GameAudio.play('score');
+            this.cameras.main.fadeOut(180,0,0,0);
+            this.time.delayedCall(200,()=>{ this._buildRoom(); this.cameras.main.fadeIn(180,0,0,0); });
+        }
 
         // ── Damage & HUD ─────────────────────────────────────────────────────────
         _takeDamage() {
@@ -11027,11 +11085,12 @@ function sceneRoguelike(data) {
             const goldStr=this._gold>0?` 💰${this._gold}`:'';
             this._lootText.setText(keyStr+goldStr);
             const ups=[];
-            if(this._weapon.spread>1) ups.push('SPR');
-            if(this._weapon.rapidFire) ups.push('RAP');
-            if(this._weapon.piercing) ups.push('PIR');
-            if(this._weapon.damageLevel>1) ups.push('×'+this._weapon.damageLevel);
-            this._wpText.setText(ups.length?'⚔ '+ups.join(' '):'');
+            if(this._weapon.spread>1)      ups.push('⚔ Spread');
+            if(this._weapon.rapidFire)     ups.push('⚡ Rapid');
+            if(this._weapon.piercing)      ups.push('🔮 Pierce');
+            if(this._weapon.damageLevel>1) ups.push('💥 Dmg×'+this._weapon.damageLevel);
+            this._wpText.setText(ups.length ? ups.join('  ·  ') : '⚔ Basic Weapon');
+            this._wpText.setStyle({fill: ups.length ? '#c4b5fd' : 'rgba(167,139,250,0.38)'});
         }
 
         // ── Shooting ─────────────────────────────────────────────────────────────
@@ -11160,6 +11219,13 @@ function sceneRoguelike(data) {
             if(this._room>0&&!this._transitioning&&this.actor.x<W+22) {
                 this._transitioning=true;
                 this._prevRoom();
+                this.time.delayedCall(400,()=>{this._transitioning=false;});
+            }
+            // Stair up — player reaches top gap (boss room, floor 2+)
+            if(this._stairUpOpen&&!this._transitioning&&this.actor.y<W+22) {
+                this._transitioning=true;
+                this._stairUpOpen=false;
+                this._goUpFloor();
                 this.time.delayedCall(400,()=>{this._transitioning=false;});
             }
             this._tickBase(this.score);
@@ -12545,6 +12611,21 @@ function clearCustomMusic() {
     document.getElementById('musicImportBadge').style.display = 'none';
     document.getElementById('musicImportName').textContent = 'Chiptune loop';
     showToast('Custom music cleared — using built-in synth');
+}
+function uploadCustomAudio(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        GameAudio.customMusic = e.target.result;
+        document.getElementById('musicImportName').textContent = file.name;
+        document.getElementById('musicImportBadge').style.display = 'inline';
+        document.getElementById('musicToggle').checked = true;
+        GameAudio.setMusic(true);
+        showToast('🎵 "' + file.name + '" loaded! Toggle Background Music on to hear it.');
+    };
+    reader.readAsDataURL(file);
+    input.value = ''; // reset so same file can be re-picked
 }
 
 // ── STORY IMPORT FROM STORY EDITOR ───────────────────────────────────────────
@@ -14135,7 +14216,7 @@ function updateTouchLayout(genre) {
     // Joystick zone: hide for tap-only genres, Tower Defense, Pinball, and Rhythm
     const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM','CLICKER','MEMORY','BREAKER'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER','DEFENSE'].includes(genre);
-    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','BEAT','RACING','DEFENSE'].includes(genre);
+    const showFire = ['SHOOTER','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RUNNER','PLATFORMER','BEAT','RACING','DEFENSE','WAVESURVIVAL'].includes(genre);
 
     if (joyZone) joyZone.style.display = showLR ? 'block' : 'none';
     if (joyWrap && !showLR) joyWrap.classList.remove('joy-active');
@@ -14143,7 +14224,7 @@ function updateTouchLayout(genre) {
     if (up)   up.style.display    = showUp   ? '' : 'none';
     if (fire) fire.style.display  = showFire ? '' : 'none';
     // Per-genre button labels
-    if (fire) fire.textContent = genre === 'RUNNER' ? '↓' : genre === 'BEAT' ? '👊' : genre === 'RACING' ? '⚡' : genre === 'DEFENSE' ? '🏗' : '●';
+    if (fire) fire.textContent = (genre === 'RUNNER' || genre === 'PLATFORMER') ? '↓' : genre === 'BEAT' ? '👊' : genre === 'RACING' ? '⚡' : genre === 'DEFENSE' ? '🏗' : '●';
     if (up)   up.textContent   = genre === 'DEFENSE' ? '▶' : '▲';
 
     // Runner/Flappy: tap canvas to jump; Snake: swipe canvas to steer
@@ -15863,7 +15944,8 @@ function sceneRhythm(data) {
     const BPM      = liveConfig.seqBpm || 120;
     const NOTE_INTERVAL = 60000 / BPM / 2; // 8th notes
     const PERFECT_WIN = 24, GOOD_WIN = 48; // wider windows for better feel
-    const GRACE_MS = 2000; // ignore misses for first 2 seconds
+    const GRACE_MS = 1000; // ignore misses for first 1s after countdown
+    const MAX_MISSES = liveConfig.rhythmMisses || 30; // configurable game-over threshold
 
     return class RhythmScene extends Phaser.Scene {
         constructor() { super({key:'RhythmScene'}); }
@@ -15930,11 +16012,45 @@ function sceneRhythm(data) {
                 return r;
             });
 
-            // Note spawner: use sequencer pattern if available, else random
+            // Miss counter display (top-right, below hearts)
+            this._missText = this.add.text(GW-10, 10, '❌ 0/' + MAX_MISSES,
+                {fontSize:'12px',fill:'#f87171',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:2}
+            ).setOrigin(1,0).setDepth(10).setScrollFactor(0);
+
+            // Note spawner: use sequencer pattern if it has active notes, else random
             this._elapsed = 0;
             this._noteTimer = NOTE_INTERVAL;
-            this._pattern = liveConfig.seqPattern || null;
+            const _rawPat = liveConfig.seqPattern;
+            const _patHasNotes = Array.isArray(_rawPat) && _rawPat.some(row => Array.isArray(row) && row.some(v => v));
+            this._pattern = _patHasNotes ? _rawPat : null;
             this._patStep = 0;
+
+            // Countdown: 3 → 2 → 1 → GO! before notes start
+            this._countdownActive = true;
+            this._noteTimer = 9999; // hold spawning until GO
+            const cdStyle = {fontSize:'72px',fill:'#ffffff',fontFamily:"'Fredoka One',sans-serif",stroke:'#000',strokeThickness:6};
+            this._cdText = this.add.text(GW/2, GH/2, '3', cdStyle).setOrigin(0.5).setDepth(20).setScrollFactor(0);
+            const _doCount = (n) => {
+                if (n === 0) {
+                    this._cdText.setText('GO!').setStyle({...cdStyle, fill:'#00d4aa', fontSize:'64px'});
+                    this.tweens.add({targets:this._cdText, alpha:0, scaleX:1.5, scaleY:1.5, duration:500, onComplete:()=>{
+                        this._cdText.destroy(); this._cdText = null;
+                        this._countdownActive = false;
+                        this._noteTimer = NOTE_INTERVAL; // start spawning
+                        this._elapsed = 0; // reset elapsed so GRACE_MS applies from here
+                    }});
+                    GameAudio.play('levelup');
+                } else {
+                    this._cdText.setText(String(n)).setAlpha(1).setScale(1);
+                    this.tweens.add({targets:this._cdText, alpha:0.3, scaleX:0.7, scaleY:0.7, duration:750, onComplete:()=>{
+                        this._cdText.setAlpha(1).setScale(1);
+                        this.time.delayedCall(250, ()=>_doCount(n-1));
+                    }});
+                    GameAudio.play('score');
+                }
+            };
+            this.time.delayedCall(300, ()=>_doCount(3));
+
             _updateLandscapeNudge(true);
         }
 
@@ -15960,6 +16076,7 @@ function sceneRhythm(data) {
                 // Only penalise after grace period has passed
                 if (this._elapsed > GRACE_MS) {
                     this._miss++; this._combo=0;
+                    if (this._missText) this._missText.setText('❌ '+this._miss+'/'+MAX_MISSES);
                     this._showJudge('MISS', 0xef4444);
                 } else {
                     this._showJudge('WAIT...', 0x94a3b8);
@@ -15993,24 +16110,26 @@ function sceneRhythm(data) {
 
         update(time, delta) {
             const dt = delta/1000;
-            this._elapsed += delta;
+            if (!this._countdownActive) this._elapsed += delta;
 
-            // Spawn notes
-            this._noteTimer -= delta;
-            if(this._noteTimer <= 0) {
-                this._noteTimer = NOTE_INTERVAL;
-                if(this._pattern) {
-                    // Use sequencer pattern: each row = lane, each step = time slot
-                    for(let r=0;r<Math.min(4,this._pattern.length);r++) {
-                        if(this._pattern[r][this._patStep%8]) this._spawnNote(r);
+            // Spawn notes (held during countdown)
+            if (!this._countdownActive) {
+                this._noteTimer -= delta;
+                if(this._noteTimer <= 0) {
+                    this._noteTimer = NOTE_INTERVAL;
+                    if(this._pattern) {
+                        // Use sequencer pattern: each row = lane, each step = time slot
+                        for(let r=0;r<Math.min(4,this._pattern.length);r++) {
+                            if(this._pattern[r][this._patStep%8]) this._spawnNote(r);
+                        }
+                        this._patStep++;
+                    } else {
+                        // Random: 1-2 notes per beat
+                        const numNotes = Math.random()<0.4?Math.min(2,LANES):1;
+                        const lanePool = Array.from({length:LANES},(_,i)=>i);
+                        const lanes = Phaser.Utils.Array.Shuffle(lanePool).slice(0,numNotes);
+                        lanes.forEach(l=>this._spawnNote(l));
                     }
-                    this._patStep++;
-                } else {
-                    // Random: 1-2 notes per beat (only from active lanes)
-                    const numNotes = Math.random()<0.4?Math.min(2,LANES):1;
-                    const lanePool = Array.from({length:LANES},(_,i)=>i);
-                    const lanes = Phaser.Math.Shuffle(lanePool).slice(0,numNotes);
-                    lanes.forEach(l=>this._spawnNote(l));
                 }
             }
 
@@ -16019,10 +16138,11 @@ function sceneRhythm(data) {
                 n.y += NOTE_SPD * dt;
                 if(n.y > GH + 40) {
                     n.destroy();
-                    if (this._elapsed > GRACE_MS) {
+                    if (!this._countdownActive && this._elapsed > GRACE_MS) {
                         this._miss++; this._combo=0;
                         this._comboText.setText('');
-                        if(this._miss >= 20 && !this._gameOverPending) {
+                        if (this._missText) this._missText.setText('❌ '+this._miss+'/'+MAX_MISSES);
+                        if(this._miss >= MAX_MISSES && !this._gameOverPending) {
                             this._gameOverPending = true;
                             this.time.delayedCall(200,()=>showGameOver(this.score));
                         }
