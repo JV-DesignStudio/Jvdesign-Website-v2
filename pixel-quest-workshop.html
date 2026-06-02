@@ -1,0 +1,744 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Quest! Build a Zelda-Style Game in Godot | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:#1a1a1a;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ── SERIES STRIP ── */
+.series-strip{background:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#457b9d);padding:6px 24px;text-align:center}
+.series-strip span{font-size:.75rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+/* ── NAV ── */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,0.08);box-shadow:0 2px 18px rgba(64,59,51,0.08);}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+.logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;margin-right:auto;text-decoration:none;color:inherit;}
+.logo-link img{height:36px;border-radius:8px;display:block;}
+.logo-name{font-weight:800;color:#BC4749;}
+.main-nav{display:flex;align-items:center;gap:2px;}
+.nav-link{font-size:0.85rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;white-space:nowrap;transition:background 0.15s,color 0.15s;text-decoration:none;}
+.nav-link:hover{background:#F0EAD6;color:#403B33;}
+.nav-toggle{display:none;background:none;border:none;padding:8px 12px;font-size:1.4rem;cursor:pointer;color:#403B33;flex-shrink:0;line-height:1;}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:white;border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(64,59,51,0.18);max-height:0;overflow:hidden;transition:max-height 0.4s ease;}
+.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto;}
+.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,0.06);transition:background 0.12s;text-decoration:none;}
+.mobile-nav a:last-child{border-bottom:none;}
+.mobile-nav a:hover{background:#F0EAD6;color:#403B33;}
+@media(max-width:860px){.main-nav{display:none!important;}.nav-toggle{display:block!important;}}
+@media(min-width:861px){.mobile-nav{display:none!important;}}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,#f0fdf4 50%,#dcfce7 100%);border-bottom:3px solid #86efac;overflow:hidden;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 85% 40%,rgba(34,197,94,.08) 0%,transparent 55%)}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#166534;border:1.5px solid #86efac;border-radius:999px;padding:4px 14px;margin-bottom:8px;background:#fff}
+.series-label{display:block;font-size:.85rem;font-weight:900;color:#166534;letter-spacing:.04em;margin-bottom:6px;opacity:.85}
+.hero h1{font-family:'Press Start 2P',monospace;font-size:clamp(1.3rem,3.5vw,2rem);line-height:1.3;color:#14532d;margin-bottom:10px;text-shadow:2px 2px 0 #bbf7d0}
+.hero h1 .accent{color:#16a34a}
+.hero h1 .subtitle-h1{display:block;font-family:'Nunito',sans-serif;font-size:clamp(1rem,2.2vw,1.3rem);color:#555;font-weight:900;margin-top:8px;text-shadow:none}
+.hero p.lead{font-size:1rem;color:#555;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid #ddd;border-radius:999px;padding:5px 14px;color:#333;background:#fff}
+.hero-img{width:170px;height:170px;background:linear-gradient(135deg,#dcfce7,#bbf7d0);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:5rem;flex-shrink:0;box-shadow:0 6px 30px rgba(22,163,74,.18);border:2.5px solid #86efac;position:relative;overflow:hidden}
+.hero-img::after{content:'✨';position:absolute;top:8px;right:10px;font-size:1.4rem;animation:sparkle 2s ease-in-out infinite}
+@keyframes sparkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* ── PIXEL GRID DETAIL ── */
+.pixel-strip{height:8px;background:repeating-linear-gradient(90deg,#22c55e 0,#22c55e 8px,#16a34a 8px,#16a34a 16px);opacity:.3;margin-bottom:0}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#166534;border-bottom-color:#16a34a}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1.5px solid #86efac;border-radius:14px;padding:18px 22px;margin-bottom:28px;box-shadow:0 2px 12px rgba(22,163,74,.07)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#16a34a}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:8px;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0;font-family:'Press Start 2P',monospace}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#16a34a;color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.dot.locked{cursor:default}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #e4f0e8;border-radius:18px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#16a34a;box-shadow:0 4px 24px rgba(22,163,74,.12)}
+.step-card.locked{opacity:.5}
+.step-card.done{border-color:#d1fae5}
+
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:10px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa;font-family:'Press Start 2P',monospace}
+.step-card.current .step-num{border-color:#16a34a;color:#16a34a;background:#f0fdf4}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.6rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:5px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#fef9c3;color:#854d0e}
+.tag-current{background:#dcfce7;color:#166534}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-family:'Press Start 2P',monospace;font-size:.82rem;color:#14532d;line-height:1.5}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:4px;font-family:'Nunito',sans-serif}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.step-card.current .step-status{color:#16a34a}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #e8f5ec}
+
+.goal-box{background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#166534;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tryit{background:#f0fdf4;border:1.5px dashed #4ade80;color:#14532d}
+
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#16a34a;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:6px;background:#16a34a;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+
+/* CODE */
+.code-block{background:#0d1117;border-radius:12px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;color:#c9d1d9;overflow-x:auto;border:1.5px solid #21262d}
+.code-block .cm{color:#8b949e}
+.code-block .kw{color:#7ee787}
+.code-block .fn{color:#d2a8ff}
+.code-block .st{color:#a5d6ff}
+.code-block .nu{color:#f0883e}
+
+/* DONE BUTTON */
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2.5px solid #22c55e;border-radius:12px;font-family:'Press Start 2P',monospace;font-size:.75rem;color:#166534;cursor:pointer;transition:background .15s,transform .1s;text-align:center;letter-spacing:.03em;line-height:1.6}
+.done-btn:hover{background:#f0fdf4;transform:translateY(-1px)}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e4f0e8;border-radius:16px;padding:20px}
+.about-card h3{font-family:'Press Start 2P',monospace;font-size:.75rem;color:#166534;margin-bottom:10px;display:flex;align-items:center;gap:6px;line-height:1.5}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* FOOTER */
+.site-footer{background:#403B33;padding:52px 24px 28px;}
+.footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+.footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+.footer-tagline{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(240,234,214,0.65);}
+.footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.65);padding:4px 9px;border-radius:6px;transition:color 0.15s,background 0.15s;text-decoration:none;}
+.footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+.footer-socials{display:flex;gap:24px;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:700;color:rgba(240,234,214,0.65);transition:color 0.15s;text-decoration:none;}
+.footer-socials a:hover{color:#F0EAD6;}
+.footer-copy{font-size:0.73rem;color:rgba(240,234,214,0.45);border-top:1px solid rgba(255,255,255,0.07);padding-top:18px;width:100%;}
+
+@media(max-width:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-img{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 4</span>
+</div>
+
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+      <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="games.html" class="nav-link">🎮 Games</a>
+      <a href="books.html" class="nav-link">📚 Books</a>
+      <a href="learn-hub.html" class="nav-link">🎓 Learn Hub</a>
+      <a href="workshop.html" class="nav-link">🔧 Workshop</a>
+      <a href="dev-tools.html" class="nav-link">🛠️ Dev Tools</a>
+      <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+      <a href="content_hub.html" class="nav-link">📋 Content Hub</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="games.html">🎮 Games</a>
+    <a href="books.html">📚 Books</a>
+    <a href="learn-hub.html">🎓 Learn Hub</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="dev-tools.html">🛠️ Dev Tools</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="content_hub.html">📋 Content Hub</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <span class="series-label">⭐ My First Video Game</span>
+      <h1><span class="accent">PIXEL QUEST!</span> 🗡️<span class="subtitle-h1">Build Your Own Zelda-Style Adventure</span></h1>
+      <p class="lead">Explore a top-down world, swing your sword at slimes, find a hidden chest, and unlock the exit! Your very own legend begins right here.</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 6+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 12 fun steps</span>
+      </div>
+    </div>
+    <div class="hero-img">🗡️</div>
+  </div>
+</section>
+<div class="pixel-strip"></div>
+
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Go!</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we making?</button>
+  </div>
+</div>
+
+<main class="main">
+
+  <div id="tab-workshop" class="tab-pane active">
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">⚔️ Quest Progress</span>
+        <span class="progress-count" id="prog-count">0 / 12 steps</span>
+      </div>
+      <div class="step-dots" id="dot-row"></div>
+    </div>
+    <div id="steps-container"></div>
+  </div>
+
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎮 What We're Building</h3>
+        <p>A <strong>top-down adventure game</strong> just like the original Legend of Zelda! Your hero walks in all four directions, fights bouncing slime enemies with a sword, collects a chest, and escapes through a locked door.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>Have you ever played Zelda? It's a game where a little hero explores a world full of puzzles and monsters. We're going to make our OWN version with our own hero, our own slimes, and our own dungeon to explore. You'll even make a SWORD to fight with!</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>Episode 4 of My First Video Game. Biggest new concepts: <strong>top-down 4-directional movement</strong> (no gravity!), a <strong>sword hitbox</strong> using a short-lived Area2D, <strong>bouncing slime AI</strong> using velocity reflection, a <strong>chest</strong> with an open/close state, and a <strong>locked door</strong> that opens when a key is collected. All new patterns, no prior episodes required.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What You'll Make</h3>
+        <ul>
+          <li>A hero who walks in all 4 directions</li>
+          <li>Walls they can't walk through</li>
+          <li>A sword attack with a button press</li>
+          <li>A bouncing slime enemy</li>
+          <li>A chest to open and collect a key</li>
+          <li>A locked door that opens with the key</li>
+          <li>A hearts health system</li>
+          <li>A win screen when you escape!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">JVDesignStudio</span>
+      <span class="footer-tagline">Books · Games · Creative Adventures</span>
+    </div>
+    <nav class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="content_hub.html">All Projects</a>
+      <a href="freebies.html">Free Downloads</a>
+      <a href="about.html">About</a>
+      <a href="press.html">Press Kit</a>
+      <a href="contact.html">Contact</a>
+      <a href="newsletter.html">Newsletter</a>
+      <a href="search.html">Search</a>
+      <a href="videos.html">Videos</a>
+      <a href="sitemap.html">Sitemap</a>
+    </nav>
+    <nav class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+    </nav>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+const STEPS = [
+  {
+    emoji: '🌟',
+    tag: 'Start here',
+    tagClass: 'tag-new',
+    title: 'Welcome, Hero!',
+    subtitle: 'Your adventure is about to begin!',
+    goal: 'Understand what we\'re building and get Godot open and ready!',
+    child: 'We\'re going to build a game like the Legend of Zelda one of the most famous adventure games EVER! Your tiny hero will walk around a dungeon, swing a sword at slimes, find a chest with a key, and escape through a locked door. You\'re going to make every single piece of it. Let\'s go, hero! ⚔️',
+    parent: 'Episode 4 introduces top-down movement no gravity at all this time. The hero moves in four directions using a velocity vector. New concepts across the 12 steps: 4-directional movement, sword as a temporary Area2D child, slime AI with velocity bouncing, chest state machine (closed → open), key pickup with an Area2D, and a locked door that watches for a signal. Each concept is genuinely new vs the platformer episodes.',
+    note: 'This is the most ambitious episode so far but each step is still small and achievable. The sword attack in Step 6 is the most exciting moment for kids. If you\'re short on time, Steps 1–7 give a complete playable game; Steps 8–12 add polish and depth.',
+    tryit: null,
+    steps: null,
+    code: null,
+  },
+  {
+    emoji: '📁',
+    tag: 'Step 1',
+    tagClass: 'tag-new',
+    title: 'New Project Pixel Quest!',
+    subtitle: 'Open the gates to our dungeon!',
+    goal: 'Create a new Godot 4 project called "Pixel Quest" and set it up.',
+    child: 'Time to open Godot and start fresh! Every adventure begins somewhere ours begins with a brand new project. Let\'s name it and get it ready!',
+    parent: 'Standard Godot 4 setup, Compatibility renderer. Square window works well for top-down: try 512×512 or 640×640 in Project Settings → Display → Window. This gives a classic Zelda dungeon-room feel.',
+    note: null,
+    tryit: 'Try setting the window to a square! Go to Project → Project Settings → Display → Window. Set Width and Height both to <strong>576</strong>. Dungeon rooms are square!',
+    steps: [
+      'Open <strong>Godot 4</strong> and click <strong>"New Project"</strong>.',
+      'Name it <strong>Pixel Quest</strong>. Save it somewhere on your Desktop.',
+      'Set Renderer to <strong>Compatibility</strong>. Click <strong>"Create &amp; Edit"</strong>.',
+      'Optional: Go to <strong>Project → Project Settings → Display → Window</strong>. Set Width and Height both to <strong>576</strong>.',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🧝',
+    tag: 'Step 2',
+    tagClass: 'tag-locked',
+    title: 'Build the Hero',
+    subtitle: 'A brave adventurer who walks in all directions!',
+    goal: 'Create a Hero scene that moves up, down, left, and right no jumping, no gravity!',
+    child: 'This time our hero doesn\'t jump at all! Instead of running and jumping, our Zelda hero walks in ALL FOUR directions up, down, left, right. It\'s a completely different kind of movement, and it feels really cool!',
+    parent: 'Hero scene: CharacterBody2D → Sprite2D + CollisionShape2D (CircleShape2D works well for top-down). No gravity variable needed. Movement uses Input.get_vector("ui_left","ui_right","ui_up","ui_down") which returns a Vector2 normalize it to prevent diagonal speed boost, then multiply by SPEED. Add to "player" group. Save as hero.tscn.',
+    note: 'get_vector() is the cleanest way to handle 4-directional movement in Godot 4 it handles diagonals gracefully and returns a properly normalised vector when two keys are held. No if/elif chains needed.',
+    tryit: 'Press F5. Can your hero walk up, down, left, and right? They\'ll walk through walls for now — we\'ll fix that next!',
+    steps: [
+      'Click <strong>Scene → New Scene</strong>. Root: <strong>CharacterBody2D</strong>. Rename to <strong>Hero</strong>.',
+      'Add child <strong>Sprite2D</strong> (bright colour green looks heroic!) and <strong>CollisionShape2D</strong> (CircleShape2D).',
+      'In the <strong>Node tab</strong>, add to group: <strong>player</strong>.',
+      'Attach a script and type the code below. Save as <strong>hero.tscn</strong>.',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED = 180
+
+func _physics_process(delta):
+    # get_vector gives us left/right/up/down as one Vector2
+    var dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+    velocity = dir * SPEED
+    move_and_slide()`,
+  },
+  {
+    emoji: '🧱',
+    tag: 'Step 3',
+    tagClass: 'tag-locked',
+    title: 'Build the Dungeon Room!',
+    subtitle: 'Four walls and a floor a classic dungeon!',
+    goal: 'Create a Main scene with a TileMapLayer dungeon floor and solid walls the hero bumps into.',
+    child: 'Our hero needs somewhere to explore! We\'re going to build a dungeon room a floor made of tiles and thick walls all around the edge. It\'s like building a room out of blocks. You get to be the dungeon designer!',
+    parent: 'Main scene: Node2D root. Add a TileMapLayer. Create a TileSet with two tile types: a floor tile (passable no physics) and a wall tile (with Physics Layer collision). Paint a full floor, then a border of wall tiles. Instance hero.tscn somewhere in the middle. Add a Camera2D to the hero. For simplicity, one room only no scrolling needed at this stage.',
+    note: 'Unlike the platformer, wall tiles need collision on all four sides the default RectangleShape2D for tile physics handles this automatically. Remind the child to add wall tiles around all four edges or the hero will walk off screen.',
+    tryit: 'Press F5 and walk into a wall. Does the hero stop? Try every direction. Is the hero trapped inside the room? 🏰',
+    steps: [
+      'Click <strong>Scene → New Scene</strong>. Root: <strong>Node2D</strong>. Save as <strong>main.tscn</strong>.',
+      'Add a child <strong>TileMapLayer</strong>. In Inspector, create a <strong>New TileSet</strong>.',
+      'Add a tile source. Make a <strong>floor tile</strong> (no physics) and a <strong>wall tile</strong> (add Physics Layer collision).',
+      'Paint a full floor, then paint wall tiles around all the edges.',
+      'Drag <strong>hero.tscn</strong> into the scene. Place hero in the middle.',
+      'Open hero.tscn and add a <strong>Camera2D</strong> child (Zoom: x2, y2).',
+      'Press <strong>Ctrl+S</strong> then <strong>F5</strong>!',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🟢',
+    tag: 'Step 4',
+    tagClass: 'tag-locked',
+    title: 'Add a Bouncing Slime!',
+    subtitle: 'Our first enemy wobbly, bouncy, and dangerous!',
+    goal: 'Make a Slime enemy that bounces around the dungeon room all by itself.',
+    child: 'What\'s a dungeon without a monster?! We\'re going to make a little slime that bounces around the room on its own. It doesn\'t chase you it just bounces. But if it touches you... look out! 🟢',
+    parent: 'Slime scene: CharacterBody2D → Sprite2D (green circle) + CollisionShape2D (CircleShape2D). Script: constant velocity (e.g. Vector2(120, 90)). In _physics_process, call move_and_slide(), then check get_slide_collision_count() if > 0, reflect velocity using the collision normal: velocity = velocity.bounce(collision.get_normal()). Add to "enemy" group. Save as slime.tscn.',
+    note: 'velocity.bounce(normal) is a lovely one-liner that handles wall reflection perfectly. The asymmetric starting velocity (e.g. 120,90 rather than 100,100) prevents the slime getting stuck bouncing back and forth perfectly horizontally a classic gotcha.',
+    tryit: 'Place a slime in your dungeon room and press F5. Does it bounce off the walls? Add two or three more slimes! 🟢🟢🟢',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>CharacterBody2D</strong>. Rename it <strong>Slime</strong>.',
+      'Add <strong>Sprite2D</strong> (green!) and <strong>CollisionShape2D</strong> (CircleShape2D).',
+      'In the <strong>Node tab</strong>, add to group: <strong>enemy</strong>.',
+      'Attach the script below. Save as <strong>slime.tscn</strong>.',
+      'Place 2–3 slimes inside the dungeon room in main.tscn.',
+    ],
+    code: `extends CharacterBody2D
+
+# Start moving at an angle so bouncing looks natural
+var velocity_dir = Vector2(120, 90)
+
+func _physics_process(delta):
+    velocity = velocity_dir
+    move_and_slide()
+
+    # Bounce off anything we hit
+    for i in get_slide_collision_count():
+        var col = get_slide_collision(i)
+        velocity_dir = velocity_dir.bounce(col.get_normal())`,
+  },
+  {
+    emoji: '💚',
+    tag: 'Step 5',
+    tagClass: 'tag-locked',
+    title: 'Give the Hero a Heart System!',
+    subtitle: 'Three hearts don\'t lose them all!',
+    goal: 'Show three hearts on screen. When a slime touches the hero, they lose a heart!',
+    child: 'In Zelda, the hero has HEARTS for health! We\'re going to show three hearts at the top of the screen. If a slime touches you, you lose a heart. Lose all three game over! Guard those hearts! 💚💚💚',
+    parent: 'Add a CanvasLayer → HBoxContainer → three Label nodes showing ❤️ to main.tscn for the HUD. Track lives = 3 in the hero script. Add an Area2D (HurtBox) as a child of Hero. On body_entered with "enemy" group: decrement lives, update the HUD label, add a brief invincibility timer (1 second) to prevent rapid-fire hits, then reload scene if lives == 0.',
+    note: 'Invincibility frames after being hit are essential game feel without them the hero can lose all 3 hearts in a single slime collision. A simple bool is_hurt + await get_tree().create_timer(1.0).timeout achieves this cleanly.',
+    tryit: 'Walk into a slime on purpose. Does a heart disappear? Walk into it twice more does Game Over appear?',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>CanvasLayer</strong>. Inside it add a <strong>Label</strong> named <strong>HeartsLabel</strong>. Set its text to <strong>❤️❤️❤️</strong>. Position it top-left.',
+      'Open <strong>hero.tscn</strong>. Add a child <strong>Area2D</strong>, name it <strong>HurtBox</strong>. Add a matching <strong>CollisionShape2D</strong>.',
+      'Connect <strong>body_entered</strong> on HurtBox to the hero script.',
+      'Add the code below to your hero script. Drag the HeartsLabel into the export slot in Inspector.',
+    ],
+    code: `# ADD to hero.tscn script:
+
+@export var hearts_label: Label
+var lives = 3
+var is_hurt = false
+
+func _on_hurt_box_body_entered(body):
+    if body.is_in_group("enemy") and not is_hurt:
+        is_hurt = true
+        lives -= 1
+        _update_hearts()
+        if lives <= 0:
+            get_tree().reload_current_scene()
+        # Invincibility frames — 1 second safe time
+        await get_tree().create_timer(1.0).timeout
+        is_hurt = false
+
+func _update_hearts():
+    var h = ""
+    for i in lives:
+        h += "❤️"
+    hearts_label.text = h`,
+  },
+  {
+    emoji: '⚔️',
+    tag: 'Step 6',
+    tagClass: 'tag-locked',
+    title: 'Give the Hero a Sword!',
+    subtitle: 'The most exciting step fight back!',
+    goal: 'Press Space to swing a sword that destroys slimes it touches!',
+    child: 'HERE IT IS THE SWORD! 🗡️ Press the Space bar and your hero swings their sword. If a slime is in the way BONK! It\'s gone. This is the moment our game really feels like Zelda. Get ready to fight!',
+    parent: 'Add a child Area2D (Sword) to the Hero, with a small RectangleShape2D positioned in front of the sprite. Default: disabled (monitoring = false). On Space press, enable it for 0.2 seconds, then disable again. Connect body_entered on Sword if body is in "enemy" group, queue_free() the slime. Facing direction: flip the sword\'s position based on the last movement direction.',
+    note: 'Start with the sword always pointing right for simplicity directional facing can be added as a stretch goal. The 0.2s window is enough to feel snappy without making it overpowered. Use $Sword.monitoring = true/false to toggle the hitbox cleanly.',
+    tryit: 'Press F5 and walk up to a slime. Press Space did it disappear? Try hitting two slimes! ⚔️',
+    steps: [
+      'Open <strong>hero.tscn</strong>. Add a child <strong>Area2D</strong>, rename it <strong>Sword</strong>.',
+      'Add a <strong>CollisionShape2D</strong> to Sword: a small <strong>RectangleShape2D</strong> positioned to the <em>right</em> of the hero.',
+      'In Inspector on the Sword Area2D, set <strong>Monitoring: OFF</strong> (unchecked).',
+      'Connect <strong>body_entered</strong> on Sword to the hero script.',
+      'Add the sword code below to your hero script.',
+    ],
+    code: `# ADD to hero.tscn script:
+
+@onready var sword = $Sword
+var attacking = false
+
+func _physics_process(delta):
+    # ... keep your existing movement code ...
+
+    # Swing the sword on Space!
+    if Input.is_action_just_pressed("ui_accept") and not attacking:
+        _swing_sword()
+
+func _swing_sword():
+    attacking = true
+    sword.monitoring = true          # Turn the hitbox ON
+    await get_tree().create_timer(0.2).timeout
+    sword.monitoring = false         # Turn it OFF again
+    attacking = false
+
+func _on_sword_body_entered(body):
+    if body.is_in_group("enemy"):
+        body.queue_free()            # Slime destroyed!`,
+  },
+  {
+    emoji: '📦',
+    tag: 'Step 7',
+    tagClass: 'tag-locked',
+    title: 'Add a Treasure Chest!',
+    subtitle: 'Something shiny is waiting to be found...',
+    goal: 'Place a chest in the dungeon. When the hero touches it, it opens and gives a key!',
+    child: 'Every Zelda game has a treasure chest hiding something important! We\'re going to make a chest that sits in the dungeon. When you walk up to it, it OPENS and gives you a key. That key opens a special locked door but first, we need to find the chest! 📦',
+    parent: 'Chest scene: StaticBody2D → Sprite2D + CollisionShape2D (to block movement) + Area2D (detect hero overlap). Two states: closed (normal sprite) and open (change modulate or swap texture). On Area2D body_entered with "player": if closed, change to open state, emit a key_collected signal, give hero a has_key = true variable. The StaticBody2D keeps the chest as a solid obstacle even when open.',
+    note: 'Using a signal (key_collected) from the Chest to the Door keeps the two objects loosely coupled a great pattern to introduce even at this level. Connect it in main.tscn via the editor.',
+    tryit: 'Walk into the chest. Does it change colour or look "open"? Does the hero now have a key? (We\'ll use it in the next step!)',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>StaticBody2D</strong>. Rename it <strong>Chest</strong>.',
+      'Add <strong>Sprite2D</strong> (yellow/brown box!), <strong>CollisionShape2D</strong> (RectangleShape2D).',
+      'Add a child <strong>Area2D</strong> (name it <strong>OpenZone</strong>) with its own <strong>CollisionShape2D</strong> slightly larger than the chest.',
+      'Attach the script below. Connect <strong>body_entered</strong> on OpenZone.',
+      'Save as <strong>chest.tscn</strong>. Place it somewhere in your dungeon in main.tscn.',
+    ],
+    code: `extends StaticBody2D
+
+signal key_collected  # Broadcast when opened!
+
+var is_open = false
+
+func _on_open_zone_body_entered(body):
+    if body.is_in_group("player") and not is_open:
+        is_open = true
+        body.has_key = true           # Give the hero the key
+        $Sprite2D.modulate = Color.YELLOW  # Glow to show it's open!
+        key_collected.emit()          # Tell the door!`,
+  },
+  {
+    emoji: '🔐',
+    tag: 'Step 8',
+    tagClass: 'tag-locked',
+    title: 'Add a Locked Door!',
+    subtitle: 'You need the key to get through...',
+    goal: 'Place a locked door that opens only when the hero has collected the key from the chest.',
+    child: 'Now we use that key! We\'re going to put a locked door on one side of the dungeon. It\'s solid as a wall until you have the key then it disappears and you can escape! Can you fight through the slimes and find the chest in time? 🔐',
+    parent: 'Door scene: StaticBody2D → Sprite2D (dark rectangle across a wall gap) + CollisionShape2D + Area2D (detect hero). On body_entered with "player": check body.has_key if true, play an open animation (modulate fade or queue_free() the collision + change sprite). Alternatively, connect to the chest\'s key_collected signal and open automatically. Both approaches work; signal-based is cleaner.',
+    note: null,
+    tryit: 'Try walking into the door WITHOUT the key. Does it block you? Now collect the chest first, then try the door. Does it open? 🎉',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>StaticBody2D</strong>. Rename it <strong>Door</strong>.',
+      'Add <strong>Sprite2D</strong> (dark colour, wide rectangle) and <strong>CollisionShape2D</strong> to block the gap in one wall.',
+      'Add a child <strong>Area2D</strong> (DetectZone) with a CollisionShape2D.',
+      'Attach the script below. Connect <strong>body_entered</strong> on DetectZone.',
+      'Save as <strong>door.tscn</strong>. Place it in a gap in one of your dungeon walls.',
+    ],
+    code: `extends StaticBody2D
+
+var is_open = false
+
+func _on_detect_zone_body_entered(body):
+    if body.is_in_group("player") and body.has_key and not is_open:
+        is_open = true
+        $Sprite2D.hide()          # Door disappears!
+        $CollisionShape2D.disabled = true  # Hero can walk through`,
+  },
+  {
+    emoji: '🏆',
+    tag: 'Step 9',
+    tagClass: 'tag-locked',
+    title: 'Add the Win Condition!',
+    subtitle: 'Escape the dungeon and claim victory!',
+    goal: 'Place an exit zone once the door is open, step through it to win!',
+    child: 'The door is open now we need something waiting on the other side! We\'ll put an invisible exit zone just outside the door. Step through the open door and into it YOU WIN! You\'ve escaped the dungeon! 🏆✨',
+    parent: 'Exit scene: Area2D → CollisionShape2D (positioned just outside the door gap). On body_entered with "player": show CanvasLayer "You Escaped! 🎉" win label. Same pattern as Jump Jump and Barrel Blast consistent win condition across all episodes.',
+    note: null,
+    tryit: 'Beat all the slimes, get the key, open the door, and step through. Does the win screen appear? You made a real Zelda game! 🎉',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Area2D</strong>. Rename it <strong>Exit</strong>.',
+      'Add a <strong>CollisionShape2D</strong> — place it just outside your door gap.',
+      'Attach the script below. Connect <strong>body_entered</strong>.',
+      'Save as <strong>exit.tscn</strong>. Place it just outside the locked door in main.tscn.',
+      'Add a <strong>CanvasLayer → Label</strong> in main.tscn: <strong>"You Escaped! 🎉"</strong> — hidden by default.',
+    ],
+    code: `extends Area2D
+
+@export var win_label: Label
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        win_label.show()`,
+  },
+  {
+    emoji: '🧪',
+    tag: 'Step 10',
+    tagClass: 'tag-locked',
+    title: 'Add a Health Potion!',
+    subtitle: 'A little green bottle that heals one heart!',
+    goal: 'Place a potion in the dungeon touching it restores one heart!',
+    child: 'What if the slimes get you and you lose a heart? That\'s what potions are for! We\'re going to hide a little green bottle somewhere in the dungeon. Find it and touch it a heart comes back! Healing magic! 🧪💚',
+    parent: 'Potion scene: Area2D → Sprite2D (green bottle emoji or green circle) + CollisionShape2D. On body_entered with "player": if hero lives < 3, increment lives, call _update_hearts(), queue_free(). Simple and satisfying. Place it somewhere the player has to navigate around slimes to reach.',
+    note: null,
+    tryit: 'Get hit by a slime on purpose so you lose a heart. Then find the potion and touch it. Does your heart come back? 💚',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Area2D</strong>. Rename it <strong>Potion</strong>.',
+      'Add <strong>Sprite2D</strong> (🧪 green!) and <strong>CollisionShape2D</strong>.',
+      'Attach the script below. Connect <strong>body_entered</strong>.',
+      'Save as <strong>potion.tscn</strong>. Hide it somewhere tricky in the dungeon!',
+    ],
+    code: `extends Area2D
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        # Only heal if not already at full health
+        if body.lives < 3:
+            body.lives += 1
+            body._update_hearts()
+        queue_free()  # Potion is used up!`,
+  },
+  {
+    emoji: '🎨',
+    tag: 'Step 11',
+    tagClass: 'tag-locked',
+    title: 'Make It Your Own!',
+    subtitle: 'Design your dungeon, name your hero, add your twist!',
+    goal: 'Customise everything make this YOUR quest!',
+    child: 'YOUR DUNGEON! YOUR RULES! 🎉 Add more rooms, more slimes, more potions! Give your hero a name. Make the walls a spooky colour. Design secret passages! You\'ve built a real top-down adventure game. You are officially a video game developer. Go wild! 🗡️⚔️🏰',
+    parent: 'Great stretch ideas: add facing direction to the sword (flip $Sword.position.x based on last horizontal input); add a second room using change_scene_to_file(); add AnimationPlayer for a sword swing animation; add AudioStreamPlayer for footstep and sword sounds; add a second enemy type that slowly follows the player using (player_pos - position).normalized() * speed.',
+    note: null,
+    tryit: 'Show your finished game to someone and challenge them to escape the dungeon! How fast can they do it? 🏆',
+    steps: [
+      'Redesign your <strong>dungeon layout</strong> move the chest, change the door position, add more walls!',
+      'Add <strong>more slimes</strong> in different starting positions.',
+      'Add a <strong>second potion</strong> hidden somewhere really sneaky.',
+      'Change all the <strong>colours</strong> make it dark and spooky, or bright and magical!',
+      'Give the game a <strong>name</strong> in <strong>Project → Project Settings → Application → Name</strong>.',
+      'Bonus: Try making the sword face the direction the hero is moving! (Hint: check <code>velocity.x</code> and flip <code>$Sword.position.x</code>)',
+    ],
+    code: null,
+  },
+];
+
+let completedSteps = JSON.parse(localStorage.getItem('pixelQuestProgress') || '[]');
+
+function saveProgress(){localStorage.setItem('pixelQuestProgress',JSON.stringify(completedSteps))}
+
+function getStatus(i){
+  if(completedSteps.includes(i))return'done';
+  const first=STEPS.findIndex((_,idx)=>!completedSteps.includes(idx));
+  if(i===first)return'current';
+  if(i<first)return'done';
+  return'locked';
+}
+
+function buildDots(){
+  const row=document.getElementById('dot-row');
+  row.innerHTML='';
+  STEPS.forEach((_,i)=>{
+    const s=getStatus(i);
+    const d=document.createElement('div');
+    d.className=`dot ${s}`;
+    d.textContent=s==='done'?'✓':i+1;
+    d.onclick=()=>{if(s!=='locked')scrollToStep(i)};
+    row.appendChild(d);
+  });
+  const done=STEPS.filter((_,i)=>getStatus(i)==='done').length;
+  document.getElementById('prog-count').textContent=`${done} / ${STEPS.length} steps`;
+}
+
+function scrollToStep(i){document.getElementById(`step-${i}`)?.scrollIntoView({behavior:'smooth',block:'center'})}
+
+function buildSteps(){
+  const container=document.getElementById('steps-container');
+  container.innerHTML='';
+  STEPS.forEach((s,i)=>{
+    const status=getStatus(i);
+    const card=document.createElement('div');
+    card.className=`step-card ${status}`;
+    card.id=`step-${i}`;
+
+    const tagLabel=status==='done'?'✅ Done':status==='current'?'▶ Current':status==='locked'?'🔒 Locked':s.tag;
+    const tagClass=status==='done'?'tag-done':status==='current'?'tag-current':status==='locked'?'tag-locked':s.tagClass;
+
+    let body='';
+    if(status!=='locked'){
+      if(s.goal)body+=`<div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>${s.goal}</p></div></div>`;
+      body+=`<div class="two-col"><div class="col-box child"><h4>🧒 For the child</h4><p>${s.child}</p></div><div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>${s.parent}</p></div></div>`;
+      if(s.note)body+=`<div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> ${s.note}</div></div>`;
+      if(s.steps){
+        body+=`<div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">`;
+        s.steps.forEach((st,si)=>{body+=`<li><span class="sn">${si+1}</span><span>${st}</span></li>`});
+        body+=`</ol></div>`;
+      }
+      if(s.code){
+        const c=s.code
+          .replace(/\#.*/g,m=>`<span class="cm">${m}</span>`)
+          .replace(/\b(extends|const|var|func|if|elif|else|return|await|and|or|not|signal|true|false|null|for|in)\b/g,'<span class="kw">$1</span>')
+          .replace(/"([^"]*)"/g,'<span class="st">"$1"</span>')
+          .replace(/\b(\d+\.?\d*)\b/g,'<span class="nu">$1</span>');
+        body+=`<div class="code-block"><pre>${c}</pre></div>`;
+      }
+      if(s.tryit)body+=`<div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> ${s.tryit}</div></div>`;
+      if(status==='current'){
+        const short=s.title.replace(/&amp;/g,'&').split('!')[0].trim();
+        body+=`<button class="done-btn" onclick="markDone(${i})">✅ DONE! →</button>`;
+      }
+    }
+
+    card.innerHTML=`
+      <div class="step-header" onclick="toggleBody(${i})">
+        <div class="step-num">${i+1}</div>
+        <span class="step-icon-badge">${s.emoji}</span>
+        <div class="step-title-wrap">
+          <span class="step-tag ${tagClass}">${tagLabel}</span>
+          <div class="step-title">${s.title}</div>
+          <div class="step-subtitle">${s.subtitle}</div>
+        </div>
+        <div class="step-status">${status==='done'?'✅':status==='current'?'▶ Current':status==='locked'?'🔒':''}</div>
+      </div>
+      ${status!=='locked'?`<div class="step-body" id="body-${i}">${body}</div>`:''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleBody(i){
+  const b=document.getElementById(`body-${i}`);
+  if(b)b.style.display=b.style.display==='none'?'':b.style.display==='block'?'none':'block';
+}
+
+function markDone(i){
+  if(!completedSteps.includes(i))completedSteps.push(i);
+  saveProgress();buildDots();buildSteps();
+  const next=STEPS.findIndex((_,idx)=>!completedSteps.includes(idx));
+  if(next>=0)setTimeout(()=>scrollToStep(next),100);
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+buildDots();buildSteps();
+</script>
+<script>(function(){const btn=document.getElementById('navToggle');const nav=document.getElementById('mobileNav');if(btn&&nav)btn.addEventListener('click',()=>nav.classList.toggle('open'));})();</script>
+</body>
+</html>

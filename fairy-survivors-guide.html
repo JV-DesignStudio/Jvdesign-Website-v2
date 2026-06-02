@@ -1,0 +1,841 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fairy Survivors! Build a Vampire Survivors Game in Godot | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ── NAV ── */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,0.08);box-shadow:0 2px 18px rgba(64,59,51,0.08);}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+.logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;margin-right:auto;text-decoration:none;color:inherit;}
+.logo-link img{height:36px;border-radius:8px;display:block;}
+.logo-name{font-weight:800;color:#BC4749;}
+.main-nav{display:flex;align-items:center;gap:2px;}
+.nav-link{font-size:0.85rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;white-space:nowrap;transition:background 0.15s,color 0.15s;text-decoration:none;}
+.nav-link:hover{background:#F0EAD6;color:#403B33;}
+.nav-toggle{display:none;background:none;border:none;padding:8px 12px;font-size:1.4rem;cursor:pointer;color:#403B33;flex-shrink:0;line-height:1;}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:white;border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(64,59,51,0.18);max-height:0;overflow:hidden;transition:max-height 0.4s ease;}
+.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto;}
+.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,0.06);transition:background 0.12s;text-decoration:none;}
+.mobile-nav a:last-child{border-bottom:none;}
+.mobile-nav a:hover{background:#F0EAD6;color:#403B33;}
+@media(max-width:860px){.main-nav{display:none!important;}.nav-toggle{display:block!important;}}
+@media(min-width:861px){.mobile-nav{display:none!important;}}
+
+/* ── HERO ── */
+.hero{background:#fff;border-bottom:1px solid #e8e8e4}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#555;border:1.5px solid #ddd;border-radius:999px;padding:4px 14px;margin-bottom:16px}
+.hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:900;line-height:1.05;color:#888;margin-bottom:6px}
+.hero h1 strong{color:#5a8a00;display:block}
+.hero p.lead{font-size:1rem;color:#555;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid #ddd;border-radius:999px;padding:5px 14px;color:#333;background:#fafafa}
+.hero-img{width:160px;height:160px;background:linear-gradient(135deg,#f0fff4,#d4f5c0);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:5rem;flex-shrink:0;box-shadow:0 4px 20px rgba(90,138,0,.15)}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#5a8a00;border-bottom-color:#5a8a00}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:18px 22px;margin-bottom:28px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#5a8a00}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#5a8a00;color:#5a8a00}
+.dot.locked{cursor:default}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:16px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#5a8a00;box-shadow:0 4px 24px rgba(90,138,0,.12)}
+.step-card.locked{opacity:.55}
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:12px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa}
+.step-card.current .step-num{border-color:#5a8a00;color:#5a8a00;background:#f4fff0}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.4rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:4px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#dbeafe;color:#1e40af}
+.tag-current{background:#f0fff4;color:#166534}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-size:1.05rem;font-weight:800;color:#1a1a1a;line-height:1.2}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:2px}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap}
+.step-card.current .step-status{color:#5a8a00}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #f0f0ec}
+.goal-box{background:#f8fff4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#5a8a00;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.child{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tip{background:#fffbeb;border:1.5px dashed #fcd34d;color:#713f12}
+.callout.tryit{background:#fff0f5;border:1.5px dashed #fbcfe8;color:#831843}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#5a8a00;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:50%;background:#5a8a00;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.code-block{background:#1e1b2e;border-radius:10px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.8;color:#e0d0ff;overflow-x:auto}
+.code-block .cm{color:#6b7280}
+.code-block .kw{color:#c084fc}
+.code-block .fn{color:#60a5fa}
+.code-block .st{color:#fcd34d}
+.code-block .nu{color:#6ee7b7}
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2px solid #22c55e;border-radius:10px;font-family:inherit;font-size:.95rem;font-weight:800;color:#166534;cursor:pointer;transition:background .15s;text-align:center}
+.done-btn:hover{background:#f0fdf4}
+
+/* ── WEAPON CARDS ── */
+.weapon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:14px 0}
+.weapon-card{background:#f8fff4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px;text-align:center}
+.weapon-card .wc-icon{font-size:2rem;margin-bottom:6px}
+.weapon-card h4{font-size:.88rem;font-weight:800;color:#166534;margin-bottom:4px}
+.weapon-card p{font-size:.78rem;font-weight:600;color:#555;line-height:1.4}
+.weapon-card .wc-unlock{font-size:.72rem;font-weight:800;color:#5a8a00;margin-top:6px;background:#d4f5c0;border-radius:4px;padding:2px 6px;display:inline-block}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:14px;padding:20px}
+.about-card h3{font-size:1rem;font-weight:800;color:#5a8a00;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* ── FOOTER ── */
+.site-footer{background:#403B33;padding:52px 24px 28px;}
+.footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+.footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+.footer-tagline{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(240,234,214,0.65);}
+.footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.65);padding:4px 9px;border-radius:6px;transition:color 0.15s,background 0.15s;text-decoration:none;}
+.footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+.footer-socials{display:flex;gap:24px;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:700;color:rgba(240,234,214,0.65);transition:color 0.15s;text-decoration:none;}
+.footer-socials a:hover{color:#F0EAD6;}
+.footer-copy{font-size:0.73rem;color:rgba(240,234,214,0.45);border-top:1px solid rgba(255,255,255,0.07);padding-top:18px;width:100%;}
+
+@media(max-width:680px){.hero-inner{grid-template-columns:1fr}.hero-img{display:none}}
+</style>
+</head>
+<body>
+
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+      <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="games.html" class="nav-link">🎮 Games</a>
+      <a href="books.html" class="nav-link">📚 Books</a>
+      <a href="learn-hub.html" class="nav-link">🎓 Learn Hub</a>
+      <a href="workshop.html" class="nav-link">🔧 Workshop</a>
+      <a href="dev-tools.html" class="nav-link">🛠️ Dev Tools</a>
+      <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+      <a href="content_hub.html" class="nav-link">📋 Content Hub</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="games.html">🎮 Games</a>
+    <a href="books.html">📚 Books</a>
+    <a href="learn-hub.html">🎓 Learn Hub</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="dev-tools.html">🛠️ Dev Tools</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="content_hub.html">📋 Content Hub</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <h1>Fairy Survivors! 🧚<strong>Enchanted Garden</strong></h1>
+      <p class="lead">You're a tiny fairy in a big garden full of bugs! Survive as long as you can — your magic attacks automatically and gets stronger the longer you last. How long can you hold on? 🌿</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 5+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 11 fun steps</span>
+      </div>
+    </div>
+    <div class="hero-img">🧚</div>
+  </div>
+</section>
+
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Go!</button>
+    <button class="tab-btn" onclick="showTab('weapons',this)">✨ Magic Spells</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we making?</button>
+  </div>
+</div>
+
+<main class="main">
+
+  <div id="tab-workshop" class="tab-pane active">
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">🌿 Workshop Progress</span>
+        <span class="progress-count" id="prog-count">0 / 11 steps</span>
+      </div>
+      <div class="step-dots" id="dot-row"></div>
+    </div>
+    <div id="steps-container"></div>
+  </div>
+
+  <div id="tab-weapons" class="tab-pane">
+    <div class="weapon-grid">
+      <div class="weapon-card">
+        <div class="wc-icon">⭐</div>
+        <h4>Fairy Dust</h4>
+        <p>Fires a sparkle in the direction you're moving. Levels up to fire faster and in more directions!</p>
+        <span class="wc-unlock">🌱 Start with this</span>
+      </div>
+      <div class="weapon-card">
+        <div class="wc-icon">🌸</div>
+        <h4>Petal Shield</h4>
+        <p>Flower petals orbit around you and hurt any bug that touches them.</p>
+        <span class="wc-unlock">⏱ Unlock: 1 min</span>
+      </div>
+      <div class="weapon-card">
+        <div class="wc-icon">⚡</div>
+        <h4>Lightning Leaf</h4>
+        <p>Zaps the nearest bug with electricity every few seconds. Never misses!</p>
+        <span class="wc-unlock">⏱ Unlock: 2 min</span>
+      </div>
+      <div class="weapon-card">
+        <div class="wc-icon">🍄</div>
+        <h4>Mushroom Bomb</h4>
+        <p>Drops a bouncing mushroom that explodes in a circle and hurts all nearby bugs.</p>
+        <span class="wc-unlock">⏱ Unlock: 3 min</span>
+      </div>
+    </div>
+    <div class="callout tip" style="margin-top:8px">
+      <span class="callout-icon">💡</span>
+      <div>Each spell unlocks automatically when enough time has passed — no buttons to press! The fairy just gets more powerful as you survive longer. Just like Vampire Survivors!</div>
+    </div>
+  </div>
+
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎮 What We're Building</h3>
+        <p>A <strong>Vampire Survivors-style</strong> game! You move the fairy, but all the attacking happens automatically. Survive waves of bugs that get bigger and faster over time.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>In this game you don't have to press any buttons to attack — your fairy does it all by herself! Your only job is to keep moving and not let the bugs touch you. Easy to learn, hard to master!</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>Key new concepts vs. the shooter workshop: <strong>no player input for attacking</strong> (all weapons use Timers), <strong>orbiting objects</strong> (rotating child nodes), <strong>homing behaviour</strong> (Lightning Leaf finds nearest enemy), and a <strong>survival timer</strong> driving difficulty scaling and weapon unlocks.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What You'll Make</h3>
+        <ul>
+          <li>A fairy that moves with the keyboard</li>
+          <li>Bugs that swarm in from all directions</li>
+          <li>4 auto-attacking spells that unlock over time</li>
+          <li>Difficulty that ramps up every 30 seconds</li>
+          <li>A survival timer and high score</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">JVDesignStudio</span>
+      <span class="footer-tagline">Books · Games · Creative Adventures</span>
+    </div>
+    <nav class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="content_hub.html">All Projects</a>
+      <a href="freebies.html">Free Downloads</a>
+      <a href="about.html">About</a>
+      <a href="press.html">Press Kit</a>
+      <a href="contact.html">Contact</a>
+      <a href="newsletter.html">Newsletter</a>
+      <a href="search.html">Search</a>
+      <a href="videos.html">Videos</a>
+      <a href="sitemap.html">Sitemap</a>
+    </nav>
+    <nav class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+    </nav>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+const STEPS = [
+  {
+    emoji: '🎮', tag: 'Start here', tagClass: 'tag-new',
+    title: 'Before We Start',
+    subtitle: 'What makes Fairy Survivors special?',
+    goal: 'Understand the big idea: the fairy attacks automatically — your only job is to move!',
+    child: 'Have you ever played a game where your character attacks all by themselves, and you just have to dodge? That\'s what we\'re making! A tiny fairy in a magical garden, surrounded by silly bugs. The fairy shoots magic sparkles automatically — you just move her around. The longer you survive, the more powerful she gets!',
+    parent: 'The key design difference from the shooter workshop: there is NO player input for attacking. All weapons are driven by Timer nodes firing at intervals. This makes the game much easier for young children to enjoy — movement only — while the systems underneath are interesting to build. New concepts: Timer-driven auto-attack, rotating orbiting nodes, Area2D overlap for homing, and a master game clock.',
+    note: 'This workshop assumes Godot 4 is already installed. If you\'ve done the Zoom Zoom or Bang Bang workshops, the fairy movement code will look very familiar!',
+    tryit: null,
+    steps: null, code: null,
+  },
+  {
+    emoji: '📁', tag: 'Step 1', tagClass: 'tag-new',
+    title: 'New Project',
+    subtitle: 'A fresh garden to build in!',
+    goal: 'Create a new Godot project called "Fairy Survivors" and get it open.',
+    child: 'Same as always — open Godot and make a new project. We\'re going to call it "Fairy Survivors". Pick a folder on your Desktop and click Create & Edit. Our magical garden starts NOW!',
+    parent: 'Standard Godot 4 project setup. Compatibility renderer. Empty folder. Set the window size to 480×270 (or 960×540) in Project Settings → Display → Window for a nice retro feel that suits the garden theme.',
+    note: null,
+    tryit: 'While Godot is loading, can you think of a name for your fairy? Write it down — we\'ll put it in the game later! 🧚',
+    steps: [
+      'Open Godot. Click <strong>"New Project"</strong>.',
+      'Name it: <strong>Fairy Survivors</strong>. Pick your Desktop as the folder.',
+      'Set Renderer to <strong>Compatibility</strong>. Click <strong>Create &amp; Edit</strong>.',
+      'Optional: go to <strong>Project Settings → Display → Window</strong> and set size to <strong>960 × 540</strong>.',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🧚', tag: 'Step 2', tagClass: 'tag-locked',
+    title: 'Make the Fairy',
+    subtitle: 'Our little hero who just needs to move!',
+    goal: 'Build the Fairy scene and make her move smoothly with the keyboard.',
+    child: 'Let\'s make our fairy! She\'s a CharacterBody2D — the same magic node we used for the racing car and the shooter hero. We\'ve done this before, so we\'re already experts! The big difference this time: the fairy doesn\'t shoot when YOU press a button. She just moves. Her spells happen all by themselves!',
+    parent: 'Node tree: CharacterBody2D → Sprite2D + CollisionShape2D (CircleShape2D) + a Camera2D (child of the fairy, so the camera follows her). The Camera2D following the player is essential — the garden world is bigger than the screen. Save as fairy.tscn. Add to "player" group.',
+    note: 'Adding the Camera2D as a child of the fairy node means it follows automatically with zero extra code — a nice trick to point out to the child.',
+    tryit: 'Press F5! Does the fairy move in all four directions? Does the camera follow her?',
+    steps: [
+      'New Scene → root node: <strong>CharacterBody2D</strong>. Save as <strong>fairy.tscn</strong>.',
+      'Add child: <strong>Sprite2D</strong> (bright pink or purple — make her magical! 💜).',
+      'Add child: <strong>CollisionShape2D</strong> → CircleShape2D, radius about 12.',
+      'Add child: <strong>Camera2D</strong>. In the Inspector tick <strong>Enabled</strong>.',
+      'Add the fairy to a group called <strong>"player"</strong> (Node tab → Groups).',
+      'Attach a script and type the movement code below.',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED = 150
+
+func _physics_process(delta):
+    var direction = Vector2.ZERO
+    if Input.is_action_pressed("ui_right"): direction.x += 1
+    if Input.is_action_pressed("ui_left"):  direction.x -= 1
+    if Input.is_action_pressed("ui_down"):  direction.y += 1
+    if Input.is_action_pressed("ui_up"):    direction.y -= 1
+
+    velocity = direction.normalized() * SPEED
+    move_and_slide()
+
+    # Flip the sprite to face the direction we're moving
+    if direction.x != 0:
+        $Sprite2D.flip_h = direction.x < 0`,
+  },
+  {
+    emoji: '🐛', tag: 'Step 3', tagClass: 'tag-locked',
+    title: 'Make a Bug Enemy',
+    subtitle: 'The first creepy crawly to chase our fairy!',
+    goal: 'Create a Bug scene that slowly crawls toward the fairy from any direction.',
+    child: 'Every great survival game needs something to survive FROM! Let\'s make a silly bug. It doesn\'t do anything clever — it just slowly crawls straight toward our fairy. But when there are hundreds of them... it gets tricky! 🐛',
+    parent: 'Node tree: CharacterBody2D → Sprite2D + CollisionShape2D. Add to "enemy" group. The bug finds the player using get_nodes_in_group("player"). Give it a health variable and a take_damage() method. Also add an Area2D child for the "touching the fairy hurts her" detection — connect body_entered.',
+    note: 'Make a few different coloured bugs using the same scene — duplicate the scene file and just change the sprite colour and speed. Gives visual variety for almost no work.',
+    tryit: 'Place a bug in the scene. Does it walk toward the fairy? Does it turn around if you move away?',
+    steps: [
+      'New Scene → <strong>CharacterBody2D</strong>. Save as <strong>bug.tscn</strong>.',
+      'Add <strong>Sprite2D</strong> (make it green and round — a friendly-looking bug!) and <strong>CollisionShape2D</strong>.',
+      'Add a child <strong>Area2D</strong> + <strong>CollisionShape2D</strong> for hurt detection.',
+      'Add to group <strong>"enemy"</strong>.',
+      'Attach the script below. Connect the Area2D\'s <strong>body_entered</strong> signal.',
+    ],
+    code: `extends CharacterBody2D
+
+var speed = 60
+var health = 2
+
+func _physics_process(delta):
+    var players = get_tree().get_nodes_in_group("player")
+    if players.size() > 0:
+        var dir = (players[0].position - position).normalized()
+        velocity = dir * speed
+        move_and_slide()
+        # Face the direction we're moving
+        $Sprite2D.flip_h = velocity.x < 0
+
+func take_damage(amount):
+    health -= amount
+    if health <= 0:
+        # Tell the game manager we died
+        var gm = get_tree().get_first_node_in_group("game_manager")
+        if gm: gm.on_enemy_died(position)
+        queue_free()
+
+# ── Connect Area2D body_entered signal to this: ──
+func _on_area_2d_body_entered(body):
+    if body.is_in_group("player"):
+        body.take_damage(1)`,
+  },
+  {
+    emoji: '⭐', tag: 'Step 4', tagClass: 'tag-locked',
+    title: 'First Spell: Fairy Dust',
+    subtitle: 'The fairy\'s automatic sparkle attack — no button needed!',
+    goal: 'Add a Timer to the fairy that automatically fires sparkles in the direction she\'s moving.',
+    child: 'Here comes the magic that makes this game different from Bang Bang! The fairy shoots sparkles ALL BY HERSELF. We put a Timer inside her — like a little alarm clock — and every time it rings, ZING! A sparkle flies out. You don\'t have to do anything. Isn\'t that cool?',
+    parent: 'Add a Timer node (child of the fairy, named SpellTimer) set to wait_time=0.6, autostart=true. On timeout, the fairy instantiates a Sparkle scene in the direction of current velocity (or a default direction if standing still). The Sparkle is an Area2D that flies forward and has a lifetime. Connect its body_entered to deal damage to enemies.',
+    note: 'The Sparkle scene is almost identical to the Bullet from Bang Bang — reuse that knowledge! The only difference is it uses a star/circle sprite instead.',
+    tryit: 'Run the game and just stand still. Do sparkles fire automatically? Now move — do they fly the way you\'re going?',
+    steps: [
+      'Create a new scene <strong>sparkle.tscn</strong> — root: <strong>Area2D</strong>. Add Sprite2D (a bright star shape) + CollisionShape2D. Attach a script (same as the bullet from Bang Bang — flies forward, disappears after 1.5 seconds, hurts enemies on hit).',
+      'Open <strong>fairy.tscn</strong>. Add a child <strong>Timer</strong> node. Name it <strong>SpellTimer</strong>. Set Wait Time: <strong>0.6</strong>. Tick <strong>Autostart</strong>.',
+      'Connect SpellTimer\'s <strong>timeout</strong> signal to the fairy script.',
+      'Add the spell code to the fairy script below.',
+      'Drag <strong>sparkle.tscn</strong> into the <strong>sparkle_scene</strong> export slot in the Inspector.',
+    ],
+    code: `# ── ADD to top of fairy script: ──
+@export var sparkle_scene: PackedScene
+var last_direction = Vector2.RIGHT  # Default fire direction
+
+# ── UPDATE _physics_process — save the direction: ──
+    if direction != Vector2.ZERO:
+        last_direction = direction.normalized()
+
+# ── ADD — connected to SpellTimer timeout signal: ──
+func _on_spell_timer_timeout():
+    fire_fairy_dust()
+
+func fire_fairy_dust():
+    if not sparkle_scene: return
+    var s = sparkle_scene.instantiate()
+    s.position = global_position
+    s.rotation = last_direction.angle()
+    get_parent().add_child(s)`,
+  },
+  {
+    emoji: '❤️', tag: 'Step 5', tagClass: 'tag-locked',
+    title: 'Fairy Health & Hurt Flash',
+    subtitle: 'Bugs do damage — and the fairy flashes pink when hit!',
+    goal: 'Give the fairy health points, a hurt flash effect, and a game over when she runs out.',
+    child: 'If a bug touches our fairy she should get hurt! We\'ll give her 5 hearts. When a bug bumps into her, she loses a heart AND flashes a different colour so we can see she got hurt. If she runs out of hearts — game over! But don\'t worry, you can always try again.',
+    parent: 'Same take_damage() pattern as the Bang Bang shooter — invincibility window prevents instant death. The visual feedback (modulate flash) is new and very satisfying. Use a Tween to animate modulate from red back to white over 0.3 seconds. Game over can be a simple CanvasLayer popup for now; we\'ll add a proper timer-based score in Step 8.',
+    note: 'The modulate property on any Node2D tints its colour. Setting modulate to red (Color.RED) then tweening back to white (Color.WHITE) gives a great hurt flash with just 3 lines of code.',
+    tryit: 'Touch a bug! Does the fairy flash? Does your heart count go down? What happens at zero hearts?',
+    steps: [
+      'Add the health variables and take_damage function to the <strong>fairy script</strong>.',
+      'Add a <strong>CanvasLayer → Label</strong> node to the fairy scene. Name it <strong>HealthLabel</strong>. Position it top-left.',
+      'Update HealthLabel text in take_damage to show remaining hearts (e.g. "❤️❤️❤️").',
+    ],
+    code: `# ── ADD to top of fairy script: ──
+var health = 5
+var invincible = false
+
+# ── ADD these functions: ──
+func take_damage(amount):
+    if invincible: return
+    health -= amount
+    update_health_display()
+    # Flash red!
+    modulate = Color.RED
+    var tween = create_tween()
+    tween.tween_property(self, "modulate", Color.WHITE, 0.3)
+    invincible = true
+    await get_tree().create_timer(0.8).timeout
+    invincible = false
+    if health <= 0:
+        game_over()
+
+func update_health_display():
+    var hearts = ""
+    for i in range(health): hearts += "❤️"
+    $CanvasLayer/HealthLabel.text = hearts
+
+func game_over():
+    get_tree().reload_current_scene()`,
+  },
+  {
+    emoji: '🌿', tag: 'Step 6', tagClass: 'tag-locked',
+    title: 'The Garden World',
+    subtitle: 'A big scrolling field of grass for the fairy to run around in!',
+    goal: 'Build the Main scene with a big tiling grass background and the fairy instanced in the middle.',
+    child: 'We need a garden for our fairy to live in! We\'re going to make a BIG grassy field — much bigger than the screen — and the camera will follow our fairy as she runs around. We\'ll use a pattern called a TileMap to tile the grass texture all over the place so it looks like a real garden!',
+    parent: 'Main scene (Node2D root). Add a TileMap for the grass floor (a simple green tile, no collision needed — it\'s just visual). Make it cover roughly 2000×2000 pixels. Instance fairy.tscn. Add the Main Node2D to the "game_manager" group. Attach the main game script which will handle enemy spawning, the survival timer, and weapon unlocks.',
+    note: 'The grass TileMap just needs one floor tile — a green square or a simple texture. Unlike the shooter workshop, there are no walls. The garden is open space, which is exactly right for a Vampire Survivors game — you run in circles dodging!',
+    tryit: 'Run the game. Does the fairy run around the garden? Does the camera follow her? Does the grass scroll with her?',
+    steps: [
+      'New Scene → root <strong>Node2D</strong>. Save as <strong>main.tscn</strong>.',
+      'Add a <strong>TileMap</strong> child. Create a TileSet with one green tile (no collision). Paint it to cover a big area.',
+      'Drag <strong>fairy.tscn</strong> into the scene to instance her in the middle.',
+      'Add the Main Node2D to the <strong>"game_manager"</strong> group (Node tab → Groups).',
+      'Set this as the main scene: <strong>Project → Project Settings → Application → Run → Main Scene</strong>.',
+      'Attach the game manager script below.',
+    ],
+    code: `extends Node2D
+
+@export var bug_scene: PackedScene
+
+var survival_time = 0.0
+var score = 0
+
+func _process(delta):
+    survival_time += delta
+    update_timer_display()
+
+func on_enemy_died(pos):
+    score += 10
+
+func update_timer_display():
+    # We'll hook this up to a label in Step 8!
+    pass`,
+  },
+  {
+    emoji: '🌊', tag: 'Step 7', tagClass: 'tag-locked',
+    title: 'Waves of Bugs!',
+    subtitle: 'Bugs swarm in from all sides — and get faster over time!',
+    goal: 'Spawn bugs continuously around the edge of the screen, scaling in number and speed with survival time.',
+    child: 'Time to add the bugs! They\'re going to appear at the edge of the screen and crawl towards our fairy. At first there\'s just a few — easy! But every 30 seconds there are MORE bugs, and they\'re a bit FASTER. Can you survive for 3 whole minutes? 🐛🐛🐛',
+    parent: 'A spawn Timer (autostart, 2s wait) calls spawn_bug(). Spawn position is a random point on a circle of radius ~550 around the fairy (not a fixed screen edge, since the camera moves with the player). Difficulty scaling: every 30 seconds reduce the spawn timer wait_time by 0.15 and increase bug speed by 10. Cap at wait_time=0.3 so it doesn\'t get impossible.',
+    note: null,
+    tryit: 'Survive for 60 seconds. Do you notice the bugs getting faster and more frequent? Try to last 2 minutes!',
+    steps: [
+      'Open <strong>main.tscn</strong>. Add a <strong>Timer</strong> node. Name it <strong>SpawnTimer</strong>. Wait Time: <strong>2.0</strong>. Autostart: <strong>on</strong>.',
+      'Connect SpawnTimer\'s <strong>timeout</strong> signal to the main script.',
+      'Add the spawning and difficulty code below to your main script.',
+      'Set the <strong>bug_scene</strong> export variable in the Inspector.',
+    ],
+    code: `# ── ADD to main script: ──
+var bug_speed = 60         # Starting speed
+var difficulty_timer = 0.0
+
+func _process(delta):
+    survival_time += delta
+    difficulty_timer += delta
+    if difficulty_timer >= 30.0:
+        difficulty_timer = 0.0
+        ramp_up_difficulty()
+    update_timer_display()
+
+func _on_spawn_timer_timeout():
+    spawn_bug()
+
+func spawn_bug():
+    if not bug_scene: return
+    var bug = bug_scene.instantiate()
+    # Spawn in a ring around the fairy
+    var fairy = get_tree().get_first_node_in_group("player")
+    if not fairy: return
+    var angle = randf() * TAU
+    bug.position = fairy.position + Vector2(cos(angle), sin(angle)) * 550
+    bug.speed = bug_speed
+    add_child(bug)
+
+func ramp_up_difficulty():
+    bug_speed += 10
+    var t = $SpawnTimer
+    t.wait_time = max(0.3, t.wait_time - 0.15)
+    t.start()`,
+  },
+  {
+    emoji: '⏱️', tag: 'Step 8', tagClass: 'tag-locked',
+    title: 'Survival Timer & Score',
+    subtitle: 'How long can you last? Show it on screen!',
+    goal: 'Display a survival clock and score on the HUD so the player can see how well they\'re doing.',
+    child: 'Let\'s add numbers to our game! A big clock at the top counting how many seconds you\'ve survived — that\'s your score! The longer you last, the higher your score. Can you beat your best time? Can you beat a friend\'s time? THIS is what makes survival games so addictive!',
+    parent: 'Add a CanvasLayer to the Main scene (not the fairy — this one stays fixed on screen). Inside: a Label for the timer (top-centre), a Label for the score (top-right), and a "You survived X seconds!" game over panel (hidden by default, shown on game over). The game over panel can be a simple ColorRect + Label + restart Button.',
+    note: 'CanvasLayer draws its children on top of the game world, fixed to the screen — perfect for HUD elements. It\'s independent of the Camera2D, so even as the fairy moves around, the timer always stays in the corner.',
+    tryit: 'Run the game! Does the timer count up? When you die, does it show your time? Can you beat your high score?',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>CanvasLayer</strong> node (NOT inside the fairy — it lives directly under Node2D).',
+      'Add a <strong>Label</strong> child named <strong>TimerLabel</strong>. Position it at the top-centre of the screen. Set font size to 24.',
+      'Add another <strong>Label</strong> named <strong>ScoreLabel</strong>. Top-right.',
+      'Add a <strong>ColorRect</strong> named <strong>GameOverPanel</strong> — covers the whole screen, dark semi-transparent. Add a child Label ("You survived X seconds!") and a Button ("Try Again!"). Set it <strong>Visible = false</strong> to start.',
+      'Update the main script with the HUD code below.',
+    ],
+    code: `# ── UPDATE update_timer_display in main script: ──
+func update_timer_display():
+    var mins = int(survival_time) / 60
+    var secs = int(survival_time) % 60
+    $CanvasLayer/TimerLabel.text = "%02d:%02d" % [mins, secs]
+    $CanvasLayer/ScoreLabel.text = "Score: %d" % score
+
+# ── ADD game over handler to main script: ──
+func show_game_over():
+    var t = int(survival_time)
+    $CanvasLayer/GameOverPanel/Label.text = "You survived %d seconds!\\nScore: %d" % [t, score]
+    $CanvasLayer/GameOverPanel.visible = true
+
+# ── In the fairy's game_over() function, call this instead of reload: ──
+# get_tree().get_first_node_in_group("game_manager").show_game_over()
+
+# ── Connect the Try Again button: ──
+func _on_try_again_pressed():
+    get_tree().reload_current_scene()`,
+  },
+  {
+    emoji: '🌸', tag: 'Step 9', tagClass: 'tag-locked',
+    title: 'Unlock New Spells Over Time!',
+    subtitle: 'The longer you survive, the more magic the fairy learns!',
+    goal: 'Automatically unlock the Petal Shield (orbiting petals) and Lightning Leaf (homing zap) based on survival time.',
+    child: 'Here\'s the REALLY fun bit — the fairy gets MORE POWERFUL the longer you survive! After 1 minute, flower petals start orbiting around her and hurt any bug they touch. After 2 minutes, she zaps the nearest bug with lightning! You don\'t do anything — just stay alive and watch her get stronger. So cool!',
+    parent: 'Two new weapon scenes. <strong>Petal Shield</strong>: a Node2D child added to the fairy at runtime containing 6 Area2D petals arranged in a circle. A Tween (or _process rotation) rotates the parent Node2D continuously. On Area2D body_entered, call take_damage on enemies. <strong>Lightning Leaf</strong>: a Timer on the fairy fires every 2s, finds the nearest enemy using get_nodes_in_group("enemy") + distance sorting, then fires a Line2D flash and calls take_damage directly — no projectile scene needed, feels instant and satisfying.',
+    note: 'Add a cheerful unlock announcement! When a new spell unlocks, show a brief Label in the centre of the screen ("✨ New Spell: Petal Shield!") that fades out after 2 seconds using a Tween. Children absolutely love this moment.',
+    tryit: 'Survive for 1 minute. Do petals appear around the fairy? Do they kill bugs on contact? Survive 2 minutes — does the lightning zap appear?',
+    steps: [
+      'In <strong>main.tscn</strong>, update the _process function to check survival_time milestones.',
+      'Create <strong>petal_shield.tscn</strong>: root Node2D with 6 Area2D children arranged in a circle (positions like Vector2(60,0).rotated(i * TAU/6)). Add CollisionShape2D to each. Attach a rotation script.',
+      'Add the unlock logic and Lightning Leaf code to the <strong>fairy script</strong>.',
+    ],
+    code: `# ── ADD to main script _process: ──
+    if survival_time > 60 and not has_petal_shield:
+        has_petal_shield = true
+        unlock_spell("petal_shield")
+    if survival_time > 120 and not has_lightning:
+        has_lightning = true
+        unlock_spell("lightning_leaf")
+
+var has_petal_shield = false
+var has_lightning = false
+
+func unlock_spell(spell_name):
+    var fairy = get_tree().get_first_node_in_group("player")
+    fairy.add_spell(spell_name)
+    show_unlock_message(spell_name)
+
+func show_unlock_message(name):
+    $CanvasLayer/UnlockLabel.text = "✨ New Spell: " + name.capitalize() + "!"
+    $CanvasLayer/UnlockLabel.visible = true
+    var tw = create_tween()
+    tw.tween_interval(2.0)
+    tw.tween_property($CanvasLayer/UnlockLabel, "modulate:a", 0.0, 0.5)
+
+# ── ADD to fairy script: ──
+@export var petal_scene: PackedScene
+
+func add_spell(spell_name):
+    if spell_name == "petal_shield" and petal_scene:
+        var shield = petal_scene.instantiate()
+        add_child(shield)
+    elif spell_name == "lightning_leaf":
+        var lt = Timer.new()
+        lt.wait_time = 2.0
+        lt.autostart = true
+        lt.timeout.connect(_lightning_zap)
+        add_child(lt)
+
+func _lightning_zap():
+    var enemies = get_tree().get_nodes_in_group("enemy")
+    if enemies.is_empty(): return
+    enemies.sort_custom(func(a,b): return a.position.distance_to(position) < b.position.distance_to(position))
+    enemies[0].take_damage(2)  # Instant zap — no projectile needed!`,
+  },
+  {
+    emoji: '🎉', tag: 'Step 10', tagClass: 'tag-locked',
+    title: 'Add XP Gems & Level Up!',
+    subtitle: 'Bugs drop gems — collect them to power up your spells!',
+    goal: 'When a bug dies it drops a gem. Collecting gems fills an XP bar. When it\'s full, the fairy levels up and her spells get stronger!',
+    child: 'One more amazing thing! When you squish a bug, it drops a sparkly gem. Run over it to pick it up — it fills your XP bar at the bottom. When it\'s full, your spells get STRONGER! Sparkles fly faster, petals spin quicker, lightning zaps more often. Levelling up feels so satisfying! 💎',
+    parent: 'Gem scene: Area2D with a coloured circle sprite. Gems are instanced at enemy death position (called from the game manager\'s on_enemy_died). Gems use a gentle tween to float slightly upward when spawned. On body_entered with player, add XP. XP fills a ProgressBar in the HUD. On level up, call upgrade_spells() on the fairy which reduces SpellTimer.wait_time by 0.05 and decreases petal orbit timer. Cap upgrades so the game stays fun rather than trivial.',
+    note: 'The gem pickup radius can be made generous — let the gem Area2D have a large collision circle so children don\'t have to be pixel-perfect to collect. You can also add a "magnet" effect later where gems slide toward the fairy automatically.',
+    tryit: 'Kill some bugs! Do gems appear? Run over them! Does the XP bar fill up? Do your spells get faster when you level up?',
+    steps: [
+      'Create <strong>gem.tscn</strong>: root <strong>Area2D</strong>. Add Sprite2D (a bright coloured diamond ♦) and CollisionShape2D (generous circle). Attach a script: on body_entered with "player", call player.add_xp(1) then queue_free().',
+      'In <strong>main.gd</strong>, update on_enemy_died to also spawn a gem at that position.',
+      'In <strong>fairy.gd</strong>, add the XP and level-up system below.',
+      'Add a <strong>ProgressBar</strong> to the CanvasLayer HUD at the bottom of the screen for the XP bar.',
+    ],
+    code: `# ── ADD to fairy script: ──
+var xp = 0
+var xp_to_level = 10
+var fairy_level = 1
+
+func add_xp(amount):
+    xp += amount
+    update_xp_bar()
+    if xp >= xp_to_level:
+        level_up()
+
+func level_up():
+    fairy_level += 1
+    xp = 0
+    xp_to_level = int(xp_to_level * 1.5)  # More XP needed each time
+    upgrade_spells()
+    # Flash gold to celebrate!
+    modulate = Color.GOLD
+    var tw = create_tween()
+    tw.tween_property(self, "modulate", Color.WHITE, 0.5)
+
+func upgrade_spells():
+    # Fairy Dust fires faster
+    var st = $SpellTimer
+    st.wait_time = max(0.15, st.wait_time - 0.05)
+    # Could also add: more sparkles fired per shot, bigger collision, etc.
+
+func update_xp_bar():
+    var gm = get_tree().get_first_node_in_group("game_manager")
+    # gm.$CanvasLayer/XPBar.value = float(xp) / xp_to_level * 100`,
+  },
+  {
+    emoji: '✨', tag: 'Step 11', tagClass: 'tag-locked',
+    title: 'Make It Your Own!',
+    subtitle: 'Your garden, your fairy, your rules!',
+    goal: 'Add your own ideas and make the game feel completely yours!',
+    child: 'You built a whole survival game!! Now make it YOURS. Give your fairy a name. Change the colours. Invent a new type of bug. Make the gems a different shape. Add a fun sound when you level up. This is YOUR game and you can make it anything you want. You\'re a real game developer — and a magical one at that! 🧚✨',
+    parent: 'Stretch goals that work beautifully with this codebase: different bug types (fast but weak, slow but lots of health), a Mushroom Bomb spell (Area2D that bounces and explodes), background music with AudioStreamPlayer, flower/mushroom decorations scattered around the TileMap for visual interest, or a "records" screen using a simple JSON file to save best survival time.',
+    note: null,
+    tryit: 'Show someone your game! Can THEY survive longer than you? What\'s the longest anyone has lasted? 🏆',
+    steps: [
+      'Give your fairy a name — add it to the HUD label!',
+      'Make a second bug type: copy bug.tscn, make it a different colour, change its speed.',
+      'Add a flower or mushroom sprite scattered around the garden using Node2D + Sprite2D.',
+      'Add background music: <strong>AudioStreamPlayer</strong> node in Main, import an .ogg or .mp3, set Autoplay.',
+      'Try adding the Mushroom Bomb spell — Area2D that bounces around and explodes in a circle!',
+    ],
+    code: null,
+  },
+];
+
+let completedSteps = JSON.parse(localStorage.getItem('fairySurvivorsProgress') || '[]');
+function saveProgress(){ localStorage.setItem('fairySurvivorsProgress', JSON.stringify(completedSteps)); }
+
+function getStatus(i){
+  if(completedSteps.includes(i)) return 'done';
+  const first = STEPS.findIndex((_,idx)=>!completedSteps.includes(idx));
+  if(i===first) return 'current';
+  if(i<first) return 'done';
+  return 'locked';
+}
+
+function buildDots(){
+  const row=document.getElementById('dot-row');
+  row.innerHTML='';
+  STEPS.forEach((_,i)=>{
+    const s=getStatus(i);
+    const d=document.createElement('div');
+    d.className=`dot ${s}`;
+    d.textContent=s==='done'?'✓':i+1;
+    d.onclick=()=>{if(s!=='locked')scrollToStep(i);};
+    row.appendChild(d);
+  });
+  const done=STEPS.filter((_,i)=>getStatus(i)==='done').length;
+  document.getElementById('prog-count').textContent=`${done} / ${STEPS.length} steps`;
+}
+
+function scrollToStep(i){ document.getElementById(`step-${i}`)?.scrollIntoView({behavior:'smooth',block:'center'}); }
+
+function buildSteps(){
+  const container=document.getElementById('steps-container');
+  container.innerHTML='';
+  STEPS.forEach((s,i)=>{
+    const status=getStatus(i);
+    const card=document.createElement('div');
+    card.className=`step-card ${status}`;
+    card.id=`step-${i}`;
+    const tagClass=status==='done'?'tag-done':status==='current'?'tag-current':status==='locked'?'tag-locked':s.tagClass;
+
+    let body='';
+    if(status!=='locked'){
+      if(s.goal) body+=`<div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>${s.goal}</p></div></div>`;
+      body+=`<div class="two-col"><div class="col-box child"><h4>🧒 For the child</h4><p>${s.child}</p></div><div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>${s.parent}</p></div></div>`;
+      if(s.note) body+=`<div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> ${s.note}</div></div>`;
+      if(s.steps){
+        body+=`<div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">`;
+        s.steps.forEach((st,si)=>{ body+=`<li><span class="sn">${si+1}</span><span>${st}</span></li>`; });
+        body+=`</ol></div>`;
+      }
+      if(s.code){
+        const col=s.code
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/#.*/g,m=>`<span class="cm">${m}</span>`)
+          .replace(/\b(extends|const|var|func|if|elif|else|return|await|not|and|or|pass)\b/g,'<span class="kw">$1</span>')
+          .replace(/"([^"]*)"/g,'<span class="st">"$1"</span>')
+          .replace(/\b(\d+\.?\d*)\b/g,'<span class="nu">$1</span>');
+        body+=`<div class="code-block"><pre>${col}</pre></div>`;
+      }
+      if(s.tryit) body+=`<div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> ${s.tryit}</div></div>`;
+      if(status==='current') body+=`<button class="done-btn" onclick="markDone(${i})">✅ Done! →</button>`;
+    }
+
+    card.innerHTML=`
+      <div class="step-header" onclick="toggleBody(${i})">
+        <div class="step-num">${i+1}</div>
+        <span class="step-icon-badge">${s.emoji}</span>
+        <div class="step-title-wrap">
+          <span class="step-tag ${tagClass}">${s.tag}</span>
+          <div class="step-title">${s.title}</div>
+          <div class="step-subtitle">${s.subtitle}</div>
+        </div>
+        <div class="step-status">${status==='done'?'✅ Done':status==='current'?'▶ Current':status==='locked'?'🔒 Locked':''}</div>
+      </div>
+      ${status!=='locked'?`<div class="step-body" id="body-${i}">${body}</div>`:''}`;
+    container.appendChild(card);
+  });
+}
+
+function toggleBody(i){
+  const b=document.getElementById(`body-${i}`);
+  if(b) b.style.display=b.style.display==='none'?'':b.style.display==='block'?'none':'block';
+}
+
+function markDone(i){
+  if(!completedSteps.includes(i)) completedSteps.push(i);
+  saveProgress(); buildDots(); buildSteps();
+  const next=STEPS.findIndex((_,idx)=>!completedSteps.includes(idx));
+  if(next>=0) setTimeout(()=>scrollToStep(next),100);
+}
+
+function showTab(name,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+buildDots(); buildSteps();
+</script>
+<script>(function(){const btn=document.getElementById('navToggle');const nav=document.getElementById('mobileNav');if(btn&&nav)btn.addEventListener('click',()=>nav.classList.toggle('open'));})();</script>
+</body>
+</html>

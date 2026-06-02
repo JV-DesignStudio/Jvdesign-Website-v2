@@ -1,0 +1,755 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jump Jump! Build a Mario-Style Game in Godot | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#fef9f0;color:#1a1a1a;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ── SERIES BADGE STRIP ── */
+.series-strip{background:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#457b9d);padding:6px 24px;text-align:center}
+.series-strip span{font-size:.75rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+/* ── NAV ── */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,0.08);box-shadow:0 2px 18px rgba(64,59,51,0.08);}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+.logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;margin-right:auto;text-decoration:none;color:inherit;}
+.logo-link img{height:36px;border-radius:8px;display:block;}
+.logo-name{font-weight:800;color:#BC4749;}
+.main-nav{display:flex;align-items:center;gap:2px;}
+.nav-link{font-size:0.85rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;white-space:nowrap;transition:background 0.15s,color 0.15s;text-decoration:none;}
+.nav-link:hover{background:#F0EAD6;color:#403B33;}
+.nav-toggle{display:none;background:none;border:none;padding:8px 12px;font-size:1.4rem;cursor:pointer;color:#403B33;flex-shrink:0;line-height:1;}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:white;border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(64,59,51,0.18);max-height:0;overflow:hidden;transition:max-height 0.4s ease;}
+.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto;}
+.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,0.06);transition:background 0.12s;text-decoration:none;}
+.mobile-nav a:last-child{border-bottom:none;}
+.mobile-nav a:hover{background:#F0EAD6;color:#403B33;}
+@media(max-width:860px){.main-nav{display:none!important;}.nav-toggle{display:block!important;}}
+@media(min-width:861px){.mobile-nav{display:none!important;}}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,#fff8f0 60%,#fff0f5 100%);border-bottom:1px solid #e8e8e4;overflow:hidden;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 80% 50%,rgba(230,57,70,.06) 0%,transparent 60%),radial-gradient(circle at 20% 80%,rgba(69,123,157,.06) 0%,transparent 50%)}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e63946;border:1.5px solid #fbb;border-radius:999px;padding:4px 14px;margin-bottom:8px;background:#fff5f5}
+.series-label{display:block;font-family:'Fredoka One',cursive;font-size:.85rem;color:#e63946;letter-spacing:.05em;margin-bottom:4px;opacity:.8}
+.hero h1{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,5.5vw,3.4rem);line-height:1.0;color:#1a1a1a;margin-bottom:6px}
+.hero h1 .accent{color:#e63946}
+.hero h1 .subtitle-h1{display:block;font-size:clamp(1.1rem,2.5vw,1.5rem);color:#555;font-family:'Nunito',sans-serif;font-weight:900;margin-top:4px}
+.hero p.lead{font-size:1rem;color:#555;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid #ddd;border-radius:999px;padding:5px 14px;color:#333;background:#fafafa}
+.hero-img{width:170px;height:170px;background:linear-gradient(135deg,#fff3cd,#ffe8a1);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:5.5rem;flex-shrink:0;box-shadow:0 6px 30px rgba(230,57,70,.15);border:2.5px solid #fde68a}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5;margin-bottom:0}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#e63946;border-bottom-color:#e63946}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN LAYOUT ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1.5px solid #f5c5c5;border-radius:14px;padding:18px 22px;margin-bottom:28px;box-shadow:0 2px 12px rgba(230,57,70,.06)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#e63946}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#e63946;color:#e63946;box-shadow:0 0 0 3px rgba(230,57,70,.15)}
+.dot.locked{cursor:default}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #ede8e4;border-radius:18px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#e63946;box-shadow:0 4px 24px rgba(230,57,70,.1)}
+.step-card.locked{opacity:.5}
+.step-card.done{border-color:#d1fae5}
+
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:12px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa;font-family:'Fredoka One',cursive}
+.step-card.current .step-num{border-color:#e63946;color:#e63946;background:#fff5f5}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.6rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:5px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#fef3c7;color:#b45309}
+.tag-current{background:#fee2e2;color:#e63946}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-family:'Fredoka One',cursive;font-size:1.1rem;color:#1a1a1a;line-height:1.2}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:2px}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.step-card.current .step-status{color:#e63946}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #f5f0ec}
+
+.goal-box{background:#fffbf0;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#b45309;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.child{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tip{background:#fffbeb;border:1.5px dashed #fcd34d;color:#713f12}
+.callout.tryit{background:#fff0f5;border:1.5px dashed #fbcfe8;color:#831843}
+
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#e63946;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:50%;background:#e63946;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+
+/* CODE */
+.code-block{background:#1a1a2e;border-radius:12px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;color:#e0e6ff;overflow-x:auto;border:1.5px solid #2d2d4e}
+.code-block .cm{color:#6b7480}
+.code-block .kw{color:#ff79c6}
+.code-block .fn{color:#8be9fd}
+.code-block .st{color:#f1fa8c}
+.code-block .nu{color:#bd93f9}
+.code-block .va{color:#50fa7b}
+
+/* DONE BUTTON */
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2.5px solid #22c55e;border-radius:12px;font-family:'Fredoka One',cursive;font-size:1.05rem;font-weight:400;color:#166534;cursor:pointer;transition:background .15s,color .15s,transform .1s;text-align:center;letter-spacing:.02em}
+.done-btn:hover{background:#f0fdf4;transform:translateY(-1px)}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:16px;padding:20px}
+.about-card h3{font-family:'Fredoka One',cursive;font-size:1.1rem;color:#e63946;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* FOOTER */
+.site-footer{background:#403B33;padding:52px 24px 28px;}
+.footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+.footer-logo{font-family:'Fredoka One',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+.footer-tagline{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(240,234,214,0.65);}
+.footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.65);padding:4px 9px;border-radius:6px;transition:color 0.15s,background 0.15s;text-decoration:none;}
+.footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+.footer-socials{display:flex;gap:24px;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:700;color:rgba(240,234,214,0.65);transition:color 0.15s;text-decoration:none;}
+.footer-socials a:hover{color:#F0EAD6;}
+.footer-copy{font-size:0.73rem;color:rgba(240,234,214,0.45);border-top:1px solid rgba(255,255,255,0.07);padding-top:18px;width:100%;}
+
+@media(max-width:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-img{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- SERIES STRIP -->
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 2</span>
+</div>
+
+<!-- NAV -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+      <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="games.html" class="nav-link">🎮 Games</a>
+      <a href="books.html" class="nav-link">📚 Books</a>
+      <a href="learn-hub.html" class="nav-link">🎓 Learn Hub</a>
+      <a href="workshop.html" class="nav-link">🔧 Workshop</a>
+      <a href="dev-tools.html" class="nav-link">🛠️ Dev Tools</a>
+      <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+      <a href="content_hub.html" class="nav-link">📋 Content Hub</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="games.html">🎮 Games</a>
+    <a href="books.html">📚 Books</a>
+    <a href="learn-hub.html">🎓 Learn Hub</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="dev-tools.html">🛠️ Dev Tools</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="content_hub.html">📋 Content Hub</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <span class="series-label">⭐ My First Video Game</span>
+      <h1><span class="accent">Jump Jump!</span> 🍄<span class="subtitle-h1">Build Your Own Mario-Style Platformer</span></h1>
+      <p class="lead">Run, jump, and stomp your way to your very first platform game! You'll make a character who leaps over gaps, bounces on enemies, and collects coins just like Mario!</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 5+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 12 fun steps</span>
+      </div>
+    </div>
+    <div class="hero-img">🍄</div>
+  </div>
+</section>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Go!</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we making?</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- WORKSHOP TAB -->
+  <div id="tab-workshop" class="tab-pane active">
+
+    <!-- PROGRESS -->
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">🍄 Workshop Progress</span>
+        <span class="progress-count" id="prog-count">0 / 12 steps</span>
+      </div>
+      <div class="step-dots" id="dot-row"></div>
+    </div>
+
+    <!-- STEPS -->
+    <div id="steps-container"></div>
+
+  </div>
+
+  <!-- ABOUT TAB -->
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎮 What We're Building</h3>
+        <p>A <strong>side-scrolling platform game</strong> just like Mario or Sonic! Your character runs left and right, jumps over gaps, lands on platforms, and tries to reach the end of the level.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>Have you ever played Mario? We're going to make our VERY OWN version! You'll build a little character who can jump, collect coins, and even stomp baddies. You're going to be a real game developer!</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>This is the first workshop in the <em>My First Video Game</em> series no prior Godot experience needed. New concepts introduced: CharacterBody2D, gravity &amp; jumping, TileMapLayer, Camera2D, and coins using Area2D. We keep code ultra-short and friendly.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What You'll Make</h3>
+        <ul>
+          <li>A character who runs left and right</li>
+          <li>Gravity and a jump button</li>
+          <li>Solid platforms made from tiles</li>
+          <li>A camera that follows your character</li>
+          <li>Coins to collect with a score counter</li>
+          <li>A goal flag to finish the level</li>
+          <li>A simple enemy to stomp</li>
+          <li>Your very own Mario-style level!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">JVDesignStudio</span>
+      <span class="footer-tagline">Books · Games · Creative Adventures</span>
+    </div>
+    <nav class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="content_hub.html">All Projects</a>
+      <a href="freebies.html">Free Downloads</a>
+      <a href="about.html">About</a>
+      <a href="press.html">Press Kit</a>
+      <a href="contact.html">Contact</a>
+      <a href="newsletter.html">Newsletter</a>
+      <a href="search.html">Search</a>
+      <a href="videos.html">Videos</a>
+      <a href="sitemap.html">Sitemap</a>
+    </nav>
+    <nav class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+    </nav>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+const STEPS = [
+  {
+    emoji: '🌟',
+    tag: 'Start here',
+    tagClass: 'tag-new',
+    title: 'Welcome, Game Developer!',
+    subtitle: 'A big hello before we start building!',
+    goal: 'Understand what we\'re going to make, and get Godot open and ready!',
+    child: 'We\'re going to make a REAL platform game like Mario! That means a little character who can run and JUMP over things. By the end, you\'ll have your very own game that you made yourself. That\'s amazing! Let\'s open Godot and get started! 🎉',
+    parent: 'This is the first workshop in the My First Video Game series no prior Godot experience is needed. Key concepts introduced over the 12 steps: CharacterBody2D for a physics-based player, move_and_slide() with gravity, TileMapLayer for level design, Camera2D to follow the player, Area2D for collectibles, and a simple group-based enemy stomp. Godot 4 must be installed (free at godotengine.org).',
+    note: 'Purple boxes like this one are just for you, the grown-up! The child can do most of the typing themselves your job is to read the steps together and help when they get stuck. Celebrate every little win! 🎊',
+    tryit: null,
+    steps: null,
+    code: null,
+  },
+  {
+    emoji: '📁',
+    tag: 'Step 1',
+    tagClass: 'tag-new',
+    title: 'Make a New Project',
+    subtitle: 'Every game starts with a blank canvas!',
+    goal: 'Create a new Godot 4 project called "My Platformer" and get it open.',
+    child: 'Godot is like a magic toybox for making games and it\'s completely FREE! First, we need to make a new project. Think of it like getting a fresh new notebook just for our game.',
+    parent: 'Standard Godot 4 project setup. Choose Compatibility renderer it\'s the most stable for 2D beginners and works on all hardware. Point the project folder somewhere easy like the Desktop.',
+    note: null,
+    tryit: 'Can you find the FileSystem dock at the bottom of Godot? That\'s where all your game files will live like a folder on your computer but just for your game!',
+    steps: [
+      'Open <strong>Godot 4</strong>. Click the big <strong>"New Project"</strong> button.',
+      'In the Project Name box, type: <strong>My Platformer</strong>',
+      'Click <strong>"Browse"</strong> and choose a folder your Desktop is perfect!',
+      'Make sure Renderer says <strong>Compatibility</strong>.',
+      'Click the green <strong>"Create &amp; Edit"</strong> button. Your new game opens up!',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🧑',
+    tag: 'Step 2',
+    tagClass: 'tag-locked',
+    title: 'Build the Player',
+    subtitle: 'Make the little character who does all the jumping!',
+    goal: 'Create a Player scene with a CharacterBody2D this is the hero of your game!',
+    child: 'Now we build our main character! In Godot, every character is made of pieces called "nodes" like building blocks. The special one we need is called a CharacterBody2D. It knows how to walk and jump!',
+    parent: 'Node tree: CharacterBody2D (root, rename to "Player") → Sprite2D + CollisionShape2D (RectangleShape2D, sized to match a rough character body ~24×40px). Use a coloured rectangle or placeholder for the sprite. Save as player.tscn.',
+    note: null,
+    tryit: 'Make your character any colour you like! You can use a red square, a blue blob anything! We can make it look fancier later.',
+    steps: [
+      'In the top menu, click <strong>Scene → New Scene</strong>.',
+      'Click <strong>"Other Node"</strong> and search for and choose <strong>CharacterBody2D</strong>.',
+      'In the Scene tree, double-click the node name and rename it <strong>Player</strong>.',
+      'Click the <strong>+ button</strong> to add a child node: <strong>Sprite2D</strong>. Give it a coloured square in the Inspector.',
+      'Add another child: <strong>CollisionShape2D</strong>. Set its Shape to <strong>RectangleShape2D</strong>.',
+      'Press <strong>Ctrl+S</strong> and save it as <strong>player.tscn</strong>.',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🏃',
+    tag: 'Step 3',
+    tagClass: 'tag-locked',
+    title: 'Make the Player Run!',
+    subtitle: 'Press left and right to move your character!',
+    goal: 'Write a script so your character can run left and right using the arrow keys.',
+    child: 'Time for some CODE! Don\'t worry we\'ll go slowly. We\'re going to write instructions that tell our character: "when I press the right arrow key, move that way!" It\'s like programming your own remote control.',
+    parent: 'Attach a GDScript to the CharacterBody2D root. This step focuses on horizontal movement only. We use Input.get_axis() a nice Godot 4 shorthand that returns -1, 0, or +1. move_and_slide() handles all collision response.',
+    note: 'Leave gravity out for now it\'s easier for kids to understand movement first, then add gravity in the next step. Breaking it up like this is key to keeping confidence high!',
+    tryit: 'Press <strong>F5</strong> to run the game. Does your character slide left and right? (They\'ll float in the air for now — that\'s fine, we fix that next!)',
+    steps: [
+      'Click on the <strong>Player</strong> node in the Scene tree.',
+      'Click the scroll icon (Attach Script) and click <strong>Create</strong>.',
+      'Delete everything in the script and type the code below.',
+      'Press <strong>Ctrl+S</strong> to save!',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED = 220  # How fast we run
+
+func _physics_process(delta):
+    # left/right movement — get_axis returns -1, 0 or +1
+    var direction = Input.get_axis("ui_left", "ui_right")
+    velocity.x = direction * SPEED
+
+    move_and_slide()`,
+  },
+  {
+    emoji: '🦘',
+    tag: 'Step 4',
+    tagClass: 'tag-locked',
+    title: 'Add Gravity &amp; Jumping!',
+    subtitle: 'The most important part of any platform game!',
+    goal: 'Add gravity so the player falls down, and make them jump when you press Space!',
+    child: 'What makes a platform game a platform game? JUMPING! We\'re going to add gravity that\'s the invisible force that pulls our character downward and then add a super-powered jump! Press Space to leap!',
+    parent: 'We add two things: (1) a constant downward velocity.y increase to simulate gravity, and (2) a jump impulse on the Space key, only when is_on_floor() is true (so mid-air double-jumps aren\'t possible by default). ProjectSettings.get_setting("physics/2d/default_gravity") reads the global gravity value cleanly.',
+    note: 'The JUMP_FORCE value is negative because in Godot, going UP means a smaller (more negative) Y value. This confuses kids at first a fun way to explain it: "the sky has a smaller number!" 🌤️',
+    tryit: 'Press F5 and try jumping! Does your character fall back down? Can you only jump when you\'re standing on something? (You\'ll fall forever right now we add the floor next!)',
+    steps: [
+      'Open your <strong>player.tscn</strong> and click on the script.',
+      'Add the two new lines shown at the top (JUMP_FORCE and gravity).',
+      'Then update your <strong>_physics_process</strong> function with the jump code below.',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED     = 220
+const JUMP_FORCE = -480  # Negative = upward in Godot!
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+func _physics_process(delta):
+    # Pull the player down with gravity
+    if not is_on_floor():
+        velocity.y += gravity * delta
+
+    # Jump when Space is pressed — but only when on the ground!
+    if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+        velocity.y = JUMP_FORCE
+
+    # Left / right movement
+    var direction = Input.get_axis("ui_left", "ui_right")
+    velocity.x = direction * SPEED
+
+    move_and_slide()`,
+  },
+  {
+    emoji: '🟫',
+    tag: 'Step 5',
+    tagClass: 'tag-locked',
+    title: 'Build the Level with Tiles!',
+    subtitle: 'Draw floors and platforms like a real level designer!',
+    goal: 'Create a Main scene with a TileMapLayer so your character has solid ground to land on!',
+    child: 'Now we make the WORLD your character lives in! We\'re going to draw floors and platforms using little square tiles just like how Mario levels are built from blocks. You get to be the level designer!',
+    parent: 'Create a new Main scene with a Node2D root. Add a TileMapLayer child. In the TileSet inspector, create a new TileSet, add a single Atlas source using a coloured texture or Godot\'s built-in placeholder. Enable "Physics Layers" on the TileSet (Layer 0, collision mask 1) and give at least one tile a rectangle collision. Then paint a floor and some platforms. Finally, instance player.tscn into the Main scene.',
+    note: 'This is the most fiddly step. The TileSet collision setup trips up beginners take it slowly. The key is: TileSet → Physics Layers → Add Layer, THEN select a tile and draw a collision rectangle on it in the TileSet editor. Once one tile works, copy its physics properties.',
+    tryit: 'Press F5 from the Main scene. Does your character land on the floor? Try jumping onto a raised platform!',
+    steps: [
+      'Click <strong>Scene → New Scene</strong>. Choose <strong>Node2D</strong> as the root. Save as <strong>main.tscn</strong>.',
+      'Add a child node: <strong>TileMapLayer</strong>.',
+      'In the Inspector, click <strong>TileSet → New TileSet</strong>. Then add a tile source.',
+      'In the TileSet editor at the bottom, go to <strong>Physics Layers</strong> and click <strong>Add Element</strong>.',
+      'Select a tile, click the <strong>Physics</strong> tab, and draw a collision rectangle on it.',
+      'Switch to the map and <strong>paint</strong> a floor and some platforms!',
+      'Drag your <strong>player.tscn</strong> into the scene. Place it above the floor.',
+      'Press <strong>Ctrl+S</strong> to save, then <strong>F5</strong> to test!',
+    ],
+    code: null,
+  },
+  {
+    emoji: '📷',
+    tag: 'Step 6',
+    tagClass: 'tag-locked',
+    title: 'Add a Following Camera!',
+    subtitle: 'The camera chases your character everywhere!',
+    goal: 'Add a Camera2D to the Player so the view follows wherever you run and jump!',
+    child: 'Right now the camera stays still even when we run off the screen! We\'re going to add a magic camera that follows our character everywhere just like in a real Mario game. And it only takes ONE click!',
+    parent: 'Add a Camera2D node as a child of the Player node (not the main scene). Enable "Enabled" in the Inspector. Set Zoom to (2, 2) for a nice close-up view. Drag limit settings are optional at this stage the default behaviour already works well for a child\'s first level.',
+    note: 'Making Camera2D a child of the Player is the simplest approach it follows automatically with zero code. For more advanced smoothing, set the Drag settings, but that can come later.',
+    tryit: 'Run the game and walk to the right does the camera follow you? Try running off the edge of the screen!',
+    steps: [
+      'Open <strong>player.tscn</strong>.',
+      'Click <strong>+</strong> to add a child node to the Player: <strong>Camera2D</strong>.',
+      'In the Inspector, make sure <strong>Enabled</strong> is ticked ✅.',
+      'Set the <strong>Zoom</strong> to <strong>x: 2, y: 2</strong> for a nice close-up view.',
+      'Press <strong>Ctrl+S</strong> and then <strong>F5</strong> to test!',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🪙',
+    tag: 'Step 7',
+    tagClass: 'tag-locked',
+    title: 'Add Coins to Collect!',
+    subtitle: 'Bling bling — gather them all!',
+    goal: 'Make a Coin scene that disappears when the player touches it and adds to a score!',
+    child: 'Every great platform game has coins to collect! We\'re going to make golden coins that disappear with a *pop* when you touch them. And we\'ll count how many you\'ve grabbed your very own score!',
+    parent: 'Coin scene: Area2D (root) → Sprite2D (yellow circle or star) + CollisionShape2D (CircleShape2D). Connect the body_entered signal on the Area2D to a script that calls queue_free() and emits a collected signal. In main.tscn, an autoload or a simple label updated via signal handles the score counter.',
+    note: 'Skip a global autoload for now keep the score as an @onready Label in main.tscn and connect the coin\'s collected signal to a function on the main scene. One less concept to introduce!',
+    tryit: 'Place 5 coins in your level. Can you collect them all? Does the score go up? 🪙',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root node: <strong>Area2D</strong>. Rename it <strong>Coin</strong>.',
+      'Add a child <strong>Sprite2D</strong> (make it gold/yellow!) and a <strong>CollisionShape2D</strong> (CircleShape2D).',
+      'Attach a script to the Coin and type the code below.',
+      'In the <strong>Node tab → Signals</strong>, connect <strong>body_entered</strong> to the script.',
+      'Save as <strong>coin.tscn</strong>.',
+      'In <strong>main.tscn</strong>, add a <strong>Label</strong> node for the score. Then place some coins in the level!',
+    ],
+    code: `extends Area2D
+
+signal collected  # We broadcast this when picked up!
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        collected.emit()  # Tell the main scene we were collected
+        queue_free()      # Then disappear!`,
+  },
+  {
+    emoji: '🏁',
+    tag: 'Step 8',
+    tagClass: 'tag-locked',
+    title: 'Add a Finish Flag!',
+    subtitle: 'A goal to reach at the end of the level!',
+    goal: 'Place a goal flag that shows a "You Win!" message when the player touches it!',
+    child: 'Every level needs a finish line! We\'re going to put a big flag at the end of the level. When you reach it YOU WIN! We\'ll make a big happy message pop up on the screen.',
+    parent: 'Flag scene: Area2D → Sprite2D (🚩 or a green rectangle) + CollisionShape2D. On body_entered, show a CanvasLayer with a centered Label reading "You Win! 🎉". A simple show/hide toggle is enough no scene changes needed at this stage.',
+    note: 'Resist the urge to add a scene transition here. A label pop-up keeps the scope tight and lets the kid feel the win immediately without extra complexity.',
+    tryit: 'Run all the way to the flag. Did you win? Show someone you made a level with an ending! 🎉',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Area2D</strong>. Name it <strong>Flag</strong>.',
+      'Add <strong>Sprite2D</strong> (flag emoji or green rectangle) + <strong>CollisionShape2D</strong>.',
+      'Attach a script and type the code below.',
+      'Connect the <strong>body_entered</strong> signal.',
+      'Save as <strong>flag.tscn</strong>. Place it at the end of your level in main.tscn.',
+      'In main.tscn, add a <strong>CanvasLayer → Label</strong> with "You Win! 🎉". Hide it by default.',
+    ],
+    code: `extends Area2D
+
+# Drag the "You Win" label into this slot in the Inspector!
+@export var win_label: Label
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        win_label.show()`,
+  },
+  {
+    emoji: '👾',
+    tag: 'Step 9',
+    tagClass: 'tag-locked',
+    title: 'Add an Enemy!',
+    subtitle: 'A baddie who walks back and forth!',
+    goal: 'Make a simple enemy that walks left and right along a platform.',
+    child: 'Uh oh we need some baddies! We\'re going to make an enemy who walks back and forth like a Goomba. Watch out — if it touches you, you\'ll lose! (We can fix THAT next...)',
+    parent: 'Enemy scene: CharacterBody2D → Sprite2D (red/dark colour) + CollisionShape2D + two RayCast2D nodes (EdgeLeft, EdgeRight) pointing downward from the left and right edges. When a raycast stops detecting floor, reverse horizontal direction. Add "enemy" to a group. Save as enemy.tscn.',
+    note: 'The raycast edge-detection pattern is a classic Goomba clone technique it\'s impressive for kids to see it "just work." Keep SPEED low (80-100) so the enemy is beatable.',
+    tryit: 'Place an enemy on a platform. Does it pace back and forth and turn around at the edges? 🕺',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>CharacterBody2D</strong>. Rename it <strong>Enemy</strong>.',
+      'Add <strong>Sprite2D</strong> (make it red!), <strong>CollisionShape2D</strong>.',
+      'Add two <strong>RayCast2D</strong> children. Name them <strong>EdgeLeft</strong> and <strong>EdgeRight</strong>.',
+      'Set EdgeLeft position to <strong>x: -14, y: 0</strong> and Target to <strong>(0, 32)</strong>. Mirror for EdgeRight (x: 14).',
+      'In the <strong>Node tab</strong>, add the group: <strong>enemy</strong>.',
+      'Attach the script below. Save as <strong>enemy.tscn</strong>.',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED = 90
+var direction = 1  # Start walking right
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+func _physics_process(delta):
+    # Gravity
+    if not is_on_floor():
+        velocity.y += gravity * delta
+
+    # Turn around at platform edges
+    if not $EdgeRight.is_colliding():
+        direction = -1
+    elif not $EdgeLeft.is_colliding():
+        direction = 1
+
+    velocity.x = direction * SPEED
+    move_and_slide()`,
+  },
+  {
+    emoji: '🦶',
+    tag: 'Step 10',
+    tagClass: 'tag-locked',
+    title: 'Stomp the Enemy!',
+    subtitle: 'Jump on its head to defeat it just like Mario!',
+    goal: 'Make the player defeat the enemy by jumping on top of it, and lose a life by touching it from the side.',
+    child: 'Now for the COOLEST bit stomping! If you fall on top of the enemy, it disappears. But if you walk into it from the side OH NO! You get hurt! We need to teach the game the difference between a stomp and a bump.',
+    parent: 'Add an Area2D (StompBox) as a child of the Player, positioned below the sprite with a thin RectangleShape2D. Connect its body_entered to check for "enemy" group if found, queue_free() the enemy and give the player a small upward bounce (velocity.y = -200). For side collision, check overlaps in the enemy\'s script against the "player" group.',
+    note: 'This is the most game-feel-defining step. The upward bounce after a stomp is essential without it, stomping feels flat. You can also add a small screen-shake here if you want to stretch.',
+    tryit: 'Jump directly on top of the enemy. Does it disappear and you bounce up? Now try walking into it from the side does something happen?',
+    steps: [
+      'Open <strong>player.tscn</strong>. Add a child <strong>Area2D</strong>, rename it <strong>StompBox</strong>.',
+      'Add a <strong>CollisionShape2D</strong> to StompBox: a flat <strong>RectangleShape2D</strong> (wide, thin) positioned <em>below</em> the player sprite.',
+      'Attach a script to StompBox (or add a function to the player script) with the code below.',
+      'Connect <strong>body_entered</strong> on the StompBox to the script.',
+      'Open <strong>enemy.tscn</strong>. Add an <strong>Area2D</strong> child for side-hit detection and connect it too.',
+    ],
+    code: `# --- ADD to Player script ---
+
+# Called when StompBox hits something below us
+func _on_stomp_box_body_entered(body):
+    if body.is_in_group("enemy"):
+        body.queue_free()      # Bye bye, enemy!
+        velocity.y = -300      # Bounce up!
+
+# --- ADD to Enemy script ---
+# (connect Area2D body_entered on enemy side area)
+func _on_side_area_body_entered(body):
+    if body.is_in_group("player"):
+        print("Ouch! Player got hit!")
+        # You could hide the player, show a "Game Over" label,
+        # or restart the scene with get_tree().reload_current_scene()`,
+  },
+  {
+    emoji: '🎨',
+    tag: 'Step 11',
+    tagClass: 'tag-locked',
+    title: 'Make It Your Own!',
+    subtitle: 'This is YOUR game — put your stamp on it!',
+    goal: 'Customise the game with your own ideas, colours, name, and level design!',
+    child: 'THIS IS THE BEST STEP! Your game already WORKS. Now it\'s time to make it completely YOURS. Change the colours! Design a wild level with huge jumps! Add more coins! Give your character a name! You are a real, actual, proper game developer. 🎮✨',
+    parent: 'Great stretch ideas: flip the player\'s sprite with scale.x = direction for a facing animation; add a second level with get_tree().change_scene_to_file(); add AudioStreamPlayer for a jump sound; add a parallax Background node; or animate using AnimationPlayer. All build naturally from the patterns here.',
+    note: null,
+    tryit: 'Show your finished game to someone! Can they reach the flag? Can they collect all the coins? You made this — be proud! 🌟',
+    steps: [
+      'Change the <strong>player\'s colour</strong> or try adding a real sprite image!',
+      'Redesign the <strong>level</strong> make it long, tricky, full of platforms!',
+      'Add <strong>more coins</strong> and more <strong>enemies</strong> in clever places.',
+      'Give your game a <strong>name</strong> in <strong>Project → Project Settings → Application → Name</strong>.',
+      'Add a <strong>background colour</strong> using a ColorRect behind everything.',
+      'Bonus: Add a <strong>jump sound</strong> using an AudioStreamPlayer node! 🔊',
+    ],
+    code: null,
+  },
+];
+
+let completedSteps = JSON.parse(localStorage.getItem('platformerWorkshopProgress') || '[]');
+
+function saveProgress() {
+  localStorage.setItem('platformerWorkshopProgress', JSON.stringify(completedSteps));
+}
+
+function getStatus(i) {
+  if (completedSteps.includes(i)) return 'done';
+  const firstIncomplete = STEPS.findIndex((_, idx) => !completedSteps.includes(idx));
+  if (i === firstIncomplete) return 'current';
+  if (i < firstIncomplete) return 'done';
+  return 'locked';
+}
+
+function buildDots() {
+  const row = document.getElementById('dot-row');
+  row.innerHTML = '';
+  STEPS.forEach((_, i) => {
+    const s = getStatus(i);
+    const d = document.createElement('div');
+    d.className = `dot ${s}`;
+    d.textContent = s === 'done' ? '✓' : i + 1;
+    d.onclick = () => { if (s !== 'locked') scrollToStep(i); };
+    row.appendChild(d);
+  });
+  const done = STEPS.filter((_, i) => getStatus(i) === 'done').length;
+  document.getElementById('prog-count').textContent = `${done} / ${STEPS.length} steps`;
+}
+
+function scrollToStep(i) {
+  document.getElementById(`step-${i}`)?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function buildSteps() {
+  const container = document.getElementById('steps-container');
+  container.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const status = getStatus(i);
+    const card = document.createElement('div');
+    card.className = `step-card ${status}`;
+    card.id = `step-${i}`;
+
+    const tagLabel = status === 'done' ? '✅ Done' : status === 'current' ? '▶ Current' : status === 'locked' ? '🔒 Locked' : s.tag;
+    const tagClass = status === 'done' ? 'tag-done' : status === 'current' ? 'tag-current' : status === 'locked' ? 'tag-locked' : s.tagClass;
+
+    let bodyHtml = '';
+    if (status !== 'locked') {
+      if (s.goal) bodyHtml += `<div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>${s.goal}</p></div></div>`;
+
+      bodyHtml += `<div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>${s.child}</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>${s.parent}</p></div>
+      </div>`;
+
+      if (s.note) bodyHtml += `<div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> ${s.note}</div></div>`;
+
+      if (s.steps) {
+        bodyHtml += `<div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">`;
+        s.steps.forEach((st, si) => { bodyHtml += `<li><span class="sn">${si+1}</span><span>${st}</span></li>`; });
+        bodyHtml += `</ol></div>`;
+      }
+
+      if (s.code) {
+        const coloured = s.code
+          .replace(/\#.*/g, m => `<span class="cm">${m}</span>`)
+          .replace(/\b(extends|const|var|func|if|elif|else|return|await|and|or|not|signal|true|false|null)\b/g, '<span class="kw">$1</span>')
+          .replace(/"([^"]*)"/g, '<span class="st">"$1"</span>')
+          .replace(/\b(\d+\.?\d*)\b/g, '<span class="nu">$1</span>');
+        bodyHtml += `<div class="code-block"><pre>${coloured}</pre></div>`;
+      }
+
+      if (s.tryit) bodyHtml += `<div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> ${s.tryit}</div></div>`;
+
+      if (status === 'current') {
+        const shortTitle = s.title.replace(/&amp;/g,'&').split('!')[0].split('–')[0].trim();
+        bodyHtml += `<button class="done-btn" onclick="markDone(${i})">✅ Done! ${shortTitle}! →</button>`;
+      }
+    }
+
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(${i})">
+        <div class="step-num">${i + 1}</div>
+        <span class="step-icon-badge">${s.emoji}</span>
+        <div class="step-title-wrap">
+          <span class="step-tag ${tagClass}">${tagLabel}</span>
+          <div class="step-title">${s.title}</div>
+          <div class="step-subtitle">${s.subtitle}</div>
+        </div>
+        <div class="step-status">${status === 'done' ? '✅ Done' : status === 'current' ? '▶ Current' : status === 'locked' ? '🔒 Locked' : ''}</div>
+      </div>
+      ${status !== 'locked' ? `<div class="step-body" id="body-${i}">${bodyHtml}</div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleBody(i) {
+  const b = document.getElementById(`body-${i}`);
+  if (b) b.style.display = b.style.display === 'none' ? '' : b.style.display === 'block' ? 'none' : 'block';
+}
+
+function markDone(i) {
+  if (!completedSteps.includes(i)) completedSteps.push(i);
+  saveProgress();
+  buildDots();
+  buildSteps();
+  const next = STEPS.findIndex((_, idx) => !completedSteps.includes(idx));
+  if (next >= 0) setTimeout(() => scrollToStep(next), 100);
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+buildDots();
+buildSteps();
+</script>
+<script>(function(){const btn=document.getElementById('navToggle');const nav=document.getElementById('mobileNav');if(btn&&nav)btn.addEventListener('click',()=>nav.classList.toggle('open'));})();</script>
+</body>
+</html>

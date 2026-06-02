@@ -1,0 +1,786 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barrel Blast! Build a Donkey Kong-Style Game in Godot | JVDesignStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#fdf6ee;color:#1a1a1a;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ── SERIES STRIP ── */
+.series-strip{background:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#457b9d);padding:6px 24px;text-align:center}
+.series-strip span{font-size:.75rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+/* ── NAV ── */
+.site-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(64,59,51,0.08);box-shadow:0 2px 18px rgba(64,59,51,0.08);}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;height:68px;display:flex;align-items:center;gap:8px;}
+.logo-link{display:flex;align-items:center;gap:10px;font-size:1.22rem;margin-right:auto;text-decoration:none;color:inherit;}
+.logo-link img{height:36px;border-radius:8px;display:block;}
+.logo-name{font-weight:800;color:#BC4749;}
+.main-nav{display:flex;align-items:center;gap:2px;}
+.nav-link{font-size:0.85rem;font-weight:600;color:#5a5449;padding:7px 11px;border-radius:8px;white-space:nowrap;transition:background 0.15s,color 0.15s;text-decoration:none;}
+.nav-link:hover{background:#F0EAD6;color:#403B33;}
+.nav-toggle{display:none;background:none;border:none;padding:8px 12px;font-size:1.4rem;cursor:pointer;color:#403B33;flex-shrink:0;line-height:1;}
+.mobile-nav{position:absolute;top:100%;left:0;right:0;z-index:200;background:white;border-top:3px solid #BC4749;box-shadow:0 8px 32px rgba(64,59,51,0.18);max-height:0;overflow:hidden;transition:max-height 0.4s ease;}
+.mobile-nav.open{max-height:calc(100vh - 68px);overflow-y:auto;}
+.mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 24px;font-size:1rem;font-weight:600;color:#5a5449;border-bottom:1px solid rgba(64,59,51,0.06);transition:background 0.12s;text-decoration:none;}
+.mobile-nav a:last-child{border-bottom:none;}
+.mobile-nav a:hover{background:#F0EAD6;color:#403B33;}
+@media(max-width:860px){.main-nav{display:none!important;}.nav-toggle{display:block!important;}}
+@media(min-width:861px){.mobile-nav{display:none!important;}}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,#fff7ed 55%,#fef3c7 100%);border-bottom:3px solid #fcd34d;overflow:hidden;position:relative}
+.hero::after{content:'🛢️';position:absolute;right:0;bottom:-10px;font-size:8rem;opacity:.07;transform:rotate(-15deg);pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#c2410c;border:1.5px solid #fed7aa;border-radius:999px;padding:4px 14px;margin-bottom:8px;background:#fff7ed}
+.series-label{display:block;font-family:'Boogaloo',cursive;font-size:.9rem;color:#c2410c;letter-spacing:.05em;margin-bottom:4px;opacity:.85}
+.hero h1{font-family:'Boogaloo',cursive;font-size:clamp(2.4rem,6vw,3.6rem);line-height:1.0;color:#1a1a1a;margin-bottom:6px}
+.hero h1 .accent{color:#c2410c}
+.hero h1 .subtitle-h1{display:block;font-size:clamp(1rem,2.5vw,1.4rem);color:#555;font-family:'Nunito',sans-serif;font-weight:900;margin-top:4px}
+.hero p.lead{font-size:1rem;color:#555;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid #ddd;border-radius:999px;padding:5px 14px;color:#333;background:#fafafa}
+.hero-img{width:170px;height:170px;background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:5.5rem;flex-shrink:0;box-shadow:0 6px 30px rgba(194,65,12,.18);border:2.5px solid #fcd34d;animation:wobble 3s ease-in-out infinite}
+@keyframes wobble{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#c2410c;border-bottom-color:#c2410c}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1.5px solid #fed7aa;border-radius:14px;padding:18px 22px;margin-bottom:28px;box-shadow:0 2px 12px rgba(194,65,12,.07)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#c2410c}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#c2410c;color:#c2410c;box-shadow:0 0 0 3px rgba(194,65,12,.15)}
+.dot.locked{cursor:default}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #ede8e4;border-radius:18px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#c2410c;box-shadow:0 4px 24px rgba(194,65,12,.11)}
+.step-card.locked{opacity:.5}
+.step-card.done{border-color:#d1fae5}
+
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:12px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa;font-family:'Boogaloo',cursive}
+.step-card.current .step-num{border-color:#c2410c;color:#c2410c;background:#fff7ed}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.6rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:5px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#fef3c7;color:#b45309}
+.tag-current{background:#ffedd5;color:#c2410c}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#1a1a1a;line-height:1.2;letter-spacing:.01em}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:2px}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.step-card.current .step-status{color:#c2410c}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #f5f0ea}
+
+.goal-box{background:#fffbf0;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#b45309;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.child{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tip{background:#fffbeb;border:1.5px dashed #fcd34d;color:#713f12}
+.callout.tryit{background:#fff7ed;border:1.5px dashed #fdba74;color:#9a3412}
+
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#c2410c;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:50%;background:#c2410c;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+
+/* CODE */
+.code-block{background:#1c1917;border-radius:12px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;color:#e7e5e4;overflow-x:auto;border:1.5px solid #292524}
+.code-block .cm{color:#78716c}
+.code-block .kw{color:#fb923c}
+.code-block .fn{color:#fbbf24}
+.code-block .st{color:#86efac}
+.code-block .nu{color:#67e8f9}
+.code-block .va{color:#f9a8d4}
+
+/* DONE BUTTON */
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2.5px solid #22c55e;border-radius:12px;font-family:'Boogaloo',cursive;font-size:1.1rem;color:#166534;cursor:pointer;transition:background .15s,transform .1s;text-align:center;letter-spacing:.02em}
+.done-btn:hover{background:#f0fdf4;transform:translateY(-1px)}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:16px;padding:20px}
+.about-card h3{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#c2410c;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* FOOTER */
+.site-footer{background:#403B33;padding:52px 24px 28px;}
+.footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+.footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+.footer-tagline{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(240,234,214,0.65);}
+.footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.65);padding:4px 9px;border-radius:6px;transition:color 0.15s,background 0.15s;text-decoration:none;}
+.footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+.footer-socials{display:flex;gap:24px;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:700;color:rgba(240,234,214,0.65);transition:color 0.15s;text-decoration:none;}
+.footer-socials a:hover{color:#F0EAD6;}
+.footer-copy{font-size:0.73rem;color:rgba(240,234,214,0.45);border-top:1px solid rgba(255,255,255,0.07);padding-top:18px;width:100%;}
+
+@media(max-width:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-img{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- SERIES STRIP -->
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 3</span>
+</div>
+
+<!-- NAV -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="index.html" class="logo-link">
+      <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+      <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="games.html" class="nav-link">🎮 Games</a>
+      <a href="books.html" class="nav-link">📚 Books</a>
+      <a href="learn-hub.html" class="nav-link">🎓 Learn Hub</a>
+      <a href="workshop.html" class="nav-link">🔧 Workshop</a>
+      <a href="dev-tools.html" class="nav-link">🛠️ Dev Tools</a>
+      <a href="freebies.html" class="nav-link">🎁 Free Downloads</a>
+      <a href="content_hub.html" class="nav-link">📋 Content Hub</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+  </div>
+  <nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="games.html">🎮 Games</a>
+    <a href="books.html">📚 Books</a>
+    <a href="learn-hub.html">🎓 Learn Hub</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="dev-tools.html">🛠️ Dev Tools</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="content_hub.html">📋 Content Hub</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <span class="series-label">⭐ My First Video Game</span>
+      <h1><span class="accent">Barrel Blast!</span> 🦍<span class="subtitle-h1">Build Your Own Donkey Kong-Style Game</span></h1>
+      <p class="lead">Dodge rolling barrels, climb ladders, and reach the top to win! You'll build a climbing arcade game just like the original Donkey Kong one of the greatest games ever made!</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 6+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 12 fun steps</span>
+      </div>
+    </div>
+    <div class="hero-img">🦍</div>
+  </div>
+</section>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Go!</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we making?</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div id="tab-workshop" class="tab-pane active">
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">🛢️ Workshop Progress</span>
+        <span class="progress-count" id="prog-count">0 / 12 steps</span>
+      </div>
+      <div class="step-dots" id="dot-row"></div>
+    </div>
+    <div id="steps-container"></div>
+  </div>
+
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎮 What We're Building</h3>
+        <p>A <strong>climbing arcade game</strong> inspired by the original Donkey Kong! Your hero climbs girder platforms and ladders, dodges barrels rolling down from the top, and reaches the goal to win.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>Have you ever seen old arcade games? Donkey Kong was one of the very FIRST! A big gorilla at the top throws barrels and your little hero has to dodge them and climb up. We're going to make our own version with our own characters!</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>This is Episode 3 of My First Video Game. It builds on Jump Jump's gravity and CharacterBody2D patterns, adding new concepts: <strong>ladder climbing</strong> (disabling gravity on overlap), <strong>AnimatableBody2D</strong> for rolling barrels, a <strong>Timer</strong> node for barrel spawning, and a simple thrower AI. No prior episodes required.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What You'll Make</h3>
+        <ul>
+          <li>A hero who runs and jumps</li>
+          <li>Girder platforms to stand on</li>
+          <li>Ladders to climb up and down</li>
+          <li>A big boss at the top who throws barrels</li>
+          <li>Barrels that roll and fall down</li>
+          <li>A win condition when you reach the top</li>
+          <li>A score that counts how long you survive</li>
+          <li>Your very own arcade level!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="footer-logo">JVDesignStudio</span>
+      <span class="footer-tagline">Books · Games · Creative Adventures</span>
+    </div>
+    <nav class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="content_hub.html">All Projects</a>
+      <a href="freebies.html">Free Downloads</a>
+      <a href="about.html">About</a>
+      <a href="press.html">Press Kit</a>
+      <a href="contact.html">Contact</a>
+      <a href="newsletter.html">Newsletter</a>
+      <a href="search.html">Search</a>
+      <a href="videos.html">Videos</a>
+      <a href="sitemap.html">Sitemap</a>
+    </nav>
+    <nav class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+    </nav>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+const STEPS = [
+  {
+    emoji: '🌟',
+    tag: 'Start here',
+    tagClass: 'tag-new',
+    title: 'Welcome, Arcade Maker!',
+    subtitle: 'A big hello before we start climbing!',
+    goal: 'Understand what we\'re building and get Godot open and ready!',
+    child: 'We\'re going to make a game like the VERY FIRST arcade games ever made! There\'s a big gorilla at the top throwing barrels, and your little hero has to dodge them and climb all the way up. It\'s going to be SO much fun and YOU are going to build it! 🦍🛢️',
+    parent: 'Episode 3 of My First Video Game. Core new concepts: ladder climbing via Area2D overlap (disabling gravity), barrel spawning using a Timer node, and rolling barrels as CharacterBody2D with constant horizontal velocity that flips on collision. The girder level is built with a StaticBody2D + TileMapLayer or simple coloured StaticBody2D rectangles whichever the child finds easier to paint.',
+    note: 'Purple boxes are just for grown-ups! The child can do most of the typing your job is to read together and celebrate every step. This episode is slightly more complex than Jump Jump, but the payoff is huge kids LOVE seeing barrels roll! 🛢️',
+    tryit: null,
+    steps: null,
+    code: null,
+  },
+  {
+    emoji: '📁',
+    tag: 'Step 1',
+    tagClass: 'tag-new',
+    title: 'New Project — Barrel Blast!',
+    subtitle: 'A fresh start for our arcade adventure!',
+    goal: 'Create a new Godot 4 project called "Barrel Blast" and get it open.',
+    child: 'Every game starts the same way with a brand new empty project! It\'s like opening a fresh box of LEGOs. Let\'s set ours up so we can start building our arcade game!',
+    parent: 'Standard Godot 4 new project. Compatibility renderer, Desktop platform. This time we\'ll set the window size to 480×640 in Project Settings to give a tall arcade-style aspect ratio — optional but fun.',
+    note: null,
+    tryit: 'Can you find where to change the window size? Go to Project → Project Settings → Display → Window and try setting Width to 480 and Height to 640. Arcade style!',
+    steps: [
+      'Open <strong>Godot 4</strong> and click <strong>"New Project"</strong>.',
+      'Name it <strong>Barrel Blast</strong>. Choose a folder on your Desktop.',
+      'Make sure Renderer is set to <strong>Compatibility</strong>.',
+      'Click <strong>"Create &amp; Edit"</strong>.',
+      'Optional: Go to <strong>Project → Project Settings → Display → Window</strong> and set Width: <strong>480</strong>, Height: <strong>640</strong>.',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🧑',
+    tag: 'Step 2',
+    tagClass: 'tag-locked',
+    title: 'Build the Hero',
+    subtitle: 'The brave little character who climbs to the top!',
+    goal: 'Create a Hero scene with running, jumping, and gravity just like Jump Jump!',
+    child: 'Remember Jump Jump? We\'re going to build a character the same way a CharacterBody2D who can run and jump. If you did Jump Jump already, this will feel very familiar! If not, don\'t worry we\'ll go through it together.',
+    parent: 'Identical setup to Jump Jump Episode 2: CharacterBody2D → Sprite2D + CollisionShape2D (RectangleShape2D). Add the hero to a "player" group. Gravity constant + jump on ui_accept + horizontal movement with get_axis. Save as hero.tscn. We\'ll add ladder logic in Step 5.',
+    note: null,
+    tryit: 'Run the game with F5 can your hero run left and right and jump? Good! We\'ll add the floor next.',
+    steps: [
+      'Click <strong>Scene → New Scene</strong>. Root node: <strong>CharacterBody2D</strong>. Rename it <strong>Hero</strong>.',
+      'Add child: <strong>Sprite2D</strong> (give it a bright colour!).',
+      'Add child: <strong>CollisionShape2D</strong> set Shape to <strong>RectangleShape2D</strong>.',
+      'In the <strong>Node tab</strong>, click Groups and add: <strong>player</strong>.',
+      'Attach a script and type the code below. Press <strong>Ctrl+S</strong>, save as <strong>hero.tscn</strong>.',
+    ],
+    code: `extends CharacterBody2D
+
+const SPEED      = 200
+const JUMP_FORCE = -440
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+var on_ladder  = false  # We'll use this in Step 5!
+
+func _physics_process(delta):
+    # Gravity (skip when on a ladder)
+    if not is_on_floor() and not on_ladder:
+        velocity.y += gravity * delta
+
+    # Jump
+    if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+        velocity.y = JUMP_FORCE
+
+    # Left / right
+    var dir = Input.get_axis("ui_left", "ui_right")
+    velocity.x = dir * SPEED
+
+    move_and_slide()`,
+  },
+  {
+    emoji: '🏗️',
+    tag: 'Step 3',
+    tagClass: 'tag-locked',
+    title: 'Build the Girder Level!',
+    subtitle: 'Stack up the platforms like a real arcade game!',
+    goal: 'Create a Main scene with girder platforms the hero can stand and walk on.',
+    child: 'In Donkey Kong, the hero walks on these wide metal floors called girders. We\'re going to build ours! We\'ll stack them up going from left to right, right to left — like a zig-zag staircase going upward.',
+    parent: 'Create main.tscn with a Node2D root. The simplest approach for girders: add several StaticBody2D nodes, each with a CollisionShape2D (RectangleShape2D) and a Sprite2D/ColorRect as a visual. Stack 4–5 of them at slightly different heights, alternating left/right position. Instance hero.tscn at the bottom-left. Add a Camera2D as a child of the hero.',
+    note: 'Donkey Kong\'s iconic zig-zag girder layout can be approximated with 4 girders: bottom-left long, middle-right long, upper-left long, top-right short. Each one a little higher than the last. Don\'t overthink the art coloured rectangles work perfectly for now!',
+    tryit: 'Press F5. Does your hero land on the bottom girder? Try walking to the edge do they fall off? Perfect!',
+    steps: [
+      'Click <strong>Scene → New Scene</strong>. Root: <strong>Node2D</strong>. Save as <strong>main.tscn</strong>.',
+      'Add a child <strong>StaticBody2D</strong>. Inside it, add <strong>CollisionShape2D</strong> (wide RectangleShape2D) and a <strong>ColorRect</strong> for the visual (brown is great!).',
+      'Duplicate this girder 3–4 times. <strong>Move them</strong> to different heights zig-zag them left and right.',
+      'Drag your <strong>hero.tscn</strong> into the scene. Place them above the bottom girder.',
+      'Open <strong>hero.tscn</strong> and add a <strong>Camera2D</strong> child. Set Zoom to <strong>x:2, y:2</strong>.',
+      'Press <strong>Ctrl+S</strong> then <strong>F5</strong> to test!',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🪜',
+    tag: 'Step 4',
+    tagClass: 'tag-locked',
+    title: 'Add Ladders to Climb!',
+    subtitle: 'The secret to getting to the top!',
+    goal: 'Build a Ladder scene when the hero touches it, they can climb up and down!',
+    child: 'The most special thing in our game is the LADDERS! When you walk into a ladder and press UP or DOWN, you climb! We\'re going to turn off gravity while climbing so it\'s like the ladder is holding you up.',
+    parent: 'Ladder scene: Area2D → Sprite2D (tall thin rectangle, brown/grey) + CollisionShape2D. In the hero script, we detect body_entered/body_exited from the ladder\'s Area2D. When on_ladder is true, gravity is skipped and vertical velocity is set from ui_up/ui_down input. Be sure to set the Area2D\'s collision layer/mask so only the hero detects it.',
+    note: 'The ladder detection pattern here is classic for 2D arcade games. Key detail: when the player leaves the ladder (body_exited), reset on_ladder = false AND reset velocity.y to 0 to prevent the stored upward momentum carrying them off.',
+    tryit: 'Walk your hero into a ladder and press Up. Do they climb? Press Down to go back. Now jump off do they fall normally again?',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Area2D</strong>. Rename it <strong>Ladder</strong>.',
+      'Add a <strong>Sprite2D</strong> (tall thin coloured rectangle) and a <strong>CollisionShape2D</strong> to match.',
+      'Attach the script below to the Ladder\'s Area2D.',
+      'Connect <strong>body_entered</strong> and <strong>body_exited</strong> signals in the Node tab.',
+      'Save as <strong>ladder.tscn</strong>. Place 2–3 ladders between your girders in main.tscn.',
+    ],
+    code: `extends Area2D
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        body.on_ladder = true
+
+func _on_body_exited(body):
+    if body.is_in_group("player"):
+        body.on_ladder = false
+        body.velocity.y = 0  # Stop carrying momentum off the ladder
+
+# --- ADD this inside _physics_process in hero.tscn script ---
+# (after the gravity block)
+#
+#    if on_ladder:
+#        var climb = Input.get_axis("ui_up", "ui_down")
+#        velocity.y = climb * SPEED * 0.7`,
+  },
+  {
+    emoji: '🛢️',
+    tag: 'Step 5',
+    tagClass: 'tag-locked',
+    title: 'Make a Rolling Barrel!',
+    subtitle: 'Here comes the danger!',
+    goal: 'Build a Barrel scene that rolls along girders, falls off edges, and disappears at the bottom.',
+    child: 'Now for the EXCITING bit the barrels! 🛢️ We\'re going to make a barrel that rolls across the floor. When it reaches the edge, it falls down to the next girder and keeps rolling. Just like the real Donkey Kong!',
+    parent: 'Barrel scene: CharacterBody2D → Sprite2D (brown circle/rectangle) + CollisionShape2D. In the script: constant horizontal velocity, gravity applied, move_and_slide(). When it hits a wall (is_on_wall()), it flips direction this naturally handles the zig-zag girder layout. Add to "barrel" group. Use queue_free() when it goes below the screen (position.y > 800).',
+    note: 'The barrel flipping direction on is_on_wall() is an elegant trick it works without any raycasts because the girder walls (invisible vertical edges from the StaticBody2D) stop the barrel and cause it to reverse. The child will find it magical to watch.',
+    tryit: 'Drag one barrel into the scene by hand and press F5. Does it roll? Does it flip when it hits the edge? Does it fall to the next girder? 🎉',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>CharacterBody2D</strong>. Rename it <strong>Barrel</strong>.',
+      'Add <strong>Sprite2D</strong> (brown!) and <strong>CollisionShape2D</strong> (CircleShape2D works great!).',
+      'In the <strong>Node tab</strong>, add it to the group: <strong>barrel</strong>.',
+      'Attach the script below. Save as <strong>barrel.tscn</strong>.',
+    ],
+    code: `extends CharacterBody2D
+
+const ROLL_SPEED = 130
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+var direction = 1  # Start rolling right
+
+func _physics_process(delta):
+    # Gravity — barrels fall too!
+    if not is_on_floor():
+        velocity.y += gravity * delta
+
+    # Roll sideways
+    velocity.x = direction * ROLL_SPEED
+
+    move_and_slide()
+
+    # Flip direction if hitting a wall
+    if is_on_wall():
+        direction *= -1
+
+    # Disappear if it rolls off the bottom of the screen
+    if position.y > 900:
+        queue_free()`,
+  },
+  {
+    emoji: '🦍',
+    tag: 'Step 6',
+    tagClass: 'tag-locked',
+    title: 'Add the Big Boss!',
+    subtitle: 'The gorilla at the top who throws everything!',
+    goal: 'Place a Boss character at the top who throws barrels on a timer!',
+    child: 'Every great game has a big bad boss! Our gorilla sits at the TOP of all the girders and throws barrels down at us. We\'re going to use something called a TIMER it tells Godot to throw a new barrel every few seconds. Uh oh!',
+    parent: 'Boss scene: Node2D → Sprite2D (large, dark emoji sprite or coloured rectangle) + Timer node. On the Timer\'s timeout signal, instantiate barrel.tscn at the boss\'s position and add it to the main scene. Set Timer wait_time to 2.5 seconds, autostart true. @export var barrel_scene: PackedScene lets you assign barrel.tscn in the Inspector.',
+    note: 'The Timer node is a lovely concept to introduce here it fires a signal on a schedule without any manual delta counting. This is the first time in the series we use get_tree().get_root().get_node("Main") style scene access keep it simple by using @export to pass the reference instead.',
+    tryit: 'Place the boss at the top-right of your level. Press F5 does a barrel appear every few seconds? Watch it roll! 😄',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Node2D</strong>. Rename it <strong>Boss</strong>.',
+      'Add a <strong>Sprite2D</strong> make it big and scary! (Dark colour, large size.)',
+      'Add a child <strong>Timer</strong> node. In the Inspector, set <strong>Wait Time: 2.5</strong> and tick <strong>Autostart: on</strong>.',
+      'Attach a script to the Boss node with the code below.',
+      'Connect the Timer\'s <strong>timeout</strong> signal to the script.',
+      'Save as <strong>boss.tscn</strong>. Place in main.tscn at the top.',
+      'In the Inspector, drag <strong>barrel.tscn</strong> into the Barrel Scene slot.',
+    ],
+    code: `extends Node2D
+
+@export var barrel_scene: PackedScene
+
+func _on_timer_timeout():
+    if barrel_scene:
+        var barrel = barrel_scene.instantiate()
+        # Spawn barrel at the boss's feet
+        barrel.global_position = global_position + Vector2(0, 40)
+        # Add to the main scene so it interacts with everything
+        get_parent().add_child(barrel)`,
+  },
+  {
+    emoji: '💥',
+    tag: 'Step 7',
+    tagClass: 'tag-locked',
+    title: 'Barrels Hurt the Hero!',
+    subtitle: 'Getting hit means game over!',
+    goal: 'Make the hero die (or lose a life) when a barrel touches them.',
+    child: 'What happens when a barrel rolls into our hero? Right now nothing! We need to fix that. When a barrel touches the hero, we\'ll show a "Game Over" message. Watch out for those barrels! 🛢️💨',
+    parent: 'Add an Area2D to the Hero (or the Barrel) to detect overlaps with the other group. On collision, show a CanvasLayer "Game Over" label and optionally call get_tree().reload_current_scene() after a short Timer delay. Alternatively, track lives (start at 3, decrement, reload when 0). Lives are more satisfying for kids.',
+    note: 'A 1-second delay before reload_current_scene() lets the child see the Game Over message and understand what happened instant restarts can feel confusing. A simple await get_tree().create_timer(1.5).timeout before the reload achieves this neatly.',
+    tryit: 'Let a barrel hit your hero on purpose. Does Game Over appear? Does the level restart?',
+    steps: [
+      'Open <strong>hero.tscn</strong>. Add a child <strong>Area2D</strong>, name it <strong>HitBox</strong>.',
+      'Add a <strong>CollisionShape2D</strong> to HitBox match it to the hero\'s size.',
+      'Connect <strong>body_entered</strong> on HitBox to the hero script.',
+      'In <strong>main.tscn</strong>, add a <strong>CanvasLayer → Label</strong> node. Write <strong>"Game Over! 💥"</strong> — hide it by default.',
+      'Add the code below to the hero script. Drag the label into the <strong>Game Over Label</strong> slot in Inspector.',
+    ],
+    code: `# ADD to hero.tscn script:
+
+@export var game_over_label: Label
+var dead = false
+
+func _on_hit_box_body_entered(body):
+    if body.is_in_group("barrel") and not dead:
+        dead = true
+        game_over_label.show()
+        # Wait a moment then restart!
+        await get_tree().create_timer(1.5).timeout
+        get_tree().reload_current_scene()`,
+  },
+  {
+    emoji: '🏆',
+    tag: 'Step 8',
+    tagClass: 'tag-locked',
+    title: 'Add the Win Condition!',
+    subtitle: 'Reach the top and save the day!',
+    goal: 'Place a goal at the top of the level touch it to win!',
+    child: 'Our game needs a way to WIN! We\'re going to put a big shiny prize at the top of all the girders. If you can dodge all those barrels and climb all the way up YOU WIN! 🌟',
+    parent: 'Reuse the Flag/Goal pattern from Jump Jump Episode 2: Area2D → Sprite2D (star, trophy, or heart emoji) + CollisionShape2D. On body_entered with "player" group, show a "You Win! 🎉" CanvasLayer label. Optional: add a get_tree().create_timer(2.0).timeout then load the next scene or just celebrate.',
+    note: null,
+    tryit: 'Climb all the way to the top past the barrels and touch the goal. Did you win? Show someone that\'s a real arcade game! 🎉',
+    steps: [
+      'Create a <strong>New Scene</strong>. Root: <strong>Area2D</strong>. Rename it <strong>Goal</strong>.',
+      'Add <strong>Sprite2D</strong> (⭐ or 🏆 something exciting!) and <strong>CollisionShape2D</strong>.',
+      'Attach the script below. Connect <strong>body_entered</strong>.',
+      'Save as <strong>goal.tscn</strong>. Place it near the boss at the very top of the level.',
+      'Add a <strong>CanvasLayer → Label</strong> in main.tscn: <strong>"You Win! 🎉"</strong> hidden by default.',
+    ],
+    code: `extends Area2D
+
+@export var win_label: Label
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        win_label.show()`,
+  },
+  {
+    emoji: '🔢',
+    tag: 'Step 9',
+    tagClass: 'tag-locked',
+    title: 'Add a Score!',
+    subtitle: 'Count how long you survive and earn points!',
+    goal: 'Show a score on screen that counts up every second the hero is alive.',
+    child: 'Real arcade games always have a score! Ours is going to count UP every second you\'re alive and dodging barrels. The longer you survive, the higher your score can you beat your own record? 🏅',
+    parent: 'Add a CanvasLayer → Label to main.tscn for the HUD. In the main script, use a Timer (or accumulate delta in _process) to increment score each second and update the label text. Alternatively, award 10 points per second. A simple int score variable in main.gd keeps things clean.',
+    note: null,
+    tryit: 'Run the game and watch the score climb. How high can you get before a barrel gets you?',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>CanvasLayer</strong> child. Inside it, add a <strong>Label</strong> name it <strong>ScoreLabel</strong>.',
+      'Position the label at the top of the screen. Set its text to <strong>"Score: 0"</strong>.',
+      'Attach a script to the <strong>Main</strong> (Node2D root) and type the code below.',
+    ],
+    code: `extends Node2D
+
+var score = 0
+var time_passed = 0.0
+
+@onready var score_label = $CanvasLayer/ScoreLabel
+
+func _process(delta):
+    time_passed += delta
+    if time_passed >= 1.0:
+        time_passed = 0.0
+        score += 10
+        score_label.text = "Score: " + str(score)`,
+  },
+  {
+    emoji: '⚡',
+    tag: 'Step 10',
+    tagClass: 'tag-locked',
+    title: 'Make It Get Harder!',
+    subtitle: 'The longer you survive, the faster the barrels!',
+    goal: 'Make barrels roll faster and spawn more often as the score goes up.',
+    child: 'Right now the barrels always go the same speed. But in real arcade games they get FASTER! We\'re going to make it so the longer you play, the more barrels there are and the quicker they go. Uh oh! 😬',
+    parent: 'Two changes: (1) In main.gd, as score increases, shorten the Boss\'s Timer wait_time (accessed via get_node or @export). (2) Pass a speed multiplier to each barrel on instantiation using a variable. Every 50 points, reduce wait_time by 0.2 seconds (min 0.8s) and increase ROLL_SPEED by 20.',
+    note: 'Difficulty scaling is one of the most satisfying game-feel moments for kids to implement they immediately want to test it. Cap the speed increase so it stays possible!',
+    tryit: 'Play for 30 seconds. Do the barrels come faster? Is it getting tricky? That\'s game design in action! 🎮',
+    steps: [
+      'Open your <strong>boss.tscn</strong> script.',
+      'Give the barrel a speed boost when spawning it add the extra line shown below.',
+      'In <strong>main.gd</strong>, add the difficulty update code that fires every 50 points.',
+    ],
+    code: `# In boss.tscn script modify _on_timer_timeout:
+var speed_boost = 1.0  # We'll increase this over time
+
+func _on_timer_timeout():
+    if barrel_scene:
+        var barrel = barrel_scene.instantiate()
+        barrel.global_position = global_position + Vector2(0, 40)
+        barrel.speed_boost = speed_boost  # Pass boost to barrel!
+        get_parent().add_child(barrel)
+
+# In barrel.tscn script — add this variable and use it:
+var speed_boost = 1.0
+
+# Change the roll line to:
+#   velocity.x = direction * ROLL_SPEED * speed_boost
+
+# In main.gd — update _process to call this when score goes up:
+func update_difficulty():
+    var boss = $Boss  # adjust path to match your scene
+    boss.speed_boost = 1.0 + (score / 100.0)
+    boss.$Timer.wait_time = max(0.8, 2.5 - (score / 200.0))`,
+  },
+  {
+    emoji: '🎨',
+    tag: 'Step 11',
+    tagClass: 'tag-locked',
+    title: 'Make It Your Own!',
+    subtitle: 'This is YOUR arcade game go wild!',
+    goal: 'Customise everything characters, colours, level layout, and your own creative twist!',
+    child: 'THIS IS THE BEST STEP! 🎉 Your game already works. It\'s a REAL arcade game! Now make it completely YOURS. Give the hero a name. Make the gorilla purple. Design a wild level with tons of ladders. Add more floors! You made this you\'re an arcade game developer! 🕹️',
+    parent: 'Great stretch goals: animate the hero flipping left/right using scale.x; add a high score saved with FileAccess; add sound effects with AudioStreamPlayer; add a second barrel type that moves faster; add a "lives" system (3 hearts shown in CanvasLayer); or even add a second level using change_scene_to_file().',
+    note: null,
+    tryit: 'Show your finished game to someone and challenge them to beat your high score! 🏆',
+    steps: [
+      'Redesign the <strong>level layout</strong> add more girders, more ladders, new gaps!',
+      'Change all the <strong>colours and sizes</strong> make it feel like YOUR game.',
+      'Give your <strong>hero and boss</strong> fun names in the scene.',
+      'Add a <strong>Lives system</strong> start with 3 lives instead of instant game over.',
+      'Add a <strong>jump sound</strong> using an AudioStreamPlayer node. 🔊',
+      'Give your game a <strong>name</strong> in <strong>Project → Project Settings → Application → Name</strong>.',
+    ],
+    code: null,
+  },
+];
+
+let completedSteps = JSON.parse(localStorage.getItem('barrelBlastProgress') || '[]');
+
+function saveProgress() {
+  localStorage.setItem('barrelBlastProgress', JSON.stringify(completedSteps));
+}
+
+function getStatus(i) {
+  if (completedSteps.includes(i)) return 'done';
+  const firstIncomplete = STEPS.findIndex((_, idx) => !completedSteps.includes(idx));
+  if (i === firstIncomplete) return 'current';
+  if (i < firstIncomplete) return 'done';
+  return 'locked';
+}
+
+function buildDots() {
+  const row = document.getElementById('dot-row');
+  row.innerHTML = '';
+  STEPS.forEach((_, i) => {
+    const s = getStatus(i);
+    const d = document.createElement('div');
+    d.className = `dot ${s}`;
+    d.textContent = s === 'done' ? '✓' : i + 1;
+    d.onclick = () => { if (s !== 'locked') scrollToStep(i); };
+    row.appendChild(d);
+  });
+  const done = STEPS.filter((_, i) => getStatus(i) === 'done').length;
+  document.getElementById('prog-count').textContent = `${done} / ${STEPS.length} steps`;
+}
+
+function scrollToStep(i) {
+  document.getElementById(`step-${i}`)?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function buildSteps() {
+  const container = document.getElementById('steps-container');
+  container.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    const status = getStatus(i);
+    const card = document.createElement('div');
+    card.className = `step-card ${status}`;
+    card.id = `step-${i}`;
+
+    const tagLabel = status === 'done' ? '✅ Done' : status === 'current' ? '▶ Current' : status === 'locked' ? '🔒 Locked' : s.tag;
+    const tagClass = status === 'done' ? 'tag-done' : status === 'current' ? 'tag-current' : status === 'locked' ? 'tag-locked' : s.tagClass;
+
+    let bodyHtml = '';
+    if (status !== 'locked') {
+      if (s.goal) bodyHtml += `<div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>${s.goal}</p></div></div>`;
+
+      bodyHtml += `<div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>${s.child}</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>${s.parent}</p></div>
+      </div>`;
+
+      if (s.note) bodyHtml += `<div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> ${s.note}</div></div>`;
+
+      if (s.steps) {
+        bodyHtml += `<div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">`;
+        s.steps.forEach((st, si) => { bodyHtml += `<li><span class="sn">${si+1}</span><span>${st}</span></li>`; });
+        bodyHtml += `</ol></div>`;
+      }
+
+      if (s.code) {
+        const coloured = s.code
+          .replace(/\#.*/g, m => `<span class="cm">${m}</span>`)
+          .replace(/\b(extends|const|var|func|if|elif|else|return|await|and|or|not|signal|true|false|null|max|min|str)\b/g, '<span class="kw">$1</span>')
+          .replace(/"([^"]*)"/g, '<span class="st">"$1"</span>')
+          .replace(/\b(\d+\.?\d*)\b/g, '<span class="nu">$1</span>');
+        bodyHtml += `<div class="code-block"><pre>${coloured}</pre></div>`;
+      }
+
+      if (s.tryit) bodyHtml += `<div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> ${s.tryit}</div></div>`;
+
+      if (status === 'current') {
+        const shortTitle = s.title.replace(/&amp;/g,'&').split('!')[0].split('–')[0].trim();
+        bodyHtml += `<button class="done-btn" onclick="markDone(${i})">✅ Done! ${shortTitle}! →</button>`;
+      }
+    }
+
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(${i})">
+        <div class="step-num">${i + 1}</div>
+        <span class="step-icon-badge">${s.emoji}</span>
+        <div class="step-title-wrap">
+          <span class="step-tag ${tagClass}">${tagLabel}</span>
+          <div class="step-title">${s.title}</div>
+          <div class="step-subtitle">${s.subtitle}</div>
+        </div>
+        <div class="step-status">${status === 'done' ? '✅ Done' : status === 'current' ? '▶ Current' : status === 'locked' ? '🔒 Locked' : ''}</div>
+      </div>
+      ${status !== 'locked' ? `<div class="step-body" id="body-${i}">${bodyHtml}</div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleBody(i) {
+  const b = document.getElementById(`body-${i}`);
+  if (b) b.style.display = b.style.display === 'none' ? '' : b.style.display === 'block' ? 'none' : 'block';
+}
+
+function markDone(i) {
+  if (!completedSteps.includes(i)) completedSteps.push(i);
+  saveProgress();
+  buildDots();
+  buildSteps();
+  const next = STEPS.findIndex((_, idx) => !completedSteps.includes(idx));
+  if (next >= 0) setTimeout(() => scrollToStep(next), 100);
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+buildDots();
+buildSteps();
+</script>
+<script>(function(){const btn=document.getElementById('navToggle');const nav=document.getElementById('mobileNav');if(btn&&nav)btn.addEventListener('click',()=>nav.classList.toggle('open'));})();</script>
+</body>
+</html>
