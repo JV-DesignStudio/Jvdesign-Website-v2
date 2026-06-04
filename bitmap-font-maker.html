@@ -10,7 +10,7 @@
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bitmap Font Maker | JVDesignStudio</title>
-<meta name="description" content="Design pixel bitmap fonts in your browser. Draw characters on a grid, preview typed text, export as PNG spritesheet and JSON atlas. Free game dev tool.">
+<meta name="description" content="Design pixel bitmap fonts in your browser. Draw characters, preview text live, export PNG spritesheet and JSON atlas. Free game dev tool.">
 <link rel="icon" href="/logo.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -19,7 +19,7 @@
   --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
   --accent:#10b981;--accent2:#f59e0b;--accent3:#7c3aed;--accent4:#ef4444;
   --text:#f0f0ff;--muted:#6b7280;--dim:#2a2a4a;
-  --cell-on:#10b981;--cell-off:#161628;
+  --on:#10b981;--off:#1a1a2e;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;}
@@ -28,479 +28,541 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .hdr{height:46px;background:rgba(8,8,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
 .hdr-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
 .hdr-logo img{height:26px;border-radius:5px;}
-.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;}
-.hdr-title span{font-size:.6rem;background:var(--accent3);color:white;padding:2px 7px;border-radius:20px;}
+.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);}
 .hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
-.hdr-back:hover{color:var(--text);}
 
-#app{flex:1;display:flex;min-height:0;overflow:hidden;}
+#layout{flex:1;display:flex;min-height:0;overflow:hidden;}
 
-/* LEFT: CHAR PICKER */
-#char-panel{width:200px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
-.cp-header{padding:8px 10px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;justify-content:space-between;}
-.cp-search{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.65rem;font-family:inherit;margin:6px 10px;width:calc(100% - 20px);}
-.char-grid{flex:1;overflow-y:auto;padding:4px;}
-.char-category{font-size:.45rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:6px 4px 3px;}
-.char-btn-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:4px;}
-.char-btn{width:100%;aspect-ratio:1;border-radius:4px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);transition:all .1s;display:flex;align-items:center;justify-content:center;}
+/* ── LEFT: char picker ── */
+#chars-panel{width:190px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+.cp-hdr{padding:8px 10px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+#char-scroll{flex:1;overflow-y:auto;padding:6px;}
+.char-cat-label{font-size:.45rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:6px 4px 3px;}
+.char-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:3px;}
+.char-btn{aspect-ratio:1;border-radius:4px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s;}
 .char-btn:hover{background:var(--panel3);color:var(--text);}
-.char-btn.on{background:rgba(16,185,129,.2);border-color:var(--accent);color:var(--accent);}
-.char-btn.has-data{border-color:rgba(16,185,129,.4);color:var(--text);}
+.char-btn.active{background:rgba(16,185,129,.25);border-color:var(--accent);color:var(--accent);}
+.char-btn.drawn{border-color:rgba(16,185,129,.4);}
 
-/* CENTRE: EDITOR */
-#editor-panel{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
-.ed-toolbar{padding:8px 12px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
-.ed-toolbar select,.ed-toolbar input[type=number]{background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;cursor:pointer;}
-.tool-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:all .1s;}
-.tool-btn:hover{color:var(--text);background:var(--panel3);}
-.tool-btn.on{background:rgba(16,185,129,.2);border-color:var(--accent);color:var(--accent);}
-.char-display{font-family:'Fredoka',cursive;font-size:1.4rem;color:var(--accent2);min-width:32px;text-align:center;}
-.ed-label{font-size:.55rem;color:var(--muted);}
-#editor-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px;}
-#pixel-grid{display:grid;gap:2px;cursor:crosshair;}
-.px-cell{border-radius:2px;transition:background .05s;cursor:pointer;}
+/* ── CENTRE: pixel canvas editor ── */
+#editor-col{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
 
-/* RIGHT: PREVIEW */
-#preview-panel{width:240px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
-.pv-header{padding:8px 12px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
-.pv-body{padding:12px;flex:1;overflow-y:auto;}
-#preview-text-input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:7px;font-size:.75rem;font-family:inherit;margin-bottom:10px;resize:vertical;min-height:50px;}
-#preview-canvas{border-radius:6px;width:100%;image-rendering:pixelated;}
-.pv-section{margin-top:12px;}
-.pv-label{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
-.pv-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
-.pv-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
-.pv-row label span{color:var(--accent2);}
-.pv-row input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;}
-.color-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.toolbar{height:44px;padding:0 10px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:6px;flex-shrink:0;overflow-x:auto;}
+.toolbar-lbl{font-size:.55rem;color:var(--muted);white-space:nowrap;}
+.cur-char{font-family:'Fredoka',cursive;font-size:1.4rem;color:var(--accent2);min-width:28px;text-align:center;flex-shrink:0;}
+.tb-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:all .1s;flex-shrink:0;}
+.tb-btn:hover{color:var(--text);background:var(--panel3);}
+.tb-btn.on{background:rgba(16,185,129,.2);border-color:var(--accent);color:var(--accent);}
+select.tb-sel{background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:3px 7px;border-radius:7px;font-size:.65rem;font-family:inherit;cursor:pointer;height:26px;}
+.sep{width:1px;height:22px;background:var(--border2);flex-shrink:0;}
+
+#canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg);}
+#grid-canvas{cursor:crosshair;touch-action:none;display:block;}
+
+.statusbar{height:24px;border-top:1px solid var(--border);padding:0 12px;display:flex;align-items:center;gap:16px;font-size:.5rem;color:var(--muted);flex-shrink:0;}
+.statusbar span{color:var(--accent2);}
+
+/* ── RIGHT: preview & export ── */
+#preview-panel{width:230px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+.pv-hdr{padding:8px 12px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.pv-body{flex:1;overflow-y:auto;padding:10px;}
+#pv-text{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:7px;font-size:.72rem;font-family:inherit;resize:none;min-height:48px;margin-bottom:10px;}
+#pv-canvas{width:100%;image-rendering:pixelated;border-radius:6px;display:block;}
+.pv-ctrl{display:flex;flex-direction:column;gap:4px;margin-top:10px;margin-bottom:6px;}
+.pv-ctrl label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
+.pv-ctrl label span{color:var(--accent2);}
+.pv-ctrl input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;}
+.color-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
 .color-row label{font-size:.55rem;color:var(--muted);flex:1;}
 .color-swatch{width:28px;height:22px;border-radius:5px;border:1px solid var(--border2);cursor:pointer;}
-.export-btns{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--border2);}
-.exp-btn{padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;transition:all .12s;width:100%;}
-.exp-png{background:var(--accent);color:#000;}
-.exp-json{background:var(--accent3);color:white;}
-.exp-xml{background:var(--accent2);color:#000;}
-.exp-save{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
-.exp-save:hover{background:var(--dim);}
 
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.exp-btns{padding:10px 12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:5px;}
+.exp-btn{padding:7px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:filter .12s;width:100%;}
+.exp-btn:hover{filter:brightness(1.1);}
+.ep-png{background:var(--accent);color:#000;}
+.ep-json{background:var(--accent3);color:white;}
+.ep-xml{background:var(--accent2);color:#000;}
+.ep-save{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
 
-@media(max-width:800px){
-  #char-panel{display:none;}
-  #preview-panel{width:180px;}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:5px 14px;border-radius:8px;font-size:.7rem;z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;}
+
+@media(max-width:840px){
+  #chars-panel{display:none;}
+  #preview-panel{width:170px;}
+}
+@media(max-width:560px){
+  #preview-panel{display:none;}
 }
 </style>
 </head>
 <body>
 <header class="hdr">
   <a href="/" class="hdr-logo"><img src="/logo.png" alt="JV"><span>JVDesignStudio</span></a>
-  <div class="hdr-title">Bitmap Font Maker <span>NEW</span></div>
+  <div class="hdr-title">🔤 Bitmap Font Maker</div>
   <a href="/dev-tools.html" class="hdr-back">← Tools</a>
 </header>
 
-<div id="app">
+<div id="layout">
+
   <!-- CHAR PICKER -->
-  <div id="char-panel">
-    <div class="cp-header"><span>Characters</span></div>
-    <div id="charList"></div>
+  <div id="chars-panel">
+    <div class="cp-hdr">Characters</div>
+    <div id="char-scroll"></div>
   </div>
 
   <!-- EDITOR -->
-  <div id="editor-panel">
-    <div class="ed-toolbar">
-      <span class="char-display" id="currentCharDisplay">A</span>
-      <div class="ed-label">Grid:</div>
-      <select id="gridSizeSelect" onchange="changeGridSize(this.value)">
+  <div id="editor-col">
+    <div class="toolbar">
+      <div class="cur-char" id="curCharDisp">A</div>
+      <div class="sep"></div>
+      <div class="toolbar-lbl">Grid</div>
+      <select class="tb-sel" id="gridSel" onchange="setGridSize(this.value)">
         <option value="5x7">5×7</option>
         <option value="6x8">6×8</option>
         <option value="8x8" selected>8×8</option>
         <option value="8x12">8×12</option>
         <option value="16x16">16×16</option>
       </select>
-      <div class="ed-label">Draw:</div>
-      <button class="tool-btn on" id="toolPen" onclick="setTool('pen')" title="Pen">✏</button>
-      <button class="tool-btn" id="toolErase" onclick="setTool('erase')" title="Erase">⌫</button>
-      <button class="tool-btn" id="toolFill" onclick="setTool('fill')" title="Fill">🪣</button>
-      <button class="tool-btn" onclick="clearChar()" title="Clear">✕</button>
-      <button class="tool-btn" onclick="invertChar()" title="Invert">⇄</button>
-      <button class="tool-btn" onclick="shiftChar(-1,0)" title="Shift Left">◀</button>
-      <button class="tool-btn" onclick="shiftChar(1,0)" title="Shift Right">▶</button>
-      <button class="tool-btn" onclick="shiftChar(0,-1)" title="Shift Up">▲</button>
-      <button class="tool-btn" onclick="shiftChar(0,1)" title="Shift Down">▼</button>
-      <div style="margin-left:auto;display:flex;gap:6px;">
-        <button class="tool-btn" onclick="copyChar()" title="Copy">⎘</button>
-        <button class="tool-btn" onclick="pasteChar()" title="Paste">📋</button>
+      <div class="sep"></div>
+      <button class="tb-btn on" id="btnPen" onclick="setTool('pen')" title="Draw (D)">✏</button>
+      <button class="tb-btn" id="btnErase" onclick="setTool('erase')" title="Erase (E)">⌫</button>
+      <button class="tb-btn" id="btnFill" onclick="setTool('fill')" title="Fill (F)">🪣</button>
+      <div class="sep"></div>
+      <button class="tb-btn" onclick="clearChar()" title="Clear">✕</button>
+      <button class="tb-btn" onclick="invertChar()" title="Invert">⇄</button>
+      <button class="tb-btn" onclick="shift(-1,0)" title="← Shift">◀</button>
+      <button class="tb-btn" onclick="shift(1,0)" title="→ Shift">▶</button>
+      <button class="tb-btn" onclick="shift(0,-1)" title="↑ Shift">▲</button>
+      <button class="tb-btn" onclick="shift(0,1)" title="↓ Shift">▼</button>
+      <div class="sep"></div>
+      <button class="tb-btn" onclick="copyGlyph()" title="Copy">⎘</button>
+      <button class="tb-btn" onclick="pasteGlyph()" title="Paste">📋</button>
+      <div style="margin-left:auto;display:flex;gap:4px;">
+        <button class="tb-btn" onclick="prevChar()" title="Previous char (←)">‹</button>
+        <button class="tb-btn" onclick="nextChar()" title="Next char (→)">›</button>
       </div>
     </div>
-    <div id="editor-wrap">
-      <div id="pixel-grid"></div>
+
+    <div id="canvas-wrap">
+      <canvas id="grid-canvas"></canvas>
     </div>
-    <div style="padding:6px 12px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:.55rem;color:var(--muted);flex-shrink:0;">
-      <span>← → arrows to switch character</span>
-      <span id="charsDrawn">0 / 0 chars drawn</span>
+
+    <div class="statusbar">
+      <span id="sb-char">Char: A (0x41)</span>
+      <span id="sb-grid">Grid: 8×8</span>
+      <span id="sb-drawn">0 chars drawn</span>
+      <span style="margin-left:auto;opacity:.5;">← → to switch · D/E/F = draw/erase/fill</span>
     </div>
   </div>
 
   <!-- PREVIEW -->
   <div id="preview-panel">
-    <div class="pv-header">Live Preview</div>
+    <div class="pv-hdr">Preview</div>
     <div class="pv-body">
-      <textarea id="preview-text-input" rows="3" placeholder="Type to preview...">Hello World!</textarea>
-      <canvas id="preview-canvas"></canvas>
-      <div class="pv-section">
-        <div class="pv-label">Style</div>
-        <div class="pv-row">
-          <label>Scale <span id="vScale">3</span>×</label>
-          <input type="range" min="1" max="8" value="3" id="scaleSlider" oninput="previewScale=+this.value;id('vScale').textContent=this.value;renderPreview()">
-        </div>
-        <div class="pv-row">
-          <label>Letter Spacing <span id="vSpacing">1</span></label>
-          <input type="range" min="0" max="8" value="1" id="spacingSlider" oninput="previewSpacing=+this.value;id('vSpacing').textContent=this.value;renderPreview()">
-        </div>
-        <div class="pv-row">
-          <label>Line Height <span id="vLineH">2</span></label>
-          <input type="range" min="0" max="16" value="2" id="lineHSlider" oninput="previewLineH=+this.value;id('vLineH').textContent=this.value;renderPreview()">
-        </div>
-        <div class="color-row"><label>Ink</label><input type="color" class="color-swatch" id="inkColor" value="#10b981" oninput="renderPreview()"></div>
-        <div class="color-row"><label>Background</label><input type="color" class="color-swatch" id="bgColor" value="#000000" oninput="renderPreview()"></div>
+      <textarea id="pv-text" rows="3" placeholder="Type to preview…">Hello!</textarea>
+      <canvas id="pv-canvas" height="60"></canvas>
+      <div class="pv-ctrl">
+        <label>Scale <span id="vScale">3</span>×</label>
+        <input type="range" min="1" max="8" value="3" id="scaleR" oninput="pvScale=+this.value;id('vScale').textContent=this.value;drawPreview()">
+        <label>Spacing <span id="vSpc">1</span>px</label>
+        <input type="range" min="-2" max="8" value="1" id="spcR" oninput="pvSpacing=+this.value;id('vSpc').textContent=this.value;drawPreview()">
+        <label>Line Gap <span id="vLg">2</span></label>
+        <input type="range" min="0" max="16" value="2" id="lgR" oninput="pvLineGap=+this.value;id('vLg').textContent=this.value;drawPreview()">
       </div>
+      <div class="color-row"><label>Ink</label><input type="color" class="color-swatch" id="inkCol" value="#10b981" oninput="drawPreview()"></div>
+      <div class="color-row"><label>BG</label><input type="color" class="color-swatch" id="bgCol" value="#000000" oninput="drawPreview()"></div>
     </div>
-    <div class="export-btns">
-      <button class="exp-btn exp-png" onclick="exportPNG()">📥 Export PNG Spritesheet</button>
-      <button class="exp-btn exp-json" onclick="exportJSON()">{ } Export JSON Atlas</button>
-      <button class="exp-btn exp-xml" onclick="exportXML()">📄 Export XML (BMFont)</button>
-      <button class="exp-btn exp-save" onclick="saveToLocal()">💾 Save to Browser</button>
+    <div class="exp-btns">
+      <button class="exp-btn ep-png" onclick="exportPNG()">📥 PNG Spritesheet</button>
+      <button class="exp-btn ep-json" onclick="exportJSON()">{ } JSON Atlas</button>
+      <button class="exp-btn ep-xml" onclick="exportXML()">📄 BMFont XML</button>
+      <button class="exp-btn ep-save" onclick="saveFont()">💾 Save to Browser</button>
     </div>
   </div>
 </div>
 <div id="toast"></div>
 
 <script>
+// ── helpers ──
 function id(x){return document.getElementById(x);}
+let toastT;
+function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2600);}
 
 // ── State ──
-let gridW=8, gridH=8;
-const CHARS_DEFS = {
-  'Uppercase':'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  'Lowercase':'abcdefghijklmnopqrstuvwxyz',
-  'Digits':'0123456789',
-  'Symbols':'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
-  'Space':' '
-};
-const ALL_CHARS = Object.values(CHARS_DEFS).join('');
-let fontData = {}; // char -> flat Uint8Array
-let currentChar = 'A';
-let drawTool = 'pen';
-let isDrawing = false;
-let drawState = null;
-let clipboard = null;
-let previewScale = 3, previewSpacing = 1, previewLineH = 2;
+let GW=8,GH=8; // grid width, height
+let currentChar='A';
+let drawTool='pen';
+let clipboard=null;
+let pvScale=3,pvSpacing=1,pvLineGap=2;
 
-function initFontData(){
-  ALL_CHARS.split('').forEach(c=>{
-    if(!fontData[c]) fontData[c] = new Uint8Array(gridW*gridH);
-  });
+// Character sets
+const CHAR_SETS=[
+  {label:'Uppercase',chars:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'},
+  {label:'Lowercase',chars:'abcdefghijklmnopqrstuvwxyz'},
+  {label:'Digits',chars:'0123456789'},
+  {label:'Symbols',chars:' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'},
+];
+const ALL_CHARS=CHAR_SETS.map(s=>s.chars).join('');
+
+// fontData: char code -> Uint8Array(GW*GH)
+let fontData={};
+function ensureChar(c){if(!fontData[c.charCodeAt(0)]) fontData[c.charCodeAt(0)]=new Uint8Array(GW*GH);}
+function getArr(c){ensureChar(c);return fontData[c.charCodeAt(0)];}
+
+// ── Canvas drawing ──
+const canvas=id('grid-canvas');
+const ctx=canvas.getContext('2d');
+const BORDER=1; // px border between cells
+let CELL=32; // cell size px — recalculated on resize
+
+function calcCellSize(){
+  const wrap=id('canvas-wrap');
+  const maxW=Math.floor((wrap.clientWidth-20)/(GW+BORDER));
+  const maxH=Math.floor((wrap.clientHeight-20)/(GH+BORDER));
+  CELL=Math.max(4,Math.min(maxW,maxH,56));
 }
 
-function changeGridSize(v){
-  const [w,h]=v.split('x').map(Number);
-  // Resize existing data
-  Object.keys(fontData).forEach(c=>{
-    const old=fontData[c];
-    const nw=new Uint8Array(w*h);
-    for(let y=0;y<Math.min(h,gridH);y++)
-      for(let x=0;x<Math.min(w,gridW);x++)
-        nw[y*w+x]=old[y*gridW+x]||0;
-    fontData[c]=nw;
-  });
-  gridW=w;gridH=h;
-  buildGrid();renderPreview();updateCharList();
+function resizeCanvas(){
+  calcCellSize();
+  canvas.width=(GW*(CELL+BORDER))+BORDER;
+  canvas.height=(GH*(CELL+BORDER))+BORDER;
 }
 
-// ── Pixel Grid ──
-function buildGrid(){
-  const g=id('pixel-grid');
-  g.style.gridTemplateColumns=`repeat(${gridW},1fr)`;
-  const wrap=id('editor-wrap');
-  const maxW=Math.floor((wrap.clientWidth-32)/gridW);
-  const maxH=Math.floor((wrap.clientHeight-32)/gridH);
-  const cellSize=Math.min(maxW,maxH,48);
-  g.style.gap='1px';
-  g.innerHTML='';
-  for(let y=0;y<gridH;y++){
-    for(let x=0;x<gridW;x++){
-      const cell=document.createElement('div');
-      cell.className='px-cell';
-      cell.style.width=cellSize+'px';cell.style.height=cellSize+'px';
-      cell.dataset.x=x;cell.dataset.y=y;
-      cell.addEventListener('mousedown',startDraw);
-      cell.addEventListener('mouseenter',continueDraw);
-      cell.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];startDrawAt(x,y);},{passive:false});
-      cell.addEventListener('touchmove',e=>{e.preventDefault();
-        const t=e.touches[0];const el=document.elementFromPoint(t.clientX,t.clientY);
-        if(el&&el.dataset.x) continueDraw({currentTarget:el});
-      },{passive:false});
-      g.appendChild(cell);
+function drawEditor(){
+  const arr=getArr(currentChar);
+  const W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#0a0a1a';
+  ctx.fillRect(0,0,W,H);
+  for(let row=0;row<GH;row++){
+    for(let col=0;col<GW;col++){
+      const x=BORDER+col*(CELL+BORDER);
+      const y=BORDER+row*(CELL+BORDER);
+      const on=arr[row*GW+col];
+      ctx.fillStyle=on?'var(--on)':'var(--off)';
+      // fallback rgb values since canvas can't read CSS vars
+      ctx.fillStyle=on?'#10b981':'#1a1a2e';
+      ctx.fillRect(x,y,CELL,CELL);
+      // subtle grid line tint
+      if(!on){
+        ctx.fillStyle='rgba(255,255,255,.03)';
+        ctx.fillRect(x,y,CELL,CELL);
+      }
     }
   }
-  refreshGridDisplay();
-  document.addEventListener('mouseup',()=>{isDrawing=false;drawState=null;});
 }
 
-function cellIndex(x,y){return y*gridW+x;}
+// ── Input handling ──
+let painting=false;
+let paintValue=0;
 
-function startDraw(e){
-  const x=+e.currentTarget.dataset.x;const y=+e.currentTarget.dataset.y;
-  startDrawAt(x,y);
-}
-function startDrawAt(x,y){
-  isDrawing=true;
-  const arr=fontData[currentChar];
-  if(drawTool==='fill'){floodFill(x,y,arr[cellIndex(x,y)],arr[cellIndex(x,y)]?0:1);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);return;}
-  drawState=drawTool==='erase'?0:1;
-  arr[cellIndex(x,y)]=drawState;
-  refreshGridDisplay();renderPreview();updateCharBtn(currentChar);
-}
-function continueDraw(e){
-  if(!isDrawing||drawTool==='fill'||drawState===null) return;
-  const x=+e.currentTarget.dataset.x;const y=+e.currentTarget.dataset.y;
-  fontData[currentChar][cellIndex(x,y)]=drawState;
-  refreshGridDisplay();renderPreview();updateCharBtn(currentChar);
+function pointerToCell(e){
+  const r=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/r.width;
+  const scaleY=canvas.height/r.height;
+  const px=(e.clientX-r.left)*scaleX;
+  const py=(e.clientY-r.top)*scaleY;
+  const col=Math.floor((px-BORDER)/(CELL+BORDER));
+  const row=Math.floor((py-BORDER)/(CELL+BORDER));
+  if(col<0||col>=GW||row<0||row>=GH) return null;
+  return{col,row,idx:row*GW+col};
 }
 
-function floodFill(x,y,target,replacement){
+function applyTool(e){
+  const cell=pointerToCell(e);
+  if(!cell) return;
+  const arr=getArr(currentChar);
+  if(drawTool==='fill'){
+    const target=arr[cell.idx];
+    floodFill(cell.col,cell.row,target,paintValue);
+  } else {
+    arr[cell.idx]=paintValue;
+  }
+  drawEditor();
+  drawPreview();
+  updateCharBtns();
+}
+
+function startPaint(e){
+  e.preventDefault();
+  const cell=pointerToCell(e);
+  if(!cell) return;
+  const arr=getArr(currentChar);
+  if(drawTool==='pen') paintValue=arr[cell.idx]?0:1; // toggle
+  else if(drawTool==='erase') paintValue=0;
+  else if(drawTool==='fill'){paintValue=arr[cell.idx]?0:1;}
+  painting=true;
+  applyTool(e);
+}
+function movePaint(e){
+  if(!painting) return;
+  e.preventDefault();
+  if(drawTool==='fill') return; // fill only on click
+  applyTool(e);
+}
+function endPaint(){painting=false;}
+
+// touch support
+function touchToMouse(e){
+  const t=e.touches[0];
+  return{clientX:t.clientX,clientY:t.clientY,preventDefault:()=>e.preventDefault()};
+}
+
+canvas.addEventListener('mousedown',startPaint);
+canvas.addEventListener('mousemove',movePaint);
+canvas.addEventListener('mouseup',endPaint);
+canvas.addEventListener('mouseleave',endPaint);
+canvas.addEventListener('touchstart',e=>startPaint(touchToMouse(e)),{passive:false});
+canvas.addEventListener('touchmove',e=>movePaint(touchToMouse(e)),{passive:false});
+canvas.addEventListener('touchend',endPaint);
+
+function floodFill(col,row,target,replacement){
   if(target===replacement) return;
-  const arr=fontData[currentChar];
-  const stack=[[x,y]];
+  const arr=getArr(currentChar);
+  const stack=[[col,row]];
   while(stack.length){
-    const [cx,cy]=stack.pop();
-    if(cx<0||cx>=gridW||cy<0||cy>=gridH) continue;
-    if(arr[cellIndex(cx,cy)]!==target) continue;
-    arr[cellIndex(cx,cy)]=replacement;
-    stack.push([cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]);
+    const [c,r]=stack.pop();
+    if(c<0||c>=GW||r<0||r>=GH) continue;
+    if(arr[r*GW+c]!==target) continue;
+    arr[r*GW+c]=replacement;
+    stack.push([c-1,r],[c+1,r],[c,r-1],[c,r+1]);
   }
 }
 
-function refreshGridDisplay(){
-  const cells=id('pixel-grid').children;
-  const arr=fontData[currentChar];
-  for(let i=0;i<cells.length;i++){
-    cells[i].style.background=arr[i]?'var(--cell-on)':'var(--cell-off)';
-  }
-}
-
+// ── Tools ──
 function setTool(t){
   drawTool=t;
-  ['Pen','Erase','Fill'].forEach(n=>id('tool'+n).classList.remove('on'));
-  id('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('on');
+  ['Pen','Erase','Fill'].forEach(n=>id('btn'+n).classList.remove('on'));
+  id('btn'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('on');
 }
 
-function clearChar(){fontData[currentChar].fill(0);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);}
-function invertChar(){fontData[currentChar]=fontData[currentChar].map(v=>v?0:1);refreshGridDisplay();renderPreview();}
-function copyChar(){clipboard=new Uint8Array(fontData[currentChar]);}
-function pasteChar(){if(clipboard){fontData[currentChar]=new Uint8Array(clipboard);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);}}
+function clearChar(){getArr(currentChar).fill(0);drawEditor();drawPreview();updateCharBtns();}
+function invertChar(){const a=getArr(currentChar);for(let i=0;i<a.length;i++) a[i]=a[i]?0:1;drawEditor();drawPreview();}
+function copyGlyph(){clipboard=new Uint8Array(getArr(currentChar));}
+function pasteGlyph(){if(clipboard){fontData[currentChar.charCodeAt(0)]=new Uint8Array(clipboard);drawEditor();drawPreview();updateCharBtns();}}
 
-function shiftChar(dx,dy){
-  const arr=fontData[currentChar];
-  const n=new Uint8Array(gridW*gridH);
-  for(let y=0;y<gridH;y++)
-    for(let x=0;x<gridW;x++){
-      const nx=x+dx,ny=y+dy;
-      if(nx>=0&&nx<gridW&&ny>=0&&ny<gridH) n[ny*gridW+nx]=arr[y*gridW+x];
-    }
-  fontData[currentChar]=n;refreshGridDisplay();renderPreview();
+function shift(dx,dy){
+  const src=getArr(currentChar);
+  const dst=new Uint8Array(GW*GH);
+  for(let r=0;r<GH;r++)for(let c=0;c<GW;c++){
+    const nr=r+dy,nc=c+dx;
+    if(nr>=0&&nr<GH&&nc>=0&&nc<GW) dst[nr*GW+nc]=src[r*GW+c];
+  }
+  fontData[currentChar.charCodeAt(0)]=dst;
+  drawEditor();drawPreview();
 }
 
-// ── Char Picker ──
-function buildCharList(){
-  const container=id('charList');
-  container.innerHTML='';
-  Object.entries(CHARS_DEFS).forEach(([cat,chars])=>{
-    const lbl=document.createElement('div');lbl.className='char-category';lbl.textContent=cat;
-    container.appendChild(lbl);
-    const grid=document.createElement('div');grid.className='char-btn-grid';
-    chars.split('').forEach(c=>{
+// ── Grid size ──
+function setGridSize(v){
+  const [nw,nh]=v.split('x').map(Number);
+  // migrate existing glyphs
+  Object.keys(fontData).forEach(code=>{
+    const old=fontData[code];
+    const nw2=new Uint8Array(nw*nh);
+    for(let r=0;r<Math.min(nh,GH);r++)
+      for(let c=0;c<Math.min(nw,GW);c++)
+        nw2[r*nw+c]=old[r*GW+c]||0;
+    fontData[code]=nw2;
+  });
+  GW=nw;GH=nh;
+  resizeCanvas();drawEditor();drawPreview();updateCharBtns();
+  id('sb-grid').textContent=`Grid: ${GW}×${GH}`;
+}
+
+// ── Character navigation ──
+function selectChar(c){
+  currentChar=c;
+  id('curCharDisp').textContent=c===' '?'⎵':c;
+  id('sb-char').textContent=`Char: ${c===' '?'SP':c} (0x${c.charCodeAt(0).toString(16).toUpperCase()})`;
+  updateCharBtns();
+  drawEditor();
+}
+
+function prevChar(){
+  const i=ALL_CHARS.indexOf(currentChar);
+  if(i>0) selectChar(ALL_CHARS[i-1]);
+}
+function nextChar(){
+  const i=ALL_CHARS.indexOf(currentChar);
+  if(i<ALL_CHARS.length-1) selectChar(ALL_CHARS[i+1]);
+}
+
+// ── Build char picker ──
+function buildCharPicker(){
+  const scroll=id('char-scroll');
+  scroll.innerHTML='';
+  CHAR_SETS.forEach(set=>{
+    const lbl=document.createElement('div');lbl.className='char-cat-label';lbl.textContent=set.label;
+    scroll.appendChild(lbl);
+    const row=document.createElement('div');row.className='char-row';
+    set.chars.split('').forEach(c=>{
       const btn=document.createElement('button');
-      btn.className='char-btn'+(c===currentChar?' on':'');
+      btn.className='char-btn';
       btn.id='cb-'+c.charCodeAt(0);
-      btn.textContent=c===' '?'⎵':c;
-      btn.title=c===' '?'Space (0x20)':`${c} (0x${c.charCodeAt(0).toString(16).toUpperCase()})`;
+      btn.textContent=c===' '?'·':c;
+      btn.title=c===' '?'Space':`${c} (0x${c.charCodeAt(0).toString(16).toUpperCase()})`;
       btn.onclick=()=>selectChar(c);
-      grid.appendChild(btn);
+      row.appendChild(btn);
     });
-    container.appendChild(grid);
+    scroll.appendChild(row);
   });
 }
 
-function updateCharBtn(c){
-  const btn=id('cb-'+c.charCodeAt(0));
-  if(!btn) return;
-  const hasData=fontData[c]&&fontData[c].some(v=>v);
-  btn.classList.toggle('has-data',hasData);
-  const total=ALL_CHARS.split('').filter(ch=>fontData[ch]&&fontData[ch].some(v=>v)).length;
-  id('charsDrawn').textContent=`${total} / ${ALL_CHARS.length} chars drawn`;
+function updateCharBtns(){
+  // active state
+  document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('active','drawn'));
+  const active=id('cb-'+currentChar.charCodeAt(0));
+  if(active) active.classList.add('active');
+  // drawn state
+  Object.keys(fontData).forEach(code=>{
+    if(fontData[code].some(v=>v)){
+      const btn=id('cb-'+code);
+      if(btn&&!btn.classList.contains('active')) btn.classList.add('drawn');
+    }
+  });
+  // status
+  const drawn=Object.values(fontData).filter(a=>a.some(v=>v)).length;
+  id('sb-drawn').textContent=`${drawn} chars drawn`;
 }
 
-function updateCharList(){
-  ALL_CHARS.split('').forEach(c=>updateCharBtn(c));
-}
+// ── Preview canvas ──
+const pvCanvas=id('pv-canvas');
+const pvCtx=pvCanvas.getContext('2d');
 
-function selectChar(c){
-  document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('on'));
-  const btn=id('cb-'+c.charCodeAt(0));if(btn) btn.classList.add('on');
-  currentChar=c;
-  id('currentCharDisplay').textContent=c===' '?'⎵':c;
-  refreshGridDisplay();
-}
-
-// keyboard nav
-document.addEventListener('keydown',e=>{
-  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
-  const idx=ALL_CHARS.indexOf(currentChar);
-  if(e.key==='ArrowRight'&&idx<ALL_CHARS.length-1) selectChar(ALL_CHARS[idx+1]);
-  if(e.key==='ArrowLeft'&&idx>0) selectChar(ALL_CHARS[idx-1]);
-});
-
-// ── Preview ──
-function renderPreview(){
-  const text=id('preview-text-input').value||'';
-  const ink=id('inkColor').value;
-  const bg=id('bgColor').value;
-  const scale=previewScale;
-  const spacing=previewSpacing;
-  const lineH=previewLineH;
-
+function drawPreview(){
+  const text=id('pv-text').value||'';
+  const ink=id('inkCol').value;
+  const bg=id('bgCol').value;
+  const scale=pvScale,spacing=pvSpacing,lineGap=pvLineGap;
   const lines=text.split('\n');
-  const lineWidth=lines.reduce((m,l)=>Math.max(m,l.length*(gridW+spacing)),0);
-  const totalW=lineWidth*scale||1;
-  const totalH=lines.length*(gridH+lineH)*scale||1;
 
-  const c=id('preview-canvas');
-  c.width=Math.min(totalW,800);c.height=Math.min(totalH,400);
-  const ctx=c.getContext('2d');
-  ctx.imageSmoothingEnabled=false;
-  ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
+  // measure
+  const lineW=lines.reduce((m,l)=>Math.max(m,l.length*(GW+spacing)*scale),0)||1;
+  const lineH=(GH+lineGap)*scale;
+  const totalH=lines.length*lineH||scale;
+
+  pvCanvas.width=Math.min(lineW,800)||1;
+  pvCanvas.height=Math.min(totalH,400)||1;
+  pvCtx.imageSmoothingEnabled=false;
+  pvCtx.fillStyle=bg;pvCtx.fillRect(0,0,pvCanvas.width,pvCanvas.height);
 
   const inkR=parseInt(ink.slice(1,3),16);
   const inkG=parseInt(ink.slice(3,5),16);
   const inkB=parseInt(ink.slice(5,7),16);
 
   lines.forEach((line,li)=>{
-    const baseY=li*(gridH+lineH)*scale;
     line.split('').forEach((ch,ci)=>{
-      const baseX=ci*(gridW+spacing)*scale;
-      const arr=fontData[ch];
+      const arr=fontData[ch.charCodeAt(0)];
       if(!arr) return;
-      for(let y=0;y<gridH;y++){
-        for(let x=0;x<gridW;x++){
-          if(arr[y*gridW+x]){
-            ctx.fillStyle=`rgb(${inkR},${inkG},${inkB})`;
-            ctx.fillRect(baseX+x*scale,baseY+y*scale,scale,scale);
-          }
+      const ox=ci*(GW+spacing)*scale;
+      const oy=li*lineH;
+      for(let r=0;r<GH;r++) for(let c=0;c<GW;c++){
+        if(arr[r*GW+c]){
+          pvCtx.fillStyle=`rgb(${inkR},${inkG},${inkB})`;
+          pvCtx.fillRect(ox+c*scale,oy+r*scale,scale,scale);
         }
       }
     });
   });
 }
 
-id('preview-text-input').addEventListener('input',renderPreview);
+id('pv-text').addEventListener('input',drawPreview);
 
-// ── Export ──
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();nextChar();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();prevChar();}
+  else if(e.key.toLowerCase()==='d') setTool('pen');
+  else if(e.key.toLowerCase()==='e') setTool('erase');
+  else if(e.key.toLowerCase()==='f') setTool('fill');
+  else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();clearChar();}
+});
+
+// ── Exports ──
 function exportPNG(){
-  const cols=16;
-  const rows=Math.ceil(ALL_CHARS.length/cols);
-  const padX=1,padY=1;
-  const cellW=gridW+padX*2,cellH=gridH+padY*2;
-  const offC=document.createElement('canvas');
-  offC.width=cols*cellW;offC.height=rows*cellH;
-  const ctx=offC.getContext('2d');
-  ctx.imageSmoothingEnabled=false;
-
+  const COLS=16;
+  const PAD=1;
+  const CW=GW+PAD*2,CH=GH+PAD*2;
+  const ROWS=Math.ceil(ALL_CHARS.length/COLS);
+  const off=document.createElement('canvas');
+  off.width=COLS*CW;off.height=ROWS*CH;
+  const oc=off.getContext('2d');
+  oc.imageSmoothingEnabled=false;
+  const ink=id('inkCol').value;
   ALL_CHARS.split('').forEach((c,i)=>{
-    const col=i%cols,row=Math.floor(i/cols);
-    const bx=col*cellW+padX,by=row*cellH+padY;
-    const arr=fontData[c];
+    const arr=fontData[c.charCodeAt(0)];
     if(!arr) return;
-    for(let y=0;y<gridH;y++)
-      for(let x=0;x<gridW;x++)
-        if(arr[y*gridW+x]){
-          ctx.fillStyle=id('inkColor').value;
-          ctx.fillRect(bx+x,by+y,1,1);
-        }
+    const col=i%COLS,row=Math.floor(i/COLS);
+    const bx=col*CW+PAD,by=row*CH+PAD;
+    for(let r=0;r<GH;r++) for(let c2=0;c2<GW;c2++){
+      if(arr[r*GW+c2]){oc.fillStyle=ink;oc.fillRect(bx+c2,by+r,1,1);}
+    }
   });
-
-  offC.toBlob(blob=>{
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download='bitmap_font.png';a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-    toast('PNG spritesheet downloaded!');
+  off.toBlob(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('PNG spritesheet downloaded!');
   });
 }
 
 function exportJSON(){
-  const atlas={meta:{gridW,gridH,cols:16,charCount:ALL_CHARS.length,format:'bitmap-font'},chars:{}};
+  const PAD=1,COLS=16,CW=GW+PAD*2,CH=GH+PAD*2;
+  const atlas={meta:{gridW:GW,gridH:GH,scale:1,cols:COLS,format:'jvds-bitmap-font'},chars:{}};
   ALL_CHARS.split('').forEach((c,i)=>{
-    const col=i%16,row=Math.floor(i/16);
-    const cellW=gridW+2,cellH=gridH+2;
-    atlas.chars[c]={
-      id:c.charCodeAt(0),
-      x:col*cellW+1,y:row*cellH+1,
-      w:gridW,h:gridH,
-      pixels:Array.from(fontData[c]||[])
-    };
+    const col=i%COLS,row=Math.floor(i/COLS);
+    atlas.chars[c]={id:c.charCodeAt(0),x:col*CW+PAD,y:row*CH+PAD,w:GW,h:GH,
+      pixels:Array.from(fontData[c.charCodeAt(0)]||new Uint8Array(GW*GH))};
   });
   const blob=new Blob([JSON.stringify(atlas,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.json';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast('JSON atlas downloaded!');
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('JSON atlas downloaded!');
 }
 
 function exportXML(){
-  const cellW=gridW+2,cellH=gridH+2;
-  let xml=`<?xml version="1.0"?>\n<font>\n  <info face="BitmapFont" size="${gridH}" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="0" aa="1" padding="0,0,0,0" spacing="1,1"/>\n  <common lineHeight="${gridH}" base="${gridH}" scaleW="${16*cellW}" scaleH="${Math.ceil(ALL_CHARS.length/16)*cellH}" pages="1"/>\n  <pages><page id="0" file="bitmap_font.png"/></pages>\n  <chars count="${ALL_CHARS.length}">\n`;
+  const PAD=1,COLS=16,CW=GW+PAD*2,CH=GH+PAD*2;
+  let xml=`<?xml version="1.0"?>\n<font>\n  <info face="BitmapFont" size="${GH}" bold="0" italic="0"/>\n  <common lineHeight="${GH+2}" base="${GH}" scaleW="${COLS*CW}" scaleH="${Math.ceil(ALL_CHARS.length/COLS)*CH}" pages="1"/>\n  <pages><page id="0" file="bitmap_font.png"/></pages>\n  <chars count="${ALL_CHARS.length}">\n`;
   ALL_CHARS.split('').forEach((c,i)=>{
-    const col=i%16,row=Math.floor(i/16);
-    xml+=`    <char id="${c.charCodeAt(0)}" x="${col*cellW+1}" y="${row*cellH+1}" width="${gridW}" height="${gridH}" xoffset="0" yoffset="0" xadvance="${gridW+1}" page="0" chnl="15"/>\n`;
+    const col=i%COLS,row=Math.floor(i/COLS);
+    xml+=`    <char id="${c.charCodeAt(0)}" x="${col*CW+PAD}" y="${row*CH+PAD}" width="${GW}" height="${GH}" xoffset="0" yoffset="0" xadvance="${GW+1}" page="0" chnl="15"/>\n`;
   });
   xml+=`  </chars>\n</font>`;
-  const blob=new Blob([xml],{type:'application/xml'});
+  const blob=new Blob([xml],{type:'text/xml'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.fnt';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-  toast('XML BMFont file downloaded!');
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('BMFont XML downloaded!');
 }
 
-function saveToLocal(){
-  const data={gridW,gridH,chars:{}};
-  ALL_CHARS.split('').forEach(c=>{data.chars[c]=Array.from(fontData[c]||[]);});
-  localStorage.setItem('jvds_bitmap_font',JSON.stringify(data));
-  toast('Font saved to browser!');
+function saveFont(){
+  const save={gw:GW,gh:GH,chars:{}};
+  Object.keys(fontData).forEach(code=>{save.chars[code]=Array.from(fontData[code]);});
+  localStorage.setItem('jvds_bitmapfont',JSON.stringify(save));toast('Font saved to browser!');
 }
 
-function loadFromLocal(){
+function loadFont(){
   try{
-    const raw=localStorage.getItem('jvds_bitmap_font');
-    if(!raw) return;
-    const data=JSON.parse(raw);
-    gridW=data.gridW||8;gridH=data.gridH||8;
-    id('gridSizeSelect').value=`${gridW}x${gridH}`;
-    Object.entries(data.chars).forEach(([c,arr])=>{fontData[c]=new Uint8Array(arr);});
-    buildGrid();updateCharList();renderPreview();
+    const raw=localStorage.getItem('jvds_bitmapfont');if(!raw) return;
+    const save=JSON.parse(raw);
+    GW=save.gw||8;GH=save.gh||8;
+    id('gridSel').value=`${GW}x${GH}`;
+    Object.keys(save.chars).forEach(code=>{fontData[code]=new Uint8Array(save.chars[code]);});
+    resizeCanvas();drawEditor();drawPreview();updateCharBtns();
     toast('Font loaded!');
-  }catch{}
+  }catch(e){console.warn('Font load failed',e);}
 }
+
+// ── Resize observer ──
+const ro=new ResizeObserver(()=>{resizeCanvas();drawEditor();});
+ro.observe(id('canvas-wrap'));
 
 // ── Init ──
-initFontData();
-buildCharList();
-buildGrid();
-renderPreview();
-loadFromLocal();
-updateCharList();
-
-window.addEventListener('resize',()=>{buildGrid();});
-
-let toastT;
-function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+buildCharPicker();
+// defer init until layout is painted
+requestAnimationFrame(()=>{
+  resizeCanvas();
+  loadFont();
+  drawEditor();
+  drawPreview();
+  updateCharBtns();
+  selectChar('A');
+});
 </script>
 </body>
 </html>
