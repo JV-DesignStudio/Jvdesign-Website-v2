@@ -382,6 +382,7 @@ body {
   <button class="ctrl-btn" id="recordBtn">⏺ Record Loop</button>
   <button class="ctrl-btn" id="playBtn" style="display:none">▶ Play Loop</button>
   <button class="ctrl-btn" id="clearBtn" style="display:none">✕ Clear</button>
+  <button class="ctrl-btn" id="captureBtn">🎙️ Capture Audio</button>
 </div>
 
 <div class="loop-section" id="loopSection" style="display:none">
@@ -420,16 +421,27 @@ navToggle.addEventListener('click', () => mobileNav.classList.toggle('open'));
 <script>
 // ── AUDIO CONTEXT ──────────────────────────────────────────────
 let ctx = null;
+let masterGain = null;
+let streamDest = null;
+
 function getCtx() {
-  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 1;
+    masterGain.connect(ctx.destination);
+    streamDest = ctx.createMediaStreamDestination();
+    masterGain.connect(streamDest);
+  }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
+function getDest() { getCtx(); return masterGain; }
 
 // ── SOUND ENGINES ──────────────────────────────────────────────
 function playKick(vol=1) {
   const c = getCtx(), g = c.createGain(), o = c.createOscillator();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   o.frequency.setValueAtTime(150, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(40, c.currentTime + 0.25);
@@ -446,13 +458,13 @@ function playSnare(vol=1) {
   const noise = c.createBufferSource();
   noise.buffer = buf;
   const ng = c.createGain();
-  noise.connect(ng); ng.connect(c.destination);
+  noise.connect(ng); ng.connect(getDest());
   ng.gain.setValueAtTime(vol * 0.7, c.currentTime);
   ng.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.2);
   noise.start(c.currentTime);
   // body tone
   const o = c.createOscillator(), og = c.createGain();
-  o.connect(og); og.connect(c.destination);
+  o.connect(og); og.connect(getDest());
   o.frequency.setValueAtTime(200, c.currentTime);
   og.gain.setValueAtTime(vol * 0.5, c.currentTime);
   og.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.1);
@@ -468,7 +480,7 @@ function playHihat(open=false, vol=1) {
   const bpf = c.createBiquadFilter();
   bpf.type = 'bandpass'; bpf.frequency.value = 8000; bpf.Q.value = 1.5;
   const g = c.createGain();
-  noise.connect(bpf); bpf.connect(g); g.connect(c.destination);
+  noise.connect(bpf); bpf.connect(g); g.connect(getDest());
   const dur = open ? 0.25 : 0.05;
   g.gain.setValueAtTime(vol * 0.6, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
@@ -485,7 +497,7 @@ function playClap(vol=1) {
     const bpf = c.createBiquadFilter();
     bpf.type = 'bandpass'; bpf.frequency.value = 1200; bpf.Q.value = 0.7;
     const g = c.createGain();
-    n.connect(bpf); bpf.connect(g); g.connect(c.destination);
+    n.connect(bpf); bpf.connect(g); g.connect(getDest());
     g.gain.setValueAtTime(vol * 0.9, c.currentTime + d);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d + 0.12);
     n.start(c.currentTime + d);
@@ -493,7 +505,7 @@ function playClap(vol=1) {
 }
 function playTom(freq=120, vol=1) {
   const c = getCtx(), g = c.createGain(), o = c.createOscillator();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   o.frequency.setValueAtTime(freq, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(freq * 0.4, c.currentTime + 0.2);
@@ -505,7 +517,7 @@ function playCowbell(vol=1) {
   const c = getCtx();
   [562, 845].forEach(f => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'square'; o.frequency.value = f;
     g.gain.setValueAtTime(vol * 0.4, c.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
@@ -515,7 +527,7 @@ function playCowbell(vol=1) {
 function playRimshot(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'triangle'; o.frequency.value = 400;
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.05);
@@ -529,7 +541,7 @@ function playShaker(vol=1) {
   const n = c.createBufferSource(); n.buffer = buf;
   const hpf = c.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 5000;
   const g = c.createGain();
-  n.connect(hpf); hpf.connect(g); g.connect(c.destination);
+  n.connect(hpf); hpf.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol * 0.5, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.07);
   n.start(c.currentTime);
@@ -542,7 +554,7 @@ function playCrash(vol=1) {
   const n = c.createBufferSource(); n.buffer = buf;
   const bpf = c.createBiquadFilter(); bpf.type = 'highpass'; bpf.frequency.value = 5000;
   const g = c.createGain();
-  n.connect(bpf); bpf.connect(g); g.connect(c.destination);
+  n.connect(bpf); bpf.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol * 0.6, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8);
   n.start(c.currentTime);
@@ -551,7 +563,7 @@ function playChime(freq=880, vol=1) {
   const c = getCtx();
   [1, 2, 3, 4].forEach((h, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'sine'; o.frequency.value = freq * h;
     const a = vol / (i + 1);
     g.gain.setValueAtTime(a, c.currentTime);
@@ -567,7 +579,7 @@ function playWhoosh(vol=1) {
   const n = c.createBufferSource(); n.buffer = buf;
   const bpf = c.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 600;
   const g = c.createGain();
-  n.connect(bpf); bpf.connect(g); g.connect(c.destination);
+  n.connect(bpf); bpf.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol * 0.8, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
   n.start(c.currentTime);
@@ -575,7 +587,7 @@ function playWhoosh(vol=1) {
 function playPop(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   o.frequency.setValueAtTime(800, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(200, c.currentTime + 0.04);
@@ -586,7 +598,7 @@ function playPop(vol=1) {
 function playLaser(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sawtooth';
   o.frequency.setValueAtTime(1200, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(100, c.currentTime + 0.3);
@@ -597,7 +609,7 @@ function playLaser(vol=1) {
 function playZap(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'square';
   o.frequency.setValueAtTime(400, c.currentTime);
   o.frequency.linearRampToValueAtTime(1600, c.currentTime + 0.12);
@@ -609,7 +621,7 @@ function playZap(vol=1) {
 function playBoing(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   o.frequency.setValueAtTime(200, c.currentTime);
   o.frequency.linearRampToValueAtTime(600, c.currentTime + 0.15);
@@ -622,7 +634,7 @@ function playCoin(vol=1) {
   const c = getCtx();
   [988, 1319].forEach((f, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'square'; o.frequency.value = f;
     g.gain.setValueAtTime(vol * 0.3, c.currentTime + i * 0.1);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.1 + 0.15);
@@ -633,7 +645,7 @@ function playCoin(vol=1) {
 function playJump(vol=1) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'square';
   o.frequency.setValueAtTime(300, c.currentTime);
   o.frequency.linearRampToValueAtTime(700, c.currentTime + 0.12);
@@ -649,7 +661,7 @@ function playExplosion(vol=1) {
   const n = c.createBufferSource(); n.buffer = buf;
   const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 400;
   const g = c.createGain();
-  n.connect(lpf); lpf.connect(g); g.connect(c.destination);
+  n.connect(lpf); lpf.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6);
   n.start(c.currentTime);
@@ -661,8 +673,8 @@ function playNote(freq, dur=0.6, vol=0.5, type='triangle') {
   const o = c.createOscillator(), g = c.createGain();
   // soft attack
   const o2 = c.createOscillator(), g2 = c.createGain();
-  o.connect(g); g.connect(c.destination);
-  o2.connect(g2); g2.connect(c.destination);
+  o.connect(g); g.connect(getDest());
+  o2.connect(g2); g2.connect(getDest());
   o.type = type; o.frequency.value = freq;
   o2.type = 'sine'; o2.frequency.value = freq * 2;
   g.gain.setValueAtTime(0, c.currentTime);
@@ -680,7 +692,7 @@ function playBassNote(freq, dur=0.5, vol=0.7) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
   const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 600;
-  o.connect(lpf); lpf.connect(g); g.connect(c.destination);
+  o.connect(lpf); lpf.connect(g); g.connect(getDest());
   o.type = 'sawtooth'; o.frequency.value = freq;
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
@@ -696,7 +708,7 @@ function playPluck(freq, vol=0.6) {
   const src = c.createBufferSource();
   src.buffer = buf; src.loop = true;
   const g = c.createGain();
-  src.connect(g); g.connect(c.destination);
+  src.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.8);
   src.start(c.currentTime); src.stop(c.currentTime + 0.85);
@@ -710,13 +722,13 @@ function playSlap(vol=1) {
   const n = c.createBufferSource(); n.buffer = buf;
   const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 300;
   const g = c.createGain();
-  n.connect(lpf); lpf.connect(g); g.connect(c.destination);
+  n.connect(lpf); lpf.connect(g); g.connect(getDest());
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.1);
   n.start(c.currentTime);
   // tone
   const o = c.createOscillator(), og = c.createGain();
-  o.connect(og); og.connect(c.destination);
+  o.connect(og); og.connect(getDest());
   o.type = 'sine'; o.frequency.value = 80;
   og.gain.setValueAtTime(vol * 0.8, c.currentTime);
   og.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
@@ -731,7 +743,7 @@ function playBrass(freq, dur=0.4, vol=0.5) {
   const curve = new Float32Array(256);
   for (let i = 0; i < 256; i++) { const x = (i * 2) / 256 - 1; curve[i] = (Math.PI + 200) * x / (Math.PI + 200 * Math.abs(x)); }
   dist.curve = curve;
-  o.connect(dist); dist.connect(g); g.connect(c.destination);
+  o.connect(dist); dist.connect(g); g.connect(getDest());
   o.type = 'sawtooth'; o.frequency.value = freq;
   o.frequency.setValueAtTime(freq * 0.97, c.currentTime);
   o.frequency.linearRampToValueAtTime(freq, c.currentTime + 0.04);
@@ -744,7 +756,7 @@ function playBrass(freq, dur=0.4, vol=0.5) {
 function playTromboneSlide(vol=0.5) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sawtooth';
   o.frequency.setValueAtTime(500, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(100, c.currentTime + 0.6);
@@ -758,7 +770,7 @@ function playAirHorn(vol=0.5) {
   const c = getCtx();
   [233, 311, 415].forEach((f, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'sawtooth'; o.frequency.value = f;
     g.gain.setValueAtTime(vol * (1 - i * 0.2), c.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.2);
@@ -768,7 +780,7 @@ function playAirHorn(vol=0.5) {
 function playSlideWhistle(up=true, vol=0.4) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   const lo = 400, hi = 1600;
   o.frequency.setValueAtTime(up ? lo : hi, c.currentTime);
@@ -780,7 +792,7 @@ function playSlideWhistle(up=true, vol=0.4) {
 function playSqueak(vol=0.4) {
   const c = getCtx();
   const o = c.createOscillator(), g = c.createGain();
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   o.type = 'sine';
   o.frequency.setValueAtTime(800, c.currentTime);
   o.frequency.linearRampToValueAtTime(1600, c.currentTime + 0.06);
@@ -802,7 +814,7 @@ function playFart(vol=0.5) {
   // ring mod style
   const g = c.createGain(), ng = c.createGain();
   n.connect(ng); ng.connect(g);
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(getDest());
   ng.gain.setValueAtTime(vol * 0.3, c.currentTime);
   ng.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
   g.gain.setValueAtTime(vol * 0.5, c.currentTime);
@@ -814,7 +826,7 @@ function playDing(vol=0.5) {
   const c = getCtx();
   [1047, 1319, 1568].forEach((f, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'sine'; o.frequency.value = f;
     g.gain.setValueAtTime(vol * 0.5, c.currentTime + i * 0.1);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.1 + 0.8);
@@ -826,7 +838,7 @@ function playWomp(vol=0.5) {
   const c = getCtx();
   [233, 196, 165, 147].forEach((f, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
+    o.connect(g); g.connect(getDest());
     o.type = 'sawtooth'; o.frequency.value = f;
     g.gain.setValueAtTime(vol * 0.4, c.currentTime + i * 0.18);
     g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.18 + 0.2);
@@ -1135,6 +1147,41 @@ clearBtn.addEventListener('click', () => {
   clearBtn.style.display = 'none';
   playBtn.textContent = '▶ Play Loop';
   loopStep = 0;
+});
+
+// ── AUDIO CAPTURE / DOWNLOAD ───────────────────────────────────
+let mediaRecorder = null;
+let captureChunks = [];
+let capturing = false;
+
+const captureBtn = document.getElementById('captureBtn');
+captureBtn.addEventListener('click', () => {
+  if (!capturing) {
+    getCtx(); // ensure context + streamDest exist
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(streamDest.stream, { mimeType });
+    captureChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) captureChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(captureChunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'drum-pad-' + Date.now() + '.webm';
+      a.click();
+      URL.revokeObjectURL(url);
+      captureBtn.textContent = '🎙️ Capture Audio';
+      captureBtn.classList.remove('recording');
+      capturing = false;
+    };
+    mediaRecorder.start();
+    capturing = true;
+    captureBtn.textContent = '⏹ Stop & Download';
+    captureBtn.classList.add('recording');
+  } else {
+    mediaRecorder.stop();
+  }
 });
 
 // ── INIT ───────────────────────────────────────────────────────
