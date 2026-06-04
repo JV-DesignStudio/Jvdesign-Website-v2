@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#10b981">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<meta charset="UTF-8">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/bitmap-font-maker.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bitmap Font Maker | JVDesignStudio</title>
+<meta name="description" content="Design pixel bitmap fonts in your browser. Draw characters on a grid, preview typed text, export as PNG spritesheet and JSON atlas. Free game dev tool.">
+<link rel="icon" href="/logo.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080f;--panel:#0f0f1e;--panel2:#161628;--panel3:#1e1e38;
+  --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
+  --accent:#10b981;--accent2:#f59e0b;--accent3:#7c3aed;--accent4:#ef4444;
+  --text:#f0f0ff;--muted:#6b7280;--dim:#2a2a4a;
+  --cell-on:#10b981;--cell-off:#161628;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
+
+.hdr{height:46px;background:rgba(8,8,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
+.hdr-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.hdr-logo img{height:26px;border-radius:5px;}
+.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;}
+.hdr-title span{font-size:.6rem;background:var(--accent3);color:white;padding:2px 7px;border-radius:20px;}
+.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
+.hdr-back:hover{color:var(--text);}
+
+#app{flex:1;display:flex;min-height:0;overflow:hidden;}
+
+/* LEFT: CHAR PICKER */
+#char-panel{width:200px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+.cp-header{padding:8px 10px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;justify-content:space-between;}
+.cp-search{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.65rem;font-family:inherit;margin:6px 10px;width:calc(100% - 20px);}
+.char-grid{flex:1;overflow-y:auto;padding:4px;}
+.char-category{font-size:.45rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:6px 4px 3px;}
+.char-btn-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:4px;}
+.char-btn{width:100%;aspect-ratio:1;border-radius:4px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);transition:all .1s;display:flex;align-items:center;justify-content:center;}
+.char-btn:hover{background:var(--panel3);color:var(--text);}
+.char-btn.on{background:rgba(16,185,129,.2);border-color:var(--accent);color:var(--accent);}
+.char-btn.has-data{border-color:rgba(16,185,129,.4);color:var(--text);}
+
+/* CENTRE: EDITOR */
+#editor-panel{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.ed-toolbar{padding:8px 12px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.ed-toolbar select,.ed-toolbar input[type=number]{background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;cursor:pointer;}
+.tool-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+.tool-btn:hover{color:var(--text);background:var(--panel3);}
+.tool-btn.on{background:rgba(16,185,129,.2);border-color:var(--accent);color:var(--accent);}
+.char-display{font-family:'Fredoka',cursive;font-size:1.4rem;color:var(--accent2);min-width:32px;text-align:center;}
+.ed-label{font-size:.55rem;color:var(--muted);}
+#editor-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px;}
+#pixel-grid{display:grid;gap:2px;cursor:crosshair;}
+.px-cell{border-radius:2px;transition:background .05s;cursor:pointer;}
+
+/* RIGHT: PREVIEW */
+#preview-panel{width:240px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+.pv-header{padding:8px 12px;border-bottom:1px solid var(--border2);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+.pv-body{padding:12px;flex:1;overflow-y:auto;}
+#preview-text-input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:6px 8px;border-radius:7px;font-size:.75rem;font-family:inherit;margin-bottom:10px;resize:vertical;min-height:50px;}
+#preview-canvas{border-radius:6px;width:100%;image-rendering:pixelated;}
+.pv-section{margin-top:12px;}
+.pv-label{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.pv-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.pv-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
+.pv-row label span{color:var(--accent2);}
+.pv-row input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;}
+.color-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.color-row label{font-size:.55rem;color:var(--muted);flex:1;}
+.color-swatch{width:28px;height:22px;border-radius:5px;border:1px solid var(--border2);cursor:pointer;}
+.export-btns{display:flex;flex-direction:column;gap:6px;padding:12px;border-top:1px solid var(--border2);}
+.exp-btn{padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;transition:all .12s;width:100%;}
+.exp-png{background:var(--accent);color:#000;}
+.exp-json{background:var(--accent3);color:white;}
+.exp-xml{background:var(--accent2);color:#000;}
+.exp-save{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
+.exp-save:hover{background:var(--dim);}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+
+@media(max-width:800px){
+  #char-panel{display:none;}
+  #preview-panel{width:180px;}
+}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <a href="/" class="hdr-logo"><img src="/logo.png" alt="JV"><span>JVDesignStudio</span></a>
+  <div class="hdr-title">Bitmap Font Maker <span>NEW</span></div>
+  <a href="/dev-tools.html" class="hdr-back">← Tools</a>
+</header>
+
+<div id="app">
+  <!-- CHAR PICKER -->
+  <div id="char-panel">
+    <div class="cp-header"><span>Characters</span></div>
+    <div id="charList"></div>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor-panel">
+    <div class="ed-toolbar">
+      <span class="char-display" id="currentCharDisplay">A</span>
+      <div class="ed-label">Grid:</div>
+      <select id="gridSizeSelect" onchange="changeGridSize(this.value)">
+        <option value="5x7">5×7</option>
+        <option value="6x8">6×8</option>
+        <option value="8x8" selected>8×8</option>
+        <option value="8x12">8×12</option>
+        <option value="16x16">16×16</option>
+      </select>
+      <div class="ed-label">Draw:</div>
+      <button class="tool-btn on" id="toolPen" onclick="setTool('pen')" title="Pen">✏</button>
+      <button class="tool-btn" id="toolErase" onclick="setTool('erase')" title="Erase">⌫</button>
+      <button class="tool-btn" id="toolFill" onclick="setTool('fill')" title="Fill">🪣</button>
+      <button class="tool-btn" onclick="clearChar()" title="Clear">✕</button>
+      <button class="tool-btn" onclick="invertChar()" title="Invert">⇄</button>
+      <button class="tool-btn" onclick="shiftChar(-1,0)" title="Shift Left">◀</button>
+      <button class="tool-btn" onclick="shiftChar(1,0)" title="Shift Right">▶</button>
+      <button class="tool-btn" onclick="shiftChar(0,-1)" title="Shift Up">▲</button>
+      <button class="tool-btn" onclick="shiftChar(0,1)" title="Shift Down">▼</button>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button class="tool-btn" onclick="copyChar()" title="Copy">⎘</button>
+        <button class="tool-btn" onclick="pasteChar()" title="Paste">📋</button>
+      </div>
+    </div>
+    <div id="editor-wrap">
+      <div id="pixel-grid"></div>
+    </div>
+    <div style="padding:6px 12px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:.55rem;color:var(--muted);flex-shrink:0;">
+      <span>← → arrows to switch character</span>
+      <span id="charsDrawn">0 / 0 chars drawn</span>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="preview-panel">
+    <div class="pv-header">Live Preview</div>
+    <div class="pv-body">
+      <textarea id="preview-text-input" rows="3" placeholder="Type to preview...">Hello World!</textarea>
+      <canvas id="preview-canvas"></canvas>
+      <div class="pv-section">
+        <div class="pv-label">Style</div>
+        <div class="pv-row">
+          <label>Scale <span id="vScale">3</span>×</label>
+          <input type="range" min="1" max="8" value="3" id="scaleSlider" oninput="previewScale=+this.value;id('vScale').textContent=this.value;renderPreview()">
+        </div>
+        <div class="pv-row">
+          <label>Letter Spacing <span id="vSpacing">1</span></label>
+          <input type="range" min="0" max="8" value="1" id="spacingSlider" oninput="previewSpacing=+this.value;id('vSpacing').textContent=this.value;renderPreview()">
+        </div>
+        <div class="pv-row">
+          <label>Line Height <span id="vLineH">2</span></label>
+          <input type="range" min="0" max="16" value="2" id="lineHSlider" oninput="previewLineH=+this.value;id('vLineH').textContent=this.value;renderPreview()">
+        </div>
+        <div class="color-row"><label>Ink</label><input type="color" class="color-swatch" id="inkColor" value="#10b981" oninput="renderPreview()"></div>
+        <div class="color-row"><label>Background</label><input type="color" class="color-swatch" id="bgColor" value="#000000" oninput="renderPreview()"></div>
+      </div>
+    </div>
+    <div class="export-btns">
+      <button class="exp-btn exp-png" onclick="exportPNG()">📥 Export PNG Spritesheet</button>
+      <button class="exp-btn exp-json" onclick="exportJSON()">{ } Export JSON Atlas</button>
+      <button class="exp-btn exp-xml" onclick="exportXML()">📄 Export XML (BMFont)</button>
+      <button class="exp-btn exp-save" onclick="saveToLocal()">💾 Save to Browser</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+function id(x){return document.getElementById(x);}
+
+// ── State ──
+let gridW=8, gridH=8;
+const CHARS_DEFS = {
+  'Uppercase':'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  'Lowercase':'abcdefghijklmnopqrstuvwxyz',
+  'Digits':'0123456789',
+  'Symbols':'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~',
+  'Space':' '
+};
+const ALL_CHARS = Object.values(CHARS_DEFS).join('');
+let fontData = {}; // char -> flat Uint8Array
+let currentChar = 'A';
+let drawTool = 'pen';
+let isDrawing = false;
+let drawState = null;
+let clipboard = null;
+let previewScale = 3, previewSpacing = 1, previewLineH = 2;
+
+function initFontData(){
+  ALL_CHARS.split('').forEach(c=>{
+    if(!fontData[c]) fontData[c] = new Uint8Array(gridW*gridH);
+  });
+}
+
+function changeGridSize(v){
+  const [w,h]=v.split('x').map(Number);
+  // Resize existing data
+  Object.keys(fontData).forEach(c=>{
+    const old=fontData[c];
+    const nw=new Uint8Array(w*h);
+    for(let y=0;y<Math.min(h,gridH);y++)
+      for(let x=0;x<Math.min(w,gridW);x++)
+        nw[y*w+x]=old[y*gridW+x]||0;
+    fontData[c]=nw;
+  });
+  gridW=w;gridH=h;
+  buildGrid();renderPreview();updateCharList();
+}
+
+// ── Pixel Grid ──
+function buildGrid(){
+  const g=id('pixel-grid');
+  g.style.gridTemplateColumns=`repeat(${gridW},1fr)`;
+  const wrap=id('editor-wrap');
+  const maxW=Math.floor((wrap.clientWidth-32)/gridW);
+  const maxH=Math.floor((wrap.clientHeight-32)/gridH);
+  const cellSize=Math.min(maxW,maxH,48);
+  g.style.gap='1px';
+  g.innerHTML='';
+  for(let y=0;y<gridH;y++){
+    for(let x=0;x<gridW;x++){
+      const cell=document.createElement('div');
+      cell.className='px-cell';
+      cell.style.width=cellSize+'px';cell.style.height=cellSize+'px';
+      cell.dataset.x=x;cell.dataset.y=y;
+      cell.addEventListener('mousedown',startDraw);
+      cell.addEventListener('mouseenter',continueDraw);
+      cell.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];startDrawAt(x,y);},{passive:false});
+      cell.addEventListener('touchmove',e=>{e.preventDefault();
+        const t=e.touches[0];const el=document.elementFromPoint(t.clientX,t.clientY);
+        if(el&&el.dataset.x) continueDraw({currentTarget:el});
+      },{passive:false});
+      g.appendChild(cell);
+    }
+  }
+  refreshGridDisplay();
+  document.addEventListener('mouseup',()=>{isDrawing=false;drawState=null;});
+}
+
+function cellIndex(x,y){return y*gridW+x;}
+
+function startDraw(e){
+  const x=+e.currentTarget.dataset.x;const y=+e.currentTarget.dataset.y;
+  startDrawAt(x,y);
+}
+function startDrawAt(x,y){
+  isDrawing=true;
+  const arr=fontData[currentChar];
+  if(drawTool==='fill'){floodFill(x,y,arr[cellIndex(x,y)],arr[cellIndex(x,y)]?0:1);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);return;}
+  drawState=drawTool==='erase'?0:1;
+  arr[cellIndex(x,y)]=drawState;
+  refreshGridDisplay();renderPreview();updateCharBtn(currentChar);
+}
+function continueDraw(e){
+  if(!isDrawing||drawTool==='fill'||drawState===null) return;
+  const x=+e.currentTarget.dataset.x;const y=+e.currentTarget.dataset.y;
+  fontData[currentChar][cellIndex(x,y)]=drawState;
+  refreshGridDisplay();renderPreview();updateCharBtn(currentChar);
+}
+
+function floodFill(x,y,target,replacement){
+  if(target===replacement) return;
+  const arr=fontData[currentChar];
+  const stack=[[x,y]];
+  while(stack.length){
+    const [cx,cy]=stack.pop();
+    if(cx<0||cx>=gridW||cy<0||cy>=gridH) continue;
+    if(arr[cellIndex(cx,cy)]!==target) continue;
+    arr[cellIndex(cx,cy)]=replacement;
+    stack.push([cx-1,cy],[cx+1,cy],[cx,cy-1],[cx,cy+1]);
+  }
+}
+
+function refreshGridDisplay(){
+  const cells=id('pixel-grid').children;
+  const arr=fontData[currentChar];
+  for(let i=0;i<cells.length;i++){
+    cells[i].style.background=arr[i]?'var(--cell-on)':'var(--cell-off)';
+  }
+}
+
+function setTool(t){
+  drawTool=t;
+  ['Pen','Erase','Fill'].forEach(n=>id('tool'+n).classList.remove('on'));
+  id('tool'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('on');
+}
+
+function clearChar(){fontData[currentChar].fill(0);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);}
+function invertChar(){fontData[currentChar]=fontData[currentChar].map(v=>v?0:1);refreshGridDisplay();renderPreview();}
+function copyChar(){clipboard=new Uint8Array(fontData[currentChar]);}
+function pasteChar(){if(clipboard){fontData[currentChar]=new Uint8Array(clipboard);refreshGridDisplay();renderPreview();updateCharBtn(currentChar);}}
+
+function shiftChar(dx,dy){
+  const arr=fontData[currentChar];
+  const n=new Uint8Array(gridW*gridH);
+  for(let y=0;y<gridH;y++)
+    for(let x=0;x<gridW;x++){
+      const nx=x+dx,ny=y+dy;
+      if(nx>=0&&nx<gridW&&ny>=0&&ny<gridH) n[ny*gridW+nx]=arr[y*gridW+x];
+    }
+  fontData[currentChar]=n;refreshGridDisplay();renderPreview();
+}
+
+// ── Char Picker ──
+function buildCharList(){
+  const container=id('charList');
+  container.innerHTML='';
+  Object.entries(CHARS_DEFS).forEach(([cat,chars])=>{
+    const lbl=document.createElement('div');lbl.className='char-category';lbl.textContent=cat;
+    container.appendChild(lbl);
+    const grid=document.createElement('div');grid.className='char-btn-grid';
+    chars.split('').forEach(c=>{
+      const btn=document.createElement('button');
+      btn.className='char-btn'+(c===currentChar?' on':'');
+      btn.id='cb-'+c.charCodeAt(0);
+      btn.textContent=c===' '?'⎵':c;
+      btn.title=c===' '?'Space (0x20)':`${c} (0x${c.charCodeAt(0).toString(16).toUpperCase()})`;
+      btn.onclick=()=>selectChar(c);
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+  });
+}
+
+function updateCharBtn(c){
+  const btn=id('cb-'+c.charCodeAt(0));
+  if(!btn) return;
+  const hasData=fontData[c]&&fontData[c].some(v=>v);
+  btn.classList.toggle('has-data',hasData);
+  const total=ALL_CHARS.split('').filter(ch=>fontData[ch]&&fontData[ch].some(v=>v)).length;
+  id('charsDrawn').textContent=`${total} / ${ALL_CHARS.length} chars drawn`;
+}
+
+function updateCharList(){
+  ALL_CHARS.split('').forEach(c=>updateCharBtn(c));
+}
+
+function selectChar(c){
+  document.querySelectorAll('.char-btn').forEach(b=>b.classList.remove('on'));
+  const btn=id('cb-'+c.charCodeAt(0));if(btn) btn.classList.add('on');
+  currentChar=c;
+  id('currentCharDisplay').textContent=c===' '?'⎵':c;
+  refreshGridDisplay();
+}
+
+// keyboard nav
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  const idx=ALL_CHARS.indexOf(currentChar);
+  if(e.key==='ArrowRight'&&idx<ALL_CHARS.length-1) selectChar(ALL_CHARS[idx+1]);
+  if(e.key==='ArrowLeft'&&idx>0) selectChar(ALL_CHARS[idx-1]);
+});
+
+// ── Preview ──
+function renderPreview(){
+  const text=id('preview-text-input').value||'';
+  const ink=id('inkColor').value;
+  const bg=id('bgColor').value;
+  const scale=previewScale;
+  const spacing=previewSpacing;
+  const lineH=previewLineH;
+
+  const lines=text.split('\n');
+  const lineWidth=lines.reduce((m,l)=>Math.max(m,l.length*(gridW+spacing)),0);
+  const totalW=lineWidth*scale||1;
+  const totalH=lines.length*(gridH+lineH)*scale||1;
+
+  const c=id('preview-canvas');
+  c.width=Math.min(totalW,800);c.height=Math.min(totalH,400);
+  const ctx=c.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle=bg;ctx.fillRect(0,0,c.width,c.height);
+
+  const inkR=parseInt(ink.slice(1,3),16);
+  const inkG=parseInt(ink.slice(3,5),16);
+  const inkB=parseInt(ink.slice(5,7),16);
+
+  lines.forEach((line,li)=>{
+    const baseY=li*(gridH+lineH)*scale;
+    line.split('').forEach((ch,ci)=>{
+      const baseX=ci*(gridW+spacing)*scale;
+      const arr=fontData[ch];
+      if(!arr) return;
+      for(let y=0;y<gridH;y++){
+        for(let x=0;x<gridW;x++){
+          if(arr[y*gridW+x]){
+            ctx.fillStyle=`rgb(${inkR},${inkG},${inkB})`;
+            ctx.fillRect(baseX+x*scale,baseY+y*scale,scale,scale);
+          }
+        }
+      }
+    });
+  });
+}
+
+id('preview-text-input').addEventListener('input',renderPreview);
+
+// ── Export ──
+function exportPNG(){
+  const cols=16;
+  const rows=Math.ceil(ALL_CHARS.length/cols);
+  const padX=1,padY=1;
+  const cellW=gridW+padX*2,cellH=gridH+padY*2;
+  const offC=document.createElement('canvas');
+  offC.width=cols*cellW;offC.height=rows*cellH;
+  const ctx=offC.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  ALL_CHARS.split('').forEach((c,i)=>{
+    const col=i%cols,row=Math.floor(i/cols);
+    const bx=col*cellW+padX,by=row*cellH+padY;
+    const arr=fontData[c];
+    if(!arr) return;
+    for(let y=0;y<gridH;y++)
+      for(let x=0;x<gridW;x++)
+        if(arr[y*gridW+x]){
+          ctx.fillStyle=id('inkColor').value;
+          ctx.fillRect(bx+x,by+y,1,1);
+        }
+  });
+
+  offC.toBlob(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='bitmap_font.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast('PNG spritesheet downloaded!');
+  });
+}
+
+function exportJSON(){
+  const atlas={meta:{gridW,gridH,cols:16,charCount:ALL_CHARS.length,format:'bitmap-font'},chars:{}};
+  ALL_CHARS.split('').forEach((c,i)=>{
+    const col=i%16,row=Math.floor(i/16);
+    const cellW=gridW+2,cellH=gridH+2;
+    atlas.chars[c]={
+      id:c.charCodeAt(0),
+      x:col*cellW+1,y:row*cellH+1,
+      w:gridW,h:gridH,
+      pixels:Array.from(fontData[c]||[])
+    };
+  });
+  const blob=new Blob([JSON.stringify(atlas,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('JSON atlas downloaded!');
+}
+
+function exportXML(){
+  const cellW=gridW+2,cellH=gridH+2;
+  let xml=`<?xml version="1.0"?>\n<font>\n  <info face="BitmapFont" size="${gridH}" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="0" aa="1" padding="0,0,0,0" spacing="1,1"/>\n  <common lineHeight="${gridH}" base="${gridH}" scaleW="${16*cellW}" scaleH="${Math.ceil(ALL_CHARS.length/16)*cellH}" pages="1"/>\n  <pages><page id="0" file="bitmap_font.png"/></pages>\n  <chars count="${ALL_CHARS.length}">\n`;
+  ALL_CHARS.split('').forEach((c,i)=>{
+    const col=i%16,row=Math.floor(i/16);
+    xml+=`    <char id="${c.charCodeAt(0)}" x="${col*cellW+1}" y="${row*cellH+1}" width="${gridW}" height="${gridH}" xoffset="0" yoffset="0" xadvance="${gridW+1}" page="0" chnl="15"/>\n`;
+  });
+  xml+=`  </chars>\n</font>`;
+  const blob=new Blob([xml],{type:'application/xml'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.fnt';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('XML BMFont file downloaded!');
+}
+
+function saveToLocal(){
+  const data={gridW,gridH,chars:{}};
+  ALL_CHARS.split('').forEach(c=>{data.chars[c]=Array.from(fontData[c]||[]);});
+  localStorage.setItem('jvds_bitmap_font',JSON.stringify(data));
+  toast('Font saved to browser!');
+}
+
+function loadFromLocal(){
+  try{
+    const raw=localStorage.getItem('jvds_bitmap_font');
+    if(!raw) return;
+    const data=JSON.parse(raw);
+    gridW=data.gridW||8;gridH=data.gridH||8;
+    id('gridSizeSelect').value=`${gridW}x${gridH}`;
+    Object.entries(data.chars).forEach(([c,arr])=>{fontData[c]=new Uint8Array(arr);});
+    buildGrid();updateCharList();renderPreview();
+    toast('Font loaded!');
+  }catch{}
+}
+
+// ── Init ──
+initFontData();
+buildCharList();
+buildGrid();
+renderPreview();
+loadFromLocal();
+updateCharList();
+
+window.addEventListener('resize',()=>{buildGrid();});
+
+let toastT;
+function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+</script>
+</body>
+</html>
