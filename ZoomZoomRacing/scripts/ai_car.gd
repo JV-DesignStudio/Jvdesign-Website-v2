@@ -1,12 +1,15 @@
 extends CharacterBody2D
 
-var base_speed = 300.0
-var turn_speed = 3.0
+var base_speed = 275.0
+var turn_speed = 3.2
 
 var max_health = 100.0
 var health = 100.0
 var is_dead = false
 var damage_cooldown = 0.0
+
+var waypoints: Array = []
+var current_waypoint = 0
 
 var current_checkpoint = 0
 var lap = 0
@@ -18,20 +21,29 @@ signal car_exploded
 signal lap_completed(lap_num)
 signal race_finished
 
+func setup_waypoints(wp: Array):
+	waypoints = wp
+
 func _physics_process(delta):
-	if is_dead or finished:
+	if is_dead or finished or waypoints.is_empty():
 		return
 
 	if damage_cooldown > 0:
 		damage_cooldown -= delta
 
-	var drive = Input.get_axis("ui_down", "ui_up")
-	var steer = Input.get_axis("ui_left", "ui_right")
+	# Steer toward next waypoint
+	var target: Vector2 = waypoints[current_waypoint]
+	var to_target = target - global_position
 
-	if drive != 0:
-		rotation += steer * turn_speed * delta
+	if to_target.length() < 65:
+		current_waypoint = (current_waypoint + 1) % waypoints.size()
 
-	velocity = Vector2.UP.rotated(rotation) * drive * get_speed()
+	# Smoothly rotate toward target
+	var desired_angle = to_target.angle() + PI / 2.0
+	var rot_diff = wrapf(desired_angle - rotation, -PI, PI)
+	rotation += clamp(rot_diff * 4.0 * delta, -turn_speed * delta, turn_speed * delta) * turn_speed
+
+	velocity = Vector2.UP.rotated(rotation) * get_speed()
 	move_and_slide()
 
 	for i in get_slide_collision_count():
@@ -53,13 +65,12 @@ func _handle_collision(other):
 	var combined = my_spd + other_spd
 	if combined < 50:
 		return
-	# Only the faster car drives the damage calc to avoid double-hits
 	if my_spd < other_spd:
 		return
 	if my_spd == other_spd and get_instance_id() < other.get_instance_id():
 		return
 	var base_dmg = combined * 0.06
-	var my_ratio = my_spd / combined  # higher = I'm faster = I take less
+	var my_ratio = my_spd / combined
 	receive_damage(base_dmg * (1.0 - my_ratio))
 	other.receive_damage(base_dmg * my_ratio)
 	damage_cooldown = 0.5
@@ -77,7 +88,6 @@ func repair(amount: float):
 	if is_dead:
 		return
 	health = min(max_health, health + amount)
-	emit_signal("health_changed", health, max_health)
 
 func _explode():
 	is_dead = true
