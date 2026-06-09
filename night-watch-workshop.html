@@ -552,7 +552,8 @@ func _on_cam_button(index: int):
       'Add a <strong>Button</strong> node below your left door panel. Label it <strong>"🚪 Close Left Door"</strong>. Do the same on the right.',
       'Add a dark <strong>ColorRect</strong> over each doorway (named <strong>LeftDoorBlock</strong> and <strong>RightDoorBlock</strong>). Set them <strong>Visible: off</strong> to start.',
       'In your NightWatch script, add the door variables and functions below.',
-      'Connect each door button\'s <strong>pressed</strong> signal to the matching toggle function.',
+      'Connect each door button\'s <strong>pressed</strong> signal: click <strong>CloseLeftDoor</strong> in the scene tree → click the <strong>Signals</strong> tab (top right) → click <strong>pressed()</strong> → click <strong>Connect...</strong> → select your root <strong>Node2D</strong> → set the method to <strong>_on_left_door_pressed</strong> → click <strong>Connect</strong>. Repeat for <strong>CloseRightDoor</strong> → <strong>_on_right_door_pressed</strong>.',
+      '⚠️ <strong>Important:</strong> After connecting the signals, go to the <strong>Inspector</strong> for your root Node2D, and drag <strong>LeftDoorBlock</strong> into the <strong>Left Door Block</strong> field and <strong>RightDoorBlock</strong> into the <strong>Right Door Block</strong> field.',
     ],
     code: `# Add these to your NightWatch script:
 
@@ -563,12 +564,12 @@ var right_door_closed = false
 @export var right_door_block: ColorRect
 
 func _on_left_door_pressed():
-    left_door_closed = not left_door_closed
-    left_door_block.visible = left_door_closed
+\tleft_door_closed = not left_door_closed
+\tleft_door_block.visible = left_door_closed
 
 func _on_right_door_pressed():
-    right_door_closed = not right_door_closed
-    right_door_block.visible = right_door_closed`,
+\tright_door_closed = not right_door_closed
+\tright_door_block.visible = right_door_closed`,
   },
   {
     emoji: '⚡',
@@ -684,17 +685,17 @@ func _update_display():
     code: `# Replace _move_closer() in freddy.gd (keep _update_display() from Step 6):
 
 func _move_closer():
-    match room:
-        0:  # Stage — pick a side
-            room = [1, 2].pick_random()
-        1:  # Hall Left → Left Door
-            room = 3
-        2:  # Hall Right → Right Door
-            room = 4
-        3, 4:  # Already at a door — emit signal and stop
-            reached_door.emit("left" if room == 3 else "right")
-            return
-    _update_display()
+\tmatch room:
+\t\t0:  # Stage — pick a side
+\t\t\troom = [1, 2].pick_random()
+\t\t1:  # Hall Left → Left Door
+\t\t\troom = 3
+\t\t2:  # Hall Right → Right Door
+\t\t\troom = 4
+\t\t3, 4:  # Already at a door — emit signal and stop
+\t\t\treached_door.emit("left" if room == 3 else "right")
+\t\t\treturn
+\t_update_display()
 
 # --- In main.gd, add these: ---
 
@@ -702,12 +703,12 @@ func _move_closer():
 @export var freddy: Node2D
 
 func _on_freddy_at_door(side: String):
-    var door_closed = left_door_closed if side == "left" else right_door_closed
-    if door_closed:
-        freddy.room = 0        # Blocked — send him back to stage
-        freddy._update_display()
-    else:
-        _trigger_jumpscare()   # Oh no.`,
+\tvar door_closed = left_door_closed if side == "left" else right_door_closed
+\tif door_closed:
+\t\tfreddy.room = 0        # Blocked — send him back to stage
+\t\tfreddy._update_display()
+\telse:
+\t\t_trigger_jumpscare()   # Oh no.`,
   },
   {
     emoji: '😱',
@@ -732,11 +733,11 @@ func _on_freddy_at_door(side: String):
 @export var scare_sound: AudioStreamPlayer  # optional
 
 func _trigger_jumpscare():
-    jumpscare_layer.visible = true
-    if scare_sound:
-        scare_sound.play()
-    await get_tree().create_timer(1.8).timeout
-    _game_over()`,
+\tjumpscare_layer.visible = true
+\tif scare_sound:
+\t\tscare_sound.play()
+\tawait get_tree().create_timer(1.8).timeout
+\t_game_over()`,
   },
   {
     emoji: '🌅',
@@ -767,26 +768,26 @@ const NIGHT_DURATION = 360  # 6 minutes in seconds
 
 # REPLACE your existing _process() from Step 5 with this updated version:
 func _process(delta):
-    if not game_active:
-        return
-    _update_power(delta)
-    _update_clock(delta)
+\tif not game_active:
+\t\treturn
+\t_update_power(delta)
+\t_update_clock(delta)
 
 func _update_clock(delta):
-    night_time += delta / NIGHT_DURATION
-    var hour = int(night_time * 6)  # 0–5
-    var display = ["12 AM","1 AM","2 AM","3 AM","4 AM","5 AM","6 AM"]
-    clock_label.text = display[min(hour, 6)]
-    if night_time >= 1.0:
-        _win()
+\tnight_time += delta / NIGHT_DURATION
+\tvar hour = int(night_time * 6)  # 0–5
+\tvar display = ["12 AM","1 AM","2 AM","3 AM","4 AM","5 AM","6 AM"]
+\tclock_label.text = display[min(hour, 6)]
+\tif night_time >= 1.0:
+\t\t_win()
 
 func _win():
-    game_active = false
-    win_screen.visible = true
+\tgame_active = false
+\twin_screen.visible = true
 
 func _game_over():
-    game_active = false
-    game_over_screen.visible = true`,
+\tgame_active = false
+\tgame_over_screen.visible = true`,
   },
   {
     emoji: '🎚️',
@@ -810,9 +811,9 @@ func _game_over():
 @export var ai_level: int = 3  # 0 = never moves, 20 = always moves
 
 func _on_move_timer():
-    # Only move if the random roll beats the AI level
-    if randi() % 20 < ai_level:
-        _move_closer()`,
+\t# Only move if the random roll beats the AI level
+\tif randi() % 20 < ai_level:
+\t\t_move_closer()`,
   },
   {
     emoji: '✨',
