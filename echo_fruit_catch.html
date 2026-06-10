@@ -535,6 +535,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <div class="g-title">Paused</div>
       <div class="g-sub">Take a breather, Echo's waiting!</div>
       <button class="g-btn" onclick="resumeGame()">▶️ Resume</button>
+      <button class="g-btn secondary" id="fsToggleBtn" onclick="toggleFS()">⛶ Go Fullscreen</button>
       <button class="g-btn secondary" onclick="exitGame()">← Back to Page</button>
     </div>
   </div>
@@ -575,12 +576,40 @@ let echoSprite=null;
   img.src='Axo_Fruit_Catch.png';
 })();
 
+/* ── Fullscreen ── */
+function requestFS(){
+  const el=document.getElementById('game-container');
+  const req=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+  if(req) try{ req.call(el); }catch(e){}
+}
+function exitFS(){
+  const isFS=document.fullscreenElement||document.webkitFullscreenElement||document.msFullscreenElement;
+  if(!isFS) return;
+  const exit=document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen;
+  if(exit) try{ exit.call(document); }catch(e){}
+}
+function isFullscreen(){
+  return !!(document.fullscreenElement||document.webkitFullscreenElement||document.msFullscreenElement);
+}
+function updateFSBtn(){
+  const b=document.getElementById('fsToggleBtn');
+  if(b) b.textContent=isFullscreen()?'⤢ Exit Fullscreen':'⛶ Go Fullscreen';
+}
+function toggleFS(){
+  if(isFullscreen()) exitFS(); else requestFS();
+}
+window.toggleFS=toggleFS;
+['fullscreenchange','webkitfullscreenchange','MSFullscreenChange'].forEach(ev=>{
+  document.addEventListener(ev,updateFSBtn);
+});
+
 function launchGame(){
   document.getElementById('game-container').classList.add('active');
   document.getElementById('siteHeader').style.display='none';
   document.body.style.overflow='hidden';
   if(!gameReady){ initGame(); gameReady=true; }
   showStart();
+  requestFS();
 }
 function exitGame(){
   document.getElementById('game-container').classList.remove('active');
@@ -588,6 +617,7 @@ function exitGame(){
   document.body.style.overflow='';
   document.getElementById('scr-pause').classList.add('off');
   if(gState==='playing'||gState==='paused') gState='idle';
+  exitFS();
 }
 window.launchGame=launchGame;
 window.exitGame=exitGame;
@@ -815,6 +845,7 @@ function pauseGame(){
   if(gState!=='playing') return;
   gState='paused';
   document.getElementById('scr-pause').classList.remove('off');
+  updateFSBtn();
 }
 function resumeGame(){
   if(gState!=='paused') return;

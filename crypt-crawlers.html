@@ -89,23 +89,40 @@
 
   /* Mobile controls */
   #mobile-controls{
-    position:absolute;bottom:10px;left:0;width:100%;
+    position:absolute;bottom:0;left:0;width:100%;
     display:none;justify-content:space-between;align-items:flex-end;
-    padding:0 16px;pointer-events:all;z-index:5;
+    padding:0 12px calc(14px + env(safe-area-inset-bottom));pointer-events:all;z-index:5;
   }
-  .joy-zone{position:relative;width:130px;height:130px;}
+  .joy-zone{
+    position:relative;width:160px;height:160px;
+    background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,rgba(255,255,255,0.02) 60%,transparent 75%);
+    border-radius:50%;
+  }
+  .joy-label{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.18);
+    text-transform:uppercase;font-weight:700;pointer-events:none;
+  }
   .joy-btn{
-    position:absolute;width:42px;height:42px;border-radius:8px;
-    background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);
+    position:absolute;width:54px;height:54px;border-radius:12px;
+    background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.18);
     display:flex;align-items:center;justify-content:center;
-    font-size:18px;color:rgba(255,255,255,0.5);cursor:pointer;
+    font-size:22px;color:rgba(255,255,255,0.55);cursor:pointer;
     -webkit-tap-highlight-color:transparent;
+    transition:background 0.08s,border-color 0.08s,transform 0.08s,color 0.08s;
   }
-  .joy-btn:active{background:rgba(255,255,255,0.2);}
+  .joy-btn:active,.joy-btn.active{
+    background:rgba(255,215,0,0.22);border-color:rgba(255,215,0,0.55);
+    color:#ffd700;transform:scale(0.92);
+  }
   .j-up{top:0;left:50%;transform:translateX(-50%);}
   .j-down{bottom:0;left:50%;transform:translateX(-50%);}
   .j-left{top:50%;left:0;transform:translateY(-50%);}
   .j-right{top:50%;right:0;transform:translateY(-50%);}
+  .joy-btn.j-up.active{transform:translateX(-50%) scale(0.92);}
+  .joy-btn.j-down.active{transform:translateX(-50%) scale(0.92);}
+  .joy-btn.j-left.active{transform:translateY(-50%) scale(0.92);}
+  .joy-btn.j-right.active{transform:translateY(-50%) scale(0.92);}
 
   #death-overlay, #win-overlay {
     position:absolute;inset:0;
@@ -389,12 +406,14 @@
 
 <div id="mobile-controls">
   <div class="joy-zone" id="move-joy">
+    <div class="joy-label">MOVE</div>
     <div class="joy-btn j-up" data-dir="mu">▲</div>
     <div class="joy-btn j-down" data-dir="md">▼</div>
     <div class="joy-btn j-left" data-dir="ml">◄</div>
     <div class="joy-btn j-right" data-dir="mr">►</div>
   </div>
   <div class="joy-zone" id="shoot-joy">
+    <div class="joy-label">SHOOT</div>
     <div class="joy-btn j-up" data-dir="su">▲</div>
     <div class="joy-btn j-down" data-dir="sd">▼</div>
     <div class="joy-btn j-left" data-dir="sl">◄</div>
@@ -573,6 +592,18 @@ function loadData() {
 // ══════════════════════════════════════
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const vignetteGrad = ctx.createRadialGradient(CW/2,CH/2,CH*0.32,CW/2,CH/2,CH*0.78);
+vignetteGrad.addColorStop(0,'rgba(0,0,0,0)');
+vignetteGrad.addColorStop(1,'rgba(0,0,0,0.6)');
+let ambientDust=[];
+function initAmbientDust(){
+  ambientDust=[];
+  for(let i=0;i<26;i++){
+    ambientDust.push({x:Math.random()*CW,y:Math.random()*CH,vx:(Math.random()-0.5)*0.15,vy:(Math.random()-0.5)*0.15,size:1+Math.random()*2,alpha:0.04+Math.random()*0.10});
+  }
+}
+initAmbientDust();
+let damageFlashTimer=0;
 let scale = 1;
 function resize() {
   const wrap=document.getElementById('game-wrap');
@@ -615,11 +646,14 @@ document.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 const mobileKeys={};
 document.querySelectorAll('.joy-btn').forEach(btn=>{
   const dir=btn.dataset.dir;
-  btn.addEventListener('touchstart',e=>{e.preventDefault();mobileKeys[dir]=true;});
-  btn.addEventListener('touchend',e=>{e.preventDefault();mobileKeys[dir]=false;});
-  btn.addEventListener('mousedown',()=>mobileKeys[dir]=true);
-  btn.addEventListener('mouseup',()=>mobileKeys[dir]=false);
-  btn.addEventListener('mouseleave',()=>mobileKeys[dir]=false);
+  const press=()=>{mobileKeys[dir]=true;btn.classList.add('active');};
+  const release=()=>{mobileKeys[dir]=false;btn.classList.remove('active');};
+  btn.addEventListener('touchstart',e=>{e.preventDefault();press();});
+  btn.addEventListener('touchend',e=>{e.preventDefault();release();});
+  btn.addEventListener('touchcancel',e=>{e.preventDefault();release();});
+  btn.addEventListener('mousedown',press);
+  btn.addEventListener('mouseup',release);
+  btn.addEventListener('mouseleave',release);
 });
 function isDown(k){return!!keys[k];}
 
@@ -886,6 +920,18 @@ function update(dt){
   player.x+=mx*player.speed*speedMod*dt*60;
   player.y+=my*player.speed*speedMod*dt*60;
 
+  // Footstep dust trail
+  if((mx||my)&&Math.random()<0.3){
+    particles.push({x:player.x-mx*8+(Math.random()-0.5)*6,y:player.y+player.radius*0.6+(Math.random()-0.5)*4,vx:-mx*0.4,vy:-my*0.4-0.1,life:14,maxLife:14,color:'rgba(255,255,255,0.35)',size:2+Math.random()*2,glow:false});
+  }
+
+  // Ambient dust drift
+  for(const d of ambientDust){
+    d.x+=d.vx*dt*60;d.y+=d.vy*dt*60;
+    if(d.x<0)d.x=CW;if(d.x>CW)d.x=0;if(d.y<0)d.y=CH;if(d.y>CH)d.y=0;
+  }
+  if(damageFlashTimer>0)damageFlashTimer--;
+
   const wallT=TILE,wallB=CH-TILE,wallL=TILE,wallR=CW-TILE,doorHalfW=TILE*1.5;
   const room=floorMap.grid[roomY][roomX];
   const centerX=CW/2,centerY=CH/2;
@@ -944,6 +990,8 @@ function update(dt){
     }else{
       bullets.push({x:player.x,y:player.y,vx:(sx/len)*player.shotSpeed,vy:(sy/len)*player.shotSpeed,dmg:player.atk,life:120,radius:5,fromPlayer:true});
     }
+    // Muzzle flash
+    spawnParticles(player.x+(sx/len)*16,player.y+(sy/len)*16,player.color,3);
   }
 
   // Bullets
@@ -953,11 +1001,13 @@ function update(dt){
     for(let j=enemies.length-1;j>=0;j--){
       const e=enemies[j];
       if(Math.hypot(b.x-e.x,b.y-e.y)<e.size+b.radius){
-        e.hp-=b.dmg;
+        e.hp-=b.dmg;e.flash=8;
         damageNumbers.push({x:e.x,y:e.y-e.size,text:Math.ceil(b.dmg),life:40,color:'#ffd700'});
         spawnParticles(b.x,b.y,e.color,4);bullets.splice(i,1);screenShake=3;
         if(e.hp<=0){
-          spawnParticles(e.x,e.y,e.color,12);totalKills++;
+          if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;}
+          else spawnParticles(e.x,e.y,e.color,12);
+          totalKills++;
           // Paladin: heal on kill
           if(player.passive==='healOnKill'){player.hp=Math.min(player.maxHp,player.hp+1);}
           // Vampire: lifesteal
@@ -991,6 +1041,7 @@ function update(dt){
     }
     e.x=Math.max(TILE+e.size,Math.min(CW-TILE-e.size,e.x));e.y=Math.max(TILE+e.size,Math.min(CH-TILE-e.size,e.y));
     if(iFrames<=0&&Math.hypot(e.x-player.x,e.y-player.y)<e.size+player.radius)hurtPlayer(e.atk);
+    if(e.flash>0)e.flash--;
   }
 
   // Pickups
@@ -1111,7 +1162,7 @@ function closeInRunShop(){
 // HURT / PICKUPS
 // ═══════════════════════════════════════════════════════════════════
 function hurtPlayer(dmg){
-  player.hp-=dmg;iFrames=40;screenShake=6;
+  player.hp-=dmg;iFrames=40;screenShake=6;damageFlashTimer=12;
   damageNumbers.push({x:player.x,y:player.y-20,text:Math.ceil(dmg),life:40,color:'#e74c3c'});
   spawnParticles(player.x,player.y,'#e74c3c',6);
   if(player.hp<=0){player.hp=0;bankCoins();state='dead';showDeath();}
@@ -1129,7 +1180,7 @@ function applyPickup(p){
 }
 
 function spawnParticles(x,y,color,count){
-  for(let i=0;i<count;i++){const ang=Math.random()*Math.PI*2,spd=1+Math.random()*3;particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-1,life:15+Math.random()*15,color,size:2+Math.random()*3});}
+  for(let i=0;i<count;i++){const ang=Math.random()*Math.PI*2,spd=1+Math.random()*3;const life=15+Math.random()*15;particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-1,life,maxLife:life,color,size:2+Math.random()*3,glow:true});}
 }
 function flash(){const f=document.getElementById('flash');f.style.opacity='0.3';setTimeout(()=>f.style.opacity='0',80);}
 
@@ -1144,6 +1195,9 @@ function draw(){
 
   const room=floorMap.grid[roomY][roomX];
   drawWalls(room);
+
+  // Ambient dust motes
+  for(const d of ambientDust){ctx.globalAlpha=d.alpha;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(d.x,d.y,d.size,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
 
   // Witch poison trails
   for(const pt of poisonTrails){
@@ -1174,13 +1228,22 @@ function draw(){
   for(const b of bullets){ctx.save();ctx.shadowColor=player.color;ctx.shadowBlur=8;ctx.fillStyle=player.color;ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x,b.y,b.radius*0.4,0,Math.PI*2);ctx.fill();ctx.restore();}
   for(const b of enemyBullets){ctx.save();ctx.shadowColor=b.color||'#e74c3c';ctx.shadowBlur=6;ctx.fillStyle=b.color||'#e74c3c';ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#faa';ctx.beginPath();ctx.arc(b.x,b.y,b.radius*0.4,0,Math.PI*2);ctx.fill();ctx.restore();}
 
-  for(const p of particles){ctx.globalAlpha=p.life/30;ctx.fillStyle=p.color;ctx.fillRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size);}ctx.globalAlpha=1;
+  for(const p of particles){
+    ctx.globalAlpha=Math.max(0,p.life/(p.maxLife||30));
+    ctx.fillStyle=p.color;
+    if(p.glow){ctx.shadowColor=p.color;ctx.shadowBlur=p.size*2;}else{ctx.shadowBlur=0;}
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size/2,0,Math.PI*2);ctx.fill();
+  }ctx.shadowBlur=0;ctx.globalAlpha=1;
   for(const d of damageNumbers){ctx.globalAlpha=d.life/40;ctx.font='bold 16px Outfit,sans-serif';ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(d.text,d.x+1,d.y+1);ctx.fillStyle=d.color;ctx.fillText(d.text,d.x,d.y);}ctx.globalAlpha=1;
 
   if(coinsThisRun>0){ctx.font='bold 13px Outfit,sans-serif';ctx.textAlign='left';ctx.fillStyle='rgba(255,215,0,0.8)';ctx.fillText(`🪙 +${coinsThisRun}`,TILE+8,TILE+20);}
 
   drawMinimap();
   ctx.restore();
+
+  // Vignette + damage flash (drawn outside shake transform)
+  ctx.fillStyle=vignetteGrad;ctx.fillRect(0,0,CW,CH);
+  if(damageFlashTimer>0){ctx.fillStyle=`rgba(255,0,0,${damageFlashTimer/12*0.28})`;ctx.fillRect(0,0,CW,CH);}
 }
 
 function drawWalls(room){
@@ -1194,6 +1257,7 @@ function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
   ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(0,e.size+2,e.size*0.7,3,0,0,Math.PI*2);ctx.fill();
   ctx.shadowColor=e.color;ctx.shadowBlur=e.isBoss?16:8;
+  if(e.flash>0)ctx.filter='brightness(2.4) saturate(1.4)';
   const s=e.size;ctx.fillStyle=e.color;
   switch(e.draw){
     case 'slime':ctx.beginPath();ctx.ellipse(0,0,s,s*0.7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-3,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-3,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-4,-2,1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-2,1.5,0,Math.PI*2);ctx.fill();break;

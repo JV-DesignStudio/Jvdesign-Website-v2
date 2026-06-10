@@ -46,17 +46,69 @@
     --floor-tile: #2a2a3e;
   }
 
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 50%, var(--bg-deep) 100%);
     font-family: 'Trebuchet MS', 'Lucida Sans', sans-serif;
     color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     user-select: none;
-    overflow-x: hidden;
   }
+
+  /* ── Fullscreen game wrap ── */
+  #dd-wrap {
+    position: fixed; inset: 0;
+    overflow-y: auto; overflow-x: hidden;
+    display: flex; flex-direction: column; align-items: center;
+    background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 50%, var(--bg-deep) 100%);
+    z-index: 1;
+  }
+  #dd-wrap:fullscreen, #dd-wrap:-webkit-full-screen {
+    width: 100vw; height: 100vh;
+  }
+
+  /* ── Mini toolbar ── */
+  .dd-toolbar {
+    position: sticky; top: 0; z-index: 50; width: 100%;
+    display: flex; justify-content: flex-end; padding: 8px 12px;
+    pointer-events: none;
+  }
+  .dd-toolbar button {
+    pointer-events: all;
+    background: rgba(255,255,255,0.08); border: 1px solid #444; border-radius: 8px;
+    color: var(--text); font-size: 12px; font-weight: bold; padding: 6px 12px;
+    cursor: pointer; font-family: inherit; backdrop-filter: blur(6px);
+  }
+  .dd-toolbar button:hover { background: rgba(255,255,255,0.16); }
+
+  /* ── Intro splash ── */
+  #intro-splash {
+    flex: 1; width: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+  }
+  #intro-splash.hidden { display: none; }
+  .intro-blurb {
+    max-width: 460px; font-size: 13px; color: #aaa; line-height: 1.7; margin: 8px 0 24px;
+  }
+  .intro-blurb b { color: var(--gold); }
+  .btn-enter {
+    padding: 16px 44px; font-size: 18px; font-weight: bold;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    border: none; border-radius: 10px; color: #1a1a2e;
+    cursor: pointer; letter-spacing: 2px; font-family: inherit;
+    transition: transform 0.15s; box-shadow: 0 4px 0 #b8860b;
+  }
+  .btn-enter:active { transform: scale(0.97) translateY(2px); box-shadow: 0 2px 0 #b8860b; }
+  .intro-hint {
+    margin-top: 18px; font-size: 11px; color: #555; letter-spacing: 1px;
+    animation: intro-blink 1.4s ease-in-out infinite;
+  }
+  @keyframes intro-blink { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  .hidden { display: none !important; }
 
   h1.game-title {
     font-family: Georgia, serif;
@@ -191,8 +243,25 @@
   }
 
   .battle-label { text-align: center; margin-bottom: 8px; font-size: 13px; color: var(--orange); letter-spacing: 2px; }
-  .combatant { text-align: center; padding: 12px 0; transition: transform 0.1s; }
+  .combatant { position: relative; text-align: center; padding: 12px 0; transition: transform 0.1s; }
   .combatant.shake { transform: translateX(8px); }
+
+  /* Floating damage numbers */
+  .dmg-float {
+    position: absolute; left: 50%; top: 26%; transform: translateX(-50%);
+    font-weight: bold; font-size: 18px; pointer-events: none;
+    animation: floatUp 0.8s ease-out forwards; z-index: 10; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .dmg-float.dmg { color: #ff5555; }
+  .dmg-float.heal { color: var(--green); }
+  .dmg-float.crit { font-size: 28px; color: var(--gold); }
+  @keyframes floatUp { 0% { opacity:1; transform:translate(-50%,0) scale(1); } 100% { opacity:0; transform:translate(-50%,-40px) scale(1.2); } }
+
+  /* Crit flash on overlay box */
+  .overlay-box.flash-crit { animation: critFlash 0.3s ease-out; }
+  @keyframes critFlash { 0% { box-shadow: 0 0 0 6px rgba(255,215,0,0.5); } 100% { box-shadow: none; } }
+
+  .action-btn .key-hint { display: inline-block; opacity: 0.5; font-size: 10px; margin-left: 4px; }
   .combatant .emoji { font-size: 48px; }
   .combatant .name { font-weight: bold; font-size: 16px; margin-top: 4px; }
   .combatant .hp-text { font-size: 11px; color: #999; margin-top: 2px; }
@@ -264,11 +333,6 @@
     color: var(--text); cursor: pointer; font-family: inherit;
   }
 
-/* ══ SITE NAV BAR ══════════════════════════════════════════ */
-@media(max-width:860px){.jvds-nav-links{display:none!important;}.jvds-nav-toggle{display:block!important;}}
-@media(min-width:861px){.jvds-mobile-nav{display:none!important;}}
-/* ══════════════════════════════════════════════════════════ */
-
 /* ── MOBILE PATCH ── */
 @media(max-width:480px){
   .class-grid{grid-template-columns:1fr !important;}
@@ -300,59 +364,52 @@
     <link rel="stylesheet" href="style-shared.css">
 </head>
 <body>
-<!-- BUILD:nav-tools -->
-<header class="jvds-site-nav" id="jvdsSiteNav">
-    <div class="jvds-nav-inner">
-        <a href="index.html" class="jvds-nav-logo">
-            <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
-            JVDesignStudio
-        </a>
-        <nav class="jvds-nav-links">
-            <a href="index.html">Home</a>
-            <a href="books.html">📚 Books</a>
-            <a href="learn-hub.html">🎓 Learn Hub</a>
-            <a href="games.html">🎮 Games</a>
-            <a href="mobile-games.html">📱 Mobile</a>
-            <a href="workshop.html">🔧 Workshop</a>
-            <a href="dev-tools.html" class="nav-tools active">🛠️ Dev Tools</a>
-            <a href="freebies.html">🎁 Freebies</a>
-            <a href="about.html">About</a>
-            <a href="search.html">🔍</a>
-        </nav>
-        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Toggle menu">☰</button>
-    </div>
-    <nav class="jvds-mobile-nav" id="jvdsMobileNav">
-        <a href="index.html">🏠 Home</a>
-        <a href="books.html">📚 Books</a>
-        <a href="learn-hub.html">🎓 Learn Hub</a>
-        <a href="games.html">🎮 Games</a>
-        <a href="mobile-games.html">📱 Mobile Games</a>
-        <a href="workshop.html">🔧 Workshop</a>
-        <a href="dev-tools.html">🛠️ Dev Tools</a>
-        <a href="freebies.html">🎁 Freebies</a>
-        <a href="content_hub.html">📦 All Projects</a>
-        <a href="devlog.html">📓 Dev Log</a>
-        <a href="about.html">👤 About</a>
-        <a href="contact.html">✉️ Contact</a>
-        <a href="newsletter.html">💌 Newsletter</a>
-        <a href="search.html">🔍 Search</a>
-        <a href="sitemap.html">🗺️ Sitemap</a>
+<!-- BUILD:nav-strip -->
+<div class="jvds-strip" id="jvdsStrip">
+  <div class="jvds-strip-inner">
+    <a href="index.html" class="jvds-strip-logo">JVDesignStudio</a>
+    <nav class="jvds-strip-links">
+      <a href="games.html">🎮 Games</a>
+      <a href="dev-tools.html">🛠️ Dev Tools</a>
+      <a href="content_hub.html">📦 All Projects</a>
+      <a href="index.html">🏠 Home</a>
     </nav>
-</header>
-<!-- /BUILD:nav-tools -->
-
-<!-- ═══════════ TITLE SCREEN ═══════════ -->
-<div id="title-screen">
-  <h1 class="game-title">⚔️ DUNGEON DELVE ⚔️</h1>
-  <p class="subtitle">A HACK &amp; SLASH ADVENTURE</p>
-  <div class="panel">
-    <h2>Choose Your Hero</h2>
-    <div class="class-grid" id="class-grid"></div>
-    <div class="class-info" id="class-info"></div>
-    <button class="btn-start" id="btn-start">ENTER THE DUNGEON</button>
+    <button class="jvds-strip-close" onclick="jvdsCloseStrip()" aria-label="Close">✕</button>
   </div>
-  <div class="controls-hint">🎮 Use WASD or Arrow Keys to move · Walk into enemies to fight!<br>5 floors of monsters, loot &amp; bosses await. Good luck, hero!</div>
 </div>
+<button class="jvds-tab" id="jvdsTab" onclick="jvdsOpenStrip()">☰ JVDesignStudio</button>
+<!-- /BUILD:nav-strip -->
+
+<div id="dd-wrap">
+  <div class="dd-toolbar">
+    <button id="btn-fullscreen" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  </div>
+
+  <!-- ═══════════ INTRO SPLASH ═══════════ -->
+  <div id="intro-splash">
+    <h1 class="game-title">⚔️ DUNGEON DELVE ⚔️</h1>
+    <p class="subtitle">A HACK &amp; SLASH ADVENTURE</p>
+    <p class="intro-blurb">
+      A cursed dungeon stretches five floors deep, packed with monsters, treasure and gold.
+      Pick a hero, fight your way down, and face the <b>Dark Overlord</b> at the bottom.
+      Loot makes you stronger — but one wrong step could end the run.
+    </p>
+    <button class="btn-enter" id="btn-enter">▶ PLAY</button>
+    <div class="intro-hint">Tap Play or press Space to begin</div>
+  </div>
+
+  <!-- ═══════════ TITLE SCREEN ═══════════ -->
+  <div id="title-screen" class="hidden" style="width:100%; flex-direction:column; align-items:center;">
+    <h1 class="game-title">⚔️ DUNGEON DELVE ⚔️</h1>
+    <p class="subtitle">A HACK &amp; SLASH ADVENTURE</p>
+    <div class="panel">
+      <h2>Choose Your Hero</h2>
+      <div class="class-grid" id="class-grid"></div>
+      <div class="class-info" id="class-info"></div>
+      <button class="btn-start" id="btn-start">ENTER THE DUNGEON</button>
+    </div>
+    <div class="controls-hint">🎮 Use WASD or Arrow Keys to move · Walk into enemies to fight!<br>5 floors of monsters, loot &amp; bosses await. Good luck, hero!</div>
+  </div>
 
 <!-- ═══════════ GAME SCREEN ═══════════ -->
 <div id="game-screen" style="display:none; width:100%; display:none; flex-direction:column; align-items:center;">
@@ -399,10 +456,10 @@
     </div>
     <div class="combat-log" id="combat-log"></div>
     <div class="action-grid">
-      <button class="action-btn atk" onclick="combatAttack()">⚔️ Attack</button>
-      <button class="action-btn abl" id="btn-ability" onclick="combatAbility()">✨ Ability</button>
-      <button class="action-btn heal" id="btn-potion" onclick="combatHeal()">🧪 Potion</button>
-      <button class="action-btn flee" onclick="combatFlee()">🏃 Flee</button>
+      <button class="action-btn atk" onclick="combatAttack()">⚔️ Attack<span class="key-hint">[1]</span></button>
+      <button class="action-btn abl" id="btn-ability" onclick="combatAbility()">✨ Ability<span class="key-hint">[2]</span></button>
+      <button class="action-btn heal" id="btn-potion" onclick="combatHeal()">🧪 Potion<span class="key-hint">[3]</span></button>
+      <button class="action-btn flee" onclick="combatFlee()">🏃 Flee<span class="key-hint">[4]</span></button>
     </div>
   </div>
 </div>
@@ -439,6 +496,7 @@
     <button class="replay-btn" onclick="goTitle()">🔄 Play Again</button>
   </div>
 </div>
+</div> <!-- /#dd-wrap -->
 
 <script>
 // ══════════════════════════════════════════════════════════════════
@@ -536,6 +594,61 @@ function showToast(msg, dur=2000) {
   t.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), dur);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AUDIO (lightweight synth SFX — no assets needed)
+// ══════════════════════════════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  return audioCtx;
+}
+function playTone(freq, dur, type='square', vol=0.08, delay=0) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g); g.connect(ctx.destination);
+  const t0 = ctx.currentTime + delay;
+  o.start(t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.stop(t0 + dur);
+}
+const sfx = {
+  hit: (crit) => playTone(crit?170:220, crit?0.18:0.1, 'square', crit?0.12:0.06),
+  heal: () => { playTone(523,0.12,'sine',0.07); playTone(659,0.15,'sine',0.07,0.08); },
+  ability: () => { playTone(330,0.1,'sawtooth',0.07); playTone(440,0.12,'sawtooth',0.07,0.08); },
+  hurt: () => playTone(120,0.15,'sawtooth',0.08),
+  loot: () => { playTone(660,0.08,'square',0.06); playTone(880,0.1,'square',0.06,0.07); playTone(1100,0.14,'square',0.06,0.14); },
+  levelUp: () => { [523,659,784,1047].forEach((f,i)=>playTone(f,0.15,'sine',0.08,i*0.1)); },
+  victory: () => { [523,659,784,988,1318].forEach((f,i)=>playTone(f,0.2,'sine',0.08,i*0.12)); },
+  defeat: () => { playTone(220,0.3,'sawtooth',0.1); playTone(160,0.4,'sawtooth',0.1,0.2); },
+  step: () => playTone(200,0.04,'square',0.02),
+  door: () => playTone(440,0.08,'triangle',0.05),
+};
+
+// ══════════════════════════════════════════════════════════════════
+// VISUAL JUICE — floating damage numbers & crit flashes
+// ══════════════════════════════════════════════════════════════════
+function spawnDamage(targetId, text, cls) {
+  const el = $(targetId);
+  if (!el) return;
+  const d = document.createElement('div');
+  d.className = 'dmg-float ' + cls;
+  d.textContent = text;
+  el.appendChild(d);
+  setTimeout(() => d.remove(), 800);
+}
+
+function flashCrit() {
+  const box = document.querySelector('#combat-screen .overlay-box');
+  box.classList.add('flash-crit');
+  setTimeout(() => box.classList.remove('flash-crit'), 300);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -738,15 +851,25 @@ function movePlayer(dx, dy) {
   renderMap();
 
   const chest = dungeon.chests.find(c=>c.x===nx&&c.y===ny&&!c.opened);
-  if (chest) { chest.opened=true; currentLoot=getLoot(player.floor); showLoot(); return; }
+  if (chest) { chest.opened=true; sfx.loot(); currentLoot=getLoot(player.floor); showLoot(); return; }
 
-  if (dungeon.shop&&dungeon.shop.x===nx&&dungeon.shop.y===ny) { openShop(); return; }
+  if (dungeon.shop&&dungeon.shop.x===nx&&dungeon.shop.y===ny) { sfx.door(); openShop(); return; }
 
-  if (nx===dungeon.stairsPos.x&&ny===dungeon.stairsPos.y) { goNextFloor(); }
+  if (nx===dungeon.stairsPos.x&&ny===dungeon.stairsPos.y) { sfx.door(); goNextFloor(); }
 }
 
 document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
+
+  // Combat shortcuts take priority while the combat overlay is open
+  if (!$('combat-screen').classList.contains('hidden')) {
+    if (k==='1'||k==='enter'||k===' ') { e.preventDefault(); combatAttack(); return; }
+    if (k==='2') { e.preventDefault(); if (!$('btn-ability').disabled) combatAbility(); return; }
+    if (k==='3') { e.preventDefault(); if (!$('btn-potion').disabled) combatHeal(); return; }
+    if (k==='4') { e.preventDefault(); combatFlee(); return; }
+    return;
+  }
+
   if (k==='arrowup'||k==='w') { e.preventDefault(); movePlayer(0,-1); }
   else if (k==='arrowdown'||k==='s') { e.preventDefault(); movePlayer(0,1); }
   else if (k==='arrowleft'||k==='a') { e.preventDefault(); movePlayer(-1,0); }
@@ -837,10 +960,15 @@ function enemyTurn() {
   combatLog.push(currentEnemy.name+' hits you for '+total+' damage!'+(crit?' CRITICAL!':''));
   if (player.abilityCooldown>0) player.abilityCooldown--;
 
+  sfx.hurt();
+  shakeEl('player-display');
+  spawnDamage('player-display', '-'+total, 'dmg'+(crit?' crit':''));
+  if (crit) flashCrit();
+
   if (player.hp <= 0) {
     player.hp = 0;
     renderCombat();
-    setTimeout(() => showEnd(false), 600);
+    setTimeout(() => showEnd(false), 350);
     return;
   }
   renderCombat();
@@ -852,13 +980,17 @@ function enemyDefeated() {
   player.totalGold += currentEnemy.gold;
   player.kills++;
   if (player.abilityCooldown>0) player.abilityCooldown--;
+  const wasBoss = currentEnemy.isBoss;
+  const leveled = player.xp >= player.xpNeeded;
   levelUp();
+  if (leveled) sfx.levelUp(); else sfx.loot();
 
   dungeon.monsters = dungeon.monsters.filter(m=>m.id!==currentEnemy.id);
   showToast(currentEnemy.emoji+' '+currentEnemy.name+' defeated! +'+currentEnemy.xp+'xp +'+currentEnemy.gold+'g');
 
-  if (currentEnemy.isBoss && player.floor >= FLOOR_COUNT) {
-    setTimeout(() => showEnd(true), 400);
+  if (wasBoss && player.floor >= FLOOR_COUNT) {
+    sfx.victory();
+    setTimeout(() => showEnd(true), 250);
     return;
   }
 
@@ -874,10 +1006,13 @@ function combatAttack() {
   const total = crit ? dmg*2 : dmg;
   currentEnemy.hp -= total;
   combatLog.push('You hit '+currentEnemy.name+' for '+total+' damage!'+(crit?' CRITICAL!':''));
+  sfx.hit(crit);
   shakeEl('enemy-display');
-  if (currentEnemy.hp<=0) { currentEnemy.hp=0; renderCombat(); setTimeout(enemyDefeated, 400); return; }
+  spawnDamage('enemy-display', '-'+total, 'dmg'+(crit?' crit':''));
+  if (crit) flashCrit();
+  if (currentEnemy.hp<=0) { currentEnemy.hp=0; renderCombat(); setTimeout(enemyDefeated, 250); return; }
   renderCombat();
-  setTimeout(enemyTurn, 500);
+  setTimeout(enemyTurn, 280);
 }
 
 function combatAbility() {
@@ -889,11 +1024,14 @@ function combatAbility() {
   else if (player.className==='Ranger') { dmg=Math.floor(player.atk*1.5); msg='Arrow Rain! '+dmg+' damage!'; player.abilityCooldown=2; }
   currentEnemy.hp -= dmg;
   combatLog.push(msg);
+  sfx.ability();
   shakeEl('enemy-display');
-  if (currentEnemy.hp<=0) { currentEnemy.hp=0; renderCombat(); setTimeout(enemyDefeated, 400); return; }
+  spawnDamage('enemy-display', '-'+dmg, 'crit');
+  flashCrit();
+  if (currentEnemy.hp<=0) { currentEnemy.hp=0; renderCombat(); setTimeout(enemyDefeated, 250); return; }
   renderCombat();
   if (player.className==='Knight') { combatLog.push(currentEnemy.name+' is stunned!'); renderCombat(); return; }
-  setTimeout(enemyTurn, 500);
+  setTimeout(enemyTurn, 280);
 }
 
 function combatHeal() {
@@ -901,8 +1039,10 @@ function combatHeal() {
   player.potions--;
   player.hp = Math.min(player.maxHp, player.hp+30);
   combatLog.push('You drink a potion and heal 30 HP!');
+  sfx.heal();
+  spawnDamage('player-display', '+30', 'heal');
   renderCombat();
-  setTimeout(enemyTurn, 500);
+  setTimeout(enemyTurn, 280);
 }
 
 function combatFlee() {
@@ -915,7 +1055,7 @@ function combatFlee() {
   } else {
     combatLog.push("Couldn't escape!");
     renderCombat();
-    setTimeout(enemyTurn, 500);
+    setTimeout(enemyTurn, 280);
   }
 }
 
@@ -993,6 +1133,7 @@ function equipLoot() {
 // END SCREEN
 // ══════════════════════════════════════════════════════════════════
 function showEnd(won) {
+  if (!won) sfx.defeat();
   $('combat-screen').classList.add('hidden');
   const box = $('end-box');
   box.style.background = 'var(--bg-panel)';
@@ -1010,19 +1151,51 @@ function goTitle() {
   showScreen('title');
   buildTitle();
 }
+
+// ══════════════════════════════════════════════════════════════════
+// INTRO SPLASH
+// ══════════════════════════════════════════════════════════════════
+function enterGame() {
+  $('intro-splash').classList.add('hidden');
+  showScreen('title');
+  buildTitle();
+}
+$('btn-enter').onclick = enterGame;
+document.addEventListener('keydown', e => {
+  if (!$('intro-splash').classList.contains('hidden') && (e.key===' '||e.key==='Enter')) {
+    e.preventDefault();
+    enterGame();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// FULLSCREEN TOGGLE
+// ══════════════════════════════════════════════════════════════════
+function toggleFullscreen() {
+  const el = $('dd-wrap');
+  const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!isFs) {
+    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+  }
+}
+['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev => {
+  document.addEventListener(ev, () => {
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+    $('btn-fullscreen').textContent = isFs ? '✕ Exit Fullscreen' : '⛶ Fullscreen';
+  });
+});
 </script>
 <script>
-(function(){
-  var btn=document.getElementById('jvdsNavToggle');
-  var nav=document.getElementById('jvdsMobileNav');
-  if(!btn||!nav)return;
-  function o(){nav.classList.add('open');btn.textContent='✕';}
-  function c(){nav.classList.remove('open');btn.textContent='☰';}
-  btn.addEventListener('click',function(e){e.stopPropagation();nav.classList.contains('open')?c():o();});
-  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',c);});
-  document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target))c();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')c();});
-})();
+function jvdsOpenStrip(){
+  document.getElementById('jvdsStrip').classList.add('open');
+  document.getElementById('jvdsTab').classList.add('hidden');
+}
+function jvdsCloseStrip(){
+  document.getElementById('jvdsStrip').classList.remove('open');
+  document.getElementById('jvdsTab').classList.remove('hidden');
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="cookie-consent.js"></script>
 
