@@ -20,7 +20,6 @@ const OG_MAP = {
     'echo_fruit_catch.html':         'Axo Fruit Catch.png',
     'gem_match.html':                'GemMatchCover.png',
     'gml_shooter_trainer_project.html': 'GmlCover.png',
-    'pips_night_sky.html':           'PIP Cover.png',
     'pip_star_connect.html':         'Pips_Star_Connect.png',
     'sky_high_squirt.html':          'SkyHighCover.png',
     'tiger_smash.html':              'TigerSmashCover.png',

@@ -342,8 +342,8 @@
       <div class="setting-hint">Swipe down · Down arrow</div>
     </div></div>
     <div class="setting-row"><div>
-      <div class="setting-label">🔀 Fork in the Path</div>
-      <div class="setting-hint">A stone wall blocks you ahead swipe left or right to turn. Left / Right arrows on desktop.</div>
+      <div class="setting-label">🔀 Switch Lanes</div>
+      <div class="setting-hint">Swipe left or right to dodge crystals across 3 lanes. Left / Right arrows on desktop.</div>
     </div></div>
     <div class="setting-row"><div>
       <div class="setting-label">✨ Dream Sparks</div>
@@ -436,6 +436,7 @@ const SFX = {
   spark(){ this._tone(900,'sine',0.13,0.005,0.07); this._tone(1200,'sine',0.06,0.005,0.05); },
   combo(n){ this._tone(600 + n*120,'sine',0.16,0.005,0.13); },
   slide(){ this._tone(180,'sine',0.09,0.01,0.10); },
+  nearMiss(){ this._tone(1100,'triangle',0.1,0.005,0.05); this._tone(1500,'triangle',0.07,0.04,0.08); },
   death(){
     const ac = getAC(); if(!ac) return;
     const buf = ac.createBuffer(1, ac.sampleRate*0.45, ac.sampleRate);
@@ -531,25 +532,24 @@ const game = {
   obstacles:[],
   nextSpawn:0,
 
-  // Fork state
-  // We model a fork as: a "wall z" that approaches the camera.
-  // Meanwhile, a previewLeft/previewRight path is shown behind the wall so
-  // the player can see which way to go.
-  fork:null,         // { z, warned } or null
-  nextForkAt:0,      // score at which next fork will be queued
-
-  // Camera whip (for visual turn effect)
-  whipT:0,           // countdown timer for the whip animation
-  whipDir:0,         // -1 for left, +1 for right, 0 none
-  WHIP_DURATION:500,
+  // Lanes — 0=left, 1=centre, 2=right
+  lane:1,
+  laneX:0,           // current visual offset, lerps toward LANE_OFFSETS[lane]
+  lastLaneChangeT:-Infinity,
+  nearMissFlashT:0,
+  nearMissTextT:0,
+  warnDir:0,
 
   distanceAccum:0,
   lastFrame:0,
   shakeT:0,
 
   _slideHintShown:false,
-  _forkHintShown:false,
+  _laneHintShown:false,
 };
+
+const LANE_COUNT = 3;
+const LANE_OFFSETS = [-1, 0, 1];
 
 const GRAVITY = 1800;
 const JUMP_V = -720;
@@ -600,7 +600,7 @@ function doAirJump(){
   game.vy = (c.ability === 'agile' ? JUMP_V_AGILE : JUMP_V) * 0.82;
   game.airJumps++;
   SFX.doubleJump();
-  spawnBurst(W/2, H - 130 + game.y, '#5ee1ff', 10);
+  spawnBurst(W/2 + game.laneX * (perspW(0)/3), H - 130 + game.y, '#5ee1ff', 10);
   if (db.haptics && navigator.vibrate) navigator.vibrate(8);
 }
 function doSlide(){
@@ -612,21 +612,11 @@ function doSlide(){
 }
 function doTurn(dir){
   if (!game.active) return;
-  // Only valid if there's a fork wall close enough to turn at
-  if (!game.fork) return;
-  // Must be close to the wall — within turn window (z < 0.22)
-  if (game.fork.z > 0.22) return;
-  if (game.whipT > 0) return; // already turning
-
-  // Commit: start the whip animation, clear the fork + obstacles
-  game.whipT = game.WHIP_DURATION;
-  game.whipDir = dir === 'L' ? -1 : 1;
-  game.fork = null;
-  // Clear any obstacles that were near the fork
-  game.obstacles = game.obstacles.filter(o => o.z > 0.3);
-  // Schedule next fork a bit in the future
-  game.nextForkAt = game.score + 80 + Math.random() * 60;
-  if (db.haptics && navigator.vibrate) navigator.vibrate(20);
+  const next = game.lane + (dir === 'L' ? -1 : 1);
+  if (next < 0 || next > LANE_COUNT - 1) return;
+  game.lane = next;
+  game.lastLaneChangeT = performance.now();
+  if (db.haptics && navigator.vibrate) navigator.vibrate(15);
 }
 
 /* Touch */
@@ -758,14 +748,16 @@ function startGame(){
   game.sliding = false; game.slideTimer = 0;
   game.obstacles = [];
   game.nextSpawn = performance.now() + 2500;  // 2.5s grace before first obstacle
-  game.fork = null;
-  game.nextForkAt = 120 + Math.random() * 40;  // first fork between 120-160m
-  game.whipT = 0;
-  game.whipDir = 0;
+  game.lane = 1;
+  game.laneX = 0;
+  game.lastLaneChangeT = -Infinity;
+  game.nearMissFlashT = 0;
+  game.nearMissTextT = 0;
+  game.warnDir = 0;
   game.distanceAccum = 0;
   game.shakeT = 0;
   game._slideHintShown = false;
-  game._forkHintShown = false;
+  game._laneHintShown = false;
   game.airJumps = 0;
   game.combo = 0;
   game.comboTimer = 0;
@@ -817,11 +809,11 @@ function update(dt, now){
     if (game.slideTimer <= 0) game.sliding = false;
   }
 
-  // Camera whip timer decay
-  if (game.whipT > 0){
-    game.whipT -= dt;
-    if (game.whipT < 0) { game.whipT = 0; game.whipDir = 0; }
-  }
+  // Lane switch — smoothly slide toward the target lane offset
+  const laneTarget = LANE_OFFSETS[game.lane];
+  const laneDiff = laneTarget - game.laneX;
+  if (Math.abs(laneDiff) > 0.001) game.laneX += laneDiff * Math.min(1, dts * 12);
+  else game.laneX = laneTarget;
 
   // Score
   const speed = forwardSpeed(game.score);
@@ -845,31 +837,10 @@ function update(dt, now){
   // Particles
   updateParticles(dt);
 
-  // Spawn a fork when we're due
-  if (!game.fork && game.score >= game.nextForkAt && game.whipT === 0){
-    game.fork = { z: 1.3, warned: false };
-  }
-
-  // Advance the fork wall toward the camera
   const zDecr = speed * dts * 0.13;
-  if (game.fork){
-    game.fork.z -= zDecr;
-    // Show hint first time the fork appears
-    if (game.fork.z < 0.9 && !game._forkHintShown){
-      game._forkHintShown = true;
-      showHint('SWIPE LEFT OR RIGHT', 'Choose your path at the wall');
-    }
-    // If player didn't turn by the time the wall is at the player plane — crash
-    if (game.fork.z <= 0.02){
-      gameOver();
-      return;
-    }
-  }
 
-  // Spawn obstacles — but NOT while a fork is imminent (within 0.8 depth)
-  // and NOT during grace period
-  const forkNear = game.fork && game.fork.z < 0.9;
-  if (!inGrace && !forkNear && game.score >= 10 && now >= game.nextSpawn){
+  // Spawn obstacles — not during grace period
+  if (!inGrace && game.score >= 10 && now >= game.nextSpawn){
     const slidesUnlocked = game.score >= 100;
     const sparkChance = c.ability === 'lucky' ? 0.35 : 0.26;
     let type;
@@ -883,7 +854,31 @@ function update(dt, now){
       showHint('SWIPE DOWN TO SLIDE', 'Vines hang from above');
     }
 
-    game.obstacles.push({ z: 1.1, type, wobble: Math.random()*Math.PI*2 });
+    const lane = type === 'vine' ? null : Math.floor(Math.random() * LANE_COUNT);
+    let vineLanes = null;
+    if (type === 'vine'){
+      // Past 200m, vines sometimes only block 1-2 lanes — switch lanes instead of sliding
+      if (game.score >= 200 && Math.random() < 0.5){
+        const blockCount = Math.random() < 0.5 ? 1 : 2;
+        vineLanes = [0,1,2].sort(()=>Math.random()-0.5).slice(0, blockCount);
+      } else {
+        vineLanes = [0,1,2];
+      }
+    }
+    game.obstacles.push({ z: 1.1, type, lane, lanes: vineLanes, wobble: Math.random()*Math.PI*2 });
+
+    // At higher scores, occasionally pair a crystal with a second crystal
+    // in another lane — always leaving at least one lane open. The chance
+    // ramps from 20% at 150m up to a cap of 50% by 450m.
+    if (type === 'crystal' && game.score >= 150){
+      const dualChance = Math.min(0.5, 0.20 + (game.score - 150) / 1000);
+      if (Math.random() < dualChance){
+        const otherLanes = [0,1,2].filter(l => l !== lane);
+        const lane2 = otherLanes[Math.floor(Math.random() * otherLanes.length)];
+        game.obstacles.push({ z: 1.1, type: 'crystal', lane: lane2, lanes: null, wobble: Math.random()*Math.PI*2 });
+      }
+    }
+
     game.nextSpawn = now + spawnGap(game.score);
   }
 
@@ -895,10 +890,17 @@ function update(dt, now){
 
     if (o.z <= -0.1){ game.obstacles.splice(i,1); continue; }
 
+    // First time a crystal is bearing down on the player's own lane, nudge them to switch
+    if (o.type === 'crystal' && !game._laneHintShown && o.lane === game.lane && o.z < 0.55 && o.z > 0.35){
+      game._laneHintShown = true;
+      showHint('SWIPE LEFT OR RIGHT', 'Switch lanes to dodge');
+    }
+
     // Collisions (skipped during grace)
     if (!inGrace && o.z < 0.1 && o.z > -0.02){
+      const sameLane = o.lane === game.lane;
       if (o.type === 'spark'){
-        if (!o._collected && o.z < 0.08){
+        if (sameLane && !o._collected && o.z < 0.08){
           o._collected = true;
           game.combo++;
           game.comboTimer = 2200;
@@ -906,21 +908,51 @@ function update(dt, now){
           game.runSparks += worth;
           SFX.spark();
           if (game.combo >= 2) SFX.combo(game.combo);
-          spawnBurst(W/2, perspY(o.z) - 55*(1-o.z), '#ffd04a', 12);
+          const ox = W/2 + LANE_OFFSETS[o.lane] * (perspW(o.z)/3);
+          spawnBurst(ox, perspY(o.z) - 55*(1-o.z), '#ffd04a', 12);
         }
       } else if (o.type === 'crystal'){
-        if (o.z < 0.09 * forgiveness && o.z > 0.0){
+        if (sameLane && o.z < 0.09 * forgiveness && o.z > 0.0){
           if (game.y > -50){ game.combo = 0; gameOver(); return; }
+        }
+        // Near miss: just changed lanes and a crystal whizzes past in the old lane
+        if (!o._nearMissChecked && o.z < 0.1 && o.z > 0.04){
+          o._nearMissChecked = true;
+          if (!sameLane && (now - game.lastLaneChangeT) < 600){
+            game.runSparks += 1;
+            game.nearMissFlashT = 350;
+            game.nearMissTextT = 900;
+            SFX.nearMiss();
+            const px = W/2 + game.laneX * (perspW(0)/3);
+            spawnBurst(px, H - 130 + game.y, '#5ee1ff', 8);
+          }
         }
       } else if (o.type === 'vine'){
         if (o.z < 0.09 * forgiveness && o.z > 0.0){
-          if (!game.sliding){ game.combo = 0; gameOver(); return; }
+          const blocked = o.lanes.includes(game.lane);
+          if (blocked && !game.sliding){ game.combo = 0; gameOver(); return; }
         }
       }
     }
   }
 
   if (game.shakeT > 0) game.shakeT -= dt;
+  if (game.nearMissFlashT > 0) game.nearMissFlashT -= dt;
+  if (game.nearMissTextT > 0) game.nearMissTextT -= dt;
+
+  // Edge warning — point toward a free lane if a crystal is about to hit the current one
+  game.warnDir = 0;
+  const threatenedLanes = new Set();
+  for (const o of game.obstacles){
+    if (o.type === 'crystal' && o.z < 0.6 && o.z > 0.2) threatenedLanes.add(o.lane);
+  }
+  if (threatenedLanes.has(game.lane)){
+    for (let d = 1; d < LANE_COUNT; d++){
+      const left = game.lane - d, right = game.lane + d;
+      if (left >= 0 && !threatenedLanes.has(left)){ game.warnDir = -1; break; }
+      if (right <= LANE_COUNT - 1 && !threatenedLanes.has(right)){ game.warnDir = 1; break; }
+    }
+  }
 }
 
 /* ═══ RENDERING ═══ */
@@ -934,46 +966,74 @@ function render(now){
 
   drawBackground(now);
 
-  // Whip transform: world slides horizontally + rotates during turn animation
-  let whipOffset = 0, whipRot = 0;
-  if (game.whipT > 0){
-    // progress 1 -> 0
-    const p = game.whipT / game.WHIP_DURATION;
-    // Ease out — the world zips the opposite way from the turn direction
-    whipOffset = game.whipDir * W * 0.9 * p * p;
-    whipRot = game.whipDir * 0.25 * p;
-  }
-
-  ctx.save();
-  ctx.translate(W/2 + sx + whipOffset, H*0.52 + sy);
-  ctx.rotate(whipRot);
-  ctx.translate(-W/2, -H*0.52);
-
-  drawPath(now);
-  drawFork(now);
-  drawObstacles(now);
-
-  ctx.restore();
-
-  // Player is rendered outside the camera rotation so they stay upright and centred
   ctx.save();
   ctx.translate(sx, sy);
+
+  drawPath(now);
+  drawObstacles(now);
   drawPlayer(now);
+
   ctx.restore();
 
   drawVignette();
   drawParticles();
-
-  // Fork prompt overlay
-  if (game.fork && game.fork.z < 0.9){
-    drawForkPrompt(game.fork.z, now);
-  }
+  drawNearMissFlash();
 
   drawComboDisplay();
   drawZoneLabel();
+  drawEdgeWarning(game.warnDir, now);
+  drawNearMissText();
 
   document.getElementById('scoreHUD').textContent = game.score + 'm';
   document.getElementById('sparkHUD').textContent = '✨ ' + game.runSparks;
+}
+
+/* Pulsing edge arrow pointing toward a free lane when a crystal is closing in */
+function drawEdgeWarning(dir, now){
+  if (!dir) return;
+  const pulse = 0.55 + Math.sin(now*0.012) * 0.45;
+  const x = dir < 0 ? 30 : W - 30;
+  const y = H * 0.55;
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = '#ff5470';
+  ctx.shadowColor = 'rgba(255,84,112,.85)';
+  ctx.shadowBlur = 16;
+  ctx.font = '800 30px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dir < 0 ? '←' : '→', x, y);
+  ctx.restore();
+}
+
+/* Brief screen-edge glow when the player dodges a crystal at the last moment */
+function drawNearMissFlash(){
+  if (game.nearMissFlashT <= 0) return;
+  const a = game.nearMissFlashT / 350;
+  ctx.save();
+  ctx.globalAlpha = a * 0.5;
+  ctx.strokeStyle = '#5ee1ff';
+  ctx.lineWidth = 12;
+  ctx.shadowColor = 'rgba(94,225,255,.9)';
+  ctx.shadowBlur = 30;
+  ctx.strokeRect(6, 6, W-12, H-12);
+  ctx.restore();
+}
+
+/* "NEAR MISS! +1" callout */
+function drawNearMissText(){
+  if (game.nearMissTextT <= 0) return;
+  const fade = Math.min(1, game.nearMissTextT / 300);
+  ctx.save();
+  ctx.globalAlpha = fade;
+  ctx.font = '800 20px Fredoka, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#5ee1ff';
+  ctx.shadowColor = 'rgba(94,225,255,.9)';
+  ctx.shadowBlur = 16;
+  ctx.fillText('NEAR MISS! +1 ✨', W/2, H * 0.3);
+  ctx.restore();
 }
 
 function drawComboDisplay(){
@@ -1106,13 +1166,12 @@ function perspScale(z){
   return Math.max(0.1, Math.pow(depth, 1.5) * 1.4 + 0.1);
 }
 
-/* Draw the path — but if a fork is close, cut it off at the wall */
+/* Draw the path */
 function drawPath(now){
   const cx = W/2;
   const horizonY = H * HORIZON_FRAC;
 
-  // If fork exists, path only goes from camera to fork.z (the wall position)
-  const pathEndZ = game.fork ? Math.max(0.02, game.fork.z) : 0;
+  const pathEndZ = 0;
   const pathStartZ = 1.1;
 
   const yF = perspY(pathStartZ);
@@ -1130,6 +1189,22 @@ function drawPath(now){
   ctx.lineTo(cx + wF/2, yF);
   ctx.lineTo(cx + wN/2, yN);
   ctx.lineTo(cx - wN/2, yN);
+  ctx.closePath();
+  ctx.fill();
+
+  // Highlight the lane the player currently occupies
+  const laneCenterFrac = game.laneX / 3;
+  const laneLeftFrac = laneCenterFrac - 1/6;
+  const laneRightFrac = laneCenterFrac + 1/6;
+  const lg = ctx.createLinearGradient(0, horizonY, 0, H);
+  lg.addColorStop(0, 'rgba(94,225,255,.02)');
+  lg.addColorStop(1, 'rgba(94,225,255,.16)');
+  ctx.fillStyle = lg;
+  ctx.beginPath();
+  ctx.moveTo(cx + wF*laneLeftFrac, yF);
+  ctx.lineTo(cx + wF*laneRightFrac, yF);
+  ctx.lineTo(cx + wN*laneRightFrac, yN);
+  ctx.lineTo(cx + wN*laneLeftFrac, yN);
   ctx.closePath();
   ctx.fill();
 
@@ -1165,163 +1240,18 @@ function drawPath(now){
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-}
 
-/* Draw the fork: solid wall at the dead end + two perpendicular side paths */
-function drawFork(now){
-  if (!game.fork) return;
-  const cx = W/2;
-  const z = game.fork.z;
-  if (z > 1.1 || z < 0) return;
-
-  const y = perspY(z);
-  const w = perspW(z);
-  const scale = perspScale(z);
-
-  // === SIDE PATHS (drawn first, behind the wall) ===
-  // Each side path extends sideways from the base of the wall
-  drawSidePath(cx - w/2, y, z, scale, 'L');
-  drawSidePath(cx + w/2, y, z, scale, 'R');
-
-  // === THE WALL ===
-  // Solid stone wall across the full lane width
-  const wallH = 160 * scale;
-  const wallTop = y - wallH;
-
-  // Wall shadow on the path in front
-  ctx.fillStyle = 'rgba(0,0,0,.45)';
-  ctx.beginPath();
-  ctx.ellipse(cx, y + 6, w/2, 10*scale, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // Stone wall body
-  const wallG = ctx.createLinearGradient(0, wallTop, 0, y);
-  wallG.addColorStop(0, '#4a3366');
-  wallG.addColorStop(0.5, '#2a1a40');
-  wallG.addColorStop(1, '#1a0a28');
-  ctx.fillStyle = wallG;
-  ctx.strokeStyle = 'rgba(167,139,250,.6)';
-  ctx.lineWidth = Math.max(1.5, 2*scale);
-  ctx.shadowColor = 'rgba(167,139,250,.5)';
-  ctx.shadowBlur = 18 * scale;
-
-  // Jagged rocky top
-  ctx.beginPath();
-  ctx.moveTo(cx - w/2, y);
-  ctx.lineTo(cx - w/2, wallTop + wallH*0.3);
-  ctx.lineTo(cx - w*0.35, wallTop + wallH*0.15);
-  ctx.lineTo(cx - w*0.2, wallTop);
-  ctx.lineTo(cx - w*0.05, wallTop + wallH*0.12);
-  ctx.lineTo(cx + w*0.1, wallTop + wallH*0.02);
-  ctx.lineTo(cx + w*0.25, wallTop + wallH*0.18);
-  ctx.lineTo(cx + w*0.4, wallTop + wallH*0.05);
-  ctx.lineTo(cx + w/2, wallTop + wallH*0.25);
-  ctx.lineTo(cx + w/2, y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Rocky crack details on the wall face
-  ctx.strokeStyle = 'rgba(0,0,0,.4)';
-  ctx.lineWidth = Math.max(1, 1.5*scale);
-  ctx.beginPath();
-  ctx.moveTo(cx - w*0.2, wallTop + wallH*0.3);
-  ctx.lineTo(cx - w*0.1, y - wallH*0.3);
-  ctx.lineTo(cx + w*0.05, y - wallH*0.1);
-  ctx.moveTo(cx + w*0.25, wallTop + wallH*0.4);
-  ctx.lineTo(cx + w*0.15, y - wallH*0.2);
-  ctx.stroke();
-
-  // Warning pulse as you get closer
-  const danger = z < 0.4 ? 1 : 0;
-  if (danger){
-    const pulse = 0.5 + Math.sin(now*0.012) * 0.3;
-    ctx.fillStyle = `rgba(255,84,112,${0.15 * pulse})`;
-    ctx.fillRect(cx - w/2, wallTop, w, wallH);
+  // Lane divider lines (between left/centre and centre/right lanes)
+  ctx.strokeStyle = 'rgba(255,255,255,.22)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([14, 18]);
+  for (const d of [-1/6, 1/6]){
+    ctx.beginPath();
+    ctx.moveTo(cx + wF * d, yF);
+    ctx.lineTo(cx + wN * d, yN);
+    ctx.stroke();
   }
-}
-
-/* Side path — a rectangle running perpendicular behind the wall,
-   showing the player where each branch goes */
-function drawSidePath(originX, originY, z, scale, dir){
-  const depth = 1 - z;
-  const p = Math.pow(depth, 1.5);
-
-  // Direction multiplier
-  const dx = dir === 'L' ? -1 : 1;
-
-  // Vanishing point for the side path (receding into the distance behind the wall)
-  const vpX = originX + dx * W * 0.5 * p;
-  const vpY = originY - H * 0.15 * p;
-
-  // Side path width at the near end (the fork junction) and the far end (vanishing)
-  const nearW = perspW(z) * 0.9;
-  const farW = nearW * 0.2;
-
-  ctx.save();
-
-  // Fill
-  const sg = ctx.createLinearGradient(originX, originY, vpX, vpY);
-  sg.addColorStop(0, 'rgba(94,225,255,.22)');
-  sg.addColorStop(1, 'rgba(94,225,255,.04)');
-  ctx.fillStyle = sg;
-
-  // Compute the two parallel edges of the side path
-  // The path runs from origin outward. Its "near" edge is a small segment at the junction,
-  // its "far" edge is a small segment at the vanishing point.
-  const angleSide = Math.atan2(vpY - originY, vpX - originX);
-  // Perpendicular direction (for width offset)
-  const perpX = -Math.sin(angleSide);
-  const perpY = Math.cos(angleSide);
-
-  // Near edge points
-  const nx1 = originX - perpX * nearW * 0.3;
-  const ny1 = originY - perpY * nearW * 0.3;
-  const nx2 = originX + perpX * nearW * 0.3;
-  const ny2 = originY + perpY * nearW * 0.3;
-  // Far edge points
-  const fx1 = vpX - perpX * farW * 0.3;
-  const fy1 = vpY - perpY * farW * 0.3;
-  const fx2 = vpX + perpX * farW * 0.3;
-  const fy2 = vpY + perpY * farW * 0.3;
-
-  ctx.beginPath();
-  ctx.moveTo(nx1, ny1);
-  ctx.lineTo(nx2, ny2);
-  ctx.lineTo(fx2, fy2);
-  ctx.lineTo(fx1, fy1);
-  ctx.closePath();
-  ctx.fill();
-
-  // Glowing edges
-  ctx.strokeStyle = 'rgba(94,225,255,.6)';
-  ctx.lineWidth = Math.max(1.5, 2*scale);
-  ctx.shadowColor = 'rgba(94,225,255,.7)';
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  ctx.moveTo(nx1, ny1); ctx.lineTo(fx1, fy1);
-  ctx.moveTo(nx2, ny2); ctx.lineTo(fx2, fy2);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Arrow on the side path indicating direction
-  if (z < 0.7){
-    const ax = originX + (vpX - originX) * 0.35;
-    const ay = originY + (vpY - originY) * 0.35;
-    const alpha = Math.min(1, (0.7 - z) * 2);
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#5ee1ff';
-    ctx.shadowColor = 'rgba(94,225,255,.8)';
-    ctx.shadowBlur = 12;
-    ctx.font = `800 ${Math.max(16, 26*scale)}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(dir === 'L' ? '←' : '→', ax, ay);
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-  }
-  ctx.restore();
+  ctx.setLineDash([]);
 }
 
 /* ─── Obstacles ─── */
@@ -1332,13 +1262,16 @@ function drawObstacles(now){
     if (o.z > 1.1 || o.z < -0.1) continue;
     const y = perspY(o.z);
     const scale = perspScale(o.z);
+    const x = o.lane != null ? cx + LANE_OFFSETS[o.lane] * (perspW(o.z)/3) : cx;
 
     if (o.type === 'spark'){
-      drawSpark(cx, y - 55 * (1-o.z), scale, now);
+      const sparkY = y - 55 * (1-o.z);
+      drawSparkTrail(x, sparkY, y);
+      drawSpark(x, sparkY, scale, now);
     } else if (o.type === 'crystal'){
-      drawCrystal(cx, y, scale, now, o.z);
+      drawCrystal(x, y, scale, now, o.z);
     } else if (o.type === 'vine'){
-      drawVine(cx, o.z, scale, now, o.wobble);
+      drawVine(cx, o.z, scale, now, o.wobble, o.lanes);
     }
   }
 }
@@ -1386,7 +1319,7 @@ function drawCrystal(x, y, scale, now, z){
   ctx.restore();
 }
 
-function drawVine(cx, z, scale, now, wobbleSeed){
+function drawVine(cx, z, scale, now, wobbleSeed, lanes){
   const y = perspY(z);
   const p = Math.pow(Math.max(0, 1-z), 1.5);
   const vineTopY = 0;
@@ -1395,7 +1328,7 @@ function drawVine(cx, z, scale, now, wobbleSeed){
   const danger = z < 0.3 ? 1 : 0;
   const pulse = danger ? (0.7 + Math.sin(now*0.015) * 0.3) : 1;
 
-  const xs = [cx - pathW*0.3, cx, cx + pathW*0.3];
+  const xs = lanes.map(lane => cx + LANE_OFFSETS[lane] * (pathW/3));
   for (let i=0;i<xs.length;i++){
     const x = xs[i];
     const wobble = Math.sin(now*0.002 + wobbleSeed + i) * 8 * p;
@@ -1434,11 +1367,25 @@ function drawVine(cx, z, scale, now, wobbleSeed){
     ctx.save();
     ctx.globalAlpha = 0.25 * (0.5 - z) * 2;
     ctx.fillStyle = '#ff5470';
-    ctx.beginPath();
-    ctx.ellipse(cx, y, pathW*0.35, 8 * scale, 0, 0, Math.PI*2);
-    ctx.fill();
+    for (const x of xs){
+      ctx.beginPath();
+      ctx.ellipse(x, y, (pathW/3) * 0.45, 8 * scale, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
     ctx.restore();
   }
+}
+
+/* Faint glow trail from a spark down to the path, marking its lane */
+function drawSparkTrail(x, sparkY, pathY){
+  if (pathY <= sparkY) return;
+  ctx.save();
+  const trail = ctx.createLinearGradient(x, sparkY, x, pathY);
+  trail.addColorStop(0, 'rgba(255,208,74,.22)');
+  trail.addColorStop(1, 'rgba(255,208,74,0)');
+  ctx.fillStyle = trail;
+  ctx.fillRect(x - 3, sparkY, 6, pathY - sparkY);
+  ctx.restore();
 }
 
 function drawSpark(x, y, scale, now){
@@ -1471,62 +1418,10 @@ function drawSpark(x, y, scale, now){
   ctx.restore();
 }
 
-/* Fork prompt UI — top of screen */
-function drawForkPrompt(z, now){
-  const p = Math.min(1, (0.9 - z) * 1.6);
-  if (p <= 0) return;
-  const y = H * 0.2;
-  const cx = W / 2;
-  const alpha = Math.min(0.95, p);
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-
-  // Background pill
-  const pillW = 220, pillH = 56;
-  ctx.fillStyle = 'rgba(10,6,32,.75)';
-  ctx.strokeStyle = 'rgba(255,84,112,.6)';
-  ctx.lineWidth = 2;
-  ctx.shadowColor = 'rgba(255,84,112,.5)';
-  ctx.shadowBlur = 18;
-  roundRect(cx - pillW/2, y - pillH/2, pillW, pillH, 14);
-  ctx.fill();
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Arrows + label
-  ctx.fillStyle = '#5ee1ff';
-  ctx.font = '800 30px Inter, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('←', cx - 72, y);
-  ctx.fillText('→', cx + 72, y);
-
-  ctx.fillStyle = '#ff5470';
-  ctx.font = '800 14px Inter, sans-serif';
-  ctx.fillText('TURN!', cx, y);
-
-  ctx.restore();
-}
-
-function roundRect(x, y, w, h, r){
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.lineTo(x+w-r, y);
-  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-  ctx.lineTo(x+w, y+h-r);
-  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-  ctx.lineTo(x+r, y+h);
-  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-  ctx.lineTo(x, y+r);
-  ctx.quadraticCurveTo(x, y, x+r, y);
-  ctx.closePath();
-}
-
 /* ─── Player: back-view axolotl in cloak ─── */
 function drawPlayer(now){
   const c = CHARS[db.selected];
-  const cx = W/2;
+  const cx = W/2 + game.laneX * (perspW(0)/3);
   const baseY = H - 130;
   const x = cx;
   const y = baseY + game.y;
@@ -1548,6 +1443,12 @@ function drawPlayer(now){
   ctx.translate(x, y);
   const bob = (game.grounded && !db.reducedMotion) ? Math.sin(now*0.012) * 2 : 0;
   ctx.translate(0, bob);
+
+  // Lean into lane changes
+  if (!db.reducedMotion){
+    const laneVel = LANE_OFFSETS[game.lane] - game.laneX;
+    ctx.rotate(Math.max(-0.35, Math.min(0.35, laneVel * 0.6)));
+  }
 
   if (game.sliding){
     ctx.scale(1.25, 0.55);
@@ -1644,7 +1545,7 @@ function gameOver(){
   game.combo = 0;
   game.shakeT = 24;
   SFX.death();
-  spawnBurst(W/2, H-130+game.y, '#ff5470', 18);
+  spawnBurst(W/2 + game.laneX * (perspW(0)/3), H-130+game.y, '#ff5470', 18);
   if (db.haptics && navigator.vibrate) navigator.vibrate([80, 40, 120]);
   db.sparks += game.runSparks;
   const isBest = game.score > db.best;
