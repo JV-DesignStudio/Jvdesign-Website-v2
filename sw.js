@@ -1,9 +1,11 @@
-// Quest Board Service Worker v3
-const CACHE='qb-v3';
+// JVDesignStudio Service Worker v4
+const CACHE='jvds-v4';
 const CORE=[
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.json',
+  '/style-shared.css',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/privacy-policy.html'
@@ -33,7 +35,7 @@ self.addEventListener('fetch',e=>{
     e.respondWith(
       fetch(e.request)
         .then(res=>{caches.open(CACHE).then(c=>c.put(e.request,res.clone()));return res;})
-        .catch(()=>caches.match(e.request).then(r=>r||caches.match('/index.html')))
+        .catch(()=>caches.match(e.request).then(r=>r||caches.match('/offline.html')))
     );
     return;
   }
@@ -44,7 +46,7 @@ self.addEventListener('fetch',e=>{
       return fetch(e.request).then(res=>{
         if(res.ok)caches.open(CACHE).then(c=>c.put(e.request,res.clone()));
         return res;
-      }).catch(()=>caches.match('/index.html'));
+      }).catch(()=>caches.match('/offline.html'));
     })
   );
 });

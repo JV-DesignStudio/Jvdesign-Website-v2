@@ -244,6 +244,7 @@
 </head>
 <body>
 <!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="index.html" class="logo-link">
@@ -333,8 +334,8 @@
   <h1 class="title" style="font-size:clamp(1.8rem,6vw,2.4rem)">How to <span class="accent">Play</span></h1>
   <div class="settings-panel" style="text-align:left">
     <div class="setting-row"><div>
-      <div class="setting-label">🟣 Jump</div>
-      <div class="setting-hint">Tap screen · Space / Up arrow</div>
+      <div class="setting-label">🟣 Jump / Double Jump</div>
+      <div class="setting-hint">Tap once to jump · Tap again mid-air to double jump</div>
     </div></div>
     <div class="setting-row"><div>
       <div class="setting-label">🟢 Slide</div>
@@ -402,12 +403,53 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   LITTLE STEPS v4 — Temple Run style
-   Jump · Slide · Turn at forks
+   LITTLE STEPS v5 — Sound · Particles · Zones · Double Jump · Combo
 ═══════════════════════════════════════════════════════════════ */
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
+
+/* ─── Audio ─── */
+let _ac = null;
+function getAC(){
+  if(!_ac){ try{ _ac = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(_ac && _ac.state==='suspended') _ac.resume();
+  return _ac;
+}
+['touchstart','mousedown','keydown'].forEach(ev=>
+  document.addEventListener(ev,()=>getAC(),{once:true,passive:true})
+);
+const SFX = {
+  _tone(freq, type, vol, attack, release){
+    const ac = getAC(); if(!ac) return;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = type; osc.frequency.setValueAtTime(freq, ac.currentTime);
+    gain.gain.setValueAtTime(0, ac.currentTime);
+    gain.gain.linearRampToValueAtTime(vol, ac.currentTime + attack);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + attack + release);
+    osc.start(); osc.stop(ac.currentTime + attack + release + 0.01);
+  },
+  jump(){ this._tone(300,'sine',0.15,0.01,0.12); this._tone(460,'sine',0.08,0.01,0.08); },
+  doubleJump(){ this._tone(500,'sine',0.12,0.01,0.10); this._tone(750,'sine',0.07,0.01,0.08); },
+  spark(){ this._tone(900,'sine',0.13,0.005,0.07); this._tone(1200,'sine',0.06,0.005,0.05); },
+  combo(n){ this._tone(600 + n*120,'sine',0.16,0.005,0.13); },
+  slide(){ this._tone(180,'sine',0.09,0.01,0.10); },
+  death(){
+    const ac = getAC(); if(!ac) return;
+    const buf = ac.createBuffer(1, ac.sampleRate*0.45, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.2);
+    const src = ac.createBufferSource(); src.buffer = buf;
+    const gain = ac.createGain();
+    src.connect(gain); gain.connect(ac.destination);
+    gain.gain.setValueAtTime(0.4, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime+0.45);
+    src.start();
+    this._tone(140,'sawtooth',0.22,0.01,0.35);
+  }
+};
 
 /* ─── Persistent state ─── */
 const db = {
@@ -434,16 +476,56 @@ const CHARS = {
   tiger:    { name:'Tiger Cub',       desc:'Lucky. +35% spark spawns.',         cost:1200, color:'#fb923c', accent:'#ffd0a6', cloakColor:'#5c2e0f', ability:'lucky' },
 };
 
+/* ─── Particles ─── */
+const particles = [];
+function spawnBurst(x, y, color, count){
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2;
+    const sp = 70 + Math.random()*130;
+    particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-50,
+      life:1, decay:1.6+Math.random()*1.4, size:2+Math.random()*3, color });
+  }
+}
+function updateParticles(dt){
+  const s = dt/1000;
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*s; p.y+=p.vy*s; p.vy+=220*s;
+    p.life-=p.decay*s;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size*Math.max(0,p.life),0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ─── Zone system ─── */
+const ZONE_NAMES = ['THE VOID','CYAN DRIFT','ROSE NEBULA','DEEP VOID','GOLDEN SHORE','STARFALL','CRYSTAL FIELDS','THE BEYOND'];
+const ZONE_TINTS = ['rgba(167,139,250,','rgba(94,225,255,','rgba(255,154,200,','rgba(100,70,240,','rgba(255,180,60,','rgba(60,200,180,','rgba(200,230,255,','rgba(180,100,255,'];
+
 /* ─── Game state ─── */
 const game = {
   active:false,
   score:0,
   runSparks:0,
-  startTime:0,       // for grace period
+  startTime:0,
 
   // Player
   y:0, vy:0, grounded:true,
+  airJumps:0,
   sliding:false, slideTimer:0,
+
+  // Combo
+  combo:0, comboTimer:0,
+
+  // Zone label
+  zoneLabel:'', zoneLabelT:0, _lastZone:-1,
 
   // Obstacles (on current straight section)
   obstacles:[],
@@ -508,12 +590,24 @@ function doJump(){
   game.grounded = false;
   game.sliding = false;
   game.slideTimer = 0;
+  game.airJumps = 0;
+  SFX.jump();
   if (db.haptics && navigator.vibrate) navigator.vibrate(12);
+}
+function doAirJump(){
+  if (!game.active || game.grounded || game.airJumps >= 1) return;
+  const c = CHARS[db.selected];
+  game.vy = (c.ability === 'agile' ? JUMP_V_AGILE : JUMP_V) * 0.82;
+  game.airJumps++;
+  SFX.doubleJump();
+  spawnBurst(W/2, H - 130 + game.y, '#5ee1ff', 10);
+  if (db.haptics && navigator.vibrate) navigator.vibrate(8);
 }
 function doSlide(){
   if (!game.active || !game.grounded || game.sliding) return;
   game.sliding = true;
   game.slideTimer = SLIDE_DURATION;
+  SFX.slide();
   if (db.haptics && navigator.vibrate) navigator.vibrate(10);
 }
 function doTurn(dir){
@@ -559,7 +653,7 @@ canvas.addEventListener('touchend', e=>{
       if (dy > 0) doSlide(); else doJump();
     }
   } else if (dt < 250 && adx < 25 && ady < 25){
-    doJump();
+    if (game.grounded) doJump(); else doAirJump();
   }
   tStartX = null;
 },{passive:true});
@@ -567,7 +661,7 @@ canvas.addEventListener('touchend', e=>{
 window.addEventListener('keydown', e=>{
   if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w'){
     e.preventDefault();
-    if (game.active) doJump();
+    if (game.active){ if (game.grounded) doJump(); else doAirJump(); }
     else if (document.getElementById('menuScreen').classList.contains('show')) startGame();
   } else if (e.key === 'ArrowDown' || e.key === 's'){
     e.preventDefault(); doSlide();
@@ -672,6 +766,13 @@ function startGame(){
   game.shakeT = 0;
   game._slideHintShown = false;
   game._forkHintShown = false;
+  game.airJumps = 0;
+  game.combo = 0;
+  game.comboTimer = 0;
+  game.zoneLabel = '';
+  game.zoneLabelT = 0;
+  game._lastZone = -1;
+  particles.length = 0;
 
   showScreen(null);
   document.getElementById('hud').classList.add('show');
@@ -709,7 +810,7 @@ function update(dt, now){
   if (!game.grounded){
     game.vy += GRAVITY * dts;
     game.y += game.vy * dts;
-    if (game.y >= 0){ game.y = 0; game.vy = 0; game.grounded = true; }
+    if (game.y >= 0){ game.y = 0; game.vy = 0; game.grounded = true; game.airJumps = 0; }
   }
   if (game.sliding){
     game.slideTimer -= dt;
@@ -729,6 +830,20 @@ function update(dt, now){
     game.score++;
     game.distanceAccum -= 1;
   }
+
+  // Combo timer decay
+  if (game.comboTimer > 0){ game.comboTimer -= dt; if (game.comboTimer <= 0) game.combo = 0; }
+
+  // Zone label trigger
+  if (game.zoneLabelT > 0) game.zoneLabelT -= dt;
+  const zoneNow = Math.floor(game.score / 200);
+  if (zoneNow !== game._lastZone){
+    game._lastZone = zoneNow;
+    if (game.score > 0){ game.zoneLabel = ZONE_NAMES[zoneNow % ZONE_NAMES.length]; game.zoneLabelT = 2800; }
+  }
+
+  // Particles
+  updateParticles(dt);
 
   // Spawn a fork when we're due
   if (!game.fork && game.score >= game.nextForkAt && game.whipT === 0){
@@ -785,15 +900,21 @@ function update(dt, now){
       if (o.type === 'spark'){
         if (!o._collected && o.z < 0.08){
           o._collected = true;
-          game.runSparks++;
+          game.combo++;
+          game.comboTimer = 2200;
+          const worth = game.combo >= 5 ? 3 : game.combo >= 3 ? 2 : 1;
+          game.runSparks += worth;
+          SFX.spark();
+          if (game.combo >= 2) SFX.combo(game.combo);
+          spawnBurst(W/2, perspY(o.z) - 55*(1-o.z), '#ffd04a', 12);
         }
       } else if (o.type === 'crystal'){
         if (o.z < 0.09 * forgiveness && o.z > 0.0){
-          if (game.y > -50){ gameOver(); return; }
+          if (game.y > -50){ game.combo = 0; gameOver(); return; }
         }
       } else if (o.type === 'vine'){
         if (o.z < 0.09 * forgiveness && o.z > 0.0){
-          if (!game.sliding){ gameOver(); return; }
+          if (!game.sliding){ game.combo = 0; gameOver(); return; }
         }
       }
     }
@@ -841,14 +962,51 @@ function render(now){
   ctx.restore();
 
   drawVignette();
+  drawParticles();
 
-  // Fork prompt overlay — draws the "← CHOOSE →" UI when fork is close
+  // Fork prompt overlay
   if (game.fork && game.fork.z < 0.9){
     drawForkPrompt(game.fork.z, now);
   }
 
+  drawComboDisplay();
+  drawZoneLabel();
+
   document.getElementById('scoreHUD').textContent = game.score + 'm';
   document.getElementById('sparkHUD').textContent = '✨ ' + game.runSparks;
+}
+
+function drawComboDisplay(){
+  if (game.combo < 2) return;
+  const fade = Math.min(1, game.comboTimer / 400);
+  ctx.save();
+  ctx.globalAlpha = fade;
+  const size = Math.min(30, 16 + game.combo * 2);
+  ctx.font = '800 ' + size + 'px Fredoka, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#ffd04a';
+  ctx.shadowColor = 'rgba(255,208,74,.9)';
+  ctx.shadowBlur = 18;
+  ctx.fillText('×' + game.combo + ' COMBO!', W/2, H * 0.28);
+  ctx.restore();
+}
+
+function drawZoneLabel(){
+  if (!game.zoneLabel || game.zoneLabelT <= 0) return;
+  let a = 1;
+  if (game.zoneLabelT > 2400) a = (2800 - game.zoneLabelT) / 400;
+  if (game.zoneLabelT < 500)  a = game.zoneLabelT / 500;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, a);
+  ctx.font = '700 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#5ee1ff';
+  ctx.shadowColor = 'rgba(94,225,255,.7)';
+  ctx.shadowBlur = 14;
+  ctx.fillText('— ' + game.zoneLabel + ' —', W/2, H * 0.36);
+  ctx.restore();
 }
 
 function drawBackground(now){
@@ -893,6 +1051,18 @@ function drawBackground(now){
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+
+  // Zone colour shift — drifts every 200m
+  if (game.score > 0 || game.active){
+    const zi = Math.floor(game.score / 200);
+    const zp = (game.score % 200) / 200;
+    const ca = ZONE_TINTS[zi % ZONE_TINTS.length];
+    const cb = ZONE_TINTS[(zi+1) % ZONE_TINTS.length];
+    ctx.fillStyle = ca + (0.10*(1-zp)) + ')';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = cb + (0.10*zp) + ')';
+    ctx.fillRect(0,0,W,H);
+  }
 
   for (const p of PLANETS){
     ctx.save();
@@ -1471,7 +1641,10 @@ function drawVignette(){
 
 function gameOver(){
   game.active = false;
+  game.combo = 0;
   game.shakeT = 24;
+  SFX.death();
+  spawnBurst(W/2, H-130+game.y, '#ff5470', 18);
   if (db.haptics && navigator.vibrate) navigator.vibrate([80, 40, 120]);
   db.sparks += game.runSparks;
   const isBest = game.score > db.best;
@@ -1518,11 +1691,11 @@ document.getElementById('menuBest').textContent = db.best;
             <a href="sitemap.html">Sitemap</a>
         </div>
         <nav class="footer-socials">
-            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
-            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener">YouTube</a>
-            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener">Itch.io</a>
-            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
-            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener">Ko-fi</a>
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="privacy-policy.html">Privacy Policy</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
@@ -1542,8 +1715,8 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+
+
 <!-- /BUILD:footer-content -->
 </body>
 </html>
