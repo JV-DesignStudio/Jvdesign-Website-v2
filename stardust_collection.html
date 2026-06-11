@@ -206,6 +206,8 @@
                 radial-gradient(ellipse 40% 30% at 20% 60%, rgba(112,163,167,0.08) 0%, transparent 70%),
                 radial-gradient(ellipse 30% 25% at 80% 30%, rgba(188,71,73,0.06) 0%, transparent 70%);
             pointer-events: none;
+            filter: hue-rotate(var(--nebula-shift, 0deg));
+            transition: filter 1.2s ease;
         }
 
         /* ══════════════════════════════════════
@@ -243,7 +245,7 @@
         .trail-dot {
             position: absolute;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(160,240,255,0.8), transparent);
+            background: radial-gradient(circle, var(--trail-color, rgba(160,240,255,0.8)), transparent);
             pointer-events: none;
             z-index: 14;
             animation: trail-fade 0.4s forwards;
@@ -449,6 +451,20 @@
         .hud-icon-btn:hover  { background: rgba(255,255,255,0.15); }
         .hud-icon-btn:active { transform: scale(0.92); }
 
+        #time-attack-display {
+            position: absolute;
+            top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 20;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.1rem; font-weight: 700;
+            color: #ffd700;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 9px;
+            padding: 4px 14px;
+        }
+        #time-attack-display.low { color: #ff5e5e; animation: pu-ind-in 0.2s ease; }
+
         /* ══════════════════════════════════════
            OVERLAY PANELS (pause / how-to-play)
         ══════════════════════════════════════ */
@@ -622,6 +638,175 @@
             25%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             80%  { opacity: 1; }
             100% { opacity: 0; transform: translate(-50%, -65%) scale(1.08); }
+        }
+
+        /* ══════════════════════════════════════
+           BOSS WAVE TOAST
+        ══════════════════════════════════════ */
+        .boss-toast {
+            position: absolute;
+            top: 18%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            font-family: 'Fredoka', cursive;
+            font-size: 1.3rem; font-weight: 700;
+            color: #ff5e5e;
+            text-shadow: 0 0 20px rgba(255,94,94,0.8);
+            background: rgba(54,0,0,0.88);
+            border: 2px solid rgba(255,94,94,0.5);
+            border-radius: 16px;
+            padding: 12px 26px;
+            z-index: 25;
+            pointer-events: none;
+            white-space: nowrap;
+            text-align: center;
+            animation: level-toast 1.8s ease-out forwards;
+        }
+
+        /* ══════════════════════════════════════
+           ACHIEVEMENT TOAST
+        ══════════════════════════════════════ */
+        .ach-toast {
+            position: absolute;
+            top: 14px; left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            display: flex; align-items: center; gap: 10px;
+            font-family: 'Fredoka', cursive;
+            background: rgba(14,0,54,0.95);
+            border: 2px solid #ffd700;
+            border-radius: 14px;
+            padding: 10px 18px;
+            color: var(--beige);
+            box-shadow: 0 0 30px rgba(255,215,0,0.4);
+            z-index: 40;
+            white-space: nowrap;
+            opacity: 0;
+            animation: ach-toast 3.2s ease-out forwards;
+        }
+        .ach-toast .ach-icon { font-size: 1.6rem; }
+        .ach-toast .ach-text { text-align: left; line-height: 1.25; }
+        .ach-toast .ach-title { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd700; }
+        .ach-toast .ach-name  { font-size: 0.95rem; font-weight: 700; }
+        @keyframes ach-toast {
+            0%   { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        /* ══════════════════════════════════════
+           SHOP / SKINS
+        ══════════════════════════════════════ */
+        .shop-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; margin-bottom: 18px;
+        }
+        .skin-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, transform 0.1s;
+            text-align: center;
+        }
+        .skin-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); }
+        .skin-card.equipped { border-color: #ffd700; background: rgba(255,215,0,0.08); }
+        .skin-card .skin-emoji { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .skin-card .skin-name { font-size: 0.78rem; font-weight: 700; color: var(--beige); }
+        .skin-card .skin-cost { font-size: 0.68rem; color: rgba(240,234,214,0.5); margin-top: 2px; }
+        .skin-card .skin-status { font-size: 0.68rem; color: #ffd700; margin-top: 2px; font-weight: 700; }
+
+        /* ══════════════════════════════════════
+           ACHIEVEMENTS LIST
+        ══════════════════════════════════════ */
+        .ach-list { text-align: left; margin-bottom: 18px; max-height: 320px; overflow-y: auto; }
+        .ach-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            font-size: 0.83rem;
+        }
+        .ach-row:last-child { border-bottom: none; }
+        .ach-row .ach-row-icon { font-size: 1.4rem; flex-shrink: 0; filter: grayscale(1); opacity: 0.35; }
+        .ach-row.unlocked .ach-row-icon { filter: none; opacity: 1; }
+        .ach-row .ach-row-name { font-weight: 700; color: var(--beige); }
+        .ach-row.unlocked .ach-row-name { color: #ffd700; }
+        .ach-row .ach-row-desc { font-size: 0.7rem; color: rgba(240,234,214,0.45); margin-top: 1px; }
+
+        /* ══════════════════════════════════════
+           MODE SELECTOR (start screen)
+        ══════════════════════════════════════ */
+        .mode-select {
+            display: flex; gap: 8px; justify-content: center;
+            margin: 14px 0 4px;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            font-family: 'Fredoka', cursive;
+            font-size: 0.75rem; font-weight: 700;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.05);
+            color: rgba(240,234,214,0.7);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .mode-btn.active {
+            border-color: var(--teal);
+            background: rgba(112,163,167,0.2);
+            color: var(--beige);
+        }
+
+        /* ══════════════════════════════════════
+           LEADERBOARD
+        ══════════════════════════════════════ */
+        .leaderboard-list { text-align: left; margin: 14px 0; }
+        .lb-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.8rem; padding: 5px 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            margin-bottom: 4px;
+        }
+        .lb-row .lb-rank { font-weight: 800; color: #ffd700; width: 22px; flex-shrink: 0; }
+        .lb-row .lb-mode { font-size: 0.65rem; color: rgba(240,234,214,0.4); text-transform: capitalize; }
+        .lb-row .lb-score { font-weight: 700; color: var(--beige); }
+
+        /* ══════════════════════════════════════
+           SHARE / BOOK UNLOCK
+        ══════════════════════════════════════ */
+        .share-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: 'Fredoka', cursive;
+            font-size: 0.85rem; font-weight: 700;
+            padding: 8px 16px; border-radius: 999px;
+            border: 1.5px solid rgba(112,163,167,0.4);
+            background: rgba(112,163,167,0.1);
+            color: var(--beige);
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .share-btn:hover { background: rgba(112,163,167,0.2); }
+        .book-unlock {
+            margin-top: 14px; padding: 12px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(124,58,191,0.25), rgba(76,29,149,0.25));
+            border: 1.5px solid rgba(155,89,182,0.4);
+            font-size: 0.78rem; line-height: 1.5;
+        }
+        .book-unlock a { color: #f5a623; font-weight: 700; }
+
+        /* ══════════════════════════════════════
+           FIRE TRAIL (combo intensity)
+        ══════════════════════════════════════ */
+        .trail-dot.combo-fire {
+            background: radial-gradient(circle, rgba(255,180,80,0.95), rgba(255,80,40,0.4) 60%, transparent);
+            box-shadow: 0 0 10px rgba(255,140,40,0.8);
+        }
+        .trail-dot.combo-fire-hot {
+            background: radial-gradient(circle, rgba(255,255,180,1), rgba(255,90,30,0.6) 55%, transparent);
+            box-shadow: 0 0 16px rgba(255,160,40,1);
         }
 
         /* ══════════════════════════════════════
@@ -975,6 +1160,10 @@
             <span class="score-label">🏆 Best</span>
             <span class="score-value" id="high-score-display">0</span>
         </div>
+        <div class="score-block">
+            <span class="score-label">💠 Shards</span>
+            <span class="score-value" id="shards-display">0</span>
+        </div>
     </div>
 
     <!-- Game Canvas -->
@@ -985,7 +1174,10 @@
             <button class="hud-icon-btn" id="sfx-btn" title="Toggle sound effects" aria-label="Toggle sound effects">🔊</button>
             <button class="hud-icon-btn" id="music-btn" title="Toggle music" aria-label="Toggle music">🎵</button>
             <button class="hud-icon-btn" id="howto-btn" title="How to play" aria-label="How to play">❓</button>
+            <button class="hud-icon-btn" id="ach-btn" title="Achievements" aria-label="Achievements">🏆</button>
+            <button class="hud-icon-btn" id="shop-btn" title="Ship shop" aria-label="Ship shop">🛒</button>
         </div>
+        <div id="time-attack-display" style="display:none;"></div>
         <div id="player">🌟</div>
         <div id="pu-indicators"></div>
         <div id="message-box">
@@ -1021,6 +1213,8 @@
                 </div>
                 <button class="overlay-btn primary" onclick="window.togglePause()">▶️ Resume</button>
                 <button class="overlay-btn secondary" onclick="window.howToPlay()">❓ How to Play</button>
+                <button class="overlay-btn secondary" onclick="window.openAchievements()">🏆 Achievements</button>
+                <button class="overlay-btn secondary" onclick="window.openShop()">🛒 Ship Shop</button>
                 <button class="overlay-btn secondary" onclick="window.quitToMenu()">🏠 Main Menu</button>
             </div>
         </div>
@@ -1040,6 +1234,28 @@
                     <div class="howto-row"><span class="howto-emoji">⏸️</span><span><strong>Pause</strong> anytime with the pause button or the <strong>P</strong> / <strong>Esc</strong> key.</span></div>
                 </div>
                 <button class="overlay-btn primary" onclick="window.closeHowTo()">Got it!</button>
+            </div>
+        </div>
+
+        <!-- Achievements overlay -->
+        <div id="ach-overlay" class="overlay-panel off">
+            <div class="overlay-card">
+                <span class="ov-emoji">🏆</span>
+                <h2>Achievements</h2>
+                <p class="ov-sub">Track your progress across the cosmos.</p>
+                <div class="ach-list" id="ach-list"></div>
+                <button class="overlay-btn primary" onclick="window.closeAchievements()">Close</button>
+            </div>
+        </div>
+
+        <!-- Shop overlay -->
+        <div id="shop-overlay" class="overlay-panel off">
+            <div class="overlay-card">
+                <span class="ov-emoji">🛒</span>
+                <h2>Ship Shop</h2>
+                <p class="ov-sub">Spend Stardust Shards on new ship skins. <strong id="shop-shards-val">0</strong> 💠 available.</p>
+                <div class="shop-grid" id="shop-grid"></div>
+                <button class="overlay-btn primary" onclick="window.closeShop()">Close</button>
             </div>
         </div>
     </div>
@@ -1196,6 +1412,40 @@ document.addEventListener('DOMContentLoaded',()=>{
     const BASE_SCROLL_SPEED = 3;
     const HIGH_SCORE_KEY    = 'stardust_high_score_v2';
     const BASE_SPAWN_INTERVAL = 58;
+    const TIME_ATTACK_DURATION = 60; // seconds
+
+    /* ── PERSISTENCE KEYS ── */
+    const SHARDS_KEY        = 'stardust_shards_total';
+    const ACH_KEY           = 'stardust_achievements';
+    const OWNED_SKINS_KEY   = 'stardust_owned_skins';
+    const EQUIPPED_SKIN_KEY = 'stardust_equipped_skin';
+    const LEADERBOARD_KEY   = 'stardust_leaderboard';
+    const BOOK_UNLOCK_KEY   = 'stardust_book_unlock_seen';
+    const BOOK_UNLOCK_SCORE = 300;
+
+    /* ── SHIP SKINS ── */
+    const SKINS = [
+        { id:'classic', emoji:'🌟', name:'Classic Star', cost:0,   trail:'rgba(160,240,255,0.8)' },
+        { id:'comet',   emoji:'☄️', name:'Comet',        cost:50,  trail:'rgba(255,140,80,0.8)' },
+        { id:'crystal', emoji:'🔷', name:'Crystal',      cost:100, trail:'rgba(0,191,165,0.8)' },
+        { id:'moon',    emoji:'🌙', name:'Moon',         cost:120, trail:'rgba(200,200,255,0.8)' },
+        { id:'galaxy',  emoji:'🌀', name:'Galaxy Spiral',cost:150, trail:'rgba(155,89,182,0.8)' },
+        { id:'sun',     emoji:'☀️', name:'Solar Flare',  cost:200, trail:'rgba(255,215,0,0.8)' },
+    ];
+
+    /* ── ACHIEVEMENTS ── */
+    const ACHIEVEMENTS = [
+        { id:'first_flight', icon:'🚀', name:'First Flight',    desc:'Complete your first run' },
+        { id:'survivor_60',  icon:'⏱️', name:'Survivor',        desc:'Survive 60 seconds in one run' },
+        { id:'combo_10',     icon:'🔥', name:'Combo Master',    desc:'Reach a x10 combo' },
+        { id:'nova',         icon:'🌟', name:'Nova Hunter',     desc:'Collect a Stardust Nova' },
+        { id:'score_100',    icon:'✨', name:'Stardust Novice', desc:'Score 100 in one run' },
+        { id:'score_500',    icon:'💎', name:'Stardust Adept',  desc:'Score 500 in one run' },
+        { id:'score_1000',   icon:'👑', name:'Stardust Master', desc:'Score 1000 in one run' },
+        { id:'flawless',     icon:'🛡️', name:'Flawless',       desc:'Score 100+ without losing a life' },
+        { id:'shield_block', icon:'🔰', name:'Shield Breaker',  desc:'Block a hazard with your shield' },
+        { id:'shopper',      icon:'🛍️', name:'Style Icon',     desc:'Equip a new ship skin' },
+    ];
 
     /* ── SPAWN DEFINITIONS ── */
     const SPAWN_DEFS = [
@@ -1278,6 +1528,32 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Trail
     let trailTimer = null;
 
+    // Shards / progression
+    let totalShards = 0;
+    let runShardsEarned = 0;
+
+    // Achievements
+    let unlockedAchievements = new Set();
+    let achToastQueue = [];
+    let achToastShowing = false;
+
+    // Skins
+    let ownedSkins   = ['classic'];
+    let equippedSkin = 'classic';
+
+    // Game modes
+    let currentMode = 'classic';
+    let timeAttackRemaining = TIME_ATTACK_DURATION;
+    let timeAttackTimer = null;
+
+    // Boss waves
+    let bossWaveActive = false;
+    let bossWaveUntil  = 0;
+
+    // Per-run tracking
+    let shieldBlockedThisRun = false;
+    let tookDamageThisRun    = false;
+
     /* ══════════════════════════════════════
        DOM REFS
     ══════════════════════════════════════ */
@@ -1301,6 +1577,15 @@ document.addEventListener('DOMContentLoaded',()=>{
     const pauseMusicToggle = document.getElementById('pause-music-toggle');
     const pauseScoreVal     = document.getElementById('pause-score-val');
     const pauseBestComboVal = document.getElementById('pause-best-combo-val');
+    const shardsEl       = document.getElementById('shards-display');
+    const achBtn         = document.getElementById('ach-btn');
+    const shopBtn        = document.getElementById('shop-btn');
+    const achOverlay     = document.getElementById('ach-overlay');
+    const shopOverlay    = document.getElementById('shop-overlay');
+    const achList        = document.getElementById('ach-list');
+    const shopGrid       = document.getElementById('shop-grid');
+    const shopShardsVal  = document.getElementById('shop-shards-val');
+    const timeAttackDisplay = document.getElementById('time-attack-display');
 
     /* ══════════════════════════════════════
        AUDIO
@@ -1359,6 +1644,181 @@ document.addEventListener('DOMContentLoaded',()=>{
         saveSetting(MUSIC_KEY, musicEnabled);
         if (musicEnabled) startMusic(); else stopMusic();
         syncSettingsUI();
+    }
+
+    /* ══════════════════════════════════════
+       SHARDS (persistent currency)
+    ══════════════════════════════════════ */
+    function loadShards() {
+        try { totalShards = parseInt(localStorage.getItem(SHARDS_KEY) || '0', 10) || 0; } catch(e) { totalShards = 0; }
+        renderShards();
+    }
+    function saveShards() {
+        try { localStorage.setItem(SHARDS_KEY, totalShards); } catch(e) {}
+    }
+    function addShards(amount) {
+        if (amount <= 0) return;
+        totalShards += amount;
+        saveShards();
+        renderShards();
+    }
+    function renderShards() {
+        if (shardsEl) shardsEl.textContent = totalShards;
+        if (shopShardsVal) shopShardsVal.textContent = totalShards;
+    }
+
+    /* ══════════════════════════════════════
+       ACHIEVEMENTS
+    ══════════════════════════════════════ */
+    function loadAchievements() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(ACH_KEY) || '[]');
+            unlockedAchievements = new Set(Array.isArray(raw) ? raw : []);
+        } catch(e) { unlockedAchievements = new Set(); }
+    }
+    function saveAchievements() {
+        try { localStorage.setItem(ACH_KEY, JSON.stringify([...unlockedAchievements])); } catch(e) {}
+    }
+    function unlockAchievement(id) {
+        if (unlockedAchievements.has(id)) return;
+        unlockedAchievements.add(id);
+        saveAchievements();
+        const def = ACHIEVEMENTS.find(a => a.id === id);
+        if (def) queueAchievementToast(def);
+        if (achOverlay && !achOverlay.classList.contains('off')) renderAchievementsList();
+    }
+    function queueAchievementToast(def) {
+        achToastQueue.push(def);
+        if (!achToastShowing) showNextAchievementToast();
+    }
+    function showNextAchievementToast() {
+        const def = achToastQueue.shift();
+        if (!def) { achToastShowing = false; return; }
+        achToastShowing = true;
+        const el = document.createElement('div');
+        el.className = 'ach-toast';
+        el.innerHTML = `<span class="ach-icon">${def.icon}</span><span class="ach-text"><span class="ach-title">Achievement Unlocked</span><br><span class="ach-name">${def.name}</span></span>`;
+        gameArea.appendChild(el);
+        playLevelUp();
+        setTimeout(() => {
+            el.remove();
+            showNextAchievementToast();
+        }, 3200);
+    }
+    function renderAchievementsList() {
+        achList.innerHTML = ACHIEVEMENTS.map(a => {
+            const unlocked = unlockedAchievements.has(a.id);
+            return `<div class="ach-row ${unlocked ? 'unlocked' : ''}">
+                <span class="ach-row-icon">${a.icon}</span>
+                <span><span class="ach-row-name">${a.name}</span><span class="ach-row-desc">${a.desc}</span></span>
+            </div>`;
+        }).join('');
+    }
+    window.openAchievements = function() {
+        renderAchievementsList();
+        achOverlay.classList.remove('off');
+    };
+    window.closeAchievements = function() {
+        achOverlay.classList.add('off');
+    };
+
+    /* ══════════════════════════════════════
+       SKINS / SHOP
+    ══════════════════════════════════════ */
+    function loadSkins() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(OWNED_SKINS_KEY) || '["classic"]');
+            ownedSkins = Array.isArray(raw) && raw.length ? raw : ['classic'];
+        } catch(e) { ownedSkins = ['classic']; }
+        try {
+            equippedSkin = localStorage.getItem(EQUIPPED_SKIN_KEY) || 'classic';
+        } catch(e) { equippedSkin = 'classic'; }
+        if (!ownedSkins.includes(equippedSkin)) equippedSkin = 'classic';
+        applySkin();
+    }
+    function saveSkins() {
+        try {
+            localStorage.setItem(OWNED_SKINS_KEY, JSON.stringify(ownedSkins));
+            localStorage.setItem(EQUIPPED_SKIN_KEY, equippedSkin);
+        } catch(e) {}
+    }
+    function applySkin() {
+        const skin = SKINS.find(s => s.id === equippedSkin) || SKINS[0];
+        player.textContent = skin.emoji;
+        gameArea.style.setProperty('--trail-color', skin.trail);
+    }
+    window.buySkin = function(id) {
+        const skin = SKINS.find(s => s.id === id);
+        if (!skin || ownedSkins.includes(id)) return;
+        if (totalShards < skin.cost) return;
+        totalShards -= skin.cost;
+        ownedSkins.push(id);
+        saveShards();
+        saveSkins();
+        renderShards();
+        renderShop();
+    };
+    window.equipSkin = function(id) {
+        if (!ownedSkins.includes(id)) return;
+        equippedSkin = id;
+        saveSkins();
+        applySkin();
+        renderShop();
+        if (ownedSkins.length > 1) unlockAchievement('shopper');
+    };
+    function renderShop() {
+        shopGrid.innerHTML = SKINS.map(s => {
+            const owned = ownedSkins.includes(s.id);
+            const equipped = equippedSkin === s.id;
+            let status;
+            if (equipped) status = '<div class="skin-status">Equipped</div>';
+            else if (owned) status = '<div class="skin-status">Owned</div>';
+            else status = `<div class="skin-cost">💠 ${s.cost}</div>`;
+            const action = equipped ? '' : (owned ? `window.equipSkin('${s.id}')` : `window.buySkin('${s.id}')`);
+            return `<div class="skin-card ${equipped ? 'equipped' : ''}" ${action ? `onclick="${action}"` : ''}>
+                <span class="skin-emoji">${s.emoji}</span>
+                <div class="skin-name">${s.name}</div>
+                ${status}
+            </div>`;
+        }).join('');
+        renderShards();
+    }
+    window.openShop = function() {
+        renderShop();
+        shopOverlay.classList.remove('off');
+    };
+    window.closeShop = function() {
+        shopOverlay.classList.add('off');
+    };
+
+    /* ══════════════════════════════════════
+       LEADERBOARD
+    ══════════════════════════════════════ */
+    function loadLeaderboard() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+            return Array.isArray(raw) ? raw : [];
+        } catch(e) { return []; }
+    }
+    function addLeaderboardEntry(score, mode) {
+        const board = loadLeaderboard();
+        board.push({ score, mode, date: new Date().toISOString().slice(0,10) });
+        board.sort((a,b) => b.score - a.score);
+        const top = board.slice(0, 5);
+        try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(top)); } catch(e) {}
+        return top;
+    }
+    function renderLeaderboardHTML(board) {
+        if (!board.length) return '';
+        const modeNames = { classic:'Classic', zen:'Zen', timeattack:'Time Attack' };
+        const rows = board.map((e, i) => `
+            <div class="lb-row">
+                <span class="lb-rank">#${i+1}</span>
+                <span class="lb-mode">${modeNames[e.mode] || e.mode}</span>
+                <span class="lb-score">${e.score}</span>
+            </div>
+        `).join('');
+        return `<div class="leaderboard-list"><div class="ov-stat-lbl" style="margin-bottom:6px;">🏆 Top Runs</div>${rows}</div>`;
     }
 
     /* ══════════════════════════════════════
@@ -1431,8 +1891,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     function spawnTrail() {
         if (!gameActive) return;
         const dot = document.createElement('div');
-        dot.className = 'trail-dot';
-        const size = Math.random() * 10 + 6;
+        let cls = 'trail-dot';
+        let size = Math.random() * 10 + 6;
+        if (comboCount >= 10) { cls += ' combo-fire-hot'; size += 6; }
+        else if (comboCount >= 5) { cls += ' combo-fire'; size += 3; }
+        dot.className = cls;
         dot.style.cssText = `
             width:${size}px; height:${size}px;
             left:${playerX + playerW/2 - size/2}px;
@@ -1490,6 +1953,19 @@ document.addEventListener('DOMContentLoaded',()=>{
         gameArea.appendChild(el);
         setTimeout(() => el.remove(), 1800);
         playLevelUp();
+
+        // Shift the nebula hue with each level
+        gameArea.style.setProperty('--nebula-shift', `${((level - 1) * 35) % 360}deg`);
+    }
+
+    /* Boss wave warning */
+    function showBossToast() {
+        const el = document.createElement('div');
+        el.className = 'boss-toast';
+        el.innerHTML = `⚠️ Comet Swarm Incoming!`;
+        gameArea.appendChild(el);
+        setTimeout(() => el.remove(), 1800);
+        playTone(220, 'sawtooth', 0.4, 0.5);
     }
 
     /* Screen shake */
@@ -1502,7 +1978,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     /* Lives display */
     function renderLives() {
-        livesEl.innerHTML = '❤️'.repeat(currentLives) + '🤍'.repeat(MAX_LIVES - currentLives);
+        if (currentMode === 'zen') {
+            livesEl.textContent = '∞';
+        } else {
+            livesEl.innerHTML = '❤️'.repeat(currentLives) + '🤍'.repeat(MAX_LIVES - currentLives);
+        }
     }
 
     /* Score display */
@@ -1567,6 +2047,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderCombo();
         if (comboCount > 1) playCombo(Math.min(comboCount, 8));
         comboTimer = setTimeout(resetCombo, COMBO_WINDOW);
+        if (maxCombo >= 10) unlockAchievement('combo_10');
     }
     function resetCombo() {
         comboCount = 0;
@@ -1583,12 +2064,28 @@ document.addEventListener('DOMContentLoaded',()=>{
        LIVES / DAMAGE
     ══════════════════════════════════════ */
     function loseLife() {
-        if (isInvincible || !gameActive || currentLives <= 0) return;
-        currentLives--;
-        renderLives();
+        if (isInvincible || !gameActive) return;
+        if (currentMode !== 'zen' && currentLives <= 0) return;
+        tookDamageThisRun = true;
         playDamage();
         shakeScreen();
         resetCombo();
+        if (navigator.vibrate) navigator.vibrate(120);
+
+        if (currentMode === 'zen') {
+            // Zen mode: no lives lost, just a brief invincibility flash
+            isInvincible = true;
+            player.classList.add('damaged');
+            setTimeout(() => {
+                isInvincible = false;
+                player.classList.remove('damaged');
+                updatePlayerFX();
+            }, 1000);
+            return;
+        }
+
+        currentLives--;
+        renderLives();
 
         if (currentLives <= 0) {
             gameOver();
@@ -1647,18 +2144,19 @@ document.addEventListener('DOMContentLoaded',()=>{
     /* ══════════════════════════════════════
        OBJECT SPAWNING
     ══════════════════════════════════════ */
-    function weightedRandom() {
-        const total = SPAWN_DEFS.reduce((s,d) => s + d.weight, 0);
+    function weightedRandom(favorObstacles=false) {
+        const weight = d => favorObstacles && d.isObstacle ? d.weight * 3 : d.weight;
+        const total = SPAWN_DEFS.reduce((s,d) => s + weight(d), 0);
         let r = Math.random() * total;
         for (const def of SPAWN_DEFS) {
-            r -= def.weight;
+            r -= weight(def);
             if (r < 0) return def;
         }
         return SPAWN_DEFS[0];
     }
 
-    function spawnObject() {
-        const def = weightedRandom();
+    function spawnObject(favorObstacles=false) {
+        const def = weightedRandom(favorObstacles);
         const el  = document.createElement('div');
         el.className = `game-object ${def.className}`;
         el.innerHTML  = def.emoji;
@@ -1712,6 +2210,14 @@ document.addEventListener('DOMContentLoaded',()=>{
         if (level > lastLevel) {
             lastLevel = level;
             showLevelToast(level);
+            if (level > 1 && level % 5 === 0) {
+                bossWaveActive = true;
+                bossWaveUntil = Date.now() + 6000;
+                showBossToast();
+            }
+        }
+        if (bossWaveActive && Date.now() > bossWaveUntil) {
+            bossWaveActive = false;
         }
 
         for (const obj of objects) {
@@ -1786,6 +2292,7 @@ document.addEventListener('DOMContentLoaded',()=>{
                     currentScore += points;
                     renderScore();
                     playCollect(def.pitch || 880);
+                    if (navigator.vibrate) navigator.vibrate(15);
 
                     // Particles
                     const colors = { dust:'#ffe787', gem:'#3498db', crystal:'#00bfa5', diamond:'#8e24aa', nova:'#ffd700' };
@@ -1795,6 +2302,11 @@ document.addEventListener('DOMContentLoaded',()=>{
                     let label = `+${points}`;
                     if (comboCount >= 3) label += ` 🔥`;
                     spawnFloatText(cx - 12, cy - 10, label);
+
+                    if (def.type === 'nova') unlockAchievement('nova');
+                    if (currentScore >= 100)  unlockAchievement('score_100');
+                    if (currentScore >= 500)  unlockAchievement('score_500');
+                    if (currentScore >= 1000) unlockAchievement('score_1000');
 
                 } else if (def.isObstacle) {
                     if (def.logicType === 'hazard') {
@@ -1806,6 +2318,8 @@ document.addEventListener('DOMContentLoaded',()=>{
                         deactivatePowerUp('shield');
                         spawnParticles(cx, cy, '#3498db', 10);
                         playTone(400, 'sine', 0.2, 0.4);
+                        shieldBlockedThisRun = true;
+                        unlockAchievement('shield_block');
                     } else {
                         obj.element.classList.add('collected');
                         spawnParticles(cx, cy, '#cc3333', 8);
@@ -1820,10 +2334,11 @@ document.addEventListener('DOMContentLoaded',()=>{
         objects = next;
 
         // Spawn
-        const interval = Math.max(28, BASE_SPAWN_INTERVAL - Math.floor(currentScore / 3));
+        let interval = Math.max(28, BASE_SPAWN_INTERVAL - Math.floor(currentScore / 3));
+        if (bossWaveActive) interval = Math.max(14, Math.floor(interval / 2));
         spawnTimer++;
         if (spawnTimer >= interval) {
-            spawnObject();
+            spawnObject(bossWaveActive);
             spawnTimer = 0;
         }
     }
@@ -1890,14 +2405,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         updatePlayerFX();
         updatePuIndicators();
         gameArea.style.filter = '';
-        messageBox.classList.remove('game-over');
-        messageBox.innerHTML = `
-            <span class="msg-emoji">🌌</span>
-            Welcome to<br><strong>Stardust Collector!</strong>
-            <br><span class="msg-sub">Collect dust · Dodge hazards · Build combos</span>
-            <br><button class="restart-btn" onclick="window.startGame()">🚀 Start Journey</button>
-        `;
-        messageBox.style.display = 'block';
+        clearInterval(timeAttackTimer);
+        timeAttackDisplay.style.display = 'none';
+        renderStartScreen();
     };
 
     /* ══════════════════════════════════════
@@ -1944,6 +2454,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         loadSettings();
         syncSettingsUI();
         loadHighScore();
+        loadShards();
+        loadAchievements();
+        loadSkins();
         initGameStarfield();
         playerY = gameArea.clientHeight * 0.82 - playerH/2;
         playerX = gameArea.clientWidth / 2 - playerW/2;
@@ -1952,13 +2465,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderLives();
         updatePlayerFX();
 
-        messageBox.innerHTML = `
-            <span class="msg-emoji">🌌</span>
-            Welcome to<br><strong>Stardust Collector!</strong>
-            <br><span class="msg-sub">Collect dust · Dodge hazards · Build combos</span>
-            <br><button class="restart-btn" onclick="window.startGame()">🚀 Start Journey</button>
-        `;
-        messageBox.style.display = 'block';
+        renderStartScreen();
 
         // Start trail
         if (!trailTimer) trailTimer = setInterval(spawnTrail, 60);
@@ -1974,6 +2481,29 @@ document.addEventListener('DOMContentLoaded',()=>{
         if (!gameLoopId) gameLoop();
     }
 
+    /* ══════════════════════════════════════
+       START SCREEN / MODE SELECT
+    ══════════════════════════════════════ */
+    function renderStartScreen() {
+        messageBox.classList.remove('game-over');
+        messageBox.innerHTML = `
+            <span class="msg-emoji">🌌</span>
+            Welcome to<br><strong>Stardust Collector!</strong>
+            <br><span class="msg-sub">Collect dust · Dodge hazards · Build combos</span>
+            <div class="mode-select">
+                <button class="mode-btn ${currentMode==='classic' ? 'active' : ''}" onclick="window.setMode('classic')">🚀 Classic</button>
+                <button class="mode-btn ${currentMode==='zen' ? 'active' : ''}" onclick="window.setMode('zen')">🌸 Zen</button>
+                <button class="mode-btn ${currentMode==='timeattack' ? 'active' : ''}" onclick="window.setMode('timeattack')">⏱️ Time Attack</button>
+            </div>
+            <br><button class="restart-btn" onclick="window.startGame()">🚀 Start Journey</button>
+        `;
+        messageBox.style.display = 'block';
+    }
+    window.setMode = function(mode) {
+        currentMode = mode;
+        if (!gameActive) renderStartScreen();
+    };
+
     window.startGame = function() {
         if (gameActive) return;
         currentScore    = 0;
@@ -1987,6 +2517,10 @@ document.addEventListener('DOMContentLoaded',()=>{
         SCROLL_SPEED    = BASE_SCROLL_SPEED;
         gameActive      = true;
         gamePaused      = false;
+        shieldBlockedThisRun = false;
+        tookDamageThisRun    = false;
+        bossWaveActive  = false;
+        gameArea.style.setProperty('--nebula-shift', '0deg');
         pauseOverlay.classList.add('off');
         howtoOverlay.classList.add('off');
         setStarfieldRunning(true);
@@ -2008,10 +2542,31 @@ document.addEventListener('DOMContentLoaded',()=>{
 
         playerX = gameArea.clientWidth / 2 - playerW/2;
         updatePlayerPos();
+        applySkin();
         renderScore();
         renderLives();
         renderCombo();
         gameArea.style.filter = '';
+
+        // Time Attack countdown
+        clearInterval(timeAttackTimer);
+        if (currentMode === 'timeattack') {
+            timeAttackRemaining = TIME_ATTACK_DURATION;
+            timeAttackDisplay.style.display = 'block';
+            timeAttackDisplay.classList.remove('low');
+            timeAttackDisplay.textContent = `⏱️ ${timeAttackRemaining}s`;
+            timeAttackTimer = setInterval(() => {
+                timeAttackRemaining--;
+                timeAttackDisplay.textContent = `⏱️ ${timeAttackRemaining}s`;
+                if (timeAttackRemaining <= 10) timeAttackDisplay.classList.add('low');
+                if (timeAttackRemaining <= 0) {
+                    clearInterval(timeAttackTimer);
+                    gameOver();
+                }
+            }, 1000);
+        } else {
+            timeAttackDisplay.style.display = 'none';
+        }
     };
 
     function gameOver() {
@@ -2022,12 +2577,37 @@ document.addEventListener('DOMContentLoaded',()=>{
         saveScore();
         stopMusic();
         setStarfieldRunning(false);
+        clearInterval(timeAttackTimer);
+        timeAttackDisplay.style.display = 'none';
         clearTimeout(comboTimer);
         comboCount = 0; renderCombo();
 
+        // Achievements
+        unlockAchievement('first_flight');
         const survivedSec = Math.max(0, Math.round((Date.now() - gameStartTime) / 1000));
+        if (survivedSec >= 60) unlockAchievement('survivor_60');
+        if (currentScore >= 100 && !tookDamageThisRun) unlockAchievement('flawless');
+
+        // Shards earned this run
+        runShardsEarned = Math.floor(currentScore / 10);
+        addShards(runShardsEarned);
+
+        // Leaderboard
+        const board = addLeaderboardEntry(currentScore, currentMode);
+
         const isNewBest = currentScore >= highScore && currentScore > 0;
         messageBox.classList.add('game-over');
+
+        let bookUnlockHTML = '';
+        if (currentScore >= BOOK_UNLOCK_SCORE) {
+            let seen = false;
+            try { seen = localStorage.getItem(BOOK_UNLOCK_KEY) === '1'; } catch(e) {}
+            if (!seen) {
+                try { localStorage.setItem(BOOK_UNLOCK_KEY, '1'); } catch(e) {}
+                bookUnlockHTML = `<div class="book-unlock">🌌 You've earned a bonus! Meet the original Stardust in <a href="Stardust.html">the picture book</a>.</div>`;
+            }
+        }
+
         messageBox.innerHTML = `
             <span class="msg-emoji">💫</span>
             <strong>Lost in the Nebula!</strong>
@@ -2044,11 +2624,30 @@ document.addEventListener('DOMContentLoaded',()=>{
                     <div class="ov-stat-lbl">Best Combo</div>
                 </div>
             </div>
+            <div class="msg-sub">+${runShardsEarned} 💠 Shards Banked</div>
             ${isNewBest ? '<div class="new-best">🏆 New Best Score!</div>' : `<div class="msg-sub">Best: ${highScore}</div>`}
+            ${renderLeaderboardHTML(board)}
+            ${bookUnlockHTML}
             <br><button class="restart-btn" onclick="window.startGame()">🚀 Try Again</button>
+            <br><button class="share-btn" onclick="window.shareScore()">📤 Share Score</button>
         `;
         messageBox.style.display = 'block';
     }
+
+    /* ══════════════════════════════════════
+       SHARE SCORE
+    ══════════════════════════════════════ */
+    window.shareScore = function() {
+        const text = `I just scored ${currentScore} stardust in Stardust Collector! 🌟✨`;
+        const url = location.href.split('#')[0];
+        if (navigator.share) {
+            navigator.share({ title: 'Stardust Collector', text, url }).catch(() => {});
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(`${text} ${url}`).then(() => {
+                spawnFloatText(gameArea.clientWidth/2 - 40, gameArea.clientHeight/2, 'Copied!');
+            }).catch(() => {});
+        }
+    };
 
     /* ══════════════════════════════════════
        INPUT
@@ -2057,6 +2656,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         const k = e.key.toLowerCase();
         if (!howtoOverlay.classList.contains('off') && (k === 'escape' || k === ' ' || k === 'enter')) {
             window.closeHowTo(); e.preventDefault(); return;
+        }
+        if (!achOverlay.classList.contains('off') && k === 'escape') {
+            window.closeAchievements(); e.preventDefault(); return;
+        }
+        if (!shopOverlay.classList.contains('off') && k === 'escape') {
+            window.closeShop(); e.preventDefault(); return;
         }
         if (!gameActive && messageBox.style.display === 'block' && (k === ' ' || k === 'enter')) {
             startGame(); e.preventDefault(); return;
@@ -2081,20 +2686,30 @@ document.addEventListener('DOMContentLoaded',()=>{
     });
     pauseSfxToggle.addEventListener('click', () => toggleSfx());
     pauseMusicToggle.addEventListener('click', () => toggleMusic());
+    achBtn.addEventListener('click', () => {
+        if (gameActive && !gamePaused) window.togglePause();
+        window.openAchievements();
+    });
+    shopBtn.addEventListener('click', () => {
+        if (gameActive && !gamePaused) window.togglePause();
+        window.openShop();
+    });
 
     gameArea.addEventListener('click', e => {
-        if (!howtoOverlay.classList.contains('off') || !pauseOverlay.classList.contains('off')) return;
-        if (!gameActive && messageBox.style.display === 'block' && !e.target.classList.contains('restart-btn')) {
+        if (!howtoOverlay.classList.contains('off') || !pauseOverlay.classList.contains('off')
+            || !achOverlay.classList.contains('off') || !shopOverlay.classList.contains('off')) return;
+        if (!gameActive && messageBox.style.display === 'block' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') {
             startGame();
         }
     });
 
     gameArea.addEventListener('touchstart', e => {
-        if (!howtoOverlay.classList.contains('off') || !pauseOverlay.classList.contains('off')) return;
+        if (!howtoOverlay.classList.contains('off') || !pauseOverlay.classList.contains('off')
+            || !achOverlay.classList.contains('off') || !shopOverlay.classList.contains('off')) return;
         if (e.touches.length !== 1) return;
         e.preventDefault();
         if (gameActive) { isTouching = true; }
-        else if (messageBox.style.display === 'block' && !e.target.classList.contains('restart-btn')) { startGame(); }
+        else if (messageBox.style.display === 'block' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') { startGame(); }
     }, { passive: false });
 
     gameArea.addEventListener('touchmove', e => {

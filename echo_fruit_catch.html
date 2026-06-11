@@ -249,6 +249,30 @@ footer a:hover{color:rgba(240,234,214,.85)}
 .start-extra-row{display:flex;gap:10px;margin-top:2px}
 .start-extra-row .g-btn{margin-bottom:0}
 
+/* Achievements */
+.ach-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;max-height:340px;overflow-y:auto;padding:2px}
+.ach-badge{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--beige);border-radius:14px;padding:10px 4px;border:2px solid var(--tan);transition:transform .15s}
+.ach-badge.locked{opacity:.35;filter:grayscale(1)}
+.ach-badge.unlocked{border-color:var(--echo-green);background:var(--rose-lt)}
+.ach-icon{font-size:1.6rem}
+.ach-name{font-size:.62rem;font-weight:800;color:var(--charcoal);text-align:center;line-height:1.2}
+.ach-progress{font-size:.7rem;color:var(--charcoal-lt);font-weight:700;margin-bottom:14px}
+
+/* Achievement toast */
+#ach-toast{position:absolute;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:40;display:flex;align-items:center;gap:10px;background:white;border-radius:16px;padding:10px 18px;box-shadow:0 10px 30px rgba(64,59,51,.25);border:2px solid var(--fruit-orange);font-family:'Fredoka',cursive;font-weight:700;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;white-space:nowrap}
+#ach-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#ach-toast .ach-toast-icon{font-size:1.6rem}
+#ach-toast .ach-toast-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25}
+#ach-toast .ach-toast-lbl{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fruit-orange)}
+#ach-toast .ach-toast-name{font-size:.9rem;color:var(--charcoal)}
+
+/* Tutorial overlay */
+.tut-step{display:flex;flex-direction:column;align-items:center;gap:14px}
+.tut-emoji{font-size:3.2rem}
+.tut-dots{display:flex;gap:6px;justify-content:center;margin:14px 0 18px}
+.tut-dot{width:8px;height:8px;border-radius:50%;background:var(--tan)}
+.tut-dot.active{background:var(--echo-green)}
+
 /* Score pop */
 .g-pop{position:absolute;font-family:'Fredoka',cursive;font-size:1.6rem;font-weight:700;pointer-events:none;z-index:20;animation:pop-rise 1s ease-out forwards;text-shadow:0 3px 8px rgba(0,0,0,.2)}
 @keyframes pop-rise{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
@@ -505,6 +529,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   </div>
   <div class="hud-combo" id="hud-combo"></div>
   <div id="hud-powerups"></div>
+  <div id="ach-toast"></div>
   <div id="tilt-hint">📱 Touch screen — Echo follows your finger!</div>
   <canvas id="game-canvas"></canvas>
 
@@ -523,8 +548,31 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <button class="g-btn" id="startBtn">🎮 Start Playing!</button>
       <div class="start-extra-row">
         <button class="g-btn secondary" id="muteBtnStart" onclick="toggleMute()">🔊 Sound</button>
+        <button class="g-btn secondary" onclick="showAchievements()">🏆 Badges</button>
+      </div>
+      <div class="start-extra-row" style="margin-top:10px">
         <button class="g-btn secondary" onclick="exitGame()">← Back</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS SCREEN -->
+  <div class="g-scr off" id="scr-achievements">
+    <div class="g-panel">
+      <span class="g-echo">🏆</span>
+      <div class="g-title" style="font-size:1.8rem">Badges</div>
+      <div class="ach-progress" id="ach-progress"></div>
+      <div class="ach-grid" id="ach-grid"></div>
+      <button class="g-btn secondary" onclick="hideAchievements()">← Back</button>
+    </div>
+  </div>
+
+  <!-- TUTORIAL OVERLAY -->
+  <div class="g-scr off" id="scr-tutorial">
+    <div class="g-panel">
+      <div class="tut-step" id="tut-step"></div>
+      <div class="tut-dots" id="tut-dots"></div>
+      <button class="g-btn" id="tutNextBtn">Next →</button>
     </div>
   </div>
 
@@ -536,6 +584,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <div class="g-sub">Take a breather, Echo's waiting!</div>
       <button class="g-btn" onclick="resumeGame()">▶️ Resume</button>
       <button class="g-btn secondary" id="fsToggleBtn" onclick="toggleFS()">⛶ Go Fullscreen</button>
+      <button class="g-btn secondary" onclick="showTutorial(true)">❓ How to Play</button>
       <button class="g-btn secondary" onclick="exitGame()">← Back to Page</button>
     </div>
   </div>
@@ -554,7 +603,10 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       </div>
       <div class="best-badge off" id="new-best">🌟 New High Score! 🌟</div>
       <button class="g-btn" onclick="restartGame()">🔄 Play Again!</button>
-      <button class="g-btn secondary" onclick="exitGame()">← Back to Page</button>
+      <div class="start-extra-row">
+        <button class="g-btn secondary" onclick="shareScore(this)">📤 Share Score</button>
+        <button class="g-btn secondary" onclick="exitGame()">← Back</button>
+      </div>
     </div>
   </div>
 </div>
@@ -608,7 +660,7 @@ function launchGame(){
   document.getElementById('siteHeader').style.display='none';
   document.body.style.overflow='hidden';
   if(!gameReady){ initGame(); gameReady=true; }
-  showStart();
+  if(!tutorialSeen()) showTutorial(); else showStart();
   requestFS();
 }
 function exitGame(){
@@ -618,6 +670,7 @@ function exitGame(){
   document.getElementById('scr-pause').classList.add('off');
   if(gState==='playing'||gState==='paused') gState='idle';
   exitFS();
+  stopMusic();
 }
 window.launchGame=launchGame;
 window.exitGame=exitGame;
@@ -632,6 +685,7 @@ function toggleMute(){
   muted=!muted;
   try{localStorage.setItem('echo_muted',muted?'1':'0');}catch(e){}
   updateMuteBtn();
+  if(muted) stopMusic(); else if(gState==='playing') startMusic();
 }
 function updateMuteBtn(){
   const icon=muted?'🔇':'🔊';
@@ -639,7 +693,49 @@ function updateMuteBtn(){
   const b=document.getElementById('muteBtnStart'); if(b) b.textContent=icon+' Sound';
 }
 window.toggleMute=toggleMute;
-function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)(); return ac; }
+function getAC(){
+  if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==='suspended') ac.resume().catch(()=>{});
+  return ac;
+}
+
+/* ── Background music (gentle looping pad) ── */
+let musicNodes=null;
+function startMusic(){
+  if(muted||musicNodes) return;
+  try{
+    const a=getAC();
+    const master=a.createGain();
+    master.gain.setValueAtTime(0,a.currentTime);
+    master.gain.linearRampToValueAtTime(.05,a.currentTime+1.5);
+    master.connect(a.destination);
+    const chord=[261.63,329.63,392.00,523.25]; // C E G C — calm major chord
+    const oscs=chord.map((f,i)=>{
+      const o=a.createOscillator(),g=a.createGain();
+      o.type='sine';o.frequency.value=f;
+      g.gain.value=i===0?.5:.22;
+      o.connect(g);g.connect(master);
+      // slow detune drift for a soft, alive feel
+      const lfo=a.createOscillator(),lfoGain=a.createGain();
+      lfo.frequency.value=.05+i*.02;lfoGain.gain.value=2+i;
+      lfo.connect(lfoGain);lfoGain.connect(o.detune);
+      o.start();lfo.start();
+      return [o,lfo];
+    }).flat();
+    musicNodes={master,oscs};
+  }catch(e){}
+}
+function stopMusic(){
+  if(!musicNodes) return;
+  try{
+    const a=getAC();
+    musicNodes.master.gain.linearRampToValueAtTime(0,a.currentTime+.4);
+    const nodes=musicNodes;
+    setTimeout(()=>{ nodes.oscs.forEach(o=>{try{o.stop();}catch(e){}}); nodes.master.disconnect(); },450);
+  }catch(e){}
+  musicNodes=null;
+}
+function vibrate(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
 const SFX={
   _p(fn){ if(muted) return; try{fn(getAC());}catch(e){} },
   catch(special){
@@ -747,6 +843,9 @@ let combo=0,comboMax=0,comboPopFr=0;
 /* ── Power-ups ── */
 let magnetFr=0,slowmoFr=0,doubleFr=0,shieldOn=false;
 
+/* ── Run stats (for achievements) ── */
+let starsCaught=0,shieldBlocks=0,powerupTypesUsed=new Set();
+
 /* ── Difficulty ── */
 let difficulty='normal';
 const DIFF={
@@ -782,6 +881,127 @@ function renderLifetimeStats(){
 function loadBest(){ try{best=parseInt(localStorage.getItem('echo_best')||'0');}catch(e){best=0;} }
 function saveBest(s){ try{if(s>best){best=s;localStorage.setItem('echo_best',s);}}catch(e){} }
 
+/* ── Achievements ── */
+const ACHIEVEMENTS=[
+  {id:'first_bite',icon:'🍎',name:'First Bite',desc:'Catch your first fruit'},
+  {id:'high_roller',icon:'🥇',name:'High Roller',desc:'Score 50+ in one run'},
+  {id:'century',icon:'💯',name:'Century',desc:'Score 100+ in one run'},
+  {id:'tank',icon:'🛡️',name:'Tank',desc:'Block a hit with a shield'},
+  {id:'combo_king',icon:'🔥',name:'Combo King',desc:'Reach a 15-catch combo streak'},
+  {id:'star_gazer',icon:'⭐',name:'Star Gazer',desc:'Catch 5 stars in one run'},
+  {id:'world_traveler',icon:'🌍',name:'World Traveler',desc:'Reach the Snowy Hills biome'},
+  {id:'power_player',icon:'🧲',name:'Power Player',desc:'Use all 4 power-ups in one run'},
+  {id:'survivor',icon:'💪',name:'Survivor',desc:'Reach Level 10'},
+  {id:'dedicated',icon:'🎮',name:'Dedicated',desc:'Play 10 games'},
+  {id:'fruit_master',icon:'🥭',name:'Fruit Master',desc:'Catch 200 fruit in total'},
+];
+let unlockedAch=new Set();
+function loadAchievements(){
+  try{ unlockedAch=new Set(JSON.parse(localStorage.getItem('echo_achievements')||'[]')); }catch(e){ unlockedAch=new Set(); }
+}
+function saveAchievements(){ try{localStorage.setItem('echo_achievements',JSON.stringify([...unlockedAch]));}catch(e){} }
+
+let achToastQueue=[],achToastBusy=false;
+function unlockAchievement(id){
+  if(unlockedAch.has(id)) return;
+  unlockedAch.add(id);
+  saveAchievements();
+  const a=ACHIEVEMENTS.find(x=>x.id===id);
+  if(a){ achToastQueue.push(a); showNextAchToast(); }
+}
+function showNextAchToast(){
+  if(achToastBusy||achToastQueue.length===0) return;
+  achToastBusy=true;
+  const a=achToastQueue.shift();
+  const el=document.getElementById('ach-toast');
+  el.innerHTML=`<span class="ach-toast-icon">${a.icon}</span><span class="ach-toast-text"><span class="ach-toast-lbl">Badge Unlocked</span><span class="ach-toast-name">${a.name}</span></span>`;
+  el.classList.add('show');
+  setTimeout(()=>{
+    el.classList.remove('show');
+    setTimeout(()=>{ achToastBusy=false; showNextAchToast(); },350);
+  },2200);
+}
+function checkAchievements(){
+  if(fruitCaught>=1) unlockAchievement('first_bite');
+  if(score>=50) unlockAchievement('high_roller');
+  if(score>=100) unlockAchievement('century');
+  if(shieldBlocks>=1) unlockAchievement('tank');
+  if(comboMax>=15) unlockAchievement('combo_king');
+  if(starsCaught>=5) unlockAchievement('star_gazer');
+  if(level>=13) unlockAchievement('world_traveler');
+  if(powerupTypesUsed.size>=4) unlockAchievement('power_player');
+  if(level>=10) unlockAchievement('survivor');
+  if(lifetime.games>=10) unlockAchievement('dedicated');
+  if(lifetime.totalFruit>=200) unlockAchievement('fruit_master');
+}
+function renderAchievements(){
+  const grid=document.getElementById('ach-grid');
+  if(!grid) return;
+  grid.innerHTML=ACHIEVEMENTS.map(a=>{
+    const unlocked=unlockedAch.has(a.id);
+    return `<div class="ach-badge ${unlocked?'unlocked':'locked'}" title="${a.desc}">
+      <span class="ach-icon">${a.icon}</span>
+      <span class="ach-name">${a.name}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('ach-progress').textContent=`${unlockedAch.size} / ${ACHIEVEMENTS.length} unlocked`;
+}
+function showAchievements(){
+  renderAchievements();
+  document.getElementById('scr-start').classList.add('off');
+  document.getElementById('scr-achievements').classList.remove('off');
+}
+function hideAchievements(){
+  document.getElementById('scr-achievements').classList.add('off');
+  document.getElementById('scr-start').classList.remove('off');
+}
+window.showAchievements=showAchievements;
+window.hideAchievements=hideAchievements;
+
+/* ── Share score ── */
+function shareScore(btn){
+  const text=`I scored ${score} in Echo's Fruit Catch! 🦎🍎 Level ${level}, ${fruitCaught} fruit caught. Can you beat me?`;
+  const url=location.href.split('#')[0];
+  if(navigator.share){
+    navigator.share({title:"Echo's Fruit Catch!",text,url}).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text+' '+url).then(()=>{
+      if(btn){ const old=btn.textContent; btn.textContent='✅ Copied!'; setTimeout(()=>{btn.textContent=old;},1500); }
+    }).catch(()=>{});
+  }
+}
+window.shareScore=shareScore;
+
+/* ── Tutorial ── */
+const TUTORIAL_STEPS=[
+  {emoji:'🦎',title:'Meet Echo!',desc:"Move left & right with arrow keys, tilt your phone, or touch the screen — Echo follows you!"},
+  {emoji:'🍎⭐',title:'Catch Fruit & Stars',desc:'Fruit scores points, stars score even more. Chain catches in a row to build a combo multiplier!'},
+  {emoji:'🪨💣🐦',title:'Dodge Hazards',desc:"Rocks, bombs and birds cost a heart. Lose all 3 and it's game over!"},
+  {emoji:'🧲🛡️⏱️✨',title:'Power-Ups!',desc:'Magnet, Shield, Slow-Mo and Double Points give Echo a temporary edge — grab them!'},
+];
+let tutStep=0;
+function renderTutorial(){
+  const s=TUTORIAL_STEPS[tutStep];
+  document.getElementById('tut-step').innerHTML=`<div class="tut-emoji">${s.emoji}</div><div class="g-title" style="font-size:1.6rem">${s.title}</div><div class="g-sub" style="margin-bottom:0">${s.desc}</div>`;
+  document.getElementById('tut-dots').innerHTML=TUTORIAL_STEPS.map((_,i)=>`<span class="tut-dot ${i===tutStep?'active':''}"></span>`).join('');
+  document.getElementById('tutNextBtn').textContent=tutStep===TUTORIAL_STEPS.length-1?(tutFromPause?'👍 Got it!':"🎮 Let's Go!"):'Next →';
+}
+let tutFromPause=false;
+function showTutorial(fromPause){
+  tutFromPause=!!fromPause;
+  tutStep=0;
+  renderTutorial();
+  if(tutFromPause) document.getElementById('scr-pause').classList.add('off');
+  else document.getElementById('scr-start').classList.add('off');
+  document.getElementById('scr-tutorial').classList.remove('off');
+}
+function tutorialSeen(){
+  try{ return localStorage.getItem('echo_tutorial_seen')==='1'; }catch(e){ return false; }
+}
+function markTutorialSeen(){
+  try{ localStorage.setItem('echo_tutorial_seen','1'); }catch(e){}
+}
+
 /* ── Biomes (visual themes that cycle as levels rise) ── */
 const BIOMES=[
   {name:'Meadow',sky:['#87CEEB','#b8e4f7','#c8efaa'],ground:['#7dc955','#5cb85c'],grass:'#4aa644',
@@ -802,15 +1022,28 @@ function initGame(){
   cx=canvas.getContext('2d');
   resizeGame();
   window.addEventListener('resize',resizeGame);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden && gState==='playing') pauseGame();
+  });
   document.getElementById('startBtn').addEventListener('click',startGame);
   setupControls2();
   loadBest();
   loadDifficulty();
   loadLifetime();
+  loadAchievements();
   updateMuteBtn();
   updateDiffButtons();
   document.querySelectorAll('.diff-btn').forEach(b=>{
     b.addEventListener('click',()=>setDifficulty(b.dataset.diff));
+  });
+  document.getElementById('tutNextBtn').addEventListener('click',()=>{
+    if(tutStep<TUTORIAL_STEPS.length-1){ tutStep++; renderTutorial(); }
+    else {
+      markTutorialSeen();
+      document.getElementById('scr-tutorial').classList.add('off');
+      if(tutFromPause) document.getElementById('scr-pause').classList.remove('off');
+      else showStart();
+    }
   });
   // Start render loop for background
   gState='idle';fr=0;items=[];particles=[];lives=3;score=0;fruitCaught=0;level=1;
@@ -846,11 +1079,13 @@ function pauseGame(){
   gState='paused';
   document.getElementById('scr-pause').classList.remove('off');
   updateFSBtn();
+  stopMusic();
 }
 function resumeGame(){
   if(gState!=='paused') return;
   gState='playing';
   document.getElementById('scr-pause').classList.add('off');
+  startMusic();
 }
 window.pauseGame=pauseGame;
 window.resumeGame=resumeGame;
@@ -1180,6 +1415,7 @@ function activatePowerup(pType,it){
     case 'slowmo': slowmoFr=300; addPop(it.x,it.y-30,'⏱️ Slow-Mo!','#a98cff'); break;
     case 'double': doubleFr=480; addPop(it.x,it.y-30,'✨ 2x Points!','#ff8c00'); break;
   }
+  powerupTypesUsed.add(pType);
   updateHUDPowerups();
 }
 function updateHUDPowerups(){
@@ -1204,6 +1440,7 @@ function checkCollision(){
       if(it.type==='rock'||it.type==='bomb'||it.type==='bird'){
         if(shieldOn){
           shieldOn=false;
+          shieldBlocks++;
           spawnParticles3(it.x,it.y,'#4ed8e8','🛡️',10);
           addPop(it.x,it.y-30,'🛡️ Blocked!','#4ed8e8');
           updateHUDPowerups();
@@ -1211,6 +1448,7 @@ function checkCollision(){
           lives--;
           shake=it.type==='bomb'?35:20;
           if(it.type==='bomb') SFX.bomb(); else SFX.rock();
+          vibrate(it.type==='bomb'?200:80);
           resetCombo();
           spawnParticles3(it.x,it.y,'#888',it.type==='bomb'?'💥':'💥',it.type==='bomb'?16:10);
           addPop(it.x,it.y-30,it.type==='bomb'?'💥 BOOM!':'💥 Ouch!','#e63946');
@@ -1220,6 +1458,7 @@ function checkCollision(){
       } else if(it.type==='star'){
         const gained=gainScore(3,it);
         fruitCaught++;
+        starsCaught++;
         SFX.star();
         addCombo();
         spawnParticles3(it.x,it.y,'#ffcc02','⭐',14);
@@ -1275,15 +1514,18 @@ function startGame(){
   echoX=W/2;echoY=H*.82;echoW=Math.min(W*.16,90);echoH=echoW*1.1;echoVX=0;
   combo=0;comboMax=0;comboPopFr=0;
   magnetFr=0;slowmoFr=0;doubleFr=0;shieldOn=false;
+  starsCaught=0;shieldBlocks=0;powerupTypesUsed=new Set();
   initClouds();initSnow();
   gState='playing';
   document.getElementById('scr-start').classList.add('off');
   document.getElementById('scr-dead').classList.add('off');
   document.getElementById('scr-pause').classList.add('off');
+  document.getElementById('scr-tutorial').classList.add('off');
   document.getElementById('game-hud').classList.remove('off');
   document.getElementById('hud-combo').classList.remove('show');
   updateHUDHearts();updateHUDScore();updateHUDPowerups();
   document.getElementById('hud-level').textContent='Level 1';
+  startMusic();
 }
 window.startGame=startGame;
 function restartGame(){ startGame(); }
@@ -1294,6 +1536,8 @@ function endGame(){
   saveBest(score);
   lifetime.games++; lifetime.totalFruit+=fruitCaught; lifetime.totalScore+=score;
   saveLifetime();
+  checkAchievements();
+  stopMusic();
   SFX.gameOver();
   let emoji='😢',title='Oh no!',sub='A rock got Echo!';
   if(score>=30){emoji='🎉';title='Amazing!';sub='Echo caught SO much fruit!';}
