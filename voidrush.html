@@ -188,7 +188,6 @@ footer a:hover{color:rgba(240,234,214,.85)}
 #fuel-bar-bg{height:7px;background:rgba(0,245,255,.06);border-radius:4px;overflow:hidden;margin-top:5px;border:1px solid rgba(0,245,255,.12)}
 #fuel-bar-fill{height:100%;width:100%;border-radius:4px;background:linear-gradient(90deg,var(--neon-cyan),var(--neon-mag));transition:width .25s,background .4s;box-shadow:0 0 8px rgba(0,245,255,.5)}
 #fuel-bar-fill.low{background:linear-gradient(90deg,var(--neon-red),#ff6600);box-shadow:0 0 10px rgba(255,34,68,.9)}
-#fuel-lbl{font-size:6px;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,245,255,.3);font-family:'Orbitron',sans-serif;margin-top:2px}
 #void-wrap{flex:1;max-width:160px}
 #void-bar-bg{height:7px;background:rgba(102,0,255,.08);border-radius:4px;overflow:hidden;margin-top:5px;border:1px solid rgba(102,0,255,.18)}
 #void-bar-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#4400cc,var(--neon-mag));box-shadow:0 0 8px rgba(102,0,255,.6);transition:width .4s}
@@ -247,6 +246,8 @@ footer a:hover{color:rgba(240,234,214,.85)}
 #flash.credit{background:rgba(255,238,0,.1);opacity:1}
 #void-edge{position:absolute;inset:0;pointer-events:none;z-index:8;border:5px solid transparent;transition:border-color .2s,box-shadow .2s}
 #void-edge.active{border-color:rgba(102,0,255,.6);box-shadow:inset 0 0 100px rgba(102,0,255,.18)}
+#void-edge.critical{box-shadow:inset 0 0 90px rgba(255,34,68,.22);animation:critical-pulse .9s ease-in-out infinite}
+@keyframes critical-pulse{0%,100%{border-color:rgba(255,34,68,.2)}50%{border-color:rgba(255,34,68,.8)}}
 
 /* Score pop */
 .score-pop{position:absolute;font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;pointer-events:none;z-index:15;animation:score-rise 1.2s ease-out forwards}
@@ -440,16 +441,16 @@ footer a:hover{color:rgba(240,234,214,.85)}
 
     <div class="controls-grid" style="margin-top:48px">
       <div class="ctrl-card reveal">
-        <span class="ctrl-key">← →</span>
-        <div class="ctrl-desc">Switch between the three lanes</div>
+        <span class="ctrl-key">← → ↑ ↓</span>
+        <div class="ctrl-desc">Steer your ship freely through the tunnel</div>
       </div>
       <div class="ctrl-card reveal">
-        <span class="ctrl-key">A / D</span>
+        <span class="ctrl-key">WASD</span>
         <div class="ctrl-desc">Same as arrow keys — your choice</div>
       </div>
       <div class="ctrl-card reveal">
-        <span class="ctrl-key">SPACE</span>
-        <div class="ctrl-desc">Emergency boost — brief speed burst</div>
+        <span class="ctrl-key">HOLD SPACE</span>
+        <div class="ctrl-desc">Speed boost — burns fuel fast</div>
       </div>
       <div class="ctrl-card reveal">
         <span class="ctrl-key">SWIPE</span>
@@ -566,10 +567,18 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       <div class="hud-label">Lives</div>
       <div class="hud-val" id="h-lives">♥ ♥ ♥</div>
     </div>
+    <div class="hud-panel" id="fuel-wrap">
+      <div class="hud-label">Fuel</div>
+      <div id="fuel-bar-bg"><div id="fuel-bar-fill"></div></div>
+    </div>
+    <div class="hud-panel" id="void-wrap">
+      <div class="hud-label">Void</div>
+      <div id="void-bar-bg"><div id="void-bar-fill"></div></div>
+    </div>
     <button class="hud-back" onclick="exitGame()">✕ EXIT</button>
   </div>
 
-  <div id="hint-bar">Arrow keys / WASD to move &nbsp;·&nbsp; Collect coins · Dodge asteroids &nbsp;·&nbsp; Swipe on mobile</div>
+  <div id="hint-bar">Arrow keys / WASD to move &nbsp;·&nbsp; SPACE to boost &nbsp;·&nbsp; Collect coins · Grab ⛽ fuel · Dodge asteroids &nbsp;·&nbsp; Swipe on mobile</div>
   <div id="studio-credit">JVDesignStudio</div>
 
   <canvas id="c"></canvas>
@@ -584,6 +593,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         <div class="start-card"><span class="start-card-icon">🪙</span><div class="start-card-text">Fly through <strong>coin trails</strong> to rack up your score.</div></div>
         <div class="start-card"><span class="start-card-icon">☄️</span><div class="start-card-text">Dodge <strong>asteroids and enemies</strong> — you have 3 lives.</div></div>
         <div class="start-card"><span class="start-card-icon">🚀</span><div class="start-card-text">Move freely in <strong>all directions</strong> — the void closes in as you go further.</div></div>
+        <div class="start-card"><span class="start-card-icon">⛽</span><div class="start-card-text">Grab <strong>fuel canisters</strong> to stay ahead. Run dry and the void swallows you instantly. Hold <strong>SPACE</strong> to boost — but it burns fuel fast.</div></div>
       </div>
       <button class="pbtn" id="startBtn">▶ INITIATE LAUNCH</button>
     </div>
@@ -901,6 +911,15 @@ function project3D(wx, wy, wz, sx, sy) {
   return { sx: W2*0.5 + cx*sc, sy: H2*HORIZ_Y - cy*sc, scale: sc, cz };
 }
 
+// World Y where obstacles at the ship's current altitude line up with the
+// ship's fixed screen position (H2*0.68) by the time they reach the
+// collision zone (wz ~ 10). Without this, obstacles spawned around wy=0
+// pass through a band of the screen the ship can never reach.
+function groundLevelWy(){
+  const COL_Z = 10, sc = FOCAL/(COL_Z+CAM_DIST);
+  return shipY + (HORIZ_Y-0.68)*H2/sc - CAM_Y;
+}
+
 let gameInit = false, gameState = 'start';
 let canvas2, cx2, W2, H2;
 let dist, spd, fr, scroll;
@@ -911,6 +930,7 @@ let inv, invFr, shake;
 let obstacles = [], stars3d = [], particles2 = [], voidTentacles2 = [];
 let spawnCD, best2 = 0, rafId2, wave = 0;
 let touchStartX = null, touchStartY = null, keys = {};
+let fuel, boosting, wasBoosting, lowFuelTimer, fuelCD, recentSpawns = [], deathCause;
 
 const BASE_SPD  = 28;
 const MAX_SPD   = 120;
@@ -919,6 +939,13 @@ const SHIP_SPD  = 5.4;
 const MAX_LIVES = 3;
 const INV_FR    = 100;
 const SPAWN_Z   = 260;
+const FUEL_MAX         = 100;
+const FUEL_DRAIN       = 0.0667; // per frame at BASE_SPD
+const FUEL_PICKUP      = 28;
+const FUEL_HIT_PENALTY = 15;
+const BOOST_MULT       = 1.7;
+const BOOST_FUEL_COST  = 0.5;    // extra drain per frame while boosting
+const BOOST_MIN_FUEL   = 10;
 
 function loadBest2(){ try{ best2=parseInt(localStorage.getItem('vr4_best')||'0'); }catch(e){ best2=0; } }
 function saveBest2(d){ try{ if(d>best2){best2=d;localStorage.setItem('vr4_best',d);} }catch(e){} }
@@ -944,6 +971,19 @@ function updateLivesHUD(){
   el.innerHTML=[0,1,2].map(i=>i<lives
     ?'<span style="color:#ff2244;text-shadow:0 0 10px #ff2244">♥</span>'
     :'<span style="color:rgba(255,34,68,.2)">♥</span>').join(' ');
+  const edge=document.getElementById('void-edge');
+  if(edge) edge.classList.toggle('critical', lives===1);
+}
+function updateFuelHUD(){
+  const fill=document.getElementById('fuel-bar-fill');
+  if(!fill) return;
+  fill.style.width=Math.max(0,fuel)+'%';
+  fill.classList.toggle('low', fuel<25);
+}
+function updateVoidHUD(){
+  const fill=document.getElementById('void-bar-fill');
+  if(!fill) return;
+  fill.style.width=(voidProx*100)+'%';
 }
 function showStartScreen(){
   document.getElementById('scr-start').classList.remove('off');
@@ -1034,7 +1074,7 @@ function drawGrid2(){
 }
 
 /* SHIP (top-rear view) */
-function drawShip2(_x,_y,_inv){
+function drawShip2(_x,_y,_inv,_boost){
   const sx=W2*0.5, sy=H2*0.68, sz=Math.min(W2,H2)*0.052;
   cx2.save(); cx2.translate(sx,sy);
   if(_inv&&Math.floor(fr/5)%2===0) cx2.globalAlpha=0.35;
@@ -1061,7 +1101,7 @@ function drawShip2(_x,_y,_inv){
     cx2.fillStyle='#0d1f3c'; cx2.strokeStyle='#00f5ff'; cx2.shadowColor='#00f5ff';
   });
   // Twin exhausts
-  const flH=sz*(0.5+Math.sin(fr*0.28)*0.2);
+  const flH=sz*(0.5+Math.sin(fr*0.28)*0.2)*(_boost?1.9:1);
   [-0.22,0.22].forEach(ox=>{
     cx2.fillStyle='#001a2a'; cx2.strokeStyle='#00f5ff'; cx2.lineWidth=1.2; cx2.shadowBlur=10;
     cx2.beginPath(); cx2.ellipse(sz*ox,sz*0.88,sz*0.14,sz*0.08,0,0,Math.PI*2); cx2.fill(); cx2.stroke();
@@ -1105,9 +1145,21 @@ function drawVoidEntity2(){
 }
 
 /* SPAWN */
+// Picks a lateral spawn position that doesn't overlap recently-spawned
+// objects in the same depth range, so coins/hazards/fuel don't stack.
+function pickLane(wz, half){
+  for(let i=0;i<6;i++){
+    const wx=(Math.random()-0.5)*76;
+    const clash=recentSpawns.some(s=>Math.abs(s.wz-wz)<22 && Math.abs(s.wx-wx)<(s.half+half+4));
+    if(!clash){ recentSpawns.push({wx,wz,half}); if(recentSpawns.length>16) recentSpawns.shift(); return wx; }
+  }
+  const wx=(Math.random()-0.5)*76;
+  recentSpawns.push({wx,wz,half}); if(recentSpawns.length>16) recentSpawns.shift();
+  return wx;
+}
 function spawnCoinArc(){
   const count=5+Math.floor(Math.random()*5);
-  const cx_w=(Math.random()-0.5)*70, cy_w=(Math.random()-0.5)*16-0.5;
+  const cx_w=pickLane(SPAWN_Z,14), cy_w=groundLevelWy()+(Math.random()-0.5)*16-0.5;
   for(let i=0;i<count;i++){
     obstacles.push({ type:'coin', alive:true,
       wx:cx_w+(i-count/2)*2.8,
@@ -1119,9 +1171,14 @@ function spawnHazard(){
   const types=['asteroid','saucer','mine'];
   const type=types[Math.floor(Math.random()*(wave<3?1:types.length))];
   obstacles.push({ type:'hazard', alive:true, shape:type,
-    wx:(Math.random()-0.5)*76, wy:(Math.random()-0.5)*20, wz:SPAWN_Z+Math.random()*30,
+    wx:pickLane(SPAWN_Z,18), wy:groundLevelWy()+(Math.random()-0.5)*20, wz:SPAWN_Z+Math.random()*30,
     rot:Math.random()*Math.PI*2, rotSpd:(Math.random()-0.5)*0.04,
     sides:5+Math.floor(Math.random()*4), scale:0.8+Math.random()*0.7 });
+}
+function spawnFuelCanister(){
+  obstacles.push({ type:'fuel', alive:true,
+    wx:pickLane(SPAWN_Z,12), wy:groundLevelWy()+(Math.random()-0.5)*6,
+    wz:SPAWN_Z, rot:0, rotSpd:0.05 });
 }
 
 /* DRAW OBSTACLES */
@@ -1163,6 +1220,15 @@ function drawObs2(o){
       cx2.fillStyle=i%2===0?'#ff00aa':'#00f5ff'; cx2.shadowColor=cx2.fillStyle; cx2.shadowBlur=6;
       cx2.beginPath(); cx2.arc(Math.cos(a)*r*0.72,Math.sin(a)*r*0.22,Math.max(1,2*ps),0,Math.PI*2); cx2.fill();
     }
+  } else if(o.type==='fuel'){
+    const r=Math.max(1.5,10*ps);
+    cx2.globalAlpha=0.9+Math.sin(fr*0.12+o.wz)*0.1;
+    cx2.fillStyle='#04303a'; cx2.strokeStyle='#00f5ff'; cx2.lineWidth=1.4; cx2.shadowBlur=12; cx2.shadowColor='#00f5ff';
+    cx2.beginPath(); cx2.ellipse(0,0,r*0.6,r,0,0,Math.PI*2); cx2.fill(); cx2.stroke();
+    cx2.fillStyle='rgba(0,245,255,.85)'; cx2.shadowBlur=8;
+    cx2.beginPath(); cx2.arc(0,-r*0.55,r*0.32,0,Math.PI*2); cx2.fill();
+    cx2.strokeStyle='rgba(0,245,255,.5)'; cx2.lineWidth=0.8;
+    cx2.beginPath(); cx2.moveTo(-r*0.6,r*0.15); cx2.lineTo(r*0.6,r*0.15); cx2.stroke();
   } else {
     const r=Math.max(2,14*ps*(o.scale||1));
     cx2.fillStyle='#0a0014'; cx2.strokeStyle='#8800ff'; cx2.lineWidth=1.5; cx2.shadowBlur=18; cx2.shadowColor='#6600ff';
@@ -1212,7 +1278,7 @@ function checkCol2(){
     const p=project3D(o.wx,o.wy,o.wz,shipX,shipY);
     if(!p) return;
     const d=Math.sqrt((ssx-p.sx)**2+(ssy-p.sy)**2);
-    const oR=o.type==='coin'?10:18*(o.scale||1);
+    const oR=o.type==='coin'?10:o.type==='fuel'?11:18*(o.scale||1);
     if(d<hitR+oR*0.55){
       o.alive=false;
       if(o.type==='coin'){
@@ -1222,14 +1288,20 @@ function checkCol2(){
         spawnScorePop(p.sx,p.sy-20,'+1','#ffd700');
         const el=document.getElementById('h-credits');
         el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300);
+      } else if(o.type==='fuel'){
+        fuel=Math.min(FUEL_MAX,fuel+FUEL_PICKUP);
+        SFX.fuel(); flash2('fuel'); updateFuelHUD();
+        spawnParticles2(p.sx,p.sy,'#00f5ff',9);
+        spawnScorePop(p.sx,p.sy-20,'+FUEL','#00f5ff');
       } else if(!inv){
         lives--; updateLivesHUD();
+        fuel=Math.max(0,fuel-FUEL_HIT_PENALTY); updateFuelHUD();
         inv=true; invFr=0; shake=28;
         SFX.hit(); flash2('hit');
         document.getElementById('void-edge').classList.add('active');
         setTimeout(()=>document.getElementById('void-edge').classList.remove('active'),600);
         spawnParticles2(ssx,ssy,'#ff2244',18);
-        if(lives<=0) endGame2();
+        if(lives<=0){ deathCause='lives'; endGame2(); }
       }
     }
   });
@@ -1273,9 +1345,10 @@ function startGame2(){
   dist=0; spd=BASE_SPD; fr=0; scroll=0; wave=0;
   shipX=0; shipY=0; credits=0; totalCredits=0; lives=MAX_LIVES;
   voidProx=0; voidGroanTimer=0; inv=false; invFr=0; shake=0;
-  obstacles=[]; particles2=[]; keys={};
+  fuel=FUEL_MAX; boosting=false; wasBoosting=false; lowFuelTimer=0; fuelCD=180; deathCause=null;
+  obstacles=[]; particles2=[]; keys={}; recentSpawns=[];
   touchStartX=null; touchStartY=null;
-  initStars3D(); initVoid2(); updateLivesHUD();
+  initStars3D(); initVoid2(); updateLivesHUD(); updateFuelHUD(); updateVoidHUD();
   gameState='playing'; spawnCD=45;
   document.getElementById('scr-start').classList.add('off');
   document.getElementById('scr-dead').classList.add('off');
@@ -1292,10 +1365,12 @@ function endGame2(){
   const d=Math.floor(dist); saveBest2(d);
   const isNew=d>best2&&d>0;
   SFX.die();
-  let title='NO LIVES LEFT',msg='The void has taken you',col='#ff2244';
-  if(d>3000){title='LEGENDARY';msg='You flew further than most dare dream.';col='#00f5ff';}
-  else if(d>1500){title='IMPRESSIVE';msg='You almost outran it.';col='#ffee00';}
-  else if(d>600){title='GOOD RUN';msg='The void is patient. Try again.';col='#ff00aa';}
+  let title, msg, col='#ff2244';
+  if(deathCause==='fuel'){ title='OUT OF FUEL'; msg='The void surged in and swallowed you whole'; }
+  else { title='NO LIVES LEFT'; msg='The void has taken you'; }
+  if(d>6000){title='LEGENDARY';msg='You flew further than most dare dream.';col='#00f5ff';}
+  else if(d>3000){title='IMPRESSIVE';msg='You almost outran it.';col='#ffee00';}
+  else if(d>1200){title='GOOD RUN';msg='The void is patient. Try again.';col='#ff00aa';}
   document.getElementById('dead-title').textContent=title;
   document.getElementById('dead-title').style.color=col;
   document.getElementById('dead-msg').textContent=msg;
@@ -1314,16 +1389,25 @@ function loop2(){
   fr++;
   if(gameState==='playing'){
     spd=Math.min(MAX_SPD,BASE_SPD+fr*SPD_INC);
+    boosting=(keys[' ']||keys['Spacebar'])&&fuel>BOOST_MIN_FUEL;
+    if(boosting&&!wasBoosting) SFX.boost();
+    wasBoosting=boosting;
+    const effSpd=boosting?spd*BOOST_MULT:spd;
+    fuel=Math.max(0,fuel-FUEL_DRAIN*(spd/BASE_SPD)-(boosting?BOOST_FUEL_COST:0));
     const newWave=Math.floor(dist/500);
     if(newWave>wave){ wave=newWave; spawnScorePop(W2/2,H2*0.4,'WAVE '+(wave+1),'#00f5ff'); }
-    dist+=spd*0.045; scroll+=spd*14;
-    voidProx=Math.min(1,dist/9000+wave*0.04);
+    dist+=effSpd*0.045; scroll+=effSpd*14;
+    const fuelDanger=1-fuel/FUEL_MAX;
+    voidProx=Math.min(1,dist/15000+wave*0.025+fuelDanger*0.65);
     voidGroanTimer++;
     if(voidProx>.45&&voidGroanTimer>200){ SFX.voidGroan(); voidGroanTimer=0; }
+    lowFuelTimer++;
+    if(fuel<25&&fuel>0&&lowFuelTimer>90){ SFX.lowFuel(); lowFuelTimer=0; }
+    if(fuel<=0){ deathCause='fuel'; endGame2(); }
     if(inv){ invFr++; if(invFr>INV_FR){inv=false;invFr=0;} }
     if(shake>0) shake*=0.76;
     applyShipMovement();
-    const zSpd=spd*0.22;
+    const zSpd=effSpd*0.22;
     obstacles.forEach(o=>{ o.wz-=zSpd; if(o.rot!==undefined) o.rot+=(o.rotSpd||0); });
     obstacles=obstacles.filter(o=>o.alive&&o.wz>-15);
     spawnCD--;
@@ -1335,10 +1419,13 @@ function loop2(){
       } else { spawnCoinArc(); }
       spawnCD=Math.max(22,Math.round(75-spd*0.45-wave*2));
     }
+    fuelCD--;
+    if(fuelCD<=0){ spawnFuelCanister(); fuelCD=200+Math.floor(Math.random()*160); }
     checkCol2();
     if(fr%3===0){
       document.getElementById('h-dist').textContent=Math.floor(dist)+'m';
       document.getElementById('h-credits').textContent=credits;
+      updateFuelHUD(); updateVoidHUD();
     }
   }
   cx2.save();
@@ -1349,7 +1436,7 @@ function loop2(){
   if(gameState==='playing'||gameState==='dead'){
     const sorted=[...obstacles].sort((a,b)=>b.wz-a.wz);
     sorted.forEach(drawObs2);
-    if(gameState==='playing') drawShip2(shipX,shipY,inv);
+    if(gameState==='playing') drawShip2(shipX,shipY,inv,boosting);
     tickParticles2();
     drawVoidEntity2();
   }
