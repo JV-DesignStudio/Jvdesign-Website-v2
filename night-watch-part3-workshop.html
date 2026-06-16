@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4c1d95">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<link rel="icon" href="logo.png" type="image/png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Watch! Part 3 — Polish Your Horror Game in Godot | JVDesignStudio</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/night-watch-part3-workshop.html">
+    <meta name="description" content="Part 3 of the FNAF-style Godot workshop! Add camera static, flickering lights, screen shake, custom sprites, sound effects, a power warning, and more. Polish your horror game!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jvdesignstudio.co.uk/night-watch-part3-workshop.html">
+    <meta property="og:title" content="Night Watch! Part 3 — Polish Your Horror Game | JVDesignStudio">
+    <meta property="og:description" content="Part 3 of the FNAF-style Godot workshop! Camera static, flickering lights, screen shake, custom sprites, sound effects, and a power warning. Make it feel like a real game!">
+    <meta property="og:image" content="https://jvdesignstudio.co.uk/Crypt%20crawlers.png">
+    <meta property="og:site_name" content="JVDesignStudio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Night Watch! Part 3 — Polish Your Horror Game | JVDesignStudio">
+    <meta name="twitter:description" content="Part 3 of the FNAF-style Godot workshop! Camera static, flickering lights, screen shake, custom sprites, sound effects, and a power warning.">
+    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/Crypt%20crawlers.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── JVDS Site Nav ── */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Nunito',sans-serif;background:#0d0015;color:#1a1a1a;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ── SERIES STRIP ── */
+.series-strip{background:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#457b9d);padding:6px 24px;text-align:center}
+.series-strip span{font-size:.75rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,#0d0015 0%,#1a0030 55%,#0a0a20 100%);border-bottom:3px solid #4c1d95;overflow:hidden;position:relative}
+.hero::after{content:'✨';position:absolute;right:0;bottom:-10px;font-size:8rem;opacity:.07;transform:rotate(-15deg);pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a78bfa;border:1.5px solid rgba(167,139,250,.4);border-radius:999px;padding:4px 14px;margin-bottom:8px;background:rgba(109,40,217,.15)}
+.series-label{display:block;font-family:'Boogaloo',cursive;font-size:.9rem;color:#a78bfa;letter-spacing:.05em;margin-bottom:4px;opacity:.85}
+.hero h1{font-family:'Boogaloo',cursive;font-size:clamp(2.4rem,6vw,3.6rem);line-height:1.0;color:#f0eaf8;margin-bottom:6px}
+.hero h1 .accent{color:#a78bfa}
+.hero h1 .subtitle-h1{display:block;font-size:clamp(1rem,2.5vw,1.4rem);color:#c4b5fd;font-family:'Nunito',sans-serif;font-weight:900;margin-top:4px}
+.hero p.lead{font-size:1rem;color:#d4c8e8;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid rgba(167,139,250,.4);border-radius:999px;padding:5px 14px;color:#d4c8e8;background:rgba(109,40,217,.15)}
+.hero-img{width:170px;height:170px;background:linear-gradient(135deg,#1a0030,#2e1060);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:5.5rem;flex-shrink:0;box-shadow:0 6px 30px rgba(109,40,217,.4);border:2.5px solid #6d28d9;animation:pulse-spooky 3s ease-in-out infinite}
+@keyframes pulse-spooky{0%,100%{box-shadow:0 6px 30px rgba(109,40,217,.4)}50%{box-shadow:0 6px 50px rgba(167,139,250,.7),0 0 0 8px rgba(109,40,217,.08)}}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#6d28d9;border-bottom-color:#6d28d9}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1.5px solid #ddd6fe;border-radius:14px;padding:18px 22px;margin-bottom:28px;box-shadow:0 2px 12px rgba(109,40,217,.07)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#6d28d9}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#6d28d9;color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.15)}
+.dot.locked{cursor:default}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #ede8e4;border-radius:18px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#6d28d9;box-shadow:0 4px 24px rgba(109,40,217,.11)}
+.step-card.locked{opacity:.5}
+.step-card.done{border-color:#d1fae5}
+
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:12px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa;font-family:'Boogaloo',cursive}
+.step-card.current .step-num{border-color:#6d28d9;color:#6d28d9;background:#f5f3ff}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.6rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:5px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#ede9fe;color:#5b21b6}
+.tag-current{background:#f5f3ff;color:#6d28d9}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#1a1a1a;line-height:1.2;letter-spacing:.01em}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:2px}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.step-card.current .step-status{color:#6d28d9}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #f5f0ea}
+
+.goal-box{background:#faf5ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#5b21b6;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.child{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tip{background:#fffbeb;border:1.5px dashed #fcd34d;color:#713f12}
+.callout.tryit{background:#faf5ff;border:1.5px dashed #c4b5fd;color:#4c1d95}
+
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#6d28d9;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:50%;background:#6d28d9;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+
+/* CODE */
+.code-block{background:#1c1917;border-radius:12px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;color:#e7e5e4;overflow-x:auto;border:1.5px solid #292524}
+
+/* DONE BUTTON */
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2.5px solid #22c55e;border-radius:12px;font-family:'Boogaloo',cursive;font-size:1.1rem;color:#166534;cursor:pointer;transition:background .15s,transform .1s;text-align:center;letter-spacing:.02em}
+.done-btn:hover{background:#f0fdf4;transform:translateY(-1px)}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:16px;padding:20px}
+.about-card h3{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#6d28d9;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* FOOTER */
+.site-footer{background:#403B33;padding:52px 24px 28px;}
+.footer-inner{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;}
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+.footer-logo{font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#F0EAD6;}
+.footer-tagline{font-size:0.72rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(240,234,214,0.65);}
+.footer-links{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.65);padding:4px 9px;border-radius:6px;transition:color 0.15s,background 0.15s;text-decoration:none;}
+.footer-links a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+.footer-socials{display:flex;gap:24px;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:700;color:rgba(240,234,214,0.65);transition:color 0.15s;text-decoration:none;}
+.footer-socials a:hover{color:#F0EAD6;}
+.footer-copy{font-size:0.73rem;color:rgba(240,234,214,0.45);border-top:1px solid rgba(255,255,255,0.07);padding-top:18px;width:100%;}
+
+@media(max-width:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-img{display:none}
+}
+</style>
+<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
+<link rel="stylesheet" href="style-shared.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- SERIES STRIP -->
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 9</span>
+</div>
+<div style="background:#1a1210;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 16px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;">
+  <div style="display:inline-flex;gap:6px;align-items:center;min-width:max-content;">
+    <a href="godot-racing-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🏎️ Ep 1 · Zoom Zoom</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="jump-jump-mario-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🍄 Ep 2 · Jump Jump</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="nuclear-throne-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🔫 Ep 3 · Bang Bang</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="fairy-survivors-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🧚 Ep 4 · Fairy Survivors</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="barrel-blast-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🦍 Ep 5 · Barrel Blast</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="pixel-quest-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🗡️ Ep 6 · Pixel Quest</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="night-watch-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🐻 Ep 7 · Night Watch</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="night-watch-part2-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🐰 Ep 8 · Night Watch Part 2</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;background:#6d28d9;color:#fff;border:1px solid #6d28d9;">✨ Ep 9 · Night Watch Part 3</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="index.html" class="logo-link">
+        <img loading="lazy" src="logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="gallery.html" class="nav-link" data-page="gallery.html">🖼️ Gallery</a>
+        <a href="freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="content_hub.html" class="nav-link" data-page="content_hub.html">📋 Content Hub</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="index.html">🏠 Home</a>
+    <a href="games.html">🎮 Games</a>
+    <a href="books.html">📚 Books</a>
+    <a href="learn-hub.html">🎓 Learn Hub</a>
+    <a href="workshop.html">🔧 Workshop</a>
+    <a href="dev-tools.html">🛠️ Dev Tools</a>
+    <a href="gallery.html">🖼️ Gallery</a>
+    <a href="freebies.html">🎁 Free Downloads</a>
+    <a href="content_hub.html">📋 Content Hub</a>
+    <a href="about.html">👤 About</a>
+    <a href="contact.html">✉️ Contact</a>
+    <a href="newsletter.html">💌 Newsletter</a>
+    <a href="sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <span class="series-label">⭐ My First Video Game</span>
+      <h1><span class="accent">Night Watch! Part 3</span> ✨<span class="subtitle-h1">Polish Night — Make It Feel Like a Real Game!</span></h1>
+      <p class="lead">Your horror game works. Now let's make it feel AMAZING. Camera static, flickering lights, screen shake, custom pixel art sprites, real sound effects, a power warning, and a final animated death screen — all in one glorious polish session!</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 8+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 10 polish steps</span>
+        <span class="badge">🐻 Requires Parts 1 &amp; 2</span>
+      </div>
+    </div>
+    <div class="hero-img">🎨</div>
+  </div>
+</section>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Polish!</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we adding?</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main" id="main-content">
+
+  <div id="tab-workshop" class="tab-pane active">
+
+    <!-- PART 2 CALLOUT -->
+    <div style="background:#faf5ff;border:2px solid #c4b5fd;border-radius:14px;padding:16px 20px;margin:20px 0 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-sizing:border-box;">
+      <span style="font-size:2.2rem;flex-shrink:0;line-height:1;">🐰</span>
+      <div style="flex:1;min-width:180px;">
+        <strong style="font-size:.95rem;color:#3b0764;display:block;margin-bottom:3px;">You need Parts 1 &amp; 2 first!</strong>
+        <span style="font-size:.82rem;color:#5b21b6;line-height:1.55;">This workshop polishes the game you built across Parts 1 and 2. Open your Night Watch Godot project and make sure Part 2 is complete before starting.</span>
+      </div>
+      <a href="night-watch-part2-workshop.html" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:#6d28d9;color:#fff;font-weight:800;font-size:.88rem;padding:11px 22px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 #4c1d95;white-space:nowrap;">← Go to Part 2</a>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">✨ Polish Progress</span>
+        <span class="progress-count" id="prog-count">0 / 10 steps</span>
+      </div>
+      <div class="step-dots" id="dot-row"></div>
+    </div>
+    <div id="steps-container"></div>
+  </div>
+
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎨 What Is Polish?</h3>
+        <p>Polish is the difference between a game that <em>works</em> and a game that <em>feels amazing</em>. None of these steps change how the game is played — they change how it <strong>feels</strong> to play it. A camera flash when you switch views. A light flicker that makes your hands sweat. A screen shake that makes the jump scare genuinely terrifying. Small details, huge impact.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>You've already built something incredible — a real horror game with multiple monsters, a power meter, and five nights! But right now the cameras just swap instantly and the jump scare just pops up. In this part we're going to add things like flickering lights, a flash when you switch cameras, and a screen shake during the jump scare. When you're done, it will feel EXACTLY like the real FNAF. People are going to scream playing your game! 😱</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>This episode covers: <strong>AnimationPlayer</strong> for the screen shake and camera static effects, a <strong>Timer-based random light flicker</strong>, <strong>AudioStreamPlayer</strong> with generated SFX for doors, power warnings, and ambient hum, replacing placeholder <strong>ColorRect</strong> nodes with custom <strong>Sprite2D</strong> pixel art, a <strong>low-power warning pulse</strong> using modulate animation, and a polished animated death screen with AnimationPlayer. No new gameplay systems — pure feel and presentation.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What We're Adding</h3>
+        <ul>
+          <li>Camera static flash when switching views</li>
+          <li>Flickering office lights</li>
+          <li>Screen shake on the jump scare</li>
+          <li>Custom pixel art sprites (using Pixel Studio)</li>
+          <li>Real sound effects (using SFX Studio)</li>
+          <li>Low-power warning — beep &amp; red pulse</li>
+          <li>Door slam sound &amp; animation</li>
+          <li>Animated death screen (slides in from off-screen)</li>
+          <li>Win screen confetti &amp; celebration</li>
+          <li>Final playtest &amp; share your game!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div style="background:linear-gradient(135deg,#0d0015,#1a0030);border-top:1px solid rgba(167,139,250,.15);padding:40px 24px;text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,139,250,.5);margin-bottom:12px;">⭐ My First Video Game · Series 1</div>
+    <div style="font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#f0eaf8;margin-bottom:8px;">Your game is FINISHED. Share it with the world! 🏆</div>
+    <div style="font-size:.9rem;color:rgba(196,181,253,.55);margin-bottom:24px;">Three episodes. A complete horror game. Camera systems, AI, sound, polish. That's real game development. You should be incredibly proud!</div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="night-watch-part2-workshop.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-family:'Fredoka',cursive;font-size:.95rem;font-weight:700;padding:12px 22px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,.12);">← Ep 8 · Night Watch Part 2</a>
+      <a href="my-first-video-game.html" style="display:inline-flex;align-items:center;gap:8px;background:#6d28d9;color:#fff;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;box-shadow:0 4px 0 #4c1d95;">🎮 See All Episodes →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites &amp; animations</div>
+        </div>
+      </a>
+      <a href="sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎵</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">SFX Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Create custom sound effects</div>
+        </div>
+      </a>
+      <a href="colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>
+      <a href="game-idea-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎲</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Game Idea Gen</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Random game concepts &amp; prompts</div>
+        </div>
+      </a>
+    </div>
+    <a href="dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="books.html">Books</a>
+            <a href="games.html">Games</a>
+            <a href="workshop.html">Workshop</a>
+            <a href="freebies.html">Freebies</a>
+            <a href="content_hub.html">All Projects</a>
+            <a href="devlog.html">Dev Log</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+            <a href="videos.html">Videos</a>
+            <a href="faq.html">FAQ</a>
+            <a href="press.html">Press</a>
+            <a href="follow_along.html">Follow Along</a>
+            <a href="sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+const STEPS = [
+  {
+    emoji: '🌟',
+    tag: 'Start here',
+    tagClass: 'tag-new',
+    title: 'Welcome to Polish Night!',
+    subtitle: 'Let\'s turn good into GREAT...',
+    goal: 'Understand what polish means and open your Night Watch project — ready to transform it!',
+    child: 'Your game already works brilliantly — you\'ve got animatronics, a power meter, multiple nights, and a main menu. But right now the cameras swap instantly, the lights never flicker, and the jump scare just... appears. Polish fixes all of that! We\'re going to add all the tiny details that make a game feel like a REAL published horror game. Get ready — this session is going to be so satisfying! ✨',
+    parent: 'Polish is often 20% of development time but responsible for 80% of perceived quality. This session introduces AnimationPlayer for timed effects, AudioStreamPlayer with generated SFX, modulate-based colour animations, and Sprite2D to replace placeholder geometry. Crucially, we introduce none of these via heavy abstraction — each one is added in the simplest possible way, directly to existing nodes, so the child can see and understand every change.',
+    note: 'The golden rule of polish: do it LAST. Polishing an unfinished game is a trap — you end up perfecting things that get cut later. You built your whole game first. NOW we polish. That\'s the professional order of operations! 🏆',
+    tryit: 'Open your Night Watch project in Godot 4. Press F5 and play for 30 seconds. Notice everything that feels a bit "flat" — camera swaps, door clicks, the jump scare. By the end of this workshop all of those will feel amazing.',
+    steps: [
+      'Open <strong>Godot 4</strong> and load your <strong>Night Watch</strong> project.',
+      'Press <strong>F5</strong> to confirm everything from Parts 1 &amp; 2 still works correctly.',
+      'Keep the <strong>SFX Studio</strong> open in a browser tab — you\'ll need it in Step 5: <a href="sfx-generator.html" target="_blank" style="color:#6d28d9;font-weight:700;">sfx-generator.html</a>',
+      'Keep <strong>Pixel Studio</strong> open in another tab for Step 4: <a href="pixel-studio.html" target="_blank" style="color:#6d28d9;font-weight:700;">pixel-studio.html</a>',
+      'Let\'s go! ✨',
+    ],
+    code: null,
+  },
+  {
+    emoji: '📷',
+    tag: 'Step 1',
+    tagClass: 'tag-new',
+    title: 'Camera Static Flash!',
+    subtitle: 'That satisfying TV-flicker when you switch views...',
+    goal: 'When the player clicks a camera button, briefly flash a white noisy overlay before showing the new camera — just like the real FNAF.',
+    child: 'Have you noticed in FNAF that when you switch cameras the screen goes a bit fuzzy for a split second? That\'s called camera static — it looks like old TV interference. It makes the camera switching feel REAL instead of just instantly swapping. It\'s actually super easy to add — we just show a white flash for a tiny moment every time someone presses a camera button!',
+    parent: 'Add a full-screen ColorRect named "CamStatic" to the UI CanvasLayer (or a new CanvasLayer above the cameras), initially invisible, color white with ~0.7 alpha. In show_cam(), before switching the visible panel, make CamStatic visible, await a short timer (0.06s), then hide it and reveal the new camera. The two-frame flash is enough to feel like static without being distracting. Optionally animate the alpha from 0.7 to 0 over 0.1s using a Tween for a smoother fade.',
+    note: 'In real FNAF the static is a sprite sheet animation with noise. Our version — a quick white flash — achieves 90% of the feel with 5% of the effort. This is a great lesson in "fake it \'til you make it" game feel!',
+    tryit: 'Click between camera buttons quickly. Does each switch have a brief white flash? It should feel very satisfying. If it\'s too bright or too long, adjust the color alpha or the timer wait time. 📷',
+    steps: [
+      'In <strong>main.tscn</strong>, add a new <strong>ColorRect</strong> inside your UI CanvasLayer. Name it <strong>CamStatic</strong>.',
+      'Set its anchors to fill the full screen (anchor_right = 1, anchor_bottom = 1). Set color to <strong>white with alpha 0.7</strong>. Set <strong>Visible: off</strong>.',
+      'Mark it as a <strong>scene-unique node</strong>: right-click → "Access as Unique Name" (so you can use %CamStatic in the script).',
+      'Update the <code>show_cam()</code> function in <strong>main.gd</strong> with the code below.',
+    ],
+    code: `# Updated show_cam() in main.gd:
+
+func show_cam(index: int):
+\t# Flash the static overlay first
+\t%CamStatic.visible = true
+\tawait get_tree().create_timer(0.06).timeout
+\t%CamStatic.visible = false
+
+\t# Now swap to the new camera panel
+\tfor i in cam_panels.size():
+\t\tcam_panels[i].visible = (i == index)
+\tcurrent_cam = index`,
+  },
+  {
+    emoji: '💡',
+    tag: 'Step 2',
+    tagClass: 'tag-locked',
+    title: 'Flickering Office Lights!',
+    subtitle: 'The lights are... unstable. How unsettling.',
+    goal: 'Add a random flicker to the office lighting so the environment feels alive and nervous-making.',
+    child: 'Ever been in a spooky movie where the lights flicker? It\'s terrifying! We\'re going to make the office lights randomly flicker — just for a tiny moment, then back to normal. Most of the time nothing happens. But every now and then: flicker. It\'s such a small thing but it makes the whole game feel SO much creepier. Your players are going to be on edge the entire time! 👀',
+    parent: 'Add a semi-transparent dark ColorRect ("LightFlicker") covering the full office area (or the full screen), initially invisible. Add a Timer node ("FlickerTimer") with wait_time around 0.2s and autostart on. In the timeout callback, use randf() to trigger a flicker ~5% of the time — briefly show the overlay for 0.08s then hide it. The low probability means it happens unpredictably, which is far more unnerving than a regular pattern.',
+    note: 'Randomness creates tension. A light that flickers on a predictable schedule feels mechanical. A light that flickers RANDOMLY keeps the player\'s brain in a constant low-level alert state. This is exactly why horror games feel stressful — the brain is always waiting for the next thing. 🧠',
+    tryit: 'Watch the office for 20-30 seconds. Does the light occasionally dip and return? It should be rare but when it happens it should make you look up from the cameras! Adjust the randf() threshold (try 0.03 for less frequent, 0.1 for more) until it feels right.',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>ColorRect</strong> as a child of your root NightWatch node. Name it <strong>LightFlicker</strong>.',
+      'Set it to cover the full office area (offset_right: 960, offset_bottom: 540). Set color to <strong>near-black, alpha ~0.85</strong>. Set <strong>Visible: off</strong>.',
+      'Add a <strong>Timer</strong> node to NightWatch. Name it <strong>FlickerTimer</strong>. Set Wait Time: <strong>0.2</strong>, Autostart: <strong>on</strong>.',
+      'Mark LightFlicker as a scene-unique node (right-click → "Access as Unique Name").',
+      'Add the code below to <strong>main.gd</strong>.',
+    ],
+    code: `# Add to main.gd — connect FlickerTimer.timeout to this in _ready():
+# $FlickerTimer.timeout.connect(_on_flicker_timer)
+
+func _ready():
+\t# ... your existing _ready() code ...
+\t$FlickerTimer.timeout.connect(_on_flicker_timer)
+
+func _on_flicker_timer():
+\tif not game_active:
+\t\treturn
+\tif randf() < 0.05:  # 5% chance each tick = roughly every 4 seconds on average
+\t\t%LightFlicker.visible = true
+\t\tawait get_tree().create_timer(0.08).timeout
+\t\t%LightFlicker.visible = false`,
+  },
+  {
+    emoji: '📳',
+    tag: 'Step 3',
+    tagClass: 'tag-locked',
+    title: 'Screen Shake on the Jump Scare!',
+    subtitle: 'The whole world shakes when they get you...',
+    goal: 'When an animatronic triggers the jump scare, violently shake the camera for a second before the game over screen appears.',
+    child: 'Right now the jump scare just pops up — BOOM, it\'s there. It IS scary, but imagine if the whole screen shook like an earthquake at the same time? That\'s what we\'re adding! A screen shake makes the jump scare feel like an actual IMPACT. Your whole body will feel it. We\'re going to make the camera rattle around really fast for about a second, then show the game over screen. It\'s going to make people SCREAM. 😱',
+    parent: 'Add a Camera2D node to main.tscn as a child of the NightWatch root (not in a CanvasLayer). In _trigger_jumpscare(), animate the camera\'s offset using a Tween — rapidly oscillate between small random offsets (e.g. ±15px) over ~0.8 seconds, then reset to (0,0). The Tween approach needs no AnimationPlayer and is cleanly self-contained. After the shake, proceed with showing the jumpscare CanvasLayer as before.',
+    note: 'Camera shake is one of game feel\'s most powerful tools. It communicates impact at a physical level — the player\'s eyes are literally shaken. Use it sparingly (only for the jump scare) so it retains its impact. If it happened every time you switched cameras it would just be annoying.',
+    tryit: 'Let an animatronic reach an open door. When the jump scare triggers, does the screen shake violently? The shake should be fast and chaotic — not smooth and gentle. If it feels too small, increase the offset values. If too large, reduce them. 📳',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>Camera2D</strong> node as a child of your NightWatch root. Leave its position at (0, 0). No other settings needed.',
+      'Mark it as scene-unique: right-click → "Access as Unique Name". Name it <strong>MainCamera</strong>.',
+      'Replace your existing <code>_trigger_jumpscare()</code> function in <strong>main.gd</strong> with the version below.',
+    ],
+    code: `# Replace _trigger_jumpscare() in main.gd:
+
+func _trigger_jumpscare():
+\t# Shake the screen first
+\tvar tween = create_tween()
+\tvar shake_duration = 0.8
+\tvar elapsed = 0.0
+\twhile elapsed < shake_duration:
+\t\tvar offset = Vector2(randf_range(-15, 15), randf_range(-12, 12))
+\t\ttween.tween_property(%MainCamera, "offset", offset, 0.04)
+\t\telapsed += 0.04
+\ttween.tween_property(%MainCamera, "offset", Vector2.ZERO, 0.05)
+
+\t# Show the jump scare overlay
+\t%JumpScare.visible = true
+\tawait get_tree().create_timer(1.8).timeout
+\t_game_over()`,
+  },
+  {
+    emoji: '🎨',
+    tag: 'Step 4',
+    tagClass: 'tag-locked',
+    title: 'Custom Pixel Art Sprites!',
+    subtitle: 'Replace those coloured boxes with real art!',
+    goal: 'Use Pixel Studio to draw your own animatronic sprite and replace the placeholder ColorRect with a Sprite2D.',
+    child: 'Those coloured rectangles pretending to be animatronics? It\'s time to replace them! Open Pixel Studio and draw your own version of Freddy — a round brown bear face, glowing eyes, maybe a hat! It doesn\'t have to be perfect. YOUR art in YOUR game is a thousand times better than a perfect rectangle. Once you\'ve drawn it, we\'ll drop it straight into Godot as a real sprite. How cool is that?! 🐻🎨',
+    parent: 'Pixel Studio exports PNG files. In Godot, drag the PNG into the FileSystem dock to import it as a texture. In freddy.tscn, add a Sprite2D child (or replace the existing ColorRect) and assign the texture. Sprite2D\'s default origin is the centre, which is useful for the shake effect. Recommended sprite size: 64×64 or 128×128 pixels. For camera panel markers, the same texture can be reused at a smaller scale (use the Scale property on Sprite2D). This is a great opportunity to explain texture reuse.',
+    note: 'Making your own art — even simple pixel art — is one of the most meaningful milestones in game development. The moment a child sees THEIR drawing moving in THEIR game is genuinely unforgettable. Take a moment to celebrate when it works! 🎉',
+    tryit: 'Open the game and switch to Camera 1 (Stage). Does Freddy now appear as your pixel art sprite instead of a coloured box? Check the door panels too — does Freddy show there when he arrives? Adjust the sprite\'s scale if it\'s too big or small for the space.',
+    steps: [
+      'Open <a href="pixel-studio.html" target="_blank" style="color:#6d28d9;font-weight:700;">Pixel Studio</a>. Draw a 64×64 animatronic sprite — a bear face, bunny, chicken, whatever you like!',
+      'Export it as a PNG (click the download button in Pixel Studio).',
+      'In Godot, drag the PNG file from your computer into the <strong>FileSystem dock</strong>. It will import automatically.',
+      'Open <strong>freddy.tscn</strong>. Select the existing ColorRect (the bear placeholder). Add a <strong>Sprite2D</strong> as a sibling. Assign your imported texture in the Inspector (<strong>Texture</strong> field).',
+      'Adjust the Sprite2D\'s <strong>Scale</strong> and <strong>Position</strong> until it sits nicely in the panel.',
+      'Optionally hide or delete the old ColorRect — the Sprite2D replaces it.',
+    ],
+    code: null,
+  },
+  {
+    emoji: '🎵',
+    tag: 'Step 5',
+    tagClass: 'tag-locked',
+    title: 'Real Sound Effects!',
+    subtitle: 'Doors creak. Power hums. Freddy lurks.',
+    goal: 'Use SFX Studio to generate a door creak, a power hum, and a jump scare sting — then wire them up in Godot.',
+    child: 'A horror game without sound is like a haunted house with the lights on — it\'s just not scary! We\'re going to add three sounds: a creaking GROAN when you close a door, a low electrical HUM in the background that gets more worrying as power runs out, and a horrible SHRIEK when the jump scare triggers. Go to SFX Studio and create them — there\'s no "wrong" sound here, make them as spooky as you want! 🎵👻',
+    parent: 'SFX Studio exports WAV files. Import them via the Godot FileSystem dock (they become AudioStream resources automatically). Add three AudioStreamPlayer nodes to main.tscn: DoorSFX (the creak, non-looping), AmbientHum (looping, plays from _ready), and JumpScareSFX (one-shot, triggered in _trigger_jumpscare). For the ambient hum, vary its pitch_scale based on power level to create increasing tension as power drains — a subtle but highly effective touch.',
+    note: 'Audio is responsible for roughly 50% of emotional impact in games and film. Adding sound to a previously silent game is the single highest-return polish step. Even a simple generated sound is dramatically better than silence.',
+    tryit: 'Press a door button — do you hear the creak? Let the game run silently for a moment — can you hear the ambient hum? Now get caught — does the jump scare play a sound? If the hum is too loud, lower its Volume dB in the Inspector (try -10 dB to start). 🎵',
+    steps: [
+      'Open <a href="sfx-generator.html" target="_blank" style="color:#6d28d9;font-weight:700;">SFX Studio</a>. Generate and download three sounds: a <strong>door creak</strong>, an <strong>ambient hum</strong>, and a <strong>jump scare shriek</strong>.',
+      'Drag all three WAV files into the Godot <strong>FileSystem dock</strong>.',
+      'In <strong>main.tscn</strong>, add three <strong>AudioStreamPlayer</strong> nodes to your NightWatch root: name them <strong>DoorSFX</strong>, <strong>AmbientHum</strong>, <strong>JumpScareSFX</strong>.',
+      'For each one: click it, then drag the matching audio file into its <strong>Stream</strong> slot in the Inspector.',
+      'For <strong>AmbientHum</strong>: tick <strong>Autoplay</strong> on and tick <strong>Loop</strong> on (under the stream settings).',
+      'Add the code below to <strong>main.gd</strong>.',
+    ],
+    code: `# Add to main.gd:
+
+func _on_left_door_pressed():
+\t# ... your existing door code ...
+\t$DoorSFX.play()
+
+func _on_right_door_pressed():
+\t# ... your existing door code ...
+\t$DoorSFX.play()
+
+# Add inside _update_power() — vary hum pitch as power drains:
+func _update_power(delta):
+\t# ... your existing drain code ...
+\t$AmbientHum.pitch_scale = 1.0 + (1.0 - (power / 100.0)) * 0.4
+
+# Add at the start of _trigger_jumpscare():
+func _trigger_jumpscare():
+\t$JumpScareSFX.play()
+\t$AmbientHum.stop()
+\t# ... rest of your jumpscare code ...`,
+  },
+  {
+    emoji: '⚡',
+    tag: 'Step 6',
+    tagClass: 'tag-locked',
+    title: 'Low-Power Warning!',
+    subtitle: 'The red glow of impending doom...',
+    goal: 'When power drops below 20%, add a pulsing red tint to the screen and a repeating warning beep — so the player KNOWS things are desperate.',
+    child: 'In the real FNAF, when your power gets low everything feels more desperate. We\'re going to add two things: when power goes below 20%, the whole office starts glowing a scary red colour that pulses in and out. AND a warning beep starts playing. So the player has THREE ways to know power is low — the number on the bar, the red glow, AND the sound. It\'s the panic button! 🔴⚡',
+    parent: 'Add a full-screen ColorRect ("PowerWarning") to the UI CanvasLayer, color red with alpha 0, initially visible (we\'ll animate the alpha). In _update_power(), when power drops below 20 for the first time, start a Tween that loops the alpha between 0 and 0.18 with a 0.8s period. Also start a separate Timer ("BeepTimer") that plays a short beep AudioStreamPlayer every 1.5 seconds. Stop both when power reaches 0 or game ends. The threshold check should be one-time (use a bool power_warning_active) to avoid re-triggering the tween every frame.',
+    note: 'Redundant feedback — the same information delivered through multiple channels simultaneously (visuals + audio + number) — is a cornerstone of good game UX. It ensures the player never misses critical information regardless of where they\'re looking.',
+    tryit: 'Let your power drain to below 20%. Does the screen pulse red? Do you hear the warning beep? Does the frequency feel right — urgent but not so fast it\'s annoying? Adjust the Tween duration and BeepTimer wait_time to taste. ⚡',
+    steps: [
+      'In <strong>main.tscn</strong>, add a <strong>ColorRect</strong> to your UI CanvasLayer. Name it <strong>PowerWarning</strong>. Set anchors to fill the screen. Set color to <strong>red (1, 0, 0)</strong> with <strong>alpha 0</strong>. Leave it visible (alpha 0 = invisible but ready).',
+      'Add a <strong>Timer</strong> node named <strong>BeepTimer</strong> to NightWatch. Wait Time: <strong>1.5</strong>. Autostart: <strong>off</strong>.',
+      'Create a short beep sound in SFX Studio and add a fourth <strong>AudioStreamPlayer</strong> named <strong>WarnBeep</strong> to NightWatch.',
+      'Mark PowerWarning as scene-unique. Add the code below to <strong>main.gd</strong>.',
+    ],
+    code: `# Add to main.gd:
+
+var power_warning_active = false
+
+func _update_power(delta):
+\t# ... your existing power drain code ...
+
+\t# Trigger warning when power first drops below 20%
+\tif power < 20.0 and not power_warning_active and not power_drained:
+\t\tpower_warning_active = true
+\t\t_start_power_warning()
+
+func _start_power_warning():
+\t$BeepTimer.start()
+\t$BeepTimer.timeout.connect(func(): $WarnBeep.play())
+\t# Pulse the red overlay
+\tvar tween = create_tween().set_loops()
+\ttween.tween_property(%PowerWarning, "color:a", 0.18, 0.4)
+\ttween.tween_property(%PowerWarning, "color:a", 0.0,  0.4)
+
+func _power_out():
+\t# ... your existing power-out code ...
+\t$BeepTimer.stop()
+\t%PowerWarning.color.a = 0.0`,
+  },
+  {
+    emoji: '🚪',
+    tag: 'Step 7',
+    tagClass: 'tag-locked',
+    title: 'Door Slam Animation!',
+    subtitle: 'Make those doors THUD shut.',
+    goal: 'When a door closes, animate the door block sliding in from the side instead of just appearing instantly.',
+    child: 'Right now when you press a door button, the dark rectangle just pops into existence — it\'s a bit boring. Real doors MOVE! We\'re going to make the door block slide in from the edge of the screen, like a big heavy door slamming shut. It takes about 0.15 seconds and it makes the door feel SOLID and HEAVY. You\'ll feel much safer behind it once it\'s animated! 🚪',
+    parent: 'Use a Tween to animate the door block ColorRect\'s offset_right (for left door) from just off-screen back to its resting position. On open, reverse the tween. For left door: slide from offset_right=0 (hidden, effectively 0px wide) to offset_right=120 in 0.15s using Tween.EASE_OUT. For right door: animate offset_left from 960 to 840. The exact property depends on your scene layout — the key is changing the rect so it appears to slide rather than snap.',
+    note: 'Animation duration matters enormously. 0.15 seconds feels snappy and responsive. 0.3 seconds starts to feel sluggish. 0.5 seconds would feel like the door is made of foam. Always err on the side of faster for door/button feedback — the player shouldn\'t wait for the UI to catch up with their input.',
+    tryit: 'Press the left door button. Does the dark panel slide in from the left edge? Press it again — does it slide back out? The motion should feel fast and satisfying, like a real heavy door. If it feels slow, reduce the Tween duration. 🚪',
+    steps: [
+      'In <strong>main.gd</strong>, update the door functions to animate using a Tween instead of instantly toggling visible.',
+      'For the <strong>left door</strong>: when closing, tween <code>offset_right</code> from 0 to 120 over 0.15 seconds (EASE_OUT). When opening, tween from 120 to 0.',
+      'For the <strong>right door</strong>: when closing, tween <code>offset_left</code> from 960 to 840 over 0.15 seconds. When opening, reverse.',
+      'Make sure the door block starts with <code>visible = true</code> in the scene (not hidden!) since we\'re using position/size to hide it instead of visibility.',
+      'Add the updated door code below.',
+    ],
+    code: `# Updated door functions in main.gd:
+# Note: set LeftDoorBlock visible=true in the scene,
+# but start it with offset_right = 0 (zero width = hidden).
+
+func _on_left_door_pressed():
+\tleft_door_closed = not left_door_closed
+\tvar tween = create_tween().set_ease(Tween.EASE_OUT)
+\tif left_door_closed:
+\t\ttween.tween_property(%LeftDoorBlock, "offset_right", 120.0, 0.15)
+\t\t%CloseLeftDoorButton.text = "🚪 Open Left Door"
+\telse:
+\t\ttween.tween_property(%LeftDoorBlock, "offset_right", 0.0, 0.15)
+\t\t%CloseLeftDoorButton.text = "🚪 Close Left Door"
+
+func _on_right_door_pressed():
+\tright_door_closed = not right_door_closed
+\tvar tween = create_tween().set_ease(Tween.EASE_OUT)
+\tif right_door_closed:
+\t\ttween.tween_property(%RightDoorBlock, "offset_left", 840.0, 0.15)
+\t\t%CloseRightDoorButton.text = "🚪 Open Right Door"
+\telse:
+\t\ttween.tween_property(%RightDoorBlock, "offset_left", 960.0, 0.15)
+\t\t%CloseRightDoorButton.text = "🚪 Close Right Door"`,
+  },
+  {
+    emoji: '💀',
+    tag: 'Step 8',
+    tagClass: 'tag-locked',
+    title: 'Animated Death Screen!',
+    subtitle: 'Going out with a bang (and a slide-in).',
+    goal: 'Make the game over screen SLIDE in from below rather than instantly appearing — and show clearly which animatronic caught you.',
+    child: 'When you die right now the game-over screen just appears. BORING! Let\'s make it dramatically slide up from the bottom of the screen like a curtain falling. And we\'ll also make it say WHO got you — "Freddy got you!" or "Bonnie got you!" depending on which animatronic reached your door. A dramatic death screen makes losing feel almost... satisfying? Well, almost. 😈',
+    parent: 'Pass the animatronic name into _game_over() (from _on_animatronic_at_door which already receives the "who" string from Part 2). In the GameOverScreen CanvasLayer, add a Control panel that starts offset 540px below the visible area (offset_top = 540). On _game_over(), first make the CanvasLayer visible, then Tween the panel\'s offset_top from 540 to 0 over 0.4 seconds using EASE_OUT. Update GoLabel to include the animatronic\'s name. The slide-up motion is visually impactful and feels like a curtain — appropriate for a theatre-of-horror vibe.',
+    note: 'Named consequences increase emotional investment. "Game Over" is generic. "Freddy got you because you forgot to check the right door" is a story. When the game tells the player specifically what happened, they learn and they care — and they immediately want to try again.',
+    tryit: 'Get caught on purpose. Does the game over screen slide up from the bottom? Does it say which animatronic caught you? Click Try Again — do you return to the main menu? The slide should feel smooth and theatrical, not jarring. 💀',
+    steps: [
+      'Update <code>_on_animatronic_at_door()</code> in <strong>main.gd</strong> to pass the animatronic name to <code>_trigger_jumpscare()</code>.',
+      'Update <code>_trigger_jumpscare()</code> to accept and store the name, then pass it to <code>_game_over()</code>.',
+      'In <strong>main.tscn</strong>, inside the GameOverScreen CanvasLayer, add a <strong>Control</strong> panel named <strong>DeathPanel</strong>. Put your GoLabel and GoRestartButton inside this panel.',
+      'Set DeathPanel\'s <strong>offset_top to 540</strong> (off-screen below). Mark it as scene-unique.',
+      'Update <code>_game_over()</code> in <strong>main.gd</strong> with the slide-in animation below.',
+    ],
+    code: `# Updated functions in main.gd:
+
+var caught_by = "an animatronic"
+
+func _on_animatronic_at_door(side: String, who: String = "an animatronic"):
+\tvar door_closed = left_door_closed if side == "left" else right_door_closed
+\tif door_closed:
+\t\t# Send them back — whichever animatronic it was
+\t\tfor node in get_tree().get_nodes_in_group("animatronics"):
+\t\t\tif node.get("room") == (3 if side == "left" else 4):
+\t\t\t\tnode.room = 0
+\t\t\t\tnode._update_display()
+\telse:
+\t\tcaught_by = who
+\t\t_trigger_jumpscare()
+
+func _game_over():
+\tgame_active = false
+\t%GoLabel.text = "💀 " + caught_by + " got you!"
+\t%GameOverScreen.visible = true
+\tvar tween = create_tween().set_ease(Tween.EASE_OUT)
+\ttween.tween_property(%DeathPanel, "offset_top", 0.0, 0.4)`,
+  },
+  {
+    emoji: '🌅',
+    tag: 'Step 9',
+    tagClass: 'tag-locked',
+    title: 'Win Screen Celebration!',
+    subtitle: 'You survived. You DESERVE confetti.',
+    goal: 'Make the win screen feel triumphant — a slide-in panel, the current night number displayed, and a confetti particle burst.',
+    child: 'Winning is amazing and it should FEEL amazing! Right now the win screen just pops up like everything else. We\'re going to make it slide down from the TOP (like the sun rising at 6am — get it?), show which night you survived, and add a burst of colourful confetti particles. You built a whole horror game and survived five nights — you absolutely deserve confetti! 🎉',
+    parent: 'Mirror the death screen approach — a WinPanel Control inside WinScreen CanvasLayer, starting at offset_top = -540, tweening to 0 on _win(). Display GameManager.current_night in the win text. For confetti: add a CPUParticles2D node to the WinScreen CanvasLayer configured to emit downward-falling colourful squares. Set it to emit only when triggered (Emitting: false initially). In _win(), set emitting = true. CPUParticles2D is built into Godot — no shader or extra plugin required, making it beginner-accessible.',
+    note: 'Victory screens are often the most neglected part of indie games — developers focus so much energy on gameplay they forget to make winning feel good. A well-designed win screen is your last impression on the player. Make it memorable.',
+    tryit: 'Survive a full night (cheat: temporarily set NIGHT_DURATION = 10.0 in main.gd, then change it back). Does the win panel slide down from above? Do you see confetti? Does it say which night you survived? That\'s a WIN screen worth winning for! 🌅',
+    steps: [
+      'In <strong>main.tscn</strong>, inside WinScreen CanvasLayer, add a <strong>Control</strong> named <strong>WinPanel</strong>. Move WinLabel and WinRestartButton inside it. Set WinPanel\'s <strong>offset_top to -540</strong>. Mark it scene-unique.',
+      'Add a <strong>CPUParticles2D</strong> node to WinScreen. Set: <strong>Emitting: off</strong>, Amount: 80, Lifetime: 3.0, Direction: (0, 1), Spread: 180, Initial Velocity: 200. Pick bright colours for the Color.',
+      'Mark the CPUParticles2D as scene-unique (name it <strong>Confetti</strong>).',
+      'Update <code>_win()</code> in <strong>main.gd</strong> with the code below.',
+    ],
+    code: `# Updated _win() in main.gd:
+
+func _win():
+\tgame_active = false
+\t%WinLabel.text = "🌅 6 AM! You survived Night " + str(GameManager.current_night) + "!"
+\t%WinScreen.visible = true
+\t%Confetti.emitting = true
+\tvar tween = create_tween().set_ease(Tween.EASE_OUT)
+\ttween.tween_property(%WinPanel, "offset_top", 0.0, 0.5)`,
+  },
+  {
+    emoji: '🏆',
+    tag: 'Step 10',
+    tagClass: 'tag-locked',
+    title: 'Final Playtest &amp; Share!',
+    subtitle: 'Five nights survived. Legends only.',
+    goal: 'Do a full playthrough of your polished game, fix anything that feels off, then export it and share it with someone who doesn\'t know it\'s coming.',
+    child: 'This is the most important step: actually PLAY your finished game! Try every camera. Close and open doors. Let power run out. Get caught on purpose. Then — most importantly — hand it to someone who has NEVER played it before. Watch their face. Did they jump? Did they panic when power got low? Did they scream? That reaction is YOUR work. You made a real horror game. You should be so, so proud! 🏆🎮',
+    parent: 'This step is about quality assurance and the moment of sharing. Encourage a full playthrough of all 5 nights (or at least Night 1 and Night 5 to test both extremes). Then — if you\'ve done Part 2 — export the game: Project → Export, add a Windows/HTML5 preset, export. HTML5 exports can be uploaded to itch.io for free so anyone in the world can play it in a browser. That milestone — sharing a playable link — is enormously motivating and worth attempting even if export takes some troubleshooting.',
+    note: 'Every professional game goes through playtesting before release. Watching someone else play your game reveals things you never noticed — things that feel obvious to you but confuse a fresh player. This is not a sign of failure; it\'s the most valuable feedback loop in game development. Embrace it!',
+    tryit: 'Hand the game to a parent, sibling, or friend. Tell them nothing except "try to survive until 6am." Watch — don\'t help! How long did they last? What did they miss? What surprised them? Use what you see to make one final tweak if needed. Then celebrate. 🎉',
+    steps: [
+      'Play the full game yourself — try Night 1 AND Night 5.',
+      'Check each polish step is working: camera static, light flicker, screen shake, sounds, power warning, door animation, death screen slide, win confetti.',
+      'Fix anything that feels wrong — small tweaks to timings, colours, and volumes make a huge difference.',
+      'To export for HTML5: go to <strong>Project → Export</strong>. Add a <strong>Web (HTML5)</strong> preset. Click <strong>Export Project</strong>. Upload the resulting files to <a href="https://joshhyyy.itch.io/" target="_blank" style="color:#6d28d9;font-weight:700;">itch.io</a> (free).',
+      '<strong>Share the link.</strong> You made a real horror game. The world should play it! 🌍',
+    ],
+    code: null,
+  },
+];
+
+// ── ENGINE ─────────────────────────────────────────────────────
+const TOTAL = STEPS.length;
+let progress = Array(TOTAL).fill(false);
+
+function getState(i) {
+  if (progress[i]) return 'done';
+  if (i === 0 || progress[i - 1]) return 'current';
+  return 'locked';
+}
+
+function buildDots() {
+  const row = document.getElementById('dot-row');
+  row.innerHTML = '';
+  STEPS.forEach((_, i) => {
+    const s = getState(i);
+    const d = document.createElement('button');
+    d.className = `dot ${s}`;
+    d.textContent = i === 0 ? '★' : i;
+    d.title = STEPS[i].title;
+    if (s !== 'locked') d.onclick = () => scrollToStep(i);
+    row.appendChild(d);
+  });
+  const done = progress.filter(Boolean).length;
+  document.getElementById('prog-count').textContent = `${done} / ${TOTAL} steps`;
+}
+
+function buildSteps() {
+  const container = document.getElementById('steps-container');
+  container.innerHTML = '';
+  STEPS.forEach((step, i) => {
+    const s = getState(i);
+    const card = document.createElement('div');
+    card.className = `step-card ${s}`;
+    card.id = `step-${i}`;
+
+    const statusText = s === 'done' ? '✅ Done' : s === 'current' ? '▶ Current' : '🔒 Locked';
+
+    let bodyHTML = '';
+    if (s !== 'locked') {
+      bodyHTML = `<div class="step-body">
+        <div class="goal-box">
+          <span class="goal-icon">🎯</span>
+          <div><strong>Goal</strong><p>${step.goal}</p></div>
+        </div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>${step.child}</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>${step.parent}</p></div>
+        </div>
+        ${step.note ? `<div class="callout tip"><span class="callout-icon">💡</span><div>${step.note}</div></div>` : ''}
+        ${step.steps ? `<div class="what-to-do"><h4>What to do:</h4><ul class="steps-list">${step.steps.map((st, si) => `<li><span class="sn">${si + 1}</span><span>${st}</span></li>`).join('')}</ul></div>` : ''}
+        ${step.tryit ? `<div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> ${step.tryit}</div></div>` : ''}
+        ${step.code ? `<pre class="code-block">${escHTML(step.code)}</pre>` : ''}
+        ${s === 'current' ? `<button class="done-btn" onclick="markDone(${i})">✅ Done — Next Step!</button>` : ''}
+        ${s === 'done' ? `<button class="done-btn" onclick="markUndone(${i})" style="border-color:#f87171;color:#b91c1c;">↩ Mark as not done</button>` : ''}
+      </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="step-header" onclick="toggleBody(${i})">
+        <div class="step-num">${i === 0 ? '★' : i}</div>
+        <span class="step-icon-badge">${step.emoji}</span>
+        <div class="step-title-wrap">
+          <span class="step-tag ${step.tagClass}">${step.tag}</span>
+          <div class="step-title">${step.title}</div>
+          <div class="step-subtitle">${step.subtitle}</div>
+        </div>
+        <span class="step-status">${statusText}</span>
+      </div>
+      ${bodyHTML}`;
+    container.appendChild(card);
+  });
+}
+
+function escHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function markDone(i) {
+  progress[i] = true;
+  save();
+  refresh();
+  if (i + 1 < TOTAL) scrollToStep(i + 1);
+}
+
+function markUndone(i) {
+  progress[i] = false;
+  save();
+  refresh();
+}
+
+function refresh() { buildDots(); buildSteps(); }
+
+function scrollToStep(i) {
+  const el = document.getElementById(`step-${i}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function toggleBody(i) {
+  const card = document.getElementById(`step-${i}`);
+  const body = card.querySelector('.step-body');
+  if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+}
+
+function save() {
+  try { localStorage.setItem('nw3_progress', JSON.stringify(progress)); } catch(e) {}
+}
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nw3_progress'));
+    if (Array.isArray(saved) && saved.length === TOTAL) progress = saved;
+  } catch(e) {}
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  btn.classList.add('active');
+}
+
+load();
+refresh();
+</script>
+</body>
+</html>
