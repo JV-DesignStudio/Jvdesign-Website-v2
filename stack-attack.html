@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/stack-attack.html">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Play Stack Attack — a free one-button stacking game by JVDesignStudio. Tap to drop blocks and build the tallest tower!">
+<title>Stack Attack | JVDesignStudio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<style>
+:root{--beige:#F0EAD6;--rose:#BC4749;--rose-dk:#9b3a3c;--teal:#70A3A7;--teal-dk:#4e7d80;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0d1430;color:var(--beige);min-height:100vh;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;}
+a{text-decoration:none;color:inherit;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;position:fixed;top:0;left:0;right:0;z-index:20;}
+.topbar a.back{font-weight:700;font-size:.85rem;background:rgba(0,0,0,.4);padding:7px 13px;border-radius:10px;}
+.topbar .brand{font-family:'Fredoka',cursive;font-weight:700;font-size:1rem;text-shadow:0 1px 4px rgba(0,0,0,.6);}
+#wrap{position:relative;width:100vw;height:100vh;}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
+.hud{position:fixed;top:52px;left:0;right:0;text-align:center;z-index:15;pointer-events:none;}
+.hud #score{font-family:'Fredoka',cursive;font-weight:700;font-size:2.4rem;text-shadow:0 2px 8px rgba(0,0,0,.7);}
+.hud #lbl{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;opacity:.7;font-weight:700;}
+.tap-hint{position:fixed;bottom:40px;left:0;right:0;text-align:center;font-size:.9rem;opacity:.7;z-index:15;pointer-events:none;animation:pulse 1.4s infinite;}
+@keyframes pulse{50%{opacity:.3;}}
+.overlay{position:fixed;inset:0;background:rgba(8,12,30,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:24px;z-index:50;}
+.overlay h1,.overlay h2{font-family:'Fredoka',cursive;color:#fff;}
+.overlay h1{font-size:clamp(2rem,8vw,3rem);}
+.overlay p{max-width:320px;opacity:.9;line-height:1.6;font-size:.95rem;}
+.btn{background:var(--rose);color:#fff;font-weight:800;font-size:1.05rem;padding:15px 38px;border:none;border-radius:14px;cursor:pointer;box-shadow:0 5px 0 var(--rose-dk);transition:transform .1s,box-shadow .1s;font-family:inherit;}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--rose-dk);}
+.btn.teal{background:var(--teal);box-shadow:0 5px 0 var(--teal-dk);}
+.best{font-size:.85rem;opacity:.8;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="back" href="games.html">← All Games</a>
+  <span class="brand">JVDesignStudio</span>
+  <span style="width:80px"></span>
+</div>
+
+<div id="wrap"><canvas id="game"></canvas></div>
+<div class="hud"><div id="lbl">Height</div><div id="score">0</div></div>
+<div class="tap-hint hidden" id="hint">Tap anywhere to drop</div>
+
+<div class="overlay" id="startScreen">
+  <div style="font-size:3.2rem">🧱🏗️</div>
+  <h1>Stack Attack</h1>
+  <p>A block slides back and forth. <b>Tap / click / press Space</b> to drop it. Line it up perfectly to keep your width — miss, and the overhang gets sliced off. How tall can you build?</p>
+  <button class="btn" id="startBtn">▶ Start Stacking</button>
+  <p class="best" id="bestStart"></p>
+</div>
+
+<div class="overlay hidden" id="endScreen">
+  <div style="font-size:3rem" id="endEmoji">🏗️</div>
+  <h2 id="endTitle">Toppled!</h2>
+  <p id="endMsg"></p>
+  <button class="btn teal" id="againBtn">↻ Stack Again</button>
+  <a class="back" href="games.html" style="margin-top:4px">← Back to Games</a>
+</div>
+
+<script>
+(function(){
+  const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+  const scoreEl=document.getElementById('score'),hint=document.getElementById('hint');
+  const startScreen=document.getElementById('startScreen'),endScreen=document.getElementById('endScreen');
+  let W,H,DPR,BH; // block height
+  function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);BH=Math.max(26,Math.min(40,H/20));}
+  addEventListener('resize',resize);resize();
+
+  let best=+(localStorage.getItem('stackAttackBest')||0);
+  document.getElementById('bestStart').textContent=best?('Best: '+best):'';
+
+  let stack,cur,dir,speed,running,score,camY,fragments;
+  const HUES=[6,30,170,200,280,330];
+  function baseY(){return H-60;}
+
+  function reset(){
+    const w=W*0.5, x=W/2-w/2;
+    stack=[{x:x,w:w,y:baseY(),h:BH,hue:HUES[0]}];
+    score=0;scoreEl.textContent=0;camY=0;fragments=[];
+    spawnBlock();running=true;
+  }
+  function spawnBlock(){
+    const top=stack[stack.length-1];
+    speed=2.4+Math.min(score*0.06,4.5);
+    const w=top.w;
+    cur={x:0,w:w,y:top.y-BH,h:BH,hue:HUES[stack.length%HUES.length]};
+    dir=1;cur.x=0;
+  }
+
+  function drop(){
+    if(!running||!cur)return;
+    const top=stack[stack.length-1];
+    const left=Math.max(cur.x,top.x);
+    const right=Math.min(cur.x+cur.w,top.x+top.w);
+    const overlap=right-left;
+    if(overlap<=0)return end();
+    // sliced fragment
+    if(cur.x<top.x)fragments.push({x:cur.x,w:top.x-cur.x,y:cur.y,h:BH,hue:cur.hue,vx:-2});
+    else if(cur.x+cur.w>top.x+top.w)fragments.push({x:right,w:(cur.x+cur.w)-right,y:cur.y,h:BH,hue:cur.hue,vx:2});
+    const perfect=Math.abs(overlap-cur.w)<3;
+    cur.x=left;cur.w=overlap;
+    stack.push(cur);
+    score+=perfect?2:1;scoreEl.textContent=score;
+    if(perfect&&cur.w<W*0.6){cur.w=Math.min(cur.w+12,top.w);cur.x=Math.max(top.x,cur.x-6);} // reward
+    spawnBlock();
+  }
+
+  addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();drop();}});
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
+
+  function loop(){
+    if(!running)return;requestAnimationFrame(loop);
+    if(cur){cur.x+=dir*speed;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}}
+    // camera: keep current block in view
+    const targetCam=Math.max(0,(baseY()-(cur?cur.y:0))-H*0.45);
+    camY+=(targetCam-camY)*0.1;
+    fragments.forEach(f=>{f.y+=6;f.x+=f.vx;f.vx*=0.99;});
+    fragments=fragments.filter(f=>f.y-camY<H+80);
+    draw();
+  }
+  function draw(){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#15224a');g.addColorStop(1,'#0a1230');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    // stars
+    ctx.fillStyle='rgba(255,255,255,.25)';
+    for(let i=0;i<30;i++){const sx=(i*53)%W,sy=((i*97)%H);ctx.fillRect(sx,sy,2,2);}
+    function blk(b,alpha){ctx.fillStyle=`hsla(${b.hue},65%,58%,${alpha||1})`;ctx.fillRect(b.x,b.y-camY,b.w,b.h-1);ctx.fillStyle=`hsla(${b.hue},65%,68%,${alpha||1})`;ctx.fillRect(b.x,b.y-camY,b.w,4);}
+    stack.forEach(b=>blk(b));
+    fragments.forEach(f=>blk(f,0.8));
+    if(cur)blk(cur);
+  }
+
+  function startGame(){reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);}
+  function end(){
+    running=false;hint.classList.add('hidden');
+    if(score>best){best=score;localStorage.setItem('stackAttackBest',best);}
+    document.getElementById('bestStart').textContent='Best: '+best;
+    document.getElementById('endEmoji').textContent=score>=best&&score>0?'🌟':'🏗️';
+    document.getElementById('endTitle').textContent=score>=40?'Sky-Scraper!':score>=15?'Solid Tower!':'Toppled!';
+    document.getElementById('endMsg').textContent='You stacked '+score+' blocks high.'+(score>=best&&score>0?' New best! 🎉':' Best: '+best);
+    endScreen.classList.remove('hidden');
+  }
+  document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('againBtn').addEventListener('click',startGame);
+})();
+</script>
+</body>
+</html>
