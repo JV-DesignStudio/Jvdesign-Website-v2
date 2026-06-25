@@ -1,0 +1,2157 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/unreal-zombie-survivor.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blueprint Zombies — Build a COD Zombies Game in UE5 | JVDesignStudio</title>
+<meta name="description" content="Build a COD Zombies-style wave survival game in Unreal Engine 5 Blueprints. Wall buys, Mystery Box, points, rounds, barricades — 30 steps, live preview, free.">
+<meta property="og:title" content="Build Blueprint Zombies in UE5 | JVDesignStudio">
+<meta property="og:description" content="Wall buys, Mystery Box, points from kills, rounds — a COD Zombies-style survival game built in UE5 Blueprints. 30 steps, free, all devices.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+  --bg:#05060a;--bg2:#090b0f;--bg3:#0d0f13;
+  --border:rgba(255,255,255,.07);
+  --text:#e8eaf0;--muted:rgba(232,234,240,.38);
+  --ue:#e05a1e;--ue-lt:#f08050;--ue-dk:#a03808;
+  --bp:#4a90d9;--bp-lt:#7ab8f5;
+  --green:#4ade80;--red:#f87171;--gold:#f5c842;--teal:#2dd4bf;--purple:#a78bfa;
+  --zom:#4ade80;--zom-dk:#16a34a;--zom-lt:#86efac;
+  --box:#f5c842;--box-dk:#b08a00;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:90;background:rgba(5,6,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;gap:8px}
+.hdr-logo{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.hdr-logo img{height:28px;width:auto;flex-shrink:0;border-radius:6px}
+.hdr-right{display:flex;align-items:center;gap:7px}
+.quick-btn{background:linear-gradient(135deg,var(--zom-dk),#22863a);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.08em;padding:7px 13px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 #0f5720;transition:filter .15s,transform .1s;white-space:nowrap}
+.quick-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+.share-btn{background:rgba(74,144,217,.12);color:var(--bp-lt);font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:6px 12px;border-radius:7px;border:1px solid rgba(74,144,217,.22);cursor:pointer;transition:all .2s;white-space:nowrap}
+.share-btn:hover{background:rgba(74,144,217,.2)}
+.back-btn{font-size:.74rem;font-weight:700;color:var(--muted);padding:5px 11px;border-radius:7px;border:1px solid var(--border)}
+.back-btn:hover{color:var(--text)}
+@media(max-width:560px){.back-btn{display:none}.share-btn span{display:none}}
+
+/* HERO */
+.hero{padding:16px 18px 14px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(74,222,128,.045) 1px,transparent 1px);background-size:26px 26px}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:22px;align-items:center;position:relative;z-index:1}
+@media(max-width:640px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--zom-lt);margin-bottom:6px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,7vw,3.8rem);line-height:.9;letter-spacing:.03em;color:#fff;margin-bottom:6px}
+.hero-title .hl{color:var(--zom)}
+.hero-title .hl2{color:var(--gold)}
+.hero-desc{font-size:.84rem;color:var(--muted);line-height:1.7;max-width:440px}
+.hero-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.54rem;padding:3px 7px;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.z{border-color:rgba(74,222,128,.3);color:var(--zom-lt);background:rgba(74,222,128,.06)}
+.pill.g{border-color:rgba(245,200,66,.3);color:var(--gold);background:rgba(245,200,66,.06)}
+/* stats card */
+.stats-card{background:rgba(255,255,255,.03);border:1px solid rgba(74,222,128,.18);border-radius:12px;padding:12px 15px;min-width:178px}
+.stats-card-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--zom-lt);margin-bottom:7px}
+.sc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.7rem}
+.sc-row:last-child{border:none}
+.sc-l{color:var(--muted)}
+.sc-r{font-family:'JetBrains Mono',monospace;color:var(--gold);font-size:.66rem}
+
+/* MAIN LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 160px);align-items:start}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:600px}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 7px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}.tb.active{color:var(--zom-lt);border-bottom-color:var(--zom)}.tb.done::before{content:"✓ ";color:var(--green)}
+.tb.box-step.active{color:var(--gold);border-bottom-color:var(--gold)}
+.step-body{padding:20px 22px;overflow-y:auto;flex:1}
+@media(max-width:640px){.step-body{padding:14px 12px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--zom-lt);margin-bottom:3px}
+.step-tag.gold{color:var(--gold)}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.04em;color:#fff;margin-bottom:5px;line-height:1}
+.step-title.gold{color:var(--gold)}
+.step-intro{font-size:.82rem;color:var(--muted);line-height:1.72;margin-bottom:10px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:8px;padding:8px 11px;margin:5px 0;font-size:.74rem;line-height:1.56;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0}
+.box-c{background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.13);color:rgba(232,234,240,.7)}
+.box-c::before{content:"📖"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);color:rgba(232,234,240,.7)}
+.box-t::before{content:"💡"}
+.box-u{background:rgba(74,144,217,.06);border:1px solid rgba(74,144,217,.17);color:rgba(232,234,240,.75)}
+.box-u::before{content:"🔵"}
+.box-ai{background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.15);color:rgba(232,234,240,.75)}
+.box-ai::before{content:"🧟"}
+.box-gold{background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.2);color:rgba(232,234,240,.8)}
+.box-gold::before{content:"📦"}
+
+/* BP CANVAS */
+.bp-outer{margin:9px 0;border-radius:10px;overflow:hidden;border:2px solid rgba(74,144,217,.16);position:relative}
+.bp-outer.gold-b{border-color:rgba(245,200,66,.22)}
+.bp-outer.shake{animation:bpshk .35s ease}
+@keyframes bpshk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.bp-canvas-wrap canvas{display:block;width:100%;background:#11111f;cursor:crosshair}
+.bp-hint{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.05em;color:rgba(74,222,128,.42);padding:4px 11px;background:rgba(74,222,128,.03);border-top:1px solid rgba(74,222,128,.07)}
+.bp-hint.gold{color:rgba(245,200,66,.5);background:rgba(245,200,66,.03);border-color:rgba(245,200,66,.1)}
+.bp-valinput{position:absolute;z-index:50;background:#0e1a0e;border:2px solid var(--zom);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.7);min-width:175px}
+.bp-valinput.gold-vi{border-color:var(--gold);background:#1a1600}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.63rem;color:var(--zom-lt);letter-spacing:.05em}
+.bp-valinput.gold-vi label{color:var(--gold)}
+.bp-valinput input{background:#050e05;border:1px solid rgba(74,222,128,.3);border-radius:5px;color:#e8eaf0;font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput.gold-vi input{background:#110e00;border-color:rgba(245,200,66,.3)}
+.bp-valinput input:focus{border-color:var(--zom)}
+.bp-valinput.gold-vi input:focus{border-color:var(--gold)}
+.bp-valinput-btns{display:flex;gap:5px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bv-ok{background:var(--zom);color:#0a1a0a}.bv-cancel{background:rgba(255,255,255,.08);color:rgba(232,234,240,.6)}
+.gold-vi .bv-ok{background:var(--gold);color:#111}
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.73rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.17);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+/* BUTTONS */
+.run-btn{width:100%;margin-top:8px;padding:11px;background:var(--zom);color:#0a1a0a;font-family:'Bebas Neue',sans-serif;font-size:.93rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--zom-dk);transition:transform .1s,filter .15s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn.gold-btn{background:var(--gold);color:#111;box-shadow:0 4px 0 var(--box-dk)}
+.run-btn:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px)}
+.run-btn:disabled{opacity:.32;cursor:not-allowed;transform:none;filter:none}
+.step-nav{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.78rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(74,222,128,.09);color:var(--zom-lt);border:1px solid rgba(74,222,128,.2)}
+.btn-n:hover:not(:disabled){background:rgba(74,222,128,.17)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* WALL BUY CHOOSER */
+.wbuy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}
+.wbuy-card{background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 7px;cursor:pointer;transition:all .2s;text-align:center}
+.wbuy-card:hover{border-color:rgba(74,222,128,.4);transform:translateY(-2px)}
+.wbuy-card.sel{border-color:var(--zom);background:rgba(74,222,128,.08)}
+.wbuy-icon{font-size:1.2rem;margin-bottom:3px}
+.wbuy-name{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.04em;color:#fff}
+.wbuy-cost{font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--gold);margin-top:2px}
+.wbuy-desc{font-size:.58rem;color:var(--muted);margin-top:2px;line-height:1.3}
+
+/* GAME COL */
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px);min-height:500px}
+@media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:6px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-l{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.54rem;color:var(--zom-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--zom);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.fs-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.58rem;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-btn:hover{background:rgba(255,255,255,.11);color:var(--text)}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:6px;display:flex;align-items:center;justify-content:center}
+#gc{border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.05),0 8px 36px rgba(0,0,0,.9);display:block;max-width:100%;max-height:100%;cursor:crosshair}
+.game-hud{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);flex-shrink:0}
+.hb{padding:4px 3px;border-right:1px solid var(--border);text-align:center}
+.hb:last-child{border-right:none}
+.hv{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em}
+.hl{font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.obar{padding:3px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.54rem;min-height:22px;color:var(--zom-lt);flex-shrink:0}
+
+/* MOBILE D-PAD */
+.mob-ctrl{display:none;position:absolute;bottom:10px;left:0;right:0;pointer-events:none;z-index:20;padding:0 8px}
+@media(max-width:1080px){.mob-ctrl{display:flex;justify-content:space-between;align-items:flex-end}}
+.dpad{pointer-events:all;display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px;gap:4px}
+.dpad-btn{width:52px;height:52px;border-radius:10px;background:rgba(74,222,128,.13);border:1.5px solid rgba(74,222,128,.3);display:flex;align-items:center;justify-content:center;font-size:1.15rem;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.dpad-btn:active,.dpad-btn.held{background:rgba(74,222,128,.3)}
+.dpad-empty{pointer-events:none}
+.r-ctrl{pointer-events:all;display:flex;flex-direction:column;gap:7px;align-items:flex-end}
+.fire-btn{width:64px;height:64px;border-radius:50%;background:rgba(220,38,38,.22);border:2px solid rgba(220,38,38,.5);display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.fire-btn:active,.fire-btn.held{background:rgba(220,38,38,.45)}
+.buy-btn-mob{width:58px;height:34px;border-radius:8px;background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:.75rem;letter-spacing:.06em;color:var(--gold);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.buy-btn-mob:active{background:rgba(245,200,66,.28)}
+
+/* FULLSCREEN */
+.fs-overlay{position:fixed;inset:0;z-index:500;background:#05060a;display:none;flex-direction:column;align-items:center}
+.fs-overlay.open{display:flex}
+.fs-hdr{position:fixed;top:0;left:0;right:0;height:48px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.94);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.07);z-index:10}
+.fs-hud-row{display:flex;gap:14px;align-items:center}
+.fs-hi{text-align:center}
+.fs-hv{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.04em}
+.fs-hl{font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fs-sep{width:1px;height:24px;background:rgba(255,255,255,.08)}
+.fs-close{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-close:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.fs-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 0 0;width:100%;position:relative}
+#gcFS{cursor:crosshair;display:block}
+.fs-foot{position:fixed;bottom:0;left:0;right:0;height:24px;padding:3px 14px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--zom-lt);background:rgba(5,6,10,.9);border-top:1px solid rgba(255,255,255,.05)}
+/* FS mobile controls */
+.fs-mob-ctrl{display:none;position:fixed;bottom:30px;left:0;right:0;pointer-events:none;z-index:20;padding:0 12px}
+@media(max-width:700px),(hover:none){.fs-mob-ctrl{display:flex;justify-content:space-between;align-items:flex-end}}
+.fs-dpad{pointer-events:all;display:grid;grid-template-columns:60px 60px 60px;grid-template-rows:60px 60px;gap:5px}
+.fs-dpad-btn{width:60px;height:60px;border-radius:12px;background:rgba(74,222,128,.16);border:2px solid rgba(74,222,128,.35);display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.fs-dpad-btn:active,.fs-dpad-btn.held{background:rgba(74,222,128,.35)}
+.fs-r-ctrl{pointer-events:all;display:flex;flex-direction:column;gap:9px;align-items:flex-end}
+.fs-fire-btn{width:78px;height:78px;border-radius:50%;background:rgba(220,38,38,.25);border:3px solid rgba(220,38,38,.55);display:flex;align-items:center;justify-content:center;font-size:1.8rem;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.fs-fire-btn:active,.fs-fire-btn.held{background:rgba(220,38,38,.5)}
+.fs-buy-btn{width:68px;height:38px;border-radius:9px;background:rgba(245,200,66,.14);border:1.5px solid rgba(245,200,66,.35);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.06em;color:var(--gold);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+.fs-buy-btn:active{background:rgba(245,200,66,.3)}
+
+/* PROGRESS */
+.prog-bar{background:var(--bg2);border-top:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:11px;position:sticky;bottom:0;z-index:50;width:100%}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--zom-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--zom),var(--teal));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:3px;flex-wrap:wrap;max-width:190px;justify-content:flex-end;flex-shrink:0}
+.pd{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.pd.done{background:var(--green)}.pd.active{background:var(--zom);transform:scale(1.35)}
+.pd.gd.active{background:var(--gold);transform:scale(1.35)}.pd.gd.done{background:var(--gold)}
+
+/* SHARE TOAST */
+.share-toast{position:fixed;bottom:58px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(74,222,128,.14);border:1px solid rgba(74,222,128,.4);color:var(--zom-lt);font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:8px 18px;border-radius:8px;z-index:600;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap}
+.share-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* MORE */
+.more-section{padding:36px 18px;max-width:1440px;margin:0 auto}
+.more-title{font-family:'Bebas Neue',sans-serif;font-size:1.75rem;letter-spacing:.04em;color:white;margin-bottom:14px}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.more-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:14px 15px;display:flex;flex-direction:column;gap:5px;transition:border-color .2s,transform .2s}
+.more-card:hover{border-color:rgba(255,255,255,.14);transform:translateY(-2px)}
+.more-icon{font-size:1.25rem}.more-tag{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.more-name{font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.04em;color:white}
+.more-cta{font-size:.7rem;font-weight:700;margin-top:auto}
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:14px;text-align:center;color:var(--muted);font-size:.68rem}
+footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+/* ── INTERACTIVE WORKSHOP ── */
+.xp-wrap{max-width:1100px;margin:0 auto;padding:14px 20px 0}
+.xp-bar{display:flex;align-items:center;gap:12px}
+.xp-icon{font-size:1.4rem}
+.xp-label{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--gold);min-width:80px}
+.xp-track{flex:1;height:10px;background:rgba(255,255,255,.07);border-radius:5px;overflow:hidden;position:relative}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--zom));border-radius:5px;transition:width .6s cubic-bezier(.22,1,.36,1);width:0%}
+.xp-level{font-family:'Bebas Neue',sans-serif;font-size:.8rem;color:var(--muted);white-space:nowrap}
+.xp-streak{display:flex;align-items:center;gap:4px;font-size:.78rem;font-weight:700;color:var(--muted);margin-left:8px}
+.xp-streak.hot{color:var(--ue)}
+.xp-streak .fire{font-size:1rem}
+@keyframes xp-pop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+.xp-pop{animation:xp-pop .4s ease}
+@keyframes xp-toast-in{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes xp-toast-out{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}
+.xp-toast{position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,#1a1200,#0e0800);border:1px solid rgba(245,200,66,.35);padding:12px 20px;border-radius:14px;font-family:'Bebas Neue',sans-serif;color:var(--gold);font-size:1rem;z-index:999;pointer-events:none;animation:xp-toast-in .3s ease forwards}
+.xp-toast.out{animation:xp-toast-out .3s ease forwards}
+@keyframes levelup{0%{transform:scale(.7);opacity:0}50%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+.levelup-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(6px)}
+.levelup-card{background:linear-gradient(135deg,#1a1200,#0e0800);border:2px solid var(--gold);border-radius:24px;padding:40px 48px;text-align:center;animation:levelup .5s ease forwards}
+.levelup-card .lvl-icon{font-size:3rem;margin-bottom:8px}
+.levelup-card .lvl-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--gold);margin-bottom:4px}
+.levelup-card .lvl-sub{font-size:.9rem;color:var(--muted);margin-bottom:16px}
+.levelup-card button{background:linear-gradient(135deg,var(--zom),var(--zom-dk));color:#0a1a0a;font-family:'Bebas Neue',sans-serif;font-size:1rem;padding:10px 28px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 3px 0 #0f5720}
+.iw-quiz-gate{background:linear-gradient(135deg,rgba(74,222,128,.08),rgba(245,200,66,.05));border:1px solid rgba(74,222,128,.25);border-radius:16px;padding:22px 20px;margin-top:22px}
+.iw-quiz-gate.passed{border-color:var(--zom);background:rgba(74,222,128,.06)}
+.iw-quiz-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.iw-quiz-icon{font-size:1.5rem}
+.iw-quiz-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:#fff}
+.iw-quiz-xp{margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:.78rem;color:var(--gold);background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);padding:3px 10px;border-radius:8px}
+.iw-quiz-q{font-size:.92rem;color:var(--text);line-height:1.6;margin-bottom:14px}
+.iw-quiz-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.iw-opt{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:12px;cursor:pointer;transition:all .18s;font-size:.88rem;color:var(--text);user-select:none}
+.iw-opt:hover{border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.06)}
+.iw-opt .iw-letter{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:.82rem;font-weight:700;color:var(--muted);flex-shrink:0;transition:all .18s}
+.iw-opt.selected{border-color:var(--zom);background:rgba(74,222,128,.1)}
+.iw-opt.selected .iw-letter{background:var(--zom);color:#0a1a0a;border-color:var(--zom)}
+.iw-opt.correct{border-color:var(--zom);background:rgba(74,222,128,.1)}
+.iw-opt.correct .iw-letter{background:var(--zom);color:#0a1a0a;border-color:var(--zom)}
+.iw-opt.wrong{border-color:var(--red);background:rgba(248,113,113,.08)}
+.iw-opt.wrong .iw-letter{background:var(--red);color:#fff;border-color:var(--red)}
+.iw-opt.disabled{pointer-events:none;opacity:.6}
+.iw-fb{font-size:.85rem;line-height:1.6;padding:12px 14px;border-radius:10px;margin-bottom:12px;display:none}
+.iw-fb.show{display:flex;gap:8px;align-items:flex-start}
+.iw-fb.correct{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);color:#b2f0e0}
+.iw-fb.wrong{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#ffbdbd}
+.iw-fb .fb-icon{font-size:1.1rem;flex-shrink:0}
+.iw-submit{background:linear-gradient(135deg,var(--zom),var(--zom-dk));color:#0a1a0a;font-family:'Bebas Neue',sans-serif;font-size:.95rem;padding:11px 24px;border-radius:10px;border:none;cursor:pointer;transition:filter .15s,transform .12s;box-shadow:0 3px 0 #0f5720;display:none}
+.iw-submit.show{display:inline-flex;align-items:center;gap:8px}
+.iw-submit:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.iw-submit:disabled{opacity:.45;pointer-events:none}
+.iw-tf-round{background:linear-gradient(135deg,rgba(74,144,217,.06),rgba(0,0,0,.15));border:1px solid rgba(74,144,217,.25);border-radius:16px;padding:22px 20px;margin-top:18px}
+.iw-tf-round.passed{border-color:var(--zom);background:rgba(74,222,128,.06)}
+.iw-tf-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin-bottom:8px;font-size:.88rem;color:var(--text);line-height:1.5}
+.iw-tf-item .iw-tf-statement{flex:1}
+.iw-tf-btns{display:flex;gap:6px;flex-shrink:0}
+.iw-tf-btn{padding:6px 14px;border-radius:8px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);font-family:'Bebas Neue',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .18s;color:var(--muted)}
+.iw-tf-btn:hover{border-color:rgba(255,255,255,.3);color:var(--text)}
+.iw-tf-btn.selected{border-color:var(--bp);color:var(--bp-lt);background:rgba(74,144,217,.1)}
+.iw-tf-btn.correct-answer{border-color:var(--zom);color:var(--zom);background:rgba(74,222,128,.15)}
+.iw-tf-btn.wrong-answer{border-color:var(--red);color:var(--red);background:rgba(248,113,113,.1)}
+.iw-tf-item.answered{pointer-events:none}
+.iw-cf{background:linear-gradient(135deg,rgba(245,200,66,.06),rgba(0,0,0,.15));border:1px solid rgba(245,200,66,.25);border-radius:16px;padding:22px 20px;margin-top:18px}
+.iw-cf.passed{border-color:var(--zom);background:rgba(74,222,128,.06)}
+.iw-cf-blank{display:inline-block;min-width:80px;background:rgba(245,200,66,.1);border:2px dashed rgba(245,200,66,.35);border-radius:6px;padding:2px 8px;color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:600;outline:none;transition:border-color .2s}
+.iw-cf-blank:focus{border-color:var(--gold);border-style:solid;background:rgba(245,200,66,.15)}
+.iw-cf-blank.correct{border-color:var(--zom);border-style:solid;background:rgba(74,222,128,.15);color:var(--zom)}
+.iw-cf-blank.wrong{border-color:var(--red);border-style:solid;background:rgba(248,113,113,.1);color:var(--red)}
+.iw-finish{display:none;background:linear-gradient(135deg,rgba(74,222,128,.12),rgba(245,200,66,.08));border:1px solid rgba(74,222,128,.3);border-radius:20px;padding:32px;text-align:center;margin:20px auto;max-width:1100px}
+.iw-finish.show{display:block}
+.iw-finish-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--zom);margin-bottom:8px}
+.iw-finish-sub{font-size:.95rem;color:var(--muted);line-height:1.6;max-width:500px;margin:0 auto 20px}
+.iw-confetti{font-size:1.8rem;letter-spacing:.2em;margin-bottom:16px}
+.iw-final-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:18px 0}
+.iw-final-stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 20px;text-align:center;min-width:100px}
+.iw-final-stat .stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--gold)}
+.iw-final-stat .stat-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<header class="hdr">
+  <a href="../index.html" class="hdr-logo">
+    <img width="1088" height="960" loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/28x28/05060a/4ade80?text=JV'">
+    JVDesignStudio
+  </a>
+  <div class="hdr-right">
+    <button class="quick-btn" onclick="quickPlay()">🧟 Quick Play</button>
+    <button class="share-btn" onclick="saveShare()">🔗 <span>Save &amp; Share</span></button>
+    <a href="../pages/workshop.html" class="back-btn">← Workshop</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">JVDesignStudio · Unreal Workshop</div>
+      <h1 class="hero-title">Blueprint<br><span class="hl">Zombies</span></h1>
+      <p class="hero-desc">Build a <strong>COD Zombies-style</strong> survival game in Unreal Engine 5 Blueprints. Wall buy weapons, Mystery Box, points from kills, barricade repairs, and escalating rounds.</p>
+      <div class="hero-pills">
+        <span class="pill z">Unreal Engine 5</span>
+        <span class="pill z">Blueprints</span>
+        <span class="pill g">Wall Buys</span>
+        <span class="pill g">Mystery Box</span>
+        <span class="pill">30 Steps · Free</span>
+      </div>
+    </div>
+    <div class="stats-card">
+      <div class="stats-card-title">Current Game</div>
+      <div id="heroRound" style="font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--zom);letter-spacing:.04em;margin-bottom:3px">Round 1</div>
+      <div class="sc-row"><span class="sc-l">Points</span><span class="sc-r" id="hw-pts">0</span></div>
+      <div class="sc-row"><span class="sc-l">Weapon</span><span class="sc-r" id="hw-wpn">Pistol</span></div>
+      <div class="sc-row"><span class="sc-l">Wall Buys</span><span class="sc-r" id="hw-wb">Off</span></div>
+      <div class="sc-row"><span class="sc-l">Mystery Box</span><span class="sc-r" id="hw-mb">Off</span></div>
+      <div class="sc-row"><span class="sc-l">Best Round</span><span class="sc-r" id="hw-best">0</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="layout" id="mainLayout">
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+
+  <div class="game-col">
+    <div class="game-top">
+      <span class="game-top-l">🧟 Blueprint Zombies</span>
+      <div class="game-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus">Step 1 to start</span></div>
+        <button class="fs-btn" onclick="openFS()">⛶ Fullscreen</button>
+      </div>
+    </div>
+    <div class="game-wrap" id="gameWrap">
+      <canvas id="gc"></canvas>
+      <!-- INLINE MOBILE CONTROLS -->
+      <div class="mob-ctrl">
+        <div class="dpad">
+          <div class="dpad-empty"></div><div class="dpad-btn" id="mb-up">▲</div><div class="dpad-empty"></div>
+          <div class="dpad-btn" id="mb-left">◀</div><div class="dpad-btn" id="mb-down">▼</div><div class="dpad-btn" id="mb-right">▶</div>
+        </div>
+        <div class="r-ctrl">
+          <div class="fire-btn" id="mb-fire">🔫</div>
+          <div class="buy-btn-mob" id="mb-buy">BUY [E]</div>
+        </div>
+      </div>
+    </div>
+    <div class="game-hud">
+      <div class="hb"><div class="hv" id="hudRound" style="color:var(--zom)">1</div><div class="hl">Round</div></div>
+      <div class="hb"><div class="hv" id="hudPts" style="color:var(--gold)">0</div><div class="hl">Points</div></div>
+      <div class="hb"><div class="hv" id="hudKills" style="color:var(--red)">0</div><div class="hl">Kills</div></div>
+      <div class="hb"><div class="hv" id="hudAmmo" style="color:var(--bp-lt)">12/12</div><div class="hl">Ammo</div></div>
+      <div class="hb"><div class="hv" id="hudHP" style="color:var(--green)">100</div><div class="hl">HP</div></div>
+    </div>
+    <div class="obar" id="obar">▶ Wire Blueprints to build your zombie survival map</div>
+  </div>
+</div>
+
+<div class="prog-bar">
+  <span class="prog-lbl">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<!-- FULLSCREEN OVERLAY -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-hdr">
+    <div class="fs-hud-row">
+      <div class="fs-hi"><div class="fs-hv" id="fsRound" style="color:var(--zom)">1</div><div class="fs-hl">Round</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsPts" style="color:var(--gold)">0</div><div class="fs-hl">Points</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsKills" style="color:var(--red)">0</div><div class="fs-hl">Kills</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsAmmo" style="color:var(--bp-lt)">12/12</div><div class="fs-hl">Ammo</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsHP" style="color:var(--green)">100</div><div class="fs-hl">HP</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsWpn" style="color:var(--gold);font-size:.82rem">Pistol</div><div class="fs-hl">Weapon</div></div>
+    </div>
+    <button class="fs-close" onclick="closeFS()">✕ Close [Esc]</button>
+  </div>
+  <div class="fs-canvas-wrap">
+    <canvas id="gcFS"></canvas>
+    <div class="fs-mob-ctrl">
+      <div class="fs-dpad">
+        <div class="dpad-empty"></div><div class="fs-dpad-btn" id="fs-up">▲</div><div class="dpad-empty"></div>
+        <div class="fs-dpad-btn" id="fs-left">◀</div><div class="fs-dpad-btn" id="fs-down">▼</div><div class="fs-dpad-btn" id="fs-right">▶</div>
+      </div>
+      <div class="fs-r-ctrl">
+        <div class="fs-fire-btn" id="fs-fire">🔫</div>
+        <div class="fs-buy-btn" id="fs-buy">BUY [E]</div>
+      </div>
+    </div>
+  </div>
+  <div class="fs-foot" id="fsFoot">▶ Survive the horde</div>
+</div>
+
+<div class="share-toast" id="shareToast">🔗 Link copied!</div>
+
+<!-- FINISH BANNER -->
+<div class="iw-finish" id="iwFinish">
+  <div class="iw-confetti">🎉🧟🏆🧟🎉</div>
+  <div class="iw-finish-title">Workshop Complete!</div>
+  <div class="iw-finish-sub">You built a full COD Zombies-style wave survival game in Unreal Engine 5 Blueprints. Wall buys, Mystery Box, rounds, boss fights — the works.</div>
+  <div class="iw-final-stats" id="iwFinalStats"></div>
+  <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,200,66,.15);border:1px solid rgba(245,200,66,.3);color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+</div>
+
+<section class="more-section">
+  <div class="more-title">More Workshops</div>
+  <div class="more-grid">
+    <a href="unreal-blueprint-shooter.html" class="more-card"><span class="more-icon">🔫</span><span class="more-tag" style="color:#f08050">Blueprints</span><span class="more-name">Blueprint Shooter</span><span class="more-cta" style="color:#f08050">Start →</span></a>
+    <a href="nuclear-blueprint.html" class="more-card"><span class="more-icon">⚡</span><span class="more-tag" style="color:#e05a1e">Roguelite</span><span class="more-name">Nuclear Blueprint</span><span class="more-cta" style="color:#e05a1e">Start →</span></a>
+    <a href="unreal-top-down-shooter.html" class="more-card"><span class="more-icon">💻</span><span class="more-tag" style="color:#ce93d8">C++</span><span class="more-name">C++ Shooter</span><span class="more-cta" style="color:#ce93d8">Start →</span></a>
+    <a href="../pages/workshop.html" class="more-card"><span class="more-icon">🔧</span><span class="more-tag" style="color:#70A3A7">All</span><span class="more-name">The Workshop</span><span class="more-cta" style="color:#70A3A7">Visit →</span></a>
+  </div>
+</section>
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div>
+        </div>
+      </a>      <a href="../tools/map-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗾</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Map Generator</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Procedural dungeons & world maps</div>
+        </div>
+      </a>      <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗺️</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Level Designer</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build 2D tile maps</div>
+        </div>
+      </a>      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>      <a href="../tools/gdd-builder.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">📄</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">GDD Builder</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Plan your full game design doc</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════
+   BLUEPRINT CANVAS ENGINE
+═══════════════════════════════════════════ */
+const PC={exec:'#fff',bool:'#dd2244',int:'#44aaee',float:'#88ee44',vec3:'#eebb44',rot:'#aaccff',actor:'#ee6622',object:'#4488ee',string:'#ee44aa',any:'#aaa'};
+const NS={
+  event:{h:'#8b2020',b:'#1e0c0c',e:'#cc4444'},func:{h:'#1a3a70',b:'#0e1520',e:'#3a70cc'},
+  macro:{h:'#1a4a1a',b:'#0e160e',e:'#3aaa50'},vset:{h:'#252550',b:'#0e0e18',e:'#5050bb'},
+  vget:{h:'#1a4848',b:'#0e1515',e:'#30aaaa'},branch:{h:'#383838',b:'#141414',e:'#888'},
+  cast:{h:'#1a2848',b:'#0e1218',e:'#3060aa'},custom:{h:'#481848',b:'#160e16',e:'#aa40aa'},
+  math:{h:'#2c2c2c',b:'#111',e:'#666'},box:{h:'#5a4000',b:'#1a1200',e:'#c8960a'},
+};
+class BPC{
+  constructor(el,defs,rW,rV,onDone,isGold){
+    this.el=el;this.defs=defs;this.rW=rW;this.rV=rV;this.onDone=onDone;this.isGold=isGold;
+    this.wires=[];this.pins={};this.drag=null;this.done=false;this.vals={};
+    this.DPR=Math.min(window.devicePixelRatio||1,2);
+    this.cv=document.createElement('canvas');this.cx=this.cv.getContext('2d');
+    el.appendChild(this.cv);
+    this.nodes=defs.map(d=>({...d,lp:d.lp||[],rp:d.rp||[],vf:d.vf||null,w:d.w||155}));
+    this.nodes.forEach(n=>{const r=Math.max(n.lp.length,n.rp.length,1);n.h=26+(n.sub?12:0)+r*19+(n.vf?25:0)+12;});
+    this.cv.addEventListener('mousedown',e=>this._dn(e));
+    this._mmv=e=>this._mv(e);this._mup=e=>this._up(e);
+    document.addEventListener('mousemove',this._mmv);document.addEventListener('mouseup',this._mup);
+    ['touchstart','touchmove','touchend'].forEach(ev=>this.cv.addEventListener(ev,e=>{e.preventDefault();const m=ev==='touchend'?'up':ev==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
+    this._resize();window.addEventListener('resize',()=>this._resize());
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')this._cancel();});
+    this.render();
+  }
+  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
+  _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
+  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
+  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.hypot(p.x-x,p.y-y);if(d<bd){bd=d;best=id;}}return best;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;if(x>n.x+4&&x<n.x+n.w-4&&y>vy-8&&y<vy+24)return n.id;}return null;}
+  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showVI(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const sp=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const s2=this.pins[sp];this.drag={pid:sp,mx:s2?s2.x:x,my:s2?s2.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
+  _showVI(nodeId,e){
+    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
+    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    const cr=outer.getBoundingClientRect();
+    const pop=document.createElement('div');pop.className='bp-valinput'+(this.isGold?' gold-vi':'');
+    pop.style.left=Math.min(e.clientX-cr.left,cr.width-195)+'px';pop.style.top=(e.clientY-cr.top+8)+'px';
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bv-ok">✓ Set</button><button class="bv-cancel">✕</button></div>`;
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    pop.querySelector('.bv-ok').addEventListener('click',commit);
+    pop.querySelector('.bv-cancel').addEventListener('click',()=>pop.remove());
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')pop.remove();});
+    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
+  }
+  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
+  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
+  _cancel(){if(this.drag){this.drag=null;this.render();}}
+  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt=this.pins[t];if(!pf||!pt)return;if(pf.side!=='right'||pt.side!=='left')return this._err();if(pf.type!==pt.type&&pf.type!=='any'&&pt.type!=='any')return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
+  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
+  _chk(){
+    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
+    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
+    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
+    if(this.uid){const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);}
+    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
+    else if(!(wOk&&vOk))this.done=false;
+  }
+  render(){
+    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
+    cx.fillStyle='#11111f';cx.fillRect(0,0,540,H);
+    cx.strokeStyle='rgba(255,255,255,.033)';cx.lineWidth=1;
+    for(let x=0;x<540;x+=20){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+    for(let y=0;y<H;y+=20){cx.beginPath();cx.moveTo(0,y);cx.lineTo(540,y);cx.stroke();}
+    this.pins={};this.nodes.forEach(n=>this._dN(cx,n));
+    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
+    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
+  }
+  _dN(cx,n){
+    const st=(this.isGold&&n.type==='box')?NS.box:(NS[n.type]||NS.func);
+    const HDR=22,GAP=19,rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
+    cx.fillStyle='rgba(0,0,0,.38)';this._rr(cx,x+3,y+3,w,h,7);cx.fill();
+    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,7);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
+    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,7);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
+    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
+    if(n.sub){cx.fillStyle='rgba(255,255,255,.28)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
+    if(n.vf){
+      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
+      cx.fillStyle='rgba(0,0,0,.48)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
+      const hasVal=!!n.vf.val;
+      cx.strokeStyle=hasVal?'#88ee44':(this.isGold?'rgba(245,200,66,.55)':'rgba(74,222,128,.5)');cx.lineWidth=1;cx.stroke();
+      cx.fillStyle=hasVal?'#88ee44':(this.isGold?'rgba(245,200,66,.85)':'rgba(74,222,128,.85)');
+      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
+      cx.fillText(hasVal?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint),x+w/2,vy+10);
+      cx.fillStyle='rgba(255,255,255,.15)';cx.font='6.5px JetBrains Mono,monospace';
+      cx.fillText(hasVal?'✓ set':'▼ click to type',x+w/2,vy+20);
+    }
+    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
+    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
+    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
+    cx.textAlign='left';
+  }
+  _pin(cx,x,y,col,exec,conn,side){
+    cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;
+    if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}
+    else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}
+    cx.fillStyle=col+'26';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();
+  }
+  _wire(cx,x1,y1,x2,y2,col,dash){
+    const mx=(x1+x2)/2;cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=dash?0:6;
+    if(dash){cx.setLineDash([5,4]);cx.globalAlpha=.44;}
+    cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(mx,y1,mx,y2,x2,y2);cx.stroke();cx.restore();
+  }
+  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
+}
+let UID=0;
+function mkPZ(defs,rW,rV,onDone,isGold=false){
+  const uid=++UID;
+  const hasW=rW.length>0,hasV=rV.length>0;
+  const html=`<div class="bp-outer${isGold?' gold-b':''}" id="bpo-${uid}"><div id="bpcw-${uid}"></div>
+    <div class="bp-hint${isGold?' gold':''}">🖱 Drag output pin → input pin${hasV?' · Click fields to type':''}</div></div>
+    <div class="task-list">
+    ${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wires</div>`:''}
+    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the fields</div>`:''}</div>`;
+  return{uid,html,init(cb){
+    const el=document.getElementById('bpcw-'+uid);if(!el)return;
+    const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);},isGold);bp.uid=uid;return bp;
+  }};
+}
+
+/* ═══════════════════════════════════════════
+   WEAPON DEFINITIONS
+═══════════════════════════════════════════ */
+const WEAPONS={
+  pistol:  {name:'Pistol',    dmg:25, spread:.06, ammo:12, mag:12,  fire:.42, bullets:1, col:'#aaa',  cost:0,    icon:'🔫'},
+  smg:     {name:'SMG',       dmg:14, spread:.13, ammo:30, mag:30,  fire:.11, bullets:1, col:'#4af',  cost:500,  icon:'⚡'},
+  shotgun: {name:'Shotgun',   dmg:20, spread:.28, ammo:6,  mag:6,   fire:.68, bullets:5, col:'#c84',  cost:750,  icon:'💥'},
+  ak:      {name:'AK-47',     dmg:22, spread:.09, ammo:30, mag:30,  fire:.14, bullets:1, col:'#8c4',  cost:1200, icon:'🟢'},
+  sniper:  {name:'Sniper',    dmg:90, spread:.01, ammo:5,  mag:5,   fire:.9,  bullets:1, col:'#2ef',  cost:1500, icon:'🎯'},
+  lmg:     {name:'LMG',       dmg:18, spread:.11, ammo:75, mag:75,  fire:.09, bullets:1, col:'#f82',  cost:2000, icon:'🔥'},
+  rocket:  {name:'RPG',       dmg:120,spread:.04, ammo:3,  mag:3,   fire:1.2, bullets:1, col:'#f44',  cost:0,    icon:'🚀', explosive:true},
+  wonder:  {name:'Wonder Gun', dmg:50, spread:.02, ammo:20, mag:20, fire:.2,  bullets:3, col:'#f5f',  cost:0,    icon:'✨', homing:true},
+};
+// Wall buy layout: which weapon at which position
+const WALL_BUYS=[
+  {wpn:'smg',    x:.14, y:.5 },  // left corridor centre
+  {wpn:'shotgun',x:.86, y:.5 },  // right corridor centre
+  {wpn:'ak',     x:.5,  y:.14},  // top corridor centre
+  {wpn:'sniper', x:.5,  y:.86},  // bottom corridor centre
+  {wpn:'lmg',    x:.19, y:.19},  // top-left corner (reachable via left/top corridors)
+];
+const BOX_POOL=['shotgun','ak','sniper','lmg','rocket','wonder','smg'];
+const BOX_COST=950;
+
+/* ═══════════════════════════════════════════
+   GAME ENGINE
+═══════════════════════════════════════════ */
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+let CW=650,CH=650;
+
+function resizeGame(){
+  const wrap=document.getElementById('gameWrap');
+  if(!wrap)return;
+  const availW=wrap.clientWidth||wrap.offsetWidth||400;
+  const availH=wrap.clientHeight||wrap.offsetHeight||0;
+  const s=Math.max(availH>120?Math.min(availW-12,availH-12):availW-12,320);
+  CW=s;CH=s;
+  canvas.width=CW;canvas.height=CH;
+  canvas.style.width=CW+'px';canvas.style.height=CH+'px';
+  if(typeof G!=='undefined'){
+    G.boxAnim.x=CW*.5;G.boxAnim.y=CH*.5;
+    if(G.f_barricades&&G.barricades.length)buildBars();
+  }
+}
+window.addEventListener('resize',()=>requestAnimationFrame(resizeGame));
+
+const G={
+  phase:'title',
+  p:{x:200,y:200,r:11,hp:100,maxHp:100,angle:0,
+     wpn:'pistol',ammo:12,reloading:false,reloadT:0},
+  points:0,kills:0,round:1,bestRound:0,
+  zombies:[],bullets:[],particles:[],walls:[],
+  barricades:[],
+  lastShot:0,shakeT:0,shakeAmt:0,
+  roundActive:false,zombiesLeft:0,
+  interRound:false,interTimer:0,
+  boxAnim:{active:false,timer:0,x:0,y:0,idx:0,result:null},
+  promptBuy:{active:false,buyIdx:-1,label:''},
+  keys:{},mx:200,my:200,
+  // Feature flags
+  f_arena:false,f_player:false,f_move:false,f_shoot:false,
+  f_zombies:false,f_rounds:false,f_points:false,
+  f_wallbuy:false,f_box:false,f_barricades:false,
+  f_fullGame:false,
+};
+
+function curWpn(){return WEAPONS[G.p.wpn];}
+
+/* Input */
+window.addEventListener('keydown',e=>{
+  G.keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+  if(e.code==='KeyQ')tryBuy();
+  if(e.code==='KeyE')tryBuy();
+  if(e.code==='KeyR'&&(G.phase==='dead'))startGame();
+  if(e.code==='Escape')closeFS();
+});
+window.addEventListener('keyup',e=>G.keys[e.code]=false);
+canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),sc=CW/r.width;G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;});
+canvas.addEventListener('mousedown',e=>{if(!e.button)G.keys['LMB']=true;});
+canvas.addEventListener('mouseup',  e=>{if(!e.button)G.keys['LMB']=false;});
+canvas.addEventListener('click',()=>{if(G.phase==='dead')startGame();});
+
+/* D-pad bindings */
+function bindCtrl(prefix,fs){
+  const map={'up':'ArrowUp','down':'ArrowDown','left':'ArrowLeft','right':'ArrowRight'};
+  ['up','down','left','right'].forEach(d=>{
+    const el=document.getElementById(prefix+d);if(!el)return;
+    const code=map[d];
+    el.addEventListener('touchstart',e=>{e.preventDefault();G.keys[code]=true;el.classList.add('held');},{passive:false});
+    el.addEventListener('touchend',  e=>{e.preventDefault();G.keys[code]=false;el.classList.remove('held');},{passive:false});
+    el.addEventListener('mousedown',()=>{G.keys[code]=true;el.classList.add('held');});
+    el.addEventListener('mouseup',  ()=>{G.keys[code]=false;el.classList.remove('held');});
+    el.addEventListener('mouseleave',()=>{G.keys[code]=false;el.classList.remove('held');});
+  });
+  const fire=document.getElementById(prefix+'fire');
+  const buy =document.getElementById(prefix+'buy');
+  if(fire){
+    fire.addEventListener('touchstart',e=>{e.preventDefault();G.keys['LMB']=true;fire.classList.add('held');},{passive:false});
+    fire.addEventListener('touchend',  e=>{e.preventDefault();G.keys['LMB']=false;fire.classList.remove('held');},{passive:false});
+    fire.addEventListener('mousedown',()=>{G.keys['LMB']=true;fire.classList.add('held');});
+    fire.addEventListener('mouseup',  ()=>{G.keys['LMB']=false;fire.classList.remove('held');});
+  }
+  if(buy){
+    buy.addEventListener('touchstart',e=>{e.preventDefault();tryBuy();},{passive:false});
+    buy.addEventListener('click',tryBuy);
+  }
+}
+bindCtrl('mb-',false);
+bindCtrl('fs-',true);
+
+function tryBuy(){
+  // Barricade repair — free, always available when near a damaged barricade
+  if(G.f_barricades&&G.promptBuy.repairIdx>=0){
+    const b=G.barricades[G.promptBuy.repairIdx];
+    if(b){
+      const wasDestroyed=b.destroyed;
+      b.hp=wasDestroyed?35:Math.min(100,b.hp+40);
+      b.destroyed=false;
+      spawnPtcl(b.x+b.w/2,b.y+b.h/2,'#4ade80',6);
+      sout('🔨 Barricade '+(wasDestroyed?'rebuilt':'repaired')+'! ('+Math.round(b.hp)+'hp)');
+      return;
+    }
+  }
+  if(!G.f_wallbuy&&!G.f_box)return;
+  const px=G.p.x/CW,py=G.p.y/CH;
+  // Check wall buys
+  if(G.f_wallbuy){
+    for(let i=0;i<WALL_BUYS.length;i++){
+      const wb=WALL_BUYS[i];
+      const dist=Math.hypot(px-wb.x,py-wb.y)*CW;
+      if(dist<48){
+        const w=WEAPONS[wb.wpn];
+        if(G.p.wpn===wb.wpn){
+          // Ammo refill = half price
+          const refillCost=Math.floor(w.cost*.4)||200;
+          if(G.points>=refillCost){G.points-=refillCost;G.p.ammo=w.mag;G.p.reloading=false;sout('💰 Ammo refilled! -'+refillCost+' pts');updateHUD();}
+          else sout('❌ Not enough points! Need '+refillCost);
+        } else if(G.points>=w.cost){
+          G.points-=w.cost;G.p.wpn=wb.wpn;G.p.ammo=w.mag;G.p.reloading=false;
+          sout('🔫 Bought '+w.name+'! -'+w.cost+' pts');updateHUD();
+        } else {
+          sout('❌ Need '+w.cost+' pts for '+w.name);
+        }
+        return;
+      }
+    }
+  }
+  // Check mystery box
+  if(G.f_box){
+    const bx=G.boxAnim.x/CW,by=G.boxAnim.y/CH;
+    const bdist=Math.hypot(px-bx,py-by)*CW;
+    if(bdist<50&&!G.boxAnim.active){
+      if(G.points>=BOX_COST){
+        G.points-=BOX_COST;
+        G.boxAnim.active=true;G.boxAnim.timer=90;G.boxAnim.idx=0;G.boxAnim.result=BOX_POOL[Math.floor(Math.random()*BOX_POOL.length)];
+        sout('📦 Mystery Box spinning! -'+BOX_COST+' pts');updateHUD();
+      } else {
+        sout('❌ Mystery Box costs '+BOX_COST+' pts!');
+      }
+    }
+  }
+}
+
+function startGame(){
+  G.phase='playing';
+  G.p.x=CW/2;G.p.y=CH/2;G.p.hp=G.p.maxHp;
+  G.p.wpn='pistol';G.p.ammo=WEAPONS.pistol.mag;G.p.reloading=false;
+  G.zombies=[];G.bullets=[];G.particles=[];
+  G.round=1;G.kills=0;G.points=0;
+  G.lastShot=0;G.interRound=false;G.roundActive=false;
+  G.boxAnim={active:false,timer:0,x:CW*.5,y:CH*.5,idx:0,result:null};
+  G.walls=[];buildBars(); // always build map geometry
+  spawnRound();updateHUD();sout('🧟 Round 1! WASD=move · Click=shoot · E near planks=repair barricade · E near wall sign=buy weapon');
+}
+
+/* MAP GEOMETRY
+   Outer boundary = full canvas edge (drawn as thick walls)
+   4 doorways cut into the outer wall — each has a barricade the player can defend
+   Inner safe zone = central room 30%–70% of map
+   Corridors connect outer wall gaps to the inner room
+   Solid walls block movement outside corridors
+   Wall buys sit on corridor walls
+   Mystery box is in the centre room
+*/
+function getMap(){
+  const W=CW,H=CH,T=Math.round(W*.032); // wall thickness (thinner = more playable space)
+  const iL=Math.round(W*.22),iR=Math.round(W*.78); // inner room wider: 22%–78%
+  const iT=Math.round(H*.22),iB=Math.round(H*.78); // inner room taller: 22%–78%
+  const gHalf=Math.round(W*.115); // wider doorways (11.5% each side = 23% opening)
+  const cx=W/2,cy=H/2;
+  // Static solid walls (player + zombie collision, never destroyed)
+  // Outer top wall: two segments either side of top-centre gap
+  const walls=[
+    // Top outer wall — left segment
+    {x:0,         y:0,   w:cx-gHalf, h:T},
+    // Top outer wall — right segment
+    {x:cx+gHalf,  y:0,   w:W-(cx+gHalf), h:T},
+    // Bottom outer wall — left segment
+    {x:0,         y:H-T, w:cx-gHalf, h:T},
+    // Bottom outer wall — right segment
+    {x:cx+gHalf,  y:H-T, w:W-(cx+gHalf), h:T},
+    // Left outer wall — top segment
+    {x:0,y:0,    w:T,h:cy-gHalf},
+    // Left outer wall — bottom segment
+    {x:0,y:cy+gHalf,w:T,h:H-(cy+gHalf)},
+    // Right outer wall — top segment
+    {x:W-T,y:0,  w:T,h:cy-gHalf},
+    // Right outer wall — bottom segment
+    {x:W-T,y:cy+gHalf,w:T,h:H-(cy+gHalf)},
+    // Inner room — top wall, left segment
+    {x:iL,y:iT,w:cx-gHalf-iL,h:T},
+    // Inner room — top wall, right segment
+    {x:cx+gHalf,y:iT,w:iR-(cx+gHalf),h:T},
+    // Inner room — bottom wall, left segment
+    {x:iL,y:iB,w:cx-gHalf-iL,h:T},
+    // Inner room — bottom wall, right segment
+    {x:cx+gHalf,y:iB,w:iR-(cx+gHalf),h:T},
+    // Inner room — left wall, top segment
+    {x:iL,y:iT,w:T,h:cy-gHalf-iT},
+    // Inner room — left wall, bottom segment
+    {x:iL,y:cy+gHalf,w:T,h:iB-(cy+gHalf)},
+    // Inner room — right wall, top segment
+    {x:iR,y:iT,w:T,h:cy-gHalf-iT},
+    // Inner room — right wall, bottom segment
+    {x:iR,y:cy+gHalf,w:T,h:iB-(cy+gHalf)},
+    // Corridor side walls (close off areas that aren't corridors)
+    // Top-left corner filler (seals NW quadrant diagonals)
+    {x:T,  y:T,  w:iL-T,    h:iT-T},
+    // Top-right corner filler
+    {x:iR+T,y:T, w:W-T-(iR+T),h:iT-T},
+    // Bottom-left corner filler
+    {x:T,  y:iB+T,w:iL-T,   h:H-T-(iB+T)},
+    // Bottom-right corner filler
+    {x:iR+T,y:iB+T,w:W-T-(iR+T),h:H-T-(iB+T)},
+  ];
+  // Doorways: 4 gaps in outer wall, each gets a barricade
+  // Top door: cx-gHalf .. cx+gHalf, y=0..T
+  // Bottom door: same x, y=H-T..H
+  // Left door: x=0..T, cy-gHalf..cy+gHalf
+  // Right door: x=W-T..W, same y
+  const bT=Math.round(T*1.6); // barricade thickness (slightly thicker than wall)
+  const barricades=[
+    // Top doorway barricade
+    {x:cx-gHalf, y:0,   w:gHalf*2, h:bT, hp:100, door:'top'},
+    // Bottom doorway barricade
+    {x:cx-gHalf, y:H-bT,w:gHalf*2, h:bT, hp:100, door:'bottom'},
+    // Left doorway barricade
+    {x:0,   y:cy-gHalf, w:bT, h:gHalf*2, hp:100, door:'left'},
+    // Right doorway barricade
+    {x:W-bT,y:cy-gHalf, w:bT, h:gHalf*2, hp:100, door:'right'},
+    // Inner room top door barricade
+    {x:cx-gHalf,y:iT,   w:gHalf*2, h:bT, hp:100, door:'inner-top'},
+    // Inner room bottom door barricade
+    {x:cx-gHalf,y:iB-bT,w:gHalf*2, h:bT, hp:100, door:'inner-bottom'},
+    // Inner room left door barricade
+    {x:iL,   y:cy-gHalf,w:bT, h:gHalf*2, hp:100, door:'inner-left'},
+    // Inner room right door barricade
+    {x:iR-bT,y:cy-gHalf,w:bT, h:gHalf*2, hp:100, door:'inner-right'},
+  ];
+  return {walls,barricades,iL,iR,iT,iB,T,gHalf,cx,cy};
+}
+
+function buildBars(){
+  const m=getMap();
+  G.walls=m.walls;
+  G.barricades=m.barricades;
+  G._map=m;
+}
+
+function spawnRound(){
+  G.roundActive=true;
+  const n=Math.min(4+G.round*2,30);
+  G.zombiesLeft=n;
+  const cx=CW/2,cy=CH/2;
+  // Spawn just outside each of the 4 outer doorways so zombies funnel through
+  const spawnPts=[
+    ()=>({x:cx+(Math.random()-.5)*CW*.12, y:-18}),          // top door
+    ()=>({x:cx+(Math.random()-.5)*CW*.12, y:CH+18}),        // bottom door
+    ()=>({x:-18, y:cy+(Math.random()-.5)*CH*.12}),           // left door
+    ()=>({x:CW+18, y:cy+(Math.random()-.5)*CH*.12}),         // right door
+  ];
+  for(let i=0;i<n;i++){
+    const sp=spawnPts[i%4]();
+    const big=G.round>3&&Math.random()<.15;
+    const runner=G.round>5&&Math.random()<.2;
+    const maxHp=(big?200:50)+G.round*12;
+    G.zombies.push({x:sp.x,y:sp.y,hp:maxHp,maxHp,
+      spd:(runner?1.8:.72)+G.round*.05,r:big?13:runner?7:9,
+      hit:0,big,runner,pts:big?200:runner?150:100});
+  }
+}
+
+/* Game loop */
+let lastT=0;
+function loop(ts){const dt=Math.min((ts-lastT)/16,3);lastT=ts;update(dt);draw();syncFS();requestAnimationFrame(loop);}
+
+function update(dt){
+  if(G.shakeT>0)G.shakeT-=dt;
+  if(G.phase!=='playing')return;
+  const p=G.p,w=curWpn();
+
+  // Movement
+  if(G.f_player||G.f_move){
+    let mx=0,my=0;
+    if(G.keys['KeyW']||G.keys['ArrowUp'])   my=-1;
+    if(G.keys['KeyS']||G.keys['ArrowDown']) my=1;
+    if(G.keys['KeyA']||G.keys['ArrowLeft']) mx=-1;
+    if(G.keys['KeyD']||G.keys['ArrowRight'])mx=1;
+    const len=Math.hypot(mx,my)||1;
+    if(mx||my){
+      const spd=3.2*dt;
+      let nx=p.x+mx/len*spd,ny=p.y+my/len*spd;
+      if(!hitBar(nx,p.y,p.r))p.x=nx;
+      if(!hitBar(p.x,ny,p.r))p.y=ny;
+      p.x=Math.max(p.r+2,Math.min(CW-p.r-2,p.x));
+      p.y=Math.max(p.r+2,Math.min(CH-p.r-2,p.y));
+    }
+  }
+  p.angle=Math.atan2(G.my-p.y,G.mx-p.x);
+
+  // Reload
+  if(p.reloading){p.reloadT-=dt;if(p.reloadT<=0){p.reloading=false;p.ammo=w.mag;}}
+
+  // Shoot
+  if(G.f_shoot){
+    G.lastShot+=dt/60;
+    if((G.keys['Space']||G.keys['LMB'])&&G.lastShot>=w.fire&&p.ammo>0&&!p.reloading){
+      G.lastShot=0;p.ammo--;
+      if(p.ammo<=0){p.reloading=true;p.reloadT=55;}
+      for(let i=0;i<w.bullets;i++){
+        const ao=w.bullets>1?(i/(w.bullets-1)-.5)*w.spread:0;
+        const ang=p.angle+ao+(Math.random()-.5)*w.spread*.1;
+        G.bullets.push({x:p.x+Math.cos(p.angle)*13,y:p.y+Math.sin(p.angle)*13,
+          vx:Math.cos(ang)*10,vy:Math.sin(ang)*10,
+          dmg:w.dmg,life:55,col:w.col,
+          explosive:w.explosive||false,homing:w.homing||false});
+      }
+      G.shakeT=3;G.shakeAmt=1.8;
+    }
+  }
+
+  // Bullets
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];
+    if(b.homing&&G.zombies.length){
+      let nx=G.zombies[0].x,ny=G.zombies[0].y,nd=Infinity;
+      G.zombies.forEach(z=>{const d=Math.hypot(b.x-z.x,b.y-z.y);if(d<nd){nd=d;nx=z.x;ny=z.y;}});
+      const ha=Math.atan2(ny-b.y,nx-b.x);b.vx+=(Math.cos(ha)-b.vx*.1)*.15;b.vy+=(Math.sin(ha)-b.vy*.1)*.15;
+    }
+    b.x+=b.vx;b.y+=b.vy;b.life--;
+    if(b.life<=0||b.x<-10||b.x>CW+10||b.y<-10||b.y>CH+10){G.bullets.splice(i,1);continue;}
+    let stopped=false;
+    // Stop on static walls
+    if(G.walls){for(const w2 of G.walls){if(b.x>w2.x&&b.x<w2.x+w2.w&&b.y>w2.y&&b.y<w2.y+w2.h){G.bullets.splice(i,1);stopped=true;break;}}}
+    if(stopped)continue;
+    // Bullets pass through barricades — only stop on solid walls
+    if(stopped)continue;
+  }
+
+  // Zombies
+  for(let i=G.zombies.length-1;i>=0;i--){
+    const z=G.zombies[i];if(z.hit>0)z.hit-=dt;
+    const dx=p.x-z.x,dy=p.y-z.y,dist=Math.hypot(dx,dy);
+    if(dist>.5){
+      let nx=z.x+dx/dist*z.spd*dt,ny=z.y+dy/dist*z.spd*dt;
+      if(!hitBarZombie(nx,z.y,z.r-2))z.x=nx;
+      if(!hitBarZombie(z.x,ny,z.r-2))z.y=ny;
+    }
+    // Damage barricades (only inner ones slow zombies; outer ones face zombie paths)
+    for(let bi=G.barricades.length-1;bi>=0;bi--){
+      const bar=G.barricades[bi];
+      if(z.x+z.r>bar.x&&z.x-z.r<bar.x+bar.w&&z.y+z.r>bar.y&&z.y-z.r<bar.y+bar.h){
+        const dmgRate=bar.door&&bar.door.startsWith('inner')?0.05:0.09;
+        bar.hp-=dmgRate*dt;
+        if(bar.hp<=0){
+          bar.hp=0;bar.destroyed=true;
+          spawnPtcl(bar.x+bar.w/2,bar.y+bar.h/2,'#c84',6);
+          sout('💥 Barricade down! Walk up and press E to rebuild.');
+        }
+      }
+    }
+    // Hit player
+    if(dist<p.r+z.r){p.hp-=.35*dt;spawnPtcl(p.x,p.y,'#f87171',1);}
+    // Bullet hits
+    for(let bi=G.bullets.length-1;bi>=0;bi--){
+      const b=G.bullets[bi];
+      const bd=Math.hypot(b.x-z.x,b.y-z.y);
+      if(bd<z.r+4){
+        // Explosive radius
+        if(b.explosive){
+          G.zombies.forEach(z2=>{const d=Math.hypot(b.x-z2.x,b.y-z2.y);if(d<65){z2.hp-=b.dmg*(1-d/65);z2.hit=10;}});
+          spawnPtcl(b.x,b.y,'#f82',10);G.bullets.splice(bi,1);break;
+        }
+        z.hp-=b.dmg;z.hit=8;
+        // Headshot bonus (random 20% chance)
+        const hs=Math.random()<.2;
+        if(hs){z.hp-=b.dmg*.5;spawnPtcl(z.x,z.y-z.r,'#f5c842',2);}
+        G.bullets.splice(bi,1);
+        spawnPtcl(z.x,z.y,'#dc2626',3);
+        if(z.hp<=0){
+          spawnPtcl(z.x,z.y,'#4ade80',6);
+          if(G.f_points){G.points+=hs?z.pts*2:z.pts;}
+          G.kills++;G.zombies.splice(i,1);G.zombiesLeft--;
+          break;
+        }
+      }
+    }
+  }
+
+  // Particles
+  for(let i=G.particles.length-1;i>=0;i--){const p2=G.particles[i];p2.x+=p2.vx;p2.y+=p2.vy;p2.life-=dt;p2.vx*=.86;p2.vy*=.86;if(p2.life<=0)G.particles.splice(i,1);}
+
+  // Mystery box spin
+  if(G.boxAnim.active){
+    G.boxAnim.timer-=dt;
+    G.boxAnim.idx=Math.floor(G.boxAnim.timer/8)%BOX_POOL.length;
+    if(G.boxAnim.timer<=0){
+      G.boxAnim.active=false;
+      G.p.wpn=G.boxAnim.result;G.p.ammo=WEAPONS[G.p.wpn].mag;G.p.reloading=false;
+      sout('📦 Got '+WEAPONS[G.p.wpn].name+'! '+WEAPONS[G.p.wpn].icon);
+      updateHUD();
+    }
+  }
+
+  // Round over
+  if(G.f_rounds&&G.roundActive&&G.zombies.length===0&&G.zombiesLeft===0){
+    G.roundActive=false;G.interRound=true;G.interTimer=200;
+    if(G.round>G.bestRound){G.bestRound=G.round;localStorage.setItem('bz_best',G.bestRound);}
+    sout('🎉 Round '+G.round+' complete! Next round in 3...');
+  }
+  if(G.interRound){G.interTimer-=dt;if(G.interTimer<=0){G.interRound=false;G.round++;spawnRound();sout('🧟 Round '+G.round+'!');}}
+
+  // Death
+  if(p.hp<=0){
+    p.hp=0;G.phase='dead';
+    if(G.round>G.bestRound){G.bestRound=G.round;localStorage.setItem('bz_best',G.bestRound);}
+    sout('💀 Died on Round '+G.round+'. '+G.kills+' kills. Click to restart.');
+  }
+
+  // Proximity prompts — barricade repair, wall buy, mystery box
+  G.promptBuy={active:false,buyIdx:-1,label:'',repairIdx:-1};
+  // Barricade repair check (highest priority — always available)
+  if(G.f_barricades){
+    const REPAIR_RANGE=CW*.1;
+    for(let i=0;i<G.barricades.length;i++){
+      const b=G.barricades[i];
+      const bCx=b.x+b.w/2,bCy=b.y+b.h/2;
+      if(Math.hypot(G.p.x-bCx,G.p.y-bCy)<REPAIR_RANGE&&(b.hp<100||b.destroyed)){
+        G.promptBuy={active:true,buyIdx:-88,repairIdx:i,
+          label:`[E] ${b.destroyed?'Rebuild':'Repair'} barricade${b.destroyed?'':' ('+Math.round(b.hp)+'hp)'} — FREE`};
+        break;
+      }
+    }
+  }
+  if(!G.promptBuy.active&&G.f_wallbuy){
+    const px2=G.p.x/CW,py2=G.p.y/CH;
+    for(let i=0;i<WALL_BUYS.length;i++){
+      const wb=WALL_BUYS[i];
+      if(Math.hypot(px2-wb.x,py2-wb.y)*CW<48){
+        const w2=WEAPONS[wb.wpn];
+        const isSame=G.p.wpn===wb.wpn;
+        const cost=isSame?Math.floor(w2.cost*.4)||200:w2.cost;
+        G.promptBuy={active:true,buyIdx:i,repairIdx:-1,label:`[E] ${isSame?'Refill ammo':'Buy '+w2.name} — ${cost} pts`};
+        break;
+      }
+    }
+    // Box prompt
+    if(!G.promptBuy.active&&G.f_box&&!G.boxAnim.active){
+      const bx=G.boxAnim.x/CW,by=G.boxAnim.y/CH;
+      if(Math.hypot(G.p.x/CW-bx,G.p.y/CH-by)*CW<50){
+        G.promptBuy={active:true,buyIdx:-99,repairIdx:-1,label:`[E] Mystery Box — ${BOX_COST} pts`};
+      }
+    }
+  }
+
+  updateHUD();
+}
+
+// Player only hits static walls — can walk through barricades freely
+function hitBar(x,y,r){
+  if(G.f_arena&&G.walls){
+    for(const b of G.walls){if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;}
+  }
+  return false;
+}
+// Zombies hit both walls AND barricades
+function hitBarZombie(x,y,r){
+  if(G.f_arena&&G.walls){
+    for(const b of G.walls){if(x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;}
+  }
+  if(G.f_barricades){
+    for(const b of G.barricades){
+      if(!b.destroyed&&x+r>b.x&&x-r<b.x+b.w&&y+r>b.y&&y-r<b.y+b.h)return true;
+    }
+  }
+  return false;
+}
+function spawnPtcl(x,y,col,n){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1+Math.random()*3;G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,life:10+Math.random()*8});}
+}
+
+/* DRAW */
+function draw(){
+  ctx.save();
+  if(G.shakeT>0){ctx.translate((Math.random()-.5)*G.shakeAmt,(Math.random()-.5)*G.shakeAmt);}
+  ctx.clearRect(-8,-8,CW+16,CH+16);
+
+  if(!G.f_arena){drawTitle();ctx.restore();return;}
+
+  const W=CW,H=CH;
+  const m=G._map||getMap(); // use cached map or compute
+
+  // ── Background (unreachable corners = very dark) ──
+  ctx.fillStyle='#0a0804';ctx.fillRect(0,0,W,H);
+
+  // ── Corridor floors ──
+  const corridorCol='#1a1710';
+  ctx.fillStyle=corridorCol;
+  // Top corridor
+  ctx.fillRect(W/2-m.gHalf,m.T,m.gHalf*2,m.iT-m.T);
+  // Bottom corridor
+  ctx.fillRect(W/2-m.gHalf,m.iB+m.T,m.gHalf*2,H-m.T-(m.iB+m.T));
+  // Left corridor
+  ctx.fillRect(m.T,H/2-m.gHalf,m.iL-m.T,m.gHalf*2);
+  // Right corridor
+  ctx.fillRect(m.iR+m.T,H/2-m.gHalf,W-m.T-(m.iR+m.T),m.gHalf*2);
+
+  // ── Inner room floor ──
+  const innerGr=ctx.createLinearGradient(m.iL,m.iT,m.iR,m.iB);
+  innerGr.addColorStop(0,'#201e16');innerGr.addColorStop(1,'#18160e');
+  ctx.fillStyle=innerGr;ctx.fillRect(m.iL,m.iT,m.iR-m.iL,m.iB-m.iT);
+
+  // ── Floor tile grid (corridors + inner room only) ──
+  ctx.strokeStyle='rgba(255,255,255,.028)';ctx.lineWidth=1;
+  const tSize=Math.round(W/18);
+  for(let gx=0;gx<W;gx+=tSize){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(let gy=0;gy<H;gy+=tSize){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  // ── Static walls ──
+  if(G.walls){
+    G.walls.forEach(w2=>{
+      // Wall body
+      ctx.fillStyle='#2a2520';ctx.fillRect(w2.x,w2.y,w2.w,w2.h);
+      // Brick texture lines
+      ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1;
+      const bw=Math.round(tSize*.7),bh=Math.round(m.T*.45);
+      if(w2.w>=w2.h){
+        // Horizontal wall — draw horizontal brick rows
+        for(let by=w2.y;by<w2.y+w2.h;by+=bh){
+          const offset=(Math.floor((by-w2.y)/bh)%2)*Math.round(bw*.5);
+          for(let bx=w2.x+offset;bx<w2.x+w2.w;bx+=bw){
+            ctx.strokeRect(bx,by,bw,bh);
+          }
+        }
+      } else {
+        // Vertical wall — draw vertical brick columns
+        for(let bx=w2.x;bx<w2.x+w2.w;bx+=bh){
+          const offset=(Math.floor((bx-w2.x)/bh)%2)*Math.round(bw*.5);
+          for(let by=w2.y+offset;by<w2.y+w2.h;by+=bw){
+            ctx.strokeRect(bx,by,bh,bw);
+          }
+        }
+      }
+      // Wall top highlight
+      ctx.fillStyle='rgba(255,255,255,.06)';
+      if(w2.w>=w2.h){ctx.fillRect(w2.x,w2.y,w2.w,2);}
+      else{ctx.fillRect(w2.x,w2.y,2,w2.h);}
+    });
+  }
+
+  // Barricades (boarded-up doorways)
+  if(G.f_barricades){
+    G.barricades.forEach(b=>{
+      const pct=b.hp/100;
+      const horiz=b.w>=b.h;
+      // Destroyed barricade = rubble on floor (still visible, player can rebuild)
+      if(b.destroyed){
+        ctx.fillStyle='rgba(100,70,30,.35)';ctx.fillRect(b.x,b.y,b.w,b.h);
+        ctx.strokeStyle='rgba(245,200,66,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+        ctx.strokeRect(b.x+1,b.y+1,b.w-2,b.h-2);ctx.setLineDash([]);
+        ctx.fillStyle='rgba(245,200,66,.55)';ctx.font=`bold ${W*.024}px JetBrains Mono,monospace`;
+        ctx.textAlign='center';ctx.fillText('[E] Rebuild',b.x+b.w/2,b.y+b.h/2+4);
+        return;
+      }
+      // Wood plank base
+      ctx.fillStyle=`rgba(${Math.round(120+35*pct)},${Math.round(70+20*pct)},${Math.round(30+10*pct)},${.7+pct*.25})`;
+      ctx.fillRect(b.x,b.y,b.w,b.h);
+      // Plank lines
+      ctx.strokeStyle=`rgba(0,0,0,${.4+pct*.2})`;ctx.lineWidth=1.5;
+      if(horiz){
+        const planks=3;const ph=b.h/planks;
+        for(let pi=0;pi<planks;pi++){ctx.strokeRect(b.x+1,b.y+pi*ph,b.w-2,ph);}
+        // Nails
+        ctx.fillStyle='rgba(180,180,160,.8)';
+        for(let pi=0;pi<planks;pi++){
+          ctx.beginPath();ctx.arc(b.x+b.w*.2,b.y+pi*ph+ph*.5,2,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(b.x+b.w*.8,b.y+pi*ph+ph*.5,2,0,Math.PI*2);ctx.fill();
+        }
+      } else {
+        const planks=3;const pw=b.w/planks;
+        for(let pi=0;pi<planks;pi++){ctx.strokeRect(b.x+pi*pw,b.y+1,pw,b.h-2);}
+        ctx.fillStyle='rgba(180,180,160,.8)';
+        for(let pi=0;pi<planks;pi++){
+          ctx.beginPath();ctx.arc(b.x+pi*pw+pw*.5,b.y+b.h*.2,2,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(b.x+pi*pw+pw*.5,b.y+b.h*.8,2,0,Math.PI*2);ctx.fill();
+        }
+      }
+      // Damage cracks overlay
+      if(pct<.7){
+        ctx.strokeStyle=`rgba(0,0,0,${.5*(1-pct)})`;ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(b.x+b.w*.3,b.y);ctx.lineTo(b.x+b.w*.25,b.y+b.h);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(b.x+b.w*.65,b.y);ctx.lineTo(b.x+b.w*.7,b.y+b.h);ctx.stroke();
+      }
+      // HP bar above (horizontal bars) or to-left (vertical)
+      const barLen=Math.max(b.w,b.h);
+      ctx.fillStyle='rgba(0,0,0,.6)';
+      if(horiz){ctx.fillRect(b.x,b.y-6,barLen,4);}
+      else{ctx.fillRect(b.x-6,b.y,4,barLen);}
+      ctx.fillStyle=pct>.6?'#4ade80':pct>.3?'#f5c842':'#f87171';
+      if(horiz){ctx.fillRect(b.x,b.y-6,barLen*pct,4);}
+      else{ctx.fillRect(b.x-6,b.y,4,barLen*pct);}
+      // Glow when healthy
+      if(pct>.8){
+        ctx.strokeStyle=`rgba(74,222,128,${(pct-.8)*1.5})`;ctx.lineWidth=1.5;
+        ctx.strokeRect(b.x,b.y,b.w,b.h);
+      }
+    });
+  }
+
+  // Wall buys
+  if(G.f_wallbuy){
+    WALL_BUYS.forEach((wb,i)=>{
+      const wx=wb.x*W,wy=wb.y*H;
+      const w2=WEAPONS[wb.wpn];
+      const near=G.promptBuy.buyIdx===i;
+      ctx.fillStyle=near?'rgba(245,200,66,.22)':'rgba(245,200,66,.07)';
+      ctx.strokeStyle=near?'rgba(245,200,66,.8)':'rgba(245,200,66,.25)';
+      ctx.lineWidth=near?2:1;
+      // Wall plate
+      ctx.beginPath();ctx.roundRect(wx-22,wy-18,44,36,5);ctx.fill();ctx.stroke();
+      // Weapon icon + cost
+      ctx.fillStyle=near?'#f5c842':'rgba(245,200,66,.65)';
+      ctx.font=`bold ${W*.032}px JetBrains Mono,monospace`;ctx.textAlign='center';
+      ctx.fillText(w2.icon,wx,wy-3);
+      ctx.font=`${W*.024}px JetBrains Mono,monospace`;
+      ctx.fillText(w2.cost+'pts',wx,wy+12);
+    });
+  }
+
+  // Mystery Box
+  if(G.f_box){
+    const bx=G.boxAnim.x,by=G.boxAnim.y;
+    const spinning=G.boxAnim.active;
+    const dispWpn=spinning?WEAPONS[BOX_POOL[G.boxAnim.idx]]:null;
+    // Glow
+    const grd=ctx.createRadialGradient(bx,by,0,bx,by,40);
+    grd.addColorStop(0,'rgba(245,200,66,.22)');grd.addColorStop(1,'rgba(245,200,66,0)');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(bx,by,40,0,Math.PI*2);ctx.fill();
+    // Box body
+    ctx.fillStyle=spinning?'rgba(245,200,66,.45)':'rgba(80,60,10,.9)';
+    ctx.strokeStyle=spinning?'#f5c842':'rgba(245,200,66,.5)';
+    ctx.lineWidth=spinning?2.5:1.5;
+    ctx.beginPath();ctx.roundRect(bx-18,by-18,36,36,5);ctx.fill();ctx.stroke();
+    // Question mark or weapon icon
+    ctx.fillStyle='#f5c842';ctx.font=`bold ${W*.055}px Bebas Neue,sans-serif`;ctx.textAlign='center';
+    ctx.fillText(spinning?dispWpn.icon:'?',bx,by+10);
+    // Cost label
+    ctx.font=`${W*.023}px JetBrains Mono,monospace`;ctx.fillStyle='rgba(245,200,66,.7)';
+    ctx.fillText(BOX_COST+'pts',bx,by+30);
+    // Spin ring
+    if(spinning){
+      const prog=1-(G.boxAnim.timer/90);
+      ctx.strokeStyle='#f5c842';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(bx,by,24,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);ctx.stroke();
+    }
+  }
+
+  // Particles
+  G.particles.forEach(p2=>{
+    const a=Math.min(1,p2.life/14);ctx.globalAlpha=a;
+    ctx.fillStyle=p2.col;ctx.beginPath();ctx.arc(p2.x,p2.y,2,0,Math.PI*2);ctx.fill();
+  });ctx.globalAlpha=1;
+
+  // Bullets
+  G.bullets.forEach(b=>{
+    ctx.fillStyle=b.col;ctx.beginPath();ctx.arc(b.x,b.y,b.explosive?4:2.5,0,Math.PI*2);ctx.fill();
+    if(b.explosive){ctx.strokeStyle='rgba(255,130,0,.4)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(b.x,b.y,8,0,Math.PI*2);ctx.stroke();}
+    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx*2,b.y-b.vy*2);ctx.stroke();
+  });
+
+  // Zombies
+  G.zombies.forEach(z=>{
+    const hit=z.hit>0;
+    ctx.fillStyle='rgba(0,0,0,.26)';ctx.beginPath();ctx.ellipse(z.x,z.y+z.r*.65,z.r*.72,z.r*.25,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hit?'#fff':(z.runner?'#a3e635':z.big?'#f87171':'#4ade80');
+    ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=z.runner?'#65a30d':z.big?'#b91c1c':'#16a34a';ctx.lineWidth=1.5;ctx.stroke();
+    // Eyes
+    ctx.fillStyle='#0a1a0a';
+    ctx.beginPath();ctx.arc(z.x-z.r*.3,z.y-z.r*.15,z.r*.17,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(z.x+z.r*.3,z.y-z.r*.15,z.r*.17,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#0a1a0a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(z.x,z.y+z.r*.1,z.r*.32,.2,Math.PI-.2);ctx.stroke();
+    // HP bar
+    const pct=z.hp/z.maxHp;
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(z.x-z.r,z.y-z.r-6,z.r*2,3);
+    ctx.fillStyle=pct>.5?'#4ade80':'#f87171';ctx.fillRect(z.x-z.r,z.y-z.r-6,z.r*2*pct,3);
+    // Type label
+    if(z.big||z.runner){
+      ctx.fillStyle=z.big?'#f87171':'#a3e635';ctx.font=`bold ${W*.024}px JetBrains Mono,monospace`;ctx.textAlign='center';
+      ctx.fillText(z.big?'BRUTE':'RUNNER',z.x,z.y-z.r-10);
+    }
+  });
+
+  // Player
+  if(G.f_player){
+    const{x,y,angle,r,hp,maxHp,reloading,ammo}=G.p;
+    ctx.fillStyle='rgba(0,0,0,.26)';ctx.beginPath();ctx.ellipse(x,y+r*.58,r*.68,r*.24,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e8eaf0';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=1.5;ctx.stroke();
+    if(G.f_shoot){
+      const wx=x+Math.cos(angle)*15,wy=y+Math.sin(angle)*15;
+      ctx.strokeStyle=curWpn().col;ctx.lineWidth=3;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(wx,wy);ctx.stroke();ctx.lineCap='butt';
+    }
+    // HP bar
+    const pct=hp/maxHp;
+    ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-13,y-r-8,26,4);
+    ctx.fillStyle=pct>.5?'#4ade80':pct>.25?'#f5c842':'#f87171';ctx.fillRect(x-13,y-r-8,26*pct,4);
+    // Weapon + ammo top-left
+    ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(4,4,78,32);
+    ctx.fillStyle='#f5c842';ctx.font=`bold ${W*.03}px JetBrains Mono,monospace`;ctx.textAlign='left';
+    ctx.fillText(curWpn().icon+' '+curWpn().name,8,18);
+    if(reloading){
+      ctx.fillStyle='#f87171';ctx.fillText('RELOADING...',8,30);
+      ctx.strokeStyle='#f5c842';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(x,y,r+5,-Math.PI/2,-Math.PI/2+(1-G.p.reloadT/55)*Math.PI*2);ctx.stroke();
+    } else {
+      const w2=curWpn();
+      for(let i=0;i<w2.mag;i++){
+        ctx.fillStyle=i<ammo?'#f5c842':'rgba(255,255,255,.12)';
+        ctx.fillRect(5+i*(Math.min(5,72/w2.mag)),25,Math.min(4,68/w2.mag),5);
+      }
+    }
+    // Points top-right
+    if(G.f_points){
+      ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(W-82,4,78,20);
+      ctx.fillStyle='#f5c842';ctx.font=`bold ${W*.032}px JetBrains Mono,monospace`;ctx.textAlign='right';
+      ctx.fillText('$'+G.points,W-7,20);
+    }
+    // Buy prompt
+    if(G.promptBuy.active){
+      const lbl=G.promptBuy.label;
+      const isRepair=G.promptBuy.repairIdx>=0;
+      ctx.font=`bold ${W*.026}px JetBrains Mono,monospace`;ctx.textAlign='center';
+      const tw=ctx.measureText(lbl).width+22;
+      ctx.fillStyle=isRepair?'rgba(74,222,128,.88)':'rgba(245,200,66,.88)';
+      ctx.beginPath();ctx.roundRect(W/2-tw/2,H-40,tw,22,4);ctx.fill();
+      ctx.fillStyle='#0a1a0a';
+      ctx.fillText(lbl,W/2,H-24);
+    }
+  }
+
+  // Round banner (inter-round)
+  if(G.interRound&&G.interTimer>130){
+    const a=Math.min(1,(200-G.interTimer)/30);
+    ctx.fillStyle=`rgba(0,0,0,${a*.7})`;ctx.fillRect(0,H/2-24,W,46);
+    ctx.fillStyle=`rgba(74,222,128,${a})`;ctx.font=`bold ${W*.062}px Bebas Neue,sans-serif`;ctx.textAlign='center';
+    ctx.fillText('ROUND '+G.round+' COMPLETE!',W/2,-4+H/2);
+    ctx.fillStyle=`rgba(200,255,200,${a*.55})`;ctx.font=`${W*.028}px JetBrains Mono,monospace`;
+    ctx.fillText('ROUND '+(G.round+1)+' INCOMING...',W/2,H/2+18);
+  }
+
+  if(G.phase==='dead')drawDead();
+  ctx.restore();
+}
+
+function drawTitle(){
+  ctx.fillStyle='rgba(0,0,0,.88)';ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='#4ade80';ctx.font=`bold ${CW*.075}px Bebas Neue,sans-serif`;ctx.textAlign='center';ctx.fillText('BLUEPRINT ZOMBIES',CW/2,CH*.28);
+  ctx.fillStyle='rgba(245,200,66,.8)';ctx.font=`${CW*.028}px JetBrains Mono,monospace`;
+  ctx.fillText('Wall Buys · Mystery Box · Points · Rounds',CW/2,CH*.41);
+  ctx.fillStyle='rgba(255,255,255,.38)';ctx.font=`${CW*.024}px JetBrains Mono,monospace`;
+  ctx.fillText('barricades · brutes · runners · explosive weapons',CW/2,CH*.49);
+  ctx.fillStyle='rgba(74,222,128,.62)';ctx.font=`bold ${CW*.033}px Nunito,sans-serif`;ctx.fillText('Complete Step 1 to begin',CW/2,CH*.65);
+  ctx.fillStyle='rgba(255,255,255,.2)';ctx.font=`${CW*.024}px JetBrains Mono,monospace`;ctx.fillText('or hit Quick Play',CW/2,CH*.74);ctx.textAlign='left';
+}
+function drawDead(){
+  ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='#f87171';ctx.font=`bold ${CW*.09}px Bebas Neue,sans-serif`;ctx.textAlign='center';ctx.fillText('YOU DIED',CW/2,CH*.3);
+  ctx.fillStyle='#f5c842';ctx.font=`${CW*.038}px Bebas Neue,sans-serif`;ctx.fillText('Round '+G.round+' · '+G.kills+' kills · $'+G.points,CW/2,CH*.44);
+  ctx.fillStyle='rgba(255,255,255,.55)';ctx.font=`${CW*.028}px JetBrains Mono,monospace`;ctx.fillText('Best: Round '+G.bestRound,CW/2,CH*.54);
+  ctx.fillStyle='rgba(74,222,128,.72)';ctx.font=`bold ${CW*.034}px Nunito,sans-serif`;ctx.fillText('Tap or press R to restart',CW/2,CH*.7);ctx.textAlign='left';
+}
+
+function updateHUD(){
+  const s=(v)=>String(v);
+  document.getElementById('hudRound').textContent=s(G.round);
+  document.getElementById('hudPts').textContent='$'+s(G.points);
+  document.getElementById('hudKills').textContent=s(G.kills);
+  document.getElementById('hudAmmo').textContent=s(G.p.ammo)+'/'+s(curWpn().mag);
+  document.getElementById('hudHP').textContent=s(Math.max(0,Math.round(G.p.hp)));
+  document.getElementById('fsRound').textContent=s(G.round);
+  document.getElementById('fsPts').textContent='$'+s(G.points);
+  document.getElementById('fsKills').textContent=s(G.kills);
+  document.getElementById('fsAmmo').textContent=s(G.p.ammo)+'/'+s(curWpn().mag);
+  document.getElementById('fsHP').textContent=s(Math.max(0,Math.round(G.p.hp)));
+  document.getElementById('fsWpn').textContent=curWpn().icon+' '+curWpn().name;
+  updateCard();
+}
+function updateCard(){
+  document.getElementById('heroRound').textContent='Round '+G.round;
+  document.getElementById('hw-pts').textContent='$'+G.points;
+  document.getElementById('hw-wpn').textContent=curWpn().icon+' '+curWpn().name;
+  document.getElementById('hw-wb').textContent=G.f_wallbuy?'Active ✓':'Off';
+  document.getElementById('hw-mb').textContent=G.f_box?'Active ✓':'Off';
+  document.getElementById('hw-best').textContent='Round '+G.bestRound;
+}
+function sout(t){document.getElementById('obar').textContent=t;document.getElementById('liveStatus').textContent=t.slice(0,40);}
+
+/* FULLSCREEN */
+const fsCanvas=document.getElementById('gcFS');
+const fsCtx=fsCanvas?fsCanvas.getContext('2d'):null;
+let fsOpen=false;
+function openFS(){
+  document.getElementById('fsOverlay').classList.add('open');
+  fsOpen=true;requestAnimationFrame(sizeFS);
+  if((G.phase==='title'||G.phase==='dead')&&G.f_fullGame)startGame();
+  if(fsCanvas){
+    fsCanvas.addEventListener('mousemove',e=>{const r=fsCanvas.getBoundingClientRect(),sc=CW/r.width;G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;});
+    fsCanvas.addEventListener('mousedown',e=>{if(!e.button)G.keys['LMB']=true;});
+    fsCanvas.addEventListener('mouseup',  e=>{if(!e.button)G.keys['LMB']=false;});
+    fsCanvas.addEventListener('click',()=>{if(G.phase==='dead')startGame();});
+  }
+}
+function closeFS(){document.getElementById('fsOverlay').classList.remove('open');fsOpen=false;}
+function sizeFS(){
+  if(!fsCanvas)return;
+  const avH=window.innerHeight-72;const s=Math.min(window.innerWidth,avH);
+  fsCanvas.style.width=s+'px';fsCanvas.style.height=s+'px';fsCanvas.width=CW;fsCanvas.height=CH;
+}
+window.addEventListener('resize',sizeFS);
+function syncFS(){
+  if(!fsOpen||!fsCtx||!fsCanvas)return;
+  fsCtx.clearRect(0,0,fsCanvas.width,fsCanvas.height);
+  fsCtx.drawImage(canvas,0,0,fsCanvas.width,fsCanvas.height);
+  document.getElementById('fsFoot').textContent=document.getElementById('obar').textContent;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFS();});
+
+/* QUICK PLAY */
+function quickPlay(){
+  G.f_arena=true;G.f_player=true;G.f_move=true;G.f_shoot=true;
+  G.f_zombies=true;G.f_rounds=true;G.f_points=true;
+  G.f_wallbuy=true;G.f_box=true;G.f_barricades=true;G.f_fullGame=true;
+  G.bestRound=parseInt(localStorage.getItem('bz_best')||'0');
+  startGame();openFS();
+  sout('🧟 Quick Play! WASD=move · Click/fire=shoot · [E]/BUY=wall buy or box · Survive the rounds!');
+}
+
+/* SAVE & SHARE */
+const SAVE_KEY='bz_progress';
+function saveProgress(){localStorage.setItem(SAVE_KEY,JSON.stringify({done:[...doneSet],step:cur,v:1}));}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+    if(d.done)d.done.forEach(i=>doneSet.add(i));
+    if(typeof d.step==='number')cur=Math.min(d.step,STEPS.length-1);
+    doneSet.forEach(i=>{const s=STEPS[i];if(s?.onApply)s.onApply({});});
+  }catch(e){}
+}
+function saveShare(){
+  saveProgress();
+  const url=window.location.href.split('#')[0]+'#s='+cur+'&d='+[...doneSet].join(',');
+  navigator.clipboard?.writeText(url).then(()=>{
+    const t=document.getElementById('shareToast');
+    t.textContent='🔗 Link copied! Step '+(cur+1)+', '+doneSet.size+'/'+STEPS.length+' done';
+    t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);
+  }).catch(()=>prompt('Copy link:',url));
+}
+function parseHash(){
+  try{
+    const h=window.location.hash.slice(1);if(!h)return;
+    const p=Object.fromEntries(h.split('&').map(x=>x.split('=')));
+    if(p.d)p.d.split(',').filter(Boolean).forEach(i=>doneSet.add(parseInt(i)));
+    if(p.s)cur=Math.min(parseInt(p.s)||0,STEPS.length-1);
+    doneSet.forEach(i=>{const s=STEPS[i];if(s?.onApply)s.onApply({});});
+  }catch(e){}
+}
+
+/* ═══════════════════════════════════════════
+   STEP DEFINITIONS
+═══════════════════════════════════════════ */
+function nav(i){return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===STEPS.length-1?'disabled':''}>Next →</button></div>`;}
+
+const STEPS=[
+/* 01 */ {tag:'STEP 01 · SETUP',title:'Blueprint Actor Event Graph',isBox:false,
+intro:`Connect Event BeginPlay → Setup Map → Spawn Player. This is the first wire in any Blueprint — it confirms the engine is running and builds your survival arena.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:10,y:30,w:148,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Setup Survival Map',sub:'Level Init',x:180,y:10,w:165,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Spawn Player',sub:'SurvivorPawn',x:368,y:10,w:152,lp:[{id:'l3',type:'exec',label:''}]},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'}],[]),
+boxes:[{t:'box-c',tx:'White arrow pins = exec wires. They control the order nodes run. BeginPlay fires once when the game starts, then flows right.'},{t:'box-u',tx:'Add a NavMesh Bounds Volume covering the full arena. Press P in editor to see the green walkable area. Zombies use this to pathfind around obstacles.'}],
+onApply(){G.f_arena=true;G.phase='title';sout('✅ Arena built! Complete more steps to enable gameplay.');}
+},
+
+/* 02 */ {tag:'STEP 02 · CHARACTER',title:'Survivor Pawn & Camera',isBox:false,
+intro:`Set up SurvivorCharacter. Wire BeginPlay → Set Camera Height. Type a camera height value — this sets the overhead view angle.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:10,y:34,w:145,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Set Camera Height',sub:'Spring Arm Z',x:178,y:12,w:165,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'float',label:'Height'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Height 500–1000 (e.g. 750)',val:''}},
+  {id:'n3',type:'func',title:'Lock Camera Pitch',sub:'−90 overhead',x:366,y:12,w:162,lp:[{id:'l3',type:'exec',label:''}]},
+],[{f:'r1',t:'l2e'},{f:'r2',t:'l3'}],[{id:'n2',ok:v=>parseFloat(v)>=500&&parseFloat(v)<=1000}]),
+boxes:[{t:'box-c',tx:'Spring Arm pitch −90° = straight-down overhead camera. Disable "Use Pawn Control Rotation" so the camera never rotates with the character.'},{t:'box-t',tx:'Add a Capsule Component (radius 34, half-height 88) and a Skeletal Mesh. The capsule does all physics — the mesh is visual only.'}],
+onApply(){G.f_player=true;G.p.x=CW/2;G.p.y=CH/2;if(G.phase==='title')G.phase='playing';sout('✅ Survivor spawned! Camera locked overhead.');}
+},
+
+/* 03 */ {tag:'STEP 03 · INPUT',title:'WASD Movement',isBox:false,
+intro:`Wire Enhanced Input for 8-direction movement. Connect IA_Move (Triggered) → Break Vector2D → Add Movement Input for both X and Y axes.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'IA_Move (Triggered)',sub:'Enhanced Input',x:4,y:22,w:168,rp:[{id:'r1e',type:'exec',label:''},{id:'r1v',type:'vec3',label:'Value'}]},
+  {id:'n2',type:'func',title:'Break Vector2D',x:196,y:8,w:135,lp:[{id:'l2v',type:'vec3',label:''}],rp:[{id:'r2x',type:'float',label:'X'},{id:'r2y',type:'float',label:'Y'}]},
+  {id:'n3',type:'func',title:'Add Mvmt X',x:355,y:4,w:145,lp:[{id:'l3e',type:'exec',label:''},{id:'l3s',type:'float',label:'Scale'}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Add Mvmt Y',x:355,y:78,w:145,lp:[{id:'l4e',type:'exec',label:''},{id:'l4s',type:'float',label:'Scale'}]},
+],[{f:'r1e',t:'l3e'},{f:'r1v',t:'l2v'},{f:'r2x',t:'l3s'},{f:'r2y',t:'l4s'}],[]),
+boxes:[{t:'box-c',tx:'Axis2D returns both X and Y in one action. Break Vector2D unpacks them. X feeds right/left movement, Y feeds forward/back.'},{t:'box-t',tx:'Set Max Walk Speed to 380 in Character Movement Component. Fast enough to dodge, not fast enough to trivially escape a horde.'}],
+onApply(){G.f_move=true;sout('✅ WASD active! WASD or the D-pad to move.');}
+},
+
+/* 04 */ {tag:'STEP 04 · SHOOTING',title:'Mouse Aim & Fire',isBox:false,
+intro:`Wire mouse aim using Get Hit Result Under Cursor. Then IA_Shoot → Get Muzzle Socket Location → Spawn Bullet. Click the arena to fire.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'IA_Shoot',sub:'Triggered',x:4,y:30,w:130,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get Socket Location',sub:'Muzzle',x:156,y:8,w:162,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2l',type:'vec3',label:'Location'}]},
+  {id:'n3',type:'func',title:'Spawn Bullet Actor',x:340,y:8,w:155,lp:[{id:'l3e',type:'exec',label:''},{id:'l3l',type:'vec3',label:'Location'}],rp:[{id:'r3',type:'exec',label:''}]},
+],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2l',t:'l3l'}],[]),
+boxes:[{t:'box-c',tx:'BP_Bullet: Projectile Movement Component, initial speed 2000. OnComponentHit: apply damage to overlapping zombies via Apply Point Damage.'},{t:'box-t',tx:'Muzzle socket: add a socket to the weapon mesh in the Skeleton editor at the barrel tip. Every bullet and muzzle flash spawns from exactly here.'}],
+onApply(){G.f_shoot=true;sout('✅ Shooting live! Click or tap the fire button.');}
+},
+
+/* 05 */ {tag:'STEP 05 · AI',title:'Zombie AI & Nav',isBox:false,
+intro:`Create ZombieCharacter BP with an AI Controller. Wire BeginPlay → Run Behavior Tree (BT_Zombie) to start the chase.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:8,y:30,w:145,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Run Behavior Tree',sub:'BT_Zombie',x:175,y:8,w:168,lp:[{id:'l2e',type:'exec',label:''},{id:'l2bt',type:'object',label:'BT Asset'}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'vget',title:'BT_Zombie Asset',x:8,y:90,w:152,rp:[{id:'r3',type:'object',label:'BTree Ref'}]},
+],[{f:'r1',t:'l2e'},{f:'r3',t:'l2bt'}],[]),
+boxes:[{t:'box-ai',tx:'Behavior Tree: Selector → BTService_FindPlayer (updates PlayerLocation Blackboard key each tick) → BTTask_MoveTo(PlayerLocation). Minimal but terrifying at scale.'},{t:'box-u',tx:'Three zombie types in the same BT — differentiate by data: a ZombieType variable drives the speed and HP multipliers set at spawn time.'}],
+onApply(){G.f_zombies=true;if(G.f_player)spawnRound();sout('✅ Zombies spawning! They\'re coming for you.');}
+},
+
+/* 06 */ {tag:'STEP 06 · ROUNDS',title:'Round System',isBox:false,
+intro:`Build the round manager. Wire OnRoundClear → Add to Round Count → Set Timer → Spawn Next Round. Type the inter-round delay.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'On Round Clear',x:4,y:34,w:145,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'math',title:'Round Count + 1',x:172,y:10,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'int',label:'New Round'}]},
+  {id:'n3',type:'func',title:'Set Timer',sub:'Next Round',x:344,y:10,w:138,lp:[{id:'l3e',type:'exec',label:''},{id:'l3t',type:'float',label:'Delay'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Delay secs (e.g. 4)',val:''}},
+],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'}],[{id:'n3',ok:v=>parseFloat(v)>=1&&parseFloat(v)<=10}]),
+boxes:[{t:'box-c',tx:'Spawn formula: zombies = 4 + (round × 2). Round 1 = 6. Round 5 = 14. Round 10 = 24. Capped at 30 to keep it playable.'},{t:'box-t',tx:'Runners appear from Round 6 onward (20% chance). Brutes from Round 4 (15%). Weight both toward the end to keep early rounds learnable.'}],
+onApply(v){G.f_rounds=true;sout('✅ Round system active! '+v['n3']+'s between rounds. Survive!');}
+},
+
+/* 07 */ {tag:'STEP 07 · ECONOMY',title:'Points from Kills',isBox:false,
+intro:`Wire the point system. OnZombieKill → Add Points (headshot = double). Connect a headshot check Branch and type the base kill reward.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'On Zombie Kill',x:4,y:34,w:145,rp:[{id:'r1e',type:'exec',label:''},{id:'r1h',type:'bool',label:'Headshot'}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Headshot?',x:172,y:10,w:118,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:'Cond'}],rp:[{id:'r2t',type:'exec',label:'True'},{id:'r2f',type:'exec',label:'False'}]},
+  {id:'n3',type:'math',title:'Add Points × 2',x:316,y:4,w:138,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Base pts'}],vf:{hint:'Base pts per kill (e.g. 100)',val:''}},
+  {id:'n4',type:'math',title:'Add Points × 1',x:316,y:84,w:138,lp:[{id:'l4e',type:'exec',label:''}]},
+],[{f:'r1e',t:'l2e'},{f:'r1h',t:'l2c'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'}],[{id:'n3',ok:v=>parseInt(v)>=50&&parseInt(v)<=500}]),
+boxes:[{t:'box-c',tx:'Points are the currency for wall buys and the Mystery Box. Killing a zombie = base points. Headshot = 2× base. Hitting (not killing) = 10pts.'},{t:'box-t',tx:'Display points top-right in UMG with a pop-up number that flies off the kill position (+100, +200 HEADSHOT!) — makes the economy feel exciting.'}],
+onApply(v){G.f_points=true;sout('✅ Points system live! Kill zombies to earn cash. '+v['n3']+' pts per kill.');}
+},
+
+/* 08 — GOLD STEP */ {tag:'STEP 08 📦 WALL BUY',title:'Wall Buy Weapons',isBox:true,
+intro:`Place weapon purchase stations on the walls. Wire OnPlayerNearby → Show Cost Prompt → IA_Interact → Deduct Points → Give Weapon. Choose which weapon to place on your first wall.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'IA_Interact',sub:'E Key / Buy Btn',x:4,y:34,w:162,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Has enough pts?',x:188,y:10,w:130,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:'Cond'}],rp:[{id:'r2t',type:'exec',label:'True'}]},
+  {id:'n3',type:'box',title:'Deduct Cost',sub:'Points Variable',x:342,y:10,w:138,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'int',label:'Cost'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3v',type:'int',label:'Remaining'}],vf:{hint:'Wall buy cost (e.g. 500)',val:''}},
+  {id:'n4',type:'func',title:'Give Weapon BP',x:342,y:95,w:150,lp:[{id:'l4e',type:'exec',label:''}]},
+],[{f:'r1',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r3e',t:'l4e'}],[{id:'n3',ok:v=>parseInt(v)>=100&&parseInt(v)<=5000}],true),
+boxes:[
+  {t:'box-gold',tx:'5 wall buy stations: SMG 500pts · Shotgun 750pts · AK-47 1200pts · Sniper 1500pts · LMG 2000pts. Revisiting the same gun refills ammo at 40% of the buy cost.'},
+  {t:'box-t',tx:'Walk up to a wall station and press E or the BUY button. The game already shows the prompt and colour highlight — try it with any weapon once points are active!'},
+],
+onApply(v){G.f_wallbuy=true;sout('✅ Wall Buys active! Walk to a weapon icon and press E or BUY. Cost set: '+v['n3']+' pts.');}
+},
+
+/* 09 — GOLD STEP */ {tag:'STEP 09 📦 MYSTERY BOX',title:'Mystery Box',isBox:true,
+intro:`Place the Mystery Box — a glowing chest that gives a random weapon for 950 points. Wire IA_Interact → Deduct 950pts → Spin Animation → Give Random Weapon.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'IA_Interact',sub:'At Box Position',x:4,y:34,w:162,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'pts ≥ 950?',x:188,y:10,w:120,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:''}],rp:[{id:'r2t',type:'exec',label:'True'}]},
+  {id:'n3',type:'box',title:'Play Box Spin',sub:'Timeline Anim',x:332,y:10,w:148,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:'On End'}]},
+  {id:'n4',type:'box',title:'Give Random Weapon',x:332,y:80,w:165,lp:[{id:'l4e',type:'exec',label:''}]},
+],[{f:'r1',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r3',t:'l4e'}],[]),
+boxes:[
+  {t:'box-gold',tx:'Box pool: Shotgun · AK-47 · Sniper · LMG · RPG (explosive) · Wonder Gun (homing, 3-burst) · SMG. Any weapon — could be amazing, could be a downgrade!'},
+  {t:'box-t',tx:'The Wonder Gun shoots 3 homing bullets that chase the nearest zombie. RPG has only 3 ammo but each shot does 120 damage in a radius. Walk up to the spinning yellow box and press E/BUY!'},
+],
+onApply(){G.f_box=true;sout('✅ Mystery Box active! Walk to the gold box and press E/BUY. 950pts per spin. Good luck!');}
+},
+
+/* 10 */ {tag:'STEP 10 · ENVIRONMENT',title:'Barricades & Repairs',isBox:false,
+intro:`Place destructible barricades around the arena. Zombies smash through them over time. Wire IA_Repair → Check Nearby Barricade → Add 30 HP (clamped to 100).`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'IA_Repair',sub:'E near barricade',x:4,y:30,w:155,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Find Nearest Barricade',x:182,y:8,w:168,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2b',type:'actor',label:'Barricade'}]},
+  {id:'n3',type:'math',title:'Clamp HP + 30',sub:'Max 100',x:374,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3t',type:'actor',label:'Target'}],rp:[{id:'r3',type:'exec',label:''}]},
+],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2b',t:'l3t'}],[]),
+boxes:[{t:'box-c',tx:'Barricades slow zombies and absorb damage instead of the player. Place them in chokepoints. Repairing costs nothing — just time and positioning.'},{t:'box-t',tx:'Chaos Destruction on barricades: set the mesh as a Geometry Collection. At zero HP trigger the destruction simulation — satisfying splinter-and-collapse effect.'}],
+onApply(){G.f_barricades=true;buildBars();sout('✅ Barricades placed! Use them for cover. Zombies will break through.');}
+},
+
+/* 11 */ {tag:'STEP 11 · HUD',title:'Full HUD & Round Banner',isBox:false,
+intro:`Create WBP_ZombiesHUD. Wire BeginPlay → Create Widget → Add to Viewport. Bind: Points, Round, HP bar, Ammo pips, round-clear banner.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:4,y:30,w:145,rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'macro',title:'Sequence',x:172,y:8,w:88,lp:[{id:'l2',type:'exec',label:'In'}],rp:[{id:'r2a',type:'exec',label:'HUD'},{id:'r2b',type:'exec',label:'Player'},{id:'r2c',type:'exec',label:'Waves'},{id:'r2d',type:'exec',label:'Economy'}]},
+  {id:'n3',type:'func',title:'Create & Show HUD',x:285,y:8,w:148,lp:[{id:'l3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Enable Player',x:285,y:50,w:148,lp:[{id:'l4',type:'exec',label:''}]},
+  {id:'n5',type:'func',title:'Start Round 1',x:285,y:92,w:148,lp:[{id:'l5',type:'exec',label:''}]},
+  {id:'n6',type:'func',title:'Init Points',x:285,y:134,w:148,lp:[{id:'l6',type:'exec',label:''}]},
+],[{f:'r1',t:'l2'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'},{f:'r2d',t:'l6'}],[]),
+boxes:[
+  {t:'box-c',tx:'Round banner: WBP widget animates in for 2s between rounds. Scale punch animation on the round number + colour flash green→white.'},
+  {t:'box-t',tx:'WASD/D-pad = move · Click/fire = shoot · E/BUY = buy weapon or spin box · Fullscreen for the best experience. Survive as long as you can!'},
+],
+onApply(){
+  G.f_arena=true;G.f_player=true;G.f_move=true;G.f_shoot=true;
+  G.f_zombies=true;G.f_rounds=true;G.f_points=true;
+  G.f_wallbuy=true;G.f_box=true;G.f_barricades=true;G.f_fullGame=true;
+  G.bestRound=parseInt(localStorage.getItem('bz_best')||'0');
+  buildBars();startGame();openFS();
+  sout('🚀 ALL SYSTEMS LIVE! Survive the rounds. Buy from walls. Spin the box. Good luck!');
+}
+},
+
+// Steps 12–30: content
+...[
+  {tag:'STEP 12 · AI',title:'Zombie Variants',isBox:false,intro:`Three zombie classes — <strong>Shambler</strong> (default), <strong>Runner</strong> (fast, fragile), <strong>Brute</strong> (tank, high reward). Spawn ratios shift each round.`,boxes:[{t:'box-ai',tx:'Runner: speed 1.8, HP 50, radius 7, worth 150pts. Brute: speed 0.5, HP 200+, radius 14, worth 200pts, always drops a power-up. Shambler: the vanilla baseline.'},{t:'box-t',tx:'Brutes have a secondary melee slam: when within 60cm, they do 3× normal damage. Add a wind-up animation so players can dodge it.'}]},
+  {tag:'STEP 13 · AI',title:'Zombie Animations',isBox:false,intro:`Wire the Animation Blueprint for walk, attack, and death. Drive Walk Speed from the Character Movement Component velocity.`,boxes:[{t:'box-c',tx:'AnimBP: Blend Space for walk (0 = idle, velocity = walk). Attack Montage triggers on BT notify. Death Montage plays on zero HP, then DestroyActor after it finishes.'},{t:'box-t',tx:'Root motion death: tick "Enable Root Motion" on the death anim. The zombie falls in the direction of the killing shot rather than always falling forward.'}]},
+  {tag:'STEP 14 · FX',title:'Blood & Hit Effects',isBox:false,intro:`Spawn Niagara hit sparks and blood particles on bullet impact. Persistent blood decals mark the battlefield.`,boxes:[{t:'box-c',tx:'BP_ZombieHit: spawn NS_BloodSplat (burst, 30 particles, cone toward camera). On death: NS_BloodPool + spawn Blood Decal (translucent, radial texture).'},{t:'box-t',tx:'Decal pool: cap at 40 active decals, replace the oldest first. Each decal fades from opacity 1→0 over 25 seconds using a Material Timeline.'}]},
+  {tag:'STEP 15 · ECONOMY',title:'Hit & Assist Points',isBox:false,intro:`Reward players for every bullet that connects — not just kills. Hitting a zombie = 10pts. Melee hit = 30pts. Kill = 100pts base.`,boxes:[{t:'box-gold',tx:'Point table: Bullet hit 10pts · Melee hit 30pts · Kill 100pts · Headshot kill 200pts · Brute kill 200pts · Brute headshot 400pts.'},{t:'box-t',tx:'Display floating "+100" text at the hit position using a UMG widget component attached to the zombie. Animate it floating upward and fading over 1.2s.'}]},
+  {tag:'STEP 16 · ECONOMY',title:'Power-ups',isBox:false,intro:`Four power-ups drop from Brutes: <strong>Max Ammo</strong>, <strong>Double Points</strong>, <strong>Insta-Kill</strong>, and <strong>Carpenter</strong> (repairs all barricades).`,boxes:[{t:'box-gold',tx:'Max Ammo: refills all weapon ammo instantly — the most useful. Double Points: 30s timer, all kills worth 2×. Insta-Kill: 30s, all zombies die in one hit. Carpenter: repairs every barricade to full HP.'},{t:'box-t',tx:'Spawn the power-up at the Brute\'s death location. Add a distinct colour glow per type: gold (max ammo), blue (double pts), red (insta-kill), green (carpenter).'}]},
+  {tag:'STEP 17 · ENVIRONMENT',title:'Map Zones & Doors',isBox:false,intro:`Add locked door zones. Pay points to unlock new areas of the map — each area has new wall buys and hiding spots.`,boxes:[{t:'box-c',tx:'BP_PurchaseDoor: Box Trigger + prompt showing zone name and cost. IA_Interact → Deduct Points → Destroy Door Mesh → Enable new Nav area → Update minimap.'},{t:'box-t',tx:'Three zones: Starting Room (free) → Side Room (500pts) → Rooftop (1500pts). Each zone unlocks 1–2 new wall buy weapons.'}]},
+  {tag:'STEP 18 · ATMOSPHERE',title:'Flashlight & Dark Map',isBox:false,intro:`Set the map to night. Each player has a Spot Light flashlight attached to their weapon, casting a cone of light ahead.`,boxes:[{t:'box-c',tx:'Set Directional Light Intensity to 0.02 (near-dark). Add a Spot Light component to the Survivor (Outer Cone 32°, Attenuation 600). Rotate it each tick to match aim direction.'},{t:'box-t',tx:'Dark maps with flashlights dramatically increase tension. Zombies approaching from outside the cone are invisible until the last second — perfect horror atmosphere.'}]},
+  {tag:'STEP 19 · AUDIO',title:'Dynamic Audio',isBox:false,intro:`Wire zombie groans, weapon sounds, and a dynamic music layer that intensifies with zombie count.`,boxes:[{t:'box-u',tx:'MetaSound MS_Track: Input float TensionLevel (zombie count / max). Crossfade calm ambient → tense strings → panic orchestral. Horror atmosphere lives in the audio.'},{t:'box-t',tx:'Wall buy jingle: distinct cha-ching sound on purchase. Box spin: slot-machine click that speeds up as it approaches the result. Round clear: fanfare sting.'}]},
+  {tag:'STEP 20 · UI',title:'Pause & Restart Menu',isBox:false,intro:`Wire Escape → Pause Game → Show WBP_PauseMenu (Resume / Restart / Main Menu). Mobile: always-visible pause button top-right.`,boxes:[{t:'box-c',tx:'Set Game Paused(true) freezes all actors. Input Mode UI Only during pause. On Resume: Input Mode GameOnly + Set Game Paused(false).'},{t:'box-t',tx:'Show round stats on the pause screen: current round, kills this round, total kills, points, best round. Players stay engaged with stats even while paused.'}]},
+  {tag:'STEP 21 · ECONOMY',title:'Weapon Upgrades (Pack-a-Punch)',isBox:true,intro:`Add a Pack-a-Punch machine — for 2500pts it upgrades the player\'s current weapon: +50% damage, +25% fire rate, gold visual effect.`,boxes:[{t:'box-gold',tx:'BP_PackAPunch: placed in the Rooftop zone (unlocked after Step 17). On interact: deduct 2500pts → create upgraded copy of current weapon data struct with boosted stats → give to player.'},{t:'box-t',tx:'Visual upgrade: swap weapon mesh to a gold-tinted version using a Dynamic Material Instance. Add a particle effect sleeve (Niagara orbiting golden sparks).'}]},
+  {tag:'STEP 22 · GAMEPLAY',title:'Boss Round (Round 10)',isBox:false,intro:`Every 10 rounds spawn a massive Boss zombie with 3 attack phases. Round 10 gets significantly more dramatic.`,boxes:[{t:'box-ai',tx:'BP_ZombieBoss: Phase 1 (>60% HP) chase + normal attacks. Phase 2 (30–60%) summon 5 runners. Phase 3 (<30%) berserker speed (×1.8) + ground slam AOE.'},{t:'box-t',tx:'Boss HP bar: dedicated WBP widget at the top of screen with the boss name. Slides in dramatically when the boss spawns. Fills red as HP drops.'}]},
+  {tag:'STEP 23 · ECONOMY',title:'Leaderboard & Best Round',isBox:false,intro:`Save the player\'s best round and top 5 kill counts. Show a stylised Game Over screen with all stats.`,boxes:[{t:'box-c',tx:'SaveGame_Zombies: int BestRound, int TotalKills, TArray<FRunRecord> TopFive. Sort by kills descending. Load at startup, save on game over.'},{t:'box-t',tx:'Game Over screen: show round number in big red text, then animate in stat rows one by one (Wave → Kills → Headshots → Points Earned → Best Round).'}]},
+  {tag:'STEP 24 · FX',title:'Camera Shake & Rumble',isBox:false,intro:`Three camera shakes: GunShake (small, fast), ExplosionShake (big, 0.5s), LowHPShake (slow heartbeat pulse below 25% HP).`,boxes:[{t:'box-c',tx:'Legacy Camera Shake BPs. GunShake: amplitude 3, frequency 12, duration 0.1s. Explosion: amplitude 12, frequency 5, duration 0.5s. LowHP: amplitude 1, frequency 2, loop.'},{t:'box-t',tx:'Add controller haptic feedback on mobile: Play Haptic Effect on kills (short pulse) and on player damage (long pulse). Essential for mobile feel.'}]},
+  {tag:'STEP 25 · AI',title:'Zombie Swarm Behaviour',isBox:false,intro:`Add flocking so zombies spread out rather than stacking. Use separation forces to keep them from clustering into a single point.`,boxes:[{t:'box-ai',tx:'Separation: each tick, apply a small repulsion force from nearby zombies (radius 60cm). Weight = 1 / distance². This prevents the single-stack exploit.'},{t:'box-t',tx:'Add a random stagger timer: every 2–4 seconds each zombie picks a random offset direction for 0.3s. Prevents perfectly straight-line movement.'}]},
+  {tag:'STEP 26 · ENVIRONMENT',title:'Procedural Spawn Points',isBox:false,intro:`Randomise zombie spawn windows each round. Spawners appear at windows and doors — zombies crawl through before entering the map.`,boxes:[{t:'box-c',tx:'Create BP_ZombieWindow along the arena walls. Each round randomly activate 3–6 windows. Zombies play a climb-through animation before fully entering.'},{t:'box-t',tx:'Window repair: players can board up broken windows with planks. Each board costs 0 points but takes 2s to place. Adds a strategic layer between rounds.'}]},
+  {tag:'STEP 27 · PLATFORM',title:'Mobile Optimisation',isBox:false,intro:`Scale performance for mobile: disable Lumen, reduce particles, use HISM for props, cap active decals, enforce 60fps.`,boxes:[{t:'box-u',tx:'Scalability → Mobile preset: disable SSAO, SSR, Lumen GI, shadow quality 1. Enable Nanite on arena mesh. Cap simultaneous Niagara particles at 200.'},{t:'box-t',tx:'Touch layout: D-pad bottom-left, Fire bottom-right, BUY above Fire. Min button size 80×80dp. Test single-thumb and two-thumb play styles separately.'}]},
+  {tag:'STEP 28 · POLISH',title:'Post Process & Atmosphere',isBox:false,intro:`Set a Post Process Volume: film grain, slight vignette, colour grade (desaturate + green tint for horror), motion blur on fast movement.`,boxes:[{t:'box-c',tx:'Settings: Grain 0.18, Vignette 0.45, Chromatic Aberration 0.3 (spikes during damage), Color Grade (crush blacks, teal-orange horror split-tone).'},{t:'box-t',tx:'Drive Chromatic Aberration intensity via a MPC param tied to player HP: full HP = 0.2, near death = 1.5. The world distorts as you\'re about to die.'}]},
+  {tag:'STEP 29 · LAUNCH',title:'Package & Test',isBox:false,intro:`Package for Windows or HTML5. Test all features: wall buys, mystery box, round escalation, boss round, mobile controls.`,boxes:[{t:'box-u',tx:'File → Package → Windows. Build Config: Development for testing, Shipping for release. Fix all redirectors first (Tools → Fix Up Redirectors in Content Browser).'},{t:'box-t',tx:'Test checklist: ✓ Wall buy deducts correct points ✓ Mystery Box gives random weapon ✓ Round 10 spawns boss ✓ Mobile D-pad fires and buys ✓ Fullscreen sync works'}]},
+  {tag:'STEP 30 🚀 RELEASE',title:'Share Your Zombies Map',isBox:false,intro:`Upload to itch.io, add screenshots, write a devlog — and share your round record with the community!`,boxes:[{t:'box-c',tx:'Itch.io: pay-what-you-want, genre Survival/Horror, tags: zombies, wave-survival, unreal, blueprints, cod-style. A devlog describing your map sells it.'},{t:'box-t',tx:'Screenshot tip: night map, flashlight on, 8 zombies visible, Mystery Box glowing in background, HP at 20%. That tension in one frame sells the whole game.'},{t:'box-u',tx:'Share your itch.io link and tag @JV_DesignStudio! We\'d love to feature your zombie map on the site and in the devlog.'}]},
+].map(s=>({...s,pz:mkPZ([],[],[],()=>{})}))
+];
+
+/* ═══════════════════════════════════════════
+   STEP ENGINE
+═══════════════════════════════════════════ */
+let cur=0;
+const doneSet=new Set();
+let activeInst=null,completedVals={};
+
+function go(i){if(i<0||i>=STEPS.length)return;cur=i;renderStep();document.getElementById('stepBody').scrollTop=0;}
+
+function renderStep(){
+  const s=STEPS[cur];
+  const hasInteractive=s.pz&&s.pz.uid&&cur<12;
+  let boxes='';(s.boxes||[]).forEach(b=>{boxes+=`<div class="box ${b.t}">${b.tx}</div>`;});
+  document.getElementById('stepBody').innerHTML=`
+    <div class="step-tag${s.isBox?' gold':''}">${s.tag}</div>
+    <div class="step-title${s.isBox?' gold':''}">${s.title}</div>
+    <p class="step-intro">${s.intro}</p>
+    ${hasInteractive?s.pz.html:''}${boxes}
+    <div id="iwQuizMount"></div>
+    <button class="run-btn${s.isBox?' gold-btn':''}" id="applyBtn" onclick="doApply()" ${hasInteractive?'disabled':''}>
+      ${hasInteractive?'🔗 Complete Blueprint to Apply':(doneSet.has(cur)?'✅ Done — Next Step →':'✓ Mark Complete → Next Step')}
+    </button>
+    ${nav(cur)}`;
+  document.getElementById('stepTabs').innerHTML=STEPS.map((st,i)=>
+    `<button class="tb${i===cur?' active':''}${doneSet.has(i)?' done':''}${st.isBox?' box-step':''}" onclick="go(${i})">${i+1}</button>`).join('');
+  document.querySelector('.tb.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
+  updateProg();completedVals={};
+  if(hasInteractive){
+    requestAnimationFrame(()=>{
+      activeInst=s.pz.init(vals=>{
+        completedVals=vals;
+        const btn=document.getElementById('applyBtn');
+        if(btn){btn.disabled=false;btn.textContent='▶ Apply — Unlock Feature!';}
+      });
+    });
+  }
+  /* Inject interactive quiz for this step */
+  if(typeof IW!=='undefined') IW.renderQuiz(cur);
+}
+
+function doApply(){
+  const s=STEPS[cur];const hasInteractive=s.pz&&s.pz.uid&&cur<12;
+  if(!hasInteractive){
+    doneSet.add(cur);updateProg();saveProgress();
+    if(cur<STEPS.length-1)go(cur+1);
+    return;
+  }
+  doneSet.add(cur);if(s.onApply)s.onApply(completedVals);
+  updateProg();saveProgress();
+  document.getElementById('liveStatus').textContent='Step '+(cur+1)+' done ✓';
+  const btn=document.getElementById('applyBtn');
+  if(btn){const o=btn.textContent;btn.textContent='✅ Applied!';setTimeout(()=>{btn.textContent=o;},900);}
+}
+
+function updateProg(){
+  document.getElementById('progFill').style.width=Math.max(3,Math.round(doneSet.size/STEPS.length*100))+'%';
+  document.getElementById('progDots').innerHTML=STEPS.map((s,i)=>
+    `<div class="pd${s.isBox?' gd':''}${doneSet.has(i)?' done':i===cur?' active':''}"></div>`).join('');
+}
+
+/* INIT */
+G.bestRound=parseInt(localStorage.getItem('bz_best')||'0');
+updateCard();
+if(window.location.hash)parseHash();else loadProgress();
+renderStep();
+// Defer resize until layout has fully painted, then start the loop
+function initGame(){
+  resizeGame();
+  // Second frame ensures game-col height is measured correctly
+  requestAnimationFrame(()=>{resizeGame();requestAnimationFrame(loop);});
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',initGame);
+}else{
+  requestAnimationFrame(initGame);
+}
+
+/* ═══════════════════════════════════════════
+   INTERACTIVE WORKSHOP SYSTEM
+═══════════════════════════════════════════ */
+const IW=(function(){
+const SK='jvds-unreal-zombie-v2';
+const XP_PER_LEVEL=200;
+const LETTERS='ABCDEFGH';
+
+/* ── Quiz data for each step (index = step index) ── */
+const QUIZZES=[
+/* 0 */ {type:'quiz',q:'What does Event BeginPlay do in Unreal Engine?',opts:['Fires every frame','Fires once when the game starts','Fires when the player presses a key','Fires when an actor is destroyed'],ans:1,xp:15,fb:'BeginPlay fires exactly once when the actor is spawned into the world — perfect for initialization logic.'},
+/* 1 */ {type:'quiz',q:'What Spring Arm pitch gives a straight-down overhead camera?',opts:['0 degrees','45 degrees','-90 degrees','-180 degrees'],ans:2,xp:15,fb:'A pitch of -90 degrees points the camera straight down, giving the classic top-down zombie survival view.'},
+/* 2 */ {type:'tf',statements:[{s:'WASD input in Unreal uses the Enhanced Input System.',a:true},{s:'You need a separate Blueprint for each movement direction.',a:false},{s:'Input Mapping Contexts bind keys to Input Actions.',a:true}],xp:20,fb:'Enhanced Input uses Actions + Mapping Contexts. One movement action handles all four directions via axis values.'},
+/* 3 */ {type:'quiz',q:'How do zombies find their way to the player in UE5?',opts:['They teleport randomly','They use a NavMesh and AI MoveTo','They follow a fixed spline path','They use physics impulses'],ans:1,xp:15,fb:'AI MoveTo uses the NavMesh (navigation mesh) to pathfind around obstacles toward the player.'},
+/* 4 */ {type:'cf',prompt:'Complete the Blueprint logic for spawning a zombie:',code:'Get Random Point in Navigable Radius → <blank id="b1" answer="SpawnActor"> → Set <blank id="b2" answer="MaxWalkSpeed">',xp:20,fb:'SpawnActor creates the zombie at the random nav point, then you set MaxWalkSpeed to control how fast it shambles.'},
+/* 5 */ {type:'quiz',q:'What component handles bullet-zombie collision detection?',opts:['Static Mesh','Sphere Trace (Line Trace)','Nav Mesh','Spring Arm'],ans:1,xp:15,fb:'Line Trace (or Sphere Trace) fires an invisible ray from the weapon to detect what it hits — the core of shooting in UE5.'},
+/* 6 */ {type:'tf',statements:[{s:'Zombies should have a Health variable that decreases when shot.',a:true},{s:'You should destroy the zombie actor immediately on any hit.',a:false},{s:'Apply Damage is a built-in UE5 function.',a:true}],xp:20,fb:'Apply Damage is built-in. Zombies track their own health and only die (destroy) when it reaches zero.'},
+/* 7 */ {type:'quiz',q:'What triggers the next zombie round to start?',opts:['A timer that counts to 60 seconds','When all zombies in the current round are killed','When the player presses a button','When the player reaches a checkpoint'],ans:1,xp:15,fb:'Classic zombies: when the last zombie dies, increment the round counter and spawn the next wave with more enemies.'},
+/* 8 */ {type:'cf',prompt:'Complete the points system Blueprint:',code:'On Zombie Killed → <blank id="b1" answer="AddPoints"> → Update <blank id="b2" answer="HUD">',xp:20,fb:'AddPoints increases the player score variable, then the HUD widget is updated to show the new total.'},
+/* 9 */ {type:'quiz',q:'What is a Wall Buy in COD Zombies?',opts:['A decorative wall texture','A fixed location where players spend points to get a specific weapon','A barricade the player builds','A power-up that drops from zombies'],ans:1,xp:15,fb:'Wall Buys are interact triggers placed on walls — the player spends points and receives a known weapon. Placement is strategic level design.'},
+/* 10 */ {type:'quiz',q:'How does the Mystery Box select a random weapon?',opts:['It cycles through a UI animation then picks randomly','The player chooses from a menu','It always gives the best weapon','It gives weapons in a fixed order'],ans:0,xp:15,fb:'The Mystery Box does a visual "roll" animation cycling through weapons, then lands on a random selection from the weapon pool.'},
+/* 11 */ {type:'tf',statements:[{s:'Barricades should have a health value that zombies reduce over time.',a:true},{s:'Destroyed barricades should never be rebuildable.',a:false},{s:'Players can repair barricades to earn bonus points.',a:true}],xp:20,fb:'Barricades have HP, zombies tear them down, and players can repair them for points — a core loop in zombies gameplay.'},
+/* 12 */ {type:'quiz',q:'What does a Zombie AI Behavior Tree control?',opts:['The zombie 3D model','The sequence of decisions: chase, attack, break barricade','The zombie spawn location','The round counter'],ans:1,xp:15,fb:'Behavior Trees define AI decision-making: check if barricade is nearby → attack it, else → chase player → melee attack.'},
+/* 13 */ {type:'cf',prompt:'Complete the damage overlap logic:',code:'On <blank id="b1" answer="BeginOverlap"> → Apply <blank id="b2" answer="Damage"> → Start Cooldown Timer',xp:20,fb:'BeginOverlap detects when the zombie collides with the player, then Apply Damage reduces player HP with a cooldown to prevent instant death.'},
+/* 14 */ {type:'quiz',q:'What UE5 feature is best for creating a health bar and ammo counter on screen?',opts:['Level Blueprint','UMG Widget Blueprint','Material Instance','Sequencer'],ans:1,xp:15,fb:'UMG (Unreal Motion Graphics) Widget Blueprints are the standard way to create HUD elements like health bars, ammo counters, and round displays.'},
+/* 15 */ {type:'tf',statements:[{s:'Power-ups should use a random drop chance on zombie death.',a:true},{s:'Insta-Kill should last forever once picked up.',a:false},{s:'Max Ammo should refill all weapon ammo when collected.',a:true}],xp:20,fb:'Power-ups drop randomly, have a timed duration (except Max Ammo which is instant), and add strategic depth to each round.'},
+/* 16 */ {type:'quiz',q:'How should weapon switching work in a zombies game?',opts:['Delete the old weapon and spawn a new one','Swap between weapon slots using an array of weapon data','Only allow one weapon at all times','Pause the game to open a weapon menu'],ans:1,xp:15,fb:'Store weapons in an array (typically 2 slots). Switching swaps the active index, updating the mesh and fire rate.'},
+/* 17 */ {type:'cf',prompt:'Complete the ammo reload Blueprint:',code:'Press <blank id="b1" answer="R"> → Check Current Ammo < <blank id="b2" answer="MaxAmmo"> → Play Reload Montage',xp:20,fb:'R triggers reload, but only if current ammo is less than max. The reload animation montage plays and ammo refills when it finishes.'},
+/* 18 */ {type:'quiz',q:'What makes a boss zombie different from regular zombies?',opts:['It uses a different AI controller with more health, unique attacks, and a health bar','It is just a bigger mesh with the same stats','It spawns at the start of every round','It cannot be damaged by normal weapons'],ans:0,xp:15,fb:'Boss zombies need their own AI controller with unique behaviors (charge, ground slam), much more HP, and a visible boss health bar.'},
+/* 19 */ {type:'tf',statements:[{s:'Audio cues like zombie groans should use Attenuation for 3D spatial sound.',a:true},{s:'All game sounds should be 2D with no distance falloff.',a:false},{s:'A Music Manager Blueprint can crossfade tracks based on round intensity.',a:true}],xp:20,fb:'3D spatial audio (Attenuation) makes zombies terrifying — you hear them approaching. Music intensity should scale with round number.'},
+/* 20 */ {type:'quiz',q:'What is the purpose of a Perk Machine in zombies gameplay?',opts:['It decorates the map','It gives permanent stat boosts the player buys with points','It spawns more zombies','It ends the current round early'],ans:1,xp:15,fb:'Perk Machines (Juggernog, Speed Cola, etc.) sell permanent buffs for points. They are placed strategically to encourage map exploration.'},
+/* 21 */ {type:'cf',prompt:'Complete the trap activation Blueprint:',code:'Player Interact → Deduct <blank id="b1" answer="Points"> → Activate <blank id="b2" answer="DamageVolume"> → Start Cooldown',xp:20,fb:'Traps cost points to activate, enable a damage volume that kills zombies passing through, then go on cooldown before reuse.'},
+/* 22 */ {type:'quiz',q:'How should you handle zombie difficulty scaling across rounds?',opts:['Keep everything the same every round','Increase zombie count, health, and speed each round using a formula','Only increase zombie count','Randomly change difficulty each round'],ans:1,xp:15,fb:'Scale zombie count, health, and speed using formulas tied to the round number. This creates the classic escalating tension of COD Zombies.'},
+/* 23 */ {type:'tf',statements:[{s:'Niagara particle systems are used for muzzle flash and blood splatter effects.',a:true},{s:'Post-process effects like vignette should stay constant regardless of player health.',a:false},{s:'Screen shake on explosions uses a Camera Shake Blueprint.',a:true}],xp:20,fb:'Niagara handles particles, Camera Shake adds impact feel, and post-process should dynamically respond to player state (more vignette at low HP).'},
+/* 24 */ {type:'quiz',q:'What is the best way to save player progression (best round, unlocks) between sessions?',opts:['Global variables that reset on restart','SaveGame object written to disk','Print String','Level Blueprint variables'],ans:1,xp:15,fb:'UE5 SaveGame objects serialize data to disk. Create a SaveGame class with fields for best round, unlocked perks, and weapon stats.'},
+/* 25 */ {type:'cf',prompt:'Complete the minimap setup:',code:'Scene Capture <blank id="b1" answer="2D"> → Render Target → <blank id="b2" answer="Material"> → HUD Widget Image',xp:20,fb:'A Scene Capture 2D component renders a top-down view to a Render Target texture, which feeds into a Material displayed on the HUD widget.'},
+/* 26 */ {type:'quiz',q:'How do you implement split-screen co-op in UE5?',opts:['Duplicate the entire level','Use GameMode to spawn multiple Player Controllers with viewport splitting','Run two separate game instances','It is not possible in Blueprints'],ans:1,xp:15,fb:'GameMode manages multiple Player Controllers. UE5 handles viewport splitting automatically when you configure the number of local players.'},
+/* 27 */ {type:'tf',statements:[{s:'Film grain and vignette enhance the horror atmosphere in a zombie game.',a:true},{s:'Chromatic Aberration should be the same intensity at all times.',a:false},{s:'Color grading with desaturation and green tint creates a horror look.',a:true}],xp:20,fb:'Post-process drives mood: film grain adds grit, vignette focuses attention, and dynamic chromatic aberration tied to HP increases tension.'},
+/* 28 */ {type:'quiz',q:'What Build Configuration should you use for the final release package?',opts:['Debug','DebugGame','Development','Shipping'],ans:3,xp:15,fb:'Shipping strips all debug code, logging, and dev tools for the smallest, fastest build. Use Development for testing, Shipping for release.'},
+/* 29 */ {type:'quiz',q:'What is the most important thing to include on your itch.io game page?',opts:['A long text-only description','Screenshots showing gameplay tension, a devlog, and clear tags','Only the download button','Your full source code'],ans:1,xp:15,fb:'Visual screenshots that show tension (zombies closing in, low HP, Mystery Box glowing) sell the experience. A devlog builds community connection.'},
+];
+
+/* ── State ── */
+let xp=0, streak=0, bestStreak=0, quizzesPassed=new Set(), startTime=Date.now();
+
+function loadState(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SK));
+    if(d){xp=d.xp||0;streak=d.streak||0;bestStreak=d.bestStreak||0;quizzesPassed=new Set(d.passed||[]);startTime=d.startTime||Date.now();}
+  }catch(e){}
+}
+function saveState(){
+  localStorage.setItem(SK,JSON.stringify({xp,streak,bestStreak,passed:[...quizzesPassed],startTime}));
+}
+
+/* ── XP helpers ── */
+function getLevel(){return Math.floor(xp/XP_PER_LEVEL)+1;}
+function getLevelXP(){return xp%XP_PER_LEVEL;}
+function updateXPBar(){
+  const fill=document.getElementById('xpFill');
+  const label=document.getElementById('xpLabel');
+  const level=document.getElementById('xpLevel');
+  const sc=document.getElementById('streakCount');
+  const sw=document.getElementById('xpStreak');
+  if(!fill)return;
+  fill.style.width=(getLevelXP()/XP_PER_LEVEL*100)+'%';
+  label.textContent=xp+' XP';
+  level.textContent='Level '+getLevel();
+  sc.textContent=streak;
+  if(streak>=3)sw.classList.add('hot');else sw.classList.remove('hot');
+}
+function awardXP(amount){
+  const oldLvl=getLevel();
+  xp+=amount;streak++;if(streak>bestStreak)bestStreak=streak;
+  const newLvl=getLevel();
+  updateXPBar();
+  document.getElementById('xpFill')?.classList.add('xp-pop');
+  setTimeout(()=>document.getElementById('xpFill')?.classList.remove('xp-pop'),500);
+  showToast('+'+amount+' XP'+(streak>=3?' 🔥 Streak x'+streak:''));
+  if(newLvl>oldLvl)showLevelUp(newLvl);
+  saveState();
+  checkFinish();
+}
+function resetStreak(){streak=0;updateXPBar();saveState();}
+
+function showToast(msg){
+  const t=document.createElement('div');t.className='xp-toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),400);},1800);
+}
+function showLevelUp(lvl){
+  const o=document.createElement('div');o.className='levelup-overlay';
+  o.innerHTML=`<div class="levelup-card"><div class="lvl-icon">⭐</div><div class="lvl-title">Level ${lvl}!</div><div class="lvl-sub">Keep building your zombie survival game</div><button onclick="this.closest('.levelup-overlay').remove()">Continue</button></div>`;
+  document.body.appendChild(o);
+  setTimeout(()=>o.remove(),5000);
+}
+
+/* ── Render quiz for a step ── */
+function renderQuiz(stepIdx){
+  const mount=document.getElementById('iwQuizMount');
+  if(!mount)return;
+  const qd=QUIZZES[stepIdx];
+  if(!qd){mount.innerHTML='';return;}
+  const passed=quizzesPassed.has(stepIdx);
+
+  if(qd.type==='quiz') renderMCQ(mount,qd,stepIdx,passed);
+  else if(qd.type==='tf') renderTF(mount,qd,stepIdx,passed);
+  else if(qd.type==='cf') renderCF(mount,qd,stepIdx,passed);
+}
+
+/* ── Multiple Choice ── */
+function renderMCQ(mount,qd,idx,passed){
+  const optsHTML=qd.opts.map((o,i)=>`<div class="iw-opt${passed?' disabled':''}" data-i="${i}"><span class="iw-letter">${LETTERS[i]}</span><span>${o}</span></div>`).join('');
+  mount.innerHTML=`
+    <div class="iw-quiz-gate${passed?' passed':''}" id="qg${idx}">
+      <div class="iw-quiz-header"><span class="iw-quiz-icon">🧠</span><span class="iw-quiz-title">Knowledge Check</span><span class="iw-quiz-xp">+${qd.xp} XP</span></div>
+      <div class="iw-quiz-q">${qd.q}</div>
+      <div class="iw-quiz-opts" id="qopts${idx}">${optsHTML}</div>
+      <div class="iw-fb" id="qfb${idx}"></div>
+      <button class="iw-submit" id="qsub${idx}" ${passed?'':'style="display:none"'}>${passed?'✅ Passed':'Check Answer'}</button>
+    </div>`;
+  if(passed)return;
+  let sel=-1;
+  mount.querySelectorAll('.iw-opt').forEach(el=>{
+    el.addEventListener('click',()=>{
+      if(el.classList.contains('disabled'))return;
+      mount.querySelectorAll('.iw-opt').forEach(o=>o.classList.remove('selected'));
+      el.classList.add('selected');sel=parseInt(el.dataset.i);
+      const btn=document.getElementById('qsub'+idx);btn.classList.add('show');btn.style.display='';
+    });
+  });
+  document.getElementById('qsub'+idx).addEventListener('click',()=>{
+    if(sel<0)return;
+    const opts=mount.querySelectorAll('.iw-opt');
+    const fb=document.getElementById('qfb'+idx);
+    opts.forEach(o=>o.classList.add('disabled'));
+    if(sel===qd.ans){
+      opts[sel].classList.add('correct');
+      fb.className='iw-fb show correct';fb.innerHTML='<span class="fb-icon">✅</span><span>'+qd.fb+'</span>';
+      quizzesPassed.add(idx);awardXP(qd.xp);
+      document.getElementById('qg'+idx).classList.add('passed');
+      document.getElementById('qsub'+idx).textContent='✅ Passed';
+    }else{
+      opts[sel].classList.add('wrong');opts[qd.ans].classList.add('correct');
+      fb.className='iw-fb show wrong';fb.innerHTML='<span class="fb-icon">❌</span><span>'+qd.fb+'</span>';
+      resetStreak();
+      document.getElementById('qsub'+idx).textContent='Review & Continue';
+    }
+  });
+}
+
+/* ── True/False ── */
+function renderTF(mount,qd,idx,passed){
+  const itemsHTML=qd.statements.map((s,i)=>`
+    <div class="iw-tf-item${passed?' answered':''}" data-i="${i}" data-a="${s.a}">
+      <div class="iw-tf-statement">${s.s}</div>
+      <div class="iw-tf-btns">
+        <button class="iw-tf-btn" data-v="true">True</button>
+        <button class="iw-tf-btn" data-v="false">False</button>
+      </div>
+    </div>`).join('');
+  mount.innerHTML=`
+    <div class="iw-tf-round${passed?' passed':''}" id="qg${idx}">
+      <div class="iw-quiz-header"><span class="iw-quiz-icon">⚡</span><span class="iw-quiz-title">True or False</span><span class="iw-quiz-xp">+${qd.xp} XP</span></div>
+      ${itemsHTML}
+      <div class="iw-fb" id="qfb${idx}"></div>
+      <button class="iw-submit${passed?' show':''}" id="qsub${idx}">${passed?'✅ Passed':'Check Answers'}</button>
+    </div>`;
+  if(passed)return;
+  let answers={};
+  mount.querySelectorAll('.iw-tf-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const item=btn.closest('.iw-tf-item');
+      item.querySelectorAll('.iw-tf-btn').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      answers[item.dataset.i]=btn.dataset.v;
+      if(Object.keys(answers).length===qd.statements.length){
+        const sub=document.getElementById('qsub'+idx);sub.classList.add('show');sub.style.display='';
+      }
+    });
+  });
+  document.getElementById('qsub'+idx).addEventListener('click',()=>{
+    let allCorrect=true;
+    mount.querySelectorAll('.iw-tf-item').forEach(item=>{
+      const i=item.dataset.i;const correct=item.dataset.a;
+      item.classList.add('answered');
+      item.querySelectorAll('.iw-tf-btn').forEach(b=>{
+        if(b.dataset.v===correct)b.classList.add('correct-answer');
+        else if(b.classList.contains('selected')&&b.dataset.v!==correct){b.classList.add('wrong-answer');allCorrect=false;}
+      });
+    });
+    const fb=document.getElementById('qfb'+idx);
+    if(allCorrect){
+      fb.className='iw-fb show correct';fb.innerHTML='<span class="fb-icon">✅</span><span>'+qd.fb+'</span>';
+      quizzesPassed.add(idx);awardXP(qd.xp);
+      document.getElementById('qg'+idx).classList.add('passed');
+      document.getElementById('qsub'+idx).textContent='✅ Passed';
+    }else{
+      fb.className='iw-fb show wrong';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite — review the correct answers above. '+qd.fb+'</span>';
+      resetStreak();
+      document.getElementById('qsub'+idx).textContent='Review & Continue';
+    }
+  });
+}
+
+/* ── Concept Fill ── */
+function renderCF(mount,qd,idx,passed){
+  let codeHTML=qd.code.replace(/<blank id="(\w+)" answer="(\w+)">/g,(m,id,ans)=>{
+    return `<input class="iw-cf-blank" id="${id}" data-answer="${ans}" placeholder="???" maxlength="30" ${passed?'disabled value="'+ans+'"':''}>`;
+  });
+  mount.innerHTML=`
+    <div class="iw-cf${passed?' passed':''}" id="qg${idx}">
+      <div class="iw-quiz-header"><span class="iw-quiz-icon">💻</span><span class="iw-quiz-title">Fill in the Blanks</span><span class="iw-quiz-xp">+${qd.xp} XP</span></div>
+      <div class="iw-quiz-q">${qd.prompt}</div>
+      <pre style="background:rgba(0,0,0,.3);padding:14px;border-radius:10px;font-size:.85rem;line-height:2;overflow-x:auto;white-space:pre-wrap;font-family:'JetBrains Mono',monospace;color:var(--text)">${codeHTML}</pre>
+      <div class="iw-fb" id="qfb${idx}"></div>
+      <button class="iw-submit show" id="qsub${idx}">${passed?'✅ Passed':'Check Answer'}</button>
+    </div>`;
+  if(passed)return;
+  document.getElementById('qsub'+idx).addEventListener('click',()=>{
+    const blanks=mount.querySelectorAll('.iw-cf-blank');
+    let allCorrect=true;
+    blanks.forEach(b=>{
+      const correct=b.dataset.answer.toLowerCase().trim();
+      const val=b.value.toLowerCase().trim();
+      if(val===correct){b.classList.add('correct');b.classList.remove('wrong');}
+      else{b.classList.add('wrong');b.classList.remove('correct');allCorrect=false;}
+      b.disabled=true;
+    });
+    const fb=document.getElementById('qfb'+idx);
+    if(allCorrect){
+      fb.className='iw-fb show correct';fb.innerHTML='<span class="fb-icon">✅</span><span>'+qd.fb+'</span>';
+      quizzesPassed.add(idx);awardXP(qd.xp);
+      document.getElementById('qg'+idx).classList.add('passed');
+      document.getElementById('qsub'+idx).textContent='✅ Passed';
+    }else{
+      fb.className='iw-fb show wrong';fb.innerHTML='<span class="fb-icon">❌</span><span>Check the highlighted blanks. '+qd.fb+'</span>';
+      resetStreak();
+      blanks.forEach(b=>{if(b.classList.contains('wrong')){b.disabled=false;b.classList.remove('wrong');}});
+      document.getElementById('qsub'+idx).textContent='Try Again';
+    }
+  });
+}
+
+/* ── Finish check ── */
+function checkFinish(){
+  if(quizzesPassed.size>=QUIZZES.length){
+    const el=document.getElementById('iwFinish');
+    if(el&&!el.classList.contains('show')){
+      const mins=Math.round((Date.now()-startTime)/60000);
+      el.classList.add('show');
+      document.getElementById('iwFinalStats').innerHTML=`
+        <div class="iw-final-stat"><div class="stat-val">${xp}</div><div class="stat-label">Total XP</div></div>
+        <div class="iw-final-stat"><div class="stat-val">Level ${getLevel()}</div><div class="stat-label">Level</div></div>
+        <div class="iw-final-stat"><div class="stat-val">${bestStreak}🔥</div><div class="stat-label">Best Streak</div></div>
+        <div class="iw-final-stat"><div class="stat-val">${mins}m</div><div class="stat-label">Time</div></div>
+        <div class="iw-final-stat"><div class="stat-val">${QUIZZES.length}/${QUIZZES.length}</div><div class="stat-label">Quizzes</div></div>`;
+    }
+  }
+}
+
+/* ── Init ── */
+loadState();updateXPBar();
+
+return {renderQuiz};
+})();
+
+/* Re-render current step quiz after IW is defined */
+IW.renderQuiz(cur);
+</script>
+
+</body>
+</html>

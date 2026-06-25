@@ -1,0 +1,1719 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/race-builder.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Race Builder — Build a Top-Down Racer | JVDesignStudio</title>
+<meta name="description" content="Build a top-down JavaScript racing game step by step. Set your car stats, add rivals, wire up laps, boost pads and a finish line — watch it race live. Ages 11+. Free.">
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/race-builder.html">
+    <meta property="og:title"       content="Race Builder — Build a Top-Down Racer | JVDesignStudio">
+    <meta property="og:description" content="Build a top-down JavaScript racing game step by step. Set your car stats, add rivals, wire up laps, boost pads and a finish line — watch it race live. Ages 11+. Free.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/RacingBluePrint.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Race Builder — Build a Top-Down Racer | JVDesignStudio">
+    <meta name="twitter:description" content="Build a top-down JavaScript racing game step by step. Set your car stats, add rivals, wire up laps, boost pads and a finish line — watch it race live. Ages 11+. Free.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/RacingBluePrint.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+
+  --bg:#07090a;--bg2:#0c0f11;--bg3:#111418;
+  --border:rgba(255,255,255,.07);
+  --text:#e8edf2;--muted:rgba(232,237,242,.38);
+  --acc:#f5c400;--acc-lt:#ffe055;--acc-dk:#b08c00;
+  --green:#4ade80;--red:#f87171;--blue:#38bdf8;--orange:#fb923c;--purple:#a78bfa;
+  --track:#2a7c3f;--road:#1e2228;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* ── HEADER ── */
+.hdr{position:sticky;top:0;z-index:90;background:rgba(7,9,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),#c89800);color:#07090a;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* ── HERO ── */
+.hero{padding:30px 18px 22px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(245,196,0,.06) 1px,transparent 1px);background-size:28px 28px}
+@media(max-width:640px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:7px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,7vw,4rem);line-height:.92;letter-spacing:.03em;color:#fff;margin-bottom:9px}
+.hero-title .hl{color:var(--acc)}
+.hero-desc{font-size:.86rem;color:var(--muted);line-height:1.72;max-width:440px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.56rem;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.go{border-color:rgba(245,196,0,.35);color:var(--acc-lt);background:rgba(245,196,0,.07)}
+
+/* car card */
+.car-card{background:rgba(255,255,255,.03);border:1px solid rgba(245,196,0,.18);border-radius:12px;padding:13px 16px;min-width:190px}
+.car-card-title{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin-bottom:8px}
+.car-name{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.05em;color:#fff;margin-bottom:5px}
+.car-stat{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.72rem}
+.car-stat:last-child{border:none}
+.car-stat-l{color:var(--muted)}
+.car-stat-r{font-family:'JetBrains Mono',monospace;color:var(--acc);font-size:.68rem}
+
+/* ── MAIN LAYOUT ── */
+.layout{display:grid;grid-template-columns:1fr 400px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 54px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+
+/* LEFT — STEPS */
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 9px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}
+.tb.active{color:var(--acc-lt);border-bottom-color:var(--acc)}
+.tb.done::before{content:"✓ ";color:var(--green)}
+@media(max-width:640px){.step-body{padding:14px 12px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:3px}
+.step-intro{font-size:.83rem;color:var(--muted);line-height:1.75;margin-bottom:11px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:8px;padding:9px 12px;margin:6px 0;font-size:.76rem;line-height:1.58;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(245,196,0,.05);border:1px solid rgba(245,196,0,.16);color:rgba(232,237,242,.7)}
+.box-c::before{content:"📖"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(232,237,242,.7)}
+.box-t::before{content:"💡"}
+.box-w{background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.18);color:rgba(232,237,242,.7)}
+.box-w::before{content:"⚠️"}
+.box-r{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);color:rgba(232,237,242,.8)}
+.box-r::before{content:"🏁"}
+
+/* INPUT PANEL */
+.cfg-panel{background:rgba(255,255,255,.025);border:1px solid rgba(245,196,0,.14);border-radius:9px;padding:12px 14px;margin:10px 0}
+.cfg-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-lbl{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.06em;flex:1;text-transform:uppercase}
+.cfg-input{background:#0c0e10;border:1px solid rgba(245,196,0,.25);border-radius:5px;color:var(--acc-lt);font-family:'JetBrains Mono',monospace;font-size:.82rem;padding:4px 8px;width:90px;outline:none;text-align:right}
+.cfg-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(245,196,0,.12)}
+.cfg-input.bad{border-color:var(--red)!important}
+
+/* COLOUR SWATCHES */
+.swatch-row{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0}
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff;transform:scale(1.18)}
+
+/* BUTTONS */
+.run-btn{width:100%;margin-top:9px;padding:11px;background:var(--acc);color:#07090a;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--acc-dk);transition:transform .1s,filter .15s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn:not(:disabled):hover{filter:brightness(1.13);transform:translateY(-1px)}
+.run-btn:disabled{opacity:.3;cursor:not-allowed;transform:none;filter:none}
+.step-nav{display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(245,196,0,.12);color:var(--acc-lt);border:1px solid rgba(245,196,0,.22)}
+.btn-n:hover:not(:disabled){background:rgba(245,196,0,.2)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* TASK LIST */
+.task-list{margin:7px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.74rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+/* RIGHT — GAME */
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:54px;height:calc(100vh - 54px)}
+@media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.fs-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-btn:hover{background:rgba(255,255,255,.11);color:var(--text)}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:6px;display:flex;align-items:center;justify-content:center}
+#gc{border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.05),0 8px 36px rgba(0,0,0,.9);display:block;max-width:100%;max-height:100%;image-rendering:pixelated}
+.game-hud{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);flex-shrink:0}
+.hb{padding:5px 6px;border-right:1px solid var(--border);text-align:center}
+.hb:last-child{border-right:none}
+.hv{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.04em}
+.hl2{font-family:'JetBrains Mono',monospace;font-size:.44rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;min-height:26px;color:var(--acc-lt);flex-shrink:0}
+
+.prog-bar{background:var(--bg2);border-top:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:11px;position:sticky;bottom:0;z-index:50;max-width:1440px;margin:0 auto;width:100%}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--acc-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--orange));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:3px;flex-wrap:wrap;max-width:200px;justify-content:flex-end;flex-shrink:0}
+.pd{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.pd.done{background:var(--green)}.pd.active{background:var(--acc);transform:scale(1.35)}
+
+/* FULLSCREEN */
+.fs-overlay{position:fixed;inset:0;z-index:500;background:#07090a;display:none;flex-direction:column;align-items:center}
+.fs-overlay.open{display:flex}
+.fs-hdr{position:fixed;top:0;left:0;right:0;height:50px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(7,9,10,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.07);z-index:10}
+.fs-hud-row{display:flex;gap:18px;align-items:center}
+.fs-hi{text-align:center}
+.fs-hv{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.04em}
+.fs-hl{font-family:'JetBrains Mono',monospace;font-size:.44rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fs-sep{width:1px;height:28px;background:rgba(255,255,255,.08)}
+.fs-close{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:5px 13px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-close:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.fs-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:50px 0 26px;width:100%}
+#gcFS{image-rendering:pixelated;display:block}
+.fs-foot{position:fixed;bottom:0;left:0;right:0;height:26px;padding:4px 16px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--acc-lt);background:rgba(7,9,10,.9);border-top:1px solid rgba(255,255,255,.05)}
+
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:16px;text-align:center;color:var(--muted);font-size:.7rem}
+footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--text)}
+
+/* ── TOUCH D-PAD ── */
+.touch-dpad{display:none;justify-content:center;align-items:center;gap:18px;padding:10px 16px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.3);flex-shrink:0}
+@media(pointer:coarse){.touch-dpad{display:flex}}
+.dpad-cluster{display:flex;gap:8px;align-items:center}
+.dpad-btn{width:58px;height:58px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;font-size:1.3rem;color:var(--text);cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;transition:background .1s,transform .1s,border-color .1s}
+.dpad-btn.pressed{background:rgba(245,196,0,.2);border-color:rgba(245,196,0,.5);transform:scale(.9)}
+.dpad-restart{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(245,196,0,.1);border:1px solid rgba(245,196,0,.3);font-size:.65rem;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;color:var(--acc-lt);cursor:pointer;touch-action:none;transition:background .1s,transform .1s}
+.dpad-restart.pressed{background:rgba(245,196,0,.28);transform:scale(.9)}
+
+
+
+
+
+/* ── CODE CHALLENGE ── */
+
+@keyframes xpFade{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-40px)}}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<header class="hdr">
+  <div class="logo">🏎️ Race Builder</div>
+  <div class="hdr-right">
+    <a href="../pages/workshop.html" class="back-link">← Workshop</a>
+    <button class="quick-btn" onclick="quickRace()">🏁 Quick Race</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">JVDesignStudio · JavaScript Workshop</div>
+      <h1 class="hero-title">Race<br><span class="hl">Builder</span></h1>
+      <p class="hero-desc">Build a top-down JavaScript racing game from scratch, step by step. Design your car, set rival stats, wire up laps, boost pads, and a finish line — watch it race live as you code.</p>
+      <div class="hero-pills">
+        <span class="pill go">JavaScript</span>
+        <span class="pill go">Canvas API</span>
+        <span class="pill">20 Steps</span>
+        <span class="pill">Rivals & AI</span>
+        <span class="pill">Lap Counter</span>
+        <span class="pill">🆓 Free</span>
+      </div>
+    </div>
+    <div class="car-card" id="heroCarCard">
+      <div class="car-card-title">Your Car</div>
+      <div class="car-name" id="hc-name">??? UNNAMED ???</div>
+      <div class="car-stat"><span class="car-stat-l">Top Speed</span><span class="car-stat-r" id="hc-spd">—</span></div>
+      <div class="car-stat"><span class="car-stat-l">Acceleration</span><span class="car-stat-r" id="hc-acc">—</span></div>
+      <div class="car-stat"><span class="car-stat-l">Handling</span><span class="car-stat-r" id="hc-hdl">—</span></div>
+      <div class="car-stat"><span class="car-stat-l">Colour</span><span class="car-stat-r" id="hc-col">—</span></div>
+      <div class="car-stat"><span class="car-stat-l">Rivals</span><span class="car-stat-r" id="hc-riv">0</span></div>
+      <div class="car-stat"><span class="car-stat-l">Laps</span><span class="car-stat-r" id="hc-laps">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+  <div class="game-col">
+    <div class="game-top">
+      <span class="game-top-l">🎮 Live Preview</span>
+      <div class="game-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus">Complete Step 1 to start</span></div>
+        <button class="fs-btn" onclick="openFS()">⛶ Fullscreen</button>
+      </div>
+    </div>
+    <div class="game-wrap"><canvas id="gc"></canvas></div>
+    <div class="game-hud">
+      <div class="hb"><div class="hv" id="hudPos" style="color:var(--acc)">—</div><div class="hl2">Position</div></div>
+      <div class="hb"><div class="hv" id="hudLap" style="color:var(--blue)">0/0</div><div class="hl2">Lap</div></div>
+      <div class="hb"><div class="hv" id="hudSpeed" style="color:var(--green)">0</div><div class="hl2">Speed</div></div>
+      <div class="hb"><div class="hv" id="hudTime" style="color:var(--orange)">0.0</div><div class="hl2">Time (s)</div></div>
+    </div>
+    <div class="obar" id="obar">▶ Wire up your car stats to start racing</div>
+    <div class="touch-dpad">
+      <div class="dpad-cluster">
+        <button class="dpad-btn" data-key="ArrowLeft"  aria-label="Steer left">←</button>
+        <button class="dpad-btn" data-key="ArrowRight" aria-label="Steer right">→</button>
+      </div>
+      <button class="dpad-restart" data-key="r" aria-label="Restart">RESTART</button>
+      <div class="dpad-cluster">
+        <button class="dpad-btn" data-key="ArrowUp"   aria-label="Throttle">▲</button>
+        <button class="dpad-btn" data-key="ArrowDown" aria-label="Brake">▼</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="prog-bar">
+  <span class="prog-lbl">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<!-- FULLSCREEN -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-hdr">
+    <div class="fs-hud-row">
+      <div class="fs-hi"><div class="fs-hv" id="fsPos" style="color:var(--acc)">—</div><div class="fs-hl">Position</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsLap" style="color:var(--blue)">0/0</div><div class="fs-hl">Lap</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsSpeed" style="color:var(--green)">0</div><div class="fs-hl">Speed</div></div>
+      <div class="fs-sep"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsTime" style="color:var(--orange)">0.0</div><div class="fs-hl">Time (s)</div></div>
+    </div>
+    <button class="fs-close" onclick="closeFS()">✕ Close [Esc]</button>
+  </div>
+  <div class="fs-canvas-wrap"><canvas id="gcFS"></canvas></div>
+  <div class="fs-foot" id="fsFoot">▶ Race!</div>
+</div>
+
+
+<!-- FINISH BANNER -->
+<div class="finish-banner" id="finishBanner" style="max-width:1440px;margin:16px auto;">
+  <div class="confetti-row">🏎️🏁🏆🎉⚡</div>
+  <div class="finish-title">You Built a Racing Game!</div>
+  <p class="finish-sub">Amazing work — you've built a complete top-down racing game with car physics, rival AI, lap counting, boost pads and a finish line. Every professional racing game uses these exact same systems.</p>
+  <div class="final-stats">
+    <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+  </div>
+  <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,196,0,.15);border:1px solid rgba(245,196,0,.3);color:var(--acc-lt);font-family:'Bebas Neue',sans-serif;font-size:.9rem;padding:10px 22px;border-radius:10px;text-decoration:none;margin-top:10px;transition:all .15s;letter-spacing:.06em">⭐ View My Progress & Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+</div>
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div>
+        </div>
+      </a>      <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗺️</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Level Designer</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build 2D tile maps</div>
+        </div>
+      </a>      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎵</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">SFX Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Create custom sound effects</div>
+        </div>
+      </a>      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>      <a href="../tools/game-logo-maker.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎮</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Game Logo Maker</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Design your title screen logo</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════
+   GAME ENGINE
+═══════════════════════════════════════════════ */
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+let CW=360, CH=480;
+canvas.width=CW; canvas.height=CH;
+
+// ── TRACK DEFINITION (oval with rounded corners) ──
+// Outer and inner track boundaries as oval ring
+const TRACK = {
+  cx: 180, cy: 240,
+  rx: 155, ry: 195,   // outer
+  irx: 95, iry: 130,  // inner
+  roadWidth: 60,
+};
+
+// Lap checkpoints (normalised 0..1 around the oval, 8 sectors)
+const NUM_CP = 8;
+
+// ── GAME STATE ──
+const G = {
+  phase: 'title',  // title | racing | finish
+  frame: 0,
+  t: 0,           // race time seconds
+  loopId: null,
+
+  // features unlocked per step
+  f_car:    false,
+  f_physics:false,
+  f_track:  false,
+  f_rivals: false,
+  f_boost:  false,
+  f_laps:   false,
+  f_finish: false,
+
+  // player car config (defaults, overwritten by steps)
+  carName:  '???',
+  carCol:   '#f5c400',
+  topSpeed:  4.5,
+  accel:     0.12,
+  handling:  0.055,
+  laps:      3,
+  rivalCount:2,
+  boostMult: 1.6,
+
+  player: null,
+  rivals: [],
+  boostPads:[],
+  particles:[],
+};
+
+const KEYS={};
+document.addEventListener('keydown',e=>{KEYS[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();});
+document.addEventListener('keyup',  e=>{KEYS[e.key]=false;});
+
+// ── ANGLE helper: normalised position along oval (0–2PI) ──
+function ovalAngle(x,y){return Math.atan2((y-TRACK.cy)/TRACK.iry,(x-TRACK.cx)/TRACK.irx);}
+
+function pointOnOval(a, rx, ry){
+  return {x: TRACK.cx + rx*Math.cos(a), y: TRACK.cy + ry*Math.sin(a)};
+}
+
+function midTrackPoint(a){
+  const mr=(TRACK.rx+TRACK.irx)/2, mry=(TRACK.ry+TRACK.iry)/2;
+  return pointOnOval(a, mr, mry);
+}
+
+// ── IS ON TRACK? ──
+function onTrack(x,y){
+  const ox=(x-TRACK.cx)/TRACK.rx, oy=(y-TRACK.cy)/TRACK.ry;
+  const inner_ox=(x-TRACK.cx)/TRACK.irx, inner_oy=(y-TRACK.cy)/TRACK.iry;
+  return (ox*ox+oy*oy<=1) && (inner_ox*inner_ox+inner_oy*inner_oy>=1);
+}
+
+// ── CAR OBJECT ──
+function makeCar(a, col, isPlayer){
+  const pt = midTrackPoint(a);
+  return {
+    x: pt.x, y: pt.y,
+    angle: a + Math.PI/2,
+    vel: 0,
+    angVel: 0,
+    lapProgress: a,   // 0..2PI track position
+    lap: 0,
+    crossed: false,   // start/finish line
+    col,
+    isPlayer,
+    boost: 0,         // frames of boost remaining
+    ranking: isPlayer?1:2,
+  };
+}
+
+function initCars(){
+  G.player = makeCar(-Math.PI/2, G.carCol, true);
+  G.rivals = [];
+  const rc = G.f_rivals ? G.rivalCount : 0;
+  const RIVAL_COLS = ['#f87171','#38bdf8','#a78bfa','#fb923c'];
+  for(let i=0;i<rc;i++){
+    const a = -Math.PI/2 + (i+1)*0.3;
+    G.rivals.push(makeCar(a, RIVAL_COLS[i%4], false));
+  }
+}
+
+function initBoostPads(){
+  G.boostPads=[];
+  if(!G.f_boost) return;
+  const angles=[-Math.PI/4, Math.PI/4, Math.PI*3/4, -Math.PI*3/4];
+  angles.forEach(a=>{
+    const pt = midTrackPoint(a);
+    G.boostPads.push({x:pt.x, y:pt.y, a, timer:0});
+  });
+}
+
+// ── PHYSICS ──
+function updateCar(car, isPlayer){
+  const speed = G.f_physics ? G.topSpeed : 0;
+  const accel = G.f_physics ? G.accel : 0;
+  const hdl   = G.f_physics ? G.handling : 0;
+  const dt    = 1;
+
+  let steer=0, throttle=false;
+  if(isPlayer){
+    if(KEYS['ArrowUp']   || KEYS['w'] || KEYS['W']) throttle=true;
+    if(KEYS['ArrowLeft'] || KEYS['a'] || KEYS['A']) steer=-1;
+    if(KEYS['ArrowRight']|| KEYS['d'] || KEYS['D']) steer= 1;
+    if(KEYS['ArrowDown'] || KEYS['s'] || KEYS['S']) car.vel -= accel*0.7;
+  } else {
+    // Simple AI: steer toward midTrack
+    if(G.f_rivals){
+      const targetA = car.lapProgress + 0.15;
+      const target  = midTrackPoint(targetA);
+      const desired = Math.atan2(target.y-car.y, target.x-car.x);
+      let diff = desired - car.angle;
+      while(diff> Math.PI) diff-=Math.PI*2;
+      while(diff<-Math.PI) diff+=Math.PI*2;
+      steer = Math.max(-1,Math.min(1,diff/0.3));
+      throttle = true;
+    }
+  }
+
+  const boostMult = (car.boost>0 && G.f_boost) ? G.boostMult : 1;
+  const effectiveTop = speed * boostMult;
+  if(throttle) car.vel = Math.min(effectiveTop, car.vel + accel*dt);
+  car.vel *= 0.97;   // drag
+  car.angVel = steer * hdl * (car.vel/speed||0);
+  car.angle += car.angVel*dt;
+
+  const nx = car.x + Math.cos(car.angle)*car.vel*dt;
+  const ny = car.y + Math.sin(car.angle)*car.vel*dt;
+
+  if(G.f_track){
+    if(onTrack(nx,ny)){ car.x=nx; car.y=ny; }
+    else { car.vel*=0.85; car.x+=Math.cos(car.angle)*car.vel*0.2; car.y+=Math.sin(car.angle)*car.vel*0.2; }
+  } else {
+    car.x=nx; car.y=ny;
+    car.x=Math.max(20,Math.min(CW-20,car.x));
+    car.y=Math.max(20,Math.min(CH-20,car.y));
+  }
+
+  // Lap progress
+  const newA = ovalAngle(car.x,car.y);
+  // detect finish line crossing (top of oval, angle ~ -PI/2)
+  if(G.f_laps){
+    const prevA = car.lapProgress;
+    car.lapProgress = newA;
+    // crossing threshold: from angle near PI to -PI (wrap)
+    if(prevA>2.5 && newA < -2.5){
+      car.lap++;
+      if(isPlayer && car.lap <= G.laps){
+        sout('🏁 LAP '+(car.lap)+' / '+G.laps+(car.lap===G.laps?' — FINAL LAP!':''));
+      }
+    }
+  }
+
+  // Boost pads
+  if(G.f_boost && car.boost>0) car.boost--;
+  if(G.f_boost){
+    G.boostPads.forEach(bp=>{
+      if(bp.timer>0){bp.timer--;return;}
+      const d=Math.hypot(car.x-bp.x,car.y-bp.y);
+      if(d<18){ car.boost=60; bp.timer=180; spawnParts(bp.x,bp.y,'#f5c400',8,4); }
+    });
+  }
+}
+
+function updateRankings(){
+  if(!G.f_rivals||!G.f_laps) return;
+  const all=[G.player,...G.rivals];
+  all.forEach(c=>{
+    c._score = c.lap*1000 + (ovalAngle(c.x,c.y)+Math.PI)/(Math.PI*2)*100;
+  });
+  all.sort((a,b)=>b._score-a._score);
+  all.forEach((c,i)=>c.ranking=i+1);
+}
+
+// ── PARTICLES ──
+function spawnParts(x,y,col,n=6,spd=3){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2;
+    G.particles.push({x,y,vx:Math.cos(a)*(spd+Math.random()*spd),vy:Math.sin(a)*(spd+Math.random()*spd),col,l:1,s:2+Math.random()*2});
+  }
+}
+
+// ── DRAW ──
+function drawTrack(){
+  // Grass
+  ctx.fillStyle='#1e3a26';
+  ctx.fillRect(0,0,CW,CH);
+
+  // Outer oval
+  ctx.beginPath();
+  ctx.ellipse(TRACK.cx,TRACK.cy,TRACK.rx,TRACK.ry,0,0,Math.PI*2);
+  ctx.fillStyle='#2a2e35';
+  ctx.fill();
+
+  // Road surface
+  ctx.beginPath();
+  ctx.ellipse(TRACK.cx,TRACK.cy,TRACK.rx,TRACK.ry,0,0,Math.PI*2);
+  ctx.fillStyle='#1c2026';
+  ctx.fill();
+
+  // Inner grass
+  ctx.beginPath();
+  ctx.ellipse(TRACK.cx,TRACK.cy,TRACK.irx,TRACK.iry,0,0,Math.PI*2);
+  ctx.fillStyle='#1e3a26';
+  ctx.fill();
+
+  // Track border lines
+  ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(TRACK.cx,TRACK.cy,TRACK.rx-1,TRACK.ry-1,0,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.ellipse(TRACK.cx,TRACK.cy,TRACK.irx+1,TRACK.iry+1,0,0,Math.PI*2);ctx.stroke();
+
+  // Dashed centre line
+  ctx.strokeStyle='rgba(255,255,150,.12)';ctx.lineWidth=1;ctx.setLineDash([8,14]);
+  const mr=(TRACK.rx+TRACK.irx)/2, mry=(TRACK.ry+TRACK.iry)/2;
+  ctx.beginPath();ctx.ellipse(TRACK.cx,TRACK.cy,mr,mry,0,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Start/finish line (top of oval)
+  const sfx=TRACK.cx, sfy=TRACK.cy-TRACK.iry-2;
+  const sflen=TRACK.rx-TRACK.irx;
+  ctx.save();
+  ctx.translate(sfx,sfy);
+  for(let i=0;i<6;i++){
+    ctx.fillStyle=(i%2===0)?'#fff':'#111';
+    ctx.fillRect(-sflen/2+i*(sflen/6), -5, sflen/6, 10);
+  }
+  ctx.restore();
+
+  // Boost pads
+  if(G.f_boost){
+    G.boostPads.forEach(bp=>{
+      if(bp.timer>0){ ctx.globalAlpha=0.3; }
+      ctx.save();
+      ctx.translate(bp.x,bp.y);
+      ctx.rotate(bp.a+Math.PI/2);
+      ctx.fillStyle='#f5c400';
+      ctx.shadowBlur=10; ctx.shadowColor='#f5c400';
+      ctx.fillRect(-12,-6,24,12);
+      // Arrow
+      ctx.fillStyle='#07090a';
+      ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(8,0);ctx.lineTo(0,4);ctx.closePath();ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha=1;
+      ctx.shadowBlur=0;
+    });
+  }
+}
+
+function drawCar(car){
+  ctx.save();
+  ctx.translate(car.x, car.y);
+  ctx.rotate(car.angle + Math.PI/2);
+
+  // Body
+  const w=10, h=16;
+  ctx.fillStyle=car.col;
+  ctx.shadowBlur=car.boost>0?14:0;
+  ctx.shadowColor=car.col;
+  ctx.beginPath();
+  ctx.roundRect(-w/2,-h/2,w,h,3);
+  ctx.fill();
+
+  // Windscreen
+  ctx.fillStyle='rgba(200,240,255,.35)';
+  ctx.fillRect(-w/2+2,-h/2+3,w-4,5);
+
+  // Wheels
+  ctx.fillStyle='#333';
+  [[-w/2-2,-h/2+2],[w/2-1,-h/2+2],[-w/2-2,h/2-5],[w/2-1,h/2-5]].forEach(([wx,wy])=>{
+    ctx.fillRect(wx,wy,3,5);
+  });
+
+  // Boost flame
+  if(car.boost>0 && G.f_boost){
+    ctx.fillStyle=`rgba(251,146,60,${0.6+Math.random()*0.4})`;
+    ctx.beginPath();
+    ctx.moveTo(-4,h/2);ctx.lineTo(4,h/2);ctx.lineTo(0,h/2+8+Math.random()*6);
+    ctx.closePath();ctx.fill();
+  }
+
+  ctx.shadowBlur=0;
+  ctx.restore();
+
+  // Rank label for player
+  if(car.isPlayer && G.f_rivals){
+    ctx.save();
+    ctx.font='bold 9px JetBrains Mono,monospace';
+    ctx.fillStyle='#fff';
+    ctx.textAlign='center';
+    ctx.fillText('P'+car.ranking, car.x, car.y-16);
+    ctx.restore();
+  }
+}
+
+function drawParticles(){
+  G.particles.forEach(p=>{
+    ctx.globalAlpha=p.l;
+    ctx.fillStyle=p.col;
+    ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s);
+  });
+  ctx.globalAlpha=1;
+}
+
+function drawTitle(){
+  ctx.fillStyle='rgba(7,9,10,.82)';ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='#f5c400';
+  ctx.font='bold 28px Bebas Neue,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('RACE BUILDER',CW/2,CH/2-24);
+  ctx.fillStyle='rgba(232,237,242,.5)';
+  ctx.font='700 11px Nunito,sans-serif';
+  ctx.fillText('Complete Step 1 to start',CW/2,CH/2+6);
+  ctx.fillText('Arrow keys / WASD to drive',CW/2,CH/2+24);
+  ctx.textAlign='left';
+}
+
+function drawFinish(){
+  ctx.fillStyle='rgba(7,9,10,.78)';ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle=G.player.ranking===1?'#f5c400':'#e8edf2';
+  ctx.font='bold 26px Bebas Neue,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(G.player.ranking===1?'🏆 YOU WIN!':'RACE OVER',CW/2,CH/2-18);
+  ctx.fillStyle='rgba(232,237,242,.6)';
+  ctx.font='700 11px Nunito,sans-serif';
+  ctx.fillText('Position: '+G.player.ranking+' of '+(G.rivals.length+1),CW/2,CH/2+6);
+  ctx.fillText('Time: '+G.t.toFixed(1)+'s  — Press R to restart',CW/2,CH/2+24);
+  ctx.textAlign='left';
+}
+
+// ── GAME LOOP ──
+let lastT=0;
+function tick(ts){
+  const dt=(ts-lastT)/1000; lastT=ts;
+  G.loopId=requestAnimationFrame(tick);
+
+  if(G.phase==='title'){ gameDraw(); return; }
+  if(G.phase==='finish'){ gameDraw(); return; }
+
+  G.frame++;
+  G.t+=dt;
+
+  // Update player
+  if(G.f_physics) updateCar(G.player,true);
+
+  // Update rivals
+  G.rivals.forEach(r=>updateCar(r,false));
+
+  // Update particles
+  G.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.l-=0.03;p.vx*=0.93;p.vy*=0.93;});
+  G.particles=G.particles.filter(p=>p.l>0);
+
+  // Ranking
+  updateRankings();
+
+  // Finish line check
+  if(G.f_laps && G.f_finish && G.player.lap>=G.laps){
+    G.phase='finish';
+    sout(G.player.ranking===1?'🏆 YOU WIN! R to restart':'Race over! Position '+G.player.ranking+'. R to restart');
+  }
+
+  // R to restart
+  if(KEYS['r']||KEYS['R']){ if(G.phase==='finish') startRace(); }
+
+  updateHUD();
+  gameDraw();
+}
+
+function gameDraw(){
+  ctx.clearRect(0,0,CW,CH);
+
+  if(!G.f_track){
+    // Simple placeholder before track unlocked
+    ctx.fillStyle='#1e2228';ctx.fillRect(0,0,CW,CH);
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
+    for(let x=0;x<CW;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.stroke();}
+    for(let y=0;y<CH;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CW,y);ctx.stroke();}
+  } else {
+    drawTrack();
+  }
+
+  if(G.phase==='title'){drawTitle();return;}
+  if(G.phase==='finish'){drawFinish();return;}
+
+  drawParticles();
+  G.rivals.forEach(r=>drawCar(r));
+  if(G.f_car) drawCar(G.player);
+
+  // Speed particles behind player
+  if(G.player && G.player.vel>2 && G.frame%4===0){
+    spawnParts(G.player.x-Math.cos(G.player.angle)*10, G.player.y-Math.sin(G.player.angle)*10,'rgba(255,255,255,.4)',2,0.8);
+  }
+
+  // Mirror to fullscreen canvas
+  syncFS();
+}
+
+function syncFS(){
+  const fsc=document.getElementById('gcFS');
+  if(document.getElementById('fsOverlay').classList.contains('open')&&fsc){
+    const fctx=fsc.getContext('2d');
+    fctx.clearRect(0,0,fsc.width,fsc.height);
+    fctx.drawImage(canvas,0,0,fsc.width,fsc.height);
+  }
+}
+
+function updateHUD(){
+  const p=G.player;
+  if(!p){return;}
+  const spd=Math.round(p.vel*(G.topSpeed>0?100/G.topSpeed:0));
+  document.getElementById('hudSpeed').textContent=spd;
+  document.getElementById('hudLap').textContent=(G.f_laps?p.lap:0)+'/'+G.laps;
+  document.getElementById('hudPos').textContent=G.f_rivals?(p.ranking+'/'+(G.rivals.length+1)):'1';
+  document.getElementById('hudTime').textContent=G.t.toFixed(1);
+  // FS
+  ['Pos','Lap','Speed','Time'].forEach(k=>{
+    const el=document.getElementById('fs'+k);
+    if(el) el.textContent=document.getElementById('hud'+k).textContent;
+  });
+}
+
+function startRace(){
+  G.phase='racing';
+  G.frame=0; G.t=0;
+  G.particles=[];
+  initCars();
+  initBoostPads();
+  updateHUD();
+  sout('🏎️ GO! Arrow keys or WASD to drive. Collect yellow boost pads!');
+}
+
+function quickRace(){
+  // Fill in sensible defaults and start
+  G.carName='QUICKRACER';G.carCol='#f5c400';
+  G.topSpeed=5;G.accel=0.14;G.handling=0.06;
+  G.laps=3;G.rivalCount=3;G.boostMult=1.7;
+  G.f_car=true;G.f_physics=true;G.f_track=true;
+  G.f_rivals=true;G.f_boost=true;G.f_laps=true;G.f_finish=true;
+  updateHeroCard();startRace();
+  document.getElementById('liveStatus').textContent='Quick Race Active';
+  sout('🏁 Quick Race! Arrow keys / WASD to drive!');
+}
+
+function sout(m){
+  document.getElementById('obar').textContent=m;
+  document.getElementById('fsFoot').textContent=m;
+}
+
+function updateHeroCard(){
+  document.getElementById('hc-name').textContent=G.carName||'???';
+  document.getElementById('hc-spd').textContent=G.topSpeed?G.topSpeed+'x':'—';
+  document.getElementById('hc-acc').textContent=G.accel?G.accel:'—';
+  document.getElementById('hc-hdl').textContent=G.handling?G.handling:'—';
+  document.getElementById('hc-col').innerHTML=`<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${G.carCol};vertical-align:middle"></span>`;
+  document.getElementById('hc-riv').textContent=G.f_rivals?G.rivalCount:'0';
+  document.getElementById('hc-laps').textContent=G.f_laps?G.laps:'—';
+}
+
+function openFS(){
+  const ov=document.getElementById('fsOverlay');
+  ov.classList.add('open');
+  const fsc=document.getElementById('gcFS');
+  const sz=Math.min(window.innerWidth,window.innerHeight-76);
+  fsc.width=sz; fsc.height=Math.round(sz*(CH/CW));
+  canvas.focus();
+}
+function closeFS(){document.getElementById('fsOverlay').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFS();});
+window.addEventListener('resize',()=>{if(document.getElementById('fsOverlay').classList.contains('open'))openFS();});
+
+/* ═══════════════════════════════════════════════
+   STEPS ENGINE
+═══════════════════════════════════════════════ */
+let currentStep=0;
+const stepDone=new Array(20).fill(false);
+
+function nav(i){
+  const T=STEPS.length;
+  return `<div class="step-nav">
+    <button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next Step →</button>
+  </div>`;
+}
+
+function go(i){
+  if(i<0||i>=STEPS.length) return;
+  currentStep=i;
+  renderStep();
+  updateProgress();
+  // scroll tab into view
+  const tabs=document.querySelectorAll('.tb');
+  if(tabs[i]) tabs[i].scrollIntoView({block:'nearest',inline:'center'});
+}
+
+function renderStep(){
+  const s=STEPS[currentStep];
+  const body=document.getElementById('stepBody');
+  let html=`<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+
+  // boxes
+  (s.boxes||[]).forEach(b=>{html+=`<div class="box ${b.t}">${b.tx}</div>`;});
+
+  // config inputs
+  if(s.inputs){
+    html+=`<div class="cfg-panel">`;
+    s.inputs.forEach(inp=>{
+      if(inp.type==='colour'){
+        html+=`<div class="cfg-row"><span class="cfg-lbl">${inp.label}</span>
+          <div class="swatch-row">`;
+        inp.options.forEach(c=>{
+          const sel=G.carCol===c?'sel':'';
+          html+=`<div class="swatch ${sel}" style="background:${c}" onclick="pickCol('${c}',this)"></div>`;
+        });
+        html+=`</div></div>`;
+      } else {
+        html+=`<div class="cfg-row">
+          <span class="cfg-lbl">${inp.label}</span>
+          <input class="cfg-input" id="inp_${inp.id}" type="number"
+            placeholder="${inp.placeholder||''}"
+            value="${inp.current()}"
+            min="${inp.min}" max="${inp.max}" step="${inp.step||1}"
+            oninput="validateInput(this,${inp.min},${inp.max})">
+        </div>`;
+      }
+    });
+    html+=`</div>`;
+  }
+
+  // text input (car name)
+  if(s.textInput){
+    html+=`<div class="cfg-panel"><div class="cfg-row">
+      <span class="cfg-lbl">${s.textInput.label}</span>
+      <input class="cfg-input" id="inp_${s.textInput.id}" type="text"
+        maxlength="12" placeholder="${s.textInput.placeholder||''}"
+        value="${s.textInput.current()}"
+        style="width:130px;text-align:left;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.05em;color:var(--acc-lt)">
+    </div></div>`;
+  }
+
+  // tasks
+  if(s.tasks){
+    html+=`<div class="task-list">`;
+    s.tasks.forEach((t,ti)=>{
+      const done=s._taskDone&&s._taskDone[ti];
+      html+=`<div class="task-item${done?' done':''}" id="task_${currentStep}_${ti}">
+        <div class="task-dot"></div>${t}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<button class="run-btn" onclick="applyStep(${currentStep})">▶ Apply to Game</button>`;
+  if(s.interactive) html+=s.interactive;
+  html+=nav(currentStep);
+  body.innerHTML=html;
+
+  // update tab active
+  document.querySelectorAll('.tb').forEach((t,i)=>t.classList.toggle('active',i===currentStep));
+}
+
+function validateInput(el,mn,mx){
+  const v=parseFloat(el.value);
+  el.classList.toggle('bad',isNaN(v)||v<mn||v>mx);
+}
+
+function pickCol(c,el){
+  G.carCol=c;
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+  if(G.player) G.player.col=c;
+  updateHeroCard();
+}
+
+function readInputs(stepIdx){
+  const s=STEPS[stepIdx];
+  const vals={};
+  (s.inputs||[]).forEach(inp=>{
+    if(inp.type==='colour') return;
+    const el=document.getElementById('inp_'+inp.id);
+    if(el) vals[inp.id]=parseFloat(el.value);
+  });
+  if(s.textInput){
+    const el=document.getElementById('inp_'+s.textInput.id);
+    if(el) vals[s.textInput.id]=el.value.trim().toUpperCase()||s.textInput.current();
+  }
+  return vals;
+}
+
+function applyStep(i){
+  const s=STEPS[i];
+  const vals=readInputs(i);
+  s.onApply(vals);
+  stepDone[i]=true;
+  if(!s._taskDone) s._taskDone=[];
+  (s.tasks||[]).forEach((_,ti)=>{ s._taskDone[ti]=true; });
+  renderStep();
+  updateProgress();
+  updateHeroCard();
+  saveProgress();
+  // mark tab done
+  const tabs=document.querySelectorAll('.tb');
+  if(tabs[i]){tabs[i].classList.add('done');}
+}
+
+function updateProgress(){
+  const done=stepDone.filter(Boolean).length;
+  const pct=Math.max(3,Math.round((done/STEPS.length)*100));
+  document.getElementById('progFill').style.width=pct+'%';
+  document.querySelectorAll('.pd').forEach((d,i)=>{
+    d.classList.toggle('done',stepDone[i]);
+    d.classList.toggle('active',i===currentStep);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   STEPS DATA
+═══════════════════════════════════════════════ */
+const STEPS=[
+
+/* 1 */ {
+  title:'Name Your Car',
+  tag:'STEP 01 · CAR SETUP',
+  intro:`Every racing game starts with one thing: <strong>your car</strong>. Give it a name — this will appear on the scoreboard. Then pick a colour. Your car's identity is the first thing the game engine needs before it can spawn you onto the track.`,
+  textInput:{id:'carName',label:'Car Name (max 12)',placeholder:'e.g. THUNDERBOLT',current:()=>G.carName==='???'?'':G.carName},
+  inputs:[{type:'colour',label:'Car Colour',id:'col',options:['#f5c400','#f87171','#38bdf8','#a78bfa','#fb923c','#4ade80','#e879f9','#fff']}],
+  boxes:[
+    {t:'box-c',tx:'In JavaScript a car is just an <strong>object</strong> — a bundle of variables like x, y, angle, and colour. Giving it a name and colour is the first time we tell the engine "this car is different from the others".'},
+    {t:'box-t',tx:'Choose a bold colour — you\'ll need to spot your car quickly among rivals on the track!'},
+  ],
+  tasks:['Name your car','Choose a colour'],
+  interactive:`
+    <div class="concept-fill" id="cf-1" data-step="0">
+      <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+      <div class="cf-sentence">In JavaScript, a car is stored as an <input class="cf-blank" data-answer="object" placeholder="??????" size="8"> — a bundle of variables like x, y, angle and <input class="cf-blank" data-answer="colour" placeholder="??????" size="8">.</div>
+      <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+      <div class="cf-feedback"></div>
+    </div>
+    <div class="quiz-gate" id="quiz-1" data-step="0" data-correct="1">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">Why does a game engine need a <strong>car object</strong> before it can spawn the player?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because it needs a name for the window title</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because it needs properties like position, angle and colour to draw and move the car</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Because JavaScript cannot run without at least one object</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(0)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(v){
+    G.carName=v.carName||'RACER';
+    G.f_car=true;
+    if(G.phase==='title') G.phase='racing';
+    initCars(); initBoostPads();
+    sout('🏎️ '+G.carName+' is on the track! Arrow keys or WASD to drive.');
+    document.getElementById('liveStatus').textContent='Car spawned!';
+  }
+},
+
+/* 2 */ {
+  title:'Set Top Speed',
+  tag:'STEP 02 · SPEED',
+  intro:`<strong>Top speed</strong> is the fastest your car can travel. In our engine it's measured as pixels per frame — a value of <strong>3 to 7</strong> feels like a real race. Too low and the game drags. Too high and you can't steer around corners.`,
+  inputs:[{id:'topSpeed',label:'Top Speed (3–7)',min:3,max:7,step:0.5,placeholder:'e.g. 5',current:()=>G.topSpeed}],
+  boxes:[
+    {t:'box-c',tx:'Speed in a canvas game is just how many pixels the car moves each frame. At 60fps, speed=5 means 300 pixels per second. A lap is roughly 1200 pixels of track, so you\'re completing a lap in about 4 seconds.'},
+    {t:'box-t',tx:'Start with 4.5 or 5. You can always come back and tweak it once rivals are added — their speed will be based on yours.'},
+  ],
+  tasks:['Set a top speed value','Apply and watch the car move'],
+  interactive:`
+    <div class="code-challenge" id="cc-2" data-step="1">
+      <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+      <div class="cc-prompt">Fill in the blank to cap velocity at topSpeed each frame:</div>
+      <div class="cc-code-area">velocity = Math.min(<input class="cc-blank" data-answer="topSpeed" placeholder="????????" size="10">, velocity + acceleration);</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">💡 Hint: We want the car to never exceed its maximum speed.</div>
+    </div>
+    <div class="quiz-gate" id="quiz-2" data-step="1" data-correct="2">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">At 60 frames per second, if top speed is 5 pixels/frame, how many pixels does the car move per second?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>5 pixels</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>60 pixels</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>300 pixels</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(1)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(v){
+    G.topSpeed=v.topSpeed||4.5;
+    G.f_physics=true;
+    if(G.phase!=='racing') startRace();
+    sout('🏎️ Top speed set to '+G.topSpeed+'! Drive around the track.');
+    document.getElementById('liveStatus').textContent='Physics active!';
+  }
+},
+
+/* 3 */ {
+  title:'Set Acceleration',
+  tag:'STEP 03 · ACCELERATION',
+  intro:`<strong>Acceleration</strong> controls how quickly your car reaches top speed. A high value means instant reaction — great for tight tracks. A lower value means slow build-up but more strategic driving. Try values between <strong>0.05 and 0.25</strong>.`,
+  inputs:[{id:'accel',label:'Acceleration (0.05–0.25)',min:0.05,max:0.25,step:0.01,placeholder:'e.g. 0.12',current:()=>G.accel}],
+  boxes:[
+    {t:'box-c',tx:'Each frame: <code>velocity += acceleration</code>. Then we cap velocity at topSpeed. This is called Euler integration — the simplest physics model. Real games use the same idea just with more steps.'},
+    {t:'box-t',tx:'0.10–0.14 is a good balance. Very high acceleration (0.2+) makes your car feel like a go-kart. Low (0.06) makes it feel heavy like a truck.'},
+  ],
+  tasks:['Set an acceleration value','Notice how long it takes to reach top speed'],
+  interactive:`
+    <div class="concept-fill" id="cf-3" data-step="2">
+      <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+      <div class="cf-sentence">Each frame: <input class="cf-blank" data-answer="velocity" placeholder="??????" size="8"> += acceleration. Then we cap it at <input class="cf-blank" data-answer="topSpeed" placeholder="??????" size="8">.</div>
+      <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+      <div class="cf-feedback"></div>
+    </div>
+    <div class="quiz-gate" id="quiz-3" data-step="2" data-correct="1">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">What does <strong>acceleration</strong> control in our racing engine?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The maximum speed the car can ever reach</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>How quickly the car builds up to top speed each frame</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>How sharply the car can turn around corners</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(2)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(v){
+    G.accel=v.accel||0.12;
+    sout('⚡ Acceleration set to '+G.accel+'. Notice the difference in responsiveness!');
+  }
+},
+
+/* 4 */ {
+  title:'Set Handling (Turning)',
+  tag:'STEP 04 · HANDLING',
+  intro:`<strong>Handling</strong> controls how sharply your car turns. Higher values mean tighter cornering — great for technical tracks. Lower values mean wide, sweeping turns that suit high-speed driving. Try <strong>0.03 to 0.09</strong>.`,
+  inputs:[{id:'handling',label:'Handling (0.03–0.09)',min:0.03,max:0.09,step:0.005,placeholder:'e.g. 0.055',current:()=>G.handling}],
+  boxes:[
+    {t:'box-c',tx:'Handling is added to the car\'s <strong>angular velocity</strong> each frame. Angular velocity rotates the car. The car then moves in the direction it\'s facing. This is called <em>arcade car physics</em> — not realistic, but fun to control.'},
+    {t:'box-w',tx:'Very high handling (0.09) can make the car spin wildly on the oval bends. Test it on the track before committing!'},
+  ],
+  tasks:['Set a handling value','Drive the oval corners and feel the difference'],
+  interactive:`
+    <div class="quiz-gate" id="quiz-4" data-step="3" data-correct="0">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">In arcade car physics, what does the <strong>handling</strong> value get added to each frame?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The car's angular velocity, which rotates it left or right</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The car's forward speed, making it go faster</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The car's y-position, moving it up the screen</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(3)">✅ Correct! Continue →</button>
+    </div>
+    <div class="tf-round" id="tf-4" data-step="3">
+      <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+10 XP</div></div>
+      <div class="tf-statement">In our engine, the car moves in the direction it's <strong>facing</strong> — turning changes the angle first, then movement follows.</div>
+      <div class="tf-options">
+        <button class="tf-btn" data-val="true" onclick="pickTF(this)">True</button>
+        <button class="tf-btn" data-val="false" onclick="pickTF(this)">False</button>
+      </div>
+      <button class="tf-check-btn" onclick="checkTF(this)" data-answer="true">Check Answer</button>
+      <div class="tf-feedback"></div>
+    </div>`,
+  onApply(v){
+    G.handling=v.handling||0.055;
+    sout('🔄 Handling set to '+G.handling+'. Try the corners!');
+  }
+},
+
+/* 5 */ {
+  title:'Draw the Track',
+  tag:'STEP 05 · TRACK',
+  intro:`Time to <strong>draw the oval track</strong>. Until now the background is just a grid. Applying this step switches on the real track: an oval road surface, kerbs, a grass infield, and a start/finish line. Your car will now be <strong>kept on the road</strong> — go off-track and you'll slow down.`,
+  boxes:[
+    {t:'box-c',tx:'The track is two ellipses (outer and inner). The road is the gap between them. We check if a car\'s position is inside the outer ellipse AND outside the inner one — if not, it\'s off-track and loses speed.'},
+    {t:'box-r',tx:'The start/finish line is drawn at the top of the oval as a chequered strip. Later we\'ll use this position to count laps.'},
+    {t:'box-t',tx:'Notice the dashed centre line and the white boundary lines. These are just visual guides — they help the player know which way to steer.'},
+  ],
+  tasks:['Apply to draw the track','Drive a full lap around the oval'],
+  interactive:`
+    <div class="code-challenge" id="cc-5" data-step="4">
+      <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+      <div class="cc-prompt">To check if a point is inside an ellipse with centre (cx,cy) and radii rx,ry, we compute:<br><code>dx = (x-cx)/rx, dy = (y-cy)/ry</code>. Fill in the condition:</div>
+      <div class="cc-code-area">const inside = (dx*dx + dy*dy) <= <input class="cc-blank" data-answer="1" placeholder="????" size="4">;</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">💡 Hint: The boundary of a unit ellipse is at distance 1 from centre.</div>
+    </div>
+    <div class="quiz-gate" id="quiz-5" data-step="4" data-correct="2">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">How does our engine detect if a car is <strong>on the track</strong>?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It checks if the car's pixel colour matches the road colour</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It measures the car's distance from the nearest wall</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It checks if the car is inside the outer ellipse AND outside the inner ellipse</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(4)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(){
+    G.f_track=true;
+    startRace();
+    sout('🛣️ Track is live! Drive on the road — go off-track and you\'ll slow down.');
+    document.getElementById('liveStatus').textContent='Track drawn!';
+  }
+},
+
+/* 6 */ {
+  title:'Add Rivals',
+  tag:'STEP 06 · RIVALS',
+  intro:`A race needs <strong>opponents</strong>. Set how many rival cars appear on track. They use a simple AI: they follow the centre of the track and try to match your speed. You\'ll need to out-drive them, not just drive fast.`,
+  inputs:[{id:'rivalCount',label:'Number of Rivals (1–4)',min:1,max:4,step:1,placeholder:'e.g. 3',current:()=>G.rivalCount}],
+  boxes:[
+    {t:'box-c',tx:'Each rival is its own car object. Their AI reads the track angle ahead of them and steers toward the centre line. It\'s called a <strong>steering behaviour</strong> — one of the most used techniques in game AI.'},
+    {t:'box-t',tx:'3 rivals makes for a busy but fair race. 4 rivals on an oval can feel chaotic! Start with 2 or 3.'},
+  ],
+  tasks:['Choose a rival count','Apply and race against them'],
+  interactive:`
+    <div class="concept-fill" id="cf-6" data-step="5">
+      <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+      <div class="cf-sentence">Rival AI uses a <input class="cf-blank" data-answer="steering" placeholder="??????" size="9"> behaviour — it reads the track angle ahead and steers toward the <input class="cf-blank" data-answer="centre" placeholder="??????" size="7"> line.</div>
+      <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+      <div class="cf-feedback"></div>
+    </div>
+    <div class="quiz-gate" id="quiz-6" data-step="5" data-correct="1">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">How do the rival cars decide which direction to steer?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>They copy the player's steering input with a short delay</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They read the track angle ahead and steer toward the centre line</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>They follow a pre-recorded path of waypoints</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(5)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(v){
+    G.rivalCount=Math.round(v.rivalCount)||2;
+    G.f_rivals=true;
+    startRace();
+    sout('🏎️🏎️ '+G.rivalCount+' rivals added! Try to stay ahead — rankings shown above your car.');
+    document.getElementById('liveStatus').textContent='Rivals added!';
+  }
+},
+
+/* 7 */ {
+  title:'Set Number of Laps',
+  tag:'STEP 07 · LAPS',
+  intro:`Now we <strong>count laps</strong>. Every time your car crosses the start/finish line, the lap counter goes up. Set how many laps make a full race. The HUD shows your current lap. Complete all laps to finish the race.`,
+  inputs:[{id:'laps',label:'Total Laps (1–5)',min:1,max:5,step:1,placeholder:'e.g. 3',current:()=>G.laps}],
+  boxes:[
+    {t:'box-c',tx:'Lap detection works by tracking the car\'s <strong>angle around the oval</strong>. When it crosses from ~180° to ~-180° (completing a full rotation), we increment the lap counter.'},
+    {t:'box-r',tx:'3 laps is a good race length for this track. 1 lap is good for testing. 5 laps is a long race — rivals get harder over time as the gap compounds.'},
+  ],
+  tasks:['Set total laps','Watch the lap counter in the HUD update as you drive'],
+  interactive:`
+    <div class="quiz-gate" id="quiz-7" data-step="6" data-correct="2">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">How does the engine detect that a car has completed one full lap?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It counts how many seconds have passed since the race started</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It checks if the car touches the start/finish line sprite</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It tracks the car's angle around the oval and detects when it wraps from ~180° to ~-180°</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(6)">✅ Correct! Continue →</button>
+    </div>
+    <div class="tf-round" id="tf-7" data-step="6">
+      <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+10 XP</div></div>
+      <div class="tf-statement">Angle wrapping is needed because <code>atan2</code> returns values between -PI and +PI — without wrapping, the lap counter would never increment.</div>
+      <div class="tf-options">
+        <button class="tf-btn" data-val="true" onclick="pickTF(this)">True</button>
+        <button class="tf-btn" data-val="false" onclick="pickTF(this)">False</button>
+      </div>
+      <button class="tf-check-btn" onclick="checkTF(this)" data-answer="true">Check Answer</button>
+      <div class="tf-feedback"></div>
+    </div>`,
+  onApply(v){
+    G.laps=Math.round(v.laps)||3;
+    G.f_laps=true;
+    startRace();
+    sout('🏁 '+G.laps+' lap race! Watch the Lap counter in the HUD.');
+    document.getElementById('liveStatus').textContent='Lap counter on!';
+  }
+},
+
+/* 8 */ {
+  title:'Add Boost Pads',
+  tag:'STEP 08 · BOOST',
+  intro:`<strong>Boost pads</strong> add a skill layer — hit one and your car surges forward for 1 second. They\'re placed at four positions around the track. After you collect one it recharges before you can use it again. Set the boost speed multiplier.`,
+  inputs:[{id:'boostMult',label:'Boost Multiplier (1.3–2.5)',min:1.3,max:2.5,step:0.1,placeholder:'e.g. 1.7',current:()=>G.boostMult}],
+  boxes:[
+    {t:'box-c',tx:'When your car overlaps a boost pad\'s position, we set <code>car.boost = 60</code> (frames). While boost > 0, top speed is multiplied. The boost pad is then disabled for 180 frames (3 seconds) before it reappears.'},
+    {t:'box-t',tx:'A multiplier of 1.6 is noticeable but fair. 2.0+ is rocket-like. The yellow arrow pads glow — aim for them on the straight sections!'},
+  ],
+  tasks:['Set boost multiplier','Hit a yellow pad on track and feel the surge'],
+  interactive:`
+    <div class="code-challenge" id="cc-8" data-step="7">
+      <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+      <div class="cc-prompt">When a car hits a boost pad, we set a timer. Fill in the blank to count the timer down each frame:</div>
+      <div class="cc-code-area">if (car.boost > 0) { car.boost <input class="cc-blank" data-answer="-= 1" placeholder="????????" size="6">; }</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">💡 Hint: We want to subtract 1 from the boost timer each frame.</div>
+    </div>
+    <div class="quiz-gate" id="quiz-8" data-step="7" data-correct="0">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">While a boost pad is active, what happens to the car's top speed?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Top speed is multiplied by the boost multiplier for the duration</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Top speed is permanently increased by 1</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The car teleports forward by 50 pixels</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(7)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(v){
+    G.boostMult=v.boostMult||1.6;
+    G.f_boost=true;
+    initBoostPads();
+    sout('⚡ Boost pads active — hit the yellow arrows! Multiplier: '+G.boostMult+'×');
+    document.getElementById('liveStatus').textContent='Boost pads on!';
+  }
+},
+
+/* 9 */ {
+  title:'Wire the Finish Line',
+  tag:'STEP 09 · FINISH',
+  intro:`The final piece: <strong>detect when the race ends</strong>. Once your car completes all laps, the game shows your finishing position and time. If you beat all rivals you win. Now all the systems are connected into a complete racing game.`,
+  boxes:[
+    {t:'box-r',tx:'The finish check runs every frame: <code>if player.lap >= totalLaps → game over</code>. We then sort all cars by their race score to determine final positions.'},
+    {t:'box-c',tx:'You\'ve now wired: car physics, track rendering, rival AI, lap counting, boost pads, and a finish line. Every professional racing game uses exactly these systems — just with more detail.'},
+    {t:'box-t',tx:'Press R after a race to restart. Try tweaking your speed and handling to beat the rivals more consistently.'},
+  ],
+  tasks:['Apply to activate the finish','Complete a full race and see your result'],
+  interactive:`
+    <div class="concept-fill" id="cf-9" data-step="8">
+      <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+      <div class="cf-sentence">The finish check runs every frame: if player.<input class="cf-blank" data-answer="lap" placeholder="??????" size="5"> >= <input class="cf-blank" data-answer="totalLaps" placeholder="??????" size="9"> then the race is over.</div>
+      <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+      <div class="cf-feedback"></div>
+    </div>
+    <div class="quiz-gate" id="quiz-9" data-step="8" data-correct="1">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">What triggers the <strong>race end</strong> condition in our engine?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A timer runs out after 60 seconds</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The player's lap count reaches the total number of laps</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>All rivals have been overtaken at least once</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(8)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(){
+    G.f_finish=true;
+    startRace();
+    sout('🏁 Full race active! Complete '+G.laps+' laps. Press R to restart after finishing.');
+    document.getElementById('liveStatus').textContent='Full race wired!';
+  }
+},
+
+/* 10 */ {
+  title:'Fine-Tune & Experiment',
+  tag:'STEP 10 · TUNING',
+  intro:`You have a complete racing game. Now <strong>tune it</strong>. Go back to any step and change a value — speed, handling, rivals, boost. Every change applies instantly. This is what game designers do: iterate until it feels right.`,
+  boxes:[
+    {t:'box-c',tx:'Game feel is about tiny numbers. The difference between handling 0.055 and 0.065 changes whether cornering feels satisfying or frustrating. There\'s no single right answer — tune it until YOU enjoy driving it.'},
+    {t:'box-t',tx:'Challenge: can you make a build where 4 rivals are fast but you can still win using boost pads? Try speed 6, handling 0.07, rivals 4, boost 2.0×.'},
+    {t:'box-r',tx:'This is your game. Name it something amazing. Share it with someone and see if they can beat your lap time.'},
+  ],
+  tasks:['Go back and change at least one value','Finish a race and beat your best time'],
+  interactive:`
+    <div class="quiz-gate" id="quiz-10" data-step="9" data-correct="2">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+      <div class="quiz-question">Why is <strong>iteration</strong> (tuning values repeatedly) so important in game design?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because the first values you pick are always wrong</span></div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because iteration is required by JavaScript</span></div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Because game feel depends on tiny number changes that you can only judge by playing</span></div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="quizUnlock(9)">✅ Correct! Continue →</button>
+    </div>`,
+  onApply(){
+    sout('🎉 Game complete! Go back and tune any step — your changes apply live.');
+    document.getElementById('liveStatus').textContent='Game complete!';
+  }
+},
+
+];
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+function init(){
+  // Build tabs
+  const tabsEl=document.getElementById('stepTabs');
+  STEPS.forEach((s,i)=>{
+    const btn=document.createElement('button');
+    btn.className='tb'+(i===0?' active':'');
+    btn.textContent=`${(i+1).toString().padStart(2,'0')} ${s.title.split(' ')[0]}`;
+    btn.onclick=()=>go(i);
+    tabsEl.appendChild(btn);
+  });
+
+  // Build progress dots
+  const dotsEl=document.getElementById('progDots');
+  STEPS.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='pd'+(i===0?' active':'');
+    d.title='Step '+(i+1);
+    d.onclick=()=>go(i);
+    d.style.cursor='pointer';
+    dotsEl.appendChild(d);
+  });
+
+  renderStep();
+  updateHeroCard();
+
+  // Start game loop
+  G.phase='title';
+  requestAnimationFrame(tick);
+}
+
+init();
+
+/* ═══════════════════════════════════════════════
+   INTERACTIVE ENGINE — XP, Quizzes, Challenges
+═══════════════════════════════════════════════ */
+const STORAGE_KEY='jvds-race-builder-v2';
+let totalXp=0, workshopLevel=1;
+const XP_PER_LEVEL=100;
+
+function saveProgress(){
+  try{
+    const d={stepDone,totalXp,workshopLevel,ts:Date.now()};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
+  }catch(e){}
+}
+function loadProgress(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const d=JSON.parse(raw);
+    if(d.stepDone) d.stepDone.forEach((v,i)=>{stepDone[i]=v;});
+    if(d.totalXp) totalXp=d.totalXp;
+    if(d.workshopLevel) workshopLevel=d.workshopLevel;
+    updateProgress();
+    updateXpDisplay();
+  }catch(e){}
+}
+
+function updateXpDisplay(){
+  const el=document.getElementById('xpDisplay');
+  if(el) el.textContent=totalXp+' XP';
+  const lv=document.getElementById('levelDisplay');
+  if(lv) lv.textContent='Lv '+workshopLevel;
+  const bar=document.getElementById('xpBar');
+  if(bar) bar.style.width=((totalXp%XP_PER_LEVEL)/XP_PER_LEVEL*100)+'%';
+}
+
+function awardXp(n){
+  totalXp+=n;
+  const newLv=Math.floor(totalXp/XP_PER_LEVEL)+1;
+  if(newLv>workshopLevel){workshopLevel=newLv;showLevelUp();}
+  updateXpDisplay();
+  showXpToast(n);
+  saveProgress();
+}
+
+function showXpToast(n){
+  const t=document.createElement('div');
+  t.className='xp-toast';
+  t.textContent='+'+n+' XP';
+  t.style.cssText='position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#f5c400;color:#1a1a2e;padding:8px 18px;border-radius:8px;font-weight:700;font-size:1.1rem;z-index:9999;animation:xpFade 1.2s forwards;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),1300);
+}
+
+function showLevelUp(){
+  const t=document.createElement('div');
+  t.className='level-toast';
+  t.textContent='⬆ Level '+workshopLevel+'!';
+  t.style.cssText='position:fixed;top:28%;left:50%;transform:translateX(-50%);background:#a78bfa;color:#fff;padding:10px 24px;border-radius:10px;font-weight:700;font-size:1.3rem;z-index:9999;animation:xpFade 2s forwards;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2100);
+}
+
+/* ── Quiz Gate ── */
+function selectQuizOpt(el){
+  el.closest('.quiz-options').querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function checkQuiz(btn){
+  const gate=btn.closest('.quiz-gate');
+  const correct=parseInt(gate.dataset.correct);
+  const sel=gate.querySelector('.quiz-opt.selected');
+  if(!sel) return;
+  const picked=parseInt(sel.dataset.idx);
+  const fb=gate.querySelector('.quiz-feedback');
+  if(picked===correct){
+    fb.textContent='✅ Correct!';
+    fb.className='quiz-feedback correct';
+    gate.querySelectorAll('.quiz-opt').forEach(o=>{o.style.pointerEvents='none';});
+    btn.style.display='none';
+    gate.querySelector('.quiz-next-btn').style.display='inline-block';
+    awardXp(15);
+  }else{
+    fb.textContent='❌ Not quite — try again!';
+    fb.className='quiz-feedback wrong';
+    sel.classList.add('wrong');
+    sel.classList.remove('selected');
+  }
+}
+
+/* ── Code Challenge ── */
+function checkCodeChallenge(btn){
+  const block=btn.closest('.code-challenge');
+  const blanks=block.querySelectorAll('.cc-blank');
+  const fb=block.querySelector('.cc-feedback');
+  let allRight=true;
+  blanks.forEach(b=>{
+    const ans=b.dataset.answer.trim().toLowerCase();
+    const val=b.value.trim().toLowerCase().replace(/\s+/g,' ');
+    if(val===ans){b.classList.add('correct');b.classList.remove('wrong');}
+    else{b.classList.add('wrong');b.classList.remove('correct');allRight=false;}
+  });
+  if(allRight){
+    fb.textContent='✅ Perfect code!';
+    fb.className='cc-feedback correct';
+    blanks.forEach(b=>b.disabled=true);
+    btn.disabled=true;
+    awardXp(20);
+  }else{
+    fb.textContent='❌ Check the highlighted blanks and try again.';
+    fb.className='cc-feedback wrong';
+  }
+}
+
+/* ── Concept Fill ── */
+function checkConceptFill(btn){
+  const block=btn.closest('.concept-fill');
+  const blanks=block.querySelectorAll('.cf-blank');
+  const fb=block.querySelector('.cf-feedback');
+  let allRight=true;
+  blanks.forEach(b=>{
+    const ans=b.dataset.answer.trim().toLowerCase();
+    const val=b.value.trim().toLowerCase();
+    if(val===ans){b.classList.add('correct');b.classList.remove('wrong');}
+    else{b.classList.add('wrong');b.classList.remove('correct');allRight=false;}
+  });
+  if(allRight){
+    fb.textContent='✅ All correct!';
+    fb.className='cf-feedback correct';
+    blanks.forEach(b=>b.disabled=true);
+    btn.disabled=true;
+    awardXp(15);
+  }else{
+    fb.textContent='❌ Some blanks need fixing — try again!';
+    fb.className='cf-feedback wrong';
+  }
+}
+
+/* ── True/False ── */
+function pickTF(btn){
+  btn.closest('.tf-options').querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function checkTF(btn){
+  const block=btn.closest('.tf-round');
+  const correct=btn.dataset.answer;
+  const sel=block.querySelector('.tf-btn.selected');
+  if(!sel) return;
+  const fb=block.querySelector('.tf-feedback');
+  if(sel.dataset.val===correct){
+    fb.textContent='✅ Correct!';
+    fb.className='tf-feedback correct';
+    block.querySelectorAll('.tf-btn').forEach(b=>b.style.pointerEvents='none');
+    btn.disabled=true;
+    awardXp(10);
+  }else{
+    fb.textContent='❌ Not quite — try again!';
+    fb.className='tf-feedback wrong';
+    sel.classList.add('wrong');
+    sel.classList.remove('selected');
+  }
+}
+
+/* ── Bridge functions ── */
+function quizUnlock(n){ go(n+1); }
+function completeStep(n){ go(n+1); }
+
+loadProgress();
+
+// Touch D-pad
+(function(){
+  document.querySelectorAll('.dpad-btn[data-key],.dpad-restart[data-key]').forEach(function(btn){
+    var key=btn.dataset.key;
+    function press(e){e.preventDefault();KEYS[key]=true;btn.classList.add('pressed');}
+    function release(e){e.preventDefault();KEYS[key]=false;btn.classList.remove('pressed');}
+    btn.addEventListener('touchstart',press,{passive:false});
+    btn.addEventListener('touchend',release,{passive:false});
+    btn.addEventListener('touchcancel',release,{passive:false});
+    btn.addEventListener('mousedown',press);
+    btn.addEventListener('mouseup',release);
+    btn.addEventListener('mouseleave',release);
+  });
+})();
+</script>
+
+</body>
+</html>

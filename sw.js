@@ -1,14 +1,24 @@
-// JVDesignStudio Service Worker v4
-const CACHE='jvds-v4';
+// JVDesignStudio Service Worker v5
+const CACHE='jvds-v6';
 const CORE=[
   '/',
   '/index.html',
   '/offline.html',
   '/manifest.json',
   '/style-shared.css',
+  '/style-workshop.css',
+  '/workshop-enhancements.js',
+  '/cookie-consent.js',
+  '/logo.png',
+  '/pages/workshop.html',
+  '/pages/games.html',
+  '/pages/books.html',
+  '/workshops/my-progress.html',
+  '/pages/learn-hub.html',
+  '/pages/dev-tools.html',
+  '/pages/freebies.html',
   '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/privacy-policy.html'
+  '/icons/icon-512.png'
 ];
 
 self.addEventListener('install',e=>{

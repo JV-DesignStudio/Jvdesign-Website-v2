@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#f472b6">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/sprite-animator.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sprite Animator | JVDesignStudio</title>
+<meta name="description" content="Upload a spritesheet, set frame size, preview your animation live in the browser. Export frame data as JSON for Godot or Unity. Free game dev tool.">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+  --bg:#08080f;--panel:#0f0f1e;--panel2:#161628;--panel3:#1e1e38;
+  --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
+  --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#7c3aed;
+  --text:#f0f0ff;--muted:#6b7280;--dim:#2a2a4a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
+
+.hdr{height:46px;background:rgba(8,8,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
+.hdr-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.hdr-logo img{height:26px;width:auto;flex-shrink:0;border-radius:5px;}
+.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);}
+.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
+
+#app{flex:1;display:flex;min-height:0;overflow:hidden;}
+
+/* UPLOAD / PREVIEW */
+#left{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+#preview-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--bg);}
+
+/* checkerboard bg */
+#preview-area::before{content:'';position:absolute;inset:0;background-image:repeating-conic-gradient(#1a1a2e 0% 25%,#0d0d18 0% 50%);background-size:16px 16px;opacity:.6;pointer-events:none;}
+
+#preview-canvas{position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--border2);border-radius:4px;}
+
+.upload-prompt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;pointer-events:none;}
+.upload-prompt.hidden{display:none;}
+.upload-icon{font-size:3rem;opacity:.4;}
+.upload-text{font-size:.75rem;color:var(--muted);text-align:center;line-height:1.6;}
+.upload-btn-label{padding:9px 24px;border-radius:9px;background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:700;cursor:pointer;pointer-events:all;transition:filter .12s;}
+.upload-btn-label:hover{filter:brightness(1.1);}
+
+/* playback controls */
+#playback-bar{height:52px;background:var(--panel);border-top:1px solid var(--border2);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0;}
+.pb-btn{width:34px;height:34px;border-radius:8px;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;}
+.pb-play{background:var(--accent);color:#000;}
+.pb-play:hover{filter:brightness(1.1);}
+.pb-prev,.pb-next{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
+.pb-prev:hover,.pb-next:hover{background:var(--dim);}
+.pb-loop{background:transparent;color:var(--muted);border:1px solid var(--border2);font-size:.7rem;padding:0 10px;width:auto;}
+.pb-loop.on{background:rgba(244,114,182,.15);border-color:var(--accent);color:var(--accent);}
+.pb-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.pb-val{font-size:.85rem;color:var(--accent2);font-weight:700;min-width:28px;text-align:center;}
+.fps-slider{accent-color:var(--accent);width:80px;cursor:pointer;}
+.frame-counter{font-size:.7rem;color:var(--muted);margin-left:auto;}
+.frame-counter span{color:var(--accent);}
+.zoom-btns{display:flex;gap:3px;}
+.z-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.z-btn:hover{color:var(--text);background:var(--panel3);}
+
+/* bg toggle */
+.bg-toggle{display:flex;gap:4px;}
+.bg-opt{width:20px;height:20px;border-radius:4px;border:2px solid transparent;cursor:pointer;}
+.bg-opt.on{border-color:var(--accent);}
+
+/* SIDEBAR */
+#sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+.sb-section{padding:12px;border-bottom:1px solid var(--border2);}
+.sb-title{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.ctrl-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
+.ctrl-row label span{color:var(--accent2);font-weight:700;}
+.ctrl-row input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
+.ctrl-row-h{display:flex;gap:6px;margin-bottom:8px;}
+.ctrl-row-h input[type=number]{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
+.ctrl-row-h label{font-size:.55rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.icon-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;font-family:inherit;transition:all .1s;}
+.icon-btn:hover{color:var(--text);background:var(--panel3);}
+.icon-btn.primary{background:var(--accent4);color:white;border-color:var(--accent4);}
+
+/* Frame strip */
+#frame-strip-wrap{flex:1;overflow-y:auto;padding:8px;}
+.strip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:4px;}
+.frame-thumb{border-radius:6px;border:2px solid var(--border2);overflow:hidden;cursor:pointer;position:relative;aspect-ratio:1;background:var(--panel2);transition:all .1s;display:flex;align-items:center;justify-content:center;}
+.frame-thumb:hover{border-color:rgba(255,255,255,.3);}
+.frame-thumb.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.frame-thumb.disabled{opacity:.35;}
+.frame-thumb canvas{image-rendering:pixelated;max-width:100%;max-height:100%;}
+.frame-num{position:absolute;bottom:2px;right:3px;font-size:.4rem;color:rgba(255,255,255,.5);}
+.frame-x{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:rgba(239,68,68,.8);color:white;font-size:.45rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+
+/* export */
+.export-btns{padding:10px 12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:6px;}
+.exp-btn{padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;transition:all .12s;}
+.exp-gif{background:var(--accent);color:#000;}
+.exp-json{background:var(--accent4);color:white;}
+.exp-png{background:var(--accent3);color:#000;}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+
+@media(max-width:700px){
+  #sidebar{width:100%;max-height:42vh;border-left:none;border-top:1px solid var(--border2);}
+  #app{flex-direction:column;}
+}
+
+
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+<!-- BUILD:nav-tools -->
+<header class="jvds-site-nav" id="jvdsSiteNav">
+    <div class="jvds-nav-inner">
+        <a href="../index.html" class="jvds-nav-logo">
+            <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
+            JVDesignStudio
+        </a>
+        <nav class="jvds-nav-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">📚 Books</a>
+            <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+            <a href="../pages/games.html">🎮 Games</a>
+            <a href="../games/mobile-games.html">📱 Mobile</a>
+            <a href="../pages/workshop.html">🔧 Workshop</a>
+            <a href="../pages/dev-tools.html" class="nav-tools active">🛠️ Dev Tools</a>
+            <a href="../pages/freebies.html">🎁 Freebies</a>
+            <a href="../workshops/my-progress.html">📊 Progress</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/search.html">🔍</a>
+        </nav>
+        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Toggle menu">☰</button>
+    </div>
+    <nav class="jvds-mobile-nav" id="jvdsMobileNav">
+        <a href="../index.html">🏠 Home</a>
+        <a href="../pages/books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/games.html">🎮 Games</a>
+        <a href="../games/mobile-games.html">📱 Mobile Games</a>
+        <a href="../pages/workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html">🎁 Freebies</a>
+            <a href="../workshops/my-progress.html">📊 Progress</a>
+        <a href="../pages/content_hub.html">📦 All Projects</a>
+        <a href="../pages/devlog.html">📓 Dev Log</a>
+        <a href="../pages/about.html">👤 About</a>
+        <a href="../pages/contact.html">✉️ Contact</a>
+        <a href="../pages/search.html">🔍 Search</a>
+        <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+    </nav>
+</header>
+<!-- /BUILD:nav-tools -->
+<header class="hdr">
+  <a href="../index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="../logo.png" alt="JV"><span>JVDesignStudio</span></a>
+  <div class="hdr-title">🎞 Sprite Animator</div>
+  <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
+</header>
+
+<div id="app">
+  <div id="left">
+    <div id="preview-area">
+      <div class="upload-prompt" id="uploadPrompt">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">Upload a spritesheet PNG to get started.<br>Works with transparent backgrounds too.</div>
+        <label class="upload-btn-label" for="fileInput">Upload Spritesheet</label>
+      </div>
+      <canvas id="preview-canvas" width="128" height="128"></canvas>
+    </div>
+
+    <div id="playback-bar">
+      <button class="pb-btn pb-prev" onclick="prevFrame()" title="Previous frame">◀</button>
+      <button class="pb-btn pb-play" id="playBtn" onclick="togglePlay()">▶</button>
+      <button class="pb-btn pb-next" onclick="nextFrame()" title="Next frame">▶|</button>
+      <button class="pb-btn pb-loop on" id="loopBtn" onclick="toggleLoop()">🔁</button>
+      <div class="pb-label">FPS</div>
+      <div class="pb-val" id="fpsVal">12</div>
+      <input type="range" class="fps-slider" min="1" max="60" value="12" id="fpsSlider" oninput="setFps(this.value)">
+      <div class="zoom-btns">
+        <button class="z-btn" onclick="setZoom(zoom-1)">−</button>
+        <div class="pb-val" id="zoomVal">2×</div>
+        <button class="z-btn" onclick="setZoom(zoom+1)">+</button>
+      </div>
+      <div class="bg-toggle">
+        <div class="bg-opt on" style="background:repeating-conic-gradient(#333 0% 25%,#111 0% 50%);background-size:8px 8px;" onclick="setBg('checker')" title="Checker"></div>
+        <div class="bg-opt" style="background:#000;" onclick="setBg('black')" title="Black"></div>
+        <div class="bg-opt" style="background:#fff;border:1px solid #ccc;" onclick="setBg('white')" title="White"></div>
+        <div class="bg-opt" style="background:#1a1a2e;" onclick="setBg('dark')" title="Dark"></div>
+      </div>
+      <div class="frame-counter">Frame <span id="currentFrameNum">1</span> / <span id="totalFrameNum">0</span></div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="loadSheet(this)">
+
+    <div class="sb-section">
+      <div class="sb-title">Spritesheet</div>
+      <label class="upload-btn-label" for="fileInput" style="display:inline-block;padding:6px 14px;font-size:.75rem;border-radius:7px;background:var(--accent4);color:white;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;margin-bottom:8px;">📂 Load Spritesheet</label>
+      <div style="font-size:.55rem;color:var(--muted);margin-top:4px;" id="sheetInfo">No sheet loaded</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Frame Size</div>
+      <div class="ctrl-row-h">
+        <label>W<input type="number" id="frameW" value="32" min="1" max="512" onchange="rebuildFrames()"></label>
+        <label>H<input type="number" id="frameH" value="32" min="1" max="512" onchange="rebuildFrames()"></label>
+      </div>
+      <div class="ctrl-row-h">
+        <label>Offset X<input type="number" id="offsetX" value="0" min="0" onchange="rebuildFrames()"></label>
+        <label>Offset Y<input type="number" id="offsetY" value="0" min="0" onchange="rebuildFrames()"></label>
+      </div>
+      <div class="ctrl-row-h">
+        <label>Spacing<input type="number" id="spacing" value="0" min="0" onchange="rebuildFrames()"></label>
+      </div>
+      <button class="icon-btn primary" onclick="autoDetect()" style="margin-top:4px;width:100%;">🔍 Auto-detect frames</button>
+    </div>
+
+    <div class="sb-section" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="icon-btn" onclick="selectAll()">Select All</button>
+      <button class="icon-btn" onclick="selectNone()">Select None</button>
+      <button class="icon-btn" onclick="reverseOrder()">⇄ Reverse</button>
+    </div>
+
+    <div id="frame-strip-wrap">
+      <div class="strip-grid" id="stripGrid"><div style="font-size:.6rem;color:var(--muted);padding:8px;">Load a spritesheet to see frames.</div></div>
+    </div>
+
+    <div class="export-btns">
+      <button class="exp-btn exp-json" onclick="exportJSON()">{ } Export JSON Frame Data</button>
+      <button class="exp-btn exp-png" onclick="exportPNG()">📥 Export Current Frame PNG</button>
+      <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Export Selected Frames Sheet</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+function id(x){return document.getElementById(x);}
+
+let sheetImg=null, sheetW=0, sheetH=0;
+let frameW=32, frameH=32, offsetX=0, offsetY=0, spacing=0;
+let frames=[]; // {x,y,enabled}
+let activeFrames=[];
+let currentFrame=0;
+let playing=false, looping=true;
+let fps=12, zoom=2;
+let animTimer=null;
+let bgMode='checker';
+
+const canvas=id('preview-canvas');
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+
+// ── LOAD ──
+function loadSheet(input){
+  const file=input.files[0];if(!file) return;
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    sheetImg=img;sheetW=img.width;sheetH=img.height;
+    id('sheetInfo').textContent=`${sheetW}×${sheetH}px · ${file.name}`;
+    id('uploadPrompt').classList.add('hidden');
+    rebuildFrames();
+  };
+  img.src=url;
+}
+
+function rebuildFrames(){
+  if(!sheetImg) return;
+  frameW=+id('frameW').value||32;
+  frameH=+id('frameH').value||32;
+  offsetX=+id('offsetX').value||0;
+  offsetY=+id('offsetY').value||0;
+  spacing=+id('spacing').value||0;
+  frames=[];
+  const step=v=>v+spacing;
+  for(let y=offsetY;y+frameH<=sheetH;y+=step(frameH)){
+    for(let x=offsetX;x+frameW<=sheetW;x+=step(frameW)){
+      frames.push({x,y,enabled:true});
+    }
+  }
+  buildStrip();
+  updateActiveFrames();
+  currentFrame=0;
+  drawFrame();
+}
+
+function autoDetect(){
+  if(!sheetImg) return;
+  // Try common square sizes
+  const sizes=[8,16,24,32,48,64,96,128];
+  let bestW=sheetW,bestH=sheetH;
+  for(const s of sizes){
+    if(sheetW%s===0&&sheetH%s===0&&sheetW/s>=2){bestW=s;bestH=s;break;}
+  }
+  id('frameW').value=bestW;id('frameH').value=bestH;
+  id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
+  rebuildFrames();
+  toast(`Auto-detected: ${bestW}×${bestH} frames (${frames.length} total)`);
+}
+
+// ── STRIP ──
+function buildStrip(){
+  const grid=id('stripGrid');
+  grid.innerHTML='';
+  frames.forEach((f,i)=>{
+    const div=document.createElement('div');
+    div.className='frame-thumb'+(f.enabled?' on':' disabled');
+    div.id='ft-'+i;
+
+    const c=document.createElement('canvas');
+    c.width=frameW;c.height=frameH;
+    const cx=c.getContext('2d');
+    cx.imageSmoothingEnabled=false;
+    cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+    div.appendChild(c);
+
+    const num=document.createElement('div');num.className='frame-num';num.textContent=i+1;
+    div.appendChild(num);
+
+    const xbtn=document.createElement('div');xbtn.className='frame-x';xbtn.textContent='✕';
+    xbtn.onclick=e=>{e.stopPropagation();toggleFrame(i);};
+    div.appendChild(xbtn);
+
+    div.onclick=()=>{if(f.enabled){currentFrame=activeFrames.indexOf(i);if(currentFrame<0) currentFrame=0;drawFrame();}};
+    grid.appendChild(div);
+  });
+  id('totalFrameNum').textContent=frames.filter(f=>f.enabled).length;
+}
+
+function toggleFrame(i){
+  frames[i].enabled=!frames[i].enabled;
+  id('ft-'+i).classList.toggle('on',frames[i].enabled);
+  id('ft-'+i).classList.toggle('disabled',!frames[i].enabled);
+  updateActiveFrames();
+}
+
+function selectAll(){frames.forEach((f,i)=>{f.enabled=true;const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}});updateActiveFrames();}
+function selectNone(){frames.forEach((f,i)=>{f.enabled=false;const el=id('ft-'+i);if(el){el.classList.remove('on');el.classList.add('disabled');}});updateActiveFrames();}
+function reverseOrder(){frames.reverse();buildStrip();updateActiveFrames();}
+
+function updateActiveFrames(){
+  activeFrames=frames.map((f,i)=>f.enabled?i:-1).filter(i=>i>=0);
+  id('totalFrameNum').textContent=activeFrames.length;
+  if(currentFrame>=activeFrames.length) currentFrame=0;
+  drawFrame();
+}
+
+// ── PLAYBACK ──
+function drawFrame(){
+  if(!sheetImg||activeFrames.length===0){ctx.clearRect(0,0,canvas.width,canvas.height);return;}
+  const fi=activeFrames[currentFrame]??0;
+  const f=frames[fi];
+  canvas.width=frameW*zoom;canvas.height=frameH*zoom;
+  ctx.imageSmoothingEnabled=false;
+
+  // bg
+  if(bgMode==='checker'){
+    const s=Math.max(2,zoom);
+    for(let y=0;y<canvas.height;y+=s*2)for(let x=0;x<canvas.width;x+=s*2){
+      ctx.fillStyle='#333';ctx.fillRect(x,y,s,s);ctx.fillRect(x+s,y+s,s,s);
+      ctx.fillStyle='#111';ctx.fillRect(x+s,y,s,s);ctx.fillRect(x,y+s,s,s);
+    }
+  } else {ctx.fillStyle=bgMode==='white'?'#fff':bgMode==='dark'?'#1a1a2e':'#000';ctx.fillRect(0,0,canvas.width,canvas.height);}
+
+  ctx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,canvas.width,canvas.height);
+  id('currentFrameNum').textContent=currentFrame+1;
+
+  // highlight in strip
+  document.querySelectorAll('.frame-thumb').forEach((el,i)=>{
+    el.style.outline=activeFrames[currentFrame]===i?`2px solid var(--accent)`:'';
+  });
+}
+
+function togglePlay(){
+  playing=!playing;
+  id('playBtn').textContent=playing?'⏸':'▶';
+  id('playBtn').style.background=playing?'var(--accent4)':'var(--accent)';
+  if(playing) scheduleNext();
+  else clearTimeout(animTimer);
+}
+
+function scheduleNext(){
+  if(!playing) return;
+  animTimer=setTimeout(()=>{
+    if(activeFrames.length===0){playing=false;return;}
+    currentFrame=(currentFrame+1)%activeFrames.length;
+    if(!looping&&currentFrame===0){playing=false;id('playBtn').textContent='▶';id('playBtn').style.background='var(--accent)';return;}
+    drawFrame();
+    scheduleNext();
+  },1000/fps);
+}
+
+function prevFrame(){currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;drawFrame();}
+function nextFrame(){currentFrame=(currentFrame+1)%activeFrames.length;drawFrame();}
+function toggleLoop(){looping=!looping;id('loopBtn').classList.toggle('on',looping);}
+function setFps(v){fps=+v;id('fpsVal').textContent=v;}
+function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();}
+function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();}
+
+// ── EXPORT ──
+function exportJSON(){
+  if(!sheetImg||frames.length===0){toast('No sheet loaded');return;}
+  const data={
+    spritesheet:{width:sheetW,height:sheetH},
+    frameSize:{width:frameW,height:frameH},
+    offset:{x:offsetX,y:offsetY},
+    spacing,
+    fps,
+    frameCount:activeFrames.length,
+    frames:activeFrames.map((fi,i)=>({
+      id:i,sourceX:frames[fi].x,sourceY:frames[fi].y,
+      width:frameW,height:frameH,duration:Math.round(1000/fps)
+    }))
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='animation.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('JSON exported!');
+}
+
+function exportPNG(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  const fi=activeFrames[currentFrame];const f=frames[fi];
+  const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
+  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+  cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+  c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`frame_${currentFrame+1}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Frame exported!');});
+}
+
+function exportSheet(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  const cols=Math.ceil(Math.sqrt(activeFrames.length));
+  const rows=Math.ceil(activeFrames.length/cols);
+  const c=document.createElement('canvas');c.width=cols*frameW;c.height=rows*frameH;
+  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+  activeFrames.forEach((fi,i)=>{
+    const f=frames[fi];
+    const col=i%cols,row=Math.floor(i/cols);
+    cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,col*frameW,row*frameH,frameW,frameH);
+  });
+  c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');});
+}
+
+// drag & drop
+const previewArea=id('preview-area');
+previewArea.addEventListener('dragover',e=>{e.preventDefault();previewArea.style.outline='2px dashed var(--accent)';});
+previewArea.addEventListener('dragleave',()=>{previewArea.style.outline='';});
+previewArea.addEventListener('drop',e=>{
+  e.preventDefault();previewArea.style.outline='';
+  const file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('image/')){
+    const fakeInput={files:[file]};loadSheet(fakeInput);
+  }
+});
+
+let toastT;
+function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+</script>
+
+<!-- BUILD:footer-tools -->
+<footer class="jvds-tools-footer">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+</footer>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-tools -->
+</body>
+</html>

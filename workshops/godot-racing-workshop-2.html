@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#ff6b35">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="../logo.png" type="image/png">
+<title>Zoom Zoom! Part 2 — Loops, Health & Explosions! | JVDesignStudio</title>
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/godot-racing-workshop-2.html">
+<meta name="description" content="Part 2 of the Zoom Zoom Godot racing workshop! Build a loop track, add checkpoints, lap counters, health, explosions, repair pickups and an AI opponent.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/godot-racing-workshop-2.html">
+<meta property="og:title" content="Zoom Zoom! Part 2 — Loops, Health & Explosions! | JVDesignStudio">
+<meta property="og:description" content="Part 2 of the Zoom Zoom Godot racing workshop! Build a loop track, add checkpoints, lap counters, health, explosions, repair pickups and an AI opponent.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/Godot%20Teaser.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Zoom Zoom! Part 2 — Loops, Health & Explosions! | JVDesignStudio">
+<meta name="twitter:description" content="Part 2 of the Zoom Zoom Godot racing workshop! Build a loop track, add checkpoints, health, explosions and an AI opponent.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/Godot%20Teaser.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── PAGE-SPECIFIC: Racing Track Hero ── */
+.hero-track{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.road-bg{position:absolute;bottom:0;left:0;right:0;height:140px;background:var(--road);opacity:.6}
+.lane-line{position:absolute;bottom:20px;height:6px;width:50px;background:var(--stripe);border-radius:3px;animation:zoom-in 2s linear infinite}
+@keyframes zoom-in{0%{transform:scaleX(.1) translateX(1200px);opacity:0}60%{opacity:1}100%{transform:scaleX(2) translateX(-400px);opacity:0}}
+.ll1{bottom:30px;animation-delay:0s}
+.ll2{bottom:30px;animation-delay:.5s}
+.ll3{bottom:30px;animation-delay:1s}
+.ll4{bottom:30px;animation-delay:1.5s}
+h1 strong{color:var(--accent2);font-style:normal}
+
+/* ── CAR SVG ── */
+.hero-car-wrap{flex-shrink:0}
+.hero-car-wrap svg{filter:drop-shadow(0 8px 32px rgba(255,107,53,.4))}
+
+/* ── CODE BLOCKS ── */
+.code-wrap{background:#0c0e16;border:1px solid rgba(255,255,255,.1);border-radius:12px;margin:12px 0;overflow:hidden}
+.code-label{background:var(--asphalt);padding:6px 14px;font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.code-label .dot{width:8px;height:8px;border-radius:50%}
+.dot-r{background:#f87171}.dot-y{background:#ffd166}.dot-g{background:#06d6a0}
+.code-body{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;overflow-x:auto;white-space:pre;color:#c9d1e0}
+.kw{color:#a78bfa}
+.fn{color:#60a5fa}
+.str{color:#ffd166}
+.num{color:#f87171}
+.cmt{color:#4a5568;font-style:italic}
+.var{color:#06d6a0}
+.prop{color:#f08050}
+
+/* ── INTERACTIVE BITS ── */
+.try-it{background:rgba(255,107,53,.06);border:2px dashed rgba(255,107,53,.3);border-radius:14px;padding:16px 18px;margin:16px 0}
+.try-it-header{font-family:'Fredoka',cursive;font-size:.95rem;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.try-it p{font-size:.86rem;color:var(--muted);line-height:1.6}
+
+.scene-diagram{background:#0d0f18;border:1px solid var(--border);border-radius:12px;padding:20px;margin:14px 0;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.8;color:#7089b0}
+.scene-diagram .node{color:#e8eaf2}
+.scene-diagram .child{padding-left:20px;border-left:2px solid rgba(255,255,255,.07);margin-left:10px}
+.scene-diagram .icon{color:var(--accent2);margin-right:6px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+
+.mini-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:14px}
+.mini-card h4{font-family:'Fredoka',cursive;font-size:.9rem;color:var(--accent2);margin-bottom:6px}
+.mini-card p{font-size:.82rem;color:var(--muted);line-height:1.5}
+
+/* ── TOOLTIP ── */
+.tooltip{position:relative;display:inline-block;border-bottom:1px dashed rgba(255,209,102,.5);color:var(--accent2);cursor:help;font-weight:700}
+.tooltip .tt{visibility:hidden;opacity:0;background:#1a1d2a;border:1px solid var(--border);color:var(--text);font-size:.78rem;padding:8px 12px;border-radius:8px;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);white-space:nowrap;transition:opacity .18s;z-index:99;font-weight:400;pointer-events:none;max-width:220px;white-space:normal;text-align:center;line-height:1.4}
+.tooltip:hover .tt{visibility:visible;opacity:1}
+
+/* ── HEALTH BAR ── */
+.health-bar-demo{background:var(--asphalt);border-radius:8px;height:18px;overflow:hidden;margin:10px 0;position:relative}
+.health-bar-fill{height:100%;border-radius:8px;transition:width .4s ease,background .3s}
+.health-bar-label{font-size:.72rem;font-weight:800;color:var(--muted);margin-bottom:4px}
+
+@media(max-width:700px){
+  .hero-car-wrap{display:none}
+}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 1 of 6</span>
+</div>
+
+<!-- Episode nav strip -->
+<div style="background:#1a1210;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 16px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;">
+  <div style="display:inline-flex;gap:6px;align-items:center;min-width:max-content;">
+    <a href="godot-racing-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);">🏎️ Part 1 · Zoom Zoom</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;background:#ff6b35;color:#fff;border:1px solid #ff6b35;">💥 Part 2 · Loops &amp; Explosions</span>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="jump-jump-mario-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🍄 Ep 2 · Jump Jump</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="nuclear-throne-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🔫 Ep 3 · Bang Bang</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="fairy-survivors-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🧚 Ep 4 · Fairy Survivors</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="barrel-blast-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🦍 Ep 5 · Barrel Blast</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="pixel-quest-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🗡️ Ep 6 · Pixel Quest</a>
+  </div>
+</div>
+
+<!-- Back link -->
+<div style="max-width:1100px;margin:0 auto;padding:12px 20px 0;">
+  <a href="godot-racing-workshop.html" style="display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:800;color:var(--accent2);text-decoration:none;opacity:.8;transition:opacity .15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.8'">← Back to Part 1</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-track">
+    <div class="road-bg"></div>
+    <div class="lane-line ll1"></div>
+    <div class="lane-line ll2"></div>
+    <div class="lane-line ll3"></div>
+    <div class="lane-line ll4"></div>
+  </div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">🔧 Godot Workshop · Part 2 of 2</div>
+      <h1>Zoom Zoom! Part 2 💥<br><em>Loops,</em> <strong>Health &amp; Explosions!</strong></h1>
+      <p class="hero-sub">You built a car in Part 1 — now let's make a real race! Build a loop track, count laps with checkpoints, give your car health, make it explode, and add an AI opponent to race against! 🏆</p>
+      <div class="hero-pills">
+        <span class="pill p-age">👶 Age 7+ with a grown-up</span>
+        <span class="pill p-time">⏱️ About 1 hour</span>
+        <span class="pill p-tool">🎮 Godot 4 (free!)</span>
+        <span class="pill p-free">✨ 8 more steps</span>
+      </div>
+      <div class="hero-btns">
+        <a href="#step-1" class="btn-start">🟢 Let's Go!</a>
+        <a href="godot-racing-workshop.html" class="btn-outline">← Part 1 first?</a>
+      </div>
+    </div>
+    <div class="hero-car-wrap">
+      <!-- Red AI car vs orange player car -->
+      <svg width="140" height="220" viewBox="0 0 140 220" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="70" cy="205" rx="44" ry="10" fill="rgba(0,0,0,.4)"/>
+        <!-- AI car (red, behind) -->
+        <rect x="28" y="110" width="84" height="100" rx="18" fill="#c0392b" opacity=".85"/>
+        <rect x="36" y="118" width="68" height="34" rx="8" fill="#1a2a4a" opacity=".8"/>
+        <rect x="22" y="120" width="18" height="28" rx="5" fill="#111"/>
+        <rect x="100" y="120" width="18" height="28" rx="5" fill="#111"/>
+        <rect x="22" y="164" width="18" height="28" rx="5" fill="#111"/>
+        <rect x="100" y="164" width="18" height="28" rx="5" fill="#111"/>
+        <!-- Player car (orange, front) -->
+        <ellipse cx="70" cy="90" rx="38" ry="9" fill="rgba(0,0,0,.35)"/>
+        <rect x="22" y="10" width="96" height="112" rx="20" fill="#ff6b35"/>
+        <rect x="34" y="20" width="72" height="38" rx="9" fill="#1a2a4a" opacity=".9"/>
+        <rect x="40" y="76" width="60" height="22" rx="7" fill="#1a2a4a" opacity=".7"/>
+        <rect x="60" y="10" width="20" height="112" rx="6" fill="#ffd166" opacity=".4"/>
+        <rect x="8" y="22" width="20" height="32" rx="6" fill="#111"/>
+        <rect x="112" y="22" width="20" height="32" rx="6" fill="#111"/>
+        <rect x="8" y="76" width="20" height="32" rx="6" fill="#111"/>
+        <rect x="112" y="76" width="20" height="32" rx="6" fill="#111"/>
+        <rect x="28" y="12" width="20" height="9" rx="3" fill="#ffe97a" opacity=".9"/>
+        <rect x="92" y="12" width="20" height="9" rx="3" fill="#ffe97a" opacity=".9"/>
+        <!-- explosion sparks -->
+        <circle cx="115" cy="40" r="3" fill="#ffd166" opacity=".9"/>
+        <circle cx="122" cy="30" r="2" fill="#ff6b35" opacity=".8"/>
+        <circle cx="118" cy="22" r="1.5" fill="#fff" opacity=".7"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">🏁 Workshop Progress</span>
+    <span class="progress-count" id="progressCount">0 / 8 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<!-- STEPS -->
+<div class="workshop" id="steps-area">
+
+<!-- ── STEP 1 ── -->
+<div class="step-card active-step open" id="step-1" data-step="1">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-teal" id="sn-1">1</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🗺️</div>
+      <div class="step-title">Rebuild the Track as a Loop</div>
+      <div class="step-blurb">Replace the straight road with a rectangular circuit — 4 roads + inner grass!</div>
+    </div>
+    <span class="step-status ss-active" id="ss-1">▶ Current</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Replace your straight road with a rectangular circuit so you can drive in endless loops!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> A race with a road that just ends isn't much of a race! Let's build a square track — 4 pieces of grey road arranged in a giant loop. Like a real racing circuit! 🏟️</div>
+    </div>
+
+    <h3>Delete the old road and rebuild</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>track.tscn</strong> in Godot. Find your old grey <strong>ColorRect</strong> road in the Scene panel and delete it (press Delete or right-click → Delete Node).</li>
+      <li><span class="num-badge">2</span>Add a new <strong>ColorRect</strong> as a child of Track. Make it grey (<code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">#444444</code>). Set size to <strong>x: 1000, y: 150</strong>. Position it at the <strong>top</strong> of the screen — this is your first straight!</li>
+      <li><span class="num-badge">3</span>Press <strong>Ctrl+D</strong> (or Cmd+D on Mac) to duplicate it. Move the copy to the <strong>bottom</strong> of the screen.</li>
+      <li><span class="num-badge">4</span>Duplicate again — this one becomes the <strong>left side</strong>. Set its size to <strong>x: 150, y: 700</strong> and position it on the left edge.</li>
+      <li><span class="num-badge">5</span>Duplicate once more for the <strong>right side</strong>. Mirror it to the right edge.</li>
+      <li><span class="num-badge">6</span>Add a green <strong>ColorRect</strong> in the centre to cover any gap in the grass. Size it to fill the inner rectangle.</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> Ctrl+D is your best friend here — it duplicates a node with all the same settings. Let the child drag the rectangles around visually. It doesn't need to be pixel-perfect; a slightly wonky track adds character! Aim for roughly a 1000×700 outer rectangle of road.</div>
+    </div>
+
+    <h3>Your track layout:</h3>
+    <div class="scene-diagram">
+<span class="node">📦 <span style="color:var(--teal)">Track</span> (Node2D)</span>
+<div class="child">
+  <span class="icon">🟩</span><span class="node">ColorRect</span> <span style="color:var(--muted);font-size:.75rem">← green background (grass)</span>
+</div>
+<div class="child">
+  <span class="icon">⬜</span><span class="node">RoadTop</span> (ColorRect) <span style="color:var(--muted);font-size:.75rem">← top straight</span>
+</div>
+<div class="child">
+  <span class="icon">⬜</span><span class="node">RoadBottom</span> (ColorRect) <span style="color:var(--muted);font-size:.75rem">← bottom straight</span>
+</div>
+<div class="child">
+  <span class="icon">⬜</span><span class="node">RoadLeft</span> (ColorRect) <span style="color:var(--muted);font-size:.75rem">← left side</span>
+</div>
+<div class="child">
+  <span class="icon">⬜</span><span class="node">RoadRight</span> (ColorRect) <span style="color:var(--muted);font-size:.75rem">← right side</span>
+</div>
+<div class="child">
+  <span class="icon">🟩</span><span class="node">InnerGrass</span> (ColorRect) <span style="color:var(--green);font-size:.75rem">← centre grass patch</span>
+</div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div>Move your <strong>Car</strong> to sit on one of the road sections when you're done. Press <strong>F6</strong> to play and drive around the whole circuit! You should be able to loop forever.</div>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-1" data-correct="2">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Quick Check!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">How many road pieces (ColorRects) do you need to make a rectangular loop track?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> 2 — top and bottom</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> 3 — top, bottom and one side</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> 4 — top, bottom, left and right</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> 8 — two for each side</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(1)">Continue to Step 2 →</button>
+    </div>
+
+    <!-- Code Challenge -->
+    <div class="code-challenge" id="cc-1">
+      <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Fill in the Blank</span><span class="cc-xp-badge">+20 XP</span></div>
+      <div class="cc-prompt">To duplicate a node in Godot, you press which shortcut?</div>
+      <div class="cc-code-area">Press <input class="cc-blank" data-answer="Ctrl+D" placeholder="???" style="width:90px"> to duplicate a selected node.</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">Hint: It's Ctrl plus one letter — the same shortcut many apps use for Duplicate.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 2 ── -->
+<div class="step-card locked" id="step-2" data-step="2">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-yellow" id="sn-2">2</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🏁</div>
+      <div class="step-title">Create the Checkpoint Scene</div>
+      <div class="step-blurb">Build a gate system so cheaters can't just reverse over the finish line!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-2">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a checkpoint scene that detects when the car passes through — so laps only count if you drive the whole circuit in order!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Imagine invisible gates on the road. You have to drive through ALL of them in order before your lap counts. No sneaky shortcuts! 🚧</div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>We'll use an <span class="tooltip">Area2D<span class="tt">Area2D detects when physics bodies enter it — perfect for finish lines, pickups, and checkpoints!</span></span> as our checkpoint. Like an invisible photoelectric beam across the road!</div>
+    </div>
+
+    <h3>Create checkpoint.tscn</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Go to <strong>Scene → New Scene</strong>. Click <strong>"Other Node"</strong> and search for <strong>Area2D</strong>. Add it and rename it <strong>Checkpoint</strong>.</li>
+      <li><span class="num-badge">2</span>Add a child: <strong>CollisionShape2D</strong>. In the Inspector, set Shape to <strong>New RectangleShape2D</strong>. Make it wide enough to stretch across the road — about <strong>x: 200, y: 30</strong>.</li>
+      <li><span class="num-badge">3</span>Optionally add a <strong>ColorRect</strong> (semi-transparent yellow) so you can see the gate while building. You can make it invisible later!</li>
+      <li><span class="num-badge">4</span>Attach a script to <strong>Checkpoint</strong>. Type this:</li>
+    </ol>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;checkpoint.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">Area2D</span>
+
+<span class="cmt"># Each checkpoint gets a number — set this in the Inspector!</span>
+<span class="kw">@export var</span> <span class="var">id</span> = <span class="num">0</span>
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+	<span class="cmt"># Fire our function when a car drives through</span>
+	<span class="prop">body_entered</span>.<span class="fn">connect</span>(<span class="fn">_on_body_entered</span>)
+
+<span class="kw">func</span> <span class="fn">_on_body_entered</span>(<span class="var">body</span>):
+	<span class="kw">if</span> <span class="var">body</span>.<span class="prop">name</span> == <span class="str">"Car"</span>:
+		<span class="cmt"># Tell the track which checkpoint was hit</span>
+		<span class="fn">get_parent</span>().<span class="fn">hit_checkpoint</span>(<span class="var">id</span>)</div>
+    </div>
+
+    <ol class="steps-list">
+      <li><span class="num-badge">5</span>Press <strong>Ctrl+S</strong> and save as <strong>checkpoint.tscn</strong>.</li>
+      <li><span class="num-badge">6</span>Open <strong>track.tscn</strong>. Drag <strong>checkpoint.tscn</strong> onto the track <strong>4 times</strong> — one on each side of the circuit.</li>
+      <li><span class="num-badge">7</span>Click each checkpoint in the Scene panel. In the Inspector, set their <strong>id</strong> values to <strong>0, 1, 2, 3</strong> going clockwise around the track.</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> The <code>@export var id</code> line makes the id field appear in the Godot Inspector — a really handy Godot feature! Make sure the ids are assigned in driving order (clockwise or anti-clockwise) so the lap validation works correctly in the next step.</div>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-2" data-correct="1">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Checkpoint Check!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">What does <code>@export var id</code> do in GDScript?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> It hides the variable from other scripts</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> It makes the variable editable in the Godot Inspector</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> It exports the game to a file</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> It makes the variable read-only</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(2)">Continue to Step 3 →</button>
+    </div>
+
+    <!-- Order Challenge -->
+    <div class="order-challenge" id="oc-2">
+      <div class="oc-header"><span class="oc-icon">📋</span><span class="oc-title">Order the Steps!</span><span class="oc-xp-badge">+15 XP</span></div>
+      <div class="oc-prompt">Click these in the correct order to create a checkpoint scene:</div>
+      <div class="oc-items">
+        <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span> Attach a script to the Checkpoint node</div>
+        <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span> Add an Area2D node and rename it Checkpoint</div>
+        <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span> Save as checkpoint.tscn</div>
+        <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span> Add a CollisionShape2D child with a RectangleShape2D</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+        <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+      </div>
+      <div class="oc-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 3 ── -->
+<div class="step-card locked" id="step-3" data-step="3">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-orange" id="sn-3">3</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🔢</div>
+      <div class="step-title">Add the Lap Counter</div>
+      <div class="step-blurb">Update track.gd so laps only count when all checkpoints are hit in order!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-3">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Update our track script to count laps when the car passes all checkpoints in the correct order. After 3 laps — you win!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> The track is going to be the brain of the race! It remembers which checkpoint you hit last, and when you hit all 4 in order — lap complete! It's like a combination lock! 🔐</div>
+    </div>
+
+    <h3>Add a Lap Label to the HUD</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>track.tscn</strong>. In the Scene panel, click <strong>CanvasLayer</strong> and add a child: <strong>Label</strong>.</li>
+      <li><span class="num-badge">2</span>Rename it <strong>LapLabel</strong>. Set its Text to <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">Lap: 1 / 3</code>.</li>
+      <li><span class="num-badge">3</span>Set font size to <strong>32</strong> and position it below the timer — about <strong>x: 20, y: 60</strong>.</li>
+    </ol>
+
+    <h3>Update track.gd</h3>
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> This replaces the previous track.gd content. The key concept is <code>expected_checkpoint</code> — a counter that only advances when the checkpoints are hit in sequence. Hitting them out of order does nothing!</div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;track.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">Node2D</span>
+
+<span class="kw">var</span> <span class="var">lap</span> = <span class="num">1</span>
+<span class="kw">var</span> <span class="var">elapsed</span> = <span class="num">0.0</span>
+<span class="kw">var</span> <span class="var">racing</span> = <span class="kw">true</span>
+<span class="kw">var</span> <span class="var">expected_checkpoint</span> = <span class="num">0</span>
+
+<span class="kw">func</span> <span class="fn">_process</span>(<span class="var">delta</span>):
+	<span class="kw">if</span> <span class="var">racing</span>:
+		<span class="var">elapsed</span> += <span class="var">delta</span>
+		<span class="var">$CanvasLayer</span>/<span class="var">TimerLabel</span>.<span class="prop">text</span> = <span class="str">"Time: "</span> + <span class="fn">str</span>(<span class="fn">snappedf</span>(<span class="var">elapsed</span>, <span class="num">0.1</span>))
+
+<span class="cmt"># Called by each checkpoint when the car passes through</span>
+<span class="kw">func</span> <span class="fn">hit_checkpoint</span>(<span class="var">id</span>):
+	<span class="kw">if</span> <span class="var">id</span> == <span class="var">expected_checkpoint</span>:
+		<span class="var">expected_checkpoint</span> += <span class="num">1</span>
+
+		<span class="cmt"># All 4 checkpoints hit (0, 1, 2, 3) — lap complete!</span>
+		<span class="kw">if</span> <span class="var">expected_checkpoint</span> == <span class="num">4</span>:
+			<span class="var">lap</span> += <span class="num">1</span>
+			<span class="var">expected_checkpoint</span> = <span class="num">0</span>
+			<span class="var">$CanvasLayer</span>/<span class="var">LapLabel</span>.<span class="prop">text</span> = <span class="str">"Lap: "</span> + <span class="fn">str</span>(<span class="var">lap</span>) + <span class="str">"/3"</span>
+
+			<span class="cmt"># 3 laps done — you win!</span>
+			<span class="kw">if</span> <span class="var">lap</span> &gt; <span class="num">3</span>:
+				<span class="var">racing</span> = <span class="kw">false</span>
+				<span class="var">$CanvasLayer</span>/<span class="var">WinLabel</span>.<span class="prop">visible</span> = <span class="kw">true</span></div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Press Play and drive the full circuit. Does the Lap counter go up? Now try driving <em>backwards</em> — the lap should NOT count. Then try to complete 3 full laps to see the win screen!</p>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-3" data-correct="0">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Lap Logic!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">Why does <code>expected_checkpoint</code> reset to 0 after reaching 4?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> So the car has to pass all 4 checkpoints again for the next lap</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> Because GDScript can't count higher than 4</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> To delete the checkpoints from the scene</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> To make the car teleport back to the start</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(3)">Continue to Step 4 →</button>
+    </div>
+
+    <!-- Code Challenge -->
+    <div class="code-challenge" id="cc-3">
+      <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Complete the Code</span><span class="cc-xp-badge">+20 XP</span></div>
+      <div class="cc-prompt">Fill in the blanks to complete the lap counter logic:</div>
+      <div class="cc-code-area"><span class="kw">if</span> <span class="var">id</span> == <span class="var">expected_checkpoint</span>:
+    expected_checkpoint += <input class="cc-blank" data-answer="1" placeholder="?" style="width:50px">
+    <span class="kw">if</span> expected_checkpoint == <input class="cc-blank" data-answer="4" placeholder="?" style="width:50px">:
+        <input class="cc-blank" data-answer="lap" placeholder="???" style="width:70px"> += 1
+        expected_checkpoint = <input class="cc-blank" data-answer="0" placeholder="?" style="width:50px"></div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">Hint: We increment by 1 each time, have 4 checkpoints (0-3), add to the lap count, and reset back to the start.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 4 ── -->
+<div class="step-card locked" id="step-4" data-step="4">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-pink" id="sn-4">4</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">❤️</div>
+      <div class="step-title">Give Your Car Health</div>
+      <div class="step-blurb">Add a health variable — crashes slow you down!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-4">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Add a health system to the car. As health drops, the car slows down — driving badly has consequences!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Bumping into walls shouldn't be free! We're going to give our car a health bar. Drive carefully, or your car gets slower and slower — and eventually BOOM! 💥</div>
+    </div>
+
+    <h3>Update car.gd — new variables at the top</h3>
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>Replace the <code>var speed</code> and <code>var turn_speed</code> lines at the top of your car.gd with these four new variables:</div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;car.gd — variables</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">CharacterBody2D</span>
+
+<span class="kw">var</span> <span class="var">health</span>    = <span class="num">100</span>
+<span class="kw">var</span> <span class="var">max_speed</span> = <span class="num">400</span>
+<span class="kw">var</span> <span class="var">turn_speed</span> = <span class="num">3.5</span>
+<span class="kw">var</span> <span class="var">is_alive</span>  = <span class="kw">true</span></div>
+    </div>
+
+    <h3>Update _physics_process to use max_speed</h3>
+    <p style="font-size:.87rem;color:var(--muted);margin:8px 0">In your movement code, change the line that sets velocity so it uses <code>max_speed</code> instead of the old hardcoded value:</p>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;car.gd — velocity line (update this)</div>
+      <div class="code-body"><span class="cmt"># Change this...</span>
+<span class="var">velocity</span> = <span class="fn">Vector2</span>.<span class="prop">UP</span>.<span class="fn">rotated</span>(<span class="prop">rotation</span>) * <span class="var">drive</span> * <span class="num">300</span>
+
+<span class="cmt"># ...to this:</span>
+<span class="var">velocity</span> = <span class="fn">Vector2</span>.<span class="prop">UP</span>.<span class="fn">rotated</span>(<span class="prop">rotation</span>) * <span class="var">drive</span> * <span class="var">max_speed</span></div>
+    </div>
+
+    <h3>Add a health bar to the HUD</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>track.tscn</strong>. Add a <strong>ProgressBar</strong> node to your <strong>CanvasLayer</strong>.</li>
+      <li><span class="num-badge">2</span>Rename it <strong>HealthBar</strong>. Set <strong>Min Value</strong> to 0, <strong>Max Value</strong> to 100, <strong>Value</strong> to 100.</li>
+      <li><span class="num-badge">3</span>Position it top-right — about <strong>x: 900, y: 20</strong>. Set size to <strong>x: 200, y: 20</strong>.</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> We'll actually wire up the health bar in Step 6 when we add collision damage. For now just placing the ProgressBar in the HUD is enough — it just won't change value yet. The <code>is_alive</code> flag will prevent the car from moving after an explosion.</div>
+    </div>
+
+    <!-- Visual health bar demo -->
+    <div style="background:var(--asphalt);border-radius:12px;padding:14px 18px;margin:14px 0;">
+      <div class="health-bar-label">💡 Health bar preview — drag the slider!</div>
+      <input type="range" id="healthSlider" min="0" max="100" value="100" style="width:100%;accent-color:var(--green);margin:8px 0;">
+      <div class="health-bar-demo"><div class="health-bar-fill" id="healthFill" style="width:100%;background:var(--green)"></div></div>
+      <div id="healthText" style="font-size:.78rem;color:var(--muted);margin-top:4px;">Health: 100 — Speed: 400</div>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-4" data-correct="2">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Health Check!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">If the car's health is 50, what will <code>max_speed</code> be using the formula <code>400 * (health / 100.0)</code>?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> 400</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> 100</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> 200</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> 50</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(4)">Continue to Step 5 →</button>
+    </div>
+
+    <!-- True/False -->
+    <div class="tf-round" id="tf-4">
+      <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False?</span><span class="tf-xp-badge">+15 XP</span></div>
+      <div class="tf-item" data-answer="true">
+        <div class="tf-statement">The <code>is_alive</code> variable will be used to stop the car from moving after it explodes.</div>
+        <div class="tf-btns"><button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button><button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button></div>
+      </div>
+      <div class="tf-item" data-answer="false">
+        <div class="tf-statement">We use <code>100</code> instead of <code>100.0</code> in the speed formula because integers are faster.</div>
+        <div class="tf-btns"><button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button><button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button></div>
+      </div>
+      <div class="tf-item" data-answer="true">
+        <div class="tf-statement">A ProgressBar node is a good choice for displaying a health bar in Godot's HUD.</div>
+        <div class="tf-btns"><button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button><button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button></div>
+      </div>
+      <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+      <div class="tf-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 5 ── -->
+<div class="step-card locked" id="step-5" data-step="5">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-red" id="sn-5">5</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">💥</div>
+      <div class="step-title">Make Cars Explode!</div>
+      <div class="step-blurb">Add a take_damage() function and GPUParticles2D — BOOM!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-5">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Add a take_damage() function that reduces health and slows the car — and when health hits zero, the car explodes with a particle effect!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> This is the most exciting step — we're going to make the car <em>explode</em>! Godot has a special node called GPUParticles2D that sprays glowing sparks everywhere. Let's add it! 🌟</div>
+    </div>
+
+    <h3>Add GPUParticles2D to car.tscn</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Open <strong>car.tscn</strong>. Click the <strong>Car</strong> node and add a child: search for <strong>GPUParticles2D</strong> and add it.</li>
+      <li><span class="num-badge">2</span>Rename it <strong>ExplosionParticles</strong>.</li>
+      <li><span class="num-badge">3</span>In the Inspector, set <strong>Emitting</strong> to <strong>OFF</strong> and tick <strong>One Shot</strong> to <strong>ON</strong>. (We want it to burst once, not loop.)</li>
+      <li><span class="num-badge">4</span>Click next to <strong>Process Material</strong> and choose <strong>New ParticleProcessMaterial</strong>.</li>
+      <li><span class="num-badge">5</span>Click the material to open it. Set <strong>Emission Shape</strong> to <strong>Sphere</strong>, and <strong>Initial Velocity Min/Max</strong> to around <strong>150 / 300</strong>. Set the colour to orange/red — this is our fireball!</li>
+    </ol>
+
+    <div class="scene-diagram">
+<span class="node">📦 <span style="color:var(--teal)">Car</span> (CharacterBody2D)</span>
+<div class="child">
+  <span class="icon">🟧</span><span class="node">ColorRect</span>
+</div>
+<div class="child">
+  <span class="icon">🔷</span><span class="node">CollisionShape2D</span>
+</div>
+<div class="child">
+  <span class="icon">📸</span><span class="node">Camera2D</span>
+</div>
+<div class="child">
+  <span class="icon">💥</span><span class="node">ExplosionParticles</span> <span style="color:var(--red)">← NEW!</span>
+</div>
+    </div>
+
+    <h3>Add take_damage() to car.gd</h3>
+    <p style="font-size:.87rem;color:var(--muted);margin:8px 0">Add this function to the <strong>bottom</strong> of car.gd:</p>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;car.gd — take_damage function</div>
+      <div class="code-body"><span class="kw">func</span> <span class="fn">take_damage</span>(<span class="var">amount</span>):
+	<span class="kw">if not</span> <span class="var">is_alive</span>: <span class="kw">return</span>   <span class="cmt"># Can't take damage if already exploded</span>
+
+	<span class="var">health</span> -= <span class="var">amount</span>
+
+	<span class="cmt"># Speed drops as health drops — 15% penalty feel</span>
+	<span class="var">max_speed</span> = <span class="num">400</span> * (<span class="var">health</span> / <span class="num">100.0</span>)
+
+	<span class="cmt"># If health is gone — EXPLODE!</span>
+	<span class="kw">if</span> <span class="var">health</span> &lt;= <span class="num">0</span>:
+		<span class="var">is_alive</span> = <span class="kw">false</span>
+		<span class="var">$ExplosionParticles</span>.<span class="prop">emitting</span> = <span class="kw">true</span>
+		<span class="var">$ColorRect</span>.<span class="prop">visible</span> = <span class="kw">false</span>  <span class="cmt"># Hide the car body!</span></div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div>Also add <code>if not is_alive: return</code> as the <strong>very first line</strong> of your <code>_physics_process</code> function — this stops the car moving after it explodes!</div>
+    </div>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> <code>400 * (health / 100.0)</code> calculates speed as a percentage of max health. At 100 health you get full speed (400), at 50 health you get 200 — a natural feel without lots of extra maths. Note we use <code>100.0</code> not <code>100</code> to force floating-point division in GDScript.</div>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-5" data-correct="3">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Explosion Knowledge!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">Why do we set GPUParticles2D to <strong>One Shot = ON</strong> and <strong>Emitting = OFF</strong>?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> Because particles use too much memory</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> So the explosion repeats every frame</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> Because Godot requires these settings</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> So it only bursts once when we trigger it from code</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(5)">Continue to Step 6 →</button>
+    </div>
+
+    <!-- Code Challenge -->
+    <div class="code-challenge" id="cc-5">
+      <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Complete the Explosion</span><span class="cc-xp-badge">+20 XP</span></div>
+      <div class="cc-prompt">Fill in the blanks in the take_damage function:</div>
+      <div class="cc-code-area"><span class="kw">func</span> <span class="fn">take_damage</span>(amount):
+    health -= amount
+    max_speed = 400 * (health / 100.0)
+    <span class="kw">if</span> health &lt;= <input class="cc-blank" data-answer="0" placeholder="?" style="width:50px">:
+        <input class="cc-blank" data-answer="is_alive" placeholder="????????" style="width:100px"> = false
+        $ExplosionParticles.<input class="cc-blank" data-answer="emitting" placeholder="????????" style="width:100px"> = true</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">Hint: When health reaches zero, we set the alive flag to false and start the particles emitting.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 6 ── -->
+<div class="step-card locked" id="step-6" data-step="6">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-purple" id="sn-6">6</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">💢</div>
+      <div class="step-title">Speed-Based Crash Damage</div>
+      <div class="step-blurb">Faster crashes hurt more — wire up collisions to take_damage()!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-6">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Update _physics_process so hitting a wall at high speed deals real damage — gentle taps are fine, big crashes hurt!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> A tiny tap against the wall is different from a full-speed smash! We're going to check how fast the car was going when it crashed. Slow tap = no damage. Full speed = OUCH! 🤕</div>
+    </div>
+
+    <h3>Update _physics_process in car.gd</h3>
+    <p style="font-size:.87rem;color:var(--muted);margin:8px 0">Here is the complete updated <code>_physics_process</code> function. The new part starts after <code>move_and_slide()</code>:</p>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;car.gd — full _physics_process</div>
+      <div class="code-body"><span class="kw">func</span> <span class="fn">_physics_process</span>(<span class="var">delta</span>):
+	<span class="kw">if not</span> <span class="var">is_alive</span>: <span class="kw">return</span>   <span class="cmt"># Can't drive if exploded!</span>
+
+	<span class="kw">var</span> <span class="var">drive</span> = <span class="fn">Input</span>.<span class="prop">get_axis</span>(<span class="str">"ui_down"</span>, <span class="str">"ui_up"</span>)
+	<span class="kw">var</span> <span class="var">steer</span> = <span class="fn">Input</span>.<span class="prop">get_axis</span>(<span class="str">"ui_left"</span>, <span class="str">"ui_right"</span>)
+
+	<span class="kw">if</span> <span class="var">drive</span> != <span class="num">0</span>:
+		<span class="prop">rotation</span> += <span class="var">steer</span> * <span class="var">turn_speed</span> * <span class="var">delta</span>
+
+	<span class="var">velocity</span> = <span class="fn">Vector2</span>.<span class="prop">UP</span>.<span class="fn">rotated</span>(<span class="prop">rotation</span>) * <span class="var">drive</span> * <span class="var">max_speed</span>
+
+	<span class="fn">move_and_slide</span>()
+
+	<span class="cmt"># Did we hit something while moving?</span>
+	<span class="kw">if</span> <span class="fn">get_slide_collision_count</span>() &gt; <span class="num">0</span>:
+		<span class="kw">var</span> <span class="var">crash_speed</span> = <span class="var">velocity</span>.<span class="fn">length</span>()
+		<span class="kw">if</span> <span class="var">crash_speed</span> &gt; <span class="num">100</span>:   <span class="cmt"># Ignore tiny taps</span>
+			<span class="fn">take_damage</span>(<span class="num">10</span>)
+			<span class="cmt"># Bounce back slightly</span>
+			<span class="var">velocity</span> = -<span class="var">velocity</span> * <span class="num">0.5</span></div>
+    </div>
+
+    <h3>Wire up the health bar</h3>
+    <p style="font-size:.87rem;color:var(--muted);margin:8px 0">In <strong>track.gd</strong>, add a line to the <code>_process</code> function to keep the HUD health bar updated:</p>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;track.gd — add inside _process</div>
+      <div class="code-body"><span class="cmt"># Add this inside _process, after the timer update:</span>
+<span class="kw">var</span> <span class="var">car</span> = <span class="fn">get_node_or_null</span>(<span class="str">"Car"</span>)
+<span class="kw">if</span> <span class="var">car</span>:
+	<span class="var">$CanvasLayer</span>/<span class="var">HealthBar</span>.<span class="prop">value</span> = <span class="var">car</span>.<span class="prop">health</span></div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div>Press Play and drive straight into a wall fast. Does the health bar drop? Drive slower — is it less damage? Survive long enough to complete 3 laps!</div>
+    </div>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> <code>get_slide_collision_count()</code> is Godot's built-in way to check if <code>move_and_slide()</code> hit anything this frame. <code>velocity.length()</code> gives us the speed as a single number (the magnitude of the velocity vector). This is a clean, game-dev-standard approach!</div>
+    </div>
+
+    <!-- Predict Challenge -->
+    <div class="predict-challenge" id="pc-6" data-correct="1">
+      <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens!</span><span class="pc-xp-badge">+15 XP</span></div>
+      <div class="pc-scenario">Your car is at <strong>full speed (400)</strong> and smashes into a wall. <code>get_slide_collision_count()</code> returns 1 and <code>velocity.length()</code> returns 380. What happens?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> Nothing — 380 is below the threshold</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> take_damage(10) is called and the car bounces back at half speed</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> The car explodes immediately</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> The car passes through the wall</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-6" data-correct="2">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Collision Concepts!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">What does <code>velocity.length()</code> return in Godot?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> The direction the car is facing</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> The number of collisions this frame</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> The speed as a single number (magnitude of the velocity vector)</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> The health of the car</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(6)">Continue to Step 7 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 7 ── -->
+<div class="step-card locked" id="step-7" data-step="7">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-green" id="sn-7">7</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🟢</div>
+      <div class="step-title">Add Repair Pickups</div>
+      <div class="step-blurb">Drop glowing wrenches on the track — drive over them to heal!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-7">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a glowing green repair pickup. When the car drives over it, health is restored and the pickup disappears!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> Every racing game needs power-ups! We're going to place glowing green healing pads on the track. Drive over them and your car gets fixed up! 🔧✨</div>
+    </div>
+
+    <h3>Create repair_pickup.tscn</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>Go to <strong>Scene → New Scene</strong>. Add an <strong>Area2D</strong> node and rename it <strong>RepairPickup</strong>.</li>
+      <li><span class="num-badge">2</span>Add a child: <strong>CollisionShape2D</strong>. Set shape to <strong>RectangleShape2D</strong>, size <strong>x: 60, y: 60</strong>.</li>
+      <li><span class="num-badge">3</span>Add a child: <strong>ColorRect</strong>. Size it <strong>x: 60, y: 60</strong>, position <strong>x: -30, y: -30</strong>. Set colour to bright green with some transparency (<code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--accent2)">#06d6a0</code>). Glowing!</li>
+      <li><span class="num-badge">4</span>Attach a script and type this:</li>
+    </ol>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;repair_pickup.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">Area2D</span>
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+	<span class="prop">body_entered</span>.<span class="fn">connect</span>(<span class="fn">_on_body_entered</span>)
+
+<span class="kw">func</span> <span class="fn">_on_body_entered</span>(<span class="var">body</span>):
+	<span class="kw">if</span> <span class="var">body</span>.<span class="prop">name</span> == <span class="str">"Car"</span> <span class="kw">and</span> <span class="var">body</span>.<span class="prop">health</span> &lt; <span class="num">100</span>:
+		<span class="var">body</span>.<span class="prop">health</span> += <span class="num">25</span>
+		<span class="cmt"># Clamp health to 100 max</span>
+		<span class="kw">if</span> <span class="var">body</span>.<span class="prop">health</span> &gt; <span class="num">100</span>: <span class="var">body</span>.<span class="prop">health</span> = <span class="num">100</span>
+		<span class="cmt"># Also restore some speed</span>
+		<span class="var">body</span>.<span class="prop">max_speed</span> = <span class="num">400</span> * (<span class="var">body</span>.<span class="prop">health</span> / <span class="num">100.0</span>)
+		<span class="fn">queue_free</span>()  <span class="cmt"># Delete the pickup!</span></div>
+    </div>
+
+    <ol class="steps-list">
+      <li><span class="num-badge">5</span>Save as <strong>repair_pickup.tscn</strong>.</li>
+      <li><span class="num-badge">6</span>Open <strong>track.tscn</strong> and drag <strong>repair_pickup.tscn</strong> onto the track 3 or 4 times. Place them around the circuit — ideally after the tight corners!</li>
+    </ol>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> <code>queue_free()</code> is Godot's safe way to delete a node mid-frame — it queues it for removal at the end of the frame rather than deleting it immediately, which prevents crashes. It's used for anything that should disappear: bullets, pickups, explosions.</div>
+    </div>
+
+    <div class="try-it">
+      <div class="try-it-header">🕹️ Try it!</div>
+      <p>Crash into walls on purpose to lower your health, then drive over a green pickup. Does the health bar go back up? You should also feel the car speed up again!</p>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-7" data-correct="1">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Pickup Patrol!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">What does <code>queue_free()</code> do when called on the repair pickup?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> Freezes the pickup in place forever</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> Safely deletes the pickup at the end of the frame</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> Makes the pickup invisible but keeps it in the scene</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> Moves the pickup to a random new position</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(7)">Continue to Step 8 →</button>
+    </div>
+
+    <!-- Concept Fill -->
+    <div class="concept-fill" id="cf-7">
+      <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Fill in the Concepts</span><span class="cf-xp-badge">+15 XP</span></div>
+      <div class="cf-sentence">
+        When the car drives over a repair pickup, the pickup checks if <code>body.name</code> equals <input class="cf-blank" data-answer="Car" placeholder="???" style="width:70px"> and that health is less than <input class="cf-blank" data-answer="100" placeholder="??" style="width:50px">. It then adds <input class="cf-blank" data-answer="25" placeholder="??" style="width:50px"> to the car's health and calls <input class="cf-blank" data-answer="queue_free" placeholder="?????????" style="width:110px"> to remove itself.
+      </div>
+      <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
+      <div class="cf-feedback"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 8 ── -->
+<div class="step-card locked" id="step-8" data-step="8">
+  <div class="step-header" onclick="toggleCard(this.closest('.step-card'))">
+    <div class="step-num sn-blue" id="sn-8">8</div>
+    <div class="step-title-wrap">
+      <div class="step-emoji">🤖</div>
+      <div class="step-title">Build the AI Opponent</div>
+      <div class="step-blurb">ai_car.tscn + ai_car.gd — a bouncy red car to race against!</div>
+    </div>
+    <span class="step-status ss-todo" id="ss-8">🔒 Locked</span>
+  </div>
+  <div class="step-body">
+    <div class="big-goal">
+      <div class="big-goal-icon">🎯</div>
+      <div class="big-goal-text">
+        <strong>Goal for this step</strong>
+        <p>Create a red AI car that drives forward and bounces off walls like a pinball. Drop it on the track and race against it!</p>
+      </div>
+    </div>
+
+    <div class="callout fun">
+      <span class="callout-icon">🧒</span>
+      <div><strong>Little coder:</strong> We're going to build a robot car! It doesn't think — it just zooms forward until it hits a wall, then bounces off like a pinball. It's chaotic and brilliant. Can you dodge it? 🤖🏎️</div>
+    </div>
+
+    <div class="callout parent">
+      <span class="callout-icon">👨‍👩‍👧</span>
+      <div><strong>Grown-up:</strong> Real racing AI uses navigation meshes and waypoints — way beyond this workshop! But a "pinball" car that bounces off walls is genuinely fun and teaches the exact same collision/physics concepts. The unpredictability <em>is</em> the feature!</div>
+    </div>
+
+    <h3>Create ai_car.tscn from car.tscn</h3>
+    <ol class="steps-list">
+      <li><span class="num-badge">1</span>In the <strong>FileSystem</strong> panel, right-click <strong>car.tscn</strong> and choose <strong>Duplicate</strong>. Rename the copy <strong>ai_car.tscn</strong>.</li>
+      <li><span class="num-badge">2</span>Open <strong>ai_car.tscn</strong>. Click the <strong>ColorRect</strong> child and change its colour to <strong>red</strong> — so we know it's the enemy! 🔴</li>
+      <li><span class="num-badge">3</span>Click the root <strong>Car</strong> node. Right-click → <strong>Detach Script</strong>. (We're giving it its own brain!)</li>
+      <li><span class="num-badge">4</span>Right-click the root node again → <strong>Attach Script</strong>. Name it <strong>ai_car.gd</strong>. Type this:</li>
+    </ol>
+
+    <div class="code-wrap">
+      <div class="code-label"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div> &nbsp;ai_car.gd</div>
+      <div class="code-body"><span class="kw">extends</span> <span class="fn">CharacterBody2D</span>
+
+<span class="kw">var</span> <span class="var">speed</span> = <span class="num">250</span>
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+	<span class="cmt"># Start driving in the direction the car is facing</span>
+	<span class="var">velocity</span> = <span class="fn">Vector2</span>.<span class="prop">UP</span>.<span class="fn">rotated</span>(<span class="prop">rotation</span>) * <span class="var">speed</span>
+
+<span class="kw">func</span> <span class="fn">_physics_process</span>(<span class="var">delta</span>):
+	<span class="kw">var</span> <span class="var">collision</span> = <span class="fn">move_and_collide</span>(<span class="var">velocity</span> * <span class="var">delta</span>)
+
+	<span class="kw">if</span> <span class="var">collision</span>:
+		<span class="cmt"># Bounce off the wall like a pinball!</span>
+		<span class="var">velocity</span> = <span class="var">velocity</span>.<span class="fn">bounce</span>(<span class="var">collision</span>.<span class="fn">get_normal</span>())
+		<span class="cmt"># Rotate car to face new direction</span>
+		<span class="prop">rotation</span> = <span class="var">velocity</span>.<span class="fn">angle</span>() + (<span class="fn">PI</span> / <span class="num">2</span>)</div>
+    </div>
+
+    <ol class="steps-list">
+      <li><span class="num-badge">5</span>Save. Open <strong>track.tscn</strong> and drag <strong>ai_car.tscn</strong> onto the track. Place it on the road near the start!</li>
+      <li><span class="num-badge">6</span>Press <strong>F5</strong> (Play Project) and watch chaos unfold. Dodge the red car — if it hits you it deals crash damage! 😱</li>
+    </ol>
+
+    <div class="callout tip">
+      <span class="callout-icon">✅</span>
+      <div><strong>Tune the AI:</strong> Change the AI <code>speed</code> variable to make it faster or slower. Add <strong>two</strong> AI cars in different positions for extra mayhem! You can also rotate them to face different directions at the start.</div>
+    </div>
+
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>🔴 Make it harder</h4>
+        <p>Change <code>var speed = 250</code> to <code>350</code>. Add two AI cars on opposite sides of the track!</p>
+      </div>
+      <div class="mini-card">
+        <h4>💛 Make it easier</h4>
+        <p>Set <code>speed = 150</code>. Or remove the AI car damage from the player (only walls deal damage).</p>
+      </div>
+    </div>
+
+    <!-- Quiz Gate -->
+    <div class="quiz-gate" id="quiz-8" data-correct="2">
+      <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">AI Brain Check!</span><span class="quiz-xp-badge">+15 XP</span></div>
+      <div class="quiz-question">How does the AI car change direction when it hits a wall?</div>
+      <div class="quiz-options">
+        <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span> It uses Input.get_axis to steer like the player</div>
+        <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span> It follows a pre-set path of waypoints</div>
+        <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span> It uses velocity.bounce() with the collision normal to reflect off walls</div>
+        <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span> It picks a random new direction each frame</div>
+      </div>
+      <div class="quiz-feedback"></div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn" onclick="completeStep(8)">🏆 Finish Workshop! →</button>
+    </div>
+
+    <!-- Code Challenge -->
+    <div class="code-challenge" id="cc-8">
+      <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Complete the AI Code</span><span class="cc-xp-badge">+20 XP</span></div>
+      <div class="cc-prompt">Fill in the blanks for the AI car's bounce logic:</div>
+      <div class="cc-code-area"><span class="kw">func</span> <span class="fn">_physics_process</span>(delta):
+    <span class="kw">var</span> collision = <input class="cc-blank" data-answer="move_and_collide" placeholder="????????????????" style="width:160px">(velocity * delta)
+    <span class="kw">if</span> collision:
+        velocity = velocity.<input class="cc-blank" data-answer="bounce" placeholder="??????" style="width:80px">(collision.get_normal())
+        rotation = velocity.angle() + (PI / <input class="cc-blank" data-answer="2" placeholder="?" style="width:40px">)</div>
+      <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+      <div class="cc-feedback"></div>
+      <div class="cc-hint">Hint: The function that moves and detects collisions, the method that reflects velocity, and PI/2 rotates 90 degrees.</div>
+    </div>
+  </div>
+</div>
+
+<!-- FINISH BANNER -->
+<div class="finish-banner" id="finishBanner">
+  <div class="confetti-row">🤖🏎️💥🏆🎉</div>
+  <div class="finish-title">You Mastered Godot Physics!!</div>
+  <p class="finish-sub">You built a real racing circuit with laps, checkpoints, health, explosions, repair pickups, AND an AI opponent. That's serious game dev stuff — be very proud of yourself! 🚀</p>
+  <div class="final-stats">
+    <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+    <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+    <a href="#step-1" class="btn-outline" onclick="resetAll()">🔄 Start Again</a>
+    <a href="godot-racing-workshop.html" class="btn-outline">← Back to Part 1</a>
+    <a href="jump-jump-mario-workshop.html" class="btn-start">🍄 Next Workshop →</a>
+  </div>
+  <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+</div>
+
+</div><!-- end .workshop -->
+
+<!-- NEXT EPISODE SECTION -->
+<div style="background:linear-gradient(135deg,#1a0a00,#2e1800);border-top:1px solid rgba(255,255,255,.08);padding:40px 24px;text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:12px;">⭐ My First Video Game · Series 1</div>
+    <div style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#fff;margin-bottom:8px;">You finished the Zoom Zoom series! 🎉</div>
+    <div style="font-size:.9rem;color:rgba(255,255,255,.55);margin-bottom:24px;">Ready to build a Mario-style platformer next?</div>
+    <a href="jump-jump-mario-workshop.html" style="display:inline-flex;align-items:center;gap:10px;background:#e63946;color:#fff;font-family:'Fredoka',cursive;font-size:1.1rem;padding:14px 32px;border-radius:14px;text-decoration:none;box-shadow:0 4px 0 #a02830;transition:filter .15s;">🍄 Next: Ep 2 · Jump Jump! →</a>
+  </div>
+</div>
+
+<!-- DEV TOOLS CALLOUT -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites &amp; animations</div></div>
+      </a>
+      <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗺️</span>
+        <div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Level Designer</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build 2D tile maps</div></div>
+      </a>
+      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎵</span>
+        <div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">SFX Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Create custom sound effects</div></div>
+      </a>
+      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div></div>
+      </a>
+      <a href="../tools/game-idea-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎲</span>
+        <div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Game Idea Gen</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Random game concepts &amp; prompts</div></div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+const TOTAL = 8;
+const STORAGE_KEY = 'jvds-godot-racing2-v2';
+
+let completed = new Set();
+let xp = 0;
+let level = 1;
+let streak = 0;
+let bestStreak = 0;
+let totalQuizzes = 0;
+let correctFirst = 0;
+
+const XP_PER_LEVEL = 100;
+const XP_QUIZ = 15;
+const XP_CODE = 20;
+const XP_STREAK_BONUS = 5;
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed], total: TOTAL, xp, level, streak, bestStreak, totalQuizzes, correctFirst,
+      quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
+      challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id),
+      conceptsPassed: [...document.querySelectorAll('.concept-fill.passed')].map(c => c.id),
+      tfPassed: [...document.querySelectorAll('.tf-round.passed')].map(t => t.id),
+      ordersPassed: [...document.querySelectorAll('.order-challenge.passed')].map(o => o.id),
+      predictsPassed: [...document.querySelectorAll('.predict-challenge.passed')].map(p => p.id)
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!data) return;
+    if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
+    if (data.completed && data.completed.length) {
+      data.completed.forEach(n => {
+        completed.add(n);
+        const card = document.getElementById('step-' + n);
+        if (!card) return;
+        card.classList.remove('active-step', 'open', 'locked');
+        card.classList.add('completed');
+        card.querySelector('.step-status').className = 'step-status ss-done';
+        card.querySelector('.step-status').textContent = '✓ Done';
+        card.querySelector('.step-body').style.display = 'none';
+      });
+      const next = getActiveStep();
+      if (next <= TOTAL) {
+        const nc = document.getElementById('step-' + next);
+        if (nc) { nc.classList.remove('locked'); nc.classList.add('active-step', 'open'); nc.querySelector('.step-status').className = 'step-status ss-active'; nc.querySelector('.step-status').textContent = 'Current'; }
+      }
+      if (data.completed.length === TOTAL) document.getElementById('finishBanner').classList.add('show');
+    }
+    if (data.quizzesPassed) data.quizzesPassed.forEach(id => {
+      const q = document.getElementById(id);
+      if (q) { q.classList.add('passed'); q.querySelector('.quiz-next-btn').classList.add('show'); q.querySelector('.quiz-submit').style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    if (data.challengesPassed) data.challengesPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+    });
+    if (data.conceptsPassed) data.conceptsPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+    });
+    if (data.tfPassed) data.tfPassed.forEach(id => {
+      const t = document.getElementById(id);
+      if (t) { t.classList.add('passed'); t.querySelector('.tf-check-btn').disabled = true; }
+    });
+    if (data.ordersPassed) data.ordersPassed.forEach(id => {
+      const o = document.getElementById(id);
+      if (o) { o.classList.add('passed'); o.querySelector('.oc-check-btn').disabled = true; const rb = o.querySelector('.oc-reset-btn'); if (rb) rb.style.display = 'none'; }
+    });
+    if (data.predictsPassed) data.predictsPassed.forEach(id => {
+      const p = document.getElementById(id);
+      if (p) { p.classList.add('passed'); p.querySelector('.quiz-submit').style.display = 'none'; p.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    updateXpDisplay();
+  } catch(e) {}
+}
+
+function getActiveStep() {
+  for (let i = 1; i <= TOTAL; i++) { if (!completed.has(i)) return i; }
+  return TOTAL;
+}
+
+function buildDots() {
+  const c = document.getElementById('stepDots');
+  c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' active' : ''));
+    d.textContent = completed.has(i) ? '✓' : i;
+    d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    c.appendChild(d);
+  }
+}
+
+function updateProgress() {
+  const n = completed.size;
+  document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
+  document.getElementById('progressFill').style.width = (n / TOTAL * 100) + '%';
+  buildDots();
+}
+
+function updateXpDisplay() {
+  const xpInLevel = xp % XP_PER_LEVEL;
+  document.getElementById('xpLabel').textContent = xp + ' XP';
+  document.getElementById('xpFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevel').textContent = 'Level ' + level;
+  document.getElementById('streakCount').textContent = streak;
+  const streakEl = document.getElementById('xpStreak');
+  streakEl.classList.toggle('hot', streak >= 3);
+}
+
+function awardXp(amount, label) {
+  const oldLevel = level;
+  xp += amount;
+  level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  updateXpDisplay();
+  document.getElementById('xpLabel').classList.add('xp-pop');
+  setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
+  showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
+  saveProgress();
+}
+
+function showXpToast(text) {
+  const existing = document.querySelector('.xp-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function showLevelUp(lvl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing — keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── QUIZ SYSTEM ── */
+function selectQuizOpt(el) {
+  const gate = el.closest('.quiz-gate') || el.closest('.predict-challenge');
+  if (!gate || gate.classList.contains('passed')) return;
+  gate.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const submitBtn = gate.querySelector('.quiz-submit');
+  if (submitBtn) submitBtn.classList.add('show');
+}
+
+function checkQuiz(btn) {
+  const gate = btn.closest('.quiz-gate');
+  const selected = gate.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = parseInt(gate.dataset.correct);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = gate.querySelector('.quiz-feedback');
+  totalQuizzes++;
+
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
+    gate.classList.add('passed');
+    btn.style.display = 'none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ;
+    let label = 'Quiz correct';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — try again!</span>';
+    streak = 0;
+    updateXpDisplay();
+    setTimeout(() => {
+      selected.classList.remove('wrong', 'selected');
+      fb.classList.remove('show');
+    }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── CODE CHALLENGE SYSTEM ── */
+function checkCodeChallenge(btn) {
+  const challenge = btn.closest('.code-challenge');
+  const blanks = challenge.querySelectorAll('.cc-blank');
+  const fb = challenge.querySelector('.cc-feedback');
+  const hint = challenge.querySelector('.cc-hint');
+  let allCorrect = true;
+
+  blanks.forEach(b => {
+    const userVal = b.value.trim().toLowerCase();
+    const answer = b.dataset.answer.toLowerCase();
+    if (userVal === answer) {
+      b.classList.remove('wrong');
+      b.classList.add('correct');
+    } else {
+      b.classList.remove('correct');
+      b.classList.add('wrong');
+      allCorrect = false;
+    }
+  });
+
+  if (allCorrect) {
+    fb.className = 'cc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    challenge.classList.add('passed');
+    btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    if (hint) hint.classList.remove('show');
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    totalQuizzes++;
+    let bonus = XP_CODE;
+    let label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right — check the highlighted blanks and try again.</span>';
+    if (hint) hint.classList.add('show');
+    streak = 0;
+    updateXpDisplay();
+    totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── CONCEPT FILL-IN-THE-BLANK ── */
+function checkConceptFill(btn) {
+  const wrap = btn.closest('.concept-fill');
+  const blanks = wrap.querySelectorAll('.cf-blank');
+  const fb = wrap.querySelector('.cf-feedback');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    if (b.value.trim().toLowerCase() === b.dataset.answer.toLowerCase()) {
+      b.classList.remove('wrong'); b.classList.add('correct');
+    } else {
+      b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
+    }
+  });
+  if (allCorrect) {
+    fb.className = 'cf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
+    wrap.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Concept fill';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks aren\'t right — try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── TRUE/FALSE SPEED ROUND ── */
+function pickTF(btn, value) {
+  const item = btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  btn.dataset.picked = value;
+}
+
+function checkTF(btn) {
+  const round = btn.closest('.tf-round');
+  const items = round.querySelectorAll('.tf-item');
+  const fb = round.querySelector('.tf-feedback');
+  let allAnswered = true, allCorrect = true;
+  items.forEach(item => {
+    const selected = item.querySelector('.tf-btn.selected');
+    if (!selected) { allAnswered = false; return; }
+    const correct = item.dataset.answer;
+    const picked = selected.dataset.picked;
+    item.classList.add('answered');
+    if (picked === correct) {
+      selected.classList.add('correct-answer');
+    } else {
+      selected.classList.add('wrong-answer');
+      item.querySelectorAll('.tf-btn').forEach(b => { if (b.dataset.picked !== picked && b.textContent.toLowerCase() === correct) b.classList.add('correct-answer'); });
+      allCorrect = false;
+    }
+  });
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'tf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
+    round.classList.add('passed'); btn.disabled = true;
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'True/False';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'tf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not all correct — look at the highlighted answers and try again.</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+    setTimeout(() => {
+      items.forEach(item => {
+        item.classList.remove('answered');
+        item.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('selected','correct-answer','wrong-answer'); });
+      });
+      fb.classList.remove('show');
+    }, 2500);
+  }
+  saveProgress();
+}
+
+/* ── ORDER THE STEPS ── */
+let orderCounters = {};
+function pickOrder(el) {
+  const challenge = el.closest('.order-challenge');
+  const id = challenge.id;
+  if (!orderCounters[id]) orderCounters[id] = 0;
+  if (el.classList.contains('picked')) return;
+  orderCounters[id]++;
+  el.classList.add('picked');
+  el.querySelector('.oc-num').textContent = orderCounters[id];
+  el.dataset.userOrder = orderCounters[id];
+}
+
+function resetOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  orderCounters[challenge.id] = 0;
+  challenge.querySelectorAll('.oc-item').forEach(item => {
+    item.classList.remove('picked','correct-pos','wrong-pos');
+    item.querySelector('.oc-num').textContent = '';
+    delete item.dataset.userOrder;
+  });
+  challenge.querySelector('.oc-feedback').classList.remove('show');
+}
+
+function checkOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  const items = challenge.querySelectorAll('.oc-item');
+  const fb = challenge.querySelector('.oc-feedback');
+  let allPicked = true, allCorrect = true;
+  items.forEach(item => {
+    if (!item.dataset.userOrder) { allPicked = false; return; }
+    if (parseInt(item.dataset.userOrder) === parseInt(item.dataset.correct)) {
+      item.classList.add('correct-pos');
+    } else {
+      item.classList.add('wrong-pos'); allCorrect = false;
+    }
+  });
+  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'oc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order!</span>';
+    challenge.classList.add('passed'); btn.disabled = true;
+    challenge.querySelector('.oc-reset-btn').style.display = 'none';
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Order challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'oc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite right — hit Reset and try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── PREDICT WHAT HAPPENS ── */
+function checkPredict(btn) {
+  const challenge = btn.closest('.predict-challenge');
+  const selected = challenge.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = parseInt(challenge.dataset.correct);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = challenge.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Great prediction! You really understand how this works.</span>';
+    challenge.classList.add('passed'); btn.style.display = 'none';
+    challenge.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ, label = 'Prediction';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — think about it again!</span>';
+    streak = 0; updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── STEP COMPLETION ── */
+function completeStep(n) {
+  completed.add(n);
+  const card = document.getElementById('step-' + n);
+  card.classList.remove('active-step', 'open');
+  card.classList.add('completed');
+  card.querySelector('.step-status').className = 'step-status ss-done';
+  card.querySelector('.step-status').textContent = '✓ Done';
+  card.querySelector('.step-body').style.display = 'none';
+  const next = document.getElementById('step-' + (n + 1));
+  if (next) {
+    next.classList.remove('locked');
+    next.classList.add('active-step', 'open');
+    next.querySelector('.step-status').className = 'step-status ss-active';
+    next.querySelector('.step-status').textContent = 'Current';
+    setTimeout(() => next.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  }
+  if (completed.size === TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    setTimeout(() => document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+  }
+  updateProgress();
+  saveProgress();
+}
+
+function toggleCard(card) {
+  if (card.classList.contains('locked')) return;
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  card.querySelector('.step-body').style.display = isOpen ? 'none' : 'block';
+}
+
+function resetAll() {
+  completed.clear();
+  xp = 0; level = 1; streak = 0; bestStreak = 0; totalQuizzes = 0; correctFirst = 0;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  document.getElementById('finishBanner').classList.remove('show');
+  document.querySelectorAll('.quiz-gate, .code-challenge, .concept-fill, .tf-round, .order-challenge, .predict-challenge').forEach(el => {
+    el.classList.remove('passed');
+  });
+  document.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected','correct','wrong','disabled'));
+  document.querySelectorAll('.quiz-submit').forEach(b => { b.style.display = ''; b.classList.remove('show'); });
+  document.querySelectorAll('.quiz-next-btn').forEach(b => b.classList.remove('show'));
+  document.querySelectorAll('.quiz-feedback, .cc-feedback, .cf-feedback, .tf-feedback, .oc-feedback').forEach(f => f.classList.remove('show'));
+  document.querySelectorAll('.cc-blank, .cf-blank').forEach(b => { b.value = ''; b.disabled = false; b.classList.remove('correct','wrong'); });
+  document.querySelectorAll('.cc-check-btn, .cf-check-btn, .tf-check-btn, .oc-check-btn').forEach(b => b.disabled = false);
+  document.querySelectorAll('.oc-reset-btn').forEach(b => b.style.display = '');
+  document.querySelectorAll('.oc-item').forEach(item => { item.classList.remove('picked','correct-pos','wrong-pos'); item.querySelector('.oc-num').textContent = ''; delete item.dataset.userOrder; });
+  document.querySelectorAll('.tf-item').forEach(item => { item.classList.remove('answered'); item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected','correct-answer','wrong-answer')); });
+  orderCounters = {};
+  for (let i = 1; i <= TOTAL; i++) {
+    const card = document.getElementById('step-' + i);
+    if (!card) continue;
+    card.classList.remove('completed', 'active-step', 'open');
+    if (i === 1) { card.classList.add('active-step', 'open'); card.querySelector('.step-status').className = 'step-status ss-active'; card.querySelector('.step-status').textContent = 'Current'; }
+    else { card.classList.add('locked'); card.querySelector('.step-status').className = 'step-status ss-todo'; card.querySelector('.step-status').textContent = '🔒 Locked'; }
+    card.querySelector('.step-body').style.display = '';
+  }
+  updateProgress();
+  updateXpDisplay();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── HEALTH BAR DEMO ───
+const slider = document.getElementById('healthSlider');
+if (slider) {
+  slider.addEventListener('input', function() {
+    const h = parseInt(this.value);
+    const fill = document.getElementById('healthFill');
+    const txt  = document.getElementById('healthText');
+    const spd  = Math.round(400 * (h / 100));
+    fill.style.width = h + '%';
+    fill.style.background = h > 60 ? '#06d6a0' : h > 30 ? '#ffd166' : '#f87171';
+    txt.textContent = 'Health: ' + h + ' — Speed: ' + spd;
+  });
+}
+
+// ─── BOOT ───
+loadProgress();
+updateProgress();
+updateXpDisplay();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,993 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/unreal-2d-platformer.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unreal 2D Platformer Blueprint — Build & Play | JVDesignStudio</title>
+<meta name="description" content="Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course.">
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/unreal-2d-platformer.html">
+    <meta property="og:title"       content="Unreal 2D Platformer Blueprint — Build & Play | JVDesignStudio">
+    <meta property="og:description" content="Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/logo.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Unreal 2D Platformer Blueprint — Build & Play | JVDesignStudio">
+    <meta name="twitter:description" content="Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<style>
+
+  --bg:#06070a;--bg2:#0b0c0f;--bg3:#101214;
+  --border:rgba(255,255,255,.07);
+  --text:#e8eaf0;--muted:rgba(232,234,240,.38);
+  --ue:#e05a1e;--ue-lt:#f08050;--ue-dk:#a03808;
+  --green:#4ade80;--red:#f87171;--gold:#f5c842;
+  --bp:#4a90d9;--bp-lt:#7ab8f5;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+.hdr{position:sticky;top:0;z-index:90;background:rgba(6,7,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--ue),#c04010);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--ue-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+.hero{padding:26px 18px 18px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(224,90,30,.07) 1px,transparent 1px);background-size:26px 26px}
+.hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative;z-index:1}
+@media(max-width:600px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:5px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,6vw,3.6rem);line-height:.92;letter-spacing:.03em;color:#fff;margin-bottom:6px}
+.hero-title .hl{color:var(--ue)}
+.hero-desc{font-size:.83rem;color:var(--muted);line-height:1.7;max-width:410px}
+.hero-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.52rem;padding:3px 7px;border-radius:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.fire{border-color:rgba(224,90,30,.28);color:var(--ue-lt);background:rgba(224,90,30,.06)}
+.char-card{background:rgba(255,255,255,.03);border:1px solid rgba(224,90,30,.2);border-radius:12px;padding:11px 14px;min-width:175px}
+.char-card-title{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:6px}
+.char-name-disp{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.05em;color:#fff;margin-bottom:4px}
+.cs{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.68rem}
+.cs:last-child{border:none}
+.csl{color:var(--muted)}.csr{font-family:'JetBrains Mono',monospace;color:var(--ue-lt);font-size:.64rem}
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 52px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:9px 7px;font-family:'JetBrains Mono',monospace;font-size:.46rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}.tb.active{color:var(--ue-lt);border-bottom-color:var(--ue)}.tb.done::before{content:"✓ ";color:var(--green)}
+.step-body{padding:18px 22px;overflow-y:auto;flex:1}
+@media(max-width:600px){.step-body{padding:12px 10px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.04em;color:#fff;margin-bottom:5px;line-height:1}
+.step-intro{font-size:.81rem;color:var(--muted);line-height:1.7;margin-bottom:9px}
+.step-intro strong{color:var(--text)}
+.box{border-radius:8px;padding:8px 11px;margin:5px 0;font-size:.73rem;line-height:1.56;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0}
+.box-c{background:rgba(224,90,30,.05);border:1px solid rgba(224,90,30,.14);color:rgba(232,234,240,.7)}.box-c::before{content:"📖"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.12);color:rgba(232,234,240,.7)}.box-t::before{content:"💡"}
+/* Blueprint canvas */
+.bp-outer{margin:8px 0;border-radius:10px;overflow:hidden;border:2px solid rgba(74,144,217,.18);position:relative}
+.bp-outer.shake{animation:bpshk .35s ease}
+@keyframes bpshk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.bp-hint{font-family:'JetBrains Mono',monospace;font-size:.5rem;letter-spacing:.05em;color:rgba(74,144,217,.5);padding:4px 10px;background:rgba(74,144,217,.04);border-top:1px solid rgba(74,144,217,.08)}
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.71rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.17);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+.bp-valinput{position:absolute;z-index:80;background:#14141f;border:2px solid var(--bp);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 24px rgba(0,0,0,.8);min-width:175px;max-width:250px}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--bp-lt);letter-spacing:.05em}
+.bp-valinput input{background:#0a0a18;border:1px solid rgba(74,144,217,.4);border-radius:5px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.84rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput input:focus{border-color:var(--bp)}
+.bp-valinput-btns{display:flex;gap:6px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bp-valinput-ok{background:var(--bp);color:#fff}.bp-valinput-cancel{background:rgba(255,255,255,.08);color:rgba(232,234,240,.6)}
+.char-input-wrap{background:rgba(224,90,30,.05);border:1px solid rgba(224,90,30,.17);border-radius:8px;padding:8px 11px;margin:8px 0}
+.char-input-lbl{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ue-lt);margin-bottom:5px}
+.char-name-input{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(224,90,30,.26);border-radius:5px;padding:6px 9px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em;color:var(--ue-lt);outline:none}
+.char-name-input:focus{border-color:var(--ue)}
+.run-btn{width:100%;margin-top:9px;padding:11px;background:var(--ue);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.93rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--ue-dk);transition:transform .1s,filter .15s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px)}
+.run-btn:disabled{opacity:.3;cursor:not-allowed}
+.step-nav{display:flex;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.78rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(224,90,30,.1);color:var(--ue-lt);border:1px solid rgba(224,90,30,.2)}.btn-n:hover:not(:disabled){background:rgba(224,90,30,.18)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+.prog-bar{background:var(--bg2);border-top:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:11px}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ue-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ue),var(--gold));border-radius:999px;transition:width .4s}
+.prog-dots{display:flex;gap:3px;flex-wrap:wrap;max-width:170px;justify-content:flex-end;flex-shrink:0}
+.pd{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.pd.done{background:var(--green)}.pd.active{background:var(--ue);transform:scale(1.35)}
+/* Game column */
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px)}
+@media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:7px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-l{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--ue-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--ue);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.fs-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.56rem;padding:4px 10px;border-radius:6px;cursor:pointer}
+.fs-btn:hover{background:rgba(255,255,255,.11);color:var(--text)}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:6px;display:flex;align-items:center;justify-content:center;min-height:280px}
+#gc{border-radius:8px;box-shadow:0 0 0 1px rgba(255,255,255,.05),0 8px 36px rgba(0,0,0,.9);display:block;max-width:100%;max-height:100%;image-rendering:pixelated}
+.game-hud{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);flex-shrink:0}
+.hb{padding:5px 6px;border-right:1px solid var(--border);text-align:center}
+.hb:last-child{border-right:none}
+.hv{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.04em}
+.hlb{font-family:'JetBrains Mono',monospace;font-size:.4rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.54rem;min-height:26px;color:var(--ue-lt);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Mobile controls */
+.mobile-controls{position:absolute;bottom:10px;left:0;right:0;display:none;justify-content:space-between;align-items:flex-end;padding:0 12px;pointer-events:none;z-index:10}
+@media(max-width:1080px){.mobile-controls{display:flex}}
+@media(pointer:coarse){.mobile-controls{display:flex}}
+.dpad{display:flex;flex-direction:column;gap:3px;pointer-events:all}
+.dpad-row{display:flex;gap:3px;justify-content:center}
+.dp{width:48px;height:48px;border-radius:10px;background:rgba(0,0,0,.55);border:1.5px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none;color:rgba(255,255,255,.7)}
+.dp:active{background:rgba(224,90,30,.4);border-color:var(--ue)}
+.jump-btn{width:62px;height:62px;border-radius:50%;background:rgba(224,90,30,.3);border:2px solid var(--ue);font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.05em;color:var(--ue-lt);display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:all;-webkit-tap-highlight-color:transparent;touch-action:none;user-select:none}
+.jump-btn:active{background:rgba(224,90,30,.6)}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<header class="hdr">
+<div class="logo">JV<span style="color:var(--ue)">DESIGN</span>STUDIO</div>
+  <div class="hdr-right">
+    <button class="quick-btn" onclick="quickPlay()">▶ QUICK PLAY</button>
+    <a href="../index.html" style="font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase">← Home</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">Unreal Engine 5 · Blueprint Visual Scripting</div>
+      <h1 class="hero-title">2D PLATFORMER<br><span class="hl">BLUEPRINT</span></h1>
+      <p class="hero-desc">Wire Unreal Blueprints node by node. Each step unlocks a new mechanic — play your game live as you build it.</p>
+      <div class="hero-pills">
+        <span class="pill fire">Unreal 5</span><span class="pill fire">Blueprint</span>
+        <span class="pill">20 Steps</span><span class="pill">Live Game</span><span class="pill">Mobile OK</span>
+      </div>
+    </div>
+    <div class="char-card">
+      <div class="char-card-title">Your Character</div>
+      <div class="char-name-disp" id="hcName">BP_PlatformerChar</div>
+      <div class="cs"><span class="csl">Move Speed</span><span class="csr" id="hcSpd">400 UU/s</span></div>
+      <div class="cs"><span class="csl">Jump Velocity</span><span class="csr" id="hcJmp">650 UU/s</span></div>
+      <div class="cs"><span class="csl">Gravity Scale</span><span class="csr" id="hcGrv">2.0×</span></div>
+      <div class="cs"><span class="csl">Lives</span><span class="csr" id="hcLiv">3</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="prog-bar">
+  <span class="prog-lbl">Progress</span>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:2%"></div></div>
+  <div class="prog-dots" id="progDots"></div>
+</div>
+
+<div class="layout">
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+  </div>
+  <div class="game-col">
+    <div class="game-top">
+      <span class="game-top-l">🎮 Live Preview</span>
+      <div class="game-top-r">
+        <div class="live-wrap"><div class="live-dot"></div><span id="liveStatus">Waiting…</span></div>
+        <button class="fs-btn" onclick="openFS()">⛶ Full</button>
+      </div>
+    </div>
+    <div class="game-wrap">
+      <canvas id="gc" width="400" height="400"></canvas>
+      <div class="mobile-controls">
+        <div class="dpad">
+          <div class="dpad-row"><div class="dp" id="dpU">▲</div></div>
+          <div class="dpad-row">
+            <div class="dp" id="dpL">◀</div>
+            <div class="dp" id="dpD">▼</div>
+            <div class="dp" id="dpR">▶</div>
+          </div>
+        </div>
+        <div class="jump-btn" id="jumpBtn">JUMP</div>
+      </div>
+    </div>
+    <div class="game-hud">
+      <div class="hb"><div class="hv" id="hudCoins">0</div><div class="hlb">Coins</div></div>
+      <div class="hb"><div class="hv" id="hudLives" style="font-size:.8rem">♥♥♥</div><div class="hlb">Lives</div></div>
+      <div class="hb"><div class="hv" id="hudStep">0/20</div><div class="hlb">Steps</div></div>
+      <div class="hb"><div class="hv" id="hudSys" style="font-size:.65rem;color:var(--muted)">—</div><div class="hlb">Last Unlocked</div></div>
+    </div>
+    <div class="obar" id="obar">Connect Blueprint nodes → Apply → watch the game come alive!</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════
+   BLUEPRINT ENGINE  (ported directly from nuclear-blueprint)
+═══════════════════════════════════════════════════════ */
+const PC={exec:'#fff',bool:'#dd2244',int:'#44aaee',float:'#88ee44',vec3:'#eebb44',vector:'#eebb44',rot:'#aaccff',actor:'#ee6622',object:'#4488ee',string:'#ee44aa',cls:'#ee9922',any:'#aaa'};
+const NS={
+  event:{h:'#8b2020',b:'#1e0c0c',e:'#cc4444'},
+  func:{h:'#1a3a70',b:'#0e1520',e:'#3a70cc'},
+  macro:{h:'#1a4a1a',b:'#0e160e',e:'#3aaa50'},
+  vset:{h:'#252550',b:'#0e0e18',e:'#5050bb'},
+  vget:{h:'#1a4848',b:'#0e1515',e:'#30aaaa'},
+  branch:{h:'#383838',b:'#141414',e:'#888'},
+  cast:{h:'#1a2848',b:'#0e1218',e:'#3060aa'},
+  custom:{h:'#481848',b:'#160e16',e:'#aa40aa'},
+  math:{h:'#2c2c2c',b:'#111',e:'#666'},
+  anim:{h:'#1a4a3a',b:'#0e1510',e:'#30aa88'},
+};
+class BPC{
+  constructor(el,defs,rW,rV,onDone){
+    this.el=el;this.defs=defs;this.rW=rW;this.rV=rV;this.onDone=onDone;
+    this.wires=[];this.pins={};this.drag=null;this.done=false;this.vals={};
+    this.DPR=Math.min(window.devicePixelRatio||1,2);
+    this.cv=document.createElement('canvas');this.cx=this.cv.getContext('2d');
+    el.appendChild(this.cv);
+    this.nodes=defs.map(d=>({...d,lp:d.lp||[],rp:d.rp||[],vf:d.vf||null,w:d.w||155}));
+    this.nodes.forEach(n=>{const r=Math.max(n.lp.length,n.rp.length,1);n.h=26+(n.sub?12:0)+r*19+(n.vf?25:0)+12;});
+    this.cv.addEventListener('mousedown',e=>this._dn(e));
+    this._mmv=e=>this._mv(e);this._mup=e=>this._up(e);
+    document.addEventListener('mousemove',this._mmv);
+    document.addEventListener('mouseup',this._mup);
+    ['touchstart','touchmove','touchend'].forEach(ev=>this.cv.addEventListener(ev,e=>{e.preventDefault();const m=ev==='touchend'?'up':ev==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
+    this._resize();window.addEventListener('resize',()=>this._resize());
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')this._cancel();});
+    this.render();
+  }
+  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
+  _lh(){let m=110;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
+  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
+  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&y<vy+24;const inNode=x>n.x&&x<n.x+n.w&&y>n.y&&y<n.y+n.h;const belowPins=y>n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
+  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp&&pp.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
+  _showValInput(nodeId,e){
+    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
+    const old=this.el.parentElement&&this.el.parentElement.querySelector('.bp-valinput');if(old)old.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    const cr=outer.getBoundingClientRect();
+    const src=e.touches&&e.touches[0]?e.touches[0]:e;
+    const ex=src.clientX-cr.left,ey=src.clientY-cr.top;
+    const pop=document.createElement('div');pop.className='bp-valinput';
+    pop.style.left=Math.min(Math.max(ex-88,4),cr.width-190)+'px';
+    pop.style.top=Math.min(ey+8,cr.height-88)+'px';
+    pop.innerHTML='<label>'+n.vf.hint+'</label><input type="text" inputmode="decimal" value="'+(n.vf.val||'')+'" placeholder="'+n.vf.hint+'"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>';
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    const cancel=()=>pop.remove();
+    pop.querySelector('.bp-valinput-ok').addEventListener('click',commit);
+    pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
+    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
+    pop.addEventListener('touchstart',ev=>ev.stopPropagation());
+  }
+  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
+  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
+  _cancel(){if(this.drag){this.drag=null;this.render();}}
+  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt=this.pins[t];if(!pf||!pt)return;if(pf.side!=='right'||pt.side!=='left')return this._err();const ok=pf.type===pt.type||pf.type==='any'||pt.type==='any'||(pf.type==='exec'&&pt.type==='exec');if(!ok)return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
+  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
+  _chk(){
+    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
+    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
+    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
+    const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);
+    if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);
+    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
+    else if(!(wOk&&vOk))this.done=false;
+  }
+  render(){
+    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
+    cx.fillStyle='#11111f';cx.fillRect(0,0,540,H);
+    cx.strokeStyle='rgba(255,255,255,.036)';cx.lineWidth=1;
+    for(let x=0;x<540;x+=20){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+    for(let y=0;y<H;y+=20){cx.beginPath();cx.moveTo(0,y);cx.lineTo(540,y);cx.stroke();}
+    this.pins={};
+    this.nodes.forEach(n=>this._drawNode(cx,n));
+    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
+    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
+  }
+  _drawNode(cx,n){
+    const st=NS[n.type]||NS.func,HDR=22,GAP=19;
+    const rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
+    cx.fillStyle='rgba(0,0,0,.38)';this._rr(cx,x+3,y+3,w,h,7);cx.fill();
+    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,7);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
+    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,7);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
+    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
+    if(n.sub){cx.fillStyle='rgba(255,255,255,.28)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
+    if(n.vf){
+      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
+      cx.fillStyle='rgba(0,0,0,.48)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
+      cx.strokeStyle=n.vf.val?'#88ee44':'rgba(224,90,30,.5)';cx.lineWidth=1;cx.stroke();
+      cx.fillStyle=n.vf.val?'#88ee44':'rgba(224,90,30,.85)';
+      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
+      const d=n.vf.val?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint);
+      cx.fillText(d,x+w/2,vy+10);
+      cx.fillStyle='rgba(255,255,255,.15)';cx.font='6.5px JetBrains Mono,monospace';
+      cx.fillText(n.vf.val?'✓ set':'▼ click / tap to type',x+w/2,vy+20);
+    }
+    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
+    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
+    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
+    cx.textAlign='left';
+  }
+  _pin(cx,x,y,col,exec,conn,side){
+    cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;
+    if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}
+    else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}
+    cx.fillStyle=col+'28';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();
+  }
+  _wire(cx,x1,y1,x2,y2,col,dash){
+    const mx=(x1+x2)/2;cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=dash?0:7;
+    if(dash){cx.setLineDash([5,4]);cx.globalAlpha=.48;}
+    cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(mx,y1,mx,y2,x2,y2);cx.stroke();cx.restore();
+  }
+  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
+  destroy(){document.removeEventListener('mousemove',this._mmv);document.removeEventListener('mouseup',this._mup);}
+}
+let UID=0;
+function mkPZ(defs,rW,rV){
+  const uid=++UID;
+  const hasW=rW.length>0,hasV=rV.length>0;
+  const html='<div class="bp-outer" id="bpo-'+uid+'"><div id="bpcw-'+uid+'"></div>'
+    +'<div class="bp-hint">🖱 Drag output pin → input pin to connect'+(hasV?' · Click/tap orange fields to type':'')+'</div></div>'
+    +'<div class="task-list">'
+    +(hasW?'<div class="task-item" id="tw-'+uid+'"><div class="task-dot"></div>Connect the required wires</div>':'')
+    +(hasV?'<div class="task-item" id="tv-'+uid+'"><div class="task-dot"></div>Type values in the orange fields</div>':'')
+    +'</div>';
+  return{uid,html,init(cb){
+    const el=document.getElementById('bpcw-'+uid);if(!el)return null;
+    const bp=new BPC(el,defs,rW,rV,function(v){if(cb)cb(v);});bp.uid=uid;return bp;
+  }};
+}
+
+/* ═══════════════════════════════════════════════════════
+   GAME ENGINE
+═══════════════════════════════════════════════════════ */
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+let CW=400,CH=400;
+
+const F={move:false,jump:false,gravity:false,coyote:false,doublejump:false,
+  camera:false,coins:false,coinhud:false,spikes:false,checkpoint:false,
+  movingplat:false,spring:false,flag:false,lives:false,speedboost:false,
+  particles:false,fullgame:false};
+
+const CHAR={speed:3.8,jumpVel:10.5,gravScale:2,lives:3,name:'BP_PlatformerChar'};
+
+const T=20; // tile size
+// Level map — 50 cols × 14 rows
+// G=ground P=platform C=coin ^=spike F=flag B=spring
+const LVL=[
+  '                                                  ',
+  '                                                  ',
+  '         CCC        C           C                 ',
+  '      PPPPPPPP    PPP     PPPP                    ',
+  '                                                  ',
+  '  CC          C        C            C       F     ',
+  '               PPP    PP       PPPP  PPPPPPPP     ',
+  '  PPPPPP   ^^ ^^^            B                    ',
+  '                                                  ',
+  '       CC        CC     C        C                ',
+  '     PPPPPP    PPPP   PPPP    PPPP                ',
+  '                                                  ',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG',
+  'GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG',
+];
+const LW=LVL[0].length*T, LH=LVL.length*T;
+
+function parseLevelObjs(){
+  const objs=[];
+  LVL.forEach(function(row,r){
+    for(var c=0;c<row.length;c++){
+      const ch=row[c],wx=c*T,wy=r*T;
+      if(ch==='C') objs.push({type:'coin',x:wx,y:wy,alive:true,id:r*200+c});
+      if(ch==='^') objs.push({type:'spike',x:wx,y:wy});
+      if(ch==='F') objs.push({type:'flag',x:wx,y:wy});
+      if(ch==='B') objs.push({type:'spring',x:wx,y:wy});
+    }
+  });
+  return objs;
+}
+let OBJS=parseLevelObjs();
+
+const MPLATS=[
+  {x:32*T,y:8*T,w:3*T,h:T/2,dx:1,minX:30*T,maxX:36*T},
+  {x:14*T,y:5*T,w:2*T,h:T/2,dx:-0.7,minX:12*T,maxX:17*T},
+];
+
+function isSolid(wx,wy){
+  const c=Math.floor(wx/T),r=Math.floor(wy/T);
+  if(r<0||r>=LVL.length||c<0||c>=LVL[0].length)return false;
+  const ch=LVL[r][c];return ch==='G'||ch==='P';
+}
+
+const G={px:2*T,py:9*T,pvx:0,pvy:0,onGround:false,coyoteT:0,jumpsLeft:2,
+  hp:3,coins:0,respawn:{x:2*T,y:9*T},camX:0,camY:0,
+  particles:[],speedT:0,won:false,started:false,frame:0,dead:false,deadT:0};
+
+// Keyboard
+const K={};
+let jumpPrev=false;
+window.addEventListener('keydown',function(e){
+  K[e.code]=true;
+  if(['Space','ArrowUp','ArrowLeft','ArrowRight','ArrowDown'].includes(e.code))e.preventDefault();
+  if(e.code==='KeyR'&&(G.won||G.dead))resetGame();
+});
+window.addEventListener('keyup',function(e){K[e.code]=false;});
+
+// D-pad touch/mouse
+function setupBtn(id,key){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.addEventListener('touchstart',function(e){e.preventDefault();K[key]=true;},{passive:false});
+  el.addEventListener('touchend',function(e){e.preventDefault();K[key]=false;},{passive:false});
+  el.addEventListener('mousedown',function(e){e.preventDefault();K[key]=true;});
+  el.addEventListener('mouseup',function(e){K[key]=false;});
+  el.addEventListener('mouseleave',function(){K[key]=false;});
+}
+setupBtn('dpU','ArrowUp');setupBtn('dpL','ArrowLeft');
+setupBtn('dpD','ArrowDown');setupBtn('dpR','ArrowRight');
+setupBtn('jumpBtn','Space');
+
+// Particles
+function spark(x,y,col,n){
+  if(!F.particles)return;
+  for(var i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=1+Math.random()*2.5;
+    G.particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-0.8,life:1,col:col||'#e05a1e'});
+  }
+}
+
+const PW=14,PH=20;
+function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+
+function resolveVert(){
+  G.onGround=false;
+  const c0=Math.floor(G.px/T),c1=Math.floor((G.px+PW-1)/T);
+  const r0=Math.floor(G.py/T),r1=Math.floor((G.py+PH-1)/T);
+  for(var r=Math.max(0,r0);r<=Math.min(LVL.length-1,r1);r++){
+    for(var c=Math.max(0,c0);c<=Math.min(LVL[0].length-1,c1);c++){
+      if(!isSolid(c*T+1,r*T+1))continue;
+      const ty=r*T;
+      if(G.px+PW>c*T&&G.px<c*T+T){
+        if(G.pvy>0&&G.py+PH>ty&&G.py+PH<ty+T*0.8){G.py=ty-PH;G.pvy=0;G.onGround=true;G.coyoteT=10;G.jumpsLeft=F.doublejump?2:1;}
+        else if(G.pvy<0&&G.py<ty+T&&G.py>ty+T*0.5){G.py=ty+T;G.pvy=0;}
+      }
+    }
+  }
+  if(F.movingplat){
+    MPLATS.forEach(function(mp){
+      if(G.pvy>=0&&G.py+PH>mp.y&&G.py+PH<mp.y+mp.h+8&&G.px+PW>mp.x&&G.px<mp.x+mp.w){
+        G.py=mp.y-PH;G.pvy=0;G.onGround=true;G.coyoteT=10;G.jumpsLeft=F.doublejump?2:1;G.px+=mp.dx;
+      }
+    });
+  }
+}
+
+function resolveHoriz(){
+  const c0=Math.floor(G.px/T),c1=Math.floor((G.px+PW-1)/T);
+  const r0=Math.floor(G.py/T),r1=Math.floor((G.py+PH-1)/T);
+  for(var r=Math.max(0,r0);r<=Math.min(LVL.length-1,r1);r++){
+    for(var c=Math.max(0,c0);c<=Math.min(LVL[0].length-1,c1);c++){
+      if(!isSolid(c*T+1,r*T+1))continue;
+      const tx=c*T;
+      if(G.py+PH>r*T+2&&G.py<r*T+T-2){
+        if(G.pvx>0&&G.px+PW>tx&&G.px<tx){G.px=tx-PW;G.pvx=0;}
+        else if(G.pvx<0&&G.px<tx+T&&G.px+PW>tx+T){G.px=tx+T;G.pvx=0;}
+      }
+    }
+  }
+}
+
+function killPlayer(){
+  spark(G.px+PW/2,G.py+PH/2,'#f87171',10);
+  if(F.lives){G.hp=Math.max(0,G.hp-1);updateHUD();}
+  if(F.lives&&G.hp<=0){G.dead=true;G.deadT=150;return;}
+  G.px=G.respawn.x;G.py=G.respawn.y;
+  G.pvx=0;G.pvy=0;G.onGround=false;
+}
+
+function resetGame(){
+  G.px=2*T;G.py=9*T;G.pvx=0;G.pvy=0;G.onGround=false;G.coyoteT=0;G.jumpsLeft=2;
+  G.hp=CHAR.lives;G.coins=0;G.won=false;G.dead=false;G.deadT=0;
+  G.respawn={x:2*T,y:9*T};G.particles=[];G.speedT=0;
+  OBJS=parseLevelObjs();updateHUD();
+  sout('Restarted! Collect coins, avoid spikes, reach the flag!');
+}
+
+var jumpPrev2=false;
+function update(){
+  if(!G.started||G.won)return;
+  G.frame++;
+  if(G.dead){G.deadT--;if(G.deadT<=0){G.dead=false;OBJS=parseLevelObjs();G.coins=0;G.hp=CHAR.lives;G.px=2*T;G.py=9*T;G.pvx=0;G.pvy=0;updateHUD();}return;}
+  if(G.speedT>0)G.speedT--;
+  if(F.movingplat)MPLATS.forEach(function(mp){mp.x+=mp.dx;if(mp.x<=mp.minX||mp.x+mp.w>=mp.maxX)mp.dx*=-1;});
+  const grav=F.gravity?(CHAR.gravScale*0.42):0.42;
+  if(!G.onGround)G.pvy+=grav;
+  if(G.pvy>16)G.pvy=16;
+  if(G.onGround)G.coyoteT=10;else if(G.coyoteT>0)G.coyoteT--;
+  const jumpNow=K['Space']||K['ArrowUp']||K['KeyW'];
+  const jumpEdge=jumpNow&&!jumpPrev2;jumpPrev2=jumpNow;
+  if(jumpEdge&&F.jump){
+    const canJump=G.onGround||(F.coyote&&G.coyoteT>0)||(F.doublejump&&G.jumpsLeft>0);
+    if(canJump){G.pvy=-CHAR.jumpVel;G.onGround=false;G.coyoteT=0;G.jumpsLeft--;spark(G.px+PW/2,G.py+PH,'#4a90d9',6);}
+  }
+  const spd=F.move?(G.speedT>0?CHAR.speed*1.6:CHAR.speed):0;
+  if(K['ArrowLeft']||K['KeyA'])G.pvx=-spd;
+  else if(K['ArrowRight']||K['KeyD'])G.pvx=spd;
+  else G.pvx*=0.75;
+  G.px=Math.max(0,Math.min(G.px,LW-PW));
+  G.px+=G.pvx;resolveHoriz();
+  G.py+=G.pvy;resolveVert();
+  if(F.camera){
+    const tx=G.px-CW/2+PW/2,ty=G.py-CH*0.45;
+    G.camX+=(tx-G.camX)*0.12;G.camY+=(ty-G.camY)*0.10;
+    G.camX=Math.max(0,Math.min(G.camX,LW-CW));
+    G.camY=Math.max(0,Math.min(G.camY,LH-CH));
+  }else{
+    G.camX=Math.max(0,Math.min(G.px-CW/2,LW-CW));
+    G.camY=Math.max(0,Math.min(G.py-CH*0.5,LH-CH));
+  }
+  const p={x:G.px,y:G.py,w:PW,h:PH};
+  OBJS.forEach(function(o){
+    if(o.type==='coin'&&F.coins&&o.alive){
+      if(overlap(p,{x:o.x+3,y:o.y+3,w:T-6,h:T-6})){o.alive=false;G.coins++;spark(o.x+T/2,o.y+T/2,'#f5c842',8);sout('🪙 Coin! Total: '+G.coins);updateHUD();}
+    }
+    if(o.type==='spike'&&F.spikes){
+      if(overlap(p,{x:o.x+2,y:o.y+8,w:T-4,h:T-8})){killPlayer();sout('💀 Spike! '+(F.checkpoint?'Respawning at checkpoint…':'Back to start!'));}
+    }
+    if(o.type==='spring'&&F.spring){
+      if(overlap(p,{x:o.x,y:o.y+T/2,w:T,h:T/2})&&G.pvy>=0){G.pvy=-17;G.onGround=false;spark(o.x+T/2,o.y,'#4ade80',10);sout('🌀 Spring launch!');}
+    }
+    if(o.type==='flag'&&F.flag){
+      if(overlap(p,{x:o.x,y:o.y-30,w:T+4,h:T+30})){G.won=true;spark(G.px+PW/2,G.py,'#f5c842',28);sout('🏁 Level complete! Coins: '+G.coins);updateHUD();}
+    }
+  });
+  if(G.py>LH+80)killPlayer();
+  G.particles=G.particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=0.04;return p.life>0;});
+}
+
+function draw(){
+  ctx.clearRect(0,0,CW,CH);
+  const sky=ctx.createLinearGradient(0,0,0,CH);
+  sky.addColorStop(0,'#0c0e1a');sky.addColorStop(1,'#181028');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle='rgba(255,255,255,.3)';
+  [[30,15],[90,28],[160,10],[240,22],[320,7],[390,35],[60,50],[200,45]].forEach(function(s){ctx.fillRect(s[0]%CW,s[1],1,1);});
+  ctx.save();ctx.translate(-G.camX,-G.camY);
+  const c0=Math.floor(G.camX/T)-1,c1=Math.ceil((G.camX+CW)/T)+1;
+  const r0=Math.floor(G.camY/T)-1,r1=Math.ceil((G.camY+CH)/T)+1;
+  for(var r=Math.max(0,r0);r<=Math.min(LVL.length-1,r1);r++){
+    for(var c=Math.max(0,c0);c<=Math.min(LVL[0].length-1,c1);c++){
+      const ch=LVL[r][c],wx=c*T,wy=r*T;
+      if(ch==='G'){
+        const g=ctx.createLinearGradient(wx,wy,wx,wy+T);
+        g.addColorStop(0,'#5d7a34');g.addColorStop(.3,'#4a6028');g.addColorStop(1,'#3a4a20');
+        ctx.fillStyle=g;ctx.fillRect(wx,wy,T,T);
+        ctx.fillStyle='#6a8a3e';ctx.fillRect(wx,wy,T,3);
+      }
+      if(ch==='P'){ctx.fillStyle='#4a3a28';ctx.fillRect(wx,wy,T,T/2);ctx.fillStyle='#6a5840';ctx.fillRect(wx,wy,T,3);}
+    }
+  }
+  if(F.movingplat){
+    MPLATS.forEach(function(mp){
+      ctx.fillStyle='#7a6a4a';ctx.fillRect(mp.x,mp.y,mp.w,mp.h);
+      ctx.fillStyle='#9a8a5a';ctx.fillRect(mp.x,mp.y,mp.w,3);
+      ctx.fillStyle='rgba(255,200,100,.3)';ctx.font='8px sans-serif';ctx.textAlign='center';
+      ctx.fillText(mp.dx>0?'→':'←',mp.x+mp.w/2,mp.y-3);ctx.textAlign='left';
+    });
+  }
+  OBJS.forEach(function(o){
+    if(o.type==='coin'&&F.coins&&o.alive){
+      const bob=Math.sin(G.frame*.09+o.id)*.8;
+      ctx.save();ctx.translate(o.x+T/2,o.y+T/2+bob);
+      ctx.fillStyle='#f5c842';ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(255,240,100,.5)';ctx.beginPath();ctx.arc(-1.5,-1.5,1.5,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    if(o.type==='spike'&&F.spikes){
+      ctx.fillStyle='#b0b8cc';ctx.beginPath();
+      ctx.moveTo(o.x+1,o.y+T);ctx.lineTo(o.x+T/2,o.y+T-11);ctx.lineTo(o.x+T-1,o.y+T);ctx.fill();
+    }
+    if(o.type==='flag'&&F.flag){
+      ctx.strokeStyle='#999';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(o.x+T/2,o.y-20);ctx.lineTo(o.x+T/2,o.y+T);ctx.stroke();
+      ctx.fillStyle='#e05a1e';
+      ctx.beginPath();ctx.moveTo(o.x+T/2,o.y-20);ctx.lineTo(o.x+T/2+14,o.y-12);ctx.lineTo(o.x+T/2,o.y-4);ctx.fill();
+    }
+    if(o.type==='spring'&&F.spring){
+      ctx.fillStyle='#4ade80';ctx.fillRect(o.x+3,o.y+T-7,T-6,7);
+      ctx.fillStyle='#22c060';ctx.fillRect(o.x+5,o.y+T-13,T-10,6);ctx.fillRect(o.x+7,o.y+T-18,T-14,5);
+    }
+  });
+  if(G.started&&!G.dead){
+    const bst=G.speedT>0;
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.beginPath();ctx.ellipse(G.px+PW/2,G.py+PH+2,PW/2,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=bst?'#b090e8':'#e05a1e';ctx.fillRect(G.px+2,G.py+7,PW-4,PH-7);
+    ctx.fillStyle=bst?'#d0b0ff':'#f07848';ctx.fillRect(G.px+2,G.py,PW-4,10);
+    ctx.fillStyle='#fff';ctx.fillRect(G.px+4,G.py+2,3,3);ctx.fillRect(G.px+PW-7,G.py+2,3,3);
+    ctx.fillStyle='#1a1a2a';
+    const eo=G.pvx>0.5?1:G.pvx<-0.5?-1:0;
+    ctx.fillRect(G.px+5+eo,G.py+3,1,2);ctx.fillRect(G.px+PW-6+eo,G.py+3,1,2);
+    const la=Math.abs(G.pvx)>.3?Math.sin(G.frame*.35)*3:0;
+    ctx.fillStyle='#b04010';
+    ctx.fillRect(G.px+2,G.py+PH-5+la,5,5);ctx.fillRect(G.px+PW-7,G.py+PH-5-la,5,5);
+    if(bst){ctx.fillStyle='rgba(176,144,240,.22)';ctx.fillRect(G.px-6,G.py+4,6,PH-10);}
+  }else if(!G.started){
+    ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(2*T,9*T,PW,PH);
+  }
+  G.particles.forEach(function(p){ctx.globalAlpha=p.life;ctx.fillStyle=p.col;ctx.fillRect(p.x-2,p.y-2,4,4);});
+  ctx.globalAlpha=1;
+  ctx.restore();
+  if(!G.started){
+    ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='rgba(224,90,30,.75)';ctx.font='bold 14px Bebas Neue';ctx.textAlign='center';
+    ctx.fillText('CONNECT BLUEPRINTS TO UNLOCK',CW/2,CH/2-8);
+    ctx.fillStyle='rgba(232,234,240,.38)';ctx.font='8px JetBrains Mono';
+    ctx.fillText('Drag wires → Apply → play!',CW/2,CH/2+10);ctx.textAlign='left';
+  }
+  if(G.dead){
+    ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#f87171';ctx.font='bold 30px Bebas Neue';ctx.textAlign='center';
+    ctx.fillText('GAME OVER',CW/2,CH/2-14);
+    ctx.fillStyle='rgba(232,234,240,.55)';ctx.font='9px JetBrains Mono';
+    ctx.fillText('Out of lives — restarting…',CW/2,CH/2+8);ctx.textAlign='left';
+  }
+  if(G.won){
+    ctx.fillStyle='rgba(0,0,0,.72)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#f5c842';ctx.font='bold 32px Bebas Neue';ctx.textAlign='center';
+    ctx.fillText('YOU WIN!',CW/2,CH/2-16);
+    ctx.fillStyle='#e8eaf0';ctx.font='10px Nunito';
+    ctx.fillText('Coins: '+G.coins+' · Blueprint complete!',CW/2,CH/2+6);
+    ctx.fillStyle='rgba(224,90,30,.65)';ctx.font='9px JetBrains Mono';
+    ctx.fillText('Press R to play again',CW/2,CH/2+22);ctx.textAlign='left';
+  }
+}
+
+function updateHUD(){
+  document.getElementById('hudCoins').textContent=G.coins;
+  document.getElementById('hudLives').textContent=F.lives?'♥'.repeat(Math.max(0,G.hp))+(G.hp<=0?'💀':''):'—';
+  document.getElementById('hudStep').textContent=done.size+'/'+STEPS.length;
+}
+function updateCharCard(){
+  document.getElementById('hcName').textContent=CHAR.name;
+  document.getElementById('hcSpd').textContent=Math.round(CHAR.speed*105)+' UU/s';
+  document.getElementById('hcJmp').textContent=Math.round(CHAR.jumpVel*62)+' UU/s';
+  document.getElementById('hcGrv').textContent=CHAR.gravScale.toFixed(1)+'×';
+  document.getElementById('hcLiv').textContent=CHAR.lives;
+}
+function sout(msg){
+  document.getElementById('obar').textContent=msg;
+  document.getElementById('hudSys').textContent=msg.slice(0,14)+(msg.length>14?'…':'');
+}
+function resizeCanvas(){
+  const wrap=canvas.parentElement;if(!wrap)return;
+  const s=Math.min(wrap.clientWidth-12,(wrap.clientHeight||400)-12,400);
+  CW=CH=Math.max(s,200);canvas.width=CW;canvas.height=CH;
+}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+function openFS(){try{canvas.requestFullscreen();}catch(e){}}
+function quickPlay(){Object.keys(F).forEach(function(k){F[k]=true;});G.started=true;G.hp=CHAR.lives;updateHUD();updateCharCard();sout('⚡ Quick Play on! Arrow/WASD+Space or use the d-pad.');document.getElementById('liveStatus').textContent='All systems ✓';}
+function gameLoop(){update();draw();requestAnimationFrame(gameLoop);}
+
+/* ═══════════════════════════════════════════════════════
+   STEPS
+═══════════════════════════════════════════════════════ */
+const STEPS=[
+{title:'Project Setup',tag:'STEP 1 · SETUP',
+intro:'Connect <strong>Event BeginPlay</strong> → <strong>Init Game Mode</strong>. This is the entry point for your platformer — Unreal fires BeginPlay when the level loads.',
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_GameMode',x:8,y:28,w:158,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Init Game Mode',x:196,y:14,w:145,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l2'}],[]),
+boxes:[{t:'box-c',tx:'In UE5, BP_GameMode controls all rules and flow. BeginPlay fires once per play session. Everything starts here — physics, inputs, HUD, and your character all boot from this single event node.'}],
+onApply:function(){sout('✅ Game Mode initialised. BeginPlay is wired!');document.getElementById('liveStatus').textContent='Setup ✓';}},
+
+{title:'Character Blueprint',tag:'STEP 2 · CHARACTER',
+intro:'Connect <strong>Spawn Default Pawn</strong> → <strong>Possess</strong>. This creates your Character Blueprint actor and hands control to Player 0.',
+pz:mkPZ([{id:'n1',type:'func',title:'Spawn Default Pawn',sub:'BP_GameMode',x:8,y:20,w:162,rp:[{id:'r1',type:'exec',label:''},{id:'r1a',type:'object',label:'Return'}]},{id:'n2',type:'func',title:'Possess',x:200,y:8,w:125,lp:[{id:'l2e',type:'exec',label:''},{id:'l2p',type:'object',label:'In Pawn'}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r1a',t:'l2p'}],[]),
+boxes:[{t:'box-t',tx:'BP_PlatformerCharacter extends the built-in Character class, giving you CapsuleComponent for collision and CharacterMovementComponent for physics — completely free from the parent class.'}],
+onApply:function(){sout('✅ Character Blueprint spawned and possessed by Player 0!');}},
+
+{title:'Move Left & Right',tag:'STEP 3 · MOVEMENT',
+intro:'Connect <strong>InputAxis MoveRight</strong> → <strong>Add Movement Input</strong>. Type a World Direction X value (e.g. <strong>1.0</strong>).',
+pz:mkPZ([{id:'n1',type:'event',title:'InputAxis MoveRight',sub:'BP_PlatformerChar',x:8,y:26,w:168,rp:[{id:'r1',type:'exec',label:''},{id:'r1a',type:'float',label:'Axis Value'}]},{id:'n2',type:'func',title:'Add Movement Input',x:208,y:8,w:162,lp:[{id:'l2e',type:'exec',label:''},{id:'l2d',type:'vector',label:'World Direction'},{id:'l2s',type:'float',label:'Scale Value'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Direction X (e.g. 1.0)',val:''}}],[{f:'r1',t:'l2e'},{f:'r1a',t:'l2s'}],[{id:'n2',ok:function(v){return parseFloat(v)>0;}}]),
+boxes:[{t:'box-c',tx:'Add Movement Input respects CharacterMovementComponent — acceleration, friction and max walk speed are handled automatically. You supply a direction and scale; the component does the rest.'}],
+onApply:function(v){CHAR.speed=3.8;F.move=true;G.started=true;updateCharCard();sout('✅ Movement on! Arrow keys / WASD to move. Direction: '+v['n2']);}},
+
+{title:'Jump',tag:'STEP 4 · JUMP',
+intro:'Connect <strong>InputAction Jump (Pressed)</strong> → <strong>Jump</strong>. The built-in Jump() function handles ground checks and launch velocity automatically.',
+pz:mkPZ([{id:'n1',type:'event',title:'InputAction Jump',sub:'Pressed',x:8,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Jump',sub:'Inherited from Character',x:192,y:12,w:148,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l2'}],[]),
+boxes:[{t:'box-t',tx:'Character→Jump() checks IsOnGround automatically. It reads JumpZVelocity from CharacterMovementComponent. Override the function in your child Blueprint to add custom jump behaviour.'}],
+onApply:function(){F.jump=true;sout('✅ Jump enabled! Press Space or tap JUMP. Velocity: '+Math.round(CHAR.jumpVel*62)+' UU/s');}},
+
+{title:'Gravity Scale',tag:'STEP 5 · GRAVITY',
+intro:'Connect <strong>Event BeginPlay</strong> → <strong>Set Gravity Scale</strong>. Type a float — try <strong>2.0</strong> for snappy, or <strong>1.2</strong> for floaty.',
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_PlatformerChar',x:8,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Set Gravity Scale',x:192,y:8,w:152,lp:[{id:'l2e',type:'exec',label:''},{id:'l2g',type:'float',label:'Gravity Scale'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Gravity (0.5 – 4.0)',val:''}}],[{f:'r1',t:'l2e'}],[{id:'n2',ok:function(v){var n=parseFloat(v);return n>=0.5&&n<=4;}}]),
+boxes:[{t:'box-c',tx:'UE default GravityScale is 1.0. Most 2D platformers use 2.0–3.0 for a satisfying snappy drop. Too high = falls like a brick. Too low = floaty balloon. Try different values and feel the difference!'}],
+onApply:function(v){var g=parseFloat(v['n2'])||2;CHAR.gravScale=Math.max(0.5,Math.min(4,g));F.gravity=true;updateCharCard();sout('✅ Gravity set to '+CHAR.gravScale+'×. Jump to feel the difference!');}},
+
+{title:'Coyote Time',tag:'STEP 6 · COYOTE',
+intro:'Connect <strong>On Walk Off Ledge</strong> → <strong>Set Timer by Event</strong> → on complete, <strong>Clear Jump Buffer</strong>. This grace window lets players jump just after walking off a ledge.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Walk Off Ledge',x:8,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Set Timer by Event',x:192,y:8,w:158,lp:[{id:'l2e',type:'exec',label:''},{id:'l2t',type:'float',label:'Time (s)'}],rp:[{id:'r2',type:'exec',label:'Expired'}],vf:{hint:'Grace secs (e.g. 0.12)',val:''}},{id:'n3',type:'func',title:'Clear Coyote Buffer',x:382,y:8,w:140,lp:[{id:'l3',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3'}],[{id:'n2',ok:function(v){var n=parseFloat(v);return n>=0.05&&n<=0.3;}}]),
+boxes:[{t:'box-t',tx:'Named after Wile E. Coyote. Even 0.1s makes controls feel dramatically more forgiving. This technique has been standard in every commercial 2D platformer since the 1980s — players expect it.'}],
+onApply:function(v){F.coyote=true;sout('✅ Coyote time active! Walk off a ledge and jump late. Grace: '+(v['n2']||'0.12')+'s');}},
+
+{title:'Double Jump',tag:'STEP 7 · DBL JUMP',
+intro:'Connect <strong>InputAction Jump</strong> → <strong>Branch (Is Falling?)</strong> → True: <strong>Launch Character (upward)</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'InputAction Jump',sub:'Pressed',x:8,y:36,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Is Falling',sub:'CharMoveComp',x:8,y:96,w:125,rp:[{id:'r2b',type:'bool',label:'Return'}]},{id:'n3',type:'branch',title:'Branch',x:170,y:18,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Condition'}],rp:[{id:'r3t',type:'exec',label:'True'},{id:'r3f',type:'exec',label:'False'}]},{id:'n4',type:'func',title:'Launch Character',x:302,y:6,w:135,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'vector',label:'Velocity'}],rp:[{id:'r4',type:'exec',label:''}]}],[{f:'r1',t:'l3e'},{f:'r2b',t:'l3c'},{f:'r3t',t:'l4e'}],[]),
+boxes:[{t:'box-c',tx:'Set JumpMaxCount to 2 on CharacterMovementComponent for an even cleaner solution. Override Z = True in Launch Character replaces vertical velocity completely, giving a consistent second jump height.'}],
+onApply:function(){F.doublejump=true;G.jumpsLeft=2;sout('✅ Double Jump! Press Space twice in the air.');}},
+
+{title:'Camera Follow',tag:'STEP 8 · CAMERA',
+intro:'Connect <strong>Event Tick</strong> → <strong>VInterp To</strong> → <strong>Set World Location (SpringArm)</strong>. The camera smoothly tracks the character every frame.',
+pz:mkPZ([{id:'n1',type:'event',title:'Event Tick',sub:'BP_PlatformerChar',x:8,y:28,w:142,rp:[{id:'r1',type:'exec',label:''},{id:'r1d',type:'float',label:'Delta'}]},{id:'n2',type:'func',title:'VInterp To',x:176,y:8,w:138,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'vector',label:'Current'},{id:'l2t',type:'vector',label:'Target'}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'vector',label:'Result'}]},{id:'n3',type:'func',title:'Set World Location',sub:'SpringArm',x:344,y:8,w:152,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vector',label:'New Location'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2v',t:'l3v'}],[]),
+boxes:[{t:'box-t',tx:'Spring Arm + Camera component is the standard UE setup. Set Camera Lag Speed 6–10 for smooth tracking. The camera lags behind giving a natural feel. Constraint the boom to X axis only for a true side-scroller.'}],
+onApply:function(){F.camera=true;sout('✅ Camera follow on! The view now tracks your character.');}},
+
+{title:'Coin Collectible',tag:'STEP 9 · COINS',
+intro:'Connect <strong>On Comp Begin Overlap (BP_Coin)</strong> → <strong>Cast To BP_PlatformerChar</strong> → <strong>Add Coin + Destroy</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Comp Begin Overlap',sub:'BP_Coin',x:8,y:20,w:175,rp:[{id:'r1',type:'exec',label:''},{id:'r1o',type:'object',label:'Other Actor'}]},{id:'n2',type:'cast',title:'Cast To BP_PlatformerChar',x:212,y:8,w:175,lp:[{id:'l2e',type:'exec',label:''},{id:'l2o',type:'object',label:'Object'}],rp:[{id:'r2',type:'exec',label:'Success'}]},{id:'n3',type:'func',title:'Add Coin + Destroy',x:418,y:8,w:110,lp:[{id:'l3',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r1o',t:'l2o'},{f:'r2',t:'l3'}],[]),
+boxes:[{t:'box-c',tx:'Cast checks the overlapping actor IS a PlatformerCharacter before rewarding. This stops enemies or physics objects from accidentally triggering coin pickup. Always cast when dealing with Actor overlaps.'}],
+onApply:function(){F.coins=true;G.coins=0;sout('✅ Coins active! Collect the golden circles.');}},
+
+{title:'Coin Counter HUD',tag:'STEP 10 · HUD',
+intro:'Connect <strong>On Coin Added (Event Dispatcher)</strong> → <strong>Get Coin Count</strong> → <strong>Set Text (WBP_HUD)</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Coin Added',sub:'Event Dispatcher',x:8,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'vget',title:'Get Coin Count',x:8,y:90,w:130,rp:[{id:'r2',type:'int',label:'Count'}]},{id:'n3',type:'func',title:'Set Text',sub:'WBP_HUD',x:178,y:8,w:130,lp:[{id:'l3e',type:'exec',label:''},{id:'l3t',type:'string',label:'In Text'}],rp:[{id:'r3',type:'exec',label:''}]}],[{f:'r1',t:'l3e'},{f:'r2',t:'l3t'}],[]),
+boxes:[{t:'box-t',tx:'In Widget Blueprint, use a Binding on a Text block to auto-update without calling Set Text manually. Event-driven (as here) is more performant — bindings run every frame which can be wasteful.'}],
+onApply:function(){F.coinhud=true;updateHUD();sout('✅ Coin HUD live! Watch the Coins counter below as you collect.');}},
+
+{title:'Spike Hazard',tag:'STEP 11 · SPIKES',
+intro:'Connect <strong>On Comp Begin Overlap (BP_Spike)</strong> → <strong>Apply Damage</strong> then <strong>Spawn Emitter</strong>. Type the damage amount.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Comp Begin Overlap',sub:'BP_Spike',x:8,y:20,w:175,rp:[{id:'r1',type:'exec',label:''},{id:'r1o',type:'object',label:'Other Actor'}]},{id:'n2',type:'func',title:'Apply Damage',x:212,y:8,w:130,lp:[{id:'l2e',type:'exec',label:''},{id:'l2d',type:'float',label:'Damage'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Damage amount (e.g. 1)',val:''}},{id:'n3',type:'func',title:'Spawn Emitter',sub:'NS_DeathFX',x:374,y:8,w:120,lp:[{id:'l3',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3'}],[{id:'n2',ok:function(v){return parseFloat(v)>0;}}]),
+boxes:[{t:'box-c',tx:'Apply Damage routes through UE\'s damage pipeline. The Character\'s Take Damage event fires, you subtract from Health and check for death. This centralises all damage logic in one place — clean architecture.'}],
+onApply:function(v){F.spikes=true;sout('✅ Spikes armed! Touch the grey triangles to take damage. Dmg: '+(v['n2']||'1'));}},
+
+{title:'Checkpoint & Respawn',tag:'STEP 12 · CHECKPOINT',
+intro:'Connect <strong>On Overlap (Checkpoint)</strong> → <strong>Set Respawn Location</strong>. On death, <strong>Set Actor Location</strong> to the saved point.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Comp Begin Overlap',sub:'BP_Checkpoint',x:8,y:20,w:175,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Set Respawn Point',x:212,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2l',type:'vector',label:'Location'}],rp:[{id:'r2',type:'exec',label:''}]},{id:'n3',type:'func',title:'Play Checkpoint FX',x:390,y:8,w:132,lp:[{id:'l3',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3'}],[]),
+boxes:[{t:'box-t',tx:'Store the respawn Vector in a variable on GameMode or PlayerState so it persists across deaths. On death, teleport with Set Actor Location and call Re-Enable Input — otherwise the player stays frozen.'}],
+onApply:function(){F.checkpoint=true;G.respawn={x:2*T,y:9*T};sout('✅ Checkpoints active! Respawn point saved on contact.');}},
+
+{title:'Moving Platform',tag:'STEP 13 · MOV PLAT',
+intro:'Connect <strong>Event Tick</strong> → <strong>Timeline: Platform</strong> → <strong>Lerp Vector</strong> → <strong>Set Actor Location</strong>. The platform oscillates between two points.',
+pz:mkPZ([{id:'n1',type:'event',title:'Event Tick',sub:'BP_MovingPlatform',x:8,y:28,w:140,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Timeline: Platform',x:176,y:8,w:130,lp:[{id:'l2',type:'exec',label:'Play'}],rp:[{id:'r2e',type:'exec',label:'Update'},{id:'r2v',type:'float',label:'Alpha'}]},{id:'n3',type:'math',title:'Lerp (Vector)',x:336,y:8,w:116,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'float',label:'Alpha'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3v',type:'vector',label:'Result'}]},{id:'n4',type:'func',title:'Set Actor Location',x:482,y:8,w:50,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'vector',label:''}]}],[{f:'r1',t:'l2'},{f:'r2e',t:'l3e'},{f:'r2v',t:'l3a'},{f:'r3e',t:'l4e'},{f:'r3v',t:'l4v'}],[]),
+boxes:[{t:'box-c',tx:'Timelines are perfect for looping platform movement. Create a float curve (0→1→0), set it to loop, and Lerp between StartPoint and EndPoint vectors. The platform automatically reverses direction.'}],
+onApply:function(){F.movingplat=true;sout('✅ Moving platforms active! Two patrol platforms now in the level.');}},
+
+{title:'Spring / Bounce Pad',tag:'STEP 14 · SPRING',
+intro:'Connect <strong>On Overlap (BP_SpringPad)</strong> → <strong>Launch Character</strong> with high Z velocity. Override Z must be True.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Comp Begin Overlap',sub:'BP_SpringPad',x:8,y:20,w:175,rp:[{id:'r1',type:'exec',label:''},{id:'r1o',type:'object',label:'Other Actor'}]},{id:'n2',type:'func',title:'Launch Character',x:212,y:8,w:142,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'vector',label:'Launch Velocity'},{id:'l2b',type:'bool',label:'Override Z'}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l2e'}],[]),
+boxes:[{t:'box-t',tx:'Override Z = True replaces any current vertical velocity completely, giving a reliable consistent bounce. Keep Override XY = False to preserve horizontal momentum. Z of 1500–2000 UU/s feels great.'}],
+onApply:function(){F.spring=true;sout('✅ Spring pads active! The green coil launches you skyward.');}},
+
+{title:'Level End Flag',tag:'STEP 15 · FLAG',
+intro:'Connect <strong>On Overlap (BP_LevelEnd)</strong> → <strong>Cast To BP_PlatformerChar</strong> → <strong>Open Level By Name</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Comp Begin Overlap',sub:'BP_LevelEnd',x:8,y:20,w:175,rp:[{id:'r1',type:'exec',label:''},{id:'r1o',type:'object',label:'Other Actor'}]},{id:'n2',type:'cast',title:'Cast To BP_PlatformerChar',x:212,y:8,w:172,lp:[{id:'l2e',type:'exec',label:''},{id:'l2o',type:'object',label:'Object'}],rp:[{id:'r2',type:'exec',label:'Success'}]},{id:'n3',type:'func',title:'Open Level By Name',x:414,y:8,w:118,lp:[{id:'l3',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r1o',t:'l2o'},{f:'r2',t:'l3'}],[]),
+boxes:[{t:'box-c',tx:'Open Level fires async level streaming. For a win screen load a dedicated WinScreen map. Use Game Instance variables to carry the score between levels — Game Instance persists across map loads.'}],
+onApply:function(){F.flag=true;sout('✅ Flag active! Reach the orange flag on the right to win.');}},
+
+{title:'Lives System',tag:'STEP 16 · LIVES',
+intro:'Connect <strong>On Player Death</strong> → <strong>Decrement Lives</strong> → <strong>Branch (Lives > 0)</strong> → Respawn or Game Over.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Player Death',x:8,y:28,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Decrement Lives',x:184,y:8,w:132,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''},{id:'r2i',type:'int',label:'Lives Left'}]},{id:'n3',type:'branch',title:'Branch',x:344,y:6,w:90,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Lives > 0'}],rp:[{id:'r3t',type:'exec',label:'True'},{id:'r3f',type:'exec',label:'False'}]},{id:'n4',type:'func',title:'Respawn',x:464,y:2,w:68,lp:[{id:'l4',type:'exec',label:''}]},{id:'n5',type:'func',title:'Game Over',x:464,y:50,w:68,lp:[{id:'l5',type:'exec',label:''}]}],[{f:'r1',t:'l2'},{f:'r2',t:'l3e'},{f:'r3t',t:'l4'},{f:'r3f',t:'l5'}],[]),
+boxes:[{t:'box-t',tx:'Store Lives in a Game Instance variable so it persists across map reloads. Branch checks lives remain: True → respawn at checkpoint; False → Game Over screen, then reset lives when returning to main menu.'}],
+onApply:function(){F.lives=true;G.hp=CHAR.lives;updateHUD();sout('✅ Lives active! ♥ shown below. Touch spikes to lose a life.');}},
+
+{title:'Speed Boost Pickup',tag:'STEP 17 · BOOST',
+intro:'Connect <strong>On Overlap (BP_SpeedBoost)</strong> → <strong>Set Max Walk Speed (×1.6)</strong> → <strong>Set Timer to reset</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Overlap',sub:'BP_SpeedBoost',x:8,y:20,w:152,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Set Max Walk Speed',x:188,y:8,w:155,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'float',label:'Speed'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Boosted speed (e.g. 640)',val:''}},{id:'n3',type:'func',title:'Set Timer By Event',x:374,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''},{id:'l3t',type:'float',label:'Duration'}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[{id:'n2',ok:function(v){return parseFloat(v)>=200;}}]),
+boxes:[{t:'box-c',tx:'1.5–2× normal speed feels impactful without breaking level design. Use Set Timer By Function Name to auto-revert after 3–5 seconds. Play a Niagara burst on pickup — purple or lightning blue looks great.'}],
+onApply:function(v){F.speedboost=true;sout('✅ Speed Boost ready! Purple trail on activation. Speed: '+(v['n2']||'640')+' UU/s');}},
+
+{title:'Particle FX',tag:'STEP 18 · FX',
+intro:'Connect <strong>On Jumped</strong> → <strong>Spawn Niagara (NS_JumpDust)</strong>. Connect <strong>On Landed</strong> → <strong>Spawn Niagara (NS_LandImpact)</strong>.',
+pz:mkPZ([{id:'n1',type:'event',title:'On Jumped',sub:'BP_PlatformerChar',x:8,y:28,w:150,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Spawn Niagara System',sub:'NS_JumpDust',x:184,y:8,w:155,lp:[{id:'l2e',type:'exec',label:''},{id:'l2l',type:'vector',label:'Location'}],rp:[{id:'r2',type:'exec',label:''}]},{id:'n3',type:'event',title:'On Landed',sub:'BP_PlatformerChar',x:8,y:94,w:150,rp:[{id:'r3',type:'exec',label:''}]},{id:'n4',type:'func',title:'Spawn Niagara System',sub:'NS_LandImpact',x:184,y:90,w:155,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r3',t:'l4e'}],[]),
+boxes:[{t:'box-t',tx:'Niagara replaces Cascade in UE5. Good juice rule: every player action needs visual + audio feedback. Add camera shake on land, squash/stretch on jump start, coin burst on collect — transforms feel from flat to polished.'}],
+onApply:function(){F.particles=true;sout('✅ Particle FX on! Blue sparks on jump, gold bursts on coin collect.');}},
+
+{title:'Animation State Machine',tag:'STEP 19 · ANIM',
+intro:'Connect <strong>Anim Graph Update</strong> → check <strong>Get Velocity (Vector Length > 0)</strong> → <strong>Set Anim State</strong>. Idle is the default.',
+pz:mkPZ([{id:'n1',type:'event',title:'Anim Graph Update',sub:'ABP_Platformer',x:8,y:28,w:155,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Velocity',sub:'Owner',x:8,y:86,w:115,rp:[{id:'r2v',type:'vector',label:'Velocity'}]},{id:'n3',type:'math',title:'VectorLength > 0',x:148,y:75,w:128,lp:[{id:'l3v',type:'vector',label:'Vector'}],rp:[{id:'r3b',type:'bool',label:'Is Moving'}]},{id:'n4',type:'anim',title:'Set Anim State',sub:'Idle / Run / Jump',x:200,y:10,w:130,lp:[{id:'l4e',type:'exec',label:''},{id:'l4b',type:'bool',label:'Is Moving'}],rp:[{id:'r4',type:'exec',label:''}]}],[{f:'r1',t:'l4e'},{f:'r2v',t:'l3v'},{f:'r3b',t:'l4b'}],[]),
+boxes:[{t:'box-c',tx:'Animation Blueprint (ABP) has its own separate graph. The Anim Graph runs every frame. State Machines handle Idle→Run→Jump transitions based on booleans/floats set from the character Blueprint each tick.'}],
+onApply:function(){sout('✅ Animation State Machine wired! Idle, Run, Jump states connected.');}},
+
+{title:'Name Your Character & Launch!',tag:'STEP 20 🚀 LAUNCH',
+intro:'Connect <strong>BeginPlay</strong> → <strong>Sequence</strong> → enable all four systems. Type your character name and Launch!',
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_GameMode',x:8,y:26,w:150,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'macro',title:'Sequence',x:186,y:6,w:88,lp:[{id:'l2',type:'exec',label:'In'}],rp:[{id:'r2a',type:'exec',label:'Player'},{id:'r2b',type:'exec',label:'Camera'},{id:'r2c',type:'exec',label:'HUD'},{id:'r2d',type:'exec',label:'FX'}]},{id:'n3',type:'func',title:'Enable Player',x:304,y:2,w:102,lp:[{id:'l3',type:'exec',label:''}]},{id:'n4',type:'func',title:'Enable Camera',x:304,y:40,w:102,lp:[{id:'l4',type:'exec',label:''}]},{id:'n5',type:'func',title:'Show HUD',x:304,y:78,w:102,lp:[{id:'l5',type:'exec',label:''}]},{id:'n6',type:'func',title:'Enable Niagara',x:304,y:116,w:102,lp:[{id:'l6',type:'exec',label:''}]},{id:'n7',type:'vset',title:'Set Char Name',sub:'Designer',x:424,y:50,w:104,lp:[{id:'l7e',type:'exec',label:''},{id:'l7n',type:'string',label:'Name'}],vf:{hint:'Name your character!',val:''}}],[{f:'r1',t:'l2'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'},{f:'r2d',t:'l6'},{f:'r2d',t:'l7e'}],[{id:'n7',ok:function(v){return v.trim().length>=2;}}]),
+extraHTML:'<div class="char-input-wrap"><div class="char-input-lbl">Or type your character name here:</div><input class="char-name-input" id="charNameInput" placeholder="e.g. Nova, Pip, Echo, Blaze…" oninput="CHAR.name=this.value||\'BP_PlatformerChar\';updateCharCard()"></div>',
+boxes:[{t:'box-t',tx:'20 Blueprint systems complete: move · jump · double jump · coyote time · gravity · camera · coins · HUD · spikes · checkpoint · moving platforms · springs · flag · lives · speed boost · particles · animation. Arrow/WASD + Space (or D-pad + JUMP button on mobile)!'}],
+onApply:function(v){
+  var name=(document.getElementById('charNameInput')&&document.getElementById('charNameInput').value.trim()||v['n7']||'Hero').trim();
+  CHAR.name=name;updateCharCard();
+  Object.keys(F).forEach(function(k){F[k]=true;});
+  G.started=true;G.hp=CHAR.lives;updateHUD();
+  sout('🚀 '+name.toUpperCase()+' is live! Collect coins, avoid spikes, reach the flag!');
+  document.getElementById('liveStatus').textContent='All systems ✓';
+}},
+];
+
+/* ═══════════════════════════════════════════════════════
+   STEP ENGINE
+═══════════════════════════════════════════════════════ */
+let cur=0;
+const done=new Set();
+const TOTAL=STEPS.length;
+let activeInst=null,completedVals={};
+
+function go(i){
+  if(i<0||i>=TOTAL)return;
+  if(activeInst&&activeInst.destroy)activeInst.destroy();
+  cur=i;renderStep();
+  document.getElementById('stepBody').scrollTop=0;
+}
+
+function renderStep(){
+  const s=STEPS[cur];
+  var boxes='';(s.boxes||[]).forEach(function(b){boxes+='<div class="box '+b.t+'">'+b.tx+'</div>';});
+  document.getElementById('stepBody').innerHTML=
+    '<div class="step-tag">'+s.tag+'</div>'
+    +'<div class="step-title">'+s.title+'</div>'
+    +'<p class="step-intro">'+s.intro+'</p>'
+    +s.pz.html+(s.extraHTML||'')+boxes
+    +'<button class="run-btn" id="applyBtn" onclick="doApply()" disabled>🔗 Complete Blueprint to Apply</button>'
+    +'<div class="step-nav">'
+    +'<button class="btn-p" onclick="go('+(cur-1)+')" '+(cur===0?'disabled':'')+'>← Prev</button>'
+    +'<button class="btn-n" onclick="go('+(cur+1)+')" '+(cur===TOTAL-1?'disabled':'')+'>Next →</button>'
+    +'</div>';
+  document.getElementById('stepTabs').innerHTML=STEPS.map(function(st,i){
+    return '<button class="tb'+(i===cur?' active':'')+(done.has(i)?' done':'')+'" onclick="go('+i+')">'+(i+1)+'</button>';
+  }).join('');
+  var activeTab=document.querySelector('.tb.active');
+  if(activeTab)activeTab.scrollIntoView({inline:'nearest',behavior:'smooth'});
+  updateProg();completedVals={};
+  requestAnimationFrame(function(){
+    activeInst=s.pz.init(function(vals){
+      completedVals=vals;
+      var btn=document.getElementById('applyBtn');
+      if(btn){btn.disabled=false;btn.textContent='▶ Apply — Unlock Feature!';}
+    });
+  });
+}
+
+function doApply(){
+  done.add(cur);STEPS[cur].onApply(completedVals);updateProg();updateHUD();
+  document.getElementById('liveStatus').textContent='Step '+(cur+1)+' done ✓';
+  var btn=document.getElementById('applyBtn');
+  if(btn){var o=btn.textContent;btn.textContent='✅ Applied!';setTimeout(function(){if(btn)btn.textContent=o;},1200);}
+}
+
+function updateProg(){
+  document.getElementById('progFill').style.width=Math.max(2,Math.round(done.size/TOTAL*100))+'%';
+  document.getElementById('progDots').innerHTML=STEPS.map(function(_,i){
+    return '<div class="pd'+(done.has(i)?' done':i===cur?' active':'')+'"></div>';
+  }).join('');
+  document.getElementById('hudStep').textContent=done.size+'/'+TOTAL;
+}
+
+renderStep();
+gameLoop();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+</body>
+</html>

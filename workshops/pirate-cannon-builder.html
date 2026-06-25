@@ -1,0 +1,1480 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Build a pirate cannon game in your browser with this free game dev workshop from JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/pirate-cannon-builder.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pirate Cannon Forge | JVDesignStudio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<style>
+/* ── JVDS Site Nav ── */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=IM+Fell+English+SC&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  --parchment: #f4e4c1;
+  --parchment-dark: #d4c4a1;
+  --ink: #2c1810;
+  --ink-light: #5c3a28;
+  --gold: #c9a84c;
+  --gold-bright: #e8c84c;
+  --rust: #8b4513;
+  --ocean: #1a3a4a;
+  --ocean-deep: #0d1f2d;
+  --cannon-dark: #2a2a2a;
+  --cannon-mid: #444;
+  --wood: #6d4c2a;
+  --rope: #c9a84c;
+  --red-accent: #8b2500;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--ocean-deep);
+  color: var(--parchment);
+  font-family: 'IM Fell English SC', serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: 60px 1fr;
+  height: 100vh;
+  gap: 0;
+}
+
+/* === HEADER === */
+header {
+  grid-column: 1 / -1;
+  background: linear-gradient(180deg, var(--ocean) 0%, var(--ocean-deep) 100%);
+  border-bottom: 2px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+
+header h1 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,168,76,0.3);
+  letter-spacing: 3px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-actions button {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 6px 14px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+}
+
+.header-actions button:hover {
+  background: var(--gold);
+  color: var(--ocean-deep);
+}
+
+/* === SIDEBAR === */
+#sidebar {
+  background: linear-gradient(135deg, rgba(26,58,74,0.95), rgba(13,31,45,0.98));
+  border-right: 1px solid rgba(201,168,76,0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.step-progress {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+}
+
+.progress-label {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(201,168,76,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.step-counter {
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  color: var(--parchment-dark);
+  margin-top: 5px;
+}
+
+/* Step list */
+.step-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
+}
+
+.step-list::-webkit-scrollbar { width: 4px; }
+.step-list::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+.step-item {
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.step-item:hover {
+  background: rgba(201,168,76,0.06);
+}
+
+.step-item.active {
+  background: rgba(201,168,76,0.1);
+  border-color: var(--gold);
+}
+
+.step-item.completed {
+  opacity: 0.7;
+}
+
+.step-item.completed .step-num {
+  background: var(--gold);
+  color: var(--ocean-deep);
+}
+
+.step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  flex-shrink: 0;
+  color: var(--gold);
+  transition: all 0.3s;
+}
+
+.step-name {
+  font-size: 12.5px;
+  color: var(--parchment);
+  line-height: 1.3;
+}
+
+.step-item.active .step-name { color: var(--gold-bright); }
+
+/* Controls panel */
+.controls-panel {
+  padding: 14px;
+  border-top: 1px solid rgba(201,168,76,0.15);
+  background: rgba(0,0,0,0.15);
+}
+
+.control-title {
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.control-group {
+  margin-bottom: 12px;
+}
+
+.control-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--parchment-dark);
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  background: rgba(201,168,76,0.2);
+  border-radius: 2px;
+  outline: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--gold);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.control-group .range-val {
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  color: var(--gold-bright);
+  float: right;
+  margin-top: -16px;
+}
+
+.control-group select {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--parchment);
+  font-family: 'IM Fell English SC', serif;
+  font-size: 12px;
+  border-radius: 4px;
+  outline: none;
+}
+
+.control-group select option { background: var(--ocean-deep); }
+
+input[type="color"] {
+  width: 100%;
+  height: 30px;
+  border: 1px solid rgba(201,168,76,0.3);
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* Navigation */
+.step-nav {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(201,168,76,0.15);
+}
+
+.step-nav button {
+  flex: 1;
+  padding: 8px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+  letter-spacing: 1px;
+}
+
+.btn-prev {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+}
+
+.btn-next {
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--ocean-deep);
+  font-weight: 700;
+}
+
+.btn-prev:hover { background: rgba(201,168,76,0.15); }
+.btn-next:hover { background: var(--gold-bright); }
+.btn-prev:disabled, .btn-next:disabled { opacity: 0.3; cursor: default; }
+
+/* === 3D VIEWPORT === */
+#viewport {
+  position: relative;
+  background: radial-gradient(ellipse at center, #1a2a3a 0%, var(--ocean-deep) 70%);
+  overflow: hidden;
+}
+
+#viewport canvas { display: block; }
+
+.viewport-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(201,168,76,0.5);
+  letter-spacing: 2px;
+  pointer-events: none;
+  animation: fadeHint 4s ease infinite;
+}
+
+@keyframes fadeHint {
+  0%,100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+.step-toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,31,45,0.92);
+  border: 1px solid var(--gold);
+  padding: 10px 24px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px;
+  color: var(--gold-bright);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+  z-index: 10;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.step-toast.show { opacity: 1; }
+
+/* Save modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: linear-gradient(145deg, var(--ocean), var(--ocean-deep));
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  padding: 28px;
+  width: 380px;
+  max-width: 90vw;
+}
+
+.modal h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.modal input[type="text"] {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--parchment);
+  font-family: 'IM Fell English SC', serif;
+  font-size: 14px;
+  border-radius: 4px;
+  outline: none;
+  margin-bottom: 14px;
+}
+
+.modal .saves-list {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.save-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-entry:hover { background: rgba(201,168,76,0.08); }
+
+.save-entry .save-name {
+  font-size: 13px;
+  color: var(--parchment);
+}
+
+.save-entry .save-date {
+  font-family: 'Courier Prime', monospace;
+  font-size: 10px;
+  color: var(--parchment-dark);
+}
+
+.save-entry .del-btn {
+  background: none;
+  border: none;
+  color: var(--red-accent);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+
+.modal-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-btns button {
+  padding: 7px 18px;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.btn-save-confirm {
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: var(--ocean-deep);
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.4);
+  color: var(--parchment-dark);
+}
+
+.btn-export {
+  background: rgba(139,69,19,0.3);
+  border: 1px solid var(--rust);
+  color: var(--parchment);
+}
+
+/* Grid floor helper hint */
+.dim-display {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(13,31,45,0.85);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  color: var(--parchment-dark);
+  z-index: 5;
+}
+
+.dim-display span { color: var(--gold-bright); }
+
+/* === MOBILE === */
+@media (max-width: 860px) {
+  body { overflow: auto; height: auto; min-height: 100vh; }
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  header {
+    grid-column: 1;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  header h1 {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    flex: 1 1 100%;
+    text-align: center;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+  .header-actions button {
+    font-size: 11px;
+    padding: 8px 10px;
+    flex: 1 1 auto;
+    min-width: 70px;
+  }
+  #viewport {
+    order: 1;
+    height: 55vh;
+    min-height: 320px;
+    position: relative;
+  }
+  #sidebar {
+    order: 2;
+    border-right: none;
+    border-top: 1px solid rgba(201,168,76,0.2);
+    max-height: none;
+    overflow: visible;
+  }
+  .step-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .controls-panel {
+    padding: 14px;
+  }
+  .step-nav {
+    position: sticky;
+    bottom: 0;
+    background: var(--ocean-deep);
+    padding: 10px;
+    border-top: 1px solid rgba(201,168,76,0.2);
+  }
+  .step-nav button {
+    font-size: 13px;
+    padding: 12px 8px;
+  }
+  .viewport-hint {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  .dim-display {
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+  .modal {
+    width: 92vw;
+    max-width: 92vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 480px) {
+  header h1 { font-size: 14px; }
+  .header-actions button { font-size: 10px; padding: 7px 6px; }
+  #viewport { height: 50vh; min-height: 280px; }
+}
+
+/* ── MOBILE RESPONSIVE PATCH ──────────────────────────── */
+@media(max-width:480px){
+  canvas{max-width:100% !important;height:auto !important;}
+  .header-actions button{font-size:10px;padding:6px 8px;}
+  #sidebar{font-size:.82rem;}
+  .step-list{font-size:.8rem;}
+}
+/* ─────────────────────────────────────────────────────── */
+
+
+/* ══ SITE NAV BAR ══════════════════════════════════════════ */
+@media(max-width:860px){.jvds-nav-links{display:none!important;}.jvds-nav-toggle{display:block!important;}}
+@media(min-width:861px){.jvds-mobile-nav{display:none!important;}}
+/* ══════════════════════════════════════════════════════════ */
+
+/* ── 3D BUILDER MOBILE PATCH ─────────────────────────────── */
+@media(max-width:480px){
+  /* Sliders: bigger touch targets */
+  input[type=range]{height:28px;cursor:pointer;}
+  /* Labels and values */
+  .ctrl-label,.control-label,.prop-label,.clabel{font-size:.72rem;}
+  .ctrl-val,.control-value,.prop-val,.cval{font-size:.72rem;min-width:38px;}
+  /* Section headers */
+  .section-title,.ctrl-section-title,.group-title{font-size:.68rem;padding:6px 10px;}
+  /* Step nav buttons */
+  .step-nav button,.snav button,.nav-btn{padding:12px 8px;font-size:.78rem;flex:1;}
+  /* Step list items */
+  .step-item,.step-li{padding:8px 10px;font-size:.75rem;}
+  /* Export/save buttons */
+  .export-btn,.save-btn,.hb button{padding:8px 10px;font-size:.7rem;}
+  /* Progress bar */
+  .prog-label,.progress-label{font-size:.6rem;}
+  /* Viewport height adjustment */
+  #viewport{min-height:280px !important;height:50vw !important;max-height:400px !important;}
+}
+@media(max-width:360px){
+  #viewport{min-height:240px !important;height:45vw !important;}
+  input[type=range]{height:32px;}
+}
+/* ─────────────────────────────────────────────────────────── */
+
+
+/* ── SITE FOOTER ── */
+.jv-site-footer{background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.1);padding:14px;text-align:center;font-size:.72rem;}
+.jv-site-footer a{color:rgba(255,255,255,.45);text-decoration:none;margin:0 8px;transition:color .15s;}
+.jv-site-footer a:hover{color:rgba(255,255,255,.85);}</style>
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/pirate-cannon-builder.html">
+    <meta property="og:title"       content="Pirate Cannon Forge">
+    <meta property="og:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/Cannon.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Pirate Cannon Forge">
+    <meta name="twitter:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Cannon.png">
+    <link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+<!-- BUILD:nav-tools -->
+<header class="jvds-site-nav" id="jvdsSiteNav">
+    <div class="jvds-nav-inner">
+        <a href="../index.html" class="jvds-nav-logo">
+            <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
+            JVDesignStudio
+        </a>
+        <nav class="jvds-nav-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">📚 Books</a>
+            <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+            <a href="../pages/games.html">🎮 Games</a>
+            <a href="../games/mobile-games.html">📱 Mobile</a>
+            <a href="../pages/workshop.html">🔧 Workshop</a>
+            <a href="../pages/dev-tools.html" class="nav-tools active">🛠️ Dev Tools</a>
+            <a href="../pages/freebies.html">🎁 Freebies</a>
+            <a href="my-progress.html">📊 Progress</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/search.html">🔍</a>
+        </nav>
+        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Toggle menu">☰</button>
+    </div>
+    <nav class="jvds-mobile-nav" id="jvdsMobileNav">
+        <a href="../index.html">🏠 Home</a>
+        <a href="../pages/books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/games.html">🎮 Games</a>
+        <a href="../games/mobile-games.html">📱 Mobile Games</a>
+        <a href="../pages/workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html">🎁 Freebies</a>
+            <a href="my-progress.html">📊 Progress</a>
+        <a href="../pages/content_hub.html">📦 All Projects</a>
+        <a href="../pages/devlog.html">📓 Dev Log</a>
+        <a href="../pages/about.html">👤 About</a>
+        <a href="../pages/contact.html">✉️ Contact</a>
+        <a href="../pages/search.html">🔍 Search</a>
+        <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+    </nav>
+</header>
+<!-- /BUILD:nav-tools -->
+
+<div id="app">
+  <header>
+
+    <h1>⚓ Pirate Cannon Forge</h1>
+    <div class="header-actions">
+      <button onclick="openSaveModal()">💾 Save</button>
+      <button onclick="openLoadModal()">📂 Load</button>
+      <button onclick="exportModel()">⬇ Export OBJ</button>
+      <button onclick="resetAll()">🔄 Reset</button>
+    </div>
+  </header>
+
+  <div id="sidebar">
+    <div class="step-progress">
+      <div class="progress-label">Forge Progress</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="step-counter" id="stepCounter">Step 1 of 15</div>
+    </div>
+    <div class="step-list" id="stepList"></div>
+    <div class="controls-panel" id="controlsPanel"></div>
+    <div class="step-nav">
+      <button class="btn-prev" id="btnPrev" onclick="prevStep()">◀ Previous</button>
+      <button class="btn-next" id="btnNext" onclick="nextStep()">Next ▶</button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div class="step-toast" id="stepToast"></div>
+    <div class="dim-display" id="dimDisplay">Workshop: <span id="wsWidth">3</span>m × <span id="wsDepth">3</span>m × <span id="wsHeight">2.5</span>m</div>
+    <div class="viewport-hint">Drag to orbit · Scroll to zoom</div>
+  </div>
+</div>
+
+<!-- Save/Load Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+// ============ DATA MODEL ============
+const STEPS = [
+  { id:'workshop', name:'Workshop Size', desc:'Set the dimensions of your workshop space' },
+  { id:'barrelLen', name:'Barrel Length', desc:'How long is the main cannon barrel?' },
+  { id:'barrelDia', name:'Barrel Diameter', desc:'Set the bore and outer diameter' },
+  { id:'barrelShape', name:'Barrel Taper', desc:'Taper and flare of the barrel' },
+  { id:'muzzle', name:'Muzzle Ring', desc:'Decorative ring at the mouth' },
+  { id:'muzzleFlare', name:'Muzzle Flare', desc:'Bell-out at the cannon mouth' },
+  { id:'cascabel', name:'Cascabel (Rear Knob)', desc:'The rounded knob at the breech' },
+  { id:'trunnions', name:'Trunnions', desc:'Side mounting cylinders' },
+  { id:'reinforceRings', name:'Reinforce Rings', desc:'Decorative bands along the barrel' },
+  { id:'ventHole', name:'Vent / Touch Hole', desc:'The ignition vent on top' },
+  { id:'carriage', name:'Gun Carriage', desc:'The wooden carriage body' },
+  { id:'wheels', name:'Wheels', desc:'Carriage wheels' },
+  { id:'axle', name:'Axle & Hardware', desc:'Connecting axle and metal bands' },
+  { id:'materials', name:'Materials & Color', desc:'Color and finish of cannon parts' },
+  { id:'details', name:'Final Details', desc:'Rope, wedge, and finishing touches' },
+];
+
+let params = {
+  wsWidth: 3, wsDepth: 3, wsHeight: 2.5,
+  barrelLen: 1.2, barrelOuterR: 0.12, barrelInnerR: 0.06,
+  barrelTaper: 0.15, barrelFlare: 0.0,
+  muzzleRingSize: 0.03, muzzleRingWidth: 0.04,
+  muzzleFlare: 0.04,
+  cascabelR: 0.06, cascabelNeckR: 0.035,
+  trunnionR: 0.03, trunnionLen: 0.08,
+  ringCount: 2, ringSize: 0.015,
+  ventHoleR: 0.008,
+  carriageLen: 0.9, carriageW: 0.35, carriageH: 0.18, carriageAngle: 8,
+  wheelR: 0.2, wheelThick: 0.04, spokeCount: 8,
+  axleR: 0.02,
+  barrelColor: '#3a3a3a', carriageColor: '#6d4c2a', wheelColor: '#5a3d1e',
+  metalColor: '#555555', ropeColor: '#c9a84c',
+  showRope: true, showWedge: true
+};
+
+let currentStep = 0;
+let scene, camera, renderer, cannonGroup, workshopBox, gridHelper;
+let isMouseDown = false, mouseX = 0, mouseY = 0, camTheta = 0.6, camPhi = 0.8, camDist = 3;
+
+// ============ THREE.JS SETUP ============
+function initThree() {
+  const vp = document.getElementById('viewport');
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0d1f2d, 0.15);
+
+  camera = new THREE.PerspectiveCamera(45, vp.clientWidth / vp.clientHeight, 0.01, 100);
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(vp.clientWidth, vp.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  vp.appendChild(renderer.domElement);
+
+  // Lights
+  const amb = new THREE.AmbientLight(0x4477aa, 0.5);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffeedd, 1.0);
+  dir.position.set(3, 5, 3);
+  dir.castShadow = true;
+  dir.shadow.mapSize.set(1024,1024);
+  scene.add(dir);
+  const rim = new THREE.DirectionalLight(0x88aacc, 0.3);
+  rim.position.set(-3, 2, -2);
+  scene.add(rim);
+  const point = new THREE.PointLight(0xffcc77, 0.4, 10);
+  point.position.set(0, 2, 0);
+  scene.add(point);
+
+  cannonGroup = new THREE.Group();
+  scene.add(cannonGroup);
+
+  // Controls
+  const cvs = renderer.domElement;
+  cvs.addEventListener('mousedown', e => { isMouseDown = true; mouseX = e.clientX; mouseY = e.clientY; });
+  cvs.addEventListener('mousemove', e => {
+    if (!isMouseDown) return;
+    const dx = e.clientX - mouseX, dy = e.clientY - mouseY;
+    camTheta -= dx * 0.005;
+    camPhi = Math.max(0.1, Math.min(Math.PI - 0.1, camPhi - dy * 0.005));
+    mouseX = e.clientX; mouseY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => isMouseDown = false);
+  cvs.addEventListener('wheel', e => {
+    camDist = Math.max(0.8, Math.min(8, camDist + e.deltaY * 0.003));
+    e.preventDefault();
+  }, { passive: false });
+
+  // Touch
+  let touchStartX, touchStartY, touchDist;
+  cvs.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchDist = Math.sqrt(dx*dx+dy*dy);
+    }
+  });
+  cvs.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      camTheta -= dx * 0.005;
+      camPhi = Math.max(0.1, Math.min(Math.PI-0.1, camPhi - dy * 0.005));
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      camDist = Math.max(0.8, Math.min(8, camDist - (d - touchDist) * 0.008));
+      touchDist = d;
+    }
+  }, { passive: false });
+
+  window.addEventListener('resize', () => {
+    camera.aspect = vp.clientWidth / vp.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(vp.clientWidth, vp.clientHeight);
+  });
+
+  animate();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const cx = camDist * Math.sin(camPhi) * Math.cos(camTheta);
+  const cy = camDist * Math.cos(camPhi);
+  const cz = camDist * Math.sin(camPhi) * Math.sin(camTheta);
+  camera.position.set(cx, cy + 0.3, cz);
+  camera.lookAt(0, 0.3, 0);
+  renderer.render(scene, camera);
+}
+
+// ============ CANNON BUILDER ============
+function rebuildCannon() {
+  while (cannonGroup.children.length) cannonGroup.remove(cannonGroup.children[0]);
+  if (workshopBox) { scene.remove(workshopBox); workshopBox = null; }
+  if (gridHelper) { scene.remove(gridHelper); gridHelper = null; }
+
+  const p = params;
+
+  // Workshop wireframe
+  const wGeo = new THREE.BoxGeometry(p.wsWidth, p.wsHeight, p.wsDepth);
+  const wEdges = new THREE.EdgesGeometry(wGeo);
+  workshopBox = new THREE.LineSegments(wEdges, new THREE.LineBasicMaterial({ color: 0xc9a84c, opacity: 0.25, transparent: true }));
+  workshopBox.position.y = p.wsHeight / 2;
+  scene.add(workshopBox);
+
+  // Grid floor
+  gridHelper = new THREE.GridHelper(Math.max(p.wsWidth, p.wsDepth), 20, 0x334455, 0x223344);
+  gridHelper.position.y = 0.001;
+  scene.add(gridHelper);
+
+  const barrelMat = new THREE.MeshStandardMaterial({ color: p.barrelColor, roughness: 0.4, metalness: 0.8 });
+  const metalMat = new THREE.MeshStandardMaterial({ color: p.metalColor, roughness: 0.3, metalness: 0.9 });
+  const woodMat = new THREE.MeshStandardMaterial({ color: p.carriageColor, roughness: 0.7, metalness: 0.05 });
+  const wheelMat = new THREE.MeshStandardMaterial({ color: p.wheelColor, roughness: 0.65, metalness: 0.05 });
+  const ropeMat = new THREE.MeshStandardMaterial({ color: p.ropeColor, roughness: 0.9, metalness: 0 });
+  const boreMat = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5, metalness: 0.3 });
+
+  const angleRad = p.carriageAngle * Math.PI / 180;
+  const carriageTopY = p.wheelR + p.carriageH;
+
+  // =============================================
+  // BARREL PIVOT GROUP
+  // Local space: barrel extends along +Z (breech at -Z, muzzle at +Z).
+  // Pivot sits at trunnion mount on carriage top.
+  // Elevation: rotate around X to tilt muzzle up.
+  // =============================================
+  const barrelPivot = new THREE.Group();
+  barrelPivot.position.set(0, carriageTopY + p.barrelOuterR * 0.55, -p.carriageLen * 0.05);
+  barrelPivot.rotation.x = angleRad; // positive X rotation tilts muzzle (+Z) upward
+  cannonGroup.add(barrelPivot);
+
+  // Helper: radius at a given t (0=breech, 1=muzzle)
+  function radiusAt(t) {
+    let r = p.barrelOuterR;
+    r -= p.barrelTaper * 0.1 * t;
+    if (t > 0.92) r += p.muzzleFlare * ((t - 0.92) / 0.08);
+    return Math.max(r, 0.01);
+  }
+
+  // Pivot is at 25% of barrel length from breech
+  const breechZ = -p.barrelLen * 0.25;
+  const muzzleZ = p.barrelLen * 0.75;
+
+  // --- Barrel (built as a LatheGeometry along Y, then rotated to Z) ---
+  const barrelPts = [];
+  const segs = 24;
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    barrelPts.push(new THREE.Vector2(radiusAt(t), t * p.barrelLen));
+  }
+  const barrelGeo = new THREE.LatheGeometry(barrelPts, 32);
+  const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+  barrel.castShadow = true;
+  // Lathe grows along Y; rotate so it grows along +Z instead
+  barrel.rotation.x = -Math.PI / 2;
+  barrel.position.z = breechZ;
+  barrelPivot.add(barrel);
+
+  // Inner bore (cylinder along Y → rotate to Z)
+  const boreGeo = new THREE.CylinderGeometry(p.barrelInnerR, p.barrelInnerR, p.barrelLen * 0.92, 16);
+  const bore = new THREE.Mesh(boreGeo, boreMat);
+  bore.rotation.x = Math.PI / 2;
+  bore.position.z = breechZ + p.barrelLen * 0.5;
+  barrelPivot.add(bore);
+
+  // --- Muzzle Ring (torus wrapping around barrel at muzzle) ---
+  if (p.muzzleRingSize > 0) {
+    const tipR = radiusAt(1.0);
+    const mRingGeo = new THREE.TorusGeometry(tipR + p.muzzleRingSize * 0.3, p.muzzleRingSize, 12, 32);
+    const mRing = new THREE.Mesh(mRingGeo, metalMat);
+    // Torus default is in XY plane; for it to circle around Z axis, we leave rotation alone
+    // (XY torus around Z axis is exactly what we want)
+    mRing.position.z = muzzleZ;
+    mRing.castShadow = true;
+    barrelPivot.add(mRing);
+  }
+
+  // --- Cascabel (rear knob + neck, behind breech) ---
+  const cascGeo = new THREE.SphereGeometry(p.cascabelR, 16, 12);
+  const casc = new THREE.Mesh(cascGeo, metalMat);
+  casc.position.z = breechZ - p.cascabelR * 0.6;
+  casc.castShadow = true;
+  barrelPivot.add(casc);
+
+  const cascNeckGeo = new THREE.CylinderGeometry(p.cascabelNeckR, p.cascabelNeckR, p.cascabelR * 0.8, 12);
+  const cascNeck = new THREE.Mesh(cascNeckGeo, metalMat);
+  cascNeck.rotation.x = Math.PI / 2; // align along Z
+  cascNeck.position.z = breechZ - p.cascabelR * 0.15;
+  barrelPivot.add(cascNeck);
+
+  // --- Trunnions (stick out sideways at pivot point Z=0) ---
+  const trGeo = new THREE.CylinderGeometry(p.trunnionR, p.trunnionR, p.trunnionLen, 12);
+  [-1, 1].forEach(side => {
+    const tr = new THREE.Mesh(trGeo, metalMat);
+    // Cylinder along Y → rotate to extend along X
+    tr.rotation.z = Math.PI / 2;
+    tr.position.set(side * (radiusAt(0.25) + p.trunnionLen * 0.5), 0, 0);
+    tr.castShadow = true;
+    barrelPivot.add(tr);
+  });
+
+  // --- Reinforce Rings (torus bands along barrel) ---
+  for (let i = 0; i < p.ringCount; i++) {
+    const t = 0.15 + (i / Math.max(p.ringCount, 1)) * 0.5;
+    const rr = radiusAt(t) + p.ringSize;
+    const ringGeo = new THREE.TorusGeometry(rr, p.ringSize, 8, 32);
+    const ring = new THREE.Mesh(ringGeo, metalMat);
+    // Torus in XY plane circles around Z — perfect
+    ring.position.z = breechZ + p.barrelLen * t;
+    ring.castShadow = true;
+    barrelPivot.add(ring);
+  }
+
+  // --- Vent / Touch Hole (pokes out radially near breech) ---
+  const ventZ = breechZ + p.barrelLen * 0.12;
+  const ventGeo = new THREE.CylinderGeometry(p.ventHoleR, p.ventHoleR, radiusAt(0.12) * 2.2, 8);
+  const ventMat2 = new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.5 });
+  const vent = new THREE.Mesh(ventGeo, ventMat2);
+  // Vent pokes upward (along Y local) from barrel surface
+  vent.position.set(0, radiusAt(0.12) * 0.5, ventZ);
+  barrelPivot.add(vent);
+
+  // =============================================
+  // CARRIAGE GROUP — the wooden body, cheeks,
+  // metal bands, rope, wedge. All parented so
+  // they stay together.
+  // =============================================
+  const carriageGroup = new THREE.Group();
+  cannonGroup.add(carriageGroup);
+
+  // Main carriage box
+  const cGeo = new THREE.BoxGeometry(p.carriageW, p.carriageH, p.carriageLen);
+  const carriage = new THREE.Mesh(cGeo, woodMat);
+  carriage.position.y = p.wheelR + p.carriageH / 2;
+  carriage.castShadow = true;
+  carriage.receiveShadow = true;
+  carriageGroup.add(carriage);
+
+  // Carriage side cheeks (tapered)
+  [-1, 1].forEach(side => {
+    const cheekShape = new THREE.Shape();
+    cheekShape.moveTo(0, 0);
+    cheekShape.lineTo(p.carriageLen * 0.5, 0);
+    cheekShape.lineTo(p.carriageLen * 0.45, p.carriageH * 1.2);
+    cheekShape.lineTo(-p.carriageLen * 0.3, p.carriageH * 0.8);
+    cheekShape.lineTo(-p.carriageLen * 0.4, 0);
+    const cheekGeo = new THREE.ExtrudeGeometry(cheekShape, { depth: 0.025, bevelEnabled: false });
+    const cheek = new THREE.Mesh(cheekGeo, woodMat);
+    cheek.rotation.y = Math.PI / 2;
+    cheek.position.set(side * (p.carriageW / 2 + 0.012), p.wheelR, 0);
+    cheek.castShadow = true;
+    carriageGroup.add(cheek);
+  });
+
+  // Barrel cradle notches on top of cheeks
+  [-1, 1].forEach(side => {
+    const cradleGeo = new THREE.TorusGeometry(p.barrelOuterR + 0.005, 0.012, 6, 16, Math.PI);
+    const cradle = new THREE.Mesh(cradleGeo, metalMat);
+    cradle.position.set(side * (p.carriageW / 2 + 0.012), carriageTopY + p.barrelOuterR * 0.1, -p.carriageLen * 0.05);
+    cradle.rotation.x = Math.PI / 2;
+    cradle.rotation.z = side > 0 ? Math.PI : 0;
+    carriageGroup.add(cradle);
+  });
+
+  // Metal bands on carriage
+  for (let i = 0; i < 3; i++) {
+    const bandZ = -p.carriageLen * 0.3 + i * p.carriageLen * 0.3;
+    const bandGeo = new THREE.BoxGeometry(p.carriageW + 0.01, 0.015, 0.02);
+    const band = new THREE.Mesh(bandGeo, metalMat);
+    band.position.set(0, p.wheelR + p.carriageH + 0.005, bandZ);
+    carriageGroup.add(band);
+  }
+
+  // --- Rope ---
+  if (p.showRope) {
+    [-1, 1].forEach(side => {
+      const ropeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(side * p.carriageW * 0.4, carriageTopY + 0.05, p.carriageLen * 0.4),
+        new THREE.Vector3(side * p.carriageW * 0.55, carriageTopY - 0.05, p.carriageLen * 0.2),
+        new THREE.Vector3(side * p.carriageW * 0.4, carriageTopY + 0.02, 0),
+      ]);
+      const ropeGeo = new THREE.TubeGeometry(ropeCurve, 20, 0.006, 6, false);
+      carriageGroup.add(new THREE.Mesh(ropeGeo, ropeMat));
+    });
+  }
+
+  // --- Quoin Wedge (elevation wedge under barrel at rear) ---
+  if (p.showWedge) {
+    const wedgeShape = new THREE.Shape();
+    wedgeShape.moveTo(0, 0);
+    wedgeShape.lineTo(0.12, 0);
+    wedgeShape.lineTo(0.12, 0.04);
+    wedgeShape.lineTo(0, 0.015);
+    const wedgeGeo = new THREE.ExtrudeGeometry(wedgeShape, { depth: 0.06, bevelEnabled: false });
+    const wedge = new THREE.Mesh(wedgeGeo, woodMat);
+    wedge.position.set(-0.03, carriageTopY, -p.carriageLen * 0.32);
+    carriageGroup.add(wedge);
+  }
+
+  // =============================================
+  // WHEEL + AXLE GROUP
+  // =============================================
+  const wheelAxleGroup = new THREE.Group();
+  cannonGroup.add(wheelAxleGroup);
+
+  [-1, 1].forEach(side => {
+    const wheelGroup = new THREE.Group();
+    // Rim
+    const rimGeo = new THREE.TorusGeometry(p.wheelR, p.wheelThick * 0.5, 8, 32);
+    const rim = new THREE.Mesh(rimGeo, wheelMat);
+    wheelGroup.add(rim);
+    // Hub
+    const hubGeo = new THREE.CylinderGeometry(p.wheelThick, p.wheelThick, p.wheelThick * 1.5, 12);
+    const hub = new THREE.Mesh(hubGeo, metalMat);
+    hub.rotation.x = Math.PI / 2;
+    wheelGroup.add(hub);
+    // Spokes
+    for (let s = 0; s < p.spokeCount; s++) {
+      const ang = (s / p.spokeCount) * Math.PI * 2;
+      const spokeGeo = new THREE.CylinderGeometry(0.008, 0.008, p.wheelR * 0.9, 6);
+      const spoke = new THREE.Mesh(spokeGeo, wheelMat);
+      spoke.position.set(Math.cos(ang) * p.wheelR * 0.45, Math.sin(ang) * p.wheelR * 0.45, 0);
+      spoke.rotation.z = ang + Math.PI / 2;
+      wheelGroup.add(spoke);
+    }
+    wheelGroup.rotation.y = Math.PI / 2;
+    wheelGroup.position.set(side * (p.carriageW / 2 + p.wheelThick), p.wheelR, -p.carriageLen * 0.15);
+    wheelGroup.children.forEach(c => c.castShadow = true);
+    wheelAxleGroup.add(wheelGroup);
+  });
+
+  // Axle
+  const axleGeo = new THREE.CylinderGeometry(p.axleR, p.axleR, p.carriageW + p.wheelThick * 4, 8);
+  const axle = new THREE.Mesh(axleGeo, metalMat);
+  axle.rotation.z = Math.PI / 2;
+  axle.position.set(0, p.wheelR, -p.carriageLen * 0.15);
+  wheelAxleGroup.add(axle);
+
+  // Ground plane
+  const floorGeo = new THREE.PlaneGeometry(p.wsWidth, p.wsDepth);
+  const floorMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  cannonGroup.add(floor);
+
+  // Update dimension display
+  document.getElementById('wsWidth').textContent = p.wsWidth.toFixed(1);
+  document.getElementById('wsDepth').textContent = p.wsDepth.toFixed(1);
+  document.getElementById('wsHeight').textContent = p.wsHeight.toFixed(1);
+}
+
+// ============ STEP CONTROLS ============
+function getControlsForStep(stepIdx) {
+  const s = STEPS[stepIdx].id;
+  switch(s) {
+    case 'workshop': return [
+      { type:'range', key:'wsWidth', label:'Width (m)', min:1, max:6, step:0.1 },
+      { type:'range', key:'wsDepth', label:'Depth (m)', min:1, max:6, step:0.1 },
+      { type:'range', key:'wsHeight', label:'Height (m)', min:1.5, max:4, step:0.1 },
+    ];
+    case 'barrelLen': return [
+      { type:'range', key:'barrelLen', label:'Barrel Length (m)', min:0.4, max:2.5, step:0.05 },
+    ];
+    case 'barrelDia': return [
+      { type:'range', key:'barrelOuterR', label:'Outer Radius (m)', min:0.05, max:0.25, step:0.005 },
+      { type:'range', key:'barrelInnerR', label:'Bore Radius (m)', min:0.02, max:0.15, step:0.005 },
+    ];
+    case 'barrelShape': return [
+      { type:'range', key:'barrelTaper', label:'Taper Amount', min:0, max:0.5, step:0.01 },
+    ];
+    case 'muzzle': return [
+      { type:'range', key:'muzzleRingSize', label:'Ring Thickness', min:0, max:0.06, step:0.005 },
+      { type:'range', key:'muzzleRingWidth', label:'Ring Width', min:0.01, max:0.08, step:0.005 },
+    ];
+    case 'muzzleFlare': return [
+      { type:'range', key:'muzzleFlare', label:'Flare Amount', min:0, max:0.1, step:0.005 },
+    ];
+    case 'cascabel': return [
+      { type:'range', key:'cascabelR', label:'Knob Radius', min:0.02, max:0.12, step:0.005 },
+      { type:'range', key:'cascabelNeckR', label:'Neck Radius', min:0.01, max:0.06, step:0.005 },
+    ];
+    case 'trunnions': return [
+      { type:'range', key:'trunnionR', label:'Trunnion Radius', min:0.01, max:0.06, step:0.005 },
+      { type:'range', key:'trunnionLen', label:'Trunnion Length', min:0.03, max:0.15, step:0.005 },
+    ];
+    case 'reinforceRings': return [
+      { type:'range', key:'ringCount', label:'Number of Rings', min:0, max:6, step:1 },
+      { type:'range', key:'ringSize', label:'Ring Thickness', min:0.005, max:0.04, step:0.002 },
+    ];
+    case 'ventHole': return [
+      { type:'range', key:'ventHoleR', label:'Vent Radius', min:0.003, max:0.02, step:0.001 },
+    ];
+    case 'carriage': return [
+      { type:'range', key:'carriageLen', label:'Length (m)', min:0.5, max:1.8, step:0.05 },
+      { type:'range', key:'carriageW', label:'Width (m)', min:0.2, max:0.6, step:0.02 },
+      { type:'range', key:'carriageH', label:'Height (m)', min:0.08, max:0.35, step:0.01 },
+      { type:'range', key:'carriageAngle', label:'Elevation (°)', min:0, max:25, step:1 },
+    ];
+    case 'wheels': return [
+      { type:'range', key:'wheelR', label:'Wheel Radius (m)', min:0.1, max:0.45, step:0.01 },
+      { type:'range', key:'wheelThick', label:'Wheel Thickness', min:0.02, max:0.08, step:0.005 },
+      { type:'range', key:'spokeCount', label:'Spokes', min:4, max:16, step:1 },
+    ];
+    case 'axle': return [
+      { type:'range', key:'axleR', label:'Axle Radius', min:0.01, max:0.04, step:0.002 },
+    ];
+    case 'materials': return [
+      { type:'color', key:'barrelColor', label:'Barrel Color' },
+      { type:'color', key:'carriageColor', label:'Carriage Color' },
+      { type:'color', key:'wheelColor', label:'Wheel Color' },
+      { type:'color', key:'metalColor', label:'Metal Fittings' },
+      { type:'color', key:'ropeColor', label:'Rope Color' },
+    ];
+    case 'details': return [
+      { type:'toggle', key:'showRope', label:'Show Rope' },
+      { type:'toggle', key:'showWedge', label:'Show Quoin Wedge' },
+    ];
+    default: return [];
+  }
+}
+
+function renderControls() {
+  const panel = document.getElementById('controlsPanel');
+  const ctrls = getControlsForStep(currentStep);
+  let html = `<div class="control-title">${STEPS[currentStep].desc}</div>`;
+  ctrls.forEach(c => {
+    if (c.type === 'range') {
+      html += `<div class="control-group">
+        <label>${c.label} <span class="range-val" id="val_${c.key}">${params[c.key]}</span></label>
+        <input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${params[c.key]}"
+          oninput="updateParam('${c.key}', parseFloat(this.value))">
+      </div>`;
+    } else if (c.type === 'color') {
+      html += `<div class="control-group">
+        <label>${c.label}</label>
+        <input type="color" value="${params[c.key]}"
+          oninput="updateParam('${c.key}', this.value)">
+      </div>`;
+    } else if (c.type === 'toggle') {
+      html += `<div class="control-group">
+        <label><input type="checkbox" ${params[c.key] ? 'checked' : ''}
+          onchange="updateParam('${c.key}', this.checked)"> ${c.label}</label>
+      </div>`;
+    }
+  });
+  panel.innerHTML = html;
+}
+
+function updateParam(key, val) {
+  params[key] = val;
+  const ve = document.getElementById('val_' + key);
+  if (ve) ve.textContent = typeof val === 'number' ? (Number.isInteger(val) ? val : val.toFixed(3)) : val;
+  rebuildCannon();
+}
+
+// ============ STEP NAVIGATION ============
+function renderStepList() {
+  const list = document.getElementById('stepList');
+  list.innerHTML = STEPS.map((s, i) => `
+    <div class="step-item ${i === currentStep ? 'active' : ''} ${i < currentStep ? 'completed' : ''}"
+         onclick="goToStep(${i})">
+      <div class="step-num">${i < currentStep ? '✓' : i + 1}</div>
+      <div class="step-name">${s.name}</div>
+    </div>
+  `).join('');
+}
+
+function goToStep(idx) {
+  currentStep = idx;
+  updateUI();
+  showToast(STEPS[idx].name);
+}
+
+function nextStep() { if (currentStep < STEPS.length - 1) goToStep(currentStep + 1); }
+function prevStep() { if (currentStep > 0) goToStep(currentStep - 1); }
+
+function updateUI() {
+  renderStepList();
+  renderControls();
+  document.getElementById('progressFill').style.width = ((currentStep + 1) / STEPS.length * 100) + '%';
+  document.getElementById('stepCounter').textContent = `Step ${currentStep + 1} of ${STEPS.length}`;
+  document.getElementById('btnPrev').disabled = currentStep === 0;
+  document.getElementById('btnNext').disabled = currentStep === STEPS.length - 1;
+
+  // Scroll active step into view
+  const activeEl = document.querySelector('.step-item.active');
+  if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('stepToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ============ SAVE / LOAD / EXPORT ============
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem('cannonSaves') || '{}'); } catch { return {}; }
+}
+function setSaves(s) { localStorage.setItem('cannonSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  const m = document.getElementById('modalContent');
+  m.innerHTML = `
+    <h2>💾 Save Cannon</h2>
+    <input type="text" id="saveName" placeholder="Enter a name for your cannon...">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save-confirm" onclick="doSave()">Save</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('saveName').focus(), 100);
+}
+
+function openLoadModal() {
+  const saves = getSaves();
+  const keys = Object.keys(saves);
+  const m = document.getElementById('modalContent');
+  let listHtml = '';
+  if (keys.length === 0) {
+    listHtml = '<p style="color:var(--parchment-dark);font-size:13px;padding:10px 0;">No saved cannons yet.</p>';
+  } else {
+    listHtml = '<div class="saves-list">' + keys.map(k => {
+      const d = new Date(saves[k].date).toLocaleDateString();
+      return `<div class="save-entry" onclick="doLoad('${k.replace(/'/g,"\\'")}')">
+        <div><div class="save-name">${k}</div><div class="save-date">${d}</div></div>
+        <button class="del-btn" onclick="event.stopPropagation();doDelete('${k.replace(/'/g,"\\'")}')">✕</button>
+      </div>`;
+    }).join('') + '</div>';
+  }
+  m.innerHTML = `<h2>📂 Load Cannon</h2>${listHtml}
+    <div class="modal-btns"><button class="btn-cancel" onclick="closeModal()">Close</button></div>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function doSave() {
+  const name = document.getElementById('saveName').value.trim();
+  if (!name) return;
+  const saves = getSaves();
+  saves[name] = { params: { ...params }, step: currentStep, date: Date.now() };
+  setSaves(saves);
+  closeModal();
+  showToast('Cannon saved!');
+}
+
+function doLoad(name) {
+  const saves = getSaves();
+  if (!saves[name]) return;
+  params = { ...saves[name].params };
+  currentStep = saves[name].step || 0;
+  closeModal();
+  rebuildCannon();
+  updateUI();
+  showToast(`Loaded: ${name}`);
+}
+
+function doDelete(name) {
+  const saves = getSaves();
+  delete saves[name];
+  setSaves(saves);
+  openLoadModal();
+}
+
+function resetAll() {
+  if (!confirm('Reset all parameters to defaults?')) return;
+  Object.assign(params, {
+    wsWidth:3,wsDepth:3,wsHeight:2.5,barrelLen:1.2,barrelOuterR:0.12,barrelInnerR:0.06,
+    barrelTaper:0.15,barrelFlare:0,muzzleRingSize:0.03,muzzleRingWidth:0.04,muzzleFlare:0.04,
+    cascabelR:0.06,cascabelNeckR:0.035,trunnionR:0.03,trunnionLen:0.08,ringCount:2,ringSize:0.015,
+    ventHoleR:0.008,carriageLen:0.9,carriageW:0.35,carriageH:0.18,carriageAngle:8,wheelR:0.2,
+    wheelThick:0.04,spokeCount:8,axleR:0.02,barrelColor:'#3a3a3a',carriageColor:'#6d4c2a',
+    wheelColor:'#5a3d1e',metalColor:'#555555',ropeColor:'#c9a84c',showRope:true,showWedge:true
+  });
+  currentStep = 0;
+  rebuildCannon();
+  updateUI();
+  showToast('Reset to defaults');
+}
+
+function exportModel() {
+  // Simple OBJ export
+  let objStr = '# Pirate Cannon Exported from Pirate Cannon Forge\n';
+  let vOffset = 0;
+  cannonGroup.traverse(child => {
+    if (child.isMesh && child.geometry) {
+      const geo = child.geometry.clone();
+      child.updateWorldMatrix(true, false);
+      geo.applyMatrix4(child.matrixWorld);
+      const pos = geo.attributes.position;
+      const idx = geo.index;
+      for (let i = 0; i < pos.count; i++) {
+        objStr += `v ${pos.getX(i).toFixed(6)} ${pos.getY(i).toFixed(6)} ${pos.getZ(i).toFixed(6)}\n`;
+      }
+      if (idx) {
+        for (let i = 0; i < idx.count; i += 3) {
+          objStr += `f ${idx.getX(i)+1+vOffset} ${idx.getX(i+1)+1+vOffset} ${idx.getX(i+2)+1+vOffset}\n`;
+        }
+      } else {
+        for (let i = 0; i < pos.count; i += 3) {
+          objStr += `f ${i+1+vOffset} ${i+2+vOffset} ${i+3+vOffset}\n`;
+        }
+      }
+      vOffset += pos.count;
+      geo.dispose();
+    }
+  });
+  const blob = new Blob([objStr], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pirate_cannon.obj';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('OBJ exported!');
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', () => {
+  initThree();
+  rebuildCannon();
+  updateUI();
+});
+
+// Close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextStep();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevStep();
+});
+</script>
+<script>
+(function(){
+  var btn=document.getElementById('jvdsNavToggle');
+  var nav=document.getElementById('jvdsMobileNav');
+  if(!btn||!nav)return;
+  function o(){nav.classList.add('open');btn.textContent='✕';}
+  function c(){nav.classList.remove('open');btn.textContent='☰';}
+  btn.addEventListener('click',function(e){e.stopPropagation();nav.classList.contains('open')?c():o();});
+  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',c);});
+  document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target))c();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')c();});
+})();
+</script>
+
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/roblox-builder.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🧱</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Block Builder</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Design Roblox-style 3D models</div>
+        </div>
+      </a>      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div>
+        </div>
+      </a>      <a href="../tools/arcade-game-maker.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🕹️</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Arcade Game Maker</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build & play browser games</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+<footer class="jv-site-footer">
+  <a href="../index.html">🏠 Home</a>
+  <a href="../pages/workshop.html">🔧 Workshop</a>
+  <a href="../pages/games.html">🎮 Games</a>
+  <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+  <a href="../pages/content_hub.html">📋 All Content</a>
+</footer><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
+</body>
+</html>

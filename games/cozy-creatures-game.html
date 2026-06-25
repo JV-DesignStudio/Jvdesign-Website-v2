@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cozy Creatures: The Ultimate Snuggle</title>
+<style>
+  :root {
+    --cream: #fdf6e3;
+    --warm: #f5e6c8;
+    --brown: #8b5e3c;
+    --dark: #3d2b1f;
+    --green: #5a8a5a;
+    --red: #c0392b;
+    --blue: #3498db;
+    --purple: #8e44ad;
+    --orange: #e67e22;
+    --yellow: #f1c40f;
+    --card-bg: #fff9f0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #2d1b0e url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    min-height: 100vh;
+    color: var(--dark);
+  }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ─── TITLE SCREEN ─── */
+  #screen-title {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+  }
+  .title-box {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 3rem 4rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    max-width: 600px;
+  }
+  .title-box h1 { font-size: 2.5rem; color: var(--brown); line-height: 1.2; }
+  .title-box .subtitle { color: #777; margin: 0.5rem 0 2rem; font-style: italic; }
+  .title-emoji { font-size: 4rem; margin-bottom: 1rem; }
+  .player-select { margin: 1.5rem 0; }
+  .player-select label { font-weight: bold; color: var(--brown); display: block; margin-bottom: 0.5rem; }
+  .player-btns { display: flex; gap: 0.5rem; justify-content: center; }
+  .player-btns button {
+    width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--brown);
+    background: var(--warm); font-size: 1.2rem; font-weight: bold; cursor: pointer;
+    transition: all 0.2s; color: var(--brown);
+  }
+  .player-btns button.selected { background: var(--brown); color: white; }
+
+  /* ─── SETUP SCREEN ─── */
+  #screen-setup {
+    padding: 2rem;
+    align-items: center;
+  }
+  #screen-setup h2 { color: var(--cream); font-size: 1.8rem; text-align: center; margin-bottom: 1.5rem; }
+  .setup-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 900px; }
+  .char-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 1.2rem;
+    width: 200px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .char-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+  .char-card.selected { border-color: var(--brown); background: var(--warm); }
+  .char-card.taken { opacity: 0.4; cursor: not-allowed; }
+  .char-card .char-emoji { font-size: 2.5rem; display: block; text-align: center; margin-bottom: 0.5rem; }
+  .char-card h3 { text-align: center; color: var(--brown); font-size: 1rem; }
+  .char-card .role { text-align: center; color: #888; font-size: 0.8rem; font-style: italic; margin-bottom: 0.5rem; }
+  .char-card .ability { font-size: 0.78rem; color: var(--dark); line-height: 1.4; }
+  .char-card .inv { font-size: 0.75rem; color: #888; margin-top: 0.4rem; }
+  .taken-badge {
+    position: absolute; top: 8px; right: 8px; background: #e74c3c;
+    color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px;
+  }
+  .setup-nav { display: flex; gap: 1rem; margin-top: 1.5rem; }
+
+  /* ─── GOAL SCREEN ─── */
+  #screen-goal { align-items: center; padding: 2rem; }
+  #screen-goal h2 { color: var(--cream); font-size: 1.8rem; text-align: center; margin-bottom: 0.5rem; }
+  #screen-goal p { color: #ccc; text-align: center; margin-bottom: 1.5rem; }
+  .goal-grid { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; max-width: 900px; }
+  .goal-card {
+    background: var(--card-bg); border-radius: 14px; padding: 1.2rem;
+    width: 170px; cursor: pointer; border: 3px solid transparent;
+    transition: all 0.2s; box-shadow: var(--shadow); text-align: center;
+  }
+  .goal-card:hover { transform: translateY(-3px); }
+  .goal-card.selected { border-color: var(--yellow); background: #fffbe6; }
+  .goal-card .stars { font-size: 1.1rem; margin-bottom: 0.3rem; }
+  .goal-card h3 { color: var(--brown); font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .goal-card .reqs { font-size: 0.78rem; color: #555; line-height: 1.6; }
+
+  /* ─── GAME SCREEN ─── */
+  #screen-game { padding: 0.75rem; background: #1a0f08; }
+  .game-layout { display: grid; grid-template-columns: 220px 1fr 220px; gap: 0.75rem; max-width: 1200px; margin: 0 auto; }
+
+  /* Rain / Goal panel */
+  .side-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+  .panel-box {
+    background: var(--cream); border-radius: 12px; padding: 0.8rem;
+    box-shadow: var(--shadow);
+  }
+  .panel-box h4 { color: var(--brown); font-size: 0.85rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--warm); padding-bottom: 0.3rem; }
+
+  .rain-display { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .rain-icon { font-size: 1.4rem; }
+  .rain-count { font-size: 0.8rem; color: #555; }
+  .sunshine-track { display: flex; gap: 6px; margin-top: 0.4rem; }
+  .sun-slot {
+    width: 36px; height: 36px; border-radius: 50%; border: 2px dashed #ccc;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .sun-slot.filled { border-color: var(--orange); background: #fff3e0; }
+
+  .goal-req { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; margin: 0.2rem 0; }
+  .goal-req .check { color: var(--green); font-weight: bold; }
+  .goal-req .cross { color: #ccc; }
+
+  /* Center: map + log */
+  .center-col { display: flex; flex-direction: column; gap: 0.75rem; }
+
+  /* Room map */
+  .room-map {
+    background: var(--cream); border-radius: 12px; padding: 0.8rem;
+    box-shadow: var(--shadow);
+  }
+  .room-map h4 { color: var(--brown); font-size: 0.85rem; margin-bottom: 0.6rem; }
+  .rooms-grid {
+    display: grid;
+    grid-template-areas:
+      ". closet ."
+      "den living kitchen"
+      ". . .";
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .room-btn {
+    border-radius: 10px; padding: 0.6rem 0.4rem; border: 2px solid transparent;
+    cursor: pointer; font-family: 'Georgia', serif; font-size: 0.8rem;
+    transition: all 0.2s; text-align: center; position: relative;
+  }
+  .room-btn.room-living { grid-area: living; background: #e8f5e9; border-color: #81c784; }
+  .room-btn.room-kitchen { grid-area: kitchen; background: #fff3e0; border-color: #ffb74d; }
+  .room-btn.room-den { grid-area: den; background: #e3f2fd; border-color: #64b5f6; }
+  .room-btn.room-closet { grid-area: closet; background: #f3e5f5; border-color: #ba68c8; }
+  .room-btn.current-room { box-shadow: 0 0 0 3px var(--brown); }
+  .room-btn.can-move { cursor: pointer; }
+  .room-btn.cannot-move { opacity: 0.5; cursor: not-allowed; }
+  .room-btn .room-name { font-weight: bold; color: var(--dark); font-size: 0.78rem; }
+  .room-btn .room-emoji { font-size: 1.4rem; display: block; }
+  .room-btn .players-here { font-size: 0.7rem; color: #666; margin-top: 2px; min-height: 14px; }
+  .room-connector-h { display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 1rem; }
+
+  /* Action buttons */
+  .action-row {
+    background: var(--cream); border-radius: 12px; padding: 0.8rem;
+    box-shadow: var(--shadow); display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  }
+  .action-row .ap-display { font-size: 0.85rem; color: var(--brown); font-weight: bold; margin-right: 0.5rem; }
+  .ap-pip { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--brown); margin: 0 1px; }
+  .ap-pip.spent { background: #ccc; }
+  .btn {
+    padding: 0.4rem 0.9rem; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Georgia', serif; font-size: 0.82rem; font-weight: bold;
+    transition: all 0.15s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-search { background: #e3f2fd; color: #1565c0; border: 2px solid #90caf9; }
+  .btn-assemble { background: #e8f5e9; color: #2e7d32; border: 2px solid #a5d6a7; }
+  .btn-end { background: var(--warm); color: var(--brown); border: 2px solid #c9956a; }
+  .btn-share { background: #fce4ec; color: #c62828; border: 2px solid #f48fb1; }
+  .btn-special { background: #f3e5f5; color: #6a1b9a; border: 2px solid #ce93d8; }
+
+  /* Log */
+  .game-log {
+    background: #1a1a1a; border-radius: 10px; padding: 0.6rem 0.8rem;
+    height: 120px; overflow-y: auto; font-size: 0.75rem; color: #ddd;
+    font-family: monospace;
+  }
+  .game-log .log-line { padding: 1px 0; border-bottom: 1px solid #222; }
+  .log-good { color: #a8d8a8; }
+  .log-bad { color: #f1948a; }
+  .log-info { color: #85c1e9; }
+  .log-warn { color: #f8c471; }
+
+  /* Right panel: players */
+  .players-panel { display: flex; flex-direction: column; gap: 0.5rem; }
+  .player-status {
+    background: var(--cream); border-radius: 12px; padding: 0.7rem;
+    box-shadow: var(--shadow); border-left: 4px solid transparent;
+    transition: all 0.2s;
+  }
+  .player-status.active-player { border-left-color: var(--brown); background: var(--warm); }
+  .player-status .p-name { font-size: 0.82rem; font-weight: bold; color: var(--brown); }
+  .player-status .p-location { font-size: 0.72rem; color: #888; }
+  .player-status .p-hand { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.4rem; }
+  .hand-card {
+    background: white; border: 1px solid #ddd; border-radius: 6px;
+    padding: 2px 6px; font-size: 0.7rem; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .hand-card:hover { background: var(--warm); border-color: var(--brown); }
+  .hand-card.ingredient { border-color: #a5d6a7; background: #f1f8e9; }
+  .hand-card.resource { border-color: #90caf9; background: #e3f2fd; }
+  .hand-card.selected-card { border-color: var(--brown); background: var(--warm); box-shadow: 0 0 0 2px var(--brown); }
+  .hand-empty { font-size: 0.7rem; color: #bbb; font-style: italic; }
+
+  /* Assembled tokens */
+  .tokens-display { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.4rem; }
+  .token-chip {
+    background: var(--green); color: white; border-radius: 10px;
+    padding: 2px 8px; font-size: 0.7rem;
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--cream); border-radius: 16px; padding: 2rem;
+    max-width: 480px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    text-align: center;
+  }
+  .modal h2 { color: var(--brown); font-size: 1.6rem; margin-bottom: 0.8rem; }
+  .modal p { color: #555; margin-bottom: 1.2rem; font-size: 0.95rem; line-height: 1.6; }
+  .modal .modal-emoji { font-size: 4rem; margin-bottom: 0.8rem; }
+  .modal-btns { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+
+  /* Share modal */
+  .share-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; text-align: left; }
+  .share-option {
+    background: var(--warm); border-radius: 8px; padding: 0.5rem 0.8rem;
+    cursor: pointer; border: 2px solid transparent; font-size: 0.88rem;
+  }
+  .share-option:hover { border-color: var(--brown); }
+
+  /* ─── BUTTONS global ─── */
+  .btn-primary {
+    background: var(--brown); color: white; padding: 0.6rem 1.5rem;
+    border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'Georgia', serif; font-size: 1rem; font-weight: bold;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: #6b4530; transform: translateY(-2px); }
+  .btn-secondary {
+    background: var(--warm); color: var(--brown); padding: 0.6rem 1.2rem;
+    border-radius: 10px; border: 2px solid var(--brown); cursor: pointer;
+    font-family: 'Georgia', serif; font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--cream); }
+
+  /* Hazard flash */
+  @keyframes flashRed { 0%,100%{background:var(--cream)} 50%{background:#ffebee} }
+  .flash-hazard { animation: flashRed 0.6s ease; }
+
+  /* Current player banner */
+  .turn-banner {
+    background: var(--brown); color: white; border-radius: 10px;
+    padding: 0.5rem 1rem; text-align: center; font-size: 0.9rem;
+    font-weight: bold; margin-bottom: 0.5rem;
+  }
+
+  /* Drawn card reveal */
+  .drawn-card-reveal {
+    background: white; border: 3px solid var(--brown); border-radius: 12px;
+    padding: 1rem; margin: 0.8rem 0;
+  }
+  .drawn-card-reveal .card-type { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .drawn-card-reveal .card-name { font-size: 1.2rem; font-weight: bold; color: var(--dark); margin: 0.2rem 0; }
+  .drawn-card-reveal .card-effect { font-size: 0.85rem; color: #555; }
+  .drawn-card-reveal .card-emoji { font-size: 2rem; }
+
+  /* Responsive */
+  @media(max-width: 900px) {
+    .game-layout { grid-template-columns: 1fr; }
+    .side-panel { flex-direction: row; flex-wrap: wrap; }
+    .side-panel .panel-box { flex: 1; min-width: 160px; }
+    .players-panel { flex-direction: row; flex-wrap: wrap; }
+    .player-status { flex: 1; min-width: 150px; }
+  }
+
+  /* Number badge on player tokens */
+  .p-token {
+    display: inline-block; width: 18px; height: 18px; border-radius: 50%;
+    font-size: 0.6rem; font-weight: bold; color: white; text-align: center;
+    line-height: 18px; margin: 0 1px;
+  }
+  .p0 { background: #e74c3c; }
+  .p1 { background: #3498db; }
+  .p2 { background: #2ecc71; }
+  .p3 { background: #9b59b6; }
+
+  .setup-step-label { color: #aaa; font-size: 0.8rem; text-align: center; margin-bottom: 0.5rem; }
+  .current-player-label { color: #f8c471; font-size: 1rem; text-align: center; margin-bottom: 1rem; }
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+
+<!-- ══════════════ TITLE SCREEN ══════════════ -->
+<div id="screen-title" class="screen active">
+  <div class="title-box">
+    <div class="title-emoji">🐾☔</div>
+    <h1>Cozy Creatures</h1>
+    <p class="subtitle">The Ultimate Snuggle</p>
+    <p style="color:#666;font-size:0.9rem;margin-bottom:1.5rem;">A cooperative card game for 1–4 players.<br>Work together to get cozy before the rain ends!</p>
+    <div class="player-select">
+      <label>How many players?</label>
+      <div class="player-btns">
+        <button onclick="selectPlayers(1)" id="pb1">1</button>
+        <button onclick="selectPlayers(2)" id="pb2">2</button>
+        <button onclick="selectPlayers(3)" id="pb3">3</button>
+        <button onclick="selectPlayers(4)" id="pb4">4</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="goToSetup()" id="start-btn" disabled>Choose Characters →</button>
+    <p style="font-size:0.75rem;color:#aaa;margin-top:1rem;">Hot-seat multiplayer pass the device between players on your turn</p>
+  </div>
+</div>
+
+<!-- ══════════════ SETUP SCREEN ══════════════ -->
+<div id="screen-setup" class="screen">
+  <h2>🐾 Choose Your Character</h2>
+  <p class="setup-step-label" id="setup-step-label"></p>
+  <p class="current-player-label" id="setup-player-label"></p>
+  <div class="setup-grid" id="char-grid"></div>
+  <div class="setup-nav">
+    <button class="btn-secondary" onclick="goToTitle()">← Back</button>
+    <button class="btn-primary" id="char-confirm-btn" disabled onclick="confirmChar()">Confirm Character →</button>
+  </div>
+</div>
+
+<!-- ══════════════ GOAL SCREEN ══════════════ -->
+<div id="screen-goal" class="screen">
+  <h2>🎯 Choose Your Snuggle Goal</h2>
+  <p>Select the difficulty level for this session.</p>
+  <div class="goal-grid" id="goal-grid"></div>
+  <div class="setup-nav" style="margin-top:1.5rem;">
+    <button class="btn-secondary" onclick="goToSetup()">← Back</button>
+    <button class="btn-primary" id="goal-confirm-btn" disabled onclick="startGame()">Start Game! 🎮</button>
+  </div>
+</div>
+
+<!-- ══════════════ GAME SCREEN ══════════════ -->
+<div id="screen-game" class="screen">
+  <div class="game-layout">
+    <!-- Left panel -->
+    <div class="side-panel">
+      <div class="panel-box">
+        <h4>☔ Rain Deck</h4>
+        <div class="rain-count" id="rain-remaining"></div>
+        <div style="margin:0.5rem 0;font-size:0.78rem;color:#666;">Sunshine Breaks revealed:</div>
+        <div class="sunshine-track" id="sunshine-track"></div>
+        <div style="font-size:0.72rem;color:#c0392b;margin-top:0.4rem;">3 = Team loses!</div>
+      </div>
+      <div class="panel-box">
+        <h4>🎯 Goal: <span id="goal-name-display"></span></h4>
+        <div id="goal-reqs-display"></div>
+        <div style="margin-top:0.6rem;">
+          <div style="font-size:0.75rem;color:#888;margin-bottom:0.3rem;">Assembled tokens:</div>
+          <div class="tokens-display" id="global-tokens"></div>
+        </div>
+      </div>
+      <div class="panel-box">
+        <h4>📋 How to Play</h4>
+        <div style="font-size:0.72rem;color:#555;line-height:1.7;">
+          <b>Move</b> (1AP) go to a room<br>
+          <b>Search</b> (1AP) draw a card<br>
+          <b>Share</b> (1AP) give a card<br>
+          <b>Assemble</b> (3AP) in Living Room, combine ingredients into a token<br>
+          <b>Special</b> use your ability
+        </div>
+      </div>
+    </div>
+
+    <!-- Center -->
+    <div class="center-col">
+      <div class="turn-banner" id="turn-banner"></div>
+      <div class="room-map">
+        <h4>🗺️ The House</h4>
+        <div class="rooms-grid">
+          <div></div>
+          <button class="room-btn room-closet" id="room-closet" onclick="tryMove('closet')">
+            <span class="room-emoji">🚪</span>
+            <div class="room-name">Closet</div>
+            <div class="players-here" id="players-closet"></div>
+          </button>
+          <div></div>
+          <button class="room-btn room-den" id="room-den" onclick="tryMove('den')">
+            <span class="room-emoji">📚</span>
+            <div class="room-name">Den</div>
+            <div class="players-here" id="players-den"></div>
+          </button>
+          <button class="room-btn room-living" id="room-living" onclick="tryMove('living')">
+            <span class="room-emoji">🛋️</span>
+            <div class="room-name">Living Room</div>
+            <div class="players-here" id="players-living"></div>
+          </button>
+          <button class="room-btn room-kitchen" id="room-kitchen" onclick="tryMove('kitchen')">
+            <span class="room-emoji">☕</span>
+            <div class="room-name">Kitchen</div>
+            <div class="players-here" id="players-kitchen"></div>
+          </button>
+        </div>
+      </div>
+      <div class="action-row" id="action-row">
+        <div>
+          <div class="ap-display">Action Points: <span id="ap-display"></span></div>
+        </div>
+        <button class="btn btn-search" id="btn-search" onclick="doSearch()">🔍 Search (1AP)</button>
+        <button class="btn btn-share" id="btn-share" onclick="openShareModal()">🤝 Share (1AP)</button>
+        <button class="btn btn-assemble" id="btn-assemble" onclick="openAssembleModal()">⚙️ Assemble (3AP)</button>
+        <button class="btn btn-special" id="btn-special" onclick="doSpecial()"></button>
+        <button class="btn btn-end" onclick="endTurn()">End Turn →</button>
+      </div>
+      <div class="game-log" id="game-log"></div>
+    </div>
+
+    <!-- Right: players -->
+    <div class="side-panel">
+      <div class="panel-box">
+        <h4>👥 Players</h4>
+        <div class="players-panel" id="players-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+<div class="modal-overlay" id="modal-drawn">
+  <div class="modal">
+    <div id="drawn-content"></div>
+    <div class="modal-btns"><button class="btn-primary" onclick="closDrawnModal()">OK</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-assemble">
+  <div class="modal">
+    <h2>⚙️ Assemble Token</h2>
+    <p>Choose what to assemble (costs 3 AP, must be in Living Room):</p>
+    <div id="assemble-options" class="share-list"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeAssembleModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-share">
+  <div class="modal">
+    <h2>🤝 Share a Card</h2>
+    <p>Select a card to give, then a teammate in the same room:</p>
+    <div id="share-options" class="share-list"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-end">
+  <div class="modal">
+    <div id="end-content"></div>
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-fox-kettle">
+  <div class="modal">
+    <h2>☕ Quick Kettle</h2>
+    <p>Convert a Hot Cocoa Powder or Marshmallow into a Hot Drink token immediately (1 AP).</p>
+    <div id="kettle-options" class="share-list"></div>
+    <div class="modal-btns"><button class="btn-secondary" onclick="document.getElementById('modal-fox-kettle').classList.remove('open')">Cancel</button></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const CHARACTERS = [
+  {
+    id: 'axolotl', name: 'Axolotl', role: 'The Snuggler', emoji: '🦎',
+    inv: 2,
+    abilityName: 'Fluff Finder',
+    abilityDesc: 'Passive: In Closet, draw 2 cards and keep 1. Ignore Tangled Mess.',
+    specialLabel: '✨ Fluff Finder',
+    specialCost: 0,
+    passive: true
+  },
+  {
+    id: 'fox', name: 'Fox', role: 'The Barista', emoji: '🦊',
+    inv: 2,
+    abilityName: 'Quick Kettle',
+    abilityDesc: '1 AP: Convert Hot Cocoa Powder or Marshmallow into a Hot Drink token.',
+    specialLabel: '☕ Quick Kettle (1AP)',
+    specialCost: 1,
+    passive: false
+  },
+  {
+    id: 'cat', name: 'Witch-Hat Cat', role: 'The Librarian', emoji: '🐱',
+    inv: 2,
+    abilityName: 'Focused Read',
+    abilityDesc: '1 AP: Instantly swap locations with any other player.',
+    specialLabel: '🔄 Focused Read (1AP)',
+    specialCost: 1,
+    passive: false
+  },
+  {
+    id: 'turtle', name: 'Turtle', role: 'The Carrier', emoji: '🐢',
+    inv: 3,
+    abilityName: 'Generous Shell',
+    abilityDesc: 'Passive: Sharing costs 0 AP.',
+    specialLabel: '🐚 Generous Shell',
+    specialCost: 0,
+    passive: true
+  }
+];
+
+const GOALS = [
+  { id: 'simple', stars: '⭐', name: 'A Simple Snuggle', tokens: ['Hot Drink', 'Stack of Books'] },
+  { id: 'reading', stars: '⭐⭐', name: 'Reading Marathon', tokens: ['Stack of Books', 'Snack Platter'] },
+  { id: 'deep', stars: '⭐⭐⭐', name: 'Deep Comfort', tokens: ['Warm Blanket', 'Snack Platter'] },
+  { id: 'full', stars: '⭐⭐⭐⭐', name: 'The Full Cozy', tokens: ['Warm Blanket', 'Hot Drink'] },
+  { id: 'ultimate', stars: '🔥', name: 'The Ultimate Snuggle', tokens: ['Warm Blanket', 'Stack of Books', 'Hot Drink'] }
+];
+
+const SEARCH_DECKS = {
+  kitchen: [
+    { name: 'Hot Cocoa Powder', type: 'ingredient', emoji: '🍫', effect: 'Ingredient for Hot Drink.' },
+    { name: 'Hot Cocoa Powder', type: 'ingredient', emoji: '🍫', effect: 'Ingredient for Hot Drink.' },
+    { name: 'Marshmallows', type: 'ingredient', emoji: '🍡', effect: 'Ingredient for Hot Drink.' },
+    { name: 'Marshmallows', type: 'ingredient', emoji: '🍡', effect: 'Ingredient for Hot Drink.' },
+    { name: 'Snack Platter Base', type: 'ingredient', emoji: '🍽️', effect: 'Makes a Snack Platter token on its own.' },
+    { name: 'Snack Platter Base', type: 'ingredient', emoji: '🍽️', effect: 'Makes a Snack Platter token on its own.' },
+    { name: 'Minor Mess', type: 'hazard', emoji: '💥', effect: 'Hazard: Lose 1 AP before your next action.' },
+    { name: 'Minor Mess', type: 'hazard', emoji: '💥', effect: 'Hazard: Lose 1 AP before your next action.' },
+    { name: 'Unexpected Visitor', type: 'hazard', emoji: '🚪', effect: 'Hazard: Move to Living Room and draw a Rain card.' },
+    { name: 'Unexpected Visitor', type: 'hazard', emoji: '🚪', effect: 'Hazard: Move to Living Room and draw a Rain card.' }
+  ],
+  den: [
+    { name: 'Chapter Book', type: 'resource', emoji: '📖', effect: 'Counts as 1 toward Stack of Books (need 3).' },
+    { name: 'Chapter Book', type: 'resource', emoji: '📖', effect: 'Counts as 1 toward Stack of Books (need 3).' },
+    { name: 'Chapter Book', type: 'resource', emoji: '📖', effect: 'Counts as 1 toward Stack of Books (need 3).' },
+    { name: 'Chapter Book', type: 'resource', emoji: '📖', effect: 'Counts as 1 toward Stack of Books (need 3).' },
+    { name: 'Graphic Novel', type: 'resource', emoji: '🎨', effect: 'Counts as 2 Chapter Books toward Stack of Books.' },
+    { name: 'Graphic Novel', type: 'resource', emoji: '🎨', effect: 'Counts as 2 Chapter Books toward Stack of Books.' },
+    { name: 'Distraction', type: 'hazard', emoji: '📱', effect: 'Hazard: You may only use 2 AP this turn.' },
+    { name: 'Distraction', type: 'hazard', emoji: '📱', effect: 'Hazard: You may only use 2 AP this turn.' },
+    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back to the bottom. Draw a Rain card.' },
+    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back to the bottom. Draw a Rain card.' }
+  ],
+  closet: [
+    { name: 'Warm Fleece Blanket', type: 'ingredient', emoji: '🧶', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Warm Fleece Blanket', type: 'ingredient', emoji: '🧶', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Comfy Throw Pillow', type: 'ingredient', emoji: '🛏️', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Comfy Throw Pillow', type: 'ingredient', emoji: '🛏️', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Cozy Slippers', type: 'ingredient', emoji: '🥿', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Cozy Slippers', type: 'ingredient', emoji: '🥿', effect: 'Ingredient for Warm Blanket token.' },
+    { name: 'Tangled Mess', type: 'hazard', emoji: '🕸️', effect: 'Hazard: Your turn ends immediately.' },
+    { name: 'Tangled Mess', type: 'hazard', emoji: '🕸️', effect: 'Hazard: Your turn ends immediately.' },
+    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: Place one of your cards face-down into a Search Deck.' },
+    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: Place one of your cards face-down into a Search Deck.' }
+  ]
+};
+
+const RAIN_DECK_FULL = [
+  ...Array(12).fill({ name: 'Steady Rain', type: 'rain', emoji: '🌧️', effect: 'No effect.' }),
+  { name: 'Sunshine Break', type: 'sunshine', emoji: '☀️', effect: 'Danger! 3 of these = team loses.' },
+  { name: 'Sunshine Break', type: 'sunshine', emoji: '☀️', effect: 'Danger! 3 of these = team loses.' },
+  { name: 'Sunshine Break', type: 'sunshine', emoji: '☀️', effect: 'Danger! 3 of these = team loses.' }
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let G = {};
+
+function initState(numPlayers, chars, goal) {
+  const players = chars.map((c, i) => ({
+    id: i,
+    char: c,
+    room: 'living',
+    hand: [],
+    pendingApLoss: 0
+  }));
+
+  G = {
+    numPlayers,
+    players,
+    goal,
+    assembledTokens: [],
+    rainDeck: shuffle([...RAIN_DECK_FULL]),
+    sunshineCount: 0,
+    searchDecks: {
+      kitchen: shuffle([...SEARCH_DECKS.kitchen]),
+      den: shuffle([...SEARCH_DECKS.den]),
+      closet: shuffle([...SEARCH_DECKS.closet])
+    },
+    currentPlayer: 0,
+    ap: 3,
+    log: [],
+    pendingMinorMess: false,
+    gameOver: false
+  };
+}
+
+// ══════════════════════════════════════════
+//  SETUP FLOW
+// ══════════════════════════════════════════
+let setupNumPlayers = 0;
+let setupCurrentPlayer = 0;
+let setupChars = [];
+let selectedCharId = null;
+let selectedGoalId = null;
+
+function selectPlayers(n) {
+  setupNumPlayers = n;
+  document.querySelectorAll('.player-btns button').forEach(b => b.classList.remove('selected'));
+  document.getElementById('pb' + n).classList.add('selected');
+  document.getElementById('start-btn').disabled = false;
+}
+
+function goToTitle() {
+  showScreen('title');
+  setupNumPlayers = 0; setupCurrentPlayer = 0; setupChars = []; selectedCharId = null;
+  document.querySelectorAll('.player-btns button').forEach(b => b.classList.remove('selected'));
+  document.getElementById('start-btn').disabled = true;
+}
+
+function goToSetup() {
+  setupCurrentPlayer = 0; setupChars = []; selectedCharId = null;
+  renderCharGrid();
+  showScreen('setup');
+}
+
+function renderCharGrid() {
+  const taken = setupChars.map(c => c.id);
+  document.getElementById('setup-step-label').textContent = `Player ${setupCurrentPlayer+1} of ${setupNumPlayers}`;
+  document.getElementById('setup-player-label').textContent = `Player ${setupCurrentPlayer+1}, choose your character`;
+  document.getElementById('char-confirm-btn').disabled = true;
+  selectedCharId = null;
+
+  document.getElementById('char-grid').innerHTML = CHARACTERS.map(c => {
+    const isTaken = taken.includes(c.id);
+    return `<div class="char-card ${isTaken?'taken':''}" id="cc-${c.id}" onclick="selectChar('${c.id}')">
+      ${isTaken ? '<span class="taken-badge">Taken</span>' : ''}
+      <span class="char-emoji">${c.emoji}</span>
+      <h3>${c.name}</h3>
+      <div class="role">${c.role}</div>
+      <div class="ability"><b>${c.abilityName}:</b> ${c.abilityDesc}</div>
+      <div class="inv">Inventory: ${c.inv} cards</div>
+    </div>`;
+  }).join('');
+}
+
+function selectChar(id) {
+  const taken = setupChars.map(c => c.id);
+  if (taken.includes(id)) return;
+  selectedCharId = id;
+  document.querySelectorAll('.char-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('cc-' + id).classList.add('selected');
+  document.getElementById('char-confirm-btn').disabled = false;
+}
+
+function confirmChar() {
+  if (!selectedCharId) return;
+  setupChars.push(CHARACTERS.find(c => c.id === selectedCharId));
+  setupCurrentPlayer++;
+  if (setupCurrentPlayer >= setupNumPlayers) {
+    renderGoalScreen();
+    showScreen('goal');
+  } else {
+    renderCharGrid();
+  }
+}
+
+function renderGoalScreen() {
+  selectedGoalId = null;
+  document.getElementById('goal-confirm-btn').disabled = true;
+  document.getElementById('goal-grid').innerHTML = GOALS.map(g => `
+    <div class="goal-card" id="gc-${g.id}" onclick="selectGoal('${g.id}')">
+      <div class="stars">${g.stars}</div>
+      <h3>${g.name}</h3>
+      <div class="reqs">${g.tokens.map(t=>'• '+t).join('<br>')}</div>
+    </div>`).join('');
+}
+
+function selectGoal(id) {
+  selectedGoalId = id;
+  document.querySelectorAll('.goal-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('gc-' + id).classList.add('selected');
+  document.getElementById('goal-confirm-btn').disabled = false;
+}
+
+function startGame() {
+  if (!selectedGoalId) return;
+  const goal = GOALS.find(g => g.id === selectedGoalId);
+  initState(setupNumPlayers, setupChars, goal);
+  renderGame();
+  showScreen('game');
+  addLog(`Game started! Goal: ${goal.name}`, 'info');
+  addLog(`${currentPlayerName()} goes first.`, 'info');
+}
+
+// ══════════════════════════════════════════
+//  GAME RENDER
+// ══════════════════════════════════════════
+function currentPlayerName() {
+  const p = G.players[G.currentPlayer];
+  return `${p.char.emoji} ${p.char.name} (P${p.id+1})`;
+}
+
+function renderGame() {
+  renderTurnBanner();
+  renderRain();
+  renderGoalDisplay();
+  renderRooms();
+  renderPlayers();
+  renderActions();
+}
+
+function renderTurnBanner() {
+  const p = G.players[G.currentPlayer];
+  document.getElementById('turn-banner').textContent =
+    `${p.char.emoji} ${p.char.name}'s Turn  (Player ${p.id+1})  —  AP: ${G.ap}`;
+}
+
+function renderRain() {
+  document.getElementById('rain-remaining').textContent = `Cards remaining: ${G.rainDeck.length}`;
+  const track = document.getElementById('sunshine-track');
+  track.innerHTML = [0,1,2].map(i =>
+    `<div class="sun-slot ${i < G.sunshineCount ? 'filled' : ''}">
+      ${i < G.sunshineCount ? '☀️' : ''}
+    </div>`).join('');
+}
+
+function renderGoalDisplay() {
+  document.getElementById('goal-name-display').textContent = G.goal.name;
+  document.getElementById('goal-reqs-display').innerHTML = G.goal.tokens.map(t => {
+    const done = G.assembledTokens.includes(t);
+    return `<div class="goal-req">
+      <span class="${done ? 'check' : 'cross'}">${done ? '✓' : '○'}</span>
+      <span style="text-decoration:${done?'line-through':'none'};color:${done?'#888':'inherit'}">${t}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('global-tokens').innerHTML = G.assembledTokens.length
+    ? G.assembledTokens.map(t => `<div class="token-chip">✓ ${t}</div>`).join('')
+    : '<span style="font-size:0.72rem;color:#bbb;">None yet</span>';
+}
+
+function renderRooms() {
+  const rooms = ['living','kitchen','den','closet'];
+  rooms.forEach(r => {
+    const playersHere = G.players.filter(p => p.room === r);
+    document.getElementById('players-' + r).innerHTML = playersHere
+      .map(p => `<span class="p-token p${p.id}">${p.id+1}</span>`).join('');
+    const btn = document.getElementById('room-' + r);
+    const curRoom = G.players[G.currentPlayer].room;
+    if (r === curRoom) {
+      btn.classList.add('current-room');
+    } else {
+      btn.classList.remove('current-room');
+    }
+  });
+}
+
+function renderPlayers() {
+  document.getElementById('players-panel').innerHTML = G.players.map(p => {
+    const isActive = p.id === G.currentPlayer;
+    const handHtml = p.hand.length
+      ? p.hand.map((c, ci) => `<div class="hand-card ${c.type}" title="${c.effect}">${c.emoji} ${c.name}</div>`).join('')
+      : '<span class="hand-empty">Empty</span>';
+    return `<div class="player-status ${isActive ? 'active-player' : ''}">
+      <div class="p-name"><span class="p-token p${p.id}">${p.id+1}</span> ${p.char.emoji} ${p.char.name}</div>
+      <div class="p-location">📍 ${roomLabel(p.room)}</div>
+      <div class="p-hand">${handHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderActions() {
+  const p = G.players[G.currentPlayer];
+  const ap = G.ap;
+  const inLiving = p.room === 'living';
+
+  // AP pips
+  document.getElementById('ap-display').innerHTML = [0,1,2].map(i =>
+    `<span class="ap-pip ${i >= ap ? 'spent' : ''}"></span>`).join('');
+
+  document.getElementById('btn-search').disabled = ap < 1 || p.room === 'living';
+  document.getElementById('btn-share').disabled = ap < 1;
+
+  // Assemble: only in living room, 3ap
+  const canAssemble = inLiving && ap >= 3 && getAssembleOptions().length > 0;
+  document.getElementById('btn-assemble').disabled = !canAssemble;
+
+  // Special ability
+  const specialBtn = document.getElementById('btn-special');
+  specialBtn.textContent = p.char.specialLabel;
+  if (p.char.passive) {
+    specialBtn.disabled = true;
+    specialBtn.title = 'Passive ability — activates automatically';
+  } else if (p.char.id === 'fox') {
+    const canKettle = ap >= 1 && p.hand.some(c => c.name === 'Hot Cocoa Powder' || c.name === 'Marshmallows');
+    specialBtn.disabled = !canKettle;
+  } else if (p.char.id === 'cat') {
+    specialBtn.disabled = ap < 1 || G.numPlayers < 2;
+  }
+}
+
+function roomLabel(r) {
+  return { living: 'Living Room', kitchen: 'Kitchen', den: 'Den/Bookshelf', closet: 'Closet/Storage' }[r];
+}
+
+// ══════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════
+function tryMove(room) {
+  if (G.gameOver) return;
+  const p = G.players[G.currentPlayer];
+  if (p.room === room) return;
+  if (G.ap < 1) { addLog('Not enough AP to move!', 'warn'); return; }
+  // All rooms adjacent to living room; other rooms only adjacent to living
+  if (p.room !== 'living' && room !== 'living') {
+    addLog('You must go through the Living Room!', 'warn'); return;
+  }
+  G.ap--;
+  p.room = room;
+  addLog(`${currentPlayerName()} moved to ${roomLabel(room)}.`, 'info');
+  renderGame();
+}
+
+function doSearch() {
+  if (G.gameOver) return;
+  const p = G.players[G.currentPlayer];
+  if (G.ap < 1) return;
+  if (p.room === 'living') return;
+
+  const deckKey = p.room;
+  const deck = G.searchDecks[deckKey];
+
+  if (deck.length === 0) {
+    addLog(`The ${roomLabel(p.room)} deck is empty!`, 'warn');
+    return;
+  }
+
+  // Axolotl passive in closet
+  if (p.char.id === 'axolotl' && p.room === 'closet') {
+    doAxolotlSearch();
+    return;
+  }
+
+  G.ap--;
+  const card = deck.shift();
+  handleSearchedCard(p, card, deckKey);
+}
+
+function handleSearchedCard(p, card, deckKey) {
+  if (card.type === 'hazard') {
+    applyHazard(p, card, deckKey);
+  } else {
+    // Check inventory limit
+    if (p.hand.length >= p.char.inv) {
+      addLog(`${p.char.name} has no room! Discarding ${card.name}.`, 'warn');
+      showDrawnModal(card, true);
+    } else {
+      p.hand.push(card);
+      addLog(`${currentPlayerName()} found: ${card.emoji} ${card.name}`, 'good');
+      showDrawnModal(card, false);
+    }
+  }
+  renderGame();
+}
+
+function applyHazard(p, card, deckKey) {
+  addLog(`${currentPlayerName()} drew a hazard: ${card.emoji} ${card.name}!`, 'bad');
+
+  if (card.name === 'Tangled Mess') {
+    if (p.char.id === 'axolotl') {
+      addLog('Axolotl ignores Tangled Mess! (Fluff Finder)', 'good');
+      showDrawnModal(card, false, 'Axolotl ignores Tangled Mess!');
+    } else {
+      showDrawnModal(card, false, 'Your turn ends immediately!');
+      G.ap = 0;
+    }
+  } else if (card.name === 'Minor Mess') {
+    showDrawnModal(card, false, 'You lose 1 AP before your next action this turn!');
+    G.ap = Math.max(0, G.ap - 1);
+  } else if (card.name === 'Unexpected Visitor') {
+    p.room = 'living';
+    showDrawnModal(card, false, 'You are moved to the Living Room! Drawing a Rain card...');
+    setTimeout(() => { drawRainCard(); renderGame(); }, 800);
+  } else if (card.name === 'Distraction') {
+    showDrawnModal(card, false, 'You may only use 2 AP total this turn!');
+    if (G.ap > 2) G.ap = 2; // cap remaining at 2 we already spent 1, so effectively max 2 spent total... actually: cap current ap at 1 since 1 already spent
+    // The rule says "can only use 2 AP this turn" set total for turn to 2
+    G.ap = Math.max(0, Math.min(G.ap, 1)); // 1 already spent searching, so 1 remains max
+  } else if (card.name === 'Wrong Book') {
+    showDrawnModal(card, false, 'Shuffled back into the Den deck. Drawing a Rain card...');
+    G.searchDecks.den.push(card);
+    G.searchDecks.den = shuffle(G.searchDecks.den);
+    setTimeout(() => { drawRainCard(); renderGame(); }, 800);
+  } else if (card.name === 'Lost Toy') {
+    if (p.hand.length > 0) {
+      const lost = p.hand.splice(Math.floor(Math.random() * p.hand.length), 1)[0];
+      const decks = ['kitchen','den','closet'];
+      const target = decks[Math.floor(Math.random() * decks.length)];
+      G.searchDecks[target].push(lost);
+      showDrawnModal(card, false, `${lost.emoji} ${lost.name} slipped into the ${roomLabel(target)} deck!`);
+    } else {
+      showDrawnModal(card, false, 'No cards to lose — you got lucky!');
+    }
+  }
+}
+
+function drawRainCard() {
+  if (G.rainDeck.length === 0) {
+    triggerLoss('The Rain Deck ran out before you finished!');
+    return;
+  }
+  const rc = G.rainDeck.shift();
+  if (rc.type === 'sunshine') {
+    G.sunshineCount++;
+    addLog(`☀️ Sunshine Break revealed! (${G.sunshineCount}/3)`, 'bad');
+    if (G.sunshineCount >= 3) {
+      setTimeout(() => triggerLoss('Three Sunshine Breaks appeared the rain stopped before you got cozy!'), 400);
+    }
+  } else {
+    addLog('🌧️ Rain card drawn — steady drizzle...', 'info');
+  }
+  renderRain();
+}
+
+function doAxolotlSearch() {
+  const deck = G.searchDecks.closet;
+  if (deck.length < 1) { addLog('Closet deck is empty!', 'warn'); return; }
+  G.ap--;
+  const card1 = deck.shift();
+  const card2 = deck.length > 0 ? deck.shift() : null;
+  // Show both, player picks one
+  showAxolotlChoice(card1, card2);
+}
+
+function showAxolotlChoice(c1, c2) {
+  const cards = c2 ? [c1, c2] : [c1];
+  const p = G.players[G.currentPlayer];
+  const html = `
+    <h2>✨ Fluff Finder</h2>
+    <p>Draw 2 cards, keep 1:</p>
+    <div class="share-list">
+      ${cards.map((c, i) => `<div class="share-option" onclick="axolotlPick(${i})">
+        ${c.emoji} <b>${c.name}</b><br><small>${c.effect}</small>
+      </div>`).join('')}
+    </div>`;
+  document.getElementById('drawn-content').innerHTML = html;
+  document.getElementById('modal-drawn').classList.add('open');
+  document.getElementById('modal-drawn').dataset.axolotlCards = JSON.stringify(cards);
+  document.getElementById('modal-drawn').dataset.axolotl = '1';
+}
+
+function axolotlPick(idx) {
+  const modal = document.getElementById('modal-drawn');
+  const cards = JSON.parse(modal.dataset.axolotlCards);
+  const p = G.players[G.currentPlayer];
+  const chosen = cards[idx];
+  if (chosen.type !== 'hazard') {
+    if (p.hand.length < p.char.inv) {
+      p.hand.push(chosen);
+      addLog(`Axolotl kept: ${chosen.emoji} ${chosen.name}`, 'good');
+    } else {
+      addLog(`Axolotl has no room — ${chosen.name} discarded.`, 'warn');
+    }
+  } else {
+    addLog(`Axolotl picked a hazard card and discards it (Fluff Finder!).`, 'warn');
+  }
+  modal.dataset.axolotl = '0';
+  closDrawnModal();
+  renderGame();
+}
+
+function showDrawnModal(card, discarded, extraMsg) {
+  const modal = document.getElementById('modal-drawn');
+  modal.dataset.axolotl = '0';
+  const typeColor = card.type === 'hazard' ? '#c0392b' : (card.type === 'sunshine' ? '#e67e22' : '#2e7d32');
+  document.getElementById('drawn-content').innerHTML = `
+    <div class="drawn-card-reveal">
+      <div class="card-emoji">${card.emoji}</div>
+      <div class="card-type" style="color:${typeColor}">${card.type.toUpperCase()}</div>
+      <div class="card-name">${card.name}</div>
+      <div class="card-effect">${card.effect}</div>
+      ${extraMsg ? `<div style="margin-top:0.5rem;font-weight:bold;color:${typeColor}">${extraMsg}</div>` : ''}
+      ${discarded ? '<div style="color:#888;margin-top:0.4rem;font-size:0.8rem;">(Inventory full — discarded)</div>' : ''}
+    </div>`;
+  modal.classList.add('open');
+}
+
+function closDrawnModal() {
+  const modal = document.getElementById('modal-drawn');
+  if (modal.dataset.axolotl === '1') return; // waiting for axolotl pick
+  modal.classList.remove('open');
+  renderGame();
+}
+
+// ── SHARE ──
+function openShareModal() {
+  if (G.ap < 1 && G.players[G.currentPlayer].char.id !== 'turtle') return;
+  const p = G.players[G.currentPlayer];
+  const teammates = G.players.filter(t => t.id !== p.id && t.room === p.room);
+  if (p.hand.length === 0) { addLog('Nothing to share!', 'warn'); return; }
+  if (teammates.length === 0) { addLog('No teammates in this room!', 'warn'); return; }
+
+  let html = '';
+  p.hand.forEach((card, ci) => {
+    teammates.forEach(t => {
+      const full = t.hand.length >= t.char.inv;
+      html += `<div class="share-option ${full?'':''}">
+        Give <b>${card.emoji} ${card.name}</b> to ${t.char.emoji} ${t.char.name}
+        ${full ? ' <span style="color:#c0392b">(full!)</span>' : ''}
+        ${!full ? `<button class="btn btn-search" style="float:right;padding:2px 8px" onclick="doShare(${ci},${t.id})">Give</button>` : ''}
+      </div>`;
+    });
+  });
+
+  document.getElementById('share-options').innerHTML = html || '<p>No valid targets.</p>';
+  document.getElementById('modal-share').classList.add('open');
+}
+
+function doShare(cardIdx, targetId) {
+  const p = G.players[G.currentPlayer];
+  const target = G.players[targetId];
+  const isTurtle = p.char.id === 'turtle';
+  const cost = isTurtle ? 0 : 1;
+  if (G.ap < cost) { addLog('Not enough AP!', 'warn'); return; }
+  G.ap -= cost;
+  const card = p.hand.splice(cardIdx, 1)[0];
+  target.hand.push(card);
+  addLog(`${p.char.name} gave ${card.emoji} ${card.name} to ${target.char.name}${isTurtle ? ' (free!)' : ''}.`, 'good');
+  closeShareModal();
+  renderGame();
+}
+function closeShareModal() { document.getElementById('modal-share').classList.remove('open'); }
+
+// ── ASSEMBLE ──
+function getAssembleOptions() {
+  const p = G.players[G.currentPlayer];
+  const allHands = G.players.filter(pl => pl.room === 'living').reduce((acc, pl) => acc.concat(pl.hand), []);
+  const options = [];
+  const needed = G.goal.tokens.filter(t => !G.assembledTokens.includes(t));
+
+  needed.forEach(token => {
+    if (token === 'Hot Drink') {
+      const hasCocoa = allHands.some(c => c.name === 'Hot Cocoa Powder');
+      const hasMarshmallow = allHands.some(c => c.name === 'Marshmallows');
+      if (hasCocoa && hasMarshmallow) options.push({ token, recipe: 'Hot Cocoa Powder + Marshmallows' });
+    }
+    if (token === 'Warm Blanket') {
+      const blanketItems = ['Warm Fleece Blanket','Comfy Throw Pillow','Cozy Slippers'];
+      const has = blanketItems.some(n => allHands.some(c => c.name === n));
+      if (has) options.push({ token, recipe: 'Any Blanket/Pillow/Slipper item' });
+    }
+    if (token === 'Stack of Books') {
+      let bookValue = 0;
+      allHands.forEach(c => {
+        if (c.name === 'Chapter Book') bookValue++;
+        if (c.name === 'Graphic Novel') bookValue += 2;
+      });
+      if (bookValue >= 3) options.push({ token, recipe: `Books totaling 3+ (have ${bookValue})` });
+    }
+    if (token === 'Snack Platter') {
+      const has = allHands.some(c => c.name === 'Snack Platter Base');
+      if (has) options.push({ token, recipe: 'Snack Platter Base' });
+    }
+  });
+  return options;
+}
+
+function openAssembleModal() {
+  const options = getAssembleOptions();
+  if (options.length === 0) { addLog('No assembly options available!', 'warn'); return; }
+  document.getElementById('assemble-options').innerHTML = options.map((opt, i) =>
+    `<div class="share-option" onclick="doAssemble(${i})">
+      <b>${opt.token}</b><br><small>Uses: ${opt.recipe}</small>
+    </div>`).join('');
+  document.getElementById('modal-assemble').classList.add('open');
+}
+
+function doAssemble(idx) {
+  const options = getAssembleOptions();
+  const opt = options[idx];
+  const token = opt.token;
+  const livingPlayers = G.players.filter(p => p.room === 'living');
+
+  // Consume ingredients
+  if (token === 'Hot Drink') {
+    consumeFromLivingPlayers(livingPlayers, 'Hot Cocoa Powder');
+    consumeFromLivingPlayers(livingPlayers, 'Marshmallows');
+  } else if (token === 'Warm Blanket') {
+    const blanketItems = ['Warm Fleece Blanket','Comfy Throw Pillow','Cozy Slippers'];
+    for (const n of blanketItems) {
+      if (consumeFromLivingPlayers(livingPlayers, n)) break;
+    }
+  } else if (token === 'Stack of Books') {
+    let needed = 3;
+    for (const p of livingPlayers) {
+      let i = 0;
+      while (i < p.hand.length && needed > 0) {
+        if (p.hand[i].name === 'Graphic Novel') { p.hand.splice(i,1); needed -= 2; }
+        else if (p.hand[i].name === 'Chapter Book') { p.hand.splice(i,1); needed--; }
+        else i++;
+      }
+    }
+  } else if (token === 'Snack Platter') {
+    consumeFromLivingPlayers(livingPlayers, 'Snack Platter Base');
+  }
+
+  G.assembledTokens.push(token);
+  G.ap -= 3;
+  addLog(`✅ Assembled: ${token}!`, 'good');
+  closeAssembleModal();
+  checkWin();
+  renderGame();
+}
+
+function consumeFromLivingPlayers(players, cardName) {
+  for (const p of players) {
+    const idx = p.hand.findIndex(c => c.name === cardName);
+    if (idx !== -1) { p.hand.splice(idx, 1); return true; }
+  }
+  return false;
+}
+
+function closeAssembleModal() { document.getElementById('modal-assemble').classList.remove('open'); }
+
+// ── SPECIAL ABILITIES ──
+function doSpecial() {
+  const p = G.players[G.currentPlayer];
+  if (p.char.id === 'fox') doFoxKettle();
+  else if (p.char.id === 'cat') doCatSwap();
+}
+
+function doFoxKettle() {
+  const p = G.players[G.currentPlayer];
+  if (G.ap < 1) return;
+  const eligible = p.hand.filter(c => c.name === 'Hot Cocoa Powder' || c.name === 'Marshmallows');
+  if (eligible.length === 0) { addLog('No ingredients for Quick Kettle!', 'warn'); return; }
+  document.getElementById('kettle-options').innerHTML = eligible.map((c,i) =>
+    `<div class="share-option" onclick="foxKettleUse(${p.hand.indexOf(c)})">
+      ${c.emoji} <b>${c.name}</b> → Hot Drink token
+    </div>`).join('');
+  document.getElementById('modal-fox-kettle').classList.add('open');
+}
+
+function foxKettleUse(cardIdx) {
+  const p = G.players[G.currentPlayer];
+  if (!G.assembledTokens.includes('Hot Drink') && G.goal.tokens.includes('Hot Drink')) {
+    p.hand.splice(cardIdx, 1);
+    G.assembledTokens.push('Hot Drink');
+    G.ap--;
+    addLog(`☕ Fox used Quick Kettle Hot Drink assembled!`, 'good');
+  } else {
+    addLog('Hot Drink already assembled or not needed!', 'warn');
+  }
+  document.getElementById('modal-fox-kettle').classList.remove('open');
+  checkWin();
+  renderGame();
+}
+
+function doCatSwap() {
+  if (G.ap < 1) return;
+  const p = G.players[G.currentPlayer];
+  const others = G.players.filter(t => t.id !== p.id);
+  if (others.length === 0) return;
+  // Pick target to swap with
+  const html = others.map(t =>
+    `<div class="share-option" onclick="catSwapWith(${t.id})">
+      ${t.char.emoji} ${t.char.name} (📍 ${roomLabel(t.room)})
+    </div>`).join('');
+  document.getElementById('share-options').innerHTML = `<p>Swap locations with:</p>${html}`;
+  document.getElementById('modal-share').classList.add('open');
+  document.getElementById('modal-share').querySelector('h2').textContent = '🔄 Focused Read — Swap Locations';
+}
+
+window._catSwapping = false;
+function catSwapWith(targetId) {
+  const p = G.players[G.currentPlayer];
+  const t = G.players[targetId];
+  const tmp = p.room;
+  p.room = t.room;
+  t.room = tmp;
+  G.ap--;
+  addLog(`🔄 ${p.char.name} swapped places with ${t.char.name}!`, 'info');
+  closeShareModal();
+  renderGame();
+}
+
+// ── END TURN ──
+function endTurn() {
+  addLog(`${currentPlayerName()} ends their turn.`, 'info');
+  drawRainCard();
+  if (G.gameOver) return;
+  G.currentPlayer = (G.currentPlayer + 1) % G.numPlayers;
+  G.ap = 3;
+  addLog(`--- ${currentPlayerName()}'s turn ---`, 'info');
+  renderGame();
+}
+
+// ── WIN/LOSS ──
+function checkWin() {
+  const allDone = G.goal.tokens.every(t => G.assembledTokens.includes(t));
+  if (allDone) triggerWin();
+}
+
+function triggerWin() {
+  G.gameOver = true;
+  document.getElementById('end-content').innerHTML = `
+    <div class="modal-emoji">🎉</div>
+    <h2>You Win!</h2>
+    <p>The team got perfectly cozy before the rain ended!<br>
+    <b>${G.goal.name}</b> completed!<br><br>
+    Tokens assembled: ${G.assembledTokens.join(', ')}</p>`;
+  document.getElementById('modal-end').classList.add('open');
+}
+
+function triggerLoss(reason) {
+  G.gameOver = true;
+  document.getElementById('end-content').innerHTML = `
+    <div class="modal-emoji">☔</div>
+    <h2>Oh no...</h2>
+    <p>${reason}<br><br>Better luck next time, cozy creatures!</p>`;
+  document.getElementById('modal-end').classList.add('open');
+}
+
+function resetGame() {
+  document.getElementById('modal-end').classList.remove('open');
+  goToTitle();
+}
+
+// ══════════════════════════════════════════
+//  LOG
+// ══════════════════════════════════════════
+function addLog(msg, type='') {
+  const log = document.getElementById('game-log');
+  if (!log) return;
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+  line.textContent = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  G.log.push(msg);
+}
+
+// ══════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>

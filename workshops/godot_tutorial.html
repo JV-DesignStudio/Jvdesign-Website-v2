@@ -1,0 +1,1665 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/godot_tutorial.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How To Godot 4 Build Your First Platformer | JVDesignStudio</title>
+<meta name="description" content="A complete beginner guide to building a 2D platformer in Godot 4 with GDScript. 8 modules, free PDF, ages 10+. By JVDesignStudio.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+
+
+
+  --bg:#0a0a0c;
+  --bg2:#111114;
+  --bg3:#18181d;
+  --border:rgba(255,255,255,.07);
+  --text:#e4e0d8;
+  --muted:rgba(228,224,216,.45);
+  --godot:#478cbf;
+  --godot-lt:#6ab0e0;
+  --godot-dk:#2d6a9f;
+  --gold:#f5a623;
+  --gold-lt:#ffc046;
+  --green:#3ddc84;
+  --purple:#9b6bff;
+  --teal:#70A3A7;
+  --rose:#BC4749;
+}
+code,pre{font-family:'DM Mono',monospace}
+
+/* ── HERO ── */
+.hero{position:relative;overflow:hidden;padding:80px 24px 72px;background:var(--bg);border-bottom:1px solid var(--border)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black,transparent)}
+.hero-glow{position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(71,140,191,.15) 0%,rgba(71,140,191,.05) 40%,transparent 70%);pointer-events:none}
+.hero-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:60px;align-items:center;position:relative;z-index:1}
+@media(max-width:760px){.hero-inner{grid-template-columns:1fr;gap:32px}}
+.hero-kicker{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--godot-lt);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.hero-kicker::before{content:'';width:24px;height:2px;background:var(--godot)}
+.hero-title{font-family:'Bebas Neue',cursive;font-size:clamp(3rem,7vw,5.5rem);line-height:.95;letter-spacing:.02em;margin-bottom:18px;color:white}
+.hero-title .accent{color:var(--godot-lt)}
+.hero-sub{font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:28px;max-width:460px}
+.hero-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+.hero-pill{font-family:'DM Mono',monospace;font-size:.68rem;padding:5px 12px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.06em;text-transform:uppercase}
+.hero-pill.blue{border-color:rgba(71,140,191,.35);color:var(--godot-lt);background:rgba(71,140,191,.08)}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap}
+
+/* Stats panel */
+.stats-panel{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:0}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stat-value{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.06em;color:var(--godot-lt)}
+
+/* ── SECTION LAYOUT ── */
+.section-wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.section-label{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px;display:inline-flex;align-items:center;gap:8px}
+.section-label::before{content:'';width:16px;height:2px;background:currentColor}
+.section-heading{font-family:'Bebas Neue',cursive;font-size:clamp(2rem,5vw,3rem);letter-spacing:.04em;color:white;margin-bottom:8px;line-height:1}
+.section-desc{font-size:.95rem;color:var(--muted);line-height:1.7;max-width:540px}
+
+/* ── OUTCOMES SECTION ── */
+.outcomes-section{padding:72px 0;border-bottom:1px solid var(--border)}
+.outcomes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:40px}
+.outcome-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;display:flex;gap:14px;align-items:flex-start;transition:border-color .2s}
+.outcome-card:hover{border-color:rgba(71,140,191,.3)}
+.outcome-icon{font-size:1.5rem;flex-shrink:0;margin-top:2px}
+.outcome-title{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.06em;color:white;margin-bottom:4px}
+.outcome-desc{font-size:.8rem;color:var(--muted);line-height:1.55}
+
+/* ── COURSE SECTION ── */
+.course-section{padding:72px 0;border-bottom:1px solid var(--border);background:var(--bg2)}
+.course-grid{display:grid;grid-template-columns:260px 1fr;gap:0;margin-top:40px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+@media(max-width:680px){.course-grid{grid-template-columns:1fr}}
+.course-sidebar{background:var(--bg);border-right:1px solid var(--border);padding:20px 0}
+@media(max-width:680px){.course-sidebar{border-right:none;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;padding:12px}}
+.step-btn{width:100%;display:flex;align-items:center;gap:12px;padding:12px 18px;background:none;border:none;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;transition:background .15s,color .15s;text-align:left}
+.step-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.step-btn.active{color:white;background:rgba(255,255,255,.05)}
+.step-num{width:26px;height:26px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:.85rem;flex-shrink:0;transition:all .2s;color:var(--godot-lt);border-color:var(--godot-lt)}
+.step-btn.active .step-num{background:var(--godot-lt);color:var(--bg)}
+@media(max-width:680px){.step-btn{width:auto;padding:7px 12px;border-radius:8px;font-size:.75rem}.step-num{width:20px;height:20px;font-size:.7rem}}
+.course-main{padding:32px 36px;min-height:400px}
+@media(max-width:680px){.course-main{padding:20px 18px}}
+.step-panel{display:none}
+.step-panel.active{display:block}
+.step-tag{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;color:var(--godot-lt)}
+.step-title{font-family:'Bebas Neue',cursive;font-size:1.7rem;letter-spacing:.04em;color:white;margin-bottom:10px;line-height:1.1}
+.step-body{font-size:.88rem;color:var(--muted);line-height:1.75}
+.step-body p{margin-bottom:10px}
+.step-body strong{color:var(--text);font-weight:600}
+.step-body ul{padding-left:18px;margin-bottom:10px}
+.step-body li{margin-bottom:5px}
+.step-list{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:7px}
+.step-list li{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:.83rem;color:var(--text)}
+.step-list li::before{content:attr(data-n);font-family:'Bebas Neue',cursive;font-size:.85rem;color:var(--muted);min-width:18px;padding-top:1px;flex-shrink:0}
+.code-block{background:#0d0d10;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px 18px;margin:12px 0;overflow-x:auto}
+.code-block pre{font-size:.76rem;line-height:1.65;color:#a8c8ff}
+.code-block .comment{color:#505060}
+.code-block .key{color:var(--gold-lt)}
+.code-block .val{color:var(--green)}
+.code-block .fn{color:#c084fc}
+.tip-box{background:rgba(71,140,191,.07);border:1px solid rgba(71,140,191,.2);border-radius:10px;padding:11px 15px;margin:10px 0;font-size:.8rem;color:rgba(228,224,216,.75);display:flex;gap:10px}
+.tip-box::before{content:'💡';flex-shrink:0}
+.warn-box{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2);border-radius:10px;padding:11px 15px;margin:10px 0;font-size:.8rem;color:rgba(228,224,216,.75);display:flex;gap:10px}
+.warn-box::before{content:'⚠️';flex-shrink:0}
+.tag-pill{display:inline-flex;align-items:center;font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:rgba(71,140,191,.1);color:var(--godot-lt);border:1px solid rgba(71,140,191,.2);margin:2px}
+.step-nav{display:flex;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--border)}
+.btn-step{padding:8px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:background .15s}
+.btn-step-prev{background:rgba(255,255,255,.06);color:var(--muted)}
+.btn-step-prev:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.btn-step-next{background:var(--godot);color:white;box-shadow:0 3px 0 var(--godot-dk)}
+.btn-step-next:hover{filter:brightness(1.1)}
+.btn-step:disabled{opacity:.3;cursor:default}
+@media(max-width:480px){
+  .btn-step{flex:1;padding:13px 10px;font-size:.85rem;text-align:center;}
+  .step-nav{gap:8px;}
+  .course-grid{grid-template-columns:1fr!important;}
+  .step-btn{width:auto;flex:1 1 130px;}
+}
+
+/* ── CODE SHOWCASE ── */
+.code-section{padding:72px 0;border-bottom:1px solid var(--border)}
+.code-showcase{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
+@media(max-width:680px){.code-showcase{grid-template-columns:1fr}}
+.code-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .2s}
+.code-card:hover{border-color:rgba(71,140,191,.3)}
+.code-card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.code-card-title{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;color:var(--muted);letter-spacing:.06em}
+.code-card-tag{font-family:'DM Mono',monospace;font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(71,140,191,.1);color:var(--godot-lt);border:1px solid rgba(71,140,191,.2)}
+.code-card pre{padding:16px 18px;font-size:.74rem;line-height:1.6;color:#a8c8ff;overflow-x:auto}
+
+/* ── PDF SECTION ── */
+.pdf-section{padding:72px 0;border-bottom:1px solid var(--border);background:var(--bg2)}
+.pdf-card{background:linear-gradient(135deg,#0a1628,#0d2240);border:1px solid rgba(71,140,191,.2);border-radius:20px;padding:48px 40px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;max-width:900px;margin-top:36px;transition:border-color .2s,box-shadow .2s}
+.pdf-card:hover{border-color:rgba(71,140,191,.4);box-shadow:0 8px 40px rgba(71,140,191,.08)}
+@media(max-width:600px){.pdf-card{grid-template-columns:1fr;gap:24px}}
+.pdf-card-title{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:.04em;color:white;margin-bottom:8px;line-height:1}
+.pdf-card-desc{font-size:.9rem;color:var(--muted);line-height:1.7;margin-bottom:20px;max-width:480px}
+.pdf-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.pdf-meta-item{font-family:'DM Mono',monospace;font-size:.68rem;padding:4px 10px;border-radius:6px;background:rgba(71,140,191,.08);color:var(--godot-lt);border:1px solid rgba(71,140,191,.15)}
+.pdf-icon{font-size:5rem;opacity:.5}
+
+/* ── CHANGELOG ── */
+.changelog-section{padding:72px 0;border-bottom:1px solid var(--border)}
+.changelog-list{display:flex;flex-direction:column;gap:14px;margin-top:36px;max-width:800px}
+.cl-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 22px;display:flex;gap:16px}
+.cl-badge{font-family:'DM Mono',monospace;font-size:.62rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:6px;flex-shrink:0;height:fit-content;margin-top:2px}
+.cl-badge.coming{background:rgba(155,107,255,.1);color:var(--purple);border:1px solid rgba(155,107,255,.2)}
+.cl-badge.done{background:rgba(61,220,132,.1);color:var(--green);border:1px solid rgba(61,220,132,.2)}
+.cl-badge.added{background:rgba(71,140,191,.1);color:var(--godot-lt);border:1px solid rgba(71,140,191,.2)}
+.cl-title{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.04em;color:white;margin-bottom:4px}
+.cl-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
+.cl-date{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted);margin-top:6px}
+
+/* ── MORE FROM ── */
+.more-section{padding:72px 0}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:36px}
+.more-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .2s}
+.more-card:hover{border-color:rgba(255,255,255,.15);transform:translateY(-3px)}
+.more-card-icon{font-size:1.8rem}
+.more-card-tag{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.more-card-title{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.04em;color:white}
+.more-card-cta{font-size:.8rem;font-weight:700;margin-top:auto;display:inline-flex;align-items:center;gap:5px;transition:gap .15s}
+.more-card:hover .more-card-cta{gap:9px}
+
+/* ── REVEAL ── */
+/* ── FOOTER ── */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:28px 24px;text-align:center;color:var(--muted);font-size:.8rem}
+footer a{color:var(--muted);transition:color .15s}
+footer a:hover{color:var(--text)}
+</style>
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/godot_tutorial.html">
+    <meta property="og:title"       content="How To Godot 4 Build Your First Platformer | JVDesignStudio">
+    <meta property="og:description" content="A complete beginner guide to building a 2D platformer in Godot 4 with GDScript. 8 modules, free PDF, ages 10+. By JVDesignStudio.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/How%20to%20GODOT.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="How To Godot 4 Build Your First Platformer | JVDesignStudio">
+    <meta name="twitter:description" content="A complete beginner guide to building a 2D platformer in Godot 4 with GDScript. 8 modules, free PDF, ages 10+. By JVDesignStudio.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/How%20to%20GODOT.png">
+<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+<style>
+/* mobile-nav cascade fix */
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ══ HEADER ══ -->
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<!-- ══ HERO ══ -->
+<section id="main-content" class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-kicker">JVDesignStudio · Godot 4 Guide</div>
+      <h1 class="hero-title">How To<br><span class="accent">Godot 4</span><br>Build Your First Platformer</h1>
+      <p class="hero-sub">A step-by-step beginner guide to building a complete 2D platformer using Godot 4 and GDScript. No game dev experience needed just follow along module by module.</p>
+      <div class="hero-pills">
+        <span class="hero-pill blue">Godot 4.3</span>
+        <span class="hero-pill blue">GDScript</span>
+        <span class="hero-pill">🆓 Free</span>
+        <span class="hero-pill">📄 PDF Included</span>
+        <span class="hero-pill">Ages 10+</span>
+      </div>
+      <div class="hero-ctas">
+        <a href="#step-1" class="btn-primary">⚙️ Start Learning</a>
+        <a href="Godot.pdf" target="_blank" class="btn-outline" rel="noopener noreferrer">📄 Download PDF</a>
+      </div>
+    </div>
+    <div class="stats-panel">
+      <div class="stat-row"><span class="stat-label">Engine</span><span class="stat-value">Godot 4.3</span></div>
+      <div class="stat-row"><span class="stat-label">Language</span><span class="stat-value">GDScript</span></div>
+      <div class="stat-row"><span class="stat-label">Modules</span><span class="stat-value">8 + Bonus</span></div>
+      <div class="stat-row"><span class="stat-label">Duration</span><span class="stat-value">5+ Hours</span></div>
+      <div class="stat-row"><span class="stat-label">Level</span><span class="stat-value">Beginner</span></div>
+      <div class="stat-row"><span class="stat-label">Price</span><span class="stat-value" style="color:var(--green)">Free</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ OUTCOMES ══ -->
+<section class="outcomes-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--godot-lt)">⚙️ Learning Outcomes</div>
+      <h2 class="section-heading">What You'll Build &amp; Learn</h2>
+      <p class="section-desc">By the end you'll have a fully playable 2D platformer and the skills to keep building from there.</p>
+    </div>
+    <div class="outcomes-grid">
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">⚙️</span>
+        <div>
+          <div class="outcome-title">Godot Basics</div>
+          <div class="outcome-desc">Master Nodes, Scenes, Signals, and the Editor. Understand how Godot projects are structured.</div>
+        </div>
+      </div>
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">🏃</span>
+        <div>
+          <div class="outcome-title">Player Control</div>
+          <div class="outcome-desc">Responsive running, jumping, and gravity using CharacterBody2D and GDScript physics.</div>
+        </div>
+      </div>
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">🗺️</span>
+        <div>
+          <div class="outcome-title">Level Design</div>
+          <div class="outcome-desc">Build interactive levels with TileMaps, TileSets, and parallax scrolling backgrounds.</div>
+        </div>
+      </div>
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">👾</span>
+        <div>
+          <div class="outcome-title">Enemies &amp; Hazards</div>
+          <div class="outcome-desc">Patrolling enemy AI, collision detection, player death and respawn logic.</div>
+        </div>
+      </div>
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">🎮</span>
+        <div>
+          <div class="outcome-title">UI &amp; Game State</div>
+          <div class="outcome-desc">Coin collectibles, HUD score counter, game over screens, managing state with signals.</div>
+        </div>
+      </div>
+      <div class="outcome-card reveal">
+        <span class="outcome-icon">🚀</span>
+        <div>
+          <div class="outcome-title">Export &amp; Ship</div>
+          <div class="outcome-desc">Sound effects, music, a main menu, and exporting your game for PC and web.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">Your Progress</span>
+    <span class="progress-count" id="progressCount">0 / 9 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<main class="workshop">
+
+  <!-- STEP 1: Setup -->
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-blue">1</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">⚙️</div>
+        <div class="ws-step-title">Setting Up Your Project</div>
+        <div class="step-blurb">Install Godot 4, explore the editor, and organise your folders</div>
+      </div>
+      <span class="step-status ss-active">Current</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Get Godot 4 installed, create a new project, and understand the editor layout.</p></div>
+      </div>
+      <h3 class="ws-h3">Get started</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Download <strong>Godot 4.3</strong> from godotengine.org — choose the Standard version (not .NET).</span></li>
+        <li><span class="num-badge">2</span><span>Launch Godot and click <strong>New Project</strong> — give it a name and pick a folder.</span></li>
+        <li><span class="num-badge">3</span><span>Explore the editor: <strong>Scene panel</strong> (top-left), <strong>Filesystem</strong> (bottom-left), <strong>Inspector</strong> (right), <strong>Viewport</strong> (centre).</span></li>
+        <li><span class="num-badge">4</span><span>Create your folder structure: <code>res://scenes/</code>, <code>res://scripts/</code>, <code>res://assets/</code>.</span></li>
+        <li><span class="num-badge">5</span><span>Set <strong>Project Settings → Display → Window</strong> to your target resolution (e.g. 1280x720).</span></li>
+      </ul>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>Godot is free and open source. No licence, no subscription. You own everything you make with it.</div></div>
+
+      <!-- Concept Fill -->
+      <div class="concept-fill" id="cf-1" data-step="1">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">The <input class="cf-blank" data-answer="Inspector" placeholder="?????????" size="10"> panel on the right lets you edit properties of any selected node. Your project files live in the <input class="cf-blank" data-answer="Filesystem" placeholder="??????????" size="11"> panel at the bottom-left.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Which version of Godot should you download for this tutorial?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Godot 3.5 Standard</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Godot 4.3 Standard (not .NET)</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Godot 4.3 .NET version</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Player -->
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-blue">2</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🏃</div>
+        <div class="ws-step-title">The Player: CharacterBody2D</div>
+        <div class="step-blurb">Create the player scene with sprite, collision, and your first script</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Build a Player scene with CharacterBody2D, Sprite2D, CollisionShape2D and attach your first GDScript.</p></div>
+      </div>
+      <h3 class="ws-h3">Build the player</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create a new scene — add a <strong>CharacterBody2D</strong> node as root, rename it "Player".</span></li>
+        <li><span class="num-badge">2</span><span>Add a <strong>Sprite2D</strong> child node, assign your player texture in the Inspector.</span></li>
+        <li><span class="num-badge">3</span><span>Add a <strong>CollisionShape2D</strong> child — set Shape to CapsuleShape2D, size it to fit your sprite.</span></li>
+        <li><span class="num-badge">4</span><span>Right-click Player node → <strong>Attach Script</strong> → GDScript → Create.</span></li>
+        <li><span class="num-badge">5</span><span>Save the scene as <code>res://scenes/player.tscn</code>.</span></li>
+      </ul>
+      <div class="code-block"><pre><span class="comment"># player.gd starter script</span>
+<span class="key">extends</span> <span class="fn">CharacterBody2D</span>
+
+<span class="key">const</span> SPEED = <span class="val">200.0</span>
+<span class="key">const</span> JUMP_VELOCITY = <span class="val">-450.0</span>
+<span class="key">var</span> gravity = <span class="fn">ProjectSettings</span>.get_setting(<span class="val">"physics/2d/default_gravity"</span>)</pre></div>
+
+      <!-- Code Challenge -->
+      <div class="code-challenge" id="cc-2" data-step="2">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks to complete the player script starter:</div>
+        <div class="cc-code-area">extends <input class="cc-blank" data-answer="CharacterBody2D" placeholder="???????????????" size="18">
+
+const SPEED = 200.0
+const JUMP_VELOCITY = <input class="cc-blank" data-answer="-450.0" placeholder="??????" size="8">
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The player extends CharacterBody2D and jumps upward with a negative velocity.</div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-correct="2">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What type of node do you use as the root of the player scene for a 2D platformer in Godot 4?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>RigidBody2D</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Area2D</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>CharacterBody2D</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Physics -->
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-green">3</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🎮</div>
+        <div class="ws-step-title">Movement &amp; Jumping</div>
+        <div class="step-blurb">Implement gravity, horizontal movement, and jump velocity with move_and_slide()</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Write the _physics_process function so the player can run left/right and jump.</p></div>
+      </div>
+      <div class="code-block"><pre><span class="fn">func</span> _physics_process(delta):
+    <span class="comment"># Apply gravity when airborne</span>
+    <span class="key">if not</span> is_on_floor():
+        velocity.y += gravity * delta
+
+    <span class="comment"># Jump</span>
+    <span class="key">if</span> <span class="fn">Input</span>.is_action_just_pressed(<span class="val">"ui_accept"</span>):
+        <span class="key">if</span> is_on_floor():
+            velocity.y = JUMP_VELOCITY
+
+    <span class="comment"># Horizontal movement</span>
+    <span class="key">var</span> direction = <span class="fn">Input</span>.get_axis(<span class="val">"ui_left"</span>, <span class="val">"ui_right"</span>)
+    velocity.x = direction * SPEED
+
+    move_and_slide()</pre></div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>move_and_slide() handles all collision response automatically. It moves the character and slides along surfaces — you don't need to write collision logic yourself.</div></div>
+
+      <!-- Code Challenge -->
+      <div class="code-challenge" id="cc-3" data-step="3">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks for the physics loop:</div>
+        <div class="cc-code-area">func _physics_process(delta):
+    if not is_on_floor():
+        velocity.y += gravity * <input class="cc-blank" data-answer="delta" placeholder="?????" size="7">
+
+    if Input.is_action_just_pressed("ui_accept"):
+        if is_on_floor():
+            velocity.y = JUMP_VELOCITY
+
+    var direction = Input.get_axis("ui_left", "ui_right")
+    velocity.x = direction * SPEED
+
+    <input class="cc-blank" data-answer="move_and_slide" placeholder="??????????????" size="16">()</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: delta is the time since last frame. The function that handles movement and collisions is move_and_slide.</div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-correct="0">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What does <strong>move_and_slide()</strong> do?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Moves the character and handles collision response automatically</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Only applies gravity to the character</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Plays a sliding animation on the sprite</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Levels -->
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-gold">4</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🗺️</div>
+        <div class="ws-step-title">Creating Interactive Terrain</div>
+        <div class="step-blurb">Build levels with TileSets, TileMaps, and collision layers</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Create a playable level using TileMap and TileSet with proper collision, plus a smooth camera.</p></div>
+      </div>
+      <h3 class="ws-h3">Build your level</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create a new scene — add a <strong>TileMap</strong> node as root.</span></li>
+        <li><span class="num-badge">2</span><span>In the Inspector, create a new <strong>TileSet</strong> resource — set tile size (e.g. 32x32).</span></li>
+        <li><span class="num-badge">3</span><span>Click the TileSet editor, drag your tileset texture in, then select tiles and add <strong>Physics Layer</strong> collision shapes.</span></li>
+        <li><span class="num-badge">4</span><span>Back in the TileMap, paint your level using the tile palette at the bottom of the screen.</span></li>
+        <li><span class="num-badge">5</span><span>Add a <strong>Camera2D</strong> node to the Player scene — enable <strong>Position Smoothing</strong> for a nice feel.</span></li>
+      </ul>
+      <div class="callout warn"><div class="callout-icon">⚠️</div><div>Always set collision layers correctly. The player and tiles must be on compatible layers or they'll pass through each other.</div></div>
+
+      <!-- Order Challenge -->
+      <div class="order-challenge" id="oc-4" data-step="4">
+        <div class="oc-header">
+          <div class="oc-icon">🔢</div>
+          <div class="oc-title">Order the Steps</div>
+          <div class="oc-xp-badge">+15 XP</div>
+        </div>
+        <div class="oc-prompt">Click each item in the correct order for setting up a TileMap level:</div>
+        <div class="oc-items">
+          <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><div class="oc-num"></div><span>Paint tiles onto the TileMap in the viewport</span></div>
+          <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><div class="oc-num"></div><span>Add a TileMap node to the scene</span></div>
+          <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><div class="oc-num"></div><span>Add a Camera2D to the Player scene</span></div>
+          <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><div class="oc-num"></div><span>Create a TileSet resource and add collision shapes</span></div>
+        </div>
+        <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order</button>
+        <button class="oc-reset-btn" onclick="resetOrder(this)">↺ Reset</button>
+        <div class="oc-feedback"></div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-correct="2">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What happens if the player and tile collision layers don't match?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The game crashes with an error</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The tiles turn invisible</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The player passes through the tiles</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: Enemies -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-rose">5</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">👾</div>
+        <div class="ws-step-title">Enemies &amp; Hazards</div>
+        <div class="step-blurb">Patrolling enemy AI, player death via Area2D, and respawn checkpoints</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add a patrolling enemy that kills the player on contact, plus respawn logic.</p></div>
+      </div>
+      <div class="code-block"><pre><span class="comment"># enemy.gd simple patrol AI</span>
+<span class="fn">func</span> _physics_process(delta):
+    <span class="key">if</span> direction == <span class="val">1</span> <span class="key">and</span> $RightWall.is_colliding():
+        direction = <span class="val">-1</span>
+    <span class="key">elif</span> direction == <span class="val">-1</span> <span class="key">and</span> $LeftWall.is_colliding():
+        direction = <span class="val">1</span>
+    velocity.x = direction * SPEED
+    move_and_slide()</pre></div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>Use two RayCast2D nodes pointing left and right at the edge of the platform. When one detects a wall, flip the direction. Simple but effective.</div></div>
+
+      <!-- True/False -->
+      <div class="tf-round" id="tf-5" data-step="5">
+        <div class="tf-header">
+          <div class="tf-icon">⚡</div>
+          <div class="tf-title">True or False</div>
+          <div class="tf-xp-badge">+15 XP</div>
+        </div>
+        <div class="tf-item" data-answer="true">
+          <span class="tf-statement">RayCast2D can detect when an enemy reaches a wall or platform edge.</span>
+          <div class="tf-btns">
+            <button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button>
+            <button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button>
+          </div>
+        </div>
+        <div class="tf-item" data-answer="false">
+          <span class="tf-statement">Area2D is used for the enemy's movement physics.</span>
+          <div class="tf-btns">
+            <button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button>
+            <button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button>
+          </div>
+        </div>
+        <div class="tf-item" data-answer="true">
+          <span class="tf-statement">Flipping the direction variable from 1 to -1 reverses the enemy's patrol direction.</span>
+          <div class="tf-btns">
+            <button class="tf-btn" data-picked="true" onclick="pickTF(this,'true')">True</button>
+            <button class="tf-btn" data-picked="false" onclick="pickTF(this,'false')">False</button>
+          </div>
+        </div>
+        <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check Answers</button>
+        <div class="tf-feedback"></div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">How does the patrol enemy know when to turn around?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It uses a timer to change direction every few seconds</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>RayCast2D detects a wall, then the direction variable flips</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It follows the player's position</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: UI & HUD -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-purple">6</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🎮</div>
+        <div class="ws-step-title">Collectibles &amp; UI</div>
+        <div class="step-blurb">Coin pickups, score counter HUD, and game state with Autoloads</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Create coin collectibles, a HUD showing score and lives, and a global GameState Autoload.</p></div>
+      </div>
+      <div class="code-block"><pre><span class="comment"># coin.gd collected by player</span>
+<span class="fn">func</span> _on_body_entered(body):
+    <span class="key">if</span> body.is_in_group(<span class="val">"player"</span>):
+        GameState.score += <span class="val">1</span>
+        emit_signal(<span class="val">"coin_collected"</span>)
+        queue_free()</pre></div>
+      <h3 class="ws-h3">Build the HUD</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create a <strong>CanvasLayer</strong> scene for your HUD — add Labels for score and lives.</span></li>
+        <li><span class="num-badge">2</span><span>Create an <strong>Autoload</strong> called GameState (Project Settings → Autoload) — store score and lives here.</span></li>
+        <li><span class="num-badge">3</span><span>Connect signals from coins/enemies to update the HUD.</span></li>
+      </ul>
+
+      <!-- Code Challenge -->
+      <div class="code-challenge" id="cc-6" data-step="6">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Complete the coin pickup script:</div>
+        <div class="cc-code-area">func _on_body_entered(body):
+    if body.is_in_group(<input class="cc-blank" data-answer="player" placeholder="??????" size="8">):
+        GameState.score += 1
+        emit_signal("coin_collected")
+        <input class="cc-blank" data-answer="queue_free" placeholder="??????????" size="12">()</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The player belongs to the "player" group. queue_free() removes the coin from the scene.</div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-correct="0">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What is an <strong>Autoload</strong> in Godot?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A script that is always loaded and accessible from any scene — perfect for global game state</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A node that automatically saves your game to disk</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A setting that auto-loads textures when the game starts</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: Polish -->
+  <div class="step-card locked" id="step-7" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-teal2">7</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🔊</div>
+        <div class="ws-step-title">Finishing Touches</div>
+        <div class="step-blurb">Sound effects, background music, and a main menu with scene switching</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add audio, build a main menu scene, and wire up scene transitions.</p></div>
+      </div>
+      <h3 class="ws-h3">Add audio and a menu</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Add <strong>AudioStreamPlayer</strong> nodes to the player — import WAV files for jump, land, and hurt sounds.</span></li>
+        <li><span class="num-badge">2</span><span>Add a separate <strong>AudioStreamPlayer</strong> to the main scene for looping background music (use OGG format).</span></li>
+        <li><span class="num-badge">3</span><span>Create a <strong>MainMenu</strong> scene with a TextureRect background, title Label, and Start button.</span></li>
+        <li><span class="num-badge">4</span><span>Connect the Start button to <code>get_tree().change_scene_to_file("res://scenes/level_1.tscn")</code>.</span></li>
+      </ul>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>OGG files loop better than MP3 in Godot. Use Audacity (free) to trim your music to a clean loop point.</div></div>
+
+      <!-- Concept Fill -->
+      <div class="concept-fill" id="cf-7" data-step="7">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">To play sound effects in Godot you use an <input class="cf-blank" data-answer="AudioStreamPlayer" placeholder="?????????????????" size="20"> node. The best audio format for looping music in Godot is <input class="cf-blank" data-answer="OGG" placeholder="???" size="5">.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-7" data-step="7" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Which function switches to a different scene in Godot 4?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>load_scene("path")</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>get_tree().change_scene_to_file("path")</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>SceneManager.goto("path")</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8: Export -->
+  <div class="step-card locked" id="step-8" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-blue">8</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🚀</div>
+        <div class="ws-step-title">Exporting Your Game</div>
+        <div class="step-blurb">Configure export templates and build for PC and HTML5 web</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Export your finished game for PC and web, and prepare it for itch.io.</p></div>
+      </div>
+      <h3 class="ws-h3">Export your game</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Open <strong>Project → Export</strong> — click Add and choose your platform (Windows, Mac, HTML5).</span></li>
+        <li><span class="num-badge">2</span><span>Click <strong>Manage Export Templates</strong> — download the templates for Godot 4.3.</span></li>
+        <li><span class="num-badge">3</span><span>For HTML5: set the export path, click <strong>Export Project</strong> — this creates an index.html + .wasm file.</span></li>
+        <li><span class="num-badge">4</span><span>On itch.io: upload as a <strong>ZIP</strong> containing all HTML5 export files, set Kind to HTML.</span></li>
+        <li><span class="num-badge">5</span><span>Test in browser before publishing — some features need HTTPS to work.</span></li>
+      </ul>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>The free itch.io HTML5 embed is the easiest way to share your game. Players can play instantly with no download.</div></div>
+
+      <!-- Order Challenge -->
+      <div class="order-challenge" id="oc-8" data-step="8">
+        <div class="oc-header">
+          <div class="oc-icon">🔢</div>
+          <div class="oc-title">Order the Steps</div>
+          <div class="oc-xp-badge">+15 XP</div>
+        </div>
+        <div class="oc-prompt">Put the export steps in the correct order:</div>
+        <div class="oc-items">
+          <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><div class="oc-num"></div><span>Click Export Project to generate the HTML5 files</span></div>
+          <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><div class="oc-num"></div><span>Open Project → Export and add a platform</span></div>
+          <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><div class="oc-num"></div><span>Upload the ZIP to itch.io and set Kind to HTML</span></div>
+          <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><div class="oc-num"></div><span>Download the export templates for Godot 4.3</span></div>
+        </div>
+        <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order</button>
+        <button class="oc-reset-btn" onclick="resetOrder(this)">↺ Reset</button>
+        <div class="oc-feedback"></div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-8" data-step="8" data-correct="2">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What is the easiest way to share your Godot game online for free?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Email the project folder to friends</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Upload the Godot project to GitHub</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Export as HTML5 and upload to itch.io</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(8)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 9: Bonus - Particles -->
+  <div class="step-card locked" id="step-9" data-step="9">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num-card sn-gold">★</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">✨</div>
+        <div class="ws-step-title">Bonus: Particle Effects</div>
+        <div class="step-blurb">Dust trails, sparkle pickups, and GPUParticles2D visual polish</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add beautiful particle effects for landing dust and coin pickup sparkles.</p></div>
+      </div>
+      <h3 class="ws-h3">Add particles</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Add a <strong>GPUParticles2D</strong> node to the Player scene — it starts emitting immediately.</span></li>
+        <li><span class="num-badge">2</span><span>Create a new <strong>ParticleProcessMaterial</strong> — set Direction, Spread, Gravity, and Initial Velocity.</span></li>
+        <li><span class="num-badge">3</span><span>Set <strong>One Shot = true</strong> and <strong>Explosiveness = 1.0</strong> for burst effects (landing, hit).</span></li>
+        <li><span class="num-badge">4</span><span>Trigger it from code: <code>$DustParticles.restart()</code> on landing detection.</span></li>
+      </ul>
+      <div class="code-block"><pre><span class="comment"># Detect landing to trigger dust burst</span>
+<span class="key">var</span> was_on_floor = <span class="val">false</span>
+
+<span class="fn">func</span> _physics_process(delta):
+    <span class="key">var</span> just_landed = is_on_floor() <span class="key">and not</span> was_on_floor
+    <span class="key">if</span> just_landed:
+        $DustParticles.restart()
+    was_on_floor = is_on_floor()</pre></div>
+
+      <!-- Code Challenge -->
+      <div class="code-challenge" id="cc-9" data-step="9">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks for the landing detection:</div>
+        <div class="cc-code-area">var was_on_floor = false
+
+func _physics_process(delta):
+    var just_landed = <input class="cc-blank" data-answer="is_on_floor" placeholder="????????????" size="14">() and not was_on_floor
+    if just_landed:
+        $DustParticles.<input class="cc-blank" data-answer="restart" placeholder="???????" size="9">()
+    was_on_floor = is_on_floor()</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: is_on_floor() checks if the character is grounded. restart() triggers the particle burst.</div>
+      </div>
+
+      <!-- Quiz Gate -->
+      <div class="quiz-gate" id="quiz-9" data-step="9" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What two properties make GPUParticles2D fire once as a burst instead of continuously?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Looping = false and Speed = max</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>One Shot = true and Explosiveness = 1.0</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Emit = once and Burst = true</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(9)">✅ Correct! Workshop Complete! →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINISH BANNER -->
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🏆⚙️🎮✨</div>
+    <div class="finish-title">Workshop Complete!</div>
+    <div class="finish-sub">You've built a complete 2D platformer in Godot 4 from scratch — player, levels, enemies, UI, audio, and export. Amazing work!</div>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-lbl">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-lbl">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-lbl">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-lbl">Accuracy</div></div>
+    </div>
+    <a href="my-progress.html" class="next-ep-btn">📊 View My Progress</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ CODE SHOWCASE ══ -->
+<section class="code-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--godot-lt)">💻 GDScript in Action</div>
+      <h2 class="section-heading">Taste the Code</h2>
+      <p class="section-desc">GDScript is Godot's beginner-friendly Python-like language. Here's a taste of what you'll write across the modules.</p>
+    </div>
+    <div class="code-showcase">
+      <div class="code-card reveal">
+        <div class="code-card-header">
+          <span class="code-card-title">player.gd</span>
+          <span class="code-card-tag">Jump Logic</span>
+        </div>
+        <pre><span style="color:#6ab0e0">if</span> <span style="color:#ffc046">Input</span>.is_action_just_pressed(<span style="color:#3ddc84">"ui_accept"</span>):
+    <span style="color:#6ab0e0">if</span> is_on_floor():
+        velocity.y = JUMP_VELOCITY
+
+<span style="color:#505060"># Apply gravity when airborne</span>
+<span style="color:#6ab0e0">if not</span> is_on_floor():
+    velocity.y += gravity * delta</pre>
+      </div>
+      <div class="code-card reveal">
+        <div class="code-card-header">
+          <span class="code-card-title">coin.gd</span>
+          <span class="code-card-tag">Coin Pickup</span>
+        </div>
+        <pre><span style="color:#c084fc">func</span> _on_body_entered(body):
+    <span style="color:#6ab0e0">if</span> body.is_in_group(<span style="color:#3ddc84">"player"</span>):
+        GameState.score += <span style="color:#ffc046">1</span>
+        emit_signal(<span style="color:#3ddc84">"coin_collected"</span>)
+        queue_free()</pre>
+      </div>
+      <div class="code-card reveal">
+        <div class="code-card-header">
+          <span class="code-card-title">enemy.gd</span>
+          <span class="code-card-tag">Patrol AI</span>
+        </div>
+        <pre><span style="color:#c084fc">func</span> _physics_process(delta):
+    <span style="color:#6ab0e0">if</span> direction == <span style="color:#ffc046">1</span> <span style="color:#6ab0e0">and</span> $RightWall.is_colliding():
+        direction = <span style="color:#ffc046">-1</span>
+    <span style="color:#6ab0e0">elif</span> direction == <span style="color:#ffc046">-1</span> <span style="color:#6ab0e0">and</span> $LeftWall.is_colliding():
+        direction = <span style="color:#ffc046">1</span>
+    move_and_slide()</pre>
+      </div>
+      <div class="code-card reveal">
+        <div class="code-card-header">
+          <span class="code-card-title">level.gd</span>
+          <span class="code-card-tag">Scene Transition</span>
+        </div>
+        <pre><span style="color:#c084fc">func</span> _on_goal_reached():
+    <span style="color:#505060"># Save score, load next level</span>
+    GameState.save_score()
+    get_tree().change_scene_to_file(
+        <span style="color:#3ddc84">"res://scenes/level_2.tscn"</span>
+    )</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PDF ══ -->
+<section class="pdf-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--godot-lt)">📄 Free Download</div>
+      <h2 class="section-heading">Get the Full PDF</h2>
+      <p class="section-desc">All 8 modules plus the bonus chapter step by step, with code examples throughout. Download free and go at your own pace.</p>
+    </div>
+    <div class="pdf-card reveal">
+      <div>
+        <div class="pdf-card-title">How To Godot 4<br>Full Tutorial PDF</div>
+        <div class="pdf-card-desc">The complete guide offline. Every module, every code snippet, every tip in a single PDF you can print or read on any device.</div>
+        <div class="pdf-meta">
+          <span class="pdf-meta-item">Godot 4.3</span>
+          <span class="pdf-meta-item">GDScript</span>
+          <span class="pdf-meta-item">8 Modules + Bonus</span>
+          <span class="pdf-meta-item">Free Forever</span>
+          <span class="pdf-meta-item">Updated Nov 2025</span>
+        </div>
+        <a href="Godot.pdf" target="_blank" class="btn-primary" style="width:fit-content" rel="noopener noreferrer">📄 Download Free PDF</a>
+      </div>
+      <div class="pdf-icon">📄</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CHANGELOG ══ -->
+<section class="changelog-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--godot-lt)">📝 Update Log</div>
+      <h2 class="section-heading">What's Been Added</h2>
+      <p class="section-desc">The tutorial is kept up to date with the latest Godot releases and community feedback.</p>
+    </div>
+    <div class="changelog-list">
+      <div class="cl-item reveal">
+        <span class="cl-badge coming">Coming Next</span>
+        <div>
+          <div class="cl-title">Module 9: Animated Sprites &amp; Character States</div>
+          <div class="cl-desc">AnimationPlayer, state machines for player animations (idle, run, jump, fall), and blending transitions cleanly.</div>
+          <div class="cl-date">In Progress</div>
+        </div>
+      </div>
+      <div class="cl-item reveal">
+        <span class="cl-badge done">Updated</span>
+        <div>
+          <div class="cl-title">Full Godot 4.3 Compatibility Check</div>
+          <div class="cl-desc">Every module reviewed and updated — new editor UI changes, updated TileMap workflow, and revised export templates.</div>
+          <div class="cl-date">November 10, 2025</div>
+        </div>
+      </div>
+      <div class="cl-item reveal">
+        <span class="cl-badge added">Added</span>
+        <div>
+          <div class="cl-title">Bonus Chapter: Particle Effects</div>
+          <div class="cl-desc">GPUParticles2D for dust trails on landing, sparkle effects for coin pickups, and screen shake on enemy collision.</div>
+          <div class="cl-date">October 1, 2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MORE FROM ══ -->
+<section class="more-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:var(--muted)">🎮 More from JVDesignStudio</div>
+      <h2 class="section-heading">Keep Building</h2>
+    </div>
+    <div class="more-grid">
+      <a href="space_invaders_tutorial.html" class="more-card reveal">
+        <span class="more-card-icon">👾</span>
+        <span class="more-card-tag" style="color:var(--godot-lt)">Godot 4 · 11 Chapters</span>
+        <span class="more-card-title">Build Space Invaders</span>
+        <span class="more-card-cta" style="color:var(--godot-lt)">Start Tutorial →</span>
+      </a>
+      <a href="godot_templates.html" class="more-card reveal">
+        <span class="more-card-icon">📦</span>
+        <span class="more-card-tag" style="color:#c084fc">Free Download · 4 Templates</span>
+        <span class="more-card-title">Starter Templates</span>
+        <span class="more-card-cta" style="color:#c084fc">Download Free →</span>
+      </a>
+      <a href="mugen-workshop.html" class="more-card reveal">
+        <span class="more-card-icon">⚔</span>
+        <span class="more-card-tag" style="color:#f5635e">MUGEN · Full Course</span>
+        <span class="more-card-title">MUGEN Workshop</span>
+        <span class="more-card-cta" style="color:#f5635e">Start Course →</span>
+      </a>
+      <a href="roblox-creator-journey.html" class="more-card reveal">
+        <span class="more-card-icon">🎭</span>
+        <span class="more-card-tag" style="color:#f97316">Roblox · 6 Levels</span>
+        <span class="more-card-title">Roblox Creator Journey</span>
+        <span class="more-card-cta" style="color:#f97316">Start Course →</span>
+      </a>
+      <a href="../pages/workshop.html" class="more-card reveal">
+        <span class="more-card-icon">🔧</span>
+        <span class="more-card-tag" style="color:var(--teal)">All Resources</span>
+        <span class="more-card-title">The Workshop</span>
+        <span class="more-card-cta" style="color:var(--teal)">Visit Workshop →</span>
+      </a>
+      <a href="../pages/content_hub.html" class="more-card reveal">
+        <span class="more-card-icon">📦</span>
+        <span class="more-card-tag" style="color:var(--muted)">Games · Books · Guides</span>
+        <span class="more-card-title">See Everything</span>
+        <span class="more-card-cta" style="color:var(--muted)">Content Hub →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div>
+        </div>
+      </a>      <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗺️</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Level Designer</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build 2D tile maps</div>
+        </div>
+      </a>      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎵</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">SFX Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Create custom sound effects</div>
+        </div>
+      </a>      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>      <a href="../tools/game-idea-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎲</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Game Idea Gen</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Random game concepts & prompts</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+const TOTAL = 9;
+const STORAGE_KEY = 'jvds-godot-tutorial-v2';
+
+let completed = new Set();
+let xp = 0;
+let level = 1;
+let streak = 0;
+let bestStreak = 0;
+let totalQuizzes = 0;
+let correctFirst = 0;
+
+const XP_PER_LEVEL = 100;
+const XP_QUIZ = 15;
+const XP_CODE = 20;
+const XP_STREAK_BONUS = 5;
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed], total: TOTAL, xp, level, streak, bestStreak, totalQuizzes, correctFirst,
+      quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
+      challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id)
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!data) return;
+    if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
+    if (data.completed && data.completed.length) {
+      data.completed.forEach(n => {
+        completed.add(n);
+        const card = document.getElementById('step-' + n);
+        if (!card) return;
+        card.classList.remove('active-step', 'open', 'locked');
+        card.classList.add('completed');
+        card.querySelector('.step-status').className = 'step-status ss-done';
+        card.querySelector('.step-status').textContent = '✓ Done';
+        card.querySelector('.step-body').style.display = 'none';
+      });
+      const next = getActiveStep();
+      if (next <= TOTAL) {
+        const nc = document.getElementById('step-' + next);
+        if (nc) { nc.classList.remove('locked'); nc.classList.add('active-step', 'open'); nc.querySelector('.step-status').className = 'step-status ss-active'; nc.querySelector('.step-status').textContent = 'Current'; }
+      }
+      if (data.completed.length === TOTAL) document.getElementById('finishBanner').classList.add('show');
+    }
+    if (data.quizzesPassed) data.quizzesPassed.forEach(id => {
+      const q = document.getElementById(id);
+      if (q) { q.classList.add('passed'); q.querySelector('.quiz-next-btn').classList.add('show'); q.querySelector('.quiz-submit').style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    if (data.challengesPassed) data.challengesPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+    });
+    updateXpDisplay();
+  } catch(e) {}
+}
+
+function getActiveStep() {
+  for (let i = 1; i <= TOTAL; i++) { if (!completed.has(i)) return i; }
+  return TOTAL;
+}
+
+function buildDots() {
+  const c = document.getElementById('stepDots');
+  c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' active' : ''));
+    d.textContent = i;
+    d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    c.appendChild(d);
+  }
+}
+
+function updateProgress() {
+  const n = completed.size;
+  document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
+  document.getElementById('progressFill').style.width = (n / TOTAL * 100) + '%';
+  buildDots();
+}
+
+function updateXpDisplay() {
+  const xpInLevel = xp % XP_PER_LEVEL;
+  document.getElementById('xpLabel').textContent = xp + ' XP';
+  document.getElementById('xpFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevel').textContent = 'Level ' + level;
+  document.getElementById('streakCount').textContent = streak;
+  const streakEl = document.getElementById('xpStreak');
+  streakEl.classList.toggle('hot', streak >= 3);
+}
+
+function awardXp(amount, label) {
+  const oldLevel = level;
+  xp += amount;
+  level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  updateXpDisplay();
+  document.getElementById('xpLabel').classList.add('xp-pop');
+  setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
+  showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
+  saveProgress();
+}
+
+function showXpToast(text) {
+  const existing = document.querySelector('.xp-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function showLevelUp(lvl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = '<div class="levelup-card" style="font-family:\'Bebas Neue\',sans-serif"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing — keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── QUIZ SYSTEM ── */
+function selectQuizOpt(el) {
+  const gate = el.closest('.quiz-gate') || el.closest('.predict-challenge');
+  if (!gate || gate.classList.contains('passed')) return;
+  gate.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const submitBtn = gate.querySelector('.quiz-submit');
+  if (submitBtn) submitBtn.classList.add('show');
+}
+
+function checkQuiz(btn) {
+  const gate = btn.closest('.quiz-gate');
+  const selected = gate.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = parseInt(gate.dataset.correct);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = gate.querySelector('.quiz-feedback');
+  totalQuizzes++;
+
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
+    gate.classList.add('passed');
+    btn.style.display = 'none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ;
+    let label = 'Quiz correct';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — try again!</span>';
+    streak = 0;
+    updateXpDisplay();
+    setTimeout(() => {
+      selected.classList.remove('wrong', 'selected');
+      fb.classList.remove('show');
+    }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── CODE CHALLENGE SYSTEM ── */
+function checkCodeChallenge(btn) {
+  const challenge = btn.closest('.code-challenge');
+  const blanks = challenge.querySelectorAll('.cc-blank');
+  const fb = challenge.querySelector('.cc-feedback');
+  const hint = challenge.querySelector('.cc-hint');
+  let allCorrect = true;
+
+  blanks.forEach(b => {
+    const userVal = b.value.trim().toLowerCase();
+    const answer = b.dataset.answer.toLowerCase();
+    if (userVal === answer) {
+      b.classList.remove('wrong');
+      b.classList.add('correct');
+    } else {
+      b.classList.remove('correct');
+      b.classList.add('wrong');
+      allCorrect = false;
+    }
+  });
+
+  if (allCorrect) {
+    fb.className = 'cc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    challenge.classList.add('passed');
+    btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    hint.classList.remove('show');
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    totalQuizzes++;
+    let bonus = XP_CODE;
+    let label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right — check the highlighted blanks and try again.</span>';
+    hint.classList.add('show');
+    streak = 0;
+    updateXpDisplay();
+    totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── CONCEPT FILL-IN-THE-BLANK ── */
+function checkConceptFill(btn) {
+  const wrap = btn.closest('.concept-fill');
+  const blanks = wrap.querySelectorAll('.cf-blank');
+  const fb = wrap.querySelector('.cf-feedback');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    if (b.value.trim().toLowerCase() === b.dataset.answer.toLowerCase()) {
+      b.classList.remove('wrong'); b.classList.add('correct');
+    } else {
+      b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
+    }
+  });
+  if (allCorrect) {
+    fb.className = 'cf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
+    wrap.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Concept fill';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks aren\'t right — try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── TRUE/FALSE SPEED ROUND ── */
+function pickTF(btn, value) {
+  const item = btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  btn.dataset.picked = value;
+}
+
+function checkTF(btn) {
+  const round = btn.closest('.tf-round');
+  const items = round.querySelectorAll('.tf-item');
+  const fb = round.querySelector('.tf-feedback');
+  let allAnswered = true, allCorrect = true;
+  items.forEach(item => {
+    const selected = item.querySelector('.tf-btn.selected');
+    if (!selected) { allAnswered = false; return; }
+    const correct = item.dataset.answer;
+    const picked = selected.dataset.picked;
+    item.classList.add('answered');
+    if (picked === correct) {
+      selected.classList.add('correct-answer');
+    } else {
+      selected.classList.add('wrong-answer');
+      item.querySelectorAll('.tf-btn').forEach(b => { if (b.dataset.picked !== picked && b.textContent.toLowerCase() === correct) b.classList.add('correct-answer'); });
+      allCorrect = false;
+    }
+  });
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'tf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
+    round.classList.add('passed'); btn.disabled = true;
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'True/False';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'tf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not all correct — look at the highlighted answers and try again next time.</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+    setTimeout(() => {
+      items.forEach(item => {
+        item.classList.remove('answered');
+        item.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('selected','correct-answer','wrong-answer'); });
+      });
+      fb.classList.remove('show');
+    }, 2500);
+  }
+  saveProgress();
+}
+
+/* ── ORDER THE STEPS ── */
+let orderCounters = {};
+function pickOrder(el) {
+  const challenge = el.closest('.order-challenge');
+  const id = challenge.id;
+  if (!orderCounters[id]) orderCounters[id] = 0;
+  if (el.classList.contains('picked')) return;
+  orderCounters[id]++;
+  el.classList.add('picked');
+  el.querySelector('.oc-num').textContent = orderCounters[id];
+  el.dataset.userOrder = orderCounters[id];
+}
+
+function resetOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  orderCounters[challenge.id] = 0;
+  challenge.querySelectorAll('.oc-item').forEach(item => {
+    item.classList.remove('picked','correct-pos','wrong-pos');
+    item.querySelector('.oc-num').textContent = '';
+    delete item.dataset.userOrder;
+  });
+  challenge.querySelector('.oc-feedback').classList.remove('show');
+}
+
+function checkOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  const items = challenge.querySelectorAll('.oc-item');
+  const fb = challenge.querySelector('.oc-feedback');
+  let allPicked = true, allCorrect = true;
+  items.forEach(item => {
+    if (!item.dataset.userOrder) { allPicked = false; return; }
+    if (parseInt(item.dataset.userOrder) === parseInt(item.dataset.correct)) {
+      item.classList.add('correct-pos');
+    } else {
+      item.classList.add('wrong-pos'); allCorrect = false;
+    }
+  });
+  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'oc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order!</span>';
+    challenge.classList.add('passed'); btn.disabled = true;
+    challenge.querySelector('.oc-reset-btn').style.display = 'none';
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Order challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'oc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite right — hit Reset and try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── STEP COMPLETION ── */
+function completeStep(n) {
+  completed.add(n);
+  const card = document.getElementById('step-' + n);
+  card.classList.remove('active-step', 'open');
+  card.classList.add('completed');
+  card.querySelector('.step-status').className = 'step-status ss-done';
+  card.querySelector('.step-status').textContent = '✓ Done';
+  card.querySelector('.step-body').style.display = 'none';
+  const next = document.getElementById('step-' + (n + 1));
+  if (next) {
+    next.classList.remove('locked');
+    next.classList.add('active-step', 'open');
+    next.querySelector('.step-status').className = 'step-status ss-active';
+    next.querySelector('.step-status').textContent = 'Current';
+    setTimeout(() => next.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  }
+  if (completed.size === TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    setTimeout(() => document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+  }
+  updateProgress();
+  saveProgress();
+}
+
+function toggleStep(header) {
+  const card = header.closest('.step-card');
+  if (card.classList.contains('locked')) return;
+  const body = card.querySelector('.step-body');
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
+}
+
+loadProgress();
+updateProgress();
+updateXpDisplay();
+</script>
+
+</body>
+</html>

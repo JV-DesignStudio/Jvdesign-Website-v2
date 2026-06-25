@@ -1,0 +1,1827 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Build a fighting game in Unreal Engine with this free workshop from JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/unreal-fighter-workshop.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena Fighter Blueprint – Build a 2-Player Fighting Game | JVDesignStudio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── Site footer ── */
+.footer-socials{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
+.footer-socials a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.55);padding:4px 9px;border-radius:6px;text-decoration:none;transition:color 0.15s,background 0.15s;}
+.footer-socials a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
+
+  --bg:#06070a;--bg2:#0b0c0f;--bg3:#101214;
+  --border:rgba(255,255,255,.07);
+  --text:#e8eaf0;--muted:rgba(232,234,240,.38);
+  --ue:#e05a1e;--ue-lt:#f08050;--ue-dk:#a03808;
+  --gold:#f5c842;--green:#4ade80;--red:#f87171;--purple:#a78bfa;--teal:#2dd4bf;--blue:#4a90d9;
+  --fight:#c94040;--fight-lt:#e86060;--fight-dk:#8a2020;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:90;background:rgba(6,7,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--fight),#a02828);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.85rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--fight-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+
+/* HERO */
+.hero{padding:32px 18px 24px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(201,64,64,.07) 1px,transparent 1px);background-size:26px 26px}
+@media(max-width:640px){.hero-inner{grid-template-columns:1fr}}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--fight-lt);margin-bottom:7px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,7vw,4rem);line-height:.9;letter-spacing:.03em;color:#fff;margin-bottom:8px}
+.hero-title .hl{color:var(--fight)}
+.hero-desc{font-size:.86rem;color:var(--muted);line-height:1.72;max-width:440px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:.56rem;padding:3px 8px;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
+.pill.fire{border-color:rgba(201,64,64,.3);color:var(--fight-lt);background:rgba(201,64,64,.07)}
+/* fighter card */
+.f-card{background:rgba(255,255,255,.03);border:1px solid rgba(201,64,64,.22);border-radius:12px;padding:13px 16px;min-width:190px}
+.f-card-title{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fight-lt);margin-bottom:8px}
+.f-name{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.05em;color:#fff;margin-bottom:5px}
+.f-stat{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.72rem}
+.f-stat:last-child{border:none}
+.f-stat-l{color:var(--muted)}
+.f-stat-r{font-family:'JetBrains Mono',monospace;color:var(--fight-lt);font-size:.68rem}
+
+/* MAIN LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 420px;max-width:1440px;margin:0 auto;min-height:calc(100vh - 52px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.steps-col{border-right:1px solid var(--border);display:flex;flex-direction:column}
+.step-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.step-tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 8px;font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+.tb:hover{color:var(--text)}
+.tb.active{color:var(--fight-lt);border-bottom-color:var(--fight)}
+.tb.done::before{content:"✓ ";color:var(--green)}
+@media(max-width:640px){.step-body{padding:14px 12px}}
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fight-lt);margin-bottom:3px}
+.step-intro{font-size:.83rem;color:var(--muted);line-height:1.73;margin-bottom:11px}
+.step-intro strong{color:var(--text)}
+
+/* BOXES */
+.box{border-radius:8px;padding:9px 12px;margin:6px 0;font-size:.76rem;line-height:1.58;display:flex;gap:8px;align-items:flex-start}
+.box::before{flex-shrink:0}
+.box-c{background:rgba(201,64,64,.05);border:1px solid rgba(201,64,64,.16);color:rgba(232,234,240,.7)}
+.box-c::before{content:"📖"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(232,234,240,.7)}
+.box-t::before{content:"💡"}
+.box-u{background:rgba(74,144,217,.06);border:1px solid rgba(74,144,217,.18);color:rgba(232,234,240,.76)}
+.box-u::before{content:"🔵"}
+.box-f{background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.2);color:rgba(232,234,240,.8)}
+.box-f::before{content:"⚔️"}
+.box-ai{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);color:rgba(232,234,240,.8)}
+.box-ai::before{content:"🤖"}
+
+/* BLUEPRINT CANVAS */
+.bp-outer{margin:10px 0;border-radius:10px;overflow:hidden;border:2px solid rgba(74,144,217,.17);position:relative}
+.bp-outer.shake{animation:bpshk .35s ease}
+@keyframes bpshk{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.bp-canvas-wrap canvas{display:block;width:100%;background:#11111f;cursor:crosshair}
+.bp-hint{font-family:'JetBrains Mono',monospace;font-size:.54rem;letter-spacing:.05em;color:rgba(74,144,217,.48);padding:4px 11px;background:rgba(74,144,217,.04);border-top:1px solid rgba(74,144,217,.08)}
+.bp-valinput{position:absolute;z-index:50;background:#1a1a2e;border:2px solid #4a90d9;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.7);min-width:180px}
+.bp-valinput label{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(74,144,217,.8);letter-spacing:.05em}
+.bp-valinput input{background:#0d0d1a;border:1px solid rgba(74,144,217,.4);border-radius:5px;color:#e8eaf0;font-family:'JetBrains Mono',monospace;font-size:.85rem;padding:5px 8px;outline:none;width:100%}
+.bp-valinput input:focus{border-color:#4a90d9}
+.bp-valinput-btns{display:flex;gap:6px}
+.bp-valinput-btns button{flex:1;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:5px;border-radius:5px;border:none;cursor:pointer}
+.bp-valinput-ok{background:#4a90d9;color:#fff}.bp-valinput-ok:hover{background:#5ba0e9}
+.bp-valinput-cancel{background:rgba(255,255,255,.08);color:rgba(232,234,240,.6)}.bp-valinput-cancel:hover{background:rgba(255,255,255,.14)}
+.task-list{margin:7px 0;display:flex;flex-direction:column;gap:4px}
+.task-item{display:flex;align-items:center;gap:7px;font-size:.74rem;padding:5px 9px;border-radius:6px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+/* MODE PICKER */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:9px 0}
+.mode-card{background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.07);border-radius:9px;padding:12px;cursor:pointer;transition:all .2s;text-align:center}
+.mode-card:hover{border-color:rgba(201,64,64,.45);transform:translateY(-2px)}
+.mode-card.sel{border-color:var(--fight);background:rgba(201,64,64,.09)}
+.mode-icon{font-size:1.6rem;margin-bottom:4px}
+.mode-name{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.04em;color:#fff}
+.mode-desc{font-size:.62rem;color:var(--muted);margin-top:2px;line-height:1.4}
+
+/* FIGHTER NAME INPUT */
+.fname-wrap{background:rgba(201,64,64,.05);border:1px solid rgba(201,64,64,.18);border-radius:8px;padding:9px 12px;margin:9px 0}
+.fname-lbl{font-family:'JetBrains Mono',monospace;font-size:.54rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fight-lt);margin-bottom:5px}
+.fname-input{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(201,64,64,.25);border-radius:5px;padding:6px 9px;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.06em;color:var(--fight-lt);outline:none}
+.fname-input:focus{border-color:var(--fight);box-shadow:0 0 0 2px rgba(201,64,64,.12)}
+
+/* BUTTONS */
+.run-btn{width:100%;margin-top:9px;padding:11px;background:var(--fight);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.1em;border:none;border-radius:9px;cursor:pointer;box-shadow:0 4px 0 var(--fight-dk);transition:transform .1s,filter .15s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.run-btn:not(:disabled):hover{filter:brightness(1.15);transform:translateY(-1px)}
+.run-btn:disabled{opacity:.32;cursor:not-allowed;transform:none;filter:none}
+.step-nav{display:flex;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
+.btn-p,.btn-n{flex:1;padding:9px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted)}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.09);color:var(--text)}
+.btn-n{background:rgba(201,64,64,.11);color:var(--fight-lt);border:1px solid rgba(201,64,64,.2)}
+.btn-n:hover:not(:disabled){background:rgba(201,64,64,.19)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* GAME COLUMN */
+.game-col{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:52px;height:calc(100vh - 52px)}
+@media(max-width:1080px){.game-col{position:static;height:auto;border-top:1px solid var(--border)}}
+.game-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.game-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.game-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--fight-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--fight);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.fs-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:4px 11px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-btn:hover{background:rgba(255,255,255,.11);color:var(--text)}
+.game-wrap{flex:1;position:relative;overflow:hidden;padding:7px;display:flex;align-items:center;justify-content:center}
+#gc{border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.05),0 8px 36px rgba(0,0,0,.9);display:block;max-width:100%;max-height:100%;image-rendering:pixelated}
+.game-hud{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);flex-shrink:0}
+.hb{padding:5px 7px;border-right:1px solid var(--border);text-align:center}
+.hb:last-child{border-right:none}
+.hv{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.04em}
+.hl2{font-family:'JetBrains Mono',monospace;font-size:.44rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;min-height:26px;color:var(--fight-lt);flex-shrink:0}
+
+/* FULLSCREEN */
+.fs-overlay{position:fixed;inset:0;z-index:500;background:#06070a;display:none;flex-direction:column;align-items:center}
+.fs-overlay.open{display:flex}
+.fs-hdr{position:fixed;top:0;left:0;right:0;height:50px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,7,10,.94);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.07);z-index:10}
+.fs-hud-row{display:flex;gap:18px;align-items:center}
+.fs-hi{text-align:center}
+.fs-hv{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:.04em}
+.fs-hl{font-family:'JetBrains Mono',monospace;font-size:.44rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fs-close{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.11);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;padding:5px 13px;border-radius:6px;cursor:pointer;transition:all .2s}
+.fs-close:hover{background:rgba(255,255,255,.13);color:var(--text)}
+.fs-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:50px 0 26px;width:100%}
+#gcFS{image-rendering:pixelated;display:block}
+.fs-foot{position:fixed;bottom:0;left:0;right:0;height:26px;padding:4px 16px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--fight-lt);background:rgba(6,7,10,.9);border-top:1px solid rgba(255,255,255,.05)}
+
+/* PROGRESS */
+.prog-bar{background:var(--bg2);border-top:1px solid var(--border);padding:7px 16px;display:flex;align-items:center;gap:11px;position:sticky;bottom:0;z-index:50;max-width:1440px;margin:0 auto;width:100%}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fight-lt);flex-shrink:0}
+.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--fight),var(--gold));border-radius:999px;transition:width .4s ease}
+.prog-dots{display:flex;gap:3px;flex-wrap:wrap;max-width:190px;justify-content:flex-end;flex-shrink:0}
+.pd{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
+.pd.done{background:var(--green)}.pd.active{background:var(--fight);transform:scale(1.35)}
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:16px;text-align:center;color:var(--muted);font-size:.7rem}
+footer a{color:var(--muted)}footer a:hover{color:var(--text)}
+
+/* ════════ BOOT.DEV-STYLE INTERACTIVE LEARNING SYSTEM ════════ */
+/* theme tokens reused by the interactive components */
+  --accent:#e05a1e;--accent2:#f08050;--green:#4ade80;--teal:#2dd4bf;
+  --pink:#ff70b8;--purple:#a78bfa;--blue:#4a90d9;--red:#f87171;--yellow:#f5c842;
+  --card:#101214;--asphalt:#1b1f24;--xp-gold:#f5c842;--xp-glow:rgba(245,200,66,.3);
+}
+.uf-hero{position:relative;overflow:hidden;padding:40px 20px 36px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#1a0606 0%,#06070a 100%)}
+.uf-hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.uf-h1{font-family:'Fredoka',cursive;font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;color:#fff;margin-bottom:10px}
+.uf-h1 em{color:var(--accent2);font-style:normal}
+.uf-hero-sub{font-size:1rem;color:var(--muted);max-width:560px;line-height:1.6;margin-bottom:20px}
+.hero-pills2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.pill2{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:12px;border:1px solid}
+.pill2.p-age{color:var(--pink);border-color:rgba(255,112,184,.3);background:rgba(255,112,184,.08)}
+.pill2.p-time{color:var(--teal);border-color:rgba(45,212,191,.3);background:rgba(45,212,191,.08)}
+.pill2.p-tool{color:var(--accent2);border-color:rgba(224,90,30,.3);background:rgba(224,90,30,.08)}
+.pill2.p-free{color:var(--yellow);border-color:rgba(245,200,66,.3);background:rgba(245,200,66,.08)}
+.skill-tag span{font-size:.9em}
+.print-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(232,234,240,.6);cursor:pointer;text-decoration:none;transition:background .15s,color .15s}
+.print-btn:hover{background:rgba(255,255,255,.09);color:var(--text)}
+
+
+
+.sn-blue{background:rgba(74,144,217,.15);color:var(--blue);border:2px solid rgba(74,144,217,.25)}
+.step-title2{font-family:'Fredoka',cursive;font-size:1.25rem;color:#fff;line-height:1.2}
+.step-body2{padding:0 24px 24px;display:none}
+.wk h3{font-family:'Fredoka',cursive;font-size:1.05rem;color:#fff;margin:18px 0 8px}
+.wk h3:first-child{margin-top:0}
+.b-event{color:#a78bfa;font-weight:700}
+.b-flow{color:#f5c842}
+.b-func{color:#4a90d9}
+.b-val{color:#4ade80}
+.b-comment{color:rgba(232,234,240,.4);font-style:italic}
+
+
+
+
+
+
+
+.gallery-prompt{margin-top:20px;padding:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;text-align:left}
+.gallery-prompt-label{font-family:'Fredoka',cursive;font-size:1rem;color:#fff;margin-bottom:10px}
+.gallery-input-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.gallery-input{flex:1;min-width:200px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;font-size:.85rem;color:var(--text);outline:none}
+.gallery-input:focus{border-color:rgba(224,90,30,.5)}
+.gallery-copy-btn{background:linear-gradient(135deg,#e05a1e,#a03808);color:#fff;font-family:'Fredoka',cursive;font-size:.9rem;padding:9px 18px;border-radius:8px;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 2px 0 #6e2705;transition:filter .15s}
+.gallery-copy-btn:hover{filter:brightness(1.1)}
+.gallery-hint{font-size:.78rem;color:var(--muted);line-height:1.5}
+@media(max-width:700px){.uf-h1{font-size:1.8rem}.step-header{padding:14px 16px 12px}.step-body2{padding:0 16px 18px}}
+@media print{.site-header,.xp-wrap,.progress-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.tf-round,.order-challenge,.predict-challenge,.finish-banner,.hero-btns,.print-btn,.skills-strip{display:none!important}.uf-hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-card.completed .step-body2,.step-card.active-step .step-body2{display:block!important}.step-body2{display:block!important}body{background:#fff;color:#111}.uf-h1,.wk h3,.step-title2,.finish-title{color:#111}}
+</style>
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/unreal-fighter-workshop.html">
+    <meta property="og:title"       content="Arena Fighter Blueprint – Build a 2-Player Fighting Game | JVDesignStudio">
+    <meta property="og:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/UnrealFighter.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Arena Fighter Blueprint – Build a 2-Player Fighting Game | JVDesignStudio">
+    <meta name="twitter:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/UnrealFighter.png">
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<header class="hdr">
+  <div class="logo">⚔️ Arena Fighter Blueprint</div>
+  <div class="hdr-right">
+    <button class="quick-btn" id="quickBtn">🥊 Quick Fight — Jump In</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="kicker">JVDesignStudio · Unreal Workshop</div>
+      <h1 class="hero-title">Arena<br><span class="hl">Fighter</span></h1>
+      <p class="hero-desc">Wire Unreal Blueprints to build a 2-player fighting game. Choose your fighter, pick your opponent — Human or AI — and design your move set before the bell rings.</p>
+      <div class="hero-pills">
+        <span class="pill fire">Unreal Engine 5</span>
+        <span class="pill">Blueprints</span>
+        <span class="pill">2-Player</span>
+        <span class="pill">AI Opponent</span>
+        <span class="pill">Custom Moves</span>
+      </div>
+    </div>
+    <div class="f-card" id="fighterCard">
+      <div class="f-card-title">⚔️ Your Fighter</div>
+      <div class="f-name" id="fcName">Unnamed</div>
+      <div class="f-stat"><span class="f-stat-l">Speed</span><span class="f-stat-r" id="fcSpeed">—</span></div>
+      <div class="f-stat"><span class="f-stat-l">Damage</span><span class="f-stat-r" id="fcDmg">—</span></div>
+      <div class="f-stat"><span class="f-stat-l">Health</span><span class="f-stat-r" id="fcHp">—</span></div>
+      <div class="f-stat"><span class="f-stat-l">Opponent</span><span class="f-stat-r" id="fcOpp">—</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <span class="xp-icon">⚡</span>
+    <span class="xp-label" id="xpLabel">0 XP</span>
+    <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+    <span class="xp-level" id="xpLevel">Level 1</span>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span> <span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- STEPS -->
+  <div class="steps-col">
+    <div class="step-tabs" id="stepTabs"></div>
+    <div class="step-body" id="stepBody"></div>
+    <div class="prog-bar">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+      <div class="prog-dots" id="progDots"></div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="game-col">
+    <div class="game-top">
+      <span class="game-top-l">Live Preview</span>
+      <div class="game-top-r">
+        <span class="live-wrap"><span class="live-dot"></span>LIVE</span>
+        <button class="fs-btn" id="fsBtnTop">⛶ Fullscreen</button>
+      </div>
+    </div>
+    <div class="game-wrap"><canvas id="gc" width="400" height="300"></canvas></div>
+    <div class="game-hud">
+      <div class="hb"><div class="hv" id="hP1HP">100</div><div class="hl2">P1 HP</div></div>
+      <div class="hb"><div class="hv" id="hP2HP">100</div><div class="hl2">P2 HP</div></div>
+      <div class="hb"><div class="hv" id="hRound">1</div><div class="hl2">Round</div></div>
+      <div class="hb"><div class="hv" id="hTimer">99</div><div class="hl2">Time</div></div>
+    </div>
+    <div class="obar" id="liveStatus">Complete a Blueprint step to unlock features…</div>
+  </div>
+</div>
+
+<!-- FULLSCREEN OVERLAY -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-hdr">
+    <div class="fs-hud-row">
+      <div class="fs-hi"><div class="fs-hv" id="fsP1HP">100</div><div class="fs-hl">P1 HP</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,.08)"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsP2HP">100</div><div class="fs-hl">P2 HP</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,.08)"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsRound">1</div><div class="fs-hl">Round</div></div>
+      <div style="width:1px;height:28px;background:rgba(255,255,255,.08)"></div>
+      <div class="fs-hi"><div class="fs-hv" id="fsTimer">99</div><div class="fs-hl">Time</div></div>
+    </div>
+    <button class="fs-close" id="fsCloseBtn">✕ Exit Fullscreen</button>
+  </div>
+  <div class="fs-canvas-wrap"><canvas id="gcFS"></canvas></div>
+  <div class="fs-foot" id="fsStatus">Ready to fight…</div>
+</div>
+
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div>
+        </div>
+      </a>      <a href="../tools/map-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗾</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Map Generator</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Procedural dungeons & world maps</div>
+        </div>
+      </a>      <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🗺️</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Level Designer</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build 2D tile maps</div>
+        </div>
+      </a>      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>      <a href="../tools/gdd-builder.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">📄</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">GDD Builder</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Plan your full game design doc</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+<div class="finish-banner" id="finishBanner">
+  <div style="font-size:2rem;margin-bottom:8px">🎉🥊🏆🎊⚡</div>
+  <div class="finish-title">You Built a Fighting Game!</div>
+  <p class="finish-sub">Incredible — you've built a real 2-player fighting game in Unreal Engine with health bars, combos, special moves, AI and a round system. You're an Unreal developer!</p>
+  <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+</div>
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+/* ════════════════════════════════════════════════════════
+   XP & INTERACTIVE LEARNING SYSTEM
+════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'jvds-unreal-fighter-v2';
+let xp = 0, level = 1, streak = 0, bestStreak = 0, totalQuizzes = 0, correctFirst = 0;
+const XP_PER_LEVEL = 100, XP_QUIZ = 15, XP_CODE = 20, XP_STREAK_BONUS = 5;
+
+function saveProgress(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    completed:[...done], xp, level, streak, bestStreak, totalQuizzes, correctFirst, cur,
+    passedInteractive:[...document.querySelectorAll('.quiz-gate.passed,.code-challenge.passed,.concept-fill.passed,.tf-round.passed,.order-challenge.passed,.predict-challenge.passed')].map(e=>e.id)
+  })); } catch(e){}
+}
+function loadProgress(){
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!data) return;
+    if(data.xp){xp=data.xp;level=data.level||1;streak=data.streak||0;bestStreak=data.bestStreak||0;totalQuizzes=data.totalQuizzes||0;correctFirst=data.correctFirst||0;}
+    if(data.completed) data.completed.forEach(i=>done.add(i));
+    if(data.cur!==undefined) cur=data.cur;
+  } catch(e){}
+}
+function updateXpDisplay(){
+  const el=document.getElementById('xpLabel');if(!el)return;
+  const xpInLevel=xp%XP_PER_LEVEL;
+  el.textContent=xp+' XP';
+  document.getElementById('xpFill').style.width=(xpInLevel/XP_PER_LEVEL*100)+'%';
+  document.getElementById('xpLevel').textContent='Level '+level;
+  document.getElementById('streakCount').textContent=streak;
+  const s=document.getElementById('xpStreak');if(s)s.classList.toggle('hot',streak>=3);
+}
+function awardXp(amount,label){
+  const oldLevel=level;xp+=amount;level=Math.floor(xp/XP_PER_LEVEL)+1;
+  updateXpDisplay();
+  const el=document.getElementById('xpLabel');if(el){el.classList.add('xp-pop');setTimeout(()=>el.classList.remove('xp-pop'),400);}
+  showXpToast('+'+amount+' XP'+(label?' · '+label:''));
+  if(level>oldLevel)setTimeout(()=>showLevelUp(level),600);
+  saveProgress();
+}
+function showXpToast(text){
+  const old=document.querySelector('.xp-toast');if(old)old.remove();
+  const t=document.createElement('div');t.className='xp-toast';t.textContent=text;
+  document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2000);
+}
+function showLevelUp(lvl){
+  const o=document.createElement('div');o.className='levelup-overlay';
+  o.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing — keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+}
+
+/* ── QUIZ SYSTEM ── */
+function selectQuizOpt(el){
+  const gate=el.closest('.quiz-gate')||el.closest('.predict-challenge');
+  if(!gate||gate.classList.contains('passed'))return;
+  gate.querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  const sb=gate.querySelector('.quiz-submit');if(sb)sb.classList.add('show');
+}
+function checkQuiz(btn){
+  const gate=btn.closest('.quiz-gate');
+  const sel=gate.querySelector('.quiz-opt.selected');if(!sel)return;
+  const correct=parseInt(gate.dataset.correct),chosen=parseInt(sel.dataset.idx);
+  const fb=gate.querySelector('.quiz-feedback');totalQuizzes++;
+  if(chosen===correct){
+    sel.classList.add('correct');fb.className='quiz-feedback correct show';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>That\'s right!</span>';
+    gate.classList.add('passed');btn.style.display='none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
+    let bonus=XP_QUIZ,label='Quiz correct';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    sel.classList.add('wrong');fb.className='quiz-feedback wrong show';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite — try again!</span>';
+    streak=0;updateXpDisplay();
+    setTimeout(()=>{sel.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
+  }
+  saveProgress();
+}
+
+/* ── CODE CHALLENGE SYSTEM ── */
+function checkCodeChallenge(btn){
+  const ch=btn.closest('.code-challenge');const blanks=ch.querySelectorAll('.cc-blank');
+  const fb=ch.querySelector('.cc-feedback');const hint=ch.querySelector('.cc-hint');
+  let allCorrect=true;
+  blanks.forEach(b=>{
+    if(b.value.trim().toLowerCase()===b.dataset.answer.toLowerCase()){b.classList.remove('wrong');b.classList.add('correct');}
+    else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}
+  });
+  if(allCorrect){
+    fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    ch.classList.add('passed');btn.disabled=true;blanks.forEach(b=>b.disabled=true);
+    if(hint)hint.classList.remove('show');
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
+    let bonus=XP_CODE,label='Code challenge';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    fb.className='cc-feedback wrong show';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Some answers aren\'t right — check the highlighted blanks.</span>';
+    if(hint)hint.classList.add('show');streak=0;updateXpDisplay();totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── CONCEPT FILL ── */
+function checkConceptFill(btn){
+  const w=btn.closest('.concept-fill');const blanks=w.querySelectorAll('.cf-blank');
+  const fb=w.querySelector('.cf-feedback');let allCorrect=true;
+  blanks.forEach(b=>{
+    if(b.value.trim().toLowerCase()===b.dataset.answer.toLowerCase()){b.classList.remove('wrong');b.classList.add('correct');}
+    else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}
+  });
+  if(allCorrect){
+    fb.className='cf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>';
+    w.classList.add('passed');btn.disabled=true;blanks.forEach(b=>b.disabled=true);
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
+    let bonus=XP_QUIZ,label='Concept fill';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    fb.className='cf-feedback wrong show';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Some blanks aren\'t right — try again!</span>';
+    streak=0;updateXpDisplay();totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── TRUE/FALSE ── */
+function pickTF(btn,value){
+  const item=btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');btn.dataset.picked=value;
+}
+function checkTF(btn){
+  const round=btn.closest('.tf-round');const items=round.querySelectorAll('.tf-item');
+  const fb=round.querySelector('.tf-feedback');let allAnswered=true,allCorrect=true;
+  items.forEach(item=>{
+    const sel=item.querySelector('.tf-btn.selected');
+    if(!sel){allAnswered=false;return;}
+    const correct=item.dataset.answer,picked=sel.dataset.picked;
+    item.classList.add('answered');
+    if(picked===correct){sel.classList.add('correct-answer');}
+    else{sel.classList.add('wrong-answer');item.querySelectorAll('.tf-btn').forEach(b=>{if(b.dataset.picked!==picked&&b.textContent.toLowerCase()===correct)b.classList.add('correct-answer');});allCorrect=false;}
+  });
+  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>';return;}
+  if(allCorrect){
+    fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>All correct!</span>';
+    round.classList.add('passed');btn.disabled=true;
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
+    let bonus=XP_QUIZ,label='True/False';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not all correct — check the highlighted answers.</span>';
+    streak=0;updateXpDisplay();totalQuizzes++;
+    setTimeout(()=>{items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});fb.classList.remove('show');},2500);
+  }
+  saveProgress();
+}
+
+let orderCounters={};
+function pickOrder(el){
+  const ch=el.closest('.order-challenge');const id=ch.id;
+  if(!orderCounters[id])orderCounters[id]=0;
+  if(el.classList.contains('picked'))return;
+  orderCounters[id]++;el.classList.add('picked');
+  el.querySelector('.oc-num').textContent=orderCounters[id];
+  el.dataset.userOrder=orderCounters[id];
+}
+function resetOrder(btn){
+  const ch=btn.closest('.order-challenge');orderCounters[ch.id]=0;
+  ch.querySelectorAll('.oc-item').forEach(item=>{item.classList.remove('picked','correct-pos','wrong-pos');item.querySelector('.oc-num').textContent='';delete item.dataset.userOrder;});
+  ch.querySelector('.oc-feedback').classList.remove('show');
+}
+function checkOrder(btn){
+  const ch=btn.closest('.order-challenge');const items=ch.querySelectorAll('.oc-item');
+  const fb=ch.querySelector('.oc-feedback');let allPicked=true,allCorrect=true;
+  items.forEach(item=>{
+    if(!item.dataset.userOrder){allPicked=false;return;}
+    if(parseInt(item.dataset.userOrder)===parseInt(item.dataset.correct)){item.classList.add('correct-pos');}
+    else{item.classList.add('wrong-pos');allCorrect=false;}
+  });
+  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>';return;}
+  if(allCorrect){
+    fb.className='oc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect order!</span>';
+    ch.classList.add('passed');btn.disabled=true;
+    ch.querySelector('.oc-reset-btn').style.display='none';
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
+    let bonus=XP_QUIZ,label='Order challenge';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite — hit Reset and try again!</span>';
+    streak=0;updateXpDisplay();totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── PREDICT ── */
+function checkPredict(btn){
+  const ch=btn.closest('.predict-challenge');
+  const sel=ch.querySelector('.quiz-opt.selected');if(!sel)return;
+  const correct=parseInt(ch.dataset.correct),chosen=parseInt(sel.dataset.idx);
+  const fb=ch.querySelector('.quiz-feedback');totalQuizzes++;
+  if(chosen===correct){
+    sel.classList.add('correct');fb.className='quiz-feedback correct show';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>Great prediction!</span>';
+    ch.classList.add('passed');btn.style.display='none';
+    ch.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
+    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
+    let bonus=XP_QUIZ,label='Prediction';
+    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
+    awardXp(bonus,label);
+  } else {
+    sel.classList.add('wrong');fb.className='quiz-feedback wrong show';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite — think again!</span>';
+    streak=0;updateXpDisplay();
+    setTimeout(()=>{sel.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
+  }
+  saveProgress();
+}
+
+/* ════════════════════════════════════════════════════════
+   FIGHTER STATE
+════════════════════════════════════════════════════════ */
+const F = {
+  name: 'Unnamed',
+  speed: 500,
+  dmg: 20,
+  hp: 100,
+  combo: 3,
+  opponentMode: 'ai', // 'ai' | 'human'
+  // feature flags
+  f_movement:false, f_jump:false, f_light:false, f_heavy:false,
+  f_block:false, f_combo:false, f_special:false, f_ai:false,
+  f_hud:false, f_rounds:false, f_win:false, f_fullGame:false,
+};
+
+function updateFighterCard(){
+  document.getElementById('fcName').textContent = F.name;
+  document.getElementById('fcSpeed').textContent = F.speed + ' UU/s';
+  document.getElementById('fcDmg').textContent = F.dmg + ' pts';
+  document.getElementById('fcHp').textContent = F.hp + ' HP';
+  document.getElementById('fcOpp').textContent = F.opponentMode === 'ai' ? '🤖 AI' : '👤 Player 2';
+}
+updateFighterCard();
+
+/* ════════════════════════════════════════════════════════
+   GAME ENGINE (Canvas preview)
+════════════════════════════════════════════════════════ */
+const CV = document.getElementById('gc');
+const CX = CV.getContext('2d');
+const CVF = document.getElementById('gcFS');
+const CXF = CVF.getContext('2d');
+let fsOpen = false;
+
+const GS = {
+  p1:{ x:90, y:190, w:32, h:52, hp:100, maxHp:100, vy:0, onGround:true, state:'idle',
+       color:'#e05a1e', blocking:false, combo:0, comboTimer:0, anim:0 },
+  p2:{ x:270, y:190, w:32, h:52, hp:100, maxHp:100, vy:0, onGround:true, state:'idle',
+       color:'#4a90d9', blocking:false, combo:0, comboTimer:0, anim:0 },
+  round:1, timer:99, timerTick:0, phase:'start', startTimer:120,
+  effects:[],
+  keys:{},
+};
+
+/* AI state */
+const AI = { actionTimer:0, actionInterval:60, mode:'approach' };
+
+/* Input — P1: WASD+F+G, P2: Arrows+,+. */
+window.addEventListener('keydown', e => {
+  GS.keys[e.code] = true;
+  if(F.f_fullGame) handleFightInput(e.code, 'dn');
+  e.key === ' ' && e.preventDefault();
+});
+window.addEventListener('keyup', e => { GS.keys[e.code] = false; if(F.f_fullGame) handleFightInput(e.code, 'up'); });
+
+function handleFightInput(code, dir){
+  if(dir==='dn'){
+    // P1 jump
+    if(code==='KeyW' && F.f_jump && GS.p1.onGround){ GS.p1.vy=-14; GS.p1.onGround=false; }
+    // P2 jump (human)
+    if(code==='ArrowUp' && F.f_jump && F.opponentMode==='human' && GS.p2.onGround){ GS.p2.vy=-14; GS.p2.onGround=false; }
+    // P1 light
+    if(code==='KeyF' && F.f_light) doAttack(GS.p1, GS.p2, 'light');
+    // P1 heavy
+    if(code==='KeyG' && F.f_heavy) doAttack(GS.p1, GS.p2, 'heavy');
+    // P1 block
+    if(code==='KeyS' && F.f_block) GS.p1.blocking = true;
+    // P2 (human) attacks
+    if(F.opponentMode==='human'){
+      if(code==='Comma' && F.f_light) doAttack(GS.p2, GS.p1, 'light');
+      if(code==='Period' && F.f_heavy) doAttack(GS.p2, GS.p1, 'heavy');
+      if(code==='ArrowDown' && F.f_block) GS.p2.blocking = true;
+    }
+  }
+  if(dir==='up'){
+    if(code==='KeyS') GS.p1.blocking = false;
+    if(code==='ArrowDown' && F.opponentMode==='human') GS.p2.blocking = false;
+  }
+}
+
+function doAttack(attacker, defender, type){
+  const range = 100;
+  if(Math.abs(attacker.x - defender.x) > range) return;
+  const rawDmg = type==='light' ? Math.round(F.dmg*0.5) : F.dmg;
+  const blocked = defender.blocking && F.f_block;
+  const dmg = blocked ? Math.round(rawDmg*0.15) : rawDmg;
+  defender.hp = Math.max(0, defender.hp - dmg);
+  attacker.state = type==='light' ? 'light' : 'heavy';
+  attacker.anim = 12;
+  spawnHit(defender.x+defender.w/2, defender.y+defender.h/2, blocked ? '#88f' : '#f84', blocked ? 'BLOCK!' : (type==='heavy'?'HEAVY!':'HIT!'));
+  if(F.f_combo){ attacker.combo++; attacker.comboTimer=90; }
+  syncHUD();
+}
+
+function spawnHit(x,y,col,txt){
+  GS.effects.push({x,y,col,txt,life:40,vy:-1.2});
+}
+
+function aiTick(){
+  if(!F.f_ai) return;
+  AI.actionTimer++;
+  if(AI.actionTimer < AI.actionInterval) return;
+  AI.actionTimer = 0;
+  const p1=GS.p1, p2=GS.p2;
+  const dist=p1.x-p2.x;
+  // Approach
+  if(Math.abs(dist)>110){ p2.x += dist>0?3:-3; return; }
+  // Attack or block randomly
+  const r=Math.random();
+  if(r<0.5 && F.f_light) doAttack(p2,p1,'light');
+  else if(r<0.7 && F.f_heavy) doAttack(p2,p1,'heavy');
+  else if(F.f_block){ p2.blocking=true; setTimeout(()=>p2.blocking=false,600); }
+  // Occasionally jump
+  if(Math.random()<0.15 && F.f_jump && p2.onGround){ p2.vy=-13; p2.onGround=false; }
+  AI.actionInterval = 45 + Math.floor(Math.random()*45);
+}
+
+const GND=242;
+function physicsTick(p){
+  if(!p.onGround){ p.vy+=0.7; p.y+=p.vy; if(p.y>=GND){p.y=GND;p.vy=0;p.onGround=true;} }
+  if(p.anim>0) p.anim--;
+  else p.state='idle';
+  if(p.comboTimer>0){ p.comboTimer--; if(p.comboTimer<=0) p.combo=0; }
+}
+
+function movementTick(){
+  if(!F.f_movement) return;
+  const s=4;
+  if(GS.keys['KeyA']) GS.p1.x=Math.max(20,GS.p1.x-s);
+  if(GS.keys['KeyD']) GS.p1.x=Math.min(350,GS.p1.x+s);
+  if(F.opponentMode==='human'){
+    if(GS.keys['ArrowLeft']) GS.p2.x=Math.max(20,GS.p2.x-s);
+    if(GS.keys['ArrowRight']) GS.p2.x=Math.min(350,GS.p2.x+s);
+  }
+}
+
+function syncHUD(){
+  document.getElementById('hP1HP').textContent=Math.max(0,Math.round(GS.p1.hp));
+  document.getElementById('hP2HP').textContent=Math.max(0,Math.round(GS.p2.hp));
+  document.getElementById('hRound').textContent=GS.round;
+  document.getElementById('hTimer').textContent=Math.ceil(GS.timer);
+  document.getElementById('fsP1HP').textContent=Math.max(0,Math.round(GS.p1.hp));
+  document.getElementById('fsP2HP').textContent=Math.max(0,Math.round(GS.p2.hp));
+  document.getElementById('fsRound').textContent=GS.round;
+  document.getElementById('fsTimer').textContent=Math.ceil(GS.timer);
+}
+
+function resetRound(){
+  GS.p1.x=90; GS.p1.y=GND; GS.p1.hp=F.hp; GS.p1.vy=0; GS.p1.blocking=false; GS.p1.combo=0;
+  GS.p2.x=270; GS.p2.y=GND; GS.p2.hp=F.hp; GS.p2.vy=0; GS.p2.blocking=false; GS.p2.combo=0;
+  GS.timer=99; GS.timerTick=0; GS.phase='start'; GS.startTimer=90; GS.effects=[];
+  syncHUD();
+}
+
+function drawArena(cx,W,H){
+  // Sky gradient
+  const sky=cx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#1a1a2e'); sky.addColorStop(1,'#16213e');
+  cx.fillStyle=sky; cx.fillRect(0,0,W,H);
+  // Floor
+  cx.fillStyle='#2a1a1a'; cx.fillRect(0,GND+52,W,H);
+  cx.fillStyle='#c94040'; cx.fillRect(0,GND+50,W,4);
+  // Arena lines
+  cx.strokeStyle='rgba(201,64,64,.15)'; cx.lineWidth=1;
+  for(let i=0;i<W;i+=30){cx.beginPath();cx.moveTo(i,GND+54);cx.lineTo(i,H);cx.stroke();}
+  // Center line
+  cx.strokeStyle='rgba(255,255,255,.06)'; cx.lineWidth=1;
+  cx.beginPath(); cx.moveTo(W/2,GND+50); cx.lineTo(W/2,H); cx.stroke();
+}
+
+function drawFighter(cx,p,label){
+  const bx=p.x, by=p.y;
+  // Shadow
+  cx.fillStyle='rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(bx+p.w/2,GND+52,20,5,0,0,Math.PI*2); cx.fill();
+  // Body
+  cx.fillStyle=p.blocking?'#667799':p.color;
+  cx.fillRect(bx,by,p.w,p.h);
+  // Punch arm
+  if(p.state==='light'||p.state==='heavy'){
+    const armX = (p.x < 200) ? bx+p.w : bx-14;
+    cx.fillStyle=p.color; cx.fillRect(armX,by+14,14,10);
+  }
+  // Block shield
+  if(p.blocking){
+    cx.fillStyle='rgba(100,140,220,.5)'; cx.fillRect(bx+(p.x<200?-6:-4),by+8,8,36);
+  }
+  // Head
+  cx.fillStyle='#e8c89a'; cx.fillRect(bx+6,by-14,20,16);
+  // Eyes
+  cx.fillStyle='#222'; cx.fillRect(bx+9,by-10,5,4); cx.fillRect(bx+18,by-10,5,4);
+  // Label
+  cx.fillStyle='rgba(255,255,255,.6)'; cx.font='bold 8px JetBrains Mono,monospace'; cx.textAlign='center';
+  cx.fillText(label,bx+p.w/2,by-20);
+  // HP bar
+  const bw=42, bh=5;
+  cx.fillStyle='rgba(0,0,0,.5)'; cx.fillRect(bx-5,by-30,bw,bh);
+  const pct=Math.max(0,p.hp/p.maxHp);
+  const hcol = pct>0.5?'#4ade80':pct>0.25?'#f5c842':'#f87171';
+  cx.fillStyle=hcol; cx.fillRect(bx-5,by-30,bw*pct,bh);
+  // Combo
+  if(F.f_combo && p.combo>=2){
+    cx.fillStyle=p.color; cx.font='bold 10px Bebas Neue,sans-serif';
+    cx.fillText(p.combo+'x COMBO',bx+p.w/2,by-36);
+  }
+  cx.textAlign='left';
+}
+
+function drawEffects(cx){
+  GS.effects.forEach(ef=>{
+    ef.y+=ef.vy; ef.life--;
+    cx.globalAlpha=Math.max(0,ef.life/40);
+    cx.font='bold 11px Bebas Neue,sans-serif'; cx.fillStyle=ef.col; cx.textAlign='center';
+    cx.fillText(ef.txt,ef.x,ef.y);
+    cx.globalAlpha=1;
+  });
+  GS.effects=GS.effects.filter(e=>e.life>0);
+  if(GS.effects.length) cx.textAlign='left';
+}
+
+function drawHUD(cx,W){
+  if(!F.f_hud) return;
+  // P1 health bar top
+  cx.fillStyle='rgba(0,0,0,.5)'; cx.fillRect(10,10,W/2-20,10);
+  cx.fillStyle='#e05a1e'; cx.fillRect(10,10,(W/2-20)*Math.max(0,GS.p1.hp/GS.p1.maxHp),10);
+  cx.strokeStyle='rgba(255,255,255,.1)'; cx.lineWidth=1; cx.strokeRect(10,10,W/2-20,10);
+  // P2
+  cx.fillStyle='rgba(0,0,0,.5)'; cx.fillRect(W/2+10,10,W/2-20,10);
+  cx.fillStyle='#4a90d9'; cx.fillRect(W/2+10,10,(W/2-20)*Math.max(0,GS.p2.hp/GS.p2.maxHp),10);
+  cx.strokeRect(W/2+10,10,W/2-20,10);
+  // Names
+  cx.fillStyle='rgba(255,255,255,.7)'; cx.font='bold 8px JetBrains Mono,monospace';
+  cx.fillText(F.name||'P1',12,34);
+  cx.textAlign='right';
+  cx.fillText(F.opponentMode==='ai'?'AI BOT':'P2',W-12,34);
+  cx.textAlign='left';
+  // Timer
+  if(F.f_rounds){
+    cx.textAlign='center'; cx.font='bold 14px Bebas Neue,sans-serif';
+    cx.fillStyle='#fff'; cx.fillText(Math.ceil(GS.timer),W/2,36);
+    cx.textAlign='left';
+  }
+}
+
+function drawOverlay(cx,W,H){
+  if(GS.phase==='start'){
+    cx.fillStyle='rgba(0,0,0,.55)'; cx.fillRect(0,0,W,H);
+    cx.textAlign='center'; cx.font='bold 28px Bebas Neue,sans-serif'; cx.fillStyle='#fff';
+    const frac=GS.startTimer/90;
+    if(frac>0.66) cx.fillText('ROUND '+GS.round,W/2,H/2);
+    else if(frac>0.33) cx.fillText('FIGHT!',W/2,H/2);
+    else { cx.font='bold 14px JetBrains Mono,monospace'; cx.fillStyle='rgba(255,255,255,.6)'; cx.fillText(F.opponentMode==='ai'?'WASD + F(light) G(heavy) S(block)':'P1:WASD+F+G+S  P2:Arrows+,+.+↓',W/2,H/2+26);}
+    cx.textAlign='left';
+  }
+  if(GS.phase==='ko'){
+    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(0,0,W,H);
+    cx.textAlign='center';
+    cx.font='bold 36px Bebas Neue,sans-serif'; cx.fillStyle='#f87171'; cx.fillText('K.O.',W/2,H/2-10);
+    cx.font='bold 14px JetBrains Mono,monospace'; cx.fillStyle='rgba(255,255,255,.7)';
+    const winner = GS.p1.hp>GS.p2.hp ? (F.name||'P1') : (F.opponentMode==='ai'?'AI BOT':'P2');
+    cx.fillText(winner+' WINS! Press R to restart',W/2,H/2+22);
+    cx.textAlign='left';
+  }
+  if(GS.phase==='timeout'){
+    cx.fillStyle='rgba(0,0,0,.6)'; cx.fillRect(0,0,W,H);
+    cx.textAlign='center';
+    cx.font='bold 30px Bebas Neue,sans-serif'; cx.fillStyle='#f5c842'; cx.fillText('TIME OUT',W/2,H/2-8);
+    const winner = GS.p1.hp>=GS.p2.hp ? (F.name||'P1') : (F.opponentMode==='ai'?'AI BOT':'P2');
+    cx.font='bold 13px JetBrains Mono,monospace'; cx.fillStyle='rgba(255,255,255,.7)';
+    cx.fillText(winner+' wins by HP! Press R to restart',W/2,H/2+18);
+    cx.textAlign='left';
+  }
+}
+
+function gameTick(){
+  movementTick();
+  physicsTick(GS.p1); physicsTick(GS.p2);
+  if(GS.phase==='start'){
+    GS.startTimer--;
+    if(GS.startTimer<=0) GS.phase='fighting';
+    return;
+  }
+  if(GS.phase==='fighting'){
+    aiTick();
+    if(F.f_rounds){ GS.timerTick++; if(GS.timerTick>=60){GS.timer--;GS.timerTick=0;} }
+    if(GS.p1.hp<=0||GS.p2.hp<=0) GS.phase='ko';
+    if(F.f_rounds && GS.timer<=0) GS.phase='timeout';
+    syncHUD();
+  }
+  if((GS.phase==='ko'||GS.phase==='timeout') && GS.keys['KeyR']){ resetRound(); }
+}
+
+function drawFrame(cx,W,H){
+  drawArena(cx,W,H);
+  if(F.f_movement||F.f_fullGame){
+    drawFighter(cx,GS.p1,F.name||'P1');
+    drawFighter(cx,GS.p2,F.opponentMode==='ai'?'AI BOT':'P2');
+    drawEffects(cx);
+    drawHUD(cx,W);
+    drawOverlay(cx,W,H);
+  } else {
+    // Preview state — show placeholder
+    cx.fillStyle='rgba(201,64,64,.12)'; cx.fillRect(0,0,W,H);
+    cx.textAlign='center'; cx.font='bold 14px Bebas Neue,sans-serif';
+    cx.fillStyle='rgba(255,255,255,.25)'; cx.fillText('COMPLETE BLUEPRINTS TO UNLOCK',W/2,H/2-8);
+    cx.font='10px JetBrains Mono,monospace'; cx.fillStyle='rgba(255,255,255,.15)';
+    cx.fillText('Start at Step 1 →',W/2,H/2+14); cx.textAlign='left';
+  }
+}
+
+function resizeGame(){
+  const wrap=document.querySelector('.game-wrap');
+  if(!wrap) return;
+  const W=wrap.clientWidth-14, H=Math.min(wrap.clientHeight-14||300,300);
+  CV.width=W; CV.height=H;
+}
+
+function loop(){
+  gameTick();
+  const W=CV.width,H=CV.height;
+  drawFrame(CX,W,H);
+  if(fsOpen){ CVF.width=Math.min(window.innerWidth,1280); CVF.height=Math.min(window.innerHeight-76,720); drawFrame(CXF,CVF.width,CVF.height); }
+  requestAnimationFrame(loop);
+}
+
+function openFS(){ document.getElementById('fsOverlay').classList.add('open'); fsOpen=true; }
+function closeFS(){ document.getElementById('fsOverlay').classList.remove('open'); fsOpen=false; }
+function quickFight(){
+  F.f_movement=F.f_jump=F.f_light=F.f_heavy=F.f_block=F.f_combo=F.f_special=F.f_ai=F.f_hud=F.f_rounds=F.f_win=F.f_fullGame=true;
+  F.name='Quick Fighter'; F.speed=500; F.dmg=22; F.hp=100; F.opponentMode='ai';
+  GS.p1.maxHp=F.hp; GS.p2.maxHp=F.hp;
+  resetRound(); updateFighterCard();
+  sout('⚔️ Quick Fight! WASD+F+G+S vs AI. Press R to restart after KO!');
+}
+
+function sout(t){ document.getElementById('liveStatus').textContent=t; document.getElementById('fsStatus').textContent=t; }
+
+/* ════════════════════════════════════════════════════════
+   BLUEPRINT CANVAS ENGINE (identical pattern to Nuclear)
+════════════════════════════════════════════════════════ */
+const PC={exec:'#e8eaf0',bool:'#a78bfa',float:'#4ade80',int:'#60a5fa',string:'#f59e0b',object:'#f87171',any:'rgba(232,234,240,.4)'};
+const NS={
+  event:{b:'#1a1230',h:'#6d28d9',e:'rgba(109,40,217,.5)'},
+  func:{b:'#0d1117',h:'#1e3a5f',e:'rgba(74,144,217,.35)'},
+  macro:{b:'#0d1a0d',h:'#166534',e:'rgba(22,101,52,.5)'},
+  custom:{b:'#1a0d0d',h:'#7f1d1d',e:'rgba(127,29,29,.5)'},
+  ai:{b:'#0d0d1a',h:'#3730a3',e:'rgba(55,48,163,.5)'},
+};
+let _uid=0;
+
+function mkPZ(nodes,reqWires=[],reqVals=[]){
+  const id='pz'+(++_uid);
+  const html=`<div class="bp-outer" id="o${id}">
+    <div class="bp-canvas-wrap" id="w${id}"></div>
+    <div class="bp-hint">Drag pins to wire · Click value nodes to type · Complete to unlock</div>
+  </div>
+  <div class="task-list">
+    <div class="task-item" id="tw-${id}"><span class="task-dot"></span>All wires connected</div>
+    <div class="task-item" id="tv-${id}"><span class="task-dot"></span>All values entered</div>
+  </div>`;
+  function init(onDone){ return new BPCanvas(document.getElementById('w'+id),document.getElementById('o'+id),nodes,reqWires,reqVals,onDone,id); }
+  return {html,init};
+}
+
+class BPCanvas{
+  constructor(el,outer,nodes,rW,rV,onDone,uid){
+    this.el=el;this.outer=outer;this.nodes=JSON.parse(JSON.stringify(nodes));
+    this.rW=rW;this.rV=rV;this.onDone=onDone;this.uid=uid;
+    this.wires=[];this.drag=null;this.pins={};this.vals={};this.done=false;this.DPR=Math.min(window.devicePixelRatio||1,2);
+    this.cv=document.createElement('canvas');el.appendChild(this.cv);
+    this.cx=this.cv.getContext('2d');
+    ['mousedown','mousemove','mouseup'].forEach(ev=>this.cv.addEventListener(ev,e=>this['_'+ev.slice(5)](e,0)));
+    ['touchstart','touchmove','touchend'].forEach(ev=>this.cv.addEventListener(ev,e=>{e.preventDefault();const m=ev==='touchend'?'up':ev==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
+    this._resize();window.addEventListener('resize',()=>this._resize());
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')this._cancel();});
+    this.render();
+  }
+  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
+  _lh(){let m=120;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
+  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
+  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&y<vy+24;if(inX&&inY)return n.id;}return null;}
+  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
+  _showValInput(nodeId,e){
+    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
+    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
+    const outer=this.el.closest('.bp-outer');if(!outer)return;
+    const cr=outer.getBoundingClientRect();const ex=e.clientX-cr.left,ey=e.clientY-cr.top;
+    const pop=document.createElement('div');pop.className='bp-valinput';
+    pop.style.left=Math.min(ex,cr.width-200)+'px';pop.style.top=(ey+10)+'px';
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
+    outer.appendChild(pop);
+    const inp=pop.querySelector('input');inp.focus();inp.select();
+    const commit=()=>{const v=inp.value.trim();if(v!==''){n.vf.val=v;this._chk();this.render();}pop.remove();};
+    const cancel=()=>pop.remove();
+    pop.querySelector('.bp-valinput-ok').addEventListener('click',commit);
+    pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
+    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
+  }
+  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
+  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
+  _cancel(){if(this.drag){this.drag=null;this.render();}}
+  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt=this.pins[t];if(!pf||!pt)return;if(pf.side!=='right'||pt.side!=='left')return this._err();const compat=pf.type===pt.type||pf.type==='any'||pt.type==='any'||(pf.type==='exec'&&pt.type==='exec');if(!compat)return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
+  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
+  _chk(){
+    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
+    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
+    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
+    const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);
+    if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);
+    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
+    else if(!(wOk&&vOk))this.done=false;
+  }
+  render(){
+    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
+    cx.fillStyle='#11111f';cx.fillRect(0,0,540,H);
+    cx.strokeStyle='rgba(255,255,255,.036)';cx.lineWidth=1;
+    for(let x=0;x<540;x+=20){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,H);cx.stroke();}
+    for(let y=0;y<H;y+=20){cx.beginPath();cx.moveTo(0,y);cx.lineTo(540,y);cx.stroke();}
+    this.pins={};
+    this.nodes.forEach(n=>this._drawNode(cx,n));
+    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
+    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
+  }
+  _drawNode(cx,n){
+    const st=NS[n.type]||NS.func,HDR=22,GAP=19;
+    const rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
+    cx.fillStyle='rgba(0,0,0,.38)';this._rr(cx,x+3,y+3,w,h,7);cx.fill();
+    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,7);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
+    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,7);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
+    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
+    if(n.sub){cx.fillStyle='rgba(255,255,255,.28)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
+    if(n.vf){
+      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
+      cx.fillStyle='rgba(0,0,0,.48)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
+      cx.strokeStyle=n.vf.val?'#88ee44':'rgba(201,64,64,.5)';cx.lineWidth=1;cx.stroke();
+      cx.fillStyle=n.vf.val?'#88ee44':'rgba(201,64,64,.85)';
+      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
+      const d=n.vf.val?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint);
+      cx.fillText(d,x+w/2,vy+10);
+      cx.fillStyle='rgba(255,255,255,.15)';cx.font='6.5px JetBrains Mono,monospace';
+      cx.fillText(n.vf.val?'✓ set':'▼ click to type',x+w/2,vy+20);
+    }
+    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
+    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
+    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
+    cx.textAlign='left';
+  }
+  _pin(cx,x,y,col,exec,conn,side){
+    cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;
+    if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}
+    else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}
+    cx.fillStyle=col+'28';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();
+  }
+  _wire(cx,x1,y1,x2,y2,col,dashed){
+    const cp=Math.abs(x2-x1)*0.5;
+    cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=4;
+    if(dashed)cx.setLineDash([5,4]);
+    cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(x1+cp,y1,x2-cp,y2,x2,y2);cx.stroke();
+    cx.restore();cx.setLineDash([]);
+  }
+  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.lineTo(x+w-r,y);cx.quadraticCurveTo(x+w,y,x+w,y+r);cx.lineTo(x+w,y+h-r);cx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);cx.lineTo(x+r,y+h);cx.quadraticCurveTo(x,y+h,x,y+h-r);cx.lineTo(x,y+r);cx.quadraticCurveTo(x,y,x+r,y);cx.closePath();}
+}
+
+function nav(i){
+  return `<div class="step-nav">
+    <button class="btn-p" data-go="${i-1}" ${i===0?'disabled':''}>← Previous</button>
+    <button class="btn-n" data-go="${i+1}" ${i===STEPS.length-1?'disabled':''}>Next →</button>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════
+   STEPS DEFINITION
+════════════════════════════════════════════════════════ */
+const STEPS = [
+
+/* ── STEP 1 ── OPPONENT MODE ── */
+{title:'Choose Your Opponent',tag:'STEP 1 SETUP',
+intro:`Before wiring a single node, you need to decide: <strong>AI or Human</strong>? This choice changes which Input Bindings and AI Controller nodes you'll wire later. Pick a mode then connect the BeginPlay flow.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:4,y:20,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Set Opponent Mode',x:174,y:10,w:148,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2m',type:'string',label:'Mode'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'ai  or  human',val:''}},
+  {id:'n3',type:'func',title:'Init Fighter Actors',x:340,y:20,w:148,h:58,lp:[{id:'l3',type:'exec',label:''}],rp:[]},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'}],[{id:'n2',ok:v=>v==='ai'||v==='human'}]),
+extraHTML:`<div id="modePicker" style="margin:8px 0">
+  <div class="mode-grid">
+    <div class="mode-card" data-mode="ai"><div class="mode-icon">🤖</div><div class="mode-name">AI Opponent</div><div class="mode-desc">Solo play. The AI reacts, blocks, and attacks using a Behaviour Tree.</div></div>
+    <div class="mode-card" data-mode="human"><div class="mode-icon">👤</div><div class="mode-name">2-Player Local</div><div class="mode-desc">Two players, one keyboard. P1: WASD+F+G+S. P2: Arrows+,+.+↓</div></div>
+  </div>
+</div>`,
+boxes:[{t:'box-c',tx:'In Unreal, create a BP_GameMode, a BP_FighterP1 and a BP_FighterP2 (or BP_FighterAI). Your mode choice here links to which Pawn Controller gets possessed at game start.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s1" data-correct="1">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">In Unreal Engine, what determines which Pawn Controller gets possessed at game start?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>The Level Blueprint</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>The Game Mode</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>The Player Controller</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="tf-round" id="tf-s1">
+  <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">AI opponents use a Behaviour Tree to make decisions.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">You can only have one player in an Unreal fighting game.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-feedback"></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  F.opponentMode = v['n2']==='human'?'human':'ai';
+  updateFighterCard();
+  sout('✅ Opponent mode set to: '+(F.opponentMode==='ai'?'AI Bot':'Human Player 2'));
+}},
+
+/* ── STEP 2 ── FIGHTER PROJECT SETUP ── */
+{title:'Fighter Project Setup',tag:'STEP 2 PROJECT',
+intro:`Every fight needs a stage. Wire the level setup: spawn the ring mesh, set gravity, and fix the camera to a locked side-on perspective — the hallmark of the fighting genre.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',x:4,y:24,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Spawn Ring Mesh',x:174,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Set Camera Side-On',x:340,y:8,w:148,h:58,lp:[{id:'l3',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Set World Gravity',x:340,y:78,w:148,h:58,lp:[{id:'l4',type:'exec',label:''},{id:'l4g',type:'float',label:'Z Value'}],rp:[],vf:{hint:'e.g. -980',val:''}},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r3',t:'l4'}],[{id:'n4',ok:v=>parseFloat(v)<0}]),
+boxes:[{t:'box-t',tx:'Set gravity to around -980 for a snappy arcade feel or -1200 for a faster, more aggressive game. The camera should use a fixed springarm at 800 units away on the Y-axis with no rotation.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s2" data-correct="2">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">What camera setup is standard for a 2D fighting game?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Free-look third person</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>First person</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Fixed side-on perspective</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="concept-fill" id="cf-s2">
+  <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Fill in the Blank</span><span class="cf-xp-badge">+15 XP</span></div>
+  <p class="cf-sentence">In Unreal Engine, gravity is measured in cm/s² and a typical value is <input class="cf-blank" data-answer="-980" placeholder="???">. The camera should be fixed on the <input class="cf-blank" data-answer="Y" placeholder="?">-axis.</p>
+  <div class="cf-feedback"></div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  sout('✅ Stage ready! Gravity: '+v['n4']+' cm/s² — ring and camera spawned.');
+}},
+
+/* ── STEP 3 ── PLAYER MOVEMENT ── */
+{title:'Player Movement',tag:'STEP 3 MOVE',
+intro:`Connect the Input Axis events to Character Movement. Wire <strong>MoveRight</strong> (A/D for P1) to Add Movement Input. Type the walk speed.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'InputAxis MoveRight',sub:'BP_FighterP1',x:4,y:24,w:160,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''},{id:'r1v',type:'float',label:'Axis Val'}]},
+  {id:'n2',type:'func',title:'Add Movement Input',x:190,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2d',type:'float',label:'Scale'}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Set Max Walk Speed',x:358,y:8,w:148,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3s',type:'float',label:'Speed'}],rp:[],vf:{hint:'e.g. 500',val:''}},
+],[{f:'r1',t:'l2'},{f:'r1v',t:'l2d'},{f:'r2',t:'l3'}],[{id:'n3',ok:v=>parseFloat(v)>=200&&parseFloat(v)<=1200}]),
+boxes:[{t:'box-t',tx:'500 UU/s is a solid starting speed. Wire the same axis for P2 with a separate InputAxis MoveRight_P2 binding in Project Settings → Input.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s3" data-correct="0">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">Which Unreal node feeds the direction value for character movement?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>InputAxis (Axis Value output)</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Event Tick (Delta Seconds)</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Get Actor Location</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="code-challenge" id="cc-s3">
+  <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP</span></div>
+  <p class="cc-prompt">Complete the Blueprint pseudocode for player movement:</p>
+  <div class="cc-code-area">InputAxis MoveRight → <input class="cc-blank" data-answer="Add Movement Input" placeholder="???" style="min-width:140px"> → Set Max Walk Speed(<input class="cc-blank" data-answer="500" placeholder="???">)</div>
+  <div class="cc-feedback"></div>
+  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+  <div class="cc-hint">Hint: The node that moves the character is "Add Movement Input". A good walk speed is 500.</div>
+</div>`,
+onApply(v){
+  F.speed=parseFloat(v['n3'])||500; F.f_movement=true; updateFighterCard();
+  sout('✅ Movement live! A/D to move P1 at '+F.speed+' UU/s.');
+}},
+
+/* ── STEP 4 ── JUMP ── */
+{title:'Jump & Gravity',tag:'STEP 4 JUMP',
+intro:`Wire the Jump Action to the Character's Launch Character node. Set launch velocity Z for jump height.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'InputAction Jump',sub:'BP_FighterP1',x:4,y:24,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:'Pressed'}]},
+  {id:'n2',type:'func',title:'Launch Character',x:174,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2z',type:'float',label:'Z Velocity'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'e.g. 700',val:''}},
+],[{f:'r1',t:'l2'}],[{id:'n2',ok:v=>parseFloat(v)>=400&&parseFloat(v)<=1400}]),
+boxes:[{t:'box-t',tx:'700 gives a floaty Street Fighter feel. 1000+ gives a fast anime-style jump. Both fighters need separate Jump bindings.'}],
+quizHTML:`
+<div class="predict-challenge" id="pred-s4" data-correct="1">
+  <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+  <div class="pc-scenario">You set Launch Character Z Velocity to <strong>1400</strong> with gravity at -980. What happens?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>The fighter barely leaves the ground</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>The fighter jumps very high with a long hang time</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>The fighter gets stuck in mid-air</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+</div>
+<div class="tf-round" id="tf-s4">
+  <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Launch Character uses a Z velocity value to control jump height.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Both fighters need separate Jump input bindings.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">A Z velocity of 100 gives a high, floaty jump.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-feedback"></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  F.f_jump=true;
+  sout('✅ Jump unlocked! Z launch: '+v['n2']+'. Both fighters can now leave the ground.');
+}},
+
+/* ── STEP 5 ── HEALTH SYSTEM ── */
+{title:'Health Component',tag:'STEP 5 HEALTH',
+intro:`Create an Actor Component BP_HealthComp. Wire TakeDamage → Subtract HP → Check if HP ≤ 0 → Broadcast OnDeath. Type the starting HP.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event TakeDamage',sub:'BP_HealthComp',x:4,y:10,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'}]},
+  {id:'n2',type:'func',title:'Subtract Health',x:174,y:8,w:120,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2d',type:'float',label:'Amount'}],rp:[{id:'r2',type:'exec',label:''},{id:'r2h',type:'float',label:'New HP'}]},
+  {id:'n3',type:'macro',title:'Branch (HP ≤ 0?)',x:314,y:8,w:120,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'True'},{id:'r3f',type:'exec',label:'False'}]},
+  {id:'n4',type:'custom',title:'Broadcast OnDeath',x:454,y:4,w:80,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+  {id:'n5',type:'func',title:'Set Start HP',x:454,y:68,w:80,h:48,lp:[{id:'l5',type:'exec',label:''},{id:'l5h',type:'float',label:'HP'}],rp:[],vf:{hint:'e.g. 100',val:''}},
+],[{f:'r1',t:'l2'},{f:'r1d',t:'l2d'},{f:'r2',t:'l3'},{f:'r3t',t:'l4'},{f:'r3f',t:'l5'}],[{id:'n5',ok:v=>parseFloat(v)>=50&&parseFloat(v)<=300}]),
+boxes:[{t:'box-c',tx:'Add BP_HealthComp to both fighter Blueprints. OnDeath should Broadcast a Dispatcher so the Game Mode knows who won.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s5" data-correct="2">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">Why should OnDeath use a Broadcast Dispatcher instead of directly ending the game?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>It runs faster</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>It uses less memory</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>It decouples the health component from the game mode, so multiple systems can react</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="order-challenge" id="oc-s5">
+  <div class="oc-header"><span class="oc-icon">🔢</span><span class="oc-title">Order the Steps</span><span class="oc-xp-badge">+15 XP</span></div>
+  <p class="oc-prompt">Put the health system flow in the correct order:</p>
+  <div class="oc-items">
+    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span>Branch: is HP ≤ 0?</div>
+    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span>TakeDamage event fires</div>
+    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span>Broadcast OnDeath</div>
+    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span>Subtract damage from HP</div>
+  </div>
+  <div class="oc-feedback"></div>
+  <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+  <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+</div>`,
+onApply(v){
+  F.hp=parseFloat(v['n5'])||100; GS.p1.maxHp=F.hp; GS.p2.maxHp=F.hp; resetRound(); updateFighterCard();
+  sout('✅ Health system active — each fighter starts with '+F.hp+' HP.');
+}},
+
+/* ── STEP 6 ── LIGHT ATTACK ── */
+{title:'Light Attack',tag:'STEP 6 LIGHT',
+intro:`Wire the Light Attack input → Play Animation Montage (light combo anim) → call ApplyDamage on the opponent if the hitbox overlaps. Type the light hit damage.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'InputAction LightAtk',sub:'BP_FighterP1',x:4,y:24,w:158,h:58,lp:[],rp:[{id:'r1',type:'exec',label:'Pressed'}]},
+  {id:'n2',type:'func',title:'Play Anim Montage',x:183,y:8,w:138,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2m',type:'object',label:'Montage'}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Hitbox Overlap?',x:341,y:8,w:120,h:58,lp:[{id:'l3',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:'Hit'},{id:'r3a',type:'object',label:'Actor'}]},
+  {id:'n4',type:'func',title:'Apply Damage',x:481,y:4,w:58,h:58,lp:[{id:'l4',type:'exec',label:''},{id:'l4d',type:'float',label:'Dmg'}],rp:[],vf:{hint:'e.g. 10',val:''}},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r3',t:'l4'}],[{id:'n4',ok:v=>parseFloat(v)>=5&&parseFloat(v)<=50}]),
+boxes:[{t:'box-t',tx:'Bind F for P1. Light attacks should be fast (0.3s) and safe on block. In Unreal, use a Notify in the Montage to open/close the hitbox collision — never leave it on permanently!'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s6" data-correct="1">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">Why should you use an Animation Notify to open/close the hitbox instead of leaving it always active?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>It makes the animation play faster</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>It prevents phantom hits when the fighter isn't actually punching</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>It reduces the file size of the Blueprint</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="concept-fill" id="cf-s6">
+  <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Fill in the Blank</span><span class="cf-xp-badge">+15 XP</span></div>
+  <p class="cf-sentence">A light attack should be <input class="cf-blank" data-answer="fast" placeholder="???"> (fast/slow) with a startup around <input class="cf-blank" data-answer="0.3" placeholder="???"> seconds. Light attacks are safe on <input class="cf-blank" data-answer="block" placeholder="???">.</p>
+  <div class="cf-feedback"></div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  F.f_light=true; const d=parseFloat(v['n4'])||10;
+  sout('✅ Light attack live! '+d+' damage · fast startup · press F to test.');
+}},
+
+/* ── STEP 7 ── HEAVY ATTACK ── */
+{title:'Heavy Attack',tag:'STEP 7 HEAVY',
+intro:`Wire the Heavy Attack input to a slower montage with more damage. Type the heavy hit damage — it should be roughly 2× the light attack.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'InputAction HeavyAtk',sub:'BP_FighterP1',x:4,y:24,w:158,h:58,lp:[],rp:[{id:'r1',type:'exec',label:'Pressed'}]},
+  {id:'n2',type:'func',title:'Play Heavy Montage',x:183,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Apply Heavy Damage',x:351,y:8,w:148,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3d',type:'float',label:'Damage'}],rp:[],vf:{hint:'e.g. 20',val:''}},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'}],[{id:'n3',ok:v=>parseFloat(v)>=10&&parseFloat(v)<=80}]),
+boxes:[{t:'box-t',tx:'Bind G for P1. Heavy attacks should feel weighty — use a longer windup animation (0.5–0.7s). The long startup is the tradeoff for high damage.'}],
+quizHTML:`
+<div class="predict-challenge" id="pred-s7" data-correct="2">
+  <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+  <div class="pc-scenario">A heavy attack deals <strong>40 damage</strong> with a <strong>0.7s windup</strong>. The opponent has a fast light attack (0.3s). What is most likely to happen if both attack at the same time?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>The heavy attack always wins because it does more damage</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Both attacks cancel each other out</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>The light attack hits first because its startup is shorter</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+</div>
+<div class="tf-round" id="tf-s7">
+  <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Heavy attacks should deal roughly 2x the damage of light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A longer windup animation is the tradeoff for higher damage.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">Heavy attacks should have the same startup speed as light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-feedback"></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  F.dmg=parseFloat(v['n3'])||20; F.f_heavy=true; updateFighterCard();
+  sout('✅ Heavy attack live! '+F.dmg+' damage · press G to test.');
+}},
+
+/* ── STEP 8 ── BLOCKING ── */
+{title:'Block Mechanic',tag:'STEP 8 BLOCK',
+intro:`Wire the Block input to set a boolean IsBlocking. Wire TakeDamage to a Branch on IsBlocking — if true, reduce damage by 85%.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'InputAction Block',sub:'BP_FighterP1',x:4,y:10,w:148,h:58,lp:[],rp:[{id:'r1p',type:'exec',label:'Pressed'},{id:'r1r',type:'exec',label:'Released'}]},
+  {id:'n2',type:'func',title:'Set IsBlocking True',x:174,y:4,w:148,h:48,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Set IsBlocking False',x:174,y:66,w:148,h:48,lp:[{id:'l3',type:'exec',label:''}],rp:[]},
+],[{f:'r1p',t:'l2'},{f:'r1r',t:'l3'}],[]),
+boxes:[{t:'box-t',tx:'Bind S (hold) for P1 block, ↓ for P2. In TakeDamage, Branch on IsBlocking: True → multiply damage by 0.15. Give the blocked fighter a chip-damage sound cue.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s8" data-correct="1">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">In the TakeDamage Blueprint, what does the Branch node check when blocking is implemented?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Whether the attacker is in range</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Whether the IsBlocking boolean is true</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Whether the defender has enough HP</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="code-challenge" id="cc-s8">
+  <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP</span></div>
+  <p class="cc-prompt">Complete the block damage reduction logic:</p>
+  <div class="cc-code-area">TakeDamage → Branch(IsBlocking)
+  True → Damage × <input class="cc-blank" data-answer="0.15" placeholder="???" style="min-width:60px">
+  False → Damage × <input class="cc-blank" data-answer="1" placeholder="???" style="min-width:60px"></div>
+  <div class="cc-feedback"></div>
+  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+  <div class="cc-hint">Hint: Blocking reduces damage by 85%, so only 15% gets through (0.15). Unblocked is full damage (1).</div>
+</div>`,
+onApply(){
+  F.f_block=true;
+  sout('✅ Blocking active! Hold S to block (P1). Damage reduced by 85% when blocking.');
+}},
+
+/* ── STEP 9 ── COMBO SYSTEM ── */
+{title:'Combo Counter',tag:'STEP 9 COMBO',
+intro:`Wire each successful hit to Increment a Combo Counter. After X consecutive hits within a time window, add a Combo Multiplier. Wire a Reset on idle. Type your max combo length.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'On Hit Landed',x:4,y:24,w:130,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Increment Combo',x:156,y:8,w:128,h:58,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''},{id:'r2c',type:'int',label:'Count'}]},
+  {id:'n3',type:'func',title:'Set Combo Multiplier',x:305,y:8,w:148,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3m',type:'float',label:'Mult'}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Set Max Combo Hits',x:473,y:8,w:66,h:58,lp:[{id:'l4',type:'exec',label:''},{id:'l4n',type:'int',label:'Max'}],rp:[],vf:{hint:'e.g. 5',val:''}},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r3',t:'l4'}],[{id:'n4',ok:v=>parseInt(v)>=2&&parseInt(v)<=12}]),
+boxes:[{t:'box-t',tx:'Use a Delay or Timer to reset the combo if no hit lands within 1.5 seconds. Show the combo count in a Widget Blueprint — big font, screen centre.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s9" data-correct="0">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">What should reset the combo counter in a fighting game?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>No hit landing within the combo time window (e.g. 1.5s)</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>The opponent blocking</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>The player pressing a different button</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="order-challenge" id="oc-s9">
+  <div class="oc-header"><span class="oc-icon">🔢</span><span class="oc-title">Order the Combo Flow</span><span class="oc-xp-badge">+15 XP</span></div>
+  <p class="oc-prompt">Put the combo system steps in order:</p>
+  <div class="oc-items">
+    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span>Increment combo counter</div>
+    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span>Reset combo if timer expires</div>
+    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span>Hit lands on opponent</div>
+    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span>Apply combo multiplier to damage</div>
+  </div>
+  <div class="oc-feedback"></div>
+  <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+  <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+</div>`,
+onApply(v){
+  F.f_combo=true; F.combo=parseInt(v['n4'])||5;
+  sout('✅ Combo system active! Max '+F.combo+' hits. Chain attacks to build combos!');
+}},
+
+/* ── STEP 10 ── SPECIAL MOVE ── */
+{title:'Special Move',tag:'STEP 10 SPECIAL',
+intro:`Wire a Special Move using a gesture sequence — e.g. ↓↘→ + F (quarter-circle forward). Use an Input Buffer array. On match, trigger a high-damage attack.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'Input Buffer Tick',x:4,y:24,w:138,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Check Buffer Sequence',x:163,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2t',type:'exec',label:'Match!'},{id:'r2f',type:'exec',label:'No Match'}]},
+  {id:'n3',type:'func',title:'Trigger Special Attack',x:333,y:4,w:148,h:58,lp:[{id:'l3',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Clear Input Buffer',x:333,y:72,w:148,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+],[{f:'r1',t:'l2'},{f:'r2t',t:'l3'},{f:'r2f',t:'l4'}],[]),
+boxes:[
+  {t:'box-c',tx:'An Input Buffer is an array of recent inputs stamped with time. Each Tick, append the current frame inputs and flush anything older than 0.3s.'},
+  {t:'box-t',tx:'Start simple: just press F+G simultaneously as the special trigger. Once that works, graduate to sequence inputs.'},
+],
+quizHTML:`
+<div class="predict-challenge" id="pred-s10" data-correct="0">
+  <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+  <div class="pc-scenario">Your Input Buffer stores the last 0.3 seconds of inputs. The player presses <strong>↓, →, F</strong> in 0.2 seconds. What happens?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>The buffer matches the quarter-circle-forward sequence and triggers the special attack</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Only the F (light attack) fires because input buffers only store one input</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Nothing happens because 0.2s is too fast</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+</div>
+<div class="tf-round" id="tf-s10">
+  <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">An Input Buffer is an array of recent inputs stamped with time.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">You should keep old inputs in the buffer forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A good beginner special-move trigger is pressing two buttons simultaneously.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-feedback"></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+</div>`,
+onApply(){
+  F.f_special=true;
+  sout('✅ Special move wired! Press F+G together for a super attack.');
+}},
+
+/* ── STEP 11 ── AI CONTROLLER ── */
+{title:'AI Behaviour Tree',tag:'STEP 11 AI',
+intro:`Create a BP_AIController and attach a Behaviour Tree (BT_Fighter). Wire BeginPlay → Run Behaviour Tree. Inside the BT add: Approach → Attack → Block (with random weights). Connect Possess Pawn.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_AIController',x:4,y:24,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Run Behaviour Tree',x:174,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2bt',type:'object',label:'BT Asset'}],rp:[{id:'r2',type:'exec',label:''}]},
+  {id:'n3',type:'ai',title:'BT: Approach Target',x:342,y:4,w:148,h:48,lp:[{id:'l3',type:'exec',label:''}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'ai',title:'BT: Attack (Random)',x:342,y:66,w:148,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r3',t:'l4'}],[]),
+boxes:[
+  {t:'box-ai',tx:'The Behaviour Tree runs on a Selector: first try Attack (if in range), else Approach, else Block (random 20% chance). This gives the AI a natural rhythm.'},
+  {t:'box-t',tx:'Skip this step if you chose 2-Player Human mode — the AI controller won\'t be possessed in that case.'},
+],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s11" data-correct="2">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">In a Behaviour Tree, what node type tries children in order and stops at the first success?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Sequence</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Parallel</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Selector</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="order-challenge" id="oc-s11">
+  <div class="oc-header"><span class="oc-icon">🔢</span><span class="oc-title">Order the AI Priority</span><span class="oc-xp-badge">+15 XP</span></div>
+  <p class="oc-prompt">Put the AI Behaviour Tree actions in priority order (highest first):</p>
+  <div class="oc-items">
+    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span>Block (random 20% chance)</div>
+    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span>Attack (if in range)</div>
+    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span>Approach target</div>
+  </div>
+  <div class="oc-feedback"></div>
+  <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+  <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+</div>`,
+onApply(){
+  F.f_ai=true;
+  sout('✅ AI controller live! The bot will approach, attack, and block. Fight!');
+}},
+
+/* ── STEP 12 ── HUD & HEALTH BARS ── */
+{title:'HUD & Health Bars',tag:'STEP 12 HUD',
+intro:`Create a Widget Blueprint WBP_FightHUD. Add two Progress Bars (P1HP, P2HP), a Round timer text, and a Round counter. Wire Create Widget → Add to Viewport on BeginPlay.`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_GameMode',x:4,y:24,w:148,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Create WBP_FightHUD',x:174,y:8,w:148,h:58,lp:[{id:'l2',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''},{id:'r2w',type:'object',label:'Widget'}]},
+  {id:'n3',type:'func',title:'Add to Viewport',x:342,y:8,w:136,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3w',type:'object',label:'Target'}],rp:[{id:'r3',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Bind HP to Progress Bar',x:342,y:76,w:136,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r2w',t:'l3w'},{f:'r3',t:'l4'}],[]),
+boxes:[{t:'box-t',tx:'Bind the P1HP ProgressBar percent to (CurrentHP / MaxHP) using a Binding function in the Widget. Repeat for P2. The timer text binds to the GameMode timer variable.'}],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s12" data-correct="0">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">How do you bind a health bar's fill percentage to the fighter's current HP in Unreal?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Use a Binding function on the Progress Bar percent: CurrentHP / MaxHP</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Set the bar width manually every frame in the Level Blueprint</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Use a material instance to change the bar colour</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="code-challenge" id="cc-s12">
+  <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP</span></div>
+  <p class="cc-prompt">Complete the HUD setup flow:</p>
+  <div class="cc-code-area">BeginPlay → <input class="cc-blank" data-answer="Create Widget" placeholder="???" style="min-width:110px"> → <input class="cc-blank" data-answer="Add to Viewport" placeholder="???" style="min-width:120px"> → Bind HP</div>
+  <div class="cc-feedback"></div>
+  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check Code</button>
+  <div class="cc-hint">Hint: First you create the widget, then add it to the viewport.</div>
+</div>`,
+onApply(){
+  F.f_hud=true;
+  sout('✅ HUD live! Health bars and timer now visible during the fight.');
+}},
+
+/* ── STEP 13 ── ROUND SYSTEM ── */
+{title:'Round System (Best of 3)',tag:'STEP 13 ROUNDS',
+intro:`Wire the OnDeath dispatcher → Award Round Win → Check if Wins ≥ 2 → if True show Victory Screen, else Reset Round. Wire a 99-second countdown timer.`,
+pz:mkPZ([
+  {id:'n1',type:'custom',title:'On Fighter Death',x:4,y:24,w:138,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''},{id:'r1p',type:'object',label:'Fighter'}]},
+  {id:'n2',type:'func',title:'Award Round Win',x:164,y:8,w:136,h:58,lp:[{id:'l2',type:'exec',label:''},{id:'l2p',type:'object',label:'Winner'}],rp:[{id:'r2',type:'exec',label:''},{id:'r2w',type:'int',label:'Wins'}]},
+  {id:'n3',type:'macro',title:'Branch (Wins ≥ 2)',x:320,y:8,w:130,h:58,lp:[{id:'l3',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'Match Win'},{id:'r3f',type:'exec',label:'Next Round'}]},
+  {id:'n4',type:'func',title:'Show Victory Screen',x:470,y:4,w:68,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+  {id:'n5',type:'func',title:'Reset Round',x:470,y:66,w:68,h:48,lp:[{id:'l5',type:'exec',label:''}],rp:[]},
+],[{f:'r1',t:'l2'},{f:'r2',t:'l3'},{f:'r3t',t:'l4'},{f:'r3f',t:'l5'}],[]),
+boxes:[{t:'box-f',tx:'Best of 3 means first to 2 round wins takes the match. Show a "Round 2" / "Round 3" splash screen between rounds with a short Delay before resetting fighters.'}],
+quizHTML:`
+<div class="predict-challenge" id="pred-s13" data-correct="1">
+  <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+  <div class="pc-scenario">P1 has won 1 round. P2 has won 1 round. P1 knocks out P2 in Round 3. What should the game do?</div>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Start Round 4</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Show the Victory Screen — P1 reached 2 wins first</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Reset both players' win counts and start over</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+</div>
+<div class="tf-round" id="tf-s13">
+  <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">"Best of 3" means the first player to win 2 rounds takes the match.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A round timer prevents matches from going on forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">When the timer runs out, the round is a draw with no winner.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-feedback"></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+</div>`,
+onApply(){
+  F.f_rounds=true;
+  sout('✅ Round system: Best of 3. First to 2 round wins takes the match!');
+}},
+
+/* ── STEP 14 ── FIGHTER NAME & LAUNCH ── */
+{title:'Name Your Fighter & Launch!',tag:'STEP 14 🚀 LAUNCH',
+intro:`Connect Game Start → Sequence → Enable all systems. Type your fighter's name then hit Launch — the full fighting game is ready!`,
+pz:mkPZ([
+  {id:'n1',type:'event',title:'Event BeginPlay',sub:'BP_GameMode',x:4,y:30,w:152,h:58,lp:[],rp:[{id:'r1',type:'exec',label:''}]},
+  {id:'n2',type:'macro',title:'Sequence',x:178,y:8,w:95,h:72,lp:[{id:'l2',type:'exec',label:'In'}],rp:[{id:'r2a',type:'exec',label:'P1'},{id:'r2b',type:'exec',label:'P2/AI'},{id:'r2c',type:'exec',label:'HUD'},{id:'r2d',type:'exec',label:'Round'}]},
+  {id:'n3',type:'func',title:'Enable P1 Input',x:293,y:8,w:105,h:48,lp:[{id:'l3',type:'exec',label:''}],rp:[]},
+  {id:'n4',type:'func',title:'Enable P2/AI',x:293,y:66,w:105,h:48,lp:[{id:'l4',type:'exec',label:''}],rp:[]},
+  {id:'n5',type:'func',title:'Show HUD',x:293,y:124,w:105,h:48,lp:[{id:'l5',type:'exec',label:''}],rp:[]},
+  {id:'n6',type:'func',title:'Start Round 1',x:293,y:182,w:105,h:48,lp:[{id:'l6',type:'exec',label:''}],rp:[]},
+  {id:'n7',type:'custom',title:'Set Fighter Name',sub:'Fighter Designer',x:418,y:60,w:120,h:58,lp:[{id:'l7e',type:'exec',label:''},{id:'l7n',type:'string',label:'Name'}],rp:[],vf:{hint:'Name your fighter!',val:''}},
+],[{f:'r1',t:'l2'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'},{f:'r2d',t:'l6'},{f:'r2d',t:'l7e'}],[{id:'n7',ok:v=>v.trim().length>=2}]),
+extraHTML:`<div class="fname-wrap"><div class="fname-lbl">Or type your fighter's name here:</div><input class="fname-input" id="fighterNameInput" placeholder="e.g. Iron Fist"></div>`,
+boxes:[
+  {t:'box-f',tx:'Your fighter: Speed '+F.speed+' UU/s · '+F.dmg+' heavy damage · '+F.hp+' HP · '+F.combo+' max combo · Opponent: '+(F.opponentMode==='ai'?'AI Bot':'Human P2')},
+  {t:'box-t',tx:'Best of 3 rounds · 99 second timer · light + heavy + block + special + combos. Press R after KO to restart the round. Fullscreen for the best experience!'},
+],
+quizHTML:`
+<div class="quiz-gate" id="quiz-s14" data-correct="2">
+  <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Final Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+  <p class="quiz-question">What does the Sequence node do in Unreal Blueprints?</p>
+  <div class="quiz-options">
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>It plays animations in sequence</div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>It picks one random output to execute</div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>It executes multiple output pins in order, one after another</div>
+  </div>
+  <div class="quiz-feedback"></div>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →</button>
+</div>
+<div class="concept-fill" id="cf-s14">
+  <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Final Recap</span><span class="cf-xp-badge">+15 XP</span></div>
+  <p class="cf-sentence">A fighting game needs a <input class="cf-blank" data-answer="health" placeholder="???"> system, <input class="cf-blank" data-answer="light" placeholder="???"> and heavy attacks, a <input class="cf-blank" data-answer="block" placeholder="???"> mechanic, and a round-based <input class="cf-blank" data-answer="timer" placeholder="???">.</p>
+  <div class="cf-feedback"></div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
+</div>`,
+onApply(v){
+  const name=(document.getElementById('fighterNameInput')?.value.trim()||v['n7']||'Unnamed').trim();
+  F.name=name; F.f_movement=F.f_jump=F.f_light=F.f_heavy=F.f_block=F.f_combo=F.f_special=F.f_ai=F.f_hud=F.f_rounds=F.f_win=F.f_fullGame=true;
+  GS.p1.maxHp=F.hp; GS.p2.maxHp=F.hp;
+  resetRound(); updateFighterCard();
+  openFS();
+  sout('🥊 '+name.toUpperCase()+' VS '+(F.opponentMode==='ai'?'AI BOT':'P2')+' — FIGHT!');
+}},
+
+]; // end STEPS
+
+/* ════════════════════════════════════════════════════════
+   STEP ENGINE
+════════════════════════════════════════════════════════ */
+let cur=0;
+const done=new Set();
+const TOTAL=STEPS.length;
+let activeInst=null, completedVals={};
+
+function go(i){if(i<0||i>=TOTAL)return;cur=i;renderStep();document.getElementById('stepBody').scrollTop=0;}
+
+function renderStep(){
+  const s=STEPS[cur];
+  let boxes='';(s.boxes||[]).forEach(b=>{boxes+=`<div class="box ${b.t}">${b.tx}</div>`;});
+  document.getElementById('stepBody').innerHTML=`
+    <div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <p class="step-intro">${s.intro}</p>
+    ${s.pz.html}${s.extraHTML||''}${boxes}
+    <button class="run-btn" id="applyBtn" disabled>🔗 Complete Blueprint to Apply</button>
+    ${s.quizHTML||''}
+    ${nav(cur)}`;
+
+  document.getElementById('stepTabs').innerHTML=STEPS.map((st,i)=>`
+    <button class="tb${i===cur?' active':''}${done.has(i)?' done':''}" data-go="${i}">${i+1}</button>`).join('');
+  document.querySelector('.tb.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
+  updateProg();
+  completedVals={};
+  requestAnimationFrame(()=>{
+    activeInst=s.pz.init(vals=>{
+      completedVals=vals;
+      const btn=document.getElementById('applyBtn');
+      if(btn){btn.disabled=false;btn.textContent='▶ Apply — Unlock Feature!';}
+    });
+  });
+}
+
+function doApply(){
+  done.add(cur);STEPS[cur].onApply(completedVals);updateProg();
+  document.getElementById('liveStatus').textContent='Step '+(cur+1)+' done ✓';
+  const btn=document.getElementById('applyBtn');
+  if(btn){const o=btn.textContent;btn.textContent='✅ Applied!';setTimeout(()=>{btn.textContent=o;},1000);}
+  awardXp(XP_CODE,'Blueprint complete');
+  saveProgress();
+}
+
+function updateProg(){
+  document.getElementById('progFill').style.width=Math.max(3,Math.round(done.size/TOTAL*100))+'%';
+  document.getElementById('progDots').innerHTML=STEPS.map((s,i)=>`<div class="pd${done.has(i)?' done':i===cur?' active':''}"></div>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════
+   MODE PICKER
+════════════════════════════════════════════════════════ */
+let modePickerActive = null;
+function pickMode(mode, el) {
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  F.opponentMode = mode;
+  updateFighterCard();
+}
+
+/* ════════════════════════════════════════════════════════
+   BOOT — script is at end of body so DOM is ready
+════════════════════════════════════════════════════════ */
+loadProgress();
+resizeGame();
+renderStep();
+updateXpDisplay();
+requestAnimationFrame(loop);
+
+// Static buttons
+document.getElementById('quickBtn').addEventListener('click', quickFight);
+document.getElementById('fsBtnTop').addEventListener('click', openFS);
+document.getElementById('fsCloseBtn').addEventListener('click', closeFS);
+
+// Event delegation: step tabs
+document.getElementById('stepTabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-go]');
+  if(btn && !btn.disabled) go(parseInt(btn.dataset.go));
+});
+
+// Event delegation: step body (nav, apply, mode cards, name input)
+document.getElementById('stepBody').addEventListener('click', e => {
+  const nav = e.target.closest('[data-go]');
+  if(nav && !nav.disabled){ go(parseInt(nav.dataset.go)); return; }
+  if(e.target.id === 'applyBtn' && !e.target.disabled){ doApply(); return; }
+  const modeCard = e.target.closest('[data-mode]');
+  if(modeCard){ pickMode(modeCard.dataset.mode, modeCard); return; }
+});
+
+document.getElementById('stepBody').addEventListener('input', e => {
+  if(e.target.id === 'fighterNameInput'){
+    F.name = e.target.value;
+    updateFighterCard();
+  }
+});
+</script>
+
+</body>
+</html>

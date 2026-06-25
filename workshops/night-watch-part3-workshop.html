@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4c1d95">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Watch! Part 3 — Polish Your Horror Game in Godot | JVDesignStudio</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/night-watch-part3-workshop.html">
+    <meta name="description" content="Part 3 of the FNAF-style Godot workshop! Add camera static, flickering lights, screen shake, custom sprites, sound effects, a power warning, and more. Polish your horror game!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/night-watch-part3-workshop.html">
+    <meta property="og:title" content="Night Watch! Part 3 Polish Your Horror Game | JVDesignStudio">
+    <meta property="og:description" content="Part 3 of the FNAF-style Godot workshop! Camera static, flickering lights, screen shake, custom sprites, sound effects, and a power warning. Make it feel like a real game!">
+    <meta property="og:image" content="https://jvdesignstudio.co.uk/Crypt%20crawlers.png">
+    <meta property="og:site_name" content="JVDesignStudio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Night Watch! Part 3 Polish Your Horror Game | JVDesignStudio">
+    <meta name="twitter:description" content="Part 3 of the FNAF-style Godot workshop! Camera static, flickering lights, screen shake, custom sprites, sound effects, and a power warning.">
+    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/Crypt%20crawlers.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Nunito',sans-serif;background:#0d0015;color:#1a1a1a;min-height:100vh}
+
+
+
+/* ── HERO ── */
+.hero{background:linear-gradient(160deg,#0d0015 0%,#1a0030 55%,#0a0a20 100%);border-bottom:3px solid #4c1d95;overflow:hidden;position:relative}
+.hero::after{content:'✨';position:absolute;right:0;bottom:-10px;font-size:8rem;opacity:.07;transform:rotate(-15deg);pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;padding:40px 24px 44px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a78bfa;border:1.5px solid rgba(167,139,250,.4);border-radius:999px;padding:4px 14px;margin-bottom:8px;background:rgba(109,40,217,.15)}
+.series-label{display:block;font-family:'Boogaloo',cursive;font-size:.9rem;color:#a78bfa;letter-spacing:.05em;margin-bottom:4px;opacity:.85}
+.hero h1{font-family:'Boogaloo',cursive;font-size:clamp(2.4rem,6vw,3.6rem);line-height:1.0;color:#f0eaf8;margin-bottom:6px}
+.hero h1 .accent{color:#a78bfa}
+.hero h1 .subtitle-h1{display:block;font-size:clamp(1rem,2.5vw,1.4rem);color:#c4b5fd;font-family:'Nunito',sans-serif;font-weight:900;margin-top:4px}
+.hero p.lead{font-size:1rem;color:#d4c8e8;font-weight:600;line-height:1.6;max-width:520px;margin-bottom:20px}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:.8rem;font-weight:700;border:1.5px solid rgba(167,139,250,.4);border-radius:999px;padding:5px 14px;color:#d4c8e8;background:rgba(109,40,217,.15)}
+.hero-img{width:170px;height:170px;background:linear-gradient(135deg,#1a0030,#2e1060);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:5.5rem;flex-shrink:0;box-shadow:0 6px 30px rgba(109,40,217,.4);border:2.5px solid #6d28d9;animation:pulse-spooky 3s ease-in-out infinite}
+@keyframes pulse-spooky{0%,100%{box-shadow:0 6px 30px rgba(109,40,217,.4)}50%{box-shadow:0 6px 50px rgba(167,139,250,.7),0 0 0 8px rgba(109,40,217,.08)}}
+
+/* ── TABS ── */
+.tabs{background:#fff;border-bottom:2px solid #e5e5e5}
+.tabs-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;gap:4px}
+.tab-btn{font-size:.9rem;font-weight:800;padding:14px 20px;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;font-family:inherit}
+.tab-btn.active{color:#6d28d9;border-bottom-color:#6d28d9}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
+
+/* ── PROGRESS ── */
+.progress-bar{background:#fff;border:1.5px solid #ddd6fe;border-radius:14px;padding:18px 22px;margin-bottom:28px;box-shadow:0 2px 12px rgba(109,40,217,.07)}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.progress-label{font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#888;display:flex;align-items:center;gap:6px}
+.progress-count{font-size:.85rem;font-weight:800;color:#6d28d9}
+.step-dots{display:flex;gap:8px;flex-wrap:wrap}
+.dot{width:36px;height:36px;border-radius:50%;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#bbb;cursor:pointer;transition:all .2s;background:#fff;flex-shrink:0}
+.dot.done{background:#22c55e;border-color:#22c55e;color:#fff}
+.dot.current{background:#fff;border-color:#6d28d9;color:#6d28d9;box-shadow:0 0 0 3px rgba(109,40,217,.15)}
+.dot.locked{cursor:default}
+.progress-track{height:8px;background:#ede9fe;border-radius:4px;overflow:hidden;margin-bottom:10px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#6d28d9,#a78bfa);border-radius:4px;transition:width .5s ease;width:0%}
+.step-card.active-step{border-color:#6d28d9;box-shadow:0 4px 24px rgba(109,40,217,.11)}
+.step-card.completed{border-color:#d1fae5}
+.step-card.open .step-body{display:block}
+.ss-todo{color:#aaa}
+.ss-active{color:#6d28d9;font-weight:700}
+.ss-done{color:#22c55e;font-weight:700}
+
+/* ── STEP CARDS ── */
+.step-card{background:#fff;border:1.5px solid #ede8e4;border-radius:18px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.step-card.current{border-color:#6d28d9;box-shadow:0 4px 24px rgba(109,40,217,.11)}
+.step-card.locked{opacity:.5}
+.step-card.done{border-color:#d1fae5}
+
+.step-header{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer}
+.step-num{width:44px;height:44px;border-radius:12px;border:2px solid #e0e0e0;display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:900;color:#aaa;flex-shrink:0;background:#fafafa;font-family:'Boogaloo',cursive}
+.step-card.current .step-num{border-color:#6d28d9;color:#6d28d9;background:#f5f3ff}
+.step-card.done .step-num{border-color:#22c55e;color:#22c55e;background:#f0fdf4}
+.step-icon-badge{font-size:1.6rem}
+.step-title-wrap{flex:1}
+.step-tag{font-size:.65rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:5px;padding:2px 8px;margin-bottom:3px;display:inline-block}
+.tag-new{background:#ede9fe;color:#5b21b6}
+.tag-current{background:#f5f3ff;color:#6d28d9}
+.tag-locked{background:#f3f4f6;color:#9ca3af}
+.tag-done{background:#dcfce7;color:#166534}
+.step-title{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#1a1a1a;line-height:1.2;letter-spacing:.01em}
+.step-card.locked .step-title{color:#aaa}
+.step-subtitle{font-size:.82rem;color:#888;font-weight:600;margin-top:2px}
+.step-status{font-size:.78rem;font-weight:700;color:#aaa;margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.step-card.current .step-status{color:#6d28d9}
+
+/* ── STEP BODY ── */
+.step-body{padding:0 22px 22px;border-top:1px solid #f5f0ea}
+
+.goal-box{background:#faf5ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start}
+.goal-box .goal-icon{font-size:1.4rem;flex-shrink:0}
+.goal-box strong{color:#5b21b6;font-weight:800;display:block;font-size:.85rem;margin-bottom:2px}
+.goal-box p{font-size:.88rem;color:#555;font-weight:600;line-height:1.5}
+
+.callout{border-radius:10px;padding:14px 16px;margin:12px 0;display:flex;gap:10px;align-items:flex-start;font-size:.88rem;font-weight:600;line-height:1.6}
+.callout-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.callout.child{background:#f0fdf4;border:1px solid #bbf7d0;color:#14532d}
+.callout.parent{background:#f5f3ff;border:1px solid #ddd6fe;color:#3b0764}
+.callout.tip{background:#fffbeb;border:1.5px dashed #fcd34d;color:#713f12}
+.callout.tryit{background:#faf5ff;border:1.5px dashed #c4b5fd;color:#4c1d95}
+
+.what-to-do{margin:16px 0 0}
+.what-to-do h4{font-size:.9rem;font-weight:900;color:#6d28d9;margin-bottom:10px;font-style:italic}
+.steps-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.steps-list li{display:flex;gap:12px;align-items:flex-start;font-size:.9rem;font-weight:600;color:#333;line-height:1.5}
+.steps-list li .sn{width:22px;height:22px;border-radius:50%;background:#6d28d9;color:#fff;font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.col-box{background:#fafafa;border:1px solid #eee;border-radius:10px;padding:14px}
+.col-box h4{font-size:.8rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.col-box.child h4{color:#166534}
+.col-box.parent h4{color:#5b21b6}
+.col-box p,.col-box li{font-size:.85rem;font-weight:600;color:#444;line-height:1.6}
+
+/* CODE */
+.code-block{background:#1c1917;border-radius:12px;padding:16px 18px;margin:12px 0;font-family:'Courier New',monospace;font-size:.8rem;line-height:1.9;color:#e7e5e4;overflow-x:auto;border:1.5px solid #292524}
+
+/* DONE BUTTON */
+.done-btn{display:block;width:100%;margin-top:18px;padding:15px;background:#fff;border:2.5px solid #22c55e;border-radius:12px;font-family:'Boogaloo',cursive;font-size:1.1rem;color:#166534;cursor:pointer;transition:background .15s,transform .1s;text-align:center;letter-spacing:.02em}
+.done-btn:hover{background:#f0fdf4;transform:translateY(-1px)}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+@media(max-width:600px){.about-grid{grid-template-columns:1fr}}
+.about-card{background:#fff;border:1.5px solid #e8e8e4;border-radius:16px;padding:20px}
+.about-card h3{font-family:'Boogaloo',cursive;font-size:1.15rem;color:#6d28d9;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.about-card p,.about-card li{font-size:.88rem;font-weight:600;color:#444;line-height:1.7}
+.about-card ul{margin-left:16px}
+
+/* FOOTER */
+.footer-brand{display:flex;flex-direction:column;gap:6px;}
+
+@media(max-width:680px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-img{display:none}
+}
+</style>
+<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- SERIES STRIP -->
+<div class="series-strip">
+  <span>⭐ My First Video Game · Series 1 · Episode 9</span>
+</div>
+<div style="background:#1a1210;border-bottom:1px solid rgba(255,255,255,.08);padding:8px 16px;overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;">
+  <div style="display:inline-flex;gap:6px;align-items:center;min-width:max-content;">
+    <a href="godot-racing-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🏎️ Ep 1 · Zoom Zoom</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="jump-jump-mario-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🍄 Ep 2 · Jump Jump</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="nuclear-throne-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🔫 Ep 3 · Bang Bang</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="fairy-survivors-guide.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🧚 Ep 4 · Fairy Survivors</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="barrel-blast-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🦍 Ep 5 · Barrel Blast</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="pixel-quest-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🗡️ Ep 6 · Pixel Quest</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="night-watch-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🐻 Ep 7 · Night Watch</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <a href="night-watch-part2-workshop.html" style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;text-decoration:none;background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.1);">🐰 Ep 8 · Night Watch Part 2</a>
+    <span style="color:rgba(255,255,255,.2);">›</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:800;padding:5px 12px;border-radius:20px;background:#6d28d9;color:#fff;border:1px solid #6d28d9;">✨ Ep 9 · Night Watch Part 3</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">🔧 Godot Workshop · Parent &amp; Child</div>
+      <span class="series-label">⭐ My First Video Game</span>
+      <h1><span class="accent">Night Watch! Part 3</span> ✨<span class="subtitle-h1">Polish Night Make It Feel Like a Real Game!</span></h1>
+      <p class="lead">Your horror game works. Now let's make it feel AMAZING. Camera static, flickering lights, screen shake, custom pixel art sprites, real sound effects, a power warning, and a final animated death screen all in one glorious polish session!</p>
+      <div class="badge-row">
+        <span class="badge">🧒 Age 8+ with a grown-up</span>
+        <span class="badge">⏱️ About 1–2 hours</span>
+        <span class="badge">🎮 Godot 4 (free!)</span>
+        <span class="badge">✨ 10 polish steps</span>
+        <span class="badge">🐻 Requires Parts 1 &amp; 2</span>
+      </div>
+    </div>
+    <div class="hero-img">🎨</div>
+  </div>
+</section>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="showTab('workshop',this)">🟢 Let's Polish!</button>
+    <button class="tab-btn" onclick="showTab('about',this)">🤔 What are we adding?</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main" id="main-content">
+
+  <div id="tab-workshop" class="tab-pane active">
+
+    <!-- PART 2 CALLOUT -->
+    <div style="background:#faf5ff;border:2px solid #c4b5fd;border-radius:14px;padding:16px 20px;margin:20px 0 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-sizing:border-box;">
+      <span style="font-size:2.2rem;flex-shrink:0;line-height:1;">🐰</span>
+      <div style="flex:1;min-width:180px;">
+        <strong style="font-size:.95rem;color:#3b0764;display:block;margin-bottom:3px;">You need Parts 1 &amp; 2 first!</strong>
+        <span style="font-size:.82rem;color:#5b21b6;line-height:1.55;">This workshop polishes the game you built across Parts 1 and 2. Open your Night Watch Godot project and make sure Part 2 is complete before starting.</span>
+      </div>
+      <a href="night-watch-part2-workshop.html" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:#6d28d9;color:#fff;font-weight:800;font-size:.88rem;padding:11px 22px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 #4c1d95;white-space:nowrap;">← Go to Part 2</a>
+    </div>
+
+    <!-- XP BAR -->
+    <div class="xp-bar-wrap">
+      <div class="xp-bar">
+        <span class="xp-icon">⭐</span>
+        <span class="xp-label" id="xpLabel">0 XP</span>
+        <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+        <span class="xp-level" id="xpLevel">Level 1</span>
+        <span class="xp-streak" id="xpStreak"><span class="fire">🔥</span> <span id="streakCount">0</span></span>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-header">
+        <span class="progress-label">✨ Polish Progress</span>
+        <span class="progress-count" id="progressCount">0 / 10 steps</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="step-dots" id="stepDots"></div>
+    </div>
+
+    <!-- ═══════ STEP 1 ═══════ -->
+    <div class="step-card active-step open" id="step-1">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">★</div>
+        <span class="step-icon-badge">🌟</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-current">Start here</span>
+          <div class="step-title">Welcome to Polish Night!</div>
+          <div class="step-subtitle">Let's turn good into GREAT...</div>
+        </div>
+        <span class="step-status ss-active">Current</span>
+      </div>
+      <div class="step-body" style="display:block">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Understand what polish means and open your Night Watch project ready to transform it!</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Your game already works brilliantly you've got animatronics, a power meter, multiple nights, and a main menu. But right now the cameras swap instantly, the lights never flicker, and the jump scare just... appears. Polish fixes all of that! We're going to add all the tiny details that make a game feel like a REAL published horror game. Get ready this session is going to be so satisfying!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Polish is often 20% of development time but responsible for 80% of perceived quality. This session introduces AnimationPlayer for timed effects, AudioStreamPlayer with generated SFX, modulate-based colour animations, and Sprite2D to replace placeholder geometry. Crucially, we introduce none of these via heavy abstraction each one is added in the simplest possible way, directly to existing nodes, so the child can see and understand every change.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>The golden rule of polish: do it LAST. Polishing an unfinished game is a trap you end up perfecting things that get cut later. You built your whole game first. NOW we polish. That's the professional order of operations!</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Open <strong>Godot 4</strong> and load your <strong>Night Watch</strong> project.</span></li>
+            <li><span class="sn">2</span><span>Press <strong>F5</strong> to confirm everything from Parts 1 &amp; 2 still works correctly.</span></li>
+            <li><span class="sn">3</span><span>Keep the <strong>SFX Studio</strong> open in a browser tab you'll need it in Step 5: <a href="../tools/sfx-generator.html" target="_blank" style="color:#6d28d9;font-weight:700;">sfx-generator.html</a></span></li>
+            <li><span class="sn">4</span><span>Keep <strong>Pixel Studio</strong> open in another tab for Step 4: <a href="../tools/pixel-studio.html" target="_blank" style="color:#6d28d9;font-weight:700;">pixel-studio.html</a></span></li>
+            <li><span class="sn">5</span><span>Let's go!</span></li>
+          </ul>
+        </div>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Open your Night Watch project in Godot 4. Press F5 and play for 30 seconds. Notice everything that feels a bit "flat" camera swaps, door clicks, the jump scare. By the end of this workshop all of those will feel amazing.</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-1" data-correct="2">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">Why should you polish your game LAST instead of as you build it?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Because polish is the easiest part</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Because Godot requires you to finish gameplay first</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Because you might end up perfecting things that get cut later</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>Because polish doesn't matter</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(1)">Continue to Step 1 →</button>
+        </div>
+
+        <!-- True/False -->
+        <div class="tf-round" id="tf-1">
+          <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">Quick True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">Camera static is a visual effect that makes camera switching feel more realistic.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="false"><span class="tf-statement">Polish changes the core gameplay mechanics of your game.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">Screen shake makes jump scares feel more impactful.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-feedback"></div>
+          <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 2 ═══════ -->
+    <div class="step-card locked" id="step-2">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">1</div>
+        <span class="step-icon-badge">📷</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 1</span>
+          <div class="step-title">Camera Static Flash!</div>
+          <div class="step-subtitle">That satisfying TV-flicker when you switch views...</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>When the player clicks a camera button, briefly flash a white noisy overlay before showing the new camera just like the real FNAF.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Have you noticed in FNAF that when you switch cameras the screen goes a bit fuzzy for a split second? That's called camera static it looks like old TV interference. It makes the camera switching feel REAL instead of just instantly swapping. It's actually super easy to add we just show a white flash for a tiny moment every time someone presses a camera button!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Add a full-screen ColorRect named "CamStatic" to the UI CanvasLayer (or a new CanvasLayer above the cameras), initially invisible, color white with ~0.7 alpha. In show_cam(), before switching the visible panel, make CamStatic visible, await a short timer (0.06s), then hide it and reveal the new camera. The two-frame flash is enough to feel like static without being distracting.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>In real FNAF the static is a sprite sheet animation with noise. Our version a quick white flash achieves 90% of the feel with 5% of the effort. This is a great lesson in "fake it 'til you make it" game feel!</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>In <strong>main.tscn</strong>, add a new <strong>ColorRect</strong> inside your UI CanvasLayer. Name it <strong>CamStatic</strong>.</span></li>
+            <li><span class="sn">2</span><span>Set its anchors to fill the full screen (anchor_right = 1, anchor_bottom = 1). Set color to <strong>white with alpha 0.7</strong>. Set <strong>Visible: off</strong>.</span></li>
+            <li><span class="sn">3</span><span>Mark it as a <strong>scene-unique node</strong>: right-click → "Access as Unique Name" (so you can use %CamStatic in the script).</span></li>
+            <li><span class="sn">4</span><span>Update the <code>show_cam()</code> function in <strong>main.gd</strong> with the code below.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Updated show_cam() in main.gd:
+
+func show_cam(index: int):
+&#9;# Flash the static overlay first
+&#9;%CamStatic.visible = true
+&#9;await get_tree().create_timer(0.06).timeout
+&#9;%CamStatic.visible = false
+
+&#9;# Now swap to the new camera panel
+&#9;for i in cam_panels.size():
+&#9;&#9;cam_panels[i].visible = (i == index)
+&#9;current_cam = index</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Click between camera buttons quickly. Does each switch have a brief white flash? It should feel very satisfying. If it's too bright or too long, adjust the color alpha or the timer wait time.</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-2" data-correct="1">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">In the camera static effect, what does <code>await get_tree().create_timer(0.06).timeout</code> do?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Creates a new camera</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Waits 0.06 seconds before continuing</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Deletes the CamStatic node</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>Speeds up the game</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(2)">Continue to Step 2 →</button>
+        </div>
+
+        <!-- Code Challenge -->
+        <div class="code-challenge" id="cc-2">
+          <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Fill in the Code</span><span class="cc-xp-badge">+20 XP</span></div>
+          <div class="cc-prompt">Complete the camera static flash code:</div>
+          <div class="cc-code-area">func show_cam(index: int):
+&#9;%<input class="cc-blank" data-answer="CamStatic" placeholder="???">.visible = <input class="cc-blank" data-answer="true" placeholder="???">
+&#9;await get_tree().create_timer(<input class="cc-blank" data-answer="0.06" placeholder="???">.timeout
+&#9;%CamStatic.visible = <input class="cc-blank" data-answer="false" placeholder="???"></div>
+          <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+          <div class="cc-feedback"></div>
+          <div class="cc-hint">💡 Hint: The static overlay is called CamStatic. It shows (true) then hides (false) after a short delay.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 3 ═══════ -->
+    <div class="step-card locked" id="step-3">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">2</div>
+        <span class="step-icon-badge">💡</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 2</span>
+          <div class="step-title">Flickering Office Lights!</div>
+          <div class="step-subtitle">The lights are... unstable. How unsettling.</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Add a random flicker to the office lighting so the environment feels alive and nervous-making.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Ever been in a spooky movie where the lights flicker? It's terrifying! We're going to make the office lights randomly flicker just for a tiny moment, then back to normal. Most of the time nothing happens. But every now and then: flicker. It makes the whole game feel SO much creepier!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Add a semi-transparent dark ColorRect ("LightFlicker") covering the full office area, initially invisible. Add a Timer node ("FlickerTimer") with wait_time around 0.2s and autostart on. In the timeout callback, use randf() to trigger a flicker ~5% of the time briefly show the overlay for 0.08s then hide it.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Randomness creates tension. A light that flickers on a predictable schedule feels mechanical. A light that flickers RANDOMLY keeps the player's brain in a constant low-level alert state.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>In <strong>main.tscn</strong>, add a <strong>ColorRect</strong> as a child of your root NightWatch node. Name it <strong>LightFlicker</strong>.</span></li>
+            <li><span class="sn">2</span><span>Set it to cover the full office area. Set color to <strong>near-black, alpha ~0.85</strong>. Set <strong>Visible: off</strong>.</span></li>
+            <li><span class="sn">3</span><span>Add a <strong>Timer</strong> node to NightWatch. Name it <strong>FlickerTimer</strong>. Set Wait Time: <strong>0.2</strong>, Autostart: <strong>on</strong>.</span></li>
+            <li><span class="sn">4</span><span>Mark LightFlicker as a scene-unique node.</span></li>
+            <li><span class="sn">5</span><span>Add the code below to <strong>main.gd</strong>.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Add to main.gd connect FlickerTimer.timeout in _ready():
+
+func _ready():
+&#9;# ... your existing _ready() code ...
+&#9;$FlickerTimer.timeout.connect(_on_flicker_timer)
+
+func _on_flicker_timer():
+&#9;if not game_active:
+&#9;&#9;return
+&#9;if randf() &lt; 0.05:  # 5% chance each tick
+&#9;&#9;%LightFlicker.visible = true
+&#9;&#9;await get_tree().create_timer(0.08).timeout
+&#9;&#9;%LightFlicker.visible = false</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Watch the office for 20-30 seconds. Does the light occasionally dip and return? Adjust the randf() threshold (try 0.03 for less frequent, 0.1 for more) until it feels right.</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-3" data-correct="0">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">Why do we use <code>randf() &lt; 0.05</code> for the flicker instead of a fixed timer?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Random flickering is more unsettling than predictable flickering</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Because Godot doesn't support fixed timers</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>To make the game run faster</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>Because random numbers are easier to code</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(3)">Continue to Step 3 →</button>
+        </div>
+
+        <!-- Concept Fill -->
+        <div class="concept-fill" id="cf-3">
+          <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Fill in the Concept</span><span class="cf-xp-badge">+15 XP</span></div>
+          <div class="cf-sentence">The flicker has a <input class="cf-blank" data-answer="5" placeholder="???">% chance of triggering each tick, making it happen roughly every <input class="cf-blank" data-answer="4" placeholder="???"> seconds on average.</div>
+          <button class="cf-check-btn" onclick="checkConceptFill(this)">Check</button>
+          <div class="cf-feedback"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 4 ═══════ -->
+    <div class="step-card locked" id="step-4">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">3</div>
+        <span class="step-icon-badge">📳</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 3</span>
+          <div class="step-title">Screen Shake on the Jump Scare!</div>
+          <div class="step-subtitle">The whole world shakes when they get you...</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>When an animatronic triggers the jump scare, violently shake the camera for a second before the game over screen appears.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Right now the jump scare just pops up BOOM, it's there. Imagine if the whole screen shook like an earthquake at the same time? We're going to make the camera rattle around really fast for about a second, then show the game over screen. People are going to SCREAM.</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Add a Camera2D node to main.tscn. In _trigger_jumpscare(), animate the camera's offset using a Tween rapidly oscillate between small random offsets (e.g. ±15px) over ~0.8 seconds, then reset to (0,0). The Tween approach needs no AnimationPlayer and is cleanly self-contained.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Camera shake is one of game feel's most powerful tools. It communicates impact at a physical level. Use it sparingly only for the jump scare so it retains its impact.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>In <strong>main.tscn</strong>, add a <strong>Camera2D</strong> node as a child of your NightWatch root. Name it <strong>MainCamera</strong>.</span></li>
+            <li><span class="sn">2</span><span>Mark it as scene-unique: right-click → "Access as Unique Name".</span></li>
+            <li><span class="sn">3</span><span>Replace your existing <code>_trigger_jumpscare()</code> function in <strong>main.gd</strong> with the version below.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Replace _trigger_jumpscare() in main.gd:
+
+func _trigger_jumpscare():
+&#9;var tween = create_tween()
+&#9;var shake_duration = 0.8
+&#9;var elapsed = 0.0
+&#9;while elapsed &lt; shake_duration:
+&#9;&#9;var offset = Vector2(randf_range(-15, 15), randf_range(-12, 12))
+&#9;&#9;tween.tween_property(%MainCamera, "offset", offset, 0.04)
+&#9;&#9;elapsed += 0.04
+&#9;tween.tween_property(%MainCamera, "offset", Vector2.ZERO, 0.05)
+
+&#9;%JumpScare.visible = true
+&#9;await get_tree().create_timer(1.8).timeout
+&#9;_game_over()</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Let an animatronic reach an open door. When the jump scare triggers, does the screen shake violently? The shake should be fast and chaotic not smooth and gentle.</div></div>
+
+        <!-- Predict Challenge -->
+        <div class="predict-challenge" id="predict-4" data-correct="1">
+          <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+          <div class="pc-scenario">If you changed <code>randf_range(-15, 15)</code> to <code>randf_range(-2, 2)</code>, what would happen to the screen shake?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>The shake would be much more violent</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>The shake would be barely noticeable a tiny wobble</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>The game would crash</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>The shake would last longer</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+          <button class="quiz-next-btn" onclick="completeStep(4)">Continue to Step 4 →</button>
+        </div>
+
+        <!-- Order Challenge -->
+        <div class="order-challenge" id="oc-4">
+          <div class="oc-header"><span class="oc-icon">📋</span><span class="oc-title">Order the Steps</span><span class="oc-xp-badge">+15 XP</span></div>
+          <div class="oc-prompt">Put the screen shake steps in the correct order:</div>
+          <div class="oc-items">
+            <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span>Reset camera offset to Vector2.ZERO</div>
+            <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span>Create a new Tween</div>
+            <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span>Show jump scare overlay</div>
+            <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span>Loop random offsets for 0.8 seconds</div>
+          </div>
+          <div class="oc-feedback"></div>
+          <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+          <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 5 ═══════ -->
+    <div class="step-card locked" id="step-5">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">4</div>
+        <span class="step-icon-badge">🎨</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 4</span>
+          <div class="step-title">Custom Pixel Art Sprites!</div>
+          <div class="step-subtitle">Replace those coloured boxes with real art!</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Use Pixel Studio to draw your own animatronic sprite and replace the placeholder ColorRect with a Sprite2D.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Those coloured rectangles pretending to be animatronics? It's time to replace them! Open Pixel Studio and draw your own version of Freddy a round brown bear face, glowing eyes, maybe a hat! YOUR art in YOUR game is a thousand times better than a perfect rectangle.</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Pixel Studio exports PNG files. In Godot, drag the PNG into the FileSystem dock. In freddy.tscn, add a Sprite2D child and assign the texture. Recommended sprite size: 64x64 or 128x128 pixels. This is a great opportunity to explain texture reuse.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Making your own art even simple pixel art is one of the most meaningful milestones in game development. The moment a child sees THEIR drawing moving in THEIR game is genuinely unforgettable.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Open <a href="../tools/pixel-studio.html" target="_blank" style="color:#6d28d9;font-weight:700;">Pixel Studio</a>. Draw a 64x64 animatronic sprite.</span></li>
+            <li><span class="sn">2</span><span>Export it as a PNG (click the download button).</span></li>
+            <li><span class="sn">3</span><span>In Godot, drag the PNG file into the <strong>FileSystem dock</strong>.</span></li>
+            <li><span class="sn">4</span><span>Open <strong>freddy.tscn</strong>. Add a <strong>Sprite2D</strong> and assign your texture.</span></li>
+            <li><span class="sn">5</span><span>Adjust the Sprite2D's <strong>Scale</strong> and <strong>Position</strong>.</span></li>
+            <li><span class="sn">6</span><span>Optionally hide or delete the old ColorRect.</span></li>
+          </ul>
+        </div>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Open the game and switch to Camera 1 (Stage). Does Freddy now appear as your pixel art sprite instead of a coloured box? Adjust scale if needed.</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-5" data-correct="2">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">What node type do you use in Godot to display a PNG image in your game?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>ColorRect</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Label</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Sprite2D</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>AudioStreamPlayer</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(5)">Continue to Step 5 →</button>
+        </div>
+
+        <!-- True/False -->
+        <div class="tf-round" id="tf-5">
+          <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">Quick True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">You can reuse the same texture on multiple Sprite2D nodes at different scales.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="false"><span class="tf-statement">Sprite2D's default origin is at the top-left corner.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-feedback"></div>
+          <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 6 ═══════ -->
+    <div class="step-card locked" id="step-6">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">5</div>
+        <span class="step-icon-badge">🎵</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 5</span>
+          <div class="step-title">Real Sound Effects!</div>
+          <div class="step-subtitle">Doors creak. Power hums. Freddy lurks.</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Use SFX Studio to generate a door creak, a power hum, and a jump scare sting then wire them up in Godot.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>A horror game without sound is like a haunted house with the lights on! We're going to add three sounds: a creaking GROAN when you close a door, a low electrical HUM in the background, and a horrible SHRIEK when the jump scare triggers. Make them as spooky as you want!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>SFX Studio exports WAV files. Add three AudioStreamPlayer nodes: DoorSFX (non-looping), AmbientHum (looping, from _ready), and JumpScareSFX (one-shot). Vary AmbientHum's pitch_scale based on power level to create increasing tension.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Audio is responsible for roughly 50% of emotional impact in games and film. Adding sound to a previously silent game is the single highest-return polish step.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Open <a href="../tools/sfx-generator.html" target="_blank" style="color:#6d28d9;font-weight:700;">SFX Studio</a>. Generate and download three sounds.</span></li>
+            <li><span class="sn">2</span><span>Drag all three WAV files into the Godot <strong>FileSystem dock</strong>.</span></li>
+            <li><span class="sn">3</span><span>Add three <strong>AudioStreamPlayer</strong> nodes: <strong>DoorSFX</strong>, <strong>AmbientHum</strong>, <strong>JumpScareSFX</strong>.</span></li>
+            <li><span class="sn">4</span><span>Assign each audio file to its matching node's <strong>Stream</strong> slot.</span></li>
+            <li><span class="sn">5</span><span>For <strong>AmbientHum</strong>: tick <strong>Autoplay</strong> and <strong>Loop</strong>.</span></li>
+            <li><span class="sn">6</span><span>Add the code below to <strong>main.gd</strong>.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Add to main.gd:
+
+func _on_left_door_pressed():
+&#9;# ... your existing door code ...
+&#9;$DoorSFX.play()
+
+func _on_right_door_pressed():
+&#9;# ... your existing door code ...
+&#9;$DoorSFX.play()
+
+# Vary hum pitch as power drains:
+func _update_power(delta):
+&#9;# ... your existing drain code ...
+&#9;$AmbientHum.pitch_scale = 1.0 + (1.0 - (power / 100.0)) * 0.4
+
+func _trigger_jumpscare():
+&#9;$JumpScareSFX.play()
+&#9;$AmbientHum.stop()
+&#9;# ... rest of your jumpscare code ...</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Press a door button do you hear the creak? Can you hear the ambient hum? Get caught does the jump scare play a sound?</div></div>
+
+        <!-- Code Challenge -->
+        <div class="code-challenge" id="cc-6">
+          <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Fill in the Code</span><span class="cc-xp-badge">+20 XP</span></div>
+          <div class="cc-prompt">Complete the pitch variation code for the ambient hum:</div>
+          <div class="cc-code-area">$AmbientHum.<input class="cc-blank" data-answer="pitch_scale" placeholder="???"> = 1.0 + (1.0 - (<input class="cc-blank" data-answer="power" placeholder="???"> / 100.0)) * 0.4</div>
+          <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+          <div class="cc-feedback"></div>
+          <div class="cc-hint">💡 Hint: We're changing the pitch_scale property. The variable that tracks remaining power is called "power".</div>
+        </div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-6" data-correct="3">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">Why do we vary the AmbientHum's pitch_scale as power drains?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>To make the sound louder</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>To save memory</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Because Godot requires it</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>To create increasing tension as power runs out</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(6)">Continue to Step 6 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 7 ═══════ -->
+    <div class="step-card locked" id="step-7">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">6</div>
+        <span class="step-icon-badge">⚡</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 6</span>
+          <div class="step-title">Low-Power Warning!</div>
+          <div class="step-subtitle">The red glow of impending doom...</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>When power drops below 20%, add a pulsing red tint to the screen and a repeating warning beep.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>When power goes below 20%, the whole office starts glowing a scary red colour that pulses in and out. AND a warning beep starts playing. So the player has THREE ways to know power is low the number, the red glow, AND the sound. It's the panic button!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Add a full-screen ColorRect ("PowerWarning") with red color alpha 0. When power drops below 20, start a looping Tween on the alpha (0 to 0.18). Also start a BeepTimer. Use a bool power_warning_active to avoid re-triggering every frame.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Redundant feedback the same information delivered through multiple channels simultaneously (visuals + audio + number) is a cornerstone of good game UX.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Add a <strong>ColorRect</strong> named <strong>PowerWarning</strong> to your UI CanvasLayer. Red color, alpha 0.</span></li>
+            <li><span class="sn">2</span><span>Add a <strong>Timer</strong> named <strong>BeepTimer</strong>. Wait Time: 1.5, Autostart: off.</span></li>
+            <li><span class="sn">3</span><span>Create a short beep sound and add an <strong>AudioStreamPlayer</strong> named <strong>WarnBeep</strong>.</span></li>
+            <li><span class="sn">4</span><span>Add the code below to <strong>main.gd</strong>.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Add to main.gd:
+
+var power_warning_active = false
+
+func _update_power(delta):
+&#9;# ... your existing power drain code ...
+&#9;if power &lt; 20.0 and not power_warning_active and not power_drained:
+&#9;&#9;power_warning_active = true
+&#9;&#9;_start_power_warning()
+
+func _start_power_warning():
+&#9;$BeepTimer.start()
+&#9;$BeepTimer.timeout.connect(func(): $WarnBeep.play())
+&#9;var tween = create_tween().set_loops()
+&#9;tween.tween_property(%PowerWarning, "color:a", 0.18, 0.4)
+&#9;tween.tween_property(%PowerWarning, "color:a", 0.0,  0.4)
+
+func _power_out():
+&#9;# ... your existing power-out code ...
+&#9;$BeepTimer.stop()
+&#9;%PowerWarning.color.a = 0.0</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Let your power drain to below 20%. Does the screen pulse red? Do you hear the warning beep?</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-7" data-correct="1">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">Why do we use a <code>power_warning_active</code> boolean?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>To make the warning louder</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>To prevent the tween from being created every single frame</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>To change the colour of the warning</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>It's not needed it's just a habit</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(7)">Continue to Step 7 →</button>
+        </div>
+
+        <!-- Concept Fill -->
+        <div class="concept-fill" id="cf-7">
+          <div class="cf-header"><span class="cf-icon">📝</span><span class="cf-title">Fill in the Concept</span><span class="cf-xp-badge">+15 XP</span></div>
+          <div class="cf-sentence">The power warning uses <input class="cf-blank" data-answer="3" placeholder="???"> channels of feedback simultaneously: the power <input class="cf-blank" data-answer="number" placeholder="???">, the red <input class="cf-blank" data-answer="glow" placeholder="???">, and the warning <input class="cf-blank" data-answer="beep" placeholder="???">.</div>
+          <button class="cf-check-btn" onclick="checkConceptFill(this)">Check</button>
+          <div class="cf-feedback"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 8 ═══════ -->
+    <div class="step-card locked" id="step-8">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">7</div>
+        <span class="step-icon-badge">🚪</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 7</span>
+          <div class="step-title">Door Slam Animation!</div>
+          <div class="step-subtitle">Make those doors THUD shut.</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>When a door closes, animate the door block sliding in from the side instead of just appearing instantly.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Real doors MOVE! We're going to make the door block slide in from the edge of the screen, like a big heavy door slamming shut. It takes about 0.15 seconds and it makes the door feel SOLID and HEAVY.</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Use a Tween to animate the door block ColorRect's offset_right (for left door) from 0 to 120 in 0.15s using EASE_OUT. For right door: animate offset_left from 960 to 840. Duration matters: 0.15s feels snappy, 0.3s feels sluggish.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Animation duration matters enormously. 0.15 seconds feels snappy and responsive. 0.5 seconds would feel like the door is made of foam. Always err on the side of faster for UI feedback.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Update the door functions to animate using a Tween instead of toggling visible.</span></li>
+            <li><span class="sn">2</span><span>For the <strong>left door</strong>: tween <code>offset_right</code> from 0 to 120 (0.15s).</span></li>
+            <li><span class="sn">3</span><span>For the <strong>right door</strong>: tween <code>offset_left</code> from 960 to 840 (0.15s).</span></li>
+            <li><span class="sn">4</span><span>Set door blocks to <code>visible = true</code> in the scene.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Updated door functions in main.gd:
+
+func _on_left_door_pressed():
+&#9;left_door_closed = not left_door_closed
+&#9;var tween = create_tween().set_ease(Tween.EASE_OUT)
+&#9;if left_door_closed:
+&#9;&#9;tween.tween_property(%LeftDoorBlock, "offset_right", 120.0, 0.15)
+&#9;&#9;%CloseLeftDoorButton.text = "🚪 Open Left Door"
+&#9;else:
+&#9;&#9;tween.tween_property(%LeftDoorBlock, "offset_right", 0.0, 0.15)
+&#9;&#9;%CloseLeftDoorButton.text = "🚪 Close Left Door"
+
+func _on_right_door_pressed():
+&#9;right_door_closed = not right_door_closed
+&#9;var tween = create_tween().set_ease(Tween.EASE_OUT)
+&#9;if right_door_closed:
+&#9;&#9;tween.tween_property(%RightDoorBlock, "offset_left", 840.0, 0.15)
+&#9;&#9;%CloseRightDoorButton.text = "🚪 Open Right Door"
+&#9;else:
+&#9;&#9;tween.tween_property(%RightDoorBlock, "offset_left", 960.0, 0.15)
+&#9;&#9;%CloseRightDoorButton.text = "🚪 Close Right Door"</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Press the left door button. Does the dark panel slide in from the left edge? The motion should feel fast and satisfying.</div></div>
+
+        <!-- Code Challenge -->
+        <div class="code-challenge" id="cc-8">
+          <div class="cc-header"><span class="cc-icon">💻</span><span class="cc-title">Fill in the Code</span><span class="cc-xp-badge">+20 XP</span></div>
+          <div class="cc-prompt">Complete the door animation tween:</div>
+          <div class="cc-code-area">var tween = create_tween().set_ease(Tween.<input class="cc-blank" data-answer="EASE_OUT" placeholder="???">)
+if left_door_closed:
+&#9;tween.tween_property(%LeftDoorBlock, "<input class="cc-blank" data-answer="offset_right" placeholder="???">", 120.0, <input class="cc-blank" data-answer="0.15" placeholder="???">)</div>
+          <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+          <div class="cc-feedback"></div>
+          <div class="cc-hint">💡 Hint: We use EASE_OUT for the easing. The property is offset_right. The duration is 0.15 seconds.</div>
+        </div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-8" data-correct="0">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">Why do we use position/size animation instead of toggling visible for the door?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>It looks like a real door sliding shut instead of popping into existence</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Toggling visible doesn't work in Godot</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>It uses less memory</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>Because Tween is required for all nodes</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(8)">Continue to Step 8 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 9 ═══════ -->
+    <div class="step-card locked" id="step-9">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">8</div>
+        <span class="step-icon-badge">💀</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 8</span>
+          <div class="step-title">Animated Death Screen!</div>
+          <div class="step-subtitle">Going out with a bang (and a slide-in).</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Make the game over screen SLIDE in from below and show which animatronic caught you.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Let's make the game-over screen dramatically slide up from the bottom like a curtain falling. And we'll make it say WHO got you "Freddy got you!" or "Bonnie got you!" A dramatic death screen makes losing feel almost... satisfying?</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Pass the animatronic name into _game_over(). Add a DeathPanel Control that starts 540px below, then Tween offset_top from 540 to 0 over 0.4 seconds. Named consequences increase emotional investment.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Named consequences increase emotional investment. "Game Over" is generic. "Freddy got you because you forgot to check the right door" is a story.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Update <code>_on_animatronic_at_door()</code> to pass the name to <code>_trigger_jumpscare()</code>.</span></li>
+            <li><span class="sn">2</span><span>Add a <strong>Control</strong> named <strong>DeathPanel</strong> inside GameOverScreen. Set offset_top to 540.</span></li>
+            <li><span class="sn">3</span><span>Update <code>_game_over()</code> with the slide-in animation below.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Updated functions in main.gd:
+
+var caught_by = "an animatronic"
+
+func _on_animatronic_at_door(side, who = "an animatronic"):
+&#9;var door_closed = left_door_closed if side == "left" else right_door_closed
+&#9;if door_closed:
+&#9;&#9;for node in get_tree().get_nodes_in_group("animatronics"):
+&#9;&#9;&#9;if node.get("room") == (3 if side == "left" else 4):
+&#9;&#9;&#9;&#9;node.room = 0
+&#9;&#9;&#9;&#9;node._update_display()
+&#9;else:
+&#9;&#9;caught_by = who
+&#9;&#9;_trigger_jumpscare()
+
+func _game_over():
+&#9;game_active = false
+&#9;%GoLabel.text = "💀 " + caught_by + " got you!"
+&#9;%GameOverScreen.visible = true
+&#9;var tween = create_tween().set_ease(Tween.EASE_OUT)
+&#9;tween.tween_property(%DeathPanel, "offset_top", 0.0, 0.4)</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Get caught on purpose. Does the game over screen slide up from the bottom? Does it say which animatronic caught you?</div></div>
+
+        <!-- Predict Challenge -->
+        <div class="predict-challenge" id="predict-9" data-correct="2">
+          <div class="pc-header"><span class="pc-icon">🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP</span></div>
+          <div class="pc-scenario">If you changed the Tween duration from <code>0.4</code> to <code>3.0</code> seconds, how would the death screen feel?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>More dramatic and scary</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>The game would crash</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Painfully slow and awkward it would kill the tension</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>No different at all</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
+          <button class="quiz-next-btn" onclick="completeStep(9)">Continue to Step 9 →</button>
+        </div>
+
+        <!-- Order Challenge -->
+        <div class="order-challenge" id="oc-9">
+          <div class="oc-header"><span class="oc-icon">📋</span><span class="oc-title">Order the Steps</span><span class="oc-xp-badge">+15 XP</span></div>
+          <div class="oc-prompt">Put the death screen sequence in order:</div>
+          <div class="oc-items">
+            <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span>Tween DeathPanel offset_top from 540 to 0</div>
+            <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span>Set game_active to false</div>
+            <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span>Update GoLabel text with animatronic name</div>
+            <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span>Player sees the animated slide-in</div>
+          </div>
+          <div class="oc-feedback"></div>
+          <button class="oc-check-btn" onclick="checkOrder(this)">Check Order</button>
+          <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 10 ═══════ -->
+    <div class="step-card locked" id="step-10">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">9</div>
+        <span class="step-icon-badge">🌅</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 9</span>
+          <div class="step-title">Win Screen Celebration!</div>
+          <div class="step-subtitle">You survived. You DESERVE confetti.</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Make the win screen feel triumphant a slide-in panel, the current night number, and a confetti particle burst.</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>Winning should FEEL amazing! We're going to make the win screen slide down from the TOP (like the sun rising at 6am), show which night you survived, and add a burst of colourful confetti. You built a whole horror game and survived five nights you absolutely deserve confetti!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Mirror the death screen: WinPanel starting at offset_top = -540, tween to 0. Add a CPUParticles2D node for confetti (built into Godot, no plugins needed). Set emitting = true in _win().</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Victory screens are often the most neglected part of indie games. A well-designed win screen is your last impression on the player. Make it memorable.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Add a <strong>Control</strong> named <strong>WinPanel</strong> inside WinScreen. Set offset_top to -540.</span></li>
+            <li><span class="sn">2</span><span>Add a <strong>CPUParticles2D</strong> node named <strong>Confetti</strong>. Set Emitting: off, Amount: 80, Lifetime: 3.0.</span></li>
+            <li><span class="sn">3</span><span>Update <code>_win()</code> in <strong>main.gd</strong> with the code below.</span></li>
+          </ul>
+        </div>
+        <pre class="code-block"># Updated _win() in main.gd:
+
+func _win():
+&#9;game_active = false
+&#9;%WinLabel.text = "🌅 6 AM! You survived Night " + str(GameManager.current_night) + "!"
+&#9;%WinScreen.visible = true
+&#9;%Confetti.emitting = true
+&#9;var tween = create_tween().set_ease(Tween.EASE_OUT)
+&#9;tween.tween_property(%WinPanel, "offset_top", 0.0, 0.5)</pre>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Survive a full night (cheat: temporarily set NIGHT_DURATION = 10.0). Does the win panel slide down from above? Do you see confetti?</div></div>
+
+        <!-- Quiz Gate -->
+        <div class="quiz-gate" id="quiz-10" data-correct="2">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">What is CPUParticles2D used for in this step?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>Playing sound effects</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>Moving the camera</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>Creating a confetti celebration burst</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>Tracking the player's score</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(10)">Continue to Final Step →</button>
+        </div>
+
+        <!-- True/False -->
+        <div class="tf-round" id="tf-10">
+          <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">Quick True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">CPUParticles2D is built into Godot no extra plugins needed.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="false"><span class="tf-statement">The win screen slides UP from below, the same as the death screen.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">Setting emitting = true is what starts the confetti particles.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-feedback"></div>
+          <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 11 (Final) ═══════ -->
+    <div class="step-card locked" id="step-11">
+      <div class="step-header" onclick="toggleStep(this)">
+        <div class="step-num">10</div>
+        <span class="step-icon-badge">🏆</span>
+        <div class="step-title-wrap">
+          <span class="step-tag tag-locked">Step 10</span>
+          <div class="step-title">Final Playtest &amp; Share!</div>
+          <div class="step-subtitle">Five nights survived. Legends only.</div>
+        </div>
+        <span class="step-status ss-todo">Locked</span>
+      </div>
+      <div class="step-body" style="display:none">
+        <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal</strong><p>Do a full playthrough of your polished game, fix anything that feels off, then export it and share it!</p></div></div>
+        <div class="two-col">
+          <div class="col-box child"><h4>🧒 For the Child</h4><p>This is the most important step: actually PLAY your finished game! Try every camera. Close and open doors. Let power run out. Get caught on purpose. Then hand it to someone who has NEVER played it before. Watch their face. Did they jump? That reaction is YOUR work. You should be so, so proud!</p></div>
+          <div class="col-box parent"><h4>👨‍👩‍👧 For the Grown-Up</h4><p>Encourage a full playthrough of all 5 nights. Then export: Project → Export, add a Web (HTML5) preset, export. HTML5 exports can be uploaded to itch.io for free. That milestone is enormously motivating.</p></div>
+        </div>
+        <div class="callout tip"><span class="callout-icon">💡</span><div>Every professional game goes through playtesting. Watching someone else play your game reveals things you never noticed. This is not a sign of failure it's the most valuable feedback loop in game development.</div></div>
+        <div class="what-to-do"><h4>What to do:</h4>
+          <ul class="steps-list">
+            <li><span class="sn">1</span><span>Play the full game yourself try Night 1 AND Night 5.</span></li>
+            <li><span class="sn">2</span><span>Check each polish step: camera static, light flicker, screen shake, sounds, power warning, door animation, death screen slide, win confetti.</span></li>
+            <li><span class="sn">3</span><span>Fix anything that feels wrong.</span></li>
+            <li><span class="sn">4</span><span>To export: <strong>Project → Export</strong>. Add <strong>Web (HTML5)</strong> preset. Click <strong>Export Project</strong>.</span></li>
+            <li><span class="sn">5</span><span>Upload to <a href="https://joshhyyy.itch.io/" target="_blank" style="color:#6d28d9;font-weight:700;">itch.io</a> (free) and <strong>share the link!</strong></span></li>
+          </ul>
+        </div>
+        <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Hand the game to a parent, sibling, or friend. Tell them nothing except "try to survive until 6am." Watch don't help! Then celebrate.</div></div>
+
+        <!-- Final Quiz Gate -->
+        <div class="quiz-gate" id="quiz-11" data-correct="1">
+          <div class="quiz-header"><span class="quiz-icon">🧠</span><span class="quiz-title">Final Knowledge Check</span><span class="quiz-xp-badge">+15 XP</span></div>
+          <div class="quiz-question">What is the MOST valuable thing about watching someone else play your game?</div>
+          <div class="quiz-options">
+            <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span>It proves your game has no bugs</div>
+            <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span>It reveals things that confuse fresh players that you never noticed</div>
+            <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span>It makes you feel good about yourself</div>
+            <div class="quiz-opt" data-idx="3" onclick="selectQuizOpt(this)"><span class="opt-letter">D</span>It's not valuable it's just for fun</div>
+          </div>
+          <div class="quiz-feedback"></div>
+          <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+          <button class="quiz-next-btn" onclick="completeStep(11)">Complete Workshop! 🏆</button>
+        </div>
+
+        <!-- True/False -->
+        <div class="tf-round" id="tf-11">
+          <div class="tf-header"><span class="tf-icon">⚡</span><span class="tf-title">Final True or False</span><span class="tf-xp-badge">+15 XP</span></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">You should polish your game AFTER the gameplay is complete, not during.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="true"><span class="tf-statement">Godot can export games to HTML5 so anyone can play them in a browser.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-item" data-answer="false"><span class="tf-statement">Playtesting is only useful if you find bugs.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+          <div class="tf-feedback"></div>
+          <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ FINISH BANNER ═══════ -->
+    <div class="finish-banner" id="finishBanner">
+      <div class="confetti-row">🎉🏆🎮✨🎊</div>
+      <div class="finish-title">Night Watch is COMPLETE!</div>
+      <div class="finish-sub">You built a fully polished, five-night horror game from scratch. Camera static, flickering lights, screen shake, custom sprites, sound effects, power warnings, animated screens, and confetti. You're a real game developer now!</div>
+      <div class="final-stats">
+        <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+        <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+        <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+        <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+      </div>
+      <a href="my-first-video-game.html" class="next-ep-btn">🎮 See All Episodes →</a>
+      <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+    </div>
+  </div>
+
+  <div id="tab-about" class="tab-pane">
+    <div class="about-grid">
+      <div class="about-card">
+        <h3>🎨 What Is Polish?</h3>
+        <p>Polish is the difference between a game that <em>works</em> and a game that <em>feels amazing</em>. None of these steps change how the game is played they change how it <strong>feels</strong> to play it. A camera flash when you switch views. A light flicker that makes your hands sweat. A screen shake that makes the jump scare genuinely terrifying. Small details, huge impact.</p>
+      </div>
+      <div class="about-card">
+        <h3>🧒 For the Child</h3>
+        <p>You've already built something incredible a real horror game with multiple monsters, a power meter, and five nights! But right now the cameras just swap instantly and the jump scare just pops up. In this part we're going to add things like flickering lights, a flash when you switch cameras, and a screen shake during the jump scare. When you're done, it will feel EXACTLY like the real FNAF. People are going to scream playing your game! 😱</p>
+      </div>
+      <div class="about-card">
+        <h3>👨‍👩‍👧 For the Grown-Up</h3>
+        <p>This episode covers: <strong>AnimationPlayer</strong> for the screen shake and camera static effects, a <strong>Timer-based random light flicker</strong>, <strong>AudioStreamPlayer</strong> with generated SFX for doors, power warnings, and ambient hum, replacing placeholder <strong>ColorRect</strong> nodes with custom <strong>Sprite2D</strong> pixel art, a <strong>low-power warning pulse</strong> using modulate animation, and a polished animated death screen with AnimationPlayer. No new gameplay systems pure feel and presentation.</p>
+      </div>
+      <div class="about-card">
+        <h3>✨ What We're Adding</h3>
+        <ul>
+          <li>Camera static flash when switching views</li>
+          <li>Flickering office lights</li>
+          <li>Screen shake on the jump scare</li>
+          <li>Custom pixel art sprites (using Pixel Studio)</li>
+          <li>Real sound effects (using SFX Studio)</li>
+          <li>Low-power warning beep &amp; red pulse</li>
+          <li>Door slam sound &amp; animation</li>
+          <li>Animated death screen (slides in from off-screen)</li>
+          <li>Win screen confetti &amp; celebration</li>
+          <li>Final playtest &amp; share your game!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div style="background:linear-gradient(135deg,#0d0015,#1a0030);border-top:1px solid rgba(167,139,250,.15);padding:40px 24px;text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:rgba(167,139,250,.5);margin-bottom:12px;">⭐ My First Video Game · Series 1</div>
+    <div style="font-family:'Fredoka',cursive;font-size:1.5rem;font-weight:700;color:#f0eaf8;margin-bottom:8px;">Your game is FINISHED. Share it with the world! 🏆</div>
+    <div style="font-size:.9rem;color:rgba(196,181,253,.55);margin-bottom:24px;">Three episodes. A complete horror game. Camera systems, AI, sound, polish. That's real game development. You should be incredibly proud!</div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="night-watch-part2-workshop.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-family:'Fredoka',cursive;font-size:.95rem;font-weight:700;padding:12px 22px;border-radius:12px;text-decoration:none;border:1px solid rgba(255,255,255,.12);">← Ep 8 · Night Watch Part 2</a>
+      <a href="my-first-video-game.html" style="display:inline-flex;align-items:center;gap:8px;background:#6d28d9;color:#fff;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;box-shadow:0 4px 0 #4c1d95;">🎮 See All Episodes →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DEV TOOLS CALLOUT ═══ -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites &amp; animations</div>
+        </div>
+      </a>
+      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎵</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">SFX Studio</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Create custom sound effects</div>
+        </div>
+      </a>
+      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎨</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div>
+        </div>
+      </a>
+      <a href="../tools/game-idea-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'">
+        <span style="font-size:1.7rem;flex-shrink:0;">🎲</span>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Game Idea Gen</div>
+          <div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Random game concepts &amp; prompts</div>
+        </div>
+      </a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/content_hub.html">All Projects</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            observer.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+const TOTAL = 11;
+const STORAGE_KEY = 'jvds-night-watch-p3-v2';
+
+let completed = new Set();
+let xp = 0;
+let level = 1;
+let streak = 0;
+let bestStreak = 0;
+let totalQuizzes = 0;
+let correctFirst = 0;
+
+const XP_PER_LEVEL = 100;
+const XP_QUIZ = 15;
+const XP_CODE = 20;
+const XP_STREAK_BONUS = 5;
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed], total: TOTAL, xp, level, streak, bestStreak, totalQuizzes, correctFirst,
+      quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
+      challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id),
+      conceptsPassed: [...document.querySelectorAll('.concept-fill.passed')].map(c => c.id),
+      tfPassed: [...document.querySelectorAll('.tf-round.passed')].map(t => t.id),
+      ordersPassed: [...document.querySelectorAll('.order-challenge.passed')].map(o => o.id),
+      predictsPassed: [...document.querySelectorAll('.predict-challenge.passed')].map(p => p.id)
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!data) return;
+    if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
+    if (data.completed && data.completed.length) {
+      data.completed.forEach(n => {
+        completed.add(n);
+        const card = document.getElementById('step-' + n);
+        if (!card) return;
+        card.classList.remove('active-step', 'open', 'locked');
+        card.classList.add('completed');
+        card.querySelector('.step-status').className = 'step-status ss-done';
+        card.querySelector('.step-status').textContent = '✓ Done';
+        card.querySelector('.step-body').style.display = 'none';
+      });
+      const next = getActiveStep();
+      if (next <= TOTAL) {
+        const nc = document.getElementById('step-' + next);
+        if (nc) { nc.classList.remove('locked'); nc.classList.add('active-step', 'open'); nc.querySelector('.step-status').className = 'step-status ss-active'; nc.querySelector('.step-status').textContent = 'Current'; nc.querySelector('.step-body').style.display = 'block'; }
+      }
+      if (data.completed.length === TOTAL) document.getElementById('finishBanner').classList.add('show');
+    }
+    if (data.quizzesPassed) data.quizzesPassed.forEach(id => {
+      const q = document.getElementById(id);
+      if (q) { q.classList.add('passed'); const nb = q.querySelector('.quiz-next-btn'); if(nb) nb.classList.add('show'); const sb = q.querySelector('.quiz-submit'); if(sb) sb.style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    if (data.challengesPassed) data.challengesPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); const btn = c.querySelector('.cc-check-btn'); if(btn) btn.disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+    });
+    if (data.conceptsPassed) data.conceptsPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); const btn = c.querySelector('.cf-check-btn'); if(btn) btn.disabled = true; c.querySelectorAll('.cf-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+    });
+    if (data.tfPassed) data.tfPassed.forEach(id => {
+      const t = document.getElementById(id);
+      if (t) { t.classList.add('passed'); const btn = t.querySelector('.tf-check-btn'); if(btn) btn.disabled = true; }
+    });
+    if (data.ordersPassed) data.ordersPassed.forEach(id => {
+      const o = document.getElementById(id);
+      if (o) { o.classList.add('passed'); const btn = o.querySelector('.oc-check-btn'); if(btn) btn.disabled = true; const rb = o.querySelector('.oc-reset-btn'); if(rb) rb.style.display = 'none'; }
+    });
+    if (data.predictsPassed) data.predictsPassed.forEach(id => {
+      const p = document.getElementById(id);
+      if (p) { p.classList.add('passed'); const sb = p.querySelector('.quiz-submit'); if(sb) sb.style.display = 'none'; const nb = p.querySelector('.quiz-next-btn'); if(nb) nb.classList.add('show'); p.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    updateXpDisplay();
+  } catch(e) {}
+}
+
+function getActiveStep() {
+  for (let i = 1; i <= TOTAL; i++) { if (!completed.has(i)) return i; }
+  return TOTAL;
+}
+
+function buildDots() {
+  const c = document.getElementById('stepDots');
+  c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' current' : ''));
+    d.textContent = i === 1 ? '★' : (i - 1);
+    d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    c.appendChild(d);
+  }
+}
+
+function updateProgress() {
+  const n = completed.size;
+  document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
+  const fill = document.getElementById('progressFill');
+  if (fill) fill.style.width = (n / TOTAL * 100) + '%';
+  buildDots();
+}
+
+function updateXpDisplay() {
+  const xpInLevel = xp % XP_PER_LEVEL;
+  document.getElementById('xpLabel').textContent = xp + ' XP';
+  document.getElementById('xpFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevel').textContent = 'Level ' + level;
+  document.getElementById('streakCount').textContent = streak;
+  const streakEl = document.getElementById('xpStreak');
+  streakEl.classList.toggle('hot', streak >= 3);
+}
+
+function awardXp(amount, label) {
+  const oldLevel = level;
+  xp += amount;
+  level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  updateXpDisplay();
+  document.getElementById('xpLabel').classList.add('xp-pop');
+  setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
+  showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
+  saveProgress();
+}
+
+function showXpToast(text) {
+  const existing = document.querySelector('.xp-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function showLevelUp(lvl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing — keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── QUIZ SYSTEM ── */
+function selectQuizOpt(el) {
+  const gate = el.closest('.quiz-gate') || el.closest('.predict-challenge');
+  if (!gate || gate.classList.contains('passed')) return;
+  gate.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const submitBtn = gate.querySelector('.quiz-submit');
+  if (submitBtn) submitBtn.classList.add('show');
+}
+
+function checkQuiz(btn) {
+  const gate = btn.closest('.quiz-gate');
+  const selected = gate.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = parseInt(gate.dataset.correct);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = gate.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
+    gate.classList.add('passed');
+    btn.style.display = 'none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ, label = 'Quiz correct';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — try again!</span>';
+    streak = 0;
+    updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong', 'selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── CODE CHALLENGE SYSTEM ── */
+function checkCodeChallenge(btn) {
+  const challenge = btn.closest('.code-challenge');
+  const blanks = challenge.querySelectorAll('.cc-blank');
+  const fb = challenge.querySelector('.cc-feedback');
+  const hint = challenge.querySelector('.cc-hint');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    const userVal = b.value.trim().toLowerCase();
+    const answer = b.dataset.answer.toLowerCase();
+    if (userVal === answer) { b.classList.remove('wrong'); b.classList.add('correct'); }
+    else { b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false; }
+  });
+  if (allCorrect) {
+    fb.className = 'cc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    challenge.classList.add('passed');
+    btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    if (hint) hint.classList.remove('show');
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_CODE, label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right — check the highlighted blanks and try again.</span>';
+    if (hint) hint.classList.add('show');
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── CONCEPT FILL-IN-THE-BLANK ── */
+function checkConceptFill(btn) {
+  const wrap = btn.closest('.concept-fill');
+  const blanks = wrap.querySelectorAll('.cf-blank');
+  const fb = wrap.querySelector('.cf-feedback');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    if (b.value.trim().toLowerCase() === b.dataset.answer.toLowerCase()) { b.classList.remove('wrong'); b.classList.add('correct'); }
+    else { b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false; }
+  });
+  if (allCorrect) {
+    fb.className = 'cf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
+    wrap.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => b.disabled = true);
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Concept fill';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks aren\'t right — try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── TRUE/FALSE SPEED ROUND ── */
+function pickTF(btn, value) {
+  const item = btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  btn.dataset.picked = value;
+}
+
+function checkTF(btn) {
+  const round = btn.closest('.tf-round');
+  const items = round.querySelectorAll('.tf-item');
+  const fb = round.querySelector('.tf-feedback');
+  let allAnswered = true, allCorrect = true;
+  items.forEach(item => {
+    const selected = item.querySelector('.tf-btn.selected');
+    if (!selected) { allAnswered = false; return; }
+    const correct = item.dataset.answer;
+    const picked = selected.dataset.picked;
+    item.classList.add('answered');
+    if (picked === correct) { selected.classList.add('correct-answer'); }
+    else {
+      selected.classList.add('wrong-answer');
+      item.querySelectorAll('.tf-btn').forEach(b => { if (b.dataset.picked !== picked && b.textContent.toLowerCase() === correct) b.classList.add('correct-answer'); });
+      allCorrect = false;
+    }
+  });
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'tf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
+    round.classList.add('passed'); btn.disabled = true;
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'True/False';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'tf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not all correct — look at the highlighted answers and try again next time.</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+    setTimeout(() => {
+      items.forEach(item => {
+        item.classList.remove('answered');
+        item.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('selected','correct-answer','wrong-answer'); });
+      });
+      fb.classList.remove('show');
+    }, 2500);
+  }
+  saveProgress();
+}
+
+/* ── ORDER THE STEPS ── */
+let orderCounters = {};
+function pickOrder(el) {
+  const challenge = el.closest('.order-challenge');
+  const id = challenge.id;
+  if (!orderCounters[id]) orderCounters[id] = 0;
+  if (el.classList.contains('picked')) return;
+  orderCounters[id]++;
+  el.classList.add('picked');
+  el.querySelector('.oc-num').textContent = orderCounters[id];
+  el.dataset.userOrder = orderCounters[id];
+}
+
+function resetOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  orderCounters[challenge.id] = 0;
+  challenge.querySelectorAll('.oc-item').forEach(item => {
+    item.classList.remove('picked','correct-pos','wrong-pos');
+    item.querySelector('.oc-num').textContent = '';
+    delete item.dataset.userOrder;
+  });
+  challenge.querySelector('.oc-feedback').classList.remove('show');
+}
+
+function checkOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  const items = challenge.querySelectorAll('.oc-item');
+  const fb = challenge.querySelector('.oc-feedback');
+  let allPicked = true, allCorrect = true;
+  items.forEach(item => {
+    if (!item.dataset.userOrder) { allPicked = false; return; }
+    if (parseInt(item.dataset.userOrder) === parseInt(item.dataset.correct)) { item.classList.add('correct-pos'); }
+    else { item.classList.add('wrong-pos'); allCorrect = false; }
+  });
+  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'oc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order!</span>';
+    challenge.classList.add('passed'); btn.disabled = true;
+    challenge.querySelector('.oc-reset-btn').style.display = 'none';
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Order challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'oc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite right — hit Reset and try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+/* ── PREDICT WHAT HAPPENS ── */
+function checkPredict(btn) {
+  const challenge = btn.closest('.predict-challenge');
+  const selected = challenge.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = parseInt(challenge.dataset.correct);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = challenge.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Great prediction! You really understand how this works.</span>';
+    challenge.classList.add('passed'); btn.style.display = 'none';
+    challenge.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ, label = 'Prediction';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — think about it again!</span>';
+    streak = 0; updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── STEP COMPLETION ── */
+function completeStep(n) {
+  completed.add(n);
+  const card = document.getElementById('step-' + n);
+  card.classList.remove('active-step', 'open');
+  card.classList.add('completed');
+  card.querySelector('.step-status').className = 'step-status ss-done';
+  card.querySelector('.step-status').textContent = '✓ Done';
+  card.querySelector('.step-body').style.display = 'none';
+  const next = document.getElementById('step-' + (n + 1));
+  if (next) {
+    next.classList.remove('locked');
+    next.classList.add('active-step', 'open');
+    next.querySelector('.step-status').className = 'step-status ss-active';
+    next.querySelector('.step-status').textContent = 'Current';
+    next.querySelector('.step-body').style.display = 'block';
+    setTimeout(() => next.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  }
+  if (completed.size === TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    setTimeout(() => document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+  }
+  updateProgress();
+  saveProgress();
+}
+
+function toggleStep(header) {
+  const card = header.closest('.step-card');
+  if (card.classList.contains('locked')) return;
+  const body = card.querySelector('.step-body');
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
+}
+
+loadProgress();
+updateProgress();
+updateXpDisplay();
+</script>
+</body>
+</html>
