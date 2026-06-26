@@ -30,7 +30,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:'Nunito',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
+body{font-family:'Nunito',sans-serif;background:#0a0b10;color:#e8eaf2;min-height:100vh}
 a{text-decoration:none;color:inherit}
 
 /* ── HERO ── */
@@ -389,7 +389,6 @@ a{text-decoration:none;color:inherit}
             <a href="../pages/games.html">Games</a>
             <a href="../pages/workshop.html">Workshop</a>
             <a href="../pages/freebies.html">Freebies</a>
-            <a href="../pages/content_hub.html">All Projects</a>
             <a href="../pages/devlog.html">Dev Log</a>
             <a href="../pages/about.html">About</a>
             <a href="../pages/contact.html">Contact</a>
@@ -894,10 +893,28 @@ func next_level():
   },
 ];
 
-let completedSteps = JSON.parse(localStorage.getItem('shooterWorkshopProgress') || '[]');
+const STORAGE_KEY = 'jvds-nuclear-throne-v2';
+let completedSteps = [];
+let _ntXp = 0;
+
+(function _migrateOld() {
+  try {
+    const old = JSON.parse(localStorage.getItem('shooterWorkshopProgress') || 'null');
+    if (Array.isArray(old) && old.length) { completedSteps = old; _ntXp = old.length * 20; localStorage.removeItem('shooterWorkshopProgress'); }
+  } catch(e) {}
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (d && d.completed) { completedSteps = d.completed; _ntXp = d.xp || 0; }
+  } catch(e) {}
+})();
 
 function saveProgress() {
-  localStorage.setItem('shooterWorkshopProgress', JSON.stringify(completedSteps));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: completedSteps, total: STEPS.length, xp: _ntXp,
+      level: Math.floor(_ntXp / 100) + 1, bestStreak: 0, totalQuizzes: 0, correctFirst: 0
+    }));
+  } catch(e) {}
 }
 
 function getStatus(i) {
@@ -995,7 +1012,7 @@ function toggleBody(i) {
 }
 
 function markDone(i) {
-  if (!completedSteps.includes(i)) completedSteps.push(i);
+  if (!completedSteps.includes(i)) { completedSteps.push(i); _ntXp += 20; }
   saveProgress();
   buildDots();
   buildSteps();

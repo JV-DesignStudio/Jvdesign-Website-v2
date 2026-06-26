@@ -142,6 +142,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .jump-btn:active{background:rgba(224,90,30,.6)}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
 </head>
 <body>
 <!-- BUILD:nav-content -->
@@ -878,9 +879,24 @@ onApply:function(v){
 /* ═══════════════════════════════════════════════════════
    STEP ENGINE
 ═══════════════════════════════════════════════════════ */
+const STORAGE_KEY='jvds-unreal-2d-platformer-v2';
 let cur=0;
 const done=new Set();
 const TOTAL=STEPS.length;
+let _wsXp=0;
+
+function saveProgress(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    completed:[...done],total:TOTAL,xp:_wsXp,
+    level:Math.floor(_wsXp/100)+1,bestStreak:0,totalQuizzes:0,correctFirst:0
+  }));}catch(e){}
+}
+function loadProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(d&&d.completed){d.completed.forEach(i=>done.add(i));_wsXp=d.xp||0;}
+  }catch(e){}
+}
 let activeInst=null,completedVals={};
 
 function go(i){
@@ -919,7 +935,7 @@ function renderStep(){
 }
 
 function doApply(){
-  done.add(cur);STEPS[cur].onApply(completedVals);updateProg();updateHUD();
+  if(!done.has(cur)){done.add(cur);_wsXp+=20;}STEPS[cur].onApply(completedVals);updateProg();updateHUD();saveProgress();
   document.getElementById('liveStatus').textContent='Step '+(cur+1)+' done ✓';
   var btn=document.getElementById('applyBtn');
   if(btn){var o=btn.textContent;btn.textContent='✅ Applied!';setTimeout(function(){if(btn)btn.textContent=o;},1200);}
@@ -933,6 +949,7 @@ function updateProg(){
   document.getElementById('hudStep').textContent=done.size+'/'+TOTAL;
 }
 
+loadProgress();
 renderStep();
 gameLoop();
 </script>
@@ -951,7 +968,6 @@ gameLoop();
             <a href="../pages/games.html">Games</a>
             <a href="../pages/workshop.html">Workshop</a>
             <a href="../pages/freebies.html">Freebies</a>
-            <a href="../pages/content_hub.html">All Projects</a>
             <a href="../pages/devlog.html">Dev Log</a>
             <a href="../pages/about.html">About</a>
             <a href="../pages/contact.html">Contact</a>

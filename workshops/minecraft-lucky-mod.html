@@ -849,8 +849,11 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overf
 </footer>
 
 <script>
+var STORAGE_KEY = 'jvds-minecraft-lucky-v2';
 var TOTAL = 12;
 var completed = new Set();
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp:completed.size*20,level:Math.floor(completed.size*20/100),bestStreak:0,totalQuizzes:0,correctFirst:0}));}catch(e){}}
+function loadProgress(){try{var d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d&&d.completed){d.completed.forEach(function(s){completed.add(s);var card=document.getElementById('step-'+s);if(card){card.classList.add('completed');card.classList.remove('locked','active-step','open');var st=document.getElementById('status-'+s);if(st){st.textContent='Done ✓';st.className='step-status ss-done';}var dot=document.getElementById('dot-'+s);if(dot){dot.classList.remove('active');dot.classList.add('done');dot.textContent='✓';}}});var nxt=Math.max(...d.completed)+1;if(nxt<=TOTAL){var nc=document.getElementById('step-'+nxt);if(nc){nc.classList.remove('locked');nc.classList.add('open','active-step');var ns=document.getElementById('status-'+nxt);if(ns){ns.textContent='In Progress';ns.className='step-status ss-active';}var nd=document.getElementById('dot-'+nxt);if(nd)nd.classList.add('active');}};var pct=Math.round((completed.size/TOTAL)*100);document.getElementById('progressFill').style.width=pct+'%';document.getElementById('progressCount').textContent=completed.size+' / '+TOTAL+' Steps';}}catch(e){}}
 
 function buildDots() {
   const wrap = document.getElementById('stepDots');
@@ -912,9 +915,10 @@ function completeStep(n) {
     document.getElementById('finishBanner').classList.add('show');
     setTimeout(() => document.getElementById('finishBanner').scrollIntoView({ behavior: 'smooth' }), 300);
   }
+  saveProgress();
 }
 
-buildDots();
+buildDots();loadProgress();
 </script>
 <script src="../workshop-enhancements.js"></script>
 </body>

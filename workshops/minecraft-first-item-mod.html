@@ -23,6 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
 /* ── :root accent overrides ── */
 /* ── Reset & base ── */
 /* ── Page-specific hero gradient ── */
@@ -647,8 +648,11 @@
 <!-- /BUILD:footer-content -->
 
 <script>
+var STORAGE_KEY = 'jvds-minecraft-first-item-v2';
 var TOTAL = 10;
 var completed = new Set();
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp:completed.size*20,level:Math.floor(completed.size*20/100),bestStreak:0,totalQuizzes:0,correctFirst:0}));}catch(e){}}
+function loadProgress(){try{var d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d&&d.completed){d.completed.forEach(function(s){completed.add(s);var card=document.getElementById('step-'+s);if(card){card.classList.add('completed');card.classList.remove('locked','active-step');var btn=card.querySelector('.step-complete-btn');if(btn){btn.textContent='✅ Done!';btn.disabled=true;}var st=card.querySelector('.step-status');if(st){st.textContent='Done';st.className='step-status ss-done';}}});var nxt=Math.max(...d.completed)+1;if(nxt<=TOTAL){var nc=document.getElementById('step-'+nxt);if(nc){nc.classList.remove('locked');nc.classList.add('open','active-step');var ns=nc.querySelector('.step-status');if(ns){ns.textContent='Active';ns.className='step-status ss-active';}}}}}catch(e){}}
 function buildDots(){
   const c=document.getElementById('stepDots');
   for(let i=1;i<=TOTAL;i++){
@@ -689,6 +693,7 @@ function completeStep(n){
     setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);
   }
   updateProgress();
+  saveProgress();
 }
 function toggleStep(header){
   const card=header.closest('.step-card');
@@ -696,7 +701,7 @@ function toggleStep(header){
   card.classList.toggle('open');
 }
 function toggleCheck(el){el.classList.toggle('checked');}
-buildDots();updateProgress();
+buildDots();loadProgress();updateProgress();
 </script>
 <script src="../workshop-enhancements.js"></script>
 </body>
