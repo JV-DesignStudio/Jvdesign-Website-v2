@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#4ade80">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Free printable OpenRCT2 plugin modding cheat sheet plugin basics, park/ride/guest API, UI windows, map and tiles and common code snippets. No sign-up needed.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/openrct2-cheatsheet.html">
+<title>Free OpenRCT2 Modding Cheat Sheet | JVDesignStudio</title>
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/openrct2-cheatsheet.html">
+<meta property="og:title" content="Free OpenRCT2 Modding Cheat Sheet | JVDesignStudio">
+<meta property="og:description" content="Plugin basics, park/ride/guest API, UI windows, map and tiles and common code snippets for OpenRCT2 plugin development free, printable, no sign-up.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Free OpenRCT2 Modding Cheat Sheet | JVDesignStudio">
+<meta name="twitter:description" content="Plugin basics, park/ride/guest API, UI windows, map and tiles and common code snippets for OpenRCT2 plugin development free, printable, no sign-up.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/logo.png">
+
+<style>
+body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
+code,pre{font-family:'JetBrains Mono',monospace;}
+
+
+/* HERO */
+.cheat-hero{background:linear-gradient(135deg,#0d2a16 0%,#163b22 60%,#0d2a16 100%);padding:64px 24px 56px;text-align:center;position:relative;overflow:hidden;}
+.cheat-hero::before{content:'🎢';position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:200px;opacity:.06;pointer-events:none;}
+.cheat-hero h1{font-family:'Fredoka',cursive;font-size:clamp(2.1rem,5.5vw,3.4rem);font-weight:700;color:white;margin-bottom:12px;}
+.cheat-hero p{font-size:1.02rem;color:rgba(255,255,255,.7);max-width:600px;margin:0 auto 28px;line-height:1.7;}
+.cheat-tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#4ade80;background:rgba(74,222,128,.12);border-radius:999px;padding:5px 16px;margin-bottom:16px;}
+.btn-print-big{display:inline-flex;align-items:center;gap:10px;background:var(--rose);color:white;font-weight:800;font-size:1.05rem;padding:15px 32px;border-radius:14px;box-shadow:0 4px 0 var(--rose-dk);transition:filter .15s,transform .12s;}
+.btn-print-big:hover{filter:brightness(1.1);transform:translateY(-2px);}
+
+/* SHEET */
+.sheet-wrap{max-width:1040px;margin:0 auto;padding:48px 24px 64px;}
+.sheet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;}
+.sheet-card{background:white;border-radius:16px;box-shadow:0 5px 20px rgba(64,59,51,.08);padding:22px 24px;}
+.sheet-card h2{font-family:'Fredoka',cursive;font-size:1.15rem;color:var(--charcoal);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sheet-card pre{background:#1e1e2e;color:#e8eef8;border-radius:10px;padding:12px 14px;font-size:.78rem;line-height:1.6;overflow-x:auto;margin-bottom:10px;}
+.sheet-card pre .c{color:#7a7268;}
+.sheet-card pre .k{color:#4ade80;}
+.sheet-card pre .s{color:#7dd3fc;}
+.sheet-card pre .f{color:#f5c842;}
+.sheet-card p{font-size:.84rem;color:var(--charcoal-lt);line-height:1.6;}
+.sheet-card ul{font-size:.84rem;color:var(--charcoal-lt);line-height:1.7;padding-left:18px;}
+.sheet-card table{width:100%;font-size:.82rem;border-collapse:collapse;}
+.sheet-card table td{padding:4px 6px;border-bottom:1px solid var(--beige);}
+.sheet-card table td:first-child{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--blue);white-space:nowrap;}
+.sheet-card.full{grid-column:1/-1;}
+
+/* PRINT */
+@media print{
+    .site-header,.mobile-nav,.cheat-hero,.more-strip,.site-footer,.btn-print-big,.no-print{display:none !important;}
+
+    .sheet-wrap{padding:0;max-width:100%;}
+    .sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .sheet-card{box-shadow:none;border:1px solid #ddd;break-inside:avoid;}
+    .sheet-card pre{font-size:.7rem;}
+}
+
+/* MORE STRIP */
+.more-strip{padding:56px 24px;background:var(--charcoal);text-align:center;}
+.more-strip h2{font-family:'Lora',serif;font-size:clamp(1.5rem,4vw,2rem);font-weight:600;color:white;margin-bottom:10px;}
+.more-strip p{font-size:.95rem;color:rgba(240,234,214,.65);margin-bottom:24px;}
+.btn-ig-strip{display:inline-flex;align-items:center;gap:8px;background:var(--rose);color:white;font-weight:800;font-size:1rem;padding:14px 28px;border-radius:13px;box-shadow:0 4px 0 var(--rose-dk);transition:filter .15s,transform .12s;}
+.btn-ig-strip:hover{filter:brightness(1.1);transform:translateY(-2px);}
+
+/* FOOTER */
+</style>
+<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
+<link rel="stylesheet" href="../style-shared.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- BUILD:nav-content -->
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="../index.html" class="logo-link">
+        <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="../index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="../pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="../pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="../pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn Hub</a>
+        <a href="../pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="../pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Dev Tools</a>
+        <a href="../pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
+        <a href="my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="../index.html">🏠 Home</a>
+    <a href="../pages/games.html">🎮 Games</a>
+    <a href="../pages/books.html">📚 Books</a>
+    <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+    <a href="../pages/workshop.html">🔧 Workshop</a>
+    <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+    <a href="../pages/freebies.html">🎁 Free Downloads</a>
+    <a href="my-progress.html">📊 My Progress</a>
+    <a href="../pages/about.html">👤 About</a>
+    <a href="../pages/contact.html">✉️ Contact</a>
+    <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<section id="main-content" class="cheat-hero">
+    <span class="cheat-tag">✦ JVDesignStudio · No Sign-Up Required</span>
+    <h1>OpenRCT2 Modding Cheat Sheet</h1>
+    <p>A one-page printable reference for plugin basics, the park/ride/guest API, UI windows and map/tile access the most-used TypeScript snippets for OpenRCT2 plugins. Pin it next to your monitor!</p>
+    <button class="btn-print-big" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</section>
+
+<div class="sheet-wrap">
+    <div class="sheet-grid">
+
+        <div class="sheet-card">
+            <h2>🔌 Plugin Basics</h2>
+            <pre>registerPlugin({
+    name: <span class="s">"My Plugin"</span>,
+    version: <span class="s">"1.0"</span>,
+    authors: [<span class="s">"You"</span>],
+    type: <span class="s">"remote"</span>,
+    licence: <span class="s">"MIT"</span>,
+    main: <span class="k">function</span>() {
+        console.log(<span class="s">"Plugin loaded!"</span>);
+    }
+});</pre>
+            <p>The <code>main</code> function runs once when the plugin is loaded set up your hooks and UI here.</p>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🏞️ Park API</h2>
+            <pre><span class="c">// read/write park cash</span>
+console.log(park.cash);
+park.cash += 10000;
+
+<span class="c">// park name</span>
+park.name = <span class="s">"Fun World"</span>;
+
+<span class="c">// current in-game date</span>
+console.log(date.year, date.month, date.day);</pre>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🎢 Ride API</h2>
+            <pre><span class="k">const</span> rides = map.getAllEntities(<span class="s">"ride"</span>);
+
+rides.forEach(<span class="k">function</span>(ride) {
+    console.log(ride.name);
+    console.log(ride.excitement);
+    console.log(ride.intensity);
+    console.log(ride.nausea);
+});</pre>
+            <p>Excitement, intensity and nausea are raw rating values, divide by 100 for the displayed star value.</p>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🧑 Guest API</h2>
+            <pre><span class="k">const</span> guests = map.getAllEntities(<span class="s">"guest"</span>);
+
+guests.forEach(<span class="k">function</span>(guest) {
+    console.log(guest.happiness);
+    console.log(guest.energy);
+    console.log(guest.cash);
+});</pre>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🪟 UI Windows</h2>
+            <pre>ui.openWindow({
+    classification: <span class="s">"my-plugin-window"</span>,
+    width: 200,
+    height: 120,
+    title: <span class="s">"My Plugin"</span>,
+    widgets: [
+        { type: <span class="s">"label"</span>,  x: 10, y: 20, width: 180, height: 14, text: <span class="s">"Hello!"</span> },
+        { type: <span class="s">"button"</span>, x: 10, y: 40, width: 80,  height: 16, text: <span class="s">"Click"</span>, onClick: <span class="k">function</span>() {} },
+        { type: <span class="s">"dropdown"</span>, x: 10, y: 60, width: 100, height: 14, items: [<span class="s">"A"</span>,<span class="s">"B"</span>] }
+    ]
+});</pre>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🗺️ Map &amp; Tiles</h2>
+            <pre><span class="k">const</span> tile = map.getTile(10, 15);
+
+tile.elements.forEach(<span class="k">function</span>(el) {
+    console.log(el.type);
+});
+
+<span class="c">// surface height (in z-units, divide by 8 for game height)</span>
+<span class="k">const</span> surface = tile.elements.find(<span class="k">function</span>(e) { <span class="k">return</span> e.type === <span class="s">"surface"</span>; });
+console.log(surface.baseHeight);</pre>
+        </div>
+
+        <div class="sheet-card">
+            <h2>🪝 Events &amp; Hooks</h2>
+            <pre>context.subscribe(<span class="s">"interval.tick"</span>, <span class="k">function</span>() {
+    <span class="c">// runs every game tick</span>
+});
+
+context.subscribe(<span class="s">"ride.ratings.calculate"</span>, <span class="k">function</span>(e) {
+    console.log(<span class="s">"Ride ratings calculated for ride "</span> + e.rideId);
+});</pre>
+        </div>
+
+        <div class="sheet-card full">
+            <h2>🛠️ Common Patterns: Minimal Plugin with a UI Button</h2>
+            <pre>registerPlugin({
+    name: <span class="s">"Cash Booster"</span>,
+    version: <span class="s">"1.0"</span>,
+    authors: [<span class="s">"You"</span>],
+    type: <span class="s">"remote"</span>,
+    licence: <span class="s">"MIT"</span>,
+    main: <span class="k">function</span>() {
+        <span class="k">if</span> (typeof ui === <span class="s">"undefined"</span>) <span class="k">return</span>;
+
+        ui.registerMenuItem(<span class="s">"Cash Booster"</span>, <span class="k">function</span>() {
+            ui.openWindow({
+                classification: <span class="s">"cash-booster-window"</span>,
+                width: 180,
+                height: 90,
+                title: <span class="s">"Cash Booster"</span>,
+                widgets: [
+                    {
+                        type: <span class="s">"button"</span>,
+                        x: 10, y: 30, width: 160, height: 20,
+                        text: <span class="s">"Add £10,000"</span>,
+                        onClick: <span class="k">function</span>() {
+                            park.cash += 1000000;
+                        }
+                    }
+                ]
+            });
+        });
+    }
+});</pre>
+        </div>
+
+    </div>
+</div>
+
+<section class="more-strip no-print">
+    <h2>Want to build a whole game?</h2>
+    <p>Follow one of our free step-by-step workshops in the Workshop hub.</p>
+    <a href="../pages/workshop.html" class="btn-ig-strip">🔧 Browse Workshops →</a>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/books.html">Books</a>
+            <a href="../pages/games.html">Games</a>
+            <a href="../pages/workshop.html">Workshop</a>
+            <a href="../pages/freebies.html">Freebies</a>
+            <a href="../pages/devlog.html">Dev Log</a>
+            <a href="../pages/about.html">About</a>
+            <a href="../pages/contact.html">Contact</a>
+            <a href="../pages/videos.html">Videos</a>
+            <a href="../pages/faq.html">FAQ</a>
+            <a href="../pages/press.html">Press</a>
+            <a href="../pages/follow_along.html">Follow Along</a>
+            <a href="../pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="../pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/../cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+</body>
+</html>
