@@ -739,6 +739,9 @@
       "url": "https://jvdesignstudio.co.uk/games/cozy-cafe-match-game.html"
     }
     </script><link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -2516,6 +2519,42 @@ function jvdsCloseStrip(){
   document.getElementById('jvdsTab').classList.remove('hidden');
 }
 </script>
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+// Track score as XP (10 points = 1 XP)
+let lastScore = 0;
+setInterval(() => {
+  const currentScore = parseInt(document.querySelector('[data-stat="score"]')?.textContent || vault.score || '0');
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}, 500);
+
+// Check achievements
+function checkGameSystemAchievements() {
+  const score = vault.score || 0;
+  if (score > 0) gameSystem.unlockAchievement('firstMatch');
+  if (score >= 500) gameSystem.unlockAchievement('score500');
+  if (score >= 1000) gameSystem.unlockAchievement('score1000');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+// Save on page unload
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
+
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
 </body>
 </html>

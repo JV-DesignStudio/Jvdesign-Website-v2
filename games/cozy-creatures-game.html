@@ -315,6 +315,9 @@
   .current-player-label { color: #f8c471; font-size: 1rem; text-align: center; margin-bottom: 1rem; }
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 
@@ -1286,6 +1289,44 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
 }
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('cozy-creatures', 'Cozy Creatures', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  // Cozy Creatures score tracking
+  const currentScore = parseInt(localStorage.getItem('creaturesScore') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('creaturesScore') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstCreature');
+  if (score >= 100) gameSystem.unlockAchievement('score100');
+  if (score >= 300) gameSystem.unlockAchievement('score300');
+  if (score >= 500) gameSystem.unlockAchievement('score500');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 </body>
 </html>

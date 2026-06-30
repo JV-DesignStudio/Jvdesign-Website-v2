@@ -221,6 +221,9 @@ body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var
     <meta name="twitter:description" content="Books, games, courses and free tools from JVDesignStudio.">
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Biscuit%20Tin%20Clicker.png">
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -1172,6 +1175,50 @@ requestAnimationFrame(tick);
 setInterval(spawnPetal,3500); spawnPetal();
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
+
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('biscuit-clicker', 'Biscuit Tin Clicker', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+// Save game state to progression system
+const originalSaveNow = window.saveNow || (() => {});
+window.saveNow = function() {
+  originalSaveNow();
+  gameSystem.addCoins(Math.floor(Math.random() * 5)); // Small coin bonus
+  gameSystem.saveState();
+};
+
+// Track XP on clicks
+let lastXPTick = 0;
+const originalOnClick = window.onClickTin || (() => {});
+window.onClickTin = function(e) {
+  originalOnClick(e);
+  // Grant 1 XP per 10 clicks
+  lastXPTick++;
+  if (lastXPTick >= 10) {
+    gameSystem.addXP(1);
+    lastXPTick = 0;
+  }
+};
+
+// Check for achievements
+function checkGameSystemAchievements() {
+  const clicks = bv().clicks || 0;
+  if (clicks === 1) gameSystem.unlockAchievement('firstClick');
+  if (clicks >= 100) gameSystem.unlockAchievement('clicks100');
+  if (clicks >= 1000) gameSystem.unlockAchievement('clicks1000');
+  if (clicks >= 10000) gameSystem.unlockAchievement('clicks10000');
+  gameSystem.checkAchievements();
+}
+
+// Run achievement check every 10 seconds
+setInterval(checkGameSystemAchievements, 10000);
+
+// Save progression when game ends/tab closes
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now() - lastTick);
+  gameSystem.saveState();
+});
 </script>
 <script>
 function jvdsOpenStrip(){

@@ -45,6 +45,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
 .hidden{display:none!important;}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <div class="topbar">
@@ -167,6 +170,43 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   // initial idle draw
   snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};food={x:13,y:10};draw();
 })();
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('nibble-quest', 'Nibble Quest', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = parseInt(localStorage.getItem('nibbleScore') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 5);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('nibbleScore') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstNibble');
+  if (score >= 30) gameSystem.unlockAchievement('score30');
+  if (score >= 100) gameSystem.unlockAchievement('score100');
+  if (score >= 200) gameSystem.unlockAchievement('score200');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 </body>
 </html>

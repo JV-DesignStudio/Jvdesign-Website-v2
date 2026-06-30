@@ -49,6 +49,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 .hidden{display:none!important;}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <div class="topbar">
@@ -494,6 +497,43 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   document.getElementById('startBtn').addEventListener('click',startGame);
   document.getElementById('againBtn').addEventListener('click',startGame);
 })();
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('lumo-dash', 'Lumo Dash', 'neon');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = parseInt(localStorage.getItem('lumoDashScore') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 5);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('lumoDashScore') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstDash');
+  if (score >= 50) gameSystem.unlockAchievement('score50');
+  if (score >= 100) gameSystem.unlockAchievement('score100');
+  if (score >= 200) gameSystem.unlockAchievement('score200');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 </body>
 </html>

@@ -105,6 +105,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 .end-ach{font-size:.75rem;color:#FFD700;margin:3px 0;}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <div class="topbar">
@@ -514,6 +517,43 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   document.getElementById('achBtn').onclick=()=>{renderAchs();startScreen.classList.add('hidden');document.getElementById('achScreen').classList.remove('hidden');};
   document.getElementById('achBack').onclick=()=>{document.getElementById('achScreen').classList.add('hidden');startScreen.classList.remove('hidden');};
 })();
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('critter-whack', 'Critter Whack', 'tiger');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = window.score || 0;
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 5);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = window.score || 0;
+  if (score > 0) gameSystem.unlockAchievement('firstWhack');
+  if (score >= 50) gameSystem.unlockAchievement('score50');
+  if (score >= 150) gameSystem.unlockAchievement('score150');
+  if (score >= 300) gameSystem.unlockAchievement('score300');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 </body>
 </html>

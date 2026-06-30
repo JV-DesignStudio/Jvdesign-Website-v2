@@ -329,6 +329,9 @@ footer a:hover{color:rgba(240,234,214,.85)}
       "url": "https://jvdesignstudio.co.uk/games/voidrush.html"
     }
     </script><link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -1899,6 +1902,43 @@ function setSkin(id){
   refreshSkinSelector();
 }
 window.setSkin=setSkin;
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('void-rush', 'VoidRush', 'neon');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = parseInt(localStorage.getItem('score') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 15);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('score') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstRun');
+  if (score >= 150) gameSystem.unlockAchievement('score150');
+  if (score >= 300) gameSystem.unlockAchievement('score300');
+  if (score >= 500) gameSystem.unlockAchievement('score500');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 
 </body>

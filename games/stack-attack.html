@@ -80,6 +80,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 .end-ach{font-size:.78rem;color:#FFD700;margin:3px 0;}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <div class="topbar">
@@ -434,6 +437,43 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
   document.getElementById('achBtn').onclick=()=>{renderAchGrid();startScreen.classList.add('hidden');document.getElementById('achScreen').classList.remove('hidden');};
   document.getElementById('achBack').onclick=()=>{document.getElementById('achScreen').classList.add('hidden');startScreen.classList.remove('hidden');};
 })();
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('stack-attack', 'Stack Attack', 'tiger');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = window.score || 0;
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = window.score || 0;
+  if (score > 0) gameSystem.unlockAchievement('firstStack');
+  if (score >= 100) gameSystem.unlockAchievement('score100');
+  if (score >= 300) gameSystem.unlockAchievement('score300');
+  if (score >= 500) gameSystem.unlockAchievement('score500');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 </script>
 </body>
 </html>

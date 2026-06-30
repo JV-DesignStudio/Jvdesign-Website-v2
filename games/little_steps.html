@@ -228,6 +228,9 @@
     <meta name="twitter:description" content="Little Steps — a cosmic endless runner. Choose your path through the void. Free browser game from JVDesignStudio.">
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/logo.png">
 <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -1599,5 +1602,42 @@ function jvdsCloseStrip(){
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
 </footer>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('little-steps', 'Little Steps', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  const currentScore = parseInt(localStorage.getItem('stepsScore') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('stepsScore') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstStep');
+  if (score >= 50) gameSystem.unlockAchievement('score50');
+  if (score >= 150) gameSystem.unlockAchievement('score150');
+  if (score >= 300) gameSystem.unlockAchievement('score300');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
 </body>
 </html>

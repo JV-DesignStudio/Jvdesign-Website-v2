@@ -346,6 +346,9 @@
     <meta name="twitter:description" content="Books, games, courses and free tools from JVDesignStudio.">
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Dungeondelve.png">
     <link rel="stylesheet" href="../style-shared.css">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -1222,5 +1225,43 @@ function jvdsCloseStrip(){
     <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
   </div>
 </footer>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('dungeon-delve', 'Dungeon Delve', 'hero');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  // Dungeon Delve likely stores score in localStorage
+  const currentScore = parseInt(localStorage.getItem('dungeonScore') || '0');
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 25);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = parseInt(localStorage.getItem('dungeonScore') || '0');
+  if (score > 0) gameSystem.unlockAchievement('firstDelve');
+  if (score >= 100) gameSystem.unlockAchievement('score100');
+  if (score >= 250) gameSystem.unlockAchievement('score250');
+  if (score >= 500) gameSystem.unlockAchievement('score500');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
 </body>
 </html>
