@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Pip's Bakery Empire | JVDesignStudio</title>
-<meta name="description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP. An idle game by JVDesignStudio.">
+<meta name="description" content="Build a bakery idle empire. Bake dough, hire staff, buy upgrades, catch golden croissants, earn offline and franchise for permanent bonuses. A free idle game by JVDesignStudio.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/pips-bakery-empire.html">
 <meta property="og:title" content="Pip's Bakery Empire | JVDesignStudio">
-<meta property="og:description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP.">
+<meta property="og:description" content="Build a bakery idle empire. Bake, hire staff, buy upgrades, catch golden croissants and franchise for permanent bonuses.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Pip's Bakery Empire | JVDesignStudio">
-<meta name="twitter:description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP.">
+<meta name="twitter:description" content="Build a bakery idle empire. Bake, hire staff, buy upgrades and franchise for permanent bonuses.">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="manifest" href="../manifest.json">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
@@ -21,175 +21,516 @@
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fef5e7; overflow: hidden; }
-body { display: flex; flex-direction: column; }
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root { --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+  --cream:#fff9f0; --dough:#f4e4c8; --crust:#c9936b; --crust-dk:#a9743f; --brown:#5b3d24; --gold:#ffb700; }
+html, body { width:100%; height:100%; overflow:hidden;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:linear-gradient(180deg,#fff4e2,#f6e3c6); color:var(--brown);
+  user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.app { position:relative; width:100%; height:100%; display:flex; flex-direction:column;
+  padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); }
 
-.game-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.game-header { padding: 16px 20px; background: linear-gradient(135deg, #d4a574, #c9936b); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; color: white; }
-.game-title { font-size: 1.8rem; font-weight: 700; }
-.game-hud { display: flex; gap: 12px; align-items: center; }
-.hud-item { background: rgba(0,0,0,0.15); padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+/* HEADER */
+.header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px 6px; }
+.title { font-size:1.15rem; font-weight:800; color:var(--crust-dk); white-space:nowrap; }
+.home-btn { background:rgba(0,0,0,.06); border:none; color:var(--crust-dk); width:40px; height:40px; border-radius:12px; font-size:1.2rem; cursor:pointer; display:grid; place-items:center; }
+.home-btn:active { transform:scale(.92); }
 
-.game-main { flex: 1; display: grid; grid-template-columns: 1fr 280px; gap: 16px; padding: 16px; overflow: hidden; }
+/* TOP STATS */
+.dough-panel { text-align:center; padding:6px 16px 10px; }
+.dough-count { font-size:2.4rem; font-weight:900; color:var(--brown); line-height:1; }
+.dough-count .unit { font-size:1.2rem; }
+.dough-rate { font-size:.9rem; font-weight:700; color:var(--crust-dk); margin-top:2px; }
+.franchise-badge { display:inline-flex; align-items:center; gap:4px; margin-top:6px; font-size:.72rem; font-weight:700; color:#b8860b; background:rgba(255,183,0,.16); border:1px solid rgba(255,183,0,.4); border-radius:999px; padding:3px 10px; }
 
-.game-canvas { background: linear-gradient(180deg, #fff9f0, #fef5e7); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.1); overflow: hidden; }
-.bakery-emoji { font-size: 5rem; animation: bounce 2s infinite; }
-@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-.tap-text { font-size: 1.2rem; font-weight: 700; color: #8b5e3c; margin-top: 12px; }
+/* BAKE BUTTON */
+.bake-area { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 0 8px; position:relative; }
+.bake-btn { font-size:5rem; background:none; border:none; cursor:pointer; line-height:1; filter:drop-shadow(0 8px 14px rgba(169,116,63,.4)); transition:transform .08s; }
+.bake-btn:active { transform:scale(.86); }
+.bake-hint { font-size:.8rem; font-weight:700; color:var(--crust-dk); opacity:.8; }
+.click-float { position:fixed; z-index:60; pointer-events:none; font-weight:800; font-size:1.1rem; color:var(--crust-dk); animation:cfloat .8s ease-out forwards; }
+@keyframes cfloat { 0%{opacity:1; transform:translate(-50%,-50%) scale(.7);} 100%{opacity:0; transform:translate(-50%,-160%) scale(1);} }
 
-.sidebar { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-.recipe-card { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-.recipe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); border-color: #d4a574; }
-.recipe-card.purchased { background: #e8f5e9; border-color: #4caf50; }
-.recipe-icon { font-size: 2rem; text-align: center; margin-bottom: 6px; }
-.recipe-name { font-size: 0.85rem; font-weight: 700; color: #2c2c2c; }
-.recipe-cost { font-size: 0.75rem; color: #888; margin-top: 4px; }
-.recipe-per-sec { font-size: 0.7rem; color: #4caf50; font-weight: 600; margin-top: 2px; }
+/* GOLDEN CROISSANT */
+.golden { position:fixed; z-index:70; font-size:2.6rem; cursor:pointer; filter:drop-shadow(0 0 12px rgba(255,183,0,.9)); animation:goldBob 1.6s ease-in-out infinite; }
+@keyframes goldBob { 50%{transform:translateY(-10px) rotate(8deg);} }
 
-.stat-bar { margin-top: 8px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
-.stat-bar-fill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); }
+/* TABS */
+.tabs { display:flex; gap:6px; padding:0 12px 8px; }
+.tab { flex:1; background:rgba(0,0,0,.05); border:none; border-radius:12px 12px 0 0; padding:9px 4px; font-weight:800; font-size:.82rem; color:var(--crust-dk); cursor:pointer; }
+.tab.active { background:#fff; color:var(--brown); box-shadow:0 -2px 8px rgba(0,0,0,.05); }
+.tab .badge { display:inline-block; min-width:16px; background:var(--crust); color:#fff; border-radius:999px; font-size:.62rem; padding:0 4px; margin-left:3px; }
 
-button.tap-btn { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(255,152,0,0.4); transition: all 0.2s; }
-button.tap-btn:active { transform: scale(0.95); }
+/* PANEL / LISTS */
+.panel { flex:1; overflow-y:auto; background:#fff; margin:0 12px; border-radius:0 0 16px 16px; padding:10px; -webkit-overflow-scrolling:touch; }
+.card { display:flex; align-items:center; gap:10px; background:var(--cream); border:2px solid transparent; border-radius:12px; padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:transform .1s, border-color .15s, opacity .15s; }
+.card:active { transform:scale(.98); }
+.card.affordable { border-color:var(--crust); }
+.card.locked { opacity:.45; cursor:not-allowed; }
+.card-emoji { font-size:2rem; width:44px; text-align:center; flex-shrink:0; }
+.card-body { flex:1; min-width:0; }
+.card-name { font-weight:800; font-size:.92rem; }
+.card-desc { font-size:.72rem; color:var(--crust-dk); margin-top:1px; }
+.card-right { text-align:right; flex-shrink:0; }
+.card-cost { font-weight:800; font-size:.9rem; color:var(--crust-dk); }
+.card-cost.cant { color:#c0392b; }
+.card-owned { font-size:.72rem; color:var(--brown); opacity:.7; }
+.card-cps { font-size:.68rem; color:#2e7d32; font-weight:700; }
 
-.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; color: white; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
+/* STATS TAB */
+.stat-row { display:flex; justify-content:space-between; padding:9px 6px; border-bottom:1px solid rgba(0,0,0,.06); font-size:.9rem; }
+.stat-row b { color:var(--crust-dk); }
+.goal-box { background:var(--cream); border-radius:12px; padding:12px; margin-top:10px; }
+.goal-title { font-weight:800; font-size:.85rem; }
+.goal-bar { height:8px; background:rgba(0,0,0,.08); border-radius:999px; overflow:hidden; margin-top:8px; }
+.goal-fill { height:100%; background:linear-gradient(90deg,var(--crust),var(--gold)); width:0%; transition:width .3s; }
+.prestige-btn { width:100%; margin-top:12px; background:linear-gradient(135deg,#ffcf4a,#e8960f); color:#5b3d24; border:none; padding:14px; border-radius:14px; font-weight:900; font-size:1rem; cursor:pointer; box-shadow:0 8px 18px rgba(232,150,15,.4); }
+.prestige-btn:disabled { opacity:.5; box-shadow:none; cursor:not-allowed; }
+.prestige-note { font-size:.72rem; color:var(--crust-dk); text-align:center; margin-top:6px; }
 
-@media (max-width: 768px) {
-  .game-main { grid-template-columns: 1fr; }
-  .sidebar { max-height: 200px; }
-  .game-title { font-size: 1.4rem; }
-}
+/* MODAL */
+.modal { position:fixed; inset:0; background:rgba(60,40,20,.55); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:100; padding:24px; }
+.modal.show { display:flex; }
+.modal-card { background:#fff; border-radius:20px; padding:28px 24px; text-align:center; max-width:320px; width:100%; box-shadow:0 24px 60px rgba(0,0,0,.35); }
+.modal-emoji { font-size:3rem; }
+.modal-title { font-size:1.5rem; font-weight:900; margin:6px 0 4px; }
+.modal-sub { color:var(--crust-dk); font-size:.9rem; margin-bottom:18px; }
+.btn { background:linear-gradient(135deg,var(--crust),var(--crust-dk)); color:#fff; border:none; padding:13px; border-radius:14px; font-weight:800; font-size:1rem; cursor:pointer; width:100%; }
+.btn:active { transform:scale(.97); }
+.btn.ghost { background:rgba(0,0,0,.06); color:var(--brown); margin-top:10px; }
+.toast { position:fixed; left:50%; bottom:calc(16px + var(--safe-bottom)); transform:translateX(-50%); background:var(--brown); color:#fff; padding:10px 18px; border-radius:999px; font-weight:700; font-size:.85rem; z-index:90; opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(-4px); }
 </style>
 </head>
 <body>
-<a href="mobile-games.html" class="home-btn">🏠</a>
-
-<div class="game-wrapper">
-  <div class="game-header">
-    <div class="game-title">🥐 Pip's Bakery Empire</div>
-    <div class="game-hud">
-      <div class="hud-item">🍪 <span id="doughValue">0</span></div>
-      <div class="hud-item">⭐ <span id="xpValue">0</span> XP</div>
-      <div class="hud-item">📊 Lv. <span id="levelValue">1</span></div>
-    </div>
+<div class="app">
+  <div class="header">
+    <div class="title">🥐 Pip's Bakery Empire</div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
 
-  <div class="game-main">
-    <div class="game-canvas">
-      <div class="bakery-emoji">🥐</div>
-      <div class="tap-text">Tap to bake!</div>
-      <button class="tap-btn" id="tapBtn" onclick="tapBake()">BAKE (+1 🍪)</button>
-    </div>
+  <div class="dough-panel">
+    <div class="dough-count"><span id="doughVal">0</span> <span class="unit">🍪</span></div>
+    <div class="dough-rate"><span id="cpsVal">0</span>/sec · <span id="clickVal">1</span>/tap</div>
+    <div class="franchise-badge" id="franchiseBadge" style="display:none">⭐ <span id="starVal">0</span> franchise stars · +<span id="starPct">0</span>% forever</div>
+  </div>
 
-    <div class="sidebar">
-      <div id="recipesContainer"></div>
-    </div>
+  <div class="bake-area">
+    <button class="bake-btn" id="bakeBtn">🥐</button>
+    <div class="bake-hint">Tap to bake!</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="bakers" onclick="switchTab('bakers')">👩‍🍳 Bakers</button>
+    <button class="tab" data-tab="upgrades" onclick="switchTab('upgrades')">⬆️ Upgrades<span class="badge" id="upgBadge" style="display:none">0</span></button>
+    <button class="tab" data-tab="stats" onclick="switchTab('stats')">📊 Stats</button>
+  </div>
+
+  <div class="panel" id="panel"></div>
+</div>
+
+<!-- Offline earnings / prestige modal -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-emoji" id="modalEmoji">😴</div>
+    <div class="modal-title" id="modalTitle">Welcome back!</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <button class="btn" id="modalBtn" onclick="closeModal()">Collect</button>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
+/* ═══════════════ SETUP ═══════════════ */
 const gameSystem = new GameSystem('bakery-empire', "Pip's Bakery Empire", 'pip');
 const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
+if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
+const SAVE_KEY = 'bakeryEmpire:v2';
 
-let state = {
-  dough: 0,
-  perSecond: 0,
-  recipes: [
-    { id: 'oven', name: 'Oven', emoji: '🔥', baseCost: 10, basePerSec: 0.1, owned: 0 },
-    { id: 'baker', name: 'Baker', emoji: '👨‍🍳', baseCost: 100, basePerSec: 1, owned: 0 },
-    { id: 'mixer', name: 'Mixer', emoji: '⚙️', baseCost: 500, basePerSec: 5, owned: 0 },
-    { id: 'robo', name: 'Robot Chef', emoji: '🤖', baseCost: 2500, basePerSec: 25, owned: 0 },
-    { id: 'factory', name: 'Factory', emoji: '🏭', baseCost: 10000, basePerSec: 100, owned: 0 },
-  ]
-};
+/* ═══════════════ CONTENT ═══════════════ */
+const GENERATORS = [
+  { id:'oven',    name:'Oven',        emoji:'🔥', baseCost:15,      baseCps:0.2 },
+  { id:'baker',   name:'Baker',       emoji:'👩‍🍳', baseCost:120,     baseCps:1.5 },
+  { id:'mixer',   name:'Mixer',       emoji:'⚙️', baseCost:1300,    baseCps:10 },
+  { id:'robo',    name:'Robot Chef',  emoji:'🤖', baseCost:14000,   baseCps:70 },
+  { id:'truck',   name:'Food Truck',  emoji:'🚚', baseCost:200000,  baseCps:500 },
+  { id:'factory', name:'Factory',     emoji:'🏭', baseCost:3300000, baseCps:4000 },
+  { id:'hq',      name:'Franchise HQ',emoji:'🏢', baseCost:51000000,baseCps:30000 },
+];
 
+// upgrades: effect types — click_mult, click_add, gen_mult (genId), global_mult
+const UPGRADES = [
+  { id:'pin',    name:'Rolling Pin',      emoji:'🥖', cost:100,    desc:'Double tap power',        eff:{type:'click_mult',value:2} },
+  { id:'whisk',  name:'Golden Whisk',     emoji:'🥄', cost:1200,   desc:'+10 per tap',             eff:{type:'click_add',value:10} },
+  { id:'mitts',  name:'Oven Mitts',       emoji:'🧤', cost:600,    desc:'Ovens x2',    req:s=>s.gen.oven>=5,    eff:{type:'gen_mult',genId:'oven',value:2} },
+  { id:'apron',  name:'Fresh Aprons',     emoji:'🎽', cost:6000,   desc:'Bakers x2',   req:s=>s.gen.baker>=5,   eff:{type:'gen_mult',genId:'baker',value:2} },
+  { id:'gears',  name:'Titanium Gears',   emoji:'🔩', cost:65000,  desc:'Mixers x2',   req:s=>s.gen.mixer>=5,   eff:{type:'gen_mult',genId:'mixer',value:2} },
+  { id:'ai',     name:'AI Firmware',      emoji:'🧠', cost:700000, desc:'Robot Chefs x2', req:s=>s.gen.robo>=5, eff:{type:'gen_mult',genId:'robo',value:2} },
+  { id:'tap2',   name:'Power Kneading',   emoji:'💪', cost:50000,  desc:'Double tap power again',  eff:{type:'click_mult',value:2} },
+  { id:'mktg',   name:'Marketing Push',   emoji:'📣', cost:250000, desc:'ALL production x2', req:s=>s.gen.mixer>=10, eff:{type:'global_mult',value:2} },
+  { id:'social', name:'Viral Campaign',   emoji:'📱', cost:9000000,desc:'ALL production x2', req:s=>s.gen.truck>=10, eff:{type:'global_mult',value:2} },
+];
+
+const GOALS = [
+  { id:'g1', name:'Bake 500 dough',        test:s=>s.totalEarned>=500,     xp:20 },
+  { id:'g2', name:'Own 10 Ovens',          test:s=>s.gen.oven>=10,         xp:30 },
+  { id:'g3', name:'Bake 50K dough',        test:s=>s.totalEarned>=50000,   xp:60 },
+  { id:'g4', name:'Hire 10 Bakers',        test:s=>s.gen.baker>=10,        xp:80 },
+  { id:'g5', name:'Reach 100/sec',         test:s=>currentCps()>=100,      xp:120 },
+  { id:'g6', name:'Bake 5M dough',         test:s=>s.totalEarned>=5000000, xp:200 },
+  { id:'g7', name:'Open your 1st Franchise',test:s=>s.stars>=1,            xp:300 },
+];
+
+/* ═══════════════ STATE ═══════════════ */
+let state;
+function freshState() {
+  const gen = {}; GENERATORS.forEach(g => gen[g.id] = 0);
+  return { dough:0, totalEarned:0, gen, upgrades:[], stars:0, goals:[], lastSave:Date.now(), totalTaps:0, goldenCaught:0 };
+}
 function load() {
-  const saved = localStorage.getItem('bakeryState');
-  if (saved) state = JSON.parse(saved);
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { state = freshState(); return false; }
+    const s = JSON.parse(raw);
+    state = Object.assign(freshState(), s);
+    // ensure every generator key exists (in case of new content)
+    GENERATORS.forEach(g => { if (state.gen[g.id] == null) state.gen[g.id] = 0; });
+    return true;
+  } catch(e) { state = freshState(); return false; }
+}
+function save() { state.lastSave = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+
+/* ═══════════════ ECONOMY ═══════════════ */
+function prestigeMult() { return 1 + state.stars * 0.02; }
+function globalMult() {
+  let m = 1;
+  UPGRADES.forEach(u => { if (u.eff.type==='global_mult' && state.upgrades.includes(u.id)) m *= u.eff.value; });
+  return m * prestigeMult();
+}
+function genMult(genId) {
+  let m = 1;
+  UPGRADES.forEach(u => { if (u.eff.type==='gen_mult' && u.eff.genId===genId && state.upgrades.includes(u.id)) m *= u.eff.value; });
+  return m;
+}
+function currentCps() {
+  let cps = 0;
+  GENERATORS.forEach(g => { cps += state.gen[g.id] * g.baseCps * genMult(g.id); });
+  return cps * globalMult();
+}
+function clickValue() {
+  let base = 1, mult = 1;
+  UPGRADES.forEach(u => {
+    if (!state.upgrades.includes(u.id)) return;
+    if (u.eff.type==='click_add') base += u.eff.value;
+    if (u.eff.type==='click_mult') mult *= u.eff.value;
+  });
+  return base * mult * globalMult();
+}
+function genCost(g) { return Math.ceil(g.baseCost * Math.pow(1.15, state.gen[g.id])); }
+
+/* ═══════════════ FORMAT ═══════════════ */
+function fmt(n) {
+  if (n < 1000) return (Math.floor(n * 10) / 10).toString().replace(/\.0$/, '');
+  const units = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc'];
+  let u = 0; while (n >= 1000 && u < units.length - 1) { n /= 1000; u++; }
+  return n.toFixed(2).replace(/\.?0+$/, '') + units[u];
 }
 
-function save() {
-  localStorage.setItem('bakeryState', JSON.stringify(state));
-}
-
-function tapBake() {
-  state.dough += 1;
+/* ═══════════════ ACTIONS ═══════════════ */
+function bake(x, y) {
+  const v = clickValue();
+  state.dough += v; state.totalEarned += v; state.totalTaps++;
   gameSystem.addXP(1);
   gameSystem.unlockAchievement('firstBake');
-  updateDisplay();
-  save();
-  audioEffects.playSuccess(900);
-  const bakeryEl = document.querySelector('.bakery-emoji');
-  ScreenShake.pulse(bakeryEl, 1.3, 150);
-  ParticleSystem.sparkle(bakeryEl, 4);
-  soundManager.play('success');
+  audioEffects.playTap(700 + Math.random()*120);
+  if (x != null) floatText(x, y, '+' + fmt(v));
+  const btn = document.getElementById('bakeBtn');
+  ScreenShake.pulse(btn, 1.18, 130);
+  updateTopStats();
 }
 
-function buyRecipe(id) {
-  const recipe = state.recipes.find(r => r.id === id);
-  const cost = recipe.baseCost * Math.pow(1.15, recipe.owned);
-
-  if (state.dough >= cost) {
-    state.dough -= cost;
-    recipe.owned += 1;
-    state.perSecond = state.recipes.reduce((sum, r) => sum + r.basePerSec * r.owned, 0);
-    gameSystem.addXP(Math.floor(cost / 10));
-    updateDisplay();
-    save();
-    audioEffects.playLevelUp();
-    const recipeCard = event.currentTarget;
-    ScreenShake.shake(recipeCard, 3, 200);
-    ParticleSystem.burst(recipeCard.getBoundingClientRect().left + 40, recipeCard.getBoundingClientRect().top + 40, '🎉', 8);
-    soundManager.play('success');
-  } else {
-    audioEffects.playError();
-  }
+function buyGenerator(g) {
+  const cost = genCost(g);
+  if (state.dough < cost) { audioEffects.playError(); toast('Not enough dough'); return; }
+  state.dough -= cost;
+  state.gen[g.id]++;
+  gameSystem.addXP(Math.max(1, Math.floor(Math.log10(cost))));
+  audioEffects.playSuccess(500 + state.gen[g.id]*8);
+  const el = document.querySelector(`[data-gen="${g.id}"]`);
+  if (el) { ScreenShake.shake(el, 3, 160); ParticleSystem.sparkle(el, 4); }
+  renderPanel(); updateTopStats(); save();
 }
 
-function updateDisplay() {
-  document.getElementById('doughValue').textContent = Math.floor(state.dough);
-  document.getElementById('xpValue').textContent = gameSystem.state.xp;
-  document.getElementById('levelValue').textContent = gameSystem.state.level;
-  renderRecipes();
+function buyUpgrade(u) {
+  if (state.upgrades.includes(u.id)) return;
+  if (state.dough < u.cost) { audioEffects.playError(); toast('Not enough dough'); return; }
+  state.dough -= u.cost;
+  state.upgrades.push(u.id);
+  gameSystem.addXP(15);
+  audioEffects.playLevelUp();
+  const rect = document.querySelector(`[data-upg="${u.id}"]`)?.getBoundingClientRect();
+  if (rect) ParticleSystem.burst(rect.left+rect.width/2, rect.top+rect.height/2, '⭐', 8);
+  toast(u.name + ' unlocked!');
+  renderPanel(); updateTopStats(); updateUpgradeBadge(); save();
 }
 
-function renderRecipes() {
-  const container = document.getElementById('recipesContainer');
-  container.innerHTML = state.recipes.map(recipe => {
-    const cost = recipe.baseCost * Math.pow(1.15, recipe.owned);
-    const canAfford = state.dough >= cost;
-    return `
-      <div class="recipe-card ${recipe.owned > 0 ? 'purchased' : ''}"
-           onclick="buyRecipe('${recipe.id}')"
-           style="opacity: ${canAfford ? 1 : 0.6}; cursor: ${canAfford ? 'pointer' : 'not-allowed'}">
-        <div class="recipe-icon">${recipe.emoji}</div>
-        <div class="recipe-name">${recipe.name}</div>
-        <div class="recipe-cost">💰 ${Math.floor(cost)}</div>
-        ${recipe.owned > 0 ? `<div class="recipe-per-sec">+${(recipe.basePerSec * recipe.owned).toFixed(1)}/sec</div>` : ''}
-        ${recipe.owned > 0 ? `<div class="recipe-cost">Owned: ${recipe.owned}</div>` : ''}
-      </div>
-    `;
+function doPrestige() {
+  const pending = prestigeGain();
+  if (pending < 1) { toast('Not enough progress to franchise yet'); return; }
+  state.stars += pending;
+  // reset the run but keep stars, goals, totals
+  const keepStars = state.stars, keepGoals = state.goals, keepTotal = state.totalEarned, keepGolden = state.goldenCaught;
+  const gen = {}; GENERATORS.forEach(g => gen[g.id] = 0);
+  state.dough = 0; state.gen = gen; state.upgrades = [];
+  state.stars = keepStars; state.goals = keepGoals; state.totalEarned = keepTotal; state.goldenCaught = keepGolden;
+  gameSystem.addXP(100 * pending);
+  gameSystem.unlockAchievement('franchise');
+  audioEffects.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 24);
+  showModal('⭐', 'Franchised!', `+${pending} franchise stars. Your empire now earns +${(state.stars*2)}% forever.`);
+  checkGoals(); renderPanel(); updateTopStats(); save();
+}
+function prestigeGain() { return Math.floor(Math.sqrt(state.totalEarned / 1000000)); }
+
+/* ═══════════════ GOLDEN CROISSANT ═══════════════ */
+let goldenEl = null;
+function scheduleGolden() {
+  const delay = 45000 + Math.random() * 45000;
+  setTimeout(spawnGolden, delay);
+}
+function spawnGolden() {
+  if (goldenEl) { scheduleGolden(); return; }
+  goldenEl = document.createElement('div');
+  goldenEl.className = 'golden';
+  goldenEl.textContent = '🥐';
+  const x = 20 + Math.random() * (window.innerWidth - 90);
+  const y = 120 + Math.random() * (window.innerHeight - 320);
+  goldenEl.style.left = x + 'px';
+  goldenEl.style.top = y + 'px';
+  goldenEl.addEventListener('pointerdown', catchGolden);
+  document.body.appendChild(goldenEl);
+  const timeout = setTimeout(() => { if (goldenEl) { goldenEl.remove(); goldenEl = null; scheduleGolden(); } }, 8000);
+  goldenEl.dataset.timeout = timeout;
+}
+function catchGolden(e) {
+  if (!goldenEl) return;
+  clearTimeout(+goldenEl.dataset.timeout);
+  const rect = goldenEl.getBoundingClientRect();
+  // reward: bigger of 20s of production or 25 taps
+  const reward = Math.max(currentCps() * 20, clickValue() * 25, 25);
+  state.dough += reward; state.totalEarned += reward; state.goldenCaught++;
+  gameSystem.addXP(20);
+  gameSystem.unlockAchievement('goldenCatch');
+  audioEffects.playLevelUp();
+  ParticleSystem.confetti(rect.left+rect.width/2, rect.top+rect.height/2, 16);
+  floatText(rect.left+rect.width/2, rect.top, '+' + fmt(reward) + ' 🥐');
+  toast('Golden croissant! +' + fmt(reward));
+  goldenEl.remove(); goldenEl = null;
+  updateTopStats(); save();
+  scheduleGolden();
+}
+
+/* ═══════════════ RENDER ═══════════════ */
+let currentTab = 'bakers';
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderPanel();
+}
+
+function renderPanel() {
+  const panel = document.getElementById('panel');
+  if (currentTab === 'bakers') panel.innerHTML = GENERATORS.map(genCard).join('');
+  else if (currentTab === 'upgrades') panel.innerHTML = renderUpgrades();
+  else panel.innerHTML = renderStats();
+  // rebind stats-tab prestige button
+  const pb = document.getElementById('prestigeBtn');
+  if (pb) pb.onclick = doPrestige;
+}
+
+function genCard(g) {
+  const cost = genCost(g);
+  const afford = state.dough >= cost;
+  const owned = state.gen[g.id];
+  const each = g.baseCps * genMult(g.id) * globalMult();
+  const unlocked = owned > 0 || state.dough >= cost * 0.4 || anyOwnedBefore(g);
+  return `<div class="card ${afford?'affordable':''} ${unlocked?'':'locked'}" data-gen="${g.id}" onclick="${unlocked?`buyGenClick('${g.id}')`:''}">
+    <div class="card-emoji">${g.emoji}</div>
+    <div class="card-body">
+      <div class="card-name">${g.name}</div>
+      <div class="card-desc">${fmt(each)}/sec each${owned?` · making ${fmt(each*owned)}/sec`:''}</div>
+    </div>
+    <div class="card-right">
+      <div class="card-cost ${afford?'':'cant'}">${fmt(cost)} 🍪</div>
+      <div class="card-owned">owned: ${owned}</div>
+    </div>
+  </div>`;
+}
+function anyOwnedBefore(g) {
+  const idx = GENERATORS.indexOf(g);
+  if (idx <= 0) return true;
+  return state.gen[GENERATORS[idx-1].id] > 0;
+}
+
+function renderUpgrades() {
+  const available = UPGRADES.filter(u => !state.upgrades.includes(u.id) && (!u.req || u.req(state)));
+  const owned = UPGRADES.filter(u => state.upgrades.includes(u.id));
+  if (available.length === 0 && owned.length === 0) return `<div style="text-align:center;padding:30px;color:var(--crust-dk)">Buy some bakers to unlock upgrades!</div>`;
+  let html = available.map(u => {
+    const afford = state.dough >= u.cost;
+    return `<div class="card ${afford?'affordable':''}" data-upg="${u.id}" onclick="buyUpgClick('${u.id}')">
+      <div class="card-emoji">${u.emoji}</div>
+      <div class="card-body"><div class="card-name">${u.name}</div><div class="card-desc">${u.desc}</div></div>
+      <div class="card-right"><div class="card-cost ${afford?'':'cant'}">${fmt(u.cost)} 🍪</div></div>
+    </div>`;
   }).join('');
+  if (owned.length) html += `<div style="font-size:.72rem;font-weight:800;color:var(--crust-dk);margin:10px 4px 6px">OWNED (${owned.length})</div>` +
+    owned.map(u => `<div class="card" style="opacity:.7;cursor:default"><div class="card-emoji">${u.emoji}</div><div class="card-body"><div class="card-name">${u.name}</div><div class="card-desc">${u.desc}</div></div><div class="card-right">✅</div></div>`).join('');
+  return html;
 }
 
-setInterval(() => {
-  state.dough += state.perSecond / 10;
-  if (state.perSecond > 0) {
-    gameSystem.addXP(Math.floor(state.perSecond / 100) || 1);
+function renderStats() {
+  const nextGoal = GOALS.find(g => !state.goals.includes(g.id));
+  const pending = prestigeGain();
+  let html = `
+    <div class="stat-row"><span>Total baked</span><b>${fmt(state.totalEarned)} 🍪</b></div>
+    <div class="stat-row"><span>Per second</span><b>${fmt(currentCps())}/sec</b></div>
+    <div class="stat-row"><span>Per tap</span><b>${fmt(clickValue())}</b></div>
+    <div class="stat-row"><span>Total taps</span><b>${state.totalTaps}</b></div>
+    <div class="stat-row"><span>Golden croissants</span><b>${state.goldenCaught} 🥐</b></div>
+    <div class="stat-row"><span>Franchise stars</span><b>⭐ ${state.stars} (+${state.stars*2}%)</b></div>`;
+  if (nextGoal) {
+    const prog = goalProgress(nextGoal);
+    html += `<div class="goal-box">
+      <div class="goal-title">🎯 ${nextGoal.name}</div>
+      <div class="goal-bar"><div class="goal-fill" style="width:${Math.min(100,prog*100)}%"></div></div>
+      <div style="font-size:.72rem;color:var(--crust-dk);margin-top:6px">Reward: ${nextGoal.xp} XP</div>
+    </div>`;
+  } else {
+    html += `<div class="goal-box"><div class="goal-title">🏆 All goals complete!</div></div>`;
   }
-  updateDisplay();
-  save();
-}, 100);
+  html += `<button class="prestige-btn" id="prestigeBtn" ${pending<1?'disabled':''}>
+    ⭐ Franchise for +${pending} star${pending===1?'':'s'}</button>
+    <div class="prestige-note">Resets bakers & upgrades. Each star = +2% production forever.${pending<1?' Bake more to unlock (needs 1M+ total).':''}</div>`;
+  return html;
+}
+function goalProgress(g) {
+  if (g.id==='g1') return state.totalEarned/500;
+  if (g.id==='g2') return state.gen.oven/10;
+  if (g.id==='g3') return state.totalEarned/50000;
+  if (g.id==='g4') return state.gen.baker/10;
+  if (g.id==='g5') return currentCps()/100;
+  if (g.id==='g6') return state.totalEarned/5000000;
+  if (g.id==='g7') return state.stars/1;
+  return 0;
+}
+
+/* click handlers routed so we can look up objects */
+function buyGenClick(id){ buyGenerator(GENERATORS.find(g=>g.id===id)); }
+function buyUpgClick(id){ buyUpgrade(UPGRADES.find(u=>u.id===id)); }
+
+/* ═══════════════ HUD UPDATES ═══════════════ */
+function updateTopStats() {
+  document.getElementById('doughVal').textContent = fmt(state.dough);
+  document.getElementById('cpsVal').textContent = fmt(currentCps());
+  document.getElementById('clickVal').textContent = fmt(clickValue());
+  const fb = document.getElementById('franchiseBadge');
+  if (state.stars > 0) { fb.style.display='inline-flex'; document.getElementById('starVal').textContent=state.stars; document.getElementById('starPct').textContent=state.stars*2; }
+  else fb.style.display='none';
+  // live-refresh costs on the visible tab
+  if (currentTab !== 'stats') refreshAffordability();
+}
+function refreshAffordability() {
+  document.querySelectorAll('.card[data-gen]').forEach(el => {
+    const g = GENERATORS.find(x=>x.id===el.dataset.gen);
+    const afford = state.dough >= genCost(g);
+    el.classList.toggle('affordable', afford);
+    const c = el.querySelector('.card-cost'); if (c) c.classList.toggle('cant', !afford);
+  });
+  document.querySelectorAll('.card[data-upg]').forEach(el => {
+    const u = UPGRADES.find(x=>x.id===el.dataset.upg);
+    const afford = state.dough >= u.cost;
+    el.classList.toggle('affordable', afford);
+    const c = el.querySelector('.card-cost'); if (c) c.classList.toggle('cant', !afford);
+  });
+}
+function updateUpgradeBadge() {
+  const n = UPGRADES.filter(u => !state.upgrades.includes(u.id) && (!u.req || u.req(state)) && state.dough >= u.cost).length;
+  const b = document.getElementById('upgBadge');
+  if (n > 0) { b.style.display='inline-block'; b.textContent = n; } else b.style.display='none';
+}
+
+/* ═══════════════ GOALS ═══════════════ */
+function checkGoals() {
+  GOALS.forEach(g => {
+    if (!state.goals.includes(g.id) && g.test(state)) {
+      state.goals.push(g.id);
+      gameSystem.addXP(g.xp);
+      toast('🎯 Goal complete: ' + g.name + ' (+' + g.xp + ' XP)');
+      audioEffects.playSuccess(1100);
+    }
+  });
+}
+
+/* ═══════════════ FX ═══════════════ */
+function floatText(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'click-float'; el.textContent = text;
+  el.style.left = x + 'px'; el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function showModal(emoji, title, sub) {
+  document.getElementById('modalEmoji').textContent = emoji;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalSub').textContent = sub;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+/* ═══════════════ OFFLINE ═══════════════ */
+function applyOffline() {
+  const now = Date.now();
+  const dt = Math.min((now - (state.lastSave || now)) / 1000, 8 * 3600); // cap 8h
+  if (dt > 30 && currentCps() > 0) {
+    const earned = currentCps() * dt * 0.5; // 50% efficiency offline
+    state.dough += earned; state.totalEarned += earned;
+    const mins = Math.floor(dt / 60);
+    showModal('😴', 'Welcome back!', `Your bakery made ${fmt(earned)} 🍪 while you were away (${mins} min at 50%).`);
+  }
+}
+
+/* ═══════════════ LOOP ═══════════════ */
+function tick() {
+  const cps = currentCps();
+  if (cps > 0) { const gain = cps / 10; state.dough += gain; state.totalEarned += gain; }
+  checkGoals();
+  updateTopStats();
+}
+
+/* ═══════════════ BOOT ═══════════════ */
+document.getElementById('bakeBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); bake(e.clientX, e.clientY); });
 
 load();
-updateDisplay();
+applyOffline();
+renderPanel();
+updateTopStats();
+updateUpgradeBadge();
+setInterval(tick, 100);
+setInterval(() => { save(); updateUpgradeBadge(); }, 5000);
+scheduleGolden();
 
-window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
-});
+window.addEventListener('beforeunload', () => { save(); gameSystem.recordGamePlay(Date.now()); gameSystem.saveState(); });
 </script>
 </body>
 </html>
