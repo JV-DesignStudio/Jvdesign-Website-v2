@@ -202,6 +202,15 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
     .cta-buttons { flex-direction: column; align-items: center; }
     .btn-white, .btn-outline { width: 100%; max-width: 280px; justify-content: center; }
 }
+.sound-toggle {
+    background: none; border: none; color: var(--beige);
+    font-size: 1.3rem; cursor: pointer; padding: 6px;
+    margin-right: 12px; opacity: 0.7;
+    transition: opacity 0.15s, transform 0.15s;
+}
+.sound-toggle:hover { opacity: 1; }
+.sound-toggle:active { transform: scale(0.92); }
+.sound-toggle.muted { opacity: 0.4; }
 </style>
 <style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
 <script type="application/ld+json">
@@ -231,6 +240,7 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
         <a href="freebies.html" class="nav-link" data-page="freebies.html">🎁 Free Downloads</a>
         <a href="../workshops/my-progress.html" class="nav-link" data-page="my-progress.html">📊 My Progress</a>
     </nav>
+    <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" title="Toggle game sounds">🔊</button>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
 </div>
 <nav class="mobile-nav" id="mobileNav">
@@ -916,6 +926,27 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     slots.forEach((slot, i) => {
       if (level >= unlockAt[i]) { slot.classList.add('unlocked'); slot.classList.remove('locked'); slot.textContent = faces[i]; }
       else { slot.classList.add('locked'); slot.classList.remove('unlocked'); slot.textContent = '⏳'; }
+    });
+  }
+
+  // Sound toggle
+  const soundToggle = document.getElementById('soundToggle');
+  const isSoundEnabled = () => localStorage.getItem('soundEnabled') !== 'false';
+  const updateSoundUI = () => {
+    if (isSoundEnabled()) {
+      soundToggle.textContent = '🔊';
+      soundToggle.classList.remove('muted');
+    } else {
+      soundToggle.textContent = '🔇';
+      soundToggle.classList.add('muted');
+    }
+  };
+  if (soundToggle) {
+    updateSoundUI();
+    soundToggle.addEventListener('click', () => {
+      const enabled = isSoundEnabled();
+      localStorage.setItem('soundEnabled', enabled ? 'false' : 'true');
+      updateSoundUI();
     });
   }
 

@@ -186,6 +186,42 @@ class GameSystem {
         description: 'Reach level 10',
         icon: '📈',
         unlocked: false
+      },
+      // Global cross-game achievements
+      collector: {
+        id: 'collector',
+        name: '🎁 Collector',
+        description: 'Unlock 5 different characters',
+        icon: '🎁',
+        unlocked: false
+      },
+      masterGamer: {
+        id: 'masterGamer',
+        name: '🏆 Master Gamer',
+        description: 'Reach level 10 in 3 different games',
+        icon: '🏆',
+        unlocked: false
+      },
+      speedRunner: {
+        id: 'speedRunner',
+        name: '⚡ Speed Runner',
+        description: 'Complete 100 games in 7 days',
+        icon: '⚡',
+        unlocked: false
+      },
+      completionist: {
+        id: 'completionist',
+        name: '✅ Completionist',
+        description: 'Earn all single-game achievements',
+        icon: '✅',
+        unlocked: false
+      },
+      billionaire: {
+        id: 'billionaire',
+        name: '💰 Billionaire',
+        description: 'Earn 1 billion total points',
+        icon: '💰',
+        unlocked: false
       }
     };
   }
@@ -224,6 +260,15 @@ class GameSystem {
 
     if (this.state.level >= 10 && !this.state.achievements.includes('level10')) {
       toUnlock.push('level10');
+    }
+
+    // Global cross-game achievements
+    if (this.state.gamesPlayed >= 100 && !this.state.achievements.includes('speedRunner')) {
+      toUnlock.push('speedRunner');
+    }
+
+    if (this.state.score >= 1000000000 && !this.state.achievements.includes('billionaire')) {
+      toUnlock.push('billionaire');
     }
 
     toUnlock.forEach(id => this.unlockAchievement(id));
