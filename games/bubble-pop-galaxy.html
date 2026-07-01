@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Bubble Pop Galaxy | JVDesignStudio</title>
+<meta name="description" content="Tap bubbles to pop them! Match groups of same-color bubbles for combos. Earn XP and achievements.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html">
+<meta property="og:title" content="Bubble Pop Galaxy | JVDesignStudio">
+<meta property="og:description" content="Tap bubbles to pop them! Match groups of same-color bubbles for combos.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="manifest" href="../manifest.json">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(circle at 20% 50%, #1a1a2e, #0f0f1e); overflow: hidden; }
+
+.game-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+.header { padding: 16px 20px; background: rgba(26,26,46,0.95); border-bottom: 2px solid #6366f1; display: flex; justify-content: space-between; align-items: center; }
+.title { font-size: 1.8rem; font-weight: 800; color: #a78bfa; }
+.hud { display: flex; gap: 16px; font-weight: 700; color: white; }
+.hud-item { display: flex; align-items: center; gap: 6px; font-size: 1.1rem; }
+
+.game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
+
+.bubble-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; aspect-ratio: 5/6; width: 100%; max-width: 380px; }
+.bubble { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 3px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; transition: all 0.15s; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+.bubble:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.6); }
+.bubble:active { transform: scale(0.95); }
+.bubble.color-1 { background: linear-gradient(135deg, #ff6b6b, #ff5252); }
+.bubble.color-2 { background: linear-gradient(135deg, #4ecdc4, #45b7b8); }
+.bubble.color-3 { background: linear-gradient(135deg, #ffd93d, #ffb700); }
+.bubble.color-4 { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+.bubble.color-5 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+.bubble.matched { animation: popBubble 0.5s forwards; }
+@keyframes popBubble { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); } 100% { transform: scale(0); opacity: 0; } }
+
+.info { margin-top: 20px; text-align: center; }
+.score { font-size: 2rem; font-weight: 800; color: #4ecdc4; margin-bottom: 6px; }
+.combo { font-size: 1.1rem; color: #a78bfa; }
+
+.game-over { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+.game-over.show { display: flex; }
+.game-over-content { background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #a78bfa; }
+.game-over-title { font-size: 2rem; font-weight: 800; margin-bottom: 16px; color: white; }
+.game-over-stats { font-size: 1.2rem; margin-bottom: 24px; color: rgba(255,255,255,0.9); }
+.game-over-stats div { margin: 8px 0; }
+.btn { background: linear-gradient(90deg, #4ecdc4, #45b7b8); color: #0f0f1e; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 12px; font-size: 1rem; }
+.btn:hover { transform: translateY(-2px); }
+
+.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(167,139,250,0.2); border: 2px solid #a78bfa; color: #a78bfa; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
+
+.particle { position: fixed; pointer-events: none; font-size: 2rem; animation: particleFly 0.8s ease-out forwards; }
+@keyframes particleFly { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); } }
+
+@media (max-width: 600px) {
+  .title { font-size: 1.4rem; }
+  .bubble { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+<a href="mobile-games.html" class="home-btn">🏠</a>
+
+<div class="game-container">
+  <div class="header">
+    <div class="title">🫧 Bubble Pop Galaxy</div>
+    <div class="hud">
+      <div class="hud-item">📊 <span id="scoreHud">0</span></div>
+      <div class="hud-item">⭐ Lv.<span id="levelHud">1</span></div>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="bubble-grid" id="bubbleGrid"></div>
+    <div class="info">
+      <div class="score" id="scoreDisplay">0</div>
+      <div class="combo" id="comboDisplay">Tap bubbles!</div>
+    </div>
+  </div>
+</div>
+
+<div class="game-over" id="gameOverModal">
+  <div class="game-over-content">
+    <div class="game-over-title">Game Over!</div>
+    <div class="game-over-stats">
+      <div>Final Score: <span id="finalScore">0</span></div>
+      <div>Best Combo: <span id="maxCombo">0</span></div>
+      <div>XP Earned: <span id="xpEarned">0</span></div>
+    </div>
+    <button class="btn" onclick="startGame()">Play Again</button>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('bubble-pop', 'Bubble Pop Galaxy', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+const COLORS = 5;
+const GRID_SIZE = 30;
+let bubbles = [];
+let score = 0;
+let combo = 0;
+let maxCombo = 0;
+let gameActive = true;
+let moves = 0;
+const maxMoves = 30;
+
+function init() {
+  bubbles = [];
+  for (let i = 0; i < GRID_SIZE; i++) {
+    bubbles.push({
+      id: i,
+      color: Math.floor(Math.random() * COLORS) + 1,
+      matched: false
+    });
+  }
+  render();
+}
+
+function startGame() {
+  score = 0;
+  combo = 0;
+  maxCombo = 0;
+  moves = maxMoves;
+  gameActive = true;
+  document.getElementById('gameOverModal').classList.remove('show');
+  gameSystem.resetState();
+  gameSystem.unlockAchievement('firstPop');
+  init();
+}
+
+function findConnected(index, color, visited = new Set()) {
+  if (visited.has(index) || !bubbles[index] || bubbles[index].color !== color) return [];
+  visited.add(index);
+  const row = Math.floor(index / 5);
+  const col = index % 5;
+  let connected = [index];
+
+  const neighbors = [
+    index - 5, index + 5, // up/down
+    col > 0 ? index - 1 : -1, col < 4 ? index + 1 : -1 // left/right
+  ].filter(i => i >= 0 && i < GRID_SIZE);
+
+  neighbors.forEach(n => {
+    connected.push(...findConnected(n, color, visited));
+  });
+  return connected;
+}
+
+function popBubble(index) {
+  if (!gameActive || !bubbles[index] || bubbles[index].matched) return;
+
+  const color = bubbles[index].color;
+  const connected = findConnected(index, color);
+
+  if (connected.length < 2) return;
+
+  connected.forEach(i => {
+    bubbles[i].matched = true;
+    document.getElementById(`bubble-${i}`).classList.add('matched');
+  });
+
+  combo += connected.length;
+  maxCombo = Math.max(maxCombo, combo);
+  score += connected.length * (10 + combo);
+  moves--;
+
+  gameSystem.addXP(connected.length);
+  if (combo >= 10) gameSystem.unlockAchievement('combo10');
+
+  setTimeout(() => {
+    bubbles = bubbles.filter(b => !b.matched);
+    if (bubbles.length === 0) {
+      endGame();
+    } else {
+      render();
+    }
+  }, 500);
+
+  updateDisplay();
+  soundManager.play('success');
+}
+
+function render() {
+  const grid = document.getElementById('bubbleGrid');
+  grid.innerHTML = bubbles.map((b, i) => `
+    <div class="bubble color-${b.color}" id="bubble-${i}" onclick="popBubble(${i})">
+      ${['🔴', '🔵', '🟡', '🟣', '🟢'][b.color - 1]}
+    </div>
+  `).join('');
+}
+
+function updateDisplay() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('comboDisplay').textContent = combo > 0 ? `Combo: ${combo}` : 'Tap bubbles!';
+  document.getElementById('scoreHud').textContent = score;
+  document.getElementById('levelHud').textContent = gameSystem.state.level;
+}
+
+function endGame() {
+  gameActive = false;
+  const xpEarned = Math.floor(score / 10);
+  gameSystem.addXP(xpEarned);
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('maxCombo').textContent = maxCombo;
+  document.getElementById('xpEarned').textContent = xpEarned;
+  document.getElementById('gameOverModal').classList.add('show');
+}
+
+init();
+startGame();
+</script>
+</body>
+</html>
