@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Pastry Match — flip cards to find pairs. A free memory matching game by JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#c56cf0">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/pastry-match.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pastry Match | JVDesignStudio</title>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/pastry-match.html">
+<meta property="og:title" content="Pastry Match | JVDesignStudio">
+<meta property="og:description" content="Flip cards to find matching pastries. XP, achievements, and character unlocks.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #c56cf0 0%, #9b59b6 100%); display: flex; align-items: center; justify-content: center; }
+.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 500px; display: flex; flex-direction: column; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+
+.hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 8px; }
+.pills { display: flex; gap: 8px; }
+.pill { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 6px 13px; color: #fff; font-weight: 700; font-size: .78rem; display: flex; gap: 5px; align-items: center; }
+.pill b { color: #ffd24a; }
+.home-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
+.home-btn:active { transform: scale(.92); }
+
+.board { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; align-content: center; justify-items: center; }
+.card-btn { width: 100%; aspect-ratio: 1; border: none; border-radius: 12px; font-size: 2.4rem; background: linear-gradient(135deg, #e8d5f2 0%, #d4a5e0 100%); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.15); transition: transform .15s; position: relative; }
+.card-btn:active { transform: scale(.92); }
+.card-btn.flipped { background: linear-gradient(135deg, #fff 0%, #f0e6ff 100%); box-shadow: 0 6px 16px rgba(0,0,0,.2); }
+.card-btn.matched { background: linear-gradient(135deg, #ffd24a 0%, #ffb700 100%); color: #fff; cursor: default; }
+.card-btn:disabled { cursor: default; }
+
+.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(20,10,30,.65); backdrop-filter: blur(5px); }
+.modal.show { display: flex; }
+.card-modal { background: linear-gradient(165deg, #6c3483, #4a235a); border: 1px solid rgba(197, 108, 240, .35); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.card-modal h1 { font-family: 'Fredoka', cursive; font-size: 2rem; color: #fff; margin-bottom: 8px; }
+.card-modal .sub { color: #ffd24a; font-weight: 700; margin-bottom: 14px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
+.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
+.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.stat .v { font-size: 1.5rem; font-weight: 800; color: #ffd24a; margin-top: 3px; }
+.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #c56cf0, #9b59b6); color: #fff; box-shadow: 0 8px 18px rgba(197, 108, 240, .4); margin-top: 10px; }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
+.how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffd24a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrapper" id="wrapper">
+  <div class="hud">
+    <div class="pills">
+      <div class="pill">SCORE <b id="scoreHud">0</b></div>
+      <div class="pill">MOVES <b id="movesHud">0</b></div>
+    </div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="modal show" id="startModal">
+    <div class="card-modal">
+      <h1>🧩 Pastry Match</h1>
+      <div class="sub">Flip cards to find pairs</div>
+      <div class="how">
+        <div>Tap cards to flip them over and reveal the pastries inside.</div>
+        <div style="margin-top:8px;">Match pairs quickly to earn points. Fewer moves = higher score!</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="l">Best Score</div><div class="v" id="bestStart">0</div></div>
+        <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+
+  <div class="modal" id="winModal">
+    <div class="card-modal">
+      <h1>🎉 You Won!</h1>
+      <div class="sub" id="winSub">Perfect match!</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
+        <div class="stat"><div class="l">Moves</div><div class="v" id="finalMoves">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play Again</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
+const audioEffects = new AudioEffects(0.6);
+
+const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥖', '🍩', '🧆', '🥯'];
+let cards = [];
+let state = 'menu';
+let score = 0, moves = 0, best = 0;
+let flipped = [];
+let matched = 0;
+let startTime = 0;
+
+function initCards() {
+  const deck = [...PASTRIES, ...PASTRIES];
+  cards = deck.sort(() => Math.random() - 0.5).map((emoji, i) => ({ id: i, emoji, state: 'hidden' }));
+  matched = 0;
+  flipped = [];
+  score = 0;
+  moves = 0;
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = cards.map((c, i) => `
+    <button class="card-btn ${c.state === 'flipped' || c.state === 'matched' ? 'flipped' : ''} ${c.state === 'matched' ? 'matched' : ''}"
+            ${c.state === 'matched' ? 'disabled' : ''}
+            onclick="flipCard(${i})">${c.state !== 'hidden' ? c.emoji : '?'}</button>
+  `).join('');
+  document.getElementById('scoreHud').textContent = score;
+  document.getElementById('movesHud').textContent = moves;
+}
+
+function flipCard(i) {
+  if (state !== 'playing' || cards[i].state !== 'hidden' || flipped.length >= 2) return;
+  audioEffects.playTap(600);
+  cards[i].state = 'flipped';
+  flipped.push(i);
+  renderBoard();
+
+  if (flipped.length === 2) {
+    moves++;
+    setTimeout(checkMatch, 600);
+  }
+}
+
+function checkMatch() {
+  const [a, b] = flipped;
+  if (cards[a].emoji === cards[b].emoji) {
+    cards[a].state = 'matched';
+    cards[b].state = 'matched';
+    matched++;
+    score += Math.max(100 - moves * 2, 10);
+    audioEffects.playSuccess(750);
+    if (matched === PASTRIES.length) endGame();
+  } else {
+    cards[a].state = 'hidden';
+    cards[b].state = 'hidden';
+    audioEffects.playError();
+  }
+  flipped = [];
+  renderBoard();
+}
+
+function startGame() {
+  document.getElementById('startModal').classList.remove('show');
+  document.getElementById('winModal').classList.remove('show');
+  state = 'playing';
+  initCards();
+  renderBoard();
+  startTime = performance.now();
+}
+
+function endGame() {
+  state = 'won';
+  const time = Math.round((performance.now() - startTime) / 1000);
+  gameSystem.addScore(score);
+  gameSystem.addXP(Math.max(5, Math.floor(score / 20)));
+  gameSystem.unlockAchievement('firstPlay');
+  if (moves <= 16) gameSystem.unlockAchievement('perfectMemory');
+  gameSystem.recordGamePlay(time);
+  gameSystem.saveState();
+
+  best = Math.max(best, score);
+  document.getElementById('winSub').textContent = moves <= 16 ? 'Perfect memory! 🧠' : 'Great match!';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalMoves').textContent = moves;
+  document.getElementById('winModal').classList.add('show');
+}
+
+best = gameSystem.state.highScore || 0;
+document.getElementById('bestStart').textContent = best;
+document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+</script>
+</body>
+</html>

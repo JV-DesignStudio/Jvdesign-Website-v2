@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Dough Dash — match 3+ dough tiles to clear the board. A free puzzle game by JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#ff6b9d">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/dough-dash.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Dough Dash | JVDesignStudio</title>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/dough-dash.html">
+<meta property="og:title" content="Dough Dash | JVDesignStudio">
+<meta property="og:description" content="Match 3+ tiles to clear the board. XP, achievements, and character unlocks.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #ff6b9d 0%, #ff8fab 100%); display: flex; align-items: center; justify-content: center; }
+.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 500px; display: flex; flex-direction: column; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+
+.hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 8px; }
+.pills { display: flex; gap: 8px; }
+.pill { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 6px 13px; color: #fff; font-weight: 700; font-size: .78rem; display: flex; gap: 5px; align-items: center; }
+.pill b { color: #fff; }
+.home-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
+.home-btn:active { transform: scale(.92); }
+
+.board { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 16px; align-content: start; justify-items: center; }
+.tile { width: 100%; aspect-ratio: 1; border: none; border-radius: 10px; font-size: 2rem; background: linear-gradient(135deg, #ffe8ee 0%, #ffd1e0 100%); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.1); transition: transform .1s; }
+.tile:active { transform: scale(.92); }
+.tile.matched { animation: pop .4s ease-out forwards; }
+@keyframes pop { 0%{transform:scale(1);opacity:1;} 100%{transform:scale(0);opacity:0;} }
+
+.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(40,10,30,.65); backdrop-filter: blur(5px); }
+.modal.show { display: flex; }
+.card-modal { background: linear-gradient(165deg, #c2185b, #880e4f); border: 1px solid rgba(255,107,157,.35); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.card-modal h1 { font-family: 'Fredoka', cursive; font-size: 2rem; color: #fff; margin-bottom: 8px; }
+.card-modal .sub { color: #ffb3d9; font-weight: 700; margin-bottom: 14px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
+.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
+.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.stat .v { font-size: 1.5rem; font-weight: 800; color: #ffb3d9; margin-top: 3px; }
+.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #ff6b9d, #ff8fab); color: #fff; box-shadow: 0 8px 18px rgba(255, 107, 157, .4); margin-top: 10px; }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
+.how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffb3d9; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrapper" id="wrapper">
+  <div class="hud">
+    <div class="pills">
+      <div class="pill">SCORE <b id="scoreHud">0</b></div>
+      <div class="pill">MOVES <b id="movesHud">0</b></div>
+    </div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="modal show" id="startModal">
+    <div class="card-modal">
+      <h1>🧁 Dough Dash</h1>
+      <div class="sub">Match 3+ tiles to clear</div>
+      <div class="how">
+        <div>Tap tiles to select them. Match 3 or more in a row or column.</div>
+        <div style="margin-top:8px;">Clear the board before you run out of moves. Combos earn bonus points!</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="l">Best Score</div><div class="v" id="bestStart">0</div></div>
+        <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+
+  <div class="modal" id="endModal">
+    <div class="card-modal">
+      <h1 id="endTitle">Game Over</h1>
+      <div class="sub" id="endSub">Nice try!</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
+        <div class="stat"><div class="l">Best</div><div class="v" id="finalBest">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play Again</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('dough-dash', 'Dough Dash', 'squirt');
+const audioEffects = new AudioEffects(0.6);
+
+const TILES = ['🍪', '🧁', '🥐', '🍰', '🍩'];
+const COLS = 5, ROWS = 8;
+const MOVES_LIMIT = 30;
+
+let grid = [];
+let state = 'menu';
+let score = 0, moves = 0, best = 0;
+let selected = null;
+let startTime = 0;
+
+function initGrid() {
+  grid = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      grid[r][c] = TILES[Math.floor(Math.random() * TILES.length)];
+    }
+  }
+  score = 0;
+  moves = 0;
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const btn = document.createElement('button');
+      btn.className = 'tile';
+      btn.textContent = grid[r][c];
+      btn.onclick = () => selectTile(r, c);
+      board.appendChild(btn);
+    }
+  }
+  document.getElementById('scoreHud').textContent = score;
+  document.getElementById('movesHud').textContent = moves;
+}
+
+function selectTile(r, c) {
+  if (state !== 'playing' || !grid[r][c]) return;
+  if (!selected) {
+    selected = { r, c };
+    return;
+  }
+  const s = selected;
+  selected = null;
+
+  if ((Math.abs(s.r - r) === 1 && s.c === c) || (Math.abs(s.c - c) === 1 && s.r === r)) {
+    [grid[s.r][s.c], grid[r][c]] = [grid[r][c], grid[s.r][s.c]];
+    moves++;
+    setTimeout(() => checkMatches(), 200);
+  }
+  renderBoard();
+}
+
+function checkMatches() {
+  let matched = false;
+  const toRemove = new Set();
+
+  // check rows
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS - 2; c++) {
+      if (grid[r][c] && grid[r][c] === grid[r][c+1] && grid[r][c] === grid[r][c+2]) {
+        for (let i = c; i <= c + 2; i++) toRemove.add(`${r},${i}`);
+        matched = true;
+      }
+    }
+  }
+
+  // check cols
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS - 2; r++) {
+      if (grid[r][c] && grid[r][c] === grid[r+1][c] && grid[r][c] === grid[r+2][c]) {
+        for (let i = r; i <= r + 2; i++) toRemove.add(`${i},${c}`);
+        matched = true;
+      }
+    }
+  }
+
+  if (matched) {
+    toRemove.forEach(k => {
+      const [r, c] = k.split(',').map(Number);
+      grid[r][c] = null;
+      score += 10;
+    });
+    audioEffects.playSuccess(600);
+    setTimeout(() => { cascade(); checkMatches(); }, 300);
+  } else if (moves >= MOVES_LIMIT) {
+    endGame();
+  } else {
+    renderBoard();
+  }
+}
+
+function cascade() {
+  for (let c = 0; c < COLS; c++) {
+    let write = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][c]) {
+        if (r !== write) grid[write][c] = grid[r][c];
+        write--;
+      }
+    }
+    for (let r = 0; r <= write; r++) grid[r][c] = TILES[Math.floor(Math.random() * TILES.length)];
+  }
+}
+
+function startGame() {
+  document.getElementById('startModal').classList.remove('show');
+  document.getElementById('endModal').classList.remove('show');
+  state = 'playing';
+  initGrid();
+  renderBoard();
+  startTime = performance.now();
+}
+
+function endGame() {
+  state = 'over';
+  gameSystem.addScore(score);
+  gameSystem.addXP(Math.max(3, Math.floor(score / 30)));
+  gameSystem.unlockAchievement('firstPlay');
+  if (score >= 200) gameSystem.unlockAchievement('matchMaster');
+  gameSystem.recordGamePlay(Math.round((performance.now() - startTime) / 1000));
+  gameSystem.saveState();
+
+  best = Math.max(best, score);
+  document.getElementById('endTitle').textContent = score >= 200 ? '🎉 Excellent!' : 'Game Over';
+  document.getElementById('endSub').textContent = score >= 200 ? 'Master matcher!' : moves >= MOVES_LIMIT ? 'Out of moves!' : 'Nice score!';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalBest').textContent = best;
+  document.getElementById('endModal').classList.add('show');
+}
+
+best = gameSystem.state.highScore || 0;
+document.getElementById('bestStart').textContent = best;
+document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+</script>
+</body>
+</html>

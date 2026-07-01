@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Bread Blocks — place falling blocks to clear rows. A free Tetris-like puzzle game by JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#7cb342">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/bread-blocks.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Bread Blocks | JVDesignStudio</title>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/bread-blocks.html">
+<meta property="og:title" content="Bread Blocks | JVDesignStudio">
+<meta property="og:description" content="Place blocks to clear rows. XP, achievements, and character unlocks.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #7cb342 0%, #9ccc65 100%); display: flex; align-items: center; justify-content: center; }
+.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 500px; display: flex; flex-direction: column; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
+
+.hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 8px; }
+.pills { display: flex; gap: 8px; }
+.pill { background: rgba(255,255,255,.15); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 6px 13px; color: #fff; font-weight: 700; font-size: .78rem; display: flex; gap: 5px; align-items: center; }
+.pill b { color: #fff; }
+.home-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
+.home-btn:active { transform: scale(.92); }
+
+.canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+
+.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(40,60,20,.65); backdrop-filter: blur(5px); }
+.modal.show { display: flex; }
+.card-modal { background: linear-gradient(165deg, #558b2f, #2e5c1f); border: 1px solid rgba(124, 179, 66, .35); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.card-modal h1 { font-family: 'Fredoka', cursive; font-size: 2rem; color: #fff; margin-bottom: 8px; }
+.card-modal .sub { color: #c5e1a5; font-weight: 700; margin-bottom: 14px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
+.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
+.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.stat .v { font-size: 1.5rem; font-weight: 800; color: #c5e1a5; margin-top: 3px; }
+.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #7cb342, #9ccc65); color: #fff; box-shadow: 0 8px 18px rgba(124, 179, 66, .4); margin-top: 10px; }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
+.how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #c5e1a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrapper" id="wrapper">
+  <div class="hud">
+    <div class="pills">
+      <div class="pill">SCORE <b id="scoreHud">0</b></div>
+      <div class="pill">LEVEL <b id="levelHud">1</b></div>
+    </div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
+  </div>
+
+  <div class="canvas-container" id="container">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="modal show" id="startModal">
+    <div class="card-modal">
+      <h1>🍞 Bread Blocks</h1>
+      <div class="sub">Stack blocks to clear rows</div>
+      <div class="how">
+        <div>Tap left/right to move blocks. Complete rows to clear them.</div>
+        <div style="margin-top:8px;">Don't let blocks reach the top!</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="l">Best Score</div><div class="v" id="bestStart">0</div></div>
+        <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+
+  <div class="modal" id="overModal">
+    <div class="card-modal">
+      <h1>Game Over</h1>
+      <div class="sub" id="overSub">Nice try!</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
+        <div class="stat"><div class="l">Level</div><div class="v" id="finalLevel">1</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play Again</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('bread-blocks', 'Bread Blocks', 'squirt');
+const audioEffects = new AudioEffects(0.6);
+
+const W = 10, H = 20, CELL = 24;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('container');
+
+canvas.width = W * CELL;
+canvas.height = H * CELL;
+
+const COLORS = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7'];
+const SHAPES = [
+  [[1, 1, 1, 1]],  // I
+  [[1, 1], [1, 1]],  // O
+  [[0, 1, 1], [1, 1, 0]],  // Z
+  [[1, 1, 0], [0, 1, 1]],  // S
+  [[1, 0, 0], [1, 1, 1]],  // L
+  [[0, 0, 1], [1, 1, 1]],  // J
+  [[0, 1, 0], [1, 1, 1]],  // T
+];
+
+let grid = [];
+let state = 'menu';
+let score = 0, lines = 0, level = 1, best = 0;
+let piece = null, nextX = 0, nextY = 0;
+let dropTime = 0, dropInterval = 800;
+let startTime = 0;
+
+function initGrid() {
+  grid = [];
+  for (let r = 0; r < H; r++) grid[r] = new Array(W).fill(0);
+}
+
+function newPiece() {
+  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  piece = { shape, color, x: Math.floor(W / 2) - 1, y: 0 };
+  nextX = piece.x;
+  nextY = piece.y;
+  if (collision(piece.x, piece.y)) endGame();
+}
+
+function collision(x, y, shape = piece.shape) {
+  for (let r = 0; r < shape.length; r++) {
+    for (let c = 0; c < shape[r].length; c++) {
+      if (!shape[r][c]) continue;
+      const nx = x + c, ny = y + r;
+      if (nx < 0 || nx >= W || ny >= H || (ny >= 0 && grid[ny][nx])) return true;
+    }
+  }
+  return false;
+}
+
+function placePiece() {
+  for (let r = 0; r < piece.shape.length; r++) {
+    for (let c = 0; c < piece.shape[r].length; c++) {
+      if (piece.shape[r][c]) {
+        const ny = piece.y + r, nx = piece.x + c;
+        if (ny >= 0) grid[ny][nx] = piece.color;
+      }
+    }
+  }
+  checkLines();
+  newPiece();
+}
+
+function checkLines() {
+  const full = [];
+  for (let r = 0; r < H; r++) {
+    if (grid[r].every(c => c)) full.push(r);
+  }
+  if (full.length) {
+    score += full.length * 100 * level;
+    lines += full.length;
+    level = Math.floor(lines / 3) + 1;
+    dropInterval = Math.max(200, 800 - level * 50);
+    audioEffects.playSuccess(800);
+    full.forEach(r => grid.splice(r, 1));
+    grid.unshift(...new Array(full.length).fill(null).map(() => new Array(W).fill(0)));
+  }
+}
+
+function update(now) {
+  if (state !== 'playing') return;
+  dropTime += now;
+  if (dropTime >= dropInterval) {
+    dropTime = 0;
+    if (!collision(piece.x, piece.y + 1)) piece.y++;
+    else placePiece();
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // grid
+  for (let r = 0; r < H; r++) {
+    for (let c = 0; c < W; c++) {
+      if (grid[r][c]) {
+        ctx.fillStyle = grid[r][c];
+        ctx.fillRect(c * CELL, r * CELL, CELL - 2, CELL - 2);
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,.1)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+    }
+  }
+
+  // piece
+  if (piece) {
+    ctx.fillStyle = piece.color;
+    for (let r = 0; r < piece.shape.length; r++) {
+      for (let c = 0; c < piece.shape[r].length; c++) {
+        if (piece.shape[r][c]) {
+          ctx.fillRect((piece.x + c) * CELL, (piece.y + r) * CELL, CELL - 2, CELL - 2);
+        }
+      }
+    }
+  }
+}
+
+function startGame() {
+  document.getElementById('startModal').classList.remove('show');
+  document.getElementById('overModal').classList.remove('show');
+  state = 'playing';
+  initGrid();
+  score = 0;
+  lines = 0;
+  level = 1;
+  dropInterval = 800;
+  newPiece();
+  startTime = performance.now();
+  dropTime = 0;
+  loop();
+}
+
+function endGame() {
+  state = 'over';
+  gameSystem.addScore(score);
+  gameSystem.addXP(Math.max(5, Math.floor(score / 50)));
+  gameSystem.unlockAchievement('firstPlay');
+  if (score >= 500) gameSystem.unlockAchievement('builder');
+  gameSystem.recordGamePlay(Math.round((performance.now() - startTime) / 1000));
+  gameSystem.saveState();
+
+  best = Math.max(best, score);
+  document.getElementById('overSub').textContent = score >= 500 ? 'Master builder!' : 'Nice score!';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalLevel').textContent = level;
+  document.getElementById('overModal').classList.add('show');
+}
+
+canvas.addEventListener('click', (e) => {
+  if (state !== 'playing') return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const dir = x < rect.width / 2 ? -1 : 1;
+  if (!collision(piece.x + dir, piece.y)) {
+    piece.x += dir;
+    audioEffects.playTap(400);
+  }
+});
+
+let lastTime = performance.now();
+function loop() {
+  const now = performance.now();
+  update(now - lastTime);
+  lastTime = now;
+  draw();
+  if (state === 'playing') requestAnimationFrame(loop);
+}
+
+best = gameSystem.state.highScore || 0;
+document.getElementById('bestStart').textContent = best;
+document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+</script>
+</body>
+</html>
