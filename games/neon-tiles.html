@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Neon Tiles | JVDesignStudio</title>
-<meta name="description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards. Free to play by JVDesignStudio.">
+<meta name="description" content="A neon rhythm runner. Tap the falling tiles in four lanes, keep your combo alive, dodge the traps and climb the levels. Free to play by JVDesignStudio.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/neon-tiles.html">
 <meta property="og:title" content="Neon Tiles | JVDesignStudio">
-<meta property="og:description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards.">
+<meta property="og:description" content="A neon rhythm runner. Tap the falling tiles, keep your combo alive, climb the levels.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Neon Tiles | JVDesignStudio">
-<meta name="twitter:description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards.">
+<meta name="twitter:description" content="A neon rhythm runner. Tap the falling tiles, keep your combo alive, climb the levels.">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="manifest" href="../manifest.json">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
@@ -21,201 +21,443 @@
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, sans-serif; background: #0a0e27; overflow: hidden; color: white; }
-
-.game-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; }
-.header { padding: 16px 20px; background: rgba(30,70,255,0.2); border-bottom: 2px solid #1e46ff; display: flex; justify-content: space-between; align-items: center; }
-.title { font-size: 1.6rem; font-weight: 800; background: linear-gradient(90deg, #00d4ff, #0099ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hud { display: flex; gap: 16px; font-weight: 700; }
-.hud-item { display: flex; align-items: center; gap: 6px; font-size: 1.1rem; }
-
-.game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; aspect-ratio: 1; max-width: 500px; width: 100%; }
-.tile { background: linear-gradient(135deg, #1e46ff, #0066ff); border: 2px solid #0099ff; border-radius: 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 0 20px rgba(0,100,255,0.3); }
-.tile:hover { transform: scale(1.05); }
-.tile.active { background: linear-gradient(135deg, #00d4ff, #00ff88); border-color: #00ff88; box-shadow: 0 0 40px rgba(0,255,136,0.8); animation: pulse 0.4s; }
-.tile.hit { animation: hitPulse 0.3s; }
-.tile.miss { background: #ff3333; border-color: #ff3333; box-shadow: 0 0 30px rgba(255,51,51,0.6); animation: shake 0.3s; }
-
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-@keyframes hitPulse { 0% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 0.5; } }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-
-.info { margin-top: 24px; text-align: center; }
-.score-display { font-size: 2.4rem; font-weight: 800; color: #00ff88; margin-bottom: 8px; }
-.streak-display { font-size: 1.2rem; color: #00d4ff; }
-
-.game-over { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-.game-over.show { display: flex; }
-.game-over-content { background: linear-gradient(135deg, #1e46ff, #0066ff); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #00ff88; }
-.game-over-title { font-size: 2.4rem; font-weight: 800; margin-bottom: 16px; }
-.game-over-stats { font-size: 1.2rem; margin-bottom: 24px; }
-.game-over-stats div { margin: 8px 0; }
-.btn { background: linear-gradient(90deg, #00ff88, #00d4ff); color: #0a0e27; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 12px; }
-.btn:hover { transform: translateY(-2px); }
-
-.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(0,255,136,0.2); border: 2px solid #00ff88; color: #00ff88; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
-
-@media (max-width: 600px) {
-  .grid { max-width: 100%; }
-  .title { font-size: 1.3rem; }
-  .tile { font-size: 1.5rem; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --lane0:#00e5ff; --lane1:#7c5cff; --lane2:#ff3cac; --lane3:#3cff8f;
 }
+html, body {
+  width:100%; height:100%; overflow:hidden; color:#fff;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#05060f; user-select:none; -webkit-user-select:none; touch-action:manipulation;
+}
+.wrap { position:relative; width:100%; height:100%; display:flex; flex-direction:column;
+  padding-top:var(--safe-top); padding-bottom:var(--safe-bottom); }
+
+/* HEADER */
+.header { display:flex; justify-content:space-between; align-items:center; padding:10px 16px 6px; z-index:20; }
+.title { font-size:1.15rem; font-weight:800; background:linear-gradient(90deg,#00e5ff,#7c5cff,#ff3cac); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.home-btn { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#9fe8ff; width:40px; height:40px; border-radius:12px; font-size:1.2rem; cursor:pointer; display:grid; place-items:center; }
+.home-btn:active { transform:scale(.92); }
+
+/* STATS */
+.stats { display:flex; gap:8px; padding:0 16px 6px; z-index:20; }
+.stat { flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:12px; padding:6px 4px; text-align:center; }
+.stat-label { font-size:.55rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.5); }
+.stat-value { font-size:1.05rem; font-weight:800; }
+.combo-stat .stat-value { color:#3cff8f; }
+
+/* LIVES */
+.lives { display:flex; gap:4px; justify-content:center; padding:2px 0 6px; z-index:20; }
+.life { font-size:1rem; filter:drop-shadow(0 0 4px rgba(255,60,172,.6)); transition:opacity .3s, transform .3s; }
+.life.lost { opacity:.18; transform:scale(.7); filter:none; }
+
+/* LEVEL PROGRESS */
+.lvl-wrap { padding:0 16px 6px; z-index:20; }
+.lvl-bar { height:6px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; }
+.lvl-fill { height:100%; width:0%; background:linear-gradient(90deg,#00e5ff,#7c5cff,#ff3cac); transition:width .2s; }
+
+/* PLAYFIELD */
+.field { position:relative; flex:1; margin:0 12px 8px; border-radius:16px; overflow:hidden;
+  background:linear-gradient(180deg,#0a0c1e,#05060f);
+  border:1px solid rgba(255,255,255,.07); min-height:0; }
+.lane-lines { position:absolute; inset:0; display:flex; pointer-events:none; }
+.lane-lines div { flex:1; border-right:1px solid rgba(255,255,255,.05); }
+.lane-lines div:last-child { border-right:none; }
+
+/* HIT LINE */
+.hitline { position:absolute; left:0; right:0; bottom:14%; height:3px; background:rgba(255,255,255,.25); box-shadow:0 0 12px rgba(255,255,255,.4); z-index:3; }
+.hit-zone { position:absolute; left:0; right:0; bottom:14%; height:0; z-index:4; }
+
+/* TILES */
+.tile { position:absolute; border-radius:12px; z-index:2; will-change:transform;
+  display:grid; place-items:center; font-size:1.4rem; color:#fff;
+  box-shadow:0 0 18px rgba(0,0,0,.4), inset 0 0 12px rgba(255,255,255,.15); }
+.tile.l0 { background:linear-gradient(160deg,#00e5ff,#0090c0); box-shadow:0 0 20px rgba(0,229,255,.5); }
+.tile.l1 { background:linear-gradient(160deg,#7c5cff,#4b2fd0); box-shadow:0 0 20px rgba(124,92,255,.5); }
+.tile.l2 { background:linear-gradient(160deg,#ff3cac,#c01e78); box-shadow:0 0 20px rgba(255,60,172,.5); }
+.tile.l3 { background:linear-gradient(160deg,#3cff8f,#12b060); box-shadow:0 0 20px rgba(60,255,143,.5); }
+.tile.trap { background:linear-gradient(160deg,#3a3a48,#14141c); border:2px dashed #ff5b6b; box-shadow:0 0 16px rgba(255,91,107,.4); }
+.tile.gold { background:linear-gradient(160deg,#ffe17a,#e8960f); box-shadow:0 0 24px rgba(255,210,74,.7); }
+.tile.hit { animation:tileHit .25s forwards; }
+@keyframes tileHit { 0%{transform:scale(1);} 40%{transform:scale(1.25); opacity:1;} 100%{transform:scale(.4); opacity:0;} }
+.tile.miss { animation:tileMiss .3s forwards; }
+@keyframes tileMiss { 0%{opacity:1;} 100%{opacity:0; transform:translateY(20px);} }
+
+/* JUDGEMENT TEXT */
+.judge { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); z-index:6; font-weight:900; font-size:1.6rem; pointer-events:none; opacity:0; }
+.judge.show { animation:judgePop .5s ease-out; }
+@keyframes judgePop { 0%{opacity:0; transform:translate(-50%,-50%) scale(.5);} 30%{opacity:1; transform:translate(-50%,-60%) scale(1.1);} 100%{opacity:0; transform:translate(-50%,-80%) scale(1);} }
+
+/* COUNTDOWN */
+.countdown { position:absolute; inset:0; display:grid; place-items:center; z-index:30; background:rgba(5,6,15,.6); }
+.countdown-num { font-size:5rem; font-weight:900; background:linear-gradient(90deg,#00e5ff,#ff3cac); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:cd 1s ease-out; }
+@keyframes cd { 0%{transform:scale(.4); opacity:0;} 40%{transform:scale(1.1); opacity:1;} 100%{transform:scale(.8); opacity:0;} }
+
+/* MODALS */
+.modal { position:absolute; inset:0; background:rgba(5,6,15,.88); backdrop-filter:blur(6px); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:40; padding:24px; }
+.modal.show { display:flex; }
+.modal-card { background:linear-gradient(160deg,#14162e,#0a0b18); border:1px solid rgba(124,92,255,.35); border-radius:22px; padding:30px 26px; text-align:center; max-width:340px; width:100%; box-shadow:0 24px 70px rgba(0,0,0,.6); }
+.modal-emoji { font-size:3rem; }
+.modal-title { font-size:1.7rem; font-weight:800; margin:6px 0 4px; }
+.modal-sub { color:rgba(255,255,255,.65); font-size:.9rem; margin-bottom:18px; }
+.modal-stats { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+.modal-stat { display:flex; justify-content:space-between; background:rgba(255,255,255,.05); border-radius:10px; padding:10px 14px; font-size:.9rem; }
+.modal-stat b { color:#3cff8f; }
+.btn { background:linear-gradient(90deg,#00e5ff,#7c5cff); color:#fff; border:none; padding:14px; border-radius:14px; font-weight:800; font-size:1rem; cursor:pointer; width:100%; box-shadow:0 8px 20px rgba(124,92,255,.4); }
+.btn:active { transform:scale(.97); }
+.btn.ghost { background:rgba(255,255,255,.08); box-shadow:none; margin-top:10px; }
+.how { font-size:.82rem; color:rgba(255,255,255,.6); line-height:1.6; margin-bottom:18px; text-align:left; }
+.how b { color:#fff; }
 </style>
 </head>
 <body>
-<a href="mobile-games.html" class="home-btn">🏠</a>
-
-<div class="game-wrapper">
+<div class="wrap">
   <div class="header">
     <div class="title">⚡ Neon Tiles</div>
-    <div class="hud">
-      <div class="hud-item">📊 <span id="scoreHud">0</span></div>
-      <div class="hud-item">⭐ Lv.<span id="levelHud">1</span></div>
-    </div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
 
-  <div class="game-area">
-    <div class="grid" id="grid"></div>
-    <div class="info">
-      <div class="score-display" id="scoreDisplay">0</div>
-      <div class="streak-display" id="streakDisplay">Streak: 0</div>
-    </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Level</div><div class="stat-value" id="levelVal">1</div></div>
+    <div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="scoreVal">0</div></div>
+    <div class="stat combo-stat"><div class="stat-label">Combo</div><div class="stat-value" id="comboVal">0</div></div>
+  </div>
+
+  <div class="lives" id="lives"></div>
+
+  <div class="lvl-wrap">
+    <div class="lvl-bar"><div class="lvl-fill" id="lvlFill"></div></div>
+  </div>
+
+  <div class="field" id="field">
+    <div class="lane-lines"><div></div><div></div><div></div><div></div></div>
+    <div class="hitline"></div>
+    <div class="hit-zone" id="hitZone"></div>
+    <div class="judge" id="judge"></div>
+    <div class="countdown" id="countdown" style="display:none"><div class="countdown-num" id="cdNum">3</div></div>
   </div>
 </div>
 
-<div class="game-over" id="gameOverModal">
-  <div class="game-over-content">
-    <div class="game-over-title">Game Over!</div>
-    <div class="game-over-stats">
-      <div>Final Score: <span id="finalScore">0</span></div>
-      <div>Max Streak: <span id="maxStreak">0</span></div>
-      <div>XP Earned: <span id="xpEarned">0</span></div>
+<!-- Start / Game over -->
+<div class="modal show" id="modal">
+  <div class="modal-card">
+    <div class="modal-emoji" id="modalEmoji">⚡</div>
+    <div class="modal-title" id="modalTitle">Neon Tiles</div>
+    <div class="modal-sub" id="modalSub">Tap tiles as they cross the line</div>
+    <div class="how" id="howBox">
+      <div>🎯 <b>Tap</b> each glowing tile as it reaches the white line.</div>
+      <div>🔥 Chain hits to build your <b>combo</b> multiplier.</div>
+      <div>💛 <b>Gold</b> tiles are worth double. ⚠️ <b>Dashed traps</b> — don't tap them!</div>
+      <div>❤️ Miss a tile or hit a trap and you lose a life.</div>
     </div>
-    <button class="btn" onclick="startGame()">Play Again</button>
+    <div class="modal-stats" id="modalStats" style="display:none">
+      <div class="modal-stat"><span>Score</span><b id="mScore">0</b></div>
+      <div class="modal-stat"><span>Best combo</span><b id="mCombo">0</b></div>
+      <div class="modal-stat"><span>Level reached</span><b id="mLevel">1</b></div>
+      <div class="modal-stat"><span>XP earned</span><b id="mXp">0</b></div>
+    </div>
+    <button class="btn" id="modalBtn" onclick="startGame()">Start</button>
+    <button class="btn ghost" onclick="location.href='mobile-games.html'">Back to Games</button>
   </div>
 </div>
 
 <script>
+/* ═══════════════ SETUP ═══════════════ */
 const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles', 'echo');
 const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
+if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
-let state = {
-  score: 0,
-  streak: 0,
-  maxStreak: 0,
-  lives: 3,
-  gameActive: false,
-  speed: 1000,
-  level: 1,
+const LANES = 4;
+const LANE_COLORS = ['l0','l1','l2','l3'];
+const HIT_LINE_FRAC = 0.86;   // fraction of field height where the hit line sits
+const HIT_WINDOW = 0.10;      // +/- fraction around the line that counts as a hit
+
+const field = document.getElementById('field');
+const hitZone = document.getElementById('hitZone');
+
+let tiles = [];       // {el, lane, y(px), speed, type, judged}
+let rafId = null;
+let lastT = 0;
+let spawnTimer = 0;
+
+const S = {
+  running:false, score:0, combo:0, bestCombo:0, lives:3,
+  level:1, tilesCleared:0, tilesForLevel:12,
+  fallMs:2600,        // ms for a tile to cross the field
+  spawnMs:900,        // ms between spawns
+  trapChance:0,       // introduced at higher levels
+  goldChance:0.08,
 };
 
-const tiles = [];
-for (let i = 0; i < 9; i++) tiles.push({ id: i, active: false });
+/* ═══════════════ LEVEL CONFIG ═══════════════ */
+function applyLevel(level) {
+  S.level = level;
+  S.tilesCleared = 0;
+  S.tilesForLevel = 10 + level * 2;
+  S.fallMs = Math.max(950, 2600 - (level - 1) * 170);
+  S.spawnMs = Math.max(430, 900 - (level - 1) * 55);
+  S.trapChance = level >= 3 ? Math.min(0.05 + (level - 3) * 0.02, 0.20) : 0;
+  S.goldChance = 0.08;
+}
 
-function init() {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = tiles.map(t => `<div class="tile" id="tile-${t.id}">🟫</div>`).join('');
-  tiles.forEach((t, i) => {
-    document.getElementById(`tile-${i}`).addEventListener('click', () => tapTile(i));
+/* ═══════════════ HELPERS ═══════════════ */
+function fieldH() { return field.clientHeight; }
+function fieldW() { return field.clientWidth; }
+function laneW() { return fieldW() / LANES; }
+function hitY() { return fieldH() * HIT_LINE_FRAC; }
+
+function renderLives() {
+  const el = document.getElementById('lives');
+  el.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const h = document.createElement('span');
+    h.className = 'life' + (i >= S.lives ? ' lost' : '');
+    h.textContent = '❤️';
+    el.appendChild(h);
+  }
+}
+
+function updateHud() {
+  document.getElementById('levelVal').textContent = S.level;
+  document.getElementById('scoreVal').textContent = S.score;
+  document.getElementById('comboVal').textContent = S.combo + (S.combo >= 2 ? '×' : '');
+  document.getElementById('lvlFill').style.width = (S.tilesCleared / S.tilesForLevel * 100) + '%';
+}
+
+function judge(text, color) {
+  const j = document.getElementById('judge');
+  j.textContent = text;
+  j.style.color = color;
+  j.classList.remove('show'); void j.offsetWidth; j.classList.add('show');
+}
+
+/* ═══════════════ SPAWNING ═══════════════ */
+function spawnTile() {
+  const lane = Math.floor(Math.random() * LANES);
+  let type = 'normal';
+  const roll = Math.random();
+  if (roll < S.trapChance) type = 'trap';
+  else if (roll < S.trapChance + S.goldChance) type = 'gold';
+
+  const el = document.createElement('div');
+  const size = laneW() * 0.72;
+  el.className = 'tile ' + LANE_COLORS[lane] + (type === 'trap' ? ' trap' : type === 'gold' ? ' gold' : '');
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.left = (lane * laneW() + (laneW() - size) / 2) + 'px';
+  el.textContent = type === 'trap' ? '⚠️' : type === 'gold' ? '★' : '';
+  field.appendChild(el);
+
+  const speed = (hitY() + size) / S.fallMs; // px per ms so it reaches line in ~fallMs
+  const tile = { el, lane, y: -size, size, speed, type, judged: false };
+  el.style.transform = `translateY(${tile.y}px)`;
+  el.addEventListener('pointerdown', (e) => { e.preventDefault(); onTileTap(tile); }, { passive:false });
+  tiles.push(tile);
+}
+
+/* ═══════════════ INPUT ═══════════════ */
+function onTileTap(tile) {
+  if (!S.running || tile.judged) return;
+  const center = tile.y + tile.size / 2;
+  const dist = Math.abs(center - hitY());
+  const window = fieldH() * HIT_WINDOW;
+
+  if (tile.type === 'trap') {
+    // tapping a trap is a mistake
+    tile.judged = true;
+    tile.el.classList.add('miss');
+    loseLife('trap');
+    audioEffects.playError();
+    setTimeout(() => removeTile(tile), 300);
+    return;
+  }
+
+  if (dist <= window) {
+    // successful hit — quality based on distance
+    const perfect = dist <= window * 0.4;
+    tile.judged = true;
+    tile.el.classList.add('hit');
+    registerHit(tile, perfect);
+    setTimeout(() => removeTile(tile), 250);
+  } else if (center < hitY()) {
+    // tapped too early — small penalty, break combo but no life lost
+    tile.judged = true;
+    tile.el.classList.add('hit');
+    breakCombo();
+    judge('Early', '#ffd24a');
+    audioEffects.playTap(300);
+    setTimeout(() => removeTile(tile), 250);
+  }
+}
+
+function registerHit(tile, perfect) {
+  S.combo++;
+  S.bestCombo = Math.max(S.bestCombo, S.combo);
+  const mult = 1 + Math.min(Math.floor(S.combo / 5), 6) * 0.5; // up to 4x
+  let base = perfect ? 100 : 60;
+  if (tile.type === 'gold') base *= 2;
+  const pts = Math.round(base * mult);
+  S.score += pts;
+  S.tilesCleared++;
+
+  gameSystem.addXP(Math.max(1, Math.floor(pts / 40)));
+
+  if (tile.type === 'gold') { judge('GOLD! +' + pts, '#ffd24a'); ParticleSystem.burst(tileCenterX(tile), fieldTopOffset() + hitY(), '⭐', 8); }
+  else judge(perfect ? 'PERFECT +' + pts : 'Good +' + pts, perfect ? '#3cff8f' : '#00e5ff');
+
+  audioEffects.playTap(500 + Math.min(S.combo, 20) * 40);
+  if (perfect) audioEffects.playSuccess(900 + Math.min(S.combo, 15) * 30);
+  if (S.combo > 0 && S.combo % 10 === 0) {
+    audioEffects.playCombo(S.combo / 5);
+    ScreenShake.shake(field, 5, 150);
+    gameSystem.unlockAchievement('combo10');
+  }
+
+  updateHud();
+  if (S.tilesCleared >= S.tilesForLevel) levelUp();
+}
+
+function breakCombo() {
+  S.combo = 0;
+  updateHud();
+}
+
+function loseLife(reason) {
+  S.combo = 0;
+  S.lives--;
+  renderLives();
+  updateHud();
+  ScreenShake.shake(field, 8, 220);
+  if (reason === 'miss') judge('MISS', '#ff5b6b');
+  else if (reason === 'trap') judge('TRAP! −1', '#ff5b6b');
+  if (S.lives <= 0) gameOver();
+}
+
+/* ═══════════════ GEOMETRY FOR PARTICLES ═══════════════ */
+function fieldTopOffset() { return field.getBoundingClientRect().top; }
+function tileCenterX(tile) { return field.getBoundingClientRect().left + tile.lane * laneW() + laneW() / 2; }
+
+/* ═══════════════ LOOP ═══════════════ */
+function loop(t) {
+  if (!S.running) return;
+  const dt = Math.min(t - lastT, 50);
+  lastT = t;
+
+  // spawn
+  spawnTimer += dt;
+  if (spawnTimer >= S.spawnMs) { spawnTimer = 0; spawnTile(); }
+
+  // move tiles
+  const limit = fieldH();
+  for (const tile of tiles) {
+    tile.y += tile.speed * dt;
+    tile.el.style.transform = `translateY(${tile.y}px)`;
+    if (!tile.judged && tile.y > limit) {
+      // fell off the bottom
+      tile.judged = true;
+      if (tile.type === 'trap') {
+        // letting a trap fall is correct — small reward
+        S.score += 10; updateHud();
+      } else {
+        loseLife('miss');
+      }
+      removeTile(tile);
+    }
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
+function removeTile(tile) {
+  tile.el.remove();
+  const i = tiles.indexOf(tile);
+  if (i >= 0) tiles.splice(i, 1);
+}
+
+function clearTiles() {
+  tiles.forEach(t => t.el.remove());
+  tiles = [];
+}
+
+/* ═══════════════ FLOW ═══════════════ */
+function startGame() {
+  document.getElementById('modal').classList.remove('show');
+  S.running = false; S.score = 0; S.combo = 0; S.bestCombo = 0; S.lives = 3;
+  applyLevel(1);
+  clearTiles();
+  renderLives();
+  updateHud();
+  gameSystem.resetState();
+  gameSystem.unlockAchievement('firstTap');
+  countdown(3, () => {
+    S.running = true;
+    lastT = performance.now();
+    spawnTimer = S.spawnMs; // spawn first tile promptly
+    rafId = requestAnimationFrame(loop);
   });
 }
 
-function startGame() {
-  state = { score: 0, streak: 0, maxStreak: 0, lives: 3, gameActive: true, speed: 1000, level: 1 };
-  document.getElementById('gameOverModal').classList.remove('show');
-  gameSystem.resetState();
-  gameSystem.unlockAchievement('firstTap');
-  activateNextTile();
+function countdown(n, done) {
+  const cd = document.getElementById('countdown');
+  const num = document.getElementById('cdNum');
+  cd.style.display = 'grid';
+  let cur = n;
+  const tick = () => {
+    if (cur === 0) { cd.style.display = 'none'; done(); return; }
+    num.textContent = cur;
+    num.style.animation = 'none'; void num.offsetWidth; num.style.animation = 'cd 1s ease-out';
+    audioEffects.playTap(400 + (n - cur) * 100);
+    cur--;
+    setTimeout(tick, 700);
+  };
+  tick();
 }
 
-function activateNextTile() {
-  if (!state.gameActive) return;
-
-  const randomTile = Math.floor(Math.random() * 9);
-  tiles[randomTile].active = true;
-  document.getElementById(`tile-${randomTile}`).classList.add('active');
-
-  setTimeout(() => {
-    if (tiles[randomTile].active) {
-      tiles[randomTile].active = false;
-      document.getElementById(`tile-${randomTile}`).classList.remove('active');
-      endGame();
-    }
-  }, Math.max(300, state.speed));
+function levelUp() {
+  applyLevel(S.level + 1);
+  updateHud();
+  judge('LEVEL ' + S.level + '!', '#7c5cff');
+  audioEffects.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth / 2, fieldTopOffset() + fieldH() / 3, 16);
+  if (S.level >= 5) gameSystem.unlockAchievement('level5');
 }
 
-function tapTile(id) {
-  if (!state.gameActive || !tiles[id].active) return;
+function gameOver() {
+  S.running = false;
+  cancelAnimationFrame(rafId);
+  clearTiles();
 
-  tiles[id].active = false;
-  const tileEl = document.getElementById(`tile-${id}`);
-  tileEl.classList.remove('active');
-  tileEl.classList.add('hit');
-
-  state.score += 10;
-  state.streak += 1;
-  state.maxStreak = Math.max(state.maxStreak, state.streak);
-
-  gameSystem.addXP(state.streak);
-  if (state.streak % 10 === 0) gameSystem.unlockAchievement('streak10');
-
-  state.speed = Math.max(300, 1000 - state.score / 20);
-
-  audioEffects.playTap(600 + state.streak * 50);
-  if (state.streak % 5 === 0) {
-    audioEffects.playCombo(state.streak / 5);
-    ScreenShake.pulse(tileEl, 1.15, 200);
-    ParticleSystem.sparkle(tileEl, 6);
-  }
-
-  setTimeout(() => {
-    tileEl.classList.remove('hit');
-    activateNextTile();
-  }, 100);
-
-  updateDisplay();
-  soundManager.play('success');
-}
-
-function endGame() {
-  state.gameActive = false;
-  const xpEarned = Math.floor(state.score / 10);
-  gameSystem.addXP(xpEarned);
+  const xp = Math.floor(S.score / 40) + S.bestCombo * 2;
+  gameSystem.addXP(xp);
+  if (S.bestCombo >= 25) gameSystem.unlockAchievement('streak10');
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 
-  document.getElementById('finalScore').textContent = state.score;
-  document.getElementById('maxStreak').textContent = state.maxStreak;
-  document.getElementById('xpEarned').textContent = xpEarned;
+  audioEffects.playError();
+  if (S.bestCombo >= 20) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18);
 
-  if (state.maxStreak >= 30) {
-    audioEffects.playLevelUp();
-    ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 2, 25);
-  } else if (state.maxStreak >= 15) {
-    audioEffects.playSuccess();
-    ParticleSystem.burst(window.innerWidth / 2, window.innerHeight / 2, '⭐', 15);
-  } else {
-    audioEffects.playError();
-  }
-
-  setTimeout(() => {
-    document.getElementById('gameOverModal').classList.add('show');
-  }, 500);
+  document.getElementById('modalEmoji').textContent = S.level >= 5 ? '🏆' : '⚡';
+  document.getElementById('modalTitle').textContent = 'Game Over';
+  document.getElementById('modalSub').textContent = S.level >= 5 ? 'Incredible run!' : 'Nice try — go again!';
+  document.getElementById('howBox').style.display = 'none';
+  document.getElementById('modalStats').style.display = 'flex';
+  document.getElementById('mScore').textContent = S.score;
+  document.getElementById('mCombo').textContent = S.bestCombo + '×';
+  document.getElementById('mLevel').textContent = S.level;
+  document.getElementById('mXp').textContent = xp;
+  document.getElementById('modalBtn').textContent = 'Play Again';
+  document.getElementById('modal').classList.add('show');
 }
 
-function updateDisplay() {
-  document.getElementById('scoreDisplay').textContent = state.score;
-  document.getElementById('streakDisplay').textContent = `Streak: ${state.streak}`;
-  document.getElementById('scoreHud').textContent = state.score;
-  document.getElementById('levelHud').textContent = gameSystem.state.level;
-}
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
 
-init();
-startGame();
+renderLives();
+updateHud();
 </script>
 </body>
 </html>
