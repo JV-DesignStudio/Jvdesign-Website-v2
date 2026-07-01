@@ -211,22 +211,24 @@ let hintTimer = null;
 
 const game = {
   level: 1,
-  score: 0,
+  score: 0,              // cumulative total across the whole game (display + XP)
+  levelScore: 0,         // resets each level; this is what the target is measured against
   moves: 0,
   target: 0,
   numColors: 4,
   bestGroup: 0,
-  levelStartScore: 0,
   streak: 0,             // consecutive matches of 4+
   over: false,
 };
 
-/* ═══════════════ LEVEL CONFIG ═══════════════ */
+/* ═══════════════ LEVEL CONFIG ═══════════════
+   Target is PER LEVEL (levelScore resets each level). Per-pop scores are
+   tuned so a level takes roughly 8-14 taps rather than a single big pop. */
 function levelConfig(level) {
   return {
     numColors: Math.min(4 + Math.floor((level - 1) / 3), 6),
-    moves: 18 + Math.floor(level / 2),
-    target: Math.round((600 + (level - 1) * 450) * (1 + (level - 1) * 0.12)),
+    moves: 24 + Math.floor(level / 2),
+    target: Math.round((1600 + (level - 1) * 650) * (1 + (level - 1) * 0.08)),
   };
 }
 
@@ -356,11 +358,14 @@ function onTap(id) {
   const size = group.length;
   const willSpawnBomb = !isBomb && size >= 6;
 
-  // scoring — reward big groups quadratically, with a streak multiplier
-  if (!isBomb && size >= 4) game.streak++; else if (!isBomb) game.streak = 0;
-  const mult = 1 + Math.min(game.streak, 5) * 0.5;
-  const gained = Math.round(size * (size + 1) * 5 * mult);
+  // scoring — reward big groups, with a gentle streak multiplier.
+  // Streak builds on 3+ groups so ordinary play isn't punished; the target
+  // is tuned so a level takes roughly 6-14 taps rather than a single big pop.
+  if (!isBomb && size >= 3) game.streak++; else if (!isBomb) game.streak = 0;
+  const mult = 1 + Math.min(game.streak, 5) * 0.3;
+  const gained = Math.round(size * (size + 1) * 3 * mult);
   game.score += gained;
+  game.levelScore += gained;
   game.bestGroup = Math.max(game.bestGroup, size);
   game.moves--;
 
@@ -413,7 +418,7 @@ function afterResolve() {
   updateHud();
   busy = false;
 
-  if (game.score >= game.target) { levelComplete(); return; }
+  if (game.levelScore >= game.target) { levelComplete(); return; }
   if (game.moves <= 0) { gameOver(); return; }
   scheduleHint();
 }
@@ -476,9 +481,9 @@ function updateHud() {
   document.getElementById('levelVal').textContent = game.level;
   document.getElementById('scoreVal').textContent = game.score;
   document.getElementById('movesVal').textContent = Math.max(0, game.moves);
-  document.getElementById('scoreMini').textContent = Math.min(game.score, game.target);
+  document.getElementById('scoreMini').textContent = Math.min(game.levelScore, game.target);
   document.getElementById('targetVal').textContent = game.target;
-  const pct = Math.min(100, (game.score / game.target) * 100);
+  const pct = Math.min(100, (game.levelScore / game.target) * 100);
   document.getElementById('targetFill').style.width = pct + '%';
   document.getElementById('movesStat').classList.toggle('low', game.moves <= 5);
 
@@ -537,7 +542,7 @@ function startLevel(level) {
   game.numColors = cfg.numColors;
   game.moves = cfg.moves;
   game.target = cfg.target;
-  game.levelStartScore = game.score;
+  game.levelScore = 0;
   game.streak = 0;
   game.over = false;
   busy = false;
@@ -562,7 +567,7 @@ function levelComplete() {
   const leftover = Math.max(0, game.moves);
   const bonus = leftover * 60;
   game.score += bonus;
-  const xp = Math.floor((game.score - game.levelStartScore) / 20) + leftover * 3;
+  const xp = Math.floor(game.levelScore / 20) + leftover * 3;
   gameSystem.addXP(xp);
   if (game.level >= 5) gameSystem.unlockAchievement('level5');
   if (game.bestGroup >= 10) gameSystem.unlockAchievement('bigGroup');
@@ -581,7 +586,7 @@ function levelComplete() {
 function gameOver() {
   game.over = true;
   clearHint();
-  const xp = Math.floor((game.score - game.levelStartScore) / 30);
+  const xp = Math.floor(game.levelScore / 30);
   gameSystem.addXP(Math.max(0, xp));
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
