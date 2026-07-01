@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Bubble Pop Galaxy | JVDesignStudio</title>
-<meta name="description" content="Tap bubbles to pop them! Match groups of same-color bubbles for combos. Earn XP and achievements.">
+<meta name="description" content="A cosmic collapse puzzle. Clear groups of bubbles, trigger chain reactions, hit level targets and chase bombs. Earn XP and achievements.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html">
 <meta property="og:title" content="Bubble Pop Galaxy | JVDesignStudio">
-<meta property="og:description" content="Tap bubbles to pop them! Match groups of same-color bubbles for combos.">
+<meta property="og:description" content="A cosmic collapse puzzle. Clear bubble groups, build combos, hit level targets and chase bombs.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../logo.png" type="image/png">
@@ -19,233 +19,608 @@
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, sans-serif; background: radial-gradient(circle at 20% 50%, #1a1a2e, #0f0f1e); overflow: hidden; }
-
-.game-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
-.header { padding: 16px 20px; background: rgba(26,26,46,0.95); border-bottom: 2px solid #6366f1; display: flex; justify-content: space-between; align-items: center; }
-.title { font-size: 1.8rem; font-weight: 800; color: #a78bfa; }
-.hud { display: flex; gap: 16px; font-weight: 700; color: white; }
-.hud-item { display: flex; align-items: center; gap: 6px; font-size: 1.1rem; }
-
-.game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
-
-.bubble-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; aspect-ratio: 5/6; width: 100%; max-width: 380px; }
-.bubble { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 3px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; transition: all 0.15s; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
-.bubble:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.6); }
-.bubble:active { transform: scale(0.95); }
-.bubble.color-1 { background: linear-gradient(135deg, #ff6b6b, #ff5252); }
-.bubble.color-2 { background: linear-gradient(135deg, #4ecdc4, #45b7b8); }
-.bubble.color-3 { background: linear-gradient(135deg, #ffd93d, #ffb700); }
-.bubble.color-4 { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-.bubble.color-5 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-.bubble.matched { animation: popBubble 0.5s forwards; }
-@keyframes popBubble { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); } 100% { transform: scale(0); opacity: 0; } }
-
-.info { margin-top: 20px; text-align: center; }
-.score { font-size: 2rem; font-weight: 800; color: #4ecdc4; margin-bottom: 6px; }
-.combo { font-size: 1.1rem; color: #a78bfa; }
-
-.game-over { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-.game-over.show { display: flex; }
-.game-over-content { background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #a78bfa; }
-.game-over-title { font-size: 2rem; font-weight: 800; margin-bottom: 16px; color: white; }
-.game-over-stats { font-size: 1.2rem; margin-bottom: 24px; color: rgba(255,255,255,0.9); }
-.game-over-stats div { margin: 8px 0; }
-.btn { background: linear-gradient(90deg, #4ecdc4, #45b7b8); color: #0f0f1e; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 12px; font-size: 1rem; }
-.btn:hover { transform: translateY(-2px); }
-
-.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(167,139,250,0.2); border: 2px solid #a78bfa; color: #a78bfa; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
-
-.particle { position: fixed; pointer-events: none; font-size: 2rem; animation: particleFly 0.8s ease-out forwards; }
-@keyframes particleFly { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); } }
-
-@media (max-width: 600px) {
-  .title { font-size: 1.4rem; }
-  .bubble { font-size: 1.4rem; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --c1a:#ff5b6b; --c1b:#c81e3a;
+  --c2a:#4fd6c8; --c2b:#1f9e94;
+  --c3a:#ffd24a; --c3b:#e8960f;
+  --c4a:#b98bff; --c4b:#7c3aed;
+  --c5a:#5b8cff; --c5b:#2b4de0;
+  --c6a:#8affa0; --c6b:#27a844;
 }
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background:
+    radial-gradient(ellipse at 20% 0%, #2a2450 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, #3a1f4d 0%, transparent 55%),
+    #0c0a1a;
+  overflow: hidden; color: #fff;
+  user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+}
+/* starfield */
+body::before {
+  content:''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 22%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1px 1px at 65% 12%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1.5px 1.5px at 42% 68%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1px 1px at 82% 55%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 28% 88%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1.5px 1.5px at 92% 82%, rgba(255,255,255,.5), transparent);
+}
+
+.game-container { position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); }
+
+/* ── HEADER ── */
+.header { padding: 12px 16px 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.title { font-size: 1.15rem; font-weight: 800; letter-spacing: .3px; background: linear-gradient(90deg,#b98bff,#5b8cff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+.home-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #cdb8ff; width: 40px; height: 40px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; display: grid; place-items: center; }
+.home-btn:active { transform: scale(.92); }
+
+/* ── STATS ROW ── */
+.stats { display: flex; gap: 8px; padding: 0 16px 8px; }
+.stat { flex: 1; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09); border-radius: 12px; padding: 7px 6px; text-align: center; }
+.stat-label { font-size: .58rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.stat-value { font-size: 1.15rem; font-weight: 800; margin-top: 1px; }
+.stat.moves .stat-value { color: #ffd24a; }
+.stat.moves.low .stat-value { color: #ff5b6b; animation: pulseWarn .6s infinite; }
+@keyframes pulseWarn { 50% { opacity: .45; } }
+
+/* ── TARGET BAR ── */
+.target-wrap { padding: 0 16px 8px; }
+.target-top { display: flex; justify-content: space-between; font-size: .68rem; font-weight: 700; color: rgba(255,255,255,.6); margin-bottom: 4px; }
+.target-top b { color: #4fd6c8; }
+.target-bar { height: 9px; background: rgba(255,255,255,.08); border-radius: 999px; overflow: hidden; }
+.target-fill { height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg,#4fd6c8,#5b8cff,#b98bff); transition: width .35s ease; }
+
+/* ── BOARD ── */
+.board-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4px 12px 12px; min-height: 0; }
+.board {
+  position: relative;
+  width: min(94vw, 430px);
+  aspect-ratio: 7 / 8;
+  max-height: 100%;
+}
+.bubble {
+  position: absolute; top: 0; left: 0;
+  width: calc(100% / 7); height: calc(100% / 8);
+  transition: transform .28s cubic-bezier(.34,1.28,.64,1);
+  will-change: transform;
+}
+.bubble-inner {
+  position: absolute; inset: 3px; border-radius: 50%;
+  display: grid; place-items: center;
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.35);
+  cursor: pointer;
+  transition: transform .12s;
+}
+.bubble-inner::after {
+  content: ''; position: absolute; top: 14%; left: 20%; width: 34%; height: 30%;
+  border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+.bubble-inner:active { transform: scale(.9); }
+.c1 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c1a), var(--c1b)); }
+.c2 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c2a), var(--c2b)); }
+.c3 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c3a), var(--c3b)); }
+.c4 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c4a), var(--c4b)); }
+.c5 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c5a), var(--c5b)); }
+.c6 .bubble-inner { background: radial-gradient(circle at 35% 30%, var(--c6a), var(--c6b)); }
+.bubble.bomb .bubble-inner { background: radial-gradient(circle at 35% 30%, #3a3a4a, #111); border: 2px solid #ffd24a; font-size: 1.1rem; animation: bombPulse 1s infinite; }
+@keyframes bombPulse { 50% { box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 0 16px rgba(255,210,74,.8); } }
+.bubble.popping { z-index: 5; }
+.bubble.popping .bubble-inner { animation: popOut .22s forwards; }
+@keyframes popOut { 40% { transform: scale(1.25); } 100% { transform: scale(0); opacity: 0; } }
+.bubble.hint .bubble-inner { animation: hintGlow 1s infinite; }
+@keyframes hintGlow { 50% { box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 0 14px rgba(255,255,255,.9); } }
+
+/* group size floating label */
+.pop-score { position: fixed; z-index: 60; pointer-events: none; font-weight: 800; font-size: 1.3rem; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.6); animation: floatUp .8s ease-out forwards; }
+@keyframes floatUp { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.6); } 30% { transform: translate(-50%,-70%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-150%) scale(1); } }
+
+/* ── FOOTER HINT ── */
+.footer { text-align: center; padding: 0 16px 10px; font-size: .72rem; color: rgba(255,255,255,.4); }
+.combo-flash { color: #ffd24a; font-weight: 800; }
+
+/* ── MODALS ── */
+.modal { position: fixed; inset: 0; background: rgba(6,4,16,.86); backdrop-filter: blur(6px); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+.modal.show { display: flex; }
+.modal-card { background: linear-gradient(160deg, #241d47, #171130); border: 1px solid rgba(185,139,255,.3); padding: 30px 26px; border-radius: 22px; text-align: center; max-width: 340px; width: 100%; box-shadow: 0 24px 70px rgba(0,0,0,.6); }
+.modal-emoji { font-size: 3rem; }
+.modal-title { font-size: 1.7rem; font-weight: 800; margin: 8px 0 4px; }
+.modal-sub { color: rgba(255,255,255,.65); font-size: .9rem; margin-bottom: 18px; }
+.modal-stats { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.modal-stat { display: flex; justify-content: space-between; background: rgba(255,255,255,.05); border-radius: 10px; padding: 10px 14px; font-size: .9rem; }
+.modal-stat b { color: #4fd6c8; }
+.btn { background: linear-gradient(90deg,#b98bff,#5b8cff); color: #fff; border: none; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; box-shadow: 0 8px 20px rgba(91,140,255,.4); }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: rgba(255,255,255,.08); box-shadow: none; margin-top: 10px; }
+
+/* level banner */
+.banner { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%) scale(.5); z-index: 90; text-align: center; pointer-events: none; opacity: 0; }
+.banner.show { animation: bannerPop 1.4s ease-out forwards; }
+@keyframes bannerPop { 0% { opacity:0; transform: translate(-50%,-50%) scale(.4); } 20% { opacity:1; transform: translate(-50%,-50%) scale(1.1); } 80% { opacity:1; transform: translate(-50%,-50%) scale(1); } 100% { opacity:0; transform: translate(-50%,-50%) scale(1); } }
+.banner-title { font-size: 2.4rem; font-weight: 900; background: linear-gradient(90deg,#ffd24a,#ff5b6b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.banner-sub { font-size: 1rem; color: #fff; margin-top: 2px; }
 </style>
 </head>
 <body>
-<a href="mobile-games.html" class="home-btn">🏠</a>
-
 <div class="game-container">
   <div class="header">
     <div class="title">🫧 Bubble Pop Galaxy</div>
-    <div class="hud">
-      <div class="hud-item">📊 <span id="scoreHud">0</span></div>
-      <div class="hud-item">⭐ Lv.<span id="levelHud">1</span></div>
-    </div>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
 
-  <div class="game-area">
-    <div class="bubble-grid" id="bubbleGrid"></div>
-    <div class="info">
-      <div class="score" id="scoreDisplay">0</div>
-      <div class="combo" id="comboDisplay">Tap bubbles!</div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Level</div><div class="stat-value" id="levelVal">1</div></div>
+    <div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="scoreVal">0</div></div>
+    <div class="stat moves" id="movesStat"><div class="stat-label">Moves</div><div class="stat-value" id="movesVal">0</div></div>
+  </div>
+
+  <div class="target-wrap">
+    <div class="target-top"><span>Target</span><span><span id="scoreMini">0</span> / <b id="targetVal">0</b></span></div>
+    <div class="target-bar"><div class="target-fill" id="targetFill"></div></div>
+  </div>
+
+  <div class="board-area">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="footer" id="footer">Tap groups of 2+ to pop them</div>
+</div>
+
+<!-- Level complete / game over modal -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div class="modal-emoji" id="modalEmoji">🎉</div>
+    <div class="modal-title" id="modalTitle">Level Complete!</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="modal-stats">
+      <div class="modal-stat"><span>Score</span><b id="mScore">0</b></div>
+      <div class="modal-stat"><span>Best group</span><b id="mBest">0</b></div>
+      <div class="modal-stat"><span>XP earned</span><b id="mXp">0</b></div>
     </div>
+    <button class="btn" id="modalBtn" onclick="modalAction()">Next Level</button>
+    <button class="btn ghost" onclick="location.href='mobile-games.html'">Back to Games</button>
   </div>
 </div>
 
-<div class="game-over" id="gameOverModal">
-  <div class="game-over-content">
-    <div class="game-over-title">Game Over!</div>
-    <div class="game-over-stats">
-      <div>Final Score: <span id="finalScore">0</span></div>
-      <div>Best Combo: <span id="maxCombo">0</span></div>
-      <div>XP Earned: <span id="xpEarned">0</span></div>
-    </div>
-    <button class="btn" onclick="startGame()">Play Again</button>
-  </div>
+<div class="banner" id="banner">
+  <div class="banner-title" id="bannerTitle">Level 2</div>
+  <div class="banner-sub" id="bannerSub">Get ready!</div>
 </div>
 
 <script>
+/* ═══════════════ SETUP ═══════════════ */
 const gameSystem = new GameSystem('bubble-pop', 'Bubble Pop Galaxy', 'pip');
 const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
+if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
-const COLORS = 5;
-const GRID_SIZE = 30;
-let bubbles = [];
-let score = 0;
-let combo = 0;
-let maxCombo = 0;
-let gameActive = true;
-let moves = 0;
-const maxMoves = 30;
+const COLS = 7, ROWS = 8;
+const EMOJI_BOMB = '💣';
 
-function init() {
-  bubbles = [];
-  for (let i = 0; i < GRID_SIZE; i++) {
-    bubbles.push({
-      id: i,
-      color: Math.floor(Math.random() * COLORS) + 1,
-      matched: false
+let cells = [];          // cells[r][c] = bubble | null
+let nextId = 1;
+let busy = false;        // input lock during animation
+let hintTimer = null;
+
+const game = {
+  level: 1,
+  score: 0,
+  moves: 0,
+  target: 0,
+  numColors: 4,
+  bestGroup: 0,
+  levelStartScore: 0,
+  streak: 0,             // consecutive matches of 4+
+  over: false,
+};
+
+/* ═══════════════ LEVEL CONFIG ═══════════════ */
+function levelConfig(level) {
+  return {
+    numColors: Math.min(4 + Math.floor((level - 1) / 3), 6),
+    moves: 18 + Math.floor(level / 2),
+    target: Math.round((600 + (level - 1) * 450) * (1 + (level - 1) * 0.12)),
+  };
+}
+
+/* ═══════════════ BOARD BUILD ═══════════════ */
+function makeBubble(color) {
+  return { id: nextId++, color, special: null };
+}
+
+function fillBoard() {
+  cells = [];
+  for (let r = 0; r < ROWS; r++) {
+    cells[r] = [];
+    for (let c = 0; c < COLS; c++) {
+      cells[r][c] = makeBubble(1 + Math.floor(Math.random() * game.numColors));
+    }
+  }
+  if (!hasMoves()) reshuffle();
+}
+
+/* ═══════════════ RENDER ═══════════════ */
+function render() {
+  const board = document.getElementById('board');
+  const existing = {};
+  board.querySelectorAll('.bubble').forEach(el => existing[el.dataset.id] = el);
+  const seen = new Set();
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const b = cells[r][c];
+      if (!b) continue;
+      seen.add(String(b.id));
+      let el = existing[b.id];
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'bubble';
+        el.dataset.id = b.id;
+        // spawn above the board for a drop-in animation
+        el.style.transform = `translate(${c * 100}%, ${(r - ROWS) * 100}%)`;
+        el.innerHTML = `<div class="bubble-inner"></div>`;
+        el.addEventListener('click', () => onTap(b.id));
+        board.appendChild(el);
+        // force reflow so the transition to real position animates
+        void el.offsetWidth;
+      }
+      el.className = 'bubble c' + b.color + (b.special === 'bomb' ? ' bomb' : '');
+      el.querySelector('.bubble-inner').textContent = b.special === 'bomb' ? EMOJI_BOMB : '';
+      el.style.transform = `translate(${c * 100}%, ${r * 100}%)`;
+    }
+  }
+  // remove stale elements
+  board.querySelectorAll('.bubble').forEach(el => {
+    if (!seen.has(el.dataset.id)) el.remove();
+  });
+}
+
+/* ═══════════════ CONNECTIVITY ═══════════════ */
+function findBubble(id) {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (cells[r][c] && cells[r][c].id === id) return { r, c, b: cells[r][c] };
+  return null;
+}
+
+function connectedGroup(r, c) {
+  const start = cells[r][c];
+  if (!start) return [];
+  const color = start.color;
+  const stack = [[r, c]];
+  const seen = new Set([r + ',' + c]);
+  const group = [];
+  while (stack.length) {
+    const [cr, cc] = stack.pop();
+    group.push([cr, cc]);
+    [[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]].forEach(([nr, nc]) => {
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return;
+      const key = nr + ',' + nc;
+      if (seen.has(key)) return;
+      const nb = cells[nr][nc];
+      if (nb && !nb.special && nb.color === color) { seen.add(key); stack.push([nr, nc]); }
     });
   }
+  return group;
+}
+
+function bombRadius(r, c) {
+  const cellsHit = [];
+  for (let dr = -1; dr <= 1; dr++)
+    for (let dc = -1; dc <= 1; dc++) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && cells[nr][nc]) cellsHit.push([nr, nc]);
+    }
+  return cellsHit;
+}
+
+function hasMoves() {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const b = cells[r][c];
+      if (!b) continue;
+      if (b.special === 'bomb') return true;
+      if (c + 1 < COLS && cells[r][c+1] && !cells[r][c+1].special && cells[r][c+1].color === b.color) return true;
+      if (r + 1 < ROWS && cells[r+1][c] && !cells[r+1][c].special && cells[r+1][c].color === b.color) return true;
+    }
+  return false;
+}
+
+/* ═══════════════ TAP HANDLER ═══════════════ */
+function onTap(id) {
+  if (busy || game.over) return;
+  const found = findBubble(id);
+  if (!found) return;
+  const { r, c, b } = found;
+
+  let group;
+  let isBomb = false;
+  if (b.special === 'bomb') {
+    group = bombRadius(r, c);
+    isBomb = true;
+  } else {
+    group = connectedGroup(r, c);
+    if (group.length < 2) { audioEffects.playError(); nudge(id); return; }
+  }
+
+  busy = true;
+  clearHint();
+
+  const size = group.length;
+  const willSpawnBomb = !isBomb && size >= 6;
+
+  // scoring — reward big groups quadratically, with a streak multiplier
+  if (!isBomb && size >= 4) game.streak++; else if (!isBomb) game.streak = 0;
+  const mult = 1 + Math.min(game.streak, 5) * 0.5;
+  const gained = Math.round(size * (size + 1) * 5 * mult);
+  game.score += gained;
+  game.bestGroup = Math.max(game.bestGroup, size);
+  game.moves--;
+
+  gameSystem.addXP(Math.max(1, Math.floor(gained / 25)));
+
+  // audio + juice
+  if (isBomb) { audioEffects.playPop(); ScreenShake.shake(document.querySelector('.board'), 10, 220); }
+  else if (size >= 6) { audioEffects.playCombo(size); ScreenShake.shake(document.querySelector('.board'), 5, 160); }
+  else { audioEffects.playPop(); }
+  if (game.streak >= 2) audioEffects.playCombo(game.streak);
+
+  // floating score + particles at tap point
+  const tapEl = document.querySelector(`.bubble[data-id="${id}"]`);
+  if (tapEl) {
+    const rect = tapEl.getBoundingClientRect();
+    floatScore(rect.left + rect.width/2, rect.top + rect.height/2, '+' + gained, isBomb ? '#ffd24a' : '#fff');
+    if (size >= 5 || isBomb) ParticleSystem.burst(rect.left + rect.width/2, rect.top + rect.height/2, isBomb ? '💥' : '💫', Math.min(14, size + 2));
+  }
+
+  // animate pops
+  group.forEach(([gr, gc]) => {
+    const bub = cells[gr][gc];
+    if (!bub) return;
+    // when spawning a bomb, keep the tapped bubble in place
+    if (willSpawnBomb && gr === r && gc === c) return;
+    const el = document.querySelector(`.bubble[data-id="${bub.id}"]`);
+    if (el) el.classList.add('popping');
+    cells[gr][gc] = null;
+  });
+
+  if (willSpawnBomb) {
+    cells[r][c].special = 'bomb';
+    const el = document.querySelector(`.bubble[data-id="${id}"]`);
+    if (el) { el.classList.add('bomb'); el.querySelector('.bubble-inner').textContent = EMOJI_BOMB; }
+    floatScore(window.innerWidth/2, window.innerHeight*0.3, 'BOMB! 💣', '#ffd24a');
+  }
+
+  updateHud();
+
+  setTimeout(() => {
+    collapse();
+    refill();
+    render();
+    setTimeout(afterResolve, 300);
+  }, 200);
+}
+
+function afterResolve() {
+  if (!hasMoves()) reshuffle();
+  updateHud();
+  busy = false;
+
+  if (game.score >= game.target) { levelComplete(); return; }
+  if (game.moves <= 0) { gameOver(); return; }
+  scheduleHint();
+}
+
+/* ═══════════════ GRAVITY + REFILL ═══════════════ */
+function collapse() {
+  // drop within columns
+  for (let c = 0; c < COLS; c++) {
+    let write = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (cells[r][c]) {
+        const b = cells[r][c];
+        cells[r][c] = null;
+        cells[write][c] = b;
+        write--;
+      }
+    }
+  }
+  // shift whole empty columns toward the centre-left (keeps board tidy)
+  let writeCol = 0;
+  for (let c = 0; c < COLS; c++) {
+    const columnEmpty = cells.every(row => !row[c]);
+    if (!columnEmpty) {
+      if (writeCol !== c) {
+        for (let r = 0; r < ROWS; r++) { cells[r][writeCol] = cells[r][c]; cells[r][c] = null; }
+      }
+      writeCol++;
+    }
+  }
+}
+
+function refill() {
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (!cells[r][c]) cells[r][c] = makeBubble(1 + Math.floor(Math.random() * game.numColors));
+    }
+  }
+}
+
+function reshuffle() {
+  const colors = [];
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++)
+      if (cells[r][c] && !cells[r][c].special) colors.push(cells[r][c].color);
+  let guard = 0;
+  do {
+    // Fisher-Yates
+    for (let i = colors.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [colors[i],colors[j]]=[colors[j],colors[i]]; }
+    let k = 0;
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        if (cells[r][c] && !cells[r][c].special) cells[r][c].color = colors[k++];
+    guard++;
+  } while (!hasMoves() && guard < 30);
   render();
 }
 
-function startGame() {
-  score = 0;
-  combo = 0;
-  maxCombo = 0;
-  moves = maxMoves;
-  gameActive = true;
-  document.getElementById('gameOverModal').classList.remove('show');
-  gameSystem.resetState();
-  gameSystem.unlockAchievement('firstPop');
-  init();
+/* ═══════════════ HUD ═══════════════ */
+function updateHud() {
+  document.getElementById('levelVal').textContent = game.level;
+  document.getElementById('scoreVal').textContent = game.score;
+  document.getElementById('movesVal').textContent = Math.max(0, game.moves);
+  document.getElementById('scoreMini').textContent = Math.min(game.score, game.target);
+  document.getElementById('targetVal').textContent = game.target;
+  const pct = Math.min(100, (game.score / game.target) * 100);
+  document.getElementById('targetFill').style.width = pct + '%';
+  document.getElementById('movesStat').classList.toggle('low', game.moves <= 5);
+
+  const footer = document.getElementById('footer');
+  if (game.streak >= 2) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak!</span>`;
+  else footer.textContent = 'Tap groups of 2+ · big groups leave bombs 💣';
 }
 
-function findConnected(index, color, visited = new Set()) {
-  if (visited.has(index) || !bubbles[index] || bubbles[index].color !== color) return [];
-  visited.add(index);
-  const row = Math.floor(index / 5);
-  const col = index % 5;
-  let connected = [index];
-
-  const neighbors = [
-    index - 5, index + 5, // up/down
-    col > 0 ? index - 1 : -1, col < 4 ? index + 1 : -1 // left/right
-  ].filter(i => i >= 0 && i < GRID_SIZE);
-
-  neighbors.forEach(n => {
-    connected.push(...findConnected(n, color, visited));
-  });
-  return connected;
+/* ═══════════════ HINTS ═══════════════ */
+function scheduleHint() {
+  clearHint();
+  hintTimer = setTimeout(showHint, 5000);
 }
-
-function popBubble(index) {
-  if (!gameActive || !bubbles[index] || bubbles[index].matched) return;
-
-  const color = bubbles[index].color;
-  const connected = findConnected(index, color);
-
-  if (connected.length < 2) return;
-
-  const matchedElement = document.getElementById(`bubble-${index}`);
-  const rect = matchedElement.getBoundingClientRect();
-
-  connected.forEach(i => {
-    bubbles[i].matched = true;
-    document.getElementById(`bubble-${i}`).classList.add('matched');
-  });
-
-  combo += connected.length;
-  maxCombo = Math.max(maxCombo, combo);
-  score += connected.length * (10 + combo);
-  moves--;
-
-  gameSystem.addXP(connected.length);
-  if (combo >= 10) gameSystem.unlockAchievement('combo10');
-
-  audioEffects.playPop();
-  if (combo >= 5) {
-    audioEffects.playCombo(combo);
-    ScreenShake.shake(document.body, 4 + combo, 150);
-    ParticleSystem.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, '💫', Math.min(12, combo));
-  } else {
-    ParticleSystem.sparkle(matchedElement, connected.length);
-  }
-
-  setTimeout(() => {
-    bubbles = bubbles.filter(b => !b.matched);
-    if (bubbles.length === 0) {
-      endGame();
-    } else {
-      render();
+function clearHint() {
+  if (hintTimer) clearTimeout(hintTimer);
+  document.querySelectorAll('.bubble.hint').forEach(el => el.classList.remove('hint'));
+}
+function showHint() {
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const b = cells[r][c];
+      if (!b) continue;
+      if (b.special === 'bomb') { markHint([[r,c]]); return; }
+      const g = connectedGroup(r, c);
+      if (g.length >= 2) { markHint(g); return; }
     }
-  }, 500);
-
-  updateDisplay();
-  soundManager.play('success');
+}
+function markHint(group) {
+  group.forEach(([r,c]) => {
+    const b = cells[r][c];
+    const el = b && document.querySelector(`.bubble[data-id="${b.id}"]`);
+    if (el) el.classList.add('hint');
+  });
 }
 
-function render() {
-  const grid = document.getElementById('bubbleGrid');
-  grid.innerHTML = bubbles.map((b, i) => `
-    <div class="bubble color-${b.color}" id="bubble-${i}" onclick="popBubble(${i})">
-      ${['🔴', '🔵', '🟡', '🟣', '🟢'][b.color - 1]}
-    </div>
-  `).join('');
+/* ═══════════════ FX HELPERS ═══════════════ */
+function floatScore(x, y, text, color) {
+  const el = document.createElement('div');
+  el.className = 'pop-score';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.color = color || '#fff';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+function nudge(id) {
+  const el = document.querySelector(`.bubble[data-id="${id}"]`);
+  if (el) { ScreenShake.pulse(el.querySelector('.bubble-inner'), 1.12, 160); }
 }
 
-function updateDisplay() {
-  document.getElementById('scoreDisplay').textContent = score;
-  document.getElementById('comboDisplay').textContent = combo > 0 ? `Combo: ${combo}` : 'Tap bubbles!';
-  document.getElementById('scoreHud').textContent = score;
-  document.getElementById('levelHud').textContent = gameSystem.state.level;
+/* ═══════════════ FLOW ═══════════════ */
+function startLevel(level) {
+  const cfg = levelConfig(level);
+  game.level = level;
+  game.numColors = cfg.numColors;
+  game.moves = cfg.moves;
+  game.target = cfg.target;
+  game.levelStartScore = game.score;
+  game.streak = 0;
+  game.over = false;
+  busy = false;
+  document.getElementById('modal').classList.remove('show');
+  fillBoard();
+  render();
+  updateHud();
+  if (level > 1) showBanner('Level ' + level, cfg.numColors + ' colours · ' + cfg.moves + ' moves');
+  scheduleHint();
 }
 
-function endGame() {
-  gameActive = false;
-  const xpEarned = Math.floor(score / 10);
-  gameSystem.addXP(xpEarned);
+function newGame() {
+  game.score = 0;
+  game.bestGroup = 0;
+  gameSystem.unlockAchievement('firstPop');
+  startLevel(1);
+}
+
+function levelComplete() {
+  game.over = true;
+  clearHint();
+  const leftover = Math.max(0, game.moves);
+  const bonus = leftover * 60;
+  game.score += bonus;
+  const xp = Math.floor((game.score - game.levelStartScore) / 20) + leftover * 3;
+  gameSystem.addXP(xp);
+  if (game.level >= 5) gameSystem.unlockAchievement('level5');
+  if (game.bestGroup >= 10) gameSystem.unlockAchievement('bigGroup');
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 
-  document.getElementById('finalScore').textContent = score;
-  document.getElementById('maxCombo').textContent = maxCombo;
-  document.getElementById('xpEarned').textContent = xpEarned;
+  audioEffects.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 22);
 
-  if (score > 500) {
-    audioEffects.playLevelUp();
-    ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 2, 20);
-  } else if (score > 200) {
-    audioEffects.playSuccess();
-    ParticleSystem.burst(window.innerWidth / 2, window.innerHeight / 2, '⭐', 12);
-  } else {
-    audioEffects.playTap();
-  }
-
-  setTimeout(() => {
-    document.getElementById('gameOverModal').classList.add('show');
-  }, 500);
+  showModal('🎉', 'Level ' + game.level + ' Complete!',
+    leftover > 0 ? `+${bonus} move bonus (${leftover} left)` : 'Nicely cleared!',
+    xp, 'Next Level');
+  document.getElementById('modalBtn').dataset.next = 'level';
 }
 
-init();
-startGame();
+function gameOver() {
+  game.over = true;
+  clearHint();
+  const xp = Math.floor((game.score - game.levelStartScore) / 30);
+  gameSystem.addXP(Math.max(0, xp));
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+
+  audioEffects.playError();
+  showModal('🌌', 'Out of Moves', `You reached Level ${game.level}`, Math.max(0, xp), 'Try Again');
+  document.getElementById('modalBtn').dataset.next = 'retry';
+}
+
+function showModal(emoji, title, sub, xp, btnText) {
+  document.getElementById('modalEmoji').textContent = emoji;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalSub').textContent = sub;
+  document.getElementById('mScore').textContent = game.score;
+  document.getElementById('mBest').textContent = game.bestGroup;
+  document.getElementById('mXp').textContent = xp;
+  document.getElementById('modalBtn').textContent = btnText;
+  document.getElementById('modal').classList.add('show');
+}
+
+function modalAction() {
+  const next = document.getElementById('modalBtn').dataset.next;
+  if (next === 'level') startLevel(game.level + 1);
+  else newGame();
+}
+
+function showBanner(title, sub) {
+  const banner = document.getElementById('banner');
+  document.getElementById('bannerTitle').textContent = title;
+  document.getElementById('bannerSub').textContent = sub;
+  banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show');
+}
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+
+newGame();
 </script>
 </body>
 </html>
