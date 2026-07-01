@@ -16,6 +16,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -101,6 +102,7 @@ html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, san
 <script>
 const gameSystem = new GameSystem('bubble-pop', 'Bubble Pop Galaxy', 'pip');
 const soundManager = new SoundManager(gameSystem);
+const audioEffects = new AudioEffects(0.7);
 
 const COLORS = 5;
 const GRID_SIZE = 30;
@@ -162,6 +164,9 @@ function popBubble(index) {
 
   if (connected.length < 2) return;
 
+  const matchedElement = document.getElementById(`bubble-${index}`);
+  const rect = matchedElement.getBoundingClientRect();
+
   connected.forEach(i => {
     bubbles[i].matched = true;
     document.getElementById(`bubble-${i}`).classList.add('matched');
@@ -174,6 +179,15 @@ function popBubble(index) {
 
   gameSystem.addXP(connected.length);
   if (combo >= 10) gameSystem.unlockAchievement('combo10');
+
+  audioEffects.playPop();
+  if (combo >= 5) {
+    audioEffects.playCombo(combo);
+    ScreenShake.shake(document.body, 4 + combo, 150);
+    ParticleSystem.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, '💫', Math.min(12, combo));
+  } else {
+    ParticleSystem.sparkle(matchedElement, connected.length);
+  }
 
   setTimeout(() => {
     bubbles = bubbles.filter(b => !b.matched);
@@ -214,7 +228,20 @@ function endGame() {
   document.getElementById('finalScore').textContent = score;
   document.getElementById('maxCombo').textContent = maxCombo;
   document.getElementById('xpEarned').textContent = xpEarned;
-  document.getElementById('gameOverModal').classList.add('show');
+
+  if (score > 500) {
+    audioEffects.playLevelUp();
+    ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 2, 20);
+  } else if (score > 200) {
+    audioEffects.playSuccess();
+    ParticleSystem.burst(window.innerWidth / 2, window.innerHeight / 2, '⭐', 12);
+  } else {
+    audioEffects.playTap();
+  }
+
+  setTimeout(() => {
+    document.getElementById('gameOverModal').classList.add('show');
+  }, 500);
 }
 
 init();

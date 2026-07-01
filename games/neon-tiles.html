@@ -18,6 +18,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -100,6 +101,7 @@ html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, san
 <script>
 const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles', 'echo');
 const soundManager = new SoundManager(gameSystem);
+const audioEffects = new AudioEffects(0.7);
 
 let state = {
   score: 0,
@@ -150,8 +152,9 @@ function tapTile(id) {
   if (!state.gameActive || !tiles[id].active) return;
 
   tiles[id].active = false;
-  document.getElementById(`tile-${id}`).classList.remove('active');
-  document.getElementById(`tile-${id}`).classList.add('hit');
+  const tileEl = document.getElementById(`tile-${id}`);
+  tileEl.classList.remove('active');
+  tileEl.classList.add('hit');
 
   state.score += 10;
   state.streak += 1;
@@ -162,8 +165,15 @@ function tapTile(id) {
 
   state.speed = Math.max(300, 1000 - state.score / 20);
 
+  audioEffects.playTap(600 + state.streak * 50);
+  if (state.streak % 5 === 0) {
+    audioEffects.playCombo(state.streak / 5);
+    ScreenShake.pulse(tileEl, 1.15, 200);
+    ParticleSystem.sparkle(tileEl, 6);
+  }
+
   setTimeout(() => {
-    document.getElementById(`tile-${id}`).classList.remove('hit');
+    tileEl.classList.remove('hit');
     activateNextTile();
   }, 100);
 
@@ -181,7 +191,20 @@ function endGame() {
   document.getElementById('finalScore').textContent = state.score;
   document.getElementById('maxStreak').textContent = state.maxStreak;
   document.getElementById('xpEarned').textContent = xpEarned;
-  document.getElementById('gameOverModal').classList.add('show');
+
+  if (state.maxStreak >= 30) {
+    audioEffects.playLevelUp();
+    ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 2, 25);
+  } else if (state.maxStreak >= 15) {
+    audioEffects.playSuccess();
+    ParticleSystem.burst(window.innerWidth / 2, window.innerHeight / 2, '⭐', 15);
+  } else {
+    audioEffects.playError();
+  }
+
+  setTimeout(() => {
+    document.getElementById('gameOverModal').classList.add('show');
+  }, 500);
 }
 
 function updateDisplay() {

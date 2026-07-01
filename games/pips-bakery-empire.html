@@ -18,6 +18,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -90,6 +91,7 @@ button.tap-btn:active { transform: scale(0.95); }
 <script>
 const gameSystem = new GameSystem('bakery-empire', "Pip's Bakery Empire", 'pip');
 const soundManager = new SoundManager(gameSystem);
+const audioEffects = new AudioEffects(0.7);
 
 let state = {
   dough: 0,
@@ -118,6 +120,10 @@ function tapBake() {
   gameSystem.unlockAchievement('firstBake');
   updateDisplay();
   save();
+  audioEffects.playSuccess(900);
+  const bakeryEl = document.querySelector('.bakery-emoji');
+  ScreenShake.pulse(bakeryEl, 1.3, 150);
+  ParticleSystem.sparkle(bakeryEl, 4);
   soundManager.play('success');
 }
 
@@ -132,7 +138,13 @@ function buyRecipe(id) {
     gameSystem.addXP(Math.floor(cost / 10));
     updateDisplay();
     save();
+    audioEffects.playLevelUp();
+    const recipeCard = event.currentTarget;
+    ScreenShake.shake(recipeCard, 3, 200);
+    ParticleSystem.burst(recipeCard.getBoundingClientRect().left + 40, recipeCard.getBoundingClientRect().top + 40, '🎉', 8);
     soundManager.play('success');
+  } else {
+    audioEffects.playError();
   }
 }
 
