@@ -250,6 +250,9 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
         <span>✓ Works offline once loaded</span>
         <span>✓ Saves progress locally</span>
     </div>
+    <div style="margin-top: 20px;">
+        <button id="soundToggleBtn" onclick="toggleSound()" style="background: linear-gradient(135deg, rgba(112,163,167,0.3), rgba(188,71,73,0.2)); border: 1.5px solid rgba(112,163,167,0.4); color: var(--beige); padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">🔊 Sound Effects On</button>
+    </div>
 </section>
 
 <!-- ── QR / HOW ── -->
@@ -666,6 +669,7 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <script>
 /* ── My Progress Dashboard ── */
 (function(){
@@ -746,6 +750,38 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
   // Refresh every 3 seconds if another tab updated stats
   setInterval(loadGlobalStats, 3000);
 })();
+</script>
+
+<script>
+/* ── AUDIO EFFECTS CONTROL ── */
+let audioEffectsGlobal = new AudioEffects(0.7);
+let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
+function updateSoundButton() {
+  const btn = document.getElementById('soundToggleBtn');
+  if (soundEnabled) {
+    btn.textContent = '🔊 Sound Effects On';
+    btn.style.borderColor = 'rgba(112,163,167,0.6)';
+    btn.style.background = 'linear-gradient(135deg, rgba(112,163,167,0.4), rgba(188,71,73,0.2))';
+    audioEffectsGlobal.setMasterVolume(0.7);
+  } else {
+    btn.textContent = '🔇 Sound Effects Off';
+    btn.style.borderColor = 'rgba(188,71,73,0.3)';
+    btn.style.background = 'linear-gradient(135deg, rgba(188,71,73,0.2), rgba(112,163,167,0.1))';
+    audioEffectsGlobal.setMasterVolume(0);
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('soundEnabled', soundEnabled);
+  updateSoundButton();
+  if (soundEnabled) {
+    audioEffectsGlobal.playSuccess();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', updateSoundButton);
 </script>
 </body>
 </html>
