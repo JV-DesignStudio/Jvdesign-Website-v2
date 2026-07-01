@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Neon Tiles | JVDesignStudio</title>
+<meta name="description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards. Free to play by JVDesignStudio.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/neon-tiles.html">
+<meta property="og:title" content="Neon Tiles | JVDesignStudio">
+<meta property="og:description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Neon Tiles | JVDesignStudio">
+<meta name="twitter:description" content="Tap the neon tiles as they light up! A fast-paced rhythm game with XP rewards.">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="manifest" href="../manifest.json">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, sans-serif; background: #0a0e27; overflow: hidden; color: white; }
+
+.game-wrapper { width: 100%; height: 100%; display: flex; flex-direction: column; }
+.header { padding: 16px 20px; background: rgba(30,70,255,0.2); border-bottom: 2px solid #1e46ff; display: flex; justify-content: space-between; align-items: center; }
+.title { font-size: 1.6rem; font-weight: 800; background: linear-gradient(90deg, #00d4ff, #0099ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hud { display: flex; gap: 16px; font-weight: 700; }
+.hud-item { display: flex; align-items: center; gap: 6px; font-size: 1.1rem; }
+
+.game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; aspect-ratio: 1; max-width: 500px; width: 100%; }
+.tile { background: linear-gradient(135deg, #1e46ff, #0066ff); border: 2px solid #0099ff; border-radius: 16px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 0 20px rgba(0,100,255,0.3); }
+.tile:hover { transform: scale(1.05); }
+.tile.active { background: linear-gradient(135deg, #00d4ff, #00ff88); border-color: #00ff88; box-shadow: 0 0 40px rgba(0,255,136,0.8); animation: pulse 0.4s; }
+.tile.hit { animation: hitPulse 0.3s; }
+.tile.miss { background: #ff3333; border-color: #ff3333; box-shadow: 0 0 30px rgba(255,51,51,0.6); animation: shake 0.3s; }
+
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes hitPulse { 0% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 0.5; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+.info { margin-top: 24px; text-align: center; }
+.score-display { font-size: 2.4rem; font-weight: 800; color: #00ff88; margin-bottom: 8px; }
+.streak-display { font-size: 1.2rem; color: #00d4ff; }
+
+.game-over { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+.game-over.show { display: flex; }
+.game-over-content { background: linear-gradient(135deg, #1e46ff, #0066ff); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #00ff88; }
+.game-over-title { font-size: 2.4rem; font-weight: 800; margin-bottom: 16px; }
+.game-over-stats { font-size: 1.2rem; margin-bottom: 24px; }
+.game-over-stats div { margin: 8px 0; }
+.btn { background: linear-gradient(90deg, #00ff88, #00d4ff); color: #0a0e27; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 12px; }
+.btn:hover { transform: translateY(-2px); }
+
+.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(0,255,136,0.2); border: 2px solid #00ff88; color: #00ff88; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
+
+@media (max-width: 600px) {
+  .grid { max-width: 100%; }
+  .title { font-size: 1.3rem; }
+  .tile { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+<a href="mobile-games.html" class="home-btn">🏠</a>
+
+<div class="game-wrapper">
+  <div class="header">
+    <div class="title">⚡ Neon Tiles</div>
+    <div class="hud">
+      <div class="hud-item">📊 <span id="scoreHud">0</span></div>
+      <div class="hud-item">⭐ Lv.<span id="levelHud">1</span></div>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="grid" id="grid"></div>
+    <div class="info">
+      <div class="score-display" id="scoreDisplay">0</div>
+      <div class="streak-display" id="streakDisplay">Streak: 0</div>
+    </div>
+  </div>
+</div>
+
+<div class="game-over" id="gameOverModal">
+  <div class="game-over-content">
+    <div class="game-over-title">Game Over!</div>
+    <div class="game-over-stats">
+      <div>Final Score: <span id="finalScore">0</span></div>
+      <div>Max Streak: <span id="maxStreak">0</span></div>
+      <div>XP Earned: <span id="xpEarned">0</span></div>
+    </div>
+    <button class="btn" onclick="startGame()">Play Again</button>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles', 'echo');
+const soundManager = new SoundManager(gameSystem);
+
+let state = {
+  score: 0,
+  streak: 0,
+  maxStreak: 0,
+  lives: 3,
+  gameActive: false,
+  speed: 1000,
+  level: 1,
+};
+
+const tiles = [];
+for (let i = 0; i < 9; i++) tiles.push({ id: i, active: false });
+
+function init() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = tiles.map(t => `<div class="tile" id="tile-${t.id}">🟫</div>`).join('');
+  tiles.forEach((t, i) => {
+    document.getElementById(`tile-${i}`).addEventListener('click', () => tapTile(i));
+  });
+}
+
+function startGame() {
+  state = { score: 0, streak: 0, maxStreak: 0, lives: 3, gameActive: true, speed: 1000, level: 1 };
+  document.getElementById('gameOverModal').classList.remove('show');
+  gameSystem.resetState();
+  gameSystem.unlockAchievement('firstTap');
+  activateNextTile();
+}
+
+function activateNextTile() {
+  if (!state.gameActive) return;
+
+  const randomTile = Math.floor(Math.random() * 9);
+  tiles[randomTile].active = true;
+  document.getElementById(`tile-${randomTile}`).classList.add('active');
+
+  setTimeout(() => {
+    if (tiles[randomTile].active) {
+      tiles[randomTile].active = false;
+      document.getElementById(`tile-${randomTile}`).classList.remove('active');
+      endGame();
+    }
+  }, Math.max(300, state.speed));
+}
+
+function tapTile(id) {
+  if (!state.gameActive || !tiles[id].active) return;
+
+  tiles[id].active = false;
+  document.getElementById(`tile-${id}`).classList.remove('active');
+  document.getElementById(`tile-${id}`).classList.add('hit');
+
+  state.score += 10;
+  state.streak += 1;
+  state.maxStreak = Math.max(state.maxStreak, state.streak);
+
+  gameSystem.addXP(state.streak);
+  if (state.streak % 10 === 0) gameSystem.unlockAchievement('streak10');
+
+  state.speed = Math.max(300, 1000 - state.score / 20);
+
+  setTimeout(() => {
+    document.getElementById(`tile-${id}`).classList.remove('hit');
+    activateNextTile();
+  }, 100);
+
+  updateDisplay();
+  soundManager.play('success');
+}
+
+function endGame() {
+  state.gameActive = false;
+  const xpEarned = Math.floor(state.score / 10);
+  gameSystem.addXP(xpEarned);
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+
+  document.getElementById('finalScore').textContent = state.score;
+  document.getElementById('maxStreak').textContent = state.maxStreak;
+  document.getElementById('xpEarned').textContent = xpEarned;
+  document.getElementById('gameOverModal').classList.add('show');
+}
+
+function updateDisplay() {
+  document.getElementById('scoreDisplay').textContent = state.score;
+  document.getElementById('streakDisplay').textContent = `Streak: ${state.streak}`;
+  document.getElementById('scoreHud').textContent = state.score;
+  document.getElementById('levelHud').textContent = gameSystem.state.level;
+}
+
+init();
+startGame();
+</script>
+</body>
+</html>

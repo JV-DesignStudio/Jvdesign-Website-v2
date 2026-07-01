@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pip's Bakery Empire | JVDesignStudio</title>
+<meta name="description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP. An idle game by JVDesignStudio.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/pips-bakery-empire.html">
+<meta property="og:title" content="Pip's Bakery Empire | JVDesignStudio">
+<meta property="og:description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pip's Bakery Empire | JVDesignStudio">
+<meta name="twitter:description" content="Build your bakery empire! Bake pastries, unlock recipes, automate production, and earn XP.">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="manifest" href="../manifest.json">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fef5e7; overflow: hidden; }
+body { display: flex; flex-direction: column; }
+
+.game-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.game-header { padding: 16px 20px; background: linear-gradient(135deg, #d4a574, #c9936b); box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; color: white; }
+.game-title { font-size: 1.8rem; font-weight: 700; }
+.game-hud { display: flex; gap: 12px; align-items: center; }
+.hud-item { background: rgba(0,0,0,0.15); padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+
+.game-main { flex: 1; display: grid; grid-template-columns: 1fr 280px; gap: 16px; padding: 16px; overflow: hidden; }
+
+.game-canvas { background: linear-gradient(180deg, #fff9f0, #fef5e7); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.1); overflow: hidden; }
+.bakery-emoji { font-size: 5rem; animation: bounce 2s infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+.tap-text { font-size: 1.2rem; font-weight: 700; color: #8b5e3c; margin-top: 12px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.recipe-card { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+.recipe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); border-color: #d4a574; }
+.recipe-card.purchased { background: #e8f5e9; border-color: #4caf50; }
+.recipe-icon { font-size: 2rem; text-align: center; margin-bottom: 6px; }
+.recipe-name { font-size: 0.85rem; font-weight: 700; color: #2c2c2c; }
+.recipe-cost { font-size: 0.75rem; color: #888; margin-top: 4px; }
+.recipe-per-sec { font-size: 0.7rem; color: #4caf50; font-weight: 600; margin-top: 2px; }
+
+.stat-bar { margin-top: 8px; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; overflow: hidden; }
+.stat-bar-fill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); }
+
+button.tap-btn { background: linear-gradient(135deg, #ff9800, #f57c00); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 6px 20px rgba(255,152,0,0.4); transition: all 0.2s; }
+button.tap-btn:active { transform: scale(0.95); }
+
+.home-btn { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.1); border: none; color: white; width: 48px; height: 48px; border-radius: 10px; font-size: 1.5rem; cursor: pointer; }
+
+@media (max-width: 768px) {
+  .game-main { grid-template-columns: 1fr; }
+  .sidebar { max-height: 200px; }
+  .game-title { font-size: 1.4rem; }
+}
+</style>
+</head>
+<body>
+<a href="mobile-games.html" class="home-btn">🏠</a>
+
+<div class="game-wrapper">
+  <div class="game-header">
+    <div class="game-title">🥐 Pip's Bakery Empire</div>
+    <div class="game-hud">
+      <div class="hud-item">🍪 <span id="doughValue">0</span></div>
+      <div class="hud-item">⭐ <span id="xpValue">0</span> XP</div>
+      <div class="hud-item">📊 Lv. <span id="levelValue">1</span></div>
+    </div>
+  </div>
+
+  <div class="game-main">
+    <div class="game-canvas">
+      <div class="bakery-emoji">🥐</div>
+      <div class="tap-text">Tap to bake!</div>
+      <button class="tap-btn" id="tapBtn" onclick="tapBake()">BAKE (+1 🍪)</button>
+    </div>
+
+    <div class="sidebar">
+      <div id="recipesContainer"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const gameSystem = new GameSystem('bakery-empire', "Pip's Bakery Empire", 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+let state = {
+  dough: 0,
+  perSecond: 0,
+  recipes: [
+    { id: 'oven', name: 'Oven', emoji: '🔥', baseCost: 10, basePerSec: 0.1, owned: 0 },
+    { id: 'baker', name: 'Baker', emoji: '👨‍🍳', baseCost: 100, basePerSec: 1, owned: 0 },
+    { id: 'mixer', name: 'Mixer', emoji: '⚙️', baseCost: 500, basePerSec: 5, owned: 0 },
+    { id: 'robo', name: 'Robot Chef', emoji: '🤖', baseCost: 2500, basePerSec: 25, owned: 0 },
+    { id: 'factory', name: 'Factory', emoji: '🏭', baseCost: 10000, basePerSec: 100, owned: 0 },
+  ]
+};
+
+function load() {
+  const saved = localStorage.getItem('bakeryState');
+  if (saved) state = JSON.parse(saved);
+}
+
+function save() {
+  localStorage.setItem('bakeryState', JSON.stringify(state));
+}
+
+function tapBake() {
+  state.dough += 1;
+  gameSystem.addXP(1);
+  gameSystem.unlockAchievement('firstBake');
+  updateDisplay();
+  save();
+  soundManager.play('success');
+}
+
+function buyRecipe(id) {
+  const recipe = state.recipes.find(r => r.id === id);
+  const cost = recipe.baseCost * Math.pow(1.15, recipe.owned);
+
+  if (state.dough >= cost) {
+    state.dough -= cost;
+    recipe.owned += 1;
+    state.perSecond = state.recipes.reduce((sum, r) => sum + r.basePerSec * r.owned, 0);
+    gameSystem.addXP(Math.floor(cost / 10));
+    updateDisplay();
+    save();
+    soundManager.play('success');
+  }
+}
+
+function updateDisplay() {
+  document.getElementById('doughValue').textContent = Math.floor(state.dough);
+  document.getElementById('xpValue').textContent = gameSystem.state.xp;
+  document.getElementById('levelValue').textContent = gameSystem.state.level;
+  renderRecipes();
+}
+
+function renderRecipes() {
+  const container = document.getElementById('recipesContainer');
+  container.innerHTML = state.recipes.map(recipe => {
+    const cost = recipe.baseCost * Math.pow(1.15, recipe.owned);
+    const canAfford = state.dough >= cost;
+    return `
+      <div class="recipe-card ${recipe.owned > 0 ? 'purchased' : ''}"
+           onclick="buyRecipe('${recipe.id}')"
+           style="opacity: ${canAfford ? 1 : 0.6}; cursor: ${canAfford ? 'pointer' : 'not-allowed'}">
+        <div class="recipe-icon">${recipe.emoji}</div>
+        <div class="recipe-name">${recipe.name}</div>
+        <div class="recipe-cost">💰 ${Math.floor(cost)}</div>
+        ${recipe.owned > 0 ? `<div class="recipe-per-sec">+${(recipe.basePerSec * recipe.owned).toFixed(1)}/sec</div>` : ''}
+        ${recipe.owned > 0 ? `<div class="recipe-cost">Owned: ${recipe.owned}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+setInterval(() => {
+  state.dough += state.perSecond / 10;
+  if (state.perSecond > 0) {
+    gameSystem.addXP(Math.floor(state.perSecond / 100) || 1);
+  }
+  updateDisplay();
+  save();
+}, 100);
+
+load();
+updateDisplay();
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
+</body>
+</html>
