@@ -522,6 +522,7 @@
 <link rel="stylesheet" href="../style-shared.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
@@ -1573,10 +1574,18 @@ function damageBrick(br, b) {
     state.bricksBrokenStage++;
     state.bricksBrokenRun++;
     save.tigerTotalBricks++;
+    audioEffects.playPop();
+    if (state.comboHits > 3) {
+      ParticleSystem.sparkle(document.body, 4);
+    }
     // Combo
     state.comboHits++;
     state.comboTimer = 1.0;
     if (state.comboHits > save.tigerMaxCombo) save.tigerMaxCombo = state.comboHits;
+    if (state.comboHits % 5 === 0) {
+      audioEffects.playCombo(state.comboHits / 5);
+      ScreenShake.pulse(canvas, 1.05, 100);
+    }
     // Coin reward
     const paddleDef = state.paddleDef;
     const ballDef = state.ballDef;
@@ -3030,6 +3039,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 // ══ GAME SYSTEM INTEGRATION ══
 const gameSystem = new GameSystem('tiger-smash', 'Tiger Smash', 'tiger');
 const soundManager = new SoundManager(gameSystem);
+const audioEffects = new AudioEffects(0.7);
 
 // Track score as XP (10 points = 1 XP)
 let lastScore = 0;
