@@ -79,6 +79,16 @@ class GameSystem {
     return this.state.score;
   }
 
+  // Unlocks a "new personal best" achievement when the game defines one.
+  // Safe no-op otherwise. (Previously called but never defined, which threw
+  // mid-game-over in every game that uses addScore.)
+  checkHighScoreAchievement() {
+    const ids = ['highScore', 'newBest', 'personalBest'];
+    for (const id of ids) {
+      if (this.achievements && this.achievements[id]) { this.unlockAchievement(id); break; }
+    }
+  }
+
   addXP(amount) {
     this.state.xp += amount;
     const xpPerLevel = 1000;
