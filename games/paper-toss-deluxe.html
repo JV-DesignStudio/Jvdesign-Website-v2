@@ -2,498 +2,455 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="description" content="Paper Toss Deluxe — Physics-based throwing game by JVDesignStudio.">
+<meta name="description" content="Paper Toss Deluxe — drag to aim, mind the wind and sink the shot. A free physics toss game with levels, combos, XP and achievements by JVDesignStudio.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
-<meta name="theme-color" content="#0d0d12">
+<meta name="theme-color" content="#2B2D42">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
-
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/paper-toss-deluxe.html">
 <meta name="robots" content="index, follow">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Paper Toss Deluxe | JVDesignStudio</title>
-<meta property="og:type"        content="website">
-<meta property="og:url"         content="https://jvdesignstudio.co.uk/games/paper-toss-deluxe.html">
-<meta property="og:title"       content="Paper Toss Deluxe | JVDesignStudio">
-<meta property="og:description" content="Drag, aim, and throw through 20 levels. A free physics-based game with XP, achievements, and character unlocks.">
-<meta property="og:image"       content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:site_name"   content="JVDesignStudio">
-<meta name="twitter:card"        content="summary_large_image">
-<meta name="twitter:title"       content="Paper Toss Deluxe | JVDesignStudio">
-<meta name="twitter:description" content="Drag, aim, and throw through 20 levels. A free physics-based game with XP, achievements, and character unlocks.">
-<meta name="twitter:image"       content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
-
-<!-- Game Systems -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/paper-toss-deluxe.html">
+<meta property="og:title" content="Paper Toss Deluxe | JVDesignStudio">
+<meta property="og:description" content="Drag to aim, mind the wind and sink the shot. Levels, combos, XP and achievements.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/GamesUpdatePromo.svg">
+<meta name="twitter:card" content="summary_large_image">
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
-
 <style>
-:root {
-  --bg-office: #E8E6E1;
-  --bg-wall: #D4D0C8;
-  --accent: #FF6B6B;
-  --accent-dark: #E63946;
-  --text-dark: #2B2D42;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #2B2D42; display: flex; align-items: center; justify-content: center; }
+.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 520px; overflow: hidden; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
+.hud { position: absolute; top: calc(env(safe-area-inset-top,0px) + 12px); left: 12px; right: 12px; z-index: 10; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+.pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { background: rgba(20,22,38,.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.15); border-radius: 999px; padding: 6px 13px; color: #fff; font-weight: 700; font-size: .78rem; display: flex; gap: 6px; align-items: center; }
+.pill b { color: #FF8A8A; font-size: 1rem; }
+.lives { color: #FF8A8A; letter-spacing: 2px; }
+.home-btn { pointer-events: auto; width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(20,22,38,.7); backdrop-filter: blur(8px); color: #fff; font-size: 1.2rem; cursor: pointer; }
+.home-btn:active { transform: scale(.92); }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #E8E6E1 0%, #D4D0C8 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.game-wrapper {
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  max-width: 600px;
-  position: relative;
-}
-
-canvas {
-  display: block;
-  flex: 1;
-  width: 100%;
-  background: linear-gradient(180deg, #F5F3F0 0%, #E8E6E1 100%);
-  image-rendering: pixelated;
-}
-
-.hud-pill {
-  background: rgba(43, 45, 66, 0.8);
-  border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  backdrop-filter: blur(8px);
-  color: white;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.hud-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; opacity: 0.6; }
-.hud-value { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
-
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(43, 45, 66, 0.85);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 300ms;
-}
-
-.modal.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.modal-box {
-  background: var(--bg-office);
-  border: 2px solid var(--accent);
-  border-radius: 16px;
-  padding: 32px 28px;
-  max-width: 500px;
-  width: 90%;
-  text-align: center;
-  animation: slideUp 300ms ease-out;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.modal-title { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 12px; }
-.modal-subtitle { font-size: 0.95rem; color: var(--accent); margin-bottom: 16px; }
-.modal-text { font-size: 0.85rem; color: var(--text-dark); line-height: 1.5; margin-bottom: 16px; }
-
-.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
-.stat-box { background: rgba(255, 107, 107, 0.1); border: 2px solid rgba(255, 107, 107, 0.3); border-radius: 10px; padding: 12px; }
-.stat-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: rgba(43, 45, 66, 0.5); }
-.stat-value { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-top: 4px; }
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  text-transform: uppercase;
-  margin: 6px;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--accent-dark);
-}
-
-.btn-secondary {
-  background: rgba(43, 45, 66, 0.1);
-  color: var(--text-dark);
-  border: 2px solid rgba(43, 45, 66, 0.2);
-}
-
-.controls {
-  background: rgba(255, 107, 107, 0.1);
-  border-left: 4px solid var(--accent);
-  padding: 12px;
-  border-radius: 6px;
-  margin: 12px 0;
-  text-align: left;
-  font-size: 0.85rem;
-  color: var(--text-dark);
-}
-
-@media (max-width: 480px) {
-  .modal-box { padding: 20px 16px; }
-  .modal-title { font-size: 1.4rem; }
-}
+.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(20,22,38,.6); backdrop-filter: blur(5px); }
+.modal.show { display: flex; }
+.card { background: linear-gradient(165deg,#3a3d5c,#24263c); border: 1px solid rgba(255,138,138,.3); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.card h1 { font-family: 'Fredoka', cursive; font-size: 1.9rem; color: #fff; }
+.card .sub { color: #FF8A8A; font-weight: 700; margin: 2px 0 12px; }
+.how { text-align: left; background: rgba(255,138,138,.1); border-left: 4px solid #FF8A8A; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.7; }
+.how b { color: #fff; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
+.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+.stat .v { font-size: 1.5rem; font-weight: 800; color: #FF8A8A; }
+.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg,#ff7a7a,#e63946); color: #fff; box-shadow: 0 8px 18px rgba(230,57,70,.35); }
+.btn:active { transform: scale(.97); }
+.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; margin-top: 10px; }
 </style>
 </head>
 <body>
-<div class="game-wrapper">
-  <div style="position: fixed; top: 16px; left: 16px; right: 16px; z-index: 100; display: flex; justify-content: space-between; gap: 12px;">
-    <div style="display: flex; gap: 8px;">
-      <div class="hud-pill">
-        <span class="hud-label">Score</span>
-        <span class="hud-value" id="scoreDisplay">0</span>
-      </div>
-      <div class="hud-pill">
-        <span class="hud-label">Level</span>
-        <span class="hud-value" id="levelDisplay">1</span>
-      </div>
+<div class="wrapper" id="wrapper">
+  <canvas id="canvas"></canvas>
+  <div class="hud">
+    <div class="pills">
+      <div class="pill">SCORE <b id="scoreHud">0</b></div>
+      <div class="pill">LVL <b id="levelHud">1</b></div>
+      <div class="pill">BEST <b id="bestHud">0</b></div>
     </div>
-    <button style="width: 48px; height: 48px; padding: 0; font-size: 1.5rem; background: rgba(43,45,66,0.8); border: none; border-radius: 10px; cursor: pointer; color: white;" onclick="window.location.href='/games/mobile-games.html'">🏠</button>
+    <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
-  <canvas id="gameCanvas"></canvas>
-</div>
-
-<!-- Start Modal -->
-<div class="modal show" id="startModal">
-  <div class="modal-box">
-    <div class="modal-title">📄 Paper Toss</div>
-    <div class="modal-subtitle">Deluxe Edition</div>
-    <div class="controls">
-      <strong>How to Play:</strong><br>
-      1. Drag from your position to aim<br>
-      2. Release to throw<br>
-      3. Hit the trash can for points<br>
-      4. Level up with higher scores
-    </div>
-    <div class="stat-row">
-      <div class="stat-box">
-        <div class="stat-label">Best Score</div>
-        <div class="stat-value" id="bestScoreStart">0</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Throws</div>
-        <div class="stat-value" id="throwsStart">0</div>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="startGame()" style="width: 100%; margin-top: 16px;">Start Playing</button>
+  <div class="hud" style="top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);justify-content:center;">
+    <div class="pill">LIVES <span class="lives" id="livesHud">❤❤❤</span></div>
   </div>
-</div>
 
-<!-- Game Over Modal -->
-<div class="modal" id="gameOverModal">
-  <div class="modal-box">
-    <div class="modal-title" id="resultTitle">Great Job!</div>
-    <div class="modal-subtitle" id="resultScore">Score: 0</div>
-    <div class="stat-row">
-      <div class="stat-box">
-        <div class="stat-label">Points</div>
-        <div class="stat-value" id="pointsEarned">0</div>
+  <div class="modal show" id="startModal">
+    <div class="card">
+      <h1>📄 Paper Toss</h1>
+      <div class="sub">Deluxe Edition</div>
+      <div class="how">
+        <div>👉 <b>Drag anywhere</b> to aim the throw.</div>
+        <div>🎯 Watch the dotted arc and <b>release</b> to shoot.</div>
+        <div>🌬️ Mind the <b>wind</b> arrow it pushes your paper.</div>
+        <div>❤️ Miss the bin 3 times and it's game over.</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">XP</div>
-        <div class="stat-value" id="xpEarned">0</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Best</div><div class="v" id="bestStart">0</div></div>
+        <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
       </div>
+      <button class="btn" onclick="startGame()">Start Playing</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back to Games</button>
     </div>
-    <div>
-      <button class="btn btn-primary" onclick="startGame()">Play Again</button>
-      <button class="btn btn-secondary" onclick="window.location.href='/games/mobile-games.html'">Home</button>
+  </div>
+
+  <div class="modal" id="overModal">
+    <div class="card">
+      <h1 id="overTitle">Game Over</h1>
+      <div class="sub" id="overSub">Nice throwing!</div>
+      <div class="stats">
+        <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
+        <div class="stat"><div class="l">Best</div><div class="v" id="finalBest">0</div></div>
+      </div>
+      <button class="btn" onclick="startGame()">Play Again</button>
+      <button class="btn ghost" onclick="location.href='mobile-games.html'">Back to Games</button>
     </div>
   </div>
 </div>
 
 <script>
-const CANVAS_WIDTH = 400;
-const CANVAS_HEIGHT = 600;
-const PLAYER_X = 50;
-const PLAYER_Y = CANVAS_HEIGHT - 80;
-const TRASH_X = 320;
-const TRASH_Y = 100;
-
-let gameRunning = false;
-let score = 0;
-let throws = 0;
-let isDragging = false;
-let dragStart = { x: PLAYER_X, y: PLAYER_Y };
-let dragCurrent = { x: PLAYER_X, y: PLAYER_Y };
-let paper = null;
-
 const gameSystem = new GameSystem('paper-toss', 'Paper Toss Deluxe', 'squirt');
-const soundManager = new SoundManager(gameSystem);
+const audioEffects = new AudioEffects(0.7);
+if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
-const canvas = document.getElementById('gameCanvas');
+const wrap = document.getElementById('wrapper');
+const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-canvas.width = CANVAS_WIDTH;
-canvas.height = CANVAS_HEIGHT;
 
-// Input handling
-canvas.addEventListener('mousedown', (e) => {
-  if (!gameRunning || paper) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+let W = 0, H = 0, dpr = 1;
+function resize() {
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layout();
+}
+window.addEventListener('resize', resize);
 
-  const dist = Math.hypot(x - PLAYER_X, y - PLAYER_Y);
-  if (dist < 40) {
-    isDragging = true;
-    dragStart = { x: PLAYER_X, y: PLAYER_Y };
-    dragCurrent = { x, y };
-  }
-});
+// ── tunables (CSS px, seconds) ──
+const GRAVITY = 1500;
+const MAX_DRAG = 170;
+const MAX_SPEED = 1550;
+const PAPER_R = 12;
 
-canvas.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  dragCurrent.x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  dragCurrent.y = (e.clientY - rect.top) * (canvas.height / rect.height);
-});
-
-canvas.addEventListener('mouseup', () => {
-  if (!isDragging) return;
-  isDragging = false;
-  throwPaper();
-});
-
-canvas.addEventListener('touchstart', (e) => {
-  if (!gameRunning || paper) return;
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-
-  const dist = Math.hypot(x - PLAYER_X, y - PLAYER_Y);
-  if (dist < 40) {
-    isDragging = true;
-    dragStart = { x: PLAYER_X, y: PLAYER_Y };
-    dragCurrent = { x, y };
-  }
-});
-
-canvas.addEventListener('touchmove', (e) => {
-  if (!isDragging) return;
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  dragCurrent.x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-  dragCurrent.y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-}, false);
-
-canvas.addEventListener('touchend', () => {
-  if (!isDragging) return;
-  isDragging = false;
-  throwPaper();
-}, false);
-
-function throwPaper() {
-  if (paper || !gameRunning) return;
-
-  throws++;
-  const power = Math.hypot(dragStart.x - dragCurrent.x, dragStart.y - dragCurrent.y) / 3;
-  const angle = Math.atan2(dragStart.y - dragCurrent.y, dragStart.x - dragCurrent.x);
-
-  paper = {
-    x: PLAYER_X,
-    y: PLAYER_Y,
-    vx: Math.cos(angle) * power,
-    vy: Math.sin(angle) * power,
-    rotation: 0,
-    life: 120
-  };
-
-  soundManager.playSound(500, 100, 'sine');
+let launch = { x: 0, y: 0 };
+let bin = { x: 0, y: 0, w: 60, h: 74 };
+function layout() {
+  launch.x = W * 0.5; launch.y = H - 104;
+  bin.y = Math.max(120, H * 0.20);
+  placeBin();
+}
+function placeBin() {
+  // bin distance/side varies with level; opening narrows as levels climb
+  const side = (level % 2 === 0) ? -1 : 1;
+  const spread = Math.min(0.20 + level * 0.02, 0.36);
+  bin.x = W * (0.5 + side * spread);
+  bin.x = Math.max(70, Math.min(W - 70, bin.x));
+  bin.w = Math.max(44, 66 - level * 1.6);
 }
 
-function checkHit() {
-  if (!paper) return false;
-  const dx = paper.x - TRASH_X;
-  const dy = paper.y - TRASH_Y;
-  return Math.hypot(dx, dy) < 35;
+let state = 'idle';   // idle | aiming | flying | dead
+let score = 0, best = 0, level = 1, lives = 3, hits = 0, combo = 0;
+let wind = 0;         // px/s² horizontal
+let paper = null;     // {x,y,vx,vy,rot,spin}
+let aim = { active: false, sx: 0, sy: 0, cx: 0, cy: 0 };
+let particles = [];
+let shakeT = 0;
+let resultText = null; // {txt,color,t,x,y}
+let startedAt = 0;
+
+function reset() {
+  score = 0; level = 1; lives = 3; hits = 0; combo = 0;
+  paper = null; particles = []; resultText = null;
+  best = gameSystem.state.highScore || 0;
+  newWind();
+  layout();
+  updateHud();
+}
+
+function newWind() {
+  const maxW = Math.min(60 + level * 45, 420);   // grows with level
+  wind = (Math.random() * 2 - 1) * maxW;
+  if (level === 1) wind *= 0.35;                  // gentle start
+}
+
+function updateHud() {
+  document.getElementById('scoreHud').textContent = score;
+  document.getElementById('levelHud').textContent = level;
+  document.getElementById('bestHud').textContent = Math.max(best, gameSystem.state.highScore || 0);
+  document.getElementById('livesHud').textContent = '❤'.repeat(lives) + '·'.repeat(3 - lives);
 }
 
 function startGame() {
   document.getElementById('startModal').classList.remove('show');
-  document.getElementById('gameOverModal').classList.remove('show');
-
-  gameRunning = true;
-  score = 0;
-  paper = null;
-  isDragging = false;
-  gameSystem.resetState();
-
-  document.getElementById('scoreDisplay').textContent = '0';
-  document.getElementById('levelDisplay').textContent = gameSystem.state.level;
-
-  gameLoop();
+  document.getElementById('overModal').classList.remove('show');
+  resize();
+  reset();
+  state = 'ready';
+  startedAt = performance.now();
 }
 
-function endGame() {
-  gameRunning = false;
+function throwPaper() {
+  const dx = aim.cx - aim.sx, dy = aim.cy - aim.sy;
+  const len = Math.hypot(dx, dy);
+  if (len < 12) return;   // too small a drag, ignore
+  const power = Math.min(len, MAX_DRAG) / MAX_DRAG;
+  const speed = power * MAX_SPEED;
+  const ang = Math.atan2(dy, dx);
+  paper = { x: launch.x, y: launch.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, rot: 0, spin: (Math.random()*2-1)*8 };
+  state = 'flying';
+  audioEffects.playTap(360);
+}
 
-  const xpGained = Math.floor(score / 5);
-  gameSystem.addScore(score);
-  gameSystem.addXP(xpGained);
+function scoreHit() {
+  combo++;
+  hits++;
+  const gained = 100 * combo;
+  score += gained;
+  if (score > (gameSystem.state.highScore || 0)) gameSystem.state.highScore = score;
+  gameSystem.addXP(Math.max(2, Math.floor(gained / 20)));
   gameSystem.unlockAchievement('firstThrow');
-  gameSystem.checkAchievements();
-  gameSystem.recordGamePlay(Date.now());
+  if (combo >= 3) gameSystem.unlockAchievement('combo3');
+  if (score >= 1000) gameSystem.unlockAchievement('score1000');
+
+  audioEffects.playSuccess(700 + Math.min(combo, 10) * 40);
+  if (combo >= 2) audioEffects.playCombo(combo);
+  shakeT = 0.18;
+  for (let i = 0; i < 14; i++) particles.push({ x: bin.x, y: bin.y, vx: (Math.random()-0.5)*260, vy: -Math.random()*260, life: 0.6, r: 2+Math.random()*3, c: combo>=3?'#ffd24a':'#8ff0c0' });
+  resultText = { txt: (combo > 1 ? combo + 'x COMBO! ' : '') + '+' + gained, color: combo>=3?'#ffd24a':'#8ff0c0', t: 1, x: bin.x, y: bin.y - 40 };
+
+  hits % 3 === 0 ? levelUp() : 0;
+  paper = null; state = 'ready';
+  newWind(); placeBin();
+  updateHud();
+}
+
+function levelUp() {
+  level++;
+  audioEffects.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 14);
+  resultText = { txt: 'LEVEL ' + level + '!', color: '#ff9', t: 1.4, x: W/2, y: H*0.4 };
+  if (level >= 5) gameSystem.unlockAchievement('level5');
+}
+
+function miss() {
+  combo = 0;
+  lives--;
+  audioEffects.playError();
+  shakeT = 0.25;
+  resultText = { txt: 'MISS', color: '#ff8a8a', t: 1, x: launch.x, y: launch.y - 60 };
+  paper = null;
+  updateHud();
+  if (lives <= 0) { gameOver(); return; }
+  state = 'ready';
+  newWind(); placeBin();
+}
+
+function gameOver() {
+  state = 'dead';
+  gameSystem.recordGamePlay(performance.now() - startedAt);
   gameSystem.saveState();
-
-  document.getElementById('resultTitle').textContent = score > 300 ? '🎉 Excellent!' : score > 100 ? '👍 Nice!' : '📄 Good Try!';
-  document.getElementById('resultScore').textContent = `Score: ${score}`;
-  document.getElementById('pointsEarned').textContent = score;
-  document.getElementById('xpEarned').textContent = xpGained;
-  document.getElementById('gameOverModal').classList.add('show');
-
-  soundManager.playSuccessSound();
+  const isBest = score >= (best || 0) && score > 0;
+  document.getElementById('overTitle').textContent = 'Game Over';
+  document.getElementById('overSub').textContent = score >= 800 ? 'Sharpshooter! 🎯' : score >= 300 ? 'Nice throwing!' : 'Keep practising!';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalBest').textContent = gameSystem.state.highScore;
+  setTimeout(() => {
+    document.getElementById('overModal').classList.add('show');
+    if (isBest) ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 18);
+  }, 500);
 }
 
-function updateGame() {
-  if (!paper) return;
+// ── input: drag anywhere to aim ──
+function pos(e) {
+  const r = canvas.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  return { x: p.clientX - r.left, y: p.clientY - r.top };
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (state !== 'ready') return;
+  e.preventDefault();
+  const p = pos(e);
+  aim.active = true; aim.sx = p.x; aim.sy = p.y; aim.cx = p.x; aim.cy = p.y;
+  state = 'aiming';
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (state !== 'aiming' || !aim.active) return;
+  e.preventDefault();
+  const p = pos(e); aim.cx = p.x; aim.cy = p.y;
+});
+canvas.addEventListener('pointerup', (e) => {
+  if (state !== 'aiming') return;
+  e.preventDefault();
+  aim.active = false;
+  throwPaper();
+  if (state === 'aiming') state = 'ready';   // drag too small, stay ready
+});
+canvas.addEventListener('pointercancel', () => { if (state === 'aiming') { aim.active = false; state = 'ready'; } });
 
-  // Physics
-  paper.vx *= 0.985;
-  paper.vy += 0.3;
-  paper.x += paper.vx;
-  paper.y += paper.vy;
-  paper.rotation += paper.vx * 0.1;
-  paper.life--;
+// ── loop ──
+let last = performance.now();
+function loop(now) {
+  let dt = (now - last) / 1000; last = now;
+  if (dt > 0.05) dt = 0.05;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
 
-  // Check hit
-  if (checkHit()) {
-    score += 100;
-    document.getElementById('scoreDisplay').textContent = score;
-    document.getElementById('levelDisplay').textContent = gameSystem.state.level;
-    soundManager.playSuccessSound();
-    paper = null;
-    return;
+function update(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 900*dt; p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
   }
+  if (shakeT > 0) shakeT -= dt;
+  if (resultText) { resultText.t -= dt; if (resultText.t <= 0) resultText = null; }
 
-  // Out of bounds
-  if (paper.y > CANVAS_HEIGHT + 50 || paper.x < -50 || paper.x > CANVAS_WIDTH + 50 || paper.life <= 0) {
-    paper = null;
+  if (state === 'flying' && paper) {
+    paper.vy += GRAVITY * dt;
+    paper.vx += wind * dt;
+    paper.x += paper.vx * dt;
+    paper.y += paper.vy * dt;
+    paper.rot += paper.spin * dt;
+
+    // into the bin opening while descending?
+    if (paper.vy > 0) {
+      const openL = bin.x - bin.w/2, openR = bin.x + bin.w/2;
+      if (paper.x > openL && paper.x < openR && paper.y > bin.y - 6 && paper.y < bin.y + 14) { scoreHit(); return; }
+      // clank off the rim
+      if (paper.y > bin.y - 6 && paper.y < bin.y + 8 && (Math.abs(paper.x - openL) < 8 || Math.abs(paper.x - openR) < 8)) {
+        paper.vx *= -0.4; paper.vy *= -0.35; audioEffects.playTap(200);
+      }
+    }
+    // out of bounds / landed
+    if (paper.y > H + 40 || paper.x < -40 || paper.x > W + 40) { miss(); return; }
   }
 }
 
-function drawGame() {
-  // Background
-  ctx.fillStyle = '#F5F3F0';
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+function draw() {
+  ctx.save();
+  if (shakeT > 0) { const k = shakeT/0.25; ctx.translate((Math.random()-0.5)*8*k, (Math.random()-0.5)*8*k); }
 
-  // Wall gradient
-  const wallGrad = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, 0);
-  wallGrad.addColorStop(0, '#D4D0C8');
-  wallGrad.addColorStop(1, '#E8E6E1');
-  ctx.fillStyle = wallGrad;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, 120);
+  // office wall + floor
+  const wall = ctx.createLinearGradient(0, 0, 0, H);
+  wall.addColorStop(0, '#eceae4'); wall.addColorStop(1, '#d7d3ca');
+  ctx.fillStyle = wall; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#c8a06a'; ctx.fillRect(0, H - 70, W, 70);        // desk/floor
+  ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(0, H - 70, W, 4);
 
-  // Trash can
-  ctx.fillStyle = '#333';
+  drawBin();
+  drawWind();
+
+  // aim preview
+  if (state === 'aiming' && aim.active) drawAim();
+
+  // launcher (squirrel with paper)
+  ctx.font = (PAPER_R*3.2) + 'px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🐿️', launch.x, launch.y + 8);
+
+  // paper
+  if (paper) drawPaper(paper.x, paper.y, paper.rot);
+  else if (state === 'ready') drawPaper(launch.x, launch.y - PAPER_R*1.6, 0);
+
+  // particles
+  particles.forEach(p => { ctx.globalAlpha = Math.max(0, p.life*1.8); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); });
+  ctx.globalAlpha = 1;
+
+  // floating result text
+  if (resultText) {
+    ctx.globalAlpha = Math.min(1, resultText.t*1.5);
+    ctx.fillStyle = resultText.color; ctx.font = '800 22px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(resultText.txt, resultText.x, resultText.y - (1 - resultText.t) * 26);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+
+function drawBin() {
+  const x = bin.x, y = bin.y, w = bin.w, h = bin.h;
+  // opening (ellipse)
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.ellipse(x, y, w/2, 8, 0, 0, Math.PI*2); ctx.fill();
+  // body
+  const g = ctx.createLinearGradient(x - w/2, 0, x + w/2, 0);
+  g.addColorStop(0, '#4a4e69'); g.addColorStop(0.5, '#6b7095'); g.addColorStop(1, '#3a3d5c');
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.ellipse(TRASH_X, TRASH_Y - 20, 25, 12, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillRect(TRASH_X - 25, TRASH_Y - 15, 50, 70);
-  ctx.fillStyle = '#000';
-  ctx.fillRect(TRASH_X - 22, TRASH_Y - 12, 44, 10);
-
-  // Player
-  ctx.font = '48px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('🐿️', PLAYER_X, PLAYER_Y);
-
-  // Drag preview line
-  if (isDragging) {
-    ctx.strokeStyle = 'rgba(255, 107, 107, 0.6)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(dragStart.x, dragStart.y);
-    ctx.lineTo(dragCurrent.x, dragCurrent.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Power indicator
-    const power = Math.hypot(dragStart.x - dragCurrent.x, dragStart.y - dragCurrent.y);
-    ctx.fillStyle = `rgba(255, 107, 107, ${Math.min(power / 100, 1)})`;
-    ctx.beginPath();
-    ctx.arc(PLAYER_X, PLAYER_Y, Math.min(power / 4, 40), 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Paper ball
-  if (paper) {
-    ctx.save();
-    ctx.translate(paper.x, paper.y);
-    ctx.rotate(paper.rotation);
-    ctx.fillStyle = 'rgba(255, 200, 100, 0.95)';
-    ctx.fillRect(-8, -12, 16, 24);
-    ctx.strokeStyle = '#CCC';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-8, -12, 16, 24);
-    ctx.restore();
-  }
-
-  // Score label
-  ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = 'rgba(43, 45, 66, 0.6)';
-  ctx.textAlign = 'left';
-  ctx.fillText(`Throws: ${throws}`, 20, CANVAS_HEIGHT - 20);
-  ctx.fillText(`Score: ${score}`, 20, CANVAS_HEIGHT - 40);
+  ctx.moveTo(x - w/2, y);
+  ctx.lineTo(x - w/2 + 6, y + h);
+  ctx.lineTo(x + w/2 - 6, y + h);
+  ctx.lineTo(x + w/2, y);
+  ctx.closePath(); ctx.fill();
+  // rim
+  ctx.strokeStyle = '#9aa0c0'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(x, y, w/2, 8, 0, 0, Math.PI*2); ctx.stroke();
 }
 
-function gameLoop() {
-  if (gameRunning) {
-    updateGame();
-  }
-  drawGame();
-  if (gameRunning) {
-    requestAnimationFrame(gameLoop);
-  }
+function drawWind() {
+  const cx = W/2, cy = Math.max(70, H*0.11);
+  const dir = wind >= 0 ? 1 : -1;
+  const mag = Math.min(Math.abs(wind) / 420, 1);
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = 'rgba(43,45,66,0.6)';
+  ctx.font = '700 12px Inter, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('WIND', cx, cy - 12);
+  // arrow
+  const len = 20 + mag * 46;
+  ctx.strokeStyle = mag > 0.6 ? '#e63946' : '#2B2D42'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - dir*len/2, cy); ctx.lineTo(cx + dir*len/2, cy); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + dir*len/2, cy);
+  ctx.lineTo(cx + dir*len/2 - dir*10, cy - 7);
+  ctx.lineTo(cx + dir*len/2 - dir*10, cy + 7);
+  ctx.closePath(); ctx.fillStyle = mag > 0.6 ? '#e63946' : '#2B2D42'; ctx.fill();
+  ctx.restore();
 }
 
-// Initialize
-const stats = gameSystem.getStats();
-document.getElementById('bestScoreStart').textContent = stats.highScore;
-document.getElementById('throwsStart').textContent = stats.gamesPlayed;
+function drawAim() {
+  const dx = aim.cx - aim.sx, dy = aim.cy - aim.sy;
+  const len = Math.hypot(dx, dy);
+  if (len < 8) return;
+  const power = Math.min(len, MAX_DRAG) / MAX_DRAG;
+  const speed = power * MAX_SPEED;
+  const ang = Math.atan2(dy, dx);
+  let px = launch.x, py = launch.y - PAPER_R*1.6;
+  let vx = Math.cos(ang)*speed, vy = Math.sin(ang)*speed;
+  const step = 1/60;
+  ctx.fillStyle = 'rgba(230,57,70,0.7)';
+  for (let i = 0; i < 22; i++) {
+    vy += GRAVITY*step; vx += wind*step*0.5; px += vx*step; py += vy*step;
+    if (i % 2 === 0) { ctx.beginPath(); ctx.arc(px, py, 3.2 - i*0.08, 0, Math.PI*2); ctx.fill(); }
+    if (py > H) break;
+  }
+  // power ring at launcher
+  ctx.strokeStyle = `rgba(230,57,70,${0.4 + power*0.5})`; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(launch.x, launch.y, 20 + power*24, 0, Math.PI*2); ctx.stroke();
+}
 
-drawGame();
+function drawPaper(x, y, rot) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = '#fbfaf5';
+  ctx.strokeStyle = '#c9c6bd'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  // crumpled ball: rough polygon
+  const n = 9;
+  for (let i = 0; i < n; i++) {
+    const a = (i/n)*Math.PI*2;
+    const rr = PAPER_R * (0.8 + (i % 2 ? 0.25 : 0));
+    const px = Math.cos(a)*rr, py = Math.sin(a)*rr;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(180,178,170,0.7)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-4,-3); ctx.lineTo(3,2); ctx.moveTo(2,-5); ctx.lineTo(-2,4); ctx.stroke();
+  ctx.restore();
+}
+
+// init
+resize();
+best = gameSystem.state.highScore || 0;
+document.getElementById('bestStart').textContent = best;
+document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+document.getElementById('bestHud').textContent = best;
+reset();
+requestAnimationFrame(loop);
+
+window.addEventListener('beforeunload', () => { gameSystem.saveState(); });
 </script>
 </body>
 </html>
