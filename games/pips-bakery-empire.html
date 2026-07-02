@@ -18,6 +18,7 @@
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <script src="../game-system.js"></script>
+<script src="../player-profile.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
@@ -552,7 +553,17 @@ setInterval(tick, 100);
 setInterval(() => { save(); updateUpgradeBadge(); }, 5000);
 scheduleGolden();
 
-window.addEventListener('beforeunload', () => { save(); gameSystem.recordGamePlay(Date.now()); gameSystem.saveState(); });
+window.addEventListener('beforeunload', () => {
+  save();
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+  if (typeof playerProfile !== 'undefined' && gameSystem.state.xp > 0) {
+    const xpToReport = Math.min(Math.floor(gameSystem.state.xp / 10), 100);
+    if (xpToReport > 0) {
+      playerProfile.addXP(xpToReport, 'game:pips-bakery-empire');
+    }
+  }
+});
 </script>
 </body>
 </html>

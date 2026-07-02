@@ -1612,6 +1612,8 @@ document.querySelectorAll('.reveal').forEach(el=>obs3.observe(el));
 })();
 </script>
 
+<script src="../player-profile.js"></script>
+
 <script>
 // ══ GAME SYSTEM INTEGRATION ══
 const gameSystem = new GameSystem('echo-fruit', 'Echo Fruit Catch', 'echo');
@@ -1647,6 +1649,26 @@ window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });
+</script>
+
+<script>
+// ══ PLAYER PROFILE INTEGRATION (Global XP System) ══
+function reportGameToProfile() {
+  if (typeof playerProfile === 'undefined') return;
+
+  const score = parseInt(localStorage.getItem('fruitScore') || '0');
+  if (score > 0) {
+    const xpReward = Math.min(Math.floor(score / 10), 50);
+    playerProfile.addXP(xpReward, 'game:echo-fruit-catch');
+  }
+}
+
+// Hook endGame to report to profile
+const originalEndGame = window.endGame;
+window.endGame = function() {
+  reportGameToProfile();
+  originalEndGame.call(this);
+};
 </script>
 
 </body>

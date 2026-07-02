@@ -372,6 +372,47 @@ class GameSystem {
       }
     };
   }
+
+  /* ─── GLOBAL LEADERBOARD ─── */
+  syncToGlobalLeaderboard() {
+    if (typeof playerProfile === 'undefined') return;
+
+    try {
+      let leaderboard = [];
+      const stored = localStorage.getItem('jvds_global_leaderboard');
+      if (stored) {
+        leaderboard = JSON.parse(stored);
+      }
+
+      const playerId = playerProfile.state.playerId;
+      const stats = playerProfile.getStats();
+
+      const existingIdx = leaderboard.findIndex(e => e.playerId === playerId);
+      const entry = {
+        playerId: playerId,
+        name: 'Player ' + playerId.substring(0, 8),
+        totalXP: stats.totalXP,
+        level: stats.level,
+        achievements: stats.achievementsUnlocked,
+        dailyStreak: stats.dailyStreak,
+        workshopsCompleted: stats.workshopsCompleted,
+        lastUpdated: new Date().toISOString()
+      };
+
+      if (existingIdx !== -1) {
+        leaderboard[existingIdx] = entry;
+      } else {
+        leaderboard.push(entry);
+      }
+
+      leaderboard.sort((a, b) => b.totalXP - a.totalXP);
+      leaderboard = leaderboard.slice(0, 100);
+
+      localStorage.setItem('jvds_global_leaderboard', JSON.stringify(leaderboard));
+    } catch (e) {
+      console.warn('Failed to sync to global leaderboard:', e);
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
