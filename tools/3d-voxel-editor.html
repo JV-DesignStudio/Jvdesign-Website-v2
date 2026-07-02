@@ -315,6 +315,18 @@
         <div class="divider"></div>
 
         <div class="panel-section">
+            <div class="section-title">Brush Size</div>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(255,255,255,0.04); border-radius: 6px;">
+                <input type="range" id="brushSize" min="1" max="5" value="1" style="flex: 1;">
+                <span style="font-size: 0.8rem; color: #a78bfa; min-width: 20px;">
+                    <span id="brushSizeDisplay">1</span>x
+                </span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
             <div class="section-title">Colors</div>
             <div class="color-grid" id="colorGrid"></div>
             <div class="custom-color-row">
@@ -543,6 +555,7 @@ class VoxelMesh {
 let grid = new VoxelGrid(32, 32, 32);
 let currentTool = 'place';
 let currentColor = '#ff6b5b';
+let brushSize = 1;
 let history = [];
 let historyIndex = -1;
 
@@ -722,20 +735,31 @@ function placeVoxelAtMouse(event) {
 
         if (intersects.length > 0) {
             const point = intersects[0].point;
-            const x = Math.round(point.x);
-            const y = Math.round(point.y);
-            const z = Math.round(point.z);
+            const cx = Math.round(point.x);
+            const cy = Math.round(point.y);
+            const cz = Math.round(point.z);
 
             pushHistory();
 
-            if (currentTool === 'place') {
-                grid.set(x, y, z, { color: currentColor, material: 'matte' });
-            } else if (currentTool === 'delete') {
-                grid.delete(x, y, z);
-            } else if (currentTool === 'paint') {
-                const existing = grid.get(x, y, z);
-                if (existing) {
-                    grid.set(x, y, z, { color: currentColor, material: existing.material });
+            // Apply brush size
+            for (let dx = 0; dx < brushSize; dx++) {
+                for (let dy = 0; dy < brushSize; dy++) {
+                    for (let dz = 0; dz < brushSize; dz++) {
+                        const x = cx + dx;
+                        const y = cy + dy;
+                        const z = cz + dz;
+
+                        if (currentTool === 'place') {
+                            grid.set(x, y, z, { color: currentColor, material: 'matte' });
+                        } else if (currentTool === 'delete') {
+                            grid.delete(x, y, z);
+                        } else if (currentTool === 'paint') {
+                            const existing = grid.get(x, y, z);
+                            if (existing) {
+                                grid.set(x, y, z, { color: currentColor, material: existing.material });
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1027,6 +1051,22 @@ document.addEventListener('keydown', (e) => {
 
 renderer.domElement.addEventListener('click', placeVoxelAtMouse);
 
+// ========== BRUSH SIZE SETUP ==========
+function setupBrushSize() {
+    const slider = document.getElementById('brushSize');
+    const display = document.getElementById('brushSizeDisplay');
+
+    slider.addEventListener('change', (e) => {
+        brushSize = parseInt(e.target.value);
+        display.textContent = brushSize;
+    });
+
+    slider.addEventListener('input', (e) => {
+        brushSize = parseInt(e.target.value);
+        display.textContent = brushSize;
+    });
+}
+
 // ========== COLOR PALETTE SETUP ==========
 function setupColors() {
     const colorGrid = document.getElementById('colorGrid');
@@ -1057,6 +1097,7 @@ function setupColors() {
 window.addEventListener('load', () => {
     initThreeJS();
     setupColors();
+    setupBrushSize();
     updateMesh();
 });
 </script>
