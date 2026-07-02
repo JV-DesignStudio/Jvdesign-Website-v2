@@ -202,6 +202,17 @@ input[type=range].adj{width:100%;accent-color:var(--accent);height:4px;cursor:po
   <div class="section-title">🎭 Pick a Mood</div>
   <div class="mood-grid" id="moodGrid"></div>
 
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:20px;">
+    <div class="section-title" style="margin-bottom:12px;">🎨 Harmony Mode</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="setHarmonyMode('none')" class="pal-btn harmony-mode-btn" id="harmony-none" style="background:transparent;border-color:var(--accent);">Off</button>
+      <button onclick="setHarmonyMode('complementary')" class="pal-btn harmony-mode-btn" id="harmony-complementary">Complementary</button>
+      <button onclick="setHarmonyMode('triadic')" class="pal-btn harmony-mode-btn" id="harmony-triadic">Triadic</button>
+      <button onclick="setHarmonyMode('split')" class="pal-btn harmony-mode-btn" id="harmony-split">Split-Comp</button>
+      <button onclick="setHarmonyMode('analogous')" class="pal-btn harmony-mode-btn" id="harmony-analogous">Analogous</button>
+    </div>
+  </div>
+
   <div class="palette-section">
     <div class="palette-header">
       <div class="palette-name" id="paletteName">Choose a mood above</div>
@@ -246,6 +257,10 @@ input[type=range].adj{width:100%;accent-color:var(--accent);height:4px;cursor:po
 
   <div class="palette-section">
     <div class="section-title" style="margin-bottom:12px;">📋 Export</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="pal-btn" style="background:var(--accent);color:#000;" onclick="exportSwatchesCSS()">📄 CSS Swatches</button>
+      <button class="pal-btn" style="background:var(--accent3);color:#000;" onclick="exportSwatchesImage()">🖼️ Swatch Image</button>
+    </div>
     <div class="export-formats" id="exportFormats"></div>
   </div>
 
@@ -428,6 +443,7 @@ let currentMood = null;
 let palette = []; // [{hex, locked}]
 let paletteSize = 6;
 let saved = JSON.parse(localStorage.getItem('jvds_palettes')||'[]');
+let harmonyMode = 'none';
 
 // ══════════════════════════════════════════════════
 // BUILD UI
@@ -476,7 +492,16 @@ function applyAdjust(){
 
 function renderPalette(sat,bri,con){
   if(!currentMood) return;
-  const adjusted=palette.map(p=>({
+
+  let baseColors=palette;
+  if(harmonyMode!=='none'){
+    const harmonyColors=applyHarmony(palette[0].hex,palette.length);
+    if(harmonyColors){
+      baseColors=harmonyColors.map(hex=>({hex,locked:false,base:hex}));
+    }
+  }
+
+  const adjusted=baseColors.map(p=>({
     hex: hslAdjust(p.hex,sat,bri,con),
     locked: p.locked,
     base: p.hex
@@ -731,6 +756,82 @@ function clearSaved(){
   saved=[];
   localStorage.removeItem('jvds_palettes');
   renderSaved();
+}
+
+// ══════════════════════════════════════════════════
+// HARMONY MODES
+// ══════════════════════════════════════════════════
+function setHarmonyMode(mode){
+  harmonyMode=mode;
+  document.querySelectorAll('.harmony-mode-btn').forEach(b=>b.style.background='transparent');
+  document.getElementById('harmony-'+mode).style.background='rgba(245,158,11,.2)';
+  applyAdjust();
+}
+
+function applyHarmony(baseHex,paletteSize){
+  const[h,s,l]=hexToHsl(baseHex);
+  let hues=[];
+
+  switch(harmonyMode){
+    case'complementary':
+      hues=complementary(h);
+      break;
+    case'triadic':
+      hues=triadic(h);
+      break;
+    case'split':
+      hues=[h,(h+150)%360,(h+210)%360];
+      break;
+    case'analogous':
+      hues=analogous(h,paletteSize,30);
+      break;
+    default:
+      return null;
+  }
+
+  return genFromHues(hues.slice(0,paletteSize),s,l);
+}
+
+// ══════════════════════════════════════════════════
+// SWATCH EXPORT
+// ══════════════════════════════════════════════════
+function exportSwatchesCSS(){
+  if(!palette.length){showToast('Generate a palette first!');return;}
+  const cols=palette.map((p,i)=>p.adjHex||p.hex);
+  const css=`:root{\n${cols.map((c,i)=>`  --color-${i+1}:${c};`).join('\n')}\n}`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([css],{type:'text/css'}));
+  a.download=(currentMood?.name||'palette').replace(/\s+/g,'_').toLowerCase()+'_swatches.css';
+  a.click();
+  showToast('CSS swatches exported!');
+}
+
+function exportSwatchesImage(){
+  if(!palette.length){showToast('Generate a palette first!');return;}
+  const cols=palette.map(p=>p.adjHex||p.hex);
+  const w=cols.length*80;const h=120;
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');
+
+  ctx.fillStyle='#1a1a1a';ctx.fillRect(0,0,w,h);
+
+  cols.forEach((col,i)=>{
+    ctx.fillStyle=col;
+    ctx.fillRect(i*80,0,80,80);
+    ctx.fillStyle='#fff';
+    ctx.font='11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(col.toUpperCase(),i*80+40,h-8);
+  });
+
+  canvas.toBlob(blob=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=(currentMood?.name||'palette').replace(/\s+/g,'_').toLowerCase()+'_swatches.png';
+    a.click();
+    showToast('Swatch image exported!');
+  });
 }
 
 // ══════════════════════════════════════════════════
