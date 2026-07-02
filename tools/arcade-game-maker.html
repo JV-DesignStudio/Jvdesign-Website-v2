@@ -150,8 +150,23 @@ a{text-decoration:none;color:inherit;}
 .tab-lbl{font-size:.48rem;letter-spacing:.06em;display:block;}
 
 /* TAB CONTENT */
-.tab-content{display:none;flex:1;flex-direction:column;overflow-y:auto;padding:14px;gap:11px;}
+.tab-content{
+  display:none;flex:1;flex-direction:column;overflow-y:auto;padding:14px;gap:11px;
+  animation:tab-fade-in .2s ease-out;
+}
 .tab-content.on{display:flex;}
+@keyframes tab-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes error-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes error-slide-down {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(20px); opacity: 0; }
+}
 
 /* SECTION LABELS */
 .sec-label{font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-lt);border-bottom:1px solid rgba(124,58,237,.22);padding-bottom:6px;margin-bottom:-2px;flex-shrink:0;display:flex;align-items:center;}
@@ -175,6 +190,8 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .btn-run.pulsing{animation:run-pulse 2s ease-out infinite;}
 @keyframes run-launch{0%{filter:brightness(1.8);transform:scale(.95);}60%{filter:brightness(1.3);transform:scale(1.02);}100%{filter:brightness(1);transform:scale(1);}}
 .btn-run.launching{animation:run-launch .38s ease-out;}
+@keyframes run-success{0%{box-shadow:0 3px 0 var(--green-dk),0 0 0 0 rgba(34,197,94,.6);}50%{box-shadow:0 3px 0 var(--green-dk),0 0 0 8px rgba(34,197,94,0);}100%{box-shadow:0 3px 0 var(--green-dk),0 0 0 0 rgba(34,197,94,0);}}
+.btn-run.success{animation:run-success .6s ease-out;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .save-row{display:flex;gap:6px;}
 .btn-sm{flex:1;background:rgba(255,255,255,.06);color:rgba(240,234,214,.8);border:1px solid var(--border2);padding:8px 6px;border-radius:7px;font-weight:700;font-size:.72rem;cursor:pointer;transition:background .15s;font-family:'Inter',sans-serif;white-space:nowrap;text-align:center;}
@@ -186,11 +203,23 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .bp-card{
   background:var(--panel2);border:1px solid var(--border2);border-radius:10px;
   overflow:hidden;flex-shrink:0;transition:all .2s,border-color .2s;
-  cursor:pointer;
+  cursor:pointer;animation:blueprint-enter .3s ease-out backwards;
+}
+.bp-card:nth-child(1){animation-delay:0;}
+.bp-card:nth-child(2){animation-delay:.05s;}
+.bp-card:nth-child(3){animation-delay:.1s;}
+.bp-card:nth-child(n+4){animation-delay:.15s;}
+@keyframes blueprint-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .bp-card:hover{
   border-color:rgba(124,58,237,.4);background:var(--panel3);
-  box-shadow:0 4px 16px rgba(124,58,237,.15);
+  box-shadow:0 4px 16px rgba(124,58,237,.15);transform:translateY(-2px);
+}
+.bp-card.selected {
+  border-color:rgba(124,58,237,.6);background:var(--panel3);
+  box-shadow:0 8px 24px rgba(124,58,237,.25);
 }
 .bp-card[data-favorite] .bp-fav-btn{color:#fbbf24;}
 .bp-head{
@@ -819,6 +848,42 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
   margin-left: 8px;
   cursor: pointer;
   user-select: none;
+}
+
+/* PERFORMANCE METRICS */
+#fps-counter {
+  position: fixed;
+  top: 60px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #4ade80;
+  z-index: 100;
+  display: none;
+  backdrop-filter: blur(8px);
+  font-weight: 700;
+  gap: 8px;
+  flex-direction: column;
+}
+#fps-counter.show {
+  display: flex;
+}
+.fps-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 80px;
+}
+.fps-label {
+  opacity: 0.7;
+}
+.fps-value {
+  color: #86efac;
+  font-weight: 800;
 }
 
 /* FULLSCREEN / SCREENSHOT BUTTONS */
@@ -1508,7 +1573,7 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                 <button id="configUndoBtn" class="btn-sm" disabled onclick="_undoLiveConfig()" title="Undo last settings change (Ctrl+Shift+Z)" style="flex:1;font-size:.65rem;">↩ Undo</button>
                 <button id="configRedoBtn" class="btn-sm" disabled onclick="_redoLiveConfig()" title="Redo last settings change" style="flex:1;font-size:.65rem;">↪ Redo</button>
             </div>
-            <button class="btn-run pulsing" id="runGameBtn" onclick="this.classList.add('launching');setTimeout(()=>this.classList.remove('launching'),400);compileAndBootEngine()">▶ Run Game <kbd class="run-kbd">[R]</kbd></button>
+            <button class="btn-run pulsing" id="runGameBtn" onclick="this.classList.add('launching');setTimeout(()=>{this.classList.remove('launching');_showRunSuccess();},400);compileAndBootEngine()">▶ Run Game <kbd class="run-kbd">[R]</kbd></button>
             <button class="btn-sm" id="hotReloadBtn" style="width:100%;margin-top:3px;background:rgba(34,197,94,.1);color:#4ade80;border-color:rgba(34,197,94,.25);display:none;" onclick="hotReloadConfig()" title="Apply current settings to running game without restarting">⚡ Apply Live (no restart)</button>
 
             <span class="sec-label" style="display:flex;align-items:center;">Save &amp; Share <span id="autosave-badge">● Auto-saved</span></span>
@@ -1547,9 +1612,20 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     </div>
                     <div style="display:flex;gap:6px;">
                         <button class="btn-sm" style="flex:1;" onclick="startTutorial()" title="Replay the welcome guide">❓ Show Tutorial</button>
+                        <button class="btn-sm" style="flex:1;" onclick="toggleFPSCounter()" title="Show performance metrics">📊 FPS Meter</button>
                     </div>
                 </div>
             </details>
+            <!-- Controls Customization -->
+            <div style="margin-top:8px;padding:10px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;font-size:.65rem;">
+                <div style="font-weight:800;color:var(--purple-lt);margin-bottom:6px;">⌨️ Keyboard Controls</div>
+                <div style="color:var(--muted);line-height:1.6;">
+                    <div><strong>Arrow Keys</strong> or <strong>WASD</strong> to move</div>
+                    <div><strong>Space</strong> to shoot/jump</div>
+                    <div><strong>R</strong> to run game</div>
+                    <div><strong>P</strong> to pause</div>
+                </div>
+            </div>
             <div id="hiscoreStrip" style="font-size:.63rem;color:var(--amber);font-family:'JetBrains Mono',monospace;text-align:center;min-height:14px;"></div>
         </div>
 
@@ -4654,7 +4730,19 @@ score += bumper.pts;
                 <div style="font-size:.6rem;color:rgba(240,234,214,.25);margin-top:8px;font-family:'Inter',sans-serif;">Try simplifying your code or switching genre</div>
             </div>
 
-            <!-- Welcome Overlay -->
+            <!-- FPS Counter -->
+    <div id="fps-counter">
+        <div class="fps-metric">
+            <span class="fps-label">FPS:</span>
+            <span class="fps-value" id="fps-display">60</span>
+        </div>
+        <div class="fps-metric" style="font-size:0.65rem;">
+            <span class="fps-label">MS:</span>
+            <span class="fps-value" id="ms-display">16</span>
+        </div>
+    </div>
+
+    <!-- Welcome Overlay -->
     <div id="welcome-overlay">
         <div id="welcome-box">
             <div id="welcome-title">🎮 Welcome to Arcade Game Maker!</div>
@@ -7503,6 +7591,46 @@ function _loadBlueprintFavorites() {
     });
 }
 
+// ── PERFORMANCE METRICS ──
+let fpsFrameCount = 0;
+let fpsLastTime = performance.now();
+let fpsCurrent = 60;
+
+function _updateFPS() {
+    const now = performance.now();
+    fpsFrameCount++;
+
+    if (now >= fpsLastTime + 1000) {
+        fpsCurrent = Math.round((fpsFrameCount * 1000) / (now - fpsLastTime));
+        const msPerFrame = Math.round(1000 / fpsCurrent);
+
+        const fpsDisplay = document.getElementById('fps-display');
+        const msDisplay = document.getElementById('ms-display');
+        if (fpsDisplay) fpsDisplay.textContent = fpsCurrent;
+        if (msDisplay) msDisplay.textContent = msPerFrame;
+
+        fpsFrameCount = 0;
+        fpsLastTime = now;
+    }
+
+    requestAnimationFrame(_updateFPS);
+}
+
+function toggleFPSCounter() {
+    const counter = document.getElementById('fps-counter');
+    if (counter) {
+        counter.classList.toggle('show');
+        localStorage.setItem('jv_arcade_fps_enabled', counter.classList.contains('show') ? '1' : '0');
+    }
+}
+
+function _loadFPSCounterPreference() {
+    if (localStorage.getItem('jv_arcade_fps_enabled') === '1') {
+        const counter = document.getElementById('fps-counter');
+        if (counter) counter.classList.add('show');
+    }
+}
+
 // ── WELCOME OVERLAY & ONBOARDING ──
 function _showWelcomeOverlay() {
     // Only show if first visit
@@ -7558,6 +7686,57 @@ function _enhanceBlueprintDescriptions() {
                 explainDiv.textContent = desc;
                 explainDiv.setAttribute('data-enhanced', '');
             }
+        }
+    });
+}
+
+// ── VISUAL POLISH & FEEDBACK ──
+function _showRunSuccess() {
+    const runBtn = document.getElementById('runGameBtn');
+    if (runBtn && !runBtn.classList.contains('launching')) {
+        runBtn.classList.add('success');
+        setTimeout(() => runBtn.classList.remove('success'), 600);
+    }
+}
+
+function _showError(message) {
+    // Replace raw console errors with user-friendly toast notifications
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(239, 68, 68, 0.9);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fca5a5;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        z-index: 5000;
+        font-weight: 600;
+        backdrop-filter: blur(8px);
+        animation: error-slide-up 0.3s ease-out;
+    `;
+    toast.textContent = '⚠️ ' + message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'error-slide-down 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function _addBlueprintSelectionFeedback() {
+    document.querySelectorAll('.bp-card').forEach(card => {
+        if (!card.hasAttribute('data-selection-init')) {
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.bp-fav-btn')) {
+                    document.querySelectorAll('.bp-card.selected').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                }
+            });
+            card.setAttribute('data-selection-init', '');
         }
     });
 }
@@ -15404,9 +15583,14 @@ function setupTouchControls() {
         _initBlueprintSearch();
         _loadBlueprintFavorites();
         _enhanceBlueprintDescriptions();
+        _addBlueprintSelectionFeedback();
 
         // Show welcome overlay on first visit
         _showWelcomeOverlay();
+
+        // Initialize FPS counter
+        _loadFPSCounterPreference();
+        _updateFPS();
     }
 
     // Show controls on any touch-capable device regardless of screen width
