@@ -243,11 +243,25 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
     </div>
   </div>
 
+  <!-- PRESET PACKS -->
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:20px;">
+    <div style="font-family:'Fredoka',cursive;font-size:1rem;font-weight:600;color:var(--accent2);margin-bottom:14px;">📦 Sound Packs — Curated collections</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
+      <button onclick="loadPreset('arcade')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">🕹️ Arcade Game</button>
+      <button onclick="loadPreset('puzzle')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">🧩 Puzzle Game</button>
+      <button onclick="loadPreset('adventure')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">⚔️ Adventure</button>
+      <button onclick="loadPreset('platformer')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">🍄 Platformer</button>
+      <button onclick="loadPreset('racing')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">🏎️ Racing</button>
+      <button onclick="loadPreset('rpg')" style="padding:12px 8px;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;color:var(--text);font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;transition:all .15s;">🐉 RPG</button>
+    </div>
+  </div>
+
   <!-- ACTION ROW -->
   <div class="action-row">
     <button class="act-btn act-play" id="playBtn" onclick="previewCurrent()">▶ Preview Sound</button>
     <button class="act-btn act-rand" onclick="randomise()">🎲 Randomise</button>
     <button class="act-btn act-dl" onclick="downloadCurrent()">⬇ Download WAV</button>
+    <button class="act-btn" style="background:#ff6b5b;color:white;box-shadow:0 3px 0 #cc5549;" onclick="downloadPresetPack()">📦 Download Pack</button>
     <button class="act-btn" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;border-color:#7c3aed;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
     <a class="act-btn" href="arcade-game-maker.html" style="background:#16a34a;color:white;border-color:#15803d;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">↩ Back to Game Maker</a>
   </div>
@@ -785,6 +799,81 @@ function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.style.opacity=1;
   clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2500);
+}
+
+// ══════════════════════════════════════════════════
+// PRESET PACKS
+// ══════════════════════════════════════════════════
+const PRESETS = {
+  arcade: [{cat:'jump',var:1},{cat:'coin',var:0},{cat:'shoot',var:0},{cat:'explode',var:2},{cat:'ui',var:0},{cat:'win',var:5}],
+  puzzle: [{cat:'coin',var:4},{cat:'ui',var:0},{cat:'ui',var:1},{cat:'ui',var:2},{cat:'win',var:1},{cat:'lose',var:1}],
+  adventure: [{cat:'jump',var:2},{cat:'shoot',var:3},{cat:'magic',var:0},{cat:'hurt',var:0},{cat:'door',var:1},{cat:'win',var:2}],
+  platformer: [{cat:'jump',var:0},{cat:'footstep',var:0},{cat:'coin',var:0},{cat:'hurt',var:0},{cat:'power',var:0},{cat:'win',var:0}],
+  racing: [{cat:'shoot',var:0},{cat:'explode',var:2},{cat:'hurt',var:2},{cat:'footstep',var:3},{cat:'power',var:1},{cat:'win',var:1}],
+  rpg: [{cat:'magic',var:2},{cat:'power',var:0},{cat:'door',var:0},{cat:'hurt',var:3},{cat:'win',var:3},{cat:'magic',var:4}]
+};
+
+let currentPreset = null;
+
+function loadPreset(presetName){
+  currentPreset = presetName;
+  const sounds = PRESETS[presetName];
+  showToast(`Loaded ${presetName} pack — ${sounds.length} sounds ready`);
+  document.querySelectorAll('[onclick^="loadPreset"]').forEach(b=>b.style.background='var(--panel2)');
+  event.target.style.background='rgba(99,102,241,.2)';
+  event.target.style.borderColor='var(--accent)';
+}
+
+function downloadPresetPack(){
+  if(!currentPreset){showToast('Select a preset pack first!');return;}
+  const sounds = PRESETS[currentPreset];
+  showToast(`Rendering ${sounds.length} sounds…`);
+
+  let completed = 0;
+  const sr = 44100;
+  const dur = 3;
+  const files = [];
+
+  sounds.forEach((sound,idx)=>{
+    const cat = CATEGORIES.find(c=>c.id===sound.cat);
+    const variant = VARIANTS[sound.cat][sound.var];
+    const offline = new OfflineAudioContext(1,sr*dur,sr);
+    const {dest} = applyTweaks(offline, null);
+    variant.fn(offline, dest, 0.02);
+
+    offline.startRendering().then(buf=>{
+      const data = buf.getChannelData(0);
+      let end = data.length;
+      for(let i=data.length-1;i>0;i--){ if(Math.abs(data[i])>0.001){end=i+Math.ceil(sr*0.05);break;} }
+      end = Math.min(end,data.length);
+      const trimmed = data.slice(0,end);
+      const wav = makeWav(trimmed,sr);
+      const name = `${cat.name}_${variant.name}`.replace(/\s+/g,'_').toLowerCase();
+      files.push({name:`jvds_${name}.wav`,data:wav});
+
+      completed++;
+      if(completed === sounds.length){
+        downloadMultipleFiles(files);
+        showToast(`Downloaded ${sounds.length} sounds from ${currentPreset} pack!`);
+      }
+    });
+  });
+}
+
+function downloadMultipleFiles(files){
+  if(files.length===1){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([files[0].data],{type:'audio/wav'}));
+    a.download = files[0].name;
+    a.click();
+    return;
+  }
+  files.forEach((f,i)=>setTimeout(()=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([f.data],{type:'audio/wav'}));
+    a.download = f.name;
+    a.click();
+  }, i*100));
 }
 
 // ══════════════════════════════════════════════════
