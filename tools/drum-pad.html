@@ -363,12 +363,18 @@ body {
   <button class="ctrl-btn" id="recordBtn">⏺ Record Loop</button>
   <button class="ctrl-btn" id="playBtn" style="display:none">▶ Play Loop</button>
   <button class="ctrl-btn" id="clearBtn" style="display:none">✕ Clear</button>
+  <button class="ctrl-btn" id="saveBtn" style="display:none">💾 Save Pattern</button>
   <button class="ctrl-btn" id="captureBtn">🎙️ Capture Audio</button>
 </div>
 
 <div class="loop-section" id="loopSection" style="display:none">
   <div class="loop-title">Recorded loop</div>
   <div class="loop-dots" id="loopDots"></div>
+</div>
+
+<div style="padding:0 16px 20px;text-align:center;" id="patternsSection" style="display:none">
+  <div class="loop-title" style="color:rgba(240,234,214,0.7);font-size:.9rem;margin-bottom:12px;">📚 Saved Patterns</div>
+  <div id="patternsList" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
 </div>
 
 <!-- BUILD:footer-tools -->
@@ -1075,6 +1081,7 @@ function buildLoop() {
 
   // Store quantised for playback
   recordedLoop = steps;
+  saveBtn.style.display = '';
 }
 
 playBtn.addEventListener('click', () => {
@@ -1115,9 +1122,62 @@ clearBtn.addEventListener('click', () => {
   loopSection.style.display = 'none';
   playBtn.style.display = 'none';
   clearBtn.style.display = 'none';
+  saveBtn.style.display = 'none';
   playBtn.textContent = '▶ Play Loop';
   loopStep = 0;
 });
+
+// ── PATTERN SAVE / LOAD ────────────────────────────────────────
+const saveBtn = document.getElementById('saveBtn');
+const patternsSection = document.getElementById('patternsSection');
+const patternsList = document.getElementById('patternsList');
+let savedPatterns = JSON.parse(localStorage.getItem('jvds_drum_patterns')||'[]');
+
+function renderPatterns(){
+  patternsList.innerHTML='';
+  if(savedPatterns.length===0){
+    patternsSection.style.display='none';
+    return;
+  }
+  patternsSection.style.display='';
+  savedPatterns.forEach((p,i)=>{
+    const btn=document.createElement('button');
+    btn.className='ctrl-btn';
+    btn.style.cssText='margin:4px;padding:6px 14px;font-size:.75rem;position:relative;';
+    btn.innerHTML=`${p.name}<button style="position:absolute;right:2px;top:2px;width:16px;height:16px;padding:0;font-size:.6rem;background:none;border:none;cursor:pointer;color:rgba(240,234,214,0.5);" onclick="deletePattern(${i}); event.stopPropagation();">✕</button>`;
+    btn.addEventListener('click',()=>loadPattern(i));
+    patternsList.appendChild(btn);
+  });
+}
+
+saveBtn.addEventListener('click',()=>{
+  const name=prompt('Pattern name (e.g., "Beat 1", "Groove")');
+  if(!name) return;
+  savedPatterns.push({name,loop:recordedLoop,bpm:bpmRange.value});
+  localStorage.setItem('jvds_drum_patterns',JSON.stringify(savedPatterns));
+  renderPatterns();
+  alert(`Saved "${name}"!`);
+});
+
+function loadPattern(idx){
+  if(idx<0||idx>=savedPatterns.length) return;
+  const p=savedPatterns[idx];
+  recordedLoop=p.loop;
+  bpmRange.value=p.bpm;
+  bpmVal.textContent=p.bpm;
+  buildLoop();
+  playBtn.style.display='';
+  clearBtn.style.display='';
+  saveBtn.style.display='none';
+}
+
+function deletePattern(idx){
+  if(confirm(`Delete "${savedPatterns[idx].name}"?`)){
+    savedPatterns.splice(idx,1);
+    localStorage.setItem('jvds_drum_patterns',JSON.stringify(savedPatterns));
+    renderPatterns();
+  }
+}
 
 // ── AUDIO CAPTURE / DOWNLOAD ───────────────────────────────────
 let mediaRecorder = null;
@@ -1156,6 +1216,7 @@ captureBtn.addEventListener('click', () => {
 
 // ── INIT ───────────────────────────────────────────────────────
 renderPads();
+renderPatterns();
 </script>
 </body>
 </html>
