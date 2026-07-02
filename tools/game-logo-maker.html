@@ -160,6 +160,11 @@ body{display:flex;flex-direction:column;}
     </div>
 
     <div class="ctrl-section">
+      <h3>Templates</h3>
+      <div class="style-grid" id="templateGrid" style="grid-template-columns:repeat(2,1fr);"></div>
+    </div>
+
+    <div class="ctrl-section">
       <h3>Style Preset</h3>
       <div class="style-grid" id="styleGrid"></div>
     </div>
@@ -190,6 +195,19 @@ body{display:flex;flex-direction:column;}
     <div class="ctrl-section">
       <h3>Effects</h3>
       <div class="fx-grid" id="fxGrid"></div>
+    </div>
+
+    <div class="ctrl-section">
+      <h3>Text Effects</h3>
+      <div class="field"><label>Shadow Depth <span id="vShadow">2</span></label>
+        <input type="range" min="0" max="10" value="2" id="shadowDepth" oninput="id('vShadow').textContent=this.value;render()">
+      </div>
+      <div class="field"><label>Outline Width <span id="vOutline">0</span></label>
+        <input type="range" min="0" max="8" value="0" id="outlineWidth" oninput="id('vOutline').textContent=this.value;render()">
+      </div>
+      <div class="field"><label>Glow Radius <span id="vGlowRadius">0</span></label>
+        <input type="range" min="0" max="20" value="0" id="glowRadius" oninput="id('vGlowRadius').textContent=this.value;render()">
+      </div>
     </div>
 
     <div class="ctrl-section">
@@ -283,7 +301,42 @@ const EFFECTS=[
   {id:'italic',label:'Italic'},
 ];
 
+const TEMPLATES=[
+  {label:'Epic Darkness',style:'horror',font:'Cinzel',effects:['shadow','glow'],shadowDepth:4,outlineWidth:0,glowRadius:8},
+  {label:'Arcade Power',style:'pixel',font:'Press Start 2P',effects:['glow','scanlines'],shadowDepth:2,outlineWidth:2,glowRadius:4},
+  {label:'Cyber Neon',style:'neon',font:'Orbitron',effects:['glow','outline'],shadowDepth:1,outlineWidth:3,glowRadius:12},
+  {label:'Retro Classic',style:'retro',font:'Righteous',effects:['shadow','flicker'],shadowDepth:3,outlineWidth:0,glowRadius:0},
+  {label:'Glowing Magic',style:'fantasy',font:'Fredoka',effects:['glow','gradient'],shadowDepth:2,outlineWidth:1,glowRadius:10},
+  {label:'Bold Adventure',style:'scifi',font:'Orbitron',effects:['shadow','outline','stars'],shadowDepth:5,outlineWidth:2,glowRadius:6},
+];
+
 // Build UI
+function buildTemplateGrid(){
+  const g=id('templateGrid');g.innerHTML='';
+  TEMPLATES.forEach(t=>{
+    const b=document.createElement('button');b.className='style-btn';
+    b.innerHTML=`${t.label}`;
+    b.onclick=()=>{
+      const s=STYLES.find(x=>x.id===t.style);
+      if(s){
+        stylePreset=s.id;currentFont=t.font;titleColor=s.title;glowColor=s.glow;bgMode=s.bg;
+        syncFontGrid();
+      }
+      activeEffects.clear();
+      t.effects.forEach(e=>activeEffects.add(e));
+      id('shadowDepth').value=t.shadowDepth;
+      id('outlineWidth').value=t.outlineWidth;
+      id('glowRadius').value=t.glowRadius;
+      id('vShadow').textContent=t.shadowDepth;
+      id('vOutline').textContent=t.outlineWidth;
+      id('vGlowRadius').textContent=t.glowRadius;
+      buildFxGrid();
+      render();
+    };
+    g.appendChild(b);
+  });
+}
+
 function buildStyleGrid(){
   const g=id('styleGrid');g.innerHTML='';
   STYLES.forEach(s=>{
@@ -454,21 +507,25 @@ function render(){
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.letterSpacing=lSpacing+'px';
 
+  const shadowDepth=parseInt(id('shadowDepth').value||0);
+  const outlineWidth=parseInt(id('outlineWidth').value||0);
+  const glowRadius=parseInt(id('glowRadius').value||0);
+
   // Outline
-  if(activeEffects.has('outline')){
-    ctx.strokeStyle=glowColor;ctx.lineWidth=titleSz*.05;
+  if(activeEffects.has('outline')&&outlineWidth>0){
+    ctx.strokeStyle=glowColor;ctx.lineWidth=outlineWidth;
     ctx.strokeText(titleStr,cx+flickerOffset,titleY+flickerOffset);
   }
 
   // Shadow
-  if(activeEffects.has('shadow')){
-    ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=titleSz*.3;ctx.shadowOffsetX=titleSz*.04;ctx.shadowOffsetY=titleSz*.04;
+  if(activeEffects.has('shadow')&&shadowDepth>0){
+    ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=shadowDepth*2;ctx.shadowOffsetX=shadowDepth;ctx.shadowOffsetY=shadowDepth;
   }
 
   // Glow
-  if(activeEffects.has('glow')){
+  if(activeEffects.has('glow')&&glowRadius>0){
     ctx.save();
-    ctx.shadowColor=glowColor;ctx.shadowBlur=titleSz*.4;
+    ctx.shadowColor=glowColor;ctx.shadowBlur=glowRadius*2;
     ctx.fillStyle=fillStyle;
     for(let i=0;i<3;i++) ctx.fillText(titleStr,cx+flickerOffset,titleY+flickerOffset);
     ctx.restore();
@@ -545,12 +602,13 @@ function dl(blob,name){
 function saveLogo(){
   const data={stylePreset,currentFont,titleColor,glowColor,bgMode,activeEffects:[...activeEffects],
     title:id('titleText').value,sub:id('subText').value,icon:id('iconEmoji').value,
-    titleSize:id('titleSize').value,lSpacing:id('lSpacing').value};
+    titleSize:id('titleSize').value,lSpacing:id('lSpacing').value,
+    shadowDepth:id('shadowDepth').value,outlineWidth:id('outlineWidth').value,glowRadius:id('glowRadius').value};
   localStorage.setItem('jvds_game_logo',JSON.stringify(data));toast('Logo saved!');
 }
 
 // ── INIT ──
-buildStyleGrid();buildFontGrid();buildColorRows();buildBgGrid();buildFxGrid();
+buildTemplateGrid();buildStyleGrid();buildFontGrid();buildColorRows();buildBgGrid();buildFxGrid();
 render();
 
 ['titleText','subText','iconEmoji','titleSize','lSpacing'].forEach(k=>{const el=id(k);if(el) el.addEventListener('input',render);});
