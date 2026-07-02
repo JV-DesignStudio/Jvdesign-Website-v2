@@ -561,6 +561,22 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
     <div class="divider"></div>
 
     <div class="panel-section">
+      <div class="panel-title">Animation (Beta)</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="recordKeyframe()">⏺️ Record KF</button>
+        <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="playAnimation()">▶️ Play</button>
+        <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="resetAnimation()">⏹️ Reset</button>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Duration (ms)</div>
+        <input type="number" id="animDuration" min="100" max="10000" step="100" value="2000" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--panel3);color:white;box-sizing:border-box;">
+      </div>
+      <div id="keyframeList" style="font-size:.7rem;color:var(--muted);max-height:80px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
       <div class="panel-title">Quick Builds</div>
       <button class="action-btn btn-secondary" onclick="quickBuild('sword')">⚔️ Sword</button>
       <button class="action-btn btn-secondary" onclick="quickBuild('house')">🏠 House</button>
@@ -2175,6 +2191,101 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { setGizmoMode('scale'); e.preventDefault(); }
   if ((e.key === 'x' || e.key === 'X') && !e.ctrlKey && !e.metaKey) { deleteBlock(selectedBlock); e.preventDefault(); }
 });
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION SYSTEM (Keyframe Recording & Playback)
+// ═══════════════════════════════════════════════════════
+let animationData = {};
+let isPlayingAnimation = false;
+let animationStartTime = 0;
+
+function recordKeyframe() {
+  if (!selectedBlock) { toast('Select a block first'); return; }
+  const blockId = blocks.indexOf(selectedBlock);
+  if (blockId === -1) return;
+
+  if (!animationData[blockId]) {
+    animationData[blockId] = [];
+  }
+
+  const currentTime = animationData[blockId].length === 0 ? 0 :
+    animationData[blockId][animationData[blockId].length - 1].time + 500;
+
+  animationData[blockId].push({
+    time: currentTime,
+    position: selectedBlock.position.clone(),
+    rotation: selectedBlock.rotation.clone(),
+    scale: selectedBlock.scale.clone()
+  });
+
+  renderKeyframeList();
+  toast(`✓ Keyframe recorded at ${currentTime}ms`);
+}
+
+function playAnimation() {
+  if (Object.keys(animationData).length === 0) { toast('Record keyframes first'); return; }
+
+  isPlayingAnimation = true;
+  animationStartTime = Date.now();
+  const duration = parseFloat(document.getElementById('animDuration').value);
+
+  const animationFrame = () => {
+    const elapsed = Date.now() - animationStartTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    blocks.forEach((mesh, blockId) => {
+      const keyframes = animationData[blockId];
+      if (!keyframes || keyframes.length === 0) return;
+
+      for (let i = 0; i < keyframes.length - 1; i++) {
+        const kf1 = keyframes[i];
+        const kf2 = keyframes[i + 1];
+        const localProgress = (progress * duration - kf1.time) / (kf2.time - kf1.time);
+
+        if (localProgress >= 0 && localProgress <= 1) {
+          mesh.position.lerpVectors(kf1.position, kf2.position, localProgress);
+          mesh.rotation.x = THREE.MathUtils.lerp(kf1.rotation.x, kf2.rotation.x, localProgress);
+          mesh.rotation.y = THREE.MathUtils.lerp(kf1.rotation.y, kf2.rotation.y, localProgress);
+          mesh.rotation.z = THREE.MathUtils.lerp(kf1.rotation.z, kf2.rotation.z, localProgress);
+          break;
+        }
+      }
+
+      if (mesh === selectedBlock) {
+        window.highlight.position.copy(mesh.position);
+        window.highlight.rotation.copy(mesh.rotation);
+      }
+    });
+
+    if (progress < 1 && isPlayingAnimation) {
+      requestAnimationFrame(animationFrame);
+    } else {
+      isPlayingAnimation = false;
+    }
+  };
+
+  animationFrame();
+}
+
+function resetAnimation() {
+  isPlayingAnimation = false;
+  animationData = {};
+  renderKeyframeList();
+  toast('Animation reset');
+}
+
+function renderKeyframeList() {
+  const container = document.getElementById('keyframeList');
+  if (!container) return;
+
+  let html = '';
+  Object.entries(animationData).forEach(([blockId, keyframes]) => {
+    const meshName = 'Block ' + (parseInt(blockId) + 1);
+    html += `<div>${meshName}: ${keyframes.length} keyframes</div>`;
+  });
+
+  container.innerHTML = html || '<div style="text-align:center;padding:10px;color:var(--muted);">No keyframes recorded</div>';
+}
 
 // ═══════════════════════════════════════════════════════
 // ASSET LIBRARY (Model Organization)
