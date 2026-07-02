@@ -30,7 +30,7 @@ const NEEDS_MONO = new Set([
     'unreal-fighter-workshop.html', 'unreal-top-down-shooter.html',
     'unreal-zombie-survivor.html', 'race-builder.html', 'rocket-builder.html',
     'racing-blueprint.html', 'quest-board.html', 'quest-board-page.html',
-    'project-tracker.html', 'project-tracker-v3.html',
+    'project-tracker.html',
 ]);
 
 // Duplicated CSS blocks that live in style-shared.css — safe to remove from pages
