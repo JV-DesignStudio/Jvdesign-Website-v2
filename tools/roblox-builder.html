@@ -545,9 +545,20 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
     <div class="divider"></div>
 
     <div class="panel-section">
+      <div class="panel-title">Asset Library</div>
+      <div id="assetLibrary" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;max-height:120px;overflow-y:auto;"></div>
+      <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="addToAssetLibrary()">⭐ Save to Library</button>
+      <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="clearAssetLibrary()">🗑️ Clear Library</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
       <div class="panel-title">Saved Builds</div>
       <div class="save-slots" id="saveSlots"></div>
     </div>
+
+    <div class="divider"></div>
 
     <div class="panel-section">
       <div class="panel-title">Quick Builds</div>
@@ -2165,10 +2176,98 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'x' || e.key === 'X') && !e.ctrlKey && !e.metaKey) { deleteBlock(selectedBlock); e.preventDefault(); }
 });
 
+// ═══════════════════════════════════════════════════════
+// ASSET LIBRARY (Model Organization)
+// ═══════════════════════════════════════════════════════
+function getAssetLibrary() {
+  return JSON.parse(localStorage.getItem('assetLibrary') || '[]');
+}
+
+function saveAssetLibrary(assets) {
+  localStorage.setItem('assetLibrary', JSON.stringify(assets));
+  renderAssetLibrary();
+}
+
+function addToAssetLibrary() {
+  if (blocks.length === 0) { toast('Nothing to save to library!'); return; }
+  const assets = getAssetLibrary();
+  const name = prompt('Asset name:', buildName || 'Asset ' + (assets.length + 1));
+  if (!name) return;
+
+  const asset = {
+    name,
+    blocks: blocks.map(b => ({
+      x: b.position.x,
+      y: b.position.y,
+      z: b.position.z,
+      w: b.userData.w,
+      h: b.userData.h,
+      d: b.userData.d,
+      colour: b.userData.colour,
+      shape: b.userData.shape,
+      rot: b.userData.rot
+    })),
+    timestamp: Date.now()
+  };
+
+  assets.push(asset);
+  saveAssetLibrary(assets);
+  toast('✨ Saved to asset library!');
+}
+
+function loadAssetFromLibrary(idx) {
+  const assets = getAssetLibrary();
+  const asset = assets[idx];
+  if (!asset) return;
+
+  clearAll(true);
+  buildName = asset.name;
+  asset.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+  toast('Loaded: ' + asset.name);
+}
+
+function deleteAssetFromLibrary(idx) {
+  if (!confirm('Delete this asset from library?')) return;
+  const assets = getAssetLibrary();
+  assets.splice(idx, 1);
+  saveAssetLibrary(assets);
+  toast('Asset deleted');
+}
+
+function renderAssetLibrary() {
+  const assets = getAssetLibrary();
+  const container = document.getElementById('assetLibrary');
+  if (!container) return;
+
+  container.innerHTML = '';
+  assets.forEach((asset, i) => {
+    const el = document.createElement('div');
+    el.style.cssText = 'background:var(--panel3);border:1px solid var(--border);border-radius:6px;padding:6px;cursor:pointer;font-size:.65rem;transition:0.2s;';
+    el.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${asset.name}</div><div style="color:var(--muted);font-size:.6rem;">${asset.blocks.length} blocks</div>`;
+    el.onmouseover = () => el.style.background = 'var(--accent-dk)';
+    el.onmouseout = () => el.style.background = 'var(--panel3)';
+    el.onclick = () => loadAssetFromLibrary(i);
+    el.oncontextmenu = (e) => { e.preventDefault(); deleteAssetFromLibrary(i); };
+    container.appendChild(el);
+  });
+
+  if (assets.length === 0) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:10px;color:var(--muted);font-size:.7rem;">No assets saved yet</div>';
+  }
+}
+
+function clearAssetLibrary() {
+  if (!confirm('Clear all assets from library? This cannot be undone.')) return;
+  localStorage.setItem('assetLibrary', '[]');
+  renderAssetLibrary();
+  toast('Asset library cleared');
+}
+
 // ── START ──
 document.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     init();
+    renderAssetLibrary();
     toast('Welcome! Click the grid to start building 🧱');
   }));
 });
