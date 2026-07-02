@@ -222,10 +222,42 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
       <button class="icon-btn primary" onclick="autoDetect()" style="margin-top:4px;width:100%;">🔍 Auto-detect frames</button>
     </div>
 
-    <div class="sb-section" style="display:flex;gap:6px;flex-wrap:wrap;">
-      <button class="icon-btn" onclick="selectAll()">Select All</button>
-      <button class="icon-btn" onclick="selectNone()">Select None</button>
-      <button class="icon-btn" onclick="reverseOrder()">⇄ Reverse</button>
+    <div class="sb-section">
+      <div class="sb-title">Frame Editing</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="icon-btn" onclick="selectAll()">✓ All</button>
+        <button class="icon-btn" onclick="selectNone()">✗ None</button>
+        <button class="icon-btn" onclick="invertSelection()">⟲ Invert</button>
+        <button class="icon-btn" onclick="reverseOrder()">↻ Rev</button>
+      </div>
+      <div class="ctrl-row">
+        <label>Range:</label>
+        <div style="display:flex;gap:4px;font-size:.65rem;">
+          <input type="number" id="rangeStart" min="1" placeholder="From" style="width:50%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 6px;border-radius:5px;">
+          <input type="number" id="rangeEnd" min="1" placeholder="To" style="width:50%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 6px;border-radius:5px;">
+        </div>
+        <button class="icon-btn" style="width:100%;margin-top:4px;" onclick="selectRange()">📍 Select Range</button>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:4px;">
+        <button class="icon-btn" style="flex:1;background:rgba(244,114,182,.2);color:var(--accent);" onclick="duplicateSelected()">📋 Dup</button>
+        <button class="icon-btn" style="flex:1;background:rgba(239,68,68,.2);color:#ef4444;" onclick="deleteSelected()">🗑️ Del</button>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Frame Info</div>
+      <div id="frameInspector" style="font-size:.65rem;color:var(--muted);padding:8px;background:var(--panel2);border-radius:6px;border:1px solid var(--border);min-height:50px;line-height:1.6;">
+        <div>Select a frame to view</div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Per-Frame Timing</div>
+      <div class="ctrl-row">
+        <label>Frame FPS: <span id="frameFpsVal">—</span></label>
+        <input type="number" id="frameFps" min="1" max="60" placeholder="FPS" style="width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:5px;font-size:.7rem;font-family:inherit;">
+        <button class="icon-btn primary" style="width:100%;margin-top:4px;" onclick="applyFrameFps()">⏱️ Apply FPS</button>
+      </div>
     </div>
 
     <div id="frame-strip-wrap">
@@ -233,9 +265,10 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     </div>
 
     <div class="export-btns">
-      <button class="exp-btn exp-json" onclick="exportJSON()">{ } Export JSON Frame Data</button>
-      <button class="exp-btn exp-png" onclick="exportPNG()">📥 Export Current Frame PNG</button>
-      <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Export Selected Frames Sheet</button>
+      <button class="exp-btn exp-json" onclick="exportJSON()">{ } JSON Frame Data</button>
+      <button class="exp-btn exp-png" onclick="exportPNG()">📥 Current Frame PNG</button>
+      <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Selected Frames Sheet</button>
+      <button class="exp-btn" style="background:rgba(245,158,11,.2);color:var(--accent2);" onclick="exportMultiPNG()">🎞️ Batch Frame PNGs</button>
     </div>
   </div>
 </div>
@@ -329,7 +362,7 @@ function buildStrip(){
     xbtn.onclick=e=>{e.stopPropagation();toggleFrame(i);};
     div.appendChild(xbtn);
 
-    div.onclick=()=>{if(f.enabled){currentFrame=activeFrames.indexOf(i);if(currentFrame<0) currentFrame=0;drawFrame();}};
+    div.onclick=()=>{if(f.enabled){currentFrame=activeFrames.indexOf(i);if(currentFrame<0) currentFrame=0;drawFrame();showFrameInspector(i);}};
     grid.appendChild(div);
   });
   id('totalFrameNum').textContent=frames.filter(f=>f.enabled).length;
@@ -344,11 +377,64 @@ function toggleFrame(i){
 
 function selectAll(){frames.forEach((f,i)=>{f.enabled=true;const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}});updateActiveFrames();}
 function selectNone(){frames.forEach((f,i)=>{f.enabled=false;const el=id('ft-'+i);if(el){el.classList.remove('on');el.classList.add('disabled');}});updateActiveFrames();}
+function invertSelection(){frames.forEach((f,i)=>{f.enabled=!f.enabled;const el=id('ft-'+i);if(el){el.classList.toggle('on',f.enabled);el.classList.toggle('disabled',!f.enabled);}});updateActiveFrames();}
+function selectRange(){
+  const start=Math.max(0,parseInt(id('rangeStart').value||0)-1);
+  const end=Math.min(frames.length,parseInt(id('rangeEnd').value||frames.length));
+  selectNone();
+  for(let i=start;i<end;i++){
+    frames[i].enabled=true;
+    const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}
+  }
+  updateActiveFrames();
+  toast(`Selected frames ${start+1}-${end}`);
+}
 function reverseOrder(){frames.reverse();buildStrip();updateActiveFrames();}
+function deleteSelected(){
+  const toDelete=frames.map((f,i)=>f.enabled?i:-1).filter(i=>i>=0);
+  if(toDelete.length===0){toast('No frames selected');return;}
+  frames=frames.filter((f,i)=>!f.enabled);
+  buildStrip();
+  updateActiveFrames();
+  toast(`Deleted ${toDelete.length} frame(s)`);
+}
+function duplicateSelected(){
+  const selected=frames.filter(f=>f.enabled);
+  if(selected.length===0){toast('No frames selected');return;}
+  frames=[...frames,...selected.map(f=>({...f}))];
+  buildStrip();
+  updateActiveFrames();
+  toast(`Duplicated ${selected.length} frame(s)`);
+}
+
+// Frame inspector
+function showFrameInspector(frameIdx){
+  if(frameIdx<0||frameIdx>=frames.length){id('frameInspector').innerHTML='<div>Select a frame to view</div>';return;}
+  const f=frames[frameIdx];
+  const info=`
+    <div><b>Frame ${frameIdx+1}/${frames.length}</b></div>
+    <div>Position: (${f.x}, ${f.y})</div>
+    <div>Size: ${frameW}×${frameH}px</div>
+    <div>Status: ${f.enabled?'Active':'Hidden'}</div>
+    <div style="margin-top:4px;font-size:.6rem;color:var(--muted);">FPS: ${f.fps||fps}</div>
+  `;
+  id('frameInspector').innerHTML=info;
+  id('frameFpsVal').textContent=f.fps||fps;
+  id('frameFps').value=f.fps||fps;
+}
+
+function applyFrameFps(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  const fpsVal=parseInt(id('frameFps').value);
+  if(isNaN(fpsVal)){toast('Invalid FPS value');return;}
+  activeFrames.forEach(fi=>{frames[fi].fps=fpsVal;});
+  toast(`Applied FPS ${fpsVal} to ${activeFrames.length} frames`);
+}
 
 function updateActiveFrames(){
   activeFrames=frames.map((f,i)=>f.enabled?i:-1).filter(i=>i>=0);
   id('totalFrameNum').textContent=activeFrames.length;
+  if(id('selectedCount')) id('selectedCount').textContent=activeFrames.length;
   if(currentFrame>=activeFrames.length) currentFrame=0;
   drawFrame();
 }
@@ -389,13 +475,17 @@ function togglePlay(){
 
 function scheduleNext(){
   if(!playing) return;
+  // Get current frame's FPS or use global FPS
+  const fi=activeFrames[currentFrame]??0;
+  const frameFps=frames[fi]?.fps||fps;
+
   animTimer=setTimeout(()=>{
     if(activeFrames.length===0){playing=false;return;}
     currentFrame=(currentFrame+1)%activeFrames.length;
     if(!looping&&currentFrame===0){playing=false;id('playBtn').textContent='▶';id('playBtn').style.background='var(--accent)';return;}
     drawFrame();
     scheduleNext();
-  },1000/fps);
+  },1000/frameFps);
 }
 
 function prevFrame(){currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;drawFrame();}
@@ -447,6 +537,31 @@ function exportSheet(){
     cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,col*frameW,row*frameH,frameW,frameH);
   });
   c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');});
+}
+
+function exportMultiPNG(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  // Export each selected frame as individual PNG
+  // Note: In a real implementation, you'd zip these or use a download manager
+  let exported=0;
+  activeFrames.forEach((fi,idx)=>{
+    setTimeout(()=>{
+      const f=frames[fi];
+      const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
+      const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+      cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+      c.toBlob(blob=>{
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=`frame_${fi+1}.png`;
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+        exported++;
+        if(exported===activeFrames.length) toast(`Exported ${activeFrames.length} frames!`);
+      });
+    },idx*200); // Stagger downloads
+  });
+  toast('Exporting frames...');
 }
 
 // drag & drop

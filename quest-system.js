@@ -156,6 +156,137 @@ const QUESTS = {
       badge: '📚 Learning Legend',
       achievement: 'learningLegend'
     }
+  },
+
+  'quest-9-python-coder': {
+    id: 'quest-9-python-coder',
+    title: 'Python Programmer',
+    description: 'Complete 2 Python workshops and score 300 in a Python-based game.',
+    icon: '🐍',
+    category: 'coding',
+    difficulty: 'intermediate',
+    order: 9,
+    requirements: [
+      { type: 'workshop-count', workshopIds: ['python-basics-workshop', 'python-advanced-workshop'], minCount: 2 },
+      { type: 'game-score', gameId: 'python-game', minScore: 300 }
+    ],
+    rewards: {
+      xp: 180,
+      badge: '🐍 Python Pro',
+      achievement: 'pythonCoder'
+    }
+  },
+
+  'quest-10-roblox-builder': {
+    id: 'quest-10-roblox-builder',
+    title: 'Roblox Builder',
+    description: 'Complete 3 Roblox development workshops.',
+    icon: '🟥',
+    category: 'coding',
+    difficulty: 'intermediate',
+    order: 10,
+    requirements: [
+      { type: 'workshop-count', workshopIds: ['roblox-basics', 'roblox-scripts', 'roblox-games'], minCount: 3 }
+    ],
+    rewards: {
+      xp: 200,
+      badge: '🟥 Roblox Master',
+      achievement: 'robloxBuilder'
+    }
+  },
+
+  'quest-11-puzzle-master': {
+    id: 'quest-11-puzzle-master',
+    title: 'Puzzle Master',
+    description: 'Score 1000+ in 3 different puzzle games.',
+    icon: '🧩',
+    category: 'gaming',
+    difficulty: 'intermediate',
+    order: 11,
+    requirements: [
+      { type: 'multi-game-scores', minGames: 3, minScore: 1000, gameCategory: 'puzzle' }
+    ],
+    rewards: {
+      xp: 220,
+      badge: '🧩 Puzzle Solver',
+      achievement: 'puzzleMaster'
+    }
+  },
+
+  'quest-12-godot-expert': {
+    id: 'quest-12-godot-expert',
+    title: 'Godot Expert',
+    description: 'Complete 4 Godot workshops and reach level 10 in a Godot game.',
+    icon: '🔷',
+    category: 'coding',
+    difficulty: 'advanced',
+    order: 12,
+    prerequisites: ['quest-2-jump-jump-master'],
+    requirements: [
+      { type: 'workshop-count', workshopIds: ['godot-basics', 'godot-2d', 'godot-3d', 'godot-multiplayer'], minCount: 4 },
+      { type: 'game-level', gameId: 'sky-high-squirt', minLevel: 10 }
+    ],
+    rewards: {
+      xp: 280,
+      badge: '🔷 Godot Wizard',
+      achievement: 'godotExpert'
+    }
+  },
+
+  'quest-13-game-speedrunner': {
+    id: 'quest-13-game-speedrunner',
+    title: 'Speedrunner',
+    description: 'Complete 5 games with perfect or near-perfect scores.',
+    icon: '⚡',
+    category: 'gaming',
+    difficulty: 'advanced',
+    order: 13,
+    requirements: [
+      { type: 'perfect-scores', minGames: 5, minScore: 0.9 }
+    ],
+    rewards: {
+      xp: 300,
+      badge: '⚡ Speed Master',
+      achievement: 'speedrunner'
+    }
+  },
+
+  'quest-14-creative-coder': {
+    id: 'quest-14-creative-coder',
+    title: 'Creative Coder',
+    description: 'Complete workshops from all 5 major categories: Game Dev, Graphics, Game Engines, Tools, and Design.',
+    icon: '🎨',
+    category: 'learning',
+    difficulty: 'advanced',
+    order: 14,
+    prerequisites: ['quest-8-all-workshops'],
+    requirements: [
+      { type: 'category-diversity', minCategories: 5 }
+    ],
+    rewards: {
+      xp: 320,
+      cosmetic: { gameId: 'any', cosmeticId: 'rainbow-cosmetic' },
+      badge: '🎨 Creative Genius',
+      achievement: 'creativeCoder'
+    }
+  },
+
+  'quest-15-achievement-hunter': {
+    id: 'quest-15-achievement-hunter',
+    title: 'Achievement Hunter',
+    description: 'Unlock 8 different achievements across the platform.',
+    icon: '🏅',
+    category: 'engagement',
+    difficulty: 'advanced',
+    order: 15,
+    requirements: [
+      { type: 'achievement-count', minCount: 8 }
+    ],
+    rewards: {
+      xp: 350,
+      badge: '🏅 Achievement Legend',
+      achievement: 'achievementHunter'
+    }
   }
 };
 

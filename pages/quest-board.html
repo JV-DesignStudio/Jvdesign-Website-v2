@@ -691,7 +691,15 @@
     }
   </style>
 
+  <script src="../ga4-analytics.js"></script>
+
   <script>
+    // Track quest board page view
+    document.addEventListener('DOMContentLoaded', () => {
+      ga4Analytics.trackPageView('/pages/quest-board.html', 'Quest Board', 'hub');
+      ga4Analytics.trackFunnelStep('quest_completion', 1, 'view_quest_board', {});
+    });
+
     let currentFilter = 'all';
     let gameStates = {}; // Will hold game data for requirement checking
 
@@ -869,7 +877,17 @@
     }
 
     function startQuest(questId) {
+      const quest = questSystem.getQuest(questId);
       playerProfile.updateQuestProgress(questId, { started: true, startedAt: new Date().toISOString() });
+
+      // Track quest start with comprehensive analytics
+      ga4Analytics.trackQuestStart(questId, quest.title, quest.difficulty);
+      ga4Analytics.trackFunnelStep('quest_completion', 3, 'quest_started', {
+        quest_id: questId,
+        quest_name: quest.title,
+        difficulty: quest.difficulty
+      });
+
       renderQuests();
     }
 
@@ -879,6 +897,26 @@
         const quest = questSystem.getQuest(questId);
         playerProfile.completeQuest(questId);
         playerProfile.addXP(quest.rewards.xp, `quest:${questId}`);
+
+        // Determine reward type for analytics
+        let rewardType = 'none';
+        if (quest.rewards.cosmetic && quest.rewards.achievement) rewardType = 'cosmetic+achievement';
+        else if (quest.rewards.cosmetic) rewardType = 'cosmetic';
+        else if (quest.rewards.achievement) rewardType = 'achievement';
+
+        // Track comprehensive quest completion analytics
+        ga4Analytics.trackQuestComplete(questId, quest.title, quest.difficulty, quest.rewards.xp, rewardType);
+        ga4Analytics.trackFunnelStep('quest_completion', 5, 'quest_completed', {
+          quest_id: questId,
+          quest_name: quest.title,
+          difficulty: quest.difficulty,
+          xp_earned: quest.rewards.xp
+        });
+        ga4Analytics.updateUserProperties({
+          'quests_completed': playerProfile.questsCompleted,
+          'total_xp': playerProfile.globalXP,
+          'player_level': playerProfile.level
+        });
 
         // Unlock cosmetic if applicable
         if (quest.rewards.cosmetic) {
