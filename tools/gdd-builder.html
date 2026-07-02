@@ -254,6 +254,7 @@ input[type=color].inline-col{width:30px;height:30px;border:none;border-radius:7p
   <p class="hero-sub">Fill in each section to build your Game Design Document. When you're done, export it as a PDF to keep, share, or show off.</p>
   <div class="hero-btns">
     <button class="hero-btn hb-p" onclick="exportPDF()">📄 Export PDF</button>
+    <button class="hero-btn hb-p" onclick="exportJSON()" style="background:var(--accent3);color:#000;box-shadow:0 3px 0 #059669;">⬇ Export JSON</button>
     <button class="hero-btn hb-g" onclick="saveProject()">💾 Save Progress</button>
     <button class="hero-btn hb-s" onclick="loadProject()">📂 Load Saved</button>
     <button class="hero-btn hb-s" onclick="clearAll()">🔄 Start Fresh</button>
@@ -572,6 +573,7 @@ input[type=color].inline-col{width:30px;height:30px;border:none;border-radius:7p
     <button class="ctrl-btn cb-s" onclick="saveProject()">💾 Save</button>
     <button class="ctrl-btn cb-s" onclick="loadProject()">📂 Load</button>
     <button class="ctrl-btn cb-g" onclick="exportPDF()">📄 Export PDF</button>
+    <button class="ctrl-btn cb-g" onclick="exportJSON()" style="background:var(--accent3);color:#000;">⬇ Export JSON</button>
   </div>
 </div>
 
@@ -967,6 +969,31 @@ function exportPDF(){
   document.querySelectorAll('.section-body').forEach(b => b.classList.remove('hidden'));
   showToast('Opening print dialog…');
   setTimeout(() => window.print(), 400);
+}
+
+function exportJSON(){
+  const gameTitle = document.getElementById('gameTitle').value || 'Game Design Document';
+  const data = {
+    gameTitle,
+    gamePitch: document.getElementById('gamePitch').value,
+    genre: document.getElementById('genre').value,
+    platforms: document.getElementById('platforms').value,
+    targetAudience: document.getElementById('targetAudience').value,
+    coreLoop: document.getElementById('coreLoop').value,
+    uniqueFeatures: document.getElementById('uniqueFeatures').value,
+    monetization: document.getElementById('monetization').value,
+    exportedDate: new Date().toISOString(),
+    exportedFrom: 'JVDesignStudio GDD Builder'
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = gameTitle.replace(/\s+/g, '_') + '_GDD.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('GDD exported as JSON! 📋');
 }
 
 // ══════════════════════════════════════
