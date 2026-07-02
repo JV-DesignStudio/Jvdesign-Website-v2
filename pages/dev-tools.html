@@ -598,6 +598,11 @@ body { font-family: 'Inter', sans-serif; background: #0a0a12; color: var(--beige
         <p class="section-sub">Every tool runs in your browser. Click to open and get started instantly.</p>
     </div>
 
+    <div style="max-width:1200px;margin:0 auto;padding:0 28px 24px;">
+        <input type="text" id="toolSearch" placeholder="🔍 Search tools by name... (e.g., 'sprite', 'music', 'level')" style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.05);color:rgba(240,234,214,0.9);font-size:0.95rem;font-family:inherit;outline:none;transition:all 0.2s;" onfocus="this.style.borderColor='rgba(124,58,237,0.6)';this.style.background='rgba(124,58,237,0.1)'" onblur="this.style.borderColor='rgba(124,58,237,0.3)';this.style.background='rgba(124,58,237,0.05)'" oninput="filterToolsBySearch(this.value)">
+        <div id="searchResults" style="display:none;margin-top:12px;padding:12px;border-radius:10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:rgba(240,234,214,0.8);font-size:0.85rem;"></div>
+    </div>
+
     <div class="tool-filters">
         <button class="filter-btn active" data-filter="all">All Tools</button>
         <button class="filter-btn" data-filter="art">🎨 Art & Design</button>
@@ -1297,6 +1302,41 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         });
     });
 });
+
+function filterToolsBySearch(query) {
+    const cards = document.querySelectorAll('.tool-card');
+    const resultsDiv = document.getElementById('searchResults');
+    const searchInput = document.getElementById('toolSearch');
+    let matches = 0;
+
+    if (!query.trim()) {
+        resultsDiv.style.display = 'none';
+        cards.forEach(card => card.style.display = '');
+        return;
+    }
+
+    const lowerQuery = query.toLowerCase();
+    cards.forEach(card => {
+        const title = card.querySelector('.tool-title')?.textContent.toLowerCase() || '';
+        const desc = card.querySelector('.tool-desc')?.textContent.toLowerCase() || '';
+        const tags = card.querySelector('.tool-tags')?.textContent.toLowerCase() || '';
+
+        if (title.includes(lowerQuery) || desc.includes(lowerQuery) || tags.includes(lowerQuery)) {
+            card.style.display = '';
+            matches++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    if (matches > 0) {
+        resultsDiv.textContent = `🎯 Found ${matches} tool${matches === 1 ? '' : 's'} matching "${query}"`;
+        resultsDiv.style.display = 'block';
+    } else {
+        resultsDiv.textContent = `❌ No tools found matching "${query}". Try searching for "pixel", "music", "character", "level", etc.`;
+        resultsDiv.style.display = 'block';
+    }
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/../cookie-consent.js"></script>
