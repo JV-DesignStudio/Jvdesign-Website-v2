@@ -216,6 +216,39 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
         <div class="ctrl-section-title">Tile Size</div>
         <div class="ctrl-row"><label>Pixels per tile <span id="vTileSize">8</span></label><input type="range" min="2" max="16" value="8" id="tileSizeSlider" oninput="id('vTileSize').textContent=this.value"></div>
       </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">✏ Edit Mode</div>
+        <div style="display:flex;gap:4px;margin-bottom:8px;">
+          <button class="mode-btn on" id="tool-place" onclick="setEditTool('place')" style="flex:1;flex-direction:row;gap:5px;justify-content:center;"><span>🖌</span><span style="font-size:.7rem;">Place</span></button>
+          <button class="mode-btn" id="tool-erase" onclick="setEditTool('erase')" style="flex:1;flex-direction:row;gap:5px;justify-content:center;"><span>🗑</span><span style="font-size:.7rem;">Erase</span></button>
+          <button class="mode-btn" id="tool-pick" onclick="setEditTool('pick')" style="flex:1;flex-direction:row;gap:5px;justify-content:center;"><span>👁</span><span style="font-size:.7rem;">Pick</span></button>
+        </div>
+        <div class="ctrl-row" style="margin-bottom:8px;">
+          <label style="font-size:.5rem;color:var(--muted);margin-bottom:4px;display:block;">Tile Type</label>
+          <select id="editTileSelect" class="ctrl-select" onchange="currentEditTile=+this.value">
+            <option value="2">Floor</option>
+            <option value="1">Wall</option>
+            <option value="0">Void</option>
+            <option value="3">Corridor</option>
+            <option value="4">Door</option>
+            <option value="5">Stairs Up</option>
+            <option value="6">Stairs Down</option>
+            <option value="7">Enemy</option>
+            <option value="8">Loot</option>
+            <option value="9">Boss Room</option>
+            <option value="10">Deep Water</option>
+            <option value="11">Shallow Water</option>
+            <option value="12">Sand</option>
+            <option value="13">Grass</option>
+            <option value="14">Forest</option>
+            <option value="19">City</option>
+            <option value="20">Dungeon</option>
+            <option value="21">Village</option>
+          </select>
+        </div>
+        <button class="gen-btn" onclick="clearMap()" style="background:var(--accent4);padding:8px;">🗑 Clear Map</button>
+      </div>
     </div>
 
     <div class="export-btns">
@@ -232,6 +265,8 @@ function id(x){return document.getElementById(x);}
 let currentMode='dungeon';
 let currentMap=null;
 let zoom=1;
+let currentEditTool='place';
+let currentEditTile=2;
 
 function setMode(m){
   currentMode=m;
@@ -246,6 +281,51 @@ function randomSeed(){
   id('seedInput').value=Math.floor(Math.random()*99999);
   generate();
 }
+
+function setEditTool(tool){
+  currentEditTool=tool;
+  ['place','erase','pick'].forEach(t=>id('tool-'+t).classList.toggle('on',t===tool));
+}
+
+function clearMap(){
+  if(!currentMap || !confirm('Clear entire map?')) return;
+  const {W,H,map}=currentMap;
+  for(let i=0;i<map.length;i++) map[i]=0;
+  render(currentMap);
+  toast('Map cleared!');
+}
+
+function editTile(x,y){
+  if(!currentMap) return;
+  const {map,W,H}=currentMap;
+  const tileSize=+id('tileSizeSlider').value;
+  const tx=Math.floor(x/tileSize/zoom),ty=Math.floor(y/tileSize/zoom);
+  if(tx<0||ty<0||tx>=W||ty>=H) return;
+  const idx=ty*W+tx;
+  if(currentEditTool==='place') map[idx]=currentEditTile;
+  else if(currentEditTool==='erase') map[idx]=0;
+  else if(currentEditTool==='pick') {currentEditTile=map[idx];id('editTileSelect').value=map[idx];}
+  render(currentMap);
+}
+
+canvas.addEventListener('click',e=>{
+  const rect=canvas.getBoundingClientRect();
+  editTile(e.clientX-rect.left,e.clientY-rect.top);
+});
+
+canvas.addEventListener('mousemove',e=>{
+  if(!(e.buttons&1)) return;
+  const rect=canvas.getBoundingClientRect();
+  editTile(e.clientX-rect.left,e.clientY-rect.top);
+});
+
+canvas.addEventListener('touchstart',e=>e.preventDefault(),false);
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const touch=e.touches[0];
+  editTile(touch.clientX-rect.left,touch.clientY-rect.top);
+},false);
 
 // ── Seeded RNG (mulberry32) ──
 function seedRNG(seedStr){
