@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 <style>
 /* ── JVDS Site Nav ── */
 
@@ -91,6 +92,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 
 /* ACTION BUTTONS */
 .action-btn{width:100%;padding:9px 12px;border-radius:9px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:600;letter-spacing:.02em;transition:all .15s;margin-bottom:6px;}
+.gizmo-btn.active{background:var(--accent) !important;color:white !important;border-color:var(--accent) !important;}
+.gizmo-btn:hover{opacity:0.8;}
 .btn-primary{background:var(--accent);color:white;box-shadow:0 3px 0 #9b1a30;}
 .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
 .btn-secondary{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);}
@@ -426,6 +429,21 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   <!-- RIGHT PANEL -->
   <div id="right-panel">
     <div class="panel-section">
+      <div class="panel-title">Keyboard Shortcuts</div>
+      <div style="font-size:.7rem;line-height:1.4;color:var(--muted);">
+        <div><strong>G</strong> - Move (Translate)</div>
+        <div><strong>R</strong> - Rotate</div>
+        <div><strong>S</strong> - Scale</div>
+        <div><strong>X</strong> - Delete selected</div>
+        <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">
+          <strong>Mouse:</strong> Middle = Pan, Right = Orbit
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
       <div class="panel-title">Stats</div>
       <div class="stats-row">
         <div class="stat-item"><div class="stat-val" id="blockCount">0</div><div class="stat-lab">Blocks</div></div>
@@ -438,6 +456,11 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 
     <div class="panel-section" id="propPanel" style="display:none;">
       <div class="panel-title">Selected Block</div>
+      <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="gizmo-btn active" data-mode="translate" onclick="setGizmoMode('translate')" style="flex:1;padding:6px 8px;font-size:.75rem;background:var(--accent-dk);border:1px solid var(--accent);border-radius:4px;cursor:pointer;transition:0.2s;" title="G - Move">🎯 Move</button>
+        <button class="gizmo-btn" data-mode="rotate" onclick="setGizmoMode('rotate')" style="flex:1;padding:6px 8px;font-size:.75rem;background:var(--panel3);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:0.2s;" title="R - Rotate">🔄 Rotate</button>
+        <button class="gizmo-btn" data-mode="scale" onclick="setGizmoMode('scale')" style="flex:1;padding:6px 8px;font-size:.75rem;background:var(--panel3);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:0.2s;" title="S - Scale">📐 Scale</button>
+      </div>
       <div class="prop-row">
         <div class="prop-label">Width</div>
         <input type="range" class="prop-slider" id="propW" min="0.5" max="8" step="0.5" value="1" oninput="updateProp('w',this.value)">
@@ -466,8 +489,35 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
           <button class="action-btn btn-secondary" style="flex:1;padding:6px 4px;font-size:.75rem;" onclick="moveBlockY(-1)">⬇ Down</button>
         </div>
       </div>
+      <div class="prop-row">
+        <div class="prop-label">Metallic</div>
+        <input type="range" class="prop-slider" id="propMetallic" min="0" max="1" step="0.1" value="0" oninput="updateMaterial('metallic',this.value)">
+        <div class="prop-val" id="propMetallicVal">0</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Roughness</div>
+        <input type="range" class="prop-slider" id="propRoughness" min="0" max="1" step="0.1" value="0.5" oninput="updateMaterial('roughness',this.value)">
+        <div class="prop-val" id="propRoughnessVal">0.5</div>
+      </div>
       <button class="action-btn btn-warn" onclick="duplicateSelected()">📋 Duplicate</button>
       <button class="action-btn btn-secondary" style="color:#e94560;border-color:rgba(233,69,96,.3);" onclick="deleteSelected()">🗑️ Delete</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Lighting & Rendering</div>
+      <div class="prop-row">
+        <div class="prop-label">Ambient Light</div>
+        <input type="range" class="prop-slider" id="ambLightSlider" min="0" max="2" step="0.1" value="0.6" oninput="updateAmbientLight(this.value)">
+        <div class="prop-val" id="ambLightVal">0.6</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Directional Light</div>
+        <input type="range" class="prop-slider" id="dirLightSlider" min="0" max="2" step="0.1" value="0.8" oninput="updateDirectionalLight(this.value)">
+        <div class="prop-val" id="dirLightVal">0.8</div>
+      </div>
+      <button class="action-btn btn-secondary" onclick="resetLighting()">🔄 Reset Lighting</button>
     </div>
 
     <div class="divider"></div>
@@ -722,6 +772,11 @@ let selectedBlock = null;
 let buildName = 'My Build';
 let toastTimer = null;
 
+// Gizmo/Transform controls
+let transformControls = null;
+let gizmoMode = 'translate'; // translate, rotate, scale
+let showGizmo = true;
+
 // Orbit controls state
 let isRightDrag = false, isMidDrag = false;
 let prevMX = 0, prevMY = 0;
@@ -759,8 +814,27 @@ function init() {
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  // Gizmo/Transform controls
+  transformControls = new THREE.TransformControls(camera, renderer.domElement);
+  transformControls.addEventListener('change', () => renderer.render(scene, camera));
+  scene.add(transformControls);
+
+  // Lighting (enhanced)
+  const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 15, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 500;
+  dirLight.shadow.camera.left = -30;
+  dirLight.shadow.camera.right = 30;
+  dirLight.shadow.camera.top = 30;
+  dirLight.shadow.camera.bottom = -30;
+  scene.add(dirLight);
   const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
   sun.position.set(10, 20, 10);
   sun.castShadow = true;
@@ -808,6 +882,7 @@ function init() {
   setupEvents();
   buildColourPalette();
   renderSaveSlots();
+  initLighting();
   animate();
 
   window.addEventListener('resize', () => {
@@ -943,6 +1018,23 @@ function selectBlock(mesh) {
     document.getElementById('propRotVal').textContent = (mesh.userData.rot || 0) + '°';
     const yBase = Math.round(mesh.position.y - (mesh.userData.h||1)/2);
     document.getElementById('propYVal').textContent = yBase;
+
+    // Update material sliders
+    if (mesh.material) {
+      const metallic = mesh.material.metalness || 0;
+      const roughness = mesh.material.roughness || 0.5;
+      document.getElementById('propMetallic').value = metallic;
+      document.getElementById('propMetallicVal').textContent = metallic.toFixed(1);
+      document.getElementById('propRoughness').value = roughness;
+      document.getElementById('propRoughnessVal').textContent = roughness.toFixed(1);
+    }
+  }
+
+  // Attach gizmo to selected block
+  if (transformControls) {
+    transformControls.attach(mesh);
+    transformControls.setMode(gizmoMode);
+    updateGizmoUI();
   }
 }
 
@@ -958,6 +1050,9 @@ function moveBlockY(dir) {
 function deselectBlock() {
   selectedBlock = null;
   window.highlight.visible = false;
+  if (transformControls) {
+    transformControls.detach();
+  }
   document.getElementById('propPanel').style.display = 'none';
 }
 
@@ -1870,6 +1965,97 @@ function animate() {
 // ── CLOSE MODALS ON OVERLAY CLICK ──
 document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// LIGHTING CONTROLS
+// ═══════════════════════════════════════════════════════
+let ambientLight = null;
+let directionalLight = null;
+
+function initLighting() {
+  // Find existing lights
+  scene.children.forEach(child => {
+    if (child instanceof THREE.AmbientLight) ambientLight = child;
+    if (child instanceof THREE.DirectionalLight) directionalLight = child;
+  });
+}
+
+function updateAmbientLight(val) {
+  if (!ambientLight) return;
+  ambientLight.intensity = parseFloat(val);
+  document.getElementById('ambLightVal').textContent = parseFloat(val).toFixed(1);
+  renderer.render(scene, camera);
+}
+
+function updateDirectionalLight(val) {
+  if (!directionalLight) return;
+  directionalLight.intensity = parseFloat(val);
+  document.getElementById('dirLightVal').textContent = parseFloat(val).toFixed(1);
+  renderer.render(scene, camera);
+}
+
+function resetLighting() {
+  if (ambientLight) ambientLight.intensity = 0.6;
+  if (directionalLight) directionalLight.intensity = 0.8;
+  document.getElementById('ambLightSlider').value = '0.6';
+  document.getElementById('dirLightSlider').value = '0.8';
+  document.getElementById('ambLightVal').textContent = '0.6';
+  document.getElementById('dirLightVal').textContent = '0.8';
+  renderer.render(scene, camera);
+  toast('Lighting reset');
+}
+
+// ═══════════════════════════════════════════════════════
+// MATERIAL SYSTEM
+// ═══════════════════════════════════════════════════════
+function updateMaterial(prop, val) {
+  if (!selectedBlock || !selectedBlock.material) return;
+  val = parseFloat(val);
+  if (prop === 'metallic') {
+    selectedBlock.material.metalness = val;
+    document.getElementById('propMetallicVal').textContent = val.toFixed(1);
+  } else if (prop === 'roughness') {
+    selectedBlock.material.roughness = val;
+    document.getElementById('propRoughnessVal').textContent = val.toFixed(1);
+  }
+  selectedBlock.material.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════
+// GIZMO & TRANSFORM CONTROLS
+// ═══════════════════════════════════════════════════════
+function setGizmoMode(mode) {
+  if (!selectedBlock || !transformControls) return;
+  gizmoMode = mode;
+  transformControls.setMode(mode);
+  updateGizmoUI();
+  toast(`Gizmo: ${mode.toUpperCase()}`);
+}
+
+function updateGizmoUI() {
+  document.querySelectorAll('.gizmo-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.mode === gizmoMode) btn.classList.add('active');
+  });
+}
+
+// Attach gizmo to selected block
+document.addEventListener('blockSelected', (e) => {
+  if (selectedBlock && transformControls) {
+    transformControls.attach(selectedBlock);
+    updateGizmoUI();
+  }
+});
+
+// Keyboard shortcuts for gizmo modes
+document.addEventListener('keydown', (e) => {
+  if (!selectedBlock) return;
+  if ((e.key === 'g' || e.key === 'G') && !e.ctrlKey && !e.metaKey) { setGizmoMode('translate'); e.preventDefault(); }
+  if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) { setGizmoMode('rotate'); e.preventDefault(); }
+  if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { setGizmoMode('scale'); e.preventDefault(); }
+  if ((e.key === 'x' || e.key === 'X') && !e.ctrlKey && !e.metaKey) { deleteBlock(selectedBlock); e.preventDefault(); }
 });
 
 // ── START ──
