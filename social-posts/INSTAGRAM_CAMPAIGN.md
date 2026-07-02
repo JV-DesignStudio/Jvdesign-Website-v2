@@ -9,10 +9,14 @@ This campaign announces the major update to JVDesignStudio's game development to
 
 ---
 
-## 📱 Post 1: Main Announcement (Carousel Start)
+## 📱 Post 1: Main Announcement 
 
 ### Image
-**Main Announcement Graphic** - Shows all 4 tool updates + Dev-Tools Hub expansion
+**instagram_main_announcement_v2.svg** - Professional announcement with real design aesthetic
+- 4 tool update cards (SFX Generator, Drum Pad, Game Logo Maker, Colour Palette)
+- Dev-Tools Hub features grid
+- 4-stat showcase (10+ Tools, 8 Features, 20 Total Tools, ∞ Possibilities)
+- Purple accent theme matching brand colors
 
 ### Caption
 ```
@@ -51,94 +55,104 @@ Recommended Tool Combos, and Tool Analytics!
 
 ---
 
-## 📱 Post 2: "Try This First" Tutorial Post
+## 📱 Post 2: Learning Paths Spotlight
 
 ### Image
-**Try This First Graphic** - 3 beginner projects with time estimates
+**instagram_learning_paths.svg** - Three skill-level progressions
+- Beginner path: "Your First Game" (3 steps)
+- Intermediate path: "Full Game Prototype" (4 steps)  
+- Advanced path: "Polished Game" (5 steps)
+- Color-coded by difficulty (blue, purple, pink)
 
 ### Caption
 ```
-🚀 New to game dev? Start here!
+📚 LEARNING PATHS: Pick Your Skill Level
 
-We've added 3 perfect beginner projects to help you jump in:
+We've mapped out 3 complete progressions:
 
-1️⃣ Draw Your First Sprite (🎨)
-   Create a pixel character or enemy
-   ⏱ 10-15 minutes
-   No experience needed!
+👶 BEGINNER: "Your First Game"
+Step 1: Draw a sprite with Pixel Studio
+Step 2: Animate it with Sprite Animator  
+Step 3: Build a level with Arcade Game Maker
+→ Playtime: 2-3 hours total
 
-2️⃣ Generate Color Palette (🎨)
-   Pick a mood, explore color harmony
-   ⏱ Just 5 minutes
-   Instant creative satisfaction
+🎮 INTERMEDIATE: "Full Game Prototype"
+Step 1: Plan with GDD Builder
+Step 2: Design characters & world palette
+Step 3: Create a complete playable level
+Step 4: Add sound effects & music
+→ Playtime: 1-2 weeks
 
-3️⃣ Make Your First Beat (🎵)
-   Tap pads, record rhythm, save pattern
-   ⏱ 10 minutes of pure fun
-   Everyone can do this!
+🌟 ADVANCED: "Polished Game"
+Step 1: Write game story & design document
+Step 2: Create detailed art & animations
+Step 3: Compose complete soundtrack
+Step 4: Polish effects & UI design
+Step 5: Export & share your game
+→ Ready for release
 
-Why these projects?
-✓ Instant gratification
-✓ Real exports you can use
-✓ Gateway to bigger games
-✓ Zero sign-up required
+Pick your level. Follow the path. Create something amazing.
 
-Pick one and create something TODAY.
+No guessing. No gatekeeping. Just clear steps forward.
 
-No installation. No sign-up. Pure creation.
-
-#GameDev #BeginnerFriendly #CreativeTools #JVDesignStudio 
-#LearnGameDev #IndieGame #GameJam #ArtistsOnInstagram #MusicMakers
+#GameDev #Learning #JVDesignStudio #SkillProgression #IndieGame
+#BeginnerFriendly #CreativeTools #GameDeveloper #Tutorial
 ```
 
 **Engagement Hook:** Encourage users to share what they created
 
 ---
 
-## 📱 Post 3: Dev-Tools Hub Spotlight
+## 📱 Post 3: Tool Combos Showcase
 
 ### Image
-**Dev-Tools Hub Features Graphic** - Tool search, learning paths, combos, analytics
+**instagram_tool_combos.svg** - 6 curated workflow combinations
+- Make Your First Sprite combo (blue)
+- Build a Complete Level combo (green)
+- Create Full Soundtrack combo (purple)
+- Design Characters combo (pink)
+- Polish Visual Effects combo (orange)
+- Plan Your Game combo (indigo)
+- How it works section + Why Combos section
 
 ### Caption
 ```
-🛠️ Your Game Dev Ecosystem Just Got Better
+🎯 RECOMMENDED TOOL COMBOS
 
-The Dev-Tools Hub is now your creative command center:
+Stop guessing what to do next.
 
-🔍 TOOL SEARCH
-Find exactly what you need instantly
-Search by name, tags, or description
+We've mapped out 6 complete workflows:
 
-📚 LEARNING PATHS  
-Beginner → Intermediate → Advanced
-Clear progression for every skill level
+1️⃣ Make Your First Sprite
+Character Designer → Sprite Animator → Pixel Studio
 
-🎯 RECOMMENDED COMBOS
-6 curated tool workflows:
-• Make Your First Sprite
-• Build a Complete Level
-• Create a Full Soundtrack
-• Design Characters
-• Polish Visual Effects
-• Plan Your Game
+2️⃣ Build a Complete Level  
+Level Designer → Map Generator → Arcade Game Maker
 
-📊 TOOL ANALYTICS
-See which tools are most-used and why
-Discover hidden features in familiar tools
+3️⃣ Create a Full Soundtrack
+Music Maker → Drum Pad → SFX Generator
 
-Example Workflow: Make a Sprite Game
-1. Character Designer → Create protagonist
-2. Sprite Animator → Animate walk/jump
-3. Colour Palette → Design world palette
-4. Arcade Game Maker → Build playable levels
-5. SFX Generator → Add sound effects
-✅ Play your complete game!
+4️⃣ Design Characters
+Character Designer → Colour Palette → Sprite Animator
 
-Everything connected. Everything flows together.
+5️⃣ Polish Visual Effects
+Particle Designer → Colour Palette → Sprite Animator
 
-#GameDev #DevTools #IndieGame #JVDesignStudio #GameCreation
-#AllInOne #CreativeTools #GameMaker #ToolStack #FreeTools
+6️⃣ Plan Your Game
+GDD Builder → Project Tracker → Story Editor
+
+How It Works:
+✓ Pick the combo that matches your goal
+✓ Open each tool in order
+✓ Each tool guides you to the next
+✓ End result: complete game asset
+
+No thinking. No guessing. Just follow the path.
+
+Workflows that work. Tools that connect. Creation that flows.
+
+#GameDev #Workflow #JVDesignStudio #CreativeTools #Productivity
+#IndieGame #GameMaker #AllInOne #FreeTools #GameDevelopment
 ```
 
 **Engagement Hook:** Ask users what game they'd make with this workflow
