@@ -326,6 +326,15 @@
         <div class="divider"></div>
 
         <div class="panel-section">
+            <div class="section-title">Templates</div>
+            <button class="action-btn btn-secondary" onclick="loadTemplate('character')" style="font-size: 0.75rem; padding: 8px;">🤖 Character</button>
+            <button class="action-btn btn-secondary" onclick="loadTemplate('terrain')" style="font-size: 0.75rem; padding: 8px; margin-top: 4px;">🌍 Terrain</button>
+            <button class="action-btn btn-secondary" onclick="loadTemplate('house')" style="font-size: 0.75rem; padding: 8px; margin-top: 4px;">🏠 House</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
             <button class="action-btn btn-secondary" onclick="clearGrid()">🗑️ Clear All</button>
             <button class="action-btn btn-secondary" onclick="resetView()">🎯 Reset View</button>
         </div>
@@ -359,7 +368,8 @@
         <div class="panel-section">
             <div class="section-title">Export</div>
             <button class="action-btn btn-success" onclick="exportOBJ()">📥 Export OBJ</button>
-            <button class="action-btn btn-primary" onclick="saveProject()">💾 Save Project</button>
+            <button class="action-btn btn-secondary" onclick="exportGLTF()" style="margin-top: 4px;">📦 Export GLTF</button>
+            <button class="action-btn btn-primary" onclick="saveProject()" style="margin-top: 8px;">💾 Save Project</button>
             <button class="action-btn btn-secondary" onclick="loadProject()">📂 Load Project</button>
         </div>
 
@@ -779,6 +789,69 @@ function restoreHistory() {
     updateMesh();
 }
 
+// ========== TEMPLATE MODELS ==========
+function loadTemplate(type) {
+    pushHistory();
+    grid.clear();
+
+    if (type === 'character') {
+        // Simple character shape
+        const positions = [
+            // Head
+            [0, 8, 0], [0, 9, 0], [1, 8, 0], [1, 9, 0],
+            // Body
+            [0, 6, 0], [0, 7, 0], [1, 6, 0], [1, 7, 0],
+            // Left arm
+            [-1, 6, 0], [-1, 7, 0],
+            // Right arm
+            [2, 6, 0], [2, 7, 0],
+            // Left leg
+            [0, 4, 0], [0, 5, 0],
+            // Right leg
+            [1, 4, 0], [1, 5, 0]
+        ];
+        const colors = ['#ff9757', '#ff9757', '#ff9757', '#ff9757',
+                       '#8e7cc3', '#8e7cc3', '#8e7cc3', '#8e7cc3',
+                       '#8e7cc3', '#8e7cc3', '#8e7cc3', '#8e7cc3',
+                       '#4ecdc4', '#4ecdc4', '#4ecdc4', '#4ecdc4'];
+
+        positions.forEach((p, i) => {
+            grid.set(p[0], p[1], p[2], { color: colors[i], material: 'matte' });
+        });
+    } else if (type === 'terrain') {
+        // Simple terrain
+        for (let x = -4; x <= 4; x++) {
+            for (let z = -4; z <= 4; z++) {
+                const height = Math.abs(x) + Math.abs(z) < 3 ? 2 : 1;
+                for (let y = 0; y < height; y++) {
+                    const colors = ['#44a08d', '#34d399'];
+                    grid.set(x, y, z, { color: colors[y % 2], material: 'matte' });
+                }
+            }
+        }
+    } else if (type === 'house') {
+        // Simple house
+        // Walls
+        for (let x = -2; x <= 2; x++) {
+            for (let z = -3; z <= 3; z++) {
+                if (x === -2 || x === 2 || z === -3 || z === 3) {
+                    for (let y = 0; y < 4; y++) {
+                        grid.set(x, y, z, { color: '#a8dadc', material: 'matte' });
+                    }
+                }
+            }
+        }
+        // Roof
+        for (let x = -2; x <= 2; x++) {
+            for (let z = -3; z <= 3; z++) {
+                grid.set(x, 4, z, { color: '#cf6679', material: 'matte' });
+            }
+        }
+    }
+
+    updateMesh();
+}
+
 // ========== EXPORT SYSTEM ==========
 function exportOBJ() {
     let obj = '# 3D Voxel Model\n';
@@ -875,6 +948,14 @@ function downloadFile(content, filename) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function exportGLTF() {
+    alert('GLTF export comes in next update! For now, use OBJ export and convert with online tools.');
+}
+
+function exportGLB() {
+    alert('GLB export comes in next update! For now, use OBJ export.');
 }
 
 // ========== PROJECT SAVE/LOAD ==========
