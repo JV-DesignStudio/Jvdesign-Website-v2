@@ -19,6 +19,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 <style>
 /* ── JVDS Site Nav ── */
 
@@ -526,10 +527,18 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
       <div class="panel-title">Your Creation</div>
       <button class="action-btn btn-primary" onclick="openNameModal()">✏️ Name It</button>
       <button class="action-btn btn-success" onclick="saveSlotOpen()">💾 Save</button>
-      <button class="action-btn btn-secondary" onclick="exportOBJ()">⬇️ Export OBJ</button>
-      <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" onclick="exportRBXM()">🟥 Export RBLX</button>
-      <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);" onclick="triggerImportOBJ()">📂 Import OBJ</button>
-      <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.08);color:var(--accent2);border:1px solid rgba(245,166,35,.2);" onclick="triggerImportRBLX()">📥 Import RBLX</button>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="panel-title" style="font-size:.65rem;">Export Formats</div>
+        <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.12);color:var(--accent);border:1px solid rgba(91,192,248,.3);font-size:.8rem;" onclick="exportGLTF()">🎨 Export GLTF (.glb)</button>
+        <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.08);color:var(--accent);border:1px solid rgba(91,192,248,.2);font-size:.8rem;" onclick="exportOBJWithMTL()">📦 Export OBJ+MTL</button>
+        <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="exportOBJ()">📄 Export OBJ</button>
+        <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);font-size:.8rem;" onclick="exportRBXM()">🟥 Export RBLX</button>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div class="panel-title" style="font-size:.65rem;">Import Formats</div>
+        <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);font-size:.8rem;" onclick="triggerImportOBJ()">📂 Import OBJ</button>
+        <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.08);color:var(--accent2);border:1px solid rgba(245,166,35,.2);font-size:.8rem;" onclick="triggerImportRBLX()">📥 Import RBLX</button>
+      </div>
       <button class="action-btn btn-secondary" onclick="clearAll()">🔄 Clear All</button>
     </div>
 
@@ -1745,6 +1754,104 @@ function exportRBXM() {
   a.download = buildName.replace(/\s+/g,'_') + '.rbxm';
   a.click();
   toast('Exported ' + buildName + '.rbxm — import in Roblox Studio!');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT GLTF (Professional format with materials)
+// ═══════════════════════════════════════════════════════
+function exportGLTF() {
+  if (blocks.length === 0) { toast('Nothing to export!'); return; }
+
+  const exporter = new THREE.GLTFExporter();
+  const options = {
+    binary: true,
+    trs: false,
+    onlyVisible: true,
+    truncateDrawRange: true
+  };
+
+  exporter.parse(
+    scene,
+    (gltf) => {
+      const blob = new Blob([gltf], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = buildName.replace(/\s+/g, '_') + '.glb';
+      link.click();
+      URL.revokeObjectURL(url);
+      toast('Exported ' + buildName + '.glb with full materials & lighting!');
+    },
+    (error) => {
+      console.error('GLTF export error:', error);
+      toast('Export failed — check console for details');
+    },
+    options
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT OBJ with MTL (Materials)
+// ═══════════════════════════════════════════════════════
+function exportOBJWithMTL() {
+  if (blocks.length === 0) { toast('Nothing to export!'); return; }
+
+  let obj = `# JVDesignStudio Block Builder — ${buildName}\n# Exported with materials\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
+  let mtl = `# Materials for ${buildName}\n`;
+  let vOffset = 1;
+  const materials = new Map();
+
+  blocks.forEach((mesh, mi) => {
+    const color = mesh.userData.colour || '#aaaaaa';
+    const matName = `mat_${mi}`;
+
+    if (!materials.has(color)) {
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) / 255;
+      const g = parseInt(hex.substring(2, 4), 16) / 255;
+      const b = parseInt(hex.substring(4, 6), 16) / 255;
+      const metallic = mesh.material.metalness || 0;
+      const roughness = mesh.material.roughness || 0.5;
+
+      mtl += `\nnewmtl ${matName}\nKd ${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}\nKs 0.5 0.5 0.5\nNs ${(1000 * (1 - roughness)).toFixed(0)}\nTr ${metallic.toFixed(2)}\n`;
+      materials.set(color, matName);
+    }
+
+    obj += `\nusemtl ${materials.get(color)}\n`;
+    const geo = mesh.geometry.clone();
+    geo.applyMatrix4(mesh.matrixWorld);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      obj += `v ${pos.getX(i).toFixed(4)} ${pos.getY(i).toFixed(4)} ${pos.getZ(i).toFixed(4)}\n`;
+    }
+    const idx = geo.index;
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
+        obj += `f ${idx.getX(i) + vOffset} ${idx.getX(i + 1) + vOffset} ${idx.getX(i + 2) + vOffset}\n`;
+      }
+    }
+    vOffset += pos.count;
+    geo.dispose();
+  });
+
+  // Download OBJ
+  const objBlob = new Blob([obj], { type: 'text/plain' });
+  const objUrl = URL.createObjectURL(objBlob);
+  const objLink = document.createElement('a');
+  objLink.href = objUrl;
+  objLink.download = buildName.replace(/\s+/g, '_') + '.obj';
+  objLink.click();
+  URL.revokeObjectURL(objUrl);
+
+  // Download MTL
+  const mtlBlob = new Blob([mtl], { type: 'text/plain' });
+  const mtlUrl = URL.createObjectURL(mtlBlob);
+  const mtlLink = document.createElement('a');
+  mtlLink.href = mtlUrl;
+  mtlLink.download = buildName.replace(/\s+/g, '_') + '.mtl';
+  setTimeout(() => { mtlLink.click(); URL.revokeObjectURL(mtlUrl); }, 100);
+
+  toast('Exported .obj + .mtl with full materials!');
 }
 
 // ═══════════════════════════════════════════════════════
