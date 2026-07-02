@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Voxel Editor | JVDesignStudio</title>
+    <link rel="icon" href="../logo.png" type="image/png">
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="../style-shared.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #0a0a12; color: #f0ead6; font-family: 'Inter', sans-serif; }
+
+        .site-footer { display: none; }
+        .site-header { display: none; }
+
+        .editor-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 240px;
+            height: calc(100vh - 54px);
+            gap: 0;
+        }
+
+        /* LEFT PANEL */
+        .left-panel {
+            background: #16213e;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #a78bfa;
+            margin-bottom: 10px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 10px 6px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background: rgba(255,255,255,0.04);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: rgba(240,234,214,0.6);
+        }
+
+        .tool-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: rgba(240,234,214,0.9);
+        }
+
+        .tool-btn.active {
+            background: rgba(124,58,237,0.2);
+            border-color: #7c3aed;
+            color: #a78bfa;
+        }
+
+        .tool-icon { font-size: 1.2rem; }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .color-swatch {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.1s, border-color 0.1s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.selected {
+            border-color: white;
+            transform: scale(1.1);
+        }
+
+        .custom-color-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 6px;
+        }
+
+        .custom-color-row input[type="color"] {
+            width: 40px;
+            height: 32px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .custom-color-row span {
+            font-size: 0.7rem;
+            color: rgba(240,234,214,0.6);
+        }
+
+        /* VIEWPORT */
+        #viewport {
+            position: relative;
+            background: #0f0f1a;
+            overflow: hidden;
+        }
+
+        #viewport canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewport-hint {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.2);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* RIGHT PANEL */
+        .right-panel {
+            background: #16213e;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .prop-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .prop-label {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(240,234,214,0.5);
+        }
+
+        .prop-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #f0ead6;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Fredoka', cursive;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            margin-bottom: 6px;
+        }
+
+        .btn-primary {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #9d5aff;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.07);
+            color: #f0ead6;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.12);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+            margin-top: 4px;
+        }
+
+        .btn-success:hover {
+            background: #34d399;
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 12px 0;
+        }
+
+        /* MOBILE */
+        @media(max-width: 900px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+            .left-panel, .right-panel {
+                display: none;
+            }
+        }
+
+        /* TOOLBAR BUTTONS */
+        .toolbar-btn {
+            padding: 8px 12px;
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(124,58,237,0.3);
+            color: #a78bfa;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(124,58,237,0.25);
+        }
+    </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Navigation -->
+<header class="jvds-site-nav" id="jvdsSiteNav">
+    <div class="jvds-nav-inner">
+        <a href="../index.html" class="jvds-nav-logo">
+            <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
+            JVDesignStudio
+        </a>
+        <nav class="jvds-nav-links">
+            <a href="../index.html">Home</a>
+            <a href="../pages/dev-tools.html" class="nav-tools active">🛠️ Dev Tools</a>
+            <a href="../pages/games.html">🎮 Games</a>
+            <a href="../pages/workshop.html">🔧 Workshop</a>
+        </nav>
+        <button class="jvds-nav-toggle" id="jvdsNavToggle">☰</button>
+    </div>
+</header>
+
+<div id="main-content" class="editor-container">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+        <div class="panel-section">
+            <div class="section-title">Tools</div>
+            <div class="tools-grid">
+                <button class="tool-btn active" data-tool="place" onclick="setTool('place')">
+                    <span class="tool-icon">➕</span>
+                    <span>Place</span>
+                </button>
+                <button class="tool-btn" data-tool="delete" onclick="setTool('delete')">
+                    <span class="tool-icon">🗑️</span>
+                    <span>Delete</span>
+                </button>
+                <button class="tool-btn" data-tool="paint" onclick="setTool('paint')">
+                    <span class="tool-icon">🎨</span>
+                    <span>Paint</span>
+                </button>
+                <button class="tool-btn" data-tool="move" onclick="setTool('move')">
+                    <span class="tool-icon">✋</span>
+                    <span>Move</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
+            <div class="section-title">Colors</div>
+            <div class="color-grid" id="colorGrid"></div>
+            <div class="custom-color-row">
+                <input type="color" id="customColor" value="#ff6b5b">
+                <span>Custom</span>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
+            <button class="action-btn btn-secondary" onclick="clearGrid()">🗑️ Clear All</button>
+            <button class="action-btn btn-secondary" onclick="resetView()">🎯 Reset View</button>
+        </div>
+    </div>
+
+    <!-- VIEWPORT -->
+    <div id="viewport">
+        <div class="viewport-hint">Drag: Rotate | Scroll: Zoom | Right-click: Pan</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="panel-section">
+            <div class="section-title">Model Info</div>
+            <div class="prop-row">
+                <div class="prop-label">Dimensions</div>
+                <div class="prop-value"><span id="dimX">0</span>×<span id="dimY">0</span>×<span id="dimZ">0</span></div>
+            </div>
+            <div class="prop-row">
+                <div class="prop-label">Voxels</div>
+                <div class="prop-value" id="voxelCount">0</div>
+            </div>
+            <div class="prop-row">
+                <div class="prop-label">Current Color</div>
+                <div style="width: 100%; height: 40px; border-radius: 6px; background: #ff6b5b; border: 2px solid #7c3aed;" id="colorPreview"></div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
+            <div class="section-title">Export</div>
+            <button class="action-btn btn-success" onclick="exportOBJ()">📥 Export OBJ</button>
+            <button class="action-btn btn-primary" onclick="saveProject()">💾 Save Project</button>
+            <button class="action-btn btn-secondary" onclick="loadProject()">📂 Load Project</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-section">
+            <div class="section-title">Shortcuts</div>
+            <div style="font-size: 0.75rem; color: rgba(240,234,214,0.5); line-height: 1.6;">
+                <div><strong>Q:</strong> Delete</div>
+                <div><strong>E:</strong> Paint</div>
+                <div><strong>Scroll:</strong> Zoom</div>
+                <div><strong>Ctrl+Z:</strong> Undo</div>
+                <div><strong>Ctrl+S:</strong> Save</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== VOXEL GRID SYSTEM ==========
+class VoxelGrid {
+    constructor(width = 32, height = 32, depth = 32) {
+        this.width = width;
+        this.height = height;
+        this.depth = depth;
+        this.voxels = new Map(); // "x,y,z" → {color, material}
+    }
+
+    set(x, y, z, voxel) {
+        if (this.isInBounds(x, y, z)) {
+            const key = `${x},${y},${z}`;
+            this.voxels.set(key, voxel);
+            return true;
+        }
+        return false;
+    }
+
+    get(x, y, z) {
+        const key = `${x},${y},${z}`;
+        return this.voxels.get(key) || null;
+    }
+
+    delete(x, y, z) {
+        const key = `${x},${y},${z}`;
+        this.voxels.delete(key);
+    }
+
+    isInBounds(x, y, z) {
+        return x >= 0 && x < this.width &&
+               y >= 0 && y < this.height &&
+               z >= 0 && z < this.depth;
+    }
+
+    clear() {
+        this.voxels.clear();
+    }
+
+    getDimensions() {
+        if (this.voxels.size === 0) return { x: 0, y: 0, z: 0 };
+
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+
+        this.voxels.forEach((_, key) => {
+            const [x, y, z] = key.split(',').map(Number);
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            minZ = Math.min(minZ, z);
+            maxZ = Math.max(maxZ, z);
+        });
+
+        return {
+            x: maxX - minX + 1,
+            y: maxY - minY + 1,
+            z: maxZ - minZ + 1
+        };
+    }
+}
+
+// ========== VOXEL MESH GENERATION ==========
+class VoxelMesh {
+    static generateMesh(grid) {
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const colors = [];
+        const indices = [];
+
+        let vertexIndex = 0;
+        const size = 0.5;
+
+        grid.voxels.forEach((voxel, key) => {
+            const [x, y, z] = key.split(',').map(Number);
+
+            // Get color as RGB
+            const hex = voxel.color.substring(1);
+            const r = parseInt(hex.substr(0,2), 16) / 255;
+            const g = parseInt(hex.substr(2,2), 16) / 255;
+            const b = parseInt(hex.substr(4,2), 16) / 255;
+
+            // Define 8 corners of voxel
+            const corners = [
+                [x-size, y-size, z-size],
+                [x+size, y-size, z-size],
+                [x+size, y+size, z-size],
+                [x-size, y+size, z-size],
+                [x-size, y-size, z+size],
+                [x+size, y-size, z+size],
+                [x+size, y+size, z+size],
+                [x-size, y+size, z+size]
+            ];
+
+            // Define 6 faces (only add if neighbor doesn't exist)
+            const faces = [
+                { corners: [0,1,2,3], normal: [0,0,-1] }, // front
+                { corners: [4,6,5,7], normal: [0,0,1] },  // back
+                { corners: [0,4,5,1], normal: [0,-1,0] }, // bottom
+                { corners: [2,6,7,3], normal: [0,1,0] },  // top
+                { corners: [0,3,7,4], normal: [-1,0,0] }, // left
+                { corners: [1,5,6,2], normal: [1,0,0] }   // right
+            ];
+
+            faces.forEach(face => {
+                // Check if neighbor exists in this direction
+                const [nx, ny, nz] = face.normal;
+                const hasNeighbor = grid.get(x+nx, y+ny, z+nz) !== null;
+
+                if (!hasNeighbor) {
+                    // Add face
+                    const faceCorners = face.corners.map(i => corners[i]);
+
+                    // Add vertices
+                    faceCorners.forEach(corner => {
+                        vertices.push(...corner);
+                        colors.push(r, g, b);
+                    });
+
+                    // Add indices (two triangles)
+                    indices.push(vertexIndex, vertexIndex+1, vertexIndex+2);
+                    indices.push(vertexIndex, vertexIndex+2, vertexIndex+3);
+
+                    vertexIndex += 4;
+                }
+            });
+        });
+
+        if (vertices.length === 0) {
+            // Return empty geometry
+            return null;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshPhongMaterial({
+            vertexColors: true,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        return mesh;
+    }
+}
+
+// ========== EDITOR STATE ==========
+let grid = new VoxelGrid(32, 32, 32);
+let currentTool = 'place';
+let currentColor = '#ff6b5b';
+let history = [];
+let historyIndex = -1;
+
+// Color palette
+const colors = [
+    '#ff6b5b', '#ff9757', '#ffd23f', '#4ecdc4',
+    '#44a08d', '#95e1d3', '#a8dadc', '#457b9d',
+    '#f07167', '#cb6066', '#8e7cc3', '#eae2b7',
+    '#cf6679', '#5a189a', '#9d4edd', '#e0aaff'
+];
+
+// ========== THREE.JS SETUP ==========
+const viewport = document.getElementById('viewport');
+let scene, camera, renderer, gridMesh;
+
+function initThreeJS() {
+    const width = viewport.clientWidth;
+    const height = viewport.clientHeight;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f0f1a);
+
+    camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.set(20, 20, 20);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    viewport.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    scene.add(ambientLight, directionalLight);
+
+    // Grid floor
+    const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x222222);
+    gridHelper.position.y = -16;
+    scene.add(gridHelper);
+
+    // Camera controls
+    setupCameraControls();
+
+    // Rendering loop
+    animate();
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const w = viewport.clientWidth;
+        const h = viewport.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+    });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+function updateMesh() {
+    if (gridMesh) scene.remove(gridMesh);
+
+    const mesh = VoxelMesh.generateMesh(grid);
+    if (mesh) {
+        scene.add(mesh);
+        gridMesh = mesh;
+    }
+
+    updateInfo();
+}
+
+// ========== CAMERA CONTROLS ==========
+let isOrbiting = false;
+let isPanning = false;
+let lastX = 0, lastY = 0;
+
+function setupCameraControls() {
+    renderer.domElement.addEventListener('mousedown', (e) => {
+        if (e.button === 0) isOrbiting = true;
+        if (e.button === 2) isPanning = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+    });
+
+    renderer.domElement.addEventListener('mousemove', (e) => {
+        const deltaX = e.clientX - lastX;
+        const deltaY = e.clientY - lastY;
+
+        if (isOrbiting) {
+            orbitCamera(deltaX * 0.01, deltaY * 0.01);
+        }
+        if (isPanning) {
+            panCamera(deltaX * 0.01, deltaY * 0.01);
+        }
+
+        lastX = e.clientX;
+        lastY = e.clientY;
+    });
+
+    renderer.domElement.addEventListener('mouseup', () => {
+        isOrbiting = false;
+        isPanning = false;
+    });
+
+    renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const direction = camera.position.clone().normalize();
+        const distance = camera.position.length();
+        const newDistance = distance + e.deltaY * 0.01;
+
+        if (newDistance > 5 && newDistance < 100) {
+            camera.position.copy(direction.multiplyScalar(newDistance));
+        }
+    });
+
+    renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+function orbitCamera(deltaX, deltaY) {
+    const center = new THREE.Vector3(0, 0, 0);
+    const pos = camera.position.clone();
+
+    // Convert to spherical
+    let radius = pos.length();
+    let theta = Math.atan2(pos.z, pos.x);
+    let phi = Math.acos(pos.y / radius);
+
+    theta += deltaX;
+    phi += deltaY;
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi));
+
+    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = radius * Math.cos(phi);
+    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(center);
+}
+
+function panCamera(deltaX, deltaY) {
+    const speed = 0.1;
+    const direction = camera.position.clone().normalize();
+    const right = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
+    const up = camera.up.clone();
+
+    camera.position.addScaledVector(right, -deltaX * speed);
+    camera.position.addScaledVector(up, deltaY * speed);
+    camera.lookAt(0, 0, 0);
+}
+
+function resetView() {
+    camera.position.set(20, 20, 20);
+    camera.lookAt(0, 0, 0);
+}
+
+// ========== VOXEL OPERATIONS ==========
+function setTool(tool) {
+    currentTool = tool;
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+}
+
+function placeVoxelAtMouse(event) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    if (gridMesh) {
+        const intersects = raycaster.intersectObject(gridMesh);
+
+        if (intersects.length > 0) {
+            const point = intersects[0].point;
+            const x = Math.round(point.x);
+            const y = Math.round(point.y);
+            const z = Math.round(point.z);
+
+            pushHistory();
+
+            if (currentTool === 'place') {
+                grid.set(x, y, z, { color: currentColor, material: 'matte' });
+            } else if (currentTool === 'delete') {
+                grid.delete(x, y, z);
+            } else if (currentTool === 'paint') {
+                const existing = grid.get(x, y, z);
+                if (existing) {
+                    grid.set(x, y, z, { color: currentColor, material: existing.material });
+                }
+            }
+
+            updateMesh();
+        }
+    }
+}
+
+function clearGrid() {
+    if (confirm('Clear all voxels?')) {
+        pushHistory();
+        grid.clear();
+        updateMesh();
+    }
+}
+
+// ========== HISTORY / UNDO-REDO ==========
+function pushHistory() {
+    history = history.slice(0, historyIndex + 1);
+    const state = JSON.stringify(Array.from(grid.voxels.entries()));
+    history.push(state);
+    historyIndex++;
+
+    if (history.length > 50) {
+        history.shift();
+        historyIndex--;
+    }
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        restoreHistory();
+    }
+}
+
+function redo() {
+    if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreHistory();
+    }
+}
+
+function restoreHistory() {
+    grid.clear();
+    const state = JSON.parse(history[historyIndex]);
+    state.forEach(([key, voxel]) => {
+        const [x, y, z] = key.split(',').map(Number);
+        grid.set(x, y, z, voxel);
+    });
+    updateMesh();
+}
+
+// ========== EXPORT SYSTEM ==========
+function exportOBJ() {
+    let obj = '# 3D Voxel Model\n';
+    let mtl = '# Material Library\n';
+
+    const vertices = [];
+    const faces = [];
+    const colorMap = new Map();
+    let colorIndex = 0;
+
+    const size = 0.5;
+    let vertexIndex = 1;
+
+    grid.voxels.forEach((voxel, key) => {
+        const [x, y, z] = key.split(',').map(Number);
+
+        const hex = voxel.color.substring(1);
+        const r = parseInt(hex.substr(0,2), 16) / 255;
+        const g = parseInt(hex.substr(2,2), 16) / 255;
+        const b = parseInt(hex.substr(4,2), 16) / 255;
+
+        if (!colorMap.has(voxel.color)) {
+            colorMap.set(voxel.color, {
+                index: colorIndex,
+                r, g, b
+            });
+            colorIndex++;
+        }
+
+        const color = colorMap.get(voxel.color);
+
+        // Create cube
+        const corners = [
+            [x-size, y-size, z-size],
+            [x+size, y-size, z-size],
+            [x+size, y+size, z-size],
+            [x-size, y+size, z-size],
+            [x-size, y-size, z+size],
+            [x+size, y-size, z+size],
+            [x+size, y+size, z+size],
+            [x-size, y+size, z+size]
+        ];
+
+        const faceIndices = [
+            [0,1,2,3], [4,6,5,7],
+            [0,4,5,1], [2,6,7,3],
+            [0,3,7,4], [1,5,6,2]
+        ];
+
+        faceIndices.forEach(face => {
+            face.forEach(i => {
+                vertices.push(corners[i]);
+            });
+
+            const f = [vertexIndex, vertexIndex+1, vertexIndex+2, vertexIndex+3];
+            faces.push({ color: `color_${color.index}`, f });
+            vertexIndex += 4;
+        });
+    });
+
+    // Write OBJ
+    obj += `# ${vertices.length} vertices\n`;
+    vertices.forEach(v => {
+        obj += `v ${v[0].toFixed(3)} ${v[1].toFixed(3)} ${v[2].toFixed(3)}\n`;
+    });
+
+    obj += `# ${faces.length} faces\n`;
+    faces.forEach(face => {
+        obj += `usemtl ${face.color}\n`;
+        obj += `f ${face.f[0]} ${face.f[1]} ${face.f[2]} ${face.f[3]}\n`;
+    });
+
+    // Write MTL
+    colorMap.forEach((color, hex) => {
+        mtl += `newmtl color_${color.index}\n`;
+        mtl += `Kd ${color.r.toFixed(3)} ${color.g.toFixed(3)} ${color.b.toFixed(3)}\n`;
+        mtl += `Ka 0.1 0.1 0.1\n`;
+        mtl += `Ks 0.5 0.5 0.5\n`;
+        mtl += `Ns 10\n\n`;
+    });
+
+    // Download files
+    downloadFile(obj, 'model.obj');
+    downloadFile(mtl, 'model.mtl');
+}
+
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ========== PROJECT SAVE/LOAD ==========
+function saveProject() {
+    const name = prompt('Project name:', 'MyVoxelModel');
+    if (!name) return;
+
+    const data = {
+        name,
+        timestamp: Date.now(),
+        voxels: Array.from(grid.voxels.entries())
+    };
+
+    localStorage.setItem(`voxel_${name}`, JSON.stringify(data));
+    alert(`Project "${name}" saved!`);
+}
+
+function loadProject() {
+    const name = prompt('Project name to load:');
+    if (!name) return;
+
+    const json = localStorage.getItem(`voxel_${name}`);
+    if (!json) {
+        alert('Project not found!');
+        return;
+    }
+
+    const data = JSON.parse(json);
+    grid.clear();
+    data.voxels.forEach(([key, voxel]) => {
+        const [x, y, z] = key.split(',').map(Number);
+        grid.set(x, y, z, voxel);
+    });
+
+    updateMesh();
+    alert(`Project "${name}" loaded!`);
+}
+
+// ========== UI UPDATES ==========
+function updateInfo() {
+    const dims = grid.getDimensions();
+    document.getElementById('dimX').textContent = dims.x;
+    document.getElementById('dimY').textContent = dims.y;
+    document.getElementById('dimZ').textContent = dims.z;
+    document.getElementById('voxelCount').textContent = grid.voxels.size;
+}
+
+// ========== KEYBOARD SHORTCUTS ==========
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+    }
+    if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+    }
+    if (e.ctrlKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        saveProject();
+    }
+    if (e.key.toLowerCase() === 'q') {
+        setTool('delete');
+    }
+    if (e.key.toLowerCase() === 'e') {
+        setTool('paint');
+    }
+});
+
+renderer.domElement.addEventListener('click', placeVoxelAtMouse);
+
+// ========== COLOR PALETTE SETUP ==========
+function setupColors() {
+    const colorGrid = document.getElementById('colorGrid');
+    colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.style.backgroundColor = color;
+        if (color === currentColor) swatch.classList.add('selected');
+
+        swatch.addEventListener('click', () => {
+            currentColor = color;
+            document.getElementById('customColor').value = color;
+            document.getElementById('colorPreview').style.backgroundColor = color;
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            swatch.classList.add('selected');
+        });
+
+        colorGrid.appendChild(swatch);
+    });
+
+    document.getElementById('customColor').addEventListener('change', (e) => {
+        currentColor = e.target.value;
+        document.getElementById('colorPreview').style.backgroundColor = currentColor;
+    });
+}
+
+// ========== INITIALIZATION ==========
+window.addEventListener('load', () => {
+    initThreeJS();
+    setupColors();
+    updateMesh();
+});
+</script>
+</body>
+</html>
