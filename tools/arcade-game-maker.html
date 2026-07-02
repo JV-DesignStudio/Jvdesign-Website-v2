@@ -183,12 +183,33 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .btn-sm.purple:hover{background:rgba(124,58,237,.35);}
 
 /* BLUEPRINT CARDS */
-.bp-card{background:var(--panel2);border:1px solid var(--border2);border-radius:10px;overflow:hidden;flex-shrink:0;}
-.bp-head{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--border);}
+.bp-card{
+  background:var(--panel2);border:1px solid var(--border2);border-radius:10px;
+  overflow:hidden;flex-shrink:0;transition:all .2s,border-color .2s;
+  cursor:pointer;
+}
+.bp-card:hover{
+  border-color:rgba(124,58,237,.4);background:var(--panel3);
+  box-shadow:0 4px 16px rgba(124,58,237,.15);
+}
+.bp-card[data-favorite] .bp-fav-btn{color:#fbbf24;}
+.bp-head{
+  display:flex;align-items:center;gap:9px;padding:10px 12px;
+  border-bottom:1px solid var(--border);position:relative;
+}
 .bp-icon{font-size:1.3rem;line-height:1;flex-shrink:0;}
 .bp-name{font-size:.8rem;font-weight:800;color:white;line-height:1.2;}
 .bp-sub{font-size:.62rem;color:var(--muted);margin-top:1px;}
-.bp-badge{margin-left:auto;font-size:.52rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;flex-shrink:0;}
+.bp-badge{
+  font-size:.52rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;flex-shrink:0;
+}
+.bp-fav-btn{
+  margin-left:auto;background:none;border:none;font-size:1.1rem;cursor:pointer;
+  color:rgba(255,255,255,.3);transition:color .15s;padding:0 4px;
+  flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.bp-fav-btn:hover{color:#fbbf24;}
 .bp-badge.green{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.25);}
 .bp-badge.amber{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
 .bp-badge.cyan{background:rgba(0,212,170,.12);color:#34d399;border:1px solid rgba(0,212,170,.2);}
@@ -205,6 +226,29 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .tweak-row input[type=range]{flex:1;accent-color:var(--purple);}
 .tweak-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#34d399;min-width:28px;text-align:right;}
 .bp-explain{padding:8px 12px;font-size:.69rem;color:var(--muted);line-height:1.55;}
+
+/* BLUEPRINT SEARCH & FILTER */
+.bp-search-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.bp-search-input{
+  flex:1;min-width:140px;background:rgba(0,0,0,.4);border:1px solid var(--border2);
+  color:var(--text);padding:8px 10px;border-radius:7px;font-family:'Inter',sans-serif;
+  font-size:.85rem;transition:border-color .15s;
+}
+.bp-search-input:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,58,237,.15);}
+.bp-filter-btn{
+  background:rgba(255,255,255,.06);color:rgba(240,234,214,.8);border:1px solid var(--border2);
+  padding:8px 12px;border-radius:7px;font-size:.72rem;font-weight:700;cursor:pointer;
+  transition:background .15s,border-color .15s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.bp-filter-btn:hover{background:rgba(255,255,255,.11);border-color:rgba(124,58,237,.3);}
+.bp-filter-btn.active{
+  background:rgba(124,58,237,.25);color:var(--purple-lt);border-color:rgba(124,58,237,.4);
+}
+.bp-no-results{
+  text-align:center;padding:20px 12px;font-size:.85rem;color:var(--muted);
+  font-style:italic;
+}
 
 /* Genre visibility — cards are hidden until a genre class is set on #studioRoot */
 .bp-card[data-genre]{display:none;}
@@ -1363,14 +1407,22 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 
         <!-- ── BLUEPRINTS ── -->
         <div class="tab-content" id="tab-blueprints">
-            <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;">
+            <div style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;margin-bottom:9px;">
                 <div style="font-size:.7rem;font-weight:800;color:var(--purple-lt);margin-bottom:3px;">How Blueprints Work</div>
                 <div style="font-size:.64rem;color:var(--muted);line-height:1.6;">Each card shows the real code powering your game. Drag a slider the <span style="color:#34d399;">green numbers</span> update live. No restart needed!</div>
             </div>
 
+            <!-- Blueprint Search & Filter -->
+            <input type="text" id="bpSearchInput" class="bp-search-input" placeholder="🔍 Search blueprints..." style="width:100%;margin-bottom:8px;">
+            <div class="bp-search-row">
+                <button class="bp-filter-btn active" data-filter="all" onclick="_filterBlueprints('all')">All</button>
+                <button class="bp-filter-btn" data-filter="favorites" onclick="_filterBlueprints('favorites')">⭐ Favorites</button>
+            </div>
+            <div id="bpNoResults" class="bp-no-results" style="display:none;">No blueprints found</div>
+
             <!-- SHOOTER -->
-            <div class="bp-card" data-genre="SHOOTER">
-                <div class="bp-head"><span class="bp-icon">🚀</span><div><div class="bp-name">Move System</div><div class="bp-sub">Rotate &amp; thrust</div></div><span class="bp-badge green">LIVE</span></div>
+            <div class="bp-card" data-genre="SHOOTER" data-bp-id="move-system">
+                <div class="bp-head"><span class="bp-icon">🚀</span><div><div class="bp-name">Move System</div><div class="bp-sub">Rotate &amp; thrust</div></div><button class="bp-fav-btn" onclick="_toggleBlueprintFavorite(this, 'move-system')" title="Add to favorites">☆</button><span class="bp-badge green">LIVE</span></div>
 <pre class="bp-code"><span class="c-kw">if</span> (LEFT)  player.rotate(-<span class="c-num" id="bpRS">190</span>)
 <span class="c-kw">if</span> (RIGHT) player.rotate(+<span class="c-num" id="bpRS2">190</span>)
 <span class="c-kw">if</span> (UP)    player.<span class="c-fn">thrust</span>(<span class="c-num" id="bpSP">200</span>)</pre>
@@ -7154,6 +7206,117 @@ function _updateInspector() {
 }
 
 let _gamePaused = false;
+
+// ── BLUEPRINT SEARCH & FILTER ──
+function _initBlueprintSearch() {
+    const searchInput = document.getElementById('bpSearchInput');
+    if (!searchInput) return;
+
+    // Ensure all blueprint cards have data-bp-id and favorite button
+    document.querySelectorAll('.bp-card').forEach((card, idx) => {
+        if (!card.hasAttribute('data-bp-id')) {
+            const bpName = card.querySelector('.bp-name')?.textContent || 'blueprint-' + idx;
+            const bpId = bpName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+            card.setAttribute('data-bp-id', bpId);
+        }
+
+        // Add favorite button if not present
+        if (!card.querySelector('.bp-fav-btn')) {
+            const bpHead = card.querySelector('.bp-head');
+            if (bpHead) {
+                const favBtn = document.createElement('button');
+                favBtn.className = 'bp-fav-btn';
+                favBtn.innerHTML = '☆';
+                favBtn.title = 'Add to favorites';
+                favBtn.onclick = function(e) { _toggleBlueprintFavorite(this, card.getAttribute('data-bp-id')); };
+                // Insert before the badge if present, otherwise append
+                const badge = bpHead.querySelector('.bp-badge');
+                if (badge) {
+                    badge.parentNode.insertBefore(favBtn, badge);
+                } else {
+                    bpHead.appendChild(favBtn);
+                }
+            }
+        }
+    });
+
+    searchInput.addEventListener('input', _searchBlueprints);
+}
+
+function _searchBlueprints() {
+    const query = document.getElementById('bpSearchInput').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.bp-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const name = card.querySelector('.bp-name')?.textContent.toLowerCase() || '';
+        const sub = card.querySelector('.bp-sub')?.textContent.toLowerCase() || '';
+        const matches = !query || name.includes(query) || sub.includes(query);
+        card.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+
+    // Show/hide "no results" message
+    const noResults = document.getElementById('bpNoResults');
+    if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function _filterBlueprints(filterType) {
+    // Update filter buttons
+    document.querySelectorAll('.bp-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-filter="${filterType}"]`)?.classList.add('active');
+
+    // Filter cards based on type
+    const cards = document.querySelectorAll('.bp-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        let shouldShow = true;
+        if (filterType === 'favorites') {
+            shouldShow = card.hasAttribute('data-favorite');
+        }
+        card.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+
+    // Show/hide "no results" message
+    const noResults = document.getElementById('bpNoResults');
+    if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function _toggleBlueprintFavorite(btn, bpId) {
+    event.stopPropagation();
+    const card = btn.closest('.bp-card');
+    const isFavorited = card.hasAttribute('data-favorite');
+
+    if (isFavorited) {
+        card.removeAttribute('data-favorite');
+        btn.textContent = '☆';
+        btn.title = 'Add to favorites';
+        localStorage.removeItem(`jv_bp_fav_${bpId}`);
+    } else {
+        card.setAttribute('data-favorite', '');
+        btn.textContent = '★';
+        btn.title = 'Remove from favorites';
+        localStorage.setItem(`jv_bp_fav_${bpId}`, '1');
+    }
+}
+
+function _loadBlueprintFavorites() {
+    document.querySelectorAll('.bp-card[data-bp-id]').forEach(card => {
+        const bpId = card.getAttribute('data-bp-id');
+        if (localStorage.getItem(`jv_bp_fav_${bpId}`)) {
+            card.setAttribute('data-favorite', '');
+            const btn = card.querySelector('.bp-fav-btn');
+            if (btn) {
+                btn.textContent = '★';
+                btn.title = 'Remove from favorites';
+            }
+        }
+    });
+}
 
 function _toggleTag(btn, tag) {
     if (!liveConfig.tags) liveConfig.tags = [];
@@ -14992,6 +15155,10 @@ function setupTouchControls() {
                 hintToast.classList.remove('show');
             });
         }
+
+        // Initialize blueprint search & favorites
+        _initBlueprintSearch();
+        _loadBlueprintFavorites();
     }
 
     // Show controls on any touch-capable device regardless of screen width
