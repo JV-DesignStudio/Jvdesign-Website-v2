@@ -4,23 +4,45 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My First C++: Platformer Part 2 | JVDesignStudio</title>
-<meta name="description" content="Learn C++ by building a platformer game. Part 2: Enemies, power-ups, and level progression.">
+<title>My First C++ Game Ep 5: Platformer Part 2 | JVDesignStudio</title>
+<meta name="description" content="Add enemies, an sf::View camera, checkpoints and levels to your C++ platformer. Free interactive workshop.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/cpp-platformer-part2-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/cpp-platformer-part2-workshop.html">
+<meta property="og:title" content="My First C++ Game Ep 5: Platformer Part 2 | JVDesignStudio">
+<meta property="og:description" content="Add enemies, an sf::View camera, checkpoints and levels to your C++ platformer. Free interactive workshop.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+</style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
 <style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
+
+<!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
   <a href="../index.html" class="logo-link">
-    <img loading="lazy" src="../logo.png" alt="JVDesignStudio">
+    <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
     <span class="logo-name">JVDesignStudio</span>
   </a>
   <nav class="main-nav">
@@ -35,19 +57,576 @@
   </nav>
   <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
 </div>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="../index.html">🏠 Home</a>
+  <a href="../pages/games.html">🎮 Games</a>
+  <a href="../pages/books.html">📚 Books</a>
+  <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+  <a href="../pages/workshop.html">🔧 Workshop</a>
+  <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+  <a href="../pages/freebies.html">🎁 Free Downloads</a>
+  <a href="my-progress.html">📊 My Progress</a>
+  <a href="../pages/about.html">👤 About</a>
+  <a href="../pages/contact.html">✉️ Contact</a>
+  <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
 </header>
-<main id="main-content" class="workshop-container">
-<div class="workshop-header">
-  <h1>My First C++: Platformer Part 2</h1>
-  <p class="workshop-subtitle">Build a platformer game with C++ - Enemies, power-ups, and level progression</p>
+<script>
+(function(){
+  var page=location.pathname.split('/').pop()||'index.html';
+  document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){if(a.getAttribute('data-page')===page)a.classList.add('active');});
+  var btn=document.getElementById('navToggle'),nav=document.getElementById('mobileNav');
+  if(!btn||!nav)return;
+  function openNav(){nav.classList.add('open');btn.textContent='✕';}
+  function closeNav(){nav.classList.remove('open');btn.textContent='☰';}
+  btn.addEventListener('click',function(e){e.stopPropagation();nav.classList.contains('open')?closeNav():openNav();});
+  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',closeNav);});
+  document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target))closeNav();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#a78bfa,#7c3aed,#a78bfa)">
+  <span>⚙️ My First C++ Game · Episode 5 of 7 · <a href="my-progress.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
 </div>
-<div class="workshop-content">
-  <p>In this workshop, you'll add enemies, power-ups, and multiple levels to your platformer game.</p>
-  <p>This workshop is under construction. Check back soon!</p>
+
+<section class="hero" id="main-content">
+  <div class="hero-inner">
+    <div class="hero-badge">🌲 Episode 5 · Improver+ · Upgrades Episode 4</div>
+    <h1>Full Game!<br><em>Platformer Part 2</em></h1>
+    <p class="hero-sub">Open your Episode 4 project — we are shipping a full game: an Enemy class with stomps, an sf::View scrolling camera, spikes, checkpoints and multi-level structure. C++ platforming, complete.</p>
+    <div class="hero-pills">
+      <span class="pill p-age">👶 Ages 12+</span>
+      <span class="pill p-time">⏱️ ~2 Hours</span>
+      <span class="pill p-tool">⚙️ C++ & SFML</span>
+      <span class="pill p-free">✓ Free</span>
+    </div>
+    <div class="skills-strip">
+      <span class="skill-tag"><span>👾</span> Enemy class</span>
+      <span class="skill-tag"><span>🥾</span> Stomp kills</span>
+      <span class="skill-tag"><span>🎥</span> sf::View camera</span>
+      <span class="skill-tag"><span>⚠️</span> Spikes</span>
+      <span class="skill-tag"><span>🚩</span> Checkpoints</span>
+      <span class="skill-tag"><span>🗺️</span> Level structs</span>
+    </div>
+    <div class="hero-btns">
+      <a href="#step-1" class="btn-start">⚙️ Let's Build! Start Step 1</a>
+      <a href="my-progress.html" class="btn-outline">← All Episodes</a>
+      <a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
 </div>
+
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">Your Progress</span>
+    <span class="progress-count" id="progressCount">0 / 6 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<main class="workshop">
+
+  <!-- STEP 1 -->
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-orange">1</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">👾</div>
+        <div class="step-title">The Enemy Class</div>
+        <div class="step-blurb">Patrolling walkers built like the Player</div>
+      </div>
+      <span class="step-status ss-active">Active</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add an Enemy class with patrol movement, stored in a vector.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Enemy mirrors Player: shape, vx, plus minX/maxX patrol bounds and an alive flag.</span></li>
+        <li><span class="num-badge">2</span><span>Its update: move by vx·dt; flip vx at the bounds.</span></li>
+        <li><span class="num-badge">3</span><span>A constructor taking (x, y, minX, maxX) makes placing them one-liners.</span></li>
+        <li><span class="num-badge">4</span><span>Two enemies to start: one on the ground, one patrolling a ledge. Draw red.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">class Enemy {
+public:
+    sf::RectangleShape shape;
+    float vx = 120;
+    float minX, maxX;
+    bool alive = true;
+
+    Enemy(float x, float y, float lo, float hi)
+            : minX(lo), maxX(hi) {
+        shape.setSize(sf::Vector2f(30, 24));
+        shape.setPosition(x, y);
+        shape.setFillColor(sf::Color(248, 113, 113));
+    }
+
+    void update(float dt) {
+        shape.move(vx * dt, 0);
+        float x = shape.getPosition().x;
+        if (x &lt; minX || x &gt; maxX) vx = -vx;
+    }
+};
+
+std::vector&lt;Enemy&gt; enemies;
+enemies.emplace_back(390, 236, 380, 500);
+enemies.emplace_back(60, 416, 40, 700);</pre>
+  </div>
+
+      <div class="concept-fill" id="cf-1" data-step="1">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">The constructor line ": minX(lo), maxX(hi)" is an initialiser <input class="cf-blank" data-answer="list" placeholder="????" size="5">. Enemies are stored with emplace_back just like <input class="cf-blank" data-answer="bricks" placeholder="??????" size="7"> were in Episode 3.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Enemy and Player share the shape+velocity+update pattern. In bigger games this becomes…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Copy-paste forever</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A shared base class (inheritance) — Entity with Player and Enemy deriving from it</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A single giant class</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-green">2</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🥾</div>
+        <div class="step-title">Stomp or Suffer</div>
+        <div class="step-blurb">Fall on heads to kill; touch sides to die</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Implement the stomp with the falling-from-above test.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>For each living enemy intersecting the player: falling AND bottom near their top → stomp (alive = false, bounce vy = -350, +score).</span></li>
+        <li><span class="num-badge">2</span><span>Otherwise → death: respawn (checkpoints next step).</span></li>
+        <li><span class="num-badge">3</span><span>Skip dead enemies everywhere (alive flag — Episode 3 pattern).</span></li>
+        <li><span class="num-badge">4</span><span>The bounce chains stomps — line your two enemies up and try a double!</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">for (auto&amp; en : enemies) {
+    if (!en.alive) continue;
+    if (pb.intersects(en.shape.getGlobalBounds())) {
+        float enTop = en.shape.getPosition().y;
+        if (player.vy &gt; 0
+                &amp;&amp; pb.top + pb.height - player.vy * dt &lt;= enTop + 10) {
+            en.alive = false;
+            player.vy = -350;      // bounce!
+            score += 50;
+        } else {
+            respawn(player);
+        }
+    }
+}</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-2" data-step="2">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Squash the enemy and rebound:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">en.alive = <input class="cc-blank" data-answer="false" placeholder="?????" size="6">;
+player.vy = <input class="cc-blank" data-answer="-350" placeholder="????" size="5">;
+score += 50;</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The enemy stops existing; the player bounces upward with a negative vertical velocity.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">The stomp test reuses which platformer check?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The coin pickup</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Landing-from-above — the same "falling onto a top surface" logic aimed at an enemy</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The wall clamp</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-teal">3</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🎥</div>
+        <div class="step-title">The sf::View Camera</div>
+        <div class="step-blurb">SFML’s built-in camera — three lines of scrolling</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Follow the player through a 2400 px level using sf::View.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>SFML has a real camera class: <strong>sf::View</strong>. Centre it on the player, clamped to the level, then <strong>window.setView(view)</strong>.</span></li>
+        <li><span class="num-badge">2</span><span>THAT IS IT — no offsetting of draw calls (remember doing that by hand in Python? Engines do this for you).</span></li>
+        <li><span class="num-badge">3</span><span>Clamp centre x between 400 and levelWidth − 400 so the view never shows past the edges.</span></li>
+        <li><span class="num-badge">4</span><span>For screen-fixed HUD: switch back with <strong>window.setView(window.getDefaultView())</strong> before drawing text.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">const float LEVEL_W = 2400.f;
+sf::View view(sf::FloatRect(0, 0, 800, 480));
+
+// each frame:
+float cx = player.shape.getPosition().x + 17;
+cx = std::max(400.f, std::min(LEVEL_W - 400.f, cx));
+view.setCenter(cx, 240);
+window.setView(view);
+
+// ... draw world ...
+window.setView(window.getDefaultView());
+window.draw(scoreText);          // HUD stays put</pre>
+  </div>
+
+      <div class="concept-fill" id="cf-3" data-step="3">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">The camera is an sf::<input class="cf-blank" data-answer="View" placeholder="????" size="5"> centred on the player. Before drawing the HUD we restore the <input class="cf-blank" data-answer="default" placeholder="???????" size="8"> view so text stays fixed on screen.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">In Python you subtracted cam_x from every draw call. sf::View replaces that by…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Drawing twice</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Transforming ALL drawing through the view automatically — the engine does the offsetting</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Moving the window</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-purple">4</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">⚠️</div>
+        <div class="step-title">Spikes &amp; Checkpoints</div>
+        <div class="step-blurb">Hazards, flags and one shared respawn function</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add deadly spikes and fair checkpoint respawns.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Spikes: vector of FloatRects on the floor; intersecting one calls respawn().</span></li>
+        <li><span class="num-badge">2</span><span>Checkpoints: flag rects that update a <strong>respawnPoint</strong> Vector2f when touched.</span></li>
+        <li><span class="num-badge">3</span><span>One respawn(player) function used by spikes, enemies and pits — single source of truth.</span></li>
+        <li><span class="num-badge">4</span><span>Place checkpoints before hard sections. Draw spikes as red triangles (sf::ConvexShape), flags teal.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">sf::Vector2f respawnPoint(100, 380);
+
+void respawn(Player&amp; p) {
+    p.shape.setPosition(respawnPoint);
+    p.vx = 0; p.vy = 0;
+}
+
+for (auto&amp; cp : checkpoints)
+    if (pb.intersects(cp))
+        respawnPoint = { cp.left, cp.top - 44 };
+
+for (auto&amp; sp : spikes)
+    if (pb.intersects(sp))
+        respawn(player);
+
+if (player.shape.getPosition().y &gt; 480)   // pit
+    respawn(player);</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-4" data-step="4">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Update the respawn point at a checkpoint:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (pb.intersects(cp))
+    respawnPoint = { cp.left, cp.top - <input class="cc-blank" data-answer="44" placeholder="??" size="4"> };</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Spawn standing ON the flag: its top minus the player height.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Every death path calls one respawn() function. When you later add fall damage or a death sound, you edit…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Every collision block</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Exactly one function — that is why shared paths matter</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The Enemy class</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-pink">5</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🗺️</div>
+        <div class="step-title">Levels as Structs</div>
+        <div class="step-blurb">Bundle a whole level into one loadable object</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Define levels as data structs and swap between them.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>A <strong>struct Level</strong> holds: platforms, enemies (as spawn data), spikes, checkpoints, door, width.</span></li>
+        <li><span class="num-badge">2</span><span>A makeLevel(int n) function returns the struct for level n — pure data, no logic.</span></li>
+        <li><span class="num-badge">3</span><span>Loading = copying the struct’s contents into the live vectors and resetting the player.</span></li>
+        <li><span class="num-badge">4</span><span>Reaching the door loads n+1; after the last, the champion screen. Your Ep 4 game is now a multi-level product.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">struct Level {
+    std::vector&lt;sf::FloatRect&gt; platforms, spikes, checkpoints;
+    std::vector&lt;Enemy&gt; enemies;
+    sf::FloatRect door;
+    float width;
+};
+
+Level makeLevel(int n) {
+    if (n == 0) {
+        Level L;
+        L.width = 2400;
+        L.platforms = { {0,440,2400,40}, {150,340,140,16} /* ... */ };
+        L.enemies.emplace_back(390, 236, 380, 500);
+        L.spikes = { {760, 424, 40, 16} };
+        L.checkpoints = { {1000, 380, 12, 60} };
+        L.door = {2320, 380, 30, 60};
+        return L;
+    }
+    // n == 1 ...
+}</pre>
+  </div>
+
+      <div class="concept-fill" id="cf-5" data-step="5">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">A <input class="cf-blank" data-answer="struct" placeholder="??????" size="7"> Level bundles every vector one level needs. The function <input class="cf-blank" data-answer="makeLevel" placeholder="?????????" size="10">(n) returns pure data — building levels becomes filling in lists.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Separating level DATA from game LOGIC means…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Levels run faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>New levels need zero new logic — and eventually data can come from files or a level editor</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The compiler optimises structs</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-yellow">6</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🏁</div>
+        <div class="step-title">Polish &amp; Ship</div>
+        <div class="step-blurb">Death counter, timer, and the champion screen</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add the finishing touches and complete your C++ platformer.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Track deaths and a speedrun timer (one sf::Clock started at level 1) — show both on the champion screen.</span></li>
+        <li><span class="num-badge">2</span><span>Squash animation: dead enemies flatten (setScale(1, 0.3)) for 0.3 s before vanishing.</span></li>
+        <li><span class="num-badge">3</span><span>Balance: walk each level; every death should feel like YOUR fault. Adjust spike placement until it does.</span></li>
+        <li><span class="num-badge">4</span><span>Compile, play, hand the keyboard to someone. Watching a playtester is a developer rite of passage. 🏆</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+    <pre class="code-pre">int deaths = 0;                 // ++ inside respawn()
+sf::Clock runTimer;             // started at first level load
+
+// champion screen:
+int secs = (int)runTimer.getElapsedTime().asSeconds();
+championText.setString(
+    "CHAMPION!\nTime: " + std::to_string(secs / 60) + "m "
+    + std::to_string(secs % 60) + "s\nDeaths: "
+    + std::to_string(deaths));</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-6" data-step="6">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Format the speedrun time from total seconds:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">std::to_string(secs <input class="cc-blank" data-answer="/" placeholder="?" size="4"> 60) + "m "
++ std::to_string(secs <input class="cc-blank" data-answer="%" placeholder="?" size="4"> 60) + "s"</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Whole-number division gives minutes; the remainder operator gives leftover seconds.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">A death counter and timer on the win screen add…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Lag</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Replay value — beat your time, deathless runs. Numbers players can chase for free</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Compile warnings</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">🎉 Correct! Finish Workshop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINISH BANNER -->
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🏆🎮✨🎉</div>
+    <div class="finish-title">Workshop Complete!</div>
+    <div class="finish-sub">Enemy objects, a real camera, checkpoints and levels — a complete C++ platformer. Two more episodes: the Tower Defence grand finale!</div>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <a href="cpp-tower-part1-workshop.html" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ff7700,#cc5500);color:#fff;font-family:'Fredoka',cursive;font-size:.95rem;padding:12px 26px;border-radius:12px;text-decoration:none;margin-top:12px;box-shadow:0 3px 0 #993300">▶ Episode 6: Tower Defence Part 1 →</a><br>
+    <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+  </div>
+
 </main>
+
+<!-- BUILD:footer-content -->
 <footer class="site-footer">
-  <p>&copy; 2025 JVDesignStudio. All rights reserved.</p>
+  <div class="footer-inner">
+    <div><div class="footer-logo">JVDesignStudio</div><div class="footer-tagline">Books · Games · Creative Adventures</div></div>
+    <div class="footer-links">
+      <a href="../index.html">Home</a><a href="../pages/books.html">Books</a><a href="../pages/games.html">Games</a>
+      <a href="../pages/workshop.html">Workshop</a><a href="../pages/freebies.html">Freebies</a>
+      <a href="my-progress.html">My Progress</a>
+      <a href="../pages/about.html">About</a><a href="../pages/contact.html">Contact</a>
+    </div>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
 </footer>
+<!-- /BUILD:footer-content -->
+
+<script src="../player-profile.js"></script>
+<script>
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-cpp-platformer2-v2';
+window.WORKSHOP_PROFILE_ID='cpp-platformer-part2-workshop';
+</script>
+<script src="workshop-engine.js"></script>
 </body>
 </html>

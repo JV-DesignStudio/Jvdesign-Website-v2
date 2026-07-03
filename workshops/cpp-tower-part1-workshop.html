@@ -4,23 +4,45 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My First C++: Tower Defense Part 1 | JVDesignStudio</title>
-<meta name="description" content="Learn C++ by building a tower defense game. Part 1: Game mechanics and tower placement.">
+<title>My First C++ Game Ep 6: Tower Defence Part 1 | JVDesignStudio</title>
+<meta name="description" content="Build a C++ tower defence: waypoint paths, tower placement and gold economy in SFML. Free interactive workshop.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/cpp-tower-part1-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/cpp-tower-part1-workshop.html">
+<meta property="og:title" content="My First C++ Game Ep 6: Tower Defence Part 1 | JVDesignStudio">
+<meta property="og:description" content="Build a C++ tower defence: waypoint paths, tower placement and gold economy in SFML. Free interactive workshop.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+</style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
 <style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
+
+<!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
   <a href="../index.html" class="logo-link">
-    <img loading="lazy" src="../logo.png" alt="JVDesignStudio">
+    <img loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
     <span class="logo-name">JVDesignStudio</span>
   </a>
   <nav class="main-nav">
@@ -35,19 +57,573 @@
   </nav>
   <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">☰</button>
 </div>
+<nav class="mobile-nav" id="mobileNav">
+  <a href="../index.html">🏠 Home</a>
+  <a href="../pages/games.html">🎮 Games</a>
+  <a href="../pages/books.html">📚 Books</a>
+  <a href="../pages/learn-hub.html">🎓 Learn Hub</a>
+  <a href="../pages/workshop.html">🔧 Workshop</a>
+  <a href="../pages/dev-tools.html">🛠️ Dev Tools</a>
+  <a href="../pages/freebies.html">🎁 Free Downloads</a>
+  <a href="my-progress.html">📊 My Progress</a>
+  <a href="../pages/about.html">👤 About</a>
+  <a href="../pages/contact.html">✉️ Contact</a>
+  <a href="../pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
 </header>
-<main id="main-content" class="workshop-container">
-<div class="workshop-header">
-  <h1>My First C++: Tower Defense Part 1</h1>
-  <p class="workshop-subtitle">Build a tower defense game with C++ - Game mechanics and tower placement</p>
+<script>
+(function(){
+  var page=location.pathname.split('/').pop()||'index.html';
+  document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){if(a.getAttribute('data-page')===page)a.classList.add('active');});
+  var btn=document.getElementById('navToggle'),nav=document.getElementById('mobileNav');
+  if(!btn||!nav)return;
+  function openNav(){nav.classList.add('open');btn.textContent='✕';}
+  function closeNav(){nav.classList.remove('open');btn.textContent='☰';}
+  btn.addEventListener('click',function(e){e.stopPropagation();nav.classList.contains('open')?closeNav():openNav();});
+  nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',closeNav);});
+  document.addEventListener('click',function(e){if(nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target))closeNav();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#a78bfa,#7c3aed,#a78bfa)">
+  <span>⚙️ My First C++ Game · Episode 6 of 7 · <a href="my-progress.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
 </div>
-<div class="workshop-content">
-  <p>In this workshop, you'll learn C++ fundamentals by building a tower defense game. You'll work with game mechanics, tower systems, and pathfinding.</p>
-  <p>This workshop is under construction. Check back soon!</p>
+
+<section class="hero" id="main-content">
+  <div class="hero-inner">
+    <div class="hero-badge">🏰 Episode 6 · Big Project · Tower Defence Part 1 of 2</div>
+    <h1>Hold the Line!<br><em>Tower Defence Part 1</em></h1>
+    <p class="hero-sub">The two-part finale: a path-following enemy system, grid-snapped tower placement, gold economy, and range visualisation. Tower defence is systems programming — exactly what C++ is for.</p>
+    <div class="hero-pills">
+      <span class="pill p-age">👶 Ages 12+</span>
+      <span class="pill p-time">⏱️ ~2 Hours</span>
+      <span class="pill p-tool">⚙️ C++ & SFML</span>
+      <span class="pill p-free">✓ Free</span>
+    </div>
+    <div class="skills-strip">
+      <span class="skill-tag"><span>🛤️</span> Waypoint paths</span>
+      <span class="skill-tag"><span>🧮</span> Vector maths</span>
+      <span class="skill-tag"><span>🏗️</span> Tower placement</span>
+      <span class="skill-tag"><span>💰</span> Gold economy</span>
+      <span class="skill-tag"><span>📏</span> Range circles</span>
+      <span class="skill-tag"><span>🖱️</span> Mouse building</span>
+    </div>
+    <div class="hero-btns">
+      <a href="#step-1" class="btn-start">⚙️ Let's Build! Start Step 1</a>
+      <a href="my-progress.html" class="btn-outline">← All Episodes</a>
+      <a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
 </div>
+
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">Your Progress</span>
+    <span class="progress-count" id="progressCount">0 / 6 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<main class="workshop">
+
+  <!-- STEP 1 -->
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-orange">1</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🛤️</div>
+        <div class="step-title">The Path: Waypoints</div>
+        <div class="step-blurb">Enemies follow a list of corner points</div>
+      </div>
+      <span class="step-status ss-active">Active</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Define the enemy path as waypoints and draw the road.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>New project <strong>tower.cpp</strong>, 800×600. The path is a <strong>std::vector&lt;sf::Vector2f&gt;</strong> of corner points, left edge to right edge.</span></li>
+        <li><span class="num-badge">2</span><span>Draw the road: thick line segments between consecutive waypoints (a rotated RectangleShape per segment works fine).</span></li>
+        <li><span class="num-badge">3</span><span>Sketch your path with 5–7 corners — S-bends give towers more shooting time than straight lines. That is map design!</span></li>
+        <li><span class="num-badge">4</span><span>Draw grass green, road sandy.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">std::vector&lt;sf::Vector2f&gt; path = {
+    {-20, 100}, {300, 100}, {300, 300},
+    {120, 300}, {120, 480}, {600, 480},
+    {600, 220}, {820, 220}
+};
+
+// road drawing (segment between path[i] and path[i+1]):
+for (size_t i = 0; i + 1 &lt; path.size(); i++) {
+    sf::Vector2f a = path[i], b = path[i+1];
+    sf::Vector2f d = b - a;
+    float len = std::sqrt(d.x*d.x + d.y*d.y);
+    sf::RectangleShape seg(sf::Vector2f(len, 36));
+    seg.setOrigin(0, 18);
+    seg.setPosition(a);
+    seg.setRotation(std::atan2(d.y, d.x) * 57.2958f);
+    seg.setFillColor(sf::Color(194, 178, 128));
+    window.draw(seg);
+}</pre>
+  </div>
+
+      <div class="concept-fill" id="cf-1" data-step="1">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">The path is a vector of <input class="cf-blank" data-answer="waypoints" placeholder="?????????" size="10"> (corner positions). The segment angle comes from std::<input class="cf-blank" data-answer="atan2" placeholder="?????" size="6">(d.y, d.x), converted from radians to degrees.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why do S-bend paths make better tower defence maps than straight ones?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>They render faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Enemies spend longer inside tower range near bends — placement choices become interesting</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Waypoints must curve</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-green">2</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🧮</div>
+        <div class="step-title">Path-Following Enemies</div>
+        <div class="step-blurb">Normalised direction vectors — real vector maths</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Make enemies walk the path corner to corner at constant speed.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Enemy struct: position, speed, hp, and <strong>int wp</strong> — which waypoint it is heading for.</span></li>
+        <li><span class="num-badge">2</span><span>Each frame: direction = target − position; normalise it (divide by its length); move by direction × speed × dt.</span></li>
+        <li><span class="num-badge">3</span><span>Within 4 px of the target → wp++. Past the last waypoint → it escaped (lives−1 later).</span></li>
+        <li><span class="num-badge">4</span><span>Normalising is THE fundamental game maths operation — you will use it in every 2D and 3D game forever.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">struct Enemy {
+    sf::Vector2f pos;
+    float speed = 70;
+    int hp = 20;
+    int wp = 0;         // next waypoint index
+    bool alive = true;
+};
+
+void updateEnemy(Enemy&amp; e, float dt) {
+    if (e.wp &gt;= (int)path.size()) return;    // escaped
+    sf::Vector2f d = path[e.wp] - e.pos;
+    float len = std::sqrt(d.x*d.x + d.y*d.y);
+    if (len &lt; 4.f) { e.wp++; return; }
+    e.pos += (d / len) * e.speed * dt;       // normalised!
+}</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-2" data-step="2">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Move the enemy along its normalised direction:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">sf::Vector2f d = path[e.wp] - e.pos;
+float len = std::<input class="cc-blank" data-answer="sqrt" placeholder="????" size="5">(d.x*d.x + d.y*d.y);
+e.pos += (d / <input class="cc-blank" data-answer="len" placeholder="???" size="4">) * e.speed * <input class="cc-blank" data-answer="dt" placeholder="??" size="4">;</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Pythagoras gives the length; dividing the vector by it makes a unit direction; then scale by speed and delta time.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why normalise the direction before scaling by speed?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>C++ requires unit vectors</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Without it, enemies far from a waypoint would move faster — normalising makes speed constant regardless of distance</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It prevents overflow</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-teal">3</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🖱️</div>
+        <div class="step-title">Grid Placement Preview</div>
+        <div class="step-blurb">Snap the mouse to a build grid with a ghost tower</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Show a snapped, colour-coded ghost tower under the cursor.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>The build grid is 40 px: <strong>gx = mouseX / 40 * 40</strong> (integer division snaps!).</span></li>
+        <li><span class="num-badge">2</span><span>Draw a translucent ghost tower at the snapped cell: green tint = buildable, red = blocked.</span></li>
+        <li><span class="num-badge">3</span><span>Blocked cells: on the road (distance from any path segment &lt; 30 — a point-to-segment check) or already occupied.</span></li>
+        <li><span class="num-badge">4</span><span>This preview-before-commit UI is in every strategy game ever made.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">sf::Vector2i m = sf::Mouse::getPosition(window);
+int gx = (m.x / 40) * 40;
+int gy = (m.y / 40) * 40;
+
+bool blocked = nearPath((float)gx + 20, (float)gy + 20, 30.f)
+            || occupied(gx, gy);
+
+sf::RectangleShape ghost(sf::Vector2f(36, 36));
+ghost.setPosition((float)gx + 2, (float)gy + 2);
+ghost.setFillColor(blocked
+    ? sf::Color(248, 113, 113, 120)
+    : sf::Color(6, 214, 160, 120));
+window.draw(ghost);</pre>
+  </div>
+
+      <div class="concept-fill" id="cf-3" data-step="3">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">Integer division then multiplication ((m.x / 40) * <input class="cf-blank" data-answer="40" placeholder="??" size="4">) snaps a coordinate to the grid. The ghost’s fourth colour value (120) is <input class="cf-blank" data-answer="transparency" placeholder="??????????" size="13"> (alpha).</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">With m.x = 137, what is (137 / 40) * 40 in C++?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>137</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>120 — integer division truncates 137/40 to 3, times 40</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>140</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-purple">4</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🏗️</div>
+        <div class="step-title">Towers &amp; the Gold Economy</div>
+        <div class="step-blurb">Click to build — if you can afford it</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Place towers on click, spend gold, block double-building.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Tower struct: position, range (110), damage (5), fire cooldown — stored in a vector.</span></li>
+        <li><span class="num-badge">2</span><span>Start with 100 gold; a tower costs 50. Click on a valid cell with enough gold → build and subtract.</span></li>
+        <li><span class="num-badge">3</span><span>occupied() loops the towers comparing snapped positions.</span></li>
+        <li><span class="num-badge">4</span><span>Show gold top-left. Try to build on the road or overdraft — both must refuse.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">struct Tower {
+    sf::Vector2f pos;      // cell centre
+    float range = 110;
+    int damage = 5;
+    float cooldown = 0;
+};
+
+std::vector&lt;Tower&gt; towers;
+int gold = 100;
+const int TOWER_COST = 50;
+
+// on MouseButtonPressed (left):
+if (!blocked &amp;&amp; gold &gt;= TOWER_COST) {
+    towers.push_back({ {(float)gx + 20, (float)gy + 20} });
+    gold -= TOWER_COST;
+}</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-4" data-step="4">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Guard the build action properly:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (!<input class="cc-blank" data-answer="blocked" placeholder="???????" size="8"> &amp;&amp; gold &gt;= <input class="cc-blank" data-answer="TOWER_COST" placeholder="????????" size="11">) {
+    towers.push_back({ {(float)gx + 20, (float)gy + 20} });
+    gold -= <input class="cc-blank" data-answer="TOWER_COST" placeholder="????????" size="11">;
+}</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The cell must be free AND affordable; then pay the price.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-correct="0">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why is the gold check part of the SAME if as the placement check?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To save a line</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Build and payment must happen together or never — split checks can build without paying (a dupe bug!)</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>C++ ifs are faster combined</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-pink">5</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">📏</div>
+        <div class="step-title">Range Circles &amp; Targeting Maths</div>
+        <div class="step-blurb">Show range on hover; find enemies inside it</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Visualise tower range and detect enemies within it.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Hovering a tower draws its range: a translucent sf::CircleShape of radius range, centred on the tower (setOrigin(range, range)!).</span></li>
+        <li><span class="num-badge">2</span><span>In-range test: squared distance — <strong>dx² + dy² &lt;= range²</strong> — skipping the sqrt. The classic optimisation.</span></li>
+        <li><span class="num-badge">3</span><span>Write <strong>Enemy* nearestInRange(Tower&)</strong> returning the closest living target or nullptr — Part 2’s shooting uses exactly this.</span></li>
+        <li><span class="num-badge">4</span><span>Test: spawn one enemy (press E) and watch a hovered tower’s circle as it walks through.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">Enemy* nearestInRange(Tower&amp; t, std::vector&lt;Enemy&gt;&amp; enemies) {
+    Enemy* best = nullptr;
+    float bestDist = t.range * t.range;
+    for (auto&amp; e : enemies) {
+        if (!e.alive) continue;
+        float dx = e.pos.x - t.pos.x;
+        float dy = e.pos.y - t.pos.y;
+        float d2 = dx*dx + dy*dy;
+        if (d2 &lt;= bestDist) {
+            bestDist = d2;
+            best = &amp;e;
+        }
+    }
+    return best;
+}</pre>
+  </div><div class="callout tip"><div class="callout-icon">💡</div><div>Comparing squared distances avoids thousands of sqrt calls per frame. Every real engine does this.</div></div>
+
+      <div class="concept-fill" id="cf-5" data-step="5">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">We compare squared distances against range <input class="cf-blank" data-answer="squared" placeholder="???????" size="8"> to skip the expensive <input class="cf-blank" data-answer="sqrt" placeholder="????" size="5"> call. When no enemy is in range the function returns <input class="cf-blank" data-answer="nullptr" placeholder="???????" size="8">.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Returning a pointer (Enemy*) that may be nullptr forces the caller to…</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Crash</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Check "did I actually get a target?" before using it — nullptr IS the no-target answer</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Copy the enemy</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-yellow">6</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">💰</div>
+        <div class="step-title">Economy Balance &amp; the Bridge</div>
+        <div class="step-blurb">Tune the numbers, prep the Part 2 hooks</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Balance the opening economy and stage the code for Part 2.</p></div>
+      </div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Balance rules of thumb: starting gold buys 2 towers; a kill (Part 2) refunds ~20–40% of a tower; escapes must hurt.</span></li>
+        <li><span class="num-badge">2</span><span>Set kill bounty 15 in the Enemy struct now — Part 2 pays it out.</span></li>
+        <li><span class="num-badge">3</span><span>Add <strong>lives = 20</strong>, shown in the HUD; an escaped enemy will cost 1.</span></li>
+        <li><span class="num-badge">4</span><span>Checklist before Part 2: path following ✓ ghost placement ✓ gold ✓ range targeting ✓. All green? You are ready for war.</span></li>
+      </ul><div class="code-block">
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+    <pre class="code-pre">struct Enemy {
+    // ... existing fields ...
+    int bounty = 15;      // paid on kill (Part 2)
+};
+
+int lives = 20;
+
+// escape handling (enemy past last waypoint):
+if (e.wp &gt;= (int)path.size() &amp;&amp; e.alive) {
+    e.alive = false;
+    lives--;
+}</pre>
+  </div>
+
+      <div class="code-challenge" id="cc-6" data-step="6">
+        <div class="cc-header">
+          <div class="cc-icon">⌨️</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Charge the player for an escape:</div>
+        <div class="code-block" style="margin:10px 0">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (e.wp &gt;= (int)path.<input class="cc-blank" data-answer="size" placeholder="????" size="5">() &amp;&amp; e.alive) {
+    e.alive = <input class="cc-blank" data-answer="false" placeholder="?????" size="6">;
+    lives<input class="cc-blank" data-answer="--" placeholder="??" size="4">;
+}</pre>
+        </div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Escaped means past the final waypoint; the enemy leaves play and one life is deducted.</div>
+      </div>
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-correct="1">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why balance the economy BEFORE adding shooting?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Shooting is hard</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Economy is the skeleton — if building feels wrong now, waves of enemies will only hide the problem</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Gold compiles first</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">🎉 Correct! Finish Workshop</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINISH BANNER -->
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🏆🎮✨🎉</div>
+    <div class="finish-title">Workshop Complete!</div>
+    <div class="finish-sub">Waypoints, vector maths, an economy and buildable towers — the foundation is rock solid. Part 2 arms the towers: bullets, waves and victory!</div>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <a href="cpp-tower-part2-workshop.html" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ff7700,#cc5500);color:#fff;font-family:'Fredoka',cursive;font-size:.95rem;padding:12px 26px;border-radius:12px;text-decoration:none;margin-top:12px;box-shadow:0 3px 0 #993300">▶ Episode 7: Tower Defence Part 2 →</a><br>
+    <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px;transition:all .15s">⭐ View My Progress &amp; Certificates</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+  </div>
+
 </main>
+
+<!-- BUILD:footer-content -->
 <footer class="site-footer">
-  <p>&copy; 2025 JVDesignStudio. All rights reserved.</p>
+  <div class="footer-inner">
+    <div><div class="footer-logo">JVDesignStudio</div><div class="footer-tagline">Books · Games · Creative Adventures</div></div>
+    <div class="footer-links">
+      <a href="../index.html">Home</a><a href="../pages/books.html">Books</a><a href="../pages/games.html">Games</a>
+      <a href="../pages/workshop.html">Workshop</a><a href="../pages/freebies.html">Freebies</a>
+      <a href="my-progress.html">My Progress</a>
+      <a href="../pages/about.html">About</a><a href="../pages/contact.html">Contact</a>
+    </div>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
 </footer>
+<!-- /BUILD:footer-content -->
+
+<script src="../player-profile.js"></script>
+<script>
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-cpp-tower-part1-v2';
+window.WORKSHOP_PROFILE_ID='cpp-tower-part1-workshop';
+</script>
+<script src="workshop-engine.js"></script>
 </body>
 </html>

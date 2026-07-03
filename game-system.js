@@ -637,3 +637,197 @@ if (typeof document !== 'undefined') {
     document.head.appendChild(style);
   });
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL PROFILE BRIDGE — feeds gameplay into the unified
+   player profile (player-profile.js) so every game counts
+   toward global XP, quests, and the global leaderboard.
+
+   Awards (per game, capped per day so they can't be farmed):
+   - session   +10 XP  once/day  — spent 30s+ in a game
+   - run       +15 XP  5×/day    — finished a run (recordGamePlay)
+   - milestone +10 XP  5×/day    — every 100 in-game XP earned
+   - achievement +20 XP each     — unlocked a per-game achievement
+
+   player-profile.js is loaded automatically if the page didn't
+   include it; awards earned before it loads are queued.
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (typeof GameSystem === 'undefined') return;
+
+  var scriptSrc = document.currentScript && document.currentScript.src;
+  var profileSrc = scriptSrc
+    ? scriptSrc.replace(/game-system\.js.*$/, 'player-profile.js')
+    : '../player-profile.js';
+
+  function profile() {
+    // player-profile.js declares a top-level `const playerProfile`
+    // (a global lexical binding, not a window property).
+    try { return typeof playerProfile !== 'undefined' ? playerProfile : (window.playerProfile || null); }
+    catch (e) { return window.playerProfile || null; }
+  }
+
+  /* ── Daily caps (shared shape with tool-xp.js) ── */
+  var CAP_PREFIX = 'jvds_gamexp_';
+  function capKey() { return CAP_PREFIX + new Date().toDateString(); }
+  function capData() {
+    try { return JSON.parse(localStorage.getItem(capKey()) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function capCount(k) { return capData()[k] || 0; }
+  function bumpCap(k) {
+    var d = capData();
+    d[k] = (d[k] || 0) + 1;
+    try {
+      // Prune cap records from previous days
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key && key.indexOf(CAP_PREFIX) === 0 && key !== capKey()) localStorage.removeItem(key);
+      }
+      localStorage.setItem(capKey(), JSON.stringify(d));
+    } catch (e) { /* storage full/blocked — XP still awarded */ }
+  }
+
+  /* ── XP toast ── */
+  function showXPToast(text) {
+    if (!document.body) return;
+    var t = document.createElement('div');
+    t.className = 'jvds-xp-toast';
+    t.textContent = text;
+    t.style.cssText =
+      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);' +
+      'background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;' +
+      'padding:10px 22px;border-radius:999px;font:700 .85rem/1.2 Nunito,Inter,sans-serif;' +
+      'box-shadow:0 8px 24px rgba(124,58,237,.45);z-index:99999;pointer-events:none;' +
+      'opacity:0;transition:opacity .3s,transform .3s;';
+    document.body.appendChild(t);
+    requestAnimationFrame(function () {
+      t.style.opacity = '1';
+      t.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(function () {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(16px)';
+      setTimeout(function () { t.remove(); }, 350);
+    }, 2600);
+  }
+
+  /* ── Award queue (flushed once the profile is available) ── */
+  var pending = [];
+  var syncers = {}; // gameId -> GameSystem instance (for leaderboard sync)
+  var syncTimer = null;
+
+  function scheduleLeaderboardSync() {
+    if (syncTimer) return;
+    syncTimer = setTimeout(function () {
+      syncTimer = null;
+      for (var id in syncers) {
+        try { syncers[id].syncToGlobalLeaderboard(); } catch (e) {}
+        break; // one sync updates the whole profile entry
+      }
+    }, 1000);
+  }
+
+  function grant(xp, source, label) {
+    var p = profile();
+    if (!p) return;
+    var result = p.addXP(xp, source);
+    showXPToast('+' + xp + ' XP — ' + label);
+    if (result && result.levelUp) {
+      setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
+    }
+    scheduleLeaderboardSync();
+  }
+
+  function award(gameId, action, xp, maxPerDay, label) {
+    var k = gameId + ':' + action;
+    if (maxPerDay && capCount(k) >= maxPerDay) return;
+    var run = function () { grant(xp, 'game:' + gameId + ':' + action, label); };
+    if (profile()) {
+      bumpCap(k);
+      run();
+    } else {
+      pending.push({ key: k, maxPerDay: maxPerDay, run: run });
+    }
+  }
+
+  function flushPending() {
+    if (!profile()) return;
+    var jobs = pending.splice(0);
+    jobs.forEach(function (job) {
+      if (job.maxPerDay && capCount(job.key) >= job.maxPerDay) return;
+      bumpCap(job.key);
+      job.run();
+    });
+  }
+
+  /* ── Load player-profile.js if the page didn't include it ── */
+  function ensureProfileLoaded() {
+    if (profile()) { flushPending(); return; }
+    if (document.querySelector('script[src*="player-profile"]')) {
+      // Included but not executed yet — flush when the page finishes loading
+      window.addEventListener('load', flushPending);
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = profileSrc;
+    s.onload = flushPending;
+    (document.head || document.documentElement).appendChild(s);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureProfileLoaded);
+  } else {
+    ensureProfileLoaded();
+  }
+
+  /* ── Hook GameSystem ── */
+
+  // Session XP: loadState runs inside the constructor, after gameId is set
+  var sessionTimers = {};
+  var origLoadState = GameSystem.prototype.loadState;
+  GameSystem.prototype.loadState = function () {
+    if (this.gameId && !syncers[this.gameId]) {
+      syncers[this.gameId] = this;
+      var gameId = this.gameId, gameName = this.gameName;
+      sessionTimers[gameId] = setTimeout(function () {
+        award(gameId, 'session', 10, 1, 'Playing ' + gameName);
+      }, 30000);
+    }
+    return origLoadState.apply(this, arguments);
+  };
+
+  // Run finished
+  var origRecord = GameSystem.prototype.recordGamePlay;
+  GameSystem.prototype.recordGamePlay = function () {
+    var r = origRecord.apply(this, arguments);
+    award(this.gameId, 'run', 15, 5, this.gameName + ' — run finished');
+    return r;
+  };
+
+  // Per-game achievements mirror to global XP
+  var origUnlock = GameSystem.prototype.unlockAchievement;
+  GameSystem.prototype.unlockAchievement = function (achievementId) {
+    var unlocked = origUnlock.apply(this, arguments);
+    if (unlocked) {
+      var ach = this.achievements && this.achievements[achievementId];
+      var name = (ach && ach.name) || 'Achievement unlocked!';
+      award(this.gameId, 'ach:' + achievementId, 20, 1, name);
+    }
+    return unlocked;
+  };
+
+  // In-game XP milestones: every 100 per-game XP → +10 global XP
+  var origAddXP = GameSystem.prototype.addXP;
+  GameSystem.prototype.addXP = function (amount) {
+    var r = origAddXP.apply(this, arguments);
+    if (amount > 0) {
+      this._bridgeXPAcc = (this._bridgeXPAcc || 0) + amount;
+      while (this._bridgeXPAcc >= 100) {
+        this._bridgeXPAcc -= 100;
+        award(this.gameId, 'milestone', 10, 5, this.gameName + ' — score milestone!');
+      }
+    }
+    return r;
+  };
+})();
