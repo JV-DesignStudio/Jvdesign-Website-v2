@@ -477,6 +477,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 <script src="/../cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
+<script src="../player-profile.js"></script>
 <script>
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
 
@@ -1129,13 +1130,33 @@ function applyCode(stepIdx){
   playerCode=code;
   startGame();
   document.getElementById('liveStatus').textContent='Level '+(stepIdx+1)+' running ✓';
+  completeLevel(stepIdx);
+}
+
+function completeLevel(stepIdx){
+  const n = stepIdx + 1;
+  if (completed.has(n)) return;
+  completed.add(n);
+  stepsDone.add(stepIdx);
+  awardXp(XP_RUN, 'Level ' + n + ' complete');
+  document.querySelectorAll('#stepsTabs .tab-btn').forEach((b,j)=>b.classList.toggle('done', stepsDone.has(j)));
+  updateProgress();
+  checkFinish();
+  if (completed.size >= TOTAL) {
+    if (typeof playerProfile !== 'undefined') playerProfile.markWorkshopCompleted('gml-shooter-trainer', 75);
+    const banner = document.getElementById('finishBanner');
+    if (banner) setTimeout(() => banner.scrollIntoView({behavior:'smooth', block:'start'}), 800);
+  }
 }
 
 let currentStep=0;const stepsDone=new Set();
 function goTo(i){if(i<0||i>=STEPS.length)return;currentStep=i;const c=document.getElementById('stepBody');STEPS[i].render(c);document.getElementById('stepsTabs').innerHTML=STEPS.map((s,j)=>'<button class="tab-btn '+(j===i?'active':'')+' '+(stepsDone.has(j)?'done':'')+'" onclick="goTo('+j+')">'+s.tab+'</button>').join('');const at=document.querySelector('.tab-btn.active');if(at)at.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});updateProgress();c.scrollTop=0;}
 function doRun(){stepsDone.add(currentStep);STEPS[currentStep].onRun();updateProgress();const btn=document.getElementById('runBtn');if(btn){const o=btn.innerHTML;btn.innerHTML='✓ Running!';setTimeout(()=>{if(btn)btn.innerHTML=o;},900);}}
 function updateProgress(){document.getElementById('progFill').style.width=((currentStep+1)/STEPS.length*100).toFixed(0)+'%';document.getElementById('progDots').innerHTML=STEPS.map((_,i)=>'<div class="prog-dot '+(stepsDone.has(i)?'done':i===currentStep?'active':'')+'"></div>').join('');}
+loadProgress();
+completed.forEach(n => stepsDone.add(n - 1));
 goTo(0);
+checkFinish();
 
 (function(){const btn=document.getElementById('navToggle'),nav=document.getElementById('mobileNav');if(!btn||!nav)return;btn.addEventListener('click',e=>{e.stopPropagation();nav.classList.toggle('open');btn.textContent=nav.classList.contains('open')?'✕':'☰';});nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');btn.textContent='☰';}));document.addEventListener('click',e=>{if(!nav.contains(e.target)&&!btn.contains(e.target))nav.classList.remove('open');});})();
 </script>
