@@ -363,7 +363,13 @@ const LEVELS=[
 // ============================
 const SK='jvds-roblox-creator-v2';
 function load(){try{const s=localStorage.getItem(SK);return s?JSON.parse(s):null}catch(e){return null}}
-function save(){try{localStorage.setItem(SK,JSON.stringify(S))}catch(e){}}
+function save(){try{
+  /* also write completed/total/xp so my-progress.html can show this workshop */
+  const done=[];let tot=0;
+  LEVELS.forEach(l=>{(S.steps[l.id]||[]).forEach(v=>{tot++;if(v)done.push(tot)})});
+  const xp=calcXP();
+  localStorage.setItem(SK,JSON.stringify(Object.assign({},S,{completed:done,total:tot,xp:xp,level:Math.floor(xp/100)+1})))
+}catch(e){}}
 function defaults(){
   const st={};LEVELS.forEach(l=>{st[l.id]=l.steps.map(()=>false)});
   return{steps:st,activeLv:LEVELS[0].id,openStep:null,xp:0};
