@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-
+:root{
   --bg:#08080f;--panel:#0f0f1e;--panel2:#161628;--panel3:#1e1e38;
   --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
   --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#7c3aed;
@@ -88,6 +88,8 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .icon-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;font-family:inherit;transition:all .1s;}
 .icon-btn:hover{color:var(--text);background:var(--panel3);}
 .icon-btn.primary{background:var(--accent4);color:white;border-color:var(--accent4);}
+.dtool.on{background:rgba(244,114,182,.2);color:var(--accent);border-color:var(--accent);}
+#preview-canvas.drawing{cursor:crosshair;}
 
 /* Frame strip */
 #frame-strip-wrap{flex:1;overflow-y:auto;padding:8px;}
@@ -179,6 +181,8 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
       <button class="pb-btn pb-play" id="playBtn" onclick="togglePlay()">▶</button>
       <button class="pb-btn pb-next" onclick="nextFrame()" title="Next frame">▶|</button>
       <button class="pb-btn pb-loop on" id="loopBtn" onclick="toggleLoop()">🔁</button>
+      <button class="pb-btn pb-loop" id="onionBtn" onclick="toggleOnion()" title="Onion skin — ghost of previous/next frame">👻</button>
+      <button class="pb-btn pb-loop" id="drawBtn" onclick="toggleDrawMode()" title="Draw mode — edit pixels on the current frame">✏️</button>
       <div class="pb-label">FPS</div>
       <div class="pb-val" id="fpsVal">12</div>
       <input type="range" class="fps-slider" min="1" max="60" value="12" id="fpsSlider" oninput="setFps(this.value)">
@@ -203,7 +207,20 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     <div class="sb-section">
       <div class="sb-title">Spritesheet</div>
       <label class="upload-btn-label" for="fileInput" style="display:inline-block;padding:6px 14px;font-size:.75rem;border-radius:7px;background:var(--accent4);color:white;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;margin-bottom:8px;">📂 Load Spritesheet</label>
+      <button class="icon-btn" style="width:100%;background:rgba(16,185,129,.15);color:var(--accent3);border-color:rgba(16,185,129,.3);" onclick="importFromPixelStudio()">🎨 Import from Pixel Studio</button>
       <div style="font-size:.55rem;color:var(--muted);margin-top:4px;" id="sheetInfo">No sheet loaded</div>
+    </div>
+
+    <div class="sb-section" id="drawSection" style="display:none;">
+      <div class="sb-title">Pixel Editing</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <input type="color" id="drawColor" value="#f472b6" style="width:34px;height:30px;border:1px solid var(--border2);border-radius:6px;background:var(--panel2);cursor:pointer;padding:2px;">
+        <button class="icon-btn dtool on" id="dt-pencil" onclick="setDrawTool('pencil')" title="Pencil">✏️</button>
+        <button class="icon-btn dtool" id="dt-eraser" onclick="setDrawTool('eraser')" title="Eraser">🧽</button>
+        <button class="icon-btn dtool" id="dt-picker" onclick="setDrawTool('picker')" title="Eyedropper">💉</button>
+        <button class="icon-btn" onclick="undoDraw()" title="Undo last stroke">↩️</button>
+      </div>
+      <div style="font-size:.55rem;color:var(--muted);line-height:1.5;">Draw straight onto the preview. Edits apply to the sheet, so they show in every export.</div>
     </div>
 
     <div class="sb-section">
@@ -265,6 +282,7 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     </div>
 
     <div class="export-btns">
+      <button class="exp-btn exp-gif" onclick="exportGIF()">🎬 Animated GIF</button>
       <button class="exp-btn exp-json" onclick="exportJSON()">{ } JSON Frame Data</button>
       <button class="exp-btn exp-png" onclick="exportPNG()">📥 Current Frame PNG</button>
       <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Selected Frames Sheet</button>
@@ -278,6 +296,7 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 function id(x){return document.getElementById(x);}
 
 let sheetImg=null, sheetW=0, sheetH=0;
+let sheetCanvas=null, sheetCtx=null; // editable copy of the sheet — all draws/exports read this
 let frameW=32, frameH=32, offsetX=0, offsetY=0, spacing=0;
 let frames=[]; // {x,y,enabled}
 let activeFrames=[];
@@ -286,6 +305,9 @@ let playing=false, looping=true;
 let fps=12, zoom=2;
 let animTimer=null;
 let bgMode='checker';
+let onionSkin=false;
+let drawMode=false, drawTool='pencil', drawStroking=false;
+let undoStack=[]; // sheet ImageData snapshots, newest last
 
 const canvas=id('preview-canvas');
 const ctx=canvas.getContext('2d');
@@ -298,11 +320,21 @@ function loadSheet(input){
   const img=new Image();
   img.onload=()=>{
     sheetImg=img;sheetW=img.width;sheetH=img.height;
+    initSheetCanvas(img);
     id('sheetInfo').textContent=`${sheetW}×${sheetH}px · ${file.name}`;
     id('uploadPrompt').classList.add('hidden');
     rebuildFrames();
   };
   img.src=url;
+}
+
+function initSheetCanvas(source){
+  sheetCanvas=document.createElement('canvas');
+  sheetCanvas.width=sheetW;sheetCanvas.height=sheetH;
+  sheetCtx=sheetCanvas.getContext('2d',{willReadFrequently:true});
+  sheetCtx.imageSmoothingEnabled=false;
+  sheetCtx.drawImage(source,0,0);
+  undoStack=[];
 }
 
 function rebuildFrames(){
@@ -352,7 +384,7 @@ function buildStrip(){
     c.width=frameW;c.height=frameH;
     const cx=c.getContext('2d');
     cx.imageSmoothingEnabled=false;
-    cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
     div.appendChild(c);
 
     const num=document.createElement('div');num.className='frame-num';num.textContent=i+1;
@@ -456,7 +488,18 @@ function drawFrame(){
     }
   } else {ctx.fillStyle=bgMode==='white'?'#fff':bgMode==='dark'?'#1a1a2e':'#000';ctx.fillRect(0,0,canvas.width,canvas.height);}
 
-  ctx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,canvas.width,canvas.height);
+  // Onion skin: ghost previous (pink) and next (green) frames under the current one
+  if(onionSkin&&!playing&&activeFrames.length>1){
+    const prevF=frames[activeFrames[(currentFrame-1+activeFrames.length)%activeFrames.length]];
+    const nextF=frames[activeFrames[(currentFrame+1)%activeFrames.length]];
+    ctx.globalAlpha=.28;
+    ctx.drawImage(sheetCanvas,prevF.x,prevF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.globalAlpha=.16;
+    ctx.drawImage(sheetCanvas,nextF.x,nextF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.globalAlpha=1;
+  }
+
+  ctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,canvas.width,canvas.height);
   id('currentFrameNum').textContent=currentFrame+1;
 
   // highlight in strip
@@ -521,7 +564,7 @@ function exportPNG(){
   const fi=activeFrames[currentFrame];const f=frames[fi];
   const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
   const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
-  cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+  cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
   c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`frame_${currentFrame+1}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Frame exported!');});
 }
 
@@ -534,7 +577,7 @@ function exportSheet(){
   activeFrames.forEach((fi,i)=>{
     const f=frames[fi];
     const col=i%cols,row=Math.floor(i/cols);
-    cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,col*frameW,row*frameH,frameW,frameH);
+    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,col*frameW,row*frameH,frameW,frameH);
   });
   c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');});
 }
@@ -549,7 +592,7 @@ function exportMultiPNG(){
       const f=frames[fi];
       const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
       const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
-      cx.drawImage(sheetImg,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+      cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
       c.toBlob(blob=>{
         const a=document.createElement('a');
         a.href=URL.createObjectURL(blob);
@@ -562,6 +605,194 @@ function exportMultiPNG(){
     },idx*200); // Stagger downloads
   });
   toast('Exporting frames...');
+}
+
+// ── ONION SKIN ──
+function toggleOnion(){
+  onionSkin=!onionSkin;
+  id('onionBtn').classList.toggle('on',onionSkin);
+  drawFrame();
+}
+
+// ── PIXEL EDITING ──
+function toggleDrawMode(){
+  drawMode=!drawMode;
+  id('drawBtn').classList.toggle('on',drawMode);
+  id('drawSection').style.display=drawMode?'':'none';
+  canvas.classList.toggle('drawing',drawMode);
+  if(drawMode&&playing) togglePlay();
+  if(drawMode&&!sheetImg) toast('Load a spritesheet first');
+}
+
+function setDrawTool(t){
+  drawTool=t;
+  document.querySelectorAll('.dtool').forEach(el=>el.classList.remove('on'));
+  id('dt-'+(t==='pencil'?'pencil':t==='eraser'?'eraser':'picker')).classList.add('on');
+}
+
+function canvasToSheetPx(e){
+  // Map a pointer event on the preview canvas to a pixel on the sheet
+  if(activeFrames.length===0) return null;
+  const f=frames[activeFrames[currentFrame]];
+  const rect=canvas.getBoundingClientRect();
+  const px=Math.floor((e.clientX-rect.left)*(canvas.width/rect.width)/zoom);
+  const py=Math.floor((e.clientY-rect.top)*(canvas.height/rect.height)/zoom);
+  if(px<0||py<0||px>=frameW||py>=frameH) return null;
+  return {x:f.x+px,y:f.y+py};
+}
+
+function pushUndo(){
+  try{
+    undoStack.push(sheetCtx.getImageData(0,0,sheetW,sheetH));
+    if(undoStack.length>12) undoStack.shift();
+  }catch(e){}
+}
+
+function undoDraw(){
+  if(undoStack.length===0){toast('Nothing to undo');return;}
+  sheetCtx.putImageData(undoStack.pop(),0,0);
+  drawFrame();
+  refreshCurrentThumb();
+  toast('Undone');
+}
+
+function applyDrawAt(e){
+  const p=canvasToSheetPx(e);
+  if(!p) return;
+  if(drawTool==='picker'){
+    const d=sheetCtx.getImageData(p.x,p.y,1,1).data;
+    if(d[3]>0){
+      const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+      id('drawColor').value=hex;
+      setDrawTool('pencil');
+      toast('Picked '+hex);
+    }
+    return;
+  }
+  if(drawTool==='eraser'){
+    sheetCtx.clearRect(p.x,p.y,1,1);
+  }else{
+    sheetCtx.fillStyle=id('drawColor').value;
+    sheetCtx.fillRect(p.x,p.y,1,1);
+  }
+  drawFrame();
+}
+
+function refreshCurrentThumb(){
+  if(activeFrames.length===0) return;
+  const fi=activeFrames[currentFrame];
+  const thumb=id('ft-'+fi);
+  if(!thumb) return;
+  const c=thumb.querySelector('canvas');
+  if(!c) return;
+  const cx=c.getContext('2d');
+  cx.imageSmoothingEnabled=false;
+  cx.clearRect(0,0,c.width,c.height);
+  const f=frames[fi];
+  cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  if(!drawMode||!sheetImg) return;
+  e.preventDefault();
+  if(drawTool!=='picker') pushUndo();
+  drawStroking=true;
+  canvas.setPointerCapture(e.pointerId);
+  applyDrawAt(e);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!drawMode||!drawStroking||drawTool==='picker') return;
+  applyDrawAt(e);
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!drawStroking) return;
+  drawStroking=false;
+  refreshCurrentThumb();
+});
+
+// ── EXPORT GIF ──
+let _gifencModule=null;
+function exportGIF(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  toast('Encoding GIF...');
+  const load=_gifencModule?Promise.resolve(_gifencModule):import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm');
+  load.then(m=>{
+    _gifencModule=m;
+    const {GIFEncoder,quantize,applyPalette}=m;
+    const sc=Math.max(1,Math.floor(128/Math.max(frameW,frameH))); // upscale tiny sprites so the GIF is viewable
+    const gw=frameW*sc,gh=frameH*sc;
+    const tc=document.createElement('canvas');tc.width=gw;tc.height=gh;
+    const tctx=tc.getContext('2d',{willReadFrequently:true});
+    const enc=GIFEncoder();
+    const format='rgba4444';
+    activeFrames.forEach(fi=>{
+      const f=frames[fi];
+      tctx.clearRect(0,0,gw,gh);
+      tctx.imageSmoothingEnabled=false;
+      tctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,gw,gh);
+      const data=tctx.getImageData(0,0,gw,gh).data;
+      const palette=quantize(data,256,{format,oneBitAlpha:true});
+      const index=applyPalette(data,palette,format);
+      let transparentIndex=palette.findIndex(p=>p[3]===0);
+      enc.writeFrame(index,gw,gh,{
+        palette,
+        delay:Math.round(1000/(frames[fi].fps||fps)),
+        transparent:transparentIndex>=0,
+        transparentIndex:Math.max(0,transparentIndex),
+        disposal:2
+      });
+    });
+    enc.finish();
+    const blob=new Blob([enc.bytes()],{type:'image/gif'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='animation.gif';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast(`GIF exported! ${activeFrames.length} frames @ ${gw}×${gh}`);
+  }).catch(err=>{
+    console.error('GIF export failed:',err);
+    toast('GIF export failed — check connection & try again');
+  });
+}
+
+// ── IMPORT FROM PIXEL STUDIO ──
+function importFromPixelStudio(){
+  const raw=localStorage.getItem('jvds_pixel');
+  if(!raw){toast('No Pixel Studio project found — open Pixel Studio and hit Save first');return;}
+  let d;
+  try{d=JSON.parse(raw);}catch(e){toast('Could not read Pixel Studio project');return;}
+  if(!d.cW||!d.cH||!d.frames||d.frames.length===0){toast('Pixel Studio project is empty');return;}
+
+  // Flatten each frame's visible layers, lay frames out in a horizontal strip
+  const fw=d.cW,fh=d.cH,count=d.frames.length;
+  const strip=document.createElement('canvas');
+  strip.width=fw*count;strip.height=fh;
+  const sctx=strip.getContext('2d');
+  sctx.imageSmoothingEnabled=false;
+  const tmp=document.createElement('canvas');tmp.width=fw;tmp.height=fh;
+  const tmpCtx=tmp.getContext('2d');
+  d.frames.forEach((frameLayers,fi)=>{
+    frameLayers.forEach((layerData,li)=>{
+      if(!layerData) return;
+      if(d.layers&&d.layers[li]&&d.layers[li].visible===false) return;
+      const im=new ImageData(new Uint8ClampedArray(layerData),fw,fh);
+      tmpCtx.clearRect(0,0,fw,fh);
+      tmpCtx.putImageData(im,0,0);
+      sctx.drawImage(tmp,fi*fw,0);
+    });
+  });
+
+  // Load the strip as the current sheet
+  sheetW=strip.width;sheetH=strip.height;
+  sheetImg=strip; // truthy "loaded" flag; all rendering reads sheetCanvas
+  initSheetCanvas(strip);
+  id('frameW').value=fw;id('frameH').value=fh;
+  id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
+  id('sheetInfo').textContent=`${sheetW}×${sheetH}px · Pixel Studio (${count} frame${count!==1?'s':''})`;
+  id('uploadPrompt').classList.add('hidden');
+  rebuildFrames();
+  toast(`Imported ${count} frame${count!==1?'s':''} from Pixel Studio 🎨`);
 }
 
 // drag & drop
