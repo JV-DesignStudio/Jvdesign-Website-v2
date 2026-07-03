@@ -4,7 +4,13 @@
      window.WORKSHOP_TOTAL, number of steps
      window.WORKSHOP_KEY, localStorage key (matches my-progress.html SERIES)
      window.WORKSHOP_PROFILE_ID, id reported to player-profile.js on completion
+
+   Answer attributes on .cc-blank / .cf-blank inputs and .quiz-gate:
+     data-a / data-k, base64(encodeURIComponent(value)); "|" separates accepted
+                      alternates, first alternate is canonical
+     data-answer / data-correct, legacy plain-text fallback
 */
+(function () {
 var TOTAL = window.WORKSHOP_TOTAL;
 var STORAGE_KEY = window.WORKSHOP_KEY;
 var PROFILE_ID = window.WORKSHOP_PROFILE_ID;
@@ -21,6 +27,33 @@ var XP_PER_LEVEL = 100;
 var XP_QUIZ = 15;
 var XP_CODE = 20;
 var XP_STREAK_BONUS = 5;
+
+/* ── ANSWER DECODING ── */
+function decodeAnswers(el) {
+  var raw = '';
+  if (el.dataset.a) {
+    try { raw = decodeURIComponent(atob(el.dataset.a)); } catch (e) { raw = ''; }
+  } else if (el.dataset.answer !== undefined) {
+    raw = el.dataset.answer;
+  }
+  return raw.split('|');
+}
+
+function canonicalAnswer(el) {
+  return decodeAnswers(el)[0];
+}
+
+function matchesAnswer(el, value) {
+  var v = value.trim().toLowerCase();
+  return decodeAnswers(el).some(function (a) { return a.trim().toLowerCase() === v; });
+}
+
+function correctIndex(gate) {
+  if (gate.dataset.k) {
+    try { return parseInt(decodeURIComponent(atob(gate.dataset.k)), 10); } catch (e) { return -1; }
+  }
+  return parseInt(gate.dataset.correct, 10);
+}
 
 function saveProgress() {
   try {
@@ -63,11 +96,11 @@ function loadProgress() {
     });
     if (data.challengesPassed) data.challengesPassed.forEach(function(id) {
       var c = document.getElementById(id);
-      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(function(b){ b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; b.classList.add('correct'); }); }
     });
     if (data.fillsPassed) data.fillsPassed.forEach(function(id) {
       var c = document.getElementById(id);
-      if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(function(b){ b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+      if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; b.classList.add('correct'); }); }
     });
     updateXpDisplay();
   } catch(e) {}
@@ -154,7 +187,7 @@ function checkQuiz(btn) {
   var gate = btn.closest('.quiz-gate');
   var selected = gate.querySelector('.quiz-opt.selected');
   if (!selected) return;
-  var correct = parseInt(gate.dataset.correct);
+  var correct = correctIndex(gate);
   var chosenIdx = parseInt(selected.dataset.idx);
   var fb = gate.querySelector('.quiz-feedback');
   totalQuizzes++;
@@ -197,9 +230,7 @@ function checkCodeChallenge(btn) {
   var allCorrect = true;
 
   blanks.forEach(function(b) {
-    var userVal = b.value.trim().toLowerCase();
-    var answer = b.dataset.answer.toLowerCase();
-    if (userVal === answer) {
+    if (matchesAnswer(b, b.value)) {
       b.classList.remove('wrong');
       b.classList.add('correct');
     } else {
@@ -214,7 +245,7 @@ function checkCodeChallenge(btn) {
     fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
     challenge.classList.add('passed');
     btn.disabled = true;
-    blanks.forEach(function(b){ b.disabled = true; });
+    blanks.forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; });
     if (hint) hint.classList.remove('show');
     streak++;
     if (streak > bestStreak) bestStreak = streak;
@@ -242,7 +273,7 @@ function checkConceptFill(btn) {
   var fb = wrap.querySelector('.cf-feedback');
   var allCorrect = true;
   blanks.forEach(function(b) {
-    if (b.value.trim().toLowerCase() === b.dataset.answer.toLowerCase()) {
+    if (matchesAnswer(b, b.value)) {
       b.classList.remove('wrong'); b.classList.add('correct');
     } else {
       b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
@@ -252,7 +283,7 @@ function checkConceptFill(btn) {
     fb.className = 'cf-feedback correct show';
     fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
     wrap.classList.add('passed'); btn.disabled = true;
-    blanks.forEach(function(b){ b.disabled = true; });
+    blanks.forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; });
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++; totalQuizzes++;
     var bonus = XP_QUIZ, label = 'Concept fill';
@@ -312,6 +343,50 @@ function toggleStep(header) {
   body.style.display = isOpen ? 'none' : 'block';
 }
 
+/* ── QUIZ OPTION SHUFFLE ── */
+function shuffleQuizOptions() {
+  document.querySelectorAll('.quiz-gate .quiz-options').forEach(function(opts) {
+    var kids = [...opts.children];
+    for (var i = kids.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = kids[i]; kids[i] = kids[j]; kids[j] = tmp;
+    }
+    kids.forEach(function(k){ opts.appendChild(k); });
+    var letters = ['A', 'B', 'C', 'D', 'E'];
+    opts.querySelectorAll('.opt-letter').forEach(function(l, i){ l.textContent = letters[i] || ''; });
+  });
+}
+
+/* ── KEYBOARD ACCESS ── */
+function initKeyboardAccess() {
+  function activate(el) {
+    return function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    };
+  }
+  document.querySelectorAll('.quiz-opt').forEach(function(o) {
+    o.setAttribute('role', 'button');
+    o.setAttribute('tabindex', '0');
+    o.addEventListener('keydown', activate(o));
+  });
+  document.querySelectorAll('.step-header').forEach(function(h) {
+    h.setAttribute('role', 'button');
+    h.setAttribute('tabindex', '0');
+    h.addEventListener('keydown', activate(h));
+  });
+}
+
+/* pages call these from inline onclick handlers */
+window.selectQuizOpt = selectQuizOpt;
+window.checkQuiz = checkQuiz;
+window.checkCodeChallenge = checkCodeChallenge;
+window.checkConceptFill = checkConceptFill;
+window.completeStep = completeStep;
+window.toggleStep = toggleStep;
+
+shuffleQuizOptions();
+initKeyboardAccess();
 loadProgress();
 updateProgress();
 updateXpDisplay();
+})();
