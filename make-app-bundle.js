@@ -51,7 +51,7 @@ icons.forEach(icon => {
   if(fileExists(src)){
     copy(src, path.join(DEST,'icons',icon));
   } else {
-    console.log('  ⚠️  MISSING: icons/'+icon+' — open icon-generator.html and download it first!');
+    console.log('  ⚠️  MISSING: icons/'+icon+', open icon-generator.html and download it first!');
     iconsMissing = true;
   }
 });
@@ -65,7 +65,7 @@ shots.forEach(s => {
   if(fileExists(src)){
     copy(src, path.join(DEST,'screenshots',s));
   } else {
-    console.log('  (missing: screenshots/'+s+' — add manually for a better Play Store listing)');
+    console.log('  (missing: screenshots/'+s+', add manually for a better Play Store listing)');
   }
 });
 
@@ -99,7 +99,7 @@ write(path.join(DEST,'_redirects'), [
 console.log('\n─────────────────────────────────────────────────────────────');
 
 if(iconsMissing){
-  console.log('\n⚠️  ICONS MISSING — do this first:');
+  console.log('\n⚠️  ICONS MISSING, do this first:');
   console.log('  1. Open icon-generator.html in your browser');
   console.log('  2. Click "Download icon-512.png" and "Download icon-192.png"');
   console.log('  3. Put both files into: F:\\Website\\Jvdesign-Website-v2\\icons\\');
@@ -108,23 +108,23 @@ if(iconsMissing){
   console.log('\n✅ Bundle ready at: quest-board-deploy/\n');
   console.log('NEXT STEPS:');
   console.log('');
-  console.log('  STEP 1 — Deploy to Netlify:');
+  console.log('  STEP 1, Deploy to Netlify:');
   console.log('    → Go to netlify.com → "Add new site" → "Deploy manually"');
   console.log('    → Drag the quest-board-deploy/ FOLDER onto the drop zone');
   console.log('    → You get a URL like: https://random-name.netlify.app');
   console.log('    → (Optional) Buy questboard.app on Namecheap, connect in Netlify settings)');
   console.log('');
-  console.log('  STEP 2 — Test your PWA:');
+  console.log('  STEP 2, Test your PWA:');
   console.log('    → Open https://pagespeed.web.dev and enter your Netlify URL');
   console.log('    → Need Lighthouse PWA score of 80+ for Play Store');
   console.log('');
-  console.log('  STEP 3 — Generate Play Store bundle:');
+  console.log('  STEP 3, Generate Play Store bundle:');
   console.log('    → Go to pwabuilder.com');
   console.log('    → Enter your Netlify URL');
   console.log('    → Click "Package for stores" → "Google Play"');
   console.log('    → Download the generated .aab file');
   console.log('');
-  console.log('  STEP 4 — Google Play Console:');
+  console.log('  STEP 4, Google Play Console:');
   console.log('    → play.google.com/console → Create app');
   console.log('    → One-time $25 developer fee');
   console.log('    → Upload the .aab from Step 3');

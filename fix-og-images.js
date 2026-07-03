@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// fix-og-images.js — sets unique og:image and twitter:image per page
+// fix-og-images.js, sets unique og:image and twitter:image per page
 // where a matching cover image exists. Falls back to logo.png.
 // Run: node fix-og-images.js
 

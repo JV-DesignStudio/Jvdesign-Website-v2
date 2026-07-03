@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Audio & Visual Effects Engine — Sound, Shake, Particles
+   Audio & Visual Effects Engine, Sound, Shake, Particles
    ═══════════════════════════════════════════════════════════ */
 
 class AudioEffects {
@@ -126,7 +126,7 @@ class AudioEffects {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SCREEN SHAKE — Haptic feedback via CSS transforms
+   SCREEN SHAKE, Haptic feedback via CSS transforms
    ═══════════════════════════════════════════════════════════ */
 
 class ScreenShake {
@@ -165,7 +165,7 @@ class ScreenShake {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PARTICLE SYSTEM — Burst effects, confetti, sparkles
+   PARTICLE SYSTEM, Burst effects, confetti, sparkles
    ═══════════════════════════════════════════════════════════ */
 
 class ParticleSystem {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// fix-fonts.js — removes JetBrains Mono from pages that don't need it,
+// fix-fonts.js, removes JetBrains Mono from pages that don't need it,
 // and removes duplicate @keyframes logo-shift / .reveal blocks from pages
 // that load style-shared.css (which already defines them).
 // Run: node fix-fonts.js
@@ -33,7 +33,7 @@ const NEEDS_MONO = new Set([
     'project-tracker.html',
 ]);
 
-// Duplicated CSS blocks that live in style-shared.css — safe to remove from pages
+// Duplicated CSS blocks that live in style-shared.css, safe to remove from pages
 const DUPE_BLOCKS = [
     // logo-shift keyframe + class
     /@keyframes logo-shift\s*\{[^}]*\}\s*\.logo-name\s*\{[^}]*\}\s*/g,

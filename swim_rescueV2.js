@@ -1,5 +1,5 @@
 // ============================================================
-//  Swim Rescue v2.0 — OpenRCT2 Plugin
+//  Swim Rescue v2.0, OpenRCT2 Plugin
 //  Made at JVDesignStudio
 //  Place in: Documents/OpenRCT2/plugin/
 // ============================================================
@@ -85,7 +85,7 @@ function dispatchRescue(guest, safe) {
     var marker = spawnMarker(guest.x + 100, guest.y + 100, guest.z);
 
     if (!marker) {
-        // Fallback — instant teleport if balloon spawn fails
+        // Fallback, instant teleport if balloon spawn fails
         teleportToSafety(guest, safe);
         return;
     }
@@ -144,7 +144,7 @@ function updateRescues() {
             continue;
         }
 
-        // Safety timeout — if rescue takes too long, just teleport
+        // Safety timeout, if rescue takes too long, just teleport
         if (r.ticks > 500) {
             teleportToSafety(guest, r.safe);
             marker.remove();

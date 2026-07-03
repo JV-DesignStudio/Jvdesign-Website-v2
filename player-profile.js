@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Player Profile — Unified progression across all games & workshops
+   Player Profile, Unified progression across all games & workshops
    ═══════════════════════════════════════════════════════════ */
 
 class PlayerProfile {

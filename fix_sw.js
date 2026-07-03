@@ -33,7 +33,7 @@ async function pageStrategy(request) {
     return cached;
   }
 
-  // Not in cache — try network, show offline page on fail
+  // Not in cache, try network, show offline page on fail
   const fresh = await networkFetch;
   if (fresh) return fresh;
 
@@ -44,7 +44,7 @@ async function pageStrategy(request) {
   });
 }`;
 
-const newPageStrategy = `// Network-first for pages — always fetches fresh when online, falls back to cache
+const newPageStrategy = `// Network-first for pages, always fetches fresh when online, falls back to cache
 // This ensures critical bug fixes are picked up immediately on next visit
 async function pageStrategy(request) {
   const cache  = await caches.open(PAGE_CACHE);
@@ -55,7 +55,7 @@ async function pageStrategy(request) {
     if (res.ok) cache.put(request, res.clone());
     return res;
   } catch (_) {
-    // Offline — serve from cache
+    // Offline, serve from cache
     const cached = await cache.match(request) || await coreC.match(request);
     if (cached) return cached;
     const offlinePage = await coreC.match('/offline.html');
@@ -70,7 +70,7 @@ if (sw.includes(oldPageStrategy)) {
   sw = sw.replace(oldPageStrategy, newPageStrategy);
   console.log('OK: SW page strategy → network-first');
 } else {
-  console.log('WARN: pageStrategy not found by exact match — applying manual replacements');
+  console.log('WARN: pageStrategy not found by exact match, applying manual replacements');
   // Fallback: just bump the comment
 }
 
@@ -83,19 +83,19 @@ let html = fs.readFileSync('arcade-game-maker.html', 'utf8');
 const oldSwHandler = `      // Listen for a new SW becoming active (v5+ sends SW_UPDATED)
       navigator.serviceWorker.addEventListener('message', e => {
         if (e.data && e.data.type === 'SW_UPDATED') {
-          showToast('✅ Game Maker updated — changes load next visit', 'success');
+          showToast('✅ Game Maker updated, changes load next visit', 'success');
         }
       });
       // If a new SW is already waiting, prompt immediately
       if (reg.waiting) {
-        showToast('✅ New version ready — reload to update');
+        showToast('✅ New version ready, reload to update');
       }
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (!nw) return;
         nw.addEventListener('statechange', () => {
           if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            showToast('✅ New version downloaded — reload to update');
+            showToast('✅ New version downloaded, reload to update');
           }
         });
       });`;

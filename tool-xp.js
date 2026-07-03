@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
-   Tool XP — awards player-profile XP for using the dev tools.
+   Tool XP, awards player-profile XP for using the dev tools.
    Include AFTER player-profile.js:
      <script src="../player-profile.js"></script>
      <script src="../tool-xp.js"></script>
 
    Awards (per tool, capped per day so they can't be farmed):
-   - session  +10 XP  once/day   — spent time creating in a tool
-   - export   +25 XP  3×/day     — downloaded/exported a creation
+   - session  +10 XP  once/day, spent time creating in a tool
+   - export   +25 XP  3×/day, downloaded/exported a creation
    Tools can also call ToolXP.award(action, xp, maxPerDay, label)
    for their own milestones (e.g. saving a build).
    ═══════════════════════════════════════════════════════════ */
@@ -32,7 +32,7 @@
         if (k && k.indexOf(CAP_PREFIX) === 0 && k !== CAP_KEY) localStorage.removeItem(k);
       }
       localStorage.setItem(CAP_KEY, JSON.stringify(d));
-    } catch (e) { /* storage full/blocked — XP still awarded */ }
+    } catch (e) { /* storage full/blocked, XP still awarded */ }
   }
 
   function underCap(action, max) {
@@ -74,7 +74,7 @@
       if (!underCap(action, maxPerDay)) return false;
       bumpCap(action);
       var result = playerProfile.addXP(xp, 'tool:' + TOOL_ID + ':' + action);
-      showXPToast('+' + xp + ' XP — ' + (label || action));
+      showXPToast('+' + xp + ' XP, ' + (label || action));
       if (result && result.levelUp) {
         setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
       }

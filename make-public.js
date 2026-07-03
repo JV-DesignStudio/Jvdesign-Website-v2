@@ -1,4 +1,4 @@
-// make-public.js — generates quest-board.html (clean public version) from project-tracker.html
+// make-public.js, generates quest-board.html (clean public version) from project-tracker.html
 // Run: node make-public.js
 'use strict';
 const fs = require('fs');
@@ -15,8 +15,8 @@ function rep(from, to, label) {
 }
 
 // ── 1. Title & meta ──────────────────────────────────────────────────────────
-rep('<title>RPG Quest Board — JVDesignStudio</title>',
-    '<title>Quest Board RPG — Your Personal Adventure</title>', 'title');
+rep('<title>RPG Quest Board, JVDesignStudio</title>',
+    '<title>Quest Board RPG, Your Personal Adventure</title>', 'title');
 
 // ── 2. localStorage keys (keep owner's data separate) ────────────────────────
 rep("const SK='jvds-tracker-v2', RK='jvds-rpg-v1';",
@@ -61,10 +61,10 @@ rep('  nextId:400', '  nextId:10', 'nextId');
 
     c = c.slice(0, si + S.length) +
       mk('ex1','doing','👋 Welcome to Quest Board!',
-         'Drag this card to Done once you have had a look around. Your whole life is a quest — this is where you track it.',
+         'Drag this card to Done once you have had a look around. Your whole life is a quest, this is where you track it.',
          'high', false, 'Start here','#7c3aed') + ',\n' +
       mk('ex2','doing','Try the Daily Bounties',
-         'Open the 🏠 HQ Dashboard — complete daily bounties for bonus XP and gold. Hit 🔄 to reroll them.',
+         'Open the 🏠 HQ Dashboard, complete daily bounties for bonus XP and gold. Hit 🔄 to reroll them.',
          'med', false, 'Tutorial','#0284c7') + ',\n' +
       mk('ex3','todo','Add your first real task',
          'Press + New Quest (or Ctrl+K). Type "fix", "urgent", or "video" and watch priority + column auto-assign.',
@@ -80,13 +80,13 @@ rep('  nextId:400', '  nextId:10', 'nextId');
   }
 }
 
-// ── 6. Player name — replace hardcoded "Josh" references ─────────────────────
+// ── 6. Player name, replace hardcoded "Josh" references ─────────────────────
 // In JS templates
-c = c.split('`Josh — ${rpg.title}`').join("`${localStorage.getItem('qb-player-name')||'Adventurer'} — ${rpg.title}`");
-c = c.split('`Josh- ${rpg.title}`').join("`${localStorage.getItem('qb-player-name')||'Adventurer'} — ${rpg.title}`");
+c = c.split('`Josh, ${rpg.title}`').join("`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${rpg.title}`");
+c = c.split('`Josh- ${rpg.title}`').join("`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${rpg.title}`");
 // In HTML default text
-c = c.split('Josh — The Novice').join('Adventurer — The Novice');
-c = c.split('Josh- the Novice').join('Adventurer — The Novice');
+c = c.split('Josh, The Novice').join('Adventurer, The Novice');
+c = c.split('Josh- the Novice').join('Adventurer, The Novice');
 done.push('player name → dynamic');
 
 // ── 7. Auth gate + auth script → Setup Wizard ─────────────────────────────────
@@ -102,27 +102,27 @@ else {
   <div id="setupStars" style="position:absolute;inset:0;overflow:hidden;pointer-events:none"></div>
   <div style="font-size:3.5rem;animation:authFloat 3s ease-in-out infinite;position:relative">⚔️</div>
   <div style="font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);font-weight:900;text-shadow:0 0 30px rgba(245,200,66,.5);position:relative;text-align:center">Quest Board RPG</div>
-  <div style="font-size:.78rem;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;position:relative;text-align:center">Create your adventurer — takes 10 seconds</div>
+  <div style="font-size:.78rem;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;position:relative;text-align:center">Create your adventurer, takes 10 seconds</div>
   <input id="setupName" type="text" placeholder="Your name…" maxlength="24"
     style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:13px 22px;color:#fff;font-size:1rem;width:280px;text-align:center;outline:none;font-family:'JetBrains Mono',monospace;position:relative;transition:border-color .2s"
     onfocus="this.style.borderColor='rgba(245,200,66,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"
     onkeydown="if(event.key==='Enter')document.getElementById('setupClass').focus()">
   <select id="setupClass"
     style="background:#1a1030;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:13px 22px;color:#fff;font-size:.9rem;width:280px;outline:none;cursor:pointer;position:relative">
-    <option value="Code Conjurer">🧙‍♂️ Code Conjurer — builds things</option>
-    <option value="Pixel Paladin">🗡️ Pixel Paladin — ships features</option>
-    <option value="Design Druid">🦊 Design Druid — makes it beautiful</option>
-    <option value="QA Ranger">🏹 QA Ranger — finds the bugs</option>
+    <option value="Code Conjurer">🧙‍♂️ Code Conjurer, builds things</option>
+    <option value="Pixel Paladin">🗡️ Pixel Paladin, ships features</option>
+    <option value="Design Druid">🦊 Design Druid, makes it beautiful</option>
+    <option value="QA Ranger">🏹 QA Ranger, finds the bugs</option>
   </select>
   <button id="setupBtn" onclick="completeSetup()"
     style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:12px;padding:14px 44px;color:#fff;font-size:.95rem;font-weight:900;cursor:pointer;font-family:'Cinzel',serif;box-shadow:0 0 24px rgba(124,58,237,.45);position:relative;letter-spacing:.06em;transition:transform .15s,box-shadow .15s">
     ⚔️ BEGIN YOUR QUEST
   </button>
-  <div style="font-size:.65rem;color:rgba(255,255,255,.2);position:relative">All data is saved locally on your device only — nothing is sent anywhere</div>
+  <div style="font-size:.65rem;color:rgba(255,255,255,.2);position:relative">All data is saved locally on your device only, nothing is sent anywhere</div>
 </div>`;
 
   const SETUP_JS = `
-// ── SETUP WIZARD (public version — no password, first-run name/class picker) ──
+// ── SETUP WIZARD (public version, no password, first-run name/class picker) ──
 const SETUP_KEY = 'qb-setup-v1';
 
 (function initSetup(){

@@ -40,7 +40,7 @@ if (si === -1 || endIdx === -1) {
 
 console.log('Block start:', si, 'Block end:', endIdx);
 
-// The new block — use \n inside strings (NOT template literals, to avoid nesting issues)
+// The new block, use \n inside strings (NOT template literals, to avoid nesting issues)
 // Use single-quoted strings with \n escapes
 const newBlock = "const _CODE_SNIPPETS = {\n" +
 "    score:   '// Award points\\nscene.score = (scene.score||0) + 10;\\nif(scene.scoreText) scene.scoreText.setText(\\'Score: \\'+scene.score);\\nGameAudio.play(\\'score\\');',\n" +

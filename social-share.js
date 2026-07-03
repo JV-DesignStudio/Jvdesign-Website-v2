@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Social Share — Generate shareable content for achievements
+   Social Share, Generate shareable content for achievements
    ═══════════════════════════════════════════════════════════ */
 
 class SocialShare {

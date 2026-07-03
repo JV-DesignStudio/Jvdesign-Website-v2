@@ -1,9 +1,9 @@
 /* JVDesignStudio Workshop Engine
    Shared interactive engine for "My First ..." workshop pages.
    Page must define before loading this file:
-     window.WORKSHOP_TOTAL      – number of steps
-     window.WORKSHOP_KEY        – localStorage key (matches my-progress.html SERIES)
-     window.WORKSHOP_PROFILE_ID – id reported to player-profile.js on completion
+     window.WORKSHOP_TOTAL, number of steps
+     window.WORKSHOP_KEY, localStorage key (matches my-progress.html SERIES)
+     window.WORKSHOP_PROFILE_ID, id reported to player-profile.js on completion
 */
 var TOTAL = window.WORKSHOP_TOTAL;
 var STORAGE_KEY = window.WORKSHOP_KEY;
@@ -134,7 +134,7 @@ function showXpToast(text) {
 function showLevelUp(lvl) {
   var overlay = document.createElement('div');
   overlay.className = 'levelup-overlay';
-  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">Amazing work — keep going!</div><button>Continue</button></div>';
+  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">Amazing work, keep going!</div><button>Continue</button></div>';
   document.body.appendChild(overlay);
   overlay.querySelector('button').onclick = function(){ overlay.remove(); };
   overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
@@ -177,7 +177,7 @@ function checkQuiz(btn) {
   } else {
     selected.classList.add('wrong');
     fb.className = 'quiz-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite — try again!</span>';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, try again!</span>';
     streak = 0;
     updateXpDisplay();
     setTimeout(function() {
@@ -226,7 +226,7 @@ function checkCodeChallenge(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'cc-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers are not quite right — check the highlighted blanks and try again.</span>';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers are not quite right, check the highlighted blanks and try again.</span>';
     if (hint) hint.classList.add('show');
     streak = 0;
     updateXpDisplay();
@@ -260,7 +260,7 @@ function checkConceptFill(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'cf-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks are not right — try again!</span>';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks are not right, try again!</span>';
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();

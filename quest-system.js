@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Quest System — Definitions, unlock logic, reward tracking
+   Quest System, Definitions, unlock logic, reward tracking
    ═══════════════════════════════════════════════════════════ */
 
 const QUESTS = {

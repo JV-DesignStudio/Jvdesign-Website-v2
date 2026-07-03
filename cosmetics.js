@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Cosmetics System — Game unlockables (skins, outfits, accessories)
+   Cosmetics System, Game unlockables (skins, outfits, accessories)
    ═══════════════════════════════════════════════════════════ */
 
 const COSMETICS = {

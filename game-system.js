@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   JVDS Game System — Progression, Achievements, Leaderboard
+   JVDS Game System, Progression, Achievements, Leaderboard
    ═══════════════════════════════════════════════════════════ */
 
 class GameSystem {
@@ -416,7 +416,7 @@ class GameSystem {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   UI COMPONENTS — Modal, Achievement Notifications, etc
+   UI COMPONENTS, Modal, Achievement Notifications, etc
    ═══════════════════════════════════════════════════════════ */
 
 class GameUI {
@@ -504,7 +504,7 @@ class GameUI {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SOUND MANAGER — Audio effects and music
+   SOUND MANAGER, Audio effects and music
    ═══════════════════════════════════════════════════════════ */
 
 class SoundManager {
@@ -639,15 +639,15 @@ if (typeof document !== 'undefined') {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GLOBAL PROFILE BRIDGE — feeds gameplay into the unified
+   GLOBAL PROFILE BRIDGE, feeds gameplay into the unified
    player profile (player-profile.js) so every game counts
    toward global XP, quests, and the global leaderboard.
 
    Awards (per game, capped per day so they can't be farmed):
-   - session   +10 XP  once/day  — spent 30s+ in a game
-   - run       +15 XP  5×/day    — finished a run (recordGamePlay)
-   - milestone +10 XP  5×/day    — every 100 in-game XP earned
-   - achievement +20 XP each     — unlocked a per-game achievement
+   - session   +10 XP  once/day, spent 30s+ in a game
+   - run       +15 XP  5×/day, finished a run (recordGamePlay)
+   - milestone +10 XP  5×/day, every 100 in-game XP earned
+   - achievement +20 XP each, unlocked a per-game achievement
 
    player-profile.js is loaded automatically if the page didn't
    include it; awards earned before it loads are queued.
@@ -686,7 +686,7 @@ if (typeof document !== 'undefined') {
         if (key && key.indexOf(CAP_PREFIX) === 0 && key !== capKey()) localStorage.removeItem(key);
       }
       localStorage.setItem(capKey(), JSON.stringify(d));
-    } catch (e) { /* storage full/blocked — XP still awarded */ }
+    } catch (e) { /* storage full/blocked, XP still awarded */ }
   }
 
   /* ── XP toast ── */
@@ -733,7 +733,7 @@ if (typeof document !== 'undefined') {
     var p = profile();
     if (!p) return;
     var result = p.addXP(xp, source);
-    showXPToast('+' + xp + ' XP — ' + label);
+    showXPToast('+' + xp + ' XP, ' + label);
     if (result && result.levelUp) {
       setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
     }
@@ -766,7 +766,7 @@ if (typeof document !== 'undefined') {
   function ensureProfileLoaded() {
     if (profile()) { flushPending(); return; }
     if (document.querySelector('script[src*="player-profile"]')) {
-      // Included but not executed yet — flush when the page finishes loading
+      // Included but not executed yet, flush when the page finishes loading
       window.addEventListener('load', flushPending);
       return;
     }
@@ -801,7 +801,7 @@ if (typeof document !== 'undefined') {
   var origRecord = GameSystem.prototype.recordGamePlay;
   GameSystem.prototype.recordGamePlay = function () {
     var r = origRecord.apply(this, arguments);
-    award(this.gameId, 'run', 15, 5, this.gameName + ' — run finished');
+    award(this.gameId, 'run', 15, 5, this.gameName + ', run finished');
     return r;
   };
 
@@ -825,7 +825,7 @@ if (typeof document !== 'undefined') {
       this._bridgeXPAcc = (this._bridgeXPAcc || 0) + amount;
       while (this._bridgeXPAcc >= 100) {
         this._bridgeXPAcc -= 100;
-        award(this.gameId, 'milestone', 10, 5, this.gameName + ' — score milestone!');
+        award(this.gameId, 'milestone', 10, 5, this.gameName + ', score milestone!');
       }
     }
     return r;

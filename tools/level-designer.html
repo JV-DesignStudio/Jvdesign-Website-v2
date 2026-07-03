@@ -807,7 +807,7 @@ function handlePathClick(x,y){
   for(let li=0;li<layers.length;li++){const t=getTile(layers[li].data[idx(x,y)]);if(t&&t.type==='enemy'){foundKey=li+','+x+','+y;break;}}
   if(pendingPath.length===0){
     if(!foundKey){showToast('Click an enemy tile to start a path');return;}
-    pendingPath=[{x,y,key:foundKey}];showToast('Path started — click waypoints, double-click last to finish');
+    pendingPath=[{x,y,key:foundKey}];showToast('Path started, click waypoints, double-click last to finish');
   }else{
     const last=pendingPath[pendingPath.length-1];
     if(last.x===x&&last.y===y&&pendingPath.length>1){
@@ -897,7 +897,7 @@ function renderStamps(){
     del.onclick=(e)=>{e.stopPropagation();stamps.splice(i,1);if(activeStamp===i)activeStamp=null;else if(activeStamp>i)activeStamp--;saveStampsLS();renderStamps();};
     card.appendChild(del);card.appendChild(preview);
     const nm=document.createElement('div');nm.className='stamp-name';nm.textContent=s.name;card.appendChild(nm);
-    card.onclick=()=>{activeStamp=(activeStamp===i?null:i);setTool('stamp');renderStamps();showToast(activeStamp!==null?'Stamp selected — click to place':'Deselected');};
+    card.onclick=()=>{activeStamp=(activeStamp===i?null:i);setTool('stamp');renderStamps();showToast(activeStamp!==null?'Stamp selected, click to place':'Deselected');};
     grid.appendChild(card);
   });
 }
@@ -928,7 +928,7 @@ function setupEvents(){
   function pointerDown(e){
     e.preventDefault();const[x,y]=getCellCoords(e);
     const right=e.button===2;
-    // Right-click always pans (no erase on right-click drag — use erase tool)
+    // Right-click always pans (no erase on right-click drag, use erase tool)
     if(right||e.button===1||currentTool==='move'||spaceHeld){
       const src=e.touches?e.touches[0]:e;panStart={x:src.clientX,y:src.clientY};panOrigin={...panOffset};return;
     }
@@ -963,7 +963,7 @@ function setupEvents(){
     // Draw cursor overlay
     cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
     if(panStart){
-      // panning — show grabbing hand, no tile highlight
+      // panning, show grabbing hand, no tile highlight
     } else if(cx>=0&&cy>=0&&cx<gridW&&cy<gridH){
       const sz=TS*zoomLevel;
       const tx=cx*sz, ty=cy*sz;
@@ -1201,8 +1201,8 @@ function sendToGameMaker(){
       layers: [{ name:'Platforms', visible:true, locked:false, data: arcadeMap }],
       enemyPaths: {}, tileProps: {}, ts: Date.now()
     }));
-    showToast(hasTiles ? '🕹️ Sent! Open Game Maker → Assets → ⬇ Import Last' : '⚠️ No solid tiles found — draw some platforms first!');
-  } catch(e) { showToast('Export failed — level may be too large'); }
+    showToast(hasTiles ? '🕹️ Sent! Open Game Maker → Assets → ⬇ Import Last' : '⚠️ No solid tiles found, draw some platforms first!');
+  } catch(e) { showToast('Export failed, level may be too large'); }
 }
 function getLevelData(){return{meta:{name:document.getElementById('levelName').value||'My Level',width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
 function exportJSON(){const data=getLevelData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.meta.name.replace(/\s+/g,'_')||'level')+'.json';a.click();showToast('JSON exported!');}
@@ -1219,7 +1219,7 @@ function openShare(){
   document.getElementById('shareUrl').value=url;document.getElementById('share-panel').classList.add('show');
 }
 function closeShare(){document.getElementById('share-panel').classList.remove('show');}
-function copyShareUrl(){const ta=document.getElementById('shareUrl');ta.select();try{document.execCommand('copy');showToast('URL copied!');}catch(e){showToast('Copy failed — select manually');}}
+function copyShareUrl(){const ta=document.getElementById('shareUrl');ta.select();try{document.execCommand('copy');showToast('URL copied!');}catch(e){showToast('Copy failed, select manually');}}
 function checkShareParam(){
   const p=new URLSearchParams(location.search).get('level');if(!p)return;
   try{const json=decodeURIComponent(atob(p).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));const d=JSON.parse(json);if(!d.meta||!d.layers)return;gridW=d.meta.width;gridH=d.meta.height;layers=d.layers.map(l=>({name:l.name,visible:l.visible!==false,locked:l.locked||false,data:Array.from(l.data)}));document.getElementById('levelName').value=d.meta.name||'Shared Level';enemyPaths=d.enemyPaths||{};tileProps=d.tileProps||{};currentTheme=BG_THEMES.find(t=>t.id===d.meta.theme)||BG_THEMES[0];showToast('Shared level loaded!');}catch(e){}

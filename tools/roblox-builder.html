@@ -1017,7 +1017,7 @@ function selectBlock(mesh) {
   pp.style.display = 'block';
 
   if (mesh.userData.isImported) {
-    // Imported OBJ — disable all sliders, show info label
+    // Imported OBJ, disable all sliders, show info label
     ['propW','propH','propD','propRot'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = true;
@@ -1032,11 +1032,11 @@ function selectBlock(mesh) {
       const note = document.createElement('div');
       note.id = 'importedNote';
       note.style.cssText = 'font-size:.6rem;color:var(--accent3);margin-bottom:8px;';
-      note.textContent = '📦 Imported mesh — sliders locked';
+      note.textContent = '📦 Imported mesh, sliders locked';
       pp.insertBefore(note, pp.querySelector('.prop-row'));
     }
   } else {
-    // Native block — enable sliders, remove any imported note
+    // Native block, enable sliders, remove any imported note
     ['propW','propH','propD','propRot'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = false;
@@ -1094,7 +1094,7 @@ function deselectBlock() {
 
 function updateProp(prop, val) {
   if (!selectedBlock) return;
-  // Imported OBJ meshes have arbitrary geometry — never rebuild them
+  // Imported OBJ meshes have arbitrary geometry, never rebuild them
   if (selectedBlock.userData.isImported) return;
   const d = selectedBlock.userData;
   if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
@@ -1197,7 +1197,7 @@ function setupEvents() {
       // Initiate move drag on touch
       if (currentTool === 'move') {
         const rect = canvas.getBoundingClientRect();
-        // Use rect dimensions (CSS size) for normalised coords — matches how mouse events work
+        // Use rect dimensions (CSS size) for normalised coords, matches how mouse events work
         pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
@@ -1233,7 +1233,7 @@ function setupEvents() {
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
 
-      // Move drag — must check FIRST before any camera movement
+      // Move drag, must check FIRST before any camera movement
       if (isMoveDrag && selectedBlock && movePlane) {
         pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
@@ -1654,7 +1654,7 @@ function renderModalSaveSlots() {
 // EXPORT OBJ
 // ═══════════════════════════════════════════════════════
 function exportOBJ() {
-  let obj = `# JVDesignStudio Block Builder — ${buildName}\n`;
+  let obj = `# JVDesignStudio Block Builder, ${buildName}\n`;
   let vOffset = 1;
   blocks.forEach((mesh, mi) => {
     const geo = mesh.geometry.clone();
@@ -1681,7 +1681,7 @@ function exportOBJ() {
 }
 
 // ═══════════════════════════════════════════════════════
-// EXPORT — RBXM (Roblox Model XML)
+// EXPORT, RBXM (Roblox Model XML)
 // ═══════════════════════════════════════════════════════
 function exportRBXM() {
   if (blocks.length === 0) { toast('Nothing to export!'); return; }
@@ -1780,7 +1780,7 @@ function exportRBXM() {
   a.href = URL.createObjectURL(new Blob([rbxm], { type: 'application/xml' }));
   a.download = buildName.replace(/\s+/g,'_') + '.rbxm';
   a.click();
-  toast('Exported ' + buildName + '.rbxm — import in Roblox Studio!');
+  toast('Exported ' + buildName + '.rbxm, import in Roblox Studio!');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1811,7 +1811,7 @@ function exportGLTF() {
     },
     (error) => {
       console.error('GLTF export error:', error);
-      toast('Export failed — check console for details');
+      toast('Export failed, check console for details');
     },
     options
   );
@@ -1823,7 +1823,7 @@ function exportGLTF() {
 function exportOBJWithMTL() {
   if (blocks.length === 0) { toast('Nothing to export!'); return; }
 
-  let obj = `# JVDesignStudio Block Builder — ${buildName}\n# Exported with materials\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
+  let obj = `# JVDesignStudio Block Builder, ${buildName}\n# Exported with materials\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
   let mtl = `# Materials for ${buildName}\n`;
   let vOffset = 1;
   const materials = new Map();
@@ -1897,9 +1897,9 @@ function handleImportOBJ(input) {
   reader.onload = function(e) {
     const text = e.target.result;
 
-    // OBJLoader may not be available — graceful fallback
+    // OBJLoader may not be available, graceful fallback
     if (!THREE.OBJLoader) {
-      toast('OBJLoader failed to load — check connection');
+      toast('OBJLoader failed to load, check connection');
       return;
     }
 
@@ -1952,7 +1952,7 @@ function handleImportOBJ(input) {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Mark as an imported OBJ block — no w/h/d sliders
+      // Mark as an imported OBJ block, no w/h/d sliders
       mesh.userData = {
         isBlock: true,
         isImported: true,
@@ -2047,7 +2047,7 @@ function handleImportRBLX(input) {
       const h = parseFloat(sv?.querySelector('Y')?.textContent || '1');
       const d = parseFloat(sv?.querySelector('Z')?.textContent || '1');
 
-      // Colour — read Color3 R/G/B floats, convert to hex
+      // Colour, read Color3 R/G/B floats, convert to hex
       const col = part.querySelector('Color3[name="Color"]');
       let colour = currentColour;
       if (col) {
@@ -2057,7 +2057,7 @@ function handleImportRBLX(input) {
         colour = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
       }
 
-      // Shape — token 0=block, 1=sphere, 2=cylinder
+      // Shape, token 0=block, 1=sphere, 2=cylinder
       const shapeToken = parseInt(part.querySelector('token[name="Shape"]')?.textContent || '0');
       const shapeMap = { 0: 'box', 1: 'sphere', 2: 'cylinder' };
       const shape = shapeMap[shapeToken] || 'box';
@@ -2466,7 +2466,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('mob-no-selection').style.display = hasBlock ? 'none' : '';
     document.getElementById('mob-prop-controls').style.display = hasBlock ? '' : 'none';
     if (!hasBlock) return;
-    // Don't sync sliders for imported meshes — they're locked
+    // Don't sync sliders for imported meshes, they're locked
     if (selectedBlock && selectedBlock.userData.isImported) return;
     ['W','H','D','Rot'].forEach(function(prop){
       var src = document.getElementById('prop'+prop);

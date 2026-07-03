@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   GA4 Analytics System — Comprehensive Event Tracking
+   GA4 Analytics System, Comprehensive Event Tracking
    Tracks games, workshops, quests, cosmetics, user properties
    ═══════════════════════════════════════════════════════════ */
 
