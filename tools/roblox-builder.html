@@ -839,10 +839,14 @@ function init() {
   camera = new THREE.PerspectiveCamera(45, (vp.clientWidth||800)/(vp.clientHeight||600), 0.1, 200);
   updateCamera();
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  // Mobile GPUs choke on large soft-shadow maps (and can fail to allocate them
+  // altogether, blanking the canvas), so scale rendering down on touch/narrow devices.
+  const isMobile = window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 600;
+  window._isMobileRender = isMobile;
+  renderer = new THREE.WebGLRenderer({ antialias: !isMobile });
   renderer.setSize(vp.clientWidth||800, vp.clientHeight||600);
   renderer.setPixelRatio(1); // Keep at 1 so canvas CSS size === pixel size for reliable raycasting on mobile
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !isMobile;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.style.display = 'block';
   vp.appendChild(renderer.domElement);
@@ -861,7 +865,7 @@ function init() {
 
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
   dirLight.position.set(10, 15, 10);
-  dirLight.castShadow = true;
+  dirLight.castShadow = !isMobile;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
   dirLight.shadow.camera.near = 0.5;
@@ -873,7 +877,7 @@ function init() {
   scene.add(dirLight);
   const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
   sun.position.set(10, 20, 10);
-  sun.castShadow = true;
+  sun.castShadow = !isMobile;
   sun.shadow.mapSize.width = 2048;
   sun.shadow.mapSize.height = 2048;
   sun.shadow.camera.near = 0.1;
@@ -883,7 +887,9 @@ function init() {
   sun.shadow.camera.top = 20;
   sun.shadow.camera.bottom = -20;
   scene.add(sun);
-  scene.add(new THREE.DirectionalLight(0x5bc0f8, 0.3).position.set(-10, 5, -8) && new THREE.DirectionalLight(0x5bc0f8, 0.3));
+  const fillLight = new THREE.DirectionalLight(0x5bc0f8, 0.3);
+  fillLight.position.set(-10, 5, -8);
+  scene.add(fillLight);
 
   // Ground grid
   const gridHelper = new THREE.GridHelper(40, 40, 0x2a2a4a, 0x222235);
