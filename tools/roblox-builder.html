@@ -812,6 +812,7 @@ let toastTimer = null;
 let transformControls = null;
 let gizmoMode = 'translate'; // translate, rotate, scale
 let showGizmo = true;
+let isMobileRender = false; // set in init(); gates gizmos, shadows, antialias
 
 // Orbit controls state
 let isRightDrag = false, isMidDrag = false;
@@ -839,35 +840,44 @@ function init() {
   camera = new THREE.PerspectiveCamera(45, (vp.clientWidth||800)/(vp.clientHeight||600), 0.1, 200);
   updateCamera();
 
-  // Mobile GPUs choke on large soft-shadow maps (and can fail to allocate them
-  // altogether, blanking the canvas), so scale rendering down on touch/narrow devices.
-  const isMobile = window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 600;
-  window._isMobileRender = isMobile;
-  renderer = new THREE.WebGLRenderer({ antialias: !isMobile });
+  // Mobile GPUs choke on large soft-shadow maps (and can fail to allocate two
+  // of them, blanking the canvas), so scale rendering down on touch/narrow
+  // devices: one small hard shadow + no antialias instead of two big soft ones.
+  isMobileRender = window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 600;
+  window._isMobileRender = isMobileRender;
+  renderer = new THREE.WebGLRenderer({ antialias: !isMobileRender });
   renderer.setSize(vp.clientWidth||800, vp.clientHeight||600);
   renderer.setPixelRatio(1); // Keep at 1 so canvas CSS size === pixel size for reliable raycasting on mobile
-  renderer.shadowMap.enabled = !isMobile;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = isMobileRender ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   renderer.domElement.style.display = 'block';
   vp.appendChild(renderer.domElement);
 
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
 
-  // Gizmo/Transform controls
+  // Gizmo/Transform controls (desktop only — on touch they fight tap-to-place,
+  // and the mobile drawer already has Move/Resize tools)
   transformControls = new THREE.TransformControls(camera, renderer.domElement);
-  transformControls.addEventListener('change', () => renderer.render(scene, camera));
+  transformControls.addEventListener('change', requestRender);
+  transformControls.addEventListener('dragging-changed', (e) => {
+    if (e.value) pushHistory('gizmo'); // snapshot once when a drag starts
+    requestRender();
+  });
   scene.add(transformControls);
 
   // Lighting (enhanced)
   const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
   scene.add(ambLight);
 
+  // Single shadow caster (the warm 'sun' still lights the scene from a near
+  // identical angle but no longer casts, halving shadow cost on all devices).
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
   dirLight.position.set(10, 15, 10);
-  dirLight.castShadow = !isMobile;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
+  dirLight.castShadow = true;
+  const shadowRes = isMobileRender ? 512 : 2048; // 512 is plenty at phone screen sizes and safe to allocate on weak GPUs
+  dirLight.shadow.mapSize.width = shadowRes;
+  dirLight.shadow.mapSize.height = shadowRes;
   dirLight.shadow.camera.near = 0.5;
   dirLight.shadow.camera.far = 500;
   dirLight.shadow.camera.left = -30;
@@ -877,19 +887,31 @@ function init() {
   scene.add(dirLight);
   const sun = new THREE.DirectionalLight(0xfff5e0, 1.2);
   sun.position.set(10, 20, 10);
-  sun.castShadow = !isMobile;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
-  sun.shadow.camera.near = 0.1;
-  sun.shadow.camera.far = 100;
-  sun.shadow.camera.left = -20;
-  sun.shadow.camera.right = 20;
-  sun.shadow.camera.top = 20;
-  sun.shadow.camera.bottom = -20;
+  sun.castShadow = false;
   scene.add(sun);
   const fillLight = new THREE.DirectionalLight(0x5bc0f8, 0.3);
   fillLight.position.set(-10, 5, -8);
   scene.add(fillLight);
+
+  // Environment map — a small sky→ground gradient baked into a PMREM cube.
+  // Without this, MeshStandardMaterial metalness has nothing to reflect and
+  // metallic blocks render near-black; now the Metallic slider reads as metal.
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const ec = document.createElement('canvas'); ec.width = 8; ec.height = 64;
+    const eg = ec.getContext('2d');
+    const grad = eg.createLinearGradient(0, 0, 0, 64);
+    grad.addColorStop(0.0, '#e8f0fb'); // bright sky
+    grad.addColorStop(0.45, '#aab4c8');
+    grad.addColorStop(0.55, '#8b90a4');
+    grad.addColorStop(1.0, '#454552'); // lit ground (kept off-black so metals never read as pure black)
+    eg.fillStyle = grad; eg.fillRect(0, 0, 8, 64);
+    const envTex = new THREE.CanvasTexture(ec);
+    envTex.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = pmrem.fromEquirectangular(envTex).texture;
+    envTex.dispose();
+    pmrem.dispose();
+  } catch (e) { /* env map is a nicety — ignore if PMREM unsupported */ }
 
   // Ground grid
   const gridHelper = new THREE.GridHelper(40, 40, 0x2a2a4a, 0x222235);
@@ -925,6 +947,7 @@ function init() {
   buildColourPalette();
   renderSaveSlots();
   initLighting();
+  requestRender(600); // draw the opening frames while the scene settles
   animate();
 
   window.addEventListener('resize', () => {
@@ -943,6 +966,7 @@ function updateCamera() {
   const z = camTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta);
   camera.position.set(x, y, z);
   camera.lookAt(camTarget);
+  if (typeof requestRender === 'function') requestRender();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -993,13 +1017,14 @@ function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentSha
   scene.add(mesh);
   blocks.push(mesh);
   updateStats();
+  requestRender();
   return mesh;
 }
 
 function deleteBlock(mesh) {
   scene.remove(mesh);
-  mesh.geometry.dispose();
-  mesh.material.dispose();
+  // Keep imported meshes alive so undo history can restore them
+  if (!mesh.userData.isImported) { mesh.geometry.dispose(); mesh.material.dispose(); }
   blocks = blocks.filter(b => b !== mesh);
   if (selectedBlock === mesh) {
     selectedBlock = null;
@@ -1007,6 +1032,7 @@ function deleteBlock(mesh) {
     document.getElementById('propPanel').style.display = 'none';
   }
   updateStats();
+  requestRender();
 }
 
 function selectBlock(mesh) {
@@ -1072,20 +1098,24 @@ function selectBlock(mesh) {
     }
   }
 
-  // Attach gizmo to selected block
-  if (transformControls) {
+  // Attach gizmo to selected block (desktop only — on touch the gizmo handles
+  // fight tap-to-place; mobile uses the drawer's Move/Resize tools instead)
+  if (transformControls && !isMobileRender) {
     transformControls.attach(mesh);
     transformControls.setMode(gizmoMode);
     updateGizmoUI();
   }
+  requestRender();
 }
 
 function moveBlockY(dir) {
   if (!selectedBlock) return;
+  pushHistory('moveY');
   selectedBlock.position.y += dir;
   window.highlight.position.copy(selectedBlock.position);
   const yBase = Math.round(selectedBlock.position.y - (selectedBlock.userData.h||1)/2);
   document.getElementById('propYVal').textContent = yBase;
+  requestRender();
   toast(dir > 0 ? '⬆ Moved up' : '⬇ Moved down');
 }
 
@@ -1102,6 +1132,7 @@ function updateProp(prop, val) {
   if (!selectedBlock) return;
   // Imported OBJ meshes have arbitrary geometry, never rebuild them
   if (selectedBlock.userData.isImported) return;
+  pushHistory('resize');
   const d = selectedBlock.userData;
   if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
   if (prop === 'h') { d.h = parseFloat(val); document.getElementById('propHVal').textContent = val; }
@@ -1119,6 +1150,7 @@ function updateProp(prop, val) {
 
 function duplicateSelected() {
   if (!selectedBlock) return;
+  pushHistory();
   const d = selectedBlock.userData;
   addBlock(
     selectedBlock.position.x + 1.2,
@@ -1131,6 +1163,7 @@ function duplicateSelected() {
 
 function deleteSelected() {
   if (!selectedBlock) return;
+  pushHistory();
   deleteBlock(selectedBlock);
   toast('Block deleted');
 }
@@ -1139,6 +1172,7 @@ function deleteSelected() {
 // QUICK BUILDS
 // ═══════════════════════════════════════════════════════
 function quickBuild(type) {
+  pushHistory();
   clearAll(true);
   if (type === 'sword') {
     addBlock(0,0,0,0.5,6,0.5,'#aaaaaa','box'); // blade
@@ -1187,6 +1221,11 @@ function setupEvents() {
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('wheel', onWheel, { passive: false });
 
+  // Any pointer interaction opens the render window so the viewport stays live
+  // during hover/drag/zoom and idles shortly after (on-demand rendering).
+  ['pointerdown','pointermove','pointerup','wheel','touchstart','touchmove']
+    .forEach(ev => canvas.addEventListener(ev, () => requestRender(300), { passive: true }));
+
   // Touch events
   let lastTouchDist = 0;
   let lastTouchX = 0, lastTouchY = 0;
@@ -1211,6 +1250,7 @@ function setupEvents() {
         if (hits.length > 0) {
           const mesh = hits[0].object;
           selectBlock(mesh);
+          pushHistory('move');
           isMoveDrag = true;
           movePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -mesh.position.y);
           const target = new THREE.Vector3();
@@ -1311,6 +1351,7 @@ function onMouseDown(e) {
       if (hits.length > 0) {
         const mesh = hits[0].object;
         selectBlock(mesh);
+        pushHistory('move');
         isMoveDrag = true;
         // Horizontal drag plane at the block's base Y
         movePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -mesh.position.y);
@@ -1462,11 +1503,13 @@ function handleAction() {
       py = 0;
       pz = snap(groundHits[0].point.z);
     } else return;
+    pushHistory();
     addBlock(px, py, pz);
     toast('Block added!');
 
   } else if (currentTool === 'paint') {
     if (blockHits.length > 0) {
+      pushHistory();
       blockHits[0].object.material.color.set(new THREE.Color(currentColour));
       blockHits[0].object.userData.colour = currentColour;
       toast('Painted!');
@@ -1478,6 +1521,7 @@ function handleAction() {
 
   } else if (currentTool === 'delete') {
     if (blockHits.length > 0) {
+      pushHistory();
       deleteBlock(blockHits[0].object);
       toast('Block removed');
     }
@@ -1564,10 +1608,17 @@ function updateStats() {
 }
 
 function clearAll(silent=false) {
-  [...blocks].forEach(b => { scene.remove(b); b.geometry.dispose(); b.material.dispose(); });
+  // User-initiated clears are undoable; internal clears (silent) are part of a
+  // larger action that pushes its own history entry.
+  if (!silent && blocks.length) pushHistory();
+  [...blocks].forEach(b => {
+    scene.remove(b);
+    if (!b.userData.isImported) { b.geometry.dispose(); b.material.dispose(); }
+  });
   blocks = [];
   deselectBlock();
   updateStats();
+  requestRender();
   if (!silent) toast('Cleared!');
 }
 
@@ -1618,6 +1669,7 @@ function loadSlot(idx) {
   const slots = getSlots();
   const slot = slots[idx];
   if (!slot) return;
+  pushHistory();
   clearAll(true);
   buildName = slot.name;
   slot.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
@@ -2090,10 +2142,25 @@ function handleImportRBLX(input) {
 }
 
 // ═══════════════════════════════════════════════════════
-// ANIMATE
+// ANIMATE (on-demand — idles when nothing is changing to save battery/GPU)
 // ═══════════════════════════════════════════════════════
+let _renderUntil = 0;
+
+// Bump the render window. Any interaction or state change calls this; the loop
+// only actually draws while the window is open (or during playback/gizmo drag).
+function requestRender(ms = 250) {
+  _renderUntil = Math.max(_renderUntil, performance.now() + ms);
+}
+
 function animate() {
   requestAnimationFrame(animate);
+  const now = performance.now();
+  const active = now < _renderUntil ||
+                 isPlayingAnimation ||
+                 (transformControls && transformControls.dragging) ||
+                 isMoveDrag || isRightDrag || isMidDrag;
+  if (!active) return;
+
   // Keep highlight on selected block
   if (selectedBlock && window.highlight.visible) {
     window.highlight.position.copy(selectedBlock.position);
@@ -2151,6 +2218,7 @@ function resetLighting() {
 // ═══════════════════════════════════════════════════════
 function updateMaterial(prop, val) {
   if (!selectedBlock || !selectedBlock.material) return;
+  pushHistory('material');
   val = parseFloat(val);
   if (prop === 'metallic') {
     selectedBlock.material.metalness = val;
@@ -2161,6 +2229,78 @@ function updateMaterial(prop, val) {
   }
   selectedBlock.material.needsUpdate = true;
   renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════
+// UNDO / REDO HISTORY
+// ═══════════════════════════════════════════════════════
+let undoStack = [], redoStack = [];
+const HISTORY_MAX = 30;
+let _lastHistoryKey = null, _lastHistoryTime = 0;
+
+// Serialize current blocks. Native blocks store rebuild data; imported meshes
+// (arbitrary geometry addBlock can't reconstruct) are kept alive by reference.
+function captureState() {
+  return blocks.map(b => {
+    if (b.userData.isImported) return { imported: true, mesh: b };
+    return {
+      x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
+      w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
+      colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
+      metalness: b.material ? (b.material.metalness||0) : 0.1,
+      roughness: b.material ? (b.material.roughness ?? 0.55) : 0.55
+    };
+  });
+}
+
+// Snapshot the pre-mutation state. `key` coalesces rapid repeats (e.g. slider
+// drags) so an entire drag becomes a single undo step.
+function pushHistory(key) {
+  const now = Date.now();
+  if (key && key === _lastHistoryKey && (now - _lastHistoryTime) < 900) {
+    _lastHistoryTime = now;
+    return;
+  }
+  _lastHistoryKey = key || null;
+  _lastHistoryTime = now;
+  undoStack.push(captureState());
+  if (undoStack.length > HISTORY_MAX) undoStack.shift();
+  redoStack = [];
+}
+
+function restoreState(records) {
+  deselectBlock();
+  [...blocks].forEach(b => {
+    scene.remove(b);
+    // Keep imported meshes alive — history snapshots reference them
+    if (!b.userData.isImported) { b.geometry.dispose(); b.material.dispose(); }
+  });
+  blocks = [];
+  records.forEach(r => {
+    if (r.imported) { scene.add(r.mesh); blocks.push(r.mesh); }
+    else {
+      const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot);
+      if (m.material) { m.material.metalness = r.metalness; m.material.roughness = r.roughness; }
+    }
+  });
+  updateStats();
+  requestRender();
+}
+
+function undo() {
+  if (undoStack.length === 0) { toast('Nothing to undo'); return; }
+  redoStack.push(captureState());
+  restoreState(undoStack.pop());
+  _lastHistoryKey = null;
+  toast('↩ Undo');
+}
+
+function redo() {
+  if (redoStack.length === 0) { toast('Nothing to redo'); return; }
+  undoStack.push(captureState());
+  restoreState(redoStack.pop());
+  _lastHistoryKey = null;
+  toast('↪ Redo');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2189,13 +2329,22 @@ document.addEventListener('blockSelected', (e) => {
   }
 });
 
-// Keyboard shortcuts for gizmo modes
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (!selectedBlock) return;
-  if ((e.key === 'g' || e.key === 'G') && !e.ctrlKey && !e.metaKey) { setGizmoMode('translate'); e.preventDefault(); }
-  if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) { setGizmoMode('rotate'); e.preventDefault(); }
-  if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { setGizmoMode('scale'); e.preventDefault(); }
-  if ((e.key === 'x' || e.key === 'X') && !e.ctrlKey && !e.metaKey) { deleteBlock(selectedBlock); e.preventDefault(); }
+  // Never hijack keys while the user is typing in a field
+  if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+
+  // Undo / redo (work with or without a selection)
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) { undo(); e.preventDefault(); return; }
+  if (mod && ((e.key === 'y' || e.key === 'Y') || ((e.key === 'z' || e.key === 'Z') && e.shiftKey))) { redo(); e.preventDefault(); return; }
+
+  // Gizmo modes / delete need a selected block; leave other Ctrl/Cmd combos to the browser
+  if (!selectedBlock || mod) return;
+  if (e.key === 'g' || e.key === 'G') { setGizmoMode('translate'); e.preventDefault(); }
+  if (e.key === 'r' || e.key === 'R') { setGizmoMode('rotate'); e.preventDefault(); }
+  if (e.key === 's' || e.key === 'S') { setGizmoMode('scale'); e.preventDefault(); }
+  if (e.key === 'x' || e.key === 'X' || e.key === 'Delete' || e.key === 'Backspace') { pushHistory(); deleteBlock(selectedBlock); e.preventDefault(); }
 });
 
 // ═══════════════════════════════════════════════════════
@@ -2337,6 +2486,7 @@ function loadAssetFromLibrary(idx) {
   const asset = assets[idx];
   if (!asset) return;
 
+  pushHistory();
   clearAll(true);
   buildName = asset.name;
   asset.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
@@ -2381,13 +2531,22 @@ function clearAssetLibrary() {
 }
 
 // ── START ──
-document.addEventListener('DOMContentLoaded', () => {
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+let _builderBooted = false;
+function bootBuilder() {
+  if (_builderBooted) return; // guard against double-init
+  _builderBooted = true;
+  requestAnimationFrame(() => {
     init();
     renderAssetLibrary();
     toast('Welcome! Click the grid to start building 🧱');
-  }));
-});
+  });
+}
+// Run whether or not DOMContentLoaded has already fired (e.g. deferred/late scripts)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootBuilder);
+} else {
+  bootBuilder();
+}
 </script>
 <script>
 /* ── JVDS Site Nav ── */
