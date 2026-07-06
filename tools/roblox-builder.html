@@ -1858,31 +1858,35 @@ function exportGLTF() {
   if (blocks.length === 0) { toast('Nothing to export!'); return; }
 
   const exporter = new THREE.GLTFExporter();
-  const options = {
-    binary: true,
-    trs: false,
-    onlyVisible: true,
-    truncateDrawRange: true
+
+  const onDone = (result) => {
+    // With binary:true the exporter returns an ArrayBuffer (.glb); otherwise a
+    // JSON object (.gltf). Handle both so a partial result still downloads.
+    let blob, ext;
+    if (result instanceof ArrayBuffer) {
+      blob = new Blob([result], { type: 'model/gltf-binary' });
+      ext = '.glb';
+    } else {
+      blob = new Blob([JSON.stringify(result)], { type: 'model/gltf+json' });
+      ext = '.gltf';
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = buildName.replace(/\s+/g, '_') + ext;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('Exported ' + buildName + ext + ' with materials!');
   };
 
-  exporter.parse(
-    scene,
-    (gltf) => {
-      const blob = new Blob([gltf], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = buildName.replace(/\s+/g, '_') + '.glb';
-      link.click();
-      URL.revokeObjectURL(url);
-      toast('Exported ' + buildName + '.glb with full materials & lighting!');
-    },
-    (error) => {
-      console.error('GLTF export error:', error);
-      toast('Export failed, check console for details');
-    },
-    options
-  );
+  // Export just the blocks (not lights/grid/gizmo). r128's GLTFExporter uses the
+  // 3-arg parse(input, onDone, options) signature — no onError callback.
+  try {
+    exporter.parse(blocks, onDone, { binary: true, onlyVisible: true });
+  } catch (e) {
+    console.error('GLTF export error:', e);
+    toast('Export failed — see console');
+  }
 }
 
 // ═══════════════════════════════════════════════════════
