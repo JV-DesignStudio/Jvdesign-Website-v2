@@ -558,11 +558,11 @@
             &amp; Children's <span class="accent2">Books</span>
         </h1>
         <p class="hero-desc">
-            45+ interactive coding courses, 20+ browser games, and picture books about the real stuff. Everything is free. Everything works in your browser.
+            100+ interactive coding workshops, 20+ browser games, and picture books about the real stuff. Everything is free. Everything works in your browser.
         </p>
         <div class="hero-buttons">
-            <a href="pages/workshop.html" class="btn-primary">Start a Course →</a>
-            <a href="pages/games.html" class="btn-outline">Play a Game →</a>
+            <a href="workshops/scratch-catch-workshop.html" class="btn-primary">New here? Start free →</a>
+            <a href="pages/workshop.html" class="btn-outline">Browse all courses →</a>
         </div>
     </div>
 </section>
@@ -573,16 +573,40 @@
 <section class="whats-new-banner reveal" style="background:linear-gradient(135deg,rgba(255,209,102,0.06),rgba(167,139,250,0.04));border-top:1px solid rgba(255,209,102,0.1);border-bottom:1px solid rgba(255,209,102,0.1);padding:36px 28px;">
   <div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:28px;flex-wrap:wrap;">
     <div style="flex:1;min-width:280px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#ffd166;margin-bottom:8px;">June 2026 update</div>
-      <div style="font-family:Georgia,serif;font-size:clamp(1.4rem,3vw,1.8rem);font-weight:500;color:#fff;line-height:1.2;margin-bottom:8px;">The Workshop just got <span style="color:#ffd166;">serious</span></div>
-      <div style="font-size:0.88rem;color:rgba(240,234,214,0.6);line-height:1.6;">45+ interactive courses with quizzes, XP, streaks, collectible badges, and printable certificates. New Scratch, Roblox, and Minecraft sections. Full dark theme. Everything free.</div>
+      <div id="wnEyebrow" style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#ffd166;margin-bottom:8px;">🆕 Just added</div>
+      <div id="wnTitle" style="font-family:Georgia,serif;font-size:clamp(1.4rem,3vw,1.8rem);font-weight:500;color:#fff;line-height:1.2;margin-bottom:8px;">Every workshop now counts</div>
+      <div id="wnDesc" style="font-size:0.88rem;color:rgba(240,234,214,0.6);line-height:1.6;">A new Builders &amp; Blueprints series, quizzes and XP added to 8 build-and-play workshops, and full progress tracking across 119 workshops. Everything free.</div>
     </div>
     <div style="display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;">
       <a href="pages/workshop.html" style="display:inline-flex;align-items:center;gap:6px;background:#BC4749;color:#fff;font-weight:700;font-size:0.85rem;padding:10px 20px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 #9b3a3c;transition:filter 0.15s,transform 0.12s;" onmouseover="this.style.filter='brightness(1.1)';this.style.transform='translateY(-1px)'" onmouseout="this.style.filter='';this.style.transform=''">Start a course</a>
-      <a href="workshops/my-progress.html" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);color:rgba(240,234,214,0.7);font-weight:700;font-size:0.85rem;padding:10px 20px;border-radius:10px;text-decoration:none;border:0.5px solid rgba(255,255,255,0.15);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">My Progress</a>
+      <a href="pages/devlog.html" style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);color:rgba(240,234,214,0.7);font-weight:700;font-size:0.85rem;padding:10px 20px;border-radius:10px;text-decoration:none;border:0.5px solid rgba(255,255,255,0.15);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">Read the Dev Log →</a>
     </div>
   </div>
 </section>
+<script>
+/* Surface the latest Dev Log entry in the "Just added" banner.
+   Single source of truth is the POSTS array in pages/devlog.html; parsed here
+   with a graceful fallback to the static copy above if the fetch fails. */
+(function(){
+  function pick(src, field){
+    var re = new RegExp(field + "\\s*:\\s*'((?:[^'\\\\]|\\\\.)*)'");
+    var m = src.match(re);
+    return m ? m[1].replace(/\\'/g, "'").replace(/\\\\/g, "\\") : null;
+  }
+  fetch('pages/devlog.html').then(function(r){ return r.ok ? r.text() : Promise.reject(); }).then(function(html){
+    var i = html.indexOf('const POSTS');
+    if (i < 0) return;
+    var block = html.slice(i, i + 4000); // first entry lives at the top of the array
+    var emoji = pick(block, 'emoji'), date = pick(block, 'date'),
+        title = pick(block, 'title'), excerpt = pick(block, 'excerpt');
+    if (title) {
+      document.getElementById('wnEyebrow').textContent = '🆕 Just added' + (date ? ' · ' + date : '');
+      document.getElementById('wnTitle').textContent = (emoji ? emoji + ' ' : '') + title;
+      if (excerpt) document.getElementById('wnDesc').textContent = excerpt;
+    }
+  }).catch(function(){ /* keep static fallback */ });
+})();
+</script>
 
 <!-- ══════════════════════════════════════
      WHAT WE OFFER

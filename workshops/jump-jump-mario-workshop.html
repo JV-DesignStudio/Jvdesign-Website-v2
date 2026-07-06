@@ -544,6 +544,22 @@ move_and_slide()</div>
       </div>
     </div>
   </div>
+      <!-- FINISH BANNER -->
+      <div id="finishBanner" style="display:none;background:linear-gradient(135deg,#1a0a00,#2e1500);border:1px solid rgba(245,158,11,.35);border-radius:20px;padding:36px 28px;text-align:center;margin-top:28px;">
+        <div style="font-size:2.4rem;margin-bottom:8px;">🎉🍄⭐</div>
+        <div style="font-family:'Fredoka',cursive;font-size:1.7rem;font-weight:700;color:#fff;margin-bottom:8px;">You Built Jump Jump Mario!</div>
+        <p style="font-size:.92rem;color:rgba(255,255,255,.6);line-height:1.6;max-width:460px;margin:0 auto 24px;">Amazing work! You've built a side-scrolling platformer with gravity, jumping, tile platforms, a following camera and collectible coins — real game-dev skills used in every platform game.</p>
+        <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
+          <div style="min-width:78px;"><div id="finalXp" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">0</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Total XP</div></div>
+          <div style="min-width:78px;"><div id="finalLevel" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">1</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Level</div></div>
+          <div style="min-width:78px;"><div id="finalStreak" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">0</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Best Streak</div></div>
+          <div style="min-width:78px;"><div id="finalAccuracy" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">0%</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Accuracy</div></div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <a href="nuclear-throne-guide.html" style="display:inline-flex;align-items:center;gap:8px;background:#b34a00;color:#fff;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;box-shadow:0 4px 0 #7a3000;">🔫 Next: Ep 3 · Bang Bang! →</a>
+          <a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.95rem;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none;">⭐ My Progress &amp; Certificate</a>
+        </div>
+      </div>
 <!-- STEPS-END -->
       </div>
     </main>
@@ -772,6 +788,7 @@ function loadProgress() {
     if (data.cfPassed) data.cfPassed.forEach(id => { const c = document.getElementById(id); if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(b => { b.value = _canon(b); b.disabled = true; b.classList.add('correct'); }); } });
     if (data.ocPassed) data.ocPassed.forEach(id => { const o = document.getElementById(id); if (o) { o.classList.add('passed'); o.querySelector('.oc-check-btn').disabled = true; const rb = o.querySelector('.oc-reset-btn'); if (rb) rb.style.display = 'none'; } });
     if (data.predPassed) data.predPassed.forEach(id => { const p = document.getElementById(id); if (p) { p.classList.add('passed'); p.querySelector('.quiz-submit').style.display = 'none'; p.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); } });
+    if (completed.size === TOTAL) showFinish();
     updateXpDisplay();
   } catch(e) {}
 }
@@ -1091,10 +1108,25 @@ function completeStep(n) {
   updateProgress();
   saveProgress();
 
-  // Report to global profile when all steps completed
-  if (completed.size === TOTAL && typeof playerProfile !== 'undefined') {
-    playerProfile.markWorkshopCompleted('jump-jump-mario-workshop', 75);
+  // Show finish banner + report to global profile when all steps completed
+  if (completed.size === TOTAL) {
+    showFinish();
+    setTimeout(() => { const fb = document.getElementById('finishBanner'); if (fb) fb.scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
+    if (typeof playerProfile !== 'undefined') {
+      playerProfile.markWorkshopCompleted('jump-jump-mario-workshop', 75);
+    }
   }
+}
+
+function showFinish() {
+  const fb = document.getElementById('finishBanner');
+  if (!fb) return;
+  fb.style.display = 'block';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('finalXp', xp);
+  set('finalLevel', level);
+  set('finalStreak', bestStreak);
+  set('finalAccuracy', totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%');
 }
 
 function toggleStep(header) {
@@ -1120,5 +1152,8 @@ updateXpDisplay();
 </script>
 <script>(function(){const btn=document.getElementById('navToggle');const nav=document.getElementById('mobileNav');if(btn&&nav)btn.addEventListener('click',()=>nav.classList.toggle('open'));})();</script>
 
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Jump Jump! Build a Mario-Style Game in Godot","description":"Build a Mario-style platformer in Godot! Jump on enemies, collect coins, and create your own levels. A free beginner game dev workshop.","url":"https://jvdesignstudio.co.uk/workshops/jump-jump-mario-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+</script>
 </body>
 </html>

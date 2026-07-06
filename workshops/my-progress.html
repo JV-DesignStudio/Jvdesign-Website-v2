@@ -8,6 +8,8 @@
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Progress | JVDesignStudio Workshops</title>
+<meta property="og:title" content="My Progress | JVDesignStudio">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
 <meta name="description" content="Track your XP, levels, streaks and badges across all JVDesignStudio workshops. See how far you've come!">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/my-progress.html">
 <link rel="icon" href="../logo.png" type="image/png">
@@ -253,7 +255,8 @@ body{background:var(--bg);color:var(--text)}
       <div class="cert-date" id="certDate"></div>
     </div>
     <div class="cert-actions">
-      <button class="cert-print-btn" onclick="window.print()">🖨️ Print Certificate</button>
+      <button class="cert-print-btn" onclick="window.print()">🖨️ Print</button>
+      <button class="cert-print-btn" id="certShareBtn" style="background:linear-gradient(135deg,#ff5e5b,#ff9966);box-shadow:0 2px 0 #cc4a48" onclick="shareCert()">📤 Share / Save image</button>
     </div>
   </div>
 </div>
@@ -570,6 +573,15 @@ const SERIES_LEN = {};
 SERIES.forEach(s => { SERIES_LEN[s.tag] = s.episodes.length; });
 const GODOT_TOTAL = (SERIES_LEN['godot'] || 0) + (SERIES_LEN['godot-extra'] || 0);
 
+/* Custom-art opt-in registries. Emoji render by default (no network requests).
+   To use custom art, drop the PNG in the site root and flip the matching entry to true:
+     ART_BADGES['first-game'] = true;   ->  loads ../badge-first-game.png
+     ART_SERIES['scratch']    = true;   ->  loads ../logo-scratch.png
+     ART_EP['badge-ep-scratch-catch'] = true;  ->  loads ../badge-ep-scratch-catch.png */
+const ART_BADGES = {};
+const ART_SERIES = {};
+const ART_EP = {};
+
 const BADGES = [
   { id: 'first-game', icon: '🎮', name: 'First Game', desc: 'Complete your first workshop', check: d => d.completed >= 1 },
   { id: 'quiz-master', icon: '🧠', name: 'Quiz Master', desc: 'Get 90%+ accuracy in any workshop', check: d => d.anyHighAccuracy },
@@ -666,9 +678,10 @@ function buildDashboard() {
   grid.innerHTML = '';
   BADGES.forEach(b => {
     const earned = b.check(badgeData);
-    const imgSrc = '../badge-' + b.id + '.png';
-    const iconHtml = '<img src="' + imgSrc + '" alt="' + b.name + '" style="width:40px;height:40px;object-fit:contain;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">' +
-      '<span style="display:none;font-size:2rem">' + b.icon + '</span>';
+    // Render the emoji directly. To use custom art, add ../badge-<id>.png and set ART_BADGES[id]=true.
+    const iconHtml = (ART_BADGES[b.id])
+      ? '<img src="../badge-' + b.id + '.png" alt="' + b.name + '" style="width:40px;height:40px;object-fit:contain;">'
+      : '<span style="font-size:2rem">' + b.icon + '</span>';
     grid.innerHTML += '<div class="badge-card ' + (earned ? 'earned' : 'locked') + '"><div class="badge-icon">' + iconHtml + '</div><div class="badge-name">' + b.name + '</div><div class="badge-desc">' + b.desc + '</div></div>';
   });
 
@@ -684,8 +697,9 @@ function buildDashboard() {
     const eps = series.episodes;
     const doneCount = eps.filter(ep => getEpStatus(getData(ep.key)) === 'done').length;
     let html = '<div class="series-section">';
-    const seriesImgName = 'logo-' + series.tag;
-    const seriesIconHtml = '<img src="../' + seriesImgName + '.png" alt="' + series.name + '" style="width:24px;height:24px;object-fit:contain;vertical-align:-4px;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'"><span style="display:none">' + series.icon + '</span>';
+    const seriesIconHtml = (ART_SERIES[series.tag])
+      ? '<img src="../logo-' + series.tag + '.png" alt="' + series.name + '" style="width:24px;height:24px;object-fit:contain;vertical-align:-4px;">'
+      : '<span>' + series.icon + '</span>';
     html += '<div class="series-title"><span class="st-icon">' + seriesIconHtml + '</span> ' + series.name + '</div>';
     if (series.desc) html += '<div style="font-size:.82rem;color:rgba(232,234,242,.4);margin:-8px 0 12px;padding-left:2px">' + series.desc + '</div>';
     html += '<div class="series-progress"><div class="series-bar"><div class="series-fill" style="width:' + (doneCount / eps.length * 100) + '%;background:' + series.color + '"></div></div><span class="series-count">' + doneCount + ' / ' + eps.length + '</span></div>';
@@ -702,7 +716,9 @@ function buildDashboard() {
       const stepsPct = stepsTotal > 0 ? Math.round(stepsCompleted / stepsTotal * 100) : 0;
       html += '<a href="' + ep.url + '" class="ep-card ' + (status === 'done' ? 'done' : '') + '">';
       const epImgName = ep.key.replace('jvds-','badge-ep-').replace(/-v2$/,'');
-      const epBadgeHtml = '<img src="../' + epImgName + '.png" alt="' + ep.name + '" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><span style="display:none">' + (ep.badge || ep.ep) + '</span>';
+      const epBadgeHtml = (ART_EP[epImgName])
+        ? '<img src="../' + epImgName + '.png" alt="' + ep.name + '" style="width:28px;height:28px;object-fit:contain;">'
+        : '<span>' + (ep.badge || ep.ep) + '</span>';
       html += '<div class="ep-num ' + numClass + '">' + epBadgeHtml + '</div>';
       html += '<div class="ep-info"><div class="ep-name">' + ep.name + '</div>';
       if (status === 'progress' && stepsTotal > 0) {
@@ -751,21 +767,127 @@ function buildDashboard() {
   }
 }
 
+let currentCert = null;
 function showCert(key, workshopName) {
   const d = getData(key);
   const name = localStorage.getItem('jvds-player-name') || 'Amazing Coder';
+  const xp = d ? (d.xp || 0) : 0;
+  const level = d ? (d.level || 1) : 1;
+  const acc = d && d.totalQuizzes > 0 ? Math.round(d.correctFirst / d.totalQuizzes * 100) + '%' : '—';
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  currentCert = { name, workshop: workshopName, xp, level, acc, date };
   document.getElementById('certName').textContent = name;
   document.getElementById('certWorkshop').textContent = workshopName;
-  document.getElementById('certXp').textContent = d ? (d.xp || 0) : 0;
-  document.getElementById('certLevel').textContent = d ? (d.level || 1) : 1;
-  const acc = d && d.totalQuizzes > 0 ? Math.round(d.correctFirst / d.totalQuizzes * 100) + '%' : '—';
+  document.getElementById('certXp').textContent = xp;
+  document.getElementById('certLevel').textContent = level;
   document.getElementById('certAccuracy').textContent = acc;
-  document.getElementById('certDate').textContent = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('certDate').textContent = date;
   document.getElementById('certOverlay').classList.add('show');
 }
 
 function closeCert() {
   document.getElementById('certOverlay').classList.remove('show');
+}
+
+/* Render the current certificate to a branded 1200x1200 PNG and share/download it. */
+function drawCertCanvas() {
+  const c = currentCert || { name: 'Amazing Coder', workshop: 'a JVDesignStudio workshop', xp: 0, level: 1, acc: '—', date: '' };
+  const S = 1200;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+  // background
+  ctx.fillStyle = '#fbf7ee'; ctx.fillRect(0, 0, S, S);
+  // gold double border
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 10;
+  ctx.strokeRect(56, 56, S - 112, S - 112);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(80, 80, S - 160, S - 160);
+  const cx = S / 2;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#b58f2e';
+  ctx.font = '600 30px Inter, sans-serif';
+  ctx.fillText('J V D E S I G N S T U D I O', cx, 210);
+  ctx.fillStyle = '#d4af37';
+  ctx.font = '700 66px Fredoka, sans-serif';
+  ctx.fillText('Certificate of Completion', cx, 300);
+  ctx.fillStyle = '#8a7a55';
+  ctx.font = '400 30px Inter, sans-serif';
+  ctx.fillText('This certifies that', cx, 380);
+  // name
+  ctx.fillStyle = '#2a2a2a';
+  ctx.font = '700 78px Fredoka, sans-serif';
+  ctx.fillText(c.name, cx, 480);
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 3;
+  const nameW = Math.min(720, ctx.measureText(c.name).width + 120);
+  ctx.beginPath(); ctx.moveTo(cx - nameW / 2, 508); ctx.lineTo(cx + nameW / 2, 508); ctx.stroke();
+  // workshop
+  ctx.fillStyle = '#555';
+  ctx.font = '400 34px Inter, sans-serif';
+  ctx.fillText('successfully completed', cx, 575);
+  ctx.fillStyle = '#2a2a2a';
+  ctx.font = '700 46px Fredoka, sans-serif';
+  wrapText(ctx, c.workshop, cx, 640, 900, 56);
+  // stats row
+  const stats = [[c.xp + '', 'XP EARNED'], ['Lvl ' + c.level, 'LEVEL'], [c.acc, 'ACCURACY']];
+  const bx = [cx - 340, cx, cx + 340];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = '#d4af37';
+    ctx.font = '700 58px Fredoka, sans-serif';
+    ctx.fillText(stats[i][0], bx[i], 850);
+    ctx.fillStyle = '#8a7a55';
+    ctx.font = '700 22px Inter, sans-serif';
+    ctx.fillText(stats[i][1], bx[i], 895);
+  }
+  // date + url
+  ctx.fillStyle = '#8a7a55';
+  ctx.font = '400 28px Inter, sans-serif';
+  if (c.date) ctx.fillText('Awarded ' + c.date, cx, 1000);
+  ctx.fillStyle = '#b58f2e';
+  ctx.font = '700 30px Fredoka, sans-serif';
+  ctx.fillText('jvdesignstudio.co.uk', cx, 1080);
+  return cv;
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text).split(' ');
+  let line = '', lines = [];
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const startY = y - (lines.length - 1) * lineHeight / 2;
+  lines.forEach((ln, i) => ctx.fillText(ln, x, startY + i * lineHeight));
+}
+
+async function shareCert() {
+  const btn = document.getElementById('certShareBtn');
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Making image...';
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const cv = drawCertCanvas();
+  const fname = 'jvds-certificate-' + ((currentCert && currentCert.workshop) || 'workshop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png';
+  cv.toBlob(async function (blob) {
+    if (!blob) { btn.textContent = orig; return; }
+    const file = new File([blob], fname, { type: 'image/png' });
+    // One-tap share on supported devices (mobile), else download
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'My JVDesignStudio certificate',
+          text: 'I completed ' + ((currentCert && currentCert.workshop) || 'a workshop') + ' on jvdesignstudio.co.uk!' });
+        btn.textContent = orig; return;
+      } catch (e) { /* user cancelled or unsupported, fall through to download */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname; document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    btn.textContent = '✓ Image saved!';
+    setTimeout(() => btn.textContent = orig, 2200);
+  }, 'image/png');
 }
 
 function saveName() {

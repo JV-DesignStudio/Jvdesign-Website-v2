@@ -142,6 +142,12 @@
 /* PARK PREVIEW PANEL */
 .game-panel{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:60px;height:calc(100vh - 60px)}
 @media(max-width:960px){.game-panel{position:static;height:auto;border-top:1px solid var(--border)}}
+.live-park-panel{position:fixed;right:16px;top:76px;width:340px;height:min(62vh,470px);background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.45);z-index:40;display:flex;flex-direction:column;overflow:hidden}
+.live-park-head{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--rct-lt);padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.live-park-head span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0;margin-left:6px}
+.live-park-body{flex:1;min-height:0;position:relative}
+#parkCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+@media(max-width:1240px){.live-park-panel{display:none}}
 .game-top{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .game-top-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .game-live{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--rct-lt)}
@@ -310,6 +316,12 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     </div>
   </div>
 </section>
+
+<!-- LIVE PARK PREVIEW -->
+<div class="live-park-panel" id="livePark">
+  <div class="live-park-head">🎢 Your Park <span>live preview</span></div>
+  <div class="live-park-body"><canvas id="parkCanvas"></canvas></div>
+</div>
 
 <!-- XP BAR -->
 <div class="xp-wrap">
@@ -2149,12 +2161,14 @@ function goStep(i){
   if(i<0||i>=TOTAL) return;
   currentStep=i;
   renderStep();
-  document.getElementById('stepBody').scrollTop=0;
+  const sb=document.getElementById('stepBody');
+  if(sb) sb.scrollTop=0;
 }
 
 function renderStep(){
-  const s=STEPS[currentStep];
   const body=document.getElementById('stepBody');
+  if(!body) return;               // legacy single-panel UI not present; step-cards drive the page
+  const s=STEPS[currentStep];
   body.innerHTML=`
     <div class="step-num">${s.tag}</div>
     <div class="step-title">${s.title}</div>
@@ -2183,14 +2197,17 @@ function doApply(){
 }
 
 function updateProgress(){
+  const pf=document.getElementById('progFill');
+  if(!pf) return;                 // legacy progress UI not present; engine drives #progressFill
   const pct=Math.round(((stepsDone.size)/TOTAL)*100);
-  document.getElementById('progFill').style.width=Math.max(10,pct)+'%';
+  pf.style.width=Math.max(10,pct)+'%';
   const dots=document.getElementById('progDots');
-  dots.innerHTML=STEPS.map((_,i)=>`<div class="prog-dot${stepsDone.has(i)?' done':i===currentStep?' active':''}"></div>`).join('');
+  if(dots) dots.innerHTML=STEPS.map((_,i)=>`<div class="prog-dot${stepsDone.has(i)?' done':i===currentStep?' active':''}"></div>`).join('');
 }
 
 function setOutput(msg,type){
   const bar=document.getElementById('outputBar');
+  if(!bar) return;
   bar.textContent=msg;
   bar.className='output-bar'+(type?' '+type:'');
 }
@@ -2217,8 +2234,7 @@ document.getElementById('navToggle').addEventListener('click',()=>{
   document.getElementById('mobileNav').classList.toggle('open');
 });
 
-// Init
-renderStep();
+// Init — step-cards + shared engine drive completion; render the live park preview
 drawPark();
 
 /* ══════════════════════════════════════════════
@@ -2412,10 +2428,29 @@ function checkTF(btn){
   }
 }
 
-function completeStep(n){ goStep(n + 1); }
-
 loadProgress();
 </script>
 
+<!-- Shared workshop engine drives the step-cards / quizzes / XP / finish (same as every other workshop) -->
+<script>window.WORKSHOP_TOTAL=12;window.WORKSHOP_KEY='jvds-openrct2-modding-v2';window.WORKSHOP_PROFILE_ID='openrct2-modding-builder';</script>
+<script src="workshop-engine.js"></script>
+<script>
+/* Keep the live park preview building along with each completed step */
+(function(){
+  var base = window.completeStep;
+  window.completeStep = function(n){
+    if (base) base(n);
+    try {
+      var s = (typeof STEPS !== 'undefined') && STEPS[n - 1];
+      if (s && typeof s.onApply === 'function') s.onApply();
+      if (typeof drawPark === 'function') drawPark();
+    } catch (e) {}
+  };
+})();
+</script>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"OpenRCT2 Python Modding Add Shops & Items","description":"Learn to mod OpenRCT2 with Python. Add custom shops, new menu items, and stall upgrades step by step with a live park preview. Ages 11+. Free.","url":"https://jvdesignstudio.co.uk/workshops/openrct2-modding-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+</script>
 </body>
 </html>
