@@ -796,6 +796,7 @@ function initThree() {
   });
 
   animate();
+}
 
 function animate() {
   requestAnimationFrame(animate);
@@ -805,6 +806,7 @@ function animate() {
   camera.position.set(cx, cy + 0.3, cz);
   camera.lookAt(0, 0.3, 0);
   renderer.render(scene, camera);
+}
 
 // ============ CANNON BUILDER ============
 function rebuildCannon() {
@@ -923,7 +925,7 @@ function rebuildCannon() {
     const rr = radiusAt(t) + p.ringSize;
     const ringGeo = new THREE.TorusGeometry(rr, p.ringSize, 8, 32);
     const ring = new THREE.Mesh(ringGeo, metalMat);
-    // Torus in XY plane circles around Z, perfect
+    // Torus in XY plane circles around Z — perfect
     ring.position.z = breechZ + p.barrelLen * t;
     ring.castShadow = true;
     barrelPivot.add(ring);
@@ -939,7 +941,7 @@ function rebuildCannon() {
   barrelPivot.add(vent);
 
   // =============================================
-  // CARRIAGE GROUP, the wooden body, cheeks,
+  // CARRIAGE GROUP — the wooden body, cheeks,
   // metal bands, rope, wedge. All parented so
   // they stay together.
   // =============================================
@@ -1066,6 +1068,7 @@ function rebuildCannon() {
   document.getElementById('wsWidth').textContent = p.wsWidth.toFixed(1);
   document.getElementById('wsDepth').textContent = p.wsDepth.toFixed(1);
   document.getElementById('wsHeight').textContent = p.wsHeight.toFixed(1);
+}
 
 // ============ STEP CONTROLS ============
 function getControlsForStep(stepIdx) {
@@ -1135,6 +1138,7 @@ function getControlsForStep(stepIdx) {
     ];
     default: return [];
   }
+}
 
 function renderControls() {
   const panel = document.getElementById('controlsPanel');
@@ -1161,12 +1165,14 @@ function renderControls() {
     }
   });
   panel.innerHTML = html;
+}
 
 function updateParam(key, val) {
   params[key] = val;
   const ve = document.getElementById('val_' + key);
   if (ve) ve.textContent = typeof val === 'number' ? (Number.isInteger(val) ? val : val.toFixed(3)) : val;
   rebuildCannon();
+}
 
 // ============ STEP NAVIGATION ============
 function renderStepList() {
@@ -1178,11 +1184,13 @@ function renderStepList() {
       <div class="step-name">${s.name}</div>
     </div>
   `).join('');
+}
 
 function goToStep(idx) {
   currentStep = idx;
   updateUI();
   showToast(STEPS[idx].name);
+}
 
 function nextStep() { if (currentStep < STEPS.length - 1) goToStep(currentStep + 1); }
 function prevStep() { if (currentStep > 0) goToStep(currentStep - 1); }
@@ -1198,16 +1206,19 @@ function updateUI() {
   // Scroll active step into view
   const activeEl = document.querySelector('.step-item.active');
   if (activeEl) activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
 
 function showToast(msg) {
   const t = document.getElementById('stepToast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 1800);
+}
 
 // ============ SAVE / LOAD / EXPORT ============
 function getSaves() {
   try { return JSON.parse(localStorage.getItem('cannonSaves') || '{}'); } catch { return {}; }
+}
 function setSaves(s) { localStorage.setItem('cannonSaves', JSON.stringify(s)); }
 
 function openSaveModal() {
@@ -1222,6 +1233,7 @@ function openSaveModal() {
   `;
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('saveName').focus(), 100);
+}
 
 function openLoadModal() {
   const saves = getSaves();
@@ -1242,6 +1254,7 @@ function openLoadModal() {
   m.innerHTML = `<h2>📂 Load Cannon</h2>${listHtml}
     <div class="modal-btns"><button class="btn-cancel" onclick="closeModal()">Close</button></div>`;
   document.getElementById('modalOverlay').classList.add('open');
+}
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 
@@ -1253,6 +1266,7 @@ function doSave() {
   setSaves(saves);
   closeModal();
   showToast('Cannon saved!');
+}
 
 function doLoad(name) {
   const saves = getSaves();
@@ -1263,12 +1277,14 @@ function doLoad(name) {
   rebuildCannon();
   updateUI();
   showToast(`Loaded: ${name}`);
+}
 
 function doDelete(name) {
   const saves = getSaves();
   delete saves[name];
   setSaves(saves);
   openLoadModal();
+}
 
 function resetAll() {
   if (!confirm('Reset all parameters to defaults?')) return;
@@ -1284,6 +1300,7 @@ function resetAll() {
   rebuildCannon();
   updateUI();
   showToast('Reset to defaults');
+}
 
 function exportModel() {
   // Simple OBJ export
@@ -1319,6 +1336,7 @@ function exportModel() {
   a.click();
   URL.revokeObjectURL(a.href);
   showToast('OBJ exported!');
+}
 
 // ============ INIT ============
 document.addEventListener('DOMContentLoaded', () => {

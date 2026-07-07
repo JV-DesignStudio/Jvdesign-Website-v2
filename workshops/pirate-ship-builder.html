@@ -432,7 +432,7 @@ function initThree(){
   sun.shadow.camera.left=-20; sun.shadow.camera.right=20;
   sun.shadow.camera.top=20; sun.shadow.camera.bottom=-20;
   scene.add(sun);
-  scene.add(new THREE.DirectionalLight(0x88aacc,0.25).position.set(-10,8,-5)||scene.children[scene.children.length-1]);
+  const fillLight=new THREE.DirectionalLight(0x88aacc,0.25); fillLight.position.set(-10,8,-5); scene.add(fillLight);
   const pl=new THREE.PointLight(0xffcc77,0.3,30); pl.position.set(0,10,0); scene.add(pl);
 
   // Water
@@ -477,6 +477,7 @@ function initThree(){
     camera.lookAt(0,1.5,0);
     renderer.render(scene,camera);
   })();
+}
 
 // ═══════════════════════════════════════
 // SHIP BUILDER
@@ -882,6 +883,7 @@ function rebuildShip(){
   document.getElementById('dL').textContent=HL.toFixed(1);
   document.getElementById('dW').textContent=HB.toFixed(1);
   document.getElementById('dH').textContent=(HD+p.sternH).toFixed(1);
+}
 
 // ═══════════════════════════════════════
 // STEP CONTROLS
@@ -984,6 +986,7 @@ function ctrlsFor(i){
     ];
     default: return [];
   }
+}
 
 function renderCtrls(){
   const cp=document.getElementById('cpanel');
@@ -999,18 +1002,21 @@ function renderCtrls(){
     }
   });
   cp.innerHTML=h;
+}
 
 function upd(k,v){
   P[k]=v;
   const ve=document.getElementById('v_'+k);
   if(ve) ve.textContent=typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v;
   rebuildShip();
+}
 
 // ═══════════════════════════════════════
 // STEP NAV
 // ═══════════════════════════════════════
 function renderSteps(){
   document.getElementById('stepList').innerHTML=STEPS.map((s,i)=>`<div class="si ${i===curStep?'active':''} ${i<curStep?'done':''}" onclick="go(${i})"><div class="sn">${i<curStep?'✓':(i+1)}</div><div class="sl">${s.name}</div></div>`).join('');
+}
 function go(i){curStep=i;updateUI();toast(STEPS[i].name);}
 function next(){if(curStep<STEPS.length-1)go(curStep+1);}
 function prev(){if(curStep>0)go(curStep-1);}
@@ -1022,6 +1028,7 @@ function updateUI(){
   document.getElementById('bNext').disabled=curStep===STEPS.length-1;
   const ae=document.querySelector('.si.active');
   if(ae) ae.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
 
 // ═══════════════════════════════════════
@@ -1034,6 +1041,7 @@ function openSaveModal(){
   document.getElementById('modalC').innerHTML=`<h2>💾 Save Ship</h2><input type="text" id="saveName" placeholder="Name your vessel..."><div class="mb"><button class="mbc" onclick="closeModal()">Cancel</button><button class="mbs" onclick="doSave()">Save</button></div>`;
   document.getElementById('modalO').classList.add('open');
   setTimeout(()=>document.getElementById('saveName').focus(),100);
+}
 function openLoadModal(){
   const sv=getSaves(),ks=Object.keys(sv);
   let h='';
@@ -1041,22 +1049,26 @@ function openLoadModal(){
   else h='<div class="saves-list">'+ks.map(k=>{const d=new Date(sv[k].date).toLocaleDateString();return `<div class="se" onclick="doLoad('${k.replace(/'/g,"\\'")}')"><div><div class="sname">${k}</div><div class="sdate">${d}</div></div><button class="dbtn" onclick="event.stopPropagation();doDel('${k.replace(/'/g,"\\'")}')">✕</button></div>`;}).join('')+'</div>';
   document.getElementById('modalC').innerHTML=`<h2>📂 Load Ship</h2>${h}<div class="mb"><button class="mbc" onclick="closeModal()">Close</button></div>`;
   document.getElementById('modalO').classList.add('open');
+}
 function closeModal(){document.getElementById('modalO').classList.remove('open');}
 function doSave(){
   const n=document.getElementById('saveName').value.trim();
   if(!n)return;
   const sv=getSaves();sv[n]={params:{...P},step:curStep,date:Date.now()};setSaves(sv);
   closeModal();toast('Ship saved!');
+}
 function doLoad(n){
   const sv=getSaves();if(!sv[n])return;
   P={...sv[n].params};curStep=sv[n].step||0;
   closeModal();rebuildShip();updateUI();toast(`Loaded: ${n}`);
+}
 function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();}
 
 function resetAll(){
   if(!confirm('Reset all parameters to defaults?'))return;
   Object.assign(P,{hullLen:12,hullBeam:4,hullDepth:3,bowSharp:0.7,sternW:0.6,keelDepth:0.8,deckThick:0.15,bspritLen:4,bspritR:0.08,bspritAngle:25,sternH:1.8,sternLen:3,fcH:1.2,fcLen:2,mainMastH:10,mainMastR:0.12,mainMastPos:0.05,foreMastH:8,foreMastR:0.1,foreMastPos:0.32,mizzenMastH:7,mizzenMastR:0.09,mizzenMastPos:-0.35,sailW:1.0,sailBillow:0.4,sailCount:2,nestR:0.5,nestH:0.3,nestPos:0.7,railH:0.4,railPosts:12,cannonCount:5,cannonR:0.06,rudderW:1.0,rudderH:2.0,anchorSize:0.8,figSize:0.6,showFigure:true,flagW:1.5,flagH:1.0,showJolly:true,winCount:3,winR:0.25,hullColor:'#3a2010',deckColor:'#8b6b3a',sailColor:'#e8dcc8',mastColor:'#6b4a2a',metalColor:'#555555',flagColor:'#1a1a1a',trimColor:'#c9a84c',waterColor:'#0a3060',showRopes:true,showLanterns:true});
   curStep=0;rebuildShip();updateUI();toast('Reset to defaults');
+}
 
 function exportOBJ(){
   let obj='# Pirate Ship - Exported from Pirate Ship Shipyard\n';
@@ -1091,6 +1103,7 @@ function exportOBJ(){
   a.click();
   URL.revokeObjectURL(a.href);
   toast('OBJ exported!');
+}
 
 // ═══════════════════════════════════════
 // INIT

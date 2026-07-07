@@ -1169,6 +1169,16 @@ const XP_QUIZ = 15;
 const XP_CODE = 20;
 const XP_STREAK_BONUS = 5;
 
+/* ── hardened answer decoding (base64 + alternates) ── */
+function _dec(el, k){ var e = el.dataset[k]; if (e !== undefined){ try { return decodeURIComponent(atob(e)); } catch(_){ return ''; } } return k === 'a' ? (el.dataset.answer || '') : (el.dataset.correct || ''); }
+function _answers(el){ return _dec(el,'a').split('|'); }
+function _canon(el){ return _answers(el)[0]; }
+function _match(el, val){ var v = val.trim().toLowerCase(); return _answers(el).some(function(a){ return a.trim().toLowerCase() === v; }); }
+function _key(el){ return parseInt(_dec(el,'k'), 10); }
+function _shuffleQuiz(){ document.querySelectorAll('.quiz-options').forEach(function(o){ var k = [].slice.call(o.children); for (var i = k.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = k[i]; k[i] = k[j]; k[j] = t; } k.forEach(function(c){ o.appendChild(c); }); var L = ['A','B','C','D','E']; o.querySelectorAll('.opt-letter').forEach(function(l, i){ l.textContent = L[i] || ''; }); }); }
+function _initKbd(){ function act(el){ return function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); } }; } document.querySelectorAll('.quiz-opt').forEach(function(o){ o.setAttribute('role','button'); o.setAttribute('tabindex','0'); o.addEventListener('keydown', act(o)); }); document.querySelectorAll('.step-header').forEach(function(h){ h.setAttribute('role','button'); h.setAttribute('tabindex','0'); h.addEventListener('keydown', act(h)); }); }
+
+
 function saveProgress() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1176,11 +1186,12 @@ function saveProgress() {
       quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
       challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id),
       conceptsPassed: [...document.querySelectorAll('.concept-fill.passed')].map(c => c.id),
-      tfPassed: [...document.querySelectorAll('.tf-round.passed')].map(t => t.id),
-      orderPassed: [...document.querySelectorAll('.order-challenge.passed')].map(o => o.id),
-      predictPassed: [...document.querySelectorAll('.predict-challenge.passed')].map(p => p.id)
+      tfPassed: [...document.querySelectorAll('.tf-round.passed')].map(c => c.id),
+      orderPassed: [...document.querySelectorAll('.order-challenge.passed')].map(c => c.id),
+      predictPassed: [...document.querySelectorAll('.predict-challenge.passed')].map(c => c.id)
     }));
   } catch(e) {}
+}
 
 function loadProgress() {
   try {
@@ -1211,11 +1222,11 @@ function loadProgress() {
     });
     if (data.challengesPassed) data.challengesPassed.forEach(id => {
       const c = document.getElementById(id);
-      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = _canon(b); b.disabled = true; b.classList.add('correct'); }); }
     });
     if (data.conceptsPassed) data.conceptsPassed.forEach(id => {
       const c = document.getElementById(id);
-      if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(b => { b.value = b.dataset.answer; b.disabled = true; b.classList.add('correct'); }); }
+      if (c) { c.classList.add('passed'); c.querySelector('.cf-check-btn').disabled = true; c.querySelectorAll('.cf-blank').forEach(b => { b.value = _canon(b); b.disabled = true; b.classList.add('correct'); }); }
     });
     if (data.tfPassed) data.tfPassed.forEach(id => {
       const t = document.getElementById(id);
@@ -1223,7 +1234,7 @@ function loadProgress() {
     });
     if (data.orderPassed) data.orderPassed.forEach(id => {
       const o = document.getElementById(id);
-      if (o) { o.classList.add('passed'); o.querySelector('.oc-check-btn').disabled = true; const rb = o.querySelector('.oc-reset-btn'); if (rb) rb.style.display = 'none'; }
+      if (o) { o.classList.add('passed'); o.querySelector('.oc-check-btn').disabled = true; var rb = o.querySelector('.oc-reset-btn'); if(rb) rb.style.display='none'; }
     });
     if (data.predictPassed) data.predictPassed.forEach(id => {
       const p = document.getElementById(id);
@@ -1231,10 +1242,12 @@ function loadProgress() {
     });
     updateXpDisplay();
   } catch(e) {}
+}
 
 function getActiveStep() {
   for (let i = 1; i <= TOTAL; i++) { if (!completed.has(i)) return i; }
   return TOTAL;
+}
 
 function buildDots() {
   const c = document.getElementById('stepDots');
@@ -1246,12 +1259,14 @@ function buildDots() {
     d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
     c.appendChild(d);
   }
+}
 
 function updateProgress() {
   const n = completed.size;
   document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
   document.getElementById('progressFill').style.width = (n / TOTAL * 100) + '%';
   buildDots();
+}
 
 function updateXpDisplay() {
   const xpInLevel = xp % XP_PER_LEVEL;
@@ -1261,6 +1276,7 @@ function updateXpDisplay() {
   document.getElementById('streakCount').textContent = streak;
   const streakEl = document.getElementById('xpStreak');
   streakEl.classList.toggle('hot', streak >= 3);
+}
 
 function awardXp(amount, label) {
   const oldLevel = level;
@@ -1272,6 +1288,7 @@ function awardXp(amount, label) {
   showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
   if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
   saveProgress();
+}
 
 function showXpToast(text) {
   const existing = document.querySelector('.xp-toast');
@@ -1281,6 +1298,7 @@ function showXpToast(text) {
   t.textContent = text;
   document.body.appendChild(t);
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
 
 function showLevelUp(lvl) {
   const overlay = document.createElement('div');
@@ -1288,6 +1306,7 @@ function showLevelUp(lvl) {
   overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
 
 /* ── QUIZ SYSTEM ── */
 function selectQuizOpt(el) {
@@ -1297,15 +1316,17 @@ function selectQuizOpt(el) {
   el.classList.add('selected');
   const submitBtn = gate.querySelector('.quiz-submit');
   if (submitBtn) submitBtn.classList.add('show');
+}
 
 function checkQuiz(btn) {
   const gate = btn.closest('.quiz-gate');
   const selected = gate.querySelector('.quiz-opt.selected');
   if (!selected) return;
-  const correct = parseInt(gate.dataset.correct);
+  const correct = _key(gate);
   const chosenIdx = parseInt(selected.dataset.idx);
   const fb = gate.querySelector('.quiz-feedback');
   totalQuizzes++;
+
   if (chosenIdx === correct) {
     selected.classList.add('correct');
     fb.className = 'quiz-feedback correct show';
@@ -1319,7 +1340,7 @@ function checkQuiz(btn) {
     correctFirst++;
     let bonus = XP_QUIZ;
     let label = 'Quiz correct';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     selected.classList.add('wrong');
@@ -1333,6 +1354,7 @@ function checkQuiz(btn) {
     }, 1500);
   }
   saveProgress();
+}
 
 /* ── CODE CHALLENGE SYSTEM ── */
 function checkCodeChallenge(btn) {
@@ -1341,33 +1363,45 @@ function checkCodeChallenge(btn) {
   const fb = challenge.querySelector('.cc-feedback');
   const hint = challenge.querySelector('.cc-hint');
   let allCorrect = true;
+
   blanks.forEach(b => {
     const userVal = b.value.trim().toLowerCase();
-    const answer = b.dataset.answer.toLowerCase();
-    if (userVal === answer) {
-      b.classList.remove('wrong'); b.classList.add('correct');
+    const answer = _canon(b);
+    if (_match(b, b.value)) {
+      b.classList.remove('wrong');
+      b.classList.add('correct');
     } else {
-      b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
+      b.classList.remove('correct');
+      b.classList.add('wrong');
+      allCorrect = false;
     }
   });
+
   if (allCorrect) {
     fb.className = 'cc-feedback correct show';
     fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
-    challenge.classList.add('passed'); btn.disabled = true;
-    blanks.forEach(b => b.disabled = true);
+    challenge.classList.add('passed');
+    btn.disabled = true;
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
     if (hint) hint.classList.remove('show');
-    streak++; if (streak > bestStreak) bestStreak = streak;
-    correctFirst++; totalQuizzes++;
-    let bonus = XP_CODE, label = 'Code challenge';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    totalQuizzes++;
+    let bonus = XP_CODE;
+    let label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     fb.className = 'cc-feedback wrong show';
     fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';
     if (hint) hint.classList.add('show');
-    streak = 0; updateXpDisplay(); totalQuizzes++;
+    streak = 0;
+    updateXpDisplay();
+    totalQuizzes++;
   }
   saveProgress();
+}
 
 /* ── CONCEPT FILL-IN-THE-BLANK ── */
 function checkConceptFill(btn) {
@@ -1376,7 +1410,7 @@ function checkConceptFill(btn) {
   const fb = wrap.querySelector('.cf-feedback');
   let allCorrect = true;
   blanks.forEach(b => {
-    if (b.value.trim().toLowerCase() === b.dataset.answer.toLowerCase()) {
+    if (_match(b, b.value)) {
       b.classList.remove('wrong'); b.classList.add('correct');
     } else {
       b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
@@ -1386,11 +1420,11 @@ function checkConceptFill(btn) {
     fb.className = 'cf-feedback correct show';
     fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
     wrap.classList.add('passed'); btn.disabled = true;
-    blanks.forEach(b => b.disabled = true);
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++; totalQuizzes++;
     let bonus = XP_QUIZ, label = 'Concept fill';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     fb.className = 'cf-feedback wrong show';
@@ -1398,6 +1432,7 @@ function checkConceptFill(btn) {
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();
+}
 
 /* ── TRUE/FALSE SPEED ROUND ── */
 function pickTF(btn, value) {
@@ -1405,6 +1440,7 @@ function pickTF(btn, value) {
   item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   btn.dataset.picked = value;
+}
 
 function checkTF(btn) {
   const round = btn.closest('.tf-round');
@@ -1414,7 +1450,7 @@ function checkTF(btn) {
   items.forEach(item => {
     const selected = item.querySelector('.tf-btn.selected');
     if (!selected) { allAnswered = false; return; }
-    const correct = item.dataset.answer;
+    const correct = _dec(item,'a').trim().toLowerCase();
     const picked = selected.dataset.picked;
     item.classList.add('answered');
     if (picked === correct) {
@@ -1433,7 +1469,7 @@ function checkTF(btn) {
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++; totalQuizzes++;
     let bonus = XP_QUIZ, label = 'True/False';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     fb.className = 'tf-feedback wrong show';
@@ -1448,6 +1484,7 @@ function checkTF(btn) {
     }, 2500);
   }
   saveProgress();
+}
 
 /* ── ORDER THE STEPS ── */
 let orderCounters = {};
@@ -1460,6 +1497,7 @@ function pickOrder(el) {
   el.classList.add('picked');
   el.querySelector('.oc-num').textContent = orderCounters[id];
   el.dataset.userOrder = orderCounters[id];
+}
 
 function resetOrder(btn) {
   const challenge = btn.closest('.order-challenge');
@@ -1470,6 +1508,7 @@ function resetOrder(btn) {
     delete item.dataset.userOrder;
   });
   challenge.querySelector('.oc-feedback').classList.remove('show');
+}
 
 function checkOrder(btn) {
   const challenge = btn.closest('.order-challenge');
@@ -1478,7 +1517,7 @@ function checkOrder(btn) {
   let allPicked = true, allCorrect = true;
   items.forEach(item => {
     if (!item.dataset.userOrder) { allPicked = false; return; }
-    if (parseInt(item.dataset.userOrder) === parseInt(item.dataset.correct)) {
+    if (parseInt(item.dataset.userOrder) === _key(item)) {
       item.classList.add('correct-pos');
     } else {
       item.classList.add('wrong-pos'); allCorrect = false;
@@ -1493,7 +1532,7 @@ function checkOrder(btn) {
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++; totalQuizzes++;
     let bonus = XP_QUIZ, label = 'Order challenge';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     fb.className = 'oc-feedback wrong show';
@@ -1501,13 +1540,14 @@ function checkOrder(btn) {
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();
+}
 
 /* ── PREDICT WHAT HAPPENS ── */
 function checkPredict(btn) {
   const challenge = btn.closest('.predict-challenge');
   const selected = challenge.querySelector('.quiz-opt.selected');
   if (!selected) return;
-  const correct = parseInt(challenge.dataset.correct);
+  const correct = _key(challenge);
   const chosenIdx = parseInt(selected.dataset.idx);
   const fb = challenge.querySelector('.quiz-feedback');
   totalQuizzes++;
@@ -1520,7 +1560,7 @@ function checkPredict(btn) {
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++;
     let bonus = XP_QUIZ, label = 'Prediction';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
     awardXp(bonus, label);
   } else {
     selected.classList.add('wrong');
@@ -1530,6 +1570,7 @@ function checkPredict(btn) {
     setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
   }
   saveProgress();
+}
 
 /* ── STEP COMPLETION ── */
 function completeStep(n) {
@@ -1558,6 +1599,7 @@ function completeStep(n) {
   }
   updateProgress();
   saveProgress();
+}
 
 function toggleStep(header) {
   const card = header.closest('.step-card');
@@ -1566,223 +1608,22 @@ function toggleStep(header) {
   const isOpen = card.classList.contains('open');
   card.classList.toggle('open', !isOpen);
   body.style.display = isOpen ? 'none' : 'block';
+}
 
-// ══ RANDOM DEMO ══
-function updateRandDemo() {
-  const val = +document.getElementById('randSlider').value;
-  const pct = (val / 1000 * 100).toFixed(1);
-  const freq = val < 50 ? 'rarely fires' : val < 200 ? 'fires occasionally' : val < 500 ? 'fires often' : 'fires very frequently';
-  document.getElementById('randOutput').innerHTML =
-    `trigger1 = Random &lt; <span class="hi">${val}</span>\n` +
-    `→ <span class="hi">${pct}%</span> chance per game tick (60/sec)\n` +
-    `→ Roughly <span class="hi">${(val * 60 / 1000).toFixed(1)}</span> triggers per second on average\n` +
-    `→ This move <span class="hi">${freq}</span>`;
+function copyProjectLink() {
+  const inp = document.getElementById('projectUrl');
+  if (!inp || !inp.value.trim()) { if(inp) inp.focus(); return; }
+  navigator.clipboard.writeText(inp.value.trim()).catch(() => {});
+  const btn = inp.nextElementSibling;
+  btn.textContent = '✓ Copied!';
+  setTimeout(() => btn.textContent = 'Copy Link', 2500);
+}
 
+_shuffleQuiz();
+_initKbd();
 loadProgress();
 updateProgress();
 updateXpDisplay();
-updateRandDemo();
-
-// ══ DOWNLOADS ══
-function downloadTemplate() {
-  const content = `; ══════════════════════════════════════
-; MUGEN AI STARTER TEMPLATE
-; Paste this at the BOTTOM of your .CMD file
-; Replace state numbers with your own!
-; ══════════════════════════════════════
-
-[AILevel]
-value = 1
-
-[Statedef -3]
-
-; ── WALK FORWARD when far away
-[State -3, AI_Walk]
-type    = ChangeState
-value   = 20               ; EDIT ME: your walk forward state
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = p2bodydist X > 120
-trigger1 = Random < (AILevel * 40)
-
-; ── SPECIAL MOVE at range
-[State -3, AI_Special]
-type    = ChangeState
-value   = 1000             ; EDIT ME: your special move state
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = p2bodydist X > 80
-trigger1 = Random < (AILevel * 30)
-
-; ── JAB when close
-[State -3, AI_Jab]
-type    = ChangeState
-value   = 200              ; EDIT ME: your jab/punch state
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = p2bodydist X < 80
-trigger1 = Random < (AILevel * 50)
-
-; ── KICK when close (alternate)
-[State -3, AI_Kick]
-type    = ChangeState
-value   = 210              ; EDIT ME: your kick state
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = p2bodydist X < 100
-trigger1 = Random < (AILevel * 35)
-
-; ── JUMP ESCAPE when low health
-[State -3, AI_Jump]
-type    = ChangeState
-value   = 40               ; state 40 = jump (usually standard)
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = life < 200
-trigger1 = p2bodydist X < 60
-trigger1 = Random < 60
-
-; ══ END OF AI SECTION ══`;
-
-  const blob = new Blob([content], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'ai_starter_template.cmd';
-  a.click();
-
-function downloadCheatSheet() {
-  const content = `MUGEN AI CHEAT SHEET
-JVDesignStudio, AI Workshop
-=====================================
-
-BASIC STRUCTURE
----------------
-[AILevel]
-value = 1
-
-[Statedef -3]   ← always use -3!
-
-[State -3, NAME]
-type    = ChangeState
-value   = STATE_NUMBER
-trigger1 = AILevel > 0
-trigger1 = ctrl
-trigger1 = CONDITION
-trigger1 = Random < CHANCE
-
-COMMON TRIGGERS
----------------
-ctrl                    Character is free to act
-Random < 300            30% chance per tick (out of 1000)
-AILevel > 0             Only fires as CPU
-p2bodydist X < 80       Opponent within 80 pixels (close)
-p2bodydist X > 120      Opponent beyond 120 pixels (far)
-p2bodydist Y < -40      Opponent is above you
-life < 200              Your health below 200
-p2life < 100            Opponent health below 100
-power >= 3000           Full power bar
-p2statetype = A         Opponent is airborne (A = air)
-p2stateno = 200         Opponent is in state 200
-
-COMMON STATE NUMBERS (standard MUGEN)
---------------------------------------
-20   Walk forward
-21   Walk backward
-40   Jump (neutral)
-41   Jump forward
-42   Jump backward
-130  Stand guard
-131  Crouch guard
-200  Jab / Light punch
-210  Light kick
-230  Heavy punch
-240  Heavy kick
-1000 Special move 1 (varies per character)
-3000 Super (varies per character)
-
-TRIGGER LOGIC
--------------
-trigger1 = A
-trigger1 = B     → A AND B must both be true
-
-trigger1 = A
-trigger2 = B     → (A) OR (B), either path works
-
-RANDOM QUICK GUIDE
-------------------
-Random < 50   →  5%  (rarely)
-Random < 100  → 10%  (sometimes)
-Random < 200  → 20%  (occasionally)
-Random < 300  → 30%  (fairly often)
-Random < 500  → 50%  (half the time)
-Random < 800  → 80%  (very often)
-
-DIFFICULTY SCALING
-------------------
-Random < (AILevel * 40)
-→ At level 1: 40 (4%) | At level 8: 320 (32%)
-
-RULE ORDER
-----------
-Put SUPERS first, then SPECIALS, then NORMALS.
-MUGEN stops at the first rule that fires!`;
-
-  const blob = new Blob([content], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'mugen_ai_cheatsheet.txt';
-  a.click();
-
-function downloadBrief() {
-  const content = `MUGEN AI, PROJECT BRIEF
-JVDesignStudio Workshop
-=========================
-
-YOUR MISSION:
-Add working AI to your MUGEN character so it can fight on its own.
-
-PHASE 1 SETUP (10 mins)
-□ Open your character's .CMD file in Notepad or FF3
-□ Scroll to the very bottom
-□ Add [AILevel] header and [Statedef -3] block
-□ Save and test in MUGEN character should still work normally
-
-PHASE 2 BASIC ATTACKS (15 mins)
-□ Add an AI trigger for at least one normal attack (punch or kick)
-□ Add a distance check so it only fires when close
-□ Set Random < 300 as a starting value
-□ Test in Watch Mode does the AI attack?
-
-PHASE 3 MOVEMENT (10 mins)
-□ Add a walk-forward rule for when the opponent is far away
-□ Add a jump rule for when health is low
-□ Test does the AI close the gap and move around?
-
-PHASE 4 SPECIAL MOVES (10 mins)
-□ Add a special move AI rule
-□ Place it ABOVE the normal attack rules
-□ Give it a longer distance check than the normal attacks
-□ Test does the AI mix up normals and specials?
-
-PHASE 5 TUNING (15 mins)
-□ Run at least 5 CPU vs CPU watch matches
-□ Adjust Random values up or down based on what you see
-□ Try adding AILevel scaling: Random < (AILevel * 40)
-□ Optional: add a blocking rule
-
-ACHIEVEMENT TARGETS
--------------------
-★      AI attacks at least once per round
-★★     AI uses at least 2 different moves
-★★★    AI wins more than 50% of watch matches
-★★★★   AI uses different strategies at close vs long range
-★★★★★  AI scales with difficulty setting`;
-
-  const blob = new Blob([content], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'mugen_ai_project_brief.txt';
-  a.click();
 </script>
 
 <script type="application/ld+json">
