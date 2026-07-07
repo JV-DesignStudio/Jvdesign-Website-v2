@@ -1144,6 +1144,9 @@ function updateProp(prop, val) {
   if (selectedBlock.userData.isImported) return;
   pushHistory('resize');
   const d = selectedBlock.userData;
+  // Capture the block's base (bottom) Y using the *current* height, before it
+  // changes, so resizing grows the block upward instead of dropping it to the floor.
+  const baseY = selectedBlock.position.y - (d.h || 1) / 2;
   if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
   if (prop === 'h') { d.h = parseFloat(val); document.getElementById('propHVal').textContent = val; }
   if (prop === 'd') { d.d = parseFloat(val); document.getElementById('propDVal').textContent = val; }
@@ -1153,8 +1156,7 @@ function updateProp(prop, val) {
   selectedBlock.geometry.dispose();
   selectedBlock.geometry = newGeo;
   selectedBlock.rotation.y = d.rot * Math.PI / 180;
-  selectedBlock.position.y = d.h / 2 + (selectedBlock.position.y - selectedBlock.userData.prevY || 0);
-  selectedBlock.userData.prevY = d.h / 2;
+  selectedBlock.position.y = baseY + d.h / 2; // keep the base fixed
   selectBlock(selectedBlock); // refresh highlight
 }
 
@@ -2478,7 +2480,9 @@ function addToAssetLibrary() {
     name,
     blocks: blocks.map(b => ({
       x: b.position.x,
-      y: b.position.y,
+      // Store the base (bottom) Y like the save slots do — addBlock() re-adds
+      // h/2 on load, so storing centre-Y here made assets reload half a block high.
+      y: b.position.y - (b.userData.h || 1) / 2,
       z: b.position.z,
       w: b.userData.w,
       h: b.userData.h,
