@@ -286,17 +286,16 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
-id('preview-wrap').addEventListener('click', e => {
+function setEmitFromPoint(clientX, clientY){
   const r = canvas.getBoundingClientRect();
-  emitX = e.clientX - r.left;
-  emitY = e.clientY - r.top;
-});
-id('preview-wrap').addEventListener('mousemove', e => {
-  if(e.buttons !== 1) return;
-  const r = canvas.getBoundingClientRect();
-  emitX = e.clientX - r.left;
-  emitY = e.clientY - r.top;
-});
+  emitX = clientX - r.left;
+  emitY = clientY - r.top;
+}
+id('preview-wrap').addEventListener('click', e => setEmitFromPoint(e.clientX, e.clientY));
+id('preview-wrap').addEventListener('mousemove', e => { if(e.buttons === 1) setEmitFromPoint(e.clientX, e.clientY); });
+// Touch: tap and drag both reposition the emitter (mousemove never fires on mobile)
+id('preview-wrap').addEventListener('touchstart', e => { if(e.touches[0]){ setEmitFromPoint(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive:false });
+id('preview-wrap').addEventListener('touchmove', e => { if(e.touches[0]){ setEmitFromPoint(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive:false });
 
 // ── Particle pool ──
 let particles = [];
