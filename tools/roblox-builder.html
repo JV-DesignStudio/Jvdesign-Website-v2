@@ -1241,7 +1241,9 @@ function setupEvents() {
   // Touch events
   let lastTouchDist = 0;
   let lastTouchX = 0, lastTouchY = 0;
+  let startTouchX = 0, startTouchY = 0;
   let touchMoved = false;
+  const TAP_SLOP = 10; // px of finger jitter still counted as a tap, not a drag
 
   canvas.addEventListener('touchstart', e => {
     e.preventDefault();
@@ -1250,6 +1252,8 @@ function setupEvents() {
       const touch = e.touches[0];
       lastTouchX = touch.clientX;
       lastTouchY = touch.clientY;
+      startTouchX = touch.clientX;
+      startTouchY = touch.clientY;
 
       // Initiate move drag on touch
       if (currentTool === 'move') {
@@ -1286,13 +1290,13 @@ function setupEvents() {
 
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    touchMoved = true;
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       const rect = canvas.getBoundingClientRect();
 
       // Move drag, must check FIRST before any camera movement
       if (isMoveDrag && selectedBlock && movePlane) {
+        touchMoved = true;
         pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
         pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
@@ -1307,6 +1311,16 @@ function setupEvents() {
         return; // block camera orbit entirely
       }
 
+      // Ignore sub-threshold finger jitter so a still tap still places a block.
+      // Only once the finger travels past TAP_SLOP do we treat it as an orbit drag.
+      if (!touchMoved) {
+        const dist = Math.hypot(touch.clientX - startTouchX, touch.clientY - startTouchY);
+        if (dist < TAP_SLOP) return;      // still a tap in progress
+        touchMoved = true;                // commit to a drag
+        lastTouchX = touch.clientX;       // reset reference so we don't jump by the slop
+        lastTouchY = touch.clientY;
+      }
+
       // Camera orbit (only when NOT in move drag)
       const dx = touch.clientX - lastTouchX;
       const dy = touch.clientY - lastTouchY;
@@ -1317,6 +1331,7 @@ function setupEvents() {
       updateCamera();
       if (currentTool === 'add') updateGhost();
     } else if (e.touches.length === 2) {
+      touchMoved = true;
       const dist = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
