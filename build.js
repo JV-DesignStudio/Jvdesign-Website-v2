@@ -73,3 +73,13 @@ walk(ROOT).forEach(filePath => {
 });
 
 console.log(`\nDone. ${changed} file(s) updated, ${unchanged} unchanged.`);
+
+// Soft link-integrity check: surface broken internal links after every build.
+// Non-fatal (this repo auto-commits), but prints a clear warning so regressions
+// don't slip in silently. Run `npm run validate:links` for the gating exit code.
+try {
+    const { execFileSync } = require('child_process');
+    execFileSync(process.execPath, [path.join(ROOT, 'validate-links.js')], { stdio: 'inherit' });
+} catch (e) {
+    console.log('\n⚠  validate-links reported broken links (see above). Fix before deploying.');
+}
