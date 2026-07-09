@@ -2540,6 +2540,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         if (!gameActive) return;
         gameActive = false;
         gamePaused = false;
+        window.__gsScore = (window.__gsScore||0) + currentScore;
+        window.__gsBestRun = Math.max(window.__gsBestRun||0, currentScore);
         playGameOver();
         saveScore();
         stopMusic();
@@ -2702,7 +2704,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('stardustScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -2716,7 +2719,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('stardustScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstCollect');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 300) gameSystem.unlockAchievement('score300');

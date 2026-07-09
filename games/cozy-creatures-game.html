@@ -1239,6 +1239,8 @@ function checkWin() {
 
 function triggerWin() {
   G.gameOver = true;
+  window.__gsScore = (window.__gsScore||0) + 200;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, 200);
   document.getElementById('end-content').innerHTML = `
     <div class="modal-emoji">🎉</div>
     <h2>You Win!</h2>
@@ -1250,6 +1252,8 @@ function triggerWin() {
 
 function triggerLoss(reason) {
   G.gameOver = true;
+  window.__gsScore = (window.__gsScore||0) + 50;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, 50);
   document.getElementById('end-content').innerHTML = `
     <div class="modal-emoji">☔</div>
     <h2>Oh no...</h2>
@@ -1300,8 +1304,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  // Cozy Creatures score tracking
-  const currentScore = parseInt(localStorage.getItem('creaturesScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each game
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -1315,7 +1319,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('creaturesScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstCreature');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 300) gameSystem.unlockAchievement('score300');

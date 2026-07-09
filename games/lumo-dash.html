@@ -486,6 +486,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     debris(player.x+player.w/2,player.y+player.h/2);
     draw();
     const raw=Math.floor(dist),total=raw+coinCount*5;
+    window.__gsScore=(window.__gsScore||0)+total;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,total);
     const isBest=total>best;if(isBest){best=total;localStorage.setItem('lumoDashBest',best);}
     document.getElementById('bestStart').textContent='Best: '+best+' m';
     document.getElementById('endEmoji').textContent=isBest&&total>0?'🌟':(o&&o.type==='pit'?'🕳️':'💥');
@@ -506,7 +508,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('lumoDashScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 5);
@@ -520,7 +523,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('lumoDashScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstDash');
   if (score >= 50) gameSystem.unlockAchievement('score50');
   if (score >= 100) gameSystem.unlockAchievement('score100');

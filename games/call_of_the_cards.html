@@ -895,31 +895,16 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 const gameSystem = new GameSystem('call-of-cards', 'Call of the Cards', 'sage');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('callScore') || '0');
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 10);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('callScore') || '0');
-  if (score > 0) gameSystem.unlockAchievement('firstCall');
-  if (score >= 50) gameSystem.unlockAchievement('score50');
-  if (score >= 200) gameSystem.unlockAchievement('score200');
-  if (score >= 500) gameSystem.unlockAchievement('score500');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Call of the Cards is a printable card game page (no digital score),
+// so grant a small XP bonus once per visit on first interaction.
+let visitXpGiven = false;
+window.addEventListener('pointerdown', () => {
+  if (visitXpGiven) return;
+  visitXpGiven = true;
+  gameSystem.addXP(10);
+  gameSystem.unlockAchievement('firstCall');
+  gameSystem.saveState();
+});
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

@@ -459,6 +459,9 @@ function renderResults(){
   const title=state.quizData.title;
   const score=answers.filter(a=>a.isCorrect).length;
   const total=answers.length;
+  // expose quiz result to the XP tracker (100 pts per correct answer)
+  window.__gsScore=(window.__gsScore||0)+score*100;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,score*100);
   const pct=Math.round((score/total)*100);
   const lastOk=answers.reduce((acc,a,i)=>a.isCorrect?i:acc,-1);
   const won=lastOk>=0?prize(lastOk):"£0";
@@ -641,7 +644,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('millionaireScore') || '0');
+  // the quiz accumulates session score in window.__gsScore when results render
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -655,7 +659,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('millionaireScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstQuestion');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 500) gameSystem.unlockAchievement('score500');

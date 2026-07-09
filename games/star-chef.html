@@ -42,7 +42,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .patience-bar { height: 100%; background: linear-gradient(90deg, #4caf50, #ffb300); transition: width .1s; }
 .serve-btn { background: linear-gradient(135deg, #fff, #ffe8d6); border: none; border-radius: 16px; padding: 16px 40px; font-size: 1.2rem; font-weight: 800; color: #fb5607; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.2); }
 .serve-btn:active { transform: scale(.95); }
-.tip-float { position: fixed; pointer-events: none; font-weight: 800; font-size: 1.2rem; color: #fff; animation: tipFloat 1s ease-out forwards; z-index: 50; }
+.tip-float { position: fixed; pointer-events: none; font-weight: 800; font-size: 1.2rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.4); animation: tipFloat 1s ease-out forwards; z-index: 50; }
+.tip-float.big { font-size: 1.7rem; color: #ffd54f; }
 @keyframes tipFloat { 0%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-150%) scale(1.2);} }
 @keyframes slideIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
 
@@ -67,6 +68,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
     <div class="pills">
       <div class="pill">💰 <b id="moneyHud">0</b></div>
       <div class="pill">⭐ <b id="starsHud">0</b></div>
+      <div class="pill">🔥 <b id="streakHud">0</b></div>
+      <div class="pill">⏱ <b id="timeHud">45</b></div>
     </div>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
@@ -78,8 +81,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <h1>🍽️ Star Chef</h1>
       <div class="sub">Serve hungry customers fast</div>
       <div class="how">
-        <div>Tap "Serve" when the customer's food is ready.</div>
-        <div style="margin-top:8px;">Faster service = bigger tips. Collect 5-star reviews!</div>
+        <div>Tap "Serve" the moment the food is ready — fast service means happy customers.</div>
+        <div style="margin-top:8px;">Happy serves build your 🔥 <b>streak</b>: every serve in a streak multiplies your tips, up to ×3. Keep customers from storming out — the kitchen gets busier as the shift goes on!</div>
       </div>
       <div class="stats">
         <div class="stat"><div class="l">Best Tips</div><div class="v" id="bestStart">0</div></div>
@@ -113,26 +116,34 @@ const FOODS = ['🍔', '🍕', '🍜', '🍱', '🥘'];
 
 let state = 'menu';
 let money = 0, stars = 0, best = 0;
-let served = 0;
+let served = 0, streak = 0, bestStreak = 0;
 let currentCustomer = null;
 let startTime = 0;
-let sessionTime = 15000; // 15 seconds per shift
+let sessionTime = 45000; // 45 seconds per shift
 
 function newCustomer() {
-  const patience = 100 + Math.random() * 150;
+  // the kitchen gets busier as the shift goes on
+  const prog = state === 'playing' ? Math.min((Date.now() - startTime) / sessionTime, 1) : 0;
   const order = FOODS[Math.floor(Math.random() * FOODS.length)];
-  const cook = 800 + Math.random() * 800;
-  const tip = Math.ceil(patience / 20);
-  currentCustomer = { emoji: CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)], order, patience, maxPatience: patience, cook, cookStart: Date.now(), tip, earned: 0 };
+  const cook = (800 + Math.random() * 800) * (1 - prog * 0.3);
+  // once food is ready, the customer waits this long before storming out
+  const serveWindow = 2600 - prog * 1400 + Math.random() * 600;
+  const tip = Math.ceil(8 + Math.random() * 10);
+  currentCustomer = { emoji: CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)], order, cook, cookStart: Date.now(), serveWindow, tip };
   render();
+}
+
+function customerHappyness() {
+  const sinceReady = Math.max(0, Date.now() - (currentCustomer.cookStart + currentCustomer.cook));
+  return Math.max(0, 1 - sinceReady / currentCustomer.serveWindow);
 }
 
 function render() {
   if (!currentCustomer) return;
   const now = Date.now();
   const cookProgress = Math.min((now - currentCustomer.cookStart) / currentCustomer.cook, 1);
-  const patienceLeft = Math.max(0, currentCustomer.patience - (now - currentCustomer.cookStart) * 0.66);
-  const patiencePercent = (patienceLeft / currentCustomer.maxPatience) * 100;
+  const happyness = customerHappyness();
+  const patiencePercent = happyness * 100;
 
   const kitchen = document.getElementById('kitchen');
   kitchen.innerHTML = `
@@ -149,8 +160,12 @@ function render() {
   `;
   document.getElementById('moneyHud').textContent = money;
   document.getElementById('starsHud').textContent = stars;
+  document.getElementById('streakHud').textContent = streak;
+  const remaining = Math.max(0, sessionTime - (now - startTime));
+  document.getElementById('timeHud').textContent = Math.ceil(remaining / 1000);
 
-  if (patienceLeft <= 0) miss();
+  if (remaining <= 0) { endShift(); return; }
+  if (happyness <= 0) miss();
   else if (state === 'playing') requestAnimationFrame(render);
 }
 
@@ -159,27 +174,48 @@ function serve() {
   const cookProgress = Math.min((now - currentCustomer.cookStart) / currentCustomer.cook, 1);
   if (cookProgress < 0.9) return;
 
-  const quality = Math.min(Math.max(cookProgress - 0.9, 0) / 0.1, 1);
-  const patienceLeft = Math.max(0, currentCustomer.patience - (now - currentCustomer.cookStart) * 0.66);
-  const happyness = Math.min(patienceLeft / currentCustomer.maxPatience, 1);
-  const tipEarned = Math.ceil(currentCustomer.tip * (0.5 + happyness * 0.5));
+  const happyness = customerHappyness();
+  const happy = happyness >= 0.55;   // served within the first half of the window
+
+  if (happy) { streak++; bestStreak = Math.max(bestStreak, streak); }
+  else streak = 0;
+
+  const mult = 1 + Math.min(streak, 8) * 0.25;   // streak multiplier, up to ×3
+  const tipEarned = Math.ceil(currentCustomer.tip * (0.5 + happyness * 0.5) * mult);
 
   money += tipEarned;
   served++;
-  if (happyness >= 0.8) stars++;
+  if (happy) stars++;
   gameSystem.addXP(Math.floor(tipEarned / 5));
-  audioEffects.playSuccess(750);
 
   const el = document.getElementById('kitchen');
-  const x = el.offsetWidth / 2, y = el.offsetHeight / 2;
-  floatText(x, y, '+' + tipEarned + '💰');
+  const rect = el.getBoundingClientRect();
+  const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+
+  if (happy && streak >= 2) {
+    floatText(x, y, '🔥 ×' + mult.toFixed(2).replace(/\.?0+$/, '') + '  +' + tipEarned + '💰', true);
+    audioEffects.playCombo(streak);
+    if (streak % 5 === 0) {
+      ParticleSystem.confetti(x, y, 12);
+      audioEffects.playLevelUp();
+    } else {
+      ParticleSystem.burst(x, y - 40, '⭐', 5);
+    }
+  } else {
+    floatText(x, y, '+' + tipEarned + '💰');
+    audioEffects.playSuccess(happy ? 850 : 650);
+  }
 
   if (Date.now() - startTime >= sessionTime) endShift();
   else { newCustomer(); render(); }
 }
 
 function miss() {
+  streak = 0;
   audioEffects.playError();
+  ScreenShake.shake(document.getElementById('kitchen'), 7, 220);
+  const rect = document.getElementById('kitchen').getBoundingClientRect();
+  floatText(rect.left + rect.width / 2, rect.top + rect.height / 3, '💨 Customer left!');
   newCustomer();
   render();
 }
@@ -191,6 +227,8 @@ function startGame() {
   money = 0;
   stars = 0;
   served = 0;
+  streak = 0;
+  bestStreak = 0;
   startTime = Date.now();
   newCustomer();
   render();
@@ -206,16 +244,17 @@ function endShift() {
   gameSystem.saveState();
 
   best = Math.max(best, money);
+  if (stars >= 3) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 16);
   document.getElementById('endTitle').textContent = stars >= 5 ? '⭐ Five Stars!' : '🎉 Great Shift!';
-  document.getElementById('endSub').textContent = stars >= 5 ? 'Outstanding service!' : 'Nice earnings!';
+  document.getElementById('endSub').textContent = (stars >= 5 ? 'Outstanding service!' : 'Nice earnings!') + (bestStreak >= 3 ? ' Best streak: 🔥' + bestStreak : '');
   document.getElementById('finalMoney').textContent = money;
   document.getElementById('finalStars').textContent = stars;
   document.getElementById('endModal').classList.add('show');
 }
 
-function floatText(x, y, txt) {
+function floatText(x, y, txt, big) {
   const div = document.createElement('div');
-  div.className = 'tip-float';
+  div.className = 'tip-float' + (big ? ' big' : '');
   div.textContent = txt;
   div.style.left = x + 'px';
   div.style.top = y + 'px';

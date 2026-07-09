@@ -1327,6 +1327,9 @@ function onTap(e) {
 function completeLevel() {
     playComplete();
     if(!completedLevels.includes(currentLevel)) completedLevels.push(currentLevel);
+    // expose progress to the XP tracker (100 pts per constellation)
+    window.__gsScore = (window.__gsScore||0) + 100;
+    window.__gsBestRun = Math.max(window.__gsBestRun||0, completedLevels.length * 100);
     saveProgress();
 
     const p = PUZZLES[currentLevel];
@@ -1499,7 +1502,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('starScore') || '0');
+  // the game accumulates session score in window.__gsScore as constellations complete
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -1513,7 +1517,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('starScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstStar');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 300) gameSystem.unlockAchievement('score300');

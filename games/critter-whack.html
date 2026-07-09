@@ -488,6 +488,8 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
     running=false;clearTimeout(popTimer);clearTimeout(tickTimer);
     cells.forEach(c=>{c.active=false;c.c.classList.remove('up');});
     coins+=coinsEarned;saveCoins();
+    window.__gsScore=(window.__gsScore||0)+score;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
     if(score>best){best=score;localStorage.setItem('cwBest',best);}
     showBest();document.getElementById('coinsStart').textContent=coins;
 
@@ -526,7 +528,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = window.score || 0;
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 5);
@@ -540,7 +543,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = window.score || 0;
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstWhack');
   if (score >= 50) gameSystem.unlockAchievement('score50');
   if (score >= 150) gameSystem.unlockAchievement('score150');

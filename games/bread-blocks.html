@@ -50,6 +50,10 @@ canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0
 .btn:active { transform: scale(.97); }
 .btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
 .how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #c5e1a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+.pill canvas { display: block; }
+.float-pop { position: absolute; z-index: 15; pointer-events: none; font-weight: 900; font-size: 1.3rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.45); animation: floatPop .9s ease-out forwards; white-space: nowrap; }
+.float-pop.big { font-size: 1.7rem; color: #ffd54f; }
+@keyframes floatPop { 0%{opacity:0; transform:translate(-50%,-50%) scale(.6);} 20%{opacity:1; transform:translate(-50%,-70%) scale(1.15);} 100%{opacity:0; transform:translate(-50%,-160%) scale(1);} }
 </style>
 </head>
 <body>
@@ -58,6 +62,7 @@ canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0
     <div class="pills">
       <div class="pill">SCORE <b id="scoreHud">0</b></div>
       <div class="pill">LEVEL <b id="levelHud">1</b></div>
+      <div class="pill">NEXT <canvas id="nextCanvas" width="48" height="36"></canvas></div>
     </div>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
@@ -71,8 +76,9 @@ canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0
       <h1>🍞 Bread Blocks</h1>
       <div class="sub">Stack blocks to clear rows</div>
       <div class="how">
-        <div>Tap left/right to move blocks. Complete rows to clear them.</div>
-        <div style="margin-top:8px;">Don't let blocks reach the top!</div>
+        <div>Tap the <b>sides</b> to move, tap the <b>middle</b> to rotate, <b>swipe down</b> to drop.</div>
+        <div style="margin-top:8px;">Keyboard: ← → move, ↑ rotate, ↓ soft drop, Space hard drop.</div>
+        <div style="margin-top:8px;">Clear rows to score. Back-to-back clears build combos — 4 rows at once is a <b>Bread Basket</b>! 🍞</div>
       </div>
       <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,234,214,0.5); margin-bottom: 12px;">🎮 In-Game Progress</div>
       <div class="stats">
@@ -121,24 +127,35 @@ const SHAPES = [
   [[0, 1, 0], [1, 1, 1]],  // T
 ];
 
+const nextCanvas = document.getElementById('nextCanvas');
+const nctx = nextCanvas.getContext('2d');
+
 let grid = [];
 let state = 'menu';
-let score = 0, lines = 0, level = 1, best = 0;
-let piece = null, nextX = 0, nextY = 0;
+let score = 0, lines = 0, level = 1, best = 0, combo = 0;
+let piece = null, nextPiece = null;
 let dropTime = 0, dropInterval = 800;
 let startTime = 0;
+let clearingRows = [];   // rows mid flash animation; drops pause while set
+let flashT = 0;
 
 function initGrid() {
   grid = [];
   for (let r = 0; r < H; r++) grid[r] = new Array(W).fill(0);
 }
 
-function newPiece() {
+function randomPiece() {
   const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-  piece = { shape, color, x: Math.floor(W / 2) - 1, y: 0 };
-  nextX = piece.x;
-  nextY = piece.y;
+  return { shape, color, x: Math.floor(W / 2) - 1, y: 0 };
+}
+
+function newPiece() {
+  piece = nextPiece || randomPiece();
+  piece.x = Math.floor(W / 2) - 1;
+  piece.y = 0;
+  nextPiece = randomPiece();
+  drawNext();
   if (collision(piece.x, piece.y)) endGame();
 }
 
@@ -153,6 +170,59 @@ function collision(x, y, shape = piece.shape) {
   return false;
 }
 
+function rotateShape(shape) {
+  const rows = shape.length, cols = shape[0].length;
+  const out = [];
+  for (let c = 0; c < cols; c++) {
+    out[c] = [];
+    for (let r = rows - 1; r >= 0; r--) out[c].push(shape[r][c]);
+  }
+  return out;
+}
+
+function tryRotate() {
+  if (!piece || clearingRows.length) return;
+  const rotated = rotateShape(piece.shape);
+  for (const kick of [0, -1, 1, -2, 2]) {
+    if (!collision(piece.x + kick, piece.y, rotated)) {
+      piece.shape = rotated;
+      piece.x += kick;
+      audioEffects.playTap(650);
+      return;
+    }
+  }
+  audioEffects.playTap(250);
+}
+
+function tryMove(dir) {
+  if (!piece || clearingRows.length) return;
+  if (!collision(piece.x + dir, piece.y)) {
+    piece.x += dir;
+    audioEffects.playTap(400);
+  }
+}
+
+function softDrop() {
+  if (!piece || clearingRows.length) return;
+  if (!collision(piece.x, piece.y + 1)) { piece.y++; score++; updateHud(); dropTime = 0; }
+}
+
+function hardDrop() {
+  if (!piece || clearingRows.length) return;
+  let dropped = 0;
+  while (!collision(piece.x, piece.y + 1)) { piece.y++; dropped++; }
+  score += dropped * 2;
+  audioEffects.playPop();
+  ScreenShake.shake(container, 4, 120);
+  placePiece();
+}
+
+function ghostY() {
+  let y = piece.y;
+  while (!collision(piece.x, y + 1)) y++;
+  return y;
+}
+
 function placePiece() {
   for (let r = 0; r < piece.shape.length; r++) {
     for (let c = 0; c < piece.shape[r].length; c++) {
@@ -162,34 +232,91 @@ function placePiece() {
       }
     }
   }
+  dropTime = 0;
   checkLines();
-  newPiece();
 }
 
+const LINE_POINTS = [0, 100, 300, 500, 800];
 function checkLines() {
   const full = [];
   for (let r = 0; r < H; r++) {
     if (grid[r].every(c => c)) full.push(r);
   }
-  if (full.length) {
-    score += full.length * 100 * level;
-    lines += full.length;
-    level = Math.floor(lines / 3) + 1;
-    dropInterval = Math.max(200, 800 - level * 50);
-    audioEffects.playSuccess(800);
-    full.forEach(r => grid.splice(r, 1));
-    grid.unshift(...new Array(full.length).fill(null).map(() => new Array(W).fill(0)));
+  if (!full.length) {
+    combo = 0;
+    newPiece();
+    updateHud();
+    return;
   }
+
+  combo++;
+  let pts = LINE_POINTS[full.length] * level;
+  if (combo > 1) pts += 50 * combo * level;
+  score += pts;
+  lines += full.length;
+  level = Math.floor(lines / 4) + 1;
+  dropInterval = Math.max(180, 800 - (level - 1) * 60);
+
+  // feedback: flash rows, then collapse
+  clearingRows = full;
+  flashT = 0;
+  const rect = canvas.getBoundingClientRect();
+  const midRow = full[Math.floor(full.length / 2)];
+  const px = rect.left + rect.width / 2;
+  const py = rect.top + (midRow + 0.5) * (rect.height / H);
+  if (full.length >= 4) {
+    floatText('🍞 BREAD BASKET! +' + pts, true);
+    audioEffects.playLevelUp();
+    ParticleSystem.confetti(px, py, 16);
+    ScreenShake.shake(container, 9, 300);
+  } else {
+    floatText('+' + pts + (combo > 1 ? '  COMBO ×' + combo : ''), full.length >= 2);
+    audioEffects.playSuccess(700 + full.length * 120);
+    if (combo > 1) audioEffects.playCombo(combo);
+    ParticleSystem.burst(px, py, '✨', 4 + full.length * 3);
+    if (full.length >= 2) ScreenShake.shake(container, 6, 200);
+  }
+
+  setTimeout(() => {
+    clearingRows.forEach(r => grid.splice(r, 1));
+    grid.unshift(...new Array(clearingRows.length).fill(null).map(() => new Array(W).fill(0)));
+    clearingRows = [];
+    newPiece();
+    updateHud();
+  }, 280);
 }
 
-function update(now) {
-  if (state !== 'playing') return;
-  dropTime += now;
+function updateHud() {
+  document.getElementById('scoreHud').textContent = score;
+  document.getElementById('levelHud').textContent = level;
+}
+
+function floatText(txt, big) {
+  const div = document.createElement('div');
+  div.className = 'float-pop' + (big ? ' big' : '');
+  div.textContent = txt;
+  div.style.left = '50%';
+  div.style.top = '40%';
+  document.getElementById('wrapper').appendChild(div);
+  setTimeout(() => div.remove(), 900);
+}
+
+function update(delta) {
+  if (state !== 'playing' || clearingRows.length) { flashT += delta; return; }
+  dropTime += delta;
   if (dropTime >= dropInterval) {
     dropTime = 0;
     if (!collision(piece.x, piece.y + 1)) piece.y++;
     else placePiece();
   }
+}
+
+function drawCell(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x * CELL, y * CELL, CELL - 2, CELL - 2);
+  // baked-bread highlight
+  ctx.fillStyle = 'rgba(255,255,255,.28)';
+  ctx.fillRect(x * CELL, y * CELL, CELL - 2, 4);
 }
 
 function draw() {
@@ -199,27 +326,51 @@ function draw() {
   // grid
   for (let r = 0; r < H; r++) {
     for (let c = 0; c < W; c++) {
-      if (grid[r][c]) {
-        ctx.fillStyle = grid[r][c];
-        ctx.fillRect(c * CELL, r * CELL, CELL - 2, CELL - 2);
-      }
+      if (grid[r][c]) drawCell(c, r, grid[r][c]);
       ctx.strokeStyle = 'rgba(0,0,0,.1)';
       ctx.lineWidth = 1;
       ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
     }
   }
 
-  // piece
-  if (piece) {
-    ctx.fillStyle = piece.color;
-    for (let r = 0; r < piece.shape.length; r++) {
-      for (let c = 0; c < piece.shape[r].length; c++) {
-        if (piece.shape[r][c]) {
-          ctx.fillRect((piece.x + c) * CELL, (piece.y + r) * CELL, CELL - 2, CELL - 2);
-        }
-      }
-    }
+  // flash rows being cleared
+  if (clearingRows.length) {
+    const alpha = 0.55 + 0.45 * Math.sin(flashT * 0.05);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    clearingRows.forEach(r => ctx.fillRect(0, r * CELL, canvas.width, CELL));
   }
+
+  if (piece && !clearingRows.length) {
+    // ghost piece
+    const gy = ghostY();
+    if (gy > piece.y) {
+      ctx.globalAlpha = 0.22;
+      for (let r = 0; r < piece.shape.length; r++)
+        for (let c = 0; c < piece.shape[r].length; c++)
+          if (piece.shape[r][c]) {
+            ctx.fillStyle = piece.color;
+            ctx.fillRect((piece.x + c) * CELL, (gy + r) * CELL, CELL - 2, CELL - 2);
+          }
+      ctx.globalAlpha = 1;
+    }
+    // active piece
+    for (let r = 0; r < piece.shape.length; r++)
+      for (let c = 0; c < piece.shape[r].length; c++)
+        if (piece.shape[r][c]) drawCell(piece.x + c, piece.y + r, piece.color);
+  }
+}
+
+function drawNext() {
+  nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  if (!nextPiece) return;
+  const s = nextPiece.shape;
+  const cell = 10;
+  const ox = (nextCanvas.width - s[0].length * cell) / 2;
+  const oy = (nextCanvas.height - s.length * cell) / 2;
+  nctx.fillStyle = nextPiece.color;
+  for (let r = 0; r < s.length; r++)
+    for (let c = 0; c < s[r].length; c++)
+      if (s[r][c]) nctx.fillRect(ox + c * cell, oy + r * cell, cell - 1, cell - 1);
 }
 
 function startGame() {
@@ -230,8 +381,12 @@ function startGame() {
   score = 0;
   lines = 0;
   level = 1;
+  combo = 0;
   dropInterval = 800;
+  clearingRows = [];
+  nextPiece = null;
   newPiece();
+  updateHud();
   startTime = performance.now();
   dropTime = 0;
   loop();
@@ -253,14 +408,38 @@ function endGame() {
   document.getElementById('overModal').classList.add('show');
 }
 
-canvas.addEventListener('click', (e) => {
+// touch/mouse: tap sides to move, tap middle to rotate, swipe down to hard drop
+let pressStart = null;
+canvas.addEventListener('pointerdown', (e) => {
   if (state !== 'playing') return;
+  e.preventDefault();
+  pressStart = { x: e.clientX, y: e.clientY, t: performance.now() };
+}, { passive: false });
+
+canvas.addEventListener('pointerup', (e) => {
+  if (state !== 'playing' || !pressStart) return;
+  const dx = e.clientX - pressStart.x;
+  const dy = e.clientY - pressStart.y;
+  pressStart = null;
+
+  if (dy > 40 && dy > Math.abs(dx)) { hardDrop(); return; }   // swipe down
+  if (Math.abs(dx) > 40 || Math.abs(dy) > 40) return;         // other swipes ignored
+
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
-  const dir = x < rect.width / 2 ? -1 : 1;
-  if (!collision(piece.x + dir, piece.y)) {
-    piece.x += dir;
-    audioEffects.playTap(400);
+  if (x < rect.width / 3) tryMove(-1);
+  else if (x > rect.width * 2 / 3) tryMove(1);
+  else tryRotate();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (state !== 'playing') return;
+  switch (e.code) {
+    case 'ArrowLeft': e.preventDefault(); tryMove(-1); break;
+    case 'ArrowRight': e.preventDefault(); tryMove(1); break;
+    case 'ArrowUp': case 'KeyZ': e.preventDefault(); tryRotate(); break;
+    case 'ArrowDown': e.preventDefault(); softDrop(); break;
+    case 'Space': e.preventDefault(); hardDrop(); break;
   }
 });
 

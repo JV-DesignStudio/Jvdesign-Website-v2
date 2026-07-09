@@ -2445,6 +2445,8 @@ function hexPath(x,y,r){
 // ══════════════════════════════════════════════════════════
 function gameOver(){
     gameState='dead';
+    window.__gsScore=(window.__gsScore||0)+score;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
     SFX.gameOver();
     // Clear all gameplay objects so nothing renders behind the game over screen
     enemies=[]; projectiles=[]; arcs=[]; scorchPools=[]; vortexZones=[]; poisonClouds=[];
@@ -2509,7 +2511,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('arcaneScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 15);
@@ -2523,7 +2526,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('arcaneScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstCitadel');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 250) gameSystem.unlockAchievement('score250');

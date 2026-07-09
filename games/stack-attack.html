@@ -408,6 +408,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 
   function end(){
     running=false;hint.classList.add('hidden');sfxOver();
+    window.__gsScore=(window.__gsScore||0)+score;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
     if(score>best){best=score;localStorage.setItem('stackBest',best);}
     document.getElementById('bestStart').textContent='Best: '+best;
     document.getElementById('coinsStart').textContent=coins;
@@ -446,7 +448,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = window.score || 0;
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -460,7 +463,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = window.score || 0;
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstStack');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 300) gameSystem.unlockAchievement('score300');

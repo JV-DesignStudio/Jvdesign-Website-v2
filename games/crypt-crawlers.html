@@ -1282,6 +1282,9 @@ function updateHUD(){
 // END SCREENS
 // ═══════════════════════════════════════════════════════════════════
 function showDeath(){
+  const runScore=coinsThisRun+totalKills*10+(currentFloor+1)*50;
+  window.__gsScore=(window.__gsScore||0)+runScore;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
   const retained=Math.floor(coinsThisRun*getRetentionPct());
   document.getElementById('death-stats').innerHTML=`Floor: <b>${currentFloor+1}/${MAX_FLOORS}</b> · Kills: <b>${totalKills}</b>`;
   document.getElementById('death-coins').textContent=`🪙 ${bank} coins banked · Kept ${Math.round(getRetentionPct()*100)}% of run coins`;
@@ -1289,6 +1292,9 @@ function showDeath(){
   document.getElementById('death-overlay').classList.remove('hidden');
 }
 function showWin(full){
+  const runScore=coinsThisRun+totalKills*10+(currentFloor+1)*50+(full?500:0);
+  window.__gsScore=(window.__gsScore||0)+runScore;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
   if(full)bankCoinsWin();else bankCoinsWin();
   document.getElementById('win-stats').innerHTML=full?`ALL ${MAX_FLOORS} FLOORS CLEARED! 🏆<br>Kills: <b>${totalKills}</b>`:`Floor ${currentFloor+1}/${MAX_FLOORS} · Kills: <b>${totalKills}</b>`;
   document.getElementById('win-coins').textContent=`🪙 ${bank} total coins banked`;
@@ -1364,7 +1370,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('cryptScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 20);
@@ -1378,7 +1385,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('cryptScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstCrawl');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 300) gameSystem.unlockAchievement('score300');

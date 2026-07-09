@@ -923,31 +923,16 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 const gameSystem = new GameSystem('cozy-creatures-alt', 'Cozy Creatures Snuggle', 'pip');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('cozyCreaturesScore') || '0');
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 10);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('cozyCreaturesScore') || '0');
-  if (score > 0) gameSystem.unlockAchievement('firstSnuggle');
-  if (score >= 100) gameSystem.unlockAchievement('score100');
-  if (score >= 300) gameSystem.unlockAchievement('score300');
-  if (score >= 500) gameSystem.unlockAchievement('score500');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Cozy Creatures Snuggle is a tabletop game page (no digital score),
+// so grant a small XP bonus once per visit on first interaction.
+let visitXpGiven = false;
+window.addEventListener('pointerdown', () => {
+  if (visitXpGiven) return;
+  visitXpGiven = true;
+  gameSystem.addXP(10);
+  gameSystem.unlockAchievement('firstSnuggle');
+  gameSystem.saveState();
+});
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

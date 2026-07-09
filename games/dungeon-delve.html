@@ -1131,6 +1131,9 @@ function equipLoot() {
 // END SCREEN
 // ══════════════════════════════════════════════════════════════════
 function showEnd(won) {
+  const runScore = player.totalGold + player.kills*10 + (player.floorReached+1)*50 + (won?500:0);
+  window.__gsScore = (window.__gsScore||0) + runScore;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, runScore);
   if (!won) sfx.defeat();
   $('combat-screen').classList.add('hidden');
   const box = $('end-box');
@@ -1234,8 +1237,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  // Dungeon Delve likely stores score in localStorage
-  const currentScore = parseInt(localStorage.getItem('dungeonScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 25);
@@ -1249,7 +1252,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('dungeonScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstDelve');
   if (score >= 100) gameSystem.unlockAchievement('score100');
   if (score >= 250) gameSystem.unlockAchievement('score250');

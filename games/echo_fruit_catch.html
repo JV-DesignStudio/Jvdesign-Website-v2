@@ -1491,6 +1491,9 @@ window.restartGame=restartGame;
 
 function endGame(){
   gState='dead';
+  window.__gsScore=(window.__gsScore||0)+score;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
+  window.__gsLastRun=score;
   saveBest(score);
   lifetime.games++; lifetime.totalFruit+=fruitCaught; lifetime.totalScore+=score;
   saveLifetime();
@@ -1622,7 +1625,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('fruitScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 5);
@@ -1636,7 +1640,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('fruitScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstCatch');
   if (score >= 50) gameSystem.unlockAchievement('score50');
   if (score >= 150) gameSystem.unlockAchievement('score150');
@@ -1657,18 +1661,18 @@ window.addEventListener('beforeunload', () => {
 function reportGameToProfile() {
   if (typeof playerProfile === 'undefined') return;
 
-  const score = parseInt(localStorage.getItem('fruitScore') || '0');
+  const score = Math.floor(window.__gsLastRun || 0);
   if (score > 0) {
     const xpReward = Math.min(Math.floor(score / 10), 50);
     playerProfile.addXP(xpReward, 'game:echo-fruit-catch');
   }
 }
 
-// Hook endGame to report to profile
+// Hook endGame to report to profile (run the game's endGame first so the run score is exposed)
 const originalEndGame = window.endGame;
 window.endGame = function() {
-  reportGameToProfile();
   originalEndGame.call(this);
+  reportGameToProfile();
 };
 </script>
 

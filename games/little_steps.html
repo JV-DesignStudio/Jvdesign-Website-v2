@@ -1543,6 +1543,8 @@ function gameOver(){
   spawnBurst(W/2 + game.laneX * (perspW(0)/3), H-130+game.y, '#ff5470', 18);
   if (db.haptics && navigator.vibrate) navigator.vibrate([80, 40, 120]);
   db.sparks += game.runSparks;
+  window.__gsScore = (window.__gsScore||0) + game.score;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, game.score);
   const isBest = game.score > db.best;
   if (isBest) db.best = game.score;
   saveDB();
@@ -1613,7 +1615,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('stepsScore') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -1627,7 +1630,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('stepsScore') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstStep');
   if (score >= 50) gameSystem.unlockAchievement('score50');
   if (score >= 150) gameSystem.unlockAchievement('score150');
