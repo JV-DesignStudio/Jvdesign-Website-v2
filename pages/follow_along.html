@@ -113,8 +113,13 @@ body{font-family:'Inter',sans-serif;background:#0e0c0a;color:var(--beige);overfl
         .v-meta{font-size:.72rem;color:rgba(240,234,214,.3);margin-top:3px}
 
         /* Featured player */
-        .player-wrap{border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 20px 60px rgba(0,0,0,.5);margin-bottom:16px}
+        .player-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 20px 60px rgba(0,0,0,.5);margin-bottom:16px}
         .player-wrap iframe{display:block;width:100%;aspect-ratio:16/9;border:none}
+        .yt-facade{position:absolute;inset:0;width:100%;border:none;padding:0;cursor:pointer;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;aspect-ratio:16/9}
+        .yt-facade::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.35))}
+        .yt-facade-play{position:relative;width:68px;height:48px;border-radius:12px;background:rgba(18,18,18,.82);display:flex;align-items:center;justify-content:center;transition:background .15s}
+        .yt-facade:hover .yt-facade-play{background:#ff0000}
+        .yt-facade-play svg{width:30px;height:30px;fill:#fff}
         .player-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:24px}
         .player-title{font-family:'Fredoka',cursive;font-size:1.1rem;font-weight:700;color:white}
         .player-info-sub{font-size:.75rem;color:rgba(240,234,214,.35);margin-top:3px}
@@ -337,8 +342,13 @@ body{font-family:'Inter',sans-serif;background:#0e0c0a;color:var(--beige);overfl
 
     <!-- Featured player -->
     <div class="player-wrap">
-        <iframe id="studioPlayer" src="https://www.youtube.com/embed/3lDYDQENDQg?rel=0&modestbranding=1"
+        <iframe id="studioPlayer" src="about:blank" loading="lazy"
             title="JV_DesignStudio" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+        <button type="button" class="yt-facade" id="studioFacade" aria-label="Play: Mechanize Release Trailer"
+            style="background-image:url('https://img.youtube.com/vi/3lDYDQENDQg/hqdefault.jpg')"
+            onclick="playYT('3lDYDQENDQg','Mechanize Release Trailer','JV_DesignStudio · 0:53','studioPlayer','studioPlayerTitle','studioPlayerMeta','studioPlayerYT');this.remove()">
+            <span class="yt-facade-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </button>
     </div>
     <div class="player-meta">
         <div>
@@ -375,8 +385,13 @@ body{font-family:'Inter',sans-serif;background:#0e0c0a;color:var(--beige);overfl
     </div>
 
     <div class="player-wrap">
-        <iframe id="gamingPlayer" src="https://www.youtube.com/embed/5n6kVdx_l8M?rel=0&modestbranding=1"
+        <iframe id="gamingPlayer" src="about:blank" loading="lazy"
             title="Joshyy Gaming" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+        <button type="button" class="yt-facade" id="gamingFacade" aria-label="Play: latest gaming episode"
+            style="background-image:url('https://img.youtube.com/vi/5n6kVdx_l8M/hqdefault.jpg')"
+            onclick="playYT('5n6kVdx_l8M','#mw3 The Good, The Chill, &amp; The Unexpected #episode17','Joshyy · Latest episode','gamingPlayer','gamingPlayerTitle','gamingPlayerMeta','gamingPlayerYT');this.remove()">
+            <span class="yt-facade-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+        </button>
     </div>
     <div class="player-meta">
         <div>
@@ -528,7 +543,10 @@ const ITCH_GAMES = [
 
 // ─── RENDER HELPERS ──────────────────────────────────────────────────────────
 function playYT(id, title, meta, playerEl, titleEl, metaEl, ytLinkEl){
-    document.getElementById(playerEl).src = `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=1`;
+    const player = document.getElementById(playerEl);
+    const facade = player.closest('.player-wrap').querySelector('.yt-facade');
+    if (facade) facade.remove();
+    player.src = `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&autoplay=1`;
     document.getElementById(titleEl).textContent = title;
     document.getElementById(metaEl).textContent = meta;
     document.getElementById(ytLinkEl).href = `https://www.youtube.com/watch?v=${id}`;
