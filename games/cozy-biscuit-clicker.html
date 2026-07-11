@@ -1182,25 +1182,19 @@ const gameSystem = new GameSystem('biscuit-clicker', 'Biscuit Tin Clicker', 'pip
 const soundManager = new SoundManager(gameSystem);
 
 // Save game state to progression system
-const originalSaveNow = window.saveNow || (() => {});
-window.saveNow = function() {
-  originalSaveNow();
-  gameSystem.addCoins(Math.floor(Math.random() * 5)); // Small coin bonus
-  gameSystem.saveState();
-};
-
-// Track XP on clicks
+// Track XP on clicks: listen on the tin button directly
+// (pointerdown fires on both touch and mouse, unlike click which
+// the game's touchstart preventDefault suppresses on mobile)
 let lastXPTick = 0;
-const originalOnClick = window.onClickTin || (() => {});
-window.onClickTin = function(e) {
-  originalOnClick(e);
+document.getElementById('tinBtn').addEventListener('pointerdown', () => {
   // Grant 1 XP per 10 clicks
   lastXPTick++;
   if (lastXPTick >= 10) {
     gameSystem.addXP(1);
+    gameSystem.saveState();
     lastXPTick = 0;
   }
-};
+});
 
 // Check for achievements
 function checkGameSystemAchievements() {

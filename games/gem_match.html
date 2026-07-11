@@ -778,18 +778,20 @@ body{
     </div>
 </footer>
 <script>
-const observer = new IntersectionObserver((entries) => {
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const parent = entry.target.parentElement;
             const siblings = [...parent.querySelectorAll('.reveal')];
             const idx = siblings.indexOf(entry.target);
             setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            observer.unobserve(entry.target);
+            footerRevealObserver.unobserve(entry.target);
         }
     });
 }, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
@@ -1389,6 +1391,8 @@ function startTimer(){
 // ── Game over ──────────────────────────────────────────
 function endGame(){
   if(timerID){clearInterval(timerID);timerID=null;}
+  window.__gsScore=(window.__gsScore||0)+score;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
   const isNew=score>bestScore&&score>0;
   if(isNew){bestScore=score;localStorage.setItem('gmBest',bestScore);SFX.newBest();}
   else SFX.over();
@@ -1565,7 +1569,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = window.bestScore || 0;
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
@@ -1579,7 +1584,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = window.bestScore || 0;
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstMatch');
   if (score >= 500) gameSystem.unlockAchievement('score500');
   if (score >= 1000) gameSystem.unlockAchievement('score1000');

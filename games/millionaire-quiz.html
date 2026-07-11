@@ -203,6 +203,7 @@ main { flex: 1; }
 </style>
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
@@ -298,18 +299,20 @@ main { flex: 1; }
     </div>
 </footer>
 <script>
-const observer = new IntersectionObserver((entries) => {
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const parent = entry.target.parentElement;
             const siblings = [...parent.querySelectorAll('.reveal')];
             const idx = siblings.indexOf(entry.target);
             setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            observer.unobserve(entry.target);
+            footerRevealObserver.unobserve(entry.target);
         }
     });
 }, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
@@ -324,6 +327,7 @@ const esc=s=>{if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g
 
 let state={view:"setup",quizData:null,playerName:"",qIdx:0,options:[],selected:null,revealed:false,answers:[]};
 let ss={title:"",numQ:5,questions:Array.from({length:5},eq)};
+const quizFx = new AudioEffects(0.55);
 function eq(){return{question:"",correct:"",wrong1:"",wrong2:"",wrong3:"",fact:""};}
 
 function render(){
@@ -459,9 +463,19 @@ function renderResults(){
   const title=state.quizData.title;
   const score=answers.filter(a=>a.isCorrect).length;
   const total=answers.length;
-  // expose quiz result to the XP tracker (100 pts per correct answer)
-  window.__gsScore=(window.__gsScore||0)+score*100;
-  window.__gsBestRun=Math.max(window.__gsBestRun||0,score*100);
+  if(!state._scored){
+    state._scored=true;
+    // expose quiz result to the XP tracker (100 pts per correct answer)
+    window.__gsScore=(window.__gsScore||0)+score*100;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,score*100);
+    const p=Math.round((score/total)*100);
+    if(p>=70){
+      quizFx.playLevelUp();
+      ParticleSystem.confetti(window.innerWidth/2,window.innerHeight/3,p===100?24:14);
+    }else{
+      quizFx.playSuccess(700);
+    }
+  }
   const pct=Math.round((score/total)*100);
   const lastOk=answers.reduce((acc,a,i)=>a.isCorrect?i:acc,-1);
   const won=lastOk>=0?prize(lastOk):"£0";
@@ -551,9 +565,19 @@ function bindEvents(){
   }
   if(state.view==="game"){
     app.querySelectorAll(".opt-btn:not([disabled])").forEach(btn=>{
-      btn.addEventListener("click",e=>{state.selected=parseInt(e.currentTarget.dataset.optidx);render();});
+      btn.addEventListener("click",e=>{quizFx.playTap(620);state.selected=parseInt(e.currentTarget.dataset.optidx);render();});
     });
-    app.querySelector("#finalBtn")?.addEventListener("click",()=>{state.revealed=true;render();});
+    app.querySelector("#finalBtn")?.addEventListener("click",()=>{
+      state.revealed=true;
+      const ok=state.options[state.selected]?.isCorrect;
+      if(ok){
+        quizFx.playSuccess(900);
+        ParticleSystem.burst(window.innerWidth/2,window.innerHeight/3,'✨',8);
+      }else{
+        quizFx.playError();
+      }
+      render();
+    });
     app.querySelector("#nextBtn")?.addEventListener("click",nextQ);
   }
   if(state.view==="results"){
@@ -603,7 +627,7 @@ function launchQuiz(preview){
   }
 }
 function showErr(msg){const el=document.getElementById("setupError");if(el)el.innerHTML=`<div class="error-box">⚠️ ${esc(msg)}</div>`;}
-function startGame(){state.qIdx=0;state.answers=[];state.view="game";prepQ();}
+function startGame(){state.qIdx=0;state.answers=[];state.view="game";state._scored=false;prepQ();}
 function prepQ(){
   const q=state.quizData.questions[state.qIdx];
   state.options=shuffle([{text:q.correct,isCorrect:true},{text:q.wrong1,isCorrect:false},{text:q.wrong2,isCorrect:false},{text:q.wrong3,isCorrect:false}]);

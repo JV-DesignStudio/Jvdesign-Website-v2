@@ -317,6 +317,7 @@
     </script><link rel="stylesheet" href="../style-shared.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
@@ -965,6 +966,7 @@ function update(dt){
     }
     // Muzzle flash
     spawnParticles(player.x+(sx/len)*16,player.y+(sy/len)*16,player.color,3);
+    cryptFx.playTap(340);
   }
 
   // Bullets
@@ -978,8 +980,8 @@ function update(dt){
         damageNumbers.push({x:e.x,y:e.y-e.size,text:Math.ceil(b.dmg),life:40,color:'#ffd700'});
         spawnParticles(b.x,b.y,e.color,4);bullets.splice(i,1);screenShake=3;
         if(e.hp<=0){
-          if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;}
-          else spawnParticles(e.x,e.y,e.color,12);
+          if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;cryptFx.playLevelUp();}
+          else {spawnParticles(e.x,e.y,e.color,12);cryptFx.playPop();}
           totalKills++;
           // Paladin: heal on kill
           if(player.passive==='healOnKill'){player.hp=Math.min(player.maxHp,player.hp+1);}
@@ -1020,11 +1022,11 @@ function update(dt){
   // Pickups
   for(let i=pickups.length-1;i>=0;i--){
     const p=pickups[i];
-    if(Math.hypot(p.x-player.x,p.y-player.y)<28){applyPickup(p);spawnParticles(p.x,p.y,p.color,8);pickups.splice(i,1);}
+    if(Math.hypot(p.x-player.x,p.y-player.y)<28){applyPickup(p);spawnParticles(p.x,p.y,p.color,8);cryptFx.playSuccess(760);pickups.splice(i,1);}
   }
 
   // Room clear
-  if(!doorsOpen&&enemies.length===0){doorsOpen=true;floorMap.grid[roomY][roomX].cleared=true;spawnParticles(CW/2,CH/2,'#ffd700',20);}
+  if(!doorsOpen&&enemies.length===0){doorsOpen=true;floorMap.grid[roomY][roomX].cleared=true;spawnParticles(CW/2,CH/2,'#ffd700',20);cryptFx.playSuccess(980);}
 
   // Boss defeated
   if(bossDefeated&&enemies.length===0){
@@ -1134,7 +1136,9 @@ function closeInRunShop(){
 // ═══════════════════════════════════════════════════════════════════
 // HURT / PICKUPS
 // ═══════════════════════════════════════════════════════════════════
+const cryptFx=new AudioEffects(0.45);
 function hurtPlayer(dmg){
+  cryptFx.playError();
   player.hp-=dmg;iFrames=40;screenShake=6;damageFlashTimer=12;
   damageNumbers.push({x:player.x,y:player.y-20,text:Math.ceil(dmg),life:40,color:'#e74c3c'});
   spawnParticles(player.x,player.y,'#e74c3c',6);
@@ -1292,6 +1296,8 @@ function showDeath(){
   document.getElementById('death-overlay').classList.remove('hidden');
 }
 function showWin(full){
+  cryptFx.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, full?24:14);
   const runScore=coinsThisRun+totalKills*10+(currentFloor+1)*50+(full?500:0);
   window.__gsScore=(window.__gsScore||0)+runScore;
   window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);

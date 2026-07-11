@@ -1824,6 +1824,8 @@ function scoreMatches(triggered) {
 
   vault.coins += coinsEarned;
   vault.stats.lifetime_coins += coinsEarned;
+  window.__gsScore = (window.__gsScore||0) + coinsEarned;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, window.__gsScore);
   cravingProgress += cravingDelta;
 
   if (triggered.size >= 4) burstSparkles();
@@ -1836,6 +1838,8 @@ function scoreMatches(triggered) {
 function fulfilGuest() {
   vault.happiness += 1;
   vault.stats.guests_served += 1;
+  window.__gsScore = (window.__gsScore||0) + 10;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, window.__gsScore);
   vault.stats.guests_each[currentGuest.id] = (vault.stats.guests_each[currentGuest.id] || 0) + 1;
   vault.coins += 10;
   vault.stats.lifetime_coins += 10;
@@ -2530,7 +2534,8 @@ const audioEffects = new AudioEffects(0.7);
 // Track score as XP (10 points = 1 XP)
 let lastScore = 0;
 setInterval(() => {
-  const currentScore = parseInt(document.querySelector('[data-stat="score"]')?.textContent || vault.score || '0');
+  // the game accumulates session coins in window.__gsScore as they are earned
+  const currentScore = Math.floor(window.__gsScore || 0);
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
     if (xpGained > 0) {
@@ -2542,7 +2547,7 @@ setInterval(() => {
 
 // Check achievements
 function checkGameSystemAchievements() {
-  const score = vault.score || 0;
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstMatch');
   if (score >= 500) gameSystem.unlockAchievement('score500');
   if (score >= 1000) gameSystem.unlockAchievement('score1000');

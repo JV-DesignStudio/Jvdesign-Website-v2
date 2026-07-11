@@ -1,0 +1,29 @@
+#!/bin/sh
+# Reject keyboard-mash commit messages ("wdaw", "nujinuiq", "fsefes"...).
+# A good message: at least 10 characters and at least two words.
+# Versioned in .githooks/ — activate with: git config core.hooksPath .githooks
+
+msg=$(grep -v '^#' "$1" | tr -d '\r\n')
+
+# Always allow merges, reverts, and autosquash commits
+case "$msg" in
+  Merge*|Revert*|fixup!*|squash!*) exit 0 ;;
+esac
+
+len=${#msg}
+words=$(printf '%s' "$msg" | wc -w)
+
+if [ "$len" -lt 10 ] || [ "$words" -lt 2 ]; then
+  echo ""
+  echo "  ✋ Commit message looks like a placeholder: \"$msg\""
+  echo ""
+  echo "  Please write a short real message (10+ chars, 2+ words), e.g.:"
+  echo "    Fix nav labels on scratch workshop pages"
+  echo "    Perf: lazy-load hero video on index"
+  echo ""
+  echo "  (This guard exists because junk messages like \"wdaw\" made"
+  echo "   past repairs much harder. To bypass once: git commit --no-verify)"
+  echo ""
+  exit 1
+fi
+exit 0
