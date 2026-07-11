@@ -2199,6 +2199,9 @@ function die() {
   // Award XP, based on height + coins + a small completion bonus
   const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10;
   const levelUp = awardXp(xpEarned);
+  const runScore = Math.floor(state.heightM) + state.runCoins * 5;
+  window.__gsScore = (window.__gsScore||0) + runScore;
+  window.__gsBestRun = Math.max(window.__gsBestRun||0, runScore);
 
   const isNewBest = state.heightM > save.bestHeight;
   if (isNewBest) {
@@ -2669,21 +2672,59 @@ function jvdsCloseStrip(){
     </div>
 </footer>
 <script>
-const observer = new IntersectionObserver((entries) => {
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const parent = entry.target.parentElement;
             const siblings = [...parent.querySelectorAll('.reveal')];
             const idx = siblings.indexOf(entry.target);
             setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            observer.unobserve(entry.target);
+            footerRevealObserver.unobserve(entry.target);
         }
     });
 }, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('sky-high-squirt', 'Sky High Squirt', 'squirt');
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress() {
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
+
+  if (currentScore > lastScore) {
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if (xpGained > 0) {
+      gameSystem.addXP(xpGained);
+      lastScore = currentScore;
+    }
+  }
+}
+
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements() {
+  const score = Math.floor(window.__gsBestRun || 0);
+  if (score > 0) gameSystem.unlockAchievement('firstJump');
+  if (score >= 100) gameSystem.unlockAchievement('height100');
+  if (score >= 500) gameSystem.unlockAchievement('height500');
+  gameSystem.checkAchievements();
+}
+
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
 </body>
 </html>

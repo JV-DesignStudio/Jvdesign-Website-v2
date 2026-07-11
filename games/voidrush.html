@@ -544,18 +544,20 @@ footer a:hover{color:rgba(240,234,214,.85)}
     </div>
 </footer>
 <script>
-const observer = new IntersectionObserver((entries) => {
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const parent = entry.target.parentElement;
             const siblings = [...parent.querySelectorAll('.reveal')];
             const idx = siblings.indexOf(entry.target);
             setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            observer.unobserve(entry.target);
+            footerRevealObserver.unobserve(entry.target);
         }
     });
 }, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
@@ -1596,6 +1598,9 @@ function endGame2(){
   if(gameState==='dead') return;
   gameState='dead';
   const d=Math.floor(dist); saveBest2(d);
+  const runScore=d+totalCredits*5;
+  window.__gsScore=(window.__gsScore||0)+runScore;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
   const isNew=d>best2&&d>0;
   SFX.die();
   // Add coins to wallet
@@ -1912,7 +1917,8 @@ const soundManager = new SoundManager(gameSystem);
 
 let lastScore = 0;
 function trackGameSystemProgress() {
-  const currentScore = parseInt(localStorage.getItem('score') || '0');
+  // the game accumulates session score in window.__gsScore at the end of each run
+  const currentScore = Math.floor(window.__gsScore || 0);
 
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 15);
@@ -1926,7 +1932,7 @@ function trackGameSystemProgress() {
 setInterval(trackGameSystemProgress, 500);
 
 function checkGameSystemAchievements() {
-  const score = parseInt(localStorage.getItem('score') || '0');
+  const score = Math.floor(window.__gsBestRun || 0);
   if (score > 0) gameSystem.unlockAchievement('firstRun');
   if (score >= 150) gameSystem.unlockAchievement('score150');
   if (score >= 300) gameSystem.unlockAchievement('score300');

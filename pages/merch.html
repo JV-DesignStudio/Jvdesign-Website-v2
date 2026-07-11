@@ -174,10 +174,10 @@
         <p class="shop-sub">If the shop doesn't load below, tap <strong>Open Full Store</strong> to browse directly on Printify.</p>
 
         <div class="iframe-wrap">
-            <iframe id="shopFrame" class="shop-iframe" src="https://whydoidothis.printify.me/" title="JVDesignStudio Merch Store" loading="lazy" allowfullscreen></iframe>
-            <div class="iframe-fallback" id="iframeFallback">
+            <!-- Printify blocks embedding via CSP frame-ancestors, so link out instead of an iframe -->
+            <div class="iframe-fallback" id="iframeFallback" style="display:block">
                 <div style="font-size:3rem;margin-bottom:16px">🛍️</div>
-                <p>The embedded store couldn't load this can happen with certain privacy settings. Visit the store directly instead:</p>
+                <p>The full store lives on Printify, with every design, size and colour. Browse it right here:</p>
                 <a href="https://whydoidothis.printify.me/" target="_blank" rel="noopener noreferrer" class="btn-store">Open Full Store →</a>
             </div>
         </div>
@@ -238,18 +238,20 @@
     </div>
 </footer>
 <script>
-const observer = new IntersectionObserver((entries) => {
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const parent = entry.target.parentElement;
             const siblings = [...parent.querySelectorAll('.reveal')];
             const idx = siblings.indexOf(entry.target);
             setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            observer.unobserve(entry.target);
+            footerRevealObserver.unobserve(entry.target);
         }
     });
 }, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
@@ -273,12 +275,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-// Iframe fallback
-const frame=document.getElementById('shopFrame');
-let loaded=false;
-frame.addEventListener('load',()=>{loaded=true});
-frame.addEventListener('error',()=>{document.getElementById('iframeFallback').style.display='block';frame.style.display='none'});
-setTimeout(()=>{if(!loaded){document.getElementById('iframeFallback').style.display='block';frame.style.display='none'}},12000);
 </script>
 <script>
 const _revObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');_revObs.unobserve(e.target);}});},{threshold:0.07});

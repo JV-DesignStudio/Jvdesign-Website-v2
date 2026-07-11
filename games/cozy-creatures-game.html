@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cozy Creatures: The Ultimate Snuggle</title>
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="description" content="Play Cozy Creatures, a gentle kids browser game by JVDesignStudio. Safe, fun, and free.">
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://jvdesignstudio.co.uk/games/cozy-creatures-game.html">
+<meta property="og:title"       content="Cozy Creatures: The Ultimate Snuggle">
+<meta property="og:description" content="Play Cozy Creatures, a gentle kids browser game by JVDesignStudio. Safe, fun, and free.">
+<meta property="og:image"       content="https://jvdesignstudio.co.uk/Cozy%20Creatures.jpg">
+<meta property="og:site_name"   content="JVDesignStudio">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="Cozy Creatures: The Ultimate Snuggle">
+<meta name="twitter:description" content="Play Cozy Creatures, a gentle kids browser game by JVDesignStudio. Safe, fun, and free.">
+<meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Cozy%20Creatures.jpg">
 <style>
   :root {
     --cream: #fdf6e3;
@@ -317,6 +329,7 @@
 <link rel="stylesheet" href="../style-shared.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
@@ -601,6 +614,8 @@ const RAIN_DECK_FULL = [
 //  STATE
 // ══════════════════════════════════════════
 let G = {};
+
+const boardFx = new AudioEffects(0.5);
 
 function initState(numPlayers, chars, goal) {
   const players = chars.map((c, i) => ({
@@ -948,11 +963,13 @@ function drawRainCard() {
   const rc = G.rainDeck.shift();
   if (rc.type === 'sunshine') {
     G.sunshineCount++;
+    boardFx.playError();
     addLog(`☀️ Sunshine Break revealed! (${G.sunshineCount}/3)`, 'bad');
     if (G.sunshineCount >= 3) {
       setTimeout(() => triggerLoss('Three Sunshine Breaks appeared the rain stopped before you got cozy!'), 400);
     }
   } else {
+    boardFx.playTap(320);
     addLog('🌧️ Rain card drawn, steady drizzle...', 'info');
   }
   renderRain();
@@ -1018,6 +1035,8 @@ function showDrawnModal(card, discarded, extraMsg) {
       ${extraMsg ? `<div style="margin-top:0.5rem;font-weight:bold;color:${typeColor}">${extraMsg}</div>` : ''}
       ${discarded ? '<div style="color:#888;margin-top:0.4rem;font-size:0.8rem;">(Inventory full, discarded)</div>' : ''}
     </div>`;
+  if (card.type === 'hazard') boardFx.playError();
+  else boardFx.playTap(560);
   modal.classList.add('open');
 }
 
@@ -1143,6 +1162,8 @@ function doAssemble(idx) {
   G.assembledTokens.push(token);
   G.ap -= 3;
   addLog(`✅ Assembled: ${token}!`, 'good');
+  boardFx.playSuccess(850);
+  ParticleSystem.burst(window.innerWidth/2, window.innerHeight/2, '✨', 8);
   closeAssembleModal();
   checkWin();
   renderGame();
@@ -1241,6 +1262,8 @@ function triggerWin() {
   G.gameOver = true;
   window.__gsScore = (window.__gsScore||0) + 200;
   window.__gsBestRun = Math.max(window.__gsBestRun||0, 200);
+  boardFx.playLevelUp();
+  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 20);
   document.getElementById('end-content').innerHTML = `
     <div class="modal-emoji">🎉</div>
     <h2>You Win!</h2>
@@ -1254,6 +1277,7 @@ function triggerLoss(reason) {
   G.gameOver = true;
   window.__gsScore = (window.__gsScore||0) + 50;
   window.__gsBestRun = Math.max(window.__gsBestRun||0, 50);
+  boardFx.playError();
   document.getElementById('end-content').innerHTML = `
     <div class="modal-emoji">☔</div>
     <h2>Oh no...</h2>
