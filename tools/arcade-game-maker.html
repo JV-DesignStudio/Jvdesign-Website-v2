@@ -1400,6 +1400,13 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 
         <!-- ── BUILD ── -->
         <div class="tab-content on" id="tab-build">
+            <!-- ── AI DESCRIBE-YOUR-GAME ── -->
+            <div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(0,212,170,.06));border:1px solid rgba(124,58,237,.28);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+              <div style="font-family:'Fredoka',sans-serif;font-size:.95rem;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:6px;">🤖 Describe Your Game <span style="font-size:.58rem;background:rgba(124,58,237,.3);border-radius:4px;padding:1px 6px;color:rgba(167,139,250,.9);">AI fills settings</span></div>
+              <textarea id="aiPromptInput" rows="2" maxlength="250" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(124,58,237,.25);border-radius:8px;color:var(--text);font-size:.68rem;padding:7px 10px;resize:none;font-family:'Inter',sans-serif;line-height:1.5;" placeholder="e.g. A fast ocean shooter where fish enemies chase me and there's a big boss at the end..."></textarea>
+              <button onclick="_aiBuildGame(document.getElementById('aiPromptInput').value)" style="width:100%;padding:9px;background:linear-gradient(135deg,var(--purple),rgba(0,212,170,.7));border:none;border-radius:8px;color:white;font-weight:800;font-size:.82rem;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.02em;">✨ Build My Game!</button>
+            </div>
+
             <span class="sec-label">Pick Your Game 🎮</span>
             <div class="form-group">
                 <label for="gameTitle">Game Title</label>
@@ -1502,27 +1509,27 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
             <div class="form-group">
                 <label for="playerSpeed">Player Speed</label>
                 <div class="range-row">
-                    <input type="range" aria-label="Player Speed" id="playerSpeedRange" min="50" max="600" value="200" oninput="syncN('playerSpeed','playerSpeedRange','speedVal');liveConfig.speed=+this.value;_updSpeedEmoji(this.value);">
+                    <input type="range" aria-label="Player Speed" id="playerSpeedRange" min="50" max="600" value="200" oninput="syncR('playerSpeed','playerSpeedRange','speedVal');liveConfig.speed=+this.value;_updSpeedEmoji(this.value);">
                     <span class="range-val" id="speedVal">200</span>
                     <span id="speedEmoji" style="font-size:1rem;line-height:1;flex-shrink:0;" title="Speed indicator">🐰</span>
                 </div>
-                <input type="number" id="playerSpeed" value="200" oninput="syncR('playerSpeed','playerSpeedRange','speedVal');liveConfig.speed=+this.value;">
+                <input type="number" id="playerSpeed" value="200" oninput="syncN('playerSpeed','playerSpeedRange','speedVal');liveConfig.speed=+this.value;">
             </div>
             <div class="form-group" id="gravityGroup" style="display:none;">
                 <label for="gravityY">Gravity</label>
                 <div class="range-row">
-                    <input type="range" aria-label="Gravity" id="gravityRange" min="100" max="2000" value="600" oninput="syncN('gravityY','gravityRange','gravityVal');liveConfig.gravity=+this.value;">
+                    <input type="range" aria-label="Gravity" id="gravityRange" min="100" max="2000" value="600" oninput="syncR('gravityY','gravityRange','gravityVal');liveConfig.gravity=+this.value;">
                     <span class="range-val" id="gravityVal">600</span>
                 </div>
-                <input type="number" id="gravityY" value="600" oninput="syncR('gravityY','gravityRange','gravityVal');liveConfig.gravity=+this.value;">
+                <input type="number" id="gravityY" value="600" oninput="syncN('gravityY','gravityRange','gravityVal');liveConfig.gravity=+this.value;">
             </div>
             <div class="form-group" id="jumpGroup" style="display:none;">
                 <label for="jumpForce">Jump Force</label>
                 <div class="range-row">
-                    <input type="range" aria-label="Jump Force" id="jumpForceRange" min="100" max="800" value="450" oninput="syncN('jumpForce','jumpForceRange','jumpVal');liveConfig.jumpForce=+this.value;">
+                    <input type="range" aria-label="Jump Force" id="jumpForceRange" min="100" max="800" value="450" oninput="syncR('jumpForce','jumpForceRange','jumpVal');liveConfig.jumpForce=+this.value;">
                     <span class="range-val" id="jumpVal">450</span>
                 </div>
-                <input type="number" id="jumpForce" value="450" oninput="syncR('jumpForce','jumpForceRange','jumpVal');liveConfig.jumpForce=+this.value;">
+                <input type="number" id="jumpForce" value="450" oninput="syncN('jumpForce','jumpForceRange','jumpVal');liveConfig.jumpForce=+this.value;">
             </div>
 
             <div class="form-group" id="levelMapGroup">
@@ -7072,6 +7079,68 @@ function pickGenre(el, genre) {
         localStorage.setItem(_tipKey, '1');
         setTimeout(() => showToast('💡 ' + _GENRE_FIRST_TIPS[genre], 'info', 6000), 400);
     }
+}
+// Pick a genre by name (for the AI describe-your-game builder); no-op if that genre card isn't present.
+function _aiSelectGenre(g) {
+    const el = document.querySelector('.genre-card[data-genre="' + g + '"]');
+    if (el) pickGenre(el, g);
+}
+// Parse a plain-English game description and fill the builder's settings, then run.
+function _aiBuildGame(desc) {
+    if (!desc || desc.trim().length < 5) { showToast('Tell me a bit more about your game! 😊'); return; }
+    const d = desc.toLowerCase();
+    if      (d.match(/space|shoot|alien|rocket|laser|bullet/))       _aiSelectGenre('SHOOTER');
+    else if (d.match(/jump|platform|run and jump|mario|side.?scroll/)) _aiSelectGenre('PLATFORMER');
+    else if (d.match(/snake|slither|worm/))                           _aiSelectGenre('SNAKE');
+    else if (d.match(/race|car|driv|speed|track/))                    _aiSelectGenre('RACING');
+    else if (d.match(/tower|defend|defence|defense|wave.*stop/))      _aiSelectGenre('DEFENSE');
+    else if (d.match(/puzzle|match|block|swap|gem/))                  _aiSelectGenre('PUZZLE');
+    else if (d.match(/rhythm|music|beat|tap.*note/))                  _aiSelectGenre('RHYTHM');
+    else if (d.match(/pinball|flipper|ball.*bounce/))                 _aiSelectGenre('PINBALL');
+    else if (d.match(/pong|paddle|tennis/))                           _aiSelectGenre('PONG');
+    else if (d.match(/dodge|avoid|evade/))                            _aiSelectGenre('DODGE');
+    else if (d.match(/runner|endless|run|obstacle/))                  _aiSelectGenre('RUNNER');
+    else if (d.match(/flap|bird|fly.*gap/))                           _aiSelectGenre('FLAPPY');
+    else if (d.match(/invad|space invad|formation/))                  _aiSelectGenre('INVADERS');
+    else if (d.match(/rogue|dungeon|explore.*room/))                  _aiSelectGenre('ROGUELIKE');
+    else if (d.match(/beat.*up|punch|kick|fight/))                    _aiSelectGenre('BEAT');
+    else if (d.match(/break|brick|ball.*paddle/))                     _aiSelectGenre('BREAKER');
+    if      (d.match(/fast|quick|speedy|rapid|zoom/))  { liveConfig.speed = 360; }
+    else if (d.match(/slow|chill|relax|easy|gentle/))  { liveConfig.speed = 130; }
+    else                                                { liveConfig.speed = 220; }
+    if      (d.match(/hard|difficult|challenge|brutal|extreme/)) { liveConfig.difficultyScale = 2.0; }
+    else if (d.match(/easy|kids|simple|beginner|young/))         { liveConfig.difficultyScale = 0.5; }
+    else                                                          { liveConfig.difficultyScale = 1.0; }
+    if      (d.match(/one life|one chance|hardcore|permadeath/)) liveConfig.lives = 1;
+    else if (d.match(/infinite|endless lives|no lives/))         liveConfig.lives = 99;
+    else if (d.match(/five lives|5 lives/))                      liveConfig.lives = 5;
+    if (d.match(/boss|final enemy|big bad|end.*boss/)) {
+        liveConfig.bossEnabled = true;
+        const tog = document.getElementById('bossEnabledToggle');
+        if (tog) { tog.checked = true; document.getElementById('bossFightBody') && (document.getElementById('bossFightBody').style.opacity = '1'); }
+    }
+    if      (d.match(/chase|follow|hunt|track/))      { liveConfig.enemyAI = 'chaser';  activePill('pillEnemyAI', document.querySelector('[onclick*="chaser"]')); }
+    else if (d.match(/zigzag|weav|dodge|tricky/))     { liveConfig.enemyAI = 'zigzag';  activePill('pillEnemyAI', document.querySelector('[onclick*="zigzag"]')); }
+    else if (d.match(/tank|tough|armour|strong foe/)) { liveConfig.enemyAI = 'tank';    activePill('pillEnemyAI', document.querySelector('[onclick*="tank"]')); }
+    else if (d.match(/bomb|dive|kamikaze/))            { liveConfig.enemyAI = 'bomber';  activePill('pillEnemyAI', document.querySelector('[onclick*="bomber"]')); }
+    if      (d.match(/ocean|sea|underwater|fish|aqua/))            _pickTheme('ocean');
+    else if (d.match(/forest|jungle|nature|tree|wood/))            _pickTheme('forest');
+    else if (d.match(/castle|knight|dragon|medieval|magic|sword/)) _pickTheme('castle');
+    else if (d.match(/candy|sweet|sugar|cupcake|dessert/))         _pickTheme('candy');
+    else if (d.match(/cyber|robot|neon|future|sci.?fi|tech/))      _pickTheme('cyber');
+    else                                                             _pickTheme('space');
+    if (desc.trim().length > 20) {
+        const intro = desc.slice(0, 160);
+        liveConfig.storyIntro = intro;
+        const si = document.getElementById('storyIntroInput') || document.getElementById('buildStoryIntroInput');
+        if (si) si.value = intro;
+    }
+    ['playerSpeedRange','playerSpeed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = liveConfig.speed; el.dispatchEvent(new Event('input',{bubbles:true})); }
+    });
+    showToast('✨ Game built from your description! Hit ▶ Run to play.');
+    setTimeout(() => compileAndBootEngine(), 400);
 }
 function _syncGenrePicker() {
     const g = document.getElementById('genreMode').value;
