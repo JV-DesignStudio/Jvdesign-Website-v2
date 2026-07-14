@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#4e7d40">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/garden-defense.html">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Play Lumo's Garden Defense, a free browser lane defense game by JVDesignStudio. Plant defenders, spend sunlight and hold back the garden pests across 10 waves.">
+<meta property="og:type"        content="website">
+<meta property="og:url"         content="https://jvdesignstudio.co.uk/games/garden-defense.html">
+<meta property="og:title"       content="Lumo's Garden Defense | JVDesignStudio">
+<meta property="og:description" content="Plant defenders, spend sunlight and hold back the garden pests across 10 waves in this free browser lane defense game.">
+<meta property="og:image"       content="https://jvdesignstudio.co.uk/GamesUpdatePromo.png">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="Lumo's Garden Defense | JVDesignStudio">
+<meta name="twitter:description" content="Plant defenders, spend sunlight and hold back the garden pests across 10 waves.">
+<meta name="twitter:image"       content="https://jvdesignstudio.co.uk/GamesUpdatePromo.png">
+<title>Lumo's Garden Defense | JVDesignStudio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<script src="../audio-effects.js"></script>
+<script src="../game-system.js"></script>
+<link rel="stylesheet" href="../game-system.css">
+<style>
+:root{
+  --grass:#6ab04c;--grass-dk:#4e7d40;--soil:#7a5230;--soil-dk:#5e3f24;
+  --sun:#ffcf3f;--sky:#bfe6ff;--ink:#2e2a20;--cream:#f4f1e4;--rose:#BC4749;--teal:#70A3A7;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 50% -10%,#dff3ff 0%,#bfe6ff 30%,#8fd07a 62%,#5fa64c 100%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  overflow-x:hidden;-webkit-tap-highlight-color:transparent;user-select:none;
+}
+h1,h2,h3,.title{font-family:'Fredoka',sans-serif;}
+
+.top{width:100%;max-width:600px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;}
+.brand{display:flex;align-items:center;gap:8px;font-family:'Fredoka';font-weight:700;font-size:1.05rem;color:#2e5a24;}
+.brand .bug{font-size:1.3rem;filter:drop-shadow(0 0 6px #fff6a8);}
+.back{color:#2e5a24;text-decoration:none;font-weight:700;font-size:.85rem;background:#ffffffaa;padding:6px 12px;border-radius:20px;}
+
+.stage{width:100%;max-width:600px;padding:0 10px 24px;flex:1;}
+
+/* HUD */
+.hud{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:6px 2px 8px;flex-wrap:wrap;}
+.pill{background:#ffffffdd;border-radius:16px;padding:6px 12px;display:flex;align-items:center;gap:6px;font-weight:800;font-size:.95rem;box-shadow:0 2px 0 #0002;}
+.pill small{font-weight:600;opacity:.6;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;}
+.pill.sun{color:#8a6a00;}
+.wavebar{flex:1;min-width:120px;height:14px;background:#ffffff88;border-radius:8px;overflow:hidden;position:relative;}
+.wavebar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb347,#ff7b54);transition:width .3s;}
+.wavebar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#5e3f24;letter-spacing:.04em;text-transform:uppercase;}
+
+/* plant picker */
+.picker{display:flex;gap:6px;justify-content:center;margin:8px 0 10px;flex-wrap:wrap;}
+.seed{position:relative;width:60px;background:#fffbe9;border:2px solid #e6d9b0;border-radius:12px;padding:5px 2px 4px;text-align:center;cursor:pointer;transition:transform .12s,border-color .12s;box-shadow:0 2px 0 #0001;}
+.seed:active{transform:scale(.94);}
+.seed.sel{border-color:var(--grass-dk);background:#eafbdd;box-shadow:0 0 0 3px #6ab04c55;}
+.seed.cant{opacity:.42;filter:grayscale(.4);}
+.seed .ic{font-size:1.5rem;line-height:1.1;}
+.seed .cost{font-size:.66rem;font-weight:800;color:#8a6a00;display:flex;align-items:center;justify-content:center;gap:2px;}
+.seed .cd{position:absolute;inset:0;background:#0007;border-radius:10px;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.seed.shovel{background:#f3e4d0;border-color:#d8c0a0;}
+.seed.shovel.sel{border-color:var(--soil);background:#e9d6bd;box-shadow:0 0 0 3px #7a523055;}
+
+/* board */
+.board-wrap{position:relative;width:100%;display:flex;justify-content:center;}
+canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8px 24px #0003;touch-action:manipulation;display:block;}
+
+.hint{text-align:center;font-size:.75rem;color:#2e5a24;font-weight:600;margin-top:8px;opacity:.85;min-height:1.1em;}
+
+/* overlays */
+.screen{position:fixed;inset:0;background:#0b2a1acc;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
+.screen.hidden{display:none;}
+.panel{background:linear-gradient(180deg,#fffdf4,#f3ecd6);border-radius:22px;padding:24px 22px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px #0006;border:3px solid #fff;}
+.panel h2{font-size:1.7rem;color:#2e5a24;margin-bottom:4px;}
+.panel .big{font-size:3rem;line-height:1;margin-bottom:6px;filter:drop-shadow(0 4px 10px #0002);}
+.panel p{font-size:.9rem;line-height:1.5;color:#4a4636;margin-bottom:14px;}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:left;margin:0 auto 16px;max-width:320px;font-size:.72rem;}
+.legend div{background:#ffffffaa;border-radius:10px;padding:6px 8px;display:flex;gap:6px;align-items:center;}
+.legend b{font-weight:800;}
+.legend em{font-style:normal;opacity:.7;font-size:.66rem;display:block;}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 16px;}
+.sbox{background:#ffffffcc;border-radius:12px;padding:8px 4px;}
+.sbox .v{font-family:'Fredoka';font-weight:700;font-size:1.25rem;color:#2e5a24;}
+.sbox .l{font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;opacity:.6;font-weight:700;}
+.achs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px;}
+.achs .a{background:#fff3c4;border:1px solid #ecd98a;border-radius:20px;padding:4px 10px;font-size:.72rem;font-weight:700;color:#7a5a00;}
+.btn{font-family:'Fredoka';font-weight:700;font-size:1.05rem;border:none;border-radius:14px;padding:12px 22px;cursor:pointer;color:#fff;background:linear-gradient(180deg,#78c14e,#4e7d40);box-shadow:0 4px 0 #3c6231;transition:transform .1s;width:100%;}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3c6231;}
+.btn.ghost{background:linear-gradient(180deg,#fff,#eee);color:#4a4636;box-shadow:0 4px 0 #c9c3ad;margin-top:8px;}
+.wavebanner{position:absolute;top:38%;left:0;right:0;text-align:center;pointer-events:none;z-index:20;}
+.wavebanner span{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:2rem;color:#fff;text-shadow:0 3px 0 #4e7d40,0 0 20px #000a;animation:wb 1.6s ease forwards;}
+@keyframes wb{0%{transform:scale(.4);opacity:0}18%{transform:scale(1);opacity:1}75%{opacity:1}100%{transform:scale(1.1);opacity:0}}
+.sound{background:#ffffffaa;border:none;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand"><span class="bug">🐛✨</span> Lumo's Garden Defense</div>
+  <a class="back" href="../pages/games.html">← Games</a>
+</div>
+
+<div class="stage">
+  <div class="hud">
+    <div class="pill sun">☀️ <span id="sunV">150</span><small>Sun</small></div>
+    <div class="wavebar"><i id="waveFill"></i><span id="waveLbl">Wave 1 / 10</span></div>
+    <div class="pill" style="color:#3c6231">🍃 <span id="guardsV">5</span><small>Guards</small></div>
+    <button class="sound" id="soundBtn" title="Sound">🔊</button>
+  </div>
+
+  <div class="picker" id="picker"></div>
+
+  <div class="board-wrap">
+    <canvas id="game" width="1120" height="900"></canvas>
+    <div class="wavebanner" id="banner" style="display:none"><span id="bannerTxt"></span></div>
+  </div>
+
+  <div class="hint" id="hint">Pick a plant, then tap a tile to place it. Tap falling ☀️ to collect sun.</div>
+</div>
+
+<!-- START -->
+<div class="screen" id="startScreen">
+  <div class="panel">
+    <div class="big">🐛✨🌻</div>
+    <h2>Lumo's Garden Defense</h2>
+    <p>The garden pests are marching in! Plant defenders, harvest sunlight and hold the line for <b>10 waves</b>. Lumo has left a guard firefly on each row that clears it once when breached, so don't let them run out.</p>
+    <div class="legend">
+      <div>🌻 <b>Sunflower</b><em>Makes sun</em></div>
+      <div>🌱 <b>Sprout</b><em>Shoots seeds</em></div>
+      <div>🌰 <b>Acorn Wall</b><em>Tanky blocker</em></div>
+      <div>❄️ <b>Frost Bud</b><em>Slows + hits</em></div>
+      <div>🍄 <b>Boom Shroom</b><em>3×3 blast</em></div>
+      <div>🐛🐌🪲 <b>Pests</b><em>Reach 🍃 = danger</em></div>
+    </div>
+    <button class="btn" id="startBtn">Plant &amp; Defend 🌱</button>
+  </div>
+</div>
+
+<!-- END -->
+<div class="screen hidden" id="endScreen">
+  <div class="panel">
+    <div class="big" id="endEmoji">🌻</div>
+    <h2 id="endTitle">Garden Overrun!</h2>
+    <p id="endMsg"></p>
+    <div class="statgrid" id="endStats"></div>
+    <div class="achs" id="endAchs"></div>
+    <button class="btn" id="againBtn">Play Again 🔁</button>
+    <button class="btn ghost" id="hubBtn" onclick="location.href='../pages/games.html'">More Games</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const canvas=document.getElementById('game');
+  const ctx=canvas.getContext('2d');
+  const COLS=6, ROWS=5;
+  const BW=1120, BH=900;                 // logical resolution
+  const HEAD=0;                          // no top strip inside canvas
+  const CELL=BW/COLS;                    // ~186.6 wide
+  const CH=BH/ROWS;                      // 180 tall
+  const audio=new AudioEffects(0.6);
+  let soundOn=true;
+
+  // ---- content definitions ----
+  const PLANTS={
+    sun:   {key:'sun',   ic:'🌻', cost:50,  hp:60,  cd:2,  fire:0,   produce:5, name:'Sunflower'},
+    shoot: {key:'shoot', ic:'🌱', cost:75,  hp:70,  cd:2,  fire:1.4, dmg:26,   name:'Sprout'},
+    wall:  {key:'wall',  ic:'🌰', cost:50,  hp:340, cd:4,  fire:0,   name:'Acorn Wall'},
+    frost: {key:'frost', ic:'❄️', cost:150, hp:70,  cd:6,  fire:1.7, dmg:16, slow:.5, name:'Frost Bud'},
+    boom:  {key:'boom',  ic:'🍄', cost:125, hp:1,   cd:12, boom:true, name:'Boom Shroom'}
+  };
+  // speeds are px/sec on the 1120px-wide logical board (CELL ~= 186px)
+  const PESTS={
+    cat:  {ic:'🐛', hp:85,  spd:56,  dmg:40, pts:15, sun:0},
+    hop:  {ic:'🦗', hp:70,  spd:112, dmg:35, pts:22, sun:0},
+    beet: {ic:'🪲', hp:230, spd:46,  dmg:50, pts:30, sun:0},
+    snail:{ic:'🐌', hp:480, spd:30,  dmg:60, pts:45, sun:0},
+    boss: {ic:'🕷️', hp:2200,spd:40,  dmg:110,pts:300,sun:0,boss:true}
+  };
+
+  // ---- state ----
+  let grid, pests, shots, suns, guards, sun, waveIdx, score, running, paused,
+      selected, spawnQ, betweenTimer, lastT, stats, achUnlocked, pickerEls={};
+
+  function reset(){
+    grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+    pests=[]; shots=[]; suns=[];
+    guards=Array(ROWS).fill(true);
+    sun=150; waveIdx=0; score=0; running=true; paused=false;
+    selected=null; spawnQ=[]; betweenTimer=2.2; lastT=performance.now();
+    stats={killed:0,placed:0,peaked:5,bestBoom:0,sunCollected:0};
+    achUnlocked=[];
+    window.__gdBanner=0;
+    updateHUD(); buildPicker();
+  }
+
+  // ---- wave generation ----
+  function buildWave(n){
+    const q=[]; let t=0.4;
+    const count=Math.round(2+n*1.8);
+    const pool=[];
+    pool.push('cat');
+    if(n>=2) pool.push('cat');
+    if(n>=3) pool.push('beet');
+    if(n>=4) pool.push('hop');
+    if(n>=6) pool.push('beet','snail');
+    if(n>=8) pool.push('snail','hop');
+    const gap=Math.max(0.55, 2.4 - n*0.16);
+    for(let i=0;i<count;i++){
+      const type=pool[Math.floor(Math.random()*pool.length)];
+      q.push({t, row:Math.floor(Math.random()*ROWS), type});
+      t += gap*(0.6+Math.random()*0.8);
+    }
+    if(n===10){
+      // boss finale
+      q.push({t:t+0.5, row:2, type:'boss'});
+      for(let i=0;i<6;i++) q.push({t:t+1+i*0.8, row:Math.floor(Math.random()*ROWS), type:i%2?'snail':'beet'});
+    }
+    return q.sort((a,b)=>a.t-b.t);
+  }
+
+  function startWave(){
+    waveIdx++;
+    if(waveIdx>10){ win(); return; }
+    spawnQ=buildWave(waveIdx);
+    window.__gdWaveClock=0;
+    banner('Wave '+waveIdx+(waveIdx===10?' — Boss!':''));
+    if(waveIdx>1){ sun+=40; } // small breather bonus
+    updateHUD();
+  }
+
+  // ---- picker ----
+  function buildPicker(){
+    const p=document.getElementById('picker'); p.innerHTML='';
+    pickerEls={};
+    for(const k in PLANTS){
+      const d=PLANTS[k];
+      const el=document.createElement('div');
+      el.className='seed'; el.dataset.k=k;
+      el.innerHTML=`<div class="ic">${d.ic}</div><div class="cost">☀️${d.cost}</div><div class="cd" style="display:none"></div>`;
+      el.onclick=()=>selectPlant(k);
+      p.appendChild(el); pickerEls[k]=el;
+    }
+    const sh=document.createElement('div');
+    sh.className='seed shovel'; sh.dataset.k='shovel';
+    sh.innerHTML=`<div class="ic">🧹</div><div class="cost">Dig</div>`;
+    sh.onclick=()=>selectPlant('shovel');
+    p.appendChild(sh); pickerEls.shovel=sh;
+    cooldowns={}; for(const k in PLANTS) cooldowns[k]=0;
+  }
+  let cooldowns={};
+  function selectPlant(k){
+    if(k!=='shovel'){
+      if(sun<PLANTS[k].cost) { flashHint('Not enough sun for '+PLANTS[k].name); return; }
+      if(cooldowns[k]>0) return;
+    }
+    selected = (selected===k)?null:k;
+    for(const id in pickerEls) pickerEls[id].classList.toggle('sel', id===selected);
+    beep('tap');
+  }
+
+  // ---- input ----
+  function canvasPos(e){
+    const r=canvas.getBoundingClientRect();
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return {x:cx/r.width*BW, y:cy/r.height*BH};
+  }
+  function onTap(e){
+    if(!running) return;
+    e.preventDefault();
+    const p=canvasPos(e);
+    // collect sun first
+    for(let i=suns.length-1;i>=0;i--){
+      const s=suns[i];
+      if(Math.hypot(s.x-p.x,s.y-p.y)<CELL*0.45){ collectSun(s,i); return; }
+    }
+    const col=Math.floor(p.x/CELL), row=Math.floor(p.y/CH);
+    if(col<0||col>=COLS||row<0||row>=ROWS) return;
+    if(selected==='shovel'){
+      if(grid[row][col]){ grid[row][col]=null; beep('pop'); fxBurst(col*CELL+CELL/2,row*CH+CH/2,'💨',6); }
+      return;
+    }
+    if(!selected) { flashHint('Pick a plant from the tray first'); return; }
+    const d=PLANTS[selected];
+    if(grid[row][col]){ flashHint('That tile is taken'); return; }
+    if(sun<d.cost){ flashHint('Not enough sun'); return; }
+    if(cooldowns[selected]>0) return;
+    placePlant(selected,row,col);
+  }
+  canvas.addEventListener('mousedown',onTap);
+  canvas.addEventListener('touchstart',onTap,{passive:false});
+
+  function placePlant(k,row,col){
+    const d=PLANTS[k];
+    sun-=d.cost; cooldowns[k]=d.cd;
+    stats.placed++;
+    if(!achUnlocked.includes('gd_firstBloom')){achUnlocked.push('gd_firstBloom');gs.unlockAchievement('gd_firstBloom');}
+    if(d.boom){
+      // instant blast, do not occupy tile
+      cooldowns[k]=d.cd;
+      boomBlast(row,col);
+    } else {
+      grid[row][col]={type:k,hp:d.hp,maxHp:d.hp,fireT:d.fire?d.fire*Math.random():0,prodT:d.produce||0,pop:1};
+      beep('success');
+      fxBurst(col*CELL+CELL/2,row*CH+CH/2,'🌱',5);
+    }
+    // auto-deselect if now unaffordable
+    if(sun<d.cost || cooldowns[k]>0){ selected=null; for(const id in pickerEls) pickerEls[id].classList.remove('sel'); }
+    updateHUD();
+  }
+
+  function boomBlast(row,col){
+    beep('level'); ScreenShake.shake(canvas,10,320);
+    const cx=col*CELL+CELL/2, cy=row*CH+CH/2;
+    fxBurst(cx,cy,'💥',14);
+    let hit=0;
+    pests.forEach(z=>{
+      if(z.row>=row-1&&z.row<=row+1 && Math.abs(z.x-cx)<CELL*1.6){ z.hp-=900; hit++; }
+    });
+    stats.bestBoom=Math.max(stats.bestBoom,hit);
+    if(hit>=5 && !achUnlocked.includes('gd_boomKing')){achUnlocked.push('gd_boomKing');gs.unlockAchievement('gd_boomKing');}
+  }
+
+  // ---- sun motes ----
+  function spawnSkySun(){
+    suns.push({x:CELL*(0.5+Math.floor(Math.random()*COLS)), y:-40, ty:CH*(0.5+Math.floor(Math.random()*ROWS)),
+               val:50, life:10, vy:120, from:'sky'});
+  }
+  function spawnPlantSun(px,py){
+    suns.push({x:px, y:py, ty:py, val:50, life:7, vy:0, from:'plant'});
+  }
+  function collectSun(s,i){
+    sun+=s.val; stats.sunCollected+=s.val;
+    fxBurst(s.x,s.y,'✨',6); beep('pop');
+    suns.splice(i,1); updateHUD();
+    refreshPickerAfford();
+  }
+
+  // ---- loop ----
+  function loop(now){
+    if(!running){return;}
+    let dt=(now-lastT)/1000; lastT=now;
+    if(dt>0.1) dt=0.1;
+    if(!paused) update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  let skySunTimer=3;
+  function update(dt){
+    // cooldowns
+    for(const k in cooldowns) if(cooldowns[k]>0) cooldowns[k]=Math.max(0,cooldowns[k]-dt);
+    updatePickerCD();
+
+    // wave management
+    if(spawnQ.length){
+      window.__gdWaveClock+=dt;
+      while(spawnQ.length && spawnQ[0].t<=window.__gdWaveClock){
+        const s=spawnQ.shift(); spawnPest(s.type,s.row);
+      }
+    } else if(pests.length===0){
+      betweenTimer-=dt;
+      if(betweenTimer<=0){ betweenTimer=4.5; startWave(); }
+    }
+
+    // sky sun
+    skySunTimer-=dt;
+    if(skySunTimer<=0){ skySunTimer=6+Math.random()*3; spawnSkySun(); }
+
+    // suns
+    for(let i=suns.length-1;i>=0;i--){
+      const s=suns[i];
+      if(s.from==='sky' && s.y<s.ty){ s.y=Math.min(s.ty,s.y+s.vy*dt); }
+      else s.life-=dt;
+      if(s.life<=0){ suns.splice(i,1); }
+    }
+
+    // plants act
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const pl=grid[r][c]; if(!pl) continue;
+      if(pl.pop>0) pl.pop=Math.max(0,pl.pop-dt*3);
+      const d=PLANTS[pl.type];
+      if(d.produce){
+        pl.prodT-=dt;
+        if(pl.prodT<=0){ pl.prodT=d.produce; spawnPlantSun(c*CELL+CELL/2, r*CH+CH*0.5); }
+      }
+      if(d.fire){
+        // only fire if a pest is ahead in this row
+        const ahead=pests.some(z=>z.row===r && z.x>c*CELL);
+        if(ahead){
+          pl.fireT-=dt;
+          if(pl.fireT<=0){ pl.fireT=d.fire; fireShot(r,c,pl.type); }
+        }
+      }
+    }
+
+    // shots
+    for(let i=shots.length-1;i>=0;i--){
+      const s=shots[i]; s.x+=s.vx*dt;
+      if(s.x>BW+30){ shots.splice(i,1); continue; }
+      // hit nearest pest in row ahead
+      let hitZ=null,hd=1e9;
+      for(const z of pests){ if(z.row===s.row){ const dx=z.x-s.x; if(dx>-CELL*0.35 && dx<hd){hd=dx;hitZ=z;} } }
+      if(hitZ && Math.abs(hitZ.x-s.x)<CELL*0.45){
+        hitZ.hp-=s.dmg;
+        if(s.slow){ hitZ.slowT=1.6; }
+        fxBurst(s.x,s.y, s.slow?'❄️':'💧',3);
+        shots.splice(i,1);
+      }
+    }
+
+    // pests
+    for(let i=pests.length-1;i>=0;i--){
+      const z=pests[i];
+      if(z.hp<=0){ killPest(z,i); continue; }
+      if(z.slowT>0) z.slowT-=dt;
+      const col=Math.floor(z.x/CELL);
+      const blocker = (col>=0&&col<COLS)? grid[z.row][col] : null;
+      if(blocker){
+        // chew
+        z.chewT=(z.chewT||0)+dt;
+        if(z.chewT>=0.6){ z.chewT=0; blocker.hp-=z.dmg; blocker.pop=0.6; if(blocker.hp<=0){ grid[z.row][col]=null; fxBurst(col*CELL+CELL/2,z.row*CH+CH/2,'🍂',5);} }
+      } else {
+        const sp=z.spd*(z.slowT>0?0.45:1);
+        z.x-=sp*dt;
+        if(z.x<CELL*0.15){ breach(z.row); pests.splice(i,1); }
+      }
+    }
+  }
+
+  function spawnPest(type,row){
+    const d=PESTS[type];
+    pests.push({type,row,x:BW+CELL*0.4+Math.random()*40, hp:d.hp,maxHp:d.hp,spd:d.spd,dmg:d.dmg,pts:d.pts,ic:d.ic,slowT:0,chewT:0,wob:Math.random()*6});
+  }
+  function fireShot(r,c,ptype){
+    const d=PLANTS[ptype];
+    shots.push({row:r,x:c*CELL+CELL*0.75,y:r*CH+CH*0.42,vx:520,dmg:d.dmg,slow:!!d.slow});
+    beep('shot');
+  }
+  function killPest(z,i){
+    pests.splice(i,1);
+    score+=z.pts; stats.killed++;
+    fxBurst(z.x,z.y,'⭐',6);
+    window.__gsScore=(window.__gsScore||0)+z.pts;
+    if(z.boss){ score+=200; }
+    updateHUD();
+  }
+  function breach(row){
+    if(guards[row]){
+      guards[row]=false;
+      stats.peaked=guards.filter(Boolean).length;
+      beep('level'); ScreenShake.shake(canvas,14,400);
+      // sweep clear the row
+      for(let i=pests.length-1;i>=0;i--){ if(pests[i].row===row){ score+=Math.floor(pests[i].pts*0.5); fxBurst(pests[i].x,pests[i].y,'🐛✨',6); pests.splice(i,1);} }
+      flashHint('Lumo cleared row '+(row+1)+'!');
+      updateHUD();
+    } else {
+      lose();
+    }
+  }
+
+  // ---- render ----
+  function render(){
+    ctx.clearRect(0,0,BW,BH);
+    // lawn stripes + soil rows
+    for(let r=0;r<ROWS;r++){
+      const y=r*CH;
+      ctx.fillStyle = (r%2===0)?'#7cbf58':'#6fb54e';
+      ctx.fillRect(0,y,BW,CH);
+      // guard zone tint at far left
+      ctx.fillStyle=guards[r]?'#ffef9e55':'#00000012';
+      ctx.fillRect(0,y,CELL*0.28,CH);
+    }
+    // grid lines
+    ctx.strokeStyle='#ffffff33'; ctx.lineWidth=2;
+    for(let c=1;c<COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,BH);ctx.stroke();}
+    for(let r=1;r<ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CH);ctx.lineTo(BW,r*CH);ctx.stroke();}
+
+    // hover placement ghost
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+
+    // guards (Lumo fireflies)
+    for(let r=0;r<ROWS;r++){
+      if(guards[r]){
+        ctx.font='42px serif';
+        ctx.globalAlpha=0.9;
+        ctx.fillText('🐛', CELL*0.14, r*CH+CH*0.5);
+        ctx.globalAlpha=1;
+      }
+    }
+
+    // plants
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const pl=grid[r][c]; if(!pl) continue;
+      const x=c*CELL+CELL/2, y=r*CH+CH/2;
+      const sc=1+ (pl.pop>0? pl.pop*0.18:0);
+      ctx.save(); ctx.translate(x,y); ctx.scale(sc,sc);
+      ctx.font='72px serif'; ctx.fillText(PLANTS[pl.type].ic,0,4);
+      ctx.restore();
+      if(pl.hp<pl.maxHp){ bar(x-CELL*0.32,y+CH*0.30,CELL*0.64,8,pl.hp/pl.maxHp,'#7ad06a'); }
+    }
+
+    // suns
+    for(const s of suns){
+      const wob=Math.sin(performance.now()/200+s.x)*3;
+      ctx.font='54px serif'; ctx.fillText('☀️',s.x,s.y+wob);
+    }
+
+    // shots
+    for(const s of shots){
+      ctx.font='30px serif'; ctx.fillText(s.slow?'❄️':'🟢',s.x,s.y);
+    }
+
+    // pests
+    for(const z of pests){
+      const y=z.row*CH+CH/2 + Math.sin(performance.now()/160+z.wob)*4;
+      const big=z.boss?1.5:1;
+      ctx.save(); ctx.translate(z.x,y); ctx.scale(-big,big); // face left
+      ctx.font='68px serif'; ctx.fillText(z.ic,0,4);
+      ctx.restore();
+      if(z.hp<z.maxHp){ bar(z.x-CELL*0.3, y-CH*0.34, CELL*0.6, 8, z.hp/z.maxHp, z.slowT>0?'#7fd0ff':'#ff6b5e'); }
+    }
+  }
+  function bar(x,y,w,h,pct,col){
+    ctx.fillStyle='#0006'; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle=col; ctx.fillRect(x,y,w*Math.max(0,pct),h);
+  }
+
+  // ---- fx / hud helpers ----
+  function fxBurst(cx,cy,emoji,n){
+    const r=canvas.getBoundingClientRect();
+    const px=r.left+cx/BW*r.width, py=r.top+cy/BH*r.height;
+    ParticleSystem.burst(px,py,emoji,n);
+  }
+  function beep(t){
+    if(!soundOn) return;
+    if(t==='tap')audio.playTap(700);
+    else if(t==='success')audio.playSuccess(900);
+    else if(t==='pop')audio.playPop();
+    else if(t==='shot')audio.playTap(1200);
+    else if(t==='level')audio.playLevelUp();
+    else if(t==='err')audio.playError();
+  }
+  let hintTimer=null;
+  function flashHint(msg){
+    const h=document.getElementById('hint'); h.textContent=msg;
+    clearTimeout(hintTimer);
+    hintTimer=setTimeout(()=>{h.textContent='Pick a plant, then tap a tile. Tap ☀️ to collect sun.';},2200);
+  }
+  function banner(txt){
+    const b=document.getElementById('banner'), t=document.getElementById('bannerTxt');
+    t.textContent=txt; b.style.display='block';
+    // retrigger animation
+    t.style.animation='none'; void t.offsetWidth; t.style.animation='';
+    setTimeout(()=>{b.style.display='none';},1700);
+  }
+  function updateHUD(){
+    document.getElementById('sunV').textContent=Math.floor(sun);
+    document.getElementById('guardsV').textContent=guards.filter(Boolean).length;
+    document.getElementById('waveLbl').textContent='Wave '+Math.min(waveIdx,10)+' / 10';
+    document.getElementById('waveFill').style.width=(Math.min(waveIdx,10)/10*100)+'%';
+    refreshPickerAfford();
+  }
+  function refreshPickerAfford(){
+    for(const k in PLANTS){
+      const el=pickerEls[k]; if(!el) continue;
+      el.classList.toggle('cant', sun<PLANTS[k].cost);
+    }
+  }
+  function updatePickerCD(){
+    for(const k in PLANTS){
+      const el=pickerEls[k]; if(!el) continue;
+      const cd=el.querySelector('.cd');
+      if(cooldowns[k]>0){ cd.style.display='flex'; cd.textContent=Math.ceil(cooldowns[k]); }
+      else cd.style.display='none';
+    }
+  }
+
+  // ---- end states ----
+  function win(){ finish(true); }
+  function lose(){ finish(false); }
+  function finish(won){
+    running=false;
+    beep(won?'level':'err');
+    const best=Math.max(...pests.map(()=>0),0);
+    window.__gsBestRun=Math.max(window.__gsBestRun||0, score);
+    // achievements
+    if(won && !achUnlocked.includes('gd_victory')){achUnlocked.push('gd_victory');gs.unlockAchievement('gd_victory');}
+    if(won && guards.every(Boolean) && !achUnlocked.includes('gd_flawless')){achUnlocked.push('gd_flawless');gs.unlockAchievement('gd_flawless');}
+    if(waveIdx>=5 && !achUnlocked.includes('gd_wave5')){achUnlocked.push('gd_wave5');gs.unlockAchievement('gd_wave5');}
+
+    document.getElementById('endEmoji').textContent = won?'🏆':'🐛';
+    document.getElementById('endTitle').textContent = won?'Garden Saved!':'Garden Overrun!';
+    document.getElementById('endMsg').textContent = won
+      ? `You held all 10 waves with ${guards.filter(Boolean).length} guard(s) to spare. The garden is safe!`
+      : `The pests broke through on wave ${Math.min(waveIdx,10)}. Replant and try again!`;
+    document.getElementById('endStats').innerHTML=
+      `<div class="sbox"><div class="v">${score}</div><div class="l">Score</div></div>`+
+      `<div class="sbox"><div class="v">${Math.min(waveIdx,10)}</div><div class="l">Wave</div></div>`+
+      `<div class="sbox"><div class="v">${stats.killed}</div><div class="l">Pests</div></div>`+
+      `<div class="sbox"><div class="v">${stats.placed}</div><div class="l">Planted</div></div>`+
+      `<div class="sbox"><div class="v">${guards.filter(Boolean).length}</div><div class="l">Guards</div></div>`+
+      `<div class="sbox"><div class="v">${stats.bestBoom}</div><div class="l">Best Boom</div></div>`;
+    const names={gd_firstBloom:'🌱 First Bloom',gd_wave5:'🌿 Wave 5',gd_victory:'🏆 Garden Saved',gd_flawless:'💎 Flawless',gd_boomKing:'💥 Boom King'};
+    document.getElementById('endAchs').innerHTML=achUnlocked.map(a=>`<span class="a">${names[a]||a}</span>`).join('');
+    if(won) ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/2, 24);
+    document.getElementById('endScreen').classList.remove('hidden');
+  }
+
+  // ---- boot ----
+  function begin(){
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('endScreen').classList.add('hidden');
+    reset();
+    betweenTimer=5; // setup window before the first wave
+    requestAnimationFrame((t)=>{lastT=t;loop(t);});
+  }
+  document.getElementById('startBtn').onclick=()=>{ if(audio.audioContext&&audio.audioContext.state==='suspended')audio.audioContext.resume(); begin(); };
+  document.getElementById('againBtn').onclick=begin;
+  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; };
+
+  // expose for integration script + lightweight read-only debug snapshot
+  window.__gd={
+    get score(){return score;},
+    get sun(){return sun;},
+    get wave(){return waveIdx;},
+    get guards(){return guards.filter(Boolean).length;},
+    get pests(){return pests.length;},
+    occupied(row,col){return !!(grid[row]&&grid[row][col]);},
+    empties(){const e=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(!grid[r][c])e.push([c,r]);return e;}
+  };
+
+  // GameSystem instance (referenced by placePlant etc.)
+  window.gs = new GameSystem('garden-defense','Lumo\'s Garden Defense','lumo');
+
+  // pause when tab hidden
+  document.addEventListener('visibilitychange',()=>{ paused=document.hidden; if(!paused)lastT=performance.now(); });
+
+  // build an idle picker on load so the tray is visible behind the start screen
+  buildPicker();
+})();
+</script>
+
+<script>
+// ══ GAME SYSTEM INTEGRATION ══  (writes window.__gsScore / window.__gsBestRun in-game)
+const gameSystem = window.gs;
+const soundManager = new SoundManager(gameSystem);
+
+let lastScore = 0;
+function trackGameSystemProgress(){
+  const currentScore = Math.floor(window.__gsScore || 0);
+  if(currentScore > lastScore){
+    const xpGained = Math.floor((currentScore - lastScore) / 10);
+    if(xpGained > 0){ gameSystem.addXP(xpGained); lastScore = currentScore; }
+  }
+}
+setInterval(trackGameSystemProgress, 500);
+
+function checkGameSystemAchievements(){
+  const best = Math.floor(window.__gsBestRun || 0);
+  if(best >= 300) gameSystem.unlockAchievement('gd_score300');
+  if(best >= 800) gameSystem.unlockAchievement('gd_score800');
+  gameSystem.checkAchievements();
+}
+setInterval(checkGameSystemAchievements, 5000);
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
+</body>
+</html>
