@@ -237,6 +237,13 @@ code,pre{font-family:'JetBrains Mono',monospace;}
 .win-bar .tl.r{background:#ff5f57}.win-bar .tl.y{background:#febc2e}.win-bar .tl.g{background:#28c840}
 .win-bar .win-url{margin-left:8px;flex:1;background:#0b0c14;border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#8ea0c9;text-align:center;}
 
+/* "on a tablet?" note + primary Save button */
+.dev-note{max-width:640px;margin:10px auto 0;background:rgba(99,102,241,.09);border:1px solid rgba(99,102,241,.24);border-radius:12px;padding:12px 16px;font-size:.9rem;color:#cdd6f8;line-height:1.6;text-align:center;}
+.dev-note b{color:#fff;}
+.dev-note a{color:#a5b4fc;font-weight:700;text-decoration:underline;}
+.mini-btn.save{background:#6366f1;color:#fff;border-color:#6366f1;}
+.mini-btn.save:hover{background:#5457e0;}
+
 /* Scroll-reveal (only hides when JS confirmed via .js-anim, so no-JS users still see everything) */
 .js-anim .wow-reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
 .js-anim .wow-reveal.in{opacity:1;transform:none;}
@@ -339,6 +346,7 @@ code,pre{font-family:'JetBrains Mono',monospace;}
     <div class="lede">
         <h2>Make your own in 3 steps</h2>
         <p>Never written code before? Perfect. You do not need to understand any of it yet. Just copy, paste and save. The whole game is one block of code, and it already includes everything.</p>
+        <p class="dev-note">📱 <b>On a tablet, phone or Chromebook?</b> There is no Notepad on those, so skip these steps and use the <a href="#playground">live editor just below</a> instead. You can build your game and save it right there, no computer needed.</p>
     </div>
 
     <div class="cps">
@@ -380,13 +388,14 @@ code,pre{font-family:'JetBrains Mono',monospace;}
 <div class="wrap wow-reveal" id="playground">
     <div class="lede">
         <h2>Now change the game, right here</h2>
-        <p>Got your game running? Time to make it yours. No downloads, no Notepad, nothing to install. Edit the code on the left and your game updates on the right. Try changing the colour, the size, or the timer. If it breaks, press Reset. You cannot damage anything.</p>
+        <p>On a tablet, Chromebook or phone? This is your spot, no Notepad needed. Edit the code on the left and your game updates on the right. Try changing the colour, the size, or the timer. Your work saves on this device as you go, and when you are happy, tap <b>💾 Save my game</b> to keep the file. If it breaks, press Reset. You cannot damage anything.</p>
     </div>
     <div class="editor-wrap">
         <div class="editor-col">
             <div class="editor-bar">
                 <span>Your code</span>
                 <span>
+                    <button class="mini-btn save" id="edSave">💾 Save my game</button>
                     <button class="mini-btn" id="edCopy">📋 Copy</button>
                     <button class="mini-btn" id="edReset">↺ Reset</button>
                 </span>
@@ -400,6 +409,9 @@ code,pre{font-family:'JetBrains Mono',monospace;}
     </div>
     <p class="hint">
         <b style="color:#c7d2fe">Try these first:</b> find <code>#6366f1</code> near the top and type <code>hotpink</code> in its place &nbsp;·&nbsp; find the two <code>72px</code> values and try <code>40px</code> for both &nbsp;·&nbsp; find <code>startTime = 15</code> and try <code>8</code>. Click into the code, change the value, and the game updates on its own about half a second after you stop typing.
+    </p>
+    <p class="hint">
+        <b style="color:#c7d2fe">💾 Keeping your game:</b> your changes save on this device automatically, so you can close the tab and come back later. Tap <b>Save my game</b> to download it as <code>dotsmash.html</code> into your Files or Downloads. Open that file any time to play it, or send it to a friend to share.
     </p>
 </div>
 
@@ -931,10 +943,18 @@ if (editor && edPreview) {
     if ('srcdoc' in edPreview) { edPreview.srcdoc = editor.value; }
     else { const d = edPreview.contentWindow.document; d.open(); d.write(editor.value); d.close(); }
   }
-  editor.value = EDITABLE_GAME;
+  // Keep the learner's work on this device (survives closing the tab)
+  const LS_KEY = 'dotsmash_editor_v1';
+  let savedCode = null;
+  try { savedCode = localStorage.getItem(LS_KEY); } catch(e){}
+  editor.value = savedCode || EDITABLE_GAME;
   renderEditor();
   let edTimer;
-  editor.addEventListener('input', function(){ clearTimeout(edTimer); edTimer = setTimeout(renderEditor, 500); });
+  editor.addEventListener('input', function(){
+    clearTimeout(edTimer);
+    edTimer = setTimeout(renderEditor, 500);
+    try { localStorage.setItem(LS_KEY, editor.value); } catch(e){}
+  });
   // Tab inserts two spaces instead of leaving the box
   editor.addEventListener('keydown', function(e){
     if (e.key === 'Tab') {
@@ -945,9 +965,20 @@ if (editor && edPreview) {
     }
   });
   const edReset = document.getElementById('edReset');
-  if (edReset) edReset.addEventListener('click', function(){ editor.value = EDITABLE_GAME; renderEditor(); showToast('Reset to the start!'); });
+  if (edReset) edReset.addEventListener('click', function(){ editor.value = EDITABLE_GAME; renderEditor(); try{localStorage.removeItem(LS_KEY);}catch(e){} showToast('Reset to the start!'); });
   const edCopy = document.getElementById('edCopy');
   if (edCopy) edCopy.addEventListener('click', function(){ navigator.clipboard.writeText(editor.value).then(()=>showToast('Code copied!')); });
+  // Save the learner's OWN edited game as a real .html file (works on tablets, Chromebooks, phones)
+  const edSave = document.getElementById('edSave');
+  if (edSave) edSave.addEventListener('click', function(){
+    const blob = new Blob([editor.value], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'dotsmash.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    showToast('Saved! Look in your Files or Downloads.');
+  });
 }
 
 // Toast helper
