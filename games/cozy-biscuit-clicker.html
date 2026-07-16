@@ -500,6 +500,20 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
   </div>
 </div>
 
+<div class="modal-backdrop" id="welcomeModal">
+  <div class="modal">
+    <div class="offline-modal">
+      <div class="big-emoji">✨🍪✨</div>
+      <h3>Welcome to the <em style="font-style:italic;color:var(--rose-deep);font-weight:400">Biscuit Tin</em>!</h3>
+      <p>Tap the golden tin to bake biscuits.<br>
+      Hire helpers in the <strong>Bakery</strong> so it bakes while you rest,<br>
+      and say hello to the crew — they each have a favourite treat.</p>
+      <p style="font-size:12px;opacity:.8">No rush. No losing. Just biscuits. 💛</p>
+      <button class="offline-collect-btn" data-close>Let's bake! 🍪</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="offlineModal">
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Welcome <em>Back!</em></div><button class="modal-close" data-close>×</button></div>
@@ -620,9 +634,9 @@ const bv=()=>vault.biscuit;
 
 // ══ GAME DATA ══
 const CHARACTERS={
-  fox:    {emoji:'🦊',name:'Lumo',    role:'Chief Taster', biscuit:'Blueberry Shortbread',biscuitEmoji:'🫐',biscuitValue:25, cooldown:30, color:'#9B6BC4',semi:0,  desc:'Lumo has an impossibly refined palate. She can detect exactly how many blueberries went into each biscuit.',facts:['Always saves the last biscuit for someone else.','Favourite seat is by the window, where the light is just right.','Keeps a little notebook full of biscuit ratings.']},
+  fox:    {emoji:'🦊',name:'Lumo',    role:'Chief Taster', biscuit:'Blueberry Shortbread',biscuitEmoji:'🫐',biscuitValue:25, cooldown:30, color:'#9B6BC4',semi:0,  desc:'Lumo has an impossibly refined palate. He can detect exactly how many blueberries went into each biscuit.',facts:['Always saves the last biscuit for someone else.','Favourite seat is by the window, where the light is just right.','Keeps a little notebook full of biscuit ratings.']},
   tiger:  {emoji:'🐯',name:'Ember',  role:'Head Dunker',  biscuit:'Strawberry Jam Ring', biscuitEmoji:'🍓',biscuitValue:50, cooldown:60, color:'#E8617A',semi:4,  desc:'Ember holds the cafe record for longest biscuit dunk without breaking. Seven seconds. Nobody has come close.',facts:['Hums while waiting for the kettle.','Once ate nine jam rings. Nobody said anything.','Gives genuinely excellent hugs, biscuit-scented or otherwise.']},
-  turtle: {emoji:'🐢',name:'Pip', role:'Slow Baker',   biscuit:'Algae Cracker',       biscuitEmoji:'🌿',biscuitValue:100,cooldown:120,color:'#6FB89A',semi:7,  desc:'Pip perfected the algae cracker over forty-seven attempts. She says the secret is patience.',facts:['Brings a magnifying glass to inspect biscuit edges.','Knows the name of every plant on the windowsill.','Made friends with a tiny frog who visits the cafe sometimes.']},
+  turtle: {emoji:'🐢',name:'Pip', role:'Slow Baker',   biscuit:'Algae Cracker',       biscuitEmoji:'🌿',biscuitValue:100,cooldown:120,color:'#6FB89A',semi:7,  desc:'Pip perfected the algae cracker over forty-seven attempts. He says the secret is patience.',facts:['Brings a magnifying glass to inspect biscuit edges.','Knows the name of every plant on the windowsill.','Made friends with a tiny frog who visits the cafe sometimes.']},
   axolotl:{emoji:'🌸',name:'Echo',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'Echo believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
 };
 const HELPERS=[
@@ -674,9 +688,9 @@ const MILESTONES=[
   {n:5000,   msg:'5,000 biscuits! The friends are very pleased. 🦊'},
   {n:10000,  msg:'10,000 biscuits! A legendary baker! 🏆'},
   {n:50000,  msg:'50,000 biscuits! The tin never empties. ✨'},
-  {n:100000, msg:'100,000 biscuits! You may now Prestige! 🌟'},
+  {n:100000, msg:'100,000 biscuits! The tin hums with pride. 🌟'},
   {n:500000, msg:'500,000 biscuits! A biscuit empire! 💎'},
-  {n:1e6,    msg:'One million biscuits! Truly legendary. 👑'},
+  {n:1e6,    msg:'One million biscuits! A New Season awaits! 👑'},
   {n:5e6,    msg:'Five million! The whole town smells of biscuits. 🌆'},
   {n:10e6,   msg:'Ten million biscuits! You are a biscuit deity. 🌟'},
   {n:50e6,   msg:'Fifty million! A golden age of biscuits. 🥇'},
@@ -845,7 +859,7 @@ setInterval(updateCooldownRings,250);
 // ══ CLICK ══
 function doClick(x,y){
   Audio.init(); Audio.sfxTap();
-  const gained=clickPower;
+  const gained=Math.max(clickPower,Math.ceil(productionRate*0.01));
   bv().total+=gained; bv().lifetime+=gained; bv().clicks=(bv().clicks||0)+1;
   const tin=document.getElementById('tinBtn');
   tin.classList.add('tapped'); setTimeout(()=>tin.classList.remove('tapped'),140);
@@ -1184,15 +1198,17 @@ function renderStats(el){
     <div class="prestige-panel">
       <h3>🌟 New Tin${prestige>0?' (Season '+(prestige+1)+')':''}</h3>
       <p>Reset your biscuits and helpers for a permanent <strong>x${((bv().prestigeBonus||1)+0.5).toFixed(1)} production bonus</strong> forever.</p>
-      <p style="font-size:11px;color:var(--rose-deep);font-weight:800;margin-bottom:10px">Current bonus: x${(bv().prestigeBonus||1).toFixed(1)} · Lifetime: ${fmt(bv().lifetime)} / 100,000</p>
-      <button class="prestige-btn" id="prestigeBtn" ${bv().lifetime>=100000?'':'disabled'}>🌟 Start a New Season</button>
+      <p style="font-size:11px;color:var(--rose-deep);font-weight:800;margin-bottom:10px">Current bonus: x${(bv().prestigeBonus||1).toFixed(1)} · Lifetime: ${fmt(bv().lifetime)} / ${fmt(prestigeReq())}</p>
+      <button class="prestige-btn" id="prestigeBtn" ${bv().lifetime>=prestigeReq()?'':'disabled'}>🌟 Start a New Season</button>
     </div>`;
   document.getElementById('prestigeBtn')?.addEventListener('click',doPrestige);
 }
 
 // ══ PRESTIGE ══
+// First season unlocks at 1M lifetime; each season after costs 5x more.
+function prestigeReq(){return 1000000*Math.pow(5,bv().prestige||0);}
 function doPrestige(){
-  if(bv().lifetime<100000)return;
+  if(bv().lifetime<prestigeReq())return;
   Audio.sfxPrestige();
   bv().prestige=(bv().prestige||0)+1;
   bv().prestigeBonus=(bv().prestigeBonus||1)+0.5;
@@ -1393,7 +1409,7 @@ function updateQuestChip(){
 // ══ CREW QUEST CHAINS (in each character's voice) ══
 const CHAR_QUESTS={
   fox:[
-    {text:"Lumo peeks over her notebook. 'Could you... come say hi? Ten visits, maybe?'",goal:10,cur:()=>bv().charTaps.fox||0,biscuits:500,doneMsg:"'Oh! You actually came.'"},
+    {text:"Lumo peeks over his notebook. 'Could you... come say hi? Ten visits, maybe?'",goal:10,cur:()=>bv().charTaps.fox||0,biscuits:500,doneMsg:"'Oh! You actually came.'"},
     {text:"'The blueberry shortbread needs testing. Bake 2,500 biscuits and I'll take notes.'",goal:2500,cur:()=>Math.floor(bv().lifetime),biscuits:2000,doneMsg:"'Ten out of ten. All of them.'"},
     {text:"'My ratings need more data. Visit me 40 times. I promise I'll wave back.'",goal:40,cur:()=>bv().charTaps.fox||0,biscuits:8000,trail:'trail_star',doneMsg:"'I drew stars next to your name.'"},
     {text:"'Final notebook entry: you're my favourite baker.'",goal:100,cur:()=>bv().charTaps.fox||0,biscuits:25000,perk:true,doneMsg:"'I'll always be quicker for you now.'"},
@@ -1575,11 +1591,11 @@ function renderSecretQuests(el){
 
 // ══ STORY: OPENING THE CAFE ══
 const STORY=[
-  {t:'The Empty Room',   when:()=>true,                          x:"Four friends stood in a dusty little room with one crooked table. 'It smells like old rain,' said Pip. 'It smells like a beginning,' said Lumo, and wrote it in her notebook."},
+  {t:'The Empty Room',   when:()=>true,                          x:"Four friends stood in a dusty little room with one crooked table. 'It smells like old rain,' said Pip. 'It smells like a beginning,' said Lumo, and wrote it in his notebook."},
   {t:'The Tin',          when:()=>bv().lifetime>=500,            x:"Under a loose floorboard, wrapped in a flour sack, they found it: a golden tin with a star on the lid. Nobody remembered leaving it there. Inside sat one perfect biscuit, still warm."},
   {t:'First Light',      when:()=>hcount()>=1,                   x:"Echo hung her lantern in the window so the whole street could see. 'Now everyone knows we're here,' she said. Ember waved at strangers until they waved back."},
-  {t:'The Regulars',     when:()=>bv().lifetime>=25000,          x:"The bell above the door learned everyone's names. The window seat became Lumo's. She rated every biscuit in her notebook and gave them all ten out of ten, secretly."},
-  {t:'Rainy Days',       when:()=>hcount()>=20,                  x:"Some days the rain came sideways and nobody visited. Pip made tea anyway. 'The cafe isn't the customers,' she said. 'It's us, keeping the light on.'"},
+  {t:'The Regulars',     when:()=>bv().lifetime>=25000,          x:"The bell above the door learned everyone's names. The window seat became Lumo's. He rated every biscuit in his notebook and gave them all ten out of ten, secretly."},
+  {t:'Rainy Days',       when:()=>hcount()>=20,                  x:"Some days the rain came sideways and nobody visited. Pip made tea anyway. 'The cafe isn't the customers,' he said. 'It's us, keeping the light on.'"},
   {t:'The Recipe',       when:()=>bv().lifetime>=250000,         x:"One night the tin rattled all by itself. Beneath the last biscuit lay a recipe card in handwriting none of them knew: 'For whoever keeps the star warm.' Ember read it twice, then hugged everyone."},
   {t:'A New Season',     when:()=>(bv().prestige||0)>=1,         x:"They repainted the door and started again, the way you do. The tin never emptied. It just waited to be tapped, like a heart."},
   {t:'Home',             when:()=>chainsComplete(),              x:"The sign outside never said a name. It didn't need one. If you were cold, or new, or a little bit lost, you knew where to go. The light was Echo's. The patience was Pip's. The welcome was Ember's. The quiet love was Lumo's. The biscuits were yours. (Some say, on very quiet nights, a fifth chair appears at the table...)"},
@@ -1690,6 +1706,11 @@ document.getElementById('skinBtn').addEventListener('click',()=>{
 });
 applyTinSkin();
 if(vault.btStorySeen===undefined)vault.btStorySeen=STORY.filter(s=>s.when()).length;
+// First-launch welcome (brand-new bakers only; returning players never see it)
+if(!vault.btWelcomed){
+  if(Math.floor(bv().lifetime)<10)document.getElementById('welcomeModal').classList.add('show');
+  vault.btWelcomed=true; saveVault();
+}
 updateQuestChip();
 
 setInterval(()=>{
