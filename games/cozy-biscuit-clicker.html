@@ -6,8 +6,7 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#BC4749">
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{analytics_storage:'denied'});gtag('js',new Date());gtag('config','G-3JBXCCNY4C');</script>
+<script src="../analytics-loader.js"></script>
 
     <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -30,8 +29,17 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var(--cream);-webkit-user-select:none;user-select:none;background-image:radial-gradient(circle at 20% 30%,rgba(244,182,194,.10) 0%,transparent 45%),radial-gradient(circle at 80% 70%,rgba(184,221,200,.10) 0%,transparent 45%);touch-action:manipulation}
-.app{height:100vh;height:100dvh;max-width:540px;margin:0 auto;display:flex;flex-direction:column;padding:calc(var(--safe-top) + 8px) 12px calc(var(--safe-bottom) + 8px)}
+html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var(--cream);-webkit-user-select:none;user-select:none;background-image:linear-gradient(180deg,rgba(245,199,150,.30) 0%,rgba(245,199,150,0) 36%),radial-gradient(circle at 20% 30%,rgba(244,182,194,.12) 0%,transparent 45%),radial-gradient(circle at 80% 70%,rgba(184,221,200,.12) 0%,transparent 45%);touch-action:manipulation}
+.app{position:relative;z-index:1;height:100vh;height:100dvh;max-width:540px;margin:0 auto;display:flex;flex-direction:column;padding:calc(var(--safe-top) + 8px) 12px calc(var(--safe-bottom) + 8px)}
+
+/* ── COOKIE RAIN (background ambience) ── */
+#cookieRain{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-cookie{position:absolute;top:-40px;line-height:1;animation:bgFall linear forwards;will-change:transform}
+@keyframes bgFall{to{transform:translateY(115vh) rotate(var(--rot,180deg))}}
+
+/* ── CHARACTER TREAT RAIN (foreground, on char tap) ── */
+.char-rain-drop{position:fixed;top:-48px;line-height:1;pointer-events:none;z-index:250;animation:charRainFall linear forwards;will-change:transform}
+@keyframes charRainFall{to{transform:translateY(112vh) rotate(var(--rot,240deg))}}
 
 /* TOP BAR */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 8px;flex-shrink:0}
@@ -57,7 +65,7 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .char-seat:not(.on-cooldown):active{transform:scale(.93)}
 @keyframes readyBounce{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-10px) scale(1.15)}55%{transform:translateY(2px) scale(.95)}75%{transform:translateY(-5px) scale(1.08)}}
 .char-seat.just-ready{animation:readyBounce .7s ease}
-.cooldown-ring{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:62px;height:62px;pointer-events:none;opacity:0;transition:opacity .2s}
+.cooldown-ring{position:absolute;top:2px;left:50%;transform:translateX(-50%);width:62px;height:62px;pointer-events:none;opacity:0;transition:opacity .2s}
 .char-seat.on-cooldown .cooldown-ring{opacity:1}
 .cooldown-track{fill:none;stroke:var(--cream-deep);stroke-width:3}
 .cooldown-fill{fill:none;stroke:var(--rose-deep);stroke-width:3;stroke-linecap:round;transform-origin:26px 26px;transform:rotate(-90deg);transition:stroke-dashoffset .25s linear}
@@ -207,7 +215,14 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .bb-icon{font-size:17px;line-height:1}
 
 /* ── WOW HERO ── */
-.hero{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 4px}
+.hero{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 4px}
+.fairy-lights{position:absolute;top:0;left:0;width:100%;height:28px;overflow:visible;pointer-events:auto;cursor:pointer}
+.fairy-lights .bulb{animation:bulbGlow 2.6s ease-in-out infinite;filter:drop-shadow(0 0 4px #F5C76A)}
+.fairy-lights .bulb:nth-of-type(odd){animation-delay:1.3s}
+@keyframes bulbGlow{0%,100%{opacity:.5}50%{opacity:1}}
+.hero-table{position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:96%;height:62px;background:linear-gradient(180deg,#EDD1AC 0%,#DDB98F 70%,#D2AB80 100%);border-radius:100px 100px 22px 22px/50px 50px 16px 16px;box-shadow:inset 0 5px 8px rgba(255,255,255,.4),0 8px 18px rgba(74,53,40,.14);z-index:0}
+.hero-table::before{content:'';position:absolute;left:7%;right:7%;top:17px;height:2px;background:#C9A176;opacity:.45;border-radius:2px}
+.hero-table::after{content:'';position:absolute;left:13%;right:13%;top:32px;height:2px;background:#C9A176;opacity:.3;border-radius:2px}
 .hero-stage{position:relative;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px}
 .spotlight{position:absolute;left:50%;top:50%;width:330px;height:330px;max-width:96vw;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(245,199,106,.32),rgba(244,182,194,.10) 46%,transparent 66%);pointer-events:none;z-index:0}
 .crew{display:flex;flex-direction:column;gap:14px;z-index:2}
@@ -215,8 +230,8 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .biscuit-tin.tapped .cookie-svg{animation:none;transform:scale(1.06,.9) rotate(-4deg)}
 .cookie-fx{position:absolute;inset:0;pointer-events:none;z-index:5}
 .char-emoji{display:flex;align-items:center;justify-content:center;font-size:0}
-.char-emoji svg{width:64px;height:66px;display:block;filter:drop-shadow(0 2px 4px rgba(74,53,40,.16))}
-.crew{gap:22px}
+.char-emoji svg{width:66px;height:92px;display:block;filter:drop-shadow(0 2px 4px rgba(74,53,40,.16))}
+.crew{gap:12px}
 .crumb2{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:3px;background:#C9853C;animation:crumb2 .68s ease-out forwards}
 .crumb2.dk{background:#4B2E1A;width:6px;height:6px}
 @keyframes crumb2{0%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r))}}
@@ -251,6 +266,14 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .quest-section-title{font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--cocoa);padding:2px 0 8px}
 .more-actions{display:flex;gap:8px;margin-bottom:14px}
 .more-actions .bb-btn{flex:1}
+.biscuit-tin.starlit .cookie-svg{filter:hue-rotate(195deg) saturate(.75) brightness(1.08) drop-shadow(0 8px 16px rgba(60,70,120,.25))}
+.biscuit-tin.starlit .tin-glow{background:radial-gradient(circle,rgba(170,190,255,.5) 0%,transparent 68%)}
+.story-card{background:var(--milk);border:2px dashed var(--cream-deep);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.story-card.locked{opacity:.55}
+.story-title{font-family:'Fraunces',serif;font-weight:900;font-size:14px;color:var(--cocoa);margin-bottom:4px}
+.story-text{font-family:'Fraunces',serif;font-size:12.5px;color:var(--cocoa-soft);line-height:1.7;font-style:italic}
+#saveCode{width:100%;background:var(--cream);border:2px solid var(--cream-deep);border-radius:12px;padding:8px 10px;font-family:monospace;font-size:10px;color:var(--cocoa-soft);resize:none;word-break:break-all;-webkit-user-select:text;user-select:text}
+#saveCode:focus{outline:none;border-color:var(--rose-deep)}
 
 .jvds-strip.open ~ * { transition: margin-top .25s ease; }
 
@@ -261,8 +284,9 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
   .biscuit-tin{width:152px;height:152px}
   .biscuits-label{font-size:34px}
   .spotlight{width:250px;height:250px}
-  .char-emoji svg{width:46px;height:48px}
-  .crew{gap:10px}
+  .char-emoji svg{width:48px;height:67px}
+  .crew{gap:7px}
+  .hero-table{height:46px;bottom:-8px}
   .quest-chip{margin:4px auto 2px;padding:4px 12px}
 }
 /* ══════════════════════════════════════════════════════════ */
@@ -321,26 +345,38 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
   </div>
 
   <div class="hero">
+    <svg class="fairy-lights" viewBox="0 0 393 30" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 6 Q98 26 196 10 Q294 -4 393 14" stroke="#C9A176" stroke-width="1.5" fill="none" opacity=".5"/>
+      <circle class="bulb" cx="36" cy="13" r="3.2" fill="#F5C76A"/>
+      <circle class="bulb" cx="86" cy="18" r="3.2" fill="#F4B6C2"/>
+      <circle class="bulb" cx="136" cy="17" r="3.2" fill="#F5C76A"/>
+      <circle class="bulb" cx="186" cy="11" r="3.2" fill="#B8DDC8"/>
+      <circle class="bulb" cx="236" cy="6" r="3.2" fill="#F5C76A"/>
+      <circle class="bulb" cx="286" cy="3" r="3.2" fill="#F4B6C2"/>
+      <circle class="bulb" cx="336" cy="6" r="3.2" fill="#F5C76A"/>
+      <circle class="bulb" cx="376" cy="11" r="3.2" fill="#B8DDC8"/>
+    </svg>
     <div class="biscuits-label" id="biscuitsLabel">0 <span>biscuits</span></div>
     <div class="rate-label" id="rateLabel">tap to start baking!</div>
     <div class="hero-stage">
       <div class="spotlight"></div>
+      <div class="hero-table"></div>
       <div class="petal-layer" id="petalLayer"></div>
       <div class="scene-rain" id="sceneRain"></div>
       <div class="crew crew-left">
       <div class="char-seat" id="cs-fox" data-char="fox">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-fox" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
         <div class="char-hat" id="hat-fox"></div>
-        <div class="char-emoji"><svg viewBox="0 0 64 66" aria-hidden="true"><path d="M9 28 L12 2 L30 19 Z" fill="#8E6BBE"/><path d="M55 28 L52 2 L34 19 Z" fill="#8E6BBE"/><path d="M14 22 L15 8 L26 18 Z" fill="#F3EAFB"/><path d="M50 22 L49 8 L38 18 Z" fill="#F3EAFB"/><path d="M13 42 l-6 2 5 2.5 -4 3.5 6 1z" fill="#A583CE"/><path d="M51 42 l6 2 -5 2.5 4 3.5 -6 1z" fill="#A583CE"/><circle cx="32" cy="38" r="20" fill="#A583CE"/><path d="M14 43 q18 20 36 0 q-6 15 -18 15 q-12 0 -18 -15z" fill="#FFF8F2"/><path d="M19 29 q5 -3.5 9 -0.5" stroke="#6B4E93" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M45 29 q-5 -3.5 -9 -0.5" stroke="#6B4E93" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="24" cy="36" r="4.6" fill="#4A2E6B"/><circle cx="40" cy="36" r="4.6" fill="#4A2E6B"/><circle cx="25.8" cy="34.2" r="1.7" fill="#fff"/><circle cx="41.8" cy="34.2" r="1.7" fill="#fff"/><circle cx="22.4" cy="37.8" r="0.8" fill="#fff"/><circle cx="38.4" cy="37.8" r="0.8" fill="#fff"/><ellipse cx="16" cy="43" rx="3.4" ry="2.4" fill="#E48BA0" opacity=".5"/><ellipse cx="48" cy="43" rx="3.4" ry="2.4" fill="#E48BA0" opacity=".5"/><path d="M32 44 l-4 -4 h8 z" fill="#3A2743"/><path d="M32 48 q4 3.5 7 -0.5" stroke="#3A2743" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M15 55 q17 10 34 0 q1 6 -17 8 q-18 -2 -17 -8z" fill="#3E4A36"/><circle cx="32" cy="59.5" r="2.2" fill="#5C6B4C"/></svg></div>
+        <div class="char-emoji"><svg viewBox="0 0 72 100" aria-hidden="true"><path d="M50 62 q20 -2 18 18 q-2 14 -18 12 q10 -6 8 -14 q-2 -10 -8 -16z" fill="#8E6BBE"/><path d="M66 74 q2 14 -16 18 q10 -7 8 -15z" fill="#F3EAFB"/><rect x="24" y="80" width="9" height="14" rx="4.5" fill="#A583CE"/><rect x="39" y="80" width="9" height="14" rx="4.5" fill="#A583CE"/><ellipse cx="28.5" cy="92.5" rx="4.8" ry="3.2" fill="#4A3552"/><ellipse cx="43.5" cy="92.5" rx="4.8" ry="3.2" fill="#4A3552"/><path d="M20 50 Q36 44 52 50 L58 84 Q36 92 14 84 Z" fill="#33303A"/><path d="M28 54 L36 58 L44 54 L46 82 Q36 86 26 82 Z" fill="#A583CE"/><path d="M30 56.5 Q36 60.5 42 56.5 L42.5 69 Q36 72 29.5 69 Z" fill="#F3EAFB"/><path d="M50 52 L60 36 L64 44 Z" fill="#33303A"/><circle cx="61" cy="37" r="4.5" fill="#A583CE"/><path d="M22 14 L26 2 L34 10 Z" fill="#8E6BBE"/><path d="M50 14 L46 2 L38 10 Z" fill="#8E6BBE"/><path d="M25 12 L27 5 L32 10 Z" fill="#F3EAFB"/><path d="M47 12 L45 5 L40 10 Z" fill="#F3EAFB"/><path d="M18 30 Q18 10 36 10 Q54 10 54 30 Q54 44 36 46 Q18 44 18 30 Z" fill="#33303A"/><circle cx="36" cy="30" r="13.5" fill="#A583CE"/><ellipse cx="31.6" cy="36.2" rx="6.2" ry="4.8" fill="#FFF8F2"/><ellipse cx="40.4" cy="36.2" rx="6.2" ry="4.8" fill="#FFF8F2"/><path d="M25.5 21.8 q4 -2.6 7.5 -0.9" stroke="#6B4E93" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M46.5 21.8 q-4 -2.6 -7.5 -0.9" stroke="#6B4E93" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="29.5" cy="26.3" r="3.9" fill="#4A2E6B"/><circle cx="42.5" cy="26.3" r="3.9" fill="#4A2E6B"/><circle cx="31" cy="24.8" r="1.4" fill="#fff"/><circle cx="44" cy="24.8" r="1.4" fill="#fff"/><circle cx="28" cy="27.7" r="0.7" fill="#fff"/><circle cx="41" cy="27.7" r="0.7" fill="#fff"/><ellipse cx="24.3" cy="31.6" rx="2.5" ry="1.7" fill="#E48BA0" opacity=".55"/><ellipse cx="47.7" cy="31.6" rx="2.5" ry="1.7" fill="#E48BA0" opacity=".55"/><path d="M36 31.2 q-3.1 0 -3.1 2.1 q0 1.9 3.1 3.3 q3.1 -1.4 3.1 -3.3 q0 -2.1 -3.1 -2.1z" fill="#3A2743"/><path d="M36 36.8 q0 1.7 -2.5 2.2 M36 36.8 q0 1.7 2.5 2.2" stroke="#3A2743" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="36" cy="48" r="2.4" fill="#8A8494"/></svg></div>
         <div class="cooldown-timer" id="timer-fox"></div>
-        <div class="char-label">Fox</div>
+        <div class="char-label">Lumo</div>
       </div>
       <div class="char-seat" id="cs-tiger" data-char="tiger">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-tiger" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
         <div class="char-hat" id="hat-tiger"></div>
-        <div class="char-emoji"><svg viewBox="0 0 64 66" aria-hidden="true"><circle cx="14" cy="15" r="7" fill="#E8A79E"/><circle cx="14" cy="15" r="3.4" fill="#D98E93"/><circle cx="50" cy="15" r="7" fill="#E8A79E"/><circle cx="50" cy="15" r="3.4" fill="#D98E93"/><circle cx="32" cy="37" r="21" fill="#F2C4BE"/><path d="M24 17 l-2.5 -6 M32 16 v-7 M40 17 l2.5 -6 M13 32 h-7 M51 32 h7 M14 40 l-7 3 M50 40 l7 3" stroke="#7E4E5B" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M15 42 q17 21 34 0 q-6 16 -17 16 q-11 0 -17 -16z" fill="#FFF9F5"/><path d="M18 29 q5 -3.5 9 -0.5" stroke="#7E4E5B" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M46 29 q-5 -3.5 -9 -0.5" stroke="#7E4E5B" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="24" cy="36" r="5.4" fill="#fff"/><circle cx="40" cy="36" r="5.4" fill="#fff"/><circle cx="24.4" cy="36.4" r="3.4" fill="#3F8F52"/><circle cx="40.4" cy="36.4" r="3.4" fill="#3F8F52"/><circle cx="24.4" cy="36.4" r="1.6" fill="#1F3324"/><circle cx="40.4" cy="36.4" r="1.6" fill="#1F3324"/><circle cx="25.7" cy="35" r="1.2" fill="#fff"/><circle cx="41.7" cy="35" r="1.2" fill="#fff"/><path d="M32 44 l-3.5 -3.5 h7 z" fill="#D96C86"/><path d="M24 46 q8 8 16 0 z" fill="#8A3A44"/><path d="M27.5 49.6 q4.5 3.2 9 0 q-2.2 3.6 -4.5 3.6 t-4.5 -3.6z" fill="#E48BA0"/><path d="M15 55 q17 10 34 0 q1 6 -17 8 q-18 -2 -17 -8z" fill="#8F98A3"/><circle cx="32" cy="59.5" r="2.2" fill="#B9C0C9"/></svg></div>
+        <div class="char-emoji"><svg viewBox="0 0 72 100" aria-hidden="true"><path d="M18 66 q-16 2 -14 18 q2 12 16 10 q-8 -6 -6 -13 q1 -9 4 -15z" fill="#E8A9B4"/><path d="M6 78 q-1 12 13 15 q-8 -6 -7 -13z" fill="#F7E8E4"/><path d="M9 74 l6 2 M7 82 l6 1" stroke="#5E3A44" stroke-width="1.8" stroke-linecap="round"/><rect x="26" y="80" width="9" height="14" rx="4.5" fill="#E8A9B4"/><rect x="40" y="80" width="9" height="14" rx="4.5" fill="#E8A9B4"/><ellipse cx="30.5" cy="92.5" rx="4.6" ry="3" fill="#FFF9F5"/><ellipse cx="44.5" cy="92.5" rx="4.6" ry="3" fill="#FFF9F5"/><path d="M28 85 h5 M42 85 h5" stroke="#5E3A44" stroke-width="1.6" stroke-linecap="round"/><circle cx="61.8" cy="14" r="10" fill="#F5C76A" opacity=".3"/><rect x="60" y="22" width="3.6" height="60" rx="1.8" fill="#C9A176"/><rect x="54.5" y="6" width="14.5" height="16" rx="4" fill="#E8BC4E" stroke="#C9992F" stroke-width="1.4"/><rect x="57" y="8.5" width="9.5" height="11" rx="2.5" fill="#F6D97E"/><path d="M61.7 9.5 L63 12.6 L66.2 13 L63.9 15.2 L64.5 18.4 L61.7 16.7 L58.9 18.4 L59.5 15.2 L57.2 13 L60.4 12.6 Z" fill="#FFF3C4"/><path d="M20 50 Q36 44 52 50 L58 84 Q36 92 14 84 Z" fill="#828D7F"/><path d="M28 54 L36 58 L44 54 L46 82 Q36 86 26 82 Z" fill="#E8A9B4"/><path d="M30 57 Q36 60.5 42 57 L42.5 79 Q36 82.5 29.5 79 Z" fill="#F7E8E4"/><path d="M27.5 62 h4 M40.5 62 h4 M27.5 69 h4 M40.5 69 h4 M27.5 76 h4 M40.5 76 h4" stroke="#5E3A44" stroke-width="1.7" stroke-linecap="round"/><path d="M52 54 L60 46 L63 52 Z" fill="#828D7F"/><circle cx="61.8" cy="46" r="5" fill="#E8A9B4"/><path d="M20 52 L10 38 L6 46 Z" fill="#828D7F"/><circle cx="9" cy="39" r="4.5" fill="#E8A9B4"/><circle cx="25.5" cy="10.5" r="8" fill="#ECAFB8" stroke="#C98995" stroke-width="1.6"/><circle cx="25.5" cy="10.5" r="4.2" fill="#F7D5DA"/><circle cx="46.5" cy="10.5" r="8" fill="#ECAFB8" stroke="#C98995" stroke-width="1.6"/><circle cx="46.5" cy="10.5" r="4.2" fill="#F7D5DA"/><circle cx="36" cy="28" r="16" fill="#ECAFB8"/><path d="M32.5 16 l-1.5 -4 M36 15 v-4.5 M39.5 16 l1.5 -4 M21 24 h-6 M51 24 h6 M22 31 l-5.5 2.5 M50 31 l5.5 2.5" stroke="#5E3A44" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M22 32 q14 16 28 0 q-4.5 12 -14 12 q-9.5 0 -14 -12z" fill="#FFF9F5"/><path d="M25 22 q4 -2.5 7 -0.5" stroke="#5E3A44" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M47 22 q-4 -2.5 -7 -0.5" stroke="#5E3A44" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="29" cy="27" r="4.2" fill="#fff"/><circle cx="43" cy="27" r="4.2" fill="#fff"/><circle cx="29.4" cy="27.4" r="2.6" fill="#3F8F52"/><circle cx="43.4" cy="27.4" r="2.6" fill="#3F8F52"/><circle cx="29.4" cy="27.4" r="1.2" fill="#1F3324"/><circle cx="43.4" cy="27.4" r="1.2" fill="#1F3324"/><circle cx="30.4" cy="26.4" r="0.9" fill="#fff"/><circle cx="44.4" cy="26.4" r="0.9" fill="#fff"/><path d="M36 33 l-2.6 -2.6 h5.2 z" fill="#D96C86"/><path d="M30 35.5 q6 5.5 12 0 z" fill="#8A3A44"/><path d="M32.5 38.2 q3.5 2.4 7 0 q-1.8 2.8 -3.5 2.8 t-3.5 -2.8z" fill="#E48BA0"/><circle cx="36" cy="48" r="2.4" fill="#B8C4A8"/></svg></div>
         <div class="cooldown-timer" id="timer-tiger"></div>
-        <div class="char-label">Tiger</div>
+        <div class="char-label">Ember</div>
       </div>
       </div>
       <div class="biscuit-tin" id="tinBtn" role="button" aria-label="Tap to bake biscuits">
@@ -371,16 +407,16 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
       <div class="char-seat" id="cs-turtle" data-char="turtle">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-turtle" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
         <div class="char-hat" id="hat-turtle"></div>
-        <div class="char-emoji"><svg viewBox="0 0 64 66" aria-hidden="true"><path d="M8 32 q24 -26 48 0 q3 -22 -24 -22 q-27 0 -24 22z" fill="#4F8C4D"/><path d="M14 26 q18 -14 36 0" stroke="#3E7040" stroke-width="1.8" fill="none" opacity=".7"/><ellipse cx="22" cy="24" rx="4" ry="3" fill="#3E7040" opacity=".6"/><ellipse cx="42" cy="24" rx="4" ry="3" fill="#3E7040" opacity=".6"/><ellipse cx="32" cy="18" rx="4.6" ry="3.2" fill="#3E7040" opacity=".6"/><circle cx="32" cy="40" r="19" fill="#8FCB7F"/><circle cx="24" cy="38" r="5.4" fill="#fff"/><circle cx="40" cy="38" r="5.4" fill="#fff"/><circle cx="24.6" cy="38.6" r="3.2" fill="#3F8F52"/><circle cx="40.6" cy="38.6" r="3.2" fill="#3F8F52"/><circle cx="24.6" cy="38.6" r="1.5" fill="#1F3324"/><circle cx="40.6" cy="38.6" r="1.5" fill="#1F3324"/><circle cx="25.8" cy="37.2" r="1.1" fill="#fff"/><circle cx="41.8" cy="37.2" r="1.1" fill="#fff"/><ellipse cx="16" cy="45" rx="3.7" ry="2.6" fill="#F4A6C2" opacity=".65"/><ellipse cx="48" cy="45" rx="3.7" ry="2.6" fill="#F4A6C2" opacity=".65"/><path d="M25 46 q7 7 14 0 z" fill="#2F4A2C"/><path d="M28 49.5 q4 3 8 0 q-2 3 -4 3 t-4 -3z" fill="#E48BA0"/><path d="M15 55.5 q17 10 34 0 q1 6 -17 8 q-18 -2 -17 -8z" fill="#3E4A36"/><circle cx="32" cy="60" r="2.2" fill="#5C6B4C"/></svg></div>
+        <div class="char-emoji"><svg viewBox="0 0 72 100" aria-hidden="true"><ellipse cx="36" cy="66" rx="24" ry="18" fill="#75714A"/><path d="M20 58 q16 -8 32 0 M18 68 h36" stroke="#5C5938" stroke-width="1.6" fill="none" opacity=".7"/><ellipse cx="26" cy="63" rx="4" ry="3" fill="#5C5938" opacity=".55"/><ellipse cx="46" cy="63" rx="4" ry="3" fill="#5C5938" opacity=".55"/><rect x="26" y="80" width="9" height="14" rx="4.5" fill="#8FCB7F"/><rect x="40" y="80" width="9" height="14" rx="4.5" fill="#8FCB7F"/><circle cx="30" cy="86" r="1.2" fill="#6FA663"/><circle cx="44" cy="86" r="1.2" fill="#6FA663"/><path d="M20 52 Q36 46 52 52 L58 85 Q36 93 14 85 Z" fill="#2F4A38"/><path d="M28 56 L36 60 L44 56 L46 82 Q36 86 26 82 Z" fill="#C9B084"/><path d="M28.5 64 q7.5 3 15 0 M28.5 71 q7.5 3 15 0 M28.5 78 q7.5 3 15 0" stroke="#A89060" stroke-width="1.6" fill="none"/><path d="M52 54 L62 40 L66 48 Z" fill="#2F4A38"/><circle cx="63" cy="41" r="4.5" fill="#8FCB7F"/><path d="M8 56 L27 56 Q28 76 17.5 82 Q7 76 8 56 Z" fill="#F5E9D3" stroke="#6B4F3E" stroke-width="2" stroke-linejoin="round"/><path d="M17.5 62 v10 M17.5 66 q-4 -3 -5 -6 M17.5 66 q4 -3 5 -6 M17.5 70 q-3 -1 -4.5 -3 M17.5 70 q3 -1 4.5 -3" stroke="#6FB89A" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M19 34 Q19 14 36 14 Q53 14 53 34 Q53 48 36 50 Q19 48 19 34 Z" fill="#2F4A38"/><circle cx="36" cy="33" r="13" fill="#8FCB7F"/><circle cx="30" cy="23" r="1.4" fill="#6FA663"/><circle cx="36" cy="21" r="1.6" fill="#6FA663"/><circle cx="42" cy="23" r="1.4" fill="#6FA663"/><circle cx="30" cy="31" r="4.4" fill="#fff"/><circle cx="42" cy="31" r="4.4" fill="#fff"/><circle cx="30.4" cy="31.4" r="2.7" fill="#3F8F52"/><circle cx="42.4" cy="31.4" r="2.7" fill="#3F8F52"/><circle cx="30.4" cy="31.4" r="1.3" fill="#1F3324"/><circle cx="42.4" cy="31.4" r="1.3" fill="#1F3324"/><circle cx="31.4" cy="30.4" r="0.9" fill="#fff"/><circle cx="43.4" cy="30.4" r="0.9" fill="#fff"/><ellipse cx="25" cy="37" rx="2.8" ry="2" fill="#F4A6C2" opacity=".65"/><ellipse cx="47" cy="37" rx="2.8" ry="2" fill="#F4A6C2" opacity=".65"/><path d="M31 38 q5 5 10 0 z" fill="#2F4A2C"/><path d="M33 40.6 q3 2.2 6 0 q-1.5 2.4 -3 2.4 t-3 -2.4z" fill="#E48BA0"/><circle cx="36" cy="52" r="2.4" fill="#8A6A4E"/></svg></div>
         <div class="cooldown-timer" id="timer-turtle"></div>
-        <div class="char-label">Turtle</div>
+        <div class="char-label">Pip</div>
       </div>
       <div class="char-seat" id="cs-axolotl" data-char="axolotl">
         <svg class="cooldown-ring" viewBox="0 0 52 52"><circle class="cooldown-track" cx="26" cy="26" r="22"/><circle class="cooldown-fill" id="ring-axolotl" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg>
         <div class="char-hat" id="hat-axolotl"></div>
-        <div class="char-emoji"><svg viewBox="0 0 64 66" aria-hidden="true"><g fill="#EF83AB"><ellipse cx="9" cy="21" rx="8" ry="4" transform="rotate(-32 9 21)"/><ellipse cx="7" cy="33" rx="8.5" ry="4" transform="rotate(-6 7 33)"/><ellipse cx="9" cy="45" rx="8" ry="4" transform="rotate(26 9 45)"/><ellipse cx="55" cy="21" rx="8" ry="4" transform="rotate(32 55 21)"/><ellipse cx="57" cy="33" rx="8.5" ry="4" transform="rotate(6 57 33)"/><ellipse cx="55" cy="45" rx="8" ry="4" transform="rotate(-26 55 45)"/></g><g fill="#F7A9C6"><ellipse cx="7" cy="20" rx="4" ry="2" transform="rotate(-32 7 20)"/><ellipse cx="5" cy="33" rx="4.2" ry="2" transform="rotate(-6 5 33)"/><ellipse cx="7" cy="46" rx="4" ry="2" transform="rotate(26 7 46)"/><ellipse cx="57" cy="20" rx="4" ry="2" transform="rotate(32 57 20)"/><ellipse cx="59" cy="33" rx="4.2" ry="2" transform="rotate(6 59 33)"/><ellipse cx="57" cy="46" rx="4" ry="2" transform="rotate(-26 57 46)"/></g><circle cx="32" cy="35" r="21" fill="#F5B8CC"/><path d="M24 16 q8 -6 16 0" stroke="#EE8FB2" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="24" cy="33" r="5" fill="#5C3B8E"/><circle cx="40" cy="33" r="5" fill="#5C3B8E"/><circle cx="26" cy="31" r="1.9" fill="#fff"/><circle cx="42" cy="31" r="1.9" fill="#fff"/><circle cx="22.2" cy="35" r="1" fill="#fff"/><circle cx="38.2" cy="35" r="1" fill="#fff"/><ellipse cx="15" cy="40" rx="3.9" ry="2.7" fill="#F17FA6" opacity=".6"/><ellipse cx="49" cy="40" rx="3.9" ry="2.7" fill="#F17FA6" opacity=".6"/><path d="M26 42 q6 6 12 0 z" fill="#7E3B55"/><path d="M28.5 44.8 q3.5 2.6 7 0 q-1.8 2.7 -3.5 2.7 t-3.5 -2.7z" fill="#F4A6C0"/><path d="M15 53 q17 10 34 0 q1 6 -17 8 q-18 -2 -17 -8z" fill="#3E4A36"/><circle cx="32" cy="57.5" r="2.2" fill="#5C6B4C"/></svg></div>
+        <div class="char-emoji"><svg viewBox="0 0 72 100" aria-hidden="true"><path d="M50 62 q18 4 16 20 q-2 12 -16 10 q8 -6 6 -13 q-1 -9 -6 -17z" fill="#F6C6D4"/><path d="M62 74 q2 12 -12 14 q8 -6 6 -12z" fill="#FBDCE6"/><rect x="24" y="80" width="9" height="14" rx="4.5" fill="#F6C6D4"/><rect x="39" y="80" width="9" height="14" rx="4.5" fill="#F6C6D4"/><g fill="#EE7FA8"><ellipse cx="15" cy="16" rx="7.5" ry="3.6" transform="rotate(-35 15 16)"/><ellipse cx="12" cy="26" rx="8" ry="3.6" transform="rotate(-8 12 26)"/><ellipse cx="15" cy="36" rx="7.5" ry="3.6" transform="rotate(24 15 36)"/><ellipse cx="57" cy="16" rx="7.5" ry="3.6" transform="rotate(35 57 16)"/><ellipse cx="60" cy="26" rx="8" ry="3.6" transform="rotate(8 60 26)"/><ellipse cx="57" cy="36" rx="7.5" ry="3.6" transform="rotate(-24 57 36)"/><ellipse cx="11" cy="11" rx="4" ry="2" transform="rotate(-60 11 11)"/><ellipse cx="7" cy="22" rx="4" ry="2" transform="rotate(-35 7 22)"/><ellipse cx="8" cy="41" rx="4" ry="2" transform="rotate(55 8 41)"/><ellipse cx="61" cy="11" rx="4" ry="2" transform="rotate(60 61 11)"/><ellipse cx="65" cy="22" rx="4" ry="2" transform="rotate(35 65 22)"/><ellipse cx="64" cy="41" rx="4" ry="2" transform="rotate(-55 64 41)"/></g><g fill="#F7A9C6"><ellipse cx="13" cy="15" rx="3.8" ry="1.8" transform="rotate(-35 13 15)"/><ellipse cx="10" cy="26" rx="4" ry="1.8" transform="rotate(-8 10 26)"/><ellipse cx="13" cy="37" rx="3.8" ry="1.8" transform="rotate(24 13 37)"/><ellipse cx="59" cy="15" rx="3.8" ry="1.8" transform="rotate(35 59 15)"/><ellipse cx="62" cy="26" rx="4" ry="1.8" transform="rotate(8 62 26)"/><ellipse cx="59" cy="37" rx="3.8" ry="1.8" transform="rotate(-24 59 37)"/></g><path d="M20 50 Q36 44 52 50 L58 84 Q36 92 14 84 Z" fill="#3A4F3C"/><path d="M28 54 L36 58 L44 54 L46 82 Q36 86 26 82 Z" fill="#F6C6D4"/><path d="M30 57 Q36 60.5 42 57 L42.5 79 Q36 82.5 29.5 79 Z" fill="#FBDCE6"/><circle cx="29" cy="62" r="1.1" fill="#EE9CBE" opacity=".8"/><circle cx="43" cy="66" r="1.1" fill="#EE9CBE" opacity=".8"/><circle cx="30" cy="74" r="1.1" fill="#EE9CBE" opacity=".8"/><path d="M50 52 L62 42 L64 50 Z" fill="#3A4F3C"/><circle cx="62" cy="44" r="4" fill="#F6C6D4"/><circle cx="62" cy="60" r="10" fill="#F5C76A" opacity=".28"/><path d="M62 48 v3" stroke="#8A6A4E" stroke-width="1.6" stroke-linecap="round"/><rect x="58" y="53" width="8" height="2.4" rx="1.2" fill="#C9992F"/><rect x="56.5" y="55" width="11" height="12" rx="3" fill="#F5C76A" stroke="#C9992F" stroke-width="1.4"/><rect x="59.3" y="57.2" width="5.4" height="7.6" rx="2" fill="#FFEFB8"/><path d="M62 63.5 q-1.8 -2 0 -4.4 q1.8 2.4 0 4.4z" fill="#E8A830"/><circle cx="36" cy="28" r="16" fill="#F6C6D4"/><path d="M29 14 q7 -5 14 0" stroke="#EE8FB2" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="29" cy="26" r="4.4" fill="#5C3B8E"/><circle cx="43" cy="26" r="4.4" fill="#5C3B8E"/><circle cx="30.7" cy="24.3" r="1.6" fill="#fff"/><circle cx="44.7" cy="24.3" r="1.6" fill="#fff"/><circle cx="27.5" cy="27.7" r="0.9" fill="#fff"/><circle cx="41.5" cy="27.7" r="0.9" fill="#fff"/><ellipse cx="22" cy="33" rx="3.2" ry="2.2" fill="#F17FA6" opacity=".6"/><ellipse cx="50" cy="33" rx="3.2" ry="2.2" fill="#F17FA6" opacity=".6"/><path d="M31 35 q5 5 10 0 z" fill="#7E3B55"/><path d="M33 37.6 q3 2.2 6 0 q-1.5 2.4 -3 2.4 t-3 -2.4z" fill="#F4A6C0"/><circle cx="36" cy="48" r="2.4" fill="#2E3B2E"/></svg></div>
         <div class="cooldown-timer" id="timer-axolotl"></div>
-        <div class="char-label">Axolotl</div>
+        <div class="char-label">Echo</div>
       </div>
       </div>
     </div>
@@ -407,7 +443,7 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 
 <div class="modal-backdrop" id="bioModal">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="bioTitle">The Fox</div><button class="modal-close" data-close>×</button></div>
+    <div class="modal-header"><div class="modal-title" id="bioTitle">Lumo</div><button class="modal-close" data-close>×</button></div>
     <div id="bioContent"></div>
   </div>
 </div>
@@ -416,6 +452,9 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
   <div class="modal">
     <div class="modal-header"><div class="modal-title">Little <em>Goals</em></div><button class="modal-close" data-close>×</button></div>
     <div class="ach-grid" id="achList"></div>
+    <div class="quest-section-title" style="margin-top:16px">🤫 Secrets</div>
+    <p class="modal-sub">Hidden moments around the cafe. Found ones show their story, the rest only whisper a hint.</p>
+    <div class="ach-grid" id="secretList"></div>
   </div>
 </div>
 
@@ -448,6 +487,14 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
     <div class="more-actions">
       <button class="bb-btn" id="audioBtn"><span class="bb-icon">🎵</span>Music</button>
       <button class="bb-btn" id="shareBtn"><span class="bb-icon">📤</span>Share</button>
+      <button class="bb-btn" id="skinBtn" style="display:none"><span class="bb-icon">🌌</span>Tin skin</button>
+    </div>
+    <div class="quest-section-title">💾 Save Transfer</div>
+    <p class="modal-sub">Move your bakery between devices. Export here, then paste the code on your other device and import.</p>
+    <textarea id="saveCode" rows="3" placeholder="Paste a save code here to import..." spellcheck="false"></textarea>
+    <div class="more-actions" style="margin-top:8px">
+      <button class="bb-btn" id="exportSaveBtn"><span class="bb-icon">⬆️</span>Export code</button>
+      <button class="bb-btn" id="importSaveBtn"><span class="bb-icon">⬇️</span>Import code</button>
     </div>
     <div id="moreStats"></div>
   </div>
@@ -573,10 +620,10 @@ const bv=()=>vault.biscuit;
 
 // ══ GAME DATA ══
 const CHARACTERS={
-  fox:    {emoji:'🦊',name:'The Fox',    role:'Chief Taster', biscuit:'Blueberry Shortbread',biscuitEmoji:'🫐',biscuitValue:25, cooldown:30, color:'#9B6BC4',semi:0,  desc:'The Fox has an impossibly refined palate. She can detect exactly how many blueberries went into each biscuit.',facts:['Always saves the last biscuit for someone else.','Favourite seat is by the window, where the light is just right.','Keeps a little notebook full of biscuit ratings.']},
-  tiger:  {emoji:'🐯',name:'The Tiger',  role:'Head Dunker',  biscuit:'Strawberry Jam Ring', biscuitEmoji:'🍓',biscuitValue:50, cooldown:60, color:'#E8617A',semi:4,  desc:'The Tiger holds the cafe record for longest biscuit dunk without breaking. Seven seconds. Nobody has come close.',facts:['Hums while waiting for the kettle.','Once ate nine jam rings. Nobody said anything.','Gives genuinely excellent hugs, biscuit-scented or otherwise.']},
-  turtle: {emoji:'🐢',name:'The Turtle', role:'Slow Baker',   biscuit:'Algae Cracker',       biscuitEmoji:'🌿',biscuitValue:100,cooldown:120,color:'#6FB89A',semi:7,  desc:'The Turtle perfected the algae cracker over forty-seven attempts. She says the secret is patience.',facts:['Brings a magnifying glass to inspect biscuit edges.','Knows the name of every plant on the windowsill.','Made friends with a tiny frog who visits the cafe sometimes.']},
-  axolotl:{emoji:'🌸',name:'The Axolotl',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'The Axolotl believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
+  fox:    {emoji:'🦊',name:'Lumo',    role:'Chief Taster', biscuit:'Blueberry Shortbread',biscuitEmoji:'🫐',biscuitValue:25, cooldown:30, color:'#9B6BC4',semi:0,  desc:'Lumo has an impossibly refined palate. She can detect exactly how many blueberries went into each biscuit.',facts:['Always saves the last biscuit for someone else.','Favourite seat is by the window, where the light is just right.','Keeps a little notebook full of biscuit ratings.']},
+  tiger:  {emoji:'🐯',name:'Ember',  role:'Head Dunker',  biscuit:'Strawberry Jam Ring', biscuitEmoji:'🍓',biscuitValue:50, cooldown:60, color:'#E8617A',semi:4,  desc:'Ember holds the cafe record for longest biscuit dunk without breaking. Seven seconds. Nobody has come close.',facts:['Hums while waiting for the kettle.','Once ate nine jam rings. Nobody said anything.','Gives genuinely excellent hugs, biscuit-scented or otherwise.']},
+  turtle: {emoji:'🐢',name:'Pip', role:'Slow Baker',   biscuit:'Algae Cracker',       biscuitEmoji:'🌿',biscuitValue:100,cooldown:120,color:'#6FB89A',semi:7,  desc:'Pip perfected the algae cracker over forty-seven attempts. She says the secret is patience.',facts:['Brings a magnifying glass to inspect biscuit edges.','Knows the name of every plant on the windowsill.','Made friends with a tiny frog who visits the cafe sometimes.']},
+  axolotl:{emoji:'🌸',name:'Echo',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'Echo believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
 };
 const HELPERS=[
   {id:'oven',    emoji:'🫙',name:'Cookie Jar',     desc:'Biscuits appear as if by magic',          baseCost:10,     baseRate:0.1,  costMult:1.15},
@@ -584,7 +631,7 @@ const HELPERS=[
   {id:'mixer',   emoji:'🌀',name:'Stand Mixer',    desc:'Whips up batter in moments',              baseCost:450,    baseRate:2.2,  costMult:1.15},
   {id:'cat',     emoji:'🐈',name:'Cafe Cat',       desc:'Somehow makes biscuits appear faster',    baseCost:2000,   baseRate:8,    costMult:1.15},
   {id:'recipe',  emoji:'📖',name:'Secret Recipe',  desc:'Ancient baking knowledge unlocked',       baseCost:9000,   baseRate:28,   costMult:1.15},
-  {id:'fox_bake',emoji:'🦊',name:"Fox's Kitchen",  desc:'The Fox leads a baking brigade',          baseCost:30000,  baseRate:80,   costMult:1.15},
+  {id:'fox_bake',emoji:'🦊',name:"Lumo's Kitchen",  desc:'Lumo leads a baking brigade',          baseCost:30000,  baseRate:80,   costMult:1.15},
   {id:'sparkle', emoji:'✨',name:'Magic Sprinkles', desc:'Enchanted sprinkles multiply output',    baseCost:100000, baseRate:220,  costMult:1.15},
   {id:'bakery',  emoji:'🏪',name:'Cozy Bakery',    desc:'A whole bakery dedicated to biscuits',   baseCost:400000, baseRate:600,  costMult:1.15},
   {id:'wizard',  emoji:'🧙',name:'Biscuit Wizard',  desc:'Uses ancient spells to conjure biscuits',baseCost:1500000,baseRate:1600, costMult:1.15},
@@ -604,7 +651,7 @@ const UPGRADES=[
   {id:'bowl_attach',   emoji:'🥣',name:'Extra Bowl',       desc:'2x Mixer output',                  cost:5000,    type:'helper',target:'mixer',   mult:2},
   {id:'cat_nap',       emoji:'😴',name:'Power Nap',        desc:'2x Cat output',                    cost:22000,   type:'helper',target:'cat',     mult:2},
   {id:'ink_pen',       emoji:'🖊️',name:'Ink Pen',          desc:'2x Recipe output',                 cost:90000,   type:'helper',target:'recipe',  mult:2},
-  {id:'fox_apron',     emoji:'👘',name:"Fox's Apron",      desc:"2x Fox's Kitchen output",          cost:350000,  type:'helper',target:'fox_bake',mult:2},
+  {id:'fox_apron',     emoji:'👘',name:"Lumo's Apron",      desc:"2x Lumo's Kitchen output",          cost:350000,  type:'helper',target:'fox_bake',mult:2},
   {id:'glitter_jar',   emoji:'🌟',name:'Glitter Jar',      desc:'2x Magic Sprinkles output',        cost:1200000, type:'helper',target:'sparkle', mult:2},
   {id:'grand_sign',    emoji:'🪧',name:'Grand Opening Sign',desc:'2x Cozy Bakery output',           cost:5000000, type:'helper',target:'bakery',  mult:2},
   {id:'spellbook',     emoji:'📚',name:'Spellbook',        desc:'2x Biscuit Wizard output',         cost:18000000,type:'helper',target:'wizard',  mult:2},
@@ -662,15 +709,15 @@ const ACHIEVEMENTS=[
   {id:'bt_upgrade8',   emoji:'✨',name:'Fully Kitted',      desc:'Buy 8 upgrades',                       coins:40,  check:v=>bv().upgrades.length>=8},
   {id:'bt_upgrade15',  emoji:'🌟',name:'Maxed Out',         desc:'Buy 15 upgrades',                      coins:100, check:v=>bv().upgrades.length>=15},
   // Characters
-  {id:'bt_fox',        emoji:'🦊',name:"Fox's Favourite",  desc:'Tap the Fox 10 times',                 coins:10,  check:v=>(bv().charTaps.fox||0)>=10},
-  {id:'bt_tiger',      emoji:'🐯',name:"Tiger's Pal",      desc:'Tap the Tiger 10 times',               coins:10,  check:v=>(bv().charTaps.tiger||0)>=10},
-  {id:'bt_turtle',     emoji:'🐢',name:'Shell Friends',    desc:'Tap the Turtle 10 times',              coins:10,  check:v=>(bv().charTaps.turtle||0)>=10},
-  {id:'bt_axolotl',    emoji:'🌸',name:'Sparkle Crew',     desc:'Tap the Axolotl 10 times',             coins:10,  check:v=>(bv().charTaps.axolotl||0)>=10},
+  {id:'bt_fox',        emoji:'🦊',name:"Lumo's Favourite",  desc:'Tap Lumo 10 times',                 coins:10,  check:v=>(bv().charTaps.fox||0)>=10},
+  {id:'bt_tiger',      emoji:'🐯',name:"Ember's Pal",      desc:'Tap Ember 10 times',               coins:10,  check:v=>(bv().charTaps.tiger||0)>=10},
+  {id:'bt_turtle',     emoji:'🐢',name:'Shell Friends',    desc:'Tap Pip 10 times',              coins:10,  check:v=>(bv().charTaps.turtle||0)>=10},
+  {id:'bt_axolotl',    emoji:'🌸',name:'Sparkle Crew',     desc:'Tap Echo 10 times',             coins:10,  check:v=>(bv().charTaps.axolotl||0)>=10},
   {id:'bt_allfour',    emoji:'🌈',name:'Full Family',      desc:'Tap all four friends',                 coins:25,  check:v=>Object.values(bv().charTaps).every(n=>n>0)},
-  {id:'bt_foxfan',     emoji:'🦊',name:'Fox Superfan',     desc:'Tap the Fox 100 times',                coins:30,  check:v=>(bv().charTaps.fox||0)>=100},
-  {id:'bt_tigerfan',   emoji:'🐯',name:'Tiger Superfan',   desc:'Tap the Tiger 100 times',              coins:30,  check:v=>(bv().charTaps.tiger||0)>=100},
-  {id:'bt_turtlefan',  emoji:'🐢',name:'Turtle Superfan',  desc:'Tap the Turtle 100 times',             coins:30,  check:v=>(bv().charTaps.turtle||0)>=100},
-  {id:'bt_axofan',     emoji:'🌸',name:'Axolotl Superfan', desc:'Tap the Axolotl 100 times',            coins:30,  check:v=>(bv().charTaps.axolotl||0)>=100},
+  {id:'bt_foxfan',     emoji:'🦊',name:'Lumo Superfan',     desc:'Tap Lumo 100 times',                coins:30,  check:v=>(bv().charTaps.fox||0)>=100},
+  {id:'bt_tigerfan',   emoji:'🐯',name:'Ember Superfan',   desc:'Tap Ember 100 times',              coins:30,  check:v=>(bv().charTaps.tiger||0)>=100},
+  {id:'bt_turtlefan',  emoji:'🐢',name:'Pip Superfan',  desc:'Tap Pip 100 times',             coins:30,  check:v=>(bv().charTaps.turtle||0)>=100},
+  {id:'bt_axofan',     emoji:'🌸',name:'Echo Superfan', desc:'Tap Echo 100 times',            coins:30,  check:v=>(bv().charTaps.axolotl||0)>=100},
   // Prestige
   {id:'bt_prestige',   emoji:'🌟',name:'New Season',       desc:'Prestige for the first time',          coins:50,  check:v=>(bv().prestige||0)>=1},
   {id:'bt_prestige3',  emoji:'💎',name:'Seasoned Baker',   desc:'Prestige 3 times',                     coins:100, check:v=>(bv().prestige||0)>=3},
@@ -719,7 +766,7 @@ function recalc(){
     for(const up of UPGRADES)if(up.type==='helper'&&up.target===h.id&&bv().upgrades.includes(up.id))hm*=up.mult;
     rate+=h.baseRate*cnt*hm;
   }
-  productionRate=rate*gm*(bv().prestigeBonus||1);
+  productionRate=rate*gm*(bv().prestigeBonus||1)*(1+(bv().legendary||0));
 }
 
 // ══ TICK ══
@@ -831,6 +878,22 @@ function spawnCharBiscuit(x,y,emoji,color){
   document.body.appendChild(el); setTimeout(()=>el.remove(),1000);
 }
 
+function rainCharBiscuits(emoji,color){
+  for(let i=0;i<16;i++){
+    setTimeout(()=>{
+      const d=document.createElement('div'); d.className='char-rain-drop';
+      d.textContent=emoji;
+      d.style.left=(2+Math.random()*94)+'%';
+      d.style.fontSize=(18+Math.random()*14)+'px';
+      d.style.animationDuration=(1.8+Math.random()*1.4)+'s';
+      d.style.setProperty('--rot',(Math.random()*440-220).toFixed(0)+'deg');
+      d.style.filter=`drop-shadow(0 0 5px ${color}66)`;
+      d.addEventListener('animationend',()=>d.remove());
+      document.body.appendChild(d);
+    },i*85);
+  }
+}
+
 // ══ CHARACTER TAPS ══
 document.querySelectorAll('.char-seat').forEach(el=>{
   let pressTimer;
@@ -839,7 +902,8 @@ document.querySelectorAll('.char-seat').forEach(el=>{
     const id=el.dataset.char;
     if(Date.now()<charReady[id])return;
     const char=CHARACTERS[id];
-    charReady[id]=Date.now()+char.cooldown*1000; charWasCD[id]=true;
+    const cdMult=(bv().charPerks&&bv().charPerks[id])?0.75:1;
+    charReady[id]=Date.now()+char.cooldown*1000*cdMult; charWasCD[id]=true;
     bv().charTaps[id]=(bv().charTaps[id]||0)+1;
     const gained=char.biscuitValue*(bv().prestigeBonus||1);
     bv().total+=gained; bv().lifetime+=gained;
@@ -847,6 +911,7 @@ document.querySelectorAll('.char-seat').forEach(el=>{
     const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
     spawnClickPop(cx,cy,'+'+fmt(gained)+' '+char.biscuitEmoji);
     for(let i=0;i<6;i++)spawnCharBiscuit(cx,cy,char.biscuitEmoji,char.color);
+    rainCharBiscuits(char.biscuitEmoji,char.color);
     Audio.sfxCharDrop(char.semi);
     showToast(`${char.emoji} ${char.biscuitEmoji} ${char.biscuit}! +${fmt(gained)}`);
     trackDailyProgress('earn',gained); trackDailyProgress('char');
@@ -958,14 +1023,21 @@ function getDailyChallenge(){
 }
 function trackDailyProgress(key,amount=1){
   const ch=getDailyChallenge();
-  if(ch.key!==key)return;
-  if(!bv().dailyChallenge||bv().dailyChallenge.date!==ch.today){
-    bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
+  if(ch.key===key){
+    if(!bv().dailyChallenge||bv().dailyChallenge.date!==ch.today){
+      bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
+    }
+    const dc=bv().dailyChallenge;
+    if(!dc.claimed)dc.progress=(dc.progress||0)+amount;
   }
-  const dc=bv().dailyChallenge;
-  if(dc.claimed)return;
-  dc.progress=(dc.progress||0)+amount;
-  if(activeTab==='daily')renderPanel();
+  const wk=getWeeklyChallenge();
+  if(wk.key===key){
+    if(!bv().weeklyChallenge||bv().weeklyChallenge.week!==wk.week){
+      bv().weeklyChallenge={week:wk.week,progress:0,claimed:false};
+    }
+    const wc=bv().weeklyChallenge;
+    if(!wc.claimed)wc.progress=(wc.progress||0)+amount;
+  }
 }
 function renderDaily(el){
   const ch=getDailyChallenge();
@@ -1043,9 +1115,11 @@ const RANDOM_EVENTS=[
   {id:'visitor', emoji:'🦊',title:'Special Visitor!',  desc:'A mysterious guest left a gift in the tin!',              reward:()=>Math.floor(Math.random()*5000+500)},
 ];
 let eventActive=false,rushActive=false,rushTimer=null;
+const LEGENDARY_EVENT={id:'legendary',emoji:'🌟',title:'LEGENDARY Biscuit!',desc:'A biscuit that glows from within! Eating it makes the whole bakery permanently 1% faster. Forever.'};
 function maybeSpawnEvent(){
   if(eventActive||bv().lifetime<100)return;
   if(Math.random()>0.18)return; // ~18% chance each interval
+  if(Math.random()<0.02&&(bv().legendary||0)<0.25){spawnEvent(LEGENDARY_EVENT);return;}
   const ev=RANDOM_EVENTS[Math.floor(Math.random()*RANDOM_EVENTS.length)];
   spawnEvent(ev);
 }
@@ -1062,7 +1136,11 @@ function spawnEvent(ev){
   btn.onclick=()=>{
     clearTimeout(autoClose);
     dismissEvent();
-    if(ev.id==='rush'){
+    if(ev.id==='legendary'){
+      bv().legendary=Math.min(0.25,(bv().legendary||0)+0.01);
+      recalc(); updateHUD(); saveNow();
+      showToast('🌟 LEGENDARY! Production +1% forever! ('+Math.round((bv().legendary)*100)+'% total)','achievement');
+    } else if(ev.id==='rush'){
       rushActive=true;
       const prevRate=productionRate;
       productionRate*=2; clickPower*=2;
@@ -1255,7 +1333,10 @@ function renderQuests(el){
   if(!el)return;
   const claimed=questsClaimed();
   el.innerHTML='';
-  const title=document.createElement('div'); title.className='quest-section-title'; title.textContent='📜 Quest Line';
+  renderCrewQuests(el);
+  const dEl=document.createElement('div'); dEl.style.marginTop='16px'; el.appendChild(dEl); renderDaily(dEl);
+  const wEl=document.createElement('div'); wEl.style.marginTop='14px'; el.appendChild(wEl); renderWeekly(wEl);
+  const title=document.createElement('div'); title.className='quest-section-title'; title.style.marginTop='16px'; title.textContent='📜 Quest Line';
   el.appendChild(title);
   const list=document.createElement('div'); list.className='quest-list';
   QUESTLINE.forEach(q=>{
@@ -1277,8 +1358,8 @@ function renderQuests(el){
   });
   el.appendChild(list);
   list.querySelectorAll('.quest-claim').forEach(b=>b.addEventListener('click',()=>claimQuest(b.dataset.q)));
-  const dwrap=document.createElement('div'); dwrap.style.marginTop='16px';
-  el.appendChild(dwrap); renderDaily(dwrap);
+  renderSecretQuests(el);
+  renderStory(el);
 }
 function claimQuest(id){
   const q=QUESTLINE.find(x=>x.id===id);
@@ -1292,12 +1373,235 @@ function updateQuestChip(){
   const el=document.getElementById('questChipText'); if(!el)return;
   const claimed=questsClaimed();
   const badge=document.getElementById('questBadge');
-  const claimable=QUESTLINE.some(q=>!claimed.includes(q.id)&&q.cur()>=q.goal);
+  const wk=getWeeklyChallenge();
+  const wc=(bv().weeklyChallenge&&bv().weeklyChallenge.week===wk.week)?bv().weeklyChallenge:{progress:0,claimed:false};
+  const dch=getDailyChallenge();
+  const dc=(bv().dailyChallenge&&bv().dailyChallenge.date===dch.today)?bv().dailyChallenge:{progress:0,claimed:false};
+  const sq=SECRET_QUESTS[secretQuestIdx()];
+  const claimable=QUESTLINE.some(q=>!claimed.includes(q.id)&&q.cur()>=q.goal)
+    ||CREW_ORDER.some(c=>{const q=CHAR_QUESTS[c][charQuestIdx(c)];return q&&q.cur()>=q.goal;})
+    ||(foundSecrets().length>0&&sq&&sq.cur()>=sq.goal)
+    ||(!dc.claimed&&(dc.progress||0)>=dch.target)
+    ||(!wc.claimed&&(wc.progress||0)>=wk.target);
   if(badge)badge.style.display=claimable?'block':'none';
   const next=QUESTLINE.find(q=>!claimed.includes(q.id));
   if(!next){el.textContent='All quests complete! ⭐';return;}
   const cur=Math.min(next.cur(),next.goal);
   el.innerHTML=(cur>=next.goal?'<span class="qc-ready">Claim: </span>':'Next: ')+next.name+' · '+fmt(cur)+'/'+fmt(next.goal);
+}
+
+// ══ CREW QUEST CHAINS (in each character's voice) ══
+const CHAR_QUESTS={
+  fox:[
+    {text:"Lumo peeks over her notebook. 'Could you... come say hi? Ten visits, maybe?'",goal:10,cur:()=>bv().charTaps.fox||0,biscuits:500,doneMsg:"'Oh! You actually came.'"},
+    {text:"'The blueberry shortbread needs testing. Bake 2,500 biscuits and I'll take notes.'",goal:2500,cur:()=>Math.floor(bv().lifetime),biscuits:2000,doneMsg:"'Ten out of ten. All of them.'"},
+    {text:"'My ratings need more data. Visit me 40 times. I promise I'll wave back.'",goal:40,cur:()=>bv().charTaps.fox||0,biscuits:8000,trail:'trail_star',doneMsg:"'I drew stars next to your name.'"},
+    {text:"'Final notebook entry: you're my favourite baker.'",goal:100,cur:()=>bv().charTaps.fox||0,biscuits:25000,perk:true,doneMsg:"'I'll always be quicker for you now.'"},
+  ],
+  tiger:[
+    {text:"Ember bounces over. 'DUNK CONTEST! Tap the tin 200 times! GO!'",goal:200,cur:()=>bv().clicks||0,biscuits:800,doneMsg:"'SEVEN SECONDS! Still the record!'"},
+    {text:"'A proper cafe feeds EVERYONE. Hire 15 helpers!'",goal:15,cur:hcount,biscuits:5000,doneMsg:"'Group hug! All of you!'"},
+    {text:"'High-five me 30 times. I never EVER get tired of high-fives.'",goal:30,cur:()=>bv().charTaps.tiger||0,biscuits:15000,hat:'party',doneMsg:"'Party hats! For the whole crew!'"},
+    {text:"'You've earned the biggest hug I've got. C'mere!'",goal:75,cur:()=>bv().charTaps.tiger||0,biscuits:40000,perk:true,doneMsg:"'Best. Hug. Ever. I'm all warmed up now!'"},
+  ],
+  turtle:[
+    {text:"Pip smiles slowly. 'No rush at all. Bake 1,000 biscuits, at your own pace.'",goal:1000,cur:()=>Math.floor(bv().lifetime),biscuits:600,doneMsg:"'See? Time was on your side.'"},
+    {text:"'Good things are built patiently. Buy 5 upgrades.'",goal:5,cur:()=>(bv().upgrades||[]).length,biscuits:10000,doneMsg:"'Forty-seven attempts taught me that.'"},
+    {text:"'Sit with me a while? Twenty-five visits would be lovely.'",goal:25,cur:()=>bv().charTaps.turtle||0,biscuits:20000,trail:'trail_leaf',doneMsg:"'The plants missed you too.'"},
+    {text:"'You never gave up either. I noticed.'",goal:60,cur:()=>bv().charTaps.turtle||0,biscuits:60000,perk:true,doneMsg:"'I'll bake a little faster. Just for you.'"},
+  ],
+  axolotl:[
+    {text:"Echo sparkles. 'Everything needs MORE glitter! Bake 5,000 biscuits!'",goal:5000,cur:()=>Math.floor(bv().lifetime),biscuits:1500,doneMsg:"'So!! Shiny!!'"},
+    {text:"'Tap the tin 500 times! Sparkles fly EVERY single time!'",goal:500,cur:()=>bv().clicks||0,biscuits:4000,doneMsg:"'Did you SEE them?!'"},
+    {text:"'Visit my corner 20 times. I'll save you a mushroom puff.'",goal:20,cur:()=>bv().charTaps.axolotl||0,biscuits:25000,trail:'trail_snow',doneMsg:"'Edible glitter. For you.'"},
+    {text:"'You make the cafe shine brighter than my lantern.'",goal:50,cur:()=>bv().charTaps.axolotl||0,biscuits:100000,perk:true,doneMsg:"'I'll keep the light on for you. Always.'"},
+  ],
+};
+const CREW_ORDER=['fox','tiger','turtle','axolotl'];
+function charQuestIdx(cid){if(!bv().charQuests)bv().charQuests={};return bv().charQuests[cid]||0;}
+function chainsComplete(){return CREW_ORDER.every(c=>charQuestIdx(c)>=CHAR_QUESTS[c].length);}
+function claimCrewQuest(cid){
+  const chain=CHAR_QUESTS[cid],idx=charQuestIdx(cid),q=chain[idx];
+  if(!q||q.cur()<q.goal)return;
+  bv().charQuests[cid]=idx+1;
+  bv().total+=q.biscuits; bv().lifetime+=q.biscuits;
+  const c=CHARACTERS[cid];
+  if(q.trail){vault.equipped=vault.equipped||{};vault.equipped.trail=q.trail;showToast('✨ New trail unlocked and equipped!','achievement');}
+  if(q.hat){vault.equipped=vault.equipped||{};vault.equipped.hat=q.hat;showToast('🎩 The whole crew got party hats!','achievement');}
+  if(q.perk){if(!bv().charPerks)bv().charPerks={};bv().charPerks[cid]=true;showToast(c.emoji+' '+c.name+' recharges 25% faster now!','achievement');}
+  showToast(c.emoji+' '+q.doneMsg+' +'+fmt(q.biscuits)+' 🍪','milestone');
+  updateHUD(); saveVault(); renderPanel(); updateQuestChip(); checkAchievements();
+}
+function renderCrewQuests(el){
+  const title=document.createElement('div'); title.className='quest-section-title'; title.textContent='👥 Crew Quests';
+  el.appendChild(title);
+  const list=document.createElement('div'); list.className='quest-list';
+  CREW_ORDER.forEach(cid=>{
+    const c=CHARACTERS[cid],chain=CHAR_QUESTS[cid],idx=charQuestIdx(cid);
+    const row=document.createElement('div');
+    if(idx>=chain.length){
+      row.className='quest-row claimed';
+      row.innerHTML=`<div class="quest-emoji">${c.emoji}</div><div class="quest-body"><div class="quest-name">${c.name}</div><div class="quest-desc">Story complete. ${c.name} bakes 25% faster for you. 💛</div></div><div class="quest-right"><span class="quest-done">✅</span></div>`;
+    }else{
+      const q=chain[idx],cur=Math.min(q.cur(),q.goal),pct=Math.min(100,Math.floor(cur/q.goal*100)),ready=cur>=q.goal;
+      const extra=q.perk?' + ⚡perk':q.trail?' + ✨trail':q.hat?' + 🎩hat':'';
+      row.className='quest-row'+(ready?' ready':'');
+      row.innerHTML=`<div class="quest-emoji">${c.emoji}</div>
+        <div class="quest-body">
+          <div class="quest-name">${c.name} <span style="font-size:10px;color:var(--cocoa-soft);font-weight:800">${idx+1}/${chain.length}</span></div>
+          <div class="quest-desc">${q.text}</div>
+          <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+          <div class="quest-prog">${fmt(cur)} / ${fmt(q.goal)}</div>
+        </div>
+        <div class="quest-right">${ready?`<button class="quest-claim" data-cq="${cid}">Claim<br>🍪 ${fmt(q.biscuits)}</button>`:`<span class="quest-reward">🍪 ${fmt(q.biscuits)}${extra}</span>`}</div>`;
+    }
+    list.appendChild(row);
+  });
+  el.appendChild(list);
+  list.querySelectorAll('[data-cq]').forEach(b=>b.addEventListener('click',()=>claimCrewQuest(b.dataset.cq)));
+}
+
+// ══ WEEKLY CHALLENGE ══
+const WEEKLY_POOL=[
+  {key:'tap', emoji:'💪',name:'Marathon Baker',  desc:'Tap the tin {n} times this week',          amounts:[1000,2500,5000],  rewards:[5000,15000,40000]},
+  {key:'earn',emoji:'🏆',name:'Grand Bake-Off',  desc:'Bake {n} biscuits this week (any source)', amounts:[25000,100000,500000],rewards:[12000,50000,250000]},
+  {key:'char',emoji:'💛',name:'Friend of the Cafe',desc:'Visit the crew {n} times this week',     amounts:[60,120,250],      rewards:[8000,20000,60000]},
+  {key:'buy', emoji:'🧾',name:'Big Spender',      desc:'Buy {n} helpers or upgrades this week',   amounts:[25,50,90],        rewards:[10000,30000,80000]},
+];
+function getWeeklyChallenge(){
+  const d=new Date(),day=(d.getDay()+6)%7,mon=new Date(d);
+  mon.setDate(d.getDate()-day);
+  const week=mon.toISOString().slice(0,10);
+  const seed=week.split('-').reduce((a,b)=>a*37+parseInt(b),0);
+  const p=WEEKLY_POOL[seed%WEEKLY_POOL.length],tier=(seed>>3)%3;
+  return{...p,week,target:p.amounts[tier],reward:p.rewards[tier]};
+}
+function renderWeekly(el){
+  const wk=getWeeklyChallenge();
+  const wc=(bv().weeklyChallenge&&bv().weeklyChallenge.week===wk.week)?bv().weeklyChallenge:{progress:0,claimed:false};
+  const progress=wc.progress||0,pct=Math.min(100,Math.floor(progress/wk.target*100));
+  const canClaim=progress>=wk.target&&!wc.claimed;
+  const card=document.createElement('div');
+  card.style.cssText='background:linear-gradient(135deg,#F0EDFA,#E4DCF2);border:2px solid var(--lavender);border-radius:18px;padding:14px;margin-bottom:4px';
+  card.innerHTML=`
+    <div style="font-family:Fraunces,serif;font-weight:900;font-size:15px;color:var(--cocoa)">🗓️ This Week: ${wk.emoji} ${wk.name}</div>
+    <div style="font-size:12px;color:var(--cocoa-soft);line-height:1.6;margin:4px 0 10px">${wk.desc.replace('{n}',wk.target.toLocaleString())}</div>
+    <div style="background:#D8CFEA;border-radius:100px;height:10px;margin-bottom:6px;overflow:hidden"><div style="height:100%;width:${wc.claimed?100:pct}%;background:linear-gradient(90deg,var(--lavender),#A98FD0);border-radius:100px;transition:width .5s"></div></div>
+    <div style="font-size:11px;font-weight:800;color:var(--cocoa-soft);margin-bottom:10px">${wc.claimed?'Claimed! New quest on Monday. 💜':Math.floor(progress).toLocaleString()+' / '+wk.target.toLocaleString()+' · 🎁 +'+fmt(wk.reward)+' 🍪'}</div>`;
+  if(!wc.claimed){
+    const btn=document.createElement('button');
+    btn.textContent=canClaim?'🎁 Claim Weekly Reward!':'Keep going...';
+    btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--lavender),#A98FD0)':'#E4DCF2'};border:none;border-radius:100px;padding:10px;font-family:Fraunces,serif;font-size:14px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.55}`;
+    btn.addEventListener('click',()=>{
+      if(!canClaim)return;
+      if(!bv().weeklyChallenge||bv().weeklyChallenge.week!==wk.week)return;
+      bv().weeklyChallenge.claimed=true;
+      bv().total+=wk.reward; bv().lifetime+=wk.reward;
+      showToast('🗓️ Weekly quest complete! +'+fmt(wk.reward)+' 🍪','achievement');
+      saveNow(); renderPanel(); updateHUD(); checkAchievements();
+    });
+    card.appendChild(btn);
+  }
+  el.appendChild(card);
+}
+
+// ══ SECRETS ══
+const SECRETS=[
+  {id:'s_midnight',emoji:'⏰',name:'Midnight Snack',    hint:'Some biscuits taste best at the stroke of...',        desc:'Tapped the tin at exactly midnight.'},
+  {id:'s_crew',    emoji:'⚡',name:'Group Hug',         hint:'Greet everyone. Quickly.',                            desc:'Tapped all four friends within 3 seconds.'},
+  {id:'s_patience',emoji:'🐢',name:'Patience of Pip',   hint:'Sometimes, do nothing at all.',                       desc:'Sat quietly with the cafe for 10 whole minutes.'},
+  {id:'s_star',    emoji:'⭐',name:'Star Gazer',        hint:'The star on the tin holds a wish.',                   desc:'Held the tin\'s star until it twinkled.'},
+  {id:'s_lights',  emoji:'💡',name:'Lamplighter',       hint:'The little lights like attention.',                   desc:'Tapped the fairy lights five times.'},
+  {id:'s_owl',     emoji:'🦉',name:'Night Owl',         hint:'The cafe never truly sleeps.',                        desc:'Visited in the smallest hours of the night.'},
+];
+function foundSecrets(){if(!vault.btSecrets)vault.btSecrets=[];return vault.btSecrets;}
+function awardSecret(id){
+  if(foundSecrets().includes(id))return;
+  const s=SECRETS.find(x=>x.id===id); if(!s)return;
+  foundSecrets().push(id);
+  showToast('🤫 Secret found: '+s.emoji+' '+s.name+'!','achievement');
+  saveVault(); updateQuestChip();
+}
+function renderSecretList(){
+  const grid=document.getElementById('secretList'); if(!grid)return;
+  grid.innerHTML='';
+  SECRETS.forEach(s=>{
+    const found=foundSecrets().includes(s.id);
+    const card=document.createElement('div'); card.className='ach-card '+(found?'unlocked':'locked');
+    card.innerHTML=found
+      ?`<div class="ach-card-icon">${s.emoji}</div><div class="ach-card-name">${s.name}</div><div class="ach-card-desc">${s.desc}</div><div class="ach-card-badge">Found!</div>`
+      :`<div class="ach-card-icon">❓</div><div class="ach-card-name">???</div><div class="ach-card-desc">${s.hint}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ══ SECRET QUEST LINE (unlocks after your first secret) ══
+const SECRET_QUESTS=[
+  {text:'The tin hums quietly when nobody is looking. Find 2 secrets hidden in the cafe.',goal:2,cur:()=>foundSecrets().length,biscuits:10000},
+  {text:'There are whispers in the walls. Find 4 secrets.',goal:4,cur:()=>foundSecrets().length,biscuits:50000},
+  {text:"'The star remembers every tap,' says nobody visible. Reach 3,000 taps.",goal:3000,cur:()=>bv().clicks||0,biscuits:150000},
+  {text:'Bake 5,000,000 lifetime biscuits to wake the Starlit Tin.',goal:5000000,cur:()=>Math.floor(bv().lifetime),biscuits:500000,starlit:true},
+];
+function secretQuestIdx(){return bv().secretQuests||0;}
+function claimSecretQuest(){
+  const idx=secretQuestIdx(),q=SECRET_QUESTS[idx];
+  if(!q||q.cur()<q.goal)return;
+  bv().secretQuests=idx+1;
+  bv().total+=q.biscuits; bv().lifetime+=q.biscuits;
+  if(q.starlit){vault.btStarlit=true; vault.btTinSkin='starlit'; applyTinSkin(); showToast('🌌 The STARLIT TIN awakens! (Swap skins in More)','achievement');}
+  showToast('🤫 Whisper answered. +'+fmt(q.biscuits)+' 🍪','milestone');
+  updateHUD(); saveVault(); renderPanel(); updateQuestChip();
+}
+function renderSecretQuests(el){
+  if(foundSecrets().length===0)return;
+  const title=document.createElement('div'); title.className='quest-section-title'; title.style.marginTop='16px'; title.textContent='🤫 Whispers';
+  el.appendChild(title);
+  const idx=secretQuestIdx();
+  const wrap=document.createElement('div'); wrap.className='quest-list';
+  if(idx>=SECRET_QUESTS.length){
+    wrap.innerHTML='<div class="quest-row claimed"><div class="quest-emoji">🌌</div><div class="quest-body"><div class="quest-name">The whispers are quiet now.</div><div class="quest-desc">The Starlit Tin glows softly. Thank you for listening.</div></div><div class="quest-right"><span class="quest-done">✅</span></div></div>';
+  }else{
+    const q=SECRET_QUESTS[idx],cur=Math.min(q.cur(),q.goal),pct=Math.min(100,Math.floor(cur/q.goal*100)),ready=cur>=q.goal;
+    const row=document.createElement('div'); row.className='quest-row'+(ready?' ready':'');
+    row.innerHTML=`<div class="quest-emoji">🌫️</div>
+      <div class="quest-body"><div class="quest-name">Whisper ${idx+1}/${SECRET_QUESTS.length}</div><div class="quest-desc">${q.text}</div>
+      <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div><div class="quest-prog">${fmt(cur)} / ${fmt(q.goal)}</div></div>
+      <div class="quest-right">${ready?`<button class="quest-claim" id="claimWhisper">Claim<br>🍪 ${fmt(q.biscuits)}</button>`:`<span class="quest-reward">🍪 ${fmt(q.biscuits)}${q.starlit?' + 🌌':''}</span>`}</div>`;
+    wrap.appendChild(row);
+  }
+  el.appendChild(wrap);
+  const cb=document.getElementById('claimWhisper'); if(cb)cb.addEventListener('click',claimSecretQuest);
+}
+
+// ══ STORY: OPENING THE CAFE ══
+const STORY=[
+  {t:'The Empty Room',   when:()=>true,                          x:"Four friends stood in a dusty little room with one crooked table. 'It smells like old rain,' said Pip. 'It smells like a beginning,' said Lumo, and wrote it in her notebook."},
+  {t:'The Tin',          when:()=>bv().lifetime>=500,            x:"Under a loose floorboard, wrapped in a flour sack, they found it: a golden tin with a star on the lid. Nobody remembered leaving it there. Inside sat one perfect biscuit, still warm."},
+  {t:'First Light',      when:()=>hcount()>=1,                   x:"Echo hung her lantern in the window so the whole street could see. 'Now everyone knows we're here,' she said. Ember waved at strangers until they waved back."},
+  {t:'The Regulars',     when:()=>bv().lifetime>=25000,          x:"The bell above the door learned everyone's names. The window seat became Lumo's. She rated every biscuit in her notebook and gave them all ten out of ten, secretly."},
+  {t:'Rainy Days',       when:()=>hcount()>=20,                  x:"Some days the rain came sideways and nobody visited. Pip made tea anyway. 'The cafe isn't the customers,' she said. 'It's us, keeping the light on.'"},
+  {t:'The Recipe',       when:()=>bv().lifetime>=250000,         x:"One night the tin rattled all by itself. Beneath the last biscuit lay a recipe card in handwriting none of them knew: 'For whoever keeps the star warm.' Ember read it twice, then hugged everyone."},
+  {t:'A New Season',     when:()=>(bv().prestige||0)>=1,         x:"They repainted the door and started again, the way you do. The tin never emptied. It just waited to be tapped, like a heart."},
+  {t:'Home',             when:()=>chainsComplete(),              x:"The sign outside never said a name. It didn't need one. If you were cold, or new, or a little bit lost, you knew where to go. The light was Echo's. The patience was Pip's. The welcome was Ember's. The quiet love was Lumo's. The biscuits were yours. (Some say, on very quiet nights, a fifth chair appears at the table...)"},
+];
+function renderStory(el){
+  const title=document.createElement('div'); title.className='quest-section-title'; title.style.marginTop='16px'; title.textContent='📖 Opening the Cafe';
+  el.appendChild(title);
+  STORY.forEach((ch,i)=>{
+    const open=ch.when();
+    const card=document.createElement('div'); card.className='story-card'+(open?'':' locked');
+    card.innerHTML=open
+      ?`<div class="story-title">Chapter ${i+1} · ${ch.t}</div><div class="story-text">${ch.x}</div>`
+      :`<div class="story-title">🔒 Chapter ${i+1}</div><div class="story-text">Keep baking. The story is still rising...</div>`;
+    el.appendChild(card);
+  });
+}
+
+// ══ TIN SKIN ══
+function applyTinSkin(){
+  const tin=document.getElementById('tinBtn'),btn=document.getElementById('skinBtn');
+  if(tin)tin.classList.toggle('starlit',vault.btTinSkin==='starlit');
+  if(btn)btn.style.display=vault.btStarlit?'flex':'none';
 }
 
 // ══ SECTION BUTTONS ══
@@ -1313,9 +1617,79 @@ document.getElementById('achBtn').addEventListener('click',()=>{
     card.innerHTML=`<div class="ach-card-icon">${a.emoji}</div><div class="ach-card-name">${a.name}</div><div class="ach-card-desc">${a.desc}</div>${unlocked?'<div class="ach-card-badge">Earned!</div>':''}`;
     achList.appendChild(card);
   });
+  renderSecretList();
   document.getElementById('achModal').classList.add('show');
 });
 document.getElementById('moreBtn').addEventListener('click',()=>{renderStats(document.getElementById('moreStats'));document.getElementById('moreModal').classList.add('show');});
+
+// ══ SAVE TRANSFER (cross-device progression) ══
+function saveChk(s){let x=5381;for(let i=0;i<s.length;i++)x=((x*33)^s.charCodeAt(i))>>>0;return x.toString(36);}
+function exportSave(){
+  saveNow();
+  const b64=btoa(unescape(encodeURIComponent(JSON.stringify(vault))));
+  const code='BT1.'+b64+'.'+saveChk(b64);
+  const ta=document.getElementById('saveCode');
+  ta.value=code; ta.focus(); ta.select();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>showToast('⬆️ Save code copied to clipboard!')).catch(()=>showToast('⬆️ Code ready, copy it from the box'));
+  }else showToast('⬆️ Code ready, copy it from the box');
+}
+function importSave(){
+  const raw=(document.getElementById('saveCode').value||'').trim();
+  if(!raw){showToast('Paste a save code first');return;}
+  const parts=raw.split('.');
+  if(parts.length!==3||parts[0]!=='BT1'||saveChk(parts[1])!==parts[2]){showToast('❌ That code is not valid');return;}
+  let obj;
+  try{obj=JSON.parse(decodeURIComponent(escape(atob(parts[1]))));}catch(e){showToast('❌ That code is not valid');return;}
+  if(!obj||typeof obj!=='object'||!obj.biscuit){showToast('❌ That code is not valid');return;}
+  if(!confirm('Import this save? Progress on THIS device will be replaced by the imported bakery.'))return;
+  try{localStorage.setItem(VAULT_KEY,JSON.stringify(obj));}catch(e){showToast('❌ Could not write the save');return;}
+  location.reload();
+}
+document.getElementById('exportSaveBtn').addEventListener('click',exportSave);
+document.getElementById('importSaveBtn').addEventListener('click',importSave);
+
+// ══ SECRET TRIGGERS ══
+let lastAnyTap=Date.now();
+document.addEventListener('pointerdown',()=>{lastAnyTap=Date.now();},true);
+(function(){
+  const tin=document.getElementById('tinBtn');
+  if(tin){
+    let starTimer=null;
+    tin.addEventListener('pointerdown',()=>{
+      const d=new Date();
+      if(d.getHours()===0&&d.getMinutes()===0)awardSecret('s_midnight');
+      clearTimeout(starTimer);
+      starTimer=setTimeout(()=>awardSecret('s_star'),1200);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(evn=>tin.addEventListener(evn,()=>clearTimeout(starTimer)));
+  }
+  const tapTimes={};
+  document.querySelectorAll('.char-seat').forEach(seat=>{
+    seat.addEventListener('pointerdown',()=>{
+      tapTimes[seat.dataset.char]=Date.now();
+      const ts=Object.values(tapTimes);
+      if(ts.length===4&&Math.max(...ts)-Math.min(...ts)<=3000&&!foundSecrets().includes('s_crew')){
+        awardSecret('s_crew');
+        CREW_ORDER.forEach((c,i)=>setTimeout(()=>rainCharBiscuits(CHARACTERS[c].biscuitEmoji,CHARACTERS[c].color),i*250));
+        document.querySelectorAll('.char-seat').forEach(s=>{s.classList.remove('excited');void s.offsetWidth;s.classList.add('excited');setTimeout(()=>s.classList.remove('excited'),480);});
+      }
+    });
+  });
+  const lights=document.querySelector('.fairy-lights');
+  let lightTaps=0;
+  if(lights)lights.addEventListener('pointerdown',()=>{lightTaps++;if(lightTaps>=5)awardSecret('s_lights');});
+  const h=new Date().getHours();
+  if(h>=2&&h<4)awardSecret('s_owl');
+})();
+
+document.getElementById('skinBtn').addEventListener('click',()=>{
+  vault.btTinSkin=vault.btTinSkin==='starlit'?'golden':'starlit';
+  applyTinSkin(); saveVault();
+  showToast(vault.btTinSkin==='starlit'?'🌌 Starlit Tin equipped':'✨ Golden Tin equipped');
+});
+applyTinSkin();
+if(vault.btStorySeen===undefined)vault.btStorySeen=STORY.filter(s=>s.when()).length;
 updateQuestChip();
 
 setInterval(()=>{
@@ -1323,6 +1697,9 @@ setInterval(()=>{
   const qb=document.getElementById('questsBody');
   if(modalShown('questsModal')&&qb&&qb.closest('.modal').scrollTop<10)renderQuests(qb);
   updateQuestChip();
+  const unlockedCh=STORY.filter(s=>s.when()).length;
+  if(unlockedCh>(vault.btStorySeen||0)){vault.btStorySeen=unlockedCh;showToast('📖 A new page of the cafe story!','achievement');saveVault();}
+  if(!foundSecrets().includes('s_patience')&&Date.now()-lastAnyTap>600000&&!document.hidden)awardSecret('s_patience');
 },2000);
 
 function checkDailyBonus(){
@@ -1341,6 +1718,26 @@ renderPanel(); updateHUD();
 lastTick=Date.now();
 requestAnimationFrame(tick);
 setInterval(spawnPetal,3500); spawnPetal();
+
+// ── FALLING COOKIE RAIN (background ambience) ──
+const cookieRain=document.createElement('div'); cookieRain.id='cookieRain';
+document.body.prepend(cookieRain);
+const RAIN_EMOJI=['🍪','🍪','🍪','🍪','🥠','✨'];
+function spawnBgCookie(preroll){
+  if(document.hidden||cookieRain.childElementCount>=14)return;
+  const c=document.createElement('div'); c.className='bg-cookie';
+  c.textContent=RAIN_EMOJI[Math.floor(Math.random()*RAIN_EMOJI.length)];
+  c.style.left=Math.random()*100+'%';
+  c.style.fontSize=(13+Math.random()*17)+'px';
+  c.style.opacity=(0.16+Math.random()*0.2).toFixed(2);
+  c.style.animationDuration=(9+Math.random()*9)+'s';
+  if(preroll)c.style.animationDelay='-'+(Math.random()*8).toFixed(1)+'s';
+  c.style.setProperty('--rot',(Math.random()*360-180).toFixed(0)+'deg');
+  c.addEventListener('animationend',()=>c.remove());
+  cookieRain.appendChild(c);
+}
+setInterval(spawnBgCookie,900);
+for(let i=0;i<8;i++)spawnBgCookie(true);
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
 
