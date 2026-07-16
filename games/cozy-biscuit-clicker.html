@@ -266,6 +266,10 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .quest-section-title{font-family:'Fraunces',serif;font-size:15px;font-weight:900;color:var(--cocoa);padding:2px 0 8px}
 .more-actions{display:flex;gap:8px;margin-bottom:14px}
 .more-actions .bb-btn{flex:1}
+.qty-row{display:flex;gap:6px;margin:-2px 0 12px}
+.qty-btn{flex:1;background:var(--cream);border:2px solid var(--cream-deep);border-radius:100px;padding:6px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;color:var(--cocoa-soft);cursor:pointer}
+.qty-btn.active{background:var(--sun);border-color:#E8A830;color:var(--cocoa)}
+#resetBtn{background:#FBE4E4;border-color:#E9A8B4;color:#8A3A44}
 .biscuit-tin.starlit .cookie-svg{filter:hue-rotate(195deg) saturate(.75) brightness(1.08) drop-shadow(0 8px 16px rgba(60,70,120,.25))}
 .biscuit-tin.starlit .tin-glow{background:radial-gradient(circle,rgba(170,190,255,.5) 0%,transparent 68%)}
 .story-card{background:var(--milk);border:2px dashed var(--cream-deep);border-radius:14px;padding:12px 14px;margin-bottom:8px}
@@ -470,6 +474,11 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
   <div class="modal">
     <div class="modal-header"><div class="modal-title">🏡 <em>Bakery</em></div><button class="modal-close" data-close>×</button></div>
     <p class="modal-sub">Hire helpers to bake biscuits for you, even while you're away.</p>
+    <div class="qty-row">
+      <button class="qty-btn active" data-q="1">×1</button>
+      <button class="qty-btn" data-q="10">×10</button>
+      <button class="qty-btn" data-q="max">Max</button>
+    </div>
     <div id="bakeryBody"></div>
   </div>
 </div>
@@ -486,8 +495,13 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
     <div class="modal-header"><div class="modal-title">Biscuit <em>Tin</em></div><button class="modal-close" data-close>×</button></div>
     <div class="more-actions">
       <button class="bb-btn" id="audioBtn"><span class="bb-icon">🎵</span>Music</button>
+      <button class="bb-btn" id="sfxBtn"><span class="bb-icon">🔔</span>Sounds</button>
+      <button class="bb-btn" id="hapticBtn"><span class="bb-icon">📳</span>Buzz</button>
+    </div>
+    <div class="more-actions">
       <button class="bb-btn" id="shareBtn"><span class="bb-icon">📤</span>Share</button>
       <button class="bb-btn" id="skinBtn" style="display:none"><span class="bb-icon">🌌</span>Tin skin</button>
+      <button class="bb-btn" id="resetBtn"><span class="bb-icon">🧹</span>Reset</button>
     </div>
     <div class="quest-section-title">💾 Save Transfer</div>
     <p class="modal-sub">Move your bakery between devices. Export here, then paste the code on your other device and import.</p>
@@ -530,15 +544,16 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 <script>
 // ══ AUDIO ENGINE (ported from Cozy Cafe) ══
 const Audio = (() => {
-  let ctx=null,masterGain=null,musicGain=null,sfxGain=null,musicPlaying=false,musicTimer=null;
+  let ctx=null,masterGain=null,musicGain=null,sfxGain=null,musicPlaying=false,musicTimer=null,sfxEnabled=true;
   function init(){
     if(ctx)return;
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
     ctx=new AC();
     masterGain=ctx.createGain(); masterGain.gain.value=0.6; masterGain.connect(ctx.destination);
     musicGain=ctx.createGain(); musicGain.gain.value=0; musicGain.connect(masterGain);
-    sfxGain=ctx.createGain(); sfxGain.gain.value=0.5; sfxGain.connect(masterGain);
+    sfxGain=ctx.createGain(); sfxGain.gain.value=sfxEnabled?0.5:0; sfxGain.connect(masterGain);
   }
+  function setSfx(on){sfxEnabled=!!on; if(sfxGain)sfxGain.gain.value=sfxEnabled?0.5:0;}
   function tone({freq=440,dur=0.15,type='sine',vol=0.3,attack=0.01}){
     if(!ctx)return;
     const o=ctx.createOscillator(),g=ctx.createGain();
@@ -598,7 +613,7 @@ const Audio = (() => {
     if(musicTimer)clearTimeout(musicTimer);
   }
   function isMusicPlaying(){return musicPlaying}
-  return{init,sfxTap,sfxCharDrop,sfxAchievement,sfxPrestige,startMusic,stopMusic,isMusicPlaying};
+  return{init,sfxTap,sfxCharDrop,sfxAchievement,sfxPrestige,startMusic,stopMusic,isMusicPlaying,setSfx};
 })();
 
 // ══ VAULT ══
@@ -680,7 +695,9 @@ const UPGRADES=[
   {id:'secret_spice',  emoji:'🫙',name:'Secret Spice',     desc:'+15% all production each time',    cost:2000,    type:'repeat_global',mult:1.15,costMult:2.5},
   {id:'cozy_chair',    emoji:'🪑',name:'Cosy Chair',       desc:'+20% biscuits per tap each time',  cost:50000,   type:'repeat_click', mult:1.2, costMult:3.0},
   {id:'moon_yeast',    emoji:'🌙',name:'Moon Yeast',       desc:'+25% all production each time',    cost:500000,  type:'repeat_global',mult:1.25,costMult:3.5},
+  {id:'pantry',        emoji:'🏺',name:'Bigger Pantry',    desc:'+2h of away-baking storage each time (starts at 4h)', cost:50000, type:'repeat_offline',costMult:4},
 ];
+function offlineCapHours(){return 4+2*((bv().repeatUpgrades&&bv().repeatUpgrades.pantry)||0);}
 const MILESTONES=[
   {n:100,    msg:'100 biscuits baked! The tin is filling up! 🍪'},
   {n:500,    msg:'500 biscuits! The cafe smells amazing. ☕'},
@@ -747,7 +764,7 @@ const ACHIEVEMENTS=[
 const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇'};
 
 // ══ RUNTIME ══
-let clickPower=1,productionRate=0,lastTick=Date.now(),activeTab='helpers';
+let clickPower=1,productionRate=0,lastTick=Date.now(),activeTab='helpers',buyQty=1;
 const charReady={fox:0,tiger:0,turtle:0,axolotl:0};
 const charWasCD={fox:false,tiger:false,turtle:false,axolotl:false};
 const CIRC=138.2;
@@ -859,6 +876,7 @@ setInterval(updateCooldownRings,250);
 // ══ CLICK ══
 function doClick(x,y){
   Audio.init(); Audio.sfxTap();
+  if(vault.haptic!==false&&navigator.vibrate){try{navigator.vibrate(8);}catch(e){}}
   const gained=Math.max(clickPower,Math.ceil(productionRate*0.01));
   bv().total+=gained; bv().lifetime+=gained; bv().clicks=(bv().clicks||0)+1;
   const tin=document.getElementById('tinBtn');
@@ -963,20 +981,42 @@ const DAILY_POOL=[
   {key:'char',  emoji:'🦊',name:'Cafe Rounds',      desc:'Tap any character {n} times today',   amounts:[5,15,30],rewards:[300,900,2500]},
   {key:'buy',   emoji:'🏪',name:'Shopkeeper',       desc:'Buy {n} helpers or upgrades today',    amounts:[3,8,15],rewards:[500,2000,8000]},
 ];
+function bulkCost(h,owned,qty,budget){
+  // numeric qty: exact bundle price for that many. 'max': as many as budget allows.
+  let n=0,cost=0;
+  const want=qty==='max'?Infinity:qty;
+  while(n<want){
+    const step=Math.floor(h.baseCost*Math.pow(h.costMult,owned+n));
+    if(qty==='max'&&cost+step>budget)break;
+    cost+=step; n++;
+    if(n>=500)break;
+  }
+  return{n,cost};
+}
 function renderHelpers(el){
   el.innerHTML='';
   const list=document.createElement('div'); list.className='helper-list';
+  const budget=Math.floor(bv().total);
   HELPERS.forEach(h=>{
-    const cnt=bv().helpers[h.id]||0,cost=Math.floor(h.baseCost*Math.pow(h.costMult,cnt)),canAfford=Math.floor(bv().total)>=cost;
+    const cnt=bv().helpers[h.id]||0;
     let hm=1,gm=1;
     for(const up of UPGRADES){if(up.type==='helper'&&up.target===h.id&&bv().upgrades.includes(up.id))hm*=up.mult;if(up.type==='global'&&bv().upgrades.includes(up.id))gm*=up.mult;}
     const eff=h.baseRate*hm*gm*(bv().prestigeBonus||1);
+    const q=bulkCost(h,cnt,buyQty,budget);
+    const showN=buyQty==='max'?Math.max(q.n,1):buyQty;
+    const showCost=(buyQty==='max'&&q.n===0)?Math.floor(h.baseCost*Math.pow(h.costMult,cnt)):q.cost;
+    const canAfford=buyQty==='max'?q.n>0:budget>=q.cost;
     const row=document.createElement('div'); row.className='helper-row '+(canAfford?'affordable':'cant-afford');
-    row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}</div><div class="helper-desc">${h.desc} · ${eff>=1?fmt(eff):eff.toFixed(1)}/sec each</div></div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(cost)}</div></div>`;
+    row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}${showN>1?` <span style="font-size:11px;color:var(--mint-deep);font-weight:800">+${showN}</span>`:''}</div><div class="helper-desc">${h.desc} · ${eff>=1?fmt(eff):eff.toFixed(1)}/sec each</div></div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(showCost)}</div></div>`;
     row.addEventListener('click',()=>{
-      if(Math.floor(bv().total)<cost)return;
-      bv().total-=cost; bv().helpers[h.id]=(bv().helpers[h.id]||0)+1; bv().helpersOwned=(bv().helpersOwned||0)+1;
-      recalc(); renderPanel(); showToast(h.emoji+' '+h.name+' joined the cafe!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
+      const budget2=Math.floor(bv().total);
+      const q2=bulkCost(h,bv().helpers[h.id]||0,buyQty,budget2);
+      const buyN=buyQty==='max'?q2.n:(budget2>=q2.cost?q2.n:0);
+      if(buyN<1)return;
+      bv().total-=q2.cost;
+      bv().helpers[h.id]=(bv().helpers[h.id]||0)+buyN;
+      bv().helpersOwned=(bv().helpersOwned||0)+buyN;
+      recalc(); renderPanel(); showToast(h.emoji+' '+(buyN>1?buyN+'× ':'')+h.name+' joined the cafe!'); trackDailyProgress('buy',buyN); saveVault(); checkAchievements();
     });
     list.appendChild(row);
   });
@@ -986,7 +1026,7 @@ function renderUpgrades(el){
   el.innerHTML='';
   const list=document.createElement('div'); list.className='upgrade-list';
   UPGRADES.forEach(up=>{
-    const isRepeat=up.type==='repeat_click'||up.type==='repeat_global';
+    const isRepeat=up.type==='repeat_click'||up.type==='repeat_global'||up.type==='repeat_offline';
     if(isRepeat){
       if(!bv().repeatUpgrades)bv().repeatUpgrades={};
       const lvl=bv().repeatUpgrades[up.id]||0;
@@ -1186,6 +1226,8 @@ function renderStats(el){
       <div class="stat-card"><div class="stat-card-value">${fmt(bv().lifetime)}</div><div class="stat-card-label">Baked lifetime</div></div>
       <div class="stat-card"><div class="stat-card-value">${productionRate>=1?fmt(productionRate):productionRate.toFixed(1)}</div><div class="stat-card-label">Per second</div></div>
       <div class="stat-card"><div class="stat-card-value">${fmt(bv().clicks||0)}</div><div class="stat-card-label">Total taps</div></div>
+      <div class="stat-card"><div class="stat-card-value">${offlineCapHours()}h</div><div class="stat-card-label">Away storage</div></div>
+      <div class="stat-card"><div class="stat-card-value">+${Math.round((bv().legendary||0)*100)}%</div><div class="stat-card-label">Legendary bonus</div></div>
     </div>
     <div class="stats-section-title">👨‍👩‍👧 Friends</div>
     <div class="stats-grid">
@@ -1253,11 +1295,11 @@ function processToasts(){
 function checkOffline(){
   const lastSave=bv().lastSave||Date.now(),elapsed=(Date.now()-lastSave)/1000;
   if(elapsed<60||productionRate<=0)return;
-  const eff=Math.min(elapsed,4*3600),earned=Math.floor(productionRate*eff);
+  const eff=Math.min(elapsed,offlineCapHours()*3600),earned=Math.floor(productionRate*eff);
   if(earned<1)return;
   bv().total+=earned; bv().lifetime+=earned;
   const h=Math.floor(eff/3600),m=Math.floor((eff%3600)/60);
-  document.getElementById('offlineMsg').textContent=`You were away for ${h>0?h+'h '+m+'m':m+'m'} and your helpers kept baking!`;
+  document.getElementById('offlineMsg').textContent=`You were away for ${h>0?h+'h '+m+'m':m+'m'} and your helpers kept baking! (Your pantry stores up to ${offlineCapHours()}h)`;
   document.getElementById('offlineAmount').textContent='+'+fmt(earned)+' 🍪';
   document.getElementById('offlineModal').classList.add('show');
   saveVault();
@@ -1310,7 +1352,49 @@ audioBtn.addEventListener('click',()=>{
   Audio.init();
   if(Audio.isMusicPlaying()){Audio.stopMusic();audioBtn.classList.remove('active-audio');}
   else{Audio.startMusic();audioBtn.classList.add('active-audio');}
+  vault.musicOn=Audio.isMusicPlaying(); saveVault();
 });
+// Music defaults ON: start on the first tap anywhere (audio needs a user gesture)
+document.addEventListener('pointerdown',()=>{
+  Audio.init();
+  if(vault.musicOn!==false&&!Audio.isMusicPlaying()){Audio.startMusic();audioBtn.classList.add('active-audio');}
+},{once:true});
+
+// ══ SOUND / BUZZ / RESET SETTINGS ══
+const sfxBtn=document.getElementById('sfxBtn'),hapticBtn=document.getElementById('hapticBtn');
+function refreshSettingBtns(){
+  sfxBtn.classList.toggle('active-audio',vault.sfxOn!==false);
+  hapticBtn.classList.toggle('active-audio',vault.haptic!==false);
+}
+Audio.setSfx(vault.sfxOn!==false);
+refreshSettingBtns();
+sfxBtn.addEventListener('click',()=>{
+  vault.sfxOn=!(vault.sfxOn!==false);
+  Audio.setSfx(vault.sfxOn); saveVault(); refreshSettingBtns();
+  if(vault.sfxOn){Audio.init();Audio.sfxTap();}
+});
+hapticBtn.addEventListener('click',()=>{
+  vault.haptic=!(vault.haptic!==false);
+  saveVault(); refreshSettingBtns();
+  if(vault.haptic&&navigator.vibrate){try{navigator.vibrate(20);}catch(e){}}
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(!confirm('Reset your bakery? This wipes ALL Biscuit Tin progress on this device: biscuits, helpers, quests, story and secrets. Prestige bonuses too.'))return;
+  if(!confirm('Really sure? There is no undo. (Tip: export a save code first if you might regret this.)'))return;
+  vault.biscuit={total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()};
+  vault.achievements=(vault.achievements||[]).filter(id=>!id.startsWith('bt_'));
+  delete vault.btSecrets; delete vault.btStorySeen; delete vault.btStarlit; delete vault.btTinSkin; delete vault.btWelcomed;
+  try{localStorage.removeItem('bt_boost_until');}catch(e){}
+  saveNow(); location.reload();
+});
+
+// ══ BUY QUANTITY SELECTOR ══
+document.querySelectorAll('.qty-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.qty-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  buyQty=b.dataset.q==='max'?'max':parseInt(b.dataset.q,10);
+  renderHelpers(document.getElementById('bakeryBody'));
+}));
 
 document.getElementById('upgBtn').addEventListener('click',()=>{
   renderUpgrades(document.getElementById('upgradesBody'));
