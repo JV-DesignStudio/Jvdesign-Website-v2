@@ -7,12 +7,15 @@ Static HTML/CSS/JS, no framework, no build step required to view pages directly 
 ## Structure
 
 ```
-index.html, books.html, games.html, ...   Site pages (124 top-level .html files)
+index.html, pages/, games/, ...           Site pages
 partials/                                  Shared nav/footer fragments
 build.js                                   Syncs partials into every page
+generate-sitemap.js                        Regenerates sitemap.xml from pages on disk
+analytics-loader.js                        Single-source GA4 bootstrap (referenced by every page)
 manifest.json                              PWA manifest for the main site
-sitemap.xml / sitemap.html                 Sitemap (keep in sync when adding pages)
-search.html                                Site-wide search (entries defined inline)
+sitemap.xml                                Generated sitemap (run npm run build:sitemap)
+docs/                                       Dev logs, roadmaps, social/marketing notes
+scripts/archive/                           Retired one-shot migration scripts
 ```
 
 Image assets live at the project root alongside the pages that use them.
@@ -30,10 +33,9 @@ Run this after editing any file in `partials/`.
 ## Adding a new page
 
 When adding a new page, remember to:
-1. Add the nav/footer build markers (copy from an existing page).
-2. Add an entry to `sitemap.xml` and `sitemap.html`.
-3. Add an entry to the search database in `search.html` if it should be discoverable via site search.
-4. Link it from the relevant hub page (`games.html`, `freebies.html`, `learn.html`, etc).
+1. Add the nav/footer build markers (copy from an existing page), then run `node build.js`.
+2. Run `npm run build:sitemap` to refresh `sitemap.xml` (pages with a `noindex` robots meta are excluded automatically).
+3. Link it from the relevant hub page (`pages/games.html`, `pages/freebies.html`, `workshops/learn.html`, etc).
 
 ---
 
