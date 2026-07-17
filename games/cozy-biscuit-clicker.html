@@ -231,6 +231,9 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .cookie-fx{position:absolute;inset:0;pointer-events:none;z-index:5}
 .char-emoji{display:flex;align-items:center;justify-content:center;font-size:0}
 .char-emoji svg{width:66px;height:92px;display:block;filter:drop-shadow(0 2px 4px rgba(74,53,40,.16))}
+.char-sprite{display:none}
+.char-emoji.has-sprite svg{display:none}
+.char-emoji.has-sprite .char-sprite{display:block;width:66px;height:92px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(74,53,40,.16))}
 .crew{gap:12px}
 .crumb2{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:3px;background:#C9853C;animation:crumb2 .68s ease-out forwards}
 .crumb2.dk{background:#4B2E1A;width:6px;height:6px}
@@ -314,6 +317,7 @@ html body[data-btbg="starfall"]{background-image:radial-gradient(1.6px 1.6px at 
   .biscuits-label{font-size:34px}
   .spotlight{width:250px;height:250px}
   .char-emoji svg{width:48px;height:67px}
+  .char-emoji.has-sprite .char-sprite{width:48px;height:67px}
   .crew{gap:7px}
   .hero-table{height:46px;bottom:-8px}
   .quest-chip{margin:4px auto 2px;padding:4px 12px}
@@ -1812,6 +1816,25 @@ function importSave(){
 }
 document.getElementById('exportSaveBtn').addEventListener('click',exportSave);
 document.getElementById('importSaveBtn').addEventListener('click',importSave);
+
+// ══ CHARACTER SPRITES ══
+// If real art exists at chars/{lumo,ember,pip,echo}.png it replaces the
+// built-in vector crew automatically; otherwise the SVGs stay.
+(function(){
+  const map={fox:'lumo',tiger:'ember',turtle:'pip',axolotl:'echo'};
+  Object.entries(map).forEach(([key,name])=>{
+    const img=new Image();
+    img.onload=()=>{
+      const seat=document.getElementById('cs-'+key);
+      const holder=seat&&seat.querySelector('.char-emoji');
+      if(!holder)return;
+      img.className='char-sprite'; img.alt='';
+      holder.appendChild(img);
+      holder.classList.add('has-sprite');
+    };
+    img.src='chars/'+name+'.png';
+  });
+})();
 
 // ══ STYLE BOUTIQUE ══
 const BG_THEMES=[
