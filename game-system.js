@@ -10,6 +10,14 @@ class GameSystem {
     this.storageKey = `jvds_game_${gameId}`;
     this.leaderboardKey = `jvds_lb_${gameId}`;
 
+    // Fallback run timer: most games pass Date.now() (a timestamp, not a
+    // duration) to recordGamePlay, so the engine times runs itself.
+    this._runStart = Date.now();
+
+    // Lets AudioEffects (audio-effects.js) find the active game's sound
+    // settings without every game having to pass its instance around.
+    GameSystem.lastInstance = this;
+
     this.state = this.loadState() || {
       score: 0,
       highScore: 0,
@@ -29,6 +37,10 @@ class GameSystem {
       }
     };
 
+    // Persisted so cross-game achievements (collector) can count distinct
+    // characters by scanning jvds_game_* keys.
+    this.state.gameCharacter = gameCharacter;
+
     this.achievements = this.defineAchievements();
   }
 
@@ -36,7 +48,13 @@ class GameSystem {
   loadState() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) : null;
+      const state = stored ? JSON.parse(stored) : null;
+      // Repair totalTime corrupted by older pages that recorded timestamps
+      // as durations (anything over ~1 year of play is not real).
+      if (state && !(state.totalTime >= 0 && state.totalTime < 3.15e10)) {
+        state.totalTime = 0;
+      }
+      return state;
     } catch (e) {
       console.error('Failed to load game state:', e);
       return null;
@@ -54,6 +72,8 @@ class GameSystem {
   resetState() {
     this.state = {
       score: 0,
+      totalScore: this.state.totalScore || 0,
+      gameCharacter: this.state.gameCharacter,
       highScore: this.state.highScore,
       gamesPlayed: this.state.gamesPlayed,
       totalTime: this.state.totalTime,
@@ -71,6 +91,7 @@ class GameSystem {
   /* ─── SCORE & PROGRESSION ─── */
   addScore(points) {
     this.state.score += points;
+    this.state.totalScore = (this.state.totalScore || 0) + points;
     if (this.state.score > this.state.highScore) {
       this.state.highScore = this.state.score;
       this.checkHighScoreAchievement();
@@ -121,20 +142,38 @@ class GameSystem {
   }
 
   recordGamePlay(duration) {
+    // Most games pass Date.now() here (a timestamp, not a duration), so
+    // anything implausible falls back to the engine's own run timer.
+    const now = Date.now();
+    const MAX_RUN = 6 * 60 * 60 * 1000;
+    let ms = duration;
+    if (!(typeof ms === 'number' && ms > 0 && ms < MAX_RUN)) {
+      ms = Math.min(Math.max(now - this._runStart, 0), MAX_RUN);
+    }
+    this._runStart = now;
+
     this.state.gamesPlayed += 1;
-    this.state.totalTime += duration;
-    this.state.lastPlayed = new Date().toISOString();
+    this.state.totalTime += ms;
     this.updatePlayStreak();
+    this.state.lastPlayed = new Date().toISOString();
     this.saveState();
   }
 
+  // Must run before lastPlayed is overwritten with "now".
   updatePlayStreak() {
-    const lastPlayed = new Date(this.state.lastPlayed);
-    const today = new Date();
-    const daysDiff = Math.floor((today - lastPlayed) / (1000 * 60 * 60 * 24));
+    const prev = this.state.lastPlayed ? new Date(this.state.lastPlayed) : null;
+    if (!prev || isNaN(prev.getTime())) {
+      this.state.dailyPlayStreak = Math.max(this.state.dailyPlayStreak, 1);
+      return;
+    }
+
+    // Compare calendar days, not elapsed hours, so a run just after
+    // midnight still counts as the next day.
+    const dayStart = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const daysDiff = Math.round((dayStart(new Date()) - dayStart(prev)) / 86400000);
 
     if (daysDiff === 0) {
-      return;
+      this.state.dailyPlayStreak = Math.max(this.state.dailyPlayStreak, 1);
     } else if (daysDiff === 1) {
       this.state.dailyPlayStreak += 1;
     } else {
@@ -205,7 +244,7 @@ class GameSystem {
       speedRunner: {
         id: 'speedRunner',
         name: '⚡ Speed Runner',
-        description: 'Complete 100 games in 7 days',
+        description: 'Play 100 games',
         icon: '⚡',
         unlocked: false
       },
@@ -267,12 +306,52 @@ class GameSystem {
       toUnlock.push('speedRunner');
     }
 
-    if (this.state.score >= 1000000000 && !this.state.achievements.includes('billionaire')) {
+    if ((this.state.totalScore || 0) >= 1000000000 && !this.state.achievements.includes('billionaire')) {
       toUnlock.push('billionaire');
+    }
+
+    if (!this.state.achievements.includes('collector') || !this.state.achievements.includes('masterGamer')) {
+      const allStates = this.getAllGameStates();
+      const characters = {};
+      let level10Games = 0;
+      allStates.forEach(s => {
+        if (s.gamesPlayed > 0 && s.gameCharacter) characters[s.gameCharacter] = true;
+        if (s.level >= 10) level10Games++;
+      });
+
+      if (Object.keys(characters).length >= 5 && !this.state.achievements.includes('collector')) {
+        toUnlock.push('collector');
+      }
+      if (level10Games >= 3 && !this.state.achievements.includes('masterGamer')) {
+        toUnlock.push('masterGamer');
+      }
+    }
+
+    const perGameIds = ['firstPlay', 'tenGames', 'fiftyGames', 'streak7', 'streak30', 'level10'];
+    if (!this.state.achievements.includes('completionist') &&
+        perGameIds.every(id => this.state.achievements.includes(id) || toUnlock.includes(id))) {
+      toUnlock.push('completionist');
     }
 
     toUnlock.forEach(id => this.unlockAchievement(id));
     return toUnlock;
+  }
+
+  // Every game's saved state (this one included), for cross-game achievements.
+  getAllGameStates() {
+    const states = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.indexOf('jvds_game_') === 0) {
+          try {
+            const s = JSON.parse(localStorage.getItem(key));
+            if (s) states.push(key === this.storageKey ? this.state : s);
+          } catch (e) { /* skip unparseable entries */ }
+        }
+      }
+    } catch (e) { /* storage blocked */ }
+    return states;
   }
 
   getAchievements() {
@@ -516,9 +595,17 @@ class SoundManager {
   playSound(frequency = 400, duration = 100, type = 'sine') {
     if (!this.gameSystem.getSetting('soundEnabled')) return;
 
+    let sfxVolume = this.gameSystem.getSetting('sfxVolume');
+    if (typeof sfxVolume !== 'number') sfxVolume = 0.8;
+    if (sfxVolume <= 0) return;
+
     try {
       const audioContext = this.audioContext || new (window.AudioContext || window.webkitAudioContext)();
       this.audioContext = audioContext;
+
+      // Browsers create contexts suspended until a user gesture; play calls
+      // usually come from input handlers, so resuming here unblocks audio.
+      if (audioContext.state === 'suspended') audioContext.resume();
 
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -529,7 +616,7 @@ class SoundManager {
       oscillator.frequency.value = frequency;
       oscillator.type = type;
 
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.3 * sfxVolume, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
 
       oscillator.start(audioContext.currentTime);

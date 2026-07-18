@@ -20,9 +20,34 @@ class AudioEffects {
     }
   }
 
+  // Contexts created before a user gesture start suspended; play calls come
+  // from input handlers, so resuming here unblocks audio on Chrome/Safari.
+  getContext() {
+    if (!this.audioContext) this.initAudioContext();
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    return this.audioContext;
+  }
+
+  // Effective volume, honoring the active game's sound settings when a
+  // GameSystem exists on the page. Returns 0 when muted.
+  getVolume() {
+    let volume = this.masterVolume;
+    try {
+      const gs = typeof GameSystem !== 'undefined' && GameSystem.lastInstance;
+      if (gs) {
+        if (gs.getSetting('soundEnabled') === false) return 0;
+        const sfx = gs.getSetting('sfxVolume');
+        if (typeof sfx === 'number') volume *= sfx;
+      }
+    } catch (e) { /* settings unavailable, keep masterVolume */ }
+    return volume;
+  }
+
   /* ─── SOUND EFFECTS USING WEB AUDIO API ─── */
   playTap(pitch = 800) {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
@@ -30,14 +55,14 @@ class AudioEffects {
     gain.connect(this.audioContext.destination);
     osc.frequency.value = pitch;
     osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3 * this.masterVolume, now);
+    gain.gain.setValueAtTime(0.3 * this.getVolume(), now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
     osc.start(now);
     osc.stop(now + 0.1);
   }
 
   playSuccess(pitch = 1200) {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
@@ -46,14 +71,14 @@ class AudioEffects {
     osc.frequency.setValueAtTime(pitch, now);
     osc.frequency.exponentialRampToValueAtTime(pitch * 1.5, now + 0.15);
     osc.type = 'sine';
-    gain.gain.setValueAtTime(0.4 * this.masterVolume, now);
+    gain.gain.setValueAtTime(0.4 * this.getVolume(), now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
     osc.start(now);
     osc.stop(now + 0.15);
   }
 
   playLevelUp() {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const notes = [800, 1000, 1200, 1400];
     notes.forEach((pitch, i) => {
@@ -64,7 +89,7 @@ class AudioEffects {
       osc.frequency.value = pitch;
       osc.type = 'sine';
       const startTime = now + (i * 0.08);
-      gain.gain.setValueAtTime(0.3 * this.masterVolume, startTime);
+      gain.gain.setValueAtTime(0.3 * this.getVolume(), startTime);
       gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
       osc.start(startTime);
       osc.stop(startTime + 0.15);
@@ -72,7 +97,7 @@ class AudioEffects {
   }
 
   playCombo(multiplier = 2) {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const pitch = 600 + (multiplier * 100);
     const osc = this.audioContext.createOscillator();
@@ -82,14 +107,14 @@ class AudioEffects {
     osc.frequency.setValueAtTime(pitch, now);
     osc.frequency.exponentialRampToValueAtTime(pitch * 0.8, now + 0.12);
     osc.type = 'square';
-    gain.gain.setValueAtTime(0.35 * this.masterVolume, now);
+    gain.gain.setValueAtTime(0.35 * this.getVolume(), now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
     osc.start(now);
     osc.stop(now + 0.12);
   }
 
   playError() {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
@@ -98,14 +123,14 @@ class AudioEffects {
     osc.frequency.setValueAtTime(300, now);
     osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
     osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3 * this.masterVolume, now);
+    gain.gain.setValueAtTime(0.3 * this.getVolume(), now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
     osc.start(now);
     osc.stop(now + 0.2);
   }
 
   playPop() {
-    if (!this.audioContext) return;
+    if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
@@ -114,7 +139,7 @@ class AudioEffects {
     osc.frequency.setValueAtTime(400, now);
     osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
     osc.type = 'square';
-    gain.gain.setValueAtTime(0.4 * this.masterVolume, now);
+    gain.gain.setValueAtTime(0.4 * this.getVolume(), now);
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
     osc.start(now);
     osc.stop(now + 0.1);
