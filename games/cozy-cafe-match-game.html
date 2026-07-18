@@ -1279,7 +1279,9 @@ const ACHIEVEMENTS = [
   { id: 'fifth_chair', name: 'The Fifth Chair',desc: 'Welcome Stardust into the story', icon: '✦',  check: v => (v.stats.guests_served || 0) >= 50, secret: true },
   { id: 'marathon',    name: 'Marathon',       desc: 'Serve 1,000 guests',            icon: '🏅', check: v => (v.stats.guests_served || 0) >= 1000, secret: true },
   { id: 'coin_hoard',  name: 'Coin Hoard',     desc: 'Earn 25,000 coins in total',    icon: '💎', check: v => (v.stats.lifetime_coins || 0) >= 25000, secret: true },
-  { id: 'daily_devotee',name: 'Regular as Rain',desc: 'Claim 7 daily challenges',     icon: '📅', check: v => (v.stats.dailies_claimed || 0) >= 7, secret: true }
+  { id: 'daily_devotee',name: 'Regular as Rain',desc: 'Claim 7 daily challenges',     icon: '📅', check: v => (v.stats.dailies_claimed || 0) >= 7, secret: true },
+  { id: 'power_master', name: 'Power Master',    desc: 'Make 100 power-ups',           icon: '⚡', check: v => (v.stats.powerups_made || 0) >= 100, secret: true },
+  { id: 'prism_lord',   name: 'Prism Lord',      desc: 'Make 25 rainbow tiles',        icon: '🌈', check: v => (v.stats.rainbows_made || 0) >= 25, secret: true }
 ];
 
 const SHOP_CATEGORIES = [
@@ -2467,6 +2469,77 @@ const CHAR_QUESTS = {
     { text: "'Twenty-five. Enough that it feels like home. Here — a halo, because you made me one of the good ones.'", goal: 25, cur: v => v.stats.guests_each.stardust || 0, coins: 1500, unlock: 'halo', done: "'This is my place now. Thank you.'" },
   ],
 };
+// ============ DAILY + WEEKLY CHALLENGES ============
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function weekKey() { const d = new Date(), day = (d.getDay() + 6) % 7, m = new Date(d); m.setDate(d.getDate() - day); return m.toISOString().slice(0, 10); }
+const DAILY_POOL = [
+  { key: 'guests',   emoji: '☕', name: 'Busy Day',     desc: 'Serve {n} guests today',       amounts: [8, 16, 30],  rewards: [80, 160, 320] },
+  { key: 'matches',  emoji: '🍓', name: 'Match Day',    desc: 'Match {n} snacks today',       amounts: [50, 100, 180], rewards: [80, 160, 320] },
+  { key: 'powerups', emoji: '⚡', name: 'Power Snacks', desc: 'Make {n} power-ups today',     amounts: [2, 4, 7],    rewards: [120, 240, 420] },
+];
+const WEEKLY_POOL = [
+  { key: 'guests',   emoji: '🏆', name: 'Grand Week',   desc: 'Serve {n} guests this week',       amounts: [70, 140, 280],  rewards: [600, 1300, 2800] },
+  { key: 'matches',  emoji: '✨', name: 'Snack Week',    desc: 'Match {n} snacks this week',       amounts: [450, 900, 1800], rewards: [600, 1300, 2800] },
+  { key: 'powerups', emoji: '⚡', name: 'Power Week',    desc: 'Make {n} power-ups this week',     amounts: [15, 30, 60],    rewards: [700, 1400, 3000] },
+  { key: 'rainbows', emoji: '🌈', name: 'Rainbow Week',  desc: 'Make {n} rainbow tiles this week', amounts: [3, 6, 12],      rewards: [800, 1600, 3200] },
+];
+function snapMetrics() { return { guests: vault.stats.guests_served || 0, matches: vault.stats.matches || 0, powerups: vault.stats.powerups_made || 0, rainbows: vault.stats.rainbows_made || 0 }; }
+function metricNow(key) {
+  if (key === 'guests') return vault.stats.guests_served || 0;
+  if (key === 'matches') return vault.stats.matches || 0;
+  if (key === 'powerups') return vault.stats.powerups_made || 0;
+  return vault.stats.rainbows_made || 0;
+}
+function getChallenge(pool, periodKey, storeKey) {
+  const period = periodKey();
+  const seed = period.split('-').reduce((a, b) => a * 31 + parseInt(b), 0);
+  const p = pool[seed % pool.length], tier = (seed >> 3) % 3;
+  let st = vault[storeKey];
+  if (!st || st.period !== period) { st = { period, base: snapMetrics(), claimed: false }; vault[storeKey] = st; saveVault(); }
+  const cur = metricNow(p.key) - (st.base[p.key] || 0);
+  return { ...p, target: p.amounts[tier], reward: p.rewards[tier], progress: Math.max(0, cur), claimed: st.claimed };
+}
+function getDaily() { return getChallenge(DAILY_POOL, todayKey, 'daily'); }
+function getWeekly() { return getChallenge(WEEKLY_POOL, weekKey, 'weekly'); }
+function claimChallenge(storeKey) {
+  const c = storeKey === 'daily' ? getDaily() : getWeekly();
+  if (c.claimed || c.progress < c.target) return;
+  vault[storeKey].claimed = true;
+  vault.coins += c.reward; vault.stats.lifetime_coins += c.reward;
+  if (storeKey === 'daily') vault.stats.dailies_claimed = (vault.stats.dailies_claimed || 0) + 1;
+  showToast('🎁 ' + c.name + ' complete! +' + c.reward + ' 🪙', 'achievement');
+  Audio.sfxAchievement(); buzz(40);
+  updateHUD(); saveVault(); checkAchievements(); renderQuests();
+}
+function challengeCard(c, storeKey) {
+  const pct = c.claimed ? 100 : Math.min(100, Math.floor(c.progress / c.target * 100));
+  const canClaim = !c.claimed && c.progress >= c.target;
+  const card = document.createElement('div');
+  card.style.cssText = 'background:linear-gradient(135deg,#FFF9E8,#FFF0D8);border:2px solid var(--sun);border-radius:14px;padding:12px 14px;margin-bottom:9px';
+  card.innerHTML = `
+    <div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa)">${c.emoji} ${c.name}</div>
+    <div style="font-size:12px;color:var(--cocoa-soft);margin:2px 0 7px">${c.desc.replace('{n}', c.target.toLocaleString())}</div>
+    <div style="background:var(--cream-deep);border-radius:100px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--sun),#E8A830);border-radius:100px"></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+      <span style="font-size:11px;font-weight:800;color:var(--cocoa-soft)">${c.claimed ? 'Claimed ✓' : Math.min(c.progress, c.target) + ' / ' + c.target}</span>
+      ${canClaim ? `<button class="shop-buy" data-claim="${storeKey}" style="padding:6px 14px">Claim 🪙 ${c.reward}</button>` : `<span style="font-size:11px;font-weight:800;color:var(--cocoa-soft)">🪙 ${c.reward}</span>`}
+    </div>`;
+  return card;
+}
+function renderChallenges(list) {
+  const dTitle = document.createElement('div');
+  dTitle.style.cssText = 'font-family:Fraunces,serif;font-weight:900;font-size:15px;color:var(--cocoa);margin:2px 0 8px';
+  dTitle.textContent = '📅 Daily & Weekly';
+  list.appendChild(dTitle);
+  list.appendChild(challengeCard(getDaily(), 'daily'));
+  list.appendChild(challengeCard(getWeekly(), 'weekly'));
+  list.querySelectorAll('[data-claim]').forEach(b => b.addEventListener('click', () => claimChallenge(b.dataset.claim)));
+  const cTitle = document.createElement('div');
+  cTitle.style.cssText = 'font-family:Fraunces,serif;font-weight:900;font-size:15px;color:var(--cocoa);margin:14px 0 8px';
+  cTitle.textContent = '🎯 Crew Requests';
+  list.appendChild(cTitle);
+}
+
 function crewQIdx(id) { if (!vault.crewQuests) vault.crewQuests = {}; return vault.crewQuests[id] || 0; }
 function claimCrewQuest(id) {
   const chain = CHAR_QUESTS[id], idx = crewQIdx(id), q = chain[idx];
@@ -2485,6 +2558,7 @@ function claimCrewQuest(id) {
 }
 function renderQuests() {
   const list = $('questList'); list.innerHTML = '';
+  renderChallenges(list);
   CREW_ORDER.forEach(id => {
     const chain = CHAR_QUESTS[id], idx = crewQIdx(id), g = GUESTS.find(x => x.id === id);
     const card = document.createElement('div');
