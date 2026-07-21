@@ -7,11 +7,11 @@
   <link rel="canonical" href="https://jvdesignstudio.co.uk/pages/leaderboards.html">
   <meta name="robots" content="index, follow">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leaderboards | JVDesignStudio</title>
-  <meta name="description" content="Global leaderboards for JVDesignStudio. See top players by XP, achievements, streaks, and more.">
+  <title>Your Progress | JVDesignStudio</title>
+  <meta name="description" content="Track your best scores, XP, level, achievements, and streak across every JVDesignStudio game. Saved right on your device.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Leaderboards | JVDesignStudio">
-  <meta property="og:description" content="Compete globally. See where you rank among all players.">
+  <meta property="og:title" content="Your Progress | JVDesignStudio">
+  <meta property="og:description" content="Your personal best scores and milestones across every game.">
   <meta property="og:image" content="https://jvdesignstudio.co.uk/logo.png">
   <meta property="og:url" content="https://jvdesignstudio.co.uk/pages/leaderboards.html">
   <meta property="og:site_name" content="JVDesignStudio">
@@ -26,20 +26,15 @@
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": "Global Leaderboards",
-  "description": "Global leaderboards for JVDesignStudio. See top players by XP, achievements, streaks, and more.",
+  "@type": "WebPage",
+  "name": "Your Progress",
+  "description": "Track your best scores, XP, level, achievements, and streak across every JVDesignStudio game.",
   "url": "https://jvdesignstudio.co.uk/pages/leaderboards.html",
   "image": "https://jvdesignstudio.co.uk/logo.png",
   "isPartOf": {
     "@type": "WebSite",
     "name": "JVDesignStudio",
     "url": "https://jvdesignstudio.co.uk"
-  },
-  "mainEntity": {
-    "@type": "Collection",
-    "name": "Player Rankings",
-    "description": "Global competitive rankings showing player XP, achievements, and streaks"
   }
 }
   </script>
@@ -414,9 +409,9 @@
   <!-- HERO -->
   <section id="main-content" class="hero">
     <div class="hero-inner">
-      <div class="hero-eyebrow">🏆 RANKINGS</div>
-      <h1>Global <span>Leaderboards</span></h1>
-      <p class="hero-sub">See where you rank. Compete globally and climb the charts.</p>
+      <div class="hero-eyebrow">📊 YOUR STATS</div>
+      <h1>Your <span>Progress</span></h1>
+      <p class="hero-sub">Every best score and milestone you've earned across the arcade, saved right here on your device.</p>
     </div>
   </section>
 
@@ -425,12 +420,8 @@
     <!-- YOUR OVERALL STATS -->
     <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--charcoal); margin-bottom: 24px; margin-top: 0;">📊 Your Overall Stats</h2>
 
-    <!-- YOUR RANK CARD -->
+    <!-- YOUR STATS CARD -->
     <div class="your-rank" id="yourRankCard" style="display: none;">
-      <div class="rank-stat">
-        <div class="rank-num" id="yourRank">--</div>
-        <div class="rank-lbl">Your Rank</div>
-      </div>
       <div class="rank-stat">
         <div class="rank-num" id="yourXP">0</div>
         <div class="rank-lbl">Total XP</div>
@@ -443,27 +434,23 @@
         <div class="rank-num" id="yourAchievements">0</div>
         <div class="rank-lbl">Achievements</div>
       </div>
+      <div class="rank-stat">
+        <div class="rank-num" id="yourStreak">0</div>
+        <div class="rank-lbl">Day Streak</div>
+      </div>
     </div>
 
-    <!-- LEADERBOARD RANKINGS -->
-    <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--charcoal); margin-bottom: 24px; margin-top: 40px;">🏆 Global Rankings</h2>
+    <!-- YOUR BEST SCORES -->
+    <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--charcoal); margin-bottom: 24px; margin-top: 40px;">🏆 Your Best Scores</h2>
 
-    <!-- FILTERS -->
-    <div class="filter-bar" id="filterBar">
-      <button class="filter-btn active" data-filter="all-time">All Time</button>
-      <button class="filter-btn" data-filter="weekly">This Week</button>
-      <button class="filter-btn" data-filter="achievements">By Achievements</button>
-      <button class="filter-btn" data-filter="streaks">By Streaks</button>
-    </div>
-
-    <!-- LEADERBOARD TABLE -->
+    <!-- BEST SCORES TABLE -->
     <div class="leaderboard-table">
       <div class="lb-header">
-        <div>Rank</div>
-        <div>Player</div>
-        <div>XP</div>
+        <div>#</div>
+        <div>Game</div>
+        <div>Best</div>
+        <div>Plays</div>
         <div>Level</div>
-        <div>Achievements</div>
       </div>
       <div id="leaderboardRows"></div>
     </div>
@@ -472,115 +459,68 @@
   <!-- SCRIPTS -->
   <script src="../player-profile.js"></script>
   <script>
-    let currentFilter = 'all-time';
-
     function initLeaderboards() {
       // Track page view with comprehensive analytics
-      ga4Analytics.trackPageView('/pages/leaderboards.html', 'Global Leaderboards', 'hub');
-      ga4Analytics.trackEngagementMetric('leaderboard_page_view', 1, 'engagement');
+      ga4Analytics.trackPageView('/pages/leaderboards.html', 'Your Progress', 'hub');
+      ga4Analytics.trackEngagementMetric('progress_page_view', 1, 'engagement');
 
-      setupFilters();
-      renderLeaderboard();
-      renderYourRank();
+      renderYourStats();
+      renderBestScores();
     }
 
-    function setupFilters() {
-      const filterBtns = document.querySelectorAll('.filter-btn');
-      filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          filterBtns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentFilter = btn.dataset.filter;
-          // Track filter change in GA4
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'filter_leaderboard', {
-              filter_type: currentFilter,
-              leaderboard_page: true
-            });
-          }
-          renderLeaderboard();
-        });
-      });
-    }
-
-    function renderYourRank() {
+    function renderYourStats() {
       if (typeof playerProfile === 'undefined') return;
 
       const stats = playerProfile.getStats();
-      const leaderboard = getGlobalLeaderboard();
-      const yourRank = leaderboard.findIndex(entry => entry.playerId === playerProfile.state.playerId) + 1 || 'Unranked';
-
       document.getElementById('yourRankCard').style.display = 'grid';
-      document.getElementById('yourRank').textContent = yourRank;
-      document.getElementById('yourXP').textContent = stats.totalXP;
+      document.getElementById('yourXP').textContent = (stats.totalXP || 0).toLocaleString();
       document.getElementById('yourLevel').textContent = stats.level;
       document.getElementById('yourAchievements').textContent = stats.achievementsUnlocked;
+      document.getElementById('yourStreak').textContent = stats.dailyStreak || 0;
     }
 
-    function getGlobalLeaderboard() {
+    // Turn a game id ("lumo-dash", "call-of-cards") into a display name.
+    function prettyName(id) {
+      return id.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // Scan this device's saved games for the player's personal bests.
+    function getMyGames() {
+      const games = [];
       try {
-        const stored = localStorage.getItem('jvds_global_leaderboard');
-        return stored ? JSON.parse(stored) : [];
-      } catch (e) {
-        return [];
-      }
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key || key.indexOf('jvds_game_') !== 0) continue;
+          let s;
+          try { s = JSON.parse(localStorage.getItem(key)); } catch (e) { continue; }
+          if (!s) continue;
+          const highScore = s.highScore || 0;
+          const gamesPlayed = s.gamesPlayed || 0;
+          if (highScore <= 0 && gamesPlayed <= 0) continue; // never really played
+          games.push({
+            id: key.slice('jvds_game_'.length),
+            name: prettyName(key.slice('jvds_game_'.length)),
+            highScore,
+            gamesPlayed,
+            level: s.level || 1
+          });
+        }
+      } catch (e) { /* storage blocked */ }
+      games.sort((a, b) => b.highScore - a.highScore || b.gamesPlayed - a.gamesPlayed);
+      return games;
     }
 
-    function buildGlobalLeaderboard() {
-      const profile = playerProfile.state;
-      const stats = playerProfile.getStats();
-
-      let leaderboard = getGlobalLeaderboard();
-
-      const existingIdx = leaderboard.findIndex(e => e.playerId === profile.playerId);
-      const entry = {
-        playerId: profile.playerId,
-        name: 'Player ' + profile.playerId.substring(0, 8),
-        totalXP: stats.totalXP,
-        level: stats.level,
-        achievements: stats.achievementsUnlocked,
-        dailyStreak: stats.dailyStreak,
-        workshopsCompleted: stats.workshopsCompleted,
-        lastUpdated: new Date().toISOString()
-      };
-
-      if (existingIdx !== -1) {
-        leaderboard[existingIdx] = entry;
-      } else {
-        leaderboard.push(entry);
-      }
-
-      leaderboard.sort((a, b) => b.totalXP - a.totalXP);
-      leaderboard = leaderboard.slice(0, 100); // Keep top 100
-
-      try {
-        localStorage.setItem('jvds_global_leaderboard', JSON.stringify(leaderboard));
-      } catch (e) {}
-
-      return leaderboard;
-    }
-
-    function renderLeaderboard() {
-      let leaderboard = buildGlobalLeaderboard();
-
-      // Apply filter
-      if (currentFilter === 'achievements') {
-        leaderboard = [...leaderboard].sort((a, b) => b.achievements - a.achievements);
-      } else if (currentFilter === 'streaks') {
-        leaderboard = [...leaderboard].sort((a, b) => b.dailyStreak - a.dailyStreak);
-      } else if (currentFilter === 'weekly') {
-        leaderboard = [...leaderboard].slice(0, 10);
-      }
-
+    function renderBestScores() {
+      const games = getMyGames();
       const container = document.getElementById('leaderboardRows');
       container.innerHTML = '';
 
-      if (leaderboard.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🏆</div><div class="empty-state-text">No rankings yet. Start playing to appear here!</div></div>';
+      if (games.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎮</div><div class="empty-state-text">No scores yet.</div><div style="color:#999;">Play any game and your best scores show up here.</div><div style="margin-top:20px;"><a href="/pages/games.html" class="filter-btn" style="display:inline-block;text-decoration:none;">Browse games →</a></div></div>';
         return;
       }
 
-      leaderboard.forEach((entry, idx) => {
+      games.forEach((g, idx) => {
         const rank = idx + 1;
         const rankClass = rank <= 3 ? `rank-${rank} top-3` : '';
         const medalEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
@@ -590,23 +530,23 @@
         row.innerHTML = `
           <div class="lb-rank ${rankClass}">${medalEmoji ? medalEmoji : '#' + rank}</div>
           <div class="lb-player">
-            <div class="lb-avatar">${entry.name.charAt(0)}</div>
+            <div class="lb-avatar">${g.name.charAt(0)}</div>
             <div class="lb-info">
-              <div class="lb-name">${entry.name}</div>
-              <div class="lb-subtitle">Level ${entry.level} · ${entry.workshopsCompleted} workshops</div>
+              <div class="lb-name">${g.name}</div>
+              <div class="lb-subtitle">${g.gamesPlayed} play${g.gamesPlayed === 1 ? '' : 's'}</div>
             </div>
           </div>
           <div class="lb-stat">
-            <div style="color: var(--rose); font-weight: 700;">${entry.totalXP}</div>
-            <div class="lb-stat-label">XP</div>
+            <div style="color: var(--rose); font-weight: 700;">${g.highScore.toLocaleString()}</div>
+            <div class="lb-stat-label">Best</div>
           </div>
           <div class="lb-stat">
-            <div style="color: var(--teal); font-weight: 700;">${entry.level}</div>
+            <div style="color: var(--teal); font-weight: 700;">${g.gamesPlayed}</div>
+            <div class="lb-stat-label">Plays</div>
+          </div>
+          <div class="lb-stat">
+            <div style="color: var(--charcoal); font-weight: 700;">${g.level}</div>
             <div class="lb-stat-label">Level</div>
-          </div>
-          <div class="lb-stat">
-            <div style="color: var(--charcoal); font-weight: 700;">${entry.achievements}</div>
-            <div class="lb-stat-label">Badges</div>
           </div>
         `;
         container.appendChild(row);

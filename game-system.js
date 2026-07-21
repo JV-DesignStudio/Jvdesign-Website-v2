@@ -917,4 +917,25 @@ if (typeof document !== 'undefined') {
     }
     return r;
   };
+
+  /* ── Reliable persistence ──
+     beforeunload (used by ~29 games) is unreliable on mobile: browsers
+     discard backgrounded tabs and fire it inconsistently on app-switch.
+     Flush every active GameSystem when the page is hidden or unloaded so
+     score/high-score/XP/achievements survive. saveState is idempotent, so
+     firing on both events (and repeatedly) is harmless. All games benefit
+     without any per-game changes. */
+  function flushAllState() {
+    for (var id in syncers) {
+      try { syncers[id].saveState(); } catch (e) {}
+    }
+    var p = profile();
+    if (p) { try { p.saveProfile(); } catch (e) {} }
+  }
+  // pagehide is the reliable "leaving" signal (incl. bfcache); visibilitychange
+  // →hidden is the one mobile actually delivers on app-switch/tab-discard.
+  window.addEventListener('pagehide', flushAllState);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') flushAllState();
+  });
 })();
