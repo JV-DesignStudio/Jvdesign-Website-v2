@@ -361,6 +361,20 @@
   }
 
   /* Walking cat */
+  .booster-bar { display: flex; gap: 8px; justify-content: center; padding: 6px 0 2px; }
+  .booster-btn { position: relative; flex: 1; max-width: 110px; background: var(--milk); border: 2px solid var(--cream-deep); border-radius: 14px; padding: 7px 4px 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: transform .1s; }
+  .booster-btn:active { transform: scale(.95); }
+  .booster-btn.empty { opacity: .6; }
+  .booster-btn .bst-emoji { font-size: 22px; line-height: 1; }
+  .booster-btn .bst-name { font-size: 10px; font-weight: 800; color: var(--cocoa-soft); }
+  .booster-btn .bst-count { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 100px; background: var(--rose-deep); color: var(--cream); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+  .booster-btn.empty .bst-count { background: var(--cocoa-soft); }
+  .pshop-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--milk); border: 2px solid var(--cream-deep); border-radius: 14px; margin-bottom: 8px; }
+  .pshop-emoji { font-size: 28px; }
+  .pshop-body { flex: 1; min-width: 0; }
+  .pshop-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 14px; color: var(--cocoa); }
+  .pshop-desc { font-size: 11px; color: var(--cocoa-soft); margin-top: 1px; }
+  .pshop-own { font-size: 11px; font-weight: 800; color: var(--rose-deep); margin-top: 2px; }
   .cat {
     position: absolute;
     bottom: 12%;
@@ -833,6 +847,8 @@
     <div class="sparkle-layer" id="sparkleLayer"></div>
   </div>
 
+  <div class="booster-bar" id="boosterBar"></div>
+
   <div class="bottombar">
     <button class="bb-btn" id="settingsBtn" aria-label="Settings"><span class="bb-icon">⚙️</span>Settings</button>
     <button class="bb-btn" id="shopBtn" aria-label="Open shop"><span class="bb-icon">🛍️</span>Shop</button>
@@ -895,6 +911,17 @@
       <button class="bb-btn" id="exportSaveBtn" style="flex:1"><span class="bb-icon">⬆️</span>Export code</button>
       <button class="bb-btn" id="importSaveBtn" style="flex:1"><span class="bb-icon">⬇️</span>Import code</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="powerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚡ <em>Power-ups</em></div>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <p style="font-size:12px;color:var(--cocoa-soft);margin-bottom:12px;font-style:italic">Stock up on boosters, then tap them under the board while you play.</p>
+    <div id="powerShop"></div>
   </div>
 </div>
 
@@ -2581,8 +2608,144 @@ function renderQuests() {
     list.appendChild(card);
   });
   list.querySelectorAll('[data-cq]').forEach(b => b.addEventListener('click', () => claimCrewQuest(b.dataset.cq)));
+  renderPowerQuests(list);
 }
 $('questBtn').addEventListener('click', () => { renderQuests(); $('questModal').classList.add('show'); });
+
+// ============ POWER-UP BOOSTERS ============
+async function settleCascades() {
+  let m = findMatches();
+  while (m.length) { comboCount = 0; await resolveMatches(m); m = findMatches(); }
+}
+async function boosterShuffle() {
+  if (busy) { showToast('One moment...'); return false; }
+  busy = true;
+  const types = [];
+  for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) types.push(board[r][c].type);
+  for (let i = types.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [types[i], types[j]] = [types[j], types[i]]; }
+  let k = 0;
+  for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) board[r][c] = { ...board[r][c], type: types[k++] };
+  render(); buzz(25); Audio.sfxCombo(1);
+  await sleep(220);
+  comboCount = 0;
+  await settleCascades();
+  busy = false;
+  return true;
+}
+async function boosterRainbow() {
+  if (busy) { showToast('One moment...'); return false; }
+  if (!currentGuest) { showToast('No guest to help right now'); return false; }
+  const fav = currentGuest.favourite;
+  const cells = [];
+  for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) if (board[r][c] && board[r][c].type === fav) cells.push({ r, c });
+  if (!cells.length) { showToast('None of that snack on the board!'); return false; }
+  busy = true;
+  comboCount = 0;
+  await resolveMatches([{ cells, dir: 'combo', length: cells.length, type: fav }]);
+  await settleCascades();
+  busy = false;
+  return true;
+}
+function boosterTreat() {
+  if (busy) { showToast('One moment...'); return false; }
+  if (!currentGuest) { showToast('No guest waiting'); return false; }
+  cravingProgress = cravingTarget;
+  Audio.sfxGuestHappy(); buzz(40);
+  fulfilGuest();
+  updateHUD();
+  return true;
+}
+const BOOSTERS = [
+  { id: 'shuffle', emoji: '🔀', name: 'Shuffle',  desc: 'Remix the whole board when you\'re stuck', price: 60,  use: boosterShuffle },
+  { id: 'rainbow', emoji: '🌈', name: 'Rainbow',  desc: "Clear every one of the guest's favourite snack", price: 120, use: boosterRainbow },
+  { id: 'treat',   emoji: '🍰', name: 'Treat',    desc: 'Instantly finish the current order', price: 220, use: boosterTreat },
+];
+function boosterCount(id) { if (!vault.boosters) vault.boosters = {}; return vault.boosters[id] || 0; }
+function grantBooster(id, n) { if (!vault.boosters) vault.boosters = {}; vault.boosters[id] = (vault.boosters[id] || 0) + n; saveVault(); renderBoosterBar(); }
+async function useBooster(id) {
+  const b = BOOSTERS.find(x => x.id === id); if (!b) return;
+  if (boosterCount(id) < 1) { renderPowerShop(); $('powerModal').classList.add('show'); return; }
+  const ok = await b.use();
+  if (ok) {
+    vault.boosters[id] -= 1;
+    vault.stats.boosters_used = (vault.stats.boosters_used || 0) + 1;
+    saveVault(); renderBoosterBar(); checkAchievements();
+  }
+}
+function renderBoosterBar() {
+  const bar = $('boosterBar'); if (!bar) return;
+  bar.innerHTML = '';
+  BOOSTERS.forEach(b => {
+    const n = boosterCount(b.id);
+    const btn = document.createElement('button');
+    btn.className = 'booster-btn' + (n < 1 ? ' empty' : '');
+    btn.innerHTML = `<span class="bst-count">${n > 0 ? n : '+'}</span><span class="bst-emoji">${b.emoji}</span><span class="bst-name">${b.name}</span>`;
+    btn.addEventListener('click', () => useBooster(b.id));
+    bar.appendChild(btn);
+  });
+}
+function renderPowerShop() {
+  const el = $('powerShop'); if (!el) return;
+  el.innerHTML = '';
+  BOOSTERS.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'pshop-row';
+    row.innerHTML = `<div class="pshop-emoji">${b.emoji}</div>
+      <div class="pshop-body"><div class="pshop-name">${b.name}</div><div class="pshop-desc">${b.desc}</div><div class="pshop-own">You own: ${boosterCount(b.id)}</div></div>
+      <button class="shop-buy" data-buy="${b.id}" style="padding:8px 12px">🪙 ${b.price}</button>`;
+    el.appendChild(row);
+  });
+  el.querySelectorAll('[data-buy]').forEach(btn => btn.addEventListener('click', () => {
+    const b = BOOSTERS.find(x => x.id === btn.dataset.buy);
+    if (vault.coins < b.price) { showToast('Not enough coins yet!'); return; }
+    vault.coins -= b.price; grantBooster(b.id, 1); updateHUD(); renderPowerShop();
+    showToast(b.emoji + ' ' + b.name + ' added!');
+  }));
+}
+renderBoosterBar();
+
+// ============ POWER PLAY QUEST CHAIN (always on) ============
+const POWER_QUESTS = [
+  { text: 'Make your first 10 power-ups (match 4 or more snacks).', goal: 10, cur: v => v.stats.powerups_made || 0, coins: 150, reward: { shuffle: 1 }, done: 'Power snacks unlocked!' },
+  { text: 'Create 3 rainbow tiles (match 5 in a row).', goal: 3, cur: v => v.stats.rainbows_made || 0, coins: 400, reward: { rainbow: 1 }, done: 'Taste the rainbow!' },
+  { text: 'Use 5 boosters under the board.', goal: 5, cur: v => v.stats.boosters_used || 0, coins: 600, reward: { treat: 1 }, done: 'Booster pro!' },
+  { text: 'Make 50 power-ups in total.', goal: 50, cur: v => v.stats.powerups_made || 0, coins: 1200, reward: { shuffle: 2, rainbow: 1 }, done: 'You are a power legend!' },
+];
+function powerQIdx() { return vault.powerQuest || 0; }
+function claimPowerQuest() {
+  const q = POWER_QUESTS[powerQIdx()]; if (!q || q.cur(vault) < q.goal) return;
+  vault.powerQuest = powerQIdx() + 1;
+  vault.coins += q.coins; vault.stats.lifetime_coins += q.coins;
+  const rtxt = [];
+  if (q.reward) for (const k in q.reward) { grantBooster(k, q.reward[k]); const b = BOOSTERS.find(x => x.id === k); rtxt.push(q.reward[k] + '×' + (b ? b.emoji : '')); }
+  showToast('⚡ ' + q.done + ' +' + q.coins + ' 🪙 ' + rtxt.join(' '), 'achievement');
+  Audio.sfxAchievement(); buzz(40);
+  updateHUD(); saveVault(); checkAchievements(); renderQuests();
+}
+function renderPowerQuests(list) {
+  const title = document.createElement('div');
+  title.style.cssText = 'font-family:Fraunces,serif;font-weight:900;font-size:15px;color:var(--cocoa);margin:14px 0 8px';
+  title.textContent = '⚡ Power Play';
+  list.appendChild(title);
+  const idx = powerQIdx();
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--milk);border:2px solid var(--cream-deep);border-radius:14px;padding:12px 14px;margin-bottom:9px';
+  if (idx >= POWER_QUESTS.length) {
+    card.innerHTML = '<div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa)">⚡ Power Play</div><div style="font-size:12px;color:var(--cocoa-soft);margin-top:3px;font-style:italic">All power quests done. You\'re a legend. ✨</div>';
+  } else {
+    const q = POWER_QUESTS[idx], cur = Math.min(q.cur(vault), q.goal), pct = Math.min(100, Math.floor(cur / q.goal * 100)), ready = cur >= q.goal;
+    const rtxt = q.reward ? Object.keys(q.reward).map(k => { const b = BOOSTERS.find(x => x.id === k); return q.reward[k] + (b ? b.emoji : ''); }).join(' ') : '';
+    card.innerHTML = `<div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa)">⚡ Power Play <span style="font-size:10px;color:var(--cocoa-soft)">${idx + 1}/${POWER_QUESTS.length}</span></div>
+      <div style="font-size:12px;color:var(--cocoa-soft);margin:3px 0 7px;font-style:italic">${q.text}</div>
+      <div style="background:var(--cream-deep);border-radius:100px;height:8px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--rose),var(--sun));border-radius:100px"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;font-weight:800;color:var(--cocoa-soft)">${cur} / ${q.goal}</span>
+        ${ready ? `<button class="shop-buy" id="claimPowerQ" style="padding:6px 14px">Claim 🪙 ${q.coins} ${rtxt}</button>` : `<span style="font-size:11px;font-weight:800;color:var(--cocoa-soft)">🪙 ${q.coins} ${rtxt}</span>`}
+      </div>`;
+  }
+  list.appendChild(card);
+  const cb = $('claimPowerQ'); if (cb) cb.addEventListener('click', claimPowerQuest);
+}
 document.querySelectorAll('[data-close]').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.target.closest('.modal-backdrop').classList.remove('show');
