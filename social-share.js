@@ -9,7 +9,8 @@ class SocialShare {
       'level-up': `⭐ I just reached Level ${data.level} on JVDesignStudio! Join me on my learning journey! 🚀 ${data.hubUrl}`,
       'achievement': `🏅 I unlocked "${data.achievementName}" on JVDesignStudio! Check out my progress: ${data.progressUrl}`,
       'rank': `📊 I'm ranked #${data.rank} on JVDesignStudio leaderboards with ${data.xp} XP! Can you climb higher? 🎯 ${data.leaderboardUrl}`,
-      'cosmetic': `✨ I unlocked the "${data.cosmeticName}" cosmetic in ${data.gameName}! Play and unlock yours! 🎮 ${data.gameUrl}`
+      'cosmetic': `✨ I unlocked the "${data.cosmeticName}" cosmetic in ${data.gameName}! Play and unlock yours! 🎮 ${data.gameUrl}`,
+      'score': `🏆 I scored ${data.score} in ${data.gameName} on JVDesignStudio! Think you can beat it? 🎮 ${data.gameUrl}`
     };
 
     return shareMessages[type] || 'Check out my progress on JVDesignStudio!';

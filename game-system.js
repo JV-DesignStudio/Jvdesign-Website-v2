@@ -859,6 +859,137 @@ if (typeof document !== 'undefined') {
     }, 2600);
   }
 
+  /* ── Score sharing (viral loop) ──
+     When a player sets a new personal best during a session, offer a
+     dismissible chip that shares their score. Uses the native share sheet
+     on mobile (navigator.share) and falls back to clipboard copy. The
+     shared link points at the game's own page, which has a real OG card,
+     so every share becomes a preview-rich invitation back to the game.
+     One global hook on recordGamePlay; no per-game code needed. */
+  var sessionPeak = {}; // gameId -> best score at/of this session (baseline = pre-session high)
+  var chipUp = false;
+
+  function gameShareUrl() {
+    var c = document.querySelector('link[rel="canonical"]');
+    if (c && c.href) return c.href.split('#')[0];
+    return location.origin + location.pathname;
+  }
+
+  function fmtScore(n) {
+    n = Math.floor(n || 0);
+    try { return n.toLocaleString(); } catch (e) { return '' + n; }
+  }
+
+  function shareScore(gameName, score, url) {
+    var text = '🏆 I scored ' + fmtScore(score) + ' in ' + gameName +
+               ' on JVDesignStudio! Think you can beat it?';
+    if (navigator.share) {
+      navigator.share({ title: gameName + ' | JVDesignStudio', text: text, url: url })
+        .catch(function () { /* user cancelled or share unavailable */ });
+      return;
+    }
+    var payload = text + ' ' + url;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(payload)
+        .then(function () { showXPToast('📋 Score copied, paste it anywhere!'); })
+        .catch(function () { showXPToast(payload); });
+    } else {
+      showXPToast(payload);
+    }
+  }
+
+  // Public: a game can call window.jvdsShareScore() from its own game-over
+  // UI. Optional scoreOverride shares that exact number; otherwise the best
+  // known score for the active game is used.
+  window.jvdsShareScore = function (scoreOverride) {
+    var inst = (typeof GameSystem !== 'undefined') ? GameSystem.lastInstance : null;
+    var name = (inst && inst.gameName) || document.title.replace(/\s*[|\-–].*$/, '').trim() || 'this game';
+    var best = scoreOverride;
+    if (best == null) {
+      var s = inst ? inst.state : null;
+      best = Math.max((s && s.highScore) || 0, window.__gsBestRun || 0, (s && s.score) || 0);
+    }
+    shareScore(name, best, gameShareUrl());
+  };
+
+  var chipStylesReady = false;
+  function ensureChipStyles() {
+    if (chipStylesReady || !document.head) return;
+    chipStylesReady = true;
+    var st = document.createElement('style');
+    // Resting state is fully visible with NO entrance animation. CSS
+    // animations/transitions freeze at frame 0 in backgrounded tabs, which
+    // would hold the chip invisible; a static style is reliable everywhere.
+    st.textContent =
+      '.jvds-share-chip{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);' +
+      'display:flex;align-items:center;gap:12px;z-index:99999;opacity:1;' +
+      'background:linear-gradient(135deg,#f5c842,#e6a817);color:#2a1e05;' +
+      'padding:12px 14px 12px 18px;border-radius:16px;font:700 .9rem/1.2 Nunito,Inter,sans-serif;' +
+      'box-shadow:0 12px 34px rgba(0,0,0,.4);max-width:92vw}' +
+      '.jvds-share-chip button{font-family:Nunito,Inter,sans-serif}';
+    document.head.appendChild(st);
+  }
+
+  function showShareChip(gameName, score, url) {
+    if (!document.body || chipUp) return;
+    chipUp = true;
+    ensureChipStyles();
+    // Resting state is visible; entrance is a CSS animation. This avoids any
+    // deferred JS style toggle (rAF/setTimeout are throttled in backgrounded
+    // tabs), so the chip can never get stuck invisible.
+    var chip = document.createElement('div');
+    chip.className = 'jvds-share-chip';
+    chip.setAttribute('role', 'dialog');
+    chip.setAttribute('aria-label', 'Share your score');
+    var label = document.createElement('span');
+    label.innerHTML = '🏆 New best: ' + fmtScore(score) +
+      '<br><span style="font-weight:600;opacity:.75;font-size:.78rem">Share your score</span>';
+    var shareBtn = document.createElement('button');
+    shareBtn.textContent = navigator.share ? 'Share' : 'Copy';
+    shareBtn.style.cssText =
+      'background:#2a1e05;color:#f5c842;border:none;padding:9px 16px;border-radius:10px;' +
+      'font-weight:700;font-size:.85rem;cursor:pointer;flex:none;';
+    var closeBtn = document.createElement('button');
+    closeBtn.setAttribute('aria-label', 'Dismiss');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText =
+      'background:transparent;border:none;color:#2a1e05;font-size:1rem;cursor:pointer;opacity:.6;flex:none;padding:4px;';
+    var hide = function () {
+      if (!chipUp) return;
+      // Inline style change (not a deferred callback) so hide is reliable too.
+      chip.style.transition = 'opacity .28s,transform .28s';
+      chip.style.opacity = '0';
+      chip.style.transform = 'translateX(-50%) translateY(22px)';
+      setTimeout(function () { chip.remove(); chipUp = false; }, 300);
+      chipUp = false;
+    };
+    shareBtn.onclick = function () { shareScore(gameName, score, url); hide(); };
+    closeBtn.onclick = hide;
+    chip.appendChild(label);
+    chip.appendChild(shareBtn);
+    chip.appendChild(closeBtn);
+    document.body.appendChild(chip);
+    setTimeout(hide, 9000);
+  }
+
+  // Called on run-finish. Shows the chip only when the finished run beat the
+  // best score seen since the page opened (a real new record, not the stored
+  // all-time high loaded at startup), so it never nags on ordinary runs.
+  function maybePromptShare(inst) {
+    try {
+      if (!inst || !inst.gameId) return;
+      var s = inst.state || {};
+      var best = Math.max(s.highScore || 0, window.__gsBestRun || 0, s.score || 0);
+      if (best <= 0) return;
+      var prev = sessionPeak[inst.gameId];
+      if (prev == null) prev = 0;
+      if (best > prev) {
+        sessionPeak[inst.gameId] = best;
+        showShareChip(inst.gameName, best, gameShareUrl());
+      }
+    } catch (e) { /* sharing must never break game-over */ }
+  }
+
   /* ── Award queue (flushed once the profile is available) ── */
   var pending = [];
   var syncers = {}; // gameId -> GameSystem instance (for leaderboard sync)
@@ -940,7 +1071,13 @@ if (typeof document !== 'undefined') {
         award(gameId, 'session', 10, 1, 'Playing ' + gameName);
       }, 30000);
     }
-    return origLoadState.apply(this, arguments);
+    var st = origLoadState.apply(this, arguments);
+    // Baseline the share prompt at the pre-session high, so only records
+    // beaten during this visit trigger the "new best" chip.
+    if (this.gameId && sessionPeak[this.gameId] == null) {
+      sessionPeak[this.gameId] = (st && st.highScore) || 0;
+    }
+    return st;
   };
 
   // Run finished
@@ -948,6 +1085,10 @@ if (typeof document !== 'undefined') {
   GameSystem.prototype.recordGamePlay = function () {
     var r = origRecord.apply(this, arguments);
     award(this.gameId, 'run', 15, 5, this.gameName + ', run finished');
+    // Defer briefly so games that write __gsBestRun right after recordGamePlay
+    // are reflected before we decide whether it's a new best.
+    var self = this;
+    setTimeout(function () { maybePromptShare(self); }, 60);
     return r;
   };
 
