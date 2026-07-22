@@ -515,32 +515,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 const gameSystem = new GameSystem('lumo-dash', 'Lumo Dash', 'neon');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  // the game accumulates session score in window.__gsScore at the end of each run
-  const currentScore = Math.floor(window.__gsScore || 0);
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 5);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = Math.floor(window.__gsBestRun || 0);
-  if (score > 0) gameSystem.unlockAchievement('firstDash');
-  if (score >= 50) gameSystem.unlockAchievement('score50');
-  if (score >= 100) gameSystem.unlockAchievement('score100');
-  if (score >= 200) gameSystem.unlockAchievement('score200');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 5, tiers: [[1, 'firstDash'], [50, 'score50'], [100, 'score100'], [200, 'score200']] });
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

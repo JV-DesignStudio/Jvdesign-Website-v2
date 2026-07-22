@@ -920,23 +920,9 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
 const gameSystem = window.gs;
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress(){
-  const currentScore = Math.floor(window.__gsScore || 0);
-  if(currentScore > lastScore){
-    const xpGained = Math.floor((currentScore - lastScore) / 10);
-    if(xpGained > 0){ gameSystem.addXP(xpGained); lastScore = currentScore; }
-  }
-}
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements(){
-  const best = Math.floor(window.__gsBestRun || 0);
-  if(best >= 300) gameSystem.unlockAchievement('gd_score300');
-  if(best >= 800) gameSystem.unlockAchievement('gd_score800');
-  gameSystem.checkAchievements();
-}
-setInterval(checkGameSystemAchievements, 5000);
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 10, tiers: [[300, 'gd_score300'], [800, 'gd_score800']] });
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

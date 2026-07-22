@@ -1566,32 +1566,9 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 const gameSystem = new GameSystem('gem-match', 'Gem Match', 'pip');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  // the game accumulates session score in window.__gsScore at the end of each run
-  const currentScore = Math.floor(window.__gsScore || 0);
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 10);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = Math.floor(window.__gsBestRun || 0);
-  if (score > 0) gameSystem.unlockAchievement('firstMatch');
-  if (score >= 500) gameSystem.unlockAchievement('score500');
-  if (score >= 1000) gameSystem.unlockAchievement('score1000');
-  if (score >= 2000) gameSystem.unlockAchievement('score2000');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 10, tiers: [[1, 'firstMatch'], [500, 'score500'], [1000, 'score1000'], [2000, 'score2000']] });
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

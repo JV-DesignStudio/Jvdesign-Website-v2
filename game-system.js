@@ -131,6 +131,65 @@ class GameSystem {
     return this.state.coins;
   }
 
+  /* ─── SCORE TRACKING ───
+     Replaces the two setInterval pollers every game used to copy-paste:
+     one converting window.__gsScore deltas into XP, one checking
+     window.__gsBestRun against score-tier achievements. This watches both
+     globals reactively (property setters), so XP and achievements land the
+     instant the game writes a score instead of up to 5s later, and no idle
+     timers run. Behavior matches the old pollers exactly (same divisor math,
+     same "advance to current on any XP gain" remainder handling).
+
+       gameSystem.trackScore({
+         xpDivisor: 10,                       // score points per 1 XP
+         tiers: [ [1, 'firstJump'], [100, 'score100'], [500, 'score500'] ]
+       });
+  */
+  trackScore(opts) {
+    opts = opts || {};
+    const divisor = opts.xpDivisor > 0 ? opts.xpDivisor : 1;
+    const tiers = opts.tiers || [];
+    const self = this;
+    let lastScore = 0;
+    let scoreVal = (typeof window !== 'undefined' && window.__gsScore) || 0;
+    let bestVal = (typeof window !== 'undefined' && window.__gsBestRun) || 0;
+
+    const onScore = v => {
+      const cur = Math.floor(v || 0);
+      if (cur > lastScore) {
+        const xp = Math.floor((cur - lastScore) / divisor);
+        if (xp > 0) { self.addXP(xp); lastScore = cur; }
+      }
+    };
+    const onBest = v => {
+      const score = Math.floor(v || 0);
+      tiers.forEach(t => { if (score >= t[0]) self.unlockAchievement(t[1]); });
+      self.checkAchievements();
+    };
+
+    if (typeof window === 'undefined') return;
+    try {
+      Object.defineProperty(window, '__gsScore', {
+        configurable: true,
+        get() { return scoreVal; },
+        set(v) { scoreVal = v; onScore(v); }
+      });
+      Object.defineProperty(window, '__gsBestRun', {
+        configurable: true,
+        get() { return bestVal; },
+        set(v) { bestVal = v; onBest(v); }
+      });
+    } catch (e) {
+      // Fallback to polling if the globals can't be redefined.
+      setInterval(() => { onScore(window.__gsScore); }, 500);
+      setInterval(() => { onBest(window.__gsBestRun); }, 5000);
+      return;
+    }
+    // Honor any score already written before tracking started.
+    if (scoreVal) onScore(scoreVal);
+    if (bestVal) onBest(bestVal);
+  }
+
   getXPProgress() {
     const xpPerLevel = 1000;
     const currentXP = this.state.xp % xpPerLevel;

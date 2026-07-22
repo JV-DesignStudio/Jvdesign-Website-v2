@@ -535,32 +535,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 const gameSystem = new GameSystem('critter-whack', 'Critter Whack', 'tiger');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  // the game accumulates session score in window.__gsScore at the end of each run
-  const currentScore = Math.floor(window.__gsScore || 0);
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 5);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = Math.floor(window.__gsBestRun || 0);
-  if (score > 0) gameSystem.unlockAchievement('firstWhack');
-  if (score >= 50) gameSystem.unlockAchievement('score50');
-  if (score >= 150) gameSystem.unlockAchievement('score150');
-  if (score >= 300) gameSystem.unlockAchievement('score300');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 5, tiers: [[1, 'firstWhack'], [50, 'score50'], [150, 'score150'], [300, 'score300']] });
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());

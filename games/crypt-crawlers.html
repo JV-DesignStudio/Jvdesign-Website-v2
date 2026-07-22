@@ -1373,32 +1373,9 @@ function jvdsCloseStrip(){
 const gameSystem = new GameSystem('crypt-crawlers', 'Crypt Crawlers', 'skeleton');
 const soundManager = new SoundManager(gameSystem);
 
-let lastScore = 0;
-function trackGameSystemProgress() {
-  // the game accumulates session score in window.__gsScore at the end of each run
-  const currentScore = Math.floor(window.__gsScore || 0);
-
-  if (currentScore > lastScore) {
-    const xpGained = Math.floor((currentScore - lastScore) / 20);
-    if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
-      lastScore = currentScore;
-    }
-  }
-}
-
-setInterval(trackGameSystemProgress, 500);
-
-function checkGameSystemAchievements() {
-  const score = Math.floor(window.__gsBestRun || 0);
-  if (score > 0) gameSystem.unlockAchievement('firstCrawl');
-  if (score >= 100) gameSystem.unlockAchievement('score100');
-  if (score >= 300) gameSystem.unlockAchievement('score300');
-  if (score >= 600) gameSystem.unlockAchievement('score600');
-  gameSystem.checkAchievements();
-}
-
-setInterval(checkGameSystemAchievements, 5000);
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 20, tiers: [[1, 'firstCrawl'], [100, 'score100'], [300, 'score300'], [600, 'score600']] });
 
 window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());
