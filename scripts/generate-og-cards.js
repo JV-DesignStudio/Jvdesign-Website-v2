@@ -52,6 +52,7 @@ const CARDS = [
   { page: 'games/star-chef.html',          slug: 'star-chef',         title: 'Star Chef',           tag: 'Serve hungry customers, grow your restaurant.',        accent: '#fb5607', emoji: '👨‍🍳', eyebrow: 'JVDesignStudio Arcade · Manager' },
 
   // ── Homepage + hubs ──
+  { page: 'arcade.html',                   slug: 'arcade',        title: 'JVDS Arcade',        tag: 'Every game in one app. One profile, 29 games, playable offline.', accent: '#A583CE', emoji: '🕹️', eyebrow: 'JVDesignStudio · Install the Arcade' },
   { page: 'index.html',                    slug: 'home',          title: 'JVDesignStudio',     tag: "Children's books, free browser games & creative adventures.", accent: '#BC4749', emoji: '🎨', eyebrow: 'Made with heart by J. Valentine' },
   { page: 'pages/games.html',              slug: 'hub-games',     title: 'Free Browser Games', tag: 'Play instantly. No downloads, no sign-ups.',                  accent: '#7b6cf0', emoji: '🎮', eyebrow: 'JVDesignStudio Arcade' },
   { page: 'pages/books.html',              slug: 'hub-books',     title: "Children's Books",   tag: 'Picture books about courage, calm & curiosity.',              accent: '#F2A541', emoji: '📚', eyebrow: 'JVDesignStudio Books' },

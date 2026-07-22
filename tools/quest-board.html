@@ -4097,6 +4097,15 @@ function icalFilterFuture(){
   _parsedIcalEvents.forEach((ev,i)=>{const cb=document.getElementById('iev_'+i);if(cb)cb.checked=!ev.start||ev.start>=today;});
 }
 
+/* Returns the first preferred column id that exists on this board, falling back
+   to the leftmost column. Boards are user-editable, so import routing cannot
+   assume any particular column is present. */
+function _pickCol(prefs){
+  const ids=(state.columns||[]).map(c=>c.id);
+  for(const p of prefs)if(ids.includes(p))return p;
+  return ids[0]||'todo';
+}
+
 function importSelectedIcal(){
   const selected=_parsedIcalEvents.filter((_,i)=>document.getElementById('iev_'+i)?.checked);
   if(!selected.length){showToast('Select at least one event!');return;}
@@ -4106,11 +4115,12 @@ function importSelectedIcal(){
     // Skip if already imported (match by id)
     if(state.cards.some(c=>c._icalId===ev.id))return;
     const lo=(ev.title+' '+ev.desc).toLowerCase();
-    // Smart column routing
-    let colId='build';
-    if(lo.match(/\b(meet|sync|call|standup|review|planning|retro|1:1|interview|demo)\b/))colId='build';
-    if(lo.match(/\b(video|film|record|stream|youtube)\b/))colId='videos';
-    if(lo.match(/\b(doctor|dentist|physio|appointment|hospital|clinic)\b/))colId='build';
+    // Smart column routing. Resolve against the columns that actually exist,
+    // otherwise imports land in a phantom column and never render.
+    let colId=_pickCol(['todo']);
+    if(lo.match(/\b(meet|sync|call|standup|review|planning|retro|1:1|interview|demo)\b/))colId=_pickCol(['build','todo']);
+    if(lo.match(/\b(video|film|record|stream|youtube)\b/))colId=_pickCol(['videos','todo']);
+    if(lo.match(/\b(doctor|dentist|physio|appointment|hospital|clinic)\b/))colId=_pickCol(['build','todo']);
     // Auto-priority: if it has a time it's a real event → high
     const priority=ev.startTime?'high':'med';
     const desc=[

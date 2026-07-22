@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v5
-const CACHE='jvds-v6';
+// JVDesignStudio Service Worker v6
+const CACHE='jvds-v7';
 const CORE=[
   '/',
   '/index.html',
@@ -18,7 +18,20 @@ const CORE=[
   '/pages/dev-tools.html',
   '/pages/freebies.html',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  // JVDS Arcade app shell. Precached so the installed Arcade opens offline
+  // straight after install, before any game has been visited. Individual
+  // games are cached by the runtime handlers below as they get played.
+  '/arcade.html',
+  '/arcade.webmanifest',
+  '/games-registry.js',
+  '/game-system.js',
+  '/game-system.css',
+  '/player-profile.js',
+  '/audio-effects.js',
+  '/icons/arcade-192.png',
+  '/icons/arcade-512.png',
+  '/icons/arcade-180.png'
 ];
 
 self.addEventListener('install',e=>{

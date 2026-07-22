@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>JVDS Arcade | JVDesignStudio</title>
+<meta name="description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak, achievements and best scores across all 29 games. Install it and play offline.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/arcade.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/arcade.html">
+<meta property="og:title" content="JVDS Arcade | JVDesignStudio">
+<meta property="og:description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak and best scores across all 29 games.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/arcade.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="JVDS Arcade | JVDesignStudio">
+<meta name="twitter:description" content="Every JVDesignStudio game in one place. One profile, 29 games, playable offline.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/arcade.png">
+
+<!-- Installable app shell: its own manifest, separate from the site-wide one. -->
+<link rel="manifest" href="arcade.webmanifest">
+<meta name="theme-color" content="#0a0b10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JVDS Arcade">
+<link rel="apple-touch-icon" href="icons/arcade-180.png">
+<link rel="icon" href="logo.png" type="image/png">
+
+<link rel="stylesheet" href="style-shared.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   JVDS Arcade shell.
+   Mobile-first app layout. Runs as a normal page on the website
+   and as a standalone PWA / Capacitor app, so the site header is
+   hidden whenever it is launched as an installed app.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --arc-bg:#0a0b10;
+  --arc-panel:#14161f;
+  --arc-panel-2:#1b1e2a;
+  --arc-line:rgba(255,255,255,.09);
+  --arc-text:#e8eaf2;
+  --arc-dim:rgba(232,234,242,.62);
+  --arc-faint:rgba(232,234,242,.40);
+  /* Crew accents, per the cozy-crew art spec. */
+  --arc-lumo:#A583CE;   /* Lumo, purple fox   */
+  --arc-ember:#E8A9B4;  /* Ember, pink tiger  */
+  --arc-pip:#8FCB7F;    /* Pip, green turtle  */
+  --arc-echo:#F6C6D4;   /* Echo, pink axolotl */
+  --arc-gold:#F0C040;
+  --arc-tabh:64px;
+}
+html,body{background:var(--arc-bg);color:var(--arc-text);}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  overflow-x:hidden;
+}
+.arc{
+  max-width:1100px;margin:0 auto;
+  padding:14px 14px calc(var(--arc-tabh) + env(safe-area-inset-bottom,0px) + 22px);
+}
+
+/* When installed, this is an app: drop the website chrome. */
+@media (display-mode:standalone){
+  .site-header,.mobile-nav,.skip-link,.site-footer,footer{display:none!important;}
+  .arc{padding-top:calc(env(safe-area-inset-top,0px) + 10px);}
+}
+body.arc-appmode .site-header,
+body.arc-appmode .mobile-nav,
+body.arc-appmode .site-footer,
+body.arc-appmode footer{display:none!important;}
+
+/* ── App header ── */
+.arc-top{
+  display:flex;align-items:center;gap:12px;
+  padding:6px 2px 16px;
+}
+.arc-brand{
+  display:flex;align-items:center;gap:9px;
+  font-weight:800;font-size:1.18rem;letter-spacing:-.02em;
+}
+.arc-brand .cab{
+  width:34px;height:34px;flex:0 0 34px;border-radius:10px;
+  display:grid;place-items:center;font-size:1.05rem;
+  background:linear-gradient(150deg,var(--arc-lumo),#5b3f86);
+  box-shadow:0 4px 14px rgba(165,131,206,.35);
+}
+.arc-brand b{color:var(--arc-lumo);}
+.arc-top .spacer{flex:1;}
+.arc-install{
+  display:none;align-items:center;gap:6px;
+  background:var(--arc-gold);color:#241c05;border:0;
+  font:inherit;font-weight:800;font-size:.8rem;
+  padding:9px 14px;border-radius:999px;cursor:pointer;
+  box-shadow:0 4px 14px rgba(240,192,64,.3);
+}
+.arc-install.show{display:inline-flex;}
+.arc-install:active{transform:translateY(1px);}
+
+/* ── Views ── */
+.arc-view{display:none;}
+.arc-view.active{display:block;}
+.arc-h{
+  font-size:.78rem;font-weight:800;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--arc-faint);margin:26px 0 12px;
+}
+.arc-h:first-child{margin-top:4px;}
+
+/* ── Profile hero ── */
+.hero{
+  background:linear-gradient(150deg,#1d1930,#14161f 62%);
+  border:1px solid var(--arc-line);border-radius:20px;
+  padding:20px;display:flex;align-items:center;gap:18px;
+}
+.hero-ring{
+  --p:0;
+  width:78px;height:78px;flex:0 0 78px;border-radius:50%;
+  background:conic-gradient(var(--arc-lumo) calc(var(--p)*1%),rgba(255,255,255,.10) 0);
+  display:grid;place-items:center;
+}
+.hero-ring i{
+  width:63px;height:63px;border-radius:50%;background:var(--arc-panel);
+  display:grid;place-items:center;font-style:normal;
+  font-weight:800;font-size:1.5rem;color:var(--arc-lumo);line-height:1;
+}
+.hero-ring i small{display:block;font-size:.5rem;letter-spacing:.14em;color:var(--arc-faint);font-weight:700;}
+.hero-meta{min-width:0;flex:1;}
+.hero-meta h1{font-size:1.32rem;font-weight:800;letter-spacing:-.02em;margin-bottom:3px;}
+.hero-meta p{font-size:.83rem;color:var(--arc-dim);}
+.hero-bar{margin-top:10px;height:7px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;}
+.hero-bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--arc-lumo),var(--arc-echo));}
+
+/* ── Stat tiles ── */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;}
+.tile{
+  background:var(--arc-panel);border:1px solid var(--arc-line);
+  border-radius:15px;padding:13px 10px;text-align:center;
+}
+.tile b{display:block;font-size:1.18rem;font-weight:800;line-height:1.15;}
+.tile span{display:block;font-size:.63rem;margin-top:4px;color:var(--arc-faint);
+  text-transform:uppercase;letter-spacing:.07em;font-weight:700;}
+.tile.xp b{color:var(--arc-lumo);}
+.tile.streak b{color:var(--arc-gold);}
+.tile.ach b{color:var(--arc-pip);}
+.tile.plays b{color:var(--arc-echo);}
+
+/* ── Continue playing rail ── */
+.rail{display:flex;gap:11px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;}
+.rail::-webkit-scrollbar{display:none;}
+.rail a{
+  flex:0 0 132px;border-radius:15px;overflow:hidden;
+  background:var(--arc-panel);border:1px solid var(--arc-line);
+}
+.rail .art{height:74px;position:relative;display:grid;place-items:center;font-size:1.85rem;}
+.rail .art img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.rail .lab{padding:9px 10px 11px;}
+.rail .lab b{display:block;font-size:.76rem;font-weight:700;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rail .lab span{display:block;font-size:.66rem;color:var(--arc-faint);margin-top:3px;}
+
+/* ── Filter chips ── */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex:0 0 auto;background:var(--arc-panel);border:1px solid var(--arc-line);
+  color:var(--arc-dim);font:inherit;font-size:.78rem;font-weight:700;
+  padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;
+}
+.chip[aria-pressed="true"]{background:var(--arc-lumo);border-color:var(--arc-lumo);color:#17102a;}
+.arc-search{
+  width:100%;margin:12px 0 4px;background:var(--arc-panel);
+  border:1px solid var(--arc-line);border-radius:13px;
+  padding:12px 15px;color:var(--arc-text);font:inherit;font-size:.9rem;
+}
+.arc-search::placeholder{color:var(--arc-faint);}
+
+/* ── Game grid ── */
+.grid{
+  display:grid;gap:13px;margin-top:14px;
+  grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
+}
+.card{
+  background:var(--arc-panel);border:1px solid var(--arc-line);
+  border-radius:17px;overflow:hidden;display:flex;flex-direction:column;
+  transition:transform .14s ease,border-color .14s ease;
+}
+.card:active{transform:scale(.975);}
+@media (hover:hover){.card:hover{border-color:rgba(165,131,206,.55);transform:translateY(-3px);}}
+.card .art{
+  height:96px;position:relative;display:grid;place-items:center;
+  font-size:2.3rem;overflow:hidden;
+}
+.card .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.card .best{
+  position:absolute;left:8px;bottom:8px;z-index:2;
+  background:rgba(8,8,14,.82);backdrop-filter:blur(4px);
+  border-radius:999px;padding:3px 9px;
+  font-size:.66rem;font-weight:800;color:var(--arc-gold);
+}
+.card .kidflag{
+  position:absolute;right:8px;top:8px;z-index:2;
+  background:rgba(8,8,14,.78);border-radius:999px;
+  padding:3px 8px;font-size:.6rem;font-weight:800;color:var(--arc-pip);
+}
+.card .body{padding:11px 12px 13px;display:flex;flex-direction:column;gap:4px;flex:1;}
+.card .tag{font-size:.62rem;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--arc-faint);}
+.card .name{font-size:.87rem;font-weight:800;line-height:1.25;}
+.card .plays{margin-top:auto;padding-top:6px;font-size:.66rem;color:var(--arc-faint);}
+
+/* ── Goals ── */
+.goals{display:grid;gap:11px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
+.goal{
+  background:var(--arc-panel);border:1px solid var(--arc-line);
+  border-radius:15px;padding:14px 12px;text-align:center;opacity:.42;
+}
+.goal.got{opacity:1;border-color:rgba(240,192,64,.45);
+  background:linear-gradient(160deg,rgba(240,192,64,.13),var(--arc-panel));}
+.goal .ic{font-size:1.7rem;line-height:1;}
+.goal b{display:block;font-size:.76rem;font-weight:800;margin-top:7px;}
+.goal span{display:block;font-size:.66rem;color:var(--arc-faint);margin-top:3px;line-height:1.35;}
+
+/* ── Score table ── */
+.scores{background:var(--arc-panel);border:1px solid var(--arc-line);
+  border-radius:17px;overflow:hidden;}
+.srow{display:grid;grid-template-columns:34px 1fr auto auto;gap:11px;
+  align-items:center;padding:12px 14px;border-bottom:1px solid var(--arc-line);}
+.srow:last-child{border-bottom:0;}
+.srow .rk{font-size:.85rem;font-weight:800;color:var(--arc-faint);text-align:center;}
+.srow .rk.top{color:var(--arc-gold);}
+.srow .nm{min-width:0;}
+.srow .nm b{display:block;font-size:.85rem;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.srow .nm span{font-size:.68rem;color:var(--arc-faint);}
+.srow .sc{font-size:.92rem;font-weight:800;color:var(--arc-gold);text-align:right;}
+.srow .sc span{display:block;font-size:.6rem;color:var(--arc-faint);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── Empty state ── */
+.empty{
+  background:var(--arc-panel);border:1px dashed var(--arc-line);
+  border-radius:17px;padding:34px 22px;text-align:center;
+}
+.empty .ic{font-size:2.4rem;}
+.empty b{display:block;margin-top:10px;font-size:.98rem;font-weight:800;}
+.empty p{margin-top:6px;font-size:.83rem;color:var(--arc-dim);}
+.empty button{
+  margin-top:16px;background:var(--arc-lumo);color:#17102a;border:0;font:inherit;
+  font-weight:800;font-size:.84rem;padding:11px 22px;border-radius:999px;cursor:pointer;
+}
+
+/* ── Bottom tab bar ── */
+.arc-tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  display:flex;background:rgba(14,16,23,.94);
+  backdrop-filter:blur(14px);border-top:1px solid var(--arc-line);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.arc-tabs button{
+  flex:1;background:none;border:0;font:inherit;cursor:pointer;
+  color:var(--arc-faint);padding:9px 4px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:.64rem;font-weight:700;letter-spacing:.03em;
+}
+.arc-tabs button .ic{font-size:1.22rem;line-height:1;}
+.arc-tabs button[aria-selected="true"]{color:var(--arc-lumo);}
+
+/* iOS install hint sheet */
+.ios-hint{
+  position:fixed;left:12px;right:12px;bottom:calc(var(--arc-tabh) + 14px);z-index:70;
+  background:var(--arc-panel-2);border:1px solid var(--arc-line);border-radius:16px;
+  padding:15px 17px;display:none;box-shadow:0 12px 34px rgba(0,0,0,.5);
+}
+.ios-hint.show{display:block;}
+.ios-hint b{font-size:.9rem;}
+.ios-hint p{font-size:.8rem;color:var(--arc-dim);margin-top:5px;line-height:1.5;}
+.ios-hint button{margin-top:11px;background:none;border:1px solid var(--arc-line);
+  color:var(--arc-dim);font:inherit;font-size:.78rem;font-weight:700;
+  padding:7px 15px;border-radius:999px;cursor:pointer;}
+
+@media (min-width:700px){
+  .tiles{grid-template-columns:repeat(4,1fr);}
+  .hero{padding:24px 26px;}
+  .hero-meta h1{font-size:1.5rem;}
+}
+</style>
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+    <a href="/index.html" class="logo-link">
+        <img loading="lazy" src="/logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+        <span class="logo-name">JVDesignStudio</span>
+    </a>
+    <nav class="main-nav">
+        <a href="/index.html" class="nav-link" data-page="index.html">Home</a>
+        <a href="/pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
+        <a href="/pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
+        <a href="/pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn</a>
+        <a href="/pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
+        <a href="/pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Tools</a>
+        <a href="/pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Freebies</a>
+        <a href="/workshops/my-progress.html" class="nav-link" data-page="my-progress.html">📊 Progress</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
+</div>
+<nav class="mobile-nav" id="mobileNav">
+    <a href="/index.html">🏠 Home</a>
+    <a href="/pages/games.html">🎮 Games</a>
+    <a href="/pages/books.html">📚 Books</a>
+    <a href="/pages/learn-hub.html">🎓 Learn</a>
+    <a href="/pages/workshop.html">🔧 Workshop</a>
+    <a href="/pages/dev-tools.html">🛠️ Tools</a>
+    <a href="/pages/freebies.html">🎁 Freebies</a>
+    <a href="/workshops/my-progress.html">📊 Progress</a>
+    <a href="/pages/about.html">👤 About</a>
+    <a href="/pages/contact.html">✉️ Contact</a>
+    <a href="/pages/search.html">🔍 Search</a>
+    <a href="/pages/sitemap.html">🗺️ Sitemap</a>
+</nav>
+</header>
+<script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<main class="arc" id="main-content">
+
+  <header class="arc-top">
+    <div class="arc-brand"><span class="cab">🕹️</span> <span><b>JVDS</b> Arcade</span></div>
+    <div class="spacer"></div>
+    <button class="arc-install" id="installBtn" type="button">⬇ Install</button>
+  </header>
+
+  <!-- ══ HOME ══ -->
+  <section class="arc-view active" id="view-home" role="tabpanel" aria-label="Home">
+    <div class="hero">
+      <div class="hero-ring" id="heroRing"><i><span id="heroLevel">1</span><small>LEVEL</small></i></div>
+      <div class="hero-meta">
+        <h1>Your Arcade</h1>
+        <p id="heroXP">0 XP</p>
+        <div class="hero-bar"><span id="heroBar" style="width:0%"></span></div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile xp"><b id="stXP">0</b><span>Total XP</span></div>
+      <div class="tile streak"><b id="stStreak">0</b><span>Streak</span></div>
+      <div class="tile ach"><b id="stAch">0</b><span>Goals</span></div>
+      <div class="tile plays"><b id="stPlays">0</b><span>Plays</span></div>
+    </div>
+
+    <div id="continueWrap" hidden>
+      <div class="arc-h">Jump back in</div>
+      <div class="rail" id="continueRail"></div>
+    </div>
+
+    <div class="arc-h">Your best scores</div>
+    <div id="scoresWrap"></div>
+  </section>
+
+  <!-- ══ PLAY ══ -->
+  <section class="arc-view" id="view-play" role="tabpanel" aria-label="Play">
+    <input class="arc-search" id="search" type="search" placeholder="Search games..." aria-label="Search games">
+    <div class="chips" id="chips"></div>
+    <div class="grid" id="grid"></div>
+    <div id="noResults" hidden>
+      <div class="empty"><div class="ic">🔍</div><b>No games match</b><p>Try a different search or filter.</p></div>
+    </div>
+  </section>
+
+  <!-- ══ GOALS ══ -->
+  <section class="arc-view" id="view-goals" role="tabpanel" aria-label="Goals">
+    <div class="arc-h">Cross-game goals <span id="goalCount" style="color:var(--arc-gold)"></span></div>
+    <div class="goals" id="goalGrid"></div>
+    <div class="arc-h">Progress by game</div>
+    <div id="perGame"></div>
+  </section>
+
+</main>
+
+<nav class="arc-tabs" role="tablist" aria-label="Arcade sections">
+  <button data-tab="home"  role="tab" aria-selected="true"><span class="ic">🏠</span>Home</button>
+  <button data-tab="play"  role="tab" aria-selected="false"><span class="ic">🎮</span>Play</button>
+  <button data-tab="goals" role="tab" aria-selected="false"><span class="ic">🏆</span>Goals</button>
+</nav>
+
+<div class="ios-hint" id="iosHint">
+  <b>Install the Arcade</b>
+  <p>Tap the Share button in Safari, then choose <strong>Add to Home Screen</strong>.</p>
+  <button type="button" id="iosHintClose">Got it</button>
+</div>
+
+<script src="player-profile.js"></script>
+<script src="game-system.js"></script>
+<script src="games-registry.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Arcade hub logic.
+   Reads the same localStorage the games already write, so it needs
+   no per-game changes: jvds_profile for the global profile and
+   jvds_game_<id> for each game's best score / plays / achievements.
+   ══════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var GAMES = window.JVDS_GAMES || [];
+  var byId = {};
+  GAMES.forEach(function (g) { byId[g.id] = g; });
+
+  /* ── Saved game state ─────────────────────────────────────── */
+
+  // Read one game's save. Returns null when the game was never played.
+  function saveOf(id) {
+    try {
+      var raw = localStorage.getItem('jvds_game_' + id);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      if (!s) return null;
+      return {
+        high: s.highScore || 0,
+        plays: s.gamesPlayed || 0,
+        level: s.level || 1,
+        last: s.lastPlayed ? Date.parse(s.lastPlayed) || 0 : 0,
+        achievements: Array.isArray(s.achievements) ? s.achievements : []
+      };
+    } catch (e) { return null; }
+  }
+
+  // Every arcade game that has actually been played.
+  function playedGames() {
+    var out = [];
+    GAMES.forEach(function (g) {
+      var s = saveOf(g.id);
+      if (!s) return;
+      if (s.high <= 0 && s.plays <= 0) return;
+      out.push({ game: g, save: s });
+    });
+    return out;
+  }
+
+  function fmt(n) { return (n || 0).toLocaleString(); }
+
+  /* ── Card art ─────────────────────────────────────────────── */
+
+  // Cover art if the game has one, otherwise its emoji on the gradient.
+  function artHTML(g) {
+    if (g.cover) {
+      return '<img loading="lazy" src="' + encodeURI(g.cover) + '" alt="" ' +
+             'onerror="this.style.display=\'none\'">';
+    }
+    return g.emoji || '🎮';
+  }
+
+  /* ── HOME ─────────────────────────────────────────────────── */
+
+  function renderHome() {
+    var stats = (typeof playerProfile !== 'undefined')
+      ? playerProfile.getStats()
+      : { level: 1, totalXP: 0, dailyStreak: 0, achievementsUnlocked: 0,
+          xpProgress: { current: 0, max: 1000, percentage: 0 } };
+
+    var played = playedGames();
+    var totalPlays = played.reduce(function (n, p) { return n + p.save.plays; }, 0);
+
+    document.getElementById('heroLevel').textContent = stats.level;
+    document.getElementById('heroXP').textContent =
+      fmt(stats.xpProgress.current) + ' / ' + fmt(stats.xpProgress.max) +
+      ' XP to level ' + (stats.level + 1);
+    document.getElementById('heroBar').style.width = stats.xpProgress.percentage + '%';
+    document.getElementById('heroRing').style.setProperty('--p', stats.xpProgress.percentage);
+
+    document.getElementById('stXP').textContent = fmt(stats.totalXP);
+    document.getElementById('stStreak').textContent = stats.dailyStreak || 0;
+    document.getElementById('stAch').textContent = stats.achievementsUnlocked || 0;
+    document.getElementById('stPlays').textContent = fmt(totalPlays);
+
+    renderContinue(played);
+    renderScores(played);
+  }
+
+  function renderContinue(played) {
+    var recent = played.filter(function (p) { return p.save.last; })
+                       .sort(function (a, b) { return b.save.last - a.save.last; })
+                       .slice(0, 6);
+    var wrap = document.getElementById('continueWrap');
+    if (!recent.length) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    document.getElementById('continueRail').innerHTML = recent.map(function (p) {
+      return '<a href="games/' + p.game.file + '">' +
+               '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '</div>' +
+               '<div class="lab"><b>' + esc(p.game.title) + '</b>' +
+               '<span>' + fmt(p.save.high) + ' best</span></div>' +
+             '</a>';
+    }).join('');
+  }
+
+  function renderScores(played) {
+    var wrap = document.getElementById('scoresWrap');
+    var ranked = played.filter(function (p) { return p.save.high > 0; })
+                       .sort(function (a, b) { return b.save.high - a.save.high; })
+                       .slice(0, 10);
+
+    if (!ranked.length) {
+      wrap.innerHTML =
+        '<div class="empty"><div class="ic">🎮</div>' +
+        '<b>No scores yet</b><p>Play anything in the Arcade and your bests land here.</p>' +
+        '<button type="button" data-goto="play">Browse games</button></div>';
+      return;
+    }
+
+    wrap.innerHTML = '<div class="scores">' + ranked.map(function (p, i) {
+      var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
+      return '<a class="srow" href="games/' + p.game.file + '">' +
+               '<div class="rk' + (i < 3 ? ' top' : '') + '">' + medal + '</div>' +
+               '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
+               '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') +
+               ' · level ' + p.save.level + '</span></div>' +
+               '<div class="sc">' + fmt(p.save.high) + '<span>Best</span></div>' +
+             '</a>';
+    }).join('') + '</div>';
+  }
+
+  /* ── PLAY ─────────────────────────────────────────────────── */
+
+  var filter = 'All';
+  var query = '';
+
+  function categories() {
+    var seen = ['All'];
+    GAMES.forEach(function (g) { if (seen.indexOf(g.cat) < 0) seen.push(g.cat); });
+    seen.push('Little Players');
+    return seen;
+  }
+
+  function renderChips() {
+    document.getElementById('chips').innerHTML = categories().map(function (c) {
+      return '<button class="chip" type="button" data-cat="' + c + '" aria-pressed="' +
+             (c === filter) + '">' + c + '</button>';
+    }).join('');
+  }
+
+  function renderGrid() {
+    var q = query.trim().toLowerCase();
+    var list = GAMES.filter(function (g) {
+      var okCat = filter === 'All' ? true
+                : filter === 'Little Players' ? g.kids
+                : g.cat === filter;
+      if (!okCat) return false;
+      if (!q) return true;
+      return (g.title + ' ' + g.tag + ' ' + g.desc).toLowerCase().indexOf(q) >= 0;
+    });
+
+    document.getElementById('noResults').hidden = list.length > 0;
+    document.getElementById('grid').innerHTML = list.map(function (g) {
+      var s = saveOf(g.id);
+      var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
+      var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
+      var plays = (s && s.plays > 0)
+        ? s.plays + ' play' + (s.plays === 1 ? '' : 's')
+        : 'Not played yet';
+      return '<a class="card" href="games/' + g.file + '">' +
+               '<div class="art" style="background:' + g.bg + '">' +
+                 artHTML(g) + best + kid +
+               '</div>' +
+               '<div class="body">' +
+                 '<div class="tag">' + esc(g.tag) + '</div>' +
+                 '<div class="name">' + esc(g.title) + '</div>' +
+                 '<div class="plays">' + plays + '</div>' +
+               '</div>' +
+             '</a>';
+    }).join('');
+  }
+
+  /* ── GOALS ────────────────────────────────────────────────── */
+
+  // The shared achievement set lives in game-system.js. Read it off the
+  // prototype rather than constructing a GameSystem, which would create a
+  // bogus jvds_game_* save and award XP for merely opening the hub.
+  function sharedAchievements() {
+    try {
+      return GameSystem.prototype.defineAchievements.call({}) || {};
+    } catch (e) { return {}; }
+  }
+
+  function renderGoals() {
+    var defs = sharedAchievements();
+    var ids = Object.keys(defs);
+    var played = playedGames();
+
+    // An achievement counts as earned if any arcade game has unlocked it.
+    var earned = {};
+    played.forEach(function (p) {
+      p.save.achievements.forEach(function (a) { earned[a] = true; });
+    });
+
+    var got = ids.filter(function (id) { return earned[id]; }).length;
+    document.getElementById('goalCount').textContent = got + ' / ' + ids.length;
+
+    document.getElementById('goalGrid').innerHTML = ids.map(function (id) {
+      var d = defs[id];
+      var has = !!earned[id];
+      var name = String(d.name || id).replace(/^\S+\s/, '');
+      return '<div class="goal' + (has ? ' got' : '') + '">' +
+               '<div class="ic">' + (has ? (d.icon || '🏆') : '🔒') + '</div>' +
+               '<b>' + esc(name) + '</b>' +
+               '<span>' + esc(d.description || '') + '</span>' +
+             '</div>';
+    }).join('');
+
+    var wrap = document.getElementById('perGame');
+    if (!played.length) {
+      wrap.innerHTML = '<div class="empty"><div class="ic">🏆</div><b>Nothing tracked yet</b>' +
+        '<p>Goals unlock as you play. Pick a game to get started.</p>' +
+        '<button type="button" data-goto="play">Browse games</button></div>';
+      return;
+    }
+
+    wrap.innerHTML = '<div class="scores">' +
+      played.sort(function (a, b) { return b.save.plays - a.save.plays; })
+            .map(function (p) {
+        return '<a class="srow" href="games/' + p.game.file + '">' +
+                 '<div class="rk">' + (p.game.emoji || '🎮') + '</div>' +
+                 '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
+                 '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '</span></div>' +
+                 '<div class="sc">' + p.save.achievements.length +
+                 '<span>' + (p.save.achievements.length === 1 ? 'Goal' : 'Goals') + '</span></div>' +
+               '</a>';
+      }).join('') + '</div>';
+  }
+
+  /* ── Tabs ─────────────────────────────────────────────────── */
+
+  function show(tab) {
+    ['home', 'play', 'goals'].forEach(function (t) {
+      document.getElementById('view-' + t).classList.toggle('active', t === tab);
+    });
+    document.querySelectorAll('.arc-tabs button').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+    });
+    if (tab === 'home') renderHome();
+    if (tab === 'play') renderGrid();
+    if (tab === 'goals') renderGoals();
+    try { history.replaceState(null, '', '#' + tab); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ── Install prompt ───────────────────────────────────────── */
+
+  var deferredPrompt = null;
+  var installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.classList.add('show');
+  });
+
+  installBtn.addEventListener('click', function () {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function () {
+        deferredPrompt = null;
+        installBtn.classList.remove('show');
+      });
+      return;
+    }
+    document.getElementById('iosHint').classList.add('show');
+  });
+
+  document.getElementById('iosHintClose').addEventListener('click', function () {
+    document.getElementById('iosHint').classList.remove('show');
+  });
+
+  window.addEventListener('appinstalled', function () {
+    installBtn.classList.remove('show');
+  });
+
+  // iOS Safari has no beforeinstallprompt, so offer the manual route there.
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var standalone = window.matchMedia('(display-mode: standalone)').matches ||
+                   navigator.standalone === true;
+  if (standalone) document.body.classList.add('arc-appmode');
+  else if (isIOS) installBtn.classList.add('show');
+
+  /* ── Boot ─────────────────────────────────────────────────── */
+
+  document.getElementById('chips').addEventListener('click', function (e) {
+    var b = e.target.closest('.chip');
+    if (!b) return;
+    filter = b.dataset.cat;
+    renderChips();
+    renderGrid();
+  });
+
+  document.getElementById('search').addEventListener('input', function (e) {
+    query = e.target.value;
+    renderGrid();
+  });
+
+  document.querySelector('.arc-tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-tab]');
+    if (b) show(b.dataset.tab);
+  });
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-goto]');
+    if (b) show(b.dataset.goto);
+  });
+
+  renderChips();
+  var start = (location.hash || '').replace('#', '');
+  show(['home', 'play', 'goals'].indexOf(start) >= 0 ? start : 'home');
+})();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="cookie-consent.js"></script>
+</body>
+</html>
