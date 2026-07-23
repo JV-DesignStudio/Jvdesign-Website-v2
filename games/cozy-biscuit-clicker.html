@@ -27,6 +27,8 @@
   --shadow-soft:0 4px 16px rgba(74,53,40,0.08); --shadow-card:0 8px 28px rgba(74,53,40,0.14);
   --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
 }
+/* Stop Android's WebView from auto-darkening the cosy palette. */
+html{color-scheme:light}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);background:var(--cream);-webkit-user-select:none;user-select:none;background-image:linear-gradient(180deg,rgba(245,199,150,.30) 0%,rgba(245,199,150,0) 36%),radial-gradient(circle at 20% 30%,rgba(244,182,194,.12) 0%,transparent 45%),radial-gradient(circle at 80% 70%,rgba(184,221,200,.12) 0%,transparent 45%);touch-action:manipulation}
@@ -426,6 +428,11 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     <div class="rate-label" id="rateLabel">tap to start baking!</div>
     <div class="hero-stage">
       <div class="spotlight"></div>
+      <div class="combo-badge" id="comboBadge">
+        <div class="combo-count" id="comboCount">×3</div>
+        <div class="combo-tier" id="comboTier">Combo</div>
+        <div class="combo-bar"><div class="combo-bar-fill" id="comboBarFill"></div></div>
+      </div>
       <div class="hero-table"></div>
       <div class="petal-layer" id="petalLayer"></div>
       <div class="scene-rain" id="sceneRain"></div>
@@ -1023,16 +1030,18 @@ setInterval(updateCooldownRings,250);
 // ══ CLICK ══
 function doClick(x,y){
   Audio.init(); Audio.sfxTap();
-  if(vault.haptic!==false&&navigator.vibrate){try{navigator.vibrate(8);}catch(e){}}
-  const gained=Math.max(clickPower,Math.ceil(productionRate*0.01));
+  const c=bumpCombo();
+  if(vault.haptic!==false&&navigator.vibrate){try{navigator.vibrate(c.idx>=3?16:8);}catch(e){}}
+  const gained=Math.round(Math.max(clickPower,Math.ceil(productionRate*0.01))*c.mult);
   bv().total+=gained; bv().lifetime+=gained; bv().clicks=(bv().clicks||0)+1;
   // Secret: 15 taps within two seconds.
   const _now=Date.now(); recentTaps.push(_now); recentTaps=recentTaps.filter(t=>_now-t<=2000);
   if(recentTaps.length>=15)awardSecret('s_rush');
   const tin=document.getElementById('tinBtn');
   tin.classList.add('tapped'); setTimeout(()=>tin.classList.remove('tapped'),140);
-  spawnClickPop(x,y,'+'+fmt(gained));
-  for(let i=0;i<Math.min(3,Math.ceil(gained));i++)spawnBiscuit(x,y);
+  spawnClickPop(x,y,'+'+fmt(gained)+(c.mult>1?' ×'+c.mult:''));
+  for(let i=0;i<Math.min(3+c.idx*2,13);i++)spawnBiscuit(x,y);
+  comboFx(x,y,c.idx);
   trackDailyProgress('earn',gained);
   updateHUD(); saveVault(); checkAchievements(); trackDailyProgress('tap');
   if(modalShown('bakeryModal')||modalShown('upgradesModal'))renderPanel();
@@ -1042,13 +1051,17 @@ function spawnClickPop(x,y,text){
   el.style.left=(x-20)+'px'; el.style.top=(y-20)+'px';
   document.body.appendChild(el); setTimeout(()=>el.remove(),750);
 }
+// Particle budgets so a hot combo can't flood a phone with DOM nodes.
+let fxBiscuits=0,fxSparks=0;
 function spawnBiscuit(x,y){
+  if(fxBiscuits>70)return;
   const el=document.createElement('div'); el.className='click-biscuit'; el.textContent='🍪';
   const a=Math.random()*Math.PI*2,d=35+Math.random()*50;
   el.style.setProperty('--dx',Math.cos(a)*d+'px'); el.style.setProperty('--dy',Math.sin(a)*d-20+'px');
   el.style.setProperty('--rot',(Math.random()*360-180)+'deg');
   el.style.left=x+'px'; el.style.top=y+'px';
-  document.body.appendChild(el); setTimeout(()=>el.remove(),850);
+  fxBiscuits++;
+  document.body.appendChild(el); setTimeout(()=>{el.remove();fxBiscuits--;},850);
 }
 function spawnCharBiscuit(x,y,emoji,color){
   const el=document.createElement('div'); el.className='click-biscuit'; el.textContent=emoji;
@@ -1059,6 +1072,79 @@ function spawnCharBiscuit(x,y,emoji,color){
   el.style.left=x+'px'; el.style.top=y+'px';
   document.body.appendChild(el); setTimeout(()=>el.remove(),1000);
 }
+
+// ══ TAP COMBOS ══
+// Keep tapping to build a combo: bigger multiplier, more stuff flying around,
+// and the crew get visibly happier the hotter it gets.
+const COMBO_WINDOW=1500;
+const COMBO_TIERS=[
+  {min:0,  label:'Combo',   mult:1,   cls:'t0'},
+  {min:5,  label:'Warm',    mult:1.2, cls:'t1'},
+  {min:12, label:'Toasty',  mult:1.4, cls:'t2'},
+  {min:25, label:'Hot!',    mult:1.6, cls:'t3'},
+  {min:45, label:'Blazing', mult:1.8, cls:'t4'},
+  {min:80, label:'COSMIC!', mult:2,   cls:'t5'},
+];
+let combo=0, comboUntil=0;
+function comboTierIdx(n){let idx=0;for(let i=0;i<COMBO_TIERS.length;i++)if(n>=COMBO_TIERS[i].min)idx=i;return idx;}
+function bumpCombo(){
+  const now=Date.now();
+  combo=(now<comboUntil)?combo+1:1;
+  comboUntil=now+COMBO_WINDOW;
+  const idx=comboTierIdx(combo),tier=COMBO_TIERS[idx];
+  const b=document.getElementById('comboBadge');
+  if(b&&combo>=3){
+    b.classList.add('show'); b.dataset.tier=tier.cls;
+    const cEl=document.getElementById('comboCount'); if(cEl)cEl.textContent='×'+combo;
+    const tEl=document.getElementById('comboTier'); if(tEl)tEl.textContent=tier.label;
+    const f=document.getElementById('comboBarFill'); if(f)f.style.transform='scaleX(1)';
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  }
+  return {mult:tier.mult,idx};
+}
+function endCombo(){
+  combo=0;
+  const b=document.getElementById('comboBadge'); if(b)b.classList.remove('show');
+  document.querySelectorAll('.char-seat.crew-happy').forEach(s=>s.classList.remove('crew-happy'));
+  const tin=document.getElementById('tinBtn'); if(tin)tin.classList.remove('combo-hot');
+}
+function spawnSpark(x,y){
+  if(fxSparks>50)return;
+  fxSparks++;
+  const el=document.createElement('div'); el.className='spark';
+  el.textContent=['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];
+  const a=Math.random()*6.283,d=30+Math.random()*45;
+  el.style.setProperty('--dx',(Math.cos(a)*d).toFixed(1)+'px');
+  el.style.setProperty('--dy',(Math.sin(a)*d-15).toFixed(1)+'px');
+  el.style.setProperty('--rot',(Math.random()*360-180).toFixed(0)+'deg');
+  el.style.left=x+'px'; el.style.top=y+'px';
+  document.body.appendChild(el); setTimeout(()=>{el.remove();fxSparks--;},620);
+}
+function spawnCrewHeart(seat){
+  const el=document.createElement('div'); el.className='crew-heart';
+  el.textContent=['💗','💕','💖','⭐','✨'][Math.floor(Math.random()*5)];
+  el.style.setProperty('--hx',(Math.random()*24-12).toFixed(0)+'px');
+  seat.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+function comboFx(x,y,idx){
+  if(idx<=0)return;
+  for(let i=0;i<idx*2;i++)spawnSpark(x,y);
+  const seats=[].slice.call(document.querySelectorAll('.char-seat'));
+  if(idx>=2)seats.forEach(s=>{if(Math.random()<0.45)spawnCrewHeart(s);});
+  if(idx>=3){
+    seats.forEach(s=>s.classList.add('crew-happy'));
+    const tin=document.getElementById('tinBtn'); if(tin)tin.classList.add('combo-hot');
+    const stage=document.querySelector('.hero-stage');
+    if(stage){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');setTimeout(()=>stage.classList.remove('shake'),300);}
+  }
+}
+setInterval(()=>{
+  if(combo<=0)return;
+  const now=Date.now();
+  if(now>=comboUntil){endCombo();return;}
+  const f=document.getElementById('comboBarFill');
+  if(f)f.style.transform='scaleX('+Math.max(0,(comboUntil-now)/COMBO_WINDOW).toFixed(3)+')';
+},80);
 
 function rainCharBiscuits(emoji,color){
   for(let i=0;i<16;i++){
@@ -2286,7 +2372,10 @@ function jvdsCloseStrip(){
   var seats=[].slice.call(document.querySelectorAll('.char-seat'));
   tin.addEventListener('pointerdown',function(){
     if(fx){
-      for(var i=0;i<6;i++){
+      // More crumbs the hotter the tap combo is.
+      var tierIdx=(typeof comboTierIdx==='function'&&typeof combo==='number')?comboTierIdx(combo):0;
+      var crumbs=fx.childElementCount>80?0:6+tierIdx*4;
+      for(var i=0;i<crumbs;i++){
         var c=document.createElement('span');
         c.className='crumb2'+(Math.random()<0.5?' dk':'');
         var a=Math.random()*6.283, d=46+Math.random()*40;

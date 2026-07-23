@@ -57,6 +57,33 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Opt out of Android WebView's automatic darkening — we ship our own
+     Night theme below, so the OS must not repaint the cosy one. */
+  html { color-scheme: light; }
+  html body.night { color-scheme: dark; }
+
+  /* ── NIGHT MODE (toggle in Settings) ── */
+  body.night {
+    --cream:       #262023;
+    --cream-deep:  #3A3136;
+    --milk:        #322A2E;
+    --cocoa:       #F6EDE4;
+    --cocoa-soft:  #C9B6AC;
+    --rose:        #E9A8BC;
+    --rose-deep:   #F2A2BC;
+    --mint:        #7FBFA6;
+    --mint-deep:   #8FD9BC;
+    --sun:         #F3C978;
+    --lavender:    #C0AEE0;
+    --scene-morning:   linear-gradient(180deg, #3A3040 0%, #4A3A52 50%, #33282F 100%);
+    --scene-afternoon: linear-gradient(180deg, #322A3C 0%, #46364C 50%, #2C242C 100%);
+    --scene-evening:   linear-gradient(180deg, #2A2438 0%, #3E2F46 50%, #241E28 100%);
+    --shadow-soft:   0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-card:   0 8px 28px rgba(0, 0, 0, 0.45);
+    --shadow-tile:   0 3px 8px rgba(0, 0, 0, 0.5);
+    --board-tray:    rgba(58, 49, 54, 0.85);
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   html, body {
@@ -104,7 +131,21 @@
     letter-spacing: -0.02em;
   }
   .brand em { font-style: italic; font-weight: 400; color: var(--rose-deep); }
-  .topbar-stats { display: flex; gap: 6px; }
+  .topbar-stats { display: flex; gap: 6px; align-items: center; }
+  /* Coins are the main currency — make them unmissable. */
+  .stat-pill.coins {
+    background: linear-gradient(135deg, #FFF3D0, #F7DFA0);
+    border-color: var(--sun);
+    font-size: 17px;
+    padding: 7px 15px;
+    box-shadow: 0 3px 10px rgba(245, 199, 106, .45);
+  }
+  body.night .stat-pill.coins {
+    background: linear-gradient(135deg, #4A3F2A, #5C4B2E);
+    border-color: var(--sun);
+    color: var(--sun);
+  }
+  .stat-pill.coins #coinCount { font-size: 18px; font-weight: 900; letter-spacing: -.01em; }
   .stat-pill {
     background: var(--milk);
     border: 2px solid var(--cream-deep);
@@ -269,7 +310,7 @@
     grid-template-columns: repeat(8, 1fr);
     gap: 3px;
     padding: 10px;
-    background: rgba(251, 244, 232, 0.85);
+    background: var(--board-tray, rgba(251, 244, 232, 0.85));
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     border-radius: 18px;
@@ -790,7 +831,7 @@
   <div class="topbar">
     <div class="brand">Cozy <em>Cafe</em></div>
     <div class="topbar-stats">
-      <div class="stat-pill">🪙 <span id="coinCount">0</span></div>
+      <div class="stat-pill coins">🪙 <span id="coinCount">0</span></div>
       <div class="stat-pill">✨ <span id="happyCount">0</span></div>
     </div>
   </div>
@@ -903,6 +944,7 @@
       <button class="bb-btn" id="audioBtn" aria-label="Toggle music" style="flex:1"><span class="bb-icon">🎵</span>Music</button>
       <button class="bb-btn" id="hapticBtn" aria-label="Toggle haptics" style="flex:1"><span class="bb-icon">📳</span>Haptic</button>
       <button class="bb-btn" id="shareBtn" aria-label="Share your stats" style="flex:1"><span class="bb-icon">📤</span>Share</button>
+      <button class="bb-btn" id="nightBtn" aria-label="Toggle night mode" style="flex:1"><span class="bb-icon">🌙</span>Night</button>
     </div>
     <div class="modal-title" style="font-size:16px;margin-bottom:4px">💾 Save Transfer</div>
     <p style="font-size:12px;color:var(--cocoa-soft);margin-bottom:8px;font-style:italic">Move your cafe between devices. Export here, paste the code on your other device, then import.</p>
@@ -2444,6 +2486,29 @@ $('storyBtn').addEventListener('click', () => {
 
 // ============ SETTINGS + SAVE TRANSFER ============
 $('settingsBtn').addEventListener('click', () => $('settingsModal').classList.add('show'));
+
+// ---- Night mode (defaults to the phone's own dark setting on first run) ----
+if (typeof vault.nightMode !== 'boolean') {
+  vault.nightMode = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  saveVault();
+}
+function applyNightMode() {
+  document.body.classList.toggle('night', !!vault.nightMode);
+  const btn = $('nightBtn');
+  if (btn) {
+    btn.classList.toggle('active', !!vault.nightMode);
+    btn.querySelector('.bb-icon').textContent = vault.nightMode ? '☀️' : '🌙';
+    btn.lastChild.textContent = vault.nightMode ? 'Day' : 'Night';
+  }
+  const tc = document.querySelector('meta[name="theme-color"]:last-of-type');
+  if (tc) tc.setAttribute('content', vault.nightMode ? '#262023' : '#FBF4E8');
+}
+$('nightBtn').addEventListener('click', () => {
+  vault.nightMode = !vault.nightMode;
+  saveVault(); applyNightMode(); buzz(20);
+  showToast(vault.nightMode ? '🌙 Night mode on' : '☀️ Day mode on');
+});
+applyNightMode();
 function saveChk(s){ let x = 5381; for (let i = 0; i < s.length; i++) x = ((x * 33) ^ s.charCodeAt(i)) >>> 0; return x.toString(36); }
 $('exportSaveBtn').addEventListener('click', () => {
   saveVault();
