@@ -218,6 +218,12 @@ function checkQuiz(btn) {
       fb.classList.remove('show');
     }, 1500);
   }
+  gaTrack('quiz_attempt', {
+    workshop_id: PROFILE_ID,
+    quiz_id: gate.id || '',
+    quiz_passed: chosenIdx === correct,
+    attempt_number: totalQuizzes
+  });
   saveProgress();
 }
 
@@ -307,8 +313,23 @@ function showFinish() {
   document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
 }
 
+// Fire-and-forget GA4 helper. Consent is handled centrally by
+// analytics-loader.js (Consent Mode v2), so these are safe to call.
+function gaTrack(name, params) {
+  if (typeof gtag !== 'function') return;
+  try { gtag('event', name, params || {}); } catch (e) { /* never break the lesson */ }
+}
+
 function completeStep(n) {
   completed.add(n);
+  // Step-level funnel: this is what shows WHERE learners drop off, rather
+  // than only whether they finished.
+  gaTrack('workshop_progress', {
+    workshop_id: PROFILE_ID,
+    step: n,
+    total_steps: TOTAL,
+    percent_complete: TOTAL ? Math.round((completed.size / TOTAL) * 100) : 0
+  });
   var card = document.getElementById('step-' + n);
   card.classList.remove('active-step', 'open');
   card.classList.add('completed');

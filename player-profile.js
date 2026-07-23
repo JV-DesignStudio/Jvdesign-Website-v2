@@ -238,3 +238,67 @@ class PlayerProfile {
 
 // Create and export singleton
 const playerProfile = new PlayerProfile();
+
+/* ═══════════════════════════════════════════════════════════
+   GA4 BRIDGE
+   Forwards the profile's existing CustomEvents to GA4. This file is
+   loaded directly by ~59 workshop pages and auto-loaded by every game
+   (game-system.js pulls it in), so subscribing here instruments the
+   whole site without touching a single page.
+
+   Consent is handled centrally: analytics-loader.js sets Consent Mode
+   v2 to denied by default and cookie-consent.js flips it on Accept, so
+   these calls are safe to make unconditionally.
+
+   Event names/params mirror the schema in ga4-analytics.js so both stay
+   in sync. Note: 'xp-gained' is deliberately NOT forwarded, it fires on
+   every award and would flood the property; 'level-up' is the signal.
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+  if (typeof window === 'undefined') return;
+
+  function track(name, params) {
+    if (typeof gtag !== 'function') return;
+    try { gtag('event', name, params || {}); } catch (e) { /* never break gameplay */ }
+  }
+
+  // Level/streak context on every event, so reports can segment by how
+  // engaged the player already was.
+  function ctx() {
+    try {
+      var s = playerProfile.getStats();
+      return { player_level: s.level, daily_streak: s.dailyStreak };
+    } catch (e) { return {}; }
+  }
+
+  // evt = profile CustomEvent name, gaName = GA4 event name,
+  // build = maps event detail to GA4 params.
+  function on(evt, gaName, build) {
+    window.addEventListener(evt, function (e) {
+      var params = build((e && e.detail) || {}) || {};
+      var c = ctx();
+      for (var k in c) if (!(k in params)) params[k] = c[k];
+      track(gaName, params);
+    });
+  }
+
+  on('workshop-completed', 'workshop_complete', function (d) {
+    return { workshop_id: d.workshopId, xp_earned: d.xpEarned };
+  });
+
+  on('quest-completed', 'quest_complete', function (d) {
+    return { quest_id: d.questId };
+  });
+
+  on('level-up', 'player_level_up', function (d) {
+    return { new_level: d.newLevel, total_xp: d.totalXP, source: d.source };
+  });
+
+  on('achievement-unlocked', 'achievement_unlock', function (d) {
+    return { achievement_id: d.achievementId };
+  });
+
+  on('cosmetic-unlocked', 'cosmetic_unlock', function (d) {
+    return { game_id: d.gameId, cosmetic_id: d.cosmeticId };
+  });
+})();

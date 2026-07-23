@@ -1,6 +1,23 @@
 /* ═══════════════════════════════════════════════════════════
    GA4 Analytics System, Comprehensive Event Tracking
-   Tracks games, workshops, quests, cosmetics, user properties
+
+   ⚠ NOT WIRED UP. This class is loaded by only a handful of hub pages
+   and has no call sites anywhere, so none of these events ever fired.
+   It is kept as the reference SCHEMA for event names and parameter
+   shapes only.
+
+   The live instrumentation lives in three places, which emit the same
+   event names directly and therefore need no per-page wiring:
+     - player-profile.js  → workshop_complete, quest_complete,
+                            player_level_up, achievement_unlock,
+                            cosmetic_unlock  (all games + ~59 workshops)
+     - game-system.js     → game_start, game_end, game_achievement
+                            (~34 games)
+     - workshops/workshop-engine.js → workshop_progress, quiz_attempt
+                            (~48 workshops)
+
+   If you add an event here, mirror it in whichever file above owns that
+   surface, or it will not be collected.
    ═══════════════════════════════════════════════════════════ */
 
 class GA4Analytics {

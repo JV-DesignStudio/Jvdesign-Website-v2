@@ -835,6 +835,17 @@ if (typeof document !== 'undefined') {
     } catch (e) { /* storage full/blocked, XP still awarded */ }
   }
 
+  /* ── GA4 events ──
+     Games never loaded ga4-analytics.js, so game_start/game_end/
+     game_achievement had never once fired. Emitting from here covers all
+     ~34 games with no per-game edits. Consent is handled centrally by
+     analytics-loader.js (Consent Mode v2), so these are safe to call
+     unconditionally. Param shapes mirror ga4-analytics.js. */
+  function track(name, params) {
+    if (typeof gtag !== 'function') return;
+    try { gtag('event', name, params || {}); } catch (e) { /* never break gameplay */ }
+  }
+
   /* ── XP toast ── */
   function showXPToast(text) {
     if (!document.body) return;
@@ -1076,6 +1087,12 @@ if (typeof document !== 'undefined') {
     // beaten during this visit trigger the "new best" chip.
     if (this.gameId && sessionPeak[this.gameId] == null) {
       sessionPeak[this.gameId] = (st && st.highScore) || 0;
+      track('game_start', {
+        game_id: this.gameId,
+        game_name: this.gameName,
+        returning_player: !!(st && st.gamesPlayed > 0),
+        high_score: (st && st.highScore) || 0
+      });
     }
     return st;
   };
@@ -1083,8 +1100,25 @@ if (typeof document !== 'undefined') {
   // Run finished
   var origRecord = GameSystem.prototype.recordGamePlay;
   GameSystem.prototype.recordGamePlay = function () {
+    // Capture before origRecord resets _runStart, so we can report run length.
+    var startedAt = this._runStart;
     var r = origRecord.apply(this, arguments);
     award(this.gameId, 'run', 15, 5, this.gameName + ', run finished');
+
+    var secs = 0;
+    if (typeof startedAt === 'number') {
+      secs = Math.round((Date.now() - startedAt) / 1000);
+      if (!(secs >= 0 && secs < 21600)) secs = 0; // ignore implausible runs
+    }
+    var best = Math.max((this.state && this.state.highScore) || 0, window.__gsBestRun || 0);
+    track('game_end', {
+      game_id: this.gameId,
+      game_name: this.gameName,
+      score: Math.floor((this.state && this.state.score) || 0),
+      high_score: Math.floor(best),
+      games_played: (this.state && this.state.gamesPlayed) || 0,
+      time_spent_seconds: secs
+    });
     // Defer briefly so games that write __gsBestRun right after recordGamePlay
     // are reflected before we decide whether it's a new best.
     var self = this;
@@ -1100,6 +1134,12 @@ if (typeof document !== 'undefined') {
       var ach = this.achievements && this.achievements[achievementId];
       var name = (ach && ach.name) || 'Achievement unlocked!';
       award(this.gameId, 'ach:' + achievementId, 20, 1, name);
+      track('game_achievement', {
+        game_id: this.gameId,
+        game_name: this.gameName,
+        achievement_id: achievementId,
+        achievement_name: name
+      });
     }
     return unlocked;
   };
