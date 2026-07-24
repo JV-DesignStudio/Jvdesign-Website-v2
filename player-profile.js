@@ -22,6 +22,10 @@ class PlayerProfile {
       lastPlayedDate: null,
       createdAt: new Date().toISOString(),
       questProgress: {}, // format: { "quest-id": { completed: bool, unlockedAt: timestamp } }
+      // Rolling record of today's activity, derived from XP sources so the
+      // daily challenge can read it without any game-code changes. Resets
+      // automatically when the calendar day changes (see getDailyActivity).
+      dailyActivity: { date: null, games: [], runs: 0, workshops: 0, xp: 0, claimed: null },
       shareCode: null
     };
   }
@@ -72,6 +76,7 @@ class PlayerProfile {
       this.emitEvent('level-up', result);
     }
 
+    this.trackDailyActivity(amount, source);
     this.updateDailyStreak();
     this.saveProfile();
     this.emitEvent('xp-gained', result);
@@ -180,6 +185,51 @@ class PlayerProfile {
     }
 
     this.state.lastPlayedDate = new Date().toISOString();
+  }
+
+  /* ─── DAILY ACTIVITY & CHALLENGE ───
+     A per-day record derived entirely from the XP `source` strings the
+     game/workshop bridge already emits (e.g. "game:echo-fruit-catch:run",
+     "workshop:scratch-catch-workshop"). Because this lives in addXP, and
+     player-profile.js loads on every game and workshop page, the counters
+     accrue site-wide with no per-game code. daily-challenge.js reads these
+     to decide whether today's rotating goal is met. */
+  getDailyActivity() {
+    const today = new Date().toDateString();
+    let d = this.state.dailyActivity;
+    if (!d || d.date !== today) {
+      d = { date: today, games: [], runs: 0, workshops: 0, xp: 0, claimed: null };
+      this.state.dailyActivity = d;
+    }
+    return d;
+  }
+
+  trackDailyActivity(amount, source) {
+    // Never count the challenge's own bonus, or it could self-complete the
+    // "earn N XP today" goal.
+    if (source === 'daily-challenge') return;
+    const d = this.getDailyActivity();
+    if (amount > 0) d.xp += amount;
+    if (typeof source === 'string') {
+      const parts = source.split(':');
+      if (parts[0] === 'game' && parts[1]) {
+        if (d.games.indexOf(parts[1]) === -1) d.games.push(parts[1]);
+        if (parts[2] === 'run') d.runs += 1;
+      } else if (parts[0] === 'workshop') {
+        d.workshops += 1;
+      }
+    }
+  }
+
+  // Grants the daily challenge bonus exactly once per day. Returns true only
+  // on the grant that actually awards XP, so callers can celebrate just once.
+  claimDailyChallenge(challengeId, xp) {
+    const d = this.getDailyActivity();
+    if (d.claimed) return false;
+    d.claimed = challengeId;
+    this.addXP(xp || 0, 'daily-challenge'); // saves profile + advances streak
+    this.emitEvent('daily-challenge-complete', { challengeId, xp: xp || 0 });
+    return true;
   }
 
   getStats() {
