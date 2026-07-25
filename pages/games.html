@@ -289,6 +289,72 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
     </div>
 </section>
 
+<!-- INSTALL THE ARCADE -->
+<style>
+    .arcade-cta{max-width:1000px;margin:0 auto 8px;padding:0 20px;}
+    .arcade-cta-inner{display:flex;align-items:center;gap:18px;background:linear-gradient(135deg,rgba(165,131,206,.16),rgba(20,22,31,.6));border:1px solid rgba(165,131,206,.35);border-radius:20px;padding:18px 22px;}
+    .arcade-cta-icon{width:56px;height:56px;flex:0 0 56px;border-radius:14px;box-shadow:0 6px 18px rgba(165,131,206,.35);}
+    .arcade-cta-copy{flex:1;min-width:0;}
+    .arcade-cta-copy h2{font-size:1.15rem;font-weight:800;color:#fff;margin:0 0 3px;letter-spacing:-.01em;}
+    .arcade-cta-copy p{font-size:.86rem;color:rgba(240,234,214,.7);margin:0;line-height:1.45;}
+    .arcade-cta-actions{display:flex;gap:10px;flex-shrink:0;}
+    .arcade-cta-btn{font-family:inherit;font-weight:800;font-size:.85rem;padding:11px 18px;border-radius:999px;cursor:pointer;text-decoration:none;white-space:nowrap;border:0;transition:transform .12s,background .15s;}
+    .arcade-cta-btn.primary{background:#A583CE;color:#17102a;}
+    .arcade-cta-btn.primary:hover{background:#b89adb;}
+    .arcade-cta-btn.ghost{background:rgba(255,255,255,.08);color:#e8eaf2;border:1px solid rgba(255,255,255,.16);}
+    .arcade-cta-btn.ghost:hover{background:rgba(255,255,255,.14);}
+    .arcade-cta-btn:active{transform:translateY(1px);}
+    #arcadeInstallBtn{display:none;}
+    @media (max-width:640px){
+        .arcade-cta-inner{flex-wrap:wrap;gap:14px;padding:16px;}
+        .arcade-cta-actions{width:100%;}
+        .arcade-cta-btn{flex:1;text-align:center;}
+    }
+</style>
+<div class="arcade-cta reveal">
+    <div class="arcade-cta-inner">
+        <img class="arcade-cta-icon" src="../icons/arcade-192.png" alt="" width="56" height="56" loading="lazy">
+        <div class="arcade-cta-copy">
+            <h2>Get the JVDS Arcade app</h2>
+            <p>All 29 games in one place, one profile across them all, and it plays offline. Install it to your home screen, free.</p>
+        </div>
+        <div class="arcade-cta-actions">
+            <button type="button" class="arcade-cta-btn primary" id="arcadeInstallBtn">⬇ Install app</button>
+            <a class="arcade-cta-btn ghost" href="../arcade.html">Open Arcade →</a>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    // Progressive enhancement: the "Open Arcade" link always works. The
+    // Install button only appears when the browser offers a real install
+    // prompt (Chrome/Edge/Android), or on iOS where we point at Add to
+    // Home Screen. Self-contained IIFE, no top-level declarations.
+    var btn = document.getElementById('arcadeInstallBtn');
+    if(!btn) return;
+    var deferred = null;
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+    window.addEventListener('beforeinstallprompt', function(e){
+        e.preventDefault();
+        deferred = e;
+        btn.style.display = 'inline-block';
+    });
+    btn.addEventListener('click', function(){
+        if(deferred){
+            deferred.prompt();
+            deferred.userChoice.then(function(){ deferred = null; btn.style.display = 'none'; });
+            return;
+        }
+        if(isIOS) alert('To install: tap the Share button in Safari, then choose "Add to Home Screen".');
+    });
+    window.addEventListener('appinstalled', function(){ btn.style.display = 'none'; });
+    // iOS has no beforeinstallprompt: offer the manual route unless already installed.
+    if(isIOS && !standalone) btn.style.display = 'inline-block';
+})();
+</script>
+
 <!-- YOUR PROGRESS -->
 <section class="progress-section" id="myProgress">
     <div class="progress-wrap">
