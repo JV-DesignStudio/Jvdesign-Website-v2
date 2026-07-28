@@ -1027,11 +1027,24 @@ function updateCooldownRings(){
 }
 setInterval(updateCooldownRings,250);
 
+// ══ HAPTICS ══
+// The Web Vibration API (navigator.vibrate) is unreliable inside the Android
+// app's WebView, so prefer the native Capacitor Haptics plugin when present
+// (app) and fall back to navigator.vibrate on the website.
+function doHaptic(strong){
+  if(vault.haptic===false)return;
+  try{
+    const H=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Haptics;
+    if(H){ H.impact({style:strong?'MEDIUM':'LIGHT'}).catch(function(){}); return; }
+    if(navigator.vibrate)navigator.vibrate(strong?18:10);
+  }catch(e){}
+}
+
 // ══ CLICK ══
 function doClick(x,y){
   Audio.init(); Audio.sfxTap();
   const c=bumpCombo();
-  if(vault.haptic!==false&&navigator.vibrate){try{navigator.vibrate(c.idx>=3?16:8);}catch(e){}}
+  doHaptic(c.idx>=3);
   const gained=Math.round(Math.max(clickPower,Math.ceil(productionRate*0.01))*c.mult);
   bv().total+=gained; bv().lifetime+=gained; bv().clicks=(bv().clicks||0)+1;
   // Secret: 15 taps within two seconds.
@@ -1076,14 +1089,14 @@ function spawnCharBiscuit(x,y,emoji,color){
 // ══ TAP COMBOS ══
 // Keep tapping to build a combo: bigger multiplier, more stuff flying around,
 // and the crew get visibly happier the hotter it gets.
-const COMBO_WINDOW=1500;
+const COMBO_WINDOW=1900;
 const COMBO_TIERS=[
-  {min:0,  label:'Combo',   mult:1,   cls:'t0'},
-  {min:5,  label:'Warm',    mult:1.2, cls:'t1'},
-  {min:12, label:'Toasty',  mult:1.4, cls:'t2'},
-  {min:25, label:'Hot!',    mult:1.6, cls:'t3'},
-  {min:45, label:'Blazing', mult:1.8, cls:'t4'},
-  {min:80, label:'COSMIC!', mult:2,   cls:'t5'},
+  {min:0,  label:'Combo',   mult:1,    cls:'t0'},
+  {min:3,  label:'Warm',    mult:1.25, cls:'t1'},
+  {min:8,  label:'Toasty',  mult:1.6,  cls:'t2'},
+  {min:15, label:'Hot!',    mult:2,    cls:'t3'},
+  {min:24, label:'Blazing', mult:2.5,  cls:'t4'},
+  {min:35, label:'COSMIC!', mult:3,    cls:'t5'},
 ];
 let combo=0, comboUntil=0;
 function comboTierIdx(n){let idx=0;for(let i=0;i<COMBO_TIERS.length;i++)if(n>=COMBO_TIERS[i].min)idx=i;return idx;}
@@ -1093,10 +1106,11 @@ function bumpCombo(){
   comboUntil=now+COMBO_WINDOW;
   const idx=comboTierIdx(combo),tier=COMBO_TIERS[idx];
   const b=document.getElementById('comboBadge');
-  if(b&&combo>=3){
+  if(b&&combo>=2){
     b.classList.add('show'); b.dataset.tier=tier.cls;
-    const cEl=document.getElementById('comboCount'); if(cEl)cEl.textContent='×'+combo;
-    const tEl=document.getElementById('comboTier'); if(tEl)tEl.textContent=tier.label;
+    const atCap=idx===COMBO_TIERS.length-1;
+    const cEl=document.getElementById('comboCount'); if(cEl)cEl.textContent='×'+tier.mult;
+    const tEl=document.getElementById('comboTier'); if(tEl)tEl.textContent=tier.label+(atCap?' · MAX':' · '+combo);
     const f=document.getElementById('comboBarFill'); if(f)f.style.transform='scaleX(1)';
     b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
   }
@@ -1172,8 +1186,11 @@ document.querySelectorAll('.char-seat').forEach(el=>{
     const char=CHARACTERS[id];
     const cdMult=(bv().charPerks&&bv().charPerks[id])?0.75:1;
     charReady[id]=Date.now()+char.cooldown*1000*cdMult; charWasCD[id]=true;
+    doHaptic(true);
     bv().charTaps[id]=(bv().charTaps[id]||0)+1;
-    const gained=char.biscuitValue*(bv().prestigeBonus||1);
+    // Character treats scale with the cafe: the larger of their flat value or
+    // a chunk of live production, so they never go trivial late game.
+    const gained=Math.max(char.biscuitValue*(bv().prestigeBonus||1), Math.ceil(productionRate*char.cooldown*0.3));
     bv().total+=gained; bv().lifetime+=gained;
     el.classList.add('excited'); setTimeout(()=>el.classList.remove('excited'),500);
     const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -1222,7 +1239,7 @@ function bulkCost(h,owned,qty,budget){
   let n=0,cost=0;
   const want=qty==='max'?Infinity:qty;
   while(n<want){
-    const step=Math.floor(h.baseCost*Math.pow(h.costMult,owned+n));
+    const step=Math.floor(h.baseCost*Math.pow(h.costMult+0.01,owned+n));
     if(qty==='max'&&cost+step>budget)break;
     cost+=step; n++;
     if(n>=500)break;
@@ -1534,11 +1551,13 @@ function processToasts(){
 function checkOffline(){
   const lastSave=bv().lastSave||Date.now(),elapsed=(Date.now()-lastSave)/1000;
   if(elapsed<60||productionRate<=0)return;
-  const eff=Math.min(elapsed,offlineCapHours()*3600),earned=Math.floor(productionRate*eff);
+  const OFFLINE_EFF=0.6; // helpers bake at 60% while you're away
+  const cap=offlineCapHours()*3600,eff=Math.min(elapsed,cap),earned=Math.floor(productionRate*eff*OFFLINE_EFF);
   if(earned<1)return;
   bv().total+=earned; bv().lifetime+=earned;
   const h=Math.floor(eff/3600),m=Math.floor((eff%3600)/60);
-  document.getElementById('offlineMsg').textContent=`You were away for ${h>0?h+'h '+m+'m':m+'m'} and your helpers kept baking! (Your pantry stores up to ${offlineCapHours()}h)`;
+  const capped=elapsed>=cap;
+  document.getElementById('offlineMsg').textContent=`You were away for ${h>0?h+'h '+m+'m':m+'m'} and your helpers kept baking at 60%. ${capped?'Your pantry was full — ':''}(holds up to ${offlineCapHours()}h)`;
   document.getElementById('offlineAmount').textContent='+'+fmt(earned)+' 🍪';
   document.getElementById('offlineModal').classList.add('show');
   saveVault();
@@ -1618,7 +1637,7 @@ sfxBtn.addEventListener('click',()=>{
 hapticBtn.addEventListener('click',()=>{
   vault.haptic=!(vault.haptic!==false);
   saveVault(); refreshSettingBtns();
-  if(vault.haptic&&navigator.vibrate){try{navigator.vibrate(20);}catch(e){}}
+  if(vault.haptic)doHaptic(true);
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
   if(!confirm('Reset your bakery? This wipes ALL Biscuit Tin progress on this device: biscuits, helpers, quests, story and secrets. Prestige bonuses too.'))return;
