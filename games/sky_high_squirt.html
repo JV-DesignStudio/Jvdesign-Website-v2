@@ -10,7 +10,7 @@
 
     <link rel="canonical" href="https://jvdesignstudio.co.uk/games/sky_high_squirt.html">
     <meta name="robots" content="index, follow">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Sky High Squirt &amp; Friends | JVDesignStudio</title>
 <style>
 
@@ -69,7 +69,7 @@
 
   .hud {
     position: fixed;
-    top: 14px;
+    top: calc(14px + env(safe-area-inset-top));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -313,15 +313,15 @@
   .touch-controls {
     display: none;
     position: fixed;
-    bottom: 28px;
+    bottom: calc(28px + env(safe-area-inset-bottom));
     left: 0; right: 0;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 calc(16px + env(safe-area-inset-left)) 0 calc(16px + env(safe-area-inset-right));
     pointer-events: none;
     z-index: 200;
   }
   .touch-btn {
-    width: 80px; height: 80px;
+    width: 88px; height: 88px;
     border-radius: 50%;
     background: rgba(255,255,255,0.12);
     border: 2px solid rgba(255,255,255,0.25);
@@ -2188,11 +2188,14 @@ function startGame() {
   document.getElementById('menu').classList.add('hidden');
   document.getElementById('gameover').classList.add('hidden');
   document.getElementById('shop').classList.add('hidden');
+
+  requestWakeLock();
 }
 
 function die() {
   state.mode = 'dead';
   SFX.death();
+  releaseWakeLock();
 
   save.coins += state.runCoins;
 
@@ -2600,6 +2603,20 @@ function refreshAchievements() {
 document.getElementById('ach-btn').addEventListener('click', openAchievements);
 document.getElementById('ach-back-btn').addEventListener('click', closeAchievements);
 
+// Crisp rendering on high-DPI phones. W/H stay the 420x700 logical
+// coordinate system every draw call uses; we enlarge the backing store by
+// the device pixel ratio and scale the context to match, so nothing else
+// in the game has to change. Capped at 2x so a 3x phone doesn't push 9x
+// the pixels for no visible gain. Safe because render() never resets the
+// transform (camera offset is applied manually in world coords).
+function applyHiDPI() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+}
+
 function resize() {
   const maxH = window.innerHeight - 20;
   const maxW = window.innerWidth - 20;
@@ -2614,16 +2631,58 @@ function resize() {
   canvas.style.height = dispH + 'px';
 }
 window.addEventListener('resize', resize);
+applyHiDPI();
 resize();
 
 refreshMenu();
 
-function loop() {
-  update();
+// Keep the screen awake while playing so the phone doesn't dim/sleep
+// mid-run. Progressive enhancement: no-ops where Wake Lock isn't supported.
+// The lock is auto-dropped when the tab hides, so we re-acquire on return.
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); }
+  catch (e) { /* denied or not allowed right now; harmless */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.mode === 'playing') requestWakeLock();
+});
+
+// Fixed-timestep loop: physics runs a fixed number of times per real
+// second no matter the display refresh rate. Without this, a 90/120Hz
+// phone fires requestAnimationFrame 1.5-2x more often and the whole game
+// (gravity, jumps, scrolling) runs that much faster. update() advances by
+// a fixed amount per call, so we call it on a wall-clock schedule instead.
+const STEP_MS = 1000 / 60;   // simulate at 60 Hz
+let simAccumulator = 0;
+let lastFrameTime = performance.now();
+
+function loop(now) {
+  let frameTime = now - lastFrameTime;
+  lastFrameTime = now;
+  // Clamp: after the tab is backgrounded, rAF resumes with a huge delta.
+  // Capping it stops the sim from fast-forwarding through the missed time.
+  if (frameTime > 250) frameTime = 250;
+  simAccumulator += frameTime;
+
+  // Run whole physics steps; cap the count so a slow device can't spiral.
+  let steps = 0;
+  while (simAccumulator >= STEP_MS && steps < 5) {
+    update();
+    simAccumulator -= STEP_MS;
+    steps++;
+  }
+  // If we hit the cap, drop the backlog rather than accumulating lag.
+  if (steps === 5) simAccumulator = 0;
+
   render();
   requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);
 </script>
 <script>
 function jvdsOpenStrip(){
