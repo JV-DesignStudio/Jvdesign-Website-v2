@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 20px">
+    <div class="callout-icon">🧩</div>
+    <div><strong>Need the game setup?</strong> Each episode builds a new game on the same JavaScript skeleton, the <code>&lt;canvas&gt;</code>, the 2D <code>ctx</code>, the <code>draw()</code> function and the <code>requestAnimationFrame</code> loop. If you're starting here or need that boilerplate, grab it in one click: <a href="js-flappy-workshop.html#step-1" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 full template →</a> · <a href="js-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">JS Cheatsheet →</a></div>
+  </div>
+
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
     <div class="step-header" onclick="toggleStep(this)">
@@ -180,6 +185,38 @@ ctx.beginPath();
 ctx.roundRect(padX, 480, 110, 14, 7);
 ctx.fill();</pre>
   </div>
+
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter file — paste this into breakout.html and press play</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A complete, runnable page: the &lt;canvas&gt;, the 2D <code>ctx</code> and the requestAnimationFrame loop. It opens to a blank board — every step below draws into this same file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">breakout.html</span></div>
+          <pre class="code-pre">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;style&gt;
+  body { display:flex; justify-content:center; background:#0d1117; padding:16px; }
+  canvas { background:#0a0e14; border:2px solid #1e2733; border-radius:8px; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;canvas id="game" width="700" height="520"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");    // your drawing toolkit
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // everything you build in the steps below is drawn here
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+      </details>
 
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
@@ -581,6 +618,185 @@ if (bricks.every(b =&gt; !b.alive)) {
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Mouse paddle, ball physics, paddle spin, the neon brick wall, particle bursts, lives and escalating levels — one file. Save it as <code>breakout.html</code>, open it, and play. Stuck on a step? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">breakout.html</span></div>
+      <pre class="code-pre">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;title&gt;Neon Breakout&lt;/title&gt;
+&lt;style&gt;
+  body { display:flex; flex-direction:column; align-items:center; gap:10px;
+         background:#0d1117; color:#e8eaf2; font-family:system-ui, sans-serif; padding:16px; }
+  canvas { background:#0a0e14; border:2px solid #1e2733; border-radius:8px; cursor:none; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h2&gt;🧱 Neon Breakout&lt;/h2&gt;
+  &lt;canvas id="game" width="700" height="520"&gt;&lt;/canvas&gt;
+  &lt;div&gt;Move the mouse to steer · click to restart after Game Over&lt;/div&gt;
+
+&lt;script&gt;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const COLOURS = ["#f87171","#fb923c","#facc15","#4ade80","#60a5fa"];
+let mouseX = 350, ball, bricks, particles, lives, level, score, gameOver;
+
+canvas.addEventListener("mousemove", function(e) {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+});
+canvas.addEventListener("click", function() { if (gameOver) start(); });
+
+function buildWall() {
+  const arr = [];
+  for (let r = 0; r &lt; 5; r++)
+    for (let c = 0; c &lt; 10; c++)
+      arr.push({ x: c*68+12, y: r*26+50, row: r, alive: true });
+  return arr;
+}
+
+function serve() { ball = { x: 350, y: 300, vx: 4, vy: -4, r: 7 }; }
+
+function start() {
+  bricks = buildWall();
+  particles = [];
+  lives = 3; level = 1; score = 0; gameOver = false;
+  serve();
+}
+
+function burst(x, y, colour) {
+  for (let i = 0; i &lt; 8; i++)
+    particles.push({ x:x, y:y, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*6-1, life:30, colour:colour });
+}
+
+function update() {
+  if (gameOver) return;
+  const padX = Math.max(0, Math.min(590, mouseX - 55));
+
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  // walls + ceiling
+  if (ball.x - ball.r &lt;= 0 || ball.x + ball.r &gt;= 700) ball.vx = -ball.vx;
+  if (ball.y - ball.r &lt;= 0) ball.vy = -ball.vy;
+
+  // paddle rebound with spin
+  if (ball.vy &gt; 0 &amp;&amp; ball.y + ball.r &gt;= 480 &amp;&amp; ball.y + ball.r &lt;= 494 &amp;&amp;
+      ball.x &gt;= padX &amp;&amp; ball.x &lt;= padX + 110) {
+    ball.vy = -ball.vy;
+    let spin = (ball.x - (padX + 55)) / 12;
+    spin = Math.max(-7, Math.min(7, spin));
+    ball.vx = spin === 0 ? 1 : spin;
+  }
+
+  // brick collision (one per frame)
+  for (const b of bricks) {
+    if (!b.alive) continue;
+    if (ball.x + ball.r &gt; b.x &amp;&amp; ball.x - ball.r &lt; b.x + 64 &amp;&amp;
+        ball.y + ball.r &gt; b.y &amp;&amp; ball.y - ball.r &lt; b.y + 22) {
+      b.alive = false;
+      ball.vy = -ball.vy;
+      score += (5 - b.row) * 10;
+      burst(ball.x, ball.y, COLOURS[b.row]);
+      break;
+    }
+  }
+
+  // floor miss
+  if (ball.y - ball.r &gt; 520) {
+    lives--;
+    if (lives &lt;= 0) { gameOver = true; }
+    else serve();
+  }
+
+  // wall cleared -&gt; next level
+  if (bricks.every(b =&gt; !b.alive)) {
+    level++;
+    bricks = buildWall();
+    serve();
+    ball.vx *= 1.15;
+    ball.vy = -Math.abs(ball.vy) * 1.15;
+  }
+
+  // particles
+  for (const p of particles) { p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--; }
+  particles = particles.filter(p =&gt; p.life &gt; 0);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, 700, 520);
+  const padX = Math.max(0, Math.min(590, mouseX - 55));
+
+  // bricks with glow
+  for (const b of bricks) {
+    if (!b.alive) continue;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = COLOURS[b.row];
+    ctx.fillStyle = COLOURS[b.row];
+    ctx.fillRect(b.x, b.y, 64, 22);
+  }
+  ctx.shadowBlur = 0;
+
+  // particles
+  for (const p of particles) {
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillStyle = p.colour;
+    ctx.fillRect(p.x, p.y, 3, 3);
+  }
+  ctx.globalAlpha = 1;
+
+  // paddle
+  ctx.fillStyle = "#ff7700";
+  ctx.beginPath();
+  ctx.roundRect(padX, 480, 110, 14, 7);
+  ctx.fill();
+
+  // glossy ball
+  const g = ctx.createRadialGradient(ball.x-2, ball.y-2, 1, ball.x, ball.y, ball.r);
+  g.addColorStop(0, "#fff"); g.addColorStop(1, "#bbb");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+  ctx.fill();
+
+  // HUD
+  ctx.fillStyle = "#e8eaf2";
+  ctx.font = "16px system-ui";
+  ctx.textAlign = "left";   ctx.fillText("Score " + score, 12, 30);
+  ctx.textAlign = "center"; ctx.fillText("Level " + level, 350, 30);
+  ctx.textAlign = "right";  ctx.fillText("❤️".repeat(Math.max(0, lives)), 688, 30);
+
+  if (gameOver) {
+    ctx.fillStyle = "rgba(0,0,0,.65)";
+    ctx.fillRect(0, 0, 700, 520);
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.font = "bold 40px system-ui";
+    ctx.fillText("Game Over", 350, 250);
+    ctx.font = "18px system-ui";
+    ctx.fillText("Score " + score + " · click to play again", 350, 290);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+start();
+requestAnimationFrame(loop);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

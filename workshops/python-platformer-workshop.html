@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 20px">
+    <div class="callout-icon">🧩</div>
+    <div><strong>Need the game setup?</strong> Each episode builds a new game on the same "usual template", <code>import pygame</code>, <code>pygame.init()</code>, the window and the <code>while running</code> game loop. If you're starting here or need that template, grab it in one click: <a href="python-catch-workshop.html#step-1" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 full template →</a> · <a href="python-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Python Cheatsheet →</a></div>
+  </div>
+
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
     <div class="step-header" onclick="toggleStep(this)">
@@ -178,6 +183,31 @@ if keys[pygame.K_RIGHT]:
 
 pygame.draw.rect(screen, (255, 119, 0), player)</pre>
   </div>
+
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter file — the Episode 1 pygame template</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The standard 800×480 window, the clock and the <code>while running</code> game loop. Save it as <code>game.py</code> and run it: a dark window opens. Every step below adds to this same file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
+          <pre class="code-pre">import pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 480))
+pygame.display.set_caption("My Python Game")
+clock = pygame.time.Clock()
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    screen.fill((25, 30, 60))      # everything you build below is drawn here
+    pygame.display.flip()
+    clock.tick(60)                 # 60 frames per second
+
+pygame.quit()</pre>
+        </div>
+      </details>
 
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
@@ -554,6 +584,100 @@ if won:
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Platformer — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Player movement, gravity, jumping, a list of platforms, collectable coins, a win flag and a fall-off respawn — one file. Save it as <code>game.py</code>, run <code>python game.py</code>, and play. Stuck on a step? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
+      <pre class="code-pre">import pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 480))
+pygame.display.set_caption("Sky Hopper")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 72)
+
+player = pygame.Rect(100, 380, 34, 44)
+speed = 5
+vy = 0
+on_ground = False
+
+platforms = [
+    pygame.Rect(0, 440, 800, 40),      # ground
+    pygame.Rect(150, 340, 140, 16),
+    pygame.Rect(380, 260, 140, 16),
+    pygame.Rect(610, 180, 140, 16),
+]
+coins = [pygame.Rect(205, 300, 18, 18),
+         pygame.Rect(435, 220, 18, 18),
+         pygame.Rect(665, 140, 18, 18)]
+flag = pygame.Rect(660, 130, 16, 50)
+score = 0
+won = False
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and on_ground and not won:
+                vy = -16
+                on_ground = False
+
+    if not won:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.x -= speed
+        if keys[pygame.K_RIGHT]:
+            player.x += speed
+        if player.left &lt; 0:
+            player.left = 0
+        if player.right &gt; 800:
+            player.right = 800
+
+        vy += 1                 # gravity
+        player.y += vy
+
+        on_ground = False
+        for plat in platforms:
+            if player.colliderect(plat) and vy &gt; 0 and player.bottom - vy &lt;= plat.top:
+                player.bottom = plat.top
+                vy = 0
+                on_ground = True
+
+        for coin in coins[:]:            # loop over a COPY
+            if player.colliderect(coin):
+                coins.remove(coin)
+                score += 1
+
+        if player.colliderect(flag) and len(coins) == 0:
+            won = True
+
+        if player.top &gt; 480:             # fell into a pit
+            player.x, player.y = 100, 380
+            vy = 0
+
+    # draw
+    screen.fill((25, 30, 60))
+    for plat in platforms:
+        pygame.draw.rect(screen, (6, 214, 160), plat)
+    for coin in coins:
+        pygame.draw.rect(screen, (255, 209, 102), coin)
+    pygame.draw.rect(screen, (247, 160, 30), flag)
+    pygame.draw.rect(screen, (255, 119, 0), player)
+    screen.blit(font.render("Score: " + str(score), True, (255, 255, 255)), (12, 12))
+    if won:
+        msg = big_font.render("YOU WIN!", True, (255, 209, 102))
+        screen.blit(msg, (250, 190))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

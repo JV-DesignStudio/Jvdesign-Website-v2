@@ -47,6 +47,8 @@ function _initAnalytics(){
 if(localStorage.getItem('jv_analytics_ok')==='1') _initAnalytics();
 </script>
 <script src="../phaser-arcade-physics.min.js"></script>
+<!-- Offline QR code generator (MIT, Kazuhiko Arase). Replaces the api.qrserver.com dependency so share QR codes work with no network. -->
+<script src="../qrcode-generator.js"></script>
 <style>
 /* ── JVDS Site Nav ── */
 
@@ -515,6 +517,18 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 }
 #gameWrap:fullscreen #game-container,#gameWrap:-webkit-full-screen #game-container,
 #gameWrap:-moz-full-screen #game-container,#gameWrap:-ms-fullscreen #game-container{
+    border:none!important;border-radius:0!important;box-shadow:none!important;
+    background:#000!important;display:block!important;
+}
+/* CSS-only fullscreen fallback for environments without the Fullscreen API
+   (notably the Android WebView used by the packaged app). toggleFullscreen()
+   adds .css-fs when requestFullscreen is unavailable, giving the same
+   fill-the-viewport result without the native API. */
+#gameWrap.css-fs{
+    position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;
+    max-width:none!important;z-index:2147483000!important;background:#000!important;overflow:hidden!important;
+}
+#gameWrap.css-fs #game-container{
     border:none!important;border-radius:0!important;box-shadow:none!important;
     background:#000!important;display:block!important;
 }
@@ -5985,21 +5999,38 @@ function _tileTouchMove(e)  { e.preventDefault(); if(!window._tilePainting) retu
 // ── FULLSCREEN / SCREENSHOT ───────────────────────────────────────────────────
 function toggleFullscreen() {
     const el = document.getElementById('gameWrap') || document.documentElement;
-    const isFs = document.fullscreenElement === el || document.webkitFullscreenElement === el
+    const realFs = document.fullscreenElement === el || document.webkitFullscreenElement === el
               || document.mozFullScreenElement === el || document.msFullscreenElement === el;
-    if (!isFs) {
-        (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen).call(el);
+    const cssFs = el.classList.contains('css-fs');
+
+    if (!realFs && !cssFs) {
+        // Enter: try the native Fullscreen API first, fall back to a CSS class.
+        // The Android WebView (packaged app) has no requestFullscreen, so the
+        // native call is absent; without this fallback the button did nothing.
+        const req = el.requestFullscreen || el.webkitRequestFullscreen
+                 || el.mozRequestFullScreen || el.msRequestFullscreen;
+        let ok = false;
+        if (req) { try { const r = req.call(el); if (r && r.catch) r.catch(() => _cssFullscreen(el, true)); ok = true; } catch (e) { ok = false; } }
+        if (!ok) _cssFullscreen(el, true);
+    } else if (cssFs) {
+        _cssFullscreen(el, false);
     } else {
-        (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen).call(document);
+        const exit = document.exitFullscreen || document.webkitExitFullscreen
+                  || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) { try { exit.call(document); } catch (e) {} }
     }
 }
+// CSS-class fullscreen used when the native API is unavailable. Mirrors what
+// the real fullscreenchange handler does so Phaser resizes the same way.
+function _cssFullscreen(el, on) {
+    el.classList.toggle('css-fs', on);
+    _applyFsResize(on);
+}
 // Resize the Phaser container so Scale.FIT can letterbox the canvas correctly.
-function _onFsChange() {
+// Shared by the native fullscreenchange handler and the CSS-class fallback.
+function _applyFsResize(isFs) {
     const container = document.getElementById('game-container');
     if (!container) return;
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
-                 || document.mozFullScreenElement || document.msFullscreenElement);
-
     // Two rAFs: first lets the browser complete the fullscreen transition,
     // second lets the layout engine reflow before Phaser reads offsetWidth/Height.
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -6024,8 +6055,21 @@ function _onFsChange() {
         }
     }));
 }
+// Native fullscreenchange handler: read the API state and reuse the shared resize.
+function _onFsChange() {
+    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement
+                 || document.mozFullScreenElement || document.msFullscreenElement);
+    _applyFsResize(isFs);
+}
 ['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
     .forEach(ev => document.addEventListener(ev, _onFsChange));
+// Let the hardware/gesture back and the Escape key leave CSS-fullscreen too.
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const el = document.getElementById('gameWrap');
+        if (el && el.classList.contains('css-fs')) _cssFullscreen(el, false);
+    }
+});
 function takeScreenshot() {
     if (!currentPhaserGame) { showToast('Run the game first then take a screenshot'); return; }
     const title = _engineData ? _engineData.title : 'game';
@@ -14916,6 +14960,9 @@ async function _decompressPayload(b64) {
 }
 
 async function _shortenUrl(longUrl) {
+    // Offline (e.g. the packaged app with no network): skip the doomed fetch.
+    // Callers already fall back to the full link, and the QR is generated locally.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
     try {
         const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(longUrl));
         if (!res.ok) return null;
@@ -15411,25 +15458,35 @@ window.addEventListener('DOMContentLoaded',function(){
     const mLink = document.createElement('link');
     mLink.rel='manifest'; mLink.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
     root.querySelector('head').appendChild(mLink);
-    // Inline Phaser so the exported file works offline / without CDN
+    // Inline Phaser so the exported file works offline / without CDN.
+    // Read it from the SAME local file this page already loaded (resolved to an
+    // absolute URL by the browser), not a CDN, so export works offline too and
+    // inside the packaged app where there is no network at all.
     try {
-        const PHASER_CDN = 'https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js';
-        const resp = await fetch(PHASER_CDN);
-        if (resp.ok) {
-            const phaserSrc = await resp.text();
-            // Find the <script src="...phaser..."> tag in the clone and swap it for an inline block
-            const phaserScript = Array.from(root.querySelectorAll('script[src]'))
-                .find(s => s.src && s.src.includes('phaser'));
-            if (phaserScript) {
-                const inlinePhaser = document.createElement('script');
-                inlinePhaser.textContent = phaserSrc;
-                phaserScript.parentNode.replaceChild(inlinePhaser, phaserScript);
+        const localPhaserUrl = Array.from(document.querySelectorAll('script[src]'))
+            .map(s => s.src)
+            .find(src => src && src.includes('phaser'));
+        if (localPhaserUrl) {
+            const resp = await fetch(localPhaserUrl);
+            if (resp.ok) {
+                const phaserSrc = await resp.text();
+                // Find the <script src="...phaser..."> tag in the clone and swap it for an inline block
+                const phaserScript = Array.from(root.querySelectorAll('script[src]'))
+                    .find(s => s.src && s.src.includes('phaser'));
+                if (phaserScript) {
+                    const inlinePhaser = document.createElement('script');
+                    inlinePhaser.textContent = phaserSrc;
+                    phaserScript.parentNode.replaceChild(inlinePhaser, phaserScript);
+                }
             }
         }
     } catch(e) {
-        // CDN fetch failed (no network), leave external tag so it still works online
-        console.warn('exportGame: could not inline Phaser, keeping CDN link', e);
+        // Fetch failed, leave the local <script src> tag so it still works when opened alongside the file
+        console.warn('exportGame: could not inline Phaser, keeping local script tag', e);
     }
+    // The offline QR generator is maker-only; drop its <script> from the exported
+    // game so the standalone file has no dangling reference to it.
+    root.querySelectorAll('script[src*="qrcode-generator"]').forEach(s => s.remove());
     // Patch <title> and OG tags to reflect the game's actual name
     const _exportTitle = _engineData.title || 'My Arcade Game';
     const _titleEl = root.querySelector('title');
@@ -16468,6 +16525,19 @@ async function generateRemixLink() {
     } catch(e) { showToast('Remix link failed, try clearing the level map', 'error'); }
 }
 
+// Build a QR code as a data URL entirely on-device (no api.qrserver.com call),
+// so share QR codes work offline and inside the packaged app. Returns null when
+// there is no scannable URL or the local generator is unavailable.
+function _makeQrDataUrl(text) {
+    if (!text || typeof qrcode === 'undefined') return null;
+    try {
+        const qr = qrcode(0, 'M'); // type 0 = auto-size for the data length
+        qr.addData(text);
+        qr.make();
+        return qr.createDataURL(6, 12); // cellSize, margin -> crisp ~200px GIF
+    } catch(e) { return null; }
+}
+
 function _openShareModal(url, title, forkCount, shortUrl) {
     _shareCurrentUrl = url;
     const forks = forkCount || 0;
@@ -16493,9 +16563,9 @@ function _openShareModal(url, title, forkCount, shortUrl) {
     // QR code, only works if we have a short URL (long URLs produce unreadable QR codes)
     const qrEl = document.getElementById('shareQrImg');
     const qrWrap = qrEl ? qrEl.parentElement : null;
-    if (shortUrl && shortUrl.length < 500) {
-        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&ecc=M&data=' + encodeURIComponent(shortUrl);
-        qrEl.src = qrUrl;
+    const qrData = _makeQrDataUrl(shortUrl && shortUrl.length < 500 ? shortUrl : null);
+    if (qrData) {
+        qrEl.src = qrData;
         qrEl.style.display = '';
         qrEl.style.width = '160px';
         qrEl.style.height = '160px';

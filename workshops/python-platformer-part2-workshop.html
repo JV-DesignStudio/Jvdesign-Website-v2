@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 20px">
+    <div class="callout-icon">🧩</div>
+    <div><strong>Need the game so far?</strong> This episode continues your platformer from Part 1, so it assumes you already have that pygame window, player, gravity and loop. Open your Part 1 file to keep building, or revisit Part 1 and the base template here: <a href="python-platformer-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Platformer Part 1 →</a> · <a href="python-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Python Cheatsheet →</a></div>
+  </div>
+
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
     <div class="step-header" onclick="toggleStep(this)">
@@ -177,6 +182,100 @@ for en in enemies:
     if en["rect"].x &lt;= en["min_x"] or en["rect"].x &gt;= en["max_x"]:
         en["vx"] = -en["vx"]</pre>
   </div>
+
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Starting point — your finished Episode 2 platformer</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">This finale builds on Episode 2. If you don't have your Part 1 file handy, here is the complete Episode 2 platformer to start from. Every step below adds enemies, a camera, moving platforms, spikes and levels to it.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
+          <pre class="code-pre">import pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 480))
+pygame.display.set_caption("Sky Hopper")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 72)
+
+player = pygame.Rect(100, 380, 34, 44)
+speed = 5
+vy = 0
+on_ground = False
+
+platforms = [
+    pygame.Rect(0, 440, 800, 40),      # ground
+    pygame.Rect(150, 340, 140, 16),
+    pygame.Rect(380, 260, 140, 16),
+    pygame.Rect(610, 180, 140, 16),
+]
+coins = [pygame.Rect(205, 300, 18, 18),
+         pygame.Rect(435, 220, 18, 18),
+         pygame.Rect(665, 140, 18, 18)]
+flag = pygame.Rect(660, 130, 16, 50)
+score = 0
+won = False
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and on_ground and not won:
+                vy = -16
+                on_ground = False
+
+    if not won:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.x -= speed
+        if keys[pygame.K_RIGHT]:
+            player.x += speed
+        if player.left &lt; 0:
+            player.left = 0
+        if player.right &gt; 800:
+            player.right = 800
+
+        vy += 1                 # gravity
+        player.y += vy
+
+        on_ground = False
+        for plat in platforms:
+            if player.colliderect(plat) and vy &gt; 0 and player.bottom - vy &lt;= plat.top:
+                player.bottom = plat.top
+                vy = 0
+                on_ground = True
+
+        for coin in coins[:]:            # loop over a COPY
+            if player.colliderect(coin):
+                coins.remove(coin)
+                score += 1
+
+        if player.colliderect(flag) and len(coins) == 0:
+            won = True
+
+        if player.top &gt; 480:             # fell into a pit
+            player.x, player.y = 100, 380
+            vy = 0
+
+    # draw
+    screen.fill((25, 30, 60))
+    for plat in platforms:
+        pygame.draw.rect(screen, (6, 214, 160), plat)
+    for coin in coins:
+        pygame.draw.rect(screen, (255, 209, 102), coin)
+    pygame.draw.rect(screen, (247, 160, 30), flag)
+    pygame.draw.rect(screen, (255, 119, 0), player)
+    screen.blit(font.render("Score: " + str(score), True, (255, 255, 255)), (12, 12))
+    if won:
+        msg = big_font.render("YOU WIN!", True, (255, 209, 102))
+        screen.blit(msg, (250, 190))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()</pre>
+        </div>
+      </details>
 
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
@@ -576,6 +675,189 @@ else:
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Platformer finale — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Patrolling enemies with head-stomps, a 2400px scrolling camera, carry-you moving platforms, deadly spikes, fair checkpoints, and two chained levels ending in a CHAMPION screen — one file. Both levels are completable. Save it as <code>game.py</code>, run <code>python game.py</code>, and play. Stuck on a step? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
+      <pre class="code-pre">import pygame
+pygame.init()
+screen = pygame.display.set_mode((800, 480))
+pygame.display.set_caption("Sky Hopper: The Finale")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 64)
+LEVEL_W = 2400
+
+def load_level(n):
+    if n == 0:
+        return {
+            "platforms": [pygame.Rect(0, 440, LEVEL_W, 40),
+                          pygame.Rect(300, 340, 140, 16),
+                          pygame.Rect(620, 260, 150, 16),
+                          pygame.Rect(1500, 340, 160, 16)],
+            "enemies": [{"rect": pygame.Rect(500, 416, 30, 24), "vx": 2, "min_x": 460, "max_x": 720},
+                        {"rect": pygame.Rect(1700, 416, 30, 24), "vx": 2, "min_x": 1650, "max_x": 1860}],
+            "movers": [{"rect": pygame.Rect(900, 320, 120, 16), "vx": 2, "min_x": 900, "max_x": 1240}],
+            "spikes": [pygame.Rect(760, 424, 40, 16), pygame.Rect(1400, 424, 80, 16)],
+            "checkpoints": [pygame.Rect(1000, 380, 12, 60), pygame.Rect(1900, 380, 12, 60)],
+            "coins": [pygame.Rect(350, 300, 18, 18), pygame.Rect(670, 220, 18, 18), pygame.Rect(1560, 300, 18, 18)],
+            "door": pygame.Rect(2320, 380, 30, 60),
+        }
+    return {
+        "platforms": [pygame.Rect(0, 440, LEVEL_W, 40),
+                      pygame.Rect(450, 330, 140, 16),
+                      pygame.Rect(1100, 300, 160, 16),
+                      pygame.Rect(1800, 340, 160, 16)],
+        "enemies": [{"rect": pygame.Rect(700, 416, 30, 24), "vx": 3, "min_x": 640, "max_x": 980},
+                    {"rect": pygame.Rect(1500, 416, 30, 24), "vx": 3, "min_x": 1450, "max_x": 1700}],
+        "movers": [{"rect": pygame.Rect(1150, 300, 120, 16), "vx": 3, "min_x": 1100, "max_x": 1500}],
+        "spikes": [pygame.Rect(600, 424, 80, 16), pygame.Rect(1300, 424, 80, 16), pygame.Rect(2000, 424, 80, 16)],
+        "checkpoints": [pygame.Rect(1050, 380, 12, 60), pygame.Rect(1950, 380, 12, 60)],
+        "coins": [pygame.Rect(500, 290, 18, 18), pygame.Rect(1160, 260, 18, 18), pygame.Rect(1850, 300, 18, 18)],
+        "door": pygame.Rect(2320, 380, 30, 60),
+    }
+
+current = 0
+level = load_level(0)
+player = pygame.Rect(100, 380, 34, 44)
+vy = 0
+on_ground = False
+respawn = (100, 380)
+score = 0
+state = "PLAY"
+
+def die():
+    global vy
+    player.x, player.y = respawn
+    vy = 0
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r and state == "CHAMPION":
+                current = 0
+                level = load_level(0)
+                player.x, player.y = 100, 380
+                vy = 0
+                respawn = (100, 380)
+                score = 0
+                state = "PLAY"
+            elif event.key == pygame.K_SPACE and on_ground and state == "PLAY":
+                vy = -16
+                on_ground = False
+
+    if state == "PLAY":
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            player.x -= 5
+        if keys[pygame.K_RIGHT]:
+            player.x += 5
+        if player.left &lt; 0:
+            player.left = 0
+        if player.right &gt; LEVEL_W:
+            player.right = LEVEL_W
+
+        for en in level["enemies"]:
+            en["rect"].x += en["vx"]
+            if en["rect"].x &lt;= en["min_x"] or en["rect"].x &gt;= en["max_x"]:
+                en["vx"] = -en["vx"]
+        for m in level["movers"]:
+            m["rect"].x += m["vx"]
+            if m["rect"].x &lt;= m["min_x"] or m["rect"].x &gt;= m["max_x"]:
+                m["vx"] = -m["vx"]
+
+        vy += 1
+        player.y += vy
+        on_ground = False
+        riding = None
+        for plat in level["platforms"]:
+            if player.colliderect(plat) and vy &gt; 0 and player.bottom - vy &lt;= plat.top:
+                player.bottom = plat.top
+                vy = 0
+                on_ground = True
+        for m in level["movers"]:
+            if player.colliderect(m["rect"]) and vy &gt; 0 and player.bottom - vy &lt;= m["rect"].top:
+                player.bottom = m["rect"].top
+                vy = 0
+                on_ground = True
+                riding = m
+        if riding:
+            player.x += riding["vx"]        # carried by the platform
+
+        for en in level["enemies"][:]:
+            if player.colliderect(en["rect"]):
+                if vy &gt; 0 and player.bottom - vy &lt;= en["rect"].top + 8:
+                    level["enemies"].remove(en)     # STOMP
+                    vy = -10
+                    score += 5
+                else:
+                    die()
+
+        for sp in level["spikes"]:
+            if player.colliderect(sp):
+                die()
+
+        for cp in level["checkpoints"]:
+            if player.colliderect(cp):
+                respawn = (cp.x, cp.y - 44)
+
+        for c in level["coins"][:]:
+            if player.colliderect(c):
+                level["coins"].remove(c)
+                score += 1
+
+        if player.top &gt; 480:
+            die()
+
+        if player.colliderect(level["door"]):
+            current += 1
+            if current &lt; 2:
+                level = load_level(current)
+                player.x, player.y = 100, 380
+                vy = 0
+                respawn = (100, 380)
+            else:
+                state = "CHAMPION"
+
+    # ---- draw ----
+    cam_x = player.centerx - 400
+    cam_x = max(0, min(LEVEL_W - 800, cam_x))
+    screen.fill((25, 30, 60))
+    for plat in level["platforms"]:
+        pygame.draw.rect(screen, (6, 214, 160), (plat.x - cam_x, plat.y, plat.width, plat.height))
+    for m in level["movers"]:
+        pygame.draw.rect(screen, (129, 140, 248), (m["rect"].x - cam_x, m["rect"].y, m["rect"].width, m["rect"].height))
+    for sp in level["spikes"]:
+        pygame.draw.polygon(screen, (248, 113, 113),
+                            [(sp.x - cam_x, sp.bottom), (sp.centerx - cam_x, sp.y), (sp.right - cam_x, sp.bottom)])
+    for cp in level["checkpoints"]:
+        pygame.draw.rect(screen, (250, 204, 21), (cp.x - cam_x, cp.y, cp.width, cp.height))
+    for c in level["coins"]:
+        pygame.draw.ellipse(screen, (255, 209, 102), (c.x - cam_x, c.y, c.width, c.height))
+    for en in level["enemies"]:
+        pygame.draw.rect(screen, (239, 68, 68), (en["rect"].x - cam_x, en["rect"].y, en["rect"].width, en["rect"].height))
+    d = level["door"]
+    pygame.draw.rect(screen, (167, 139, 250), (d.x - cam_x, d.y, d.width, d.height))
+    pygame.draw.rect(screen, (255, 119, 0), (player.x - cam_x, player.y, player.width, player.height))
+
+    screen.blit(font.render("Score: " + str(score) + "    Level " + str(current + 1), True, (255, 255, 255)), (12, 12))
+    if state == "CHAMPION":
+        msg = big_font.render("CHAMPION!", True, (255, 209, 102))
+        screen.blit(msg, msg.get_rect(center=(400, 210)))
+        sub = font.render("Final score " + str(score) + " - press R", True, (255, 255, 255))
+        screen.blit(sub, sub.get_rect(center=(400, 260)))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">
