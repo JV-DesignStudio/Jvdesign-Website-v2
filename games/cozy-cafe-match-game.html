@@ -403,6 +403,20 @@
   }
 
   /* Walking cat */
+  /* Floating "+N coin" feedback */
+  .coin-float { position: fixed; z-index: 120; pointer-events: none; font-family: 'Fraunces', serif; font-weight: 900; font-size: 18px; color: #C9992F; text-shadow: 0 1px 3px rgba(255,255,255,.6); animation: coinFloat .9s ease-out forwards; }
+  body.night .coin-float { color: var(--sun); text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  @keyframes coinFloat { 0% { opacity: 0; transform: translateY(0) scale(.7); } 15% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-42px) scale(1); } }
+  .stat-pill.coins.bump { animation: coinBump .35s ease; }
+  @keyframes coinBump { 0%,100% { transform: scale(1); } 40% { transform: scale(1.18); } }
+  /* Idle hint: gently pulse a valid pair */
+  .tile.hint { animation: hintPulse 1s ease-in-out infinite; z-index: 5; }
+  @keyframes hintPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.16); filter: brightness(1.15) drop-shadow(0 0 8px var(--sun)); } }
+  /* Notification dot on nav buttons */
+  .bb-btn { position: relative; }
+  .nav-dot { position: absolute; top: 3px; right: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose-deep); border: 2px solid var(--milk); display: none; }
+  .nav-dot.show { display: block; }
+
   .booster-bar { display: flex; gap: 8px; justify-content: center; padding: 6px 0 2px; }
   .booster-btn { position: relative; flex: 1; max-width: 110px; background: var(--milk); border: 2px solid var(--cream-deep); border-radius: 14px; padding: 7px 4px 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: transform .1s; }
   .booster-btn:active { transform: scale(.95); }
@@ -526,8 +540,10 @@
     text-align: center;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.achievement { background: var(--sun); color: var(--cocoa); }
-  .toast.combo { background: var(--rose-deep); color: var(--cream); }
+  /* NB: prefixed to avoid colliding with game-system.css's .achievement
+     (which is a square grid card and mangled the toast). */
+  .toast.t-achievement { background: var(--sun); color: var(--cocoa); }
+  .toast.t-combo { background: var(--rose-deep); color: var(--cream); }
 
   /* MODAL */
   .modal-backdrop {
@@ -894,7 +910,7 @@
   <div class="bottombar">
     <button class="bb-btn" id="settingsBtn" aria-label="Settings"><span class="bb-icon">⚙️</span>Settings</button>
     <button class="bb-btn" id="shopBtn" aria-label="Open shop"><span class="bb-icon">🛍️</span>Shop</button>
-    <button class="bb-btn" id="questBtn" aria-label="Crew requests"><span class="bb-icon">🎯</span>Quests</button>
+    <button class="bb-btn" id="questBtn" aria-label="Crew requests and daily tasks"><span class="nav-dot" id="questDot"></span><span class="bb-icon">🎯</span>Quests</button>
     <button class="bb-btn" id="achBtn" aria-label="View achievements"><span class="bb-icon">🏆</span>Goals</button>
     <button class="bb-btn" id="storyBtn" aria-label="Read the cafe story"><span class="bb-icon">📖</span>Story</button>
     <button class="bb-btn" id="resetBtn" aria-label="Buy a fresh board for 25 coins"><span class="bb-icon">↻</span>New 25🪙</button>
@@ -2114,6 +2130,8 @@ function updateHUD() {
   $('cravingFill').style.width = Math.min(100, (cravingProgress / cravingTarget) * 100) + '%';
   $('cravingIcon').innerHTML = renderTileSVG(currentGuest.favourite);
   $('coinCount').textContent = vault.coins;
+  if (window._lastCoins != null && vault.coins > window._lastCoins && window.floatCoins) window.floatCoins(vault.coins - window._lastCoins);
+  window._lastCoins = vault.coins;
   $('happyCount').textContent = vault.happiness;
 
   const q = $('orderQueue');
@@ -2404,7 +2422,7 @@ function processToastQueue() {
   const { msg, kind } = toastQueue.shift();
   const t = $('toast');
   t.textContent = msg;
-  t.className = 'toast show ' + kind;
+  t.className = 'toast show' + (kind ? ' t-' + kind : '');
   // Achievement toasts linger longer so you can actually read them
   const duration = kind === 'achievement' ? 2800 : 1800;
   setTimeout(() => {
@@ -2676,7 +2694,58 @@ function renderQuests() {
   list.querySelectorAll('[data-cq]').forEach(b => b.addEventListener('click', () => claimCrewQuest(b.dataset.cq)));
   renderPowerQuests(list);
 }
-$('questBtn').addEventListener('click', () => { renderQuests(); $('questModal').classList.add('show'); });
+$('questBtn').addEventListener('click', () => { renderQuests(); $('questModal').classList.add('show'); updateQuestDot(); });
+
+// ============ VISUAL FEEDBACK: floating coins ============
+window.floatCoins = function (n) {
+  const pill = document.querySelector('.stat-pill.coins');
+  if (!pill) return;
+  pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump');
+  const r = pill.getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'coin-float';
+  f.textContent = '+' + n + ' 🪙';
+  f.style.left = (r.left + r.width / 2 - 22) + 'px';
+  f.style.top = (r.bottom - 4) + 'px';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 900);
+};
+
+// ============ STUCK HELP: idle hint ============
+function findHint() {
+  for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) {
+    if (c < GRID_SIZE - 1) { swapCells({ r, c }, { r, c: c + 1 }); const ok = findMatches().length > 0; swapCells({ r, c }, { r, c: c + 1 }); if (ok) return [{ r, c }, { r, c: c + 1 }]; }
+    if (r < GRID_SIZE - 1) { swapCells({ r, c }, { r: r + 1, c }); const ok = findMatches().length > 0; swapCells({ r, c }, { r: r + 1, c }); if (ok) return [{ r, c }, { r: r + 1, c }]; }
+  }
+  return null;
+}
+let hintTimer = null;
+function clearHint() { document.querySelectorAll('.tile.hint').forEach(t => t.classList.remove('hint')); }
+function showHint() {
+  if (busy) return;
+  const pair = findHint(); if (!pair) return;
+  clearHint();
+  pair.forEach(p => { const el = boardEl.children[p.r * GRID_SIZE + p.c]; if (el) el.classList.add('hint'); });
+}
+function scheduleHint() { clearTimeout(hintTimer); clearHint(); hintTimer = setTimeout(showHint, 6000); }
+boardEl.addEventListener('pointerdown', scheduleHint);
+scheduleHint();
+
+// ============ DAILY VISIBILITY: badge the Quests button ============
+function questClaimable() {
+  try {
+    const d = getDaily(), w = getWeekly();
+    if (!d.claimed && d.progress >= d.target) return true;
+    if (!w.claimed && w.progress >= w.target) return true;
+    if (CREW_ORDER.some(id => { const q = CHAR_QUESTS[id][crewQIdx(id)]; return q && q.cur(vault) >= q.goal; })) return true;
+    const pq = POWER_QUESTS[powerQIdx()];
+    if (pq && pq.cur(vault) >= pq.goal) return true;
+  } catch (e) {}
+  return false;
+}
+function updateQuestDot() { const d = $('questDot'); if (d) d.classList.toggle('show', questClaimable()); }
+setInterval(updateQuestDot, 3000);
+updateQuestDot();
 
 // ============ POWER-UP BOOSTERS ============
 async function settleCascades() {
