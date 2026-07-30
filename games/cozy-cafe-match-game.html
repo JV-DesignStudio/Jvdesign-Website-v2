@@ -466,6 +466,15 @@
   .cat.active-right { animation: catWalkRight 14s linear; }
   .cat.active-left  { animation: catWalkLeft 14s linear; }
 
+  /* Special tiles: an emoji badge over the snack marks it as a power tile. */
+  .tile.bomb::after, .tile.cross::after {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 21px; z-index: 3; pointer-events: none; animation: specialPulse 1.1s ease-in-out infinite;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.35));
+  }
+  .tile.bomb::after { content: '💣'; }
+  .tile.cross::after { content: '🎆'; }
+  @keyframes specialPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.18); } }
   .tile.striped-h::before, .tile.striped-v::before {
     content: '';
     position: absolute;
@@ -476,14 +485,6 @@
   }
   .tile.striped-v::before {
     background: repeating-linear-gradient(0deg, transparent 0, transparent 4px, rgba(255,255,255,0.55) 4px, rgba(255,255,255,0.55) 6px);
-  }
-  .tile.bomb::after {
-    content: '✦';
-    position: absolute;
-    font-size: 22px;
-    color: white;
-    text-shadow: 0 0 4px rgba(0,0,0,0.4);
-    pointer-events: none;
   }
   .tile.rainbow {
     background: conic-gradient(from 0deg, #F4B6C2, #F5C76A, #B8DDC8, #C9B8E0, #F4B6C2);
@@ -1348,6 +1349,9 @@ const ACHIEVEMENTS = [
   { id: 'rainbow_made',name: 'Over the Rainbow',desc:'Create a rainbow tile',         icon: '🌈', check: v => v.stats.rainbows_made >= 1 },
   { id: 'powers_25',   name: 'Power Hour',     desc: 'Create 25 power-ups',           icon: '✨', check: v => (v.stats.powerups_made || 0) >= 25 },
   { id: 'rainbow_5',   name: 'Prism Master',   desc: 'Create 5 rainbow tiles',        icon: '🦄', check: v => (v.stats.rainbows_made || 0) >= 5 },
+  { id: 'bomb_maker',  name: 'Boom!',          desc: 'Make a bomb (match an L or T shape)', icon: '💣', check: v => (v.stats.bombs_made || 0) >= 1 },
+  { id: 'firework_pro',name: 'Fireworks!',     desc: 'Make a firework (a big cross match)', icon: '🎆', check: v => (v.stats.fireworks_made || 0) >= 1 },
+  { id: 'bombs_10',    name: 'Demolition',     desc: 'Make 10 bombs',                 icon: '🧨', check: v => (v.stats.bombs_made || 0) >= 10 },
 
   // ----- Customisation -----
   { id: 'wear_hat',    name: 'Looking Sharp',  desc: 'Equip a hat from the shop',     icon: '🎩', check: v => !!(v.equipped && v.equipped.hat) },
@@ -1686,7 +1690,13 @@ async function attemptSwap(a, b) {
       const powA = ca.power, powB = cb.power;
       const bothStriped = (powA === 'striped-h' || powA === 'striped-v') && (powB === 'striped-h' || powB === 'striped-v');
       const oneBomb = powA === 'bomb' || powB === 'bomb';
-      if (bothStriped) {
+      const oneCross = powA === 'cross' || powB === 'cross';
+      if (oneCross) {
+        // Firework combo: clear a 3-wide row AND a 3-wide column.
+        for (let rr = Math.max(0, b.r-1); rr <= Math.min(GRID_SIZE-1, b.r+1); rr++) for (let cc = 0; cc < GRID_SIZE; cc++) cells.push({ r: rr, c: cc });
+        for (let cc = Math.max(0, b.c-1); cc <= Math.min(GRID_SIZE-1, b.c+1); cc++) for (let rr = 0; rr < GRID_SIZE; rr++) cells.push({ r: rr, c: cc });
+        Audio.sfxBomb();
+      } else if (bothStriped) {
         // Clear the row AND column of b
         for (let cc = 0; cc < GRID_SIZE; cc++) cells.push({ r: b.r, c: cc });
         for (let rr = 0; rr < GRID_SIZE; rr++) cells.push({ r: rr, c: b.c });
@@ -1821,6 +1831,11 @@ async function resolveMatches(runs) {
             const k = `${rr},${cc}`; if (!triggered.has(k)) { triggered.add(k); added = true; }
           }
         }
+      } else if (power === 'cross') {
+        // Firework: clears the whole row AND the whole column.
+        Audio.sfxBomb();
+        for (let cc = 0; cc < GRID_SIZE; cc++) { const k = `${r},${cc}`; if (!triggered.has(k)) { triggered.add(k); added = true; } }
+        for (let rr = 0; rr < GRID_SIZE; rr++) { const k = `${rr},${c}`; if (!triggered.has(k)) { triggered.add(k); added = true; } }
       }
     }
   }
@@ -1828,8 +1843,29 @@ async function resolveMatches(runs) {
   scoreMatches(triggered);
 
   const powerSpawns = [];
+  const consumed = new Set();
+  // L / T / + shapes (a horizontal run crossing a vertical run of the same
+  // snack) spawn a Bomb — or a Firework if the shape is really big.
+  const hRuns = runs.filter(r => r.dir === 'h');
+  const vRuns = runs.filter(r => r.dir === 'v');
+  for (const h of hRuns) {
+    for (const v of vRuns) {
+      if (h.type !== v.type) continue;
+      const shared = h.cells.find(hc => v.cells.some(vc => vc.r === hc.r && vc.c === hc.c));
+      if (!shared) continue;
+      const total = h.length + v.length - 1;
+      if (total >= 5) {
+        const power = total >= 7 ? 'cross' : 'bomb';
+        powerSpawns.push({ r: shared.r, c: shared.c, power, type: h.type });
+        vault.stats.powerups_made = (vault.stats.powerups_made || 0) + 1;
+        if (power === 'bomb') vault.stats.bombs_made = (vault.stats.bombs_made || 0) + 1;
+        else vault.stats.fireworks_made = (vault.stats.fireworks_made || 0) + 1;
+        consumed.add(h); consumed.add(v);
+      }
+    }
+  }
   for (const run of runs) {
-    if (run.dir === 'rainbow' || run.dir === 'combo') continue;
+    if (run.dir === 'rainbow' || run.dir === 'combo' || consumed.has(run)) continue;
     const spawnCell = run.cells[Math.floor(run.cells.length / 2)];
     if (run.length >= 5) {
       powerSpawns.push({ r: spawnCell.r, c: spawnCell.c, power: 'rainbow', type: run.type });
