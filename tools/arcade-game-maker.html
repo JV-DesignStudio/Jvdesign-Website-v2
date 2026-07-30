@@ -8178,7 +8178,7 @@ function _launchPhaserGame() {
                     }
                     scenes.forEach(s => {
                         if (!_hitStop._active) {
-                            if (s.physics && s.physics.world) s.physics.world.timeScale = spd;
+                            _setPhysicsSpeed(s, spd);
                             if (s.time) s.time.timeScale = spd;
                         }
                         // Win condition check
@@ -9087,7 +9087,7 @@ function _sceneTickBase(scene, score) {
     }
     const spd = liveConfig.gameSpeed || 1.0;
     if (!_hitStop._active) {
-        if (scene.physics && scene.physics.world) scene.physics.world.timeScale = spd;
+        _setPhysicsSpeed(scene, spd);
         if (scene.time) scene.time.timeScale = spd;
     }
     if (_speedRunActive && !_speedRunStart) {
@@ -9114,6 +9114,23 @@ function _shake(intensity, duration) {
     sc.cameras.main.shake(ms, px / 1000);
 }
 
+/**
+ * Set Arcade Physics speed from a normal speed MULTIPLIER (2 = twice as fast).
+ *
+ * Arcade Physics' world.timeScale is inverted with respect to that: a value of
+ * 2 runs bodies at HALF speed and 0.5 runs them at DOUBLE speed. Assigning a
+ * multiplier straight to it therefore did the opposite of what was intended
+ * everywhere it was used. Worst case was the hit-stop below, which assigned
+ * 0.04 meaning "nearly frozen" and actually ran physics about 25x FASTER, so
+ * killing an enemy hurled the player across the screen. The Scene clock
+ * (time.timeScale) is NOT inverted, so it keeps taking the multiplier as-is.
+ */
+function _setPhysicsSpeed(scene, multiplier) {
+    if (!scene || !scene.physics || !scene.physics.world) return;
+    const m = multiplier || 1;
+    scene.physics.world.timeScale = 1 / m;
+}
+
 /** Briefly freeze physics + time (hit-stop), uses real setTimeout to avoid timeScale recursion */
 function _hitStop(ms) {
     if (!liveConfig.juiceEnabled || !liveConfig.juiceHitStop) return;
@@ -9123,12 +9140,11 @@ function _hitStop(ms) {
     const freeze = (ms !== undefined ? ms : liveConfig.juiceHitStopMs) || 55;
     const prevSpd = liveConfig.gameSpeed || 1.0;
     _hitStop._active = true;
-    if (sc.physics && sc.physics.world) sc.physics.world.timeScale = 0.04;
+    _setPhysicsSpeed(sc, 0.04);
     if (sc.time) sc.time.timeScale = 0.04;
     setTimeout(() => {
         _hitStop._active = false;
-        if (_activeScene && _activeScene.physics && _activeScene.physics.world)
-            _activeScene.physics.world.timeScale = liveConfig.gameSpeed || 1.0;
+        _setPhysicsSpeed(_activeScene, liveConfig.gameSpeed || 1.0);
         if (_activeScene && _activeScene.time)
             _activeScene.time.timeScale = liveConfig.gameSpeed || 1.0;
     }, freeze);
@@ -10554,7 +10570,11 @@ function scenePlatformer(data) {
             if (firstSolid) { spawnX = firstSolid.col * tileW + tileW / 2; spawnY = firstSolid.row * tileH - tileH; }
             this._tmSpawnX = spawnX; this._tmSpawnY = spawnY;
         }
-        update() {
+        // Phaser calls update(time, delta). This signature previously took no
+        // arguments while the body used `delta` for coyote time and the dash
+        // timers, so stepping off a ledge threw "delta is not defined" every
+        // frame and aborted the rest of update with it.
+        update(time, delta) {
             // Parallax: tile sprites fixed to cam, offset tilePosition proportional to scroll
             const camX = this.cameras.main.scrollX;
             if (this._bgFar)  this._bgFar.tilePositionX  = camX * 0.18;
@@ -15484,9 +15504,12 @@ window.addEventListener('DOMContentLoaded',function(){
         // Fetch failed, leave the local <script src> tag so it still works when opened alongside the file
         console.warn('exportGame: could not inline Phaser, keeping local script tag', e);
     }
-    // The offline QR generator is maker-only; drop its <script> from the exported
-    // game so the standalone file has no dangling reference to it.
-    root.querySelectorAll('script[src*="qrcode-generator"]').forEach(s => s.remove());
+    // Maker-only scripts (the offline QR generator, plus anything the packaged
+    // app injects and marks data-maker-only) must not survive into the exported
+    // game, or the standalone file carries dangling references to files that
+    // are not shipped beside it.
+    root.querySelectorAll('script[src*="qrcode-generator"],script[data-maker-only],link[data-maker-only]')
+        .forEach(s => s.remove());
     // Patch <title> and OG tags to reflect the game's actual name
     const _exportTitle = _engineData.title || 'My Arcade Game';
     const _titleEl = root.querySelector('title');
@@ -19536,6 +19559,26 @@ window.addEventListener('DOMContentLoaded', ()=>{
                     } catch(e) { console.warn('Share leaderboard seed:', e); }
                 }
                 onGenreChange();
+                // onGenreChange() resets speed/gravity/jump to that genre's
+                // factory defaults, so it wipes the values applied above and
+                // the recipient silently gets a stock game instead of the one
+                // that was shared. Re-apply the creator's tuning after it.
+                {
+                    const _sp = d.speed || 200, _gr = d.gravity || 600, _jp = d.jump || 450;
+                    const _set = (id, rangeId, valId, v) => {
+                        const el = document.getElementById(id), rg = document.getElementById(rangeId),
+                              tv = document.getElementById(valId);
+                        if (el) el.value = v;
+                        if (rg) rg.value = v;
+                        if (tv) tv.textContent = v;
+                    };
+                    _set('playerSpeed', 'playerSpeedRange', 'speedVal', _sp);
+                    _set('gravityY', 'gravityRange', 'gravityVal', _gr);
+                    _set('jumpForce', 'jumpForceRange', 'jumpVal', _jp);
+                    liveConfig.speed = _sp;
+                    liveConfig.gravity = _gr;
+                    liveConfig.jumpForce = _jp;
+                }
                 loadedOk = true;
                 if (!isRemix) window._shareAutoStart = true;
                 // Update page title + OG tags for social share previews

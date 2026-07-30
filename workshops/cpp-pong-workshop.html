@@ -174,15 +174,15 @@
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800, 500), "C++ Pong");
+    sf::RenderWindow window(sf::VideoMode({800, 500}), "C++ Pong");
     window.setFramerateLimit(60);
 
     while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event))
-            if (event.type == sf::Event::Closed)
+        while (const std::optional event = window.pollEvent())
+            if (event-&gt;is&lt;sf::Event::Closed&gt;())
                 window.close();
 
         window.clear(sf::Color(15, 18, 32));
@@ -241,23 +241,23 @@ int main() {
       <ul class="steps-list">
         <li><span class="num-badge">1</span><span>SFML gives us <strong>sf::RectangleShape</strong>, set a size, a position and a colour.</span></li>
         <li><span class="num-badge">2</span><span>Real-time input is one call: <strong>sf::Keyboard::isKeyPressed(sf::Keyboard::W)</strong>, true while held.</span></li>
-        <li><span class="num-badge">3</span><span>Move paddles with <strong>shape.move(0, ±speed)</strong>, then clamp using getPosition().</span></li>
+        <li><span class="num-badge">3</span><span>Move paddles with <strong>shape.move({0, ±speed})</strong>, then clamp using getPosition().</span></li>
         <li><span class="num-badge">4</span><span>Draw between clear() and display(): <strong>window.draw(paddle1);</strong></span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::RectangleShape paddle1(sf::Vector2f(14, 90));
-paddle1.setPosition(20, 205);
+paddle1.setPosition({20, 205});
 paddle1.setFillColor(sf::Color::White);
 
 sf::RectangleShape paddle2 = paddle1;
-paddle2.setPosition(766, 205);
+paddle2.setPosition({766, 205});
 
 // inside the loop, before drawing:
 float speed = 6.f;
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))    paddle1.move(0, -speed);
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))    paddle1.move(0,  speed);
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))   paddle2.move(0, -speed);
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) paddle2.move(0,  speed);
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    paddle1.move({0, -speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    paddle1.move({0,  speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   paddle2.move({0, -speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) paddle2.move({0,  speed});
 
 window.draw(paddle1);
 window.draw(paddle2);</pre>
@@ -272,10 +272,10 @@ window.draw(paddle2);</pre>
         <div class="cc-prompt">Move paddle 1 with W and S:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-    paddle1.move(0, <input class="cc-blank" data-a="LXNwZWVk" placeholder="??????" size="7">);
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-    paddle1.move(0, <input class="cc-blank" data-a="c3BlZWQ=" placeholder="?????" size="6">);</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+    paddle1.move({0, <input class="cc-blank" data-a="LXNwZWVk" placeholder="??????" size="7">});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+    paddle1.move({0, <input class="cc-blank" data-a="c3BlZWQ=" placeholder="?????" size="6">});</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -325,13 +325,13 @@ if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::CircleShape ball(7);
-ball.setPosition(393, 243);
+ball.setPosition({393, 243});
 float bvx = 300.f, bvy = 180.f;
 sf::Clock clock;
 
 // in the loop:
 float dt = clock.restart().asSeconds();
-ball.move(bvx * dt, bvy * dt);
+ball.move({bvx * dt, bvy * dt});
 
 if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
     bvy = -bvy;</pre>
@@ -374,7 +374,7 @@ if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
       <div class="step-title-wrap">
         <div class="step-emoji">💥</div>
         <div class="step-title">Paddle Collision &amp; Spin</div>
-        <div class="step-blurb">getGlobalBounds().intersects() plus angle control</div>
+        <div class="step-blurb">getGlobalBounds().findIntersection() plus angle control</div>
       </div>
       <span class="step-status ss-todo">Locked</span>
     </div>
@@ -384,20 +384,20 @@ if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
         <div class="big-goal-text"><strong>Goal for this step</strong><p>Bounce the ball off paddles with player-controlled angles.</p></div>
       </div>
       <ul class="steps-list">
-        <li><span class="num-badge">1</span><span>Every SFML shape has <strong>getGlobalBounds()</strong> returning a FloatRect, and FloatRects have <strong>.intersects(other)</strong>.</span></li>
+        <li><span class="num-badge">1</span><span>Every SFML shape has <strong>getGlobalBounds()</strong> returning a FloatRect, and FloatRects have <strong>.findIntersection(other)</strong> (SFML 3 renamed it from intersects).</span></li>
         <li><span class="num-badge">2</span><span>On paddle hit (moving toward it): flip bvx, and set bvy from the hit offset, centre hits go flat, edge hits go steep.</span></li>
         <li><span class="num-badge">3</span><span>Speed up each rally: multiply bvx by 1.05 (cap ~700).</span></li>
         <li><span class="num-badge">4</span><span>This is the same spin logic as Java Breakout, patterns transfer across languages!</span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::FloatRect b = ball.getGlobalBounds();
-if (b.intersects(paddle1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
+if (b.findIntersection(paddle1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
     bvx = -bvx * 1.05f;
     float padCentre  = paddle1.getPosition().y + 45;
     float ballCentre = ball.getPosition().y + 7;
     bvy = (ballCentre - padCentre) * 5.f;
 }
-if (b.intersects(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
+if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
     bvx = -bvx * 1.05f;
     float padCentre  = paddle2.getPosition().y + 45;
     float ballCentre = ball.getPosition().y + 7;
@@ -414,7 +414,7 @@ if (b.intersects(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
         <div class="cc-prompt">Detect the ball hitting paddle 1:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.<input class="cc-blank" data-a="aW50ZXJzZWN0cw==" placeholder="????????" size="11">(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="????????" size="16">()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="?" size="4">)
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.<input class="cc-blank" data-a="ZmluZEludGVyc2VjdGlvbg==" placeholder="????????????????" size="17">(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="????????" size="16">()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="?" size="4">)
     bvx = -bvx * 1.05f;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -459,21 +459,21 @@ if (b.intersects(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
       </div>
       <ul class="steps-list">
         <li><span class="num-badge">1</span><span>SFML needs a font FILE: download a free .ttf (or copy one from C:\Windows\Fonts, e.g. arial.ttf) next to your .cpp.</span></li>
-        <li><span class="num-badge">2</span><span>Load once: <strong>sf::Font font; font.loadFromFile("arial.ttf");</strong>, always check it loaded!</span></li>
+        <li><span class="num-badge">2</span><span>Load once: <strong>sf::Font font; font.openFromFile("arial.ttf");</strong>, always check it loaded!</span></li>
         <li><span class="num-badge">3</span><span>An <strong>sf::Text</strong> uses the font: set character size 48, position top-centre; update its string each frame with std::to_string.</span></li>
         <li><span class="num-badge">4</span><span>Ball out left → player 2 scores; out right → player 1; then reset to centre with a serve toward the loser.</span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::Font font;
-if (!font.loadFromFile("arial.ttf")) return 1;
-sf::Text scoreText("0   0", font, 48);
-scoreText.setPosition(330, 20);
+if (!font.openFromFile("arial.ttf")) return 1;
+sf::Text scoreText(font, "0   0", 48);
+scoreText.setPosition({330, 20});
 int s1 = 0, s2 = 0;
 
 // scoring:
 float bx = ball.getPosition().x;
-if (bx &lt; -20)  { s2++; ball.setPosition(393, 243); bvx = 300;  bvy = 180; }
-if (bx &gt; 820)  { s1++; ball.setPosition(393, 243); bvx = -300; bvy = 180; }
+if (bx &lt; -20)  { s2++; ball.setPosition({393, 243}); bvx = 300;  bvy = 180; }
+if (bx &gt; 820)  { s1++; ball.setPosition({393, 243}); bvx = -300; bvy = 180; }
 scoreText.setString(std::to_string(s1) + "   " + std::to_string(s2));</pre>
   </div>
 
@@ -494,7 +494,7 @@ scoreText.setString(std::to_string(s1) + "   " + std::to_string(s2));</pre>
           <div class="quiz-title">Knowledge Check</div>
           <div class="quiz-xp-badge">+15 XP</div>
         </div>
-        <div class="quiz-question">Why check the return value of <strong>loadFromFile</strong>?</div>
+        <div class="quiz-question">Why check the return value of <strong>openFromFile</strong>?</div>
         <div class="quiz-options">
           <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It returns the font size</span></div>
           <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A missing font file fails silently otherwise, you would draw invisible text and hunt the bug for hours</span></div>
@@ -536,8 +536,8 @@ float aiSpeed = 5.f, deadZone = 18.f;
 if (vsComputer) {
     float padCentre  = paddle2.getPosition().y + 45;
     float ballCentre = ball.getPosition().y + 7;
-    if (padCentre &lt; ballCentre - deadZone) paddle2.move(0,  aiSpeed);
-    if (padCentre &gt; ballCentre + deadZone) paddle2.move(0, -aiSpeed);
+    if (padCentre &lt; ballCentre - deadZone) paddle2.move({0,  aiSpeed});
+    if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, -aiSpeed});
 }
 
 bool gameOver = (s1 == 7 || s2 == 7);</pre>
@@ -552,8 +552,8 @@ bool gameOver = (s1 == 7 || s2 == 7);</pre>
         <div class="cc-prompt">Write the flawed-on-purpose AI chase:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - <input class="cc-blank" data-a="ZGVhZFpvbmU=" placeholder="????????" size="9">) paddle2.move(0, <input class="cc-blank" data-a="YWlTcGVlZA==" placeholder="???????" size="8">);
-if (padCentre &gt; ballCentre + deadZone) paddle2.move(0, <input class="cc-blank" data-a="LWFpU3BlZWQ=" placeholder="????????" size="9">);</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - <input class="cc-blank" data-a="ZGVhZFpvbmU=" placeholder="????????" size="9">) paddle2.move({0, <input class="cc-blank" data-a="YWlTcGVlZA==" placeholder="???????" size="8">});
+if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, <input class="cc-blank" data-a="LWFpU3BlZWQ=" placeholder="????????" size="9">});</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
