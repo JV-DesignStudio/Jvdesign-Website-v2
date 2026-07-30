@@ -417,6 +417,26 @@
   .nav-dot { position: absolute; top: 3px; right: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose-deep); border: 2px solid var(--milk); display: none; }
   .nav-dot.show { display: block; }
 
+  /* GIFTS / DAILY REWARDS */
+  .gift-section { background: var(--milk); border: 2px solid var(--cream-deep); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .gift-section-title { font-family: 'Fraunces', serif; font-weight: 600; color: var(--cocoa); font-size: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .streak-badge { font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800; background: var(--rose-deep); color: #fff; padding: 3px 9px; border-radius: 100px; }
+  .streak-badge:empty { display: none; }
+  .daily-track { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .daily-cell { position: relative; min-width: 0; aspect-ratio: 1; border-radius: 10px; background: var(--cream); border: 2px solid var(--cream-deep); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 2px; }
+  .daily-cell .dc-day { font-size: 8px; font-weight: 800; color: var(--cocoa-soft); text-transform: uppercase; letter-spacing: 0.3px; }
+  .daily-cell .dc-emoji { font-size: 16px; line-height: 1; }
+  .daily-cell .dc-amt { font-size: 8px; font-weight: 800; color: var(--cocoa); }
+  .daily-cell.claimed { opacity: 0.55; }
+  .daily-cell.claimed::after { content: '✓'; position: absolute; top: 2px; right: 4px; font-size: 10px; font-weight: 900; color: var(--sage-deep, #6b9a5f); }
+  .daily-cell.today { border-color: var(--rose-deep); background: #fff; box-shadow: 0 0 0 2px var(--rose-deep) inset; }
+  .daily-cell.big { border-color: #d8a13a; background: #fff7e6; }
+  .gift-claim-btn { width: 100%; background: var(--cocoa); color: var(--cream); border: none; font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; padding: 12px; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; }
+  .gift-claim-btn:active { transform: scale(0.98); }
+  .gift-claim-btn:disabled { opacity: 0.5; cursor: default; }
+  .gift-claim-btn.ready { background: var(--rose-deep); animation: giftPulse 1.6s ease-in-out infinite; }
+  @keyframes giftPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(214,120,120,0.5); } 50% { box-shadow: 0 0 0 8px rgba(214,120,120,0); } }
+
   .booster-bar { display: flex; gap: 8px; justify-content: center; padding: 6px 0 2px; }
   .booster-btn { position: relative; flex: 1; max-width: 110px; background: var(--milk); border: 2px solid var(--cream-deep); border-radius: 14px; padding: 7px 4px 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: transform .1s; }
   .booster-btn:active { transform: scale(.95); }
@@ -914,6 +934,7 @@
     <button class="bb-btn" id="questBtn" aria-label="Crew requests and daily tasks"><span class="nav-dot" id="questDot"></span><span class="bb-icon">🎯</span>Quests</button>
     <button class="bb-btn" id="achBtn" aria-label="View achievements"><span class="bb-icon">🏆</span>Goals</button>
     <button class="bb-btn" id="storyBtn" aria-label="Read the cafe story"><span class="bb-icon">📖</span>Story</button>
+    <button class="bb-btn" id="giftBtn" aria-label="Daily rewards and free gifts"><span class="nav-dot" id="giftDot"></span><span class="bb-icon">🎁</span>Gifts</button>
     <button class="bb-btn" id="resetBtn" aria-label="Buy a fresh board for 25 coins"><span class="bb-icon">↻</span>New 25🪙</button>
   </div>
 </div>
@@ -1004,6 +1025,26 @@
     </div>
     <p style="font-size:12px;color:var(--cocoa-soft);margin-bottom:12px;font-style:italic">One year after the friends opened their little cafe. Serve more guests to turn the page...</p>
     <div id="storyList"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="giftModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🎁 <em>Rewards</em></div>
+      <button class="modal-close" data-close>×</button>
+    </div>
+    <p style="font-size:12px;color:var(--cocoa-soft);margin-bottom:12px;font-style:italic">Pop in every day for a treat, and grab a little gift on the house whenever it's ready.</p>
+    <div class="gift-section">
+      <div class="gift-section-title">Daily visit <span id="streakBadge" class="streak-badge"></span></div>
+      <div id="dailyTrack" class="daily-track"></div>
+      <button id="claimDailyBtn" class="gift-claim-btn">Claim today's treat</button>
+    </div>
+    <div class="gift-section">
+      <div class="gift-section-title">Gift on the house</div>
+      <p style="font-size:12px;color:var(--cocoa-soft);margin:0 0 10px;font-style:italic">A free booster, fresh every little while.</p>
+      <button id="claimGiftBtn" class="gift-claim-btn">Open gift</button>
+    </div>
   </div>
 </div>
 
@@ -1353,6 +1394,11 @@ const ACHIEVEMENTS = [
   { id: 'firework_pro',name: 'Fireworks!',     desc: 'Make a firework (a big cross match)', icon: '🎆', check: v => (v.stats.fireworks_made || 0) >= 1 },
   { id: 'bombs_10',    name: 'Demolition',     desc: 'Make 10 bombs',                 icon: '🧨', check: v => (v.stats.bombs_made || 0) >= 10 },
 
+  // ----- Loyalty -----
+  { id: 'first_gift',  name: 'On the House',    desc: 'Open a free gift',              icon: '🎁', check: v => (v.stats.gifts_opened || 0) >= 1 },
+  { id: 'streak_3',    name: 'Regular',         desc: 'Reach a 3 day visit streak',    icon: '☕', check: v => (v.loginStreak || 0) >= 3 },
+  { id: 'streak_7',    name: 'A Week of Cosy',  desc: 'Reach a 7 day visit streak',    icon: '📅', check: v => (v.loginStreak || 0) >= 7 },
+
   // ----- Customisation -----
   { id: 'wear_hat',    name: 'Looking Sharp',  desc: 'Equip a hat from the shop',     icon: '🎩', check: v => !!(v.equipped && v.equipped.hat) },
   { id: 'wear_acc',    name: 'Accessorised',   desc: 'Equip an accessory',            icon: '👓', check: v => !!(v.equipped && v.equipped.accessory) },
@@ -1440,6 +1486,9 @@ function defaultVault() {
     unlocked_items: ['cafe_default', 'trail_petal', 'skin_default'],
     equipped: { background: 'cafe_default', trail: 'trail_petal', skin: 'skin_default' },
     achievements: [],
+    lastGift: 0,
+    lastLogin: '',
+    loginStreak: 0,
     stats: {
       matches: 0,
       guests_served: 0,
@@ -1472,6 +1521,9 @@ function loadVault() {
       return fresh;
     }
     if (typeof v.haptic === 'undefined') v.haptic = true;
+    if (typeof v.lastGift !== 'number') v.lastGift = 0;
+    if (typeof v.lastLogin !== 'string') v.lastLogin = '';
+    if (typeof v.loginStreak !== 'number') v.loginStreak = 0;
     if (!v.stats) v.stats = defaultVault().stats;
     if (!v.stats.guests_each) v.stats.guests_each = {};
     // Ensure starter items exist (in case vault got corrupted)
@@ -2874,6 +2926,119 @@ function renderPowerShop() {
   }));
 }
 renderBoosterBar();
+
+// ============ DAILY LOGIN + FREE GIFT REWARDS ============
+const FREE_GIFT_MS = 20 * 60 * 1000; // free booster every 20 minutes
+const DAILY_REWARDS = [
+  { emoji: '🪙', label: '50',  coins: 50 },
+  { emoji: '🔀', label: 'x1', boosters: { shuffle: 1 } },
+  { emoji: '🪙', label: '100', coins: 100 },
+  { emoji: '🌈', label: 'x1', boosters: { rainbow: 1 } },
+  { emoji: '🪙', label: '200', coins: 200 },
+  { emoji: '🍰', label: 'x1', boosters: { treat: 1 } },
+  { emoji: '🎉', label: 'BIG', coins: 400, boosters: { shuffle: 1, rainbow: 1, treat: 1 }, big: true },
+];
+const GIFT_POOL = ['shuffle', 'shuffle', 'shuffle', 'rainbow', 'rainbow', 'treat'];
+
+function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dayNumber(str) { const [y, m, d] = str.split('-').map(Number); return Math.floor(Date.UTC(y, m - 1, d) / 86400000); }
+function dailyAvailable() { return vault.lastLogin !== todayStr(); }
+function dailyIndex() { return ((vault.loginStreak || 0) % DAILY_REWARDS.length); }
+function freeGiftReady() { return Date.now() - (vault.lastGift || 0) >= FREE_GIFT_MS; }
+function anyRewardReady() { return dailyAvailable() || freeGiftReady(); }
+
+function grantReward(r) {
+  const parts = [];
+  if (r.coins) { vault.coins += r.coins; vault.stats.lifetime_coins += r.coins; parts.push('🪙 ' + r.coins); if (window.floatCoins) window.floatCoins(r.coins); }
+  if (r.boosters) for (const id in r.boosters) { grantBooster(id, r.boosters[id]); const b = BOOSTERS.find(x => x.id === id); parts.push(r.boosters[id] + '×' + (b ? b.emoji : '')); }
+  return parts.join('  ');
+}
+
+function claimDaily() {
+  if (!dailyAvailable()) return;
+  const today = todayStr();
+  // Continue the streak if the last visit was yesterday, otherwise start fresh.
+  if (vault.lastLogin && dayNumber(today) - dayNumber(vault.lastLogin) === 1) vault.loginStreak = (vault.loginStreak || 0) + 1;
+  else vault.loginStreak = 1;
+  vault.lastLogin = today;
+  const idx = (vault.loginStreak - 1) % DAILY_REWARDS.length;
+  const reward = DAILY_REWARDS[idx];
+  const txt = grantReward(reward);
+  vault.stats.dailies_claimed = (vault.stats.dailies_claimed || 0) + 1;
+  saveVaultNow(); updateHUD(); renderGifts(); updateGiftDot(); checkAchievements();
+  Audio.sfxGuestHappy && Audio.sfxGuestHappy(); buzz(40);
+  showToast('🎁 Day ' + vault.loginStreak + ' treat!  ' + txt);
+}
+
+function claimFreeGift() {
+  if (!freeGiftReady()) return;
+  const id = GIFT_POOL[Math.floor(Math.random() * GIFT_POOL.length)];
+  grantBooster(id, 1);
+  const b = BOOSTERS.find(x => x.id === id);
+  vault.lastGift = Date.now();
+  vault.stats.gifts_opened = (vault.stats.gifts_opened || 0) + 1;
+  saveVaultNow(); renderGifts(); updateGiftDot(); checkAchievements();
+  Audio.sfxGuestHappy && Audio.sfxGuestHappy(); buzz(30);
+  showToast('🎁 Free gift: ' + (b ? b.emoji + ' ' + b.name : id) + '!');
+}
+
+function fmtCountdown(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(s / 60), ss = s % 60;
+  return m + ':' + String(ss).padStart(2, '0');
+}
+
+function renderGifts() {
+  const track = $('dailyTrack');
+  if (track) {
+    track.innerHTML = '';
+    const todayIdx = dailyIndex(); // index that will be claimed next (0-based)
+    const claimedToday = !dailyAvailable();
+    DAILY_REWARDS.forEach((r, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'daily-cell' + (r.big ? ' big' : '');
+      // Cells before the current index this cycle are already collected.
+      if (i < todayIdx || (claimedToday && i === todayIdx)) cell.classList.add('claimed');
+      if (i === todayIdx) cell.classList.add('today');
+      cell.innerHTML = '<span class="dc-day">D' + (i + 1) + '</span><span class="dc-emoji">' + r.emoji + '</span><span class="dc-amt">' + r.label + '</span>';
+      track.appendChild(cell);
+    });
+    const badge = $('streakBadge');
+    if (badge) badge.textContent = (vault.loginStreak || 0) > 1 ? '🔥 ' + vault.loginStreak + ' day streak' : '';
+  }
+  const dBtn = $('claimDailyBtn');
+  if (dBtn) {
+    if (dailyAvailable()) { dBtn.disabled = false; dBtn.classList.add('ready'); dBtn.textContent = "Claim today's treat"; }
+    else { dBtn.disabled = true; dBtn.classList.remove('ready'); dBtn.textContent = 'Come back tomorrow 💤'; }
+  }
+  const gBtn = $('claimGiftBtn');
+  if (gBtn) {
+    if (freeGiftReady()) { gBtn.disabled = false; gBtn.classList.add('ready'); gBtn.textContent = 'Open gift 🎁'; }
+    else { gBtn.disabled = true; gBtn.classList.remove('ready'); gBtn.textContent = 'Next gift in ' + fmtCountdown(FREE_GIFT_MS - (Date.now() - (vault.lastGift || 0))); }
+  }
+}
+
+function updateGiftDot() { const d = $('giftDot'); if (d) d.classList.toggle('show', anyRewardReady()); }
+
+$('giftBtn').addEventListener('click', () => { renderGifts(); $('giftModal').classList.add('show'); });
+$('claimDailyBtn').addEventListener('click', claimDaily);
+$('claimGiftBtn').addEventListener('click', claimFreeGift);
+
+// Live-update the gift modal countdown while it's open; refresh the badge periodically.
+setInterval(() => {
+  if ($('giftModal').classList.contains('show')) renderGifts();
+  updateGiftDot();
+}, 1000);
+
+updateGiftDot();
+// Nudge the player toward the daily reward shortly after the board settles in,
+// but never on top of the first-run tutorial.
+setTimeout(() => {
+  const tut = $('tutorialModal');
+  const tutOpen = tut && tut.classList.contains('show');
+  const anyOpen = document.querySelector('.modal-backdrop.show');
+  if (dailyAvailable() && !tutOpen && !anyOpen) { renderGifts(); $('giftModal').classList.add('show'); }
+}, 1200);
 
 // ============ POWER PLAY QUEST CHAIN (always on) ============
 const POWER_QUESTS = [
