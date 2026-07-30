@@ -189,6 +189,42 @@ for (const v of values) {
 &lt;/script&gt;</pre>
   </div>
 
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter file — the Step 1 board builder</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A complete, runnable page that builds the 4×4 card grid from JavaScript. Open it and you see 16 face-down cards. Every step below adds shuffling, flipping, matching and scoring to this same file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">memory.html</span></div>
+          <pre class="code-pre">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;style&gt;
+  body { background:#0d1117; display:flex; justify-content:center; padding:16px; }
+  #board { display: grid; grid-template-columns: repeat(4, 90px); gap: 10px; }
+  .card  { height: 90px; background: #2a2d3a; border-radius: 12px;
+           display: flex; align-items: center; justify-content: center;
+           font-size: 2rem; cursor: pointer; color: #fff; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id="board"&gt;&lt;/div&gt;
+&lt;script&gt;
+const EMOJI = ["🐍","🚀","🍎","🎮","🐱","⚡","🌙","🎲"];
+let values = [...EMOJI, ...EMOJI];        // 8 pairs = 16 cards
+const board = document.getElementById("board");
+for (const v of values) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.dataset.value = v;
+  card.textContent = "?";                  // hidden until flipped
+  board.appendChild(card);
+}
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+      </details>
+
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
@@ -589,6 +625,147 @@ if (moves &lt; best) localStorage.setItem(key, moves);</pre>
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Memory Match — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A self-building card grid, a fair Fisher-Yates shuffle, CSS flip animation, match logic with the lock-during-wait fix, a move counter and timer, a win banner, plus Easy/Hard difficulty and best scores in localStorage — one file. Save it as <code>memory.html</code>, open it, and play. Stuck on a step? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">memory.html</span></div>
+      <pre class="code-pre">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;title&gt;Memory Match&lt;/title&gt;
+&lt;style&gt;
+  body { background:#0d1117; color:#e8eaf2; font-family:system-ui, sans-serif;
+         display:flex; flex-direction:column; align-items:center; gap:12px; padding:16px; }
+  #hud { display:flex; gap:16px; align-items:center; flex-wrap:wrap; justify-content:center; }
+  button { background:#2a2d3a; color:#fff; border:1px solid #3a3f52; border-radius:10px;
+           padding:8px 14px; font-size:.9rem; cursor:pointer; }
+  button:hover { background:#3a3f52; }
+  #board { display:grid; gap:10px; justify-content:center; margin:8px auto; }
+  .card { height:90px; width:90px; background:#2a2d3a; border-radius:12px;
+          display:flex; align-items:center; justify-content:center;
+          font-size:2rem; cursor:pointer; color:#fff; transition:transform .35s; }
+  .card.flipped { transform:rotateY(180deg); background:#ffd166; color:#222; }
+  .card.matched { background:#06d6a0; color:#08221b; cursor:default; }
+  #msg { font-size:1.1rem; min-height:1.4em; }
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h2&gt;🧠 Memory Match&lt;/h2&gt;
+  &lt;div id="hud"&gt;
+    &lt;button onclick="newGame(4)"&gt;Easy 4×4&lt;/button&gt;
+    &lt;button onclick="newGame(6)"&gt;Hard 6×6&lt;/button&gt;
+    &lt;span&gt;Moves: &lt;b id="moves"&gt;0&lt;/b&gt;&lt;/span&gt;
+    &lt;span&gt;Time: &lt;b id="time"&gt;0s&lt;/b&gt;&lt;/span&gt;
+    &lt;span id="best"&gt;&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div id="board"&gt;&lt;/div&gt;
+  &lt;div id="msg"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+// 18 emoji so Hard 6x6 (18 pairs) works; Easy 4x4 uses the first 8
+const EMOJI = ["🐍","🚀","🍎","🎮","🐱","⚡","🌙","🎲",
+               "🐶","🌟","🍕","🎸","🐧","🔥","🍔","🎯","🐙","🌈"];
+const board = document.getElementById("board");
+let values = [], first = null, locked = false, moves = 0, seconds = 0, timerId = null, size = 4;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i &gt; 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];      // one-line swap
+  }
+  return arr;
+}
+
+function buildBoard(vals) {
+  board.innerHTML = "";
+  board.style.gridTemplateColumns = "repeat(" + size + ", 90px)";
+  for (const v of vals) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.value = v;
+    card.textContent = "?";
+    board.appendChild(card);
+  }
+}
+
+function flip(card)   { card.classList.add("flipped");    card.textContent = card.dataset.value; }
+function unflip(card) { card.classList.remove("flipped"); card.textContent = "?"; }
+
+function startTimer() {
+  if (timerId) return;
+  timerId = setInterval(function () {
+    seconds++;
+    document.getElementById("time").textContent = seconds + "s";
+  }, 1000);
+}
+
+function showBest() {
+  const b4 = localStorage.getItem("memory-best-4") || "—";
+  const b6 = localStorage.getItem("memory-best-6") || "—";
+  document.getElementById("best").textContent = "Best: 4×4 " + b4 + " · 6×6 " + b6;
+}
+
+function checkWin() {
+  if (document.querySelectorAll(".matched").length === size * size) {
+    clearInterval(timerId); timerId = null;
+    const key = "memory-best-" + size;
+    const best = Number(localStorage.getItem(key) || 999);
+    if (moves &lt; best) localStorage.setItem(key, moves);
+    document.getElementById("msg").textContent = "🎉 You won in " + moves + " moves and " + seconds + "s!";
+    showBest();
+  }
+}
+
+function onCardClick(card) {
+  if (locked || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+  startTimer();
+  flip(card);
+  if (!first) { first = card; return; }
+
+  moves++;
+  document.getElementById("moves").textContent = moves;
+
+  if (first.dataset.value === card.dataset.value) {
+    first.classList.add("matched");
+    card.classList.add("matched");
+    first = null;
+    checkWin();
+  } else {
+    locked = true;
+    setTimeout(function () {
+      unflip(first); unflip(card);
+      first = null; locked = false;
+    }, 800);
+  }
+}
+
+board.addEventListener("click", function (e) {
+  const card = e.target.closest(".card");
+  if (card) onCardClick(card);
+});
+
+function newGame(n) {
+  size = n;
+  const pairs = (size * size) / 2;
+  values = shuffle([...EMOJI.slice(0, pairs), ...EMOJI.slice(0, pairs)]);
+  buildBoard(values);
+  moves = 0; seconds = 0; first = null; locked = false;
+  clearInterval(timerId); timerId = null;
+  document.getElementById("moves").textContent = "0";
+  document.getElementById("time").textContent = "0s";
+  document.getElementById("msg").textContent = "";
+  showBest();
+}
+
+newGame(4);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

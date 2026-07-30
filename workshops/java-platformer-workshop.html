@@ -182,6 +182,48 @@ public class Main {
 }</pre>
   </div><div class="callout parent"><div class="callout-icon">👨‍👧</div><div><strong>Parent note:</strong> Everything used in this series is <strong>free</strong> and built into Java, no game engine or extra libraries to install. If <strong>java -version</strong> prints a version number in a terminal, the JDK is installed correctly.</div></div>
 
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel with its 60 FPS game loop. Save it as Main.java, run <code>javac Main.java</code> then <code>java Main</code>, and a dark window opens. Every step below adds to this same file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+          <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 480));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}</pre>
+        </div>
+      </details>
+
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
@@ -622,6 +664,129 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="??" size="4">, py,
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Platformer — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Player movement, gravity and jumping, real platform collision with java.awt.Rectangle, collectable coins, a score and a win screen — one runnable file. Save it as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck on a step? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+      <pre class="code-pre">// Complete Java platformer. Both classes are in one file so it runs with:
+//     javac Main.java   then   java Main
+// In the workshop you put GamePanel in its own GamePanel.java, which works too.
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);          // ~60 FPS
+
+    int px = 100, py = 380;                      // player position
+    int pw = 34, ph = 44;                        // player size
+    int speed = 5, vy = 0;
+    boolean leftHeld, rightHeld, onGround;
+    boolean won = false;
+    int score = 0;
+
+    Rectangle[] platforms = {
+        new Rectangle(0, 440, 800, 40),          // ground
+        new Rectangle(150, 340, 140, 16),
+        new Rectangle(380, 260, 140, 16),
+        new Rectangle(610, 180, 140, 16)
+    };
+    java.util.List&lt;Rectangle&gt; coins = new java.util.ArrayList&lt;&gt;(java.util.List.of(
+        new Rectangle(205, 300, 18, 18),
+        new Rectangle(435, 220, 18, 18),
+        new Rectangle(665, 140, 18, 18)));
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 480));
+        setBackground(new Color(25, 30, 60));
+        addKeyListener(this);
+        setFocusable(true);
+        timer.start();
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        update();
+        repaint();
+    }
+
+    void update() {
+        if (won) return;
+
+        if (leftHeld)  px -= speed;
+        if (rightHeld) px += speed;
+        if (px &lt; 0) px = 0;
+        if (px + pw &gt; 800) px = 800 - pw;
+
+        vy += 1;                                 // gravity
+        py += vy;
+
+        onGround = false;
+        Rectangle player = new Rectangle(px, py, pw, ph);
+        for (Rectangle plat : platforms) {
+            if (player.intersects(plat) &amp;&amp; vy &gt;= 0 &amp;&amp; py + ph - vy &lt;= plat.y) {
+                py = plat.y - ph;                // snap on top
+                vy = 0;
+                onGround = true;
+            }
+        }
+
+        coins.removeIf(c -&gt; {
+            if (new Rectangle(px, py, pw, ph).intersects(c)) { score += 10; return true; }
+            return false;
+        });
+        if (coins.isEmpty()) won = true;
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(new Color(6, 214, 160));
+        for (Rectangle plat : platforms) g.fillRect(plat.x, plat.y, plat.width, plat.height);
+
+        g.setColor(new Color(255, 209, 102));
+        for (Rectangle c : coins) g.fillRect(c.x, c.y, c.width, c.height);
+
+        g.setColor(new Color(255, 119, 0));
+        g.fillRect(px, py, pw, ph);
+
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + score, 16, 26);
+
+        if (won) {
+            g.setFont(new Font("Arial", Font.BOLD, 56));
+            g.drawString("YOU WIN!", 250, 250);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_UP &amp;&amp; onGround) {
+            vy = -16;
+            onGround = false;
+        }
+    }
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

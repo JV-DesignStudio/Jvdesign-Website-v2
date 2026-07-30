@@ -185,6 +185,48 @@
 }</pre>
   </div><div class="callout tip"><div class="callout-icon">💡</div><div>Notice how fast setup is the second time? That JFrame + GamePanel + Timer pattern is your reusable game template for the whole series.</div></div>
 
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 700×520 for Breakout in <code>setPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Main</code>. Every step below adds to this file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+          <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 480));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}</pre>
+        </div>
+      </details>
+
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
@@ -594,6 +636,142 @@
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A clamped paddle, a bouncing ball with paddle-spin steering, a colour-banded brick wall, break-and-score, three lives and win/lose screens — one runnable file. Save as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+      <pre class="code-pre">// Complete Java Breakout. Run with:  javac Main.java  then  java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Brick Breaker");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+    Color[] rowColours = {
+        new Color(248,113,113), new Color(251,146,60), new Color(250,204,21),
+        new Color(74,222,128), new Color(96,165,250)
+    };
+
+    int padX = 295, padW = 110, padH = 14;
+    int bx = 340, by = 300, bs = 14, bvx = 4, bvy = -4;
+    boolean leftHeld, rightHeld;
+    int score = 0, lives = 3;
+    String state = "PLAY";           // PLAY / WIN / LOSE
+    List&lt;Rectangle&gt; bricks = new ArrayList&lt;&gt;();
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 520));
+        setBackground(new Color(15, 18, 32));
+        addKeyListener(this);
+        setFocusable(true);
+        buildBricks();
+        timer.start();
+    }
+
+    void buildBricks() {
+        bricks.clear();
+        for (int row = 0; row &lt; 5; row++)
+            for (int col = 0; col &lt; 10; col++)
+                bricks.add(new Rectangle(col*68 + 12, row*26 + 50, 64, 22));
+    }
+    int rowOf(Rectangle b) { return (b.y - 50) / 26; }
+
+    void serve() { bx = 343; by = 300; bvx = 4; bvy = -4; }
+
+    void reset() {
+        padX = 295; score = 0; lives = 3; state = "PLAY";
+        buildBricks(); serve();
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+
+    void update() {
+        if (!state.equals("PLAY")) return;
+
+        if (leftHeld)  padX -= 7;
+        if (rightHeld) padX += 7;
+        padX = Math.max(0, Math.min(700 - padW, padX));
+
+        bx += bvx; by += bvy;
+        if (bx &lt;= 0 || bx + bs &gt;= 700) bvx = -bvx;
+        if (by &lt;= 0) bvy = -bvy;
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        Rectangle pad  = new Rectangle(padX, 470, padW, padH);
+        if (ball.intersects(pad) &amp;&amp; bvy &gt; 0) {
+            bvy = -bvy;
+            int hit = (bx + bs/2) - (padX + padW/2);
+            bvx = hit / 12;
+            if (bvx == 0) bvx = 1;
+        }
+
+        for (int i = 0; i &lt; bricks.size(); i++) {
+            Rectangle brick = bricks.get(i);
+            if (ball.intersects(brick)) {
+                score += (5 - rowOf(brick)) * 10;
+                bvy = -bvy;
+                bricks.remove(i);
+                break;
+            }
+        }
+
+        if (by - bs &gt; 520) {
+            lives--;
+            if (lives &lt;= 0) state = "LOSE";
+            else serve();
+        }
+        if (bricks.isEmpty()) state = "WIN";
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        for (Rectangle b : bricks) {
+            g.setColor(rowColours[rowOf(b) % rowColours.length]);
+            g.fillRect(b.x, b.y, b.width, b.height);
+        }
+        g.setColor(new Color(255, 119, 0));
+        g.fillRoundRect(padX, 470, padW, padH, 8, 8);
+        g.setColor(Color.WHITE);
+        g.fillOval(bx, by, bs, bs);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + score, 16, 26);
+        g.drawString("Lives: " + Math.max(0, lives), 590, 26);
+        if (!state.equals("PLAY")) {
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            g.drawString(state.equals("WIN") ? "YOU WIN!" : "GAME OVER", 200, 250);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 270, 290);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_R &amp;&amp; !state.equals("PLAY")) reset();
+    }
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

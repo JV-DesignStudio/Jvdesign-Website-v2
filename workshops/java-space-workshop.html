@@ -186,6 +186,48 @@
     }</pre>
   </div>
 
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 600×650 for the shooter in <code>setPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Main</code>. Every step below adds to this file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+          <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 480));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}</pre>
+        </div>
+      </details>
+
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
@@ -602,6 +644,141 @@ bullets.<input class="cc-blank" data-a="cmVtb3ZlSWY=" placeholder="????????" siz
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Space Shooter — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A triangle ship, Space-to-fire lasers in an ArrayList, a marching Space-Invaders alien wave that steps down at the walls, bullet-vs-alien collisions with scoring, plus win and lose states — one runnable file. Save as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+      <pre class="code-pre">// Complete Java Space Shooter. Run with:  javac Main.java  then  java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Defend Earth");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+
+    int shipX = 280, shipW = 40;
+    boolean leftHeld, rightHeld;
+    int alienDir = 1, score = 0;
+    String state = "PLAY";                       // PLAY / WIN / LOSE
+    List&lt;Rectangle&gt; bullets = new ArrayList&lt;&gt;();
+    List&lt;Rectangle&gt; aliens  = new ArrayList&lt;&gt;();
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(600, 650));
+        setBackground(new Color(10, 12, 26));
+        addKeyListener(this);
+        setFocusable(true);
+        spawnAliens();
+        timer.start();
+    }
+
+    void spawnAliens() {
+        aliens.clear();
+        for (int r = 0; r &lt; 4; r++)
+            for (int c = 0; c &lt; 6; c++)
+                aliens.add(new Rectangle(60 + c*80, 60 + r*52, 36, 26));
+    }
+
+    void reset() {
+        shipX = 280; score = 0; alienDir = 1; state = "PLAY";
+        bullets.clear(); spawnAliens();
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+
+    void update() {
+        if (!state.equals("PLAY")) return;
+
+        if (leftHeld)  shipX -= 6;
+        if (rightHeld) shipX += 6;
+        shipX = Math.max(0, Math.min(600 - shipW, shipX));
+
+        for (Rectangle b : bullets) b.y -= 9;
+        bullets.removeIf(b -&gt; b.y + b.height &lt; 0);
+
+        // march the wave, step down and reverse at a wall
+        boolean hitWall = false;
+        for (Rectangle a : aliens)
+            if (a.x + alienDir*2 &lt; 0 || a.x + a.width + alienDir*2 &gt; 600) hitWall = true;
+        if (hitWall) {
+            alienDir = -alienDir;
+            for (Rectangle a : aliens) a.y += 14;
+        } else {
+            for (Rectangle a : aliens) a.x += alienDir * 2;
+        }
+
+        // bullets vs aliens
+        for (int i = aliens.size() - 1; i &gt;= 0; i--) {
+            Rectangle a = aliens.get(i);
+            for (int j = bullets.size() - 1; j &gt;= 0; j--) {
+                if (a.intersects(bullets.get(j))) {
+                    aliens.remove(i);
+                    bullets.remove(j);
+                    score += 10;
+                    break;
+                }
+            }
+        }
+
+        // lose if the wave reaches the ship line, win when cleared
+        for (Rectangle a : aliens)
+            if (a.y + a.height &gt;= 580) state = "LOSE";
+        if (aliens.isEmpty()) state = "WIN";
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(new Color(163, 88, 245));
+        for (Rectangle a : aliens) g.fillRect(a.x, a.y, a.width, a.height);
+        g.setColor(new Color(250, 204, 21));
+        for (Rectangle b : bullets) g.fillRect(b.x, b.y, b.width, b.height);
+
+        g.setColor(new Color(77, 217, 224));
+        int[] xs = { shipX + shipW/2, shipX, shipX + shipW };
+        int[] ys = { 580, 620, 620 };
+        g.fillPolygon(xs, ys, 3);
+
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + score, 16, 26);
+        if (!state.equals("PLAY")) {
+            g.setFont(new Font("Arial", Font.BOLD, 44));
+            g.drawString(state.equals("WIN") ? "EARTH SAVED!" : "GAME OVER", 130, 320);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 210, 360);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_SPACE &amp;&amp; state.equals("PLAY"))
+            bullets.add(new Rectangle(shipX + shipW/2 - 2, 578, 4, 12));
+        if (e.getKeyCode() == KeyEvent.VK_R &amp;&amp; !state.equals("PLAY")) reset();
+    }
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

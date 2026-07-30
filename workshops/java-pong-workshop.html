@@ -185,6 +185,48 @@
         g.fillRect(397, y, 6, 14);</pre>
   </div>
 
+      <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 800×500 for Pong in <code>setPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Main</code>. Every step below adds to this file.</p>
+        <div class="code-block" style="margin:12px 16px 16px">
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+          <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 480));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}</pre>
+        </div>
+      </details>
+
       <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
@@ -606,6 +648,134 @@ if (flash &gt; 0) flash<input class="cc-blank" data-a="LS0=" placeholder="??" si
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Pong — all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Two paddles (W/S and the arrow keys), a serving ball that bounces off walls and paddles, paddle-spin plus rally speed-up, a scoreboard and first-to-7 win — one runnable file. Save as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
+      <pre class="code-pre">// Complete Java Pong. Run with:  javac Main.java  then  java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Pong");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+
+    int p1Y = 205, p2Y = 205;
+    boolean wHeld, sHeld, upHeld, downHeld;
+    int bx = 393, by = 243, bs = 14, bvx = 5, bvy = 3;
+    int p1Score = 0, p2Score = 0;
+    String state = "PLAY";
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 500));
+        setBackground(new Color(12, 14, 24));
+        addKeyListener(this);
+        setFocusable(true);
+        serve(Math.random() &lt; 0.5 ? 1 : -1);
+        timer.start();
+    }
+
+    void serve(int direction) {
+        bx = 393; by = 243;
+        bvx = 5 * direction;
+        bvy = Math.random() &lt; 0.5 ? 3 : -3;
+    }
+
+    void reset() {
+        p1Score = 0; p2Score = 0; state = "PLAY";
+        p1Y = 205; p2Y = 205;
+        serve(Math.random() &lt; 0.5 ? 1 : -1);
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+
+    void update() {
+        if (!state.equals("PLAY")) return;
+
+        if (wHeld)    p1Y -= 6;
+        if (sHeld)    p1Y += 6;
+        if (upHeld)   p2Y -= 6;
+        if (downHeld) p2Y += 6;
+        p1Y = Math.max(0, Math.min(410, p1Y));
+        p2Y = Math.max(0, Math.min(410, p2Y));
+
+        bx += bvx; by += bvy;
+        if (by &lt;= 0 || by + bs &gt;= 500) bvy = -bvy;
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        if (ball.intersects(new Rectangle(20, p1Y, 14, 90)) &amp;&amp; bvx &lt; 0) {
+            bvx = -bvx + 1;                          // rally speeds up
+            bvy = ((by + bs/2) - (p1Y + 45)) / 7;    // spin
+        }
+        if (ball.intersects(new Rectangle(766, p2Y, 14, 90)) &amp;&amp; bvx &gt; 0) {
+            bvx = -(bvx + 1);
+            bvy = ((by + bs/2) - (p2Y + 45)) / 7;
+        }
+        bvx = Math.max(-12, Math.min(12, bvx));
+
+        if (bx &lt; 0)   { p2Score++; checkWin(); if (state.equals("PLAY")) serve(-1); }
+        if (bx &gt; 800) { p1Score++; checkWin(); if (state.equals("PLAY")) serve(1); }
+    }
+
+    void checkWin() {
+        if (p1Score &gt;= 7 || p2Score &gt;= 7) state = "WIN";
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(new Color(60, 66, 90));
+        for (int y = 0; y &lt; 500; y += 24) g.fillRect(397, y, 6, 14);   // net
+
+        g.setColor(Color.WHITE);
+        g.fillRect(20, p1Y, 14, 90);
+        g.fillRect(766, p2Y, 14, 90);
+        g.fillOval(bx, by, bs, bs);
+
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        g.drawString(String.valueOf(p1Score), 340, 60);
+        g.drawString(String.valueOf(p2Score), 440, 60);
+
+        if (state.equals("WIN")) {
+            g.setFont(new Font("Arial", Font.BOLD, 44));
+            String who = p1Score &gt;= 7 ? "PLAYER 1 WINS!" : "PLAYER 2 WINS!";
+            g.drawString(who, 240, 260);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 300, 300);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_W)    wHeld = true;
+        if (k == KeyEvent.VK_S)    sHeld = true;
+        if (k == KeyEvent.VK_UP)   upHeld = true;
+        if (k == KeyEvent.VK_DOWN) downHeld = true;
+        if (k == KeyEvent.VK_R &amp;&amp; !state.equals("PLAY")) reset();
+    }
+    public void keyReleased(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_W)    wHeld = false;
+        if (k == KeyEvent.VK_S)    sHeld = false;
+        if (k == KeyEvent.VK_UP)   upHeld = false;
+        if (k == KeyEvent.VK_DOWN) downHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">
