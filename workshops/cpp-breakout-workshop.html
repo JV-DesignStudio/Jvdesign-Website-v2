@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+  </div>
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game setup?</strong> Each episode builds a new game on the same C++/SFML skeleton: the <code>sf::RenderWindow</code>, the game loop and event polling. If you're starting here or need that boilerplate, grab it in one click: <a href="cpp-pong-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 setup →</a> · <a href="cpp-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">C++ Cheatsheet →</a></div>
@@ -587,6 +592,88 @@ if (lives == 0) state = <input class="cc-blank" data-a="TE9TRQ==" placeholder="?
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ breakout.cpp -o breakout -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./breakout</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">breakout.cpp</span></div>
+      <pre class="code-pre">// Complete C++ Breakout for SFML 3. Build:
+//   g++ breakout.cpp -o breakout -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;vector&gt;
+
+struct Brick { sf::FloatRect rect; int row; bool alive; };
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({700, 520}), "C++ Breakout");
+    window.setFramerateLimit(60);
+
+    sf::Color rowCol[5] = {
+        {248,113,113},{251,146,60},{250,204,21},{74,222,128},{96,165,250}
+    };
+
+    float padX = 295, bx = 343, by = 300, bvx = 4, bvy = -4;
+    int score = 0, lives = 3;
+
+    std::vector&lt;Brick&gt; bricks;
+    auto build = [&amp;]() {
+        bricks.clear();
+        for (int r = 0; r &lt; 5; r++)
+            for (int c = 0; c &lt; 10; c++)
+                bricks.push_back({ sf::FloatRect({c*68.f+12, r*26.f+50}, {64.f, 22.f}), r, true });
+    };
+    build();
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent())
+            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  padX -= 7;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) padX += 7;
+        if (padX &lt; 0) padX = 0; if (padX &gt; 590) padX = 590;
+
+        bx += bvx; by += bvy;
+        if (bx &lt;= 0 || bx + 14 &gt;= 700) bvx = -bvx;
+        if (by &lt;= 0) bvy = -bvy;
+
+        sf::FloatRect ball({bx, by}, {14.f, 14.f});
+        sf::FloatRect pad({padX, 480.f}, {110.f, 14.f});
+        if (ball.findIntersection(pad) &amp;&amp; bvy &gt; 0) {
+            bvy = -bvy;
+            float hit = (bx + 7) - (padX + 55);
+            bvx = hit / 12.f;
+            if (bvx == 0) bvx = 1;
+        }
+        for (auto&amp; b : bricks) {
+            if (b.alive &amp;&amp; ball.findIntersection(b.rect)) {
+                b.alive = false; score += (5 - b.row) * 10; bvy = -bvy; break;
+            }
+        }
+        if (by - 14 &gt; 520) {
+            if (--lives &lt;= 0) { build(); lives = 3; score = 0; }
+            bx = 343; by = 300; bvx = 4; bvy = -4;
+        }
+        bool anyAlive = false; for (auto&amp; b : bricks) if (b.alive) anyAlive = true;
+        if (!anyAlive) { build(); bx = 343; by = 300; }
+
+        window.clear(sf::Color(15, 18, 32));
+        for (auto&amp; b : bricks) if (b.alive) {
+            sf::RectangleShape r(b.rect.size);
+            r.setPosition(b.rect.position);
+            r.setFillColor(rowCol[b.row]);
+            window.draw(r);
+        }
+        sf::RectangleShape pd({110.f, 14.f}); pd.setPosition({padX, 480.f});
+        pd.setFillColor(sf::Color(255,119,0)); window.draw(pd);
+        sf::CircleShape ballShape(7.f); ballShape.setPosition({bx, by});
+        window.draw(ballShape);
+        window.display();
+    }
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

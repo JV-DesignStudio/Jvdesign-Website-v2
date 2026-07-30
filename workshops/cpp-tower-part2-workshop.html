@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+  </div>
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game so far?</strong> This episode continues Tower Defence Part 1, so it assumes you already have that project. Open your Part 1 file to keep building, or revisit it here: <a href="cpp-tower-part1-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Tower Defence Part 1 →</a> · <a href="cpp-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">C++ Cheatsheet →</a></div>
@@ -574,6 +579,169 @@ if (e.isBoss &amp;&amp; e.wp &gt;= (int)path.size())
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ tower.cpp -o tower -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./tower</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
+      <pre class="code-pre">// Complete C++ Tower Defence (Parts 1 + 2) for SFML 3. Build:
+//   g++ tower.cpp -o tower -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;vector&gt;
+#include &lt;cmath&gt;
+#include &lt;string&gt;
+#include &lt;algorithm&gt;
+
+struct Enemy { sf::Vector2f pos; float speed; int hp, maxHp, bounty; int wp; bool alive; };
+struct Tower { sf::Vector2f pos; float range; int damage; float cooldown; };
+struct Bullet { sf::Vector2f pos; Enemy* target; float speed; int damage; bool dead; };
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({800, 600}), "C++ Tower Defence");
+    window.setFramerateLimit(60);
+
+    std::vector&lt;sf::Vector2f&gt; path = {
+        {-20, 120}, {300, 120}, {300, 320}, {560, 320}, {560, 120}, {820, 120}
+    };
+
+    std::vector&lt;Enemy&gt; enemies; enemies.reserve(4096);   // reserve so Enemy* stays valid
+    std::vector&lt;Tower&gt; towers;
+    std::vector&lt;Bullet&gt; bullets;
+    int gold = 150, health = 20, wave = 0, toSpawn = 0;
+    float spawnGap = 0, rest = 3.f;
+    bool won = false, lost = false;
+    const int MAX_WAVE = 5, TOWER_COST = 50;
+
+    auto nearPath = [&amp;](float x, float y, float r) {
+        for (size_t i = 0; i + 1 &lt; path.size(); i++) {
+            sf::Vector2f a = path[i], b = path[i+1];
+            sf::Vector2f ab = b - a, ap = sf::Vector2f(x,y) - a;
+            float t = (ab.x*ap.x + ab.y*ap.y) / (ab.x*ab.x + ab.y*ab.y);
+            t = std::max(0.f, std::min(1.f, t));
+            sf::Vector2f c = a + ab * t;
+            float dx = x - c.x, dy = y - c.y;
+            if (std::sqrt(dx*dx + dy*dy) &lt; r) return true;
+        }
+        return false;
+    };
+    auto nearest = [&amp;](Tower&amp; t) -&gt; Enemy* {
+        Enemy* best = nullptr; float bd = t.range;
+        for (auto&amp; e : enemies) {
+            if (!e.alive) continue;
+            float dx = e.pos.x - t.pos.x, dy = e.pos.y - t.pos.y;
+            float d = std::sqrt(dx*dx + dy*dy);
+            if (d &lt; bd) { bd = d; best = &amp;e; }
+        }
+        return best;
+    };
+
+    sf::Clock clock;
+    while (window.isOpen()) {
+        float dt = clock.restart().asSeconds();
+        if (dt &gt; 0.05f) dt = 0.05f;
+
+        while (const std::optional event = window.pollEvent()) {
+            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
+            if (const auto* m = event-&gt;getIf&lt;sf::Event::MouseButtonPressed&gt;()) {
+                if (m-&gt;button == sf::Mouse::Button::Left &amp;&amp; !won &amp;&amp; !lost) {
+                    int gx = (m-&gt;position.x / 40) * 40, gy = (m-&gt;position.y / 40) * 40;
+                    float cx = gx + 20.f, cy = gy + 20.f;
+                    if (!nearPath(cx, cy, 30.f) &amp;&amp; gold &gt;= TOWER_COST) {
+                        towers.push_back({ {cx, cy}, 110.f, 5, 0.f });
+                        gold -= TOWER_COST;
+                    }
+                }
+            }
+        }
+
+        if (!won &amp;&amp; !lost) {
+            // wave director
+            bool cleared = true;
+            for (auto&amp; e : enemies) if (e.alive) cleared = false;
+            if (toSpawn == 0 &amp;&amp; cleared) {
+                rest -= dt;
+                if (rest &lt;= 0) {
+                    wave++;
+                    if (wave &gt; MAX_WAVE) won = true;
+                    else { toSpawn = 4 + wave * 2; rest = 3.f; }
+                }
+            } else if (toSpawn &gt; 0) {
+                spawnGap -= dt;
+                if (spawnGap &lt;= 0) {
+                    bool boss = (wave == MAX_WAVE &amp;&amp; toSpawn == 1);
+                    int hp = boss ? 200 : (16 + wave * 4);
+                    enemies.push_back({ path[0], boss ? 45.f : 70.f, hp, hp, boss ? 60 : 8, 1, true });
+                    toSpawn--; spawnGap = 0.8f;
+                }
+            }
+
+            // enemies
+            for (auto&amp; e : enemies) {
+                if (!e.alive) continue;
+                if (e.wp &gt;= (int)path.size()) { e.alive = false; if (--health &lt;= 0) lost = true; continue; }
+                sf::Vector2f d = path[e.wp] - e.pos;
+                float len = std::sqrt(d.x*d.x + d.y*d.y);
+                if (len &lt; 4.f) { e.wp++; }
+                else e.pos += d / len * e.speed * dt;
+            }
+
+            // towers fire
+            for (auto&amp; t : towers) {
+                t.cooldown -= dt;
+                if (t.cooldown &lt;= 0) {
+                    Enemy* target = nearest(t);
+                    if (target) { bullets.push_back({ t.pos, target, 340.f, t.damage, false }); t.cooldown = 0.7f; }
+                }
+            }
+            // bullets home
+            for (auto&amp; b : bullets) {
+                if (!b.target-&gt;alive) { b.dead = true; continue; }
+                sf::Vector2f d = b.target-&gt;pos - b.pos;
+                float len = std::sqrt(d.x*d.x + d.y*d.y);
+                if (len &lt; 8.f) {
+                    b.target-&gt;hp -= b.damage;
+                    if (b.target-&gt;hp &lt;= 0) { b.target-&gt;alive = false; gold += b.target-&gt;bounty; }
+                    b.dead = true;
+                } else b.pos += d / len * b.speed * dt;
+            }
+            bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
+                [](const Bullet&amp; b){ return b.dead; }), bullets.end());
+        }
+
+        // draw
+        window.clear(sf::Color(24, 40, 28));
+        for (size_t i = 0; i + 1 &lt; path.size(); i++) {
+            sf::Vector2f a = path[i], b = path[i+1], d = b - a;
+            float len = std::sqrt(d.x*d.x + d.y*d.y);
+            sf::RectangleShape seg({len, 36.f});
+            seg.setPosition(a);
+            seg.setOrigin({0.f, 18.f});
+            seg.setRotation(sf::radians(std::atan2(d.y, d.x)));
+            seg.setFillColor(sf::Color(70, 62, 48));
+            window.draw(seg);
+        }
+        for (auto&amp; t : towers) {
+            sf::CircleShape rng(t.range); rng.setOrigin({t.range, t.range}); rng.setPosition(t.pos);
+            rng.setFillColor(sf::Color(96, 165, 250, 24)); window.draw(rng);
+            sf::RectangleShape r({30.f, 30.f}); r.setOrigin({15.f, 15.f}); r.setPosition(t.pos);
+            r.setFillColor(sf::Color(96, 165, 250)); window.draw(r);
+        }
+        for (auto&amp; e : enemies) if (e.alive) {
+            sf::CircleShape c(12.f); c.setOrigin({12.f, 12.f}); c.setPosition(e.pos);
+            c.setFillColor(e.maxHp &gt; 100 ? sf::Color(200, 60, 200) : sf::Color(230, 80, 70));
+            window.draw(c);
+        }
+        for (auto&amp; b : bullets) {
+            sf::CircleShape c(4.f); c.setOrigin({4.f, 4.f}); c.setPosition(b.pos);
+            c.setFillColor(sf::Color(250, 204, 21)); window.draw(c);
+        }
+        window.display();
+    }
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+  </div>
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game so far?</strong> This episode continues Platformer Part 1, so it assumes you already have that project. Open your Part 1 file to keep building, or revisit it here: <a href="cpp-platformer-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Platformer Part 1 →</a> · <a href="cpp-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">C++ Cheatsheet →</a></div>
@@ -593,6 +598,143 @@ championText.setString(
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ platformer2.cpp -o platformer2 -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./platformer2</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer2.cpp</span></div>
+      <pre class="code-pre">// Complete C++ Platformer Part 2 for SFML 3 (double jump, wall jump, camera,
+// ASCII levels, patrol+stomp enemies, spikes, coins, flag). Build:
+//   g++ platformer2.cpp -o platformer2 -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;cmath&gt;
+
+struct Enemy { float x, y, vx, x0, range; bool alive; };
+
+int main() {
+    const float TILE = 40.f;
+    sf::RenderWindow window(sf::VideoMode({800, 480}), "C++ Platformer 2");
+    window.setFramerateLimit(60);
+
+    // # ground, = platform, ^ spike, o coin, E enemy, F flag
+    std::vector&lt;std::string&gt; LEVEL = {
+        "                                        ",
+        "                                     F  ",
+        "                                  ===   ",
+        "              o          o              ",
+        "         ==        ==        ===        ",
+        "    o                            o      ",
+        "   ===        ^^       E     ==         ",
+        "                   ===                  ",
+        "         E                     ^^       ",
+        "  ==           o         ==             ",
+        "          ===                   ===     ",
+        "########################################"
+    };
+    const float LEVEL_W = LEVEL[0].size() * TILE;
+
+    std::vector&lt;sf::FloatRect&gt; platforms, spikes, coins;
+    std::vector&lt;Enemy&gt; enemies;
+    sf::FloatRect flag;
+    for (size_t r = 0; r &lt; LEVEL.size(); r++)
+        for (size_t c = 0; c &lt; LEVEL[r].size(); c++) {
+            float x = c * TILE, y = r * TILE;
+            char ch = LEVEL[r][c];
+            if (ch == '#' || ch == '=') platforms.push_back({{x, y}, {TILE, TILE}});
+            if (ch == 'o') coins.push_back({{x + 11, y + 11}, {18, 18}});
+            if (ch == '^') spikes.push_back({{x, y + 20}, {TILE, 20}});
+            if (ch == 'E') enemies.push_back({x, y + 10, 1.2f, x, 70.f, true});
+            if (ch == 'F') flag = sf::FloatRect({x, y}, {TILE, TILE});
+        }
+
+    float px = 60, py = 360, pw = 30, ph = 40, vx = 0, vy = 0;
+    int jumpsLeft = 2, onWall = 0, wallKick = 0, score = 0;
+    bool onGround = false, won = false;
+
+    auto respawn = [&amp;]() { px = 60; py = 360; vx = 0; vy = 0; };
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
+            if (const auto* k = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;()) {
+                if ((k-&gt;code == sf::Keyboard::Key::Up || k-&gt;code == sf::Keyboard::Key::Space) &amp;&amp; !won) {
+                    if (onWall != 0 &amp;&amp; !onGround) { vy = -10; vx = -onWall * 6.f; wallKick = 12; jumpsLeft = 1; }
+                    else if (jumpsLeft &gt; 0) { vy = (jumpsLeft == 2) ? -11.f : -9.f; jumpsLeft--; onGround = false; }
+                }
+                if (k-&gt;code == sf::Keyboard::Key::R) { respawn(); }
+            }
+        }
+
+        if (!won) {
+            if (wallKick &gt; 0) wallKick--;
+            else {
+                vx = 0;
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  vx = -4;
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) vx = 4;
+            }
+            px += vx;
+            if (px &lt; 0) px = 0;
+            onWall = 0;
+            sf::FloatRect pr({px, py}, {pw, ph});
+            for (auto&amp; p : platforms) if (pr.findIntersection(p)) {
+                if (vx &gt; 0) { px = p.position.x - pw; onWall = 1; }
+                else if (vx &lt; 0) { px = p.position.x + p.size.x; onWall = -1; }
+                pr = sf::FloatRect({px, py}, {pw, ph});
+            }
+
+            vy += 0.5f; py += vy;
+            onGround = false;
+            pr = sf::FloatRect({px, py}, {pw, ph});
+            for (auto&amp; p : platforms) if (pr.findIntersection(p)) {
+                if (vy &gt; 0) { py = p.position.y - ph; vy = 0; onGround = true; jumpsLeft = 2; }
+                else if (vy &lt; 0) { py = p.position.y + p.size.y; vy = 0; }
+                pr = sf::FloatRect({px, py}, {pw, ph});
+            }
+            if (onWall != 0 &amp;&amp; !onGround &amp;&amp; vy &gt; 1.5f) vy = 1.5f;
+            if (py &gt; 480 + 80) respawn();
+
+            pr = sf::FloatRect({px, py}, {pw, ph});
+            for (auto&amp; en : enemies) {
+                if (!en.alive) continue;
+                en.x += en.vx;
+                if (en.x &gt; en.x0 + en.range || en.x &lt; en.x0 - en.range) en.vx = -en.vx;
+                sf::FloatRect er({en.x, en.y}, {28, 28});
+                if (pr.findIntersection(er)) {
+                    if (vy &gt; 0 &amp;&amp; (py + ph - en.y) &lt; 20) { en.alive = false; vy = -8; score += 5; }
+                    else respawn();
+                }
+            }
+            for (auto&amp; s : spikes) if (pr.findIntersection(s)) respawn();
+            for (size_t i = 0; i &lt; coins.size(); ) {
+                if (pr.findIntersection(coins[i])) { coins.erase(coins.begin()+i); score += 1; }
+                else ++i;
+            }
+            if (pr.findIntersection(flag)) won = true;
+        }
+
+        // camera follows the player
+        float camX = px + pw/2 - 400;
+        if (camX &lt; 0) camX = 0;
+        if (camX &gt; LEVEL_W - 800) camX = LEVEL_W - 800;
+        sf::View view(sf::FloatRect({camX, 0}, {800, 480}));
+        window.setView(view);
+
+        window.clear(sf::Color(16, 22, 42));
+        for (auto&amp; p : platforms) { sf::RectangleShape r(p.size); r.setPosition(p.position); r.setFillColor(sf::Color(59,74,99)); window.draw(r); }
+        for (auto&amp; s : spikes)    { sf::RectangleShape r(s.size); r.setPosition(s.position); r.setFillColor(sf::Color(255,84,112)); window.draw(r); }
+        for (auto&amp; c : coins)     { sf::RectangleShape r(c.size); r.setPosition(c.position); r.setFillColor(sf::Color(255,209,102)); window.draw(r); }
+        for (auto&amp; en : enemies) if (en.alive) { sf::RectangleShape r({28,28}); r.setPosition({en.x,en.y}); r.setFillColor(sf::Color(168,85,247)); window.draw(r); }
+        { sf::RectangleShape r({12,40}); r.setPosition({flag.position.x+6, flag.position.y}); r.setFillColor(sf::Color(74,222,128)); window.draw(r); }
+        { sf::RectangleShape r({pw,ph}); r.setPosition({px,py}); r.setFillColor(sf::Color(96,165,250)); window.draw(r); }
+        window.display();
+    }
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

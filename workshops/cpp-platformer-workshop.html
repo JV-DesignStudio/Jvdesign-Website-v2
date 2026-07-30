@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+  </div>
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game setup?</strong> Each episode builds a new game on the same C++/SFML skeleton: the <code>sf::RenderWindow</code>, the game loop and event polling. If you're starting here or need that boilerplate, grab it in one click: <a href="cpp-pong-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 setup →</a> · <a href="cpp-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">C++ Cheatsheet →</a></div>
@@ -191,7 +196,7 @@ public:
 };</pre>
   </div>
 
-      <div class="concept-fill" id="cf-1" data-step="1">
+    <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
           <div class="cf-title">Fill in the Blanks</div>
@@ -569,6 +574,83 @@ while (window.isOpen()) {
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ platformer.cpp -o platformer -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./platformer</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
+      <pre class="code-pre">// Complete C++ Platformer for SFML 3. Build:
+//   g++ platformer.cpp -o platformer -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;vector&gt;
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({800, 480}), "C++ Platformer");
+    window.setFramerateLimit(60);
+
+    float px = 100, py = 380, pw = 34, ph = 44, vy = 0;
+    bool onGround = false, won = false;
+    int score = 0;
+
+    std::vector&lt;sf::FloatRect&gt; platforms = {
+        {{0.f, 440.f},  {800.f, 40.f}},
+        {{150.f, 340.f},{140.f, 16.f}},
+        {{380.f, 260.f},{140.f, 16.f}},
+        {{610.f, 180.f},{140.f, 16.f}}
+    };
+    std::vector&lt;sf::FloatRect&gt; coins = {
+        {{205.f, 300.f},{18.f, 18.f}},
+        {{435.f, 220.f},{18.f, 18.f}},
+        {{665.f, 140.f},{18.f, 18.f}}
+    };
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
+            if (const auto* k = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;())
+                if (k-&gt;code == sf::Keyboard::Key::Up &amp;&amp; onGround &amp;&amp; !won) { vy = -16; onGround = false; }
+        }
+
+        if (!won) {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  px -= 5;
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) px += 5;
+            if (px &lt; 0) px = 0; if (px + pw &gt; 800) px = 800 - pw;
+
+            vy += 1; py += vy;
+            onGround = false;
+            sf::FloatRect player({px, py}, {pw, ph});
+            for (auto&amp; plat : platforms) {
+                if (player.findIntersection(plat) &amp;&amp; vy &gt;= 0 &amp;&amp;
+                    py + ph - vy &lt;= plat.position.y) {
+                    py = plat.position.y - ph; vy = 0; onGround = true;
+                    player = sf::FloatRect({px, py}, {pw, ph});
+                }
+            }
+            for (size_t i = 0; i &lt; coins.size(); ) {
+                if (player.findIntersection(coins[i])) { coins.erase(coins.begin()+i); score += 10; }
+                else ++i;
+            }
+            if (coins.empty()) won = true;
+        }
+
+        window.clear(sf::Color(25, 30, 60));
+        for (auto&amp; plat : platforms) {
+            sf::RectangleShape r(plat.size); r.setPosition(plat.position);
+            r.setFillColor(sf::Color(6, 214, 160)); window.draw(r);
+        }
+        for (auto&amp; c : coins) {
+            sf::RectangleShape r(c.size); r.setPosition(c.position);
+            r.setFillColor(sf::Color(255, 209, 102)); window.draw(r);
+        }
+        sf::RectangleShape p({pw, ph}); p.setPosition({px, py});
+        p.setFillColor(sf::Color(255, 119, 0)); window.draw(p);
+        window.display();
+    }
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">

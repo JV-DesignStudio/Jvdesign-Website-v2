@@ -144,6 +144,11 @@
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px">
+    <div class="callout-icon">⚠️</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+  </div>
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game setup?</strong> Each episode builds a new game on the same C++/SFML skeleton: the <code>sf::RenderWindow</code>, the game loop and event polling. If you're starting here or need that boilerplate, grab it in one click: <a href="cpp-pong-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 setup →</a> · <a href="cpp-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">C++ Cheatsheet →</a></div>
@@ -197,7 +202,7 @@ int main() {
 }</pre>
   </div>
 
-      <div class="concept-fill" id="cf-1" data-step="1">
+    <div class="concept-fill" id="cf-1" data-step="1">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
           <div class="cf-title">Fill in the Blanks</div>
@@ -599,6 +604,87 @@ seg.setFillColor(sf::Color(6, shade + 54, 120 + shade/3));</pre>
       </div>
     </div>
   </div>
+
+  <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ snake.cpp -o snake -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./snake</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <div class="code-block" style="margin:12px 16px 16px">
+      <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.cpp</span></div>
+      <pre class="code-pre">// Complete C++ Snake for SFML 3. Build:
+//   g++ snake.cpp -o snake -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;vector&gt;
+#include &lt;cstdlib&gt;
+
+int main() {
+    const int GRID = 25, CELL = 20;
+    sf::RenderWindow window(sf::VideoMode({500, 500}), "C++ Snake");
+    window.setFramerateLimit(60);
+
+    std::vector&lt;sf::Vector2i&gt; snake = {{12,12},{11,12},{10,12}};
+    sf::Vector2i dir = {1, 0};
+    sf::Vector2i food = {5, 5};
+    bool dead = false;
+    sf::Clock clock;
+    float acc = 0.f;
+
+    auto spawnFood = [&amp;]() {
+        while (true) {
+            sf::Vector2i f = {std::rand() % GRID, std::rand() % GRID};
+            bool onSnake = false;
+            for (auto&amp; c : snake) if (c == f) onSnake = true;
+            if (!onSnake) { food = f; return; }
+        }
+    };
+    spawnFood();
+
+    auto reset = [&amp;]() {
+        snake = {{12,12},{11,12},{10,12}}; dir = {1,0}; dead = false; spawnFood();
+    };
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
+            if (const auto* k = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;()) {
+                using K = sf::Keyboard::Key;
+                if (k-&gt;code == K::Up    &amp;&amp; dir.y != 1)  dir = {0,-1};
+                if (k-&gt;code == K::Down  &amp;&amp; dir.y != -1) dir = {0, 1};
+                if (k-&gt;code == K::Left  &amp;&amp; dir.x != 1)  dir = {-1,0};
+                if (k-&gt;code == K::Right &amp;&amp; dir.x != -1) dir = {1, 0};
+                if (k-&gt;code == K::Space &amp;&amp; dead) reset();
+            }
+        }
+
+        acc += clock.restart().asSeconds();
+        if (!dead &amp;&amp; acc &gt;= 0.12f) {
+            acc = 0.f;
+            sf::Vector2i head = snake[0] + dir;
+            if (head.x &lt; 0 || head.x &gt;= GRID || head.y &lt; 0 || head.y &gt;= GRID) dead = true;
+            for (auto&amp; c : snake) if (c == head) dead = true;
+            if (!dead) {
+                snake.insert(snake.begin(), head);
+                if (head == food) spawnFood();
+                else snake.pop_back();
+            }
+        }
+
+        window.clear(sf::Color(10, 14, 20));
+        sf::CircleShape f(8.f);
+        f.setPosition({food.x * (float)CELL + 2, food.y * (float)CELL + 2});
+        f.setFillColor(sf::Color(255, 84, 112));
+        window.draw(f);
+        for (auto&amp; c : snake) {
+            sf::RectangleShape cell({CELL - 2.f, CELL - 2.f});
+            cell.setPosition({c.x * (float)CELL + 1, c.y * (float)CELL + 1});
+            cell.setFillColor(sf::Color(51, 209, 122));
+            window.draw(cell);
+        }
+        window.display();
+    }
+}</pre>
+    </div>
+  </details>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">
