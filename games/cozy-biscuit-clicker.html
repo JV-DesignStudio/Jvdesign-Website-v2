@@ -594,11 +594,23 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     <div class="offline-modal">
       <div class="big-emoji">✨🍪✨</div>
       <h3>Welcome to the <em style="font-style:italic;color:var(--rose-deep);font-weight:400">Biscuit Tin</em>!</h3>
-      <p>Tap the golden tin to bake biscuits.<br>
+      <p>Tap the golden tin to bake biscuits — <strong>tap fast to build a combo</strong> for bonus biscuits!<br>
       Hire helpers in the <strong>Bakery</strong> so it bakes while you rest,<br>
       and say hello to the crew — they each have a favourite treat.</p>
       <p style="font-size:12px;opacity:.8">No rush. No losing. Just biscuits. 💛</p>
       <button class="offline-collect-btn" data-close>Let's bake! 🍪</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="streakModal">
+  <div class="modal">
+    <div class="offline-modal">
+      <div class="big-emoji" id="streakEmoji">🔥</div>
+      <h3><span id="streakDays">1</span>-day streak!</h3>
+      <p id="streakMsg">You came back — the tin missed you.</p>
+      <div class="offline-amount" id="streakAmount">+50 🍪</div>
+      <button class="offline-collect-btn" data-close>Yay! 🍪</button>
     </div>
   </div>
 </div>
@@ -877,6 +889,8 @@ const ACHIEVEMENTS=[
   // Daily
   {id:'bt_daily3',     emoji:'📅',name:'Creature of Habit',desc:'Collect 3 daily bonuses',              coins:20,  check:v=>(bv().dailyCount||0)>=3},
   {id:'bt_daily10',    emoji:'🗓️',name:'Regular',          desc:'Collect 10 daily bonuses',             coins:50,  check:v=>(bv().dailyCount||0)>=10},
+  {id:'bt_streak7',    emoji:'🔥',name:'On a Roll',        desc:'Reach a 7-day streak',                 coins:80,  check:v=>(bv().bestStreak||0)>=7},
+  {id:'bt_streak30',   emoji:'🏅',name:'Daily Devotee',    desc:'Reach a 30-day streak',                coins:300, check:v=>(bv().bestStreak||0)>=30},
   // Cosmetic / misc
   {id:'bt_hat',        emoji:'🎩',name:'Dressed to Bake',  desc:'Equip a hat in Cozy Cafe',             coins:25,  check:v=>!!(v.equipped&&v.equipped.hat)},
   {id:'bt_both',       emoji:'☕',name:'Regulars',         desc:'Play both Cozy Cafe and Biscuit Tin',  coins:30,  check:v=>v.stats.guests_served>=1&&bv().lifetime>=1},
@@ -1114,6 +1128,8 @@ function bumpCombo(){
     const f=document.getElementById('comboBarFill'); if(f)f.style.transform='scaleX(1)';
     b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
   }
+  // One-time nudge so new players discover combos by doing.
+  if(!vault.comboHintSeen&&combo>=4){ vault.comboHintSeen=true; saveVault(); showToast('🔥 Combo! Keep tapping fast for bonus biscuits','achievement'); }
   return {mult:tier.mult,idx};
 }
 function endCombo(){
@@ -2297,11 +2313,30 @@ setInterval(()=>{
 
 function checkDailyBonus(){
   const today=new Date().toISOString().slice(0,10);
-  if(vault.biscuit_last_daily!==today){
-    vault.biscuit_last_daily=today; bv().total+=50; bv().lifetime+=50;
-    bv().dailyCount=(bv().dailyCount||0)+1;
-    saveNow(); setTimeout(()=>showToast('Daily bonus! +50 🍪','achievement'),800);
-  }
+  if(vault.biscuit_last_daily===today) return; // already claimed today
+  // Streak: continued if the last claim was yesterday, else it resets to 1.
+  const y=new Date(); y.setDate(y.getDate()-1);
+  const yesterday=y.toISOString().slice(0,10);
+  bv().streak = (vault.biscuit_last_daily===yesterday) ? (bv().streak||0)+1 : 1;
+  if((bv().streak||0)>(bv().bestStreak||0)) bv().bestStreak=bv().streak;
+  vault.biscuit_last_daily=today;
+  bv().dailyCount=(bv().dailyCount||0)+1;
+  // Escalating reward: each streak day is worth ~a minute of production
+  // (min 50 early game), building up to 7 days, so returning daily pays off.
+  const perDay=Math.max(50,Math.floor(productionRate*60));
+  const reward=perDay*Math.min(bv().streak,7);
+  bv().total+=reward; bv().lifetime+=reward;
+  saveNow();
+  showStreakPopup(bv().streak,reward);
+  checkAchievements();
+}
+function showStreakPopup(streak,reward){
+  const msgs={1:"You came back — the tin missed you.",3:"Three days running — the crew are chuffed!",7:"A whole week! You're a proper regular now.",14:"Two weeks straight. Legendary dedication.",30:"A month of biscuits. The crew made you a badge."};
+  document.getElementById('streakDays').textContent=streak;
+  document.getElementById('streakEmoji').textContent=streak>=7?'🔥🔥':'🔥';
+  document.getElementById('streakMsg').textContent=msgs[streak]||('Day '+streak+' — keep it up for bigger daily treats!');
+  document.getElementById('streakAmount').textContent='+'+fmt(reward)+' 🍪';
+  setTimeout(()=>document.getElementById('streakModal').classList.add('show'),700);
 }
 
 // ══ INIT ══
