@@ -99,7 +99,9 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .tin-emoji{font-size:90px;line-height:1;animation:tinFloat 3.5s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(74,53,40,.18));pointer-events:none}
 @keyframes tinFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
 .biscuit-tin.tapped .tin-emoji{animation:none;transform:scale(.88) rotate(-6deg) !important}
-.biscuits-label{font-family:'Fraunces',serif;font-weight:900;font-size:46px;color:var(--cocoa);letter-spacing:-.02em;line-height:1;margin:0 0 2px;text-align:center}
+.biscuits-label{font-family:'Fraunces',serif;font-weight:900;font-size:46px;color:var(--cocoa);letter-spacing:-.02em;line-height:1;margin:0 0 2px;text-align:center;will-change:transform}
+.biscuits-label.bumped{animation:countBump .18s ease}
+@keyframes countBump{0%,100%{transform:scale(1)}45%{transform:scale(1.07)}}
 .biscuits-label span{display:block;color:var(--rose-deep);font-style:italic;font-weight:400;font-size:14px;letter-spacing:.02em;margin-top:2px}
 .rate-label{font-size:12px;color:var(--cocoa-soft);font-weight:800;margin-top:6px;background:var(--milk);border:2px solid var(--cream-deep);border-radius:100px;padding:4px 14px;box-shadow:var(--shadow-soft)}
 
@@ -923,12 +925,14 @@ const charWasCD={fox:false,tiger:false,turtle:false,axolotl:false};
 const CIRC=138.2;
 let milestonesHit=new Set();
 
+const FMT_UNITS=['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
 function fmt(n){
   n=Math.floor(n);
-  if(n>=1e9)return(n/1e9).toFixed(1)+'B';
-  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
-  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
-  return n.toString();
+  if(n<1e3)return n.toString();
+  // Step down in thousands so trillion+ (the late-game content) reads as T/Qa/...
+  let tier=0,v=n;
+  while(v>=1e6&&tier<FMT_UNITS.length-1){v/=1e3;tier++;}
+  return (v/1e3).toFixed(1)+FMT_UNITS[tier];
 }
 
 function recalc(){
@@ -1070,8 +1074,12 @@ function doClick(x,y){
   for(let i=0;i<Math.min(3+c.idx*2,13);i++)spawnBiscuit(x,y);
   comboFx(x,y,c.idx);
   trackDailyProgress('earn',gained);
-  updateHUD(); saveVault(); checkAchievements(); trackDailyProgress('tap');
+  updateHUD(); popCount(); saveVault(); checkAchievements(); trackDailyProgress('tap');
   if(modalShown('bakeryModal')||modalShown('upgradesModal'))renderPanel();
+}
+function popCount(){
+  const el=document.getElementById('biscuitsLabel'); if(!el)return;
+  el.classList.remove('bumped'); void el.offsetWidth; el.classList.add('bumped');
 }
 function spawnClickPop(x,y,text){
   const el=document.createElement('div'); el.className='click-pop'; el.textContent=text;
@@ -1579,7 +1587,7 @@ function checkOffline(){
   saveVault();
 }
 document.getElementById('offlineCollect').addEventListener('click',()=>{
-  document.getElementById('offlineModal').classList.remove('show'); updateHUD();
+  document.getElementById('offlineModal').classList.remove('show'); updateHUD(); popCount();
 });
 
 // ══ AMBIENCE ══
