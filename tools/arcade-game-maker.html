@@ -19871,16 +19871,35 @@ window.addEventListener('online', () => {
 (function(){
   const banner = document.getElementById('cookieBanner');
   if (!banner) return;
+  const fab = document.getElementById('panelFab');
+  // The banner is a fixed bottom overlay and sits directly on top of the
+  // mobile "Build" FAB (same corner), making it invisible and untappable
+  // until the banner is dismissed. Push the FAB above the banner while shown.
+  function positionFab(show){
+    if (!fab) return;
+    if (show) {
+      const h = banner.getBoundingClientRect().height;
+      fab.style.bottom = (h + 14) + 'px';
+    } else {
+      fab.style.bottom = '';
+    }
+  }
   const consent = localStorage.getItem('jv_analytics_ok');
-  if (consent === null) { banner.style.display = 'flex'; } // first visit, show banner
+  if (consent === null) {
+    banner.style.display = 'flex'; // first visit, show banner
+    requestAnimationFrame(() => positionFab(true));
+    window.addEventListener('resize', () => { if (banner.style.display !== 'none') positionFab(true); });
+  }
   window._consentAccept = () => {
     localStorage.setItem('jv_analytics_ok','1');
     banner.style.display = 'none';
+    positionFab(false);
     _initAnalytics();
   };
   window._consentDecline = () => {
     localStorage.setItem('jv_analytics_ok','0');
     banner.style.display = 'none';
+    positionFab(false);
   };
 })();
 </script>
