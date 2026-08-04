@@ -792,6 +792,7 @@ let echoX,echoY,echoW,echoH;
 let echoVX=0; // for tilt smoothing
 let items=[],particles=[];
 let fr=0,spawnTimer=0,spawnInterval=60;
+let lastFrameT5=0;
 let shake=0,celebrateFr=0;
 let tiltX=0; // device tilt -1..1
 let isMobile=false;
@@ -1330,10 +1331,11 @@ function drawItem(it){
 }
 
 /* ── Particles draw ── */
-function tickParticles3(){
+function tickParticles3(f){
+  f=f||1;
   particles=particles.filter(p=>p.life>.02);
   particles.forEach(p=>{
-    p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life*=.89;
+    p.x+=p.vx*f;p.y+=p.vy*f;p.vy+=.15*f;p.life*=Math.pow(.89,f);
     if(p.emoji){
       cx.save();cx.globalAlpha=p.life;cx.font=`${p.r*3}px sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(p.emoji,p.x,p.y);cx.restore();
     } else {
@@ -1521,28 +1523,31 @@ function endGame(){
 }
 
 /* ── Main Loop ── */
-function loop(){
+function loop(ts){
   requestAnimationFrame(loop);
+  if(!ts)ts=performance.now();
+  const rdt=lastFrameT5?Math.min((ts-lastFrameT5)/1000,0.05):1/60;lastFrameT5=ts;
+  const f=rdt*60;
   fr++;
 
   cx.save();
-  if(shake>.3){ cx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake*.5); shake*=.72; }
+  if(shake>.3){ cx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake*.5); shake*=Math.pow(.72,f); }
 
   drawBG3();
 
   if(gState==='playing'){
     // Move Echo, keyboard
     const speed=W*.012;
-    if(keys2.left) echoVX-=speed*.4;
-    if(keys2.right) echoVX+=speed*.4;
+    if(keys2.left) echoVX-=speed*.4*f;
+    if(keys2.right) echoVX+=speed*.4*f;
     // Tilt
-    echoVX+=tiltX*speed*.55;
+    echoVX+=tiltX*speed*.55*f;
     // Friction
-    echoVX*=.78;
-    echoX=Math.max(echoW*.55,Math.min(W-echoW*.55,echoX+echoVX));
+    echoVX*=Math.pow(.78,f);
+    echoX=Math.max(echoW*.55,Math.min(W-echoW*.55,echoX+echoVX*f));
 
     // Spawn
-    spawnTimer++;
+    spawnTimer+=f;
     if(spawnTimer>=spawnInterval){
       spawnItem();
       spawnTimer=0;
@@ -1552,20 +1557,20 @@ function loop(){
 
     // Power-up timers
     let puChanged=false;
-    if(magnetFr>0){ magnetFr--; puChanged=true; }
-    if(slowmoFr>0){ slowmoFr--; puChanged=true; }
-    if(doubleFr>0){ doubleFr--; puChanged=true; }
-    if(comboPopFr>0){ comboPopFr--; if(comboPopFr===0) document.getElementById('hud-combo').classList.remove('show'); }
+    if(magnetFr>0){ magnetFr=Math.max(0,magnetFr-f); puChanged=true; }
+    if(slowmoFr>0){ slowmoFr=Math.max(0,slowmoFr-f); puChanged=true; }
+    if(doubleFr>0){ doubleFr=Math.max(0,doubleFr-f); puChanged=true; }
+    if(comboPopFr>0){ comboPopFr=Math.max(0,comboPopFr-f); if(comboPopFr===0) document.getElementById('hud-combo').classList.remove('show'); }
     if(puChanged) updateHUDPowerups();
 
     const speedMult=slowmoFr>0?.5:1;
     // Move items
     items.forEach(it=>{
-      it.y+=it.vy*speedMult+(celebrateFr>0?-1:0);
+      it.y+=(it.vy*speedMult+(celebrateFr>0?-1:0))*f;
       if(it.type==='bird') it.x=it.baseX+Math.sin(it.y*.02+it.phase)*W*.12;
       // Magnet pulls collectibles toward Echo
       if(magnetFr>0&&(it.type==='fruit'||it.type==='star'||it.type==='powerup')){
-        it.x+=(echoX-it.x)*.08;
+        it.x+=(echoX-it.x)*Math.min(1,.08*f);
       }
     });
     items=items.filter(it=>it.alive&&it.y<H+60);
@@ -1573,14 +1578,14 @@ function loop(){
 
     // Celebrate effect
     if(celebrateFr>0){
-      celebrateFr--;
+      celebrateFr=Math.max(0,celebrateFr-f);
       cx.save();cx.globalAlpha=.15*Math.sin(celebrateFr*.2);cx.fillStyle='#ffcc02';cx.fillRect(0,0,W,H);cx.restore();
     }
   }
 
   // Draw items
   items.forEach(drawItem);
-  tickParticles3();
+  tickParticles3(f);
 
   // Draw Echo
   if(gState==='playing'||gState==='idle'){

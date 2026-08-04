@@ -1455,6 +1455,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     let scoreMultiplier = 1;
     let objects         = [];
     let spawnTimer      = 0;
+    let lastFrameT3     = 0;
     let audioCtx        = null;
     let playerX = 0, playerY = 0, lastPlayerX = 0;
     const playerW = 52, playerH = 52;
@@ -2161,7 +2162,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     /* ══════════════════════════════════════
        UPDATE LOOP
     ══════════════════════════════════════ */
-    function updateObjects() {
+    function updateObjects(f) {
+        f = f || 1;
         const next = [];
         const isMagnet = puState.magnet.active;
         const pCX = playerX + playerW/2, pCY = playerY + playerH/2;
@@ -2204,7 +2206,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             if (isMagnet && def.isCollectible && !obj.element.classList.contains('collected')) {
                 const dist = Math.hypot(pCX - (obj.x+obj.w/2), pCY - (obj.y+obj.h/2));
                 if (dist < puState.magnet.radius && dist > 1) {
-                    const force = 0.07 * (puState.magnet.radius - dist);
+                    const force = 0.07 * (puState.magnet.radius - dist) * f;
                     const nx = (pCX - (obj.x+obj.w/2)) / dist;
                     const ny = (pCY - (obj.y+obj.h/2)) / dist;
                     obj.x += nx * force;
@@ -2216,12 +2218,12 @@ document.addEventListener('DOMContentLoaded',()=>{
 
             // Black hole sideways drift
             if (def.logicType === 'blackhole') {
-                obj.x += Math.sin(obj.y * 0.03) * 1.5;
+                obj.x += Math.sin(obj.y * 0.03) * 1.5 * f;
                 obj.x = Math.max(0, Math.min(obj.x, gameArea.clientWidth - obj.w));
                 obj.element.style.left = `${obj.x}px`;
             }
 
-            obj.y += SCROLL_SPEED * speedMult;
+            obj.y += SCROLL_SPEED * speedMult * f;
             obj.element.style.top = `${obj.y}px`;
 
             if (obj.y > gameArea.clientHeight + 20) {
@@ -2302,26 +2304,31 @@ document.addEventListener('DOMContentLoaded',()=>{
         // Spawn
         let interval = Math.max(28, BASE_SPAWN_INTERVAL - Math.floor(currentScore / 3));
         if (bossWaveActive) interval = Math.max(14, Math.floor(interval / 2));
-        spawnTimer++;
+        spawnTimer += f;
         if (spawnTimer >= interval) {
             spawnObject(bossWaveActive);
             spawnTimer = 0;
         }
     }
 
-    function updatePlayerMovement() {
+    function updatePlayerMovement(f) {
+        f = f || 1;
         let dx = 0;
         if (keysPressed['arrowleft'] || keysPressed['a']) dx -= 1;
         if (keysPressed['arrowright'] || keysPressed['d']) dx += 1;
-        playerX += dx * PLAYER_SPEED;
+        playerX += dx * PLAYER_SPEED * f;
         playerX = Math.max(0, Math.min(playerX, gameArea.clientWidth - playerW));
         updatePlayerPos();
     }
 
-    function gameLoop() {
+    function gameLoop(ts) {
+        if (!ts) ts = performance.now();
+        const dt = lastFrameT3 ? Math.min((ts - lastFrameT3) / 1000, 0.05) : 1/60;
+        lastFrameT3 = ts;
+        const f = dt * 60;
         if (gameActive && !gamePaused) {
-            updatePlayerMovement();
-            updateObjects();
+            updatePlayerMovement(f);
+            updateObjects(f);
         }
         gameLoopId = requestAnimationFrame(gameLoop);
     }

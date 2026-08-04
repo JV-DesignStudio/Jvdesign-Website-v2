@@ -274,6 +274,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 
   // ── Game State ──
   let stack,cur,dir,speed,running,score,camY,fragments,particles,floaters;
+  let lastFrameT=0;
   let streak,bestStreak,perfects,totalBlocks,slimCount,coinsEarned;
   const HUES=[6,30,170,200,280,330];
   function baseY(){return H-60;}
@@ -356,14 +357,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
   cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
 
   // ── Loop ──
-  function loop(){
+  function loop(ts){
     if(!running)return;requestAnimationFrame(loop);
-    if(cur){cur.x+=dir*speed;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}if(score>=20&&Math.random()<0.002)dir*=-1;}
-    const targetCam=Math.max(0,(baseY()-(cur?cur.y:0))-H*0.45);camY+=(targetCam-camY)*0.1;
-    fragments.forEach(f=>{f.y+=6;f.x+=f.vx;f.vx*=0.99;f.rot=(f.rot||0)+(f.rv||0);});
-    fragments=fragments.filter(f=>f.y-camY<H+80);
-    particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.life-=0.02;return p.life>0;});
-    floaters=floaters.filter(f=>{f.y+=f.vy;f.life-=0.015;return f.life>0;});
+    if(!ts)ts=performance.now();
+    const dt=lastFrameT?Math.min((ts-lastFrameT)/1000,0.05):1/60;lastFrameT=ts;
+    const f=dt*60;
+    if(cur){cur.x+=dir*speed*f;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}if(score>=20&&Math.random()<0.002*f)dir*=-1;}
+    const targetCam=Math.max(0,(baseY()-(cur?cur.y:0))-H*0.45);camY+=(targetCam-camY)*Math.min(1,0.1*f);
+    fragments.forEach(f2=>{f2.y+=6*f;f2.x+=f2.vx*f;f2.vx*=Math.pow(0.99,f);f2.rot=(f2.rot||0)+(f2.rv||0)*f;});
+    fragments=fragments.filter(f2=>f2.y-camY<H+80);
+    particles=particles.filter(p=>{p.x+=p.vx*f;p.y+=p.vy*f;p.vy+=0.15*f;p.life-=0.02*f;return p.life>0;});
+    floaters=floaters.filter(f2=>{f2.y+=f2.vy*f;f2.life-=0.015*f;return f2.life>0;});
     draw();
   }
 

@@ -1007,6 +1007,7 @@ function randWy(margin){ return (Math.random()-0.5)*2*(TUNNEL_H-margin); }
 let gameInit = false, gameState = 'start';
 let canvas2, cx2, W2, H2;
 let dist, spd, fr, scroll;
+let lastFrameT2 = 0;
 let shipX, shipY;
 let credits, totalCredits, lives;
 let voidProx, voidGroanTimer;
@@ -1431,10 +1432,11 @@ function spawnScorePop(x,y,text,col){
   document.getElementById('game-container').appendChild(el);
   setTimeout(()=>el.remove(),1300);
 }
-function tickParticles2(){
+function tickParticles2(f){
+  f=f||1;
   particles2=particles2.filter(p=>p.life>.02);
   particles2.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life*=0.87;
+    p.x+=p.vx*f; p.y+=p.vy*f; p.vy+=0.12*f; p.life*=Math.pow(0.87,f);
     cx2.save(); cx2.globalAlpha=p.life; cx2.fillStyle=p.col; cx2.shadowBlur=7; cx2.shadowColor=p.col;
     cx2.beginPath(); cx2.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); cx2.fill(); cx2.restore();
   });
@@ -1548,8 +1550,9 @@ function setupControls(){
   },{passive:false});
   canvas2.addEventListener('touchend',()=>{ keys._tx=0; keys._ty=0; },{passive:true});
 }
-function applyShipMovement(){
-  const sp=SHIP_SPD*(1+spd/MAX_SPD*0.2);
+function applyShipMovement(f){
+  f=f||1;
+  const sp=SHIP_SPD*(1+spd/MAX_SPD*0.2)*f;
   let dx=0,dy=0;
   if(keys['ArrowLeft'] ||keys['a']||keys['A']||(keys._tx&&keys._tx<-18)) dx-=sp;
   if(keys['ArrowRight']||keys['d']||keys['D']||(keys._tx&&keys._tx> 18)) dx+=sp;
@@ -1558,7 +1561,7 @@ function applyShipMovement(){
   shipX=Math.max(-(TUNNEL_W-6),Math.min(TUNNEL_W-6,shipX+dx));
   shipY=Math.max(-(TUNNEL_H-4),Math.min(TUNNEL_H-4,shipY+dy));
   const targetBank=dx*0.013;
-  shipBankAngle+=(targetBank-shipBankAngle)*0.16;
+  shipBankAngle+=(targetBank-shipBankAngle)*Math.min(1,0.16*f);
 }
 
 /* START / END */
@@ -1664,9 +1667,12 @@ function endGame2(){
 }
 
 /* MAIN LOOP */
-function loop2(){
+function loop2(ts){
   rafId2=requestAnimationFrame(loop2);
-  fr++;
+  if(!ts)ts=performance.now();
+  const dt=lastFrameT2?Math.min((ts-lastFrameT2)/1000,0.05):1/60;lastFrameT2=ts;
+  const f=dt*60;
+  fr+=f;
   if(gameState==='playing'){
     const _bspd=BASE_SPD*(1+(loadUpgrades().engine||0)*0.08);
     spd=Math.min(MAX_SPD,_bspd+fr*SPD_INC);
@@ -1674,34 +1680,34 @@ function loop2(){
     if(boosting&&!wasBoosting) SFX.boost();
     wasBoosting=boosting;
     const effSpd=boosting?spd*BOOST_MULT:spd;
-    fuel=Math.max(0,fuel-FUEL_DRAIN*(spd/BASE_SPD)-(boosting?BOOST_FUEL_COST:0));
+    fuel=Math.max(0,fuel-FUEL_DRAIN*(spd/BASE_SPD)*f-(boosting?BOOST_FUEL_COST*f:0));
     const newWave=Math.floor(dist/500);
     if(newWave>wave){ wave=newWave; spawnScorePop(W2/2,H2*0.4,'WAVE '+(wave+1),'#00f5ff'); }
-    dist+=effSpd*0.045; scroll+=effSpd*14;
+    dist+=effSpd*0.045*f; scroll+=effSpd*14*f;
     const _effMax=FUEL_MAX+(loadUpgrades().tank||0)*25;
     const fuelDanger=1-fuel/_effMax;
     voidProx=Math.min(1,dist/15000+wave*0.025+fuelDanger*0.65);
-    voidGroanTimer++;
+    voidGroanTimer+=f;
     if(voidProx>.45&&voidGroanTimer>200){ SFX.voidGroan(); voidGroanTimer=0; }
-    lowFuelTimer++;
+    lowFuelTimer+=f;
     if(fuel<25&&fuel>0&&lowFuelTimer>90){ SFX.lowFuel(); lowFuelTimer=0; }
     if(fuel<=0){ deathCause='fuel'; endGame2(); }
-    if(comboTimer>0) comboTimer--;
-    if(magnetTimer>0){ magnetTimer--; updatePowerupHUD(); }
-    if(inv){ invFr++; if(invFr>INV_FR){inv=false;invFr=0;} }
-    if(shake>0) shake*=0.76;
-    applyShipMovement();
+    if(comboTimer>0) comboTimer=Math.max(0,comboTimer-f);
+    if(magnetTimer>0){ magnetTimer=Math.max(0,magnetTimer-f); updatePowerupHUD(); }
+    if(inv){ invFr+=f; if(invFr>INV_FR){inv=false;invFr=0;} }
+    if(shake>0) shake*=Math.pow(0.76,f);
+    applyShipMovement(f);
     const zSpd=effSpd*0.22;
     // Magnet pull
     if(magnetTimer>0){
       const upg=loadUpgrades();
       const mRad=(upg.magnet===2?22:12)*4;
-      const mFactor=0.06*(upg.magnet===2?1.5:1);
+      const mFactor=0.06*(upg.magnet===2?1.5:1)*f;
       obstacles.forEach(o=>{ if(o.type!=='coin'||!o.alive||o.wz>150) return; const dx=shipX-o.wx,dy=shipY-o.wy; const dd=Math.sqrt(dx*dx+dy*dy); if(dd<mRad){o.wx+=dx*mFactor;o.wy+=dy*mFactor;} });
     }
-    obstacles.forEach(o=>{ o.wz-=zSpd; if(o.rot!==undefined) o.rot+=(o.rotSpd||0); });
+    obstacles.forEach(o=>{ o.wz-=zSpd*f; if(o.rot!==undefined) o.rot+=(o.rotSpd||0)*f; });
     obstacles=obstacles.filter(o=>o.alive&&o.wz>-15);
-    spawnCD--;
+    spawnCD-=f;
     if(spawnCD<=0){
       const hc=Math.min(0.6,0.12+wave*0.06);
       if(wave>=2&&Math.random()<0.15){
@@ -1712,18 +1718,16 @@ function loop2(){
       } else { spawnCoinArc(); }
       spawnCD=Math.max(22,Math.round(75-spd*0.45-wave*2));
     }
-    fuelCD--;
+    fuelCD-=f;
     if(fuelCD<=0){ spawnFuelCanister(); fuelCD=200+Math.floor(Math.random()*160); }
-    shieldCD--;
+    shieldCD-=f;
     if(shieldCD<=0){ spawnShieldPowerup(); shieldCD=500+Math.floor(Math.random()*200); }
-    magnetCD--;
+    magnetCD-=f;
     if(magnetCD<=0){ spawnMagnetPowerup(); magnetCD=600+Math.floor(Math.random()*200); }
     checkCol2();
-    if(fr%3===0){
-      document.getElementById('h-dist').textContent=Math.floor(dist)+'m';
-      document.getElementById('h-credits').textContent=credits;
-      updateFuelHUD(); updateVoidHUD();
-    }
+    document.getElementById('h-dist').textContent=Math.floor(dist)+'m';
+    document.getElementById('h-credits').textContent=credits;
+    updateFuelHUD(); updateVoidHUD();
   }
   cx2.save();
   if(shake>0.5) cx2.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake*0.5);
@@ -1734,7 +1738,7 @@ function loop2(){
     const sorted=[...obstacles].sort((a,b)=>b.wz-a.wz);
     sorted.forEach(drawObs2);
     if(gameState==='playing') drawShip2(shipX,shipY,inv,boosting);
-    tickParticles2();
+    tickParticles2(f);
     drawVoidEntity2();
   }
   cx2.restore();

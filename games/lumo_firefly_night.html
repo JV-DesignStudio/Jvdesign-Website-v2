@@ -632,6 +632,7 @@ let aimAngle=-Math.PI/2;
 let score=0, best=0, level=1;
 let state='start';
 let tick=0, shootCount=0, dangerFlash=0;
+let lastFrameT4=0;
 let shakeFrames=0;
 let freezeActive=0; // frames remaining (freezes row-drop timer)
 let combo=0; // consecutive popping shots in a row
@@ -1429,13 +1430,16 @@ function moveBubble(b, dt){
 // ═══════════════════════════════════════
 // MAIN LOOP
 // ═══════════════════════════════════════
-function loop(){
+function loop(ts){
   requestAnimationFrame(loop);
+  if(!ts)ts=performance.now();
+  const rdt=lastFrameT4?Math.min((ts-lastFrameT4)/1000,0.05):1/60;lastFrameT4=ts;
+  const f=rdt*60;
   tick++;
-  if(slowActive>0)slowActive--;
-  if(freezeActive>0){freezeActive--; if(freezeActive===0)updateRowMeter();}
+  if(slowActive>0)slowActive=Math.max(0,slowActive-f);
+  if(freezeActive>0){freezeActive=Math.max(0,freezeActive-f); if(freezeActive===0)updateRowMeter();}
 
-  const dt = slowActive>0 ? 0.45 : 1;
+  const dt = (slowActive>0 ? 0.45 : 1) * f;
 
   ctx.clearRect(0,0,GW,GH);
   drawBG();
@@ -1479,11 +1483,11 @@ function loop(){
 
   // update particles
   for(let i=sparks.length-1;i>=0;i--){
-    const s=sparks[i];s.x+=s.vx;s.y+=s.vy;s.vy+=.1;s.life-=s.dl;
+    const s=sparks[i];s.x+=s.vx*f;s.y+=s.vy*f;s.vy+=.1*f;s.life-=s.dl*f;
     if(s.life<=0)sparks.splice(i,1);
   }
   for(let i=popTexts.length-1;i>=0;i--){
-    const t=popTexts[i];t.y+=t.vy;t.life-=t.dl;
+    const t=popTexts[i];t.y+=t.vy*f;t.life-=t.dl*f;
     if(t.life<=0)popTexts.splice(i,1);
   }
 }
