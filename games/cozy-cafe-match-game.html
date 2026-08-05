@@ -2859,6 +2859,28 @@ updateQuestDot();
 async function settleCascades() {
   let m = findMatches();
   while (m.length) { comboCount = 0; await resolveMatches(m); m = findMatches(); }
+  await autoReshuffleIfStuck();
+}
+// Deadlock safety net: cascades can settle into a board with no valid swap
+// left (hasAnyMove() was previously only ever checked once, at board init).
+// Reshuffle in place until a clean, playable layout turns up, rather than
+// leaving the player stuck with only the paid "New 25" reset as a way out.
+async function autoReshuffleIfStuck() {
+  if (hasAnyMove()) return;
+  showToast('😅 No moves left, shuffling the board...');
+  let tries = 0, ok = false;
+  do {
+    const types = [];
+    for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) types.push(board[r][c].type);
+    for (let i = types.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [types[i], types[j]] = [types[j], types[i]]; }
+    let k = 0;
+    for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) board[r][c] = { ...board[r][c], type: types[k++] };
+    tries++;
+    ok = findMatches().length === 0 && hasAnyMove();
+  } while (!ok && tries < 60);
+  render();
+  buzz(15);
+  await sleep(220);
 }
 async function boosterShuffle() {
   if (busy) { showToast('One moment...'); return false; }
