@@ -188,6 +188,52 @@ img{display:block;max-width:100%;}
 .timer-bar-wrap{background:rgba(255,255,255,.07);border-radius:999px;height:4px;margin-bottom:14px;overflow:hidden;}
 .timer-bar{height:100%;border-radius:999px;background:#A78BFA;transition:width .1s linear;}
 
+/* ═══ SIX DISTINCT QUIZ PROGRESS TREATMENTS ═══ */
+/* History: linear timeline, a scroll unrolling */
+.hist-timeline{position:relative;width:100%;box-sizing:border-box;height:40px;margin-bottom:14px;padding:10px 4px 0;background:rgba(212,160,23,.06);border:1px solid rgba(212,160,23,.15);border-radius:12px;}
+.hist-timeline::before{content:'';position:absolute;top:20px;left:14px;right:14px;height:4px;background:rgba(255,255,255,.14);border-radius:2px;}
+.hist-timeline-fill{position:absolute;top:20px;left:14px;height:4px;border-radius:2px;background:linear-gradient(90deg,#8a6d10,#D4A017);transition:width .4s ease;}
+.hist-timeline-marker{position:absolute;top:2px;transform:translateX(-50%);font-size:1.2rem;transition:left .4s ease;}
+.hist-timeline-ticks{position:absolute;top:17px;left:14px;right:14px;display:flex;justify-content:space-between;}
+.hist-tick{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.28);border:1px solid rgba(0,0,0,.25);transition:background .2s,transform .2s;}
+.hist-tick.ok{background:#34D399;transform:scale(1.15);}
+.hist-tick.bad{background:#F87171;transform:scale(1.15);}
+
+/* Art: growing mosaic grid */
+.art-mosaic{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%;box-sizing:border-box;margin-bottom:14px;padding:8px;background:rgba(249,115,22,.05);border:1px solid rgba(249,115,22,.15);border-radius:12px;}
+.art-cell{aspect-ratio:1;border-radius:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.06);transition:background .3s,transform .2s;}
+.art-cell.ok{background:linear-gradient(135deg,#F97316,#FBBF24);border-color:transparent;}
+.art-cell.bad{background:rgba(248,113,113,.35);border-color:transparent;}
+.art-cell.current{outline:2px solid #F97316;outline-offset:1px;}
+
+/* Health: ECG pulse strip */
+.health-ecg{display:flex;align-items:flex-end;gap:3px;width:100%;box-sizing:border-box;height:36px;margin-bottom:14px;padding:0 2px;}
+.health-blip{flex:1;background:rgba(255,255,255,.1);border-radius:2px;transition:background .3s,height .3s;}
+.health-blip.ok{background:#4ADE80;}
+.health-blip.bad{background:#F87171;}
+.health-blip.current{background:rgba(74,222,128,.6);animation:ecg-pulse 1s ease-in-out infinite;}
+@keyframes ecg-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* Inventors: workbench that assembles parts */
+.inv-bench{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;box-sizing:border-box;margin-bottom:14px;padding:10px;background:rgba(251,191,36,.06);border:1px dashed rgba(251,191,36,.25);border-radius:12px;}
+.inv-slot{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .3s,transform .2s;}
+.inv-slot.ok{background:rgba(251,191,36,.22);transform:scale(1.1) rotate(-4deg);}
+.inv-slot.bad{background:rgba(248,113,113,.18);}
+.inv-slot.current{outline:2px solid #FBBF24;}
+
+/* Space: circular orbit ring */
+.space-orbit{position:relative;width:104px;height:104px;margin:0 auto 14px;}
+.space-ring{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(255,255,255,.08);}
+.space-ring-fill{position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px));mask:radial-gradient(farthest-side,transparent calc(100% - 6px),#000 calc(100% - 6px));}
+.space-planet{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.7rem;}
+.space-rocket{position:absolute;font-size:1.05rem;}
+
+/* Nature: growing terrarium */
+.nat-terrarium{display:flex;align-items:flex-end;gap:4px;width:100%;box-sizing:border-box;height:42px;margin-bottom:14px;padding:0 4px 4px;background:linear-gradient(180deg,transparent 55%,rgba(45,212,191,.12) 55%);border-radius:0 0 10px 10px;border-bottom:2px solid rgba(45,212,191,.3);}
+.nat-slot{flex:1;text-align:center;font-size:15px;opacity:.15;transition:opacity .3s,transform .3s;transform:scale(.6);}
+.nat-slot.ok{opacity:1;transform:scale(1);}
+.nat-slot.bad{opacity:.3;transform:scale(.8);}
+
 /* ═══ NUMBER BONDS ═══ */
 .bond-scene{text-align:center;padding:20px 0;}
 .bond-equation{font-family:'Fredoka',cursive;font-size:clamp(2rem,6vw,3rem);color:#fff;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
@@ -736,6 +782,61 @@ function sndClick(){ playTone(660,.06,'sine',.12); }
 // Health, Inventors, Space, Nature). Cosmetic only, never touches score/XP,
 // so it can't reintroduce the kind of scoring mismatch the Echo maxScore
 // bug caused. Call with the current run of consecutive correct answers.
+// Six distinct progress visualisations for the MCQ subjects, so each one
+// FEELS different even though the underlying question-and-4-buttons
+// interaction is shared. Each takes (idx, total, results) and returns HTML
+// to drop into that subject's existing progress container.
+function histTimelineHTML(idx,total,results){
+  const pct=total<=0?0:Math.round((idx/total)*100);
+  const ticks=Array.from({length:total},(_,i)=>{
+    let c='hist-tick'; if(i<results.length)c+=results[i]?' ok':' bad';
+    return `<div class="${c}"></div>`;
+  }).join('');
+  return `<div class="hist-timeline">
+    <div class="hist-timeline-fill" style="width:${pct}%"></div>
+    <div class="hist-timeline-marker" style="left:${pct}%">🏛️</div>
+    <div class="hist-timeline-ticks">${ticks}</div>
+  </div>`;
+}
+function artMosaicHTML(idx,total,results){
+  return `<div class="art-mosaic">${Array.from({length:total},(_,i)=>{
+    let c='art-cell'; if(i<results.length)c+=results[i]?' ok':' bad'; else if(i===idx)c+=' current';
+    return `<div class="${c}"></div>`;
+  }).join('')}</div>`;
+}
+function healthEcgHTML(idx,total,results){
+  const pat=[10,22,14,28,16,24];
+  return `<div class="health-ecg">${Array.from({length:total},(_,i)=>{
+    let c='health-blip'; if(i<results.length)c+=results[i]?' ok':' bad'; else if(i===idx)c+=' current';
+    return `<div class="${c}" style="height:${pat[i%pat.length]}px"></div>`;
+  }).join('')}</div>`;
+}
+const INV_PARTS=['⚙️','🔩','🔧','🛠️','💡','🔌','⚡','🧰','📐','🔋','🖇️','💡'];
+function invBenchHTML(idx,total,results){
+  return `<div class="inv-bench">${Array.from({length:total},(_,i)=>{
+    let c='inv-slot',content=''; if(i<results.length){c+=results[i]?' ok':' bad';content=results[i]?INV_PARTS[i%INV_PARTS.length]:'💥';} else if(i===idx)c+=' current';
+    return `<div class="${c}">${content}</div>`;
+  }).join('')}</div>`;
+}
+function spaceOrbitHTML(idx,total){
+  const pct=total<=0?0:idx/total;
+  const angle=pct*360-90, rad=angle*Math.PI/180, R=44;
+  const rx=52+R*Math.cos(rad), ry=52+R*Math.sin(rad), deg=Math.round(angle+90);
+  return `<div class="space-orbit">
+    <div class="space-ring"></div>
+    <div class="space-ring-fill" style="background:conic-gradient(#C084FC ${pct*360}deg,transparent 0)"></div>
+    <div class="space-planet">🪐</div>
+    <div class="space-rocket" style="left:${rx}px;top:${ry}px;transform:translate(-50%,-50%) rotate(${deg}deg)">🚀</div>
+  </div>`;
+}
+const NAT_GROWTH=['🌱','🌿','🍃','🌳','🌻','🦋','🐛','🐝','🦔','🐿️','🍄','🌸'];
+function natTerrariumHTML(idx,total,results){
+  return `<div class="nat-terrarium">${Array.from({length:total},(_,i)=>{
+    let c='nat-slot',content=NAT_GROWTH[i%NAT_GROWTH.length]; if(i<results.length)c+=results[i]?' ok':' bad';
+    return `<div class="${c}">${content}</div>`;
+  }).join('')}</div>`;
+}
+
 function quizStreakFx(streak){
   if(streak<3||streak%3!==0)return;
   sndWow();
@@ -2665,12 +2766,7 @@ function histNextQ(){
   document.getElementById('histEra').textContent='📅 '+q.era;
   document.getElementById('histQ').textContent=q.q;
   document.getElementById('histFb').className='fb';
-  document.getElementById('histDots').innerHTML=HQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<HQ.idx) c+=HQ.results[i]?' done-ok':' done-bad';
-    else if(i===HQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('histDots').innerHTML=histTimelineHTML(HQ.idx,HQ.qs.length,HQ.results);
   document.getElementById('histOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="histAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${HQ.idx+1}/${HQ.qs.length}`;
 }
@@ -3108,12 +3204,7 @@ function artNextQ(){
   document.getElementById('artEra').textContent='🎨 '+q.era;
   document.getElementById('artQ').textContent=q.q;
   document.getElementById('artFb').className='fb';
-  document.getElementById('artDots').innerHTML=AQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<AQ.idx) c+=AQ.results[i]?' done-ok':' done-bad';
-    else if(i===AQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('artDots').innerHTML=artMosaicHTML(AQ.idx,AQ.qs.length,AQ.results);
   document.getElementById('artOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="artAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${AQ.idx+1}/${AQ.qs.length}`;
 }
@@ -3181,12 +3272,7 @@ function healthNextQ(){
   document.getElementById('healthEra').textContent='🏃 '+q.era;
   document.getElementById('healthQ').textContent=q.q;
   document.getElementById('healthFb').className='fb';
-  document.getElementById('healthDots').innerHTML=HEQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<HEQ.idx) c+=HEQ.results[i]?' done-ok':' done-bad';
-    else if(i===HEQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('healthDots').innerHTML=healthEcgHTML(HEQ.idx,HEQ.qs.length,HEQ.results);
   document.getElementById('healthOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="healthAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${HEQ.idx+1}/${HEQ.qs.length}`;
 }
@@ -3254,12 +3340,7 @@ function invNextQ(){
   document.getElementById('invEra').textContent='💡 '+q.era;
   document.getElementById('invQ').textContent=q.q;
   document.getElementById('invFb').className='fb';
-  document.getElementById('invDots').innerHTML=IQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<IQ.idx) c+=IQ.results[i]?' done-ok':' done-bad';
-    else if(i===IQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('invDots').innerHTML=invBenchHTML(IQ.idx,IQ.qs.length,IQ.results);
   document.getElementById('invOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="invAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${IQ.idx+1}/${IQ.qs.length}`;
 }
@@ -3327,12 +3408,7 @@ function spaceNextQ(){
   document.getElementById('spaceEra').textContent='🚀 '+q.era;
   document.getElementById('spaceQ').textContent=q.q;
   document.getElementById('spaceFb').className='fb';
-  document.getElementById('spaceDots').innerHTML=SPQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<SPQ.idx) c+=SPQ.results[i]?' done-ok':' done-bad';
-    else if(i===SPQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('spaceDots').innerHTML=spaceOrbitHTML(SPQ.idx,SPQ.qs.length);
   document.getElementById('spaceOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="spaceAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${SPQ.idx+1}/${SPQ.qs.length}`;
 }
@@ -3400,12 +3476,7 @@ function natNextQ(){
   document.getElementById('natEra').textContent='🦁 '+q.era;
   document.getElementById('natQ').textContent=q.q;
   document.getElementById('natFb').className='fb';
-  document.getElementById('natDots').innerHTML=NQ.qs.map((_,i)=>{
-    let c='mcq-dot';
-    if(i<NQ.idx) c+=NQ.results[i]?' done-ok':' done-bad';
-    else if(i===NQ.idx) c+=' current';
-    return `<div class="${c}"></div>`;
-  }).join('');
+  document.getElementById('natDots').innerHTML=natTerrariumHTML(NQ.idx,NQ.qs.length,NQ.results);
   document.getElementById('natOpts').innerHTML=q.opts.map((o,i)=>`<button class="hist-btn" onclick="natAnswer(${i})">${o}</button>`).join('');
   document.getElementById('modalScore').textContent=`${NQ.idx+1}/${NQ.qs.length}`;
 }
