@@ -212,7 +212,7 @@ const GOALS = [
 let state;
 function freshState() {
   const gen = {}; GENERATORS.forEach(g => gen[g.id] = 0);
-  return { dough:0, totalEarned:0, gen, upgrades:[], stars:0, goals:[], lastSave:Date.now(), totalTaps:0, goldenCaught:0 };
+  return { dough:0, totalEarned:0, gen, upgrades:[], stars:0, goals:[], lastSave:Date.now(), totalTaps:0, goldenCaught:0, bestSessionEarn:0 };
 }
 function load() {
   try {
@@ -550,8 +550,26 @@ applyOffline();
 renderPanel();
 updateTopStats();
 updateUpgradeBadge();
+
+// Share prompt: an idle game has no discrete "run" to hook the site-wide
+// share chip into (recordGamePlay only fires on tab-close, too late to be
+// seen), so this game decides for itself. "Best" = most dough earned in one
+// sitting, compared against the best sitting ever recorded, not lifetime
+// total (which only ever grows and would trigger on every check).
+const sessionBaseline = state.totalEarned;
+let bestSessionShared = false;
+function checkSessionShareMoment() {
+  if (bestSessionShared) return;
+  const sessionEarned = state.totalEarned - sessionBaseline;
+  if (sessionEarned <= 0 || sessionEarned <= (state.bestSessionEarn || 0)) return;
+  state.bestSessionEarn = sessionEarned;
+  bestSessionShared = true;
+  window.__gsBestRun = Math.max(window.__gsBestRun || 0, sessionEarned);
+  if (window.jvdsCheckNewBest) window.jvdsCheckNewBest();
+}
+
 setInterval(tick, 100);
-setInterval(() => { save(); updateUpgradeBadge(); }, 5000);
+setInterval(() => { save(); updateUpgradeBadge(); checkSessionShareMoment(); }, 5000);
 scheduleGolden();
 
 window.addEventListener('beforeunload', () => {
