@@ -336,6 +336,8 @@
   }
   .touch-btn:active { background: rgba(255,255,255,0.28); }
   @media (pointer: coarse) { .touch-controls { display: flex; } }
+  .touch-hint { display: none; }
+  @media (pointer: coarse) { .touch-hint { display: inline; } .keys-hint { display: none; } }
 
   /* ----- Shop ----- */
   .shop-header {
@@ -688,7 +690,8 @@
     <button class="tilt-toggle hidden" id="tilt-btn">📱 Enable Tilt Controls</button>
 
     <div class="controls-hint" id="controls-hint">
-      <span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to move<br>
+      <span class="keys-hint"><span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to move<br></span>
+      <span class="touch-hint">Tap the ⬅️ ➡️ buttons to move<br></span>
       Wraps around screen edges
     </div>
   </div>
@@ -949,6 +952,10 @@ const SFX = {
   break:     () => playTone(180, 0.1,  'sawtooth', 0.10, -80),
   cloud:     () => playTone(550, 0.12, 'sine',     0.07, -50),
   vanishing: () => playTone(660, 0.08, 'triangle', 0.08, 200),
+  gust:      () => playTone(150, 0.16, 'sawtooth', 0.12, -100),
+  shieldHit: () => playTone(500, 0.1,  'triangle', 0.11, 300),
+  powerup:   () => { [700, 1000, 1300].forEach((f, i) => setTimeout(() => playTone(f, 0.08, 'sine', 0.11, 0), i * 60)); },
+  jetpack:   () => playTone(200, 0.25, 'sawtooth', 0.1, 500),
   death:     () => { playTone(440, 0.15, 'sawtooth', 0.15, -300); setTimeout(() => playTone(220, 0.2, 'sawtooth', 0.12, -150), 100); setTimeout(() => playTone(110, 0.3, 'sawtooth', 0.12, -60), 250); },
   levelUp:   () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.12, 'square', 0.12, 0), i * 80)); },
   unlock:    () => { [659, 880, 1175].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'sine', 0.13, 0), i * 100)); },
@@ -975,7 +982,7 @@ const ACHIEVEMENTS = [
   { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: '🌳', check: (s) => s.level >= 20 },
   { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '🔥', check: (s) => s.bestStreak >= 3 },
   { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '💪', check: (s) => s.bestStreak >= 7 },
-  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Own 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
 ];
 
 function checkAchievements(runStats) {
@@ -1086,6 +1093,11 @@ const state = {
   player: null,
   platforms: [],
   coins: [],
+  hazards: [],
+  powerups: [],
+  jetpackFrames: 0,
+  shieldActive: false,
+  invulnFrames: 0,
   cameraY: 0,
   highestY: 0,
   runCoins: 0,
@@ -1094,6 +1106,16 @@ const state = {
   particles: [],
   trailTimer: 0,
 };
+
+/* ---------- Hazards & power-ups ----------
+   Hazards (gust puffs) start appearing once the climb has some height behind
+   it, drift left/right in open air (not on a landable platform), and on
+   contact knock the player downward instead of ending the run outright, a
+   real cost to dodge around without being an instant fail state.
+   Power-ups: jetpack (brief flight, ignores platforms) and shield (absorbs
+   one hazard hit). Both spawn like coins, off the platform's surface. */
+const HAZARD_START_M = 400;
+const POWERUP_START_M = 200;
 
 const ZONES = [
   { name: 'Meadow',    minM: 0,    sky: ['#87ceeb', '#b3e5fc'], plat: '#66bb6a', platEdge: '#2e7d32' },
@@ -1195,6 +1217,30 @@ function maybeSpawnCoins(plat) {
       state.coins.push({ x: cx + (i - (n-1)/2) * 16, y: cy, r: 7, collected: false, bob: Math.random() * Math.PI * 2 });
     }
   }
+}
+
+function maybeSpawnHazard(plat, heightM) {
+  if (heightM < HAZARD_START_M) return;
+  const chance = Math.min(0.16, (heightM - HAZARD_START_M) / 9000);
+  if (Math.random() >= chance) return;
+  // Float in the open air well above the platform so it never blocks landing outright.
+  const x = 20 + Math.random() * (W - 40);
+  const y = plat.y - 90 - Math.random() * 40;
+  state.hazards.push({
+    x, y, r: 16,
+    vx: (Math.random() < 0.5 ? -1 : 1) * (0.8 + Math.random() * 0.9),
+    bob: Math.random() * Math.PI * 2,
+  });
+}
+
+function maybeSpawnPowerup(plat, heightM) {
+  if (heightM < POWERUP_START_M) return;
+  if (Math.random() >= 0.07) return;
+  const type = Math.random() < 0.5 ? 'jetpack' : 'shield';
+  state.powerups.push({
+    x: plat.x + plat.w / 2, y: plat.y - 30, r: 12,
+    type, collected: false, bob: Math.random() * Math.PI * 2,
+  });
 }
 
 const keys = { left: false, right: false };
@@ -1340,12 +1386,20 @@ function update() {
     p.vx = Math.max(-PHYS.moveMax, Math.min(PHYS.moveMax, p.vx));
   }
 
-  p.vy += PHYS.gravity;
+  if (state.jetpackFrames > 0) {
+    state.jetpackFrames--;
+    p.vy = PHYS.jumpVel * 1.2;
+    if (state.jetpackFrames % 2 === 0) spawnParticles(p.x + p.w/2, p.y + p.h, '#ff7043', 3);
+  } else {
+    p.vy += PHYS.gravity;
+  }
   p.x += p.vx;
   p.y += p.vy;
 
   if (p.x < -p.w) p.x = W;
   if (p.x > W) p.x = -p.w;
+
+  if (state.invulnFrames > 0) state.invulnFrames--;
 
   // Move/update all platforms each frame
   for (const plat of state.platforms) {
@@ -1364,7 +1418,7 @@ function update() {
     }
   }
 
-  if (p.vy > 0) {
+  if (p.vy > 0 && state.jetpackFrames <= 0) {
     for (const plat of state.platforms) {
       // Skip non-solid platforms
       if (plat.type === 'breakable' && plat.broken) continue;
@@ -1430,6 +1484,52 @@ function update() {
     c.bob += 0.08;
   }
 
+  for (const hz of state.hazards) {
+    hz.x += hz.vx;
+    if (hz.x < hz.r) { hz.x = hz.r; hz.vx = Math.abs(hz.vx); }
+    if (hz.x > W - hz.r) { hz.x = W - hz.r; hz.vx = -Math.abs(hz.vx); }
+    hz.bob += 0.06;
+    if (state.invulnFrames <= 0) {
+      const dx = (p.x + p.w/2) - hz.x;
+      const dy = (p.y + p.h/2) - hz.y;
+      if (dx*dx + dy*dy < (hz.r + 16) * (hz.r + 16)) {
+        if (state.shieldActive) {
+          state.shieldActive = false;
+          state.invulnFrames = 40;
+          spawnParticles(hz.x, hz.y, '#5cdbff', 10);
+          SFX.shieldHit();
+          showToast('🛡️ Shield absorbed the hit!');
+        } else {
+          p.vy = 6;
+          p.vx += dx > 0 ? -3 : 3;
+          state.invulnFrames = 45;
+          spawnParticles(hz.x, hz.y, '#ff6659', 10);
+          SFX.gust();
+        }
+      }
+    }
+  }
+
+  for (const pu of state.powerups) {
+    if (pu.collected) continue;
+    pu.bob += 0.07;
+    const dx = (p.x + p.w/2) - pu.x;
+    const dy = (p.y + p.h/2) - pu.y;
+    if (dx*dx + dy*dy < (pu.r + 16) * (pu.r + 16)) {
+      pu.collected = true;
+      SFX.powerup();
+      if (pu.type === 'jetpack') {
+        state.jetpackFrames = 150;
+        spawnParticles(pu.x, pu.y, '#ff7043', 10);
+        showToast('🚀 Jetpack boost!');
+      } else {
+        state.shieldActive = true;
+        spawnParticles(pu.x, pu.y, '#5cdbff', 10);
+        showToast('🛡️ Shield up, next hit is free!');
+      }
+    }
+  }
+
   const targetCam = p.y - H * 0.45;
   if (targetCam < state.cameraY) state.cameraY += (targetCam - state.cameraY) * PHYS.cameraLerp;
 
@@ -1444,6 +1544,8 @@ function update() {
       const newP = makePlatform(y);
       state.platforms.push(newP);
       maybeSpawnCoins(newP);
+      maybeSpawnHazard(newP, state.heightM);
+      maybeSpawnPowerup(newP, state.heightM);
       y -= 60 + Math.random() * 40;
     }
   }
@@ -1454,6 +1556,8 @@ function update() {
     return true;
   });
   state.coins = state.coins.filter(c => !c.collected && c.y < state.cameraY + H + 100);
+  state.hazards = state.hazards.filter(hz => hz.y < state.cameraY + H + 100 && hz.y > state.cameraY - 400);
+  state.powerups = state.powerups.filter(pu => !pu.collected && pu.y < state.cameraY + H + 100);
 
   if (p.y > state.cameraY + H) die();
 
@@ -1607,6 +1711,71 @@ function drawCoins() {
     ctx.beginPath(); ctx.arc(c.x, y, c.r, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#fff5c4';
     ctx.beginPath(); ctx.arc(c.x - 2, y - 2, c.r * 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawHazards() {
+  for (const hz of state.hazards) {
+    const y = hz.y - state.cameraY + Math.sin(hz.bob) * 3;
+    if (y < -30 || y > H + 30) continue;
+    ctx.fillStyle = 'rgba(120, 110, 130, 0.35)';
+    ctx.beginPath(); ctx.arc(hz.x, y, hz.r + 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8d7ea3';
+    ctx.beginPath(); ctx.arc(hz.x, y, hz.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5e5270';
+    ctx.beginPath(); ctx.arc(hz.x - hz.r * 0.4, y - hz.r * 0.2, hz.r * 0.45, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hz.x + hz.r * 0.45, y + hz.r * 0.15, hz.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const sx = hz.x - hz.r - 4 - i * 5;
+      ctx.beginPath(); ctx.moveTo(sx, y - 4 + i * 4); ctx.lineTo(sx - 6, y - 4 + i * 4); ctx.stroke();
+    }
+  }
+}
+
+function drawPowerups() {
+  for (const pu of state.powerups) {
+    if (pu.collected) continue;
+    const y = pu.y - state.cameraY + Math.sin(pu.bob) * 3;
+    if (y < -30 || y > H + 30) continue;
+    const isJet = pu.type === 'jetpack';
+    ctx.fillStyle = isJet ? 'rgba(255,112,67,0.3)' : 'rgba(92,219,255,0.3)';
+    ctx.beginPath(); ctx.arc(pu.x, y, pu.r + 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = isJet ? '#ff7043' : '#5cdbff';
+    ctx.beginPath(); ctx.arc(pu.x, y, pu.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    if (isJet) {
+      ctx.beginPath();
+      ctx.moveTo(pu.x, y - pu.r * 0.55);
+      ctx.lineTo(pu.x - pu.r * 0.4, y + pu.r * 0.35);
+      ctx.lineTo(pu.x + pu.r * 0.4, y + pu.r * 0.35);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(pu.x, y, pu.r * 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = isJet ? '#ff7043' : '#5cdbff';
+      ctx.beginPath(); ctx.arc(pu.x, y, pu.r * 0.22, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawPlayerStatusFx() {
+  const p = state.player;
+  if (!p) return;
+  if (state.shieldActive) {
+    const y = p.y - state.cameraY;
+    ctx.strokeStyle = 'rgba(92,219,255,0.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x + p.w/2, y + p.h/2, p.w * 0.85, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (state.jetpackFrames > 0) {
+    const y = p.y - state.cameraY;
+    ctx.fillStyle = 'rgba(255,152,0,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(p.x + p.w * 0.3, y + p.h);
+    ctx.lineTo(p.x + p.w * 0.7, y + p.h);
+    ctx.lineTo(p.x + p.w * 0.5, y + p.h + 14 + Math.random() * 6);
+    ctx.closePath(); ctx.fill();
   }
 }
 
@@ -2125,9 +2294,12 @@ function render() {
   if (state.mode === 'playing' || state.mode === 'dead') {
     drawPlatforms();
     drawCoins();
+    drawHazards();
+    drawPowerups();
     drawParticles();
     drawGhost();
     if (state.player) drawPlayer();
+    drawPlayerStatusFx();
   }
 }
 
@@ -2165,6 +2337,11 @@ function startGame() {
   state.mode = 'playing';
   state.player = makePlayer();
   state.coins.length = 0;
+  state.hazards.length = 0;
+  state.powerups.length = 0;
+  state.jetpackFrames = 0;
+  state.shieldActive = false;
+  state.invulnFrames = 0;
   state.particles.length = 0;
   state.cameraY = 0;
   state.highestY = state.player.y;
