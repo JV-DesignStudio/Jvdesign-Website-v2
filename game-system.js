@@ -983,6 +983,18 @@ if (typeof document !== 'undefined') {
     setTimeout(hide, 9000);
   }
 
+  // Public: for games with no discrete "run" to hook recordGamePlay into
+  // (idle/incremental games, where recordGamePlay only fires on tab-close
+  // and would be too late for this chip to ever be seen), the game itself
+  // decides when a share-worthy moment happened and calls this directly.
+  // No XP/analytics side effects, unlike recordGamePlay, so it's safe to
+  // call as often as the game likes; showShareChip's own chipUp guard and
+  // maybePromptShare's sessionPeak check keep it from spamming.
+  window.jvdsCheckNewBest = function () {
+    var inst = (typeof GameSystem !== 'undefined') ? GameSystem.lastInstance : null;
+    maybePromptShare(inst);
+  };
+
   // Called on run-finish. Shows the chip only when the finished run beat the
   // best score seen since the page opened (a real new record, not the stored
   // all-time high loaded at startup), so it never nags on ordinary runs.

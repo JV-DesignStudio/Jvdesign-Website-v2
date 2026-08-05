@@ -730,7 +730,7 @@ function defaultVault(){
     equipped:{background:'cafe_default',trail:'trail_petal',skin:'skin_default'},
     achievements:[],
     stats:{matches:0,guests_served:0,max_combo:0,max_streak:0,lifetime_coins:0,powerups_made:0,rainbows_made:0,guests_each:{}},
-    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()}};
+    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now()}};
 }
 function loadVault(){
   try{
@@ -752,6 +752,23 @@ function saveVault(){bv().lastSave=Date.now();clearTimeout(saveTimer);saveTimer=
 function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}}
 let vault=loadVault();
 const bv=()=>vault.biscuit;
+
+// Share prompt: idle games have no discrete "run" to hook the site-wide
+// share chip into (recordGamePlay only fires on tab-close, too late to be
+// seen), so this game decides for itself. "Best" = most biscuits baked in
+// one sitting, compared against the best sitting ever recorded, not lifetime
+// total (which only ever grows and would trigger on every check).
+const sessionBaseline=bv().lifetime;
+let bestSessionShared=false;
+function checkSessionShareMoment(){
+  if(bestSessionShared)return;
+  const sessionEarned=bv().lifetime-sessionBaseline;
+  if(sessionEarned<=0||sessionEarned<=(bv().bestSessionEarn||0))return;
+  bv().bestSessionEarn=sessionEarned;
+  bestSessionShared=true;
+  window.__gsBestRun=Math.max(window.__gsBestRun||0,sessionEarned);
+  if(window.jvdsCheckNewBest)window.jvdsCheckNewBest();
+}
 
 // ══ GAME DATA ══
 const CHARACTERS={
@@ -2407,7 +2424,7 @@ function checkGameSystemAchievements() {
 }
 
 // Run achievement check every 10 seconds
-setInterval(checkGameSystemAchievements, 10000);
+setInterval(()=>{checkGameSystemAchievements();checkSessionShareMoment();}, 10000);
 
 // Save progression when game ends/tab closes
 window.addEventListener('beforeunload', () => {

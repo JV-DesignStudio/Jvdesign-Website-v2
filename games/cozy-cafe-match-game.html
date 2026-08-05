@@ -1497,7 +1497,8 @@ function defaultVault() {
       lifetime_coins: 0,
       powerups_made: 0,
       rainbows_made: 0,
-      guests_each: {}
+      guests_each: {},
+      best_session_coins: 0
     }
   };
 }
@@ -1526,6 +1527,7 @@ function loadVault() {
     if (typeof v.loginStreak !== 'number') v.loginStreak = 0;
     if (!v.stats) v.stats = defaultVault().stats;
     if (!v.stats.guests_each) v.stats.guests_each = {};
+    if (typeof v.stats.best_session_coins !== 'number') v.stats.best_session_coins = 0;
     // Ensure starter items exist (in case vault got corrupted)
     if (!v.unlocked_items) v.unlocked_items = [];
     ['cafe_default', 'trail_petal', 'skin_default'].forEach(id => {
@@ -1537,6 +1539,22 @@ function loadVault() {
     if (!v.equipped.skin) v.equipped.skin = 'skin_default';
     return v;
   } catch (e) { return defaultVault(); }
+}
+
+// Share prompt: idle/session games have no discrete "run" to hook the
+// site-wide share chip into (recordGamePlay only fires on tab-close, too
+// late to be seen), so this game decides for itself. "Best" = most coins
+// earned in one sitting, compared against the best sitting ever recorded
+// (persisted), not the raw session total (which only ever grows and would
+// re-trigger on every match).
+let bestSessionShared = false;
+function checkSessionShareMoment() {
+  if (bestSessionShared) return;
+  const sessionScore = window.__gsScore || 0;
+  if (sessionScore <= 0 || sessionScore <= (vault.stats.best_session_coins || 0)) return;
+  vault.stats.best_session_coins = sessionScore;
+  bestSessionShared = true;
+  if (window.jvdsCheckNewBest) window.jvdsCheckNewBest();
 }
 
 let _saveTimer = null;
@@ -2050,6 +2068,7 @@ function scoreMatches(triggered) {
   vault.stats.lifetime_coins += coinsEarned;
   window.__gsScore = (window.__gsScore||0) + coinsEarned;
   window.__gsBestRun = Math.max(window.__gsBestRun||0, window.__gsScore);
+  checkSessionShareMoment();
   cravingProgress += cravingDelta;
 
   if (triggered.size >= 4) burstSparkles();
@@ -2064,6 +2083,7 @@ function fulfilGuest() {
   vault.stats.guests_served += 1;
   window.__gsScore = (window.__gsScore||0) + 10;
   window.__gsBestRun = Math.max(window.__gsBestRun||0, window.__gsScore);
+  checkSessionShareMoment();
   vault.stats.guests_each[currentGuest.id] = (vault.stats.guests_each[currentGuest.id] || 0) + 1;
   vault.coins += 10;
   vault.stats.lifetime_coins += 10;
