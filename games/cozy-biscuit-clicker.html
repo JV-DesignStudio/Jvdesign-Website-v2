@@ -683,6 +683,13 @@ const Audio = (() => {
   function sfxPrestige(){
     [523,659,784,1047,1319].forEach((n,i)=>setTimeout(()=>tone({freq:n,dur:0.5,type:'sine',vol:0.21}),i*100));
   }
+  function sfxPurchase(){
+    tone({freq:660,dur:0.1,type:'triangle',vol:0.15,attack:0.005});
+    setTimeout(()=>tone({freq:880,dur:0.12,type:'triangle',vol:0.13,attack:0.005}),55);
+  }
+  function sfxJackpot(){
+    [523,659,784,988,1319,1568].forEach((n,i)=>setTimeout(()=>tone({freq:n,dur:0.35,type:'sine',vol:0.2}),i*70));
+  }
   function startMusic(){
     if(!ctx||musicPlaying)return;
     musicPlaying=true;
@@ -719,7 +726,7 @@ const Audio = (() => {
     if(musicTimer)clearTimeout(musicTimer);
   }
   function isMusicPlaying(){return musicPlaying}
-  return{init,sfxTap,sfxCharDrop,sfxAchievement,sfxPrestige,startMusic,stopMusic,isMusicPlaying,setSfx};
+  return{init,sfxTap,sfxCharDrop,sfxAchievement,sfxPrestige,sfxPurchase,sfxJackpot,startMusic,stopMusic,isMusicPlaying,setSfx};
 })();
 
 // ══ VAULT ══
@@ -797,6 +804,8 @@ const HELPERS=[
   {id:'comet',   emoji:'☄️',name:'Comet Kitchen',   desc:'Bakes a golden trail across the sky',   baseCost:2000000000,baseRate:750000, costMult:1.15, prestige:2},
   {id:'galaxy_mill',emoji:'🌌',name:'Galaxy Mill',   desc:'Grinds stardust into flour',           baseCost:10000000000,baseRate:3000000,costMult:1.15, prestige:2},
   {id:'nebula_forge',emoji:'🌠',name:'Nebula Forge', desc:'Bakes whole constellations of biscuits',baseCost:50000000000,baseRate:12000000,costMult:1.15, prestige:2},
+  {id:'supernova',   emoji:'💥',name:'Supernova Bakery', desc:'Bakes with the fury of a dying star',  baseCost:200000000000000,baseRate:50000000,costMult:1.15, prestige:5},
+  {id:'blackhole',   emoji:'🕳️',name:'Singularity Oven', desc:'Nothing escapes, not even crumbs',     baseCost:500000000000000000,baseRate:200000000000,costMult:1.15, prestige:10},
 ];
 const UPGRADES=[
   // ── One-time click upgrades ──
@@ -835,6 +844,9 @@ const UPGRADES=[
   {id:'galaxy_core',   emoji:'🌌',name:'Galaxy Core',      desc:'2x Galaxy Mill output',            cost:80000000000,type:'helper',target:'galaxy_mill',mult:2, prestige:2},
   {id:'cosmic_frosting',emoji:'💫',name:'Cosmic Frosting', desc:'5x all biscuit output',            cost:50000000000,type:'global',mult:5, prestige:2},
   {id:'nebula_core',   emoji:'🌠',name:'Nebula Core',     desc:'2x Nebula Forge output',           cost:400000000000,type:'helper',target:'nebula_forge',mult:2, prestige:2},
+  {id:'stellar_wind',  emoji:'🌬️',name:'Stellar Wind',    desc:'6x all biscuit output',            cost:200000000000000,type:'global',mult:6, prestige:5},
+  {id:'event_horizon', emoji:'🕳️',name:'Event Horizon',   desc:'2x Singularity Oven output',       cost:1000000000000000000,type:'helper',target:'blackhole',mult:2, prestige:10},
+  {id:'cosmic_ascendance',emoji:'👑',name:'Cosmic Ascendance',desc:'8x all biscuit output',         cost:5000000000000000,type:'global',mult:8, prestige:15},
   {id:'cosmic_kneading',emoji:'🌌',name:'Cosmic Kneading', desc:'+30% biscuits per tap each time',  cost:10000000,type:'repeat_click',mult:1.3,costMult:3.5},
   // ── Repeatable upgrades (can be bought multiple times, cost scales) ──
   {id:'flour_sack',    emoji:'🌾',name:'Flour Sack',       desc:'+10% biscuits per tap each time',  cost:300,     type:'repeat_click', mult:1.1, costMult:2.2},
@@ -912,7 +924,7 @@ const ACHIEVEMENTS=[
   {id:'bt_streak30',   emoji:'🏅',name:'Daily Devotee',    desc:'Reach a 30-day streak',                coins:300, check:v=>(bv().bestStreak||0)>=30},
   // Cosmetic / misc
   {id:'bt_hat',        emoji:'🎩',name:'Dressed to Bake',  desc:'Equip a hat in Cozy Cafe',             coins:25,  check:v=>!!(v.equipped&&v.equipped.hat)},
-  {id:'bt_both',       emoji:'☕',name:'Regulars',         desc:'Play both Cozy Cafe and Biscuit Tin',  coins:30,  check:v=>v.stats.guests_served>=1&&bv().lifetime>=1},
+  {id:'bt_both',       emoji:'☕',name:'Regulars',         desc:'Play both Cozy Cafe and Biscuit Tin (or come back for a 2nd season here)',  coins:30,  check:v=>(v.stats.guests_served>=1&&bv().lifetime>=1)||(bv().prestige||0)>=1},
   // Bigger totals
   {id:'bt_1b',         emoji:'🪐',name:'Biscuit Titan',    desc:'Bake 1,000,000,000 biscuits total',    coins:300, check:v=>bv().lifetime>=1000000000},
   {id:'bt_10b',        emoji:'🌠',name:'Biscuit Universe',  desc:'Bake 10,000,000,000 biscuits total',   coins:500, check:v=>bv().lifetime>=10000000000},
@@ -1201,6 +1213,13 @@ setInterval(()=>{
   if(f)f.style.transform='scaleX('+Math.max(0,(comboUntil-now)/COMBO_WINDOW).toFixed(3)+')';
 },80);
 
+function jackpotFx(){
+  const stage=document.querySelector('.hero-stage');
+  if(stage){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');setTimeout(()=>stage.classList.remove('shake'),300);}
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  for(let i=0;i<14;i++)spawnSpark(cx+(Math.random()*160-80),cy+(Math.random()*160-80));
+  rainCharBiscuits('✨','#f5c842');
+}
 function rainCharBiscuits(emoji,color){
   for(let i=0;i<16;i++){
     setTimeout(()=>{
@@ -1311,6 +1330,7 @@ function renderHelpers(el){
       bv().total-=q2.cost;
       bv().helpers[h.id]=(bv().helpers[h.id]||0)+buyN;
       bv().helpersOwned=(bv().helpersOwned||0)+buyN;
+      Audio.sfxPurchase();
       recalc(); renderPanel(); showToast(h.emoji+' '+(buyN>1?buyN+'× ':'')+h.name+' joined the cafe!'); trackDailyProgress('buy',buyN); saveVault(); checkAchievements();
     });
     list.appendChild(row);
@@ -1336,6 +1356,7 @@ function renderUpgrades(el){
         const curCost=Math.floor(up.cost*Math.pow(up.costMult,curLvl));
         if(Math.floor(bv().total)<curCost)return;
         bv().total-=curCost; bv().repeatUpgrades[up.id]=(curLvl+1);
+        Audio.sfxPurchase();
         recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' Lv '+(curLvl+1)+'!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
       });
       list.appendChild(row);
@@ -1346,6 +1367,7 @@ function renderUpgrades(el){
       if(!bought)row.addEventListener('click',()=>{
         if(Math.floor(bv().total)<up.cost)return;
         bv().total-=up.cost; bv().upgrades.push(up.id);
+        Audio.sfxPurchase();
         recalc(); renderPanel(); showToast(up.emoji+' '+up.name+' unlocked!'); trackDailyProgress('buy'); saveVault(); checkAchievements();
       });
       list.appendChild(row);
@@ -1486,6 +1508,7 @@ function spawnEvent(ev){
   btn.onclick=()=>{
     clearTimeout(autoClose);
     dismissEvent();
+    Audio.sfxJackpot(); jackpotFx();
     if(ev.id==='legendary'){
       bv().legendary=Math.min(0.25,(bv().legendary||0)+0.01);
       recalc(); updateHUD(); saveNow();
@@ -2126,6 +2149,7 @@ const BG_THEMES=[
   {id:'candy',   name:'Candy Corner',  cost:8000000,  css:'linear-gradient(180deg,#F6A8C6,#BDE8D8)', prestige:1},
   {id:'mint',    name:'Fresh Mint',    cost:30000000, css:'linear-gradient(180deg,#7BD6B0,#DFF3E8)', prestige:1},
   {id:'aurora',  name:'Aurora Bakes',  cost:120000000,css:'linear-gradient(180deg,#3BE0B0,#7A6FD0)', prestige:2},
+  {id:'legend',  name:'Beyond the Stars',cost:200000000000,css:'radial-gradient(circle at 50% 20%,#FFD700 0%,#2A1A5E 55%,#000 100%)', prestige:20},
 ];
 const HAT_SHOP=[
   {id:'none',      name:'No hat',    cost:0},
@@ -2147,6 +2171,7 @@ const HAT_SHOP=[
   {id:'halo',      name:'Halo',      cost:25000000, prestige:2},
   {id:'snowman',   name:'Snowcap',   cost:40000000, prestige:2},
   {id:'unicorn',   name:'Unicorn Horn',cost:90000000,prestige:2},
+  {id:'legend_crown',name:'Cosmic Crown',cost:150000000000,prestige:20},
 ];
 const ACC_SHOP=[
   {id:'none',      name:'None',      cost:0},
@@ -2176,8 +2201,9 @@ const TRAIL_SHOP=[
   {id:'trail_music',name:'Music Notes',cost:10000000, prestige:1},
   {id:'trail_rainbow',name:'Rainbow',     cost:30000000, prestige:2},
   {id:'trail_moon', name:'Moonlight',cost:80000000, prestige:2},
+  {id:'trail_legend',name:'Stardust Wake',cost:180000000000, prestige:20},
 ];
-const TRAIL_ICON={trail_none:'🚫',trail_petal:'🌸',trail_star:'⭐',trail_heart:'💗',trail_bubble:'🫧',trail_leaf:'🍃',trail_snow:'❄️',trail_fire:'🔥',trail_biscuit:'🍪',trail_rainbow:'🌈',trail_music:'🎵',trail_moon:'🌙'};
+const TRAIL_ICON={trail_none:'🚫',trail_petal:'🌸',trail_star:'⭐',trail_heart:'💗',trail_bubble:'🫧',trail_leaf:'🍃',trail_snow:'❄️',trail_fire:'🔥',trail_biscuit:'🍪',trail_rainbow:'🌈',trail_music:'🎵',trail_moon:'🌙',trail_legend:'💫'};
 function ownedBgs(){if(!vault.btOwnedBgs)vault.btOwnedBgs=['cream'];return vault.btOwnedBgs;}
 function ownedHats(){if(!vault.btOwnedHats)vault.btOwnedHats=['none'];return vault.btOwnedHats;}
 function charHats(){if(!vault.charHats)vault.charHats={};return vault.charHats;}
