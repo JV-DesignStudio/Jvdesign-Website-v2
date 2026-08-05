@@ -838,16 +838,10 @@ a{text-decoration:none;color:inherit}
 </header>
 
 <div class="tabs-bar">
-  <button class="tab-btn" id="tab-board" onclick="switchView('board')">📋 Quest Board</button>
   <button class="tab-btn active" id="tab-dash" onclick="switchView('dash')">🏠 HQ Dashboard</button>
-  <button class="tab-btn" id="tab-notes" onclick="switchView('notes')">📝 Notes</button>
+  <button class="tab-btn" id="tab-board" onclick="switchView('board')">📋 Quest Board</button>
   <button class="tab-btn" id="tab-calendar" onclick="switchView('calendar')">📅 Calendar</button>
-  <button class="tab-btn" id="tab-profile" onclick="switchView('profile')">🎒 Character & Loot</button>
-  <button class="tab-btn" id="tab-raids" onclick="switchView('raids')">🐉 Raids</button>
-  <button class="tab-btn" id="tab-dungeon" onclick="switchView('dungeon')">⚔️ Dungeon</button>
-  <button class="tab-btn" id="tab-habits" onclick="switchView('habits')">🏃 Habits</button>
-  <button class="tab-btn" id="tab-life" onclick="switchView('life')">🌟 Daily Life</button>
-  <button class="tab-btn" id="tab-shop" onclick="switchView('shop')">🛒 Market</button>
+  <button class="tab-btn" id="tab-more" onclick="openMoreMenu()">☰ More</button>
   <button class="btn btn-ghost btn-sm" onclick="openSearch()" style="margin-left:auto;padding:4px 10px;font-size:.72rem" title="Search everything (Ctrl+/)">🔍</button>
 </div>
 
@@ -1534,6 +1528,23 @@ Complete real quests to boost your stats, then return here to slay monsters on y
   </div>
 </div>
 
+<!-- MORE MENU -->
+<div class="modal-overlay" id="moreModal" onclick="event.target===this&&closeMoreMenu()">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-title">☰ More</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('profile')">🎒 Character & Loot</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('notes')">📝 Notes</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('habits')">🏃 Habits</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('life')">🌟 Daily Life</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('raids')">🐉 Raids</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('dungeon')">⚔️ Dungeon</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('shop')">🛒 Market</button>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeMoreMenu()">Close</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 /* ── DATA ── */
@@ -1547,11 +1558,7 @@ let state={
 
   ],
   cards:[
-    {id:'ex1',colId:'doing',title:'👋 Welcome to Quest Board!',desc:'Drag this card to Done once you have had a look around. Your whole life is a quest, this is where you track it.',tags:[{text:'Start here',col:'#7c3aed'}],priority:'high',date:'',comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
-    {id:'ex2',colId:'doing',title:'Try the Daily Bounties',desc:'Open the 🏠 HQ Dashboard, complete daily bounties for bonus XP and gold. Hit 🔄 to reroll them.',tags:[{text:'Tutorial',col:'#0284c7'}],priority:'med',date:'',comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
-    {id:'ex3',colId:'todo',title:'Add your first real task',desc:'Press + New Quest (or Ctrl+K). Type "fix", "urgent", or "video" and watch priority + column auto-assign.',tags:[{text:'Try it',col:'#16a34a'}],priority:'med',date:'',comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
-    {id:'ex4',colId:'todo',title:'Write a note',desc:'Go to the 📝 Notes tab and capture an idea, meeting notes, or anything. Notes can link to quests.',tags:[{text:'Try it',col:'#d97706'}],priority:'low',date:'',comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
-    {id:'ex5',colId:'todo',title:'⚔️ Defeat a Boss Quest',desc:'Create a quest, tick Boss Battle, add - [ ] checklist items. Boss quests have HP bars that fill as you tick!',tags:[{text:'Boss',col:'#dc2626'}],priority:'high',date:'',comments:[],isBoss:true,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
+    {id:'ex1',colId:'doing',title:'👋 Welcome to Quest Board!',desc:'Your whole life is a quest, this is where you track it. Press + New Quest (or Ctrl+K) to add a real task, check the 🏠 Home tab for daily bounties, and tick Boss Battle on the big ones for an HP bar. Drag this card to Done whenever you\'re ready.',tags:[{text:'Start here',col:'#7c3aed'}],priority:'high',date:'',comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[],flag:null,createdAt:'2026-06-01T20:50:42.968Z'},
 
   ],
   nextId:10
@@ -1652,7 +1659,15 @@ function addGold(n){
   save();updateRpgWidgets();
 }
 function triggerLevelUp(){
-  playSfx('levelup');startConfetti();
+  playSfx('levelup');
+  if(rpg.level===2){
+    // First-ever level-up: a gentle toast instead of the full-screen overlay, so a
+    // brand-new player isn't blindsided by a big celebration before they know what levelling means.
+    showToast('⚔️ Level up! You\'re Level 2 now.','success');
+    setTimeout(()=>spawnXpFloat('LEVEL UP!','gold'),120);
+    return;
+  }
+  startConfetti();
   const unlock=LEVEL_UNLOCKS[rpg.level];
   const s=document.getElementById('celebrateSub');
   s.innerHTML=`Level <strong style="color:var(--gold);font-size:1.6rem">${rpg.level}</strong> ${rpg.class} attained!<br><span style="font-size:.85rem;color:var(--muted)">Stats increased. Keep questing!</span>${unlock?`<br><br><div style="margin-top:10px;padding:10px 16px;background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);border-radius:8px;color:var(--gold);font-size:.85rem">${unlock.icon} ${unlock.text}</div>`:''}`;
@@ -4301,6 +4316,9 @@ function switchView(v){
   if(v==='profile'){renderClassPath();initGistUI();_updateThemeSelect();}
   document.getElementById('mobtab-habits')?.classList[v==='habits'?'add':'remove']('active');
 }
+function openMoreMenu(){document.getElementById('moreModal').classList.add('open');}
+function closeMoreMenu(){document.getElementById('moreModal').classList.remove('open');}
+function goToView(v){closeMoreMenu();switchView(v);}
 
 /* ── EXPORT / IMPORT ── */
 function exportData(){
@@ -4461,9 +4479,8 @@ document.getElementById('mobtab-dash')?.classList.add('active');
   <div class="mob-nav-inner">
     <button class="mob-nav-btn" id="mobtab-dash" onclick="switchView('dash')"><span class="mob-nav-icon">🏠</span>Home</button>
     <button class="mob-nav-btn" id="mobtab-board" onclick="switchView('board')"><span class="mob-nav-icon">📋</span>Quests</button>
-    <button class="mob-nav-btn" id="mobtab-notes" onclick="switchView('notes')"><span class="mob-nav-icon">📝</span>Notes</button>
     <button class="mob-nav-btn" id="mobtab-calendar" onclick="switchView('calendar')"><span class="mob-nav-icon">📅</span>Calendar</button>
-    <button class="mob-nav-btn" id="mobtab-profile" onclick="switchView('profile')"><span class="mob-nav-icon">🎒</span>Hero</button>
+    <button class="mob-nav-btn" onclick="openMoreMenu()"><span class="mob-nav-icon">☰</span>More</button>
   </div>
 </div>
 
