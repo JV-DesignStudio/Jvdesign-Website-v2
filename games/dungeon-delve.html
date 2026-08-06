@@ -876,18 +876,26 @@ document.addEventListener('keydown', e => {
 // ══════════════════════════════════════════════════════════════════
 // NEXT FLOOR
 // ══════════════════════════════════════════════════════════════════
+// Boss gauntlet: floor FLOOR_COUNT onward fights BOSSES[0], [1], [2]... in
+// sequence (each was previously unreachable dead content, collapsed onto
+// the last boss by Math.min). The run only truly ends after the last one.
+function spawnBossFight(newFloor) {
+  const bossIdx = Math.min(newFloor-FLOOR_COUNT, BOSSES.length-1);
+  const boss = BOSSES[bossIdx];
+  const s = 1+newFloor*0.2;
+  currentEnemy = {...boss, hp:Math.floor(boss.hp*s), maxHp:Math.floor(boss.hp*s), atk:Math.floor(boss.atk*s), def:Math.floor(boss.def*s), isBoss:true, isFinalBoss:bossIdx>=BOSSES.length-1, id:'boss_'+newFloor};
+  player.floor = newFloor;
+  player.floorReached = Math.max(player.floorReached, newFloor);
+  combatLog = ['⚠️ BOSS FIGHT! The '+currentEnemy.name+' appears!'];
+  showScreen('combat');
+  renderCombat();
+  showToast('⚠️ BOSS FIGHT! ⚠️', 3000);
+}
+
 function goNextFloor() {
   const newFloor = player.floor+1;
   if (newFloor >= FLOOR_COUNT) {
-    const boss = BOSSES[Math.min(newFloor-1, BOSSES.length-1)];
-    const s = 1+newFloor*0.2;
-    currentEnemy = {...boss, hp:Math.floor(boss.hp*s), maxHp:Math.floor(boss.hp*s), atk:Math.floor(boss.atk*s), def:Math.floor(boss.def*s), isBoss:true, id:'boss_'+newFloor};
-    player.floor = newFloor;
-    player.floorReached = Math.max(player.floorReached, newFloor);
-    combatLog = ['⚠️ BOSS FIGHT! The '+currentEnemy.name+' appears!'];
-    showScreen('combat');
-    renderCombat();
-    showToast('⚠️ BOSS FIGHT! ⚠️', 3000);
+    spawnBossFight(newFloor);
     return;
   }
   player.floor = newFloor;
@@ -986,8 +994,14 @@ function enemyDefeated() {
   showToast(currentEnemy.emoji+' '+currentEnemy.name+' defeated! +'+currentEnemy.xp+'xp +'+currentEnemy.gold+'g');
 
   if (wasBoss && player.floor >= FLOOR_COUNT) {
-    sfx.victory();
-    setTimeout(() => showEnd(true), 250);
+    if (currentEnemy.isFinalBoss) {
+      sfx.victory();
+      setTimeout(() => showEnd(true), 250);
+      return;
+    }
+    sfx.levelUp();
+    const nextFloor = player.floor+1;
+    setTimeout(() => spawnBossFight(nextFloor), 800);
     return;
   }
 

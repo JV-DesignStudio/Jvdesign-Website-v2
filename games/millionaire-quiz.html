@@ -477,8 +477,11 @@ function renderResults(){
     }
   }
   const pct=Math.round((score/total)*100);
-  const lastOk=answers.reduce((acc,a,i)=>a.isCorrect?i:acc,-1);
-  const won=lastOk>=0?prize(lastOk):"£0";
+  // Money-ladder prize: how far the player climbed before their FIRST wrong
+  // answer, not just whichever question they last happened to get right.
+  const firstWrong=answers.findIndex(a=>!a.isCorrect);
+  const climbedTo=firstWrong===-1?answers.length-1:firstWrong-1;
+  const won=climbedTo>=0?prize(climbedTo):"£0";
   const topEmoji=pct===100?"🏆":pct>=70?"🥇":pct>=40?"🥈":"📚";
   const shareText=buildShare(playerName,title,score,total,pct,won,answers);
   const enc=encodeURIComponent(shareText);

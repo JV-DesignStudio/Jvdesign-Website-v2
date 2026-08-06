@@ -1008,7 +1008,6 @@ function buyItem(item,cost){
     if(item.stat==='_heal'){tower.hp=Math.min(tower.hp+item.inc,tower.maxHp);updateHUD();}
     else if(item.stat==='_maxhp'){tower.maxHp+=item.inc;tower.hp=Math.min(tower.hp+item.inc,tower.maxHp);updateHUD();}
     else if(item.stat==='wardBonus'){player.wardBonus=(player.wardBonus||0)+item.inc;}
-    else if(item.stat==='soulHarvest'){player.soulHarvest=1;}
     else if(item.stat==='multiTarget'){player.multiTarget=(player.multiTarget||0)+item.inc;}
     else{player[item.stat]=(player[item.stat]||0)+item.inc;}
     buildShop();
@@ -1175,18 +1174,33 @@ function killEnemy(en){
         player._baseSpeed=player._baseSpeed||player.speed;
         player._rushTimer=180;
     }
-    if(player.lifeSteal){tower.hp=Math.min(tower.hp+3,tower.maxHp);}
-    // Soul Harvest, every 4th kill heals citadel
+    if(player.lifeSteal){tower.hp=Math.min(tower.hp+player.lifeSteal,tower.maxHp);}
+    // Soul Harvest, every 4th kill heals citadel; heal scales with stacks owned
     if(player.soulHarvest){
         if(!player._shCount)player._shCount=0;
         player._shCount++;
-        if(player._shCount%4===0){tower.hp=Math.min(tower.hp+8,tower.maxHp);updateHUD();}
+        if(player._shCount%4===0){tower.hp=Math.min(tower.hp+8*player.soulHarvest,tower.maxHp);updateHUD();}
     }
     // Death Chill, slow nearby foes on kill
     if(player._deathChill){
         for(const e2 of enemies){
             if(!e2._dead&&Math.hypot(e2.x-en.x,e2.y-en.y)<90) e2.slowTimer=Math.max(e2.slowTimer,120);
         }
+    }
+    // Tome of Echoes, 10% chance a kill triggers a free bonus cast
+    if(player._echo&&chosenSpell&&Math.random()<0.1){
+        const{enemy:echoTarget}=nearestEnemy(player.x,player.y);
+        if(echoTarget) chosenSpell.fire(player.x,player.y,echoTarget,player);
+    }
+    // Lich's Capacitor, every 10 kills the next shot is instant + 3x dmg
+    if(player._overload){
+        player._overloadKills=(player._overloadKills||0)+1;
+        if(player._overloadKills%10===0){ player._overloadReady=true; }
+    }
+    // Necromancer's Seal, slain Golems/Hexblades leave a spirit that fights on briefly
+    if(player._necro&&(en.type==='golem'||en.type==='hexblade')){
+        poisonClouds.push({x:en.x,y:en.y,r:70,life:1,decay:.012,dmgTimer:0,dmg:player.dmg*2,color:'#b09cff'});
+        spawnParticles(en.x,en.y,'#b09cff',10,6);
     }
 
     // Relic drop chance
@@ -1358,6 +1372,7 @@ function update(dt){
         if(d>8){mx+=dx/d;my+=dy/d;}
     }
     const mag=Math.hypot(mx,my);
+    player._moving=mag>0;
     if(mag>0){
         player.x=Math.max(player.r,Math.min(W-player.r,player.x+(mx/mag)*player.speed*dtF));
         player.y=Math.max(player.r,Math.min(H-player.r,player.y+(my/mag)*player.speed*dtF));
@@ -1374,13 +1389,17 @@ function update(dt){
     }
 
     // ── Auto-fire ──
-    const effRate=Math.max(80,chosenSpell.fireRate*(1-Math.min(player.fireRateBonus,.75)));
-    if(Date.now()-lastShot>effRate&&target){
+    // Windwalker's Coil, moving grants a 25% cast-speed boost
+    const momentumBonus=(player._momentum&&player._moving)?0.25:0;
+    const effRate=Math.max(80,chosenSpell.fireRate*(1-Math.min(player.fireRateBonus+momentumBonus,.75)));
+    if((Date.now()-lastShot>effRate||player._overloadReady)&&target){
         const maxR=260+player.rangeBonus*200;
         if(Math.hypot(target.x-player.x,target.y-player.y)<maxR){
             // Wrath Brand, below 30% citadel HP, boost damage
             const baseDmg=player.dmg;
             if(player._furyMode && tower.hp/tower.maxHp<0.3) player.dmg=Math.round(player.dmg*1.5);
+            // Lich's Capacitor, every 10th kill's next shot is instant + 3x dmg
+            if(player._overloadReady){ player._overloadReady=false; player.dmg=player.dmg*3; }
 
             // Voidheart, every 5th kill: next shot is triple strike
             if(player._relicEvery5){
@@ -1402,8 +1421,8 @@ function update(dt){
                 chosenSpell.fire(player.x,player.y,target,player);
             }
 
-            // Restore base dmg after fury boost
-            if(player._furyMode) player.dmg=baseDmg;
+            // Restore base dmg after fury/overload boosts
+            player.dmg=baseDmg;
 
             lastShot=Date.now();
         }
@@ -1677,6 +1696,11 @@ function update(dt){
         }
         p.x+=p.vx*dtF;p.y+=p.vy*dtF;
         p.life-=p.decay*dtF;
+        // Whispering Orb, ricochet a player spell off the arena walls once
+        if(player._rebound&&!p.isCultistShot&&!p._bounced){
+            if(p.x<0||p.x>W){p.vx=-p.vx;p.x=Math.max(0,Math.min(W,p.x));p._bounced=true;}
+            else if(p.y<0||p.y>H){p.vy=-p.vy;p.y=Math.max(0,Math.min(H,p.y));p._bounced=true;}
+        }
         if(p.life<=0||p.x<-40||p.x>W+40||p.y<-40||p.y>H+40){deadP.add(pi);continue;}
 
         // Cultist orb hits tower
@@ -2033,7 +2057,8 @@ function draw(ts){
     for(const c of poisonClouds){
         ctx.save();ctx.globalAlpha=c.life*0.35;
         const cg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
-        cg.addColorStop(0,'rgba(80,255,30,.6)');cg.addColorStop(1,'rgba(40,180,0,0)');
+        if(c.color){cg.addColorStop(0,c.color);cg.addColorStop(1,'rgba(0,0,0,0)');}
+        else{cg.addColorStop(0,'rgba(80,255,30,.6)');cg.addColorStop(1,'rgba(40,180,0,0)');}
         ctx.fillStyle=cg;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
         ctx.restore();
     }

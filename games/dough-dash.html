@@ -285,9 +285,50 @@ function resolveMatches(chain) {
     if (!resolveMatches(chain + 1)) {
       busy = false;
       if (moves >= MOVES_LIMIT) endGame();
+      else reshuffleIfStuck();
     }
   }, 320);
   return true;
+}
+
+function hasAnyMove() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (c < COLS - 1) {
+        [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
+        const found = findMatches().size > 0;
+        [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
+        if (found) return true;
+      }
+      if (r < ROWS - 1) {
+        [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
+        const found = findMatches().size > 0;
+        [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
+        if (found) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Deadlock safety net: cascades/refills can settle into a board with no
+// valid swap left. Reshuffle in place until a clean, playable layout
+// turns up, rather than softlocking the session (same pattern as
+// cozy-cafe-match-game.html's autoReshuffleIfStuck).
+function reshuffleIfStuck() {
+  if (hasAnyMove()) return;
+  floatText('😅 No moves, shuffling!');
+  let tries = 0, ok = false;
+  do {
+    const flat = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) flat.push(grid[r][c]);
+    for (let i = flat.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [flat[i], flat[j]] = [flat[j], flat[i]]; }
+    let k = 0;
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = flat[k++];
+    tries++;
+    ok = findMatches().size === 0 && hasAnyMove();
+  } while (!ok && tries < 60);
+  renderBoard();
 }
 
 function cascade() {
@@ -309,6 +350,7 @@ function startGame() {
   state = 'playing';
   initGrid();
   renderBoard();
+  reshuffleIfStuck();
   startTime = performance.now();
 }
 
