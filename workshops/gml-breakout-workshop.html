@@ -430,18 +430,23 @@ part_particles_create(global.ps, other.x, other.y,
         <div class="big-goal-text"><strong>Goal for this step</strong><p>Add impact shake and the three-lives system.</p></div>
       </div>
       <ul class="steps-list">
-        <li><span class="num-badge">1</span><span>Shake: obj_game holds <strong>shake = 0</strong>; brick deaths set it to 4; each Step it decays and offsets the camera by random(-shake..shake).</span></li>
-        <li><span class="num-badge">2</span><span>Lives: ball past the bottom → lives--, reset ball to centre with a fresh serve; 0 → rm_gameover.</span></li>
-        <li><span class="num-badge">3</span><span>Draw hearts in Draw GUI with a small heart sprite in a loop.</span></li>
-        <li><span class="num-badge">4</span><span>Play: bricks crunch, screen kicks, sparks fly. Juice, natively.</span></li>
+        <li><span class="num-badge">1</span><span>Room editor → Viewports: enable Viewport 0 (same as Episode 2's Platformer). Without this, camera_set_view_pos does nothing visible at all.</span></li>
+        <li><span class="num-badge">2</span><span>Shake: obj_game holds <strong>shake = 0</strong>; brick deaths set it to 4; each Step it decays and offsets the camera by random(-shake..shake) around its resting position.</span></li>
+        <li><span class="num-badge">3</span><span>Lives: ball past the bottom → lives--, reset ball to centre with a fresh serve; 0 → rm_gameover.</span></li>
+        <li><span class="num-badge">4</span><span>Draw hearts in Draw GUI with a small heart sprite in a loop.</span></li>
+        <li><span class="num-badge">5</span><span>Play: bricks crunch, screen kicks, sparks fly. Juice, natively.</span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Step</span></div>
     <pre class="code-pre">if (shake &gt; 0) {
     shake -= 0.3;
     var cam = view_camera[0];
+    // static vars capture the camera's resting position once, so the
+    // wobble always offsets FROM there instead of overwriting it
+    static base_x = camera_get_view_x(cam);
+    static base_y = camera_get_view_y(cam);
     camera_set_view_pos(cam,
-        random_range(-shake, shake),
-        random_range(-shake, shake));
+        base_x + random_range(-shake, shake),
+        base_y + random_range(-shake, shake));
 }</pre>
   </div>
 
@@ -457,8 +462,8 @@ part_particles_create(global.ps, other.x, other.y,
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (shake &gt; 0) {
     shake -= <input class="cc-blank" data-a="MC4z" placeholder="???" size="4">;
     camera_set_view_pos(cam,
-        <input class="cc-blank" data-a="cmFuZG9tX3Jhbmdl" placeholder="????????" size="13">(-shake, shake),
-        random_range(-shake, shake));
+        base_x + <input class="cc-blank" data-a="cmFuZG9tX3Jhbmdl" placeholder="????????" size="13">(-shake, shake),
+        base_y + random_range(-shake, shake));
 }</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
