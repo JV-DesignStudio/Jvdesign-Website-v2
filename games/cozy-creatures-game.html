@@ -587,8 +587,8 @@ const SEARCH_DECKS = {
     { name: 'Graphic Novel', type: 'resource', emoji: '🎨', effect: 'Counts as 2 Chapter Books toward Stack of Books.' },
     { name: 'Distraction', type: 'hazard', emoji: '📱', effect: 'Hazard: You may only use 2 AP this turn.' },
     { name: 'Distraction', type: 'hazard', emoji: '📱', effect: 'Hazard: You may only use 2 AP this turn.' },
-    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back to the bottom. Draw a Rain card.' },
-    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back to the bottom. Draw a Rain card.' }
+    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back into the deck. Draw a Rain card.' },
+    { name: 'Wrong Book', type: 'hazard', emoji: '❌', effect: 'Hazard: Shuffle this back into the deck. Draw a Rain card.' }
   ],
   closet: [
     { name: 'Warm Fleece Blanket', type: 'ingredient', emoji: '🧶', effect: 'Ingredient for Warm Blanket token.' },
@@ -599,8 +599,8 @@ const SEARCH_DECKS = {
     { name: 'Cozy Slippers', type: 'ingredient', emoji: '🥿', effect: 'Ingredient for Warm Blanket token.' },
     { name: 'Tangled Mess', type: 'hazard', emoji: '🕸️', effect: 'Hazard: Your turn ends immediately.' },
     { name: 'Tangled Mess', type: 'hazard', emoji: '🕸️', effect: 'Hazard: Your turn ends immediately.' },
-    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: Place one of your cards face-down into a Search Deck.' },
-    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: Place one of your cards face-down into a Search Deck.' }
+    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: A random card of yours is shuffled into a random Search Deck.' },
+    { name: 'Lost Toy', type: 'hazard', emoji: '🧸', effect: 'Hazard: A random card of yours is shuffled into a random Search Deck.' }
   ]
 };
 
@@ -831,7 +831,8 @@ function renderActions() {
     `<span class="ap-pip ${i >= ap ? 'spent' : ''}"></span>`).join('');
 
   document.getElementById('btn-search').disabled = ap < 1 || p.room === 'living';
-  document.getElementById('btn-share').disabled = ap < 1;
+  // Turtle's "Generous Shell" passive shares for free even at 0 AP
+  document.getElementById('btn-share').disabled = ap < 1 && p.char.id !== 'turtle';
 
   // Assemble: only in living room, 3ap
   const canAssemble = inLiving && ap >= 3 && getAssembleOptions().length > 0;
@@ -949,6 +950,7 @@ function applyHazard(p, card, deckKey) {
       const decks = ['kitchen','den','closet'];
       const target = decks[Math.floor(Math.random() * decks.length)];
       G.searchDecks[target].push(lost);
+      G.searchDecks[target] = shuffle(G.searchDecks[target]);
       showDrawnModal(card, false, `${lost.emoji} ${lost.name} slipped into the ${roomLabel(target)} deck!`);
     } else {
       showDrawnModal(card, false, 'No cards to lose, you got lucky!');

@@ -414,6 +414,12 @@ const SFX = {
   }
 };
 
+function safeParseUnlocked(){
+  try {
+    const parsed = JSON.parse(localStorage.getItem('ls_unlocked') || '["axolotl"]');
+    return Array.isArray(parsed) && parsed.length ? parsed : ['axolotl'];
+  } catch(e) { return ['axolotl']; }
+}
 /* ─── Persistent state ─── */
 const db = {
   sparks: parseInt(localStorage.getItem('ls_sparks')) || 0,
@@ -421,7 +427,7 @@ const db = {
   haptics: localStorage.getItem('ls_haptics') !== '0',
   reducedMotion: localStorage.getItem('ls_rmotion') === '1',
   selected: localStorage.getItem('ls_char') || 'axolotl',
-  unlocked: JSON.parse(localStorage.getItem('ls_unlocked') || '["axolotl"]'),
+  unlocked: safeParseUnlocked(),
 };
 function saveDB(){
   localStorage.setItem('ls_sparks', db.sparks);
@@ -1032,7 +1038,7 @@ function drawZoneLabel(){
   ctx.fillStyle = '#5ee1ff';
   ctx.shadowColor = 'rgba(94,225,255,.7)';
   ctx.shadowBlur = 14;
-  ctx.fillText('— ' + game.zoneLabel + ', ', W/2, H * 0.36);
+  ctx.fillText('— ' + game.zoneLabel, W/2, H * 0.36);
   ctx.restore();
 }
 

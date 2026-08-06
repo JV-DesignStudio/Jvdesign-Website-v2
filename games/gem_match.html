@@ -1386,7 +1386,13 @@ function startTimer(){
     timeLeft--;
     updHUD();
     if(timeLeft<=10) SFX.tick();
-    if(timeLeft<=0){ clearInterval(timerID);timerID=null;gameOn=false;busy=true;setTimeout(endGame,500); }
+    if(timeLeft<=0){
+      clearInterval(timerID);timerID=null;gameOn=false;
+      // Don't read score until any in-flight cascade (which can run
+      // longer than a fixed delay) has actually finished scoring.
+      const waitForCascade=()=>{ busy ? setTimeout(waitForCascade,100) : setTimeout(endGame,300); };
+      waitForCascade();
+    }
   },1000);
 }
 

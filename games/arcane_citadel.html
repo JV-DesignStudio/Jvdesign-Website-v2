@@ -985,6 +985,10 @@ function buildShop(){
     for(const item of pool){
         const cost=itemCost(item);
         const afford=coins>=cost;
+        // Cast-speed upgrades share one capped pool (see effRate in the auto-fire
+        // loop), so once the player is already at the cap, further purchases of
+        // any fireRateBonus item do nothing, make that visible before they buy.
+        const atSpeedCap=item.stat==='fireRateBonus'&&(player.fireRateBonus||0)>=0.75;
         const card=document.createElement('div');
         card.className='shop-card'+(afford?'':' cant-afford');
         const owned=shopOwned[item.id]||0;
@@ -992,7 +996,7 @@ function buildShop(){
             ${owned>0?`<div class="sc-owned-badge">${owned}/${item.maxOwned===99?'∞':item.maxOwned}</div>`:''}
             <div class="sc-icon">${item.icon}</div>
             <div class="sc-n">${item.name}</div>
-            <div class="sc-d">${item.desc}</div>
+            <div class="sc-d">${item.desc}${atSpeedCap?' <strong style="color:#ffcc66">(cast speed already capped, no effect)</strong>':''}</div>
             <div class="sc-c">${cost} ✦</div>`;
         if(afford) card.addEventListener('click',()=>buyItem(item,cost));
         grid.appendChild(card);
@@ -1286,7 +1290,7 @@ function fireFireball(px,py,target,pl){
         const a=Math.atan2(t.y-py,t.x-px)+(Math.random()-.5)*0.06;
         projectiles.push({x:px,y:py,vx:Math.cos(a)*8,vy:Math.sin(a)*8,
             life:1,decay:.008,r:7,color:'#ff6820',glow:'#ff4000',
-            type:'fire',dmg:pl.dmg,pl,homing:t,
+            type:'fire',dmg:pl.dmg,pl,homing:t,pierceLeft:pl.pierceCount,hitSet:new Set(),
         });
     }
     SFX.fire(); lastShot=Date.now();
@@ -1316,7 +1320,7 @@ function firePoisonCloud(px,py,target,pl){
         const a=Math.atan2(t.y-py,t.x-px)+(Math.random()-.5)*0.12;
         projectiles.push({x:px,y:py,vx:Math.cos(a)*7,vy:Math.sin(a)*7,
             life:1,decay:.009,r:8,color:'#80ff40',glow:'#40cc00',
-            type:'poison',dmg:pl.dmg,pl,
+            type:'poison',dmg:pl.dmg,pl,pierceLeft:pl.pierceCount,hitSet:new Set(),
         });
     }
     SFX.poison(); lastShot=Date.now();
@@ -1334,7 +1338,7 @@ function fireWindGust(px,py,target,pl){
     for(const a of angles){
         projectiles.push({x:px,y:py,vx:Math.cos(a)*13,vy:Math.sin(a)*13,
             life:1,decay:.014,r:9,color:'#c8f0ff',glow:'#80d8ff',
-            type:'wind',dmg:pl.dmg,pl,
+            type:'wind',dmg:pl.dmg,pl,pierceLeft:pl.pierceCount,hitSet:new Set(),
         });
     }
     SFX.wind(); lastShot=Date.now();

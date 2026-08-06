@@ -720,7 +720,7 @@ function generateDungeon(floor) {
   for (let i=0;i<rand(1,3);i++) {
     const room = rooms[rand(0,rooms.length-1)];
     const cx = rand(room.x,room.x+room.w-1), cy = rand(room.y,room.y+room.h-1);
-    if (cx===playerStart.x&&cy===playerStart.y) continue;
+    if ((cx===playerStart.x&&cy===playerStart.y)||(cx===stairsPos.x&&cy===stairsPos.y)) continue;
     if (monsters.some(m=>m.x===cx&&m.y===cy)) continue;
     chests.push({x:cx,y:cy,opened:false,id:'c'+i});
   }
@@ -805,7 +805,10 @@ function renderHUD() {
   $('hud-name').style.color = player.classColor;
   $('hud-hp-bar').style.width = Math.max(0, player.hp/player.maxHp*100)+'%';
   $('hud-xp-bar').style.width = (player.xp/player.xpNeeded*100)+'%';
-  $('hud-right').innerHTML = `💰 ${player.gold}g<br>🧪 ${player.potions}<br>⚔️ ATK ${player.atk} · 🛡️ DEF ${player.def}<br><span style="color:#9b59b6;font-size:12px">Floor ${player.floor+1}/${FLOOR_COUNT}</span>`;
+  const floorLabel = player.floor >= FLOOR_COUNT
+    ? `Boss ${Math.min(player.floor-FLOOR_COUNT+1, BOSSES.length)}/${BOSSES.length}`
+    : `Floor ${player.floor+1}/${FLOOR_COUNT}`;
+  $('hud-right').innerHTML = `💰 ${player.gold}g<br>🧪 ${player.potions}<br>⚔️ ATK ${player.atk} · 🛡️ DEF ${player.def}<br><span style="color:#9b59b6;font-size:12px">${floorLabel}</span>`;
 }
 
 // ══════════════════════════════════════════════════════════════════

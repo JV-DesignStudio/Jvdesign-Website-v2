@@ -757,7 +757,7 @@
    ============================================================================ */
 
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+let ctx = canvas.getContext('2d');
 const W = canvas.width;
 const H = canvas.height;
 const audioEffects = new AudioEffects(0.6);
@@ -852,8 +852,14 @@ function countOwned(v, cat) {
   return arr.length;
 }
 function isFullyEquipped(v) {
+  // Every slot's default is pre-populated at save creation, so a truthy
+  // check alone is always true from turn one. Require a non-default pick
+  // in every slot, i.e. the player has actually equipped something.
   const e = v.tigerEquipped || {};
-  return e.paddle && e.ball && e.bg && e.brick;
+  return e.paddle && e.paddle !== 'classic' &&
+         e.ball && e.ball !== 'standard' &&
+         e.bg && e.bg !== 'default' &&
+         e.brick && e.brick !== 'bamboo';
 }
 
 /* ---------- Save (shared with Sky High Squirt) ---------- */
@@ -899,6 +905,7 @@ function defaultSave() {
       brick:  'bamboo',
     },
     tigerBestStage: 0,
+    tigerBestReached: 0,
     tigerRunsWon: 0,
     tigerTotalBricks: 0,
     tigerMaxCombo: 0,
@@ -928,6 +935,10 @@ function loadSave() {
       });
     });
     if (!Array.isArray(merged.achievements)) merged.achievements = [];
+    // Back-compat: existing saves predate tigerBestReached, seed it from
+    // the (previously overloaded) best-cleared-stage stat so returning
+    // players don't see a spurious "new best" on their next death.
+    if (typeof parsed.tigerBestReached === 'undefined') merged.tigerBestReached = merged.tigerBestStage;
     // Settings back-compat
     if (typeof merged.settings.haptic === 'undefined') merged.settings.haptic = true;
     if (typeof merged.settings.shake  === 'undefined') merged.settings.shake  = true;
@@ -1874,8 +1885,11 @@ function onGameOver() {
   const xpGain = 10 + state.bricksBrokenRun;
   const leveled = addXP(xpGain);
 
-  const isBest = STAGES[state.stageIdx].id > save.tigerBestStage;
-  if (isBest) save.tigerBestStage = STAGES[state.stageIdx].id;
+  // Dying on a stage means it wasn't cleared, so this must not touch
+  // tigerBestStage (the "cleared" stat the achievements check). Track
+  // furthest-reached separately for the death screen's own "new best" badge.
+  const isBest = STAGES[state.stageIdx].id > save.tigerBestReached;
+  if (isBest) save.tigerBestReached = STAGES[state.stageIdx].id;
 
   checkAchievements();
   persist();
@@ -2783,7 +2797,7 @@ function drawShopPreview(canvas, cat, item) {
     // Draw a mini paddle
     const prevCtx = ctx;
     const savedStageT = state.stageT;
-    window.ctx = c; // swap global
+    ctx = c; // swap global
     const p = { x: 8, y: 20, w: Math.min(56, item.w * 0.55), h: 10 };
     state.stageT = performance.now() / 1000;
     ({
@@ -2795,12 +2809,12 @@ function drawShopPreview(canvas, cat, item) {
       slim:     drawPaddleSlim,
       champion: drawPaddleChampion,
     }[item.id] || drawPaddleClassic)(p);
-    window.ctx = prevCtx;
+    ctx = prevCtx;
     state.stageT = savedStageT;
   } else if (cat === 'ball') {
     // Mini ball centered (enlarged for preview)
     const prevCtx = ctx;
-    window.ctx = c;
+    ctx = c;
     const b = { x: canvas.width / 2, y: canvas.height / 2, vx: 0, vy: 0, fireT: 0, phantomT: 0, trail: [] };
     c.save();
     c.translate(canvas.width / 2, canvas.height / 2);
@@ -2816,7 +2830,7 @@ function drawShopPreview(canvas, cat, item) {
       phantom:   drawBallPhantom,
     }[item.id] || drawBallStandard)(b);
     c.restore();
-    window.ctx = prevCtx;
+    ctx = prevCtx;
   } else if (cat === 'bg') {
     // Mini gradient
     const swatches = {
@@ -2848,7 +2862,7 @@ function drawShopPreview(canvas, cat, item) {
   } else if (cat === 'brick') {
     // 3 sample bricks in different HPs
     const prevCtx = ctx;
-    window.ctx = c;
+    ctx = c;
     const savedT = state.stageT;
     state.stageT = performance.now() / 1000;
     c.save();
@@ -2867,7 +2881,7 @@ function drawShopPreview(canvas, cat, item) {
       c.restore();
     }
     c.restore();
-    window.ctx = prevCtx;
+    ctx = prevCtx;
     state.stageT = savedT;
   }
 }

@@ -628,6 +628,10 @@ window.addEventListener('resize',()=>resize());
 // STATE
 // ═══════════════════════════════════════
 let grid=[], currentBubble=null, nextType=0;
+// Multi-shot extras, tracked independently of currentBubble so they keep
+// flying (and can still land/score) after the primary bubble lands and
+// currentBubble gets reassigned to a fresh bubble by newBubble().
+let extraBubbles=[];
 let aimAngle=-Math.PI/2;
 let score=0, best=0, level=1;
 let state='start';
@@ -953,7 +957,7 @@ function triggerShake(){
 // SHOOTING
 // ═══════════════════════════════════════
 function newBubble(){
-  currentBubble={type:nextType,x:GW/2,y:SHOOT_Y,vx:0,vy:0,flying:false,multi:[]};
+  currentBubble={type:nextType,x:GW/2,y:SHOOT_Y,vx:0,vy:0,flying:false};
   // Pool strongly biased toward colours currently on the board (keeps game winnable)
   const activeColors=getActiveColors();
   const pool=[];
@@ -1010,10 +1014,10 @@ function shoot(){
   if(PU.multi){
     PU.multi=0; updatePUBar();
     const spread=0.18;
-    currentBubble.multi=[
+    extraBubbles.push(
       {type:currentBubble.type,x:GW/2,y:SHOOT_Y,vx:Math.cos(a-spread)*spd,vy:Math.sin(a-spread)*spd,flying:true,ghost:false,extra:true},
       {type:currentBubble.type,x:GW/2,y:SHOOT_Y,vx:Math.cos(a+spread)*spd,vy:Math.sin(a+spread)*spd,flying:true,ghost:false,extra:true},
-    ];
+    );
   }
 
   if(PU.slow){ PU.slow=0; slowActive=180; updatePUBar(); }
@@ -1415,11 +1419,13 @@ function moveBubble(b, dt){
       if(!grid[r][c])continue;
       const{x:gx,y:gy}=cellXY(r,c);
       if(Math.hypot(b.x-gx,b.y-gy)<BR*1.8){
+        // Ghost phases through its first grid collision and keeps flying,
+        // reaching further/deeper gaps than a normal shot could. Bail out
+        // of the collision scan entirely so it doesn't immediately land
+        // on a neighbouring cell in this same frame.
+        if(b.ghost&&!b.ghostUsed){ b.ghostUsed=true; return false; }
         b.flying=false;
-        if(!b.ghost) placeBubble(b.x,b.y,b.type);
-        else { // ghost: pop and keep going? No, just place silently
-          placeBubble(b.x,b.y,b.type);
-        }
+        placeBubble(b.x,b.y,b.type);
         return true;
       }
     }
@@ -1462,20 +1468,16 @@ function loop(ts){
   // move primary bubble
   if(currentBubble&&currentBubble.flying){
     const done=moveBubble(currentBubble,dt);
-    if(done){
-      // move extra multi bullets
-      for(const eb of currentBubble.multi||[]){
-        if(eb.flying) moveBubble(eb,dt);
-      }
-      afterShot();
-    }
+    if(done) afterShot();
   }
-  // draw multi bullets in flight
-  if(currentBubble){
-    for(const eb of currentBubble.multi||[]){
-      if(eb.flying){moveBubble(eb,dt);drawMovingBubble(eb);}
-    }
-    drawMovingBubble(currentBubble);
+  if(currentBubble) drawMovingBubble(currentBubble);
+  // Multi-shot extras: fully independent of currentBubble's lifecycle so
+  // they keep flying, landing and scoring even after the primary bubble
+  // has landed and currentBubble has moved on to the next shot.
+  for(let i=extraBubbles.length-1;i>=0;i--){
+    const eb=extraBubbles[i];
+    if(eb.flying){ moveBubble(eb,dt); drawMovingBubble(eb); }
+    if(!eb.flying) extraBubbles.splice(i,1);
   }
 
   drawLumo();
@@ -1609,7 +1611,7 @@ function startLevel(){
   // beyond ~11 rows the bottom row already sits at/below DANGER_Y, which made
   // levels 7+ start with an instant danger-flash and felt unfairly hard
   initGrid(Math.min(8+Math.floor(level*.4),11),numTypes(level));
-  sparks.length=0;popTexts.length=0;rings.length=0;popAnims.length=0;
+  sparks.length=0;popTexts.length=0;rings.length=0;popAnims.length=0;extraBubbles.length=0;
   cframe.classList.remove('danger-pulse');
   document.getElementById('ovPause').classList.add('off');
   document.getElementById('ovHelp').classList.add('off');
