@@ -2396,33 +2396,42 @@ function checkConceptFill(btn){
 }
 
 function pickTF(btn, value){
-  const gate = btn.closest('.tf-round');
-  if(!gate) return;
-  gate.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  const item = btn.closest('.tf-item');
+  if(!item) return;
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  btn.dataset.picked = value;
+  item.dataset.picked = value;
 }
 
 function checkTF(btn){
   const gate = btn.closest('.tf-round');
   if(!gate || gate.classList.contains('passed')) return;
-  const picked = gate.querySelector('.tf-btn.selected');
-  if(!picked){ alert('Pick True or False first!'); return; }
-  const answer = gate.dataset.answer;
-  const userVal = picked.dataset.picked;
+  const items = gate.querySelectorAll('.tf-item');
+  let allPicked = true;
+  let allCorrect = true;
+  items.forEach(item => {
+    const answer = item.dataset.answer;
+    const picked = item.dataset.picked;
+    const selBtn = item.querySelector('.tf-btn.selected');
+    if(!picked){ allPicked = false; return; }
+    if(picked === answer){ if(selBtn) selBtn.classList.add('correct'); }
+    else { if(selBtn) selBtn.classList.add('wrong'); allCorrect = false; }
+  });
+  if(!allPicked){ alert('Pick True or False for every statement first!'); return; }
   totalQuizzes++;
-  if(userVal === answer){
+  if(allCorrect){
     streak++; correctFirst++;
     if(streak > bestStreak) bestStreak = streak;
     gate.classList.add('passed');
-    picked.classList.add('correct');
     const nb = gate.querySelector('.quiz-next-btn'); if(nb) nb.style.display = 'inline-block';
     let bonus = (streak >= 3) ? XP_STREAK_BONUS : 0;
     awardXp(XP_QUIZ + bonus, 'True/False correct' + (bonus ? ' +streak' : ''));
   } else {
     streak = 0;
-    picked.classList.add('wrong');
-    setTimeout(()=> picked.classList.remove('wrong'), 800);
+    items.forEach(item => {
+      const selBtn = item.querySelector('.tf-btn.selected');
+      if(selBtn) setTimeout(()=> selBtn.classList.remove('wrong','correct'), 800);
+    });
     updateXpDisplay();
   }
 }
@@ -2431,6 +2440,7 @@ loadProgress();
 </script>
 
 <!-- Shared workshop engine drives the step-cards / quizzes / XP / finish (same as every other workshop) -->
+<script src="../player-profile.js"></script>
 <script>window.WORKSHOP_TOTAL=12;window.WORKSHOP_KEY='jvds-openrct2-modding-v2';window.WORKSHOP_PROFILE_ID='openrct2-modding-builder';</script>
 <script src="workshop-engine.js"></script>
 <script>
@@ -2449,7 +2459,7 @@ loadProgress();
 </script>
 
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Course","name":"OpenRCT2 Python Modding Add Shops & Items","description":"Learn to mod OpenRCT2 with Python. Add custom shops, new menu items, and stall upgrades step by step with a live park preview. Ages 11+. Free.","url":"https://jvdesignstudio.co.uk/workshops/openrct2-modding-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+{"@context":"https://schema.org","@type":"Course","name":"OpenRCT2 Python Modding Add Shops & Items","description":"Learn to mod OpenRCT2 with Python. Add custom shops, new menu items, and stall upgrades step by step with a live park preview. Ages 11+. Free.","url":"https://jvdesignstudio.co.uk/workshops/openrct2-modding-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>
 </html>

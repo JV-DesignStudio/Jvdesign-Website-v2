@@ -327,6 +327,7 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
 .hat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .hat-card{border:2px solid var(--cream-deep);border-radius:12px;padding:8px 4px;text-align:center;cursor:pointer;background:var(--cream)}
 .hat-card.equipped{border-color:var(--sun);background:#FFF9E8}
+.hat-card.locked{opacity:.55;border-style:dashed}
 .hat-card .hat-emoji{font-size:24px;line-height:1.2}
 .hat-name{font-size:10px;font-weight:800;color:var(--cocoa);margin-top:2px}
 .hat-price{font-size:10px;font-weight:800;color:var(--cocoa-soft)}
@@ -944,7 +945,7 @@ const ACHIEVEMENTS=[
   {id:'bt_secrets_all',emoji:'🔮',name:'Keeper of Secrets', desc:'Find every secret in the cafe',        coins:300, check:v=>(v.btSecrets||[]).length>=SECRETS.length},
   {id:'bt_decorator',  emoji:'🎨',name:'Decorator',         desc:'Own 5 cafe backgrounds',               coins:100, check:v=>(v.btOwnedBgs||['cream']).length>=5},
 ];
-const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇',cowboy:'🤠',headphones:'🎧',mushroom:'🍄',pumpkin:'🎃',bunny:'🐰',snowman:'⛄',unicorn:'🦄',knit:'🧶',legend_crown:'👑',guest_crown:'👑'};
+const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇',cowboy:'🤠',headphones:'🎧',mushroom:'🍄',pumpkin:'🎃',bunny:'🐰',snowman:'⛄',unicorn:'🦄',knit:'🧶',legend_crown:'👑',guest_crown:'👑',candy_corn:'🍬'};
 const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:'🧣',sunglasses:'🕶️',monocle:'🧐',medal:'🎖️',sparkle:'⭐',butterfly:'🦋',beads:'📿',ring:'💍',mittens:'🧤'};
 
 // ══ RUNTIME ══
@@ -2156,6 +2157,15 @@ const BG_THEMES=[
   {id:'legend',  name:'Beyond the Stars',cost:200000000000,css:'radial-gradient(circle at 50% 20%,#FFD700 0%,#2A1A5E 55%,#000 100%)', prestige:20},
   {id:'anniversary',name:'One More Season',cost:400000000000,css:'radial-gradient(circle at 50% 30%,#FFE29A 0%,#E8B84B 40%,#7A4B1E 100%)', prestige:25},
 ];
+/* Seasonal cosmetic pilot: a dateWindow-gated item stays visible year-round
+   (never mystery-vanishes) but can only be purchased while today's local
+   month-day falls inside the window. Once owned, it equips normally like
+   any other hat forever after — only the purchase itself is date-locked. */
+function inDateWindow(w){
+  const now=new Date();
+  const md=String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  return md>=w.startMD&&md<=w.endMD;
+}
 const HAT_SHOP=[
   {id:'none',      name:'No hat',    cost:0},
   {id:'beanie',    name:'Beanie',    cost:50000},
@@ -2178,6 +2188,7 @@ const HAT_SHOP=[
   {id:'unicorn',   name:'Unicorn Horn',cost:90000000,prestige:2},
   {id:'legend_crown',name:'Cosmic Crown',cost:150000000000,prestige:20},
   {id:'guest_crown',name:'Guest of Honour',cost:300000000000,prestige:25},
+  {id:'candy_corn',name:'Candy Corn Cap',cost:350000, dateWindow:{startMD:'10-25',endMD:'11-01'}, dateLabel:'Available Oct 25 – Nov 1'},
 ];
 const ACC_SHOP=[
   {id:'none',      name:'None',      cost:0},
@@ -2271,12 +2282,14 @@ function renderStyle(){
   HAT_SHOP.forEach(hh=>{
     if(hh.prestige&&p<hh.prestige)return;
     const owned=(hh.cost===0&&!hh.quest)||ownedHats().includes(hh.id);
+    const dateLocked=hh.dateWindow&&!owned&&!inDateWindow(hh.dateWindow);
     const eq=(charHats()[styleChar]||'none')===hh.id;
     const emoji=hh.id==='none'?'✖️':HAT_EMOJIS[hh.id];
-    const card=document.createElement('div'); card.className='hat-card'+(eq?' equipped':'');
-    card.innerHTML=`<div class="hat-emoji">${emoji}</div><div class="hat-name">${hh.name}</div><div class="hat-price">${eq?'Wearing':owned?'Equip':hh.quest?'Quest: '+hh.quest:'🍪 '+fmt(hh.cost)}</div>`;
+    const card=document.createElement('div'); card.className='hat-card'+(eq?' equipped':'')+(dateLocked?' locked':'');
+    card.innerHTML=`<div class="hat-emoji">${emoji}</div><div class="hat-name">${hh.name}</div><div class="hat-price">${eq?'Wearing':owned?'Equip':dateLocked?hh.dateLabel:hh.quest?'Quest: '+hh.quest:'🍪 '+fmt(hh.cost)}</div>`;
     card.addEventListener('click',()=>{
       if(!owned){
+        if(dateLocked){showToast('🍬 '+hh.dateLabel+'!');return;}
         if(hh.quest){showToast('🎁 Finish '+hh.quest+"'s crew quests to unlock this!");return;}
         if(Math.floor(bv().total)<hh.cost){showToast('Not enough biscuits yet!');return;}
         bv().total-=hh.cost; ownedHats().push(hh.id);

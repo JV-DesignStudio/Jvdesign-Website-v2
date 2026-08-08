@@ -283,6 +283,20 @@
   }
   .streak-badge.zero { display: none; }
 
+  .daily-mod-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .daily-mod-badge .dm-name { color: var(--accent); }
+
   /* New best banner */
   .newbest-banner {
     display: none;
@@ -675,6 +689,8 @@
     <div class="char-unlock-hint" id="char-unlock-hint"></div>
     <div class="char-row" id="char-row"></div>
 
+    <div class="daily-mod-badge" id="dailyModBadge"></div>
+
     <div class="stats">
       <div class="stat"><div class="v" id="menu-best">0m</div><div class="l">Best</div></div>
       <div class="stat"><div class="v" id="menu-coins">0</div><div class="l">Coins</div></div>
@@ -812,6 +828,26 @@ const PHYS = {
   scoreScale: 0.1,
 };
 
+/* ---------- Daily Modifier Run ----------
+   A different small twist each calendar day, picked deterministically from
+   the local date so it's the same for everyone on the same day without
+   needing a server. Applied as multipliers at existing spawn/reward points
+   rather than touching PHYS directly, so the base feel never drifts. */
+const DAILY_MODIFIERS = [
+  { id: 'coinRush',   name: 'Coin Rush',    icon: '🪙', desc: '+50% coins this run',        coinMult: 1.5 },
+  { id: 'feather',    name: 'Featherweight', icon: '🪶', desc: 'Lighter gravity today',     gravityMult: 0.82 },
+  { id: 'luckyJets',  name: 'Lucky Jets',   icon: '🚀', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
+  { id: 'hazardStorm',name: 'Hazard Storm', icon: '🌪️', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
+  { id: 'calmSkies',  name: 'Calm Skies',   icon: '🌤️', desc: 'Fewer hazards today',        hazardMult: 0.5 },
+];
+function daysSinceEpochLocal() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function getDailyModifier() {
+  return DAILY_MODIFIERS[daysSinceEpochLocal() % DAILY_MODIFIERS.length];
+}
+
 const CHARS = {
   turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Squirt the Turtle',  emoji: '🐢', unlockM: 0 },
   fox:     { body: '#ff5722', accent: '#bf360c', eye: '#fff', name: 'Ember the Fox',      emoji: '🦊', unlockM: 1000 },
@@ -861,6 +897,7 @@ const COSMETICS = {
     { id: 'emerald',   name: 'Emerald',    price: 300, color: '#00ff7f' },
     { id: 'shadow2',   name: 'Dark Matter', price: 400, color: '#1a1a2e' },
     { id: 'love',      name: 'Love',       price: 200, color: '#ff1493' },
+    { id: 'keepsake',  name: 'Keepsake',   price: 0, color: '#c9a96e', achievement: 'anniversary', lockedHint: 'A once-a-year gift' },
   ],
 };
 
@@ -891,6 +928,7 @@ function defaultSave() {
     streak: 0,
     bestStreak: 0,
     settings: { sound: true },
+    firstPlayTs: Date.now(),
   };
 }
 
@@ -993,6 +1031,11 @@ const ACHIEVEMENTS = [
   { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '🔥', check: (s) => s.bestStreak >= 3 },
   { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '💪', check: (s) => s.bestStreak >= 7 },
   { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: '🎂', check: (s) => {
+    if (!s.firstPlayTs) return false;
+    const first = new Date(s.firstPlayTs), now = new Date();
+    return now.getFullYear() > first.getFullYear() && now.getMonth() === first.getMonth() && now.getDate() === first.getDate();
+  } },
 ];
 
 function checkAchievements(runStats) {
@@ -1231,7 +1274,8 @@ function maybeSpawnCoins(plat) {
 
 function maybeSpawnHazard(plat, heightM) {
   if (heightM < HAZARD_START_M) return;
-  const chance = Math.min(0.16, (heightM - HAZARD_START_M) / 9000);
+  const base = Math.min(0.16, (heightM - HAZARD_START_M) / 9000);
+  const chance = Math.min(0.3, base * (getDailyModifier().hazardMult || 1));
   if (Math.random() >= chance) return;
   // Float in the open air well above the platform so it never blocks landing outright.
   const x = 20 + Math.random() * (W - 40);
@@ -1245,7 +1289,8 @@ function maybeSpawnHazard(plat, heightM) {
 
 function maybeSpawnPowerup(plat, heightM) {
   if (heightM < POWERUP_START_M) return;
-  if (Math.random() >= 0.07) return;
+  const chance = Math.min(0.4, 0.07 * (getDailyModifier().powerupMult || 1));
+  if (Math.random() >= chance) return;
   const type = Math.random() < 0.5 ? 'jetpack' : 'shield';
   state.powerups.push({
     x: plat.x + plat.w / 2, y: plat.y - 30, r: 12,
@@ -1401,7 +1446,7 @@ function update() {
     p.vy = PHYS.jumpVel * 1.2;
     if (state.jetpackFrames % 2 === 0) spawnParticles(p.x + p.w/2, p.y + p.h, '#ff7043', 3);
   } else {
-    p.vy += PHYS.gravity;
+    p.vy += PHYS.gravity * (getDailyModifier().gravityMult || 1);
   }
   p.x += p.vx;
   p.y += p.vy;
@@ -2384,7 +2429,7 @@ function die() {
   SFX.death();
   releaseWakeLock();
 
-  save.coins += state.runCoins;
+  save.coins += Math.round(state.runCoins * (getDailyModifier().coinMult || 1));
 
   // Award XP, based on height + coins + a small completion bonus
   const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10;
@@ -2468,6 +2513,10 @@ function showToast(msg) {
 function refreshMenu() {
   document.getElementById('menu-best').textContent = save.bestHeight + 'm';
   document.getElementById('menu-coins').textContent = save.coins;
+
+  const dm = getDailyModifier();
+  document.getElementById('dailyModBadge').innerHTML =
+    `${dm.icon} <span class="dm-name">${dm.name}</span> — ${dm.desc}`;
 
   // Level + XP
   const xpInfo = xpProgressInLevel(save.xp);
@@ -2595,7 +2644,7 @@ function refreshShop() {
       status.textContent = 'Tap to equip';
     } else if (lockedByAchievement) {
       status.className = 'shop-item-status';
-      status.textContent = 'Reach 10000m';
+      status.textContent = item.lockedHint || 'Reach 10000m';
     } else if (lockedByLevel) {
       status.className = 'shop-item-status';
       status.textContent = 'Lv ' + item.levelReq;
@@ -2616,7 +2665,7 @@ function refreshShop() {
 function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel) {
   if (lockedByAchievement && !owned) {
     SFX.error();
-    showToast('Reach 10000m to unlock!');
+    showToast((item.lockedHint || 'Reach 10000m') + ' to unlock!');
     return;
   }
   if (lockedByLevel && !owned) {

@@ -1733,6 +1733,8 @@ function onQuestComplete(card){
     }
   }
   rpg.lastQuestDate=today;
+  grantStreakShieldIfEarned();
+  checkAppiversary();
   // ── Combo ─────────────────────────────────────────────────────
   const nowMs=Date.now();
   rpg.comboCount=nowMs-(rpg.lastComboTime||0)<300000?(rpg.comboCount||0)+1:1;
@@ -1949,6 +1951,7 @@ const ACHS=[
   {id:'video_creator',title:'Content Creator',     desc:'Complete 5 video quests',                      titleUnlock:'The Creator',       icon:'🎬'},
   {id:'author',       title:'Published Author',    desc:'Complete 3 book quests',                       titleUnlock:'The Author',        icon:'📖'},
   {id:'weekly_boss',  title:'Weekly Hero',         desc:'Defeat your first weekly boss event',         titleUnlock:'Boss Killer',       icon:'🏆'},
+  {id:'appiversary',  title:'A Year of Quests',    desc:'Complete a quest on the anniversary of your first day here', titleUnlock:'The Veteran', icon:'🎂'},
 ];
 function unlockAch(id){
   if(rpg.achievements[id])return;
@@ -1956,6 +1959,26 @@ function unlockAch(id){
   const a=ACHS.find(x=>x.id===id);
   if(a){showToast(`🏆 Achievement: ${a.title}! Title: "${a.titleUnlock}"`);playSfx('levelup');}
   save();
+}
+function grantStreakShieldIfEarned(){
+  if(!rpg.streak||rpg.streak%7!==0)return;
+  if(hasActiveBuff('streakSave'))return;
+  if(!rpg.activeBuffs)rpg.activeBuffs=[];
+  rpg.activeBuffs.push({type:'streakSave',uses:1,name:'Streak Shield',icon:'🔥',_id:'buf'+Date.now()});
+  showToast(`🔥 ${rpg.streak}-day streak! Earned a free Streak Shield.`,'success');
+}
+function checkAppiversary(){
+  if(rpg.achievements.appiversary)return;
+  if(!rpg.firstPlayTs)return;
+  const first=new Date(rpg.firstPlayTs),now=new Date();
+  if(now.getFullYear()>first.getFullYear()&&now.getMonth()===first.getMonth()&&now.getDate()===first.getDate()){
+    unlockAch('appiversary');
+    if(!rpg.activeBuffs)rpg.activeBuffs=[];
+    const existing=rpg.activeBuffs.find(b=>b.type==='streakSave');
+    if(existing)existing.uses=(existing.uses||0)+1;
+    else rpg.activeBuffs.push({type:'streakSave',uses:1,name:'Streak Shield',icon:'🔥',_id:'buf'+Date.now()});
+    showToast('🎂 A year of quests! Bonus Streak Shield added.','success');
+  }
 }
 function openAchievements(){
   const c=document.getElementById('achList');c.innerHTML='';
@@ -4417,6 +4440,7 @@ if(!rpg.calEvents)rpg.calEvents=[];
 if(!rpg.activeBuffs)rpg.activeBuffs=[];
 if(!rpg.shopUnlocked)rpg.shopUnlocked={};
 if(!rpg.weeklyReviews)rpg.weeklyReviews=[];
+if(!rpg.firstPlayTs)rpg.firstPlayTs=Date.now();
 // Ensure all cards have new fields
 state.cards.forEach((c,i)=>{
   if(!c.timeLogs)c.timeLogs=[];

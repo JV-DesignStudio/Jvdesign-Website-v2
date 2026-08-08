@@ -254,14 +254,14 @@ const QUESTS = {
   'quest-14-creative-coder': {
     id: 'quest-14-creative-coder',
     title: 'Creative Coder',
-    description: 'Complete workshops from all 5 major categories: Game Dev, Graphics, Game Engines, Tools, and Design.',
+    description: 'Complete workshops from all 3 categories: Scratch, Godot, and MUGEN.',
     icon: '🎨',
     category: 'learning',
     difficulty: 'advanced',
     order: 14,
     prerequisites: ['quest-8-all-workshops'],
     requirements: [
-      { type: 'category-diversity', minCategories: 5 }
+      { type: 'category-diversity', minCategories: 3 }
     ],
     rewards: {
       xp: 320,
@@ -287,7 +287,146 @@ const QUESTS = {
       badge: '🏅 Achievement Legend',
       achievement: 'achievementHunter'
     }
+  },
+
+  'quest-16-tower-defender': {
+    id: 'quest-16-tower-defender',
+    title: 'Tower Defender',
+    description: 'Reach level 5 in Arcane Citadel.',
+    icon: '🏰',
+    gameId: 'arcane-citadel',
+    category: 'gaming',
+    difficulty: 'intermediate',
+    order: 16,
+    requirements: [
+      { type: 'game-level', gameId: 'arcane-citadel', minLevel: 5 }
+    ],
+    rewards: { xp: 180, badge: '🏰 Citadel Defender', achievement: 'towerDefender' }
+  },
+
+  'quest-17-gem-hunter': {
+    id: 'quest-17-gem-hunter',
+    title: 'Gem Hunter',
+    description: 'Reach level 8 in Gem Match.',
+    icon: '💎',
+    gameId: 'gem-match',
+    category: 'gaming',
+    difficulty: 'intermediate',
+    order: 17,
+    requirements: [
+      { type: 'game-level', gameId: 'gem-match', minLevel: 8 }
+    ],
+    rewards: { xp: 150, badge: '💎 Gem Hunter', achievement: 'gemHunter' }
+  },
+
+  'quest-18-dungeon-diver': {
+    id: 'quest-18-dungeon-diver',
+    title: 'Dungeon Diver',
+    description: 'Reach level 5 in Dungeon Delve.',
+    icon: '🗝️',
+    gameId: 'dungeon-delve',
+    category: 'gaming',
+    difficulty: 'intermediate',
+    order: 18,
+    requirements: [
+      { type: 'game-level', gameId: 'dungeon-delve', minLevel: 5 }
+    ],
+    rewards: { xp: 200, badge: '🗝️ Dungeon Diver', achievement: 'dungeonDiver' }
+  },
+
+  'quest-19-void-survivor': {
+    id: 'quest-19-void-survivor',
+    title: 'Void Survivor',
+    description: 'Survive to wave 10 in VoidRush.',
+    icon: '🌌',
+    gameId: 'void-rush',
+    category: 'gaming',
+    difficulty: 'advanced',
+    order: 19,
+    requirements: [
+      { type: 'game-metric', gameId: 'void-rush', metric: 'wave', minValue: 10 }
+    ],
+    rewards: { xp: 220, badge: '🌌 Void Survivor', achievement: 'voidSurvivor' }
+  },
+
+  'quest-20-chef-supreme': {
+    id: 'quest-20-chef-supreme',
+    title: 'Chef Supreme',
+    description: 'Reach level 5 in Star Chef.',
+    icon: '👨‍🍳',
+    gameId: 'star-chef',
+    category: 'gaming',
+    difficulty: 'intermediate',
+    order: 20,
+    requirements: [
+      { type: 'game-level', gameId: 'star-chef', minLevel: 5 }
+    ],
+    rewards: { xp: 150, badge: '👨‍🍳 Chef Supreme', achievement: 'chefSupreme' }
+  },
+
+  'quest-21-arcade-veteran': {
+    id: 'quest-21-arcade-veteran',
+    title: 'Arcade Veteran',
+    description: 'Maintain a 30-day play streak.',
+    icon: '🎖️',
+    category: 'engagement',
+    difficulty: 'advanced',
+    order: 21,
+    prerequisites: ['quest-5-streak-champion'],
+    requirements: [
+      { type: 'daily-streak', minDays: 30 }
+    ],
+    rewards: { xp: 400, badge: '🎖️ Arcade Veteran', achievement: 'arcadeVeteran' }
+  },
+
+  'quest-22-stage-master': {
+    id: 'quest-22-stage-master',
+    title: 'Stage Master',
+    description: 'Score at least 50 points in 8 different games.',
+    icon: '🌟',
+    category: 'gaming',
+    difficulty: 'advanced',
+    order: 22,
+    prerequisites: ['quest-4-game-collector'],
+    requirements: [
+      { type: 'game-variety', minGamesPlayed: 8, minScorePerGame: 50 }
+    ],
+    rewards: { xp: 250, badge: '🌟 Stage Master', achievement: 'stageMaster' }
+  },
+
+  'quest-23-tiger-collector': {
+    id: 'quest-23-tiger-collector',
+    title: 'Tiger Collector',
+    description: 'Unlock 3 cosmetics in Tiger Smash.',
+    icon: '🐯',
+    gameId: 'tiger-smash',
+    category: 'gaming',
+    difficulty: 'beginner',
+    order: 23,
+    requirements: [
+      { type: 'cosmetic-unlock-count', gameId: 'tiger-smash', minCount: 3 }
+    ],
+    rewards: { xp: 160, badge: '🐯 Tiger Collector', achievement: 'tigerCollector' }
   }
+};
+
+/* Real workshop-id -> category map, built from the actual ids that call
+   markWorkshopCompleted() across the site today (grep-verified, not the
+   aspirational "5 major categories" the original quest-14 description
+   claimed). Only 3 real categories exist in tracked data right now. */
+const WORKSHOP_CATEGORIES = {
+  'scratch-catch-workshop': 'scratch',
+  'scratch-clicker-workshop': 'scratch',
+  'scratch-maze-workshop': 'scratch',
+  'scratch-platformer-workshop': 'scratch',
+  'scratch-quiz-workshop': 'scratch',
+  'scratch-story-workshop': 'scratch',
+  'jump-jump-mario-workshop': 'godot',
+  'godot-racing-workshop': 'godot',
+  'gml-shooter-trainer': 'godot',
+  'mugen-workshop': 'mugen',
+  'mugen-ai-workshop': 'mugen',
+  'add-your-own-stage': 'mugen',
 };
 
 class QuestSystem {
@@ -389,6 +528,44 @@ class QuestSystem {
           u => u.startsWith(requirement.gameId + ':')
         ).length;
         return cosmeticsUnlocked >= requirement.minCount;
+
+      case 'achievement-count':
+        return playerProfile.getStats().achievementsUnlocked >= requirement.minCount;
+
+      case 'multi-game-scores':
+        // No per-game genre/category data exists anywhere in the codebase
+        // (games-registry.js has no category field), so this can't actually
+        // filter by requirement.gameCategory as originally written. Falls
+        // back to counting any N games meeting the score bar, functionally
+        // the same shape as 'game-variety' but reusing this type's own
+        // field names.
+        const scoringGames = Object.keys(gameStates).filter(
+          gameId => gameStates[gameId] && gameStates[gameId].highScore >= requirement.minScore
+        ).length;
+        return scoringGames >= requirement.minGames;
+
+      case 'perfect-scores':
+        // No game tracks a normalized 0-1 accuracy/completion field, so
+        // requirement.minScore (e.g. 0.9) is read as a fraction of level
+        // progress instead: level >= minScore * 10. Reuses the same
+        // `level` field 'game-level' already relies on.
+        const masteredGames = Object.keys(gameStates).filter(gameId => {
+          const g = gameStates[gameId];
+          return g && (g.level || 0) >= Math.round(requirement.minScore * 10);
+        }).length;
+        return masteredGames >= requirement.minGames;
+
+      case 'category-diversity':
+        // Real category data only exists for the 3 workshop series that
+        // actually call markWorkshopCompleted() with quest-system-known
+        // ids today (Scratch, Godot/GML, MUGEN) — see WORKSHOP_CATEGORIES
+        // below. requirement.minCategories should be sized to that reality.
+        const completedCats = new Set(
+          playerProfile.state.completedWorkshops
+            .map(id => WORKSHOP_CATEGORIES[id])
+            .filter(Boolean)
+        );
+        return completedCats.size >= requirement.minCategories;
 
       default:
         return false;

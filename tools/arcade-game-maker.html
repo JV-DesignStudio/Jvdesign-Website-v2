@@ -1416,6 +1416,17 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 
         <!-- ── BUILD ── -->
         <div class="tab-content on" id="tab-build">
+            <!-- ── DAILY BUILD PROMPT ── -->
+            <div class="hb-tip" id="dailyPromptCard" style="margin-top:0;">
+              <div class="hb-tip-icon">💡</div>
+              <div class="hb-tip-body">
+                <strong>Today's spark:</strong> <span id="dailyPromptText"></span>
+                <div style="margin-top:8px;">
+                  <button onclick="_useDailyPrompt()" style="padding:6px 12px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.35);border-radius:7px;color:#fbbf24;font-weight:700;font-size:.68rem;cursor:pointer;font-family:'Inter',sans-serif;">Use this prompt →</button>
+                </div>
+              </div>
+            </div>
+
             <!-- ── AI DESCRIBE-YOUR-GAME ── -->
             <div style="background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(0,212,170,.06));border:1px solid rgba(124,58,237,.28);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
               <div style="font-family:'Fredoka',sans-serif;font-size:.95rem;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:6px;">🤖 Describe Your Game <span style="font-size:.58rem;background:rgba(124,58,237,.3);border-radius:4px;padding:1px 6px;color:rgba(167,139,250,.9);">AI fills settings</span></div>
@@ -7131,6 +7142,60 @@ function _aiSelectGenre(g) {
     const el = document.querySelector('.genre-card[data-genre="' + g + '"]');
     if (el) pickGenre(el, g);
 }
+/* ── Daily build prompt ──
+   A rotating creative spark, picked deterministically from the local date
+   (same pattern used for Sky High Squirt's Daily Modifier Run), to solve
+   blank-page paralysis when there's no specific project in mind. */
+const DAILY_PROMPTS = [
+  'A game where jumping shrinks you',
+  'A shooter where your bullets are boomerangs',
+  'A platformer set entirely underwater',
+  'A game where the floor is also the enemy',
+  'A racer where slower is better',
+  'A puzzle game with only one button',
+  'A game about herding tiny robots',
+  'A shooter where enemies steal your color',
+  'A platformer where gravity flips every 10 seconds',
+  'A game where you play as the last light in a cave',
+  'A collector where the coins run away from you',
+  'A game about growing a garden that fights back',
+  'A racer through a city made of candy',
+  'A shooter where you can only see in flashes',
+  'A puzzle game where you rewind time, not undo it',
+  'A game where your shadow acts a few seconds behind you',
+  'A platformer where every jump gets you smaller',
+  'A game about delivering packages during a storm',
+  'A shooter where your ship is made of glass',
+  'A game where enemies turn into allies if you dodge them long enough',
+  'A racer on a track that rebuilds itself as you go',
+  'A puzzle game about untangling instead of matching',
+  'A game where you play as the dragon, not the knight',
+  'A platformer where the music controls the level',
+  'A game about a robot learning to feel weather',
+  'A shooter where reloading heals you',
+  'A game where every enemy is secretly a friend in disguise',
+  "A collector where you're being chased by your own high score",
+  'A puzzle game where the goal moves every turn',
+  'A game about the very last bee',
+];
+function daysSinceEpochLocalMaker() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function getDailyPrompt() {
+  return DAILY_PROMPTS[daysSinceEpochLocalMaker() % DAILY_PROMPTS.length];
+}
+function _renderDailyPrompt() {
+  const el = document.getElementById('dailyPromptText');
+  if (el) el.textContent = getDailyPrompt();
+}
+function _useDailyPrompt() {
+  const input = document.getElementById('aiPromptInput');
+  const prompt = getDailyPrompt();
+  if (input) input.value = prompt;
+  _aiBuildGame(prompt);
+}
+_renderDailyPrompt();
 // Parse a plain-English game description and fill the builder's settings, then run.
 function _aiBuildGame(desc) {
     if (!desc || desc.trim().length < 5) { showToast('Tell me a bit more about your game! 😊'); return; }
