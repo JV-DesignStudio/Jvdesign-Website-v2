@@ -265,7 +265,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 320,
-      cosmetic: { gameId: 'any', cosmeticId: 'rainbow-cosmetic' },
+      cosmetic: { gameId: 'pastry-match', cosmeticId: 'sparkle-effect' },
       badge: '🎨 Creative Genius',
       achievement: 'creativeCoder'
     }

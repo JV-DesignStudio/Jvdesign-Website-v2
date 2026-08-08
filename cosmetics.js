@@ -60,7 +60,7 @@ const COSMETICS = {
       name: '✨ Sparkle Effect',
       description: 'Matches create a shower of sparkles.',
       rarity: 'uncommon',
-      unlockedBy: null
+      unlockedBy: 'quest-14-creative-coder'
     }
   },
 

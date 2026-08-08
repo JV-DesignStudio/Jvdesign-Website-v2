@@ -200,6 +200,13 @@
     font-size: 20px;
     pointer-events: none;
   }
+  .guest-accessory {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    font-size: 16px;
+    pointer-events: none;
+  }
   @keyframes bounce {
     0%, 100% { transform: translateY(0); }
     30%      { transform: translateY(-8px) scale(1.1); }
@@ -340,6 +347,34 @@
   }
   .tile.matching { animation: pop 0.4s ease forwards; }
   .tile.falling { animation: fall 0.35s ease; }
+  .tile.shake { animation: tileShake 0.3s ease; }
+  @keyframes tileShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .combo-badge {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 4px 14px; border-radius: 100px;
+    background: rgba(255, 253, 248, .94); border: 2px solid var(--sun);
+    box-shadow: var(--shadow-card); opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .combo-badge.show { opacity: 1; }
+  .combo-badge .combo-count { font-weight: 900; font-size: 18px; line-height: 1; color: var(--cocoa); }
+  .combo-badge .combo-tier { font-weight: 800; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--rose-deep); }
+  .combo-badge[data-tier="t3"] { border-color: var(--rose-deep); }
+  .combo-badge[data-tier="t4"] { border-color: var(--lavender); }
+  .combo-badge[data-tier="t5"] { border-color: var(--rose-deep); background: linear-gradient(135deg, var(--cream), var(--rose)); }
+  .combo-badge[data-tier="t5"] .combo-tier { color: var(--cocoa); }
+  .combo-badge.pop { animation: comboPop .3s ease; }
+  @keyframes comboPop {
+    0% { transform: translateX(-50%) scale(1); }
+    40% { transform: translateX(-50%) scale(1.15); }
+    100% { transform: translateX(-50%) scale(1); }
+  }
   @keyframes pop {
     0%   { transform: scale(1); opacity: 1; }
     50%  { transform: scale(1.25) rotate(8deg); }
@@ -508,6 +543,22 @@
   }
   .tile.rainbow {
     background: conic-gradient(from 0deg, #F4B6C2, #F5C76A, #B8DDC8, #C9B8E0, #F4B6C2);
+  }
+
+  /* Frosted tiles: a light seasonal hazard, matches normally by type but
+     absorbs its first clear as a "thaw" instead of actually clearing. */
+  .tile.frosted::after {
+    content: '❄';
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; z-index: 4; color: #fff; pointer-events: none;
+    background: linear-gradient(160deg, rgba(180,220,255,.55), rgba(140,190,255,.32));
+    border-radius: 10px;
+    filter: drop-shadow(0 1px 2px rgba(20,60,110,.4));
+  }
+  .tile.thawing { animation: tileThaw .4s ease; }
+  @keyframes tileThaw {
+    0% { filter: brightness(1.5) saturate(0); }
+    100% { filter: none; }
   }
 
   /* BOTTOM BAR */
@@ -879,6 +930,7 @@
       <div class="guest-avatar" id="guestAvatar">
         <span id="guestEmoji">🦊</span>
         <span class="guest-hat" id="guestHat"></span>
+        <span class="guest-accessory" id="guestAccessory"></span>
       </div>
       <div class="guest-info">
         <div class="guest-name" id="guestName">Lumo</div>
@@ -920,6 +972,10 @@
       </svg>
     </div>
     <div class="board" id="board" role="grid" aria-label="Cozy cafe match board"></div>
+    <div class="combo-badge" id="comboBadge">
+      <div class="combo-count" id="comboCount">×2</div>
+      <div class="combo-tier" id="comboTier">Combo</div>
+    </div>
     <div class="seasonal-tint" id="seasonalTint"></div>
     <div class="rain-layer" id="rainLayer"></div>
     <div class="cat" id="cat">🐈</div>
@@ -1318,14 +1374,17 @@ const Audio = (() => {
 })();
 
 const GRID_SIZE = 8;
-const TILE_TYPES = ['berry', 'strawb', 'algae', 'mush', 'marsh'];
+const TILE_TYPES = ['berry', 'strawb', 'algae', 'mush', 'marsh', 'honey'];
 
 const TILE_DATA = {
   berry:  { color: '#9B6BC4', shape: 'circle',  label: 'blueberries' },
   strawb: { color: '#E8617A', shape: 'heart',   label: 'strawberry tarts' },
   algae:  { color: '#6FB89A', shape: 'square',  label: 'algae crackers' },
   mush:   { color: '#D49B6F', shape: 'dome',    label: 'mushrooms' },
-  marsh:  { color: '#F5C76A', shape: 'diamond', label: 'marshmallows' }
+  marsh:  { color: '#F5C76A', shape: 'diamond', label: 'marshmallows' },
+  /* Nobody's favourite or most-hated — a neutral shared treat everyone
+     is happy to see, just doesn't move anyone's craving meter. */
+  honey:  { color: '#E8A93C', shape: 'hex',     label: 'honey drops' }
 };
 
 const GUESTS = [
@@ -1593,6 +1652,54 @@ let timeOfDay = 'afternoon';
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const $ = (id) => document.getElementById(id);
 
+// Tile DOM elements are stable per grid position (render() mutates them in
+// place, never rebuilds), so a "swap" is really the CONTENT of two fixed
+// positions trading places. Slide the two tiles' visuals toward each
+// other's spot first; the caller then does the real data swap + render(),
+// which lands new content exactly where the animation already put it.
+function tileEl(pos) { return boardEl.children[pos.r * GRID_SIZE + pos.c]; }
+
+// Combo tier badge — same visual language as Biscuit Tin's combo-badge,
+// scaled to this game's cascade counts (a chain of 5-6 is already a big deal
+// on an 8x8 board, vs. Biscuit Tin's rapid-tap combos running much higher).
+const COMBO_TIERS = [
+  { min: 2, label: 'Combo',   cls: 't2' },
+  { min: 3, label: 'Nice!',   cls: 't3' },
+  { min: 4, label: 'Sweet!',  cls: 't4' },
+  { min: 6, label: 'AMAZING!', cls: 't5' },
+];
+function comboTierFor(n) {
+  let tier = COMBO_TIERS[0];
+  for (const t of COMBO_TIERS) if (n >= t.min) tier = t;
+  return tier;
+}
+function showComboBadge(n) {
+  const b = $('comboBadge');
+  if (!b || n < 2) return;
+  const tier = comboTierFor(n);
+  b.dataset.tier = tier.cls;
+  b.classList.add('show');
+  $('comboCount').textContent = '×' + n;
+  $('comboTier').textContent = tier.label;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+function hideComboBadge() {
+  const b = $('comboBadge');
+  if (b) b.classList.remove('show');
+}
+async function animateSwapVisual(a, b) {
+  const ta = tileEl(a), tb = tileEl(b);
+  if (!ta || !tb) return;
+  const ra = ta.getBoundingClientRect(), rb = tb.getBoundingClientRect();
+  const dx = rb.left - ra.left, dy = rb.top - ra.top;
+  ta.style.transition = tb.style.transition = 'transform .16s ease';
+  ta.style.transform = `translate(${dx}px,${dy}px)`;
+  tb.style.transform = `translate(${-dx}px,${-dy}px)`;
+  await sleep(160);
+  ta.style.transition = tb.style.transition = '';
+  ta.style.transform = tb.style.transform = '';
+}
+
 function buzz(ms = 15) {
   if (!vault.haptic) return;
   if (navigator.vibrate) navigator.vibrate(ms);
@@ -1603,7 +1710,11 @@ function randomTileType(exclude = []) {
   return choices[Math.floor(Math.random() * choices.length)];
 }
 
-function newCell(type, power = null) { return { type, power }; }
+function newCell(type, power = null, frost = false) { return { type, power, frost }; }
+
+// A frosted tile still matches normally by type; frost is just a hazard
+// layer that absorbs one clear before the tile actually goes away.
+const FROST_CHANCE = 0.06;
 
 function createBoard() {
   board = [];
@@ -1616,7 +1727,13 @@ function createBoard() {
       board[r][c] = newCell(randomTileType(exclude));
     }
   }
-  if (!hasAnyMove()) createBoard();
+  if (!hasAnyMove()) { createBoard(); return; }
+  // Sprinkle a handful of frosted tiles onto the fresh board.
+  let seeded = 0;
+  while (seeded < 4) {
+    const r = Math.floor(Math.random() * GRID_SIZE), c = Math.floor(Math.random() * GRID_SIZE);
+    if (!board[r][c].frost) { board[r][c].frost = true; seeded++; }
+  }
 }
 
 const boardEl = $('board');
@@ -1635,6 +1752,8 @@ function renderTileSVG(type) {
       return `<svg viewBox="0 0 40 40"><path d="M8 26 Q 20 6, 32 26 Z" fill="${c}"/><rect x="14" y="26" width="12" height="6" rx="2" fill="${c}" opacity="0.7"/><circle cx="16" cy="18" r="2" fill="white" opacity="0.7"/><circle cx="24" cy="22" r="2" fill="white" opacity="0.7"/></svg>`;
     case 'diamond':
       return `<svg viewBox="0 0 40 40"><path d="M20 6 L 34 20 L 20 34 L 6 20 Z" fill="${c}"/><path d="M20 6 L 34 20 L 20 12 Z" fill="white" opacity="0.3"/></svg>`;
+    case 'hex':
+      return `<svg viewBox="0 0 40 40"><path d="M20 5 L 33 12.5 L 33 27.5 L 20 35 L 7 27.5 L 7 12.5 Z" fill="${c}"/><circle cx="16" cy="15" r="2" fill="white" opacity="0.6"/></svg>`;
   }
 }
 
@@ -1665,6 +1784,7 @@ function render() {
       const isSelected = selected && selected.r === r && selected.c === c;
       tile.className = 'tile' +
         (cell && cell.power ? ' ' + cell.power : '') +
+        (cell && cell.frost ? ' frosted' : '') +
         (isSelected ? ' selected' : '');
 
       // Only update innerHTML if the visual content actually changed
@@ -1739,9 +1859,9 @@ function handleTap(r, c) {
 async function attemptSwap(a, b) {
   busy = true;
   try {
+    await animateSwapVisual(a, b);
     swapCells(a, b);
     render();
-    await sleep(180);
 
     const ca = board[a.r][a.c], cb = board[b.r][b.c];
 
@@ -1803,10 +1923,16 @@ async function attemptSwap(a, b) {
 
     const matches = findMatches();
     if (matches.length === 0) {
+      await animateSwapVisual(a, b);
       swapCells(a, b);
       render();
       buzz(8);
       Audio.sfxBadSwap();
+      [tileEl(a), tileEl(b)].forEach(t => {
+        if (!t) return;
+        t.classList.add('shake');
+        setTimeout(() => t.classList.remove('shake'), 300);
+      });
       return;
     }
     comboCount = 0;
@@ -1913,6 +2039,25 @@ async function resolveMatches(runs) {
     }
   }
 
+  // Frosted tiles absorb one hit instead of clearing: the first time they'd
+  // be cleared, they just thaw (no score, tile stays put) and drop out of
+  // the triggered set entirely, so everything below only ever scores/clears/
+  // refills the cells that are actually going away.
+  for (const key of [...triggered]) {
+    const [tr, tc] = key.split(',').map(Number);
+    const cell = board[tr][tc];
+    if (cell && cell.frost) {
+      triggered.delete(key);
+      board[tr][tc] = { ...cell, frost: false };
+      const idx = tr * GRID_SIZE + tc;
+      const el = boardEl.children[idx];
+      if (el) {
+        el.classList.add('thawing');
+        setTimeout(() => el.classList.remove('thawing'), 400);
+      }
+    }
+  }
+
   scoreMatches(triggered);
 
   const powerSpawns = [];
@@ -1997,7 +2142,7 @@ async function resolveMatches(runs) {
     for (let r = GRID_SIZE - 1; r >= 0; r--) {
       if (board[r][c] !== null) col.push(board[r][c]);
     }
-    while (col.length < GRID_SIZE) col.push(newCell(randomTileType()));
+    while (col.length < GRID_SIZE) col.push(newCell(randomTileType(), null, Math.random() < FROST_CHANCE));
     for (let r = GRID_SIZE - 1; r >= 0; r--) {
       board[r][c] = col[GRID_SIZE - 1 - r];
     }
@@ -2019,7 +2164,7 @@ async function resolveMatches(runs) {
   await sleep(340);
 
   if (comboCount >= 2) {
-    showToast(`Combo x${comboCount}! 💫`, 'combo');
+    showComboBadge(comboCount);
   }
 
   const next = findMatches();
@@ -2028,6 +2173,7 @@ async function resolveMatches(runs) {
     return;
   }
 
+  hideComboBadge();
   if (comboCount > vault.stats.max_combo) vault.stats.max_combo = comboCount;
   saveVault();
   checkAchievements();
@@ -2264,6 +2410,9 @@ function updateHUD() {
 
   const hatItem = SHOP_ITEMS.find(i => i.id === vault.equipped.hat);
   $('guestHat').textContent = hatItem ? hatItem.emoji : '';
+
+  const accItem = SHOP_ITEMS.find(i => i.id === vault.equipped.accessory);
+  $('guestAccessory').textContent = accItem ? accItem.emoji : '';
 
   // Reset button dims when you can't afford it
   const resetBtn = $('resetBtn');
