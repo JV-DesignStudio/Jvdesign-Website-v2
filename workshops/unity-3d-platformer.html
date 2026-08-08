@@ -322,6 +322,10 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 </script>
 <!-- /BUILD:nav-content -->
 
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#5bc0f8,#2563eb,#5bc0f8)">
+  <span>🔷 My First Unity Game · Episode 5 of 8 · <a href="my-first-unity-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
+</div>
+
 <section id="main-content" class="hero">
   <div class="hero-grid"></div>
   <div class="hero-inner">
@@ -337,6 +341,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
         <span class="pill">🆓 Free</span>
       </div>
       <a href="#builder" class="hero-cta">🧊 Start Building</a>
+      <a href="my-first-unity-game.html" class="hero-cta" style="background:rgba(255,255,255,.08);margin-left:8px">← All Episodes</a>
     </div>
     <div class="hero-preview">
       <div class="hero-preview-title">What you'll build</div>
@@ -402,6 +407,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
     <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
   </div>
+  <a href="unity-action-rpg-workshop.html" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ff7700,#cc5500);color:#fff;font-family:'Fredoka',cursive;font-size:.95rem;padding:12px 26px;border-radius:12px;text-decoration:none;margin-top:12px;box-shadow:0 3px 0 #993300">▶ Episode 6: Action RPG →</a><br>
   <a href="my-progress.html" class="next-ep-btn">📊 View My Progress</a>
     <div class="support-prompt">
       <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
@@ -513,6 +519,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
+<script src="../player-profile.js"></script>
 <!-- /BUILD:footer-content -->
 
 <!-- ══════════════════════════════════════════
@@ -2431,6 +2438,7 @@ function renderStep(){
 }
 
 function doApply(){
+  const alreadyDone = stepsDone.has(currentStep);
   stepsDone.add(currentStep);
   STEPS[currentStep].onApply();
   updateProgress();
@@ -2441,6 +2449,17 @@ function doApply(){
     setTimeout(() => { btn.innerHTML = o; }, 900);
   });
   document.getElementById('liveStatus').textContent = 'Step '+(currentStep+1)+' applied ✓';
+  if(!alreadyDone) awardXp(XP_STEP, 'Step complete');
+  else saveProgress();
+  if(stepsDone.size >= TOTAL){
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    if(typeof playerProfile !== 'undefined') playerProfile.markWorkshopCompleted('unity-3d-platformer', 75);
+    setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);
+  }
 }
 
 function updateProgress(){
@@ -3182,9 +3201,20 @@ function saveProgress() {
 function loadProgress() {
   try {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (d) { xp = d.xp || 0; level = d.level || 1; streak = d.streak || 0; bestStreak = d.bestStreak || 0; correctFirst = d.correctFirst || 0; totalQuizzes = d.totalQuizzes || 0; completedQuizzes = new Set(d.completedQuizzes || []); }
+    if (d) {
+      xp = d.xp || 0; level = d.level || 1; streak = d.streak || 0; bestStreak = d.bestStreak || 0; correctFirst = d.correctFirst || 0; totalQuizzes = d.totalQuizzes || 0; completedQuizzes = new Set(d.completedQuizzes || []);
+      (d.completed || []).forEach(i => stepsDone.add(i));
+    }
   } catch(e) {}
   updateXpDisplay();
+  renderStep();
+  if (stepsDone.size >= TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+  }
 }
 
 loadProgress();
