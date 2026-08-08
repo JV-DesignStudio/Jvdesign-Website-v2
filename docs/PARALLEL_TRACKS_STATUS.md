@@ -1,5 +1,11 @@
 # 🚀 Parallel Tracks Status — LIVE UPDATE
 
+> **⚠️ ARCHIVED.** This was a live-updating snapshot from the original games-conversion
+> sprint (early July 2026) and was never updated after that sprint ended — the game
+> counts, weekly targets and "next priorities" below are all long since overtaken by
+> events. For current status see [`pages/devlog.html`](../pages/devlog.html) and
+> [`tools/dev-board.html`](../tools/dev-board.html). Kept for historical reference only.
+
 ## ✅ COMPLETED TODAY
 
 ### TRACK A: NEW GAMES (Building)

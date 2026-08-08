@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Internal dev status board, not for public viewing.">
+<title>Dev Board | JVDesignStudio</title>
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --beige:#F0EAD6;--tan:#D2B48C;--tan-dk:#b8956a;
+  --rose:#BC4749;--rose-dk:#9b3a3c;--rose-lt:#f5e0e0;
+  --teal:#70A3A7;--teal-dk:#4e7d80;--teal-lt:#e8f2f3;
+  --gold:#c98a2e;--gold-lt:#faf1e0;
+  --charcoal:#403B33;--charcoal-lt:#5a5449;
+  --bg:#fbf8f2;--card:#ffffff;--border:rgba(64,59,51,.1);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1e1c18;--card:#28241e;--border:rgba(240,234,214,.1);--charcoal:#f0ead6;--charcoal-lt:#c8bfaa;--beige:#2a2720;--rose-lt:#3a2222;--teal-lt:#1e2f30;--gold-lt:#332a18}
+}
+:root[data-theme="dark"]{--bg:#1e1c18;--card:#28241e;--border:rgba(240,234,214,.1);--charcoal:#f0ead6;--charcoal-lt:#c8bfaa;--beige:#2a2720;--rose-lt:#3a2222;--teal-lt:#1e2f30;--gold-lt:#332a18}
+:root[data-theme="light"]{--bg:#fbf8f2;--card:#ffffff;--border:rgba(64,59,51,.1);--charcoal:#403B33;--charcoal-lt:#5a5449;--beige:#F0EAD6;--rose-lt:#f5e0e0;--teal-lt:#e8f2f3;--gold-lt:#faf1e0}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--charcoal);min-height:100vh;line-height:1.5}
+a{color:inherit}
+
+.topbar{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;flex-wrap:wrap}
+.topbar-title{font-family:'Fredoka',sans-serif;font-size:1.15rem;font-weight:700}
+.topbar-badge{font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--rose-lt);color:var(--rose-dk);padding:3px 9px;border-radius:999px}
+.topbar-sub{font-size:.8rem;color:var(--charcoal-lt);margin-left:auto}
+
+.wrap{max-width:1180px;margin:0 auto;padding:28px 24px 60px}
+.intro{font-size:.92rem;color:var(--charcoal-lt);max-width:640px;margin-bottom:28px}
+.intro strong{color:var(--charcoal)}
+
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+@media(max-width:920px){.board{grid-template-columns:1fr}}
+
+.col{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.col-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.col-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.col-shipped .col-dot{background:#3fa864}
+.col-progress .col-dot{background:var(--gold)}
+.col-backlog .col-dot{background:var(--teal)}
+.col-title{font-family:'Fredoka',sans-serif;font-weight:700;font-size:.95rem}
+.col-count{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--charcoal-lt);background:var(--beige);padding:2px 8px;border-radius:999px}
+.col-body{padding:12px;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 200px);overflow-y:auto}
+
+.card{background:var(--beige);border:1px solid var(--border);border-radius:10px;padding:12px 13px}
+.card-title{font-weight:700;font-size:.86rem;margin-bottom:4px}
+.card-desc{font-size:.79rem;color:var(--charcoal-lt);line-height:1.5}
+.card-meta{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.card-tag{font-size:.62rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+.tag-games{background:var(--rose-lt);color:var(--rose-dk)}
+.tag-workshops{background:var(--teal-lt);color:var(--teal-dk)}
+.tag-apps{background:var(--gold-lt);color:var(--gold)}
+.tag-site{background:rgba(160,120,200,.15);color:#8a5cc9}
+.card-date{font-size:.68rem;color:var(--charcoal-lt);font-family:'JetBrains Mono',monospace;margin-left:auto}
+
+.footer-note{margin-top:26px;font-size:.78rem;color:var(--charcoal-lt);border-top:1px solid var(--border);padding-top:16px}
+.footer-note a{color:var(--teal-dk);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <span class="topbar-title">🗂️ Dev Board</span>
+    <span class="topbar-badge">Internal</span>
+    <span class="topbar-sub" id="lastUpdated">Last updated 8 August 2026</span>
+</div>
+
+<div class="wrap">
+    <p class="intro">A shared snapshot of where the site actually stands right now, so we don't have to re-derive it from scratch each session. <strong>Recently Shipped</strong> pulls from the last few days of commits and mirrors what's public on the <a href="../pages/devlog.html" style="color:var(--teal-dk);font-weight:600">Dev Log</a>. <strong>In Progress</strong> is what's actively moving. <strong>Backlog</strong> is known gaps that aren't urgent. Not auto-generated, edit the arrays at the bottom of this file same as the dev log.</p>
+
+    <div class="board">
+        <div class="col col-shipped">
+            <div class="col-head"><span class="col-dot"></span><span class="col-title">✅ Recently Shipped</span><span class="col-count" id="countShipped">0</span></div>
+            <div class="col-body" id="colShipped"></div>
+        </div>
+        <div class="col col-progress">
+            <div class="col-head"><span class="col-dot"></span><span class="col-title">🚧 In Progress</span><span class="col-count" id="countProgress">0</span></div>
+            <div class="col-body" id="colProgress"></div>
+        </div>
+        <div class="col col-backlog">
+            <div class="col-head"><span class="col-dot"></span><span class="col-title">📋 Backlog</span><span class="col-count" id="countBacklog">0</span></div>
+            <div class="col-body" id="colBacklog"></div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        This board is private (<code>noindex, nofollow</code>, not linked from site nav) and lives at <code>tools/dev-board.html</code>. It's a status snapshot, not a task manager, if it drifts out of date just say so and it'll get refreshed. Full history lives in git log; the public-facing narrative version is the <a href="../pages/devlog.html">Dev Log</a>.
+    </div>
+</div>
+
+<script>
+// ── Edit these arrays to update the board ──────────────────────
+// tag: 'games' | 'workshops' | 'apps' | 'site'
+
+const SHIPPED = [
+    { title: 'New Cozy Cafe tiles + visual polish pass', desc: 'Honey + frosted (2-hit hazard) tiles, animated tile swaps, and 6 rendering/interaction bugs fixed across 5 apps.', tag: 'games', date: '8 Aug' },
+    { title: "Fifth/sixth chair anniversary secrets", desc: 'Biscuit Tin + Cozy Cafe both pay off a year-old dangling story hook via a hidden "come back in a year" mechanic.', tag: 'games', date: '8 Aug' },
+    { title: "Pocket Crew privacy policy live", desc: 'Last of the 7 apps to get one. Unblocks Play Store submission.', tag: 'apps', date: '8 Aug' },
+    { title: 'GA4 coverage gaps closed', desc: '16 pages (arcade hub, 6 app privacy pages, tool pages, offline page) were silently missing the analytics tag.', tag: 'site', date: '8 Aug' },
+    { title: 'C++/SFML workshop audit', desc: '14 issues fixed: series wasn\'t in the catalog, and 4 "finished" reference solutions contradicted their own lessons.', tag: 'workshops', date: '8 Aug' },
+    { title: 'Blender/Minecraft/Scratch/TinkerCad/MUGEN audit', desc: '28 issues fixed. MUGEN Ep4 was completely unfinishable (threw on first click) until this pass.', tag: 'workshops', date: '7 Aug' },
+    { title: 'GML/Unreal/Roblox hub rebuilds', desc: '3 hubs rebuilt around their real episode counts; 3 fully-built Unreal episodes were unreachable from anywhere.', tag: 'workshops', date: '6 Aug' },
+    { title: '29-game correctness audit', desc: '38 real bugs fixed: crashes, wiped saves, unreachable bosses, dead relics that did nothing when purchased.', tag: 'games', date: '6 Aug' },
+    { title: 'Learning Lab XP overhaul + 6 apps signed', desc: '9 XP bugs fixed across 16 subjects; all 7 studio apps got a signed release build + Play Store listing.', tag: 'apps', date: '5 Aug' },
+];
+
+const IN_PROGRESS = [
+    { title: 'Closed testing on 7 studio apps', desc: 'All signed and store-ready. Long pole is Google Play\'s mandatory 12-tester / 14-day closed test per app, not code.', tag: 'apps', date: 'ongoing' },
+    { title: 'Workshop correctness audits, series by series', desc: '155 workshop files total. C++, Blender/Minecraft/Scratch/TinkerCad/MUGEN, and GML/Unreal/Roblox are done. Most other series haven\'t had this pass yet.', tag: 'workshops', date: 'ongoing' },
+];
+
+const BACKLOG = [
+    { title: 'validate-workshops.js gives false positives', desc: 'Flags 22 builder/blueprint-style workshops as "missing functions", they intentionally skip the toggleStep/completeStep pattern by design. Script should recognize that category so a real regression doesn\'t get lost in the noise.', tag: 'site', date: '' },
+    { title: 'docs/DEV_LOG_2026.md + PARALLEL_TRACKS_STATUS.md are stale', desc: 'Frozen snapshots from the early July "Phase 1-4" sprint, now superseded by pages/devlog.html. Flagged archived in-file rather than deleted, pending a decision to keep or remove.', tag: 'site', date: '' },
+    { title: 'Sky High Squirt has zero daily-return hook', desc: 'Only one of the 7 apps with nothing pulling players back day-to-day beyond a notification, no daily-track (Cozy Cafe), no daily challenge (Arcade), no weekly boss (QuestLog). Add a date-seeded "Daily Modifier Run" (e.g. today\'s coin gravity, today\'s hazard mix), no server needed, same local-date-check pattern already used for the anniversary secrets.', tag: 'apps', date: '' },
+    { title: 'QuestLog streaks are all-or-nothing', desc: 'One missed day currently wipes a streak outright, a proven churn trigger in habit apps. Add a "streak freeze" token, earned every 7-day streak, that auto-covers a single missed day. Fits the RPG-your-to-do-list premise without adding guilt, matches the studio\'s established no-guilt design stance from Pocket Crew.', tag: 'apps', date: '' },
+    { title: 'Game Maker has no daily/weekly build prompt', desc: 'Blank-page paralysis is the real churn risk for a creative tool with no specific project in mind. Add a rotating, date-seeded prompt on the build screen ("Today\'s spark: a game where jumping shrinks you"), reusing the AI-prompt UI that already exists for a different purpose.', tag: 'apps', date: '' },
+    { title: 'Anniversary-secret pattern only shipped to 2 of 7 apps', desc: 'Biscuit Tin and Cozy Cafe both pay off a "come back in a year" hidden story beat, zero infra needed, just a local date check, and it already proved out well. Extend the same pattern to Sky High Squirt, Pocket Crew, and QuestLog, the 3 other apps with enough story/character content to support it.', tag: 'apps', date: '' },
+    { title: 'Seasonal cosmetic reskins, reusing the date-check pattern', desc: 'A Halloween or winter-only hat/skin/theme, unlocked only during that calendar week each year, same local-date mechanism as the anniversary secrets. Start with Biscuit Tin (deepest cosmetic shop already), then Cozy Cafe and Sky High Squirt.', tag: 'apps', date: '' },
+    { title: 'JVDS Arcade quest pool runs dry at 15 quests', desc: 'All 15 quests are one-time and static, an engaged player clears them and is left with only the daily-challenge streak as an ongoing hook. Needs either a rotating/repeatable quest tier or a second static batch to extend the chase for veteran players.', tag: 'apps', date: '' },
+];
+
+function card(item){
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = `<div class="card-title">${item.title}</div><div class="card-desc">${item.desc}</div><div class="card-meta"><span class="card-tag tag-${item.tag}">${item.tag}</span>${item.date ? `<span class="card-date">${item.date}</span>` : ''}</div>`;
+    return d;
+}
+function render(list, colId, countId){
+    const col = document.getElementById(colId);
+    list.forEach(item => col.appendChild(card(item)));
+    document.getElementById(countId).textContent = list.length;
+}
+render(SHIPPED, 'colShipped', 'countShipped');
+render(IN_PROGRESS, 'colProgress', 'countProgress');
+render(BACKLOG, 'colBacklog', 'countBacklog');
+</script>
+</body>
+</html>
