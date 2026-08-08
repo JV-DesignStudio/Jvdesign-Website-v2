@@ -1,13 +1,15 @@
 /* ═══════════════════════════════════════════════════════════
    GA4 Analytics System, Comprehensive Event Tracking
 
-   ⚠ NOT WIRED UP. This class is loaded by only a handful of hub pages
-   and has no call sites anywhere, so none of these events ever fired.
-   It is kept as the reference SCHEMA for event names and parameter
-   shapes only.
+   Loaded by 4 hub pages (leaderboards.html, learn-hub.html,
+   my-progress.html, quest-board.html), which call trackPageView()
+   and trackEngagementMetric() directly. Most of the other methods
+   below have no call sites and only serve as the reference SCHEMA
+   for event names and parameter shapes.
 
-   The live instrumentation lives in three places, which emit the same
-   event names directly and therefore need no per-page wiring:
+   The bulk of real instrumentation lives in three other places,
+   which emit the same event names directly and therefore need no
+   per-page wiring:
      - player-profile.js  → workshop_complete, quest_complete,
                             player_level_up, achievement_unlock,
                             cosmetic_unlock  (all games + ~59 workshops)
