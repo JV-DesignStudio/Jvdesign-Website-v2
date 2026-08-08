@@ -601,7 +601,7 @@ int main() {
     p1.setPosition({20.f, 205.f});
     p2.setPosition({766.f, 205.f});
 
-    float bx = 393, by = 243, bvx = 5, bvy = 3;
+    float bx = 393, by = 243, bvx = 300, bvy = 180;
     int p1Score = 0, p2Score = 0;
 
     // Score text needs a font. Point this at any .ttf on your system.
@@ -610,21 +610,24 @@ int main() {
 
     auto serve = [&amp;](int dir) {
         bx = 393; by = 243;
-        bvx = 5.f * dir;
-        bvy = (std::rand() % 2 == 0) ? 3.f : -3.f;
+        bvx = 300.f * dir;
+        bvy = (std::rand() % 2 == 0) ? 180.f : -180.f;
     };
     serve((std::rand() % 2 == 0) ? 1 : -1);
 
+    sf::Clock clock;
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent())
             if (event-&gt;is&lt;sf::Event::Closed&gt;())
                 window.close();
 
-        // paddles: W/S and Up/Down
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    p1.move({0.f, -6.f});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    p1.move({0.f,  6.f});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   p2.move({0.f, -6.f});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) p2.move({0.f,  6.f});
+        float dt = clock.restart().asSeconds();
+
+        // paddles: W/S and Up/Down, speed in pixels per second
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    p1.move({0.f, -360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    p1.move({0.f,  360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   p2.move({0.f, -360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) p2.move({0.f,  360.f * dt});
         auto clampY = [](sf::RectangleShape&amp; p) {
             float y = p.getPosition().y;
             if (y &lt; 0) p.setPosition({p.getPosition().x, 0.f});
@@ -632,21 +635,21 @@ int main() {
         };
         clampY(p1); clampY(p2);
 
-        // ball
-        bx += bvx; by += bvy;
+        // ball: velocity is pixels per second, scaled by dt so speed stays the same at any frame rate
+        bx += bvx * dt; by += bvy * dt;
         if (by &lt;= 0 || by + 14 &gt;= 500) bvy = -bvy;
         ball.setPosition({bx, by});
 
         sf::FloatRect br = ball.getGlobalBounds();
         if (br.findIntersection(p1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
-            bvx = -bvx + 1;
-            bvy = ((by + 7) - (p1.getPosition().y + 45)) / 7.f;
+            bvx = -bvx + 60.f;
+            bvy = (((by + 7) - (p1.getPosition().y + 45)) / 7.f) * 60.f;
         }
         if (br.findIntersection(p2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
-            bvx = -(bvx + 1);
-            bvy = ((by + 7) - (p2.getPosition().y + 45)) / 7.f;
+            bvx = -(bvx + 60.f);
+            bvy = (((by + 7) - (p2.getPosition().y + 45)) / 7.f) * 60.f;
         }
-        if (bvx &gt; 12) bvx = 12; if (bvx &lt; -12) bvx = -12;
+        if (bvx &gt; 720.f) bvx = 720.f; if (bvx &lt; -720.f) bvx = -720.f;
 
         if (bx &lt; 0)   { p2Score++; serve(-1); }
         if (bx &gt; 800) { p1Score++; serve(1); }
@@ -747,7 +750,7 @@ window.WORKSHOP_PROFILE_ID='cpp-pong-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 1: Pong","description":"Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/cpp-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+{"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 1: Pong","description":"Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/cpp-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>
 </html>

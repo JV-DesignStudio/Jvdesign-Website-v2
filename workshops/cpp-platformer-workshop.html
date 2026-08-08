@@ -264,7 +264,7 @@ vx += (target - vx) * 12.f * dt;   // smooth toward target</pre>
         </div>
         <div class="cc-prompt">Smooth the run speed toward its target:</div>
         <div class="code-block" style="margin:10px 0">
-          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cppp</span></div>
+          <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">platformer.cpp</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">vx += (target - <input class="cc-blank" data-a="dng=" placeholder="??" size="4">) * 12.f * <input class="cc-blank" data-a="ZHQ=" placeholder="??" size="4">;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -587,12 +587,50 @@ while (window.isOpen()) {
 #include &lt;optional&gt;
 #include &lt;vector&gt;
 
+class Player {
+public:
+    sf::RectangleShape shape;
+    float vx = 0, vy = 0;
+    float sinceGround = 999;
+    bool onGround = false;
+
+    Player() {
+        shape.setSize(sf::Vector2f(34, 44));
+        shape.setPosition({100, 380});
+        shape.setFillColor(sf::Color(255, 119, 0));
+    }
+
+    void update(float dt) {
+        float target = 0;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  target = -260;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) target =  260;
+        vx += (target - vx) * 12.f * dt;   // smooth toward target
+
+        vy += 1400.f * dt;                 // gravity
+        sinceGround += dt;
+        if (onGround) sinceGround = 0;
+
+        shape.move({vx * dt, vy * dt});
+
+        auto pos = shape.getPosition();
+        if (pos.x &lt; 0) shape.setPosition({0.f, pos.y});
+        if (pos.x + shape.getSize().x &gt; 800) shape.setPosition({800.f - shape.getSize().x, pos.y});
+    }
+
+    void jump() {
+        if (sinceGround &lt; 0.1f) {          // coyote time
+            vy = -560;
+            sinceGround = 999;              // spend the jump
+        }
+    }
+};
+
 int main() {
     sf::RenderWindow window(sf::VideoMode({800, 480}), "C++ Platformer");
     window.setFramerateLimit(60);
 
-    float px = 100, py = 380, pw = 34, ph = 44, vy = 0;
-    bool onGround = false, won = false;
+    Player player;
+    bool won = false;
     int score = 0;
 
     std::vector&lt;sf::FloatRect&gt; platforms = {
@@ -607,30 +645,32 @@ int main() {
         {{665.f, 140.f},{18.f, 18.f}}
     };
 
+    sf::Clock clock;
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
-            if (const auto* k = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;())
-                if (k-&gt;code == sf::Keyboard::Key::Up &amp;&amp; onGround &amp;&amp; !won) { vy = -16; onGround = false; }
+            if (const auto* kp = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;())
+                if (kp-&gt;code == sf::Keyboard::Key::Space &amp;&amp; !won) player.jump();
         }
 
-        if (!won) {
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))  px -= 5;
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) px += 5;
-            if (px &lt; 0) px = 0; if (px + pw &gt; 800) px = 800 - pw;
+        float dt = clock.restart().asSeconds();
 
-            vy += 1; py += vy;
-            onGround = false;
-            sf::FloatRect player({px, py}, {pw, ph});
+        if (!won) {
+            player.update(dt);
+            player.onGround = false;
+
+            sf::FloatRect pb = player.shape.getGlobalBounds();
             for (auto&amp; plat : platforms) {
-                if (player.findIntersection(plat) &amp;&amp; vy &gt;= 0 &amp;&amp;
-                    py + ph - vy &lt;= plat.position.y) {
-                    py = plat.position.y - ph; vy = 0; onGround = true;
-                    player = sf::FloatRect({px, py}, {pw, ph});
+                if (pb.findIntersection(plat) &amp;&amp; player.vy &gt; 0
+                        &amp;&amp; pb.position.y + pb.size.y - player.vy * dt &lt;= plat.position.y + 1) {
+                    player.shape.setPosition({pb.position.x, plat.position.y - pb.size.y});
+                    player.vy = 0;
+                    player.onGround = true;
+                    pb = player.shape.getGlobalBounds();
                 }
             }
             for (size_t i = 0; i &lt; coins.size(); ) {
-                if (player.findIntersection(coins[i])) { coins.erase(coins.begin()+i); score += 10; }
+                if (pb.findIntersection(coins[i])) { coins.erase(coins.begin()+i); score += 10; }
                 else ++i;
             }
             if (coins.empty()) won = true;
@@ -645,8 +685,7 @@ int main() {
             sf::RectangleShape r(c.size); r.setPosition(c.position);
             r.setFillColor(sf::Color(255, 209, 102)); window.draw(r);
         }
-        sf::RectangleShape p({pw, ph}); p.setPosition({px, py});
-        p.setFillColor(sf::Color(255, 119, 0)); window.draw(p);
+        window.draw(player.shape);
         window.display();
     }
 }</pre>
@@ -736,7 +775,7 @@ window.WORKSHOP_PROFILE_ID='cpp-platformer-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 4: Simple Platformer","description":"Build a C++ platformer with a Player class, dt physics and platform collision in SFML. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/cpp-platformer-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+{"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 4: Simple Platformer","description":"Build a C++ platformer with a Player class, dt physics and platform collision in SFML. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/cpp-platformer-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>
 </html>

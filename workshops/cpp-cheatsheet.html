@@ -162,7 +162,7 @@ std::<span class="f">string</span> playerName = <span class="s">"Pip"</span>;
             <pre><span class="c">#include &lt;SFML/Graphics.hpp&gt;</span>
 
 <span class="f">int</span> main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), <span class="s">"My Game"</span>);
+    sf::RenderWindow window(sf::VideoMode({800, 600}), <span class="s">"My Game"</span>);
     window.setFramerateLimit(60);
 
     <span class="k">while</span> (window.isOpen()) {
@@ -178,13 +178,13 @@ std::<span class="f">string</span> playerName = <span class="s">"Pip"</span>;
 
         <div class="sheet-card">
             <h2>🟦 Drawing Shapes</h2>
-            <pre>sf::RectangleShape rect(sf::Vector2f(50, 50));
+            <pre>sf::RectangleShape rect({50.f, 50.f});
 rect.setFillColor(sf::Color::Red);
-rect.setPosition(100, 100);
+rect.setPosition({100.f, 100.f});
 
 sf::CircleShape circle(25.f);
 circle.setFillColor(sf::Color::Green);
-circle.setPosition(200, 100);
+circle.setPosition({200.f, 100.f});
 
 window.clear(sf::Color::Black);
 window.draw(rect);
@@ -194,17 +194,18 @@ window.display();</pre>
 
         <div class="sheet-card">
             <h2>🎮 Event Handling</h2>
-            <pre>sf::Event event;
-<span class="k">while</span> (window.pollEvent(event)) {
-    <span class="k">if</span> (event.type == sf::Event::Closed)
+            <pre><span class="c">#include &lt;optional&gt;</span>
+
+<span class="k">while</span> (<span class="k">const</span> std::optional event = window.pollEvent()) {
+    <span class="k">if</span> (event-&gt;is&lt;sf::Event::Closed&gt;())
         window.close();
 
-    <span class="k">if</span> (event.type == sf::Event::KeyPressed) {
-        <span class="k">if</span> (event.key.code == sf::Keyboard::Space)
+    <span class="k">if</span> (<span class="k">const</span> <span class="k">auto</span>* kp = event-&gt;getIf&lt;sf::Event::KeyPressed&gt;()) {
+        <span class="k">if</span> (kp-&gt;code == sf::Keyboard::Key::Space)
             Jump();
     }
 }</pre>
-            <p>Always <code>pollEvent</code> every frame, even if you don't act on every event, otherwise the window appears frozen.</p>
+            <p>Always drain <code>pollEvent()</code> every frame, even if you don't act on every event, otherwise the window appears frozen. SFML 3 renamed the loop, see below.</p>
         </div>
 
         <div class="sheet-card">
@@ -214,8 +215,8 @@ sf::Vector2f velocity(2.f, 0.f);
 position += velocity;
 
 <span class="k">if</span> (playerSprite.getGlobalBounds()
-        .intersects(enemySprite.getGlobalBounds())) {
-    <span class="c">// collision happened!</span>
+        .findIntersection(enemySprite.getGlobalBounds())) {
+    <span class="c">// collision happened! (SFML 3 renamed intersects → findIntersection)</span>
     TakeDamage();
 }</pre>
         </div>
@@ -264,26 +265,25 @@ p-&gt;TakeDamage(10);</pre>
             <pre><span class="c">#include &lt;SFML/Graphics.hpp&gt;</span>
 
 <span class="f">int</span> main() {
-    sf::RenderWindow window(sf::VideoMode(800, 600), <span class="s">"Mini Game"</span>);
+    sf::RenderWindow window(sf::VideoMode({800, 600}), <span class="s">"Mini Game"</span>);
     window.setFramerateLimit(60);
 
-    sf::RectangleShape player(sf::Vector2f(40, 40));
+    sf::RectangleShape player({40.f, 40.f});
     player.setFillColor(sf::Color::Cyan);
-    player.setPosition(380, 280);
+    player.setPosition({380.f, 280.f});
 
     <span class="f">float</span> speed = 3.f;
 
     <span class="k">while</span> (window.isOpen()) {
-        sf::Event event;
-        <span class="k">while</span> (window.pollEvent(event)) {
-            <span class="k">if</span> (event.type == sf::Event::Closed)
+        <span class="k">while</span> (<span class="k">const</span> std::optional event = window.pollEvent()) {
+            <span class="k">if</span> (event-&gt;is&lt;sf::Event::Closed&gt;())
                 window.close();
         }
 
-        <span class="k">if</span> (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-            player.move(speed, 0);
-        <span class="k">if</span> (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-            player.move(-speed, 0);
+        <span class="k">if</span> (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+            player.move({speed, 0.f});
+        <span class="k">if</span> (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+            player.move({-speed, 0.f});
 
         window.clear(sf::Color::Black);
         window.draw(player);
