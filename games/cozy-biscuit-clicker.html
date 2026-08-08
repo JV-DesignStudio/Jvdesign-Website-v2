@@ -932,6 +932,7 @@ const ACHIEVEMENTS=[
   {id:'bt_helpers300', emoji:'🌏',name:'Biscuit World',     desc:'Have 300 helpers working',             coins:300, check:v=>Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=300},
   {id:'bt_upgrade25',  emoji:'🛠️',name:'Master Kitted',     desc:'Buy 25 upgrades',                      coins:200, check:v=>bv().upgrades.length>=25},
   {id:'bt_prestige20', emoji:'♾️',name:'Timeless Baker',    desc:'Prestige 20 times',                    coins:1000,check:v=>(bv().prestige||0)>=20},
+  {id:'bt_prestige25', emoji:'🪞',name:'Beyond Timeless',   desc:'Prestige 25 times',                    coins:1500,check:v=>(bv().prestige||0)>=25},
   // Style boutique
   {id:'bt_bg',         emoji:'🖼️',name:'Interior Designer', desc:'Equip a new cafe background',          coins:25,  check:v=>v.btBg&&v.btBg!=='cream'},
   {id:'bt_acc',        emoji:'👓',name:'Accessorised',      desc:'Own an accessory',                     coins:25,  check:v=>(v.btOwnedAccs||['none']).length>=2},
@@ -943,7 +944,7 @@ const ACHIEVEMENTS=[
   {id:'bt_secrets_all',emoji:'🔮',name:'Keeper of Secrets', desc:'Find every secret in the cafe',        coins:300, check:v=>(v.btSecrets||[]).length>=SECRETS.length},
   {id:'bt_decorator',  emoji:'🎨',name:'Decorator',         desc:'Own 5 cafe backgrounds',               coins:100, check:v=>(v.btOwnedBgs||['cream']).length>=5},
 ];
-const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇',cowboy:'🤠',headphones:'🎧',mushroom:'🍄',pumpkin:'🎃',bunny:'🐰',snowman:'⛄',unicorn:'🦄',knit:'🧶'};
+const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇',cowboy:'🤠',headphones:'🎧',mushroom:'🍄',pumpkin:'🎃',bunny:'🐰',snowman:'⛄',unicorn:'🦄',knit:'🧶',legend_crown:'👑',guest_crown:'👑'};
 const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:'🧣',sunglasses:'🕶️',monocle:'🧐',medal:'🎖️',sparkle:'⭐',butterfly:'🦋',beads:'📿',ring:'💍',mittens:'🧤'};
 
 // ══ RUNTIME ══
@@ -1976,8 +1977,10 @@ const SECRETS=[
   {id:'s_dapper',  emoji:'🎩',name:'Dressed to the Nines',hint:'Give a friend the full look.',                      desc:'Dressed a friend in a hat and an accessory at once.'},
   {id:'s_rush',    emoji:'🚀',name:'Sugar Rush',         hint:'Tap like the biscuits are running out!',              desc:'Tapped the tin 15 times in two seconds.'},
   {id:'s_rainbow', emoji:'🌈',name:'Full Spectrum',      hint:'Let a little rainbow follow you around.',              desc:'Equipped the Rainbow sparkle trail.'},
+  {id:'s_anniversary',emoji:'🎂',name:'A Year and a Day', hint:'Some doors only open once a year.',                   desc:'Came back on the very day you first walked in, a year or more later.'},
 ];
 function foundSecrets(){if(!vault.btSecrets)vault.btSecrets=[];return vault.btSecrets;}
+function firstPlayTs(){if(!bv().firstPlayTs)bv().firstPlayTs=Date.now();return bv().firstPlayTs;}
 function awardSecret(id){
   if(foundSecrets().includes(id))return;
   const s=SECRETS.find(x=>x.id===id); if(!s)return;
@@ -2004,7 +2007,7 @@ const SECRET_QUESTS=[
   {text:'There are whispers in the walls. Find 4 secrets.',goal:4,cur:()=>foundSecrets().length,biscuits:50000},
   {text:"'The star remembers every tap,' says nobody visible. Reach 3,000 taps.",goal:3000,cur:()=>bv().clicks||0,biscuits:150000},
   {text:'Bake 5,000,000 lifetime biscuits to wake the Starlit Tin.',goal:5000000,cur:()=>Math.floor(bv().lifetime),biscuits:500000,starlit:true},
-  {text:'Nine little secrets sleep in the cafe. Find every one of them.',goal:9,cur:()=>foundSecrets().length,biscuits:1000000},
+  {text:'Ten little secrets sleep in the cafe. Find every one of them.',goal:10,cur:()=>foundSecrets().length,biscuits:1000000},
   {text:'The Starlit Tin wants to shine brighter still. Bake 50,000,000 lifetime biscuits.',goal:50000000,cur:()=>Math.floor(bv().lifetime),biscuits:2500000},
 ];
 function secretQuestIdx(){return bv().secretQuests||0;}
@@ -2048,6 +2051,7 @@ const STORY=[
   {t:'The Recipe',       when:()=>bv().lifetime>=250000,         x:"One night the tin rattled all by itself. Beneath the last biscuit lay a recipe card in handwriting none of them knew: 'For whoever keeps the star warm.' Ember read it twice, then hugged everyone."},
   {t:'A New Season',     when:()=>(bv().prestige||0)>=1,         x:"They repainted the door and started again, the way you do. The tin never emptied. It just waited to be tapped, like a heart."},
   {t:'Home',             when:()=>chainsComplete(),              x:"The sign outside never said a name. It didn't need one. If you were cold, or new, or a little bit lost, you knew where to go. The light was Echo's. The patience was Pip's. The welcome was Ember's. The quiet love was Lumo's. The biscuits were yours. (Some say, on very quiet nights, a fifth chair appears at the table...)"},
+  {t:'The Fifth Chair',  when:()=>foundSecrets().includes('s_anniversary'), x:"A year, and a day. You came back on the very date it all began, and this time the fifth chair wasn't empty. Nobody made a fuss. Pip just poured a fifth cup of tea, the way he always somehow knew to. 'Took you long enough,' said Lumo, not looking up from his notebook, in the tone of someone who had been keeping the seat warm the whole time."},
 ];
 function renderStory(el){
   const title=document.createElement('div'); title.className='quest-section-title'; title.style.marginTop='16px'; title.textContent='📖 Opening the Cafe';
@@ -2150,6 +2154,7 @@ const BG_THEMES=[
   {id:'mint',    name:'Fresh Mint',    cost:30000000, css:'linear-gradient(180deg,#7BD6B0,#DFF3E8)', prestige:1},
   {id:'aurora',  name:'Aurora Bakes',  cost:120000000,css:'linear-gradient(180deg,#3BE0B0,#7A6FD0)', prestige:2},
   {id:'legend',  name:'Beyond the Stars',cost:200000000000,css:'radial-gradient(circle at 50% 20%,#FFD700 0%,#2A1A5E 55%,#000 100%)', prestige:20},
+  {id:'anniversary',name:'One More Season',cost:400000000000,css:'radial-gradient(circle at 50% 30%,#FFE29A 0%,#E8B84B 40%,#7A4B1E 100%)', prestige:25},
 ];
 const HAT_SHOP=[
   {id:'none',      name:'No hat',    cost:0},
@@ -2172,6 +2177,7 @@ const HAT_SHOP=[
   {id:'snowman',   name:'Snowcap',   cost:40000000, prestige:2},
   {id:'unicorn',   name:'Unicorn Horn',cost:90000000,prestige:2},
   {id:'legend_crown',name:'Cosmic Crown',cost:150000000000,prestige:20},
+  {id:'guest_crown',name:'Guest of Honour',cost:300000000000,prestige:25},
 ];
 const ACC_SHOP=[
   {id:'none',      name:'None',      cost:0},
@@ -2202,8 +2208,9 @@ const TRAIL_SHOP=[
   {id:'trail_rainbow',name:'Rainbow',     cost:30000000, prestige:2},
   {id:'trail_moon', name:'Moonlight',cost:80000000, prestige:2},
   {id:'trail_legend',name:'Stardust Wake',cost:180000000000, prestige:20},
+  {id:'trail_candle',name:'Candlelight',cost:350000000000, prestige:25},
 ];
-const TRAIL_ICON={trail_none:'🚫',trail_petal:'🌸',trail_star:'⭐',trail_heart:'💗',trail_bubble:'🫧',trail_leaf:'🍃',trail_snow:'❄️',trail_fire:'🔥',trail_biscuit:'🍪',trail_rainbow:'🌈',trail_music:'🎵',trail_moon:'🌙',trail_legend:'💫'};
+const TRAIL_ICON={trail_none:'🚫',trail_petal:'🌸',trail_star:'⭐',trail_heart:'💗',trail_bubble:'🫧',trail_leaf:'🍃',trail_snow:'❄️',trail_fire:'🔥',trail_biscuit:'🍪',trail_rainbow:'🌈',trail_music:'🎵',trail_moon:'🌙',trail_legend:'💫',trail_candle:'🕯️'};
 function ownedBgs(){if(!vault.btOwnedBgs)vault.btOwnedBgs=['cream'];return vault.btOwnedBgs;}
 function ownedHats(){if(!vault.btOwnedHats)vault.btOwnedHats=['none'];return vault.btOwnedHats;}
 function charHats(){if(!vault.charHats)vault.charHats={};return vault.charHats;}
@@ -2336,6 +2343,8 @@ document.addEventListener('pointerdown',()=>{lastAnyTap=Date.now();},true);
   if(lights)lights.addEventListener('pointerdown',()=>{lightTaps++;if(lightTaps>=5)awardSecret('s_lights');});
   const h=new Date().getHours();
   if(h>=2&&h<4)awardSecret('s_owl');
+  const first=new Date(firstPlayTs()),today=new Date();
+  if(today.getFullYear()>first.getFullYear()&&today.getMonth()===first.getMonth()&&today.getDate()===first.getDate())awardSecret('s_anniversary');
 })();
 
 document.getElementById('skinBtn').addEventListener('click',()=>{

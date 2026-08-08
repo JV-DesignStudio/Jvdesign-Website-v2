@@ -1417,7 +1417,8 @@ const ACHIEVEMENTS = [
   { id: 'coin_hoard',  name: 'Coin Hoard',     desc: 'Earn 25,000 coins in total',    icon: '💎', check: v => (v.stats.lifetime_coins || 0) >= 25000, secret: true },
   { id: 'daily_devotee',name: 'Regular as Rain',desc: 'Claim 7 daily challenges',     icon: '📅', check: v => (v.stats.dailies_claimed || 0) >= 7, secret: true },
   { id: 'power_master', name: 'Power Master',    desc: 'Make 100 power-ups',           icon: '⚡', check: v => (v.stats.powerups_made || 0) >= 100, secret: true },
-  { id: 'prism_lord',   name: 'Prism Lord',      desc: 'Make 25 rainbow tiles',        icon: '🌈', check: v => (v.stats.rainbows_made || 0) >= 25, secret: true }
+  { id: 'prism_lord',   name: 'Prism Lord',      desc: 'Make 25 rainbow tiles',        icon: '🌈', check: v => (v.stats.rainbows_made || 0) >= 25, secret: true },
+  { id: 'sixth_chair_found', name: 'Saving My Place', desc: 'Come back a year to the day since you first opened the cafe', icon: '🕯️', check: v => { const fp = v.stats.first_play; return !!fp && (() => { const f = new Date(fp), n = new Date(); return n.getFullYear() > f.getFullYear() && n.getMonth() === f.getMonth() && n.getDate() === f.getDate(); })(); }, secret: true }
 ];
 
 const SHOP_CATEGORIES = [
@@ -1498,7 +1499,8 @@ function defaultVault() {
       powerups_made: 0,
       rainbows_made: 0,
       guests_each: {},
-      best_session_coins: 0
+      best_session_coins: 0,
+      first_play: Date.now()
     }
   };
 }
@@ -1528,6 +1530,7 @@ function loadVault() {
     if (!v.stats) v.stats = defaultVault().stats;
     if (!v.stats.guests_each) v.stats.guests_each = {};
     if (typeof v.stats.best_session_coins !== 'number') v.stats.best_session_coins = 0;
+    if (typeof v.stats.first_play !== 'number') v.stats.first_play = Date.now();
     // Ensure starter items exist (in case vault got corrupted)
     if (!v.unlocked_items) v.unlocked_items = [];
     ['cafe_default', 'trail_petal', 'skin_default'].forEach(id => {
@@ -2303,18 +2306,23 @@ const STORY = [
   { at: 450, t: 'The Sixth Chair',     x: "One snowy evening the bell rang and nobody was there only small footprints leading away. On the sixth chair sat a single warm biscuit and a note in unfamiliar writing: 'Saving my place. Back soon. Keep it warm.' They did. They always would." },
   { at: 650, t: 'The Whole Street',    x: "The bakery two doors down started leaving their lights on later, just to match. The flower stall saved their prettiest blooms for the window seat. A cafe with no name had quietly become the warmest corner of the whole town." },
   { at: 1000,t: 'Keep the Light On',   x: "Years from now, someone small and cold and a little bit lost will push open a door with no name on the sign. There will be a cup of something warm, a friend who knows their usual, and a chair always a chair with their name on it, even before they say it. That's the whole secret. That's the whole story. Thank you for keeping the light on." },
+  { when: () => vault.achievements.includes('sixth_chair_found'), t: 'The Sixth Chair, Revealed', x: "A year to the day since the note appeared, the bell rang at closing time and there she was small, snow-dusted, unmistakably real. She sat straight down in the sixth chair like she'd never left it. 'Sorry,' she said. 'Took the long way round.' Nobody asked where. Pip just poured the tea. Some places you don't need a reason to come back to." },
 ];
-function storyUnlockedCount() { return STORY.filter(c => (vault.stats.guests_served || 0) >= c.at).length; }
+// A chapter unlocks either by guest-count threshold (c.at) or, for
+// discovery-based chapters, a boolean condition (c.when) — sixth_chair_found
+// pays off a mystery hook, so it's gated on finding that secret, not a grind.
+function chapterOpen(c) { return c.when ? !!c.when() : (vault.stats.guests_served || 0) >= c.at; }
+function storyUnlockedCount() { return STORY.filter(chapterOpen).length; }
 function renderStory() {
   const list = $('storyList'); list.innerHTML = '';
   const served = vault.stats.guests_served || 0;
   STORY.forEach((c, i) => {
-    const open = served >= c.at;
+    const open = chapterOpen(c);
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--milk);border:2px dashed var(--cream-deep);border-radius:14px;padding:13px 15px;margin-bottom:9px' + (open ? '' : ';opacity:.55');
     card.innerHTML = open
       ? `<div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa);margin-bottom:5px">Chapter ${i + 1} · ${c.t}</div><div style="font-family:Fraunces,serif;font-style:italic;font-size:12.5px;color:var(--cocoa-soft);line-height:1.7">${c.x}</div>`
-      : `<div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa)">🔒 Chapter ${i + 1}</div><div style="font-family:Fraunces,serif;font-style:italic;font-size:12.5px;color:var(--cocoa-soft);margin-top:4px">Serve ${c.at} guests to turn the page... (${served}/${c.at})</div>`;
+      : `<div style="font-family:Fraunces,serif;font-weight:900;font-size:14px;color:var(--cocoa)">🔒 Chapter ${i + 1}</div><div style="font-family:Fraunces,serif;font-style:italic;font-size:12.5px;color:var(--cocoa-soft);margin-top:4px">${c.when ? 'Keep an eye out. Some pages only turn on their own.' : `Serve ${c.at} guests to turn the page... (${served}/${c.at})`}</div>`;
     list.appendChild(card);
   });
 }
