@@ -2472,7 +2472,17 @@ function checkGameSystemAchievements() {
 }
 
 // Run achievement check every 10 seconds
-setInterval(()=>{checkGameSystemAchievements();checkSessionShareMoment();}, 10000);
+// Mirror session-earned biscuits into the shared score/highScore fields
+// leaderboards.html reads (was never synced before, always showed 0).
+let lastBoardScore=0;
+function syncScoreToBoard(){
+  const sessionEarned=bv().lifetime-sessionBaseline;
+  if(sessionEarned>lastBoardScore){
+    gameSystem.addScore(sessionEarned-lastBoardScore);
+    lastBoardScore=sessionEarned;
+  }
+}
+setInterval(()=>{checkGameSystemAchievements();checkSessionShareMoment();syncScoreToBoard();}, 10000);
 
 // Save progression when game ends/tab closes
 window.addEventListener('beforeunload', () => {

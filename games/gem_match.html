@@ -728,11 +728,7 @@ body{
     <div class="lb-header">
       <div>
         <div class="lb-title">🏆 Leaderboard</div>
-        <div class="lb-subtitle">Top 5 Scores</div>
-      </div>
-      <div class="lb-tabs">
-        <button class="lb-tab active" id="tabGlobal" onclick="showTab('global')">🌍 Global</button>
-        <button class="lb-tab"        id="tabMine"   onclick="showTab('mine')">👤 Mine</button>
+        <div class="lb-subtitle">Your Top 5 Scores</div>
       </div>
     </div>
     <div class="lb-body" id="lbBody">
@@ -1403,7 +1399,7 @@ function endGame(){
   if(timerID){clearInterval(timerID);timerID=null;}
   window.__gsScore=(window.__gsScore||0)+score;
   window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
-  if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
+  if(typeof gameSystem!=='undefined'){gameSystem.addScore(score);gameSystem.recordGamePlay(Date.now());}
   const isNew=score>bestScore&&score>0;
   if(isNew){bestScore=score;localStorage.setItem('gmBest',bestScore);SFX.newBest();}
   else SFX.over();
@@ -1421,7 +1417,7 @@ function endGame(){
   // Save to both leaderboards then refresh
   if(score>0){
     saveMyScore(score);
-    saveGlobalScore(score).then(()=>renderLB());
+    renderLB();
   }
 }
 
@@ -1476,11 +1472,8 @@ $('navToggle').addEventListener('click',()=>$('mobileNav').classList.toggle('ope
 $('howToHeader').addEventListener('click',()=>$('howTo').classList.toggle('open'));
 
 // ── Leaderboard ────────────────────────────────────────
-const LB_KEY   = 'gm-leaderboard';   // shared storage key
 const LB_MINE  = 'gmMyScores';       // localStorage key for personal history
 const LB_MAX   = 5;
-let lbTab = 'global';
-
 function lbRankIcon(n){
   return n===1?'🥇':n===2?'🥈':n===3?'🥉':`${n}.`;
 }
@@ -1491,33 +1484,6 @@ function fmtDate(ts){
   if(!ts) return '';
   const d=new Date(ts);
   return `${d.getDate()}/${d.getMonth()+1}`;
-}
-
-function showTab(tab){
-  lbTab=tab;
-  document.getElementById('tabGlobal').classList.toggle('active',tab==='global');
-  document.getElementById('tabMine').classList.toggle('active',tab==='mine');
-  renderLB();
-}
-window.showTab=showTab;
-
-async function loadGlobalScores(){
-  try{
-    const res=await window.storage.get(LB_KEY,true);
-    return res ? JSON.parse(res.value) : [];
-  }catch(e){ return []; }
-}
-
-async function saveGlobalScore(sc){
-  if(sc<=0) return;
-  let scores=await loadGlobalScores();
-  // anonymous entry, label as "Player" since no login
-  scores.push({score:sc, date:Date.now(), name:'Player'});
-  scores.sort((a,b)=>b.score-a.score);
-  scores=scores.slice(0,LB_MAX);
-  try{
-    await window.storage.set(LB_KEY,JSON.stringify(scores),true);
-  }catch(e){}
 }
 
 function loadMyScores(){
@@ -1539,14 +1505,8 @@ async function renderLB(){
   const note=document.getElementById('lbNote');
   body.innerHTML='<div class="lb-empty">Loading…</div>';
 
-  let rows=[];
-  if(lbTab==='global'){
-    rows=await loadGlobalScores();
-    note.textContent='Global top 5, scores shared across all players.';
-  } else {
-    rows=loadMyScores();
-    note.textContent='Your personal top 5 on this device.';
-  }
+  const rows=loadMyScores();
+  note.textContent='Your personal top 5 on this device.';
 
   if(!rows.length){
     body.innerHTML='<div class="lb-empty">No scores yet, play a game!</div>';
@@ -1554,12 +1514,11 @@ async function renderLB(){
   }
 
   body.innerHTML=rows.map((r,i)=>{
-    const isYou=lbTab==='mine';
     const rank=i+1;
     return `<div class="lb-row">
       <div class="lb-rank ${lbRankCls(rank)}">${lbRankIcon(rank)}</div>
-      <div class="lb-name${isYou?' you':''}">${lbTab==='global'?r.name:'You'}</div>
-      <div class="lb-score${isYou?' you':''}">${r.score.toLocaleString()}</div>
+      <div class="lb-name you">You</div>
+      <div class="lb-score you">${r.score.toLocaleString()}</div>
       <div class="lb-date">${fmtDate(r.date)}</div>
     </div>`;
   }).join('');

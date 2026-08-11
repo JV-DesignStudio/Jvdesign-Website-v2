@@ -3507,8 +3507,10 @@ const gameSystem = new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip');
 const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
 
-// Track score as XP (10 points = 1 XP)
+// Track score as XP (10 points = 1 XP), and mirror it into the shared
+// score/highScore fields leaderboards.html reads (was never synced before).
 let lastScore = 0;
+let lastBoardScore = 0;
 setInterval(() => {
   // the game accumulates session coins in window.__gsScore as they are earned
   const currentScore = Math.floor(window.__gsScore || 0);
@@ -3518,6 +3520,10 @@ setInterval(() => {
       gameSystem.addXP(xpGained);
       lastScore = currentScore;
     }
+  }
+  if (currentScore > lastBoardScore) {
+    gameSystem.addScore(currentScore - lastBoardScore);
+    lastBoardScore = currentScore;
   }
 }, 500);
 
