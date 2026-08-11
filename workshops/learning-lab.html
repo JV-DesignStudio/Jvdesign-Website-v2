@@ -104,6 +104,8 @@ img{display:block;max-width:100%;}
 .english-card:hover{border-color:rgba(244,114,182,.4);box-shadow:0 16px 40px rgba(244,114,182,.15);}
 .stardust-card{background:rgba(167,139,250,.04);border-color:rgba(167,139,250,.18);}
 .stardust-card:hover{border-color:rgba(167,139,250,.4);box-shadow:0 16px 40px rgba(167,139,250,.15);}
+.strange-card{background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.18);}
+.strange-card:hover{border-color:rgba(52,211,153,.4);box-shadow:0 16px 40px rgba(52,211,153,.15);}
 
 /* ═══ GAME MODAL ═══ */
 .game-modal{position:fixed;inset:0;z-index:500;background:#0d0d12;display:none;flex-direction:column;overflow:hidden;}
@@ -280,6 +282,9 @@ img{display:block;max-width:100%;}
 .mem-front{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);font-size:1.4rem;color:rgba(255,255,255,.2);}
 .mem-back{background:rgba(52,211,153,.12);border:1.5px solid rgba(52,211,153,.3);transform:rotateY(180deg);font-size:1.6rem;}
 @media(max-width:440px){.mem-back,.mem-front{font-size:1.2rem;}}
+@keyframes memGlow{0%{box-shadow:0 0 0 rgba(52,211,153,0);}50%{box-shadow:0 0 22px rgba(52,211,153,.85);}100%{box-shadow:0 0 0 rgba(52,211,153,0);}}
+.mem-card.matched .mem-back{animation:memGlow .5s ease;}
+.mem-card.mismatch .mem-back{background:rgba(248,113,113,.2);border-color:#F87171;}
 .mem-card.matched .mem-back{background:rgba(52,211,153,.25);border-color:#34D399;}
 
 /* ═══ GEOGRAPHY QUIZ ═══ */
@@ -1210,7 +1215,7 @@ const TYPE_COLOR = { Puzzle:'#3EC9A7', Arcade:'#F5A623', Quiz:'#A78BFA', Action:
 
 // Custom illustrated cards, rehaul rollout. Add an entry here as each
 // subject gets its own identity; anything not listed keeps the shared template.
-const CUSTOM_CARD_RENDERERS={ echo:renderEchoCard, pip:renderPipCard, lumo:renderLumoCard, english:renderEnglishCard, stardust:renderStardustCard };
+const CUSTOM_CARD_RENDERERS={ echo:renderEchoCard, pip:renderPipCard, lumo:renderLumoCard, english:renderEnglishCard, stardust:renderStardustCard, strange:renderStrangeCard };
 
 function renderCards(){
   document.getElementById('subjectsGrid').innerHTML = SUBJECTS.map(s => {
@@ -1422,6 +1427,41 @@ function renderStardustCard(s){
           <circle cx="-7" cy="16" r="3.4" fill="#0d0d12"/><circle cx="7" cy="16" r="3.4" fill="#0d0d12"/>
           <circle cx="-6" cy="15" r="1.1" fill="#fff"/><circle cx="8" cy="15" r="1.1" fill="#fff"/>
           <path d="M-5 24 Q0 27 5 24" stroke="#0d0d12" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>`);
+}
+
+function renderStrangeCard(s){
+  return illustratedCard(s,`
+      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="illustrated-card-svg">
+        <defs>
+          <linearGradient id="strangeSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a1c14"/><stop offset="100%" stop-color="#081410"/>
+          </linearGradient>
+          <radialGradient id="strangeGlow" cx="50%" cy="42%" r="60%">
+            <stop offset="0%" stop-color="#34D399" stop-opacity=".32"/><stop offset="100%" stop-color="#34D399" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="140" fill="url(#strangeSky)"/>
+        <circle cx="200" cy="55" r="80" fill="url(#strangeGlow)"/>
+        <g fill="rgba(255,255,255,.25)">
+          <circle cx="40" cy="20" r="1.2"/><circle cx="100" cy="40" r="1"/><circle cx="300" cy="18" r="1.3"/><circle cx="355" cy="38" r="1"/>
+        </g>
+        <g transform="translate(90,66)">
+          <rect x="-24" y="-30" width="48" height="60" rx="8" fill="rgba(52,211,153,.14)" stroke="#34D399" stroke-width="2"/>
+          <text x="0" y="10" font-size="26" text-anchor="middle" fill="#34D399" opacity=".7">?</text>
+        </g>
+        <g transform="translate(310,66) rotate(8)">
+          <rect x="-24" y="-30" width="48" height="60" rx="8" fill="rgba(52,211,153,.22)" stroke="#34D399" stroke-width="2"/>
+          <text x="0" y="12" font-size="28" text-anchor="middle">🦋</text>
+        </g>
+        <rect x="0" y="112" width="400" height="28" fill="#12271c"/>
+        <rect x="0" y="112" width="400" height="4" fill="#34D399" opacity=".7"/>
+        <g transform="translate(200,98)">
+          <ellipse cx="0" cy="24" rx="30" ry="7" fill="#000" opacity=".22"/>
+          <circle cx="0" cy="0" r="26" fill="rgba(52,211,153,.14)" stroke="#34D399" stroke-width="2"/>
+          <circle cx="0" cy="0" r="26" fill="url(#strangeGlow)"/>
+          <text x="0" y="8" font-size="22" text-anchor="middle">🔮</text>
         </g>
       </svg>`);
 }
@@ -2705,11 +2745,12 @@ function buildStrange(body){
       <span>Pairs found: <b id="memPairs">0</b>/8</span>
       <span>Moves: <b id="memMoves">0</b></span>
       <span id="memTimer">⏱ 0s</span>
+      <span id="memStreakWrap" style="display:none;color:#34D399;font-weight:700;">🔥 <span id="memStreak">0</span></span>
     </div>
     <div class="mem-grid" id="memGrid"></div>
     <div class="fb" id="memFb"></div>
   </div>`;
-  window.MG={pairs,flipped:[],matched:[],moves:0,lock:false,startTime:Date.now(),timerInt:null};
+  window.MG={pairs,flipped:[],matched:[],moves:0,lock:false,startTime:Date.now(),timerInt:null,streak:0,bestStreak:0,streakBonus:0};
   window.MG.timerInt=setInterval(()=>{
     const el=document.getElementById('memTimer');
     if(el)el.textContent='⏱ '+Math.floor((Date.now()-window.MG.startTime)/1000)+'s';
@@ -2740,15 +2781,19 @@ function memFlip(card){
       a.classList.add('matched'); b.classList.add('matched');
       MG.matched.push(a.dataset.emoji);
       document.getElementById('memPairs').textContent=MG.matched.length;
+      MG.streak++; if(MG.streak>MG.bestStreak)MG.bestStreak=MG.streak;
+      if(MG.streak>=3){ MG.streakBonus+=10; }
+      const streakWrap=document.getElementById('memStreakWrap');
+      if(MG.streak>=2){streakWrap.style.display='';document.getElementById('memStreak').textContent=MG.streak;}
       MG.flipped=[]; MG.lock=false;
       if(MG.matched.length===MEM_PAIRS.length){
         clearInterval(MG.timerInt);
         const secs=Math.floor((Date.now()-MG.startTime)/1000);
-        const score=Math.max(10,200-MG.moves*5-Math.floor(secs/5));
+        const score=Math.max(10,200-MG.moves*5-Math.floor(secs/5))+MG.streakBonus;
         markDone('strange',score);
         const fb=document.getElementById('memFb');
         fb.className='fb show ok';
-        fb.innerHTML=`🎉 All pairs found in ${MG.moves} moves and ${secs}s! Score: ${score}`;
+        fb.innerHTML=`🎉 All pairs found in ${MG.moves} moves and ${secs}s! Score: ${score} &nbsp;|&nbsp; 🔥 Best streak: ${MG.bestStreak}`;
         document.getElementById('gameBody').querySelector('.gc').insertAdjacentHTML('beforeend',`
           <div class="learn-panel"><div class="learn-eyebrow" style="color:#34D399">🔮 Something Strange explains...</div>
           <div class="learn-title">Memory your brain's superpower!</div>
@@ -2759,8 +2804,12 @@ function memFlip(card){
           <div class="char-bubble"><span class="bubble-emoji">🔮</span><div class="bubble-text">"I remember every strange thing I've ever seen and there have been many. Memory is how we learn from experience."</div></div></div>`);
       }
     } else {
+      MG.streak=0;
+      document.getElementById('memStreakWrap').style.display='none';
+      a.classList.add('mismatch'); b.classList.add('mismatch');
       setTimeout(()=>{
         a.classList.remove('flipped'); b.classList.remove('flipped');
+        a.classList.remove('mismatch'); b.classList.remove('mismatch');
         MG.flipped=[]; MG.lock=false;
       },900);
     }
