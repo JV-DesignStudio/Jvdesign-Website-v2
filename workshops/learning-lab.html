@@ -90,12 +90,14 @@ img{display:block;max-width:100%;}
 .card-cta:hover{filter:brightness(1.12);transform:translateY(-1px);}
 
 /* ═══ ECHO CARD, rehaul proof-of-concept ═══ */
+.illustrated-card-scene{position:relative;height:120px;overflow:hidden;}
+.illustrated-card-svg{width:100%;height:100%;display:block;}
+.illustrated-card-badges{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.illustrated-card-inner{padding:16px 20px 20px;}
 .echo-card{background:rgba(62,201,167,.04);border-color:rgba(62,201,167,.18);}
 .echo-card:hover{border-color:rgba(62,201,167,.4);box-shadow:0 16px 40px rgba(62,201,167,.15);}
-.echo-card-scene{position:relative;height:120px;overflow:hidden;}
-.echo-card-svg{width:100%;height:100%;display:block;}
-.echo-card-badges{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
-.echo-card-inner{padding:16px 20px 20px;}
+.pip-card{background:rgba(245,166,35,.04);border-color:rgba(245,166,35,.18);}
+.pip-card:hover{border-color:rgba(245,166,35,.4);box-shadow:0 16px 40px rgba(245,166,35,.15);}
 
 /* ═══ GAME MODAL ═══ */
 .game-modal{position:fixed;inset:0;z-index:500;background:#0d0d12;display:none;flex-direction:column;overflow:hidden;}
@@ -1200,9 +1202,13 @@ function launchGameFromStudy(id){
 // ══════════════════════════════════════════════════════
 const TYPE_COLOR = { Puzzle:'#3EC9A7', Arcade:'#F5A623', Quiz:'#A78BFA', Action:'#F472B6', Memory:'#34D399', Speed:'#FF9A3C' };
 
+// Custom illustrated cards, rehaul rollout. Add an entry here as each
+// subject gets its own identity; anything not listed keeps the shared template.
+const CUSTOM_CARD_RENDERERS={ echo:renderEchoCard, pip:renderPipCard };
+
 function renderCards(){
   document.getElementById('subjectsGrid').innerHTML = SUBJECTS.map(s => {
-    if(s.id==='echo') return renderEchoCard(s);
+    if(CUSTOM_CARD_RENDERERS[s.id]) return CUSTOM_CARD_RENDERERS[s.id](s);
     const p = PROGRESS[s.id]||{plays:0,best:0};
     const tc = TYPE_COLOR[s.type]||'#888';
     const maxS = s.maxScore||100;
@@ -1235,7 +1241,10 @@ function renderCards(){
 
 // ── Echo custom card, rehaul proof-of-concept: distinct illustrated identity
 // instead of the shared icon-circle template every other subject still uses.
-function renderEchoCard(s){
+// Shared wrapper for every custom illustrated card: badges, stars, name,
+// desc, tags, buttons, identical markup to the shared template's info
+// block. Only the `sceneSvg` (the art) differs per subject.
+function illustratedCard(s,sceneSvg){
   const p = PROGRESS[s.id]||{plays:0,best:0};
   const tc = TYPE_COLOR[s.type]||'#888';
   const maxS = s.maxScore||100;
@@ -1243,9 +1252,30 @@ function renderEchoCard(s){
   const stars = p.plays===0 ? 0 : pct>=0.8 ? 3 : pct>=0.5 ? 2 : 1;
   const starRow = `<div class="card-stars">${[1,2,3].map(i=>`<span class="card-star${i<=stars?' on':''}">⭐</span>`).join('')}</div>`;
   const newBadge = s.isNew ? `<span class="badge-new">✨ NEW</span>` : '';
-  return `<div class="subject-card echo-card" onclick="openGame('echo');sndClick()">
-    <div class="echo-card-scene">
-      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="echo-card-svg">
+  return `<div class="subject-card illustrated-card ${s.id}-card" onclick="openGame('${s.id}');sndClick()">
+    <div class="illustrated-card-scene">
+      ${sceneSvg}
+      <div class="illustrated-card-badges">
+        ${newBadge}
+        <span class="badge-type" style="color:${tc};border-color:${tc}44;background:#0d0d12cc">${s.type}</span>
+        <span class="badge-age" style="background:#0d0d12cc">Ages ${s.age}</span>
+      </div>
+    </div>
+    <div class="card-inner illustrated-card-inner">
+      ${starRow}
+      <div class="char-name">${s.name}</div>
+      <div class="char-subject" style="color:${s.color}">${s.subject}</div>
+      <p class="card-desc">${s.desc}</p>
+      <div class="card-tags">${s.tags.map(t=>`<span class="meta-tag">${t}</span>`).join('')}</div>
+      <button class="card-cta" style="background:${s.color}">${p.plays>0?'▶ Play Again':'▶ Play'}, ${s.subject}</button>
+      <button class="card-study-btn" onclick="event.stopPropagation();showStudy('${s.id}')">📖 Study Guide first</button>
+    </div>
+  </div>`;
+}
+
+function renderEchoCard(s){
+  return illustratedCard(s,`
+      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="illustrated-card-svg">
         <defs>
           <linearGradient id="echoSky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#0a0d18"/><stop offset="100%" stop-color="#0d1a14"/>
@@ -1275,23 +1305,39 @@ function renderEchoCard(s){
           <path d="M-7 6 Q0 11 7 6" stroke="#0d0d12" stroke-width="1.6" fill="none" stroke-linecap="round"/>
           <circle cx="-14" cy="2" r="1.6" fill="#1a8a5a"/><circle cx="10" cy="-2" r="1.6" fill="#1a8a5a"/><circle cx="2" cy="8" r="1.6" fill="#1a8a5a"/>
         </g>
-      </svg>
-      <div class="echo-card-badges">
-        ${newBadge}
-        <span class="badge-type" style="color:${tc};border-color:${tc}44;background:#0d0d12cc">${s.type}</span>
-        <span class="badge-age" style="background:#0d0d12cc">Ages ${s.age}</span>
-      </div>
-    </div>
-    <div class="card-inner echo-card-inner">
-      ${starRow}
-      <div class="char-name">${s.name}</div>
-      <div class="char-subject" style="color:${s.color}">${s.subject}</div>
-      <p class="card-desc">${s.desc}</p>
-      <div class="card-tags">${s.tags.map(t=>`<span class="meta-tag">${t}</span>`).join('')}</div>
-      <button class="card-cta" style="background:${s.color}">${p.plays>0?'▶ Play Again':'▶ Play'}, ${s.subject}</button>
-      <button class="card-study-btn" onclick="event.stopPropagation();showStudy('echo')">📖 Study Guide first</button>
-    </div>
-  </div>`;
+      </svg>`);
+}
+
+function renderPipCard(s){
+  return illustratedCard(s,`
+      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="illustrated-card-svg">
+        <defs>
+          <linearGradient id="pipSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2a1508"/><stop offset="100%" stop-color="#1a0e06"/>
+          </linearGradient>
+          <radialGradient id="pipGlow" cx="50%" cy="60%" r="65%">
+            <stop offset="0%" stop-color="#F5A623" stop-opacity=".3"/><stop offset="100%" stop-color="#F5A623" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="140" fill="url(#pipSky)"/>
+        <circle cx="200" cy="80" r="90" fill="url(#pipGlow)"/>
+        <rect x="0" y="30" width="400" height="10" fill="#7a4520"/>
+        <path d="M0 30 L0 12 Q30 30 60 12 Q90 30 120 12 Q150 30 180 12 Q210 30 240 12 Q270 30 300 12 Q330 30 360 12 Q390 30 400 12 L400 30 Z" fill="#c0392b"/>
+        <g font-size="26" text-anchor="middle">
+          <text x="70" y="62">⭐</text><text x="140" y="58">🟤</text><text x="210" y="63">❤️</text>
+          <text x="280" y="59">🌙</text><text x="340" y="62">☁️</text>
+        </g>
+        <rect x="0" y="86" width="400" height="54" fill="#5c3010"/>
+        <rect x="0" y="86" width="400" height="5" fill="#7a4520"/>
+        <ellipse cx="330" cy="115" rx="34" ry="24" fill="#000" opacity=".2"/>
+        <g transform="translate(330,118)">
+          <ellipse cx="0" cy="10" rx="20" ry="8" fill="#1a8a5a" opacity=".3"/>
+          <ellipse cx="0" cy="0" rx="18" ry="14" fill="#3EC9A7"/>
+          <ellipse cx="0" cy="-9" rx="10" ry="8" fill="#3EC9A7"/>
+          <circle cx="-4" cy="-10" r="2" fill="#0d0d12"/><circle cx="4" cy="-10" r="2" fill="#0d0d12"/>
+          <path d="M-3 -5 Q0 -3 3 -5" stroke="#0d0d12" stroke-width="1" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>`);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1781,6 +1827,7 @@ function buildPip(body){
     <div class="shop-scene"><canvas id="pipCanvas" width="680" height="160"></canvas></div>
     <div class="shop-score-row">
       <span>Customers: <b id="pipServed">0</b>/10</span>
+      <span id="pipStreakWrap" style="display:none">🔥 <b id="pipStreak">0</b> streak</span>
       <span>Score: <b id="pipScore">0</b></span>
     </div>
     <div class="customer-queue" id="pipQueue"></div>
@@ -1796,7 +1843,7 @@ function buildPip(body){
     </div>
     <div class="fb" id="pipFb"></div>
   </div>`;
-  window.PS={served:0,score:0,total:10,cur:null,attempts:0};
+  window.PS={served:0,score:0,total:10,cur:null,attempts:0,streak:0,particles:[]};
   pipNextCustomer(); pipDrawShop();
   document.getElementById('pipInput').addEventListener('keydown',e=>{if(e.key==='Enter')pipCheck();});
 }
@@ -1835,16 +1882,28 @@ function pipCheck(){
     sndCorrect();
     inp.className='price-input correct'; inp.disabled=true;
     document.getElementById('pipSubmit').disabled=true;
-    const pts=PS.attempts===1?10:PS.attempts===2?5:2;
+    let pts=PS.attempts===1?10:PS.attempts===2?5:2;
+    if(PS.attempts===1){
+      PS.streak++;
+      if(PS.streak>=3) pts+=5;  // streak bonus, first-try answers only
+    } else {
+      PS.streak=0;
+    }
     PS.score+=pts; PS.served++;
     document.getElementById('pipScore').textContent=PS.score;
     document.getElementById('pipServed').textContent=PS.served;
+    const streakWrap=document.getElementById('pipStreakWrap');
+    if(PS.streak>=2){streakWrap.style.display='';document.getElementById('pipStreak').textContent=PS.streak;}
+    else streakWrap.style.display='none';
     const {qty:pqty,biscuit:pb}=PS.cur;
     fb.className='fb show ok';
-    fb.innerHTML=`✅ ${pqty>1?pb.emoji.repeat(pqty)+' = '+PS.cur.correct+'p':'Correct, '+PS.cur.correct+'p!'} +${pts} pts`;
+    fb.innerHTML=`✅ ${pqty>1?pb.emoji.repeat(pqty)+' = '+PS.cur.correct+'p':'Correct, '+PS.cur.correct+'p!'} +${pts} pts`+(PS.streak>=3?' <span style="color:#FF9A3C">🔥 streak bonus!</span>':'');
+    pipCelebrate();
     setTimeout(pipNextCustomer,1300);
   } else {
     inp.className='price-input wrong';
+    PS.streak=0;
+    document.getElementById('pipStreakWrap').style.display='none';
     if(PS.attempts>=2){
       const {qty:pqty,biscuit:pb}=PS.cur;
       fb.className='fb show bad';
@@ -1857,6 +1916,25 @@ function pipCheck(){
       fb.innerHTML=`❌ Not quite. Hint: ${Array.from({length:PS.cur.qty},()=>PS.cur.biscuit.emoji).join(' ')}, count again!`;
     }
   }
+}
+
+// Short-lived celebration burst on a correct answer, self-terminating.
+function pipCelebrate(){
+  const PS=window.PS;
+  for(let i=0;i<14;i++)
+    PS.particles.push({x:340+(Math.random()-.5)*40,y:60+(Math.random()-.5)*20,vx:(Math.random()-.5)*6,vy:-(Math.random()*6+2),life:1,decay:.035+Math.random()*.025,color:i%2?'#FFD700':'#F5A623',size:3+Math.random()*4});
+  if(!PS._animating){PS._animating=true;pipParticleLoop();}
+}
+function pipParticleLoop(){
+  const PS=window.PS,c=document.getElementById('pipCanvas');
+  if(!c||!PS.particles.length){if(PS)PS._animating=false;return;}
+  pipDrawShop();
+  const ctx=c.getContext('2d');
+  PS.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life-=p.decay;});
+  PS.particles=PS.particles.filter(p=>p.life>0);
+  PS.particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
+  ctx.globalAlpha=1;
+  requestAnimationFrame(pipParticleLoop);
 }
 
 function pipFinish(){
@@ -1875,6 +1953,7 @@ function pipFinish(){
     <div class="char-bubble"><span class="bubble-emoji">🐢</span><div class="bubble-text">"I count the stars each night always in groups of 5. It's so much faster!"</div></div></div>`);
 }
 
+const PIP_CUSTOMERS=['🐰','🦔','🦉','🐿️','🦝','🐨','🐼','🦫','🐹','🦥'];
 function pipDrawShop(){
   const c=document.getElementById('pipCanvas'); if(!c)return;
   const ctx=c.getContext('2d'),W=c.width,H=c.height;
@@ -1894,7 +1973,18 @@ function pipDrawShop(){
     ctx.fillText(b.price+'p',tx+29,ty+42);
   });
   const PS=window.PS;
-  if(PS&&PS.served<PS.total){ctx.font='38px sans-serif';ctx.textAlign='center';ctx.fillText('🐢',W*.82,H*.56);}
+  // Counter/till
+  ctx.fillStyle='#3a1c08'; ctx.fillRect(W*.62,H*.64,W*.16,H*.3);
+  ctx.fillStyle='#c49700'; ctx.fillRect(W*.64,H*.7,W*.05,H*.08);
+  if(PS&&PS.served<PS.total){
+    const bob=Math.sin(Date.now()/450)*2;
+    // Waiting customer, opposite the counter, varies per order
+    ctx.font='30px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(PIP_CUSTOMERS[PS.served%PIP_CUSTOMERS.length],W*.62,H*.56+bob);
+    // Pip behind the counter
+    ctx.font='38px sans-serif';
+    ctx.fillText('🐢',W*.82,H*.56-bob*.6);
+  }
   ctx.textAlign='left';
 }
 
