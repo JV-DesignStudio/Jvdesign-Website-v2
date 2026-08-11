@@ -679,7 +679,10 @@ const soundManager = new SoundManager(gameSystem);
 gameSystem.trackScore({ xpDivisor: 10, tiers: [[1, 'firstQuestion'], [100, 'score100'], [500, 'score500'], [1000, 'score1000']] });
 
 window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now());
+  // renderResults() already records the run once (guarded by state._scored)
+  // the moment a completed quiz's results screen shows; only fall back to
+  // recording here for a tab closed mid-quiz, before that ever happened.
+  if (!state._scored) gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });
 </script>
