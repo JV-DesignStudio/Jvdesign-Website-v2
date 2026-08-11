@@ -201,9 +201,21 @@ class GameSystem {
   }
 
   recordGamePlay(duration) {
+    // Most games call this from their real game-over AND unconditionally
+    // again from a beforeunload handler as a mobile-safety-net (beforeunload
+    // is unreliable on mobile). Without a guard, a normal finish-then-close
+    // session double-counts gamesPlayed/totalTime and fires this method's
+    // XP/analytics side effects twice. A call arriving moments after a prior
+    // one is that same safety-net firing on the same run, not a new run, so
+    // it's ignored rather than recorded again.
+    const now = Date.now();
+    if (this._lastRecordAt && (now - this._lastRecordAt) < 4000) {
+      return false;
+    }
+    this._lastRecordAt = now;
+
     // Most games pass Date.now() here (a timestamp, not a duration), so
     // anything implausible falls back to the engine's own run timer.
-    const now = Date.now();
     const MAX_RUN = 6 * 60 * 60 * 1000;
     let ms = duration;
     if (!(typeof ms === 'number' && ms > 0 && ms < MAX_RUN)) {
@@ -216,6 +228,7 @@ class GameSystem {
     this.updatePlayStreak();
     this.state.lastPlayed = new Date().toISOString();
     this.saveState();
+    return true;
   }
 
   // Must run before lastPlayed is overwritten with "now".
@@ -1115,6 +1128,7 @@ if (typeof document !== 'undefined') {
     // Capture before origRecord resets _runStart, so we can report run length.
     var startedAt = this._runStart;
     var r = origRecord.apply(this, arguments);
+    if (!r) return r; // debounced duplicate (see recordGamePlay's own guard) — no XP/analytics
     award(this.gameId, 'run', 15, 5, this.gameName + ', run finished');
 
     var secs = 0;
@@ -1138,13 +1152,26 @@ if (typeof document !== 'undefined') {
     return r;
   };
 
+  // Per-game achievement ids that were never registered via defineAchievements()
+  // (e.g. custom trackScore() tiers like 'score100') still deserve a real toast
+  // instead of the generic "Achievement unlocked!" — turn the id itself into
+  // a readable label: 'firstQuestion' -> 'First Question', 'score100' -> 'Score 100'.
+  function prettifyAchievementId(id) {
+    var s = String(id || '')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+      .replace(/(\d)([a-zA-Z])/g, '$1 $2');
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    return s + '!';
+  }
+
   // Per-game achievements mirror to global XP
   var origUnlock = GameSystem.prototype.unlockAchievement;
   GameSystem.prototype.unlockAchievement = function (achievementId) {
     var unlocked = origUnlock.apply(this, arguments);
     if (unlocked) {
       var ach = this.achievements && this.achievements[achievementId];
-      var name = (ach && ach.name) || 'Achievement unlocked!';
+      var name = (ach && ach.name) || prettifyAchievementId(achievementId);
       award(this.gameId, 'ach:' + achievementId, 20, 1, name);
       track('game_achievement', {
         game_id: this.gameId,
