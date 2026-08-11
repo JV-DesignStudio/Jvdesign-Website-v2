@@ -178,7 +178,7 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
   const CELL=BW/COLS;                    // ~186.6 wide
   const CH=BH/ROWS;                      // 180 tall
   const audio=new AudioEffects(0.6);
-  let soundOn=true;
+  let soundOn=localStorage.getItem('soundEnabled')!=='false';
 
   // ---- content definitions ----
   const PLANTS={
@@ -549,20 +549,21 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
     const mult=1+Math.min(streak-1,4)*0.25;
     const pts=Math.round(z.pts*mult);
     score+=pts; stats.killed++;
-    if(z.boss){ score+=200; fxBurst(z.x,z.y,'🎆',16); ScreenShake.shake(canvas,12,400); addFloat(z.x,z.y-40,'BOSS DOWN!','#ffd75e',44); }
+    let gsBonus=0;
+    if(z.boss){ score+=200; gsBonus+=200; fxBurst(z.x,z.y,'🎆',16); ScreenShake.shake(canvas,12,400); addFloat(z.x,z.y-40,'BOSS DOWN!','#ffd75e',44); }
     fxBurst(z.x,z.y,'⭐',5);
     deaths.push({x:z.x,y:z.row*CH+CH/2,ic:z.ic,t:0.45,rot:0});
     addFloat(z.x,z.row*CH+CH*0.3,'+'+pts,mult>1?'#ffb347':'#fff');
     if(mult>1) addFloat(z.x,z.row*CH+CH*0.3-36,'×'+mult.toFixed(2).replace(/\.?0+$/,''),'#ff7b54',26);
     if(soundOn) audio.playCombo(Math.min(streak,4));
-    window.__gsScore=(window.__gsScore||0)+pts;
+    window.__gsScore=(window.__gsScore||0)+pts+gsBonus;
     updateHUD();
   }
   function breach(row){
     if(guards[row]){
       guards[row]=false;
       beep('level'); ScreenShake.shake(canvas,14,400);
-      for(let i=pests.length-1;i>=0;i--){ if(pests[i].row===row){ score+=Math.floor(pests[i].pts*0.5); fxBurst(pests[i].x,pests[i].y,'🐛✨',6); deaths.push({x:pests[i].x,y:row*CH+CH/2,ic:pests[i].ic,t:0.45,rot:0}); pests.splice(i,1);} }
+      for(let i=pests.length-1;i>=0;i--){ if(pests[i].row===row){ const bonus=Math.floor(pests[i].pts*0.5); score+=bonus; window.__gsScore=(window.__gsScore||0)+bonus; fxBurst(pests[i].x,pests[i].y,'🐛✨',6); deaths.push({x:pests[i].x,y:row*CH+CH/2,ic:pests[i].ic,t:0.45,rot:0}); pests.splice(i,1);} }
       addFloat(CELL*1.5,row*CH+CH/2,'Lumo saves row '+(row+1)+'!','#fff6a8',30);
       flashHint('Lumo cleared row '+(row+1)+'!');
       updateHUD();
@@ -888,7 +889,8 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
   document.getElementById('endlessBtn').onclick=keepGoing;
   document.getElementById('pauseBtn').onclick=togglePause;
   document.getElementById('speedBtn').onclick=function(){ speedMult=speedMult===1?2:1; this.textContent=speedMult+'×'; beep('tap'); };
-  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; };
+  document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
+  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; localStorage.setItem('soundEnabled',soundOn?'true':'false'); };
 
   // expose for integration script + lightweight read-only debug snapshot
   window.__gd={
