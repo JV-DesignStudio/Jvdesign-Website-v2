@@ -1380,6 +1380,13 @@ const soundManager = new SoundManager(gameSystem);
 gameSystem.trackScore({ xpDivisor: 20, tiers: [[1, 'firstCrawl'], [100, 'score100'], [300, 'score300'], [600, 'score600']] });
 
 window.addEventListener('beforeunload', () => {
+  // Coins picked up since the last boss-floor bank only ever got saved on a
+  // boss kill or death, not a plain floor transition — closing the tab
+  // mid-run silently discarded them despite the title screen's promise that
+  // "coins carry over between runs". Bank them here at the same retention
+  // rate a real death would apply, so leaving isn't a way to dodge that
+  // penalty either.
+  if(state==='playing'&&coinsThisRun>0) bankCoins();
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });

@@ -843,10 +843,20 @@ function launchGame(){
   showStartScreen();
 }
 function exitGame(){
+  if(gameState==='playing'){
+    // Same wallet/score bookkeeping as a real endGame2() death, so tapping
+    // the visible EXIT button mid-run doesn't discard the run's credits.
+    gameState='dead';
+    const d=Math.floor(dist); saveBest2(d);
+    const runScore=d+totalCredits*5;
+    window.__gsScore=(window.__gsScore||0)+runScore;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
+    if(typeof gameSystem!=='undefined'){gameSystem.addScore(runScore);gameSystem.recordGamePlay(Date.now());}
+    saveWallet(loadWallet()+totalCredits);
+  }
   document.getElementById('game-container').classList.remove('active');
   document.getElementById('siteHeader').style.display='';
   document.body.style.overflow='';
-  if(gameState==='playing') gameState='dead';
 }
 window.launchGame=launchGame;
 window.exitGame=exitGame;
@@ -1602,12 +1612,13 @@ window.restartGame=restartGame;
 function endGame2(){
   if(gameState==='dead') return;
   gameState='dead';
-  const d=Math.floor(dist); saveBest2(d);
+  const d=Math.floor(dist);
+  const isNew=d>best2&&d>0;
+  saveBest2(d);
   const runScore=d+totalCredits*5;
   window.__gsScore=(window.__gsScore||0)+runScore;
   window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
-  if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
-  const isNew=d>best2&&d>0;
+  if(typeof gameSystem!=='undefined'){gameSystem.addScore(runScore);gameSystem.recordGamePlay(Date.now());}
   SFX.die();
   // Add coins to wallet
   let wallet=loadWallet()+totalCredits;
