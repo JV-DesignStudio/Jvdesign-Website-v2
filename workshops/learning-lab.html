@@ -106,6 +106,8 @@ img{display:block;max-width:100%;}
 .stardust-card:hover{border-color:rgba(167,139,250,.4);box-shadow:0 16px 40px rgba(167,139,250,.15);}
 .strange-card{background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.18);}
 .strange-card:hover{border-color:rgba(52,211,153,.4);box-shadow:0 16px 40px rgba(52,211,153,.15);}
+.geo-card{background:rgba(96,165,250,.04);border-color:rgba(96,165,250,.18);}
+.geo-card:hover{border-color:rgba(96,165,250,.4);box-shadow:0 16px 40px rgba(96,165,250,.15);}
 
 /* ═══ GAME MODAL ═══ */
 .game-modal{position:fixed;inset:0;z-index:500;background:#0d0d12;display:none;flex-direction:column;overflow:hidden;}
@@ -1215,7 +1217,7 @@ const TYPE_COLOR = { Puzzle:'#3EC9A7', Arcade:'#F5A623', Quiz:'#A78BFA', Action:
 
 // Custom illustrated cards, rehaul rollout. Add an entry here as each
 // subject gets its own identity; anything not listed keeps the shared template.
-const CUSTOM_CARD_RENDERERS={ echo:renderEchoCard, pip:renderPipCard, lumo:renderLumoCard, english:renderEnglishCard, stardust:renderStardustCard, strange:renderStrangeCard };
+const CUSTOM_CARD_RENDERERS={ echo:renderEchoCard, pip:renderPipCard, lumo:renderLumoCard, english:renderEnglishCard, stardust:renderStardustCard, strange:renderStrangeCard, geo:renderGeoCard };
 
 function renderCards(){
   document.getElementById('subjectsGrid').innerHTML = SUBJECTS.map(s => {
@@ -1463,6 +1465,36 @@ function renderStrangeCard(s){
           <circle cx="0" cy="0" r="26" fill="url(#strangeGlow)"/>
           <text x="0" y="8" font-size="22" text-anchor="middle">🔮</text>
         </g>
+      </svg>`);
+}
+
+function renderGeoCard(s){
+  return illustratedCard(s,`
+      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="illustrated-card-svg">
+        <defs>
+          <linearGradient id="geoSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a1626"/><stop offset="100%" stop-color="#081220"/>
+          </linearGradient>
+          <radialGradient id="geoGlow" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stop-color="#60A5FA" stop-opacity=".3"/><stop offset="100%" stop-color="#60A5FA" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="140" fill="url(#geoSky)"/>
+        <circle cx="200" cy="55" r="85" fill="url(#geoGlow)"/>
+        <g fill="rgba(255,255,255,.25)">
+          <circle cx="30" cy="18" r="1.2"/><circle cx="90" cy="36" r="1"/><circle cx="360" cy="16" r="1.3"/>
+        </g>
+        <g transform="translate(200,58)">
+          <circle cx="0" cy="0" r="46" fill="rgba(96,165,250,.14)" stroke="#60A5FA" stroke-width="2"/>
+          <path d="M-46 0 H46 M0 -46 V46 M-38 -22 Q0 -34 38 -22 M-38 22 Q0 34 38 22" stroke="#60A5FA" stroke-width="1" opacity=".4" fill="none"/>
+          <path d="M-24 -18 Q-10 -28 6 -18 Q18 -10 10 4 Q0 14 -14 8 Q-28 0 -24 -18 Z" fill="#34D399" opacity=".55"/>
+          <path d="M8 6 Q22 0 30 14 Q26 26 12 24 Q2 18 8 6 Z" fill="#34D399" opacity=".5"/>
+        </g>
+        <text x="90" y="70" font-size="26" text-anchor="middle">🇫🇷</text>
+        <text x="310" y="90" font-size="26" text-anchor="middle">🇯🇵</text>
+        <rect x="0" y="112" width="400" height="28" fill="#0f1f33"/>
+        <rect x="0" y="112" width="400" height="4" fill="#60A5FA" opacity=".7"/>
+        <text x="200" y="133" font-size="13" text-anchor="middle" fill="rgba(255,255,255,.4)" font-family="Fredoka,cursive">🌍 match the flag to its country</text>
       </svg>`);
 }
 
@@ -2848,13 +2880,14 @@ function buildGeo(body){
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div id="geoRegion" style="font-family:'Fredoka',cursive;font-size:1rem;color:#60A5FA;font-weight:700;"></div>
       <div style="font-size:.8rem;color:rgba(255,255,255,.4);">Set <span id="geoSetNum">1</span>/4 · Matched: <span id="geoMatched" style="color:#34D399;font-weight:700">0</span>/6</div>
+      <div id="geoStreakWrap" style="display:none;font-size:.85rem;color:#60A5FA;font-weight:700;">🔥 <span id="geoStreak">0</span></div>
       <div style="font-family:'Fredoka',cursive;font-size:1rem;color:#F5A623;font-weight:700;">Score: <span id="geoScore">0</span></div>
     </div>
     <p style="font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:14px;text-align:center;">Click a flag, then click its matching country name</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="geoBoard"></div>
     <div class="fb" id="geoFb" style="margin-top:10px;"></div>
   </div>`;
-  window.GQ={setIdx:0,score:0,selected:null,matched:0,locked:new Set()};
+  window.GQ={setIdx:0,score:0,selected:null,matched:0,locked:new Set(),streak:0,bestStreak:0};
   geoLoadSet(0);
 }
 
@@ -2910,17 +2943,22 @@ function geoTap(btn){
         el.style.background='rgba(52,211,153,.25)';el.style.borderColor='#34D399';
         el.style.color='#34D399';el.disabled=true;el.classList.remove('geo-sel');
       });
-      GQ.matched++; GQ.score+=15;
+      GQ.matched++; GQ.streak++; if(GQ.streak>GQ.bestStreak)GQ.bestStreak=GQ.streak;
+      const bonus=GQ.streak>=3?10:0; GQ.score+=15+bonus;
       document.getElementById('geoMatched').textContent=GQ.matched;
       document.getElementById('geoScore').textContent=GQ.score;
+      const streakWrap=document.getElementById('geoStreakWrap');
+      if(GQ.streak>=2){streakWrap.style.display='';document.getElementById('geoStreak').textContent=GQ.streak;}
       document.getElementById('geoFb').className='fb show ok';
       const set=FLAG_SETS[GQ.setIdx];
       const pair=set.pairs[parseInt(a.dataset.idx)];
-      document.getElementById('geoFb').textContent=`✅ ${pair.flag} = ${pair.name}! +15`;
+      document.getElementById('geoFb').textContent=`✅ ${pair.flag} = ${pair.name}! +${15+bonus}`;
       GQ.selected=null;
       if(GQ.matched>=6) setTimeout(()=>geoLoadSet(GQ.setIdx+1),900);
     } else {
       sndWrong();
+      GQ.streak=0;
+      document.getElementById('geoStreakWrap').style.display='none';
       [a,b].forEach(el=>{el.style.borderColor='#F87171';el.style.background='rgba(248,113,113,.15)';});
       setTimeout(()=>{
         [a,b].forEach(el=>{el.style.borderColor='rgba(96,165,250,.2)';el.style.background='rgba(96,165,250,.08)';el.classList.remove('geo-sel');});
@@ -2938,7 +2976,8 @@ function geoFinal(){
   gc.innerHTML=`<div style="text-align:center;padding:24px;">
     <div style="font-size:3.5rem;margin-bottom:10px;">🌍🗺️🌎</div>
     <div style="font-family:'Fredoka',cursive;font-size:1.8rem;color:#fff;margin-bottom:6px;">World Explorer!</div>
-    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#60A5FA;font-weight:700">${GQ.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:4px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#60A5FA;font-weight:700">${GQ.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">🔥 Best streak: <span style="font-family:'Fredoka',cursive;font-size:1.2rem;color:#60A5FA;font-weight:700">${GQ.bestStreak||0}</span></div>
     <button onclick="openGame('geo')" style="padding:11px 26px;background:#60A5FA;border:none;border-radius:12px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:#0d0d12;cursor:pointer;">▶ Play Again</button>
   </div>
   <div class="learn-panel"><div class="learn-eyebrow" style="color:#60A5FA">🌍 Atlas explains...</div>
