@@ -21,6 +21,7 @@
         /* ══════════════════════════════════════
            PALETTE & RESET
         ══════════════════════════════════════ */
+        :root {
             --beige:    #F0EAD6;
             --tan:      #D2B48C;
             --rose:     #BC4749;
@@ -42,6 +43,7 @@
         /* ══════════════════════════════════════
            LOGO ANIMATION
         ══════════════════════════════════════ */
+        @keyframes logoCycle {
             0%   { color: var(--tan); }
             33%  { color: var(--rose); }
             66%  { color: var(--teal); }
@@ -51,18 +53,22 @@
         /* ══════════════════════════════════════
            HEADER
         ══════════════════════════════════════ */
+        .site-header {
             position: sticky; top: 0; z-index: 100;
             background: rgba(3,1,15,0.92);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(112,163,167,0.2);
         }
+        .header-inner {
             max-width: 1100px; margin: 0 auto;
             padding: 0 24px; height: 68px;
             display: flex; justify-content: space-between; align-items: center;
         }
+        .logo-link {
             display: flex; align-items: center; gap: 10px;
             text-decoration: none; font-size: 1.3rem;
         }
+        .logo-link img {
             height: 38px; width: auto; border-radius: 8px;
         }
         .btn-hub {
@@ -2363,6 +2369,16 @@ document.addEventListener('DOMContentLoaded',()=>{
     };
 
     window.quitToMenu = function() {
+        if (gameActive) {
+            // Same score/shard/recordGamePlay bookkeeping as a real gameOver(),
+            // so quitting mid-run from the pause menu doesn't discard the run.
+            window.__gsScore = (window.__gsScore||0) + currentScore;
+            window.__gsBestRun = Math.max(window.__gsBestRun||0, currentScore);
+            if (typeof gameSystem !== 'undefined') { gameSystem.addScore(currentScore); gameSystem.recordGamePlay(Date.now()); }
+            runShardsEarned = Math.floor(currentScore / 10);
+            addShards(runShardsEarned);
+            saveScore();
+        }
         gameActive = false;
         gamePaused = false;
         pauseOverlay.classList.add('off');
@@ -2550,7 +2566,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         gamePaused = false;
         window.__gsScore = (window.__gsScore||0) + currentScore;
         window.__gsBestRun = Math.max(window.__gsBestRun||0, currentScore);
-        if (typeof gameSystem !== 'undefined') gameSystem.recordGamePlay(Date.now());
+        if (typeof gameSystem !== 'undefined') { gameSystem.addScore(currentScore); gameSystem.recordGamePlay(Date.now()); }
         playGameOver();
         saveScore();
         stopMusic();
