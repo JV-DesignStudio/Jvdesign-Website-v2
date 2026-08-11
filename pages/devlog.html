@@ -582,6 +582,29 @@ const TAG_EMOJIS = {
 
 const POSTS = [
 
+    // ── 68 · 31 Games, One Fresh Look: The Games Correctness Audit ──────────
+    {
+        id: 68,
+        date: '11 August 2026',
+        tag: 'process',
+        emoji: '🔍',
+        title: '31 Games, One Fresh Look: The Games Correctness Audit',
+        excerpt: "The last games audit was in early August, 38 bugs across 29 games. Went back in with fresh eyes anyway, and found a real XP-farming exploit, six games whose scores never reached the leaderboard, three pages with their entire colour theme silently broken, and more.",
+        content: `Straight after the card rehaul, went back through every one of the 31 catalog games looking for bugs, this time split across 4 parallel research passes (one per genre grouping) rather than one file at a time, so a lot of ground got covered fast. Two of those passes hit the session's spend limit partway through and had to be re-run from scratch; the rest came back clean on the first try.
+
+The worst find was in Pip's Bakery Empire: a beforeunload handler was granting global XP based on the game's absolute cumulative XP total, not a delta since the last time it fired, capped at +100 but with no daily limit. Once that cumulative total passed 1000 (which doesn't take long in an idle clicker), every single tab close or reload handed out another +100 XP for free, forever. Echo's Fruit Catch had a smaller version of the same mistake, leftover manual XP reporting duplicating the automatic system that already covers it correctly. Both deleted outright, the engine's own XP bridge was already doing the real job.
+
+Bigger in scope: six games, Lumo's Firefly Shooter, PiP's Star Connect, Arcane Citadel, Gem Match, Cozy Cafe Match and Biscuit Tin Clicker, never called the one function that actually updates a game's high score on the shared leaderboard. Score, XP, and achievements all worked fine in every one of them; the "your best score" row on the leaderboard page just silently stayed at zero no matter how well anyone played, because nothing was calling gameSystem.addScore(). Wired it in at each game's real scoring moment. While in there, found Gem Match's "🌍 Global" leaderboard tab was calling a window.storage API that doesn't exist anywhere in the codebase, silently swallowed by a try/catch, always empty. The personal "Mine" tab worked fine, so removed the dead Global one rather than leave something that looks broken sitting next to something that works.
+
+Three pages, Tiger Smash, Candy Kingdom, and Stardust Collector, had the identical CSS defect: a style block's custom-property declarations with no ":root {" wrapper, so every colour variable those pages defined silently evaluated to nothing. Confirmed live in the browser: Candy Kingdom's entire page, title colour, the "100% FREE" pill, the download button's background, was rendering plain black-on-beige before the fix. Stardust Collector had it worse, three separate rules in a row had lost their selectors the same way. All three now render with their actual intended colours.
+
+Also found and fixed: a wallet-loss bug in three different games where quitting mid-run through a pause menu (rather than dying or finishing normally) discarded that run's coins entirely, because only the death path called the save function; a death-detection ordering bug in Lumo's Firefly Shooter that let one "free" shot happen after the board was already past the death line; a permanently-broken "new best" badge in VoidRush caused by mutating the stored best score before comparing against it; a genuinely broken mobile menu in Quiz Quest, two competing click handlers on the same button were cancelling each other out on every tap; and a CSS layout bug in Quiz Quest's own new streak pill (added earlier this session) fighting the money-prize pill for space.
+
+Two of the bugs were systemic enough to fix once in the shared engine instead of file-by-file. Most games call recordGamePlay() twice per finished session, once at the real game-over, again unconditionally from a beforeunload safety net for mobile, which was double-counting games-played and total-time-played stats, double-firing the GA4 game_end event, and unlocking play-count achievements roughly twice as fast as intended. Now debounced at the engine level: a second call within 4 seconds of the first is treated as the same run's safety net firing, not a new run. And any game-specific achievement whose id wasn't registered in the engine's global achievement list was showing a generic "Achievement unlocked!" toast instead of naming what actually happened, now falls back to a readable version of the id itself (score100 becomes "Score 100!") instead of the generic string.
+
+Status: ✅ 19 games plus the shared game-system.js touched, roughly 25 distinct bugs fixed across correctness, data integrity, and visuals. node test-site.js (272/272) clean throughout; the most severe fixes (the XP exploit, both engine-level changes, the CSS colour breakage, the streak-pill layout, and Quiz Quest's mobile nav) verified live by driving the actual game state in-browser, not just read from the code.`,
+    },
+
     // ── 67 · Sixteen Faces, Take Two: The Games Catalog Rehaul ──────────────
     {
         id: 67,
