@@ -61,6 +61,7 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
     <div class="pills">
       <div class="pill">SCORE <b id="scoreHud">0</b></div>
       <div class="pill">BEST <b id="bestHud">0</b></div>
+      <div class="pill" id="streakPill" style="display:none">🔥 <b id="streakHud">0</b></div>
     </div>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
@@ -129,6 +130,7 @@ let particles = [];
 
 let state = 'idle';        // idle | playing | dead
 let score = 0, best = 0;
+let streak = 0;
 let pipeSpeed = 165;
 let pipeGap = 0;
 let spawnDist = 0;
@@ -141,6 +143,7 @@ function reset() {
   bird.x = W * 0.30; bird.y = H * 0.42; bird.vy = 0; bird.rot = 0; bird.wing = 0;
   pipes = []; particles = [];
   score = 0;
+  streak = 0;
   pipeSpeed = 165;
   pipeGap = Math.max(H * 0.30, birdR * 7.5);
   spawnDist = Math.max(W * 0.62, 210);
@@ -148,6 +151,7 @@ function reset() {
   best = gameSystem.state.highScore || 0;
   document.getElementById('scoreHud').textContent = '0';
   document.getElementById('bestHud').textContent = best;
+  document.getElementById('streakPill').style.display = 'none';
   makeClouds();
 }
 
@@ -273,6 +277,12 @@ function update(dt) {
     p.x -= pipeSpeed * dt;
     if (!p.scored && p.x + PIPE_W < bird.x - birdR) {
       p.scored = true; score++;
+      const gapCenter = p.top + p.gap / 2;
+      const perfect = Math.abs(bird.y - gapCenter) < p.gap * 0.22;
+      if (perfect) { streak++; if (streak >= 3) score++; } else { streak = 0; }
+      const streakPill = document.getElementById('streakPill');
+      if (streak >= 2) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = streak; }
+      else streakPill.style.display = 'none';
       document.getElementById('scoreHud').textContent = score;
       audioEffects.playSuccess(880 + Math.min(score, 20) * 20);
       if (score > (gameSystem.state.highScore || 0)) document.getElementById('bestHud').textContent = score;

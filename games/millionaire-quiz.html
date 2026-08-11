@@ -326,7 +326,7 @@ const prize=i=>PRIZES[Math.min(i,PRIZES.length-1)];
 const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
 const esc=s=>{if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
 
-let state={view:"setup",quizData:null,playerName:"",qIdx:0,options:[],selected:null,revealed:false,answers:[]};
+let state={view:"setup",quizData:null,playerName:"",qIdx:0,options:[],selected:null,revealed:false,answers:[],streak:0,bestStreak:0};
 let ss={title:"",numQ:5,questions:Array.from({length:5},eq)};
 const quizFx = new AudioEffects(0.55);
 function eq(){return{question:"",correct:"",wrong1:"",wrong2:"",wrong3:"",fact:""};}
@@ -423,13 +423,14 @@ function renderName(){
 }
 
 function renderGame(){
-  const {quizData,qIdx,options,selected,revealed}=state;
+  const {quizData,qIdx,options,selected,revealed,streak}=state;
   const q=quizData.questions[qIdx];
   const total=quizData.questions.length;
   return`<div class="game-topbar">
     <span class="topbar-name">👤 ${esc(state.playerName)}</span>
     <span class="topbar-q">Q ${qIdx+1} / ${total}</span>
     <span class="topbar-prize">💰 ${prize(qIdx)}</span>
+    ${streak>=2?`<span class="topbar-prize" style="color:#F5A623">🔥 ${streak} streak</span>`:""}
   </div>
   <div class="progress-outer"><div class="progress-inner" style="width:${(qIdx/total)*100}%"></div></div>
   <div class="page-wrap" style="padding-top:32px">
@@ -448,7 +449,7 @@ function renderGame(){
     ${!revealed&&selected!==null?`<button class="btn-primary btn-block" id="finalBtn" style="font-size:1.05rem">✅ Final Answer!</button>`:""}
     ${revealed?`
     <div class="reveal-panel ${options[selected]?.isCorrect?"ok":"bad"}">
-      <p class="reveal-title">${options[selected]?.isCorrect?"🎉 Correct!":"❌ Not quite!"}</p>
+      <p class="reveal-title">${options[selected]?.isCorrect?"🎉 Correct!":"❌ Not quite!"}${options[selected]?.isCorrect&&streak>=3?` <span style="color:#F5A623">🔥 ${streak} in a row!</span>`:""}</p>
       ${!options[selected]?.isCorrect?`
         <p style="font-size:14px;color:var(--charcoal);margin-bottom:4px">Correct answer: <strong style="color:var(--teal-dk)">${esc(options.find(o=>o.isCorrect)?.text)}</strong></p>
         ${q.fact?`<div class="fact-box"><div class="fact-label">📚 Did you know?</div><p style="font-size:13px;color:var(--charcoal-lt);line-height:1.55;margin-top:4px">${esc(q.fact)}</p></div>`:""}
@@ -466,9 +467,10 @@ function renderResults(){
   const total=answers.length;
   if(!state._scored){
     state._scored=true;
-    // expose quiz result to the XP tracker (100 pts per correct answer)
-    window.__gsScore=(window.__gsScore||0)+score*100;
-    window.__gsBestRun=Math.max(window.__gsBestRun||0,score*100);
+    // expose quiz result to the XP tracker (100 pts per correct answer, +20 per streak level past 2 for a run's best streak)
+    const streakBonus=state.bestStreak>=3?(state.bestStreak-2)*20:0;
+    window.__gsScore=(window.__gsScore||0)+score*100+streakBonus;
+    window.__gsBestRun=Math.max(window.__gsBestRun||0,score*100+streakBonus);
     if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
     const p=Math.round((score/total)*100);
     if(p>=70){
@@ -576,9 +578,12 @@ function bindEvents(){
       state.revealed=true;
       const ok=state.options[state.selected]?.isCorrect;
       if(ok){
+        state.streak++;
+        state.bestStreak=Math.max(state.bestStreak,state.streak);
         quizFx.playSuccess(900);
         ParticleSystem.burst(window.innerWidth/2,window.innerHeight/3,'✨',8);
       }else{
+        state.streak=0;
         quizFx.playError();
       }
       render();
@@ -589,7 +594,7 @@ function bindEvents(){
     app.querySelector("#printBtn")?.addEventListener("click",()=>window.print());
     app.querySelector("#resetBtn")?.addEventListener("click",()=>{
       ss={title:"",numQ:5,questions:Array.from({length:5},eq)};
-      state={view:"setup",quizData:null,playerName:"",qIdx:0,options:[],selected:null,revealed:false,answers:[]};
+      state={view:"setup",quizData:null,playerName:"",qIdx:0,options:[],selected:null,revealed:false,answers:[],streak:0,bestStreak:0};
       render();
     });
     app.querySelector("#copyBtn")?.addEventListener("click",()=>{
@@ -632,7 +637,7 @@ function launchQuiz(preview){
   }
 }
 function showErr(msg){const el=document.getElementById("setupError");if(el)el.innerHTML=`<div class="error-box">⚠️ ${esc(msg)}</div>`;}
-function startGame(){state.qIdx=0;state.answers=[];state.view="game";state._scored=false;prepQ();}
+function startGame(){state.qIdx=0;state.answers=[];state.view="game";state._scored=false;state.streak=0;state.bestStreak=0;prepQ();}
 function prepQ(){
   const q=state.quizData.questions[state.qIdx];
   state.options=shuffle([{text:q.correct,isCorrect:true},{text:q.wrong1,isCorrect:false},{text:q.wrong2,isCorrect:false},{text:q.wrong3,isCorrect:false}]);
