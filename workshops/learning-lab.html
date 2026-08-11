@@ -89,6 +89,14 @@ img{display:block;max-width:100%;}
 .card-cta{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;padding:10px 20px;border-radius:9px;border:none;color:#0d0d12;transition:filter .15s,transform .1s;width:100%;justify-content:center;}
 .card-cta:hover{filter:brightness(1.12);transform:translateY(-1px);}
 
+/* ═══ ECHO CARD, rehaul proof-of-concept ═══ */
+.echo-card{background:rgba(62,201,167,.04);border-color:rgba(62,201,167,.18);}
+.echo-card:hover{border-color:rgba(62,201,167,.4);box-shadow:0 16px 40px rgba(62,201,167,.15);}
+.echo-card-scene{position:relative;height:120px;overflow:hidden;}
+.echo-card-svg{width:100%;height:100%;display:block;}
+.echo-card-badges{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.echo-card-inner{padding:16px 20px 20px;}
+
 /* ═══ GAME MODAL ═══ */
 .game-modal{position:fixed;inset:0;z-index:500;background:#0d0d12;display:none;flex-direction:column;overflow:hidden;}
 .game-modal.open{display:flex;}
@@ -1194,6 +1202,7 @@ const TYPE_COLOR = { Puzzle:'#3EC9A7', Arcade:'#F5A623', Quiz:'#A78BFA', Action:
 
 function renderCards(){
   document.getElementById('subjectsGrid').innerHTML = SUBJECTS.map(s => {
+    if(s.id==='echo') return renderEchoCard(s);
     const p = PROGRESS[s.id]||{plays:0,best:0};
     const tc = TYPE_COLOR[s.type]||'#888';
     const maxS = s.maxScore||100;
@@ -1222,6 +1231,67 @@ function renderCards(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Echo custom card, rehaul proof-of-concept: distinct illustrated identity
+// instead of the shared icon-circle template every other subject still uses.
+function renderEchoCard(s){
+  const p = PROGRESS[s.id]||{plays:0,best:0};
+  const tc = TYPE_COLOR[s.type]||'#888';
+  const maxS = s.maxScore||100;
+  const pct = p.plays>0 ? p.best/maxS : 0;
+  const stars = p.plays===0 ? 0 : pct>=0.8 ? 3 : pct>=0.5 ? 2 : 1;
+  const starRow = `<div class="card-stars">${[1,2,3].map(i=>`<span class="card-star${i<=stars?' on':''}">⭐</span>`).join('')}</div>`;
+  const newBadge = s.isNew ? `<span class="badge-new">✨ NEW</span>` : '';
+  return `<div class="subject-card echo-card" onclick="openGame('echo');sndClick()">
+    <div class="echo-card-scene">
+      <svg viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" class="echo-card-svg">
+        <defs>
+          <linearGradient id="echoSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a0d18"/><stop offset="100%" stop-color="#0d1a14"/>
+          </linearGradient>
+          <radialGradient id="echoGlow" cx="50%" cy="55%" r="60%">
+            <stop offset="0%" stop-color="#3EC9A7" stop-opacity=".35"/><stop offset="100%" stop-color="#3EC9A7" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="400" height="140" fill="url(#echoSky)"/>
+        <circle cx="150" cy="70" r="70" fill="url(#echoGlow)"/>
+        <g stroke="#3EC9A7" stroke-width="1" opacity=".22" fill="none">
+          <path d="M0 30 H90 V10 H180"/><path d="M0 95 H60 V115 H230 V95 H400"/>
+          <path d="M260 20 V60 H400"/><path d="M330 140 V100 H230 V60"/>
+        </g>
+        <g fill="#3EC9A7" opacity=".5">
+          <circle cx="90" cy="30" r="3"/><circle cx="180" cy="10" r="3"/><circle cx="230" cy="95" r="3"/><circle cx="260" cy="20" r="3"/><circle cx="330" cy="100" r="3"/>
+        </g>
+        <rect x="0" y="112" width="400" height="28" fill="#152922"/>
+        <rect x="0" y="112" width="400" height="4" fill="#3EC9A7" opacity=".7"/>
+        <g transform="translate(150,96)">
+          <ellipse cx="0" cy="18" rx="46" ry="7" fill="#000" opacity=".25"/>
+          <path d="M-24 4 Q-40 10 -34 -4 Q-30 2 -22 6 Z" fill="#F87171"/>
+          <ellipse cx="0" cy="0" rx="26" ry="20" fill="#3EC9A7"/>
+          <ellipse cx="-9" cy="17" rx="5" ry="3" fill="#2fa384"/><ellipse cx="9" cy="17" rx="5" ry="3" fill="#2fa384"/>
+          <circle cx="-9" cy="-9" r="4.5" fill="#0d0d12"/><circle cx="9" cy="-9" r="4.5" fill="#0d0d12"/>
+          <circle cx="-7.5" cy="-10.5" r="1.7" fill="#fff"/><circle cx="10.5" cy="-10.5" r="1.7" fill="#fff"/>
+          <path d="M-7 6 Q0 11 7 6" stroke="#0d0d12" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          <circle cx="-14" cy="2" r="1.6" fill="#1a8a5a"/><circle cx="10" cy="-2" r="1.6" fill="#1a8a5a"/><circle cx="2" cy="8" r="1.6" fill="#1a8a5a"/>
+        </g>
+      </svg>
+      <div class="echo-card-badges">
+        ${newBadge}
+        <span class="badge-type" style="color:${tc};border-color:${tc}44;background:#0d0d12cc">${s.type}</span>
+        <span class="badge-age" style="background:#0d0d12cc">Ages ${s.age}</span>
+      </div>
+    </div>
+    <div class="card-inner echo-card-inner">
+      ${starRow}
+      <div class="char-name">${s.name}</div>
+      <div class="char-subject" style="color:${s.color}">${s.subject}</div>
+      <p class="card-desc">${s.desc}</p>
+      <div class="card-tags">${s.tags.map(t=>`<span class="meta-tag">${t}</span>`).join('')}</div>
+      <button class="card-cta" style="background:${s.color}">${p.plays>0?'▶ Play Again':'▶ Play'}, ${s.subject}</button>
+      <button class="card-study-btn" onclick="event.stopPropagation();showStudy('echo')">📖 Study Guide first</button>
+    </div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1357,7 +1427,7 @@ function buildEcho(body){
     <div class="fb" id="echoFb" style="margin:4px 14px 8px;"></div>
   </div>`;
   window.ES={lv:0,prog:[],animating:false,lives:3,score:0,coinCount:0,coinTotal:0,
-    player:{col:0,px:0,py:0},enemies:[],particles:[],unlocked:['move'],raf:null,coinState:[]};
+    player:{col:0,px:0,py:0},enemies:[],particles:[],unlocked:['move'],raf:null,coinState:[],shakeT:0,landSquash:0};
   echoLoadLevel(0);
 }
 
@@ -1366,7 +1436,7 @@ function echoStart(){document.getElementById('echoOverlay').classList.add('hidde
 function echoLoadLevel(idx){
   const E=window.ES,lv=ECHO_LVS[idx];
   if(!lv){echoDone();return;}
-  E.lv=idx;E.prog=[];E.animating=false;E.lives=3;
+  E.lv=idx;E.prog=[];E.animating=false;E.lives=3;E.shakeT=0;E.landSquash=0;
   E.coinCount=0;E.coinTotal=lv.ground.filter(v=>v===3).length;
   E.coinState=[...lv.ground];
   E.player={col:lv.start,px:lv.start*EC.T+EC.T/2,py:EC.GY-24};
@@ -1527,6 +1597,7 @@ function echoExecStep(b){
   E.player.col=targetCol;
   const fromX=E.player.px,toX=targetCol*T+T/2;
   const afterMove=()=>{
+    E.landSquash=1;
     if(echoCheckEnemy()){echoFail('An enemy hit Echo! Use wait() to let it pass first.');return;}
     E.stepIdx++;setTimeout(echoExecNext,80);
   };
@@ -1545,24 +1616,29 @@ function echoAnimJump(sx,sy,tx,ty,dur,cb){
 
 function echoWin(){
   const E=window.ES,lv=ECHO_LVS[E.lv];
-  const bonus=Math.round((E.coinCount/Math.max(1,E.coinTotal))*50);
+  const coinBonus=Math.round((E.coinCount/Math.max(1,E.coinTotal))*50);
+  const stars=E.lives;  // 3 lives left = flawless run = 3 stars
+  const starBonus=stars>=3?25:stars===2?10:0;
+  const bonus=coinBonus+starBonus;
   E.score+=100+bonus;echoUpdateUI();
   echoSpawnParticles(E.player.px,E.player.py,'#3EC9A7');
   echoSpawnParticles(E.player.px,E.player.py,'#F5A623');
   const fb=document.getElementById('echoFb');
+  const starRow='<div style="font-size:1.1rem;letter-spacing:3px;margin-bottom:4px;">'+
+    [1,2,3].map(i=>i<=stars?'⭐':'<span style="opacity:.2">⭐</span>').join('')+'</div>';
   if(E.lv>=ECHO_LVS.length-1){
     fb.className='fb show ok';
-    fb.innerHTML='🎉 All 10 levels done! You are a real programmer! Final score: <b>'+E.score+'</b>';
+    fb.innerHTML=starRow+'🎉 All 10 levels done! You are a real programmer! Final score: <b>'+E.score+'</b>';
     markDone('echo',E.score);
   } else {
     fb.className='fb show ok';
-    fb.innerHTML='✅ Level '+(E.lv+1)+' done! +'+(100+bonus)+' pts' +
+    fb.innerHTML=starRow+'✅ Level '+(E.lv+1)+' done! +'+(100+bonus)+' pts'+(stars<3?' <span style="opacity:.6;font-size:.78rem">(no mistakes = 3⭐ next time)</span>':'') +
       ' <button onclick="echoLoadLevel('+(E.lv+1)+')" style="margin-left:10px;padding:5px 16px;background:#3EC9A7;border:none;border-radius:8px;font-family:Fredoka,cursive;font-weight:700;color:#0d0d12;cursor:pointer;">Next Level →</button>';
   }
 }
 
 function echoFail(msg){
-  const E=window.ES;E.animating=false;E.lives--;echoUpdateUI();
+  const E=window.ES;E.animating=false;E.lives--;E.shakeT=220;echoUpdateUI();
   const fb=document.getElementById('echoFb');
   const retry='<button onclick="echoClear()" style="margin-left:8px;padding:5px 13px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;font-family:Fredoka,cursive;font-size:.82rem;font-weight:700;color:#fff;cursor:pointer;">Retry ↺</button>';
   if(E.lives<=0){
@@ -1603,11 +1679,21 @@ function echoDrawLoop(){
   const E=window.ES;
   const c=document.getElementById('echoCanvas');if(!c)return;
   const ctx=c.getContext('2d'),W=EC.CW,H=EC.CH,T=EC.T,GY=EC.GY;
-  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(E.shakeT>0){
+    E.shakeT-=16;
+    const mag=Math.max(0,E.shakeT/220)*7;
+    ctx.translate((Math.random()-.5)*mag,(Math.random()-.5)*mag);
+  }
+  ctx.clearRect(-10,-10,W+20,H+20);
   // Sky
   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0a0d18');sky.addColorStop(1,'#0d1a14');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   [[30,20],[90,35],[180,12],[280,28],[400,18],[520,30],[620,15],[700,40]].forEach(([x,y])=>{ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill();});
+  // Faint circuit-trace backdrop, matches the card art
+  ctx.strokeStyle='rgba(62,201,167,.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,40);ctx.lineTo(160,40);ctx.lineTo(160,90);ctx.lineTo(340,90);ctx.moveTo(420,10);ctx.lineTo(420,60);ctx.lineTo(560,60);ctx.lineTo(560,20);ctx.lineTo(W,20);ctx.stroke();
+  [[160,40],[340,90],[420,60],[560,20]].forEach(([x,y])=>{ctx.fillStyle='rgba(62,201,167,.18)';ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();});
 
   const lv=ECHO_LVS[E.lv];
   // Tiles
@@ -1619,15 +1705,21 @@ function echoDrawLoop(){
     } else {
       ctx.fillStyle='#2d4a3e';ctx.fillRect(tx,GY,T-1,H-GY);
       ctx.fillStyle='#3EC9A7';ctx.fillRect(tx,GY,T-1,4);
+      ctx.strokeStyle='rgba(62,201,167,.12)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(tx+T/2,GY+4);ctx.lineTo(tx+T/2,H);ctx.stroke();
       if(lv.ground[col]===2){
+        const doorGlow=Math.sin(Date.now()/500)*.15+.55;
+        ctx.fillStyle='rgba(62,201,167,'+doorGlow+')';ctx.beginPath();ctx.ellipse(tx+T/2,GY-23,20,26,0,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#1a3a2a';ctx.fillRect(tx+T/2-12,GY-46,24,46);
         ctx.fillStyle='#3EC9A7';ctx.fillRect(tx+T/2-12,GY-46,24,3);
         ctx.font='22px sans-serif';ctx.textAlign='center';ctx.fillText('🚪',tx+T/2,GY-10);
       }
       if(cell===3){
         const bob=Math.sin(Date.now()/400+col)*3;
+        ctx.fillStyle='rgba(255,215,0,.25)';ctx.beginPath();ctx.arc(tx+T/2,GY-22+bob,14,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#FFD700';ctx.beginPath();ctx.arc(tx+T/2,GY-22+bob,9,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='rgba(255,255,255,.5)';ctx.beginPath();ctx.arc(tx+T/2-3,GY-25+bob,3,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#c49700';ctx.lineWidth=1.5;ctx.stroke();
+        ctx.fillStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.arc(tx+T/2-3,GY-25+bob,3,0,Math.PI*2);ctx.fill();
       }
     }
   });
@@ -1635,27 +1727,43 @@ function echoDrawLoop(){
   // Enemies
   E.enemies.forEach(en=>{
     const ex=en.col*T+T/2,ey=GY-22;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(ex,GY+4,13,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(248,113,113,.25)';ctx.beginPath();ctx.arc(ex,ey,19,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#F87171';ctx.beginPath();ctx.arc(ex,ey,14,0,Math.PI*2);ctx.fill();
     ctx.font='16px sans-serif';ctx.textAlign='center';ctx.fillText('😈',ex,ey+6);
-    ctx.fillStyle='rgba(248,113,113,.6)';ctx.font='11px sans-serif';ctx.fillText(en.dir>0?'→':'←',ex,ey-18);
+    ctx.fillStyle='rgba(248,113,113,.7)';ctx.font='11px sans-serif';ctx.fillText(en.dir>0?'→':'←',ex,ey-20);
   });
 
-  // Echo
-  const px=E.player.px,py=E.player.py;
-  ctx.fillStyle='#3EC9A7';ctx.beginPath();ctx.ellipse(px,py,14,18,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#F87171';ctx.beginPath();ctx.ellipse(px-15,py+2,6,4,-0.4,0,Math.PI*2);ctx.fill();
+  // Echo, idle bob + squash-stretch when grounded and stationary
+  const px=E.player.px,py0=E.player.py;
+  const idleBob=E.animating?0:Math.sin(Date.now()/450)*2;
+  const py=py0+idleBob;
+  const squash=E.landSquash||0;
+  ctx.save();ctx.translate(px,py);ctx.scale(1+squash*.18,1-squash*.14);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(0,20-idleBob,15,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#F87171';ctx.beginPath();ctx.ellipse(-15,2,6,4,-0.4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#2a8f6f';
+  ctx.beginPath();ctx.ellipse(-8,15,3.5,4,0.3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(8,15,3.5,4,-0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#3EC9A7';ctx.beginPath();ctx.ellipse(0,0,14,18,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.ellipse(-4,-8,5,7,0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1f7a5c';
+  [[-6,-2],[5,3],[-2,7]].forEach(([sx,sy])=>{ctx.beginPath();ctx.arc(sx,sy,1.6,0,Math.PI*2);ctx.fill();});
   ctx.fillStyle='#0d0d12';
-  ctx.beginPath();ctx.arc(px-5,py-6,3.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(px+5,py-6,3.5,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px-4,py-7,1.5,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(px+6,py-7,1.5,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py+2,5,0.2,Math.PI-.2);ctx.stroke();
+  ctx.beginPath();ctx.arc(-5,-6,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(5,-6,3.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-4,-7,1.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(6,-7,1.5,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,2,5,0.2,Math.PI-.2);ctx.stroke();
+  ctx.restore();
+  if(E.landSquash>0)E.landSquash=Math.max(0,E.landSquash-.06);
 
   // Particles
   E.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life-=p.decay;});
   E.particles.filter(p=>p.life>0).forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
   E.particles=E.particles.filter(p=>p.life>0);
   ctx.globalAlpha=1;ctx.textAlign='left';
+  ctx.restore();
   E.raf=requestAnimationFrame(echoDrawLoop);
 }
 
