@@ -367,6 +367,11 @@ img{display:block;max-width:100%;}
 .xp-pop{position:fixed;pointer-events:none;font-family:'Fredoka',cursive;font-size:1.1rem;font-weight:700;color:#FFD93D;text-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9999;animation:xp-fly .9s ease forwards;}
 @keyframes xp-fly{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-60px) scale(1.3);}}
 @keyframes potBounce{0%{transform:scale(.5);}60%{transform:scale(1.2);}100%{transform:scale(1);}}
+/* Streak-fx particle pop + body shake, shared by the 6 MCQ subjects'
+   quizStreakFx() so a streak of 9+ actually feels bigger than a streak of 3. */
+@keyframes quizStreakPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.6);}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.1);}}
+body.quiz-streak-shake{animation:quizStreakShake .35s ease-out;}
+@keyframes quizStreakShake{0%{transform:translate(0,0);}20%{transform:translate(-6px,3px);}40%{transform:translate(5px,-3px);}60%{transform:translate(-4px,2px);}80%{transform:translate(2px,-1px);}100%{transform:translate(0,0);}}
 
 /* ═══ LAB BADGES ═══ */
 .lab-badges-wrap{max-width:760px;margin:0 auto 4px;}
@@ -880,13 +885,33 @@ function natTerrariumHTML(idx,total,results){
 
 function quizStreakFx(streak){
   if(streak<3||streak%3!==0)return;
-  sndWow();
+  // Tier 1 at streak 3, tier 4+ by streak 12 — pitch, size, particle count
+  // and shake all step up with it, instead of streak 3 and streak 15
+  // triggering the exact same fixed toast.
+  const tier=Math.min(Math.floor(streak/3),4);
+  [523,659,784,1047,1319].forEach((f,i)=>setTimeout(()=>playTone(f*(1+tier*0.08),.16),i*80));
   const el=document.createElement('div');
   el.className='xp-pop';
   el.textContent=streak>=12?'🌟 Perfect streak!':'🔥 '+streak+' in a row!';
-  el.style.cssText='left:50%;top:38%;transform:translateX(-50%);color:#FF9A3C;';
+  const scale=1+tier*0.15;
+  el.style.cssText=`left:50%;top:38%;transform:translateX(-50%) scale(${scale});color:#FF9A3C;font-size:${(1.1*scale).toFixed(2)}rem;`;
   document.body.appendChild(el);
   setTimeout(()=>el.remove(),1000);
+  if(tier>=2){
+    const n=4+tier*2;
+    for(let i=0;i<n;i++){
+      const p=document.createElement('span');
+      p.textContent='✨';
+      const angle=Math.random()*Math.PI*2, dist=40+Math.random()*50;
+      p.style.cssText=`position:fixed;left:50%;top:38%;font-size:${14+tier*2}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .7s ease-out forwards;`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),720);
+    }
+  }
+  if(tier>=3){
+    document.body.classList.add('quiz-streak-shake');
+    setTimeout(()=>document.body.classList.remove('quiz-streak-shake'),350);
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -2361,7 +2386,12 @@ function pipCheck(){
     const {qty:pqty,biscuit:pb}=PS.cur;
     fb.className='fb show ok';
     fb.innerHTML=`✅ ${pqty>1?pb.emoji.repeat(pqty)+' = '+PS.cur.correct+'p':'Correct, '+PS.cur.correct+'p!'} +${pts} pts`+(PS.streak>=3?' <span style="color:#FF9A3C">🔥 streak bonus!</span>':'');
-    pipCelebrate();
+    // pipCelebrate() used to fire the exact same 14-particle burst whether
+    // this was the first correct order or the tenth in a row. Scale it
+    // (and layer in a rising extra chime) with the streak instead.
+    const pipTier=Math.min(Math.floor(PS.streak/2),4);
+    pipCelebrate(14+pipTier*4);
+    if(pipTier>=1)setTimeout(()=>playTone(784*(1+pipTier*0.1),.14),150);
     setTimeout(pipNextCustomer,1300);
   } else {
     inp.className='price-input wrong';
@@ -2382,9 +2412,9 @@ function pipCheck(){
 }
 
 // Short-lived celebration burst on a correct answer, self-terminating.
-function pipCelebrate(){
+function pipCelebrate(n){
   const PS=window.PS;
-  for(let i=0;i<14;i++)
+  for(let i=0;i<(n||14);i++)
     PS.particles.push({x:340+(Math.random()-.5)*40,y:60+(Math.random()-.5)*20,vx:(Math.random()-.5)*6,vy:-(Math.random()*6+2),life:1,decay:.035+Math.random()*.025,color:i%2?'#FFD700':'#F5A623',size:3+Math.random()*4});
   if(!PS._animating){PS._animating=true;pipParticleLoop();}
 }
@@ -2579,9 +2609,9 @@ function bubbleLoop(){
   BP.raf=requestAnimationFrame(bubbleLoop);
 }
 
-function bubblePop(x,y,color){
+function bubblePop(x,y,color,n){
   const BP=window.BP;
-  for(let i=0;i<10;i++)
+  for(let i=0;i<(n||10);i++)
     BP.particles.push({x,y,vx:(Math.random()-.5)*5,vy:-(Math.random()*5+1),life:1,decay:.04+Math.random()*.03,color,size:2+Math.random()*3});
 }
 
@@ -2620,7 +2650,10 @@ function bubbleClick(e){
       const comboWrap=document.getElementById('bubbleComboWrap');
       if(BP.combo>=2){comboWrap.style.display='';document.getElementById('bubbleCombo').textContent=BP.combo;}
       else comboWrap.style.display='none';
-      bubblePop(first.x,first.y,first.color); bubblePop(hit.x,hit.y,hit.color);
+      // Two identical 10-particle pops regardless of combo size previously.
+      const bubbleTier=Math.min(Math.floor(BP.combo/2),4);
+      bubblePop(first.x,first.y,first.color,10+bubbleTier*3); bubblePop(hit.x,hit.y,hit.color,10+bubbleTier*3);
+      if(bubbleTier>=1)setTimeout(()=>playTone(880*(1+bubbleTier*0.08),.12),120);
       const fb=document.getElementById('bubbleFb');
       fb.className='fb show ok';
       fb.textContent=`✅ ${first.val} + ${hit.val} = ${tgt}! Pop! +${pts}`+(BP.combo>=3?' 🔥 combo!':'');
@@ -2813,8 +2846,8 @@ function engSpawn(EG,ch,idx,W,isCorrect){
   EG.letters.push({ch,targetIdx:idx,isCorrect,x:36+Math.random()*(W-72),y:-24,speed:.38+Math.random()*.22});
 }
 
-function engPop(x,y,color){
-  for(let i=0;i<10;i++){
+function engPop(x,y,color,n){
+  for(let i=0;i<(n||10);i++){
     window.EG.particles.push({x,y,vx:(Math.random()-.5)*5,vy:-(Math.random()*5+1),life:1,decay:.04+Math.random()*.03,color,size:2+Math.random()*3});
   }
 }
@@ -2835,7 +2868,14 @@ document.addEventListener('click',function(e){
           EG.combo++; if(EG.combo>EG.bestCombo)EG.bestCombo=EG.combo;
           const bonus=EG.combo>=3?2:1; EG.score+=bonus;
           document.getElementById('engScore').textContent=EG.score;
-          engPop(l.x,l.y,'#F472B6');
+          // Catching a letter previously had no sound at all, and the same
+          // fixed 10-particle pop whether it was your first catch or your
+          // tenth in a row. shakeT already exists (was wired to misses
+          // only) — now the success path uses it too, scaled by combo.
+          const comboTier=Math.min(Math.floor(EG.combo/3),4);
+          sndCorrect();
+          engPop(l.x,l.y,'#F472B6',8+comboTier*3);
+          if(comboTier>=1)EG.shakeT=Math.max(EG.shakeT,2+comboTier*2);
           const comboWrap=document.getElementById('engComboWrap');
           if(EG.combo>=2){comboWrap.style.display='';document.getElementById('engCombo').textContent=EG.combo;}
           if(EG.found.length===EG.target.length){
@@ -2995,6 +3035,22 @@ function potMix(){
     const streakWrap=document.getElementById('potStreakWrap');
     if(PL.streak>=2){streakWrap.style.display='';document.getElementById('potStreak').textContent=PL.streak;}
     sndCorrect(); if(isNew) sndWow();
+    // No canvas or shake mechanism at all here (pure DOM potion panel) and
+    // potBounce played identically at streak 1 and streak 6. Layer a
+    // small emoji pop + pitch-rising chime on top once the streak is hot.
+    const potTier=Math.min(Math.floor(PL.streak/2),4);
+    if(potTier>=1){
+      const r=resultEl.getBoundingClientRect();
+      for(let i=0;i<3+potTier*2;i++){
+        const p=document.createElement('span');
+        p.textContent='✨';
+        const angle=Math.random()*Math.PI*2, dist=25+Math.random()*35;
+        p.style.cssText=`position:fixed;left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;font-size:${13+potTier}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .6s ease-out forwards;`;
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),620);
+      }
+      setTimeout(()=>playTone(659*(1+potTier*0.08),.12),120);
+    }
     resultEl.style.background='rgba(52,211,153,.12)'; resultEl.style.borderColor='rgba(52,211,153,.4)';
     resultEl.innerHTML=`<div style="font-size:3rem;animation:potBounce .5s ease;">${recipe.result}</div>
       <div style="font-family:'Fredoka',cursive;font-size:1.2rem;color:#34D399;font-weight:700;margin-top:4px;">${recipe.name}</div>
@@ -3089,6 +3145,23 @@ function memFlip(card){
       if(MG.streak>=3){ MG.streakBonus+=10; }
       const streakWrap=document.getElementById('memStreakWrap');
       if(MG.streak>=2){streakWrap.style.display='';document.getElementById('memStreak').textContent=MG.streak;}
+      // A match previously had no sound or particles at all, a silent glow
+      // was the entire payoff. Now escalates with streak like the shared
+      // quizStreakFx tiers, so a 6-in-a-row match run feels different from
+      // the first one.
+      sndCorrect();
+      const memTier=Math.min(Math.floor(MG.streak/2),4);
+      const cardRect=a.getBoundingClientRect();
+      const cx=cardRect.left+cardRect.width/2, cy=cardRect.top+cardRect.height/2;
+      for(let i=0;i<3+memTier*2;i++){
+        const p=document.createElement('span');
+        p.textContent='✨';
+        const angle=Math.random()*Math.PI*2, dist=25+Math.random()*35;
+        p.style.cssText=`position:fixed;left:${cx}px;top:${cy}px;font-size:${13+memTier}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .6s ease-out forwards;`;
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),620);
+      }
+      if(memTier>=3){document.body.classList.add('quiz-streak-shake');setTimeout(()=>document.body.classList.remove('quiz-streak-shake'),350);}
       MG.flipped=[]; MG.lock=false;
       if(MG.matched.length===MEM_PAIRS.length){
         clearInterval(MG.timerInt);
@@ -3221,6 +3294,22 @@ function geoTap(btn){
       document.getElementById('geoScore').textContent=GQ.score;
       const streakWrap=document.getElementById('geoStreakWrap');
       if(GQ.streak>=2){streakWrap.style.display='';document.getElementById('geoStreak').textContent=GQ.streak;}
+      // A match previously was just a static colour swap, identical at
+      // streak 1 and streak 6. DOM-only board (no canvas), so the burst
+      // is a small emoji pop off the matched flag button instead.
+      const geoTier=Math.min(Math.floor(GQ.streak/2),4);
+      if(geoTier>=1){
+        const r=a.getBoundingClientRect();
+        for(let i=0;i<3+geoTier*2;i++){
+          const p=document.createElement('span');
+          p.textContent='✨';
+          const angle=Math.random()*Math.PI*2, dist=20+Math.random()*30;
+          p.style.cssText=`position:fixed;left:${r.left+r.width/2}px;top:${r.top+r.height/2}px;font-size:${12+geoTier}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .55s ease-out forwards;`;
+          document.body.appendChild(p);
+          setTimeout(()=>p.remove(),570);
+        }
+        setTimeout(()=>playTone(700*(1+geoTier*0.08),.1),100);
+      }
       document.getElementById('geoFb').className='fb show ok';
       const set=FLAG_SETS[GQ.setIdx];
       const pair=set.pairs[parseInt(a.dataset.idx)];
