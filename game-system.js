@@ -1217,4 +1217,50 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') flushAllState();
   });
+
+  /* ── Auto fullscreen toggle ──
+     Most games never wired the Fullscreen API, so tapping into them from the
+     Arcade just opened a normal page instead of filling the screen. Inject a
+     floating toggle for every page that loads this engine, unless the page
+     already ships its own (dungeon-delve, echo_fruit_catch). */
+  function initFullscreenToggle() {
+    // dungeon-delve.html and echo_fruit_catch.html ship their own toggle
+    // under different ids/fn names — don't double up on those two.
+    if (document.getElementById('btn-fullscreen') || document.getElementById('fsToggleBtn') ||
+        window.toggleFullscreen || window.toggleFS) return;
+    // Iframe-wrapper game pages (e.g. critter-whack-page.html) embed the
+    // actual game in a `.game-frame-wrap` box below a marketing header —
+    // fullscreening the whole document there would just blow up the hero
+    // text and footer around a small iframe, so fullscreen that box instead.
+    var target = document.querySelector('.game-frame-wrap') || document.documentElement;
+    var request = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
+    if (!request) return;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'gs-fullscreen-btn';
+    btn.setAttribute('aria-label', 'Enter fullscreen');
+    btn.textContent = '⛶';
+    btn.addEventListener('click', function () {
+      var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!isFs) {
+        (target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen).call(target);
+      } else {
+        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
+      }
+    });
+    ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function (ev) {
+      document.addEventListener(ev, function () {
+        var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+        btn.textContent = isFs ? '✕' : '⛶';
+        btn.setAttribute('aria-label', isFs ? 'Exit fullscreen' : 'Enter fullscreen');
+      });
+    });
+    (target === document.documentElement ? document.body : target).appendChild(btn);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFullscreenToggle);
+  } else {
+    initFullscreenToggle();
+  }
 })();
