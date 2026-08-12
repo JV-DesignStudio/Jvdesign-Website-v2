@@ -876,6 +876,8 @@ if (typeof document !== 'undefined') {
     if (!document.body) return;
     var t = document.createElement('div');
     t.className = 'jvds-xp-toast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
     t.textContent = text;
     t.style.cssText =
       'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);' +
