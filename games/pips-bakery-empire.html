@@ -58,6 +58,10 @@ html, body { width:100%; height:100%; overflow:hidden;
 .golden { position:fixed; z-index:70; font-size:2.6rem; cursor:pointer; filter:drop-shadow(0 0 12px rgba(255,183,0,.9)); animation:goldBob 1.6s ease-in-out infinite; }
 @keyframes goldBob { 50%{transform:translateY(-10px) rotate(8deg);} }
 
+/* RUSH ORDER */
+.rush-banner { margin-top:6px; background:linear-gradient(135deg,#ff8a3d,#ff5252); color:#fff; font-weight:800; font-size:.8rem; padding:7px 16px; border-radius:999px; text-align:center; animation:rushPulse 1s ease-in-out infinite; box-shadow:0 4px 14px rgba(255,82,82,.4); }
+@keyframes rushPulse { 50%{transform:scale(1.05);} }
+
 /* TABS */
 .tabs { display:flex; gap:6px; padding:0 12px 8px; }
 .tab { flex:1; background:rgba(0,0,0,.05); border:none; border-radius:12px 12px 0 0; padding:9px 4px; font-weight:800; font-size:.82rem; color:var(--crust-dk); cursor:pointer; }
@@ -161,6 +165,9 @@ const GENERATORS = [
   { id:'truck',   name:'Food Truck',  emoji:'🚚', baseCost:200000,  baseCps:500 },
   { id:'factory', name:'Factory',     emoji:'🏭', baseCost:3300000, baseCps:4000 },
   { id:'hq',      name:'Franchise HQ',emoji:'🏢', baseCost:51000000,baseCps:30000 },
+  { id:'megabakery',   name:'Mega Bakery',        emoji:'🏬', baseCost:800000000,     baseCps:220000 },
+  { id:'conglomerate', name:'Global Conglomerate',emoji:'🌍', baseCost:12000000000,   baseCps:1600000 },
+  { id:'empire',       name:"Pip's Empire",       emoji:'👑', baseCost:180000000000,  baseCps:12000000 },
 ];
 
 // upgrades: effect types, click_mult, click_add, gen_mult (genId), global_mult
@@ -188,6 +195,13 @@ const UPGRADES = [
   { id:'mktg2',  name:'Global Network',   emoji:'🌐', cost:80000000, desc:'ALL production x3', req:s=>s.gen.factory>=8, eff:{type:'global_mult',value:3} },
   { id:'tap4',   name:'Iron Fists',       emoji:'👊', cost:8000000, desc:'5x tap power',         eff:{type:'click_mult',value:5} },
   { id:'dough+', name:'Premium Flour',    emoji:'🌾', cost:120000, desc:'+100 per tap',         eff:{type:'click_add',value:100} },
+
+  // Tier 3: past Franchise HQ
+  { id:'mega2',    name:'Bakery Expansion', emoji:'🏗️', cost:4000000000,     desc:'Mega Bakeries x2',    req:s=>s.gen.megabakery>=5,   eff:{type:'gen_mult',genId:'megabakery',value:2} },
+  { id:'conglom2', name:'Hostile Takeover', emoji:'🤝', cost:60000000000,    desc:'Conglomerates x2',    req:s=>s.gen.conglomerate>=5, eff:{type:'gen_mult',genId:'conglomerate',value:2} },
+  { id:'empire2',  name:"Pip's Legacy",     emoji:'📜', cost:900000000000,   desc:'Empires x2',          req:s=>s.gen.empire>=2,       eff:{type:'gen_mult',genId:'empire',value:2} },
+  { id:'mktg3',    name:'World Domination', emoji:'🌐', cost:50000000000,    desc:'ALL production x4',   req:s=>s.gen.megabakery>=8,   eff:{type:'global_mult',value:4} },
+  { id:'tap5',     name:"Pip's Blessing",   emoji:'🌟', cost:400000000,      desc:'10x tap power',       eff:{type:'click_mult',value:10} },
 ];
 
 const GOALS = [
@@ -206,13 +220,17 @@ const GOALS = [
   { id:'g13',name:'Reach 10K/sec',         test:s=>currentCps()>=10000,     xp:250 },
   { id:'g14',name:'Own 5 Franchise Stars', test:s=>s.stars>=5,              xp:400 },
   { id:'g15',name:'Catch 10 Golden Croissants',test:s=>s.goldenCaught>=10,  xp:220 },
+  { id:'g16',name:'Own 10 Mega Bakeries',  test:s=>s.gen.megabakery>=10,    xp:300 },
+  { id:'g17',name:'Reach 100K/sec',        test:s=>currentCps()>=100000,    xp:280 },
+  { id:'g18',name:"Build Pip's Empire",    test:s=>s.gen.empire>=1,         xp:500 },
+  { id:'g19',name:'Complete 5 Rush Orders',test:s=>s.rushCompleted>=5,      xp:150 },
 ];
 
 /* ═══════════════ STATE ═══════════════ */
 let state;
 function freshState() {
   const gen = {}; GENERATORS.forEach(g => gen[g.id] = 0);
-  return { dough:0, totalEarned:0, gen, upgrades:[], stars:0, goals:[], lastSave:Date.now(), totalTaps:0, goldenCaught:0, bestSessionEarn:0 };
+  return { dough:0, totalEarned:0, gen, upgrades:[], stars:0, goals:[], lastSave:Date.now(), totalTaps:0, goldenCaught:0, bestSessionEarn:0, rushCompleted:0 };
 }
 function load() {
   try {
@@ -273,6 +291,7 @@ function bake(x, y) {
   if (x != null) floatText(x, y, '+' + fmt(v));
   const btn = document.getElementById('bakeBtn');
   ScreenShake.pulse(btn, 1.18, 130);
+  progressRush();
   updateTopStats();
 }
 
@@ -355,6 +374,66 @@ function catchGolden(e) {
   goldenEl.remove(); goldenEl = null;
   updateTopStats(); save();
   scheduleGolden();
+}
+
+/* ═══════════════ RUSH ORDERS ═══════════════
+   A timed active-play burst to complement the idle/passive loop: bake fast
+   enough to hit the target before time runs out for a bonus. No penalty for
+   missing one -- it just quietly disappears, so it never punishes players
+   who are away when it fires. */
+let rushOrder = null; // { target, progress, deadline, timeout }
+function scheduleRush() {
+  const delay = 40000 + Math.random() * 40000;
+  setTimeout(spawnRush, delay);
+}
+function spawnRush() {
+  if (rushOrder) { scheduleRush(); return; }
+  const target = 12 + Math.floor(Math.random() * 10);   // 12-21 taps
+  const duration = Math.max(5000, target * 420);          // generous but real pressure
+  rushOrder = { target, progress: 0, deadline: Date.now() + duration };
+  const el = document.createElement('div');
+  el.id = 'rushBanner'; el.className = 'rush-banner';
+  document.querySelector('.bake-area').appendChild(el);
+  updateRushBanner();
+  rushOrder.timeout = setTimeout(() => {
+    if (rushOrder && rushOrder.progress < rushOrder.target) failRush();
+  }, duration);
+}
+function updateRushBanner() {
+  const el = document.getElementById('rushBanner');
+  if (!el || !rushOrder) return;
+  const secs = Math.max(0, (rushOrder.deadline - Date.now()) / 1000);
+  el.textContent = `🔔 Rush order! Bake ${rushOrder.progress}/${rushOrder.target} — ${secs.toFixed(1)}s`;
+}
+function progressRush() {
+  if (!rushOrder) return;
+  rushOrder.progress++;
+  updateRushBanner();
+  if (rushOrder.progress >= rushOrder.target) completeRush();
+}
+function completeRush() {
+  clearTimeout(rushOrder.timeout);
+  const reward = Math.max(currentCps() * 15, clickValue() * 15, 20);
+  state.dough += reward; state.totalEarned += reward;
+  state.rushCompleted = (state.rushCompleted || 0) + 1;
+  gameSystem.addXP(15);
+  gameSystem.unlockAchievement('rushOrder');
+  audioEffects.playLevelUp();
+  const rect = document.getElementById('bakeBtn').getBoundingClientRect();
+  ParticleSystem.confetti(rect.left + rect.width / 2, rect.top + rect.height / 2, 14);
+  toast('Rush order complete! +' + fmt(reward));
+  endRush();
+  checkGoals(); updateTopStats(); save();
+}
+function failRush() {
+  toast('Rush order missed — the next one will come around.');
+  endRush();
+}
+function endRush() {
+  const el = document.getElementById('rushBanner');
+  if (el) el.remove();
+  rushOrder = null;
+  scheduleRush();
 }
 
 /* ═══════════════ RENDER ═══════════════ */
@@ -457,6 +536,10 @@ function goalProgress(g) {
   if (g.id==='g13') return currentCps()/10000;
   if (g.id==='g14') return state.stars/5;
   if (g.id==='g15') return state.goldenCaught/10;
+  if (g.id==='g16') return state.gen.megabakery/10;
+  if (g.id==='g17') return currentCps()/100000;
+  if (g.id==='g18') return state.gen.empire/1;
+  if (g.id==='g19') return state.rushCompleted/5;
   return 0;
 }
 
@@ -548,6 +631,7 @@ function tick() {
   if (cps > 0) { const gain = cps / 10; state.dough += gain; state.totalEarned += gain; }
   checkGoals();
   updateTopStats();
+  updateRushBanner();
 }
 
 /* ═══════════════ BOOT ═══════════════ */
@@ -579,6 +663,7 @@ function checkSessionShareMoment() {
 setInterval(tick, 100);
 setInterval(() => { save(); updateUpgradeBadge(); checkSessionShareMoment(); }, 5000);
 scheduleGolden();
+scheduleRush();
 
 window.addEventListener('beforeunload', () => {
   save();
