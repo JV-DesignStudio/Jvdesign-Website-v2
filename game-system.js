@@ -820,6 +820,18 @@ if (typeof document !== 'undefined') {
     ? scriptSrc.replace(/game-system\.js.*$/, 'player-profile.js')
     : '../player-profile.js';
 
+  /* ── Installed-app mode ──
+     Marks <html> as soon as this script runs (still mid-<head>, before
+     FOUC can happen) so CSS can drop marketing chrome that only makes
+     sense when a game is reached by scrolling a search result, not when
+     it's opened from inside the installed Arcade app. Same detection
+     arcade.html already uses for its own shell. Scoped in game-system.css
+     to the iframe-wrapper game pages (.game-frame-wrap); the other games
+     never render .site-header/.guide-wrap, so this is a no-op there. */
+  var isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
+    navigator.standalone === true;
+  if (isStandaloneApp) document.documentElement.classList.add('arc-appmode');
+
   function profile() {
     // player-profile.js declares a top-level `const playerProfile`
     // (a global lexical binding, not a window property).
