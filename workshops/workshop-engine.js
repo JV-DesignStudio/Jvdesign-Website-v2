@@ -150,8 +150,34 @@ function awardXp(amount, label) {
   document.getElementById('xpLabel').classList.add('xp-pop');
   setTimeout(function(){ document.getElementById('xpLabel').classList.remove('xp-pop'); }, 400);
   showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  // A correct quiz/code-challenge/concept-fill answer only ever showed the
+  // same fixed toast, the "hot" streak state (streak>=3) was already there
+  // but purely cosmetic (a colour + pulse), nothing actually scaled with
+  // how long the streak had gotten. This is called right after streak is
+  // incremented at all 3 call sites, so it reflects the current run.
+  if (streak >= 3) streakFx(streak);
   if (level > oldLevel) setTimeout(function(){ showLevelUp(level); }, 600);
   saveProgress();
+}
+
+function streakFx(s) {
+  var tier = Math.min(Math.floor(s / 3), 4);
+  var anchor = document.getElementById('xpLabel');
+  if (!anchor) return;
+  var r = anchor.getBoundingClientRect();
+  var n = 3 + tier * 2;
+  for (var i = 0; i < n; i++) {
+    var p = document.createElement('span');
+    p.textContent = '✨';
+    var angle = Math.random() * Math.PI * 2, dist = 20 + Math.random() * 30;
+    p.style.cssText = 'position:fixed;left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 2) + 'px;font-size:' + (12 + tier) + 'px;pointer-events:none;z-index:9999;--dx:' + (Math.cos(angle) * dist).toFixed(1) + 'px;--dy:' + (Math.sin(angle) * dist).toFixed(1) + 'px;animation:streakPop .55s ease-out forwards;';
+    document.body.appendChild(p);
+    (function (el) { setTimeout(function () { el.remove(); }, 570); })(p);
+  }
+  if (tier >= 2) {
+    document.body.classList.add('streak-shake');
+    setTimeout(function () { document.body.classList.remove('streak-shake'); }, 300);
+  }
 }
 
 function showXpToast(text) {
