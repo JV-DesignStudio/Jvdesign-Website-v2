@@ -3358,6 +3358,7 @@ function buildTimes(body,s){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px 6px;flex-wrap:wrap;gap:6px;">
       <div id="nbLives" style="font-size:1.2rem;letter-spacing:2px;">❤️❤️❤️</div>
       <div style="font-family:'Fredoka',cursive;font-size:1rem;color:#FF9A3C;font-weight:700;">Score: <span id="nbScore">0</span></div>
+      <div id="nbStreakWrap" style="display:none;font-size:.85rem;color:#FF9A3C;font-weight:700;">🔥 <span id="nbStreak">0</span></div>
       <div style="font-size:.8rem;color:rgba(255,255,255,.4);">Q <span id="nbQNum">1</span>/20</div>
     </div>
     <div style="position:relative;">
@@ -3379,6 +3380,7 @@ function buildTimes(body,s){
     lives:3, score:0, qNum:0, total:20,
     meteors:[], particles:[], done:false, animId:null,
     speed:1.2, canvas, ctx, COLORS, stars, tableFilter:null,
+    streak:0, bestStreak:0,
   };
   const picker=document.getElementById('nbTablePicker');
   picker.innerHTML='<button onclick="nbPickTable(null)" style="padding:8px 16px;background:#FF9A3C;border:none;border-radius:9px;font-family:Fredoka,cursive;font-weight:700;color:#0d0d12;cursor:pointer;">🎲 Mixed</button>'
@@ -3435,11 +3437,20 @@ function nbClick(e){
       if(m.isCorrect){
         sndCorrect(); NB.score+=10+Math.max(0,3-Math.floor(m.y/80))*5;
         document.getElementById('nbScore').textContent=NB.score;
-        nbExplode(m.x, m.y, m.color, true);
+        // Streak of correct blasts in a row, reset by a single wrong meteor.
+        NB.streak++; if(NB.streak>NB.bestStreak)NB.bestStreak=NB.streak;
+        const nbTier=Math.min(Math.floor(NB.streak/3),4);
+        if(nbTier>=1) NB.score+=nbTier*5;
+        const streakWrap=document.getElementById('nbStreakWrap');
+        if(NB.streak>=2){streakWrap.style.display='';document.getElementById('nbStreak').textContent=NB.streak;}
+        nbExplode(m.x, m.y, m.color, true, nbTier);
+        if(nbTier>=1)setTimeout(()=>playTone(523*(1+nbTier*0.1),.12),120);
         NB.meteors=[];
         setTimeout(nbNewQuestion, 700);
       } else {
         sndWrong(); NB.lives--;
+        NB.streak=0;
+        document.getElementById('nbStreakWrap').style.display='none';
         nbExplode(m.x, m.y, '#F87171', false);
         document.getElementById('nbLives').textContent='❤️'.repeat(Math.max(0,NB.lives))+'🖤'.repeat(Math.max(0,3-NB.lives));
         if(NB.lives<=0){ setTimeout(nbGameOver,600); }
@@ -3449,9 +3460,9 @@ function nbClick(e){
   }
 }
 
-function nbExplode(x,y,color,big){
+function nbExplode(x,y,color,big,tier){
   const NB=window.NB;
-  const count=big?18:10;
+  const count=(big?18:10)+(tier||0)*4;
   for(let i=0;i<count;i++){
     const angle=Math.random()*Math.PI*2;
     const speed=(Math.random()+.5)*(big?5:3);
@@ -3532,7 +3543,8 @@ function nbGameOver(){
     <div style="font-size:3.5rem;margin-bottom:8px;">${won?'🚀🎉🚀':'💥😅💥'}</div>
     <div style="font-family:'Fredoka',cursive;font-size:1.8rem;color:#fff;margin-bottom:6px;">${won?'All Meteors Blasted!':'Game Over!'}</div>
     <div style="color:rgba(255,255,255,.6);margin-bottom:6px;">Questions: <b style="color:#fff">${NB.qNum-1}/20</b> | Lives left: ${NB.lives>0?'❤️'.repeat(NB.lives):'💀'}</div>
-    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#FF9A3C;font-weight:700">${NB.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:6px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#FF9A3C;font-weight:700">${NB.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">🔥 Best streak: <span style="font-family:'Fredoka',cursive;font-size:1.2rem;color:#FF9A3C;font-weight:700">${NB.bestStreak||0}</span></div>
     <button onclick="openGame('times')" style="padding:11px 26px;background:#FF9A3C;border:none;border-radius:12px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:#0d0d12;cursor:pointer;">▶ Play Again</button>
   </div>
   <div class="learn-panel"><div class="learn-eyebrow" style="color:#FF9A3C">🔢 Times Tables Master</div>
@@ -3653,6 +3665,7 @@ function buildMusic(body,s){
   body.innerHTML=`<div class="gc" style="max-width:520px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
       <div style="font-family:'Fredoka',cursive;font-size:1.1rem;color:#EC4899;font-weight:700;">🥁 Beat Maker</div>
+      <div id="bmStreakWrap" style="display:none;font-size:.82rem;color:#EC4899;font-weight:700;">🔥 <span id="bmStreak">0</span></div>
       <div style="font-size:.82rem;color:rgba(255,255,255,.5);">Score: <b id="bmScore" style="color:#EC4899">0</b> | Challenge <span id="bmChallNum">1</span>/8</div>
     </div>
     <div id="bmChallDesc" style="background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.25);border-radius:12px;padding:10px 14px;font-size:.83rem;color:rgba(255,255,255,.8);margin-bottom:12px;min-height:36px;line-height:1.4;"></div>
@@ -3670,6 +3683,7 @@ function buildMusic(body,s){
   window.BM={
     grid, playing:false, step:0, intervalId:null,
     score:0, challenge:0, freePlayStart:null,
+    playAttempts:0, streak:0, bestStreak:0,
   };
   bmRenderGrid();
   bmUpdateChallenge();
@@ -3750,7 +3764,7 @@ function bmTogglePlay(){
     BM_ROWS.forEach((row,r)=>{for(let b=0;b<BM_STEPS;b++){const c=document.getElementById(`bmCell_${r}_${b}`);if(c){c.style.boxShadow='none';}}});
     bmCheckChallenge(false);
   } else {
-    getBMAC(); BM.playing=true; BM.step=0;
+    getBMAC(); BM.playing=true; BM.step=0; BM.playAttempts++;
     document.getElementById('bmPlayBtn').textContent='⏹ Stop';
     const tempo=parseInt(document.getElementById('bmTempo').value);
     const ms=Math.round(60000/tempo/2);
@@ -3772,10 +3786,32 @@ function bmCheckChallenge(isPlaying, freeTime=0){
   if(ch.check(BM.grid,isPlaying,tempo,freeTime)){
     clearInterval(BM.intervalId); BM.playing=false;
     document.getElementById('bmPlayBtn').textContent='▶ Play';
-    BM.score+=25; BM.challenge++;
+    // A challenge solved on the very first Play press builds a streak,
+    // same "first-try" idiom Pip's Bakery uses; needing to stop and adjust
+    // the grid before it plays correctly resets it back to 0.
+    const firstTry=BM.playAttempts<=1;
+    if(firstTry){ BM.streak++; if(BM.streak>BM.bestStreak)BM.bestStreak=BM.streak; } else { BM.streak=0; }
+    BM.playAttempts=0;
+    const bmTier=Math.min(Math.floor(BM.streak/2),4);
+    const bonus=bmTier>=1?bmTier*5:0;
+    BM.score+=25+bonus; BM.challenge++;
     document.getElementById('bmScore').textContent=BM.score;
     sndWow();
-    document.getElementById('bmFb').textContent='✨ Challenge complete! +25 pts';
+    const streakWrap=document.getElementById('bmStreakWrap');
+    if(BM.streak>=2){streakWrap.style.display='';document.getElementById('bmStreak').textContent=BM.streak;} else streakWrap.style.display='none';
+    if(bmTier>=1){
+      setTimeout(()=>playTone(659*(1+bmTier*0.08),.14),150);
+      const el=document.getElementById('bmChallDesc').getBoundingClientRect();
+      for(let i=0;i<3+bmTier*2;i++){
+        const p=document.createElement('span');
+        p.textContent='🎵';
+        const angle=Math.random()*Math.PI*2, dist=25+Math.random()*35;
+        p.style.cssText=`position:fixed;left:${el.left+el.width/2}px;top:${el.top+el.height/2}px;font-size:${13+bmTier}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .6s ease-out forwards;`;
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),620);
+      }
+    }
+    document.getElementById('bmFb').textContent=`✨ Challenge complete! +${25+bonus} pts`+(firstTry&&BM.streak>=2?` 🔥 ${BM.streak} in a row!`:'');
     document.getElementById('bmFb').style.color='#F5A623';
     setTimeout(()=>{ document.getElementById('bmFb').textContent=''; document.getElementById('bmFb').style.color='#34D399'; },1800);
     if(BM.challenge>=BM_CHALLENGES.length){ setTimeout(musDone,1200); } else { bmUpdateChallenge(); }
@@ -3831,6 +3867,7 @@ function buildLogic(body,s){
   body.innerHTML=`<div class="gc">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div id="lgcTitle" style="font-family:'Fredoka',cursive;font-size:1.1rem;color:#22D3EE;font-weight:700;"></div>
+      <div id="lgcStreakWrap" style="display:none;font-size:.8rem;color:#22D3EE;font-weight:700;">🔥 <span id="lgcStreak">0</span></div>
       <div style="font-size:.8rem;color:rgba(255,255,255,.4);">Puzzle <span id="lgcNum">1</span>/${GATE_PUZZLES.length}</div>
       <div style="font-family:'Fredoka',cursive;font-size:1rem;color:#F5A623;font-weight:700;">Score: <span id="lgcScore">0</span></div>
     </div>
@@ -3848,12 +3885,12 @@ function buildLogic(body,s){
     <div id="lgcHint" style="font-size:.78rem;color:rgba(34,211,238,.5);text-align:center;margin-top:8px;"></div>
     <div class="fb" id="lgcFb" style="margin-top:8px;"></div>
   </div>`;
-  window.LQ={puzzleIdx:0,score:0,inputs:[],solved:0};
+  window.LQ={puzzleIdx:0,score:0,inputs:[],solved:0,toggles:0,streak:0,bestStreak:0};
   lgcLoadPuzzle(0);
 }
 
 function lgcLoadPuzzle(idx){
-  const LQ=window.LQ; LQ.puzzleIdx=idx;
+  const LQ=window.LQ; LQ.puzzleIdx=idx; LQ.toggles=0;
   if(idx>=GATE_PUZZLES.length){lgcDone();return;}
   const p=GATE_PUZZLES[idx];
   LQ.inputs=Array(p.inputs).fill(false);
@@ -3880,6 +3917,7 @@ function lgcLoadPuzzle(idx){
 function lgcToggle(i){
   const LQ=window.LQ;
   LQ.inputs[i]=!LQ.inputs[i];
+  LQ.toggles++;
   const on=LQ.inputs[i];
   const sw=document.getElementById('lgcSwitch'+i);
   const knob=document.getElementById('lgcKnob'+i);
@@ -3920,10 +3958,32 @@ function lgcEval(){
   // check win
   if(out===p.target){
     sndCorrect();
-    LQ.score+=20; LQ.solved++;
+    // Efficient streak: solved without excess trial-and-error (roughly one
+    // toggle per switch or fewer), reset by a puzzle that took a lot of
+    // flipping back and forth to land on. Toggling switches while exploring
+    // isn't a "miss" here, this rewards figuring it out cleanly instead.
+    const efficient=LQ.toggles<=p.inputs+1;
+    if(efficient){ LQ.streak++; if(LQ.streak>LQ.bestStreak)LQ.bestStreak=LQ.streak; } else { LQ.streak=0; }
+    const lgcTier=Math.min(Math.floor(LQ.streak/2),4);
+    const bonus=lgcTier>=1?lgcTier*5:0;
+    LQ.score+=20+bonus; LQ.solved++;
     document.getElementById('lgcScore').textContent=LQ.score;
+    const streakWrap=document.getElementById('lgcStreakWrap');
+    if(LQ.streak>=2){streakWrap.style.display='';document.getElementById('lgcStreak').textContent=LQ.streak;} else streakWrap.style.display='none';
     document.getElementById('lgcFb').className='fb show ok';
-    document.getElementById('lgcFb').textContent=`✅ You cracked the ${p.title} puzzle! +20 pts`;
+    document.getElementById('lgcFb').textContent=`✅ You cracked the ${p.title} puzzle! +${20+bonus} pts`+(efficient&&LQ.streak>=2?` 🔥 ${LQ.streak} in a row!`:'');
+    if(lgcTier>=1){
+      setTimeout(()=>playTone(600*(1+lgcTier*0.08),.14),150);
+      const bulb=document.getElementById('lgcOutputBulb').getBoundingClientRect();
+      for(let i=0;i<3+lgcTier*2;i++){
+        const sp=document.createElement('span');
+        sp.textContent='💡';
+        const angle=Math.random()*Math.PI*2, dist=25+Math.random()*35;
+        sp.style.cssText=`position:fixed;left:${bulb.left+bulb.width/2}px;top:${bulb.top+bulb.height/2}px;font-size:${13+lgcTier}px;pointer-events:none;z-index:9999;--dx:${(Math.cos(angle)*dist).toFixed(1)}px;--dy:${(Math.sin(angle)*dist).toFixed(1)}px;animation:quizStreakPop .6s ease-out forwards;`;
+        document.body.appendChild(sp);
+        setTimeout(()=>sp.remove(),620);
+      }
+    }
     document.querySelectorAll('[id^=lgcSwitch]').forEach(b=>b.disabled=true);
     setTimeout(()=>lgcLoadPuzzle(LQ.puzzleIdx+1),1400);
   }
@@ -3974,7 +4034,8 @@ function lgcDone(){
   gc.innerHTML=`<div style="text-align:center;padding:24px;">
     <div style="font-size:3.5rem;margin-bottom:10px;">💻⚡💻</div>
     <div style="font-family:'Fredoka',cursive;font-size:1.8rem;color:#fff;margin-bottom:6px;">Logic Master!</div>
-    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#22D3EE;font-weight:700">${LQ.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:6px;">Score: <span style="font-family:'Fredoka',cursive;font-size:1.5rem;color:#22D3EE;font-weight:700">${LQ.score}</span></div>
+    <div style="color:rgba(255,255,255,.6);margin-bottom:20px;">🔥 Best streak: <span style="font-family:'Fredoka',cursive;font-size:1.2rem;color:#22D3EE;font-weight:700">${LQ.bestStreak||0}</span></div>
     <button onclick="openGame('logic')" style="padding:11px 26px;background:#22D3EE;border:none;border-radius:12px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:#0d0d12;cursor:pointer;">▶ Play Again</button>
   </div>
   <div class="learn-panel"><div class="learn-eyebrow" style="color:#22D3EE">💻 Logic Lab explains...</div>
