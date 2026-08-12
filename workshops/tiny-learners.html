@@ -751,7 +751,12 @@ function playTone(freq, dur, type='sine', vol=0.25){
   g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur);
   o.start(); o.stop(ac.currentTime + dur);
 }
-function playCorrect(){ playTone(523,.12); setTimeout(()=>playTone(659,.12),120); setTimeout(()=>playTone(784,.2),240); }
+function playCorrect(streak){
+  streak = streak||0;
+  playTone(523,.12); setTimeout(()=>playTone(659,.12),120); setTimeout(()=>playTone(784,.2),240);
+  if(streak>=3) setTimeout(()=>playTone(988,.22),360);
+  if(streak>=3 && (streak===3 || streak%5===0)) spawnConfetti(streak>=10?45:24);
+}
 function playWrong(){ playTone(200,.25,'sawtooth',.15); }
 function playWow(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,.18),i*90)); }
 function playPop(){ playTone(880,.08,'sine',.2); }
@@ -761,9 +766,10 @@ function playPop(){ playTone(880,.08,'sine',.2); }
 // ══════════════════════════════════════════
 const CC = document.getElementById('confettiCanvas');
 let _confetti = [], _confRaf = null;
-function spawnConfetti(){
+function spawnConfetti(count){
+  count = count||100;
   CC.width = innerWidth; CC.height = innerHeight;
-  for(let i=0;i<100;i++){
+  for(let i=0;i<count;i++){
     _confetti.push({
       x:Math.random()*innerWidth, y:-10-Math.random()*80,
       vx:(Math.random()-.5)*4, vy:2+Math.random()*4,
@@ -1122,7 +1128,7 @@ function renderDots(el,total,cur,answers){
     return `<div class="${c}"></div>`;
   }).join('');
 }
-function showFb(el,ok,msg){ el.className='fb-line show '+(ok?'ok':'bad'); el.textContent=msg; }
+function showFb(el,ok,msg,streak){ el.className='fb-line show '+(ok?'ok':'bad'); el.textContent=(ok && streak>=3) ? msg+' 🔥 '+streak+' in a row!' : msg; }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
 function doneScreen(body,act,score,total,learnTitle,learnBody){
@@ -1149,7 +1155,7 @@ function buildCount(body,act){
     <div class="count-num-row" id="cntNums"></div>
     <div class="fb-line" id="cntFb"></div>
   </div>`;
-  window.CNT={q:0,score:0,total:10,answers:[],emoji:'🍎'};
+  window.CNT={q:0,score:0,total:10,answers:[],emoji:'🍎',streak:0,bestStreak:0};
   cntNext();
 }
 function cntNext(){
@@ -1168,7 +1174,7 @@ function cntNext(){
 function cntAnswer(val){
   const S=window.CNT; const ok=val===S.cur;
   document.querySelectorAll('.count-num-btn').forEach(b=>{b.disabled=true;if(parseInt(b.textContent)===S.cur)b.classList.add('correct');else if(parseInt(b.textContent)===val&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('cntFb'),true,`✅ Yes! There are ${S.cur} ${S.emoji}`),S.score++):(playWrong(),showFb(document.getElementById('cntFb'),false,`There are ${S.cur}, count them one by one! 🐢`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('cntFb'),true,`✅ Yes! There are ${S.cur} ${S.emoji}`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('cntFb'),false,`There are ${S.cur}, count them one by one! 🐢`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(cntNext,1400);
 }
 function cntDone(){
@@ -1194,7 +1200,7 @@ function buildColours(body,act){
     <div class="tap-grid tap-grid-2" id="colOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="colFb"></div>
   </div>`;
-  window.COL={q:0,score:0,total:10,answers:[]};
+  window.COL={q:0,score:0,total:10,answers:[],streak:0,bestStreak:0};
   colNext();
 }
 function colNext(){
@@ -1211,7 +1217,7 @@ function colNext(){
 function colAnswer(name){
   const S=window.COL; const ok=name===S.cur.name;
   document.querySelectorAll('.colour-swatch').forEach(el=>{el.style.pointerEvents='none';const isT=el.getAttribute('aria-label')===S.cur.name,isC=el.getAttribute('aria-label')===name;if(isT)el.classList.add('correct');else if(isC&&!ok)el.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('colFb'),true,`✅ That's right, ${S.cur.name}! ${S.cur.emoji}`),S.score++):(playWrong(),showFb(document.getElementById('colFb'),false,`The ${S.cur.name} one! ${S.cur.emoji} Look carefully!`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('colFb'),true,`✅ That's right, ${S.cur.name}! ${S.cur.emoji}`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('colFb'),false,`The ${S.cur.name} one! ${S.cur.emoji} Look carefully!`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(colNext,1500);
 }
 function colDone(){
@@ -1242,7 +1248,7 @@ function buildShapes(body,act){
     <div class="tap-grid tap-grid-2" id="shpOpts"></div>
     <div class="fb-line" id="shpFb"></div>
   </div>`;
-  window.SHP={q:0,score:0,total:10,answers:[]};
+  window.SHP={q:0,score:0,total:10,answers:[],streak:0,bestStreak:0};
   shpNext();
 }
 function shpNext(){
@@ -1259,7 +1265,7 @@ function shpNext(){
 function shpAnswer(name){
   const S=window.SHP; const ok=name===S.cur.name;
   document.querySelectorAll('.shape-card').forEach(el=>{el.style.pointerEvents='none';if(el.getAttribute('aria-label')===S.cur.name)el.classList.add('correct');else if(el.getAttribute('aria-label')===name&&!ok)el.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('shpFb'),true,`✅ Yes, that's a ${S.cur.name}! 🎉`),S.score++):(playWrong(),showFb(document.getElementById('shpFb'),false,`That one is the ${S.cur.name}! Look at its sides and corners.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('shpFb'),true,`✅ Yes, that's a ${S.cur.name}! 🎉`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('shpFb'),false,`That one is the ${S.cur.name}! Look at its sides and corners.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(shpNext,1400);
 }
 function shpDone(){
@@ -1297,7 +1303,7 @@ function buildPhonics(body,act){
     <div class="tap-grid tap-grid-2" id="phOpts"></div>
     <div class="fb-line" id="phFb"></div>
   </div>`;
-  window.PHN={q:0,score:0,total:10,answers:[],pool:shuffle([...PHONICS_DATA]).slice(0,10)};
+  window.PHN={q:0,score:0,total:10,answers:[],pool:shuffle([...PHONICS_DATA]).slice(0,10),streak:0,bestStreak:0};
   phNext();
 }
 function phNext(){
@@ -1315,7 +1321,7 @@ function phNext(){
 function phAnswer(word){
   const S=window.PHN; const ok=word===S.correct.w;
   document.querySelectorAll('#phOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.correct.w)b.classList.add('correct');else if(b.getAttribute('aria-label')===word&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('phFb'),true,`✅ Yes! ${S.correct.e} ${S.correct.w} starts with ${S.cur.letter}!`),S.score++):(playWrong(),showFb(document.getElementById('phFb'),false,`${S.correct.e} ${S.correct.w} starts with ${S.cur.letter}! (${S.cur.sound})`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('phFb'),true,`✅ Yes! ${S.correct.e} ${S.correct.w} starts with ${S.cur.letter}!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('phFb'),false,`${S.correct.e} ${S.correct.w} starts with ${S.cur.letter}! (${S.cur.sound})`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(phNext,1500);
 }
 function phDone(){
@@ -1337,7 +1343,7 @@ function buildAdd(body,act){
     <div class="count-num-row" id="addNums" style="margin-bottom:10px;"></div>
     <div class="fb-line" id="addFb"></div>
   </div>`;
-  window.ADD={q:0,score:0,total:10,answers:[]};
+  window.ADD={q:0,score:0,total:10,answers:[],streak:0,bestStreak:0};
   addNext();
 }
 function addNext(){
@@ -1357,7 +1363,7 @@ function addNext(){
 function addAnswer(val){
   const S=window.ADD; const ok=val===S.cur.ans;
   document.querySelectorAll('#addNums .count-num-btn').forEach(b=>{b.disabled=true;if(parseInt(b.textContent)===S.cur.ans)b.classList.add('correct');else if(parseInt(b.textContent)===val&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('addFb'),true,`✅ ${S.cur.a} + ${S.cur.b} = ${S.cur.ans} ${S.cur.emoji}`),S.score++):(playWrong(),showFb(document.getElementById('addFb'),false,`${S.cur.a} + ${S.cur.b} = ${S.cur.ans}. Count each group then count them all!`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('addFb'),true,`✅ ${S.cur.a} + ${S.cur.b} = ${S.cur.ans} ${S.cur.emoji}`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('addFb'),false,`${S.cur.a} + ${S.cur.b} = ${S.cur.ans}. Count each group then count them all!`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(addNext,1500);
 }
 function addDone(){
@@ -1387,7 +1393,7 @@ function buildPattern(body,act){
     <div class="tap-grid tap-grid-3" id="patOpts"></div>
     <div class="fb-line" id="patFb"></div>
   </div>`;
-  window.PAT={q:0,score:0,total:10,answers:[],pool:shuffle([...PAT_SETS]).slice(0,10)};
+  window.PAT={q:0,score:0,total:10,answers:[],pool:shuffle([...PAT_SETS]).slice(0,10),streak:0,bestStreak:0};
   patNext();
 }
 function patNext(){
@@ -1411,7 +1417,7 @@ function patAnswer(val){
   const S=window.PAT; const ok=val===S.cur;
   document.querySelectorAll('#patOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur)b.classList.add('correct');else if(b.getAttribute('aria-label')===val&&!ok)b.classList.add('wrong');});
   const blank=document.querySelector('.pat-blank'); if(blank){blank.textContent=S.cur;blank.style.border='none';}
-  ok?(playCorrect(),showFb(document.getElementById('patFb'),true,`✅ ${S.cur}, you spotted the pattern!`),S.score++):(playWrong(),showFb(document.getElementById('patFb'),false,`The answer was ${S.cur}. Look at the repeating colours!`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('patFb'),true,`✅ ${S.cur}, you spotted the pattern!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('patFb'),false,`The answer was ${S.cur}. Look at the repeating colours!`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(patNext,1500);
 }
 function patDone(){
@@ -1448,7 +1454,7 @@ function buildSize(body,act){
     <div class="size-scene" id="szScene"></div>
     <div class="fb-line" id="szFb"></div>
   </div>`;
-  window.SZ={q:0,score:0,total:10,answers:[],pool:shuffle([...SIZE_PAIRS]).slice(0,10)};
+  window.SZ={q:0,score:0,total:10,answers:[],pool:shuffle([...SIZE_PAIRS]).slice(0,10),streak:0,bestStreak:0};
   szNext();
 }
 function szNext(){
@@ -1474,7 +1480,7 @@ function szAnswer(isBig){
   const all=[...document.querySelectorAll('.size-item')];
   // find which item matches the correct answer
   all.forEach(el=>{const bigEl=el.querySelector('div').textContent===S.cur.pair.big.e;const isCorrectEl=(S.cur.askBig&&bigEl)||(!S.cur.askBig&&!bigEl);el.classList.add(isCorrectEl?'correct':'wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('szFb'),true,`✅ Right! The ${correctItem.l} ${correctItem.e} is ${S.cur.askBig?'bigger':'smaller'}!`),S.score++):(playWrong(),showFb(document.getElementById('szFb'),false,`The ${correctItem.l} ${correctItem.e} is ${S.cur.askBig?'bigger':'smaller'}!`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('szFb'),true,`✅ Right! The ${correctItem.l} ${correctItem.e} is ${S.cur.askBig?'bigger':'smaller'}!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('szFb'),false,`The ${correctItem.l} ${correctItem.e} is ${S.cur.askBig?'bigger':'smaller'}!`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(szNext,1600);
 }
 function szDone(){
@@ -1512,7 +1518,7 @@ function buildOdd(body,act){
     <div class="odd-grid" id="oddGrid"></div>
     <div class="fb-line" id="oddFb"></div>
   </div>`;
-  window.ODD={q:0,score:0,total:10,answers:[],pool:shuffle([...ODD_SETS]).slice(0,10)};
+  window.ODD={q:0,score:0,total:10,answers:[],pool:shuffle([...ODD_SETS]).slice(0,10),streak:0,bestStreak:0};
   oddNext();
 }
 function oddNext(){
@@ -1528,7 +1534,7 @@ function oddAnswer(idx){
   document.querySelectorAll('.odd-card').forEach(el=>el.style.pointerEvents='none');
   document.getElementById('oddCard'+S.cur.set.odd).classList.add('correct');
   if(!ok) document.getElementById('oddCard'+idx).classList.add('wrong');
-  ok?(playCorrect(),showFb(document.getElementById('oddFb'),true,`✅ ${S.cur.set.items[S.cur.set.odd].e} is the odd one out, ${S.cur.set.why}`),S.score++):(playWrong(),showFb(document.getElementById('oddFb'),false,`${S.cur.set.items[S.cur.set.odd].e} is the odd one out, ${S.cur.set.why}`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('oddFb'),true,`✅ ${S.cur.set.items[S.cur.set.odd].e} is the odd one out, ${S.cur.set.why}`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('oddFb'),false,`${S.cur.set.items[S.cur.set.odd].e} is the odd one out, ${S.cur.set.why}`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(oddNext,1800);
 }
 function oddDone(){
@@ -1567,7 +1573,7 @@ function buildRhyme(body,act){
     <div class="tap-grid tap-grid-2" id="rhOpts"></div>
     <div class="fb-line" id="rhFb"></div>
   </div>`;
-  window.RHM={q:0,score:0,total:10,answers:[],pool:shuffle([...RHYMES]).slice(0,10)};
+  window.RHM={q:0,score:0,total:10,answers:[],pool:shuffle([...RHYMES]).slice(0,10),streak:0,bestStreak:0};
   rhmNext();
 }
 function rhmNext(){
@@ -1583,7 +1589,7 @@ function rhmNext(){
 function rhmAnswer(word){
   const S=window.RHM; const ok=word===S.correct.w;
   document.querySelectorAll('#rhOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.correct.w)b.classList.add('correct');else if(b.getAttribute('aria-label')===word&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('rhFb'),true,`✅ ${S.cur.word} and ${S.correct.w}, they rhyme! 🎵`),S.score++):(playWrong(),showFb(document.getElementById('rhFb'),false,`${S.correct.e} ${S.correct.w} rhymes with ${S.cur.word}! Say them both out loud.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('rhFb'),true,`✅ ${S.cur.word} and ${S.correct.w}, they rhyme! 🎵`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('rhFb'),false,`${S.correct.e} ${S.correct.w} rhymes with ${S.cur.word}! Say them both out loud.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(rhmNext,1600);
 }
 function rhmDone(){
@@ -1618,7 +1624,7 @@ function buildSequence(body,act){
     <div class="seq-cards" id="seqCards"></div>
     <div class="fb-line" id="seqFb"></div>
   </div>`;
-  window.SEQ={q:0,score:0,total:7,answers:[],pool:shuffle([...SEQUENCES]).slice(0,7),placing:0,placed:[],shuffled:[]};
+  window.SEQ={q:0,score:0,total:7,answers:[],pool:shuffle([...SEQUENCES]).slice(0,7),placing:0,placed:[],shuffled:[],streak:0,bestStreak:0};
   seqNext();
 }
 function seqNext(){
@@ -1643,9 +1649,11 @@ function seqTap(origIdx){
     slot.classList.add('filled'); slot.innerHTML=`<div class="seq-slot-num">${S.placing+1}</div><div style="font-size:1.8rem">${S.story.steps[origIdx].e}</div><div style="font-size:.7rem;font-weight:700;color:rgba(64,59,51,.6);margin-top:2px">${S.story.steps[origIdx].l}</div>`;
     S.placed.push(origIdx); S.placing++;
     if(S.placing>=S.story.steps.length){
-      setTimeout(()=>{showFb(document.getElementById('seqFb'),true,`✅ ${S.story.title} in the right order! 🎉`);S.score++;S.answers.push(true);S.q++;setScore(`⭐ ${S.score}/${S.total}`);setTimeout(seqNext,1800);},300);
+      S.streak++; S.bestStreak=Math.max(S.bestStreak,S.streak);
+      setTimeout(()=>{showFb(document.getElementById('seqFb'),true,`✅ ${S.story.title} in the right order! 🎉`,S.streak);S.score++;S.answers.push(true);S.q++;setScore(`⭐ ${S.score}/${S.total}`);setTimeout(seqNext,1800);},300);
     }
   } else {
+    S.streak=0;
     playWrong(); card.classList.add('wrong'); setTimeout(()=>card.classList.remove('wrong'),400);
     showFb(document.getElementById('seqFb'),false,`Not quite! Tap picture number ${S.placing+1} next.`);
   }
@@ -1686,7 +1694,7 @@ function buildAnimals(body,act){
     <div class="tap-grid tap-grid-2" id="anmOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="anmFb"></div>
   </div>`;
-  window.ANM={q:0,score:0,total:10,answers:[],pool:shuffle([...ANIMAL_DATA]).slice(0,10)};
+  window.ANM={q:0,score:0,total:10,answers:[],pool:shuffle([...ANIMAL_DATA]).slice(0,10),streak:0,bestStreak:0};
   anmNext();
 }
 function anmNext(){
@@ -1703,7 +1711,7 @@ function anmNext(){
 function anmAnswer(name){
   const S=window.ANM; const ok=name===S.cur.name;
   document.querySelectorAll('#anmOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur.name)b.classList.add('correct');else if(b.getAttribute('aria-label')===name&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('anmFb'),true,`✅ Yes! ${S.cur.emoji} ${S.cur.name} says "${S.cur.sound}"!`),S.score++):(playWrong(),showFb(document.getElementById('anmFb'),false,`${S.cur.emoji} The ${S.cur.name} says "${S.cur.sound}"! Listen carefully next time.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('anmFb'),true,`✅ Yes! ${S.cur.emoji} ${S.cur.name} says "${S.cur.sound}"!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('anmFb'),false,`${S.cur.emoji} The ${S.cur.name} says "${S.cur.sound}"! Listen carefully next time.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(anmNext,1500);
 }
 function anmDone(){
@@ -1743,7 +1751,7 @@ function buildOpposites(body,act){
     <div class="tap-grid tap-grid-2" id="oppOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="oppFb"></div>
   </div>`;
-  window.OPP={q:0,score:0,total:10,answers:[],pool:shuffle([...OPPOSITES_DATA]).slice(0,10)};
+  window.OPP={q:0,score:0,total:10,answers:[],pool:shuffle([...OPPOSITES_DATA]).slice(0,10),streak:0,bestStreak:0};
   oppNext();
 }
 function oppNext(){
@@ -1761,7 +1769,7 @@ function oppNext(){
 function oppAnswer(word){
   const S=window.OPP; const ok=word===S.cur.opp;
   document.querySelectorAll('#oppOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur.opp)b.classList.add('correct');else if(b.getAttribute('aria-label')===word&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('oppFb'),true,`✅ Yes! The opposite of ${S.cur.word} is ${S.cur.opp} ${S.cur.oppEmoji}`),S.score++):(playWrong(),showFb(document.getElementById('oppFb'),false,`The opposite of ${S.cur.word} is ${S.cur.opp} ${S.cur.oppEmoji}!`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('oppFb'),true,`✅ Yes! The opposite of ${S.cur.word} is ${S.cur.opp} ${S.cur.oppEmoji}`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('oppFb'),false,`The opposite of ${S.cur.word} is ${S.cur.opp} ${S.cur.oppEmoji}!`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(oppNext,1500);
 }
 function oppDone(){
@@ -1801,7 +1809,7 @@ function buildDays(body,act){
     <div class="tap-grid tap-grid-2" id="dayOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="dayFb"></div>
   </div>`;
-  window.DAY={q:0,score:0,total:10,answers:[],pool:shuffle([...DAYS_DATA]).slice(0,10)};
+  window.DAY={q:0,score:0,total:10,answers:[],pool:shuffle([...DAYS_DATA]).slice(0,10),streak:0,bestStreak:0};
   dayNext();
 }
 function dayNext(){
@@ -1818,7 +1826,7 @@ function dayNext(){
 function dayAnswer(d){
   const S=window.DAY; const ok=d===S.cur.a;
   document.querySelectorAll('#dayOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur.a)b.classList.add('correct');else if(b.getAttribute('aria-label')===d&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('dayFb'),true,`✅ Yes! ${S.cur.a} is right!`),S.score++):(playWrong(),showFb(document.getElementById('dayFb'),false,`The answer was ${S.cur.a}! Try singing the days of the week.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('dayFb'),true,`✅ Yes! ${S.cur.a} is right!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('dayFb'),false,`The answer was ${S.cur.a}! Try singing the days of the week.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(dayNext,1500);
 }
 function dayDone(){
@@ -1857,7 +1865,7 @@ function buildBody(body,act){
     <div class="tap-grid tap-grid-2" id="bodOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="bodFb"></div>
   </div>`;
-  window.BOD={q:0,score:0,total:10,answers:[],pool:shuffle([...BODY_DATA]).slice(0,10)};
+  window.BOD={q:0,score:0,total:10,answers:[],pool:shuffle([...BODY_DATA]).slice(0,10),streak:0,bestStreak:0};
   bodNext();
 }
 function bodNext(){
@@ -1874,7 +1882,7 @@ function bodNext(){
 function bodAnswer(part){
   const S=window.BOD; const ok=part===S.cur.part;
   document.querySelectorAll('#bodOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur.part)b.classList.add('correct');else if(b.getAttribute('aria-label')===part&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('bodFb'),true,`✅ Yes! ${S.cur.emoji} Your ${S.cur.part}!`),S.score++):(playWrong(),showFb(document.getElementById('bodFb'),false,`${S.cur.emoji} It's your ${S.cur.part}! Point to it now.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('bodFb'),true,`✅ Yes! ${S.cur.emoji} Your ${S.cur.part}!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('bodFb'),false,`${S.cur.emoji} It's your ${S.cur.part}! Point to it now.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(bodNext,1500);
 }
 function bodDone(){
@@ -1913,7 +1921,7 @@ function buildWeather(body,act){
     <div class="tap-grid tap-grid-2" id="wthOpts" style="margin-top:8px;"></div>
     <div class="fb-line" id="wthFb"></div>
   </div>`;
-  window.WTH={q:0,score:0,total:10,answers:[],pool:shuffle([...WEATHER_DATA]).slice(0,10)};
+  window.WTH={q:0,score:0,total:10,answers:[],pool:shuffle([...WEATHER_DATA]).slice(0,10),streak:0,bestStreak:0};
   wthNext();
 }
 function wthNext(){
@@ -1931,7 +1939,7 @@ function wthNext(){
 function wthAnswer(ans){
   const S=window.WTH; const ok=ans===S.cur.a;
   document.querySelectorAll('#wthOpts .tap-btn').forEach(b=>{b.disabled=true;if(b.getAttribute('aria-label')===S.cur.a)b.classList.add('correct');else if(b.getAttribute('aria-label')===ans&&!ok)b.classList.add('wrong');});
-  ok?(playCorrect(),showFb(document.getElementById('wthFb'),true,`✅ Yes! ${S.cur.emoji} ${S.cur.a}!`),S.score++):(playWrong(),showFb(document.getElementById('wthFb'),false,`${S.cur.emoji} The answer was ${S.cur.a}! Look outside and see what the sky looks like today.`));
+  ok?(S.streak++,S.bestStreak=Math.max(S.bestStreak,S.streak),playCorrect(S.streak),showFb(document.getElementById('wthFb'),true,`✅ Yes! ${S.cur.emoji} ${S.cur.a}!`,S.streak),S.score++):(S.streak=0,playWrong(),showFb(document.getElementById('wthFb'),false,`${S.cur.emoji} The answer was ${S.cur.a}! Look outside and see what the sky looks like today.`));
   S.answers.push(ok); S.q++; setScore(`⭐ ${S.score}/${S.total}`); setTimeout(wthNext,1500);
 }
 function wthDone(){

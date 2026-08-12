@@ -963,8 +963,29 @@ function awardXp(amount, label) {
   document.getElementById('xpLabel').classList.add('xp-pop');
   setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
   showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (streak >= 3) streakFx(streak);
   if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
   saveProgress();
+}
+
+function streakFx(s) {
+  const tier = Math.min(Math.floor(s / 3), 4);
+  const anchor = document.getElementById('xpLabel');
+  if (!anchor) return;
+  const r = anchor.getBoundingClientRect();
+  const n = 3 + tier * 2;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('span');
+    p.textContent = '✨';
+    const angle = Math.random() * Math.PI * 2, dist = 20 + Math.random() * 30;
+    p.style.cssText = 'position:fixed;left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 2) + 'px;font-size:' + (12 + tier) + 'px;pointer-events:none;z-index:9999;--dx:' + (Math.cos(angle) * dist).toFixed(1) + 'px;--dy:' + (Math.sin(angle) * dist).toFixed(1) + 'px;animation:streakPop .55s ease-out forwards;';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 570);
+  }
+  if (tier >= 2) {
+    document.body.classList.add('streak-shake');
+    setTimeout(() => document.body.classList.remove('streak-shake'), 300);
+  }
 }
 
 function showXpToast(text) {
