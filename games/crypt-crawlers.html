@@ -360,6 +360,7 @@
     <div class="hud-item"><span class="hud-label">SPD</span><span class="hud-val" id="hud-spd"></span></div>
     <div class="hud-item"><span class="hud-label">Floor</span><span class="hud-val" id="hud-floor"></span></div>
     <div class="hud-item"><span style="color:#ffd700">💀</span><span class="hud-val" id="hud-kills">0</span></div>
+    <div class="hud-item" id="hud-streak-wrap" style="display:none"><span style="color:#ff7b54">🔥</span><span class="hud-val" id="hud-streak">0</span></div>
     <div class="hud-item"><span class="hud-label">Bank</span><span class="hud-val coin-val" id="hud-coins">🪙0</span></div>
   </div>
 </div>
@@ -595,6 +596,7 @@ let player=null;
 let bullets=[],enemyBullets=[],enemies=[],pickups=[],particles=[],damageNumbers=[];
 let currentFloor=0,floorMap=null,roomX=0,roomY=0,doorsOpen=false;
 let totalKills=0,bossDefeated=false,iFrames=0,selectedHero=0;
+let killStreak=0,bestKillStreak=0;
 let lastShot=0,screenShake=0,time=0;
 let coinsThisRun=0;
 let bank=0,highestFloor=0;
@@ -838,7 +840,7 @@ function startGame(hero){
   const shLv=getPassiveLevel('startHeal');
   if(shLv>0){player.hp=Math.min(player.maxHp,player.hp+shLv*2);}
 
-  totalKills=0;coinsThisRun=0;poisonTrails=[];
+  totalKills=0;coinsThisRun=0;poisonTrails=[];killStreak=0;bestKillStreak=0;
   currentFloor=0;bossIndex=0;
   enterFloor(0);
   state='playing';
@@ -982,6 +984,8 @@ function update(dt){
           if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;cryptFx.playLevelUp();}
           else {spawnParticles(e.x,e.y,e.color,12);cryptFx.playPop();}
           totalKills++;
+          killStreak++;bestKillStreak=Math.max(bestKillStreak,killStreak);
+          if(killStreak>=3)coinsThisRun+=Math.min(killStreak-2,10);
           // Paladin: heal on kill
           if(player.passive==='healOnKill'){player.hp=Math.min(player.maxHp,player.hp+1);}
           // Vampire: lifesteal
@@ -1139,6 +1143,7 @@ const cryptFx=new AudioEffects(0.45);
 function hurtPlayer(dmg){
   cryptFx.playError();
   player.hp-=dmg;iFrames=40;screenShake=6;damageFlashTimer=12;
+  killStreak=0;
   damageNumbers.push({x:player.x,y:player.y-20,text:Math.ceil(dmg),life:40,color:'#e74c3c'});
   spawnParticles(player.x,player.y,'#e74c3c',6);
   if(player.hp<=0){player.hp=0;bankCoins();state='dead';showDeath();}
@@ -1279,6 +1284,9 @@ function updateHUD(){
   document.getElementById('hud-floor').textContent=(currentFloor+1)+'/'+MAX_FLOORS;
   document.getElementById('hud-kills').textContent=totalKills;
   document.getElementById('hud-coins').textContent='🪙'+(bank+coinsThisRun);
+  const streakWrap=document.getElementById('hud-streak-wrap');
+  if(killStreak>=2){streakWrap.style.display='';document.getElementById('hud-streak').textContent=killStreak;}
+  else streakWrap.style.display='none';
 }
 
 // ═══════════════════════════════════════════════════════════════════

@@ -808,7 +808,8 @@ function renderHUD() {
   const floorLabel = player.floor >= FLOOR_COUNT
     ? `Boss ${Math.min(player.floor-FLOOR_COUNT+1, BOSSES.length)}/${BOSSES.length}`
     : `Floor ${player.floor+1}/${FLOOR_COUNT}`;
-  $('hud-right').innerHTML = `💰 ${player.gold}g<br>🧪 ${player.potions}<br>⚔️ ATK ${player.atk} · 🛡️ DEF ${player.def}<br><span style="color:#9b59b6;font-size:12px">${floorLabel}</span>`;
+  const streakLine = player.killStreak>=2 ? `<br><span style="color:#ff7b54;font-size:12px">🔥 ${player.killStreak} kill streak</span>` : '';
+  $('hud-right').innerHTML = `💰 ${player.gold}g<br>🧪 ${player.potions}<br>⚔️ ATK ${player.atk} · 🛡️ DEF ${player.def}<br><span style="color:#9b59b6;font-size:12px">${floorLabel}</span>${streakLine}`;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -820,6 +821,7 @@ function startGame(heroClass) {
     hp:heroClass.hp, maxHp:heroClass.hp, atk:heroClass.atk, def:heroClass.def, speed:heroClass.speed,
     abilityName:heroClass.ability, abilityCooldown:0,
     level:1, xp:0, xpNeeded:50, gold:0, totalGold:0, potions:2, kills:0, floor:0, floorReached:0,
+    killStreak:0, bestKillStreak:0,
   };
   dungeon = generateDungeon(0);
   fogMap = Array.from({length:MAP_H}, ()=>Array(MAP_W).fill(false));
@@ -971,7 +973,7 @@ function enemyTurn() {
   sfx.hurt();
   shakeEl('player-display');
   spawnDamage('player-display', '-'+total, 'dmg'+(crit?' crit':''));
-  if (crit) flashCrit();
+  if (crit) { flashCrit(); player.killStreak = 0; }
 
   if (player.hp <= 0) {
     player.hp = 0;
@@ -987,6 +989,9 @@ function enemyDefeated() {
   player.gold += currentEnemy.gold;
   player.totalGold += currentEnemy.gold;
   player.kills++;
+  player.killStreak++; player.bestKillStreak = Math.max(player.bestKillStreak, player.killStreak);
+  let streakBonus = 0;
+  if (player.killStreak >= 3) { streakBonus = Math.min(player.killStreak-2, 10); player.gold += streakBonus; player.totalGold += streakBonus; }
   if (player.abilityCooldown>0) player.abilityCooldown--;
   const wasBoss = currentEnemy.isBoss;
   const leveled = player.xp >= player.xpNeeded;
@@ -994,7 +999,8 @@ function enemyDefeated() {
   if (leveled) sfx.levelUp(); else sfx.loot();
 
   dungeon.monsters = dungeon.monsters.filter(m=>m.id!==currentEnemy.id);
-  showToast(currentEnemy.emoji+' '+currentEnemy.name+' defeated! +'+currentEnemy.xp+'xp +'+currentEnemy.gold+'g');
+  showToast(currentEnemy.emoji+' '+currentEnemy.name+' defeated! +'+currentEnemy.xp+'xp +'+currentEnemy.gold+'g'+
+    (player.killStreak>=2?' 🔥'+player.killStreak+' streak!':'')+(streakBonus>0?' (+'+streakBonus+'g bonus)':''));
 
   if (wasBoss && player.floor >= FLOOR_COUNT) {
     if (currentEnemy.isFinalBoss) {

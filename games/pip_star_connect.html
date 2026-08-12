@@ -830,6 +830,7 @@ const STORAGE_KEY = 'pipStarConnect_progress';
 const AUDIO_KEY = 'pipStarConnect_audio';
 let currentLevel = 0;
 let currentStar = 0;
+let levelMistakes = 0, perfectStreak = 0, bestPerfectStreak = 0;
 let completedLevels = [];
 let starsCollected = 0;
 let audioEnabled = true;
@@ -981,6 +982,7 @@ function buildProgressDots() {
 function loadLevel(idx) {
     currentLevel = idx;
     currentStar = 0;
+    levelMistakes = 0;
     hintActive = false;
     drawnSegments = [];
     revealSegments = [];
@@ -1312,6 +1314,7 @@ function onTap(e) {
             }
         });
         if(tappedOther) {
+            levelMistakes++;
             playWrong();
             // Small red flash burst
             spawnBurst(tx, ty, 'rgba(188,71,73,0.8)');
@@ -1325,10 +1328,15 @@ function onTap(e) {
 function completeLevel() {
     playComplete();
     if(!completedLevels.includes(currentLevel)) completedLevels.push(currentLevel);
+    // Perfect-clear streak: consecutive constellations finished with zero
+    // wrong taps. Broken by a single mistake, not by finishing (just slower).
+    if(levelMistakes === 0) { perfectStreak++; bestPerfectStreak = Math.max(bestPerfectStreak, perfectStreak); }
+    else perfectStreak = 0;
+    const streakBonus = perfectStreak >= 3 ? Math.min((perfectStreak-2)*20, 100) : 0;
     // expose progress to the XP tracker (100 pts per constellation)
-    window.__gsScore = (window.__gsScore||0) + 100;
+    window.__gsScore = (window.__gsScore||0) + 100 + streakBonus;
     window.__gsBestRun = Math.max(window.__gsBestRun||0, completedLevels.length * 100);
-    if (typeof gameSystem !== 'undefined') { gameSystem.addScore(100); gameSystem.recordGamePlay(Date.now()); }
+    if (typeof gameSystem !== 'undefined') { gameSystem.addScore(100 + streakBonus); gameSystem.recordGamePlay(Date.now()); }
     saveProgress();
 
     const p = PUZZLES[currentLevel];
@@ -1352,10 +1360,11 @@ function completeLevel() {
     setTimeout(() => {
         document.getElementById('celebrate-emoji').textContent = p.completeEmoji;
         document.getElementById('celebrate-title').textContent = p.completeMsg;
+        const streakNote = perfectStreak >= 2 ? ` 🔥 ${perfectStreak} perfect in a row!` : '';
         document.getElementById('celebrate-sub').textContent =
-            currentLevel < PUZZLES.length - 1
+            (currentLevel < PUZZLES.length - 1
                 ? `${PUZZLES.length - completedLevels.length} picture${PUZZLES.length - completedLevels.length !== 1 ? 's' : ''} left to find!`
-                : 'You found every constellation! 🌌';
+                : 'You found every constellation! 🌌') + streakNote;
 
         const btnNext = document.getElementById('btn-next');
         if(currentLevel < PUZZLES.length - 1) {
