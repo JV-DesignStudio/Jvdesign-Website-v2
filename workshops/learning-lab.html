@@ -683,10 +683,10 @@ body.quiz-streak-shake{animation:quizStreakShake .35s ease-out;}
 </section>
 
 <!-- ═══ FULL-SCREEN GAME MODAL ═══ -->
-<div class="game-modal" id="gameModal">
+<div class="game-modal" id="gameModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="game-modal-bar" id="modalBar"></div>
   <div class="game-modal-head">
-    <button class="gm-back" onclick="closeGame()">← Back</button>
+    <button class="gm-back" id="gmBackBtn" onclick="closeGame()">← Back</button>
     <div class="gm-title" id="modalTitle"></div>
     <div class="gm-score" id="modalScore"></div>
   </div>
@@ -1832,6 +1832,7 @@ function renderLumoCard(s){
 //  OPEN / CLOSE
 // ══════════════════════════════════════════════════════
 let _activeGame = null;
+let _modalReturnFocus = null;
 function openGame(id){
   const s = SUBJECTS.find(x=>x.id===id);
   document.getElementById('modalBar').style.background = s.color;
@@ -1840,6 +1841,9 @@ function openGame(id){
   document.getElementById('gameModal').classList.add('open');
   document.body.style.overflow = 'hidden';
   _activeGame = id;
+  _modalReturnFocus = document.activeElement;
+  document.getElementById('gmBackBtn').focus();
+  document.addEventListener('keydown', _modalEscHandler);
   const body = document.getElementById('gameBody');
   body.innerHTML = '';
   cancelAnimationFrame(window._raf);
@@ -1862,6 +1866,10 @@ function openGame(id){
   else if(id==='nature')  buildNature(body,s);
 }
 
+function _modalEscHandler(e){
+  if(e.key==='Escape') closeGame();
+}
+
 function closeGame(){
   cancelAnimationFrame(window._raf);
   window._raf = null;
@@ -1869,6 +1877,9 @@ function closeGame(){
   document.getElementById('gameModal').classList.remove('open');
   document.body.style.overflow = '';
   _activeGame = null;
+  document.removeEventListener('keydown', _modalEscHandler);
+  if(_modalReturnFocus && typeof _modalReturnFocus.focus==='function') _modalReturnFocus.focus();
+  _modalReturnFocus = null;
 }
 
 // ══════════════════════════════════════════════════════
@@ -1958,7 +1969,7 @@ function buildEcho(body){
       <button onclick="echoClear()" style="padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;font-family:'Fredoka',cursive;font-size:.88rem;font-weight:700;color:rgba(255,255,255,.7);cursor:pointer;">✕ Clear</button>
       <button onclick="echoHintBtn()" style="padding:9px 14px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.2);border-radius:10px;font-family:'Fredoka',cursive;font-size:.88rem;font-weight:700;color:#F5A623;cursor:pointer;">💡 Hint</button>
     </div>
-    <div class="fb" id="echoFb" style="margin:4px 14px 8px;"></div>
+    <div class="fb" id="echoFb" style="margin:4px 14px 8px;" role="status" aria-live="polite"></div>
   </div>`;
   window.ES={lv:0,prog:[],animating:false,lives:3,score:0,coinCount:0,coinTotal:0,
     player:{col:0,px:0,py:0},enemies:[],particles:[],unlocked:['move'],raf:null,coinState:[],shakeT:0,landSquash:0};
@@ -2329,7 +2340,7 @@ function buildPip(body){
         <button class="btn-submit" id="pipSubmit" onclick="pipCheck()">Pay →</button>
       </div>
     </div>
-    <div class="fb" id="pipFb"></div>
+    <div class="fb" id="pipFb" role="status" aria-live="polite"></div>
   </div>`;
   window.PS={served:0,score:0,total:10,cur:null,attempts:0,streak:0,particles:[]};
   pipNextCustomer(); pipDrawShop();
@@ -2503,7 +2514,7 @@ function buildLumo(body){
     <div style="position:relative;">
       <canvas id="bubbleCanvas" width="680" height="320" style="width:100%;display:block;cursor:pointer;border-radius:0 0 12px 12px;"></canvas>
     </div>
-    <div class="fb" id="bubbleFb" style="margin:8px 14px;"></div>
+    <div class="fb" id="bubbleFb" style="margin:8px 14px;" role="status" aria-live="polite"></div>
   </div>`;
   const round=BUBBLE_ROUNDS[0];
   window.BP={roundIdx:0,found:0,score:0,selected:-1,raf:null,combo:0,particles:[],
@@ -2747,7 +2758,7 @@ function buildEnglish(body){
     <div class="word-hint" id="engHint"></div>
     <div id="engComboWrap" style="display:none;font-size:.9rem;color:#F472B6;font-weight:700;margin-bottom:4px;">🔥 <span id="engCombo">0</span> streak</div>
     <div class="eng-canvas-wrap"><canvas id="engCanvas" width="680" height="260"></canvas></div>
-    <div class="fb" id="engFb"></div>
+    <div class="fb" id="engFb" role="status" aria-live="polite"></div>
   </div>`;
   window.EG={wordIdx:0,score:0,total:10,letters:[],target:'',found:[],missed:false,combo:0,bestCombo:0,particles:[],shakeT:0,
     spawnTimer:0,spawnInterval:80,gameOver:false,raf:null,words:shuffle([...ENG_WORDS]).slice(0,10)};
@@ -3108,7 +3119,7 @@ function buildStrange(body){
       <span id="memStreakWrap" style="display:none;color:#34D399;font-weight:700;">🔥 <span id="memStreak">0</span></span>
     </div>
     <div class="mem-grid" id="memGrid"></div>
-    <div class="fb" id="memFb"></div>
+    <div class="fb" id="memFb" role="status" aria-live="polite"></div>
   </div>`;
   window.MG={pairs,flipped:[],matched:[],moves:0,lock:false,startTime:Date.now(),timerInt:null,streak:0,bestStreak:0,streakBonus:0};
   window.MG.timerInt=setInterval(()=>{
@@ -3121,8 +3132,12 @@ function buildStrange(body){
     card.className='mem-card';
     card.dataset.idx=i;
     card.dataset.emoji=emoji;
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label','Memory card '+(i+1));
     card.innerHTML=`<div class="mem-front">?</div><div class="mem-back">${emoji}</div>`;
     card.addEventListener('click',()=>memFlip(card));
+    card.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); memFlip(card); } });
     grid.appendChild(card);
   });
 }
@@ -3230,7 +3245,7 @@ function buildGeo(body){
     </div>
     <p style="font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:14px;text-align:center;">Click a flag, then click its matching country name</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="geoBoard"></div>
-    <div class="fb" id="geoFb" style="margin-top:10px;"></div>
+    <div class="fb" id="geoFb" style="margin-top:10px;" role="status" aria-live="polite"></div>
   </div>`;
   window.GQ={setIdx:0,score:0,selected:null,matched:0,locked:new Set(),streak:0,bestStreak:0};
   geoLoadSet(0);
@@ -3587,7 +3602,7 @@ function buildHistory(body,s){
     <div class="hist-era" id="histEra"></div>
     <div class="hist-q" id="histQ">Loading...</div>
     <div class="hist-opts" id="histOpts"></div>
-    <div class="fb" id="histFb"></div>
+    <div class="fb" id="histFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...HIST_QS]).slice(0,12);
   window.HQ={qs,idx:0,score:0,results:[]};
@@ -3678,7 +3693,7 @@ function buildMusic(body,s){
         <input id="bmTempo" type="range" min="60" max="200" value="120" oninput="document.getElementById('bmTempoVal').textContent=this.value" style="width:90px;">
       </label>
     </div>
-    <div id="bmFb" style="min-height:28px;font-size:.83rem;color:#34D399;font-weight:700;text-align:center;"></div>
+    <div id="bmFb" style="min-height:28px;font-size:.83rem;color:#34D399;font-weight:700;text-align:center;" role="status" aria-live="polite"></div>
   </div>`;
   window.BM={
     grid, playing:false, step:0, intervalId:null,
@@ -3883,7 +3898,7 @@ function buildLogic(body,s){
       </div>
     </div>
     <div id="lgcHint" style="font-size:.78rem;color:rgba(34,211,238,.5);text-align:center;margin-top:8px;"></div>
-    <div class="fb" id="lgcFb" style="margin-top:8px;"></div>
+    <div class="fb" id="lgcFb" style="margin-top:8px;" role="status" aria-live="polite"></div>
   </div>`;
   window.LQ={puzzleIdx:0,score:0,inputs:[],solved:0,toggles:0,streak:0,bestStreak:0};
   lgcLoadPuzzle(0);
@@ -4074,7 +4089,7 @@ function buildArt(body,s){
     <div class="hist-era" id="artEra"></div>
     <div class="hist-q" id="artQ">Loading...</div>
     <div class="hist-opts" id="artOpts"></div>
-    <div class="fb" id="artFb"></div>
+    <div class="fb" id="artFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...ART_QS]).slice(0,12);
   window.AQ={qs,idx:0,score:0,results:[]};
@@ -4142,7 +4157,7 @@ function buildHealth(body,s){
     <div class="hist-era" id="healthEra"></div>
     <div class="hist-q" id="healthQ">Loading...</div>
     <div class="hist-opts" id="healthOpts"></div>
-    <div class="fb" id="healthFb"></div>
+    <div class="fb" id="healthFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...HEALTH_QS]).slice(0,12);
   window.HEQ={qs,idx:0,score:0,results:[]};
@@ -4210,7 +4225,7 @@ function buildInventors(body,s){
     <div class="hist-era" id="invEra"></div>
     <div class="hist-q" id="invQ">Loading...</div>
     <div class="hist-opts" id="invOpts"></div>
-    <div class="fb" id="invFb"></div>
+    <div class="fb" id="invFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...INV_QS]).slice(0,12);
   window.IQ={qs,idx:0,score:0,results:[]};
@@ -4278,7 +4293,7 @@ function buildSpace(body,s){
     <div class="hist-era" id="spaceEra"></div>
     <div class="hist-q" id="spaceQ">Loading...</div>
     <div class="hist-opts" id="spaceOpts"></div>
-    <div class="fb" id="spaceFb"></div>
+    <div class="fb" id="spaceFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...SPACE_QS]).slice(0,12);
   window.SPQ={qs,idx:0,score:0,results:[]};
@@ -4346,7 +4361,7 @@ function buildNature(body,s){
     <div class="hist-era" id="natEra"></div>
     <div class="hist-q" id="natQ">Loading...</div>
     <div class="hist-opts" id="natOpts"></div>
-    <div class="fb" id="natFb"></div>
+    <div class="fb" id="natFb" role="status" aria-live="polite"></div>
   </div>`;
   const qs=shuffle([...NATURE_QS]).slice(0,12);
   window.NQ={qs,idx:0,score:0,results:[]};
