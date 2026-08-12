@@ -130,6 +130,22 @@ function newCustomer() {
   const serveWindow = 2600 - prog * 1400 + Math.random() * 600;
   const tip = Math.ceil(8 + Math.random() * 10);
   currentCustomer = { emoji: CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)], order, cook, cookStart: Date.now(), serveWindow, tip };
+
+  // Build the customer's DOM once per customer, not once per frame. render()
+  // used to rebuild this whole block every animation frame (~60/sec), which
+  // restarted .customer's CSS slideIn entrance animation on every single
+  // frame -- so it was permanently trapped at the animation's opacity:0
+  // starting keyframe and never became visible at all.
+  document.getElementById('kitchen').innerHTML = `
+    <div class="customer">
+      <div class="customer-emoji">${currentCustomer.emoji}</div>
+      <div class="customer-order">Wants ${currentCustomer.order}</div>
+      <div class="patience">
+        <div class="patience-bar"></div>
+      </div>
+      <button class="serve-btn" onclick="serve()"></button>
+    </div>
+  `;
   render();
 }
 
@@ -145,19 +161,18 @@ function render() {
   const happyness = customerHappyness();
   const patiencePercent = happyness * 100;
 
-  const kitchen = document.getElementById('kitchen');
-  kitchen.innerHTML = `
-    <div class="customer">
-      <div class="customer-emoji">${currentCustomer.emoji}</div>
-      <div class="customer-order">Wants ${currentCustomer.order}</div>
-      <div class="patience">
-        <div class="patience-bar" style="width: ${patiencePercent}%"></div>
-      </div>
-      <button class="serve-btn" ${cookProgress < 0.9 ? 'disabled' : ''} onclick="serve()" style="opacity:${cookProgress < 0.9 ? 0.5 : 1};">
-        ${cookProgress < 0.9 ? '🍳 Cooking...' : '🍽️ Serve'}
-      </button>
-    </div>
-  `;
+  // Update the existing customer DOM in place -- see newCustomer() for why
+  // this no longer recreates it every frame.
+  const bar = document.querySelector('.patience-bar');
+  if (bar) bar.style.width = patiencePercent + '%';
+  const btn = document.querySelector('.serve-btn');
+  if (btn) {
+    const ready = cookProgress >= 0.9;
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? 1 : 0.5;
+    btn.textContent = ready ? '🍽️ Serve' : '🍳 Cooking...';
+  }
+
   document.getElementById('moneyHud').textContent = money;
   document.getElementById('starsHud').textContent = stars;
   document.getElementById('streakHud').textContent = streak;
