@@ -106,12 +106,15 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
 .wavebanner{position:absolute;top:38%;left:0;right:0;text-align:center;pointer-events:none;z-index:20;}
 .wavebanner span{display:inline-block;font-family:'Fredoka';font-weight:700;font-size:2rem;color:#fff;text-shadow:0 3px 0 #4e7d40,0 0 20px #000a;animation:wb 1.6s ease forwards;}
 @keyframes wb{0%{transform:scale(.4);opacity:0}18%{transform:scale(1);opacity:1}75%{opacity:1}100%{transform:scale(1.1);opacity:0}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 </style>
 </head>
 <body>
 
+<div class="sr-only" id="gdLive" role="status" aria-live="polite"></div>
+
 <div class="top">
-  <div class="brand"><span class="bug">🐛✨</span> Lumo's Garden Defense</div>
+  <h1 class="brand"><span class="bug">🐛✨</span> Lumo's Garden Defense</h1>
   <a class="back" href="../pages/games.html">← Games</a>
 </div>
 
@@ -776,11 +779,16 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
     clearTimeout(hintTimer);
     hintTimer=setTimeout(()=>{h.textContent='Pick a plant, then tap a tile. Tap ☀️ to collect sun.';},2200);
   }
+  function gdAnnounce(txt){
+    const el=document.getElementById('gdLive');
+    if(el) el.textContent=txt;
+  }
   function banner(txt){
     const b=document.getElementById('banner'), t=document.getElementById('bannerTxt');
     t.textContent=txt; b.style.display='block';
     t.style.animation='none'; void t.offsetWidth; t.style.animation='';
     setTimeout(()=>{b.style.display='none';},1700);
+    gdAnnounce(txt);
   }
   function updateHUD(){
     document.getElementById('sunV').textContent=Math.floor(sun);
@@ -837,12 +845,14 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
     }
 
     document.getElementById('endEmoji').textContent = won?'🏆':(endless?'⚡':'🐛');
-    document.getElementById('endTitle').textContent = won?'Garden Saved!':(endless?'Endless Run Over!':'Garden Overrun!');
+    const endTitleTxt = won?'Garden Saved!':(endless?'Endless Run Over!':'Garden Overrun!');
+    document.getElementById('endTitle').textContent = endTitleTxt;
     document.getElementById('endMsg').textContent = won
       ? `You held all 10 waves with ${guards.filter(Boolean).length} guard(s) to spare. The garden is safe!${newBest?' New best score! 🎉':''}`
       : endless
         ? `An epic endless run — you made it to wave ${waveIdx} before the pests broke through!${newBest?' New best score! 🎉':''}`
         : `The pests broke through on wave ${Math.min(waveIdx,10)}. Replant and try again!${newBest?' New best score! 🎉':''}`;
+    gdAnnounce(endTitleTxt+', final score '+score+'.');
     document.getElementById('endStats').innerHTML=
       `<div class="sbox"><div class="v">${score}</div><div class="l">Score</div></div>`+
       `<div class="sbox"><div class="v">${endless||waveIdx>10?waveIdx:Math.min(waveIdx,10)}</div><div class="l">Wave</div></div>`+
