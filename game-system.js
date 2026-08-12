@@ -824,11 +824,19 @@ if (typeof document !== 'undefined') {
      Marks <html> as soon as this script runs (still mid-<head>, before
      FOUC can happen) so CSS can drop marketing chrome that only makes
      sense when a game is reached by scrolling a search result, not when
-     it's opened from inside the installed Arcade app. Same detection
-     arcade.html already uses for its own shell. Scoped in game-system.css
-     to the iframe-wrapper game pages (.game-frame-wrap); the other games
-     never render .site-header/.guide-wrap, so this is a no-op there. */
-  var isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
+     it's opened from inside the installed Arcade app. Scoped in
+     game-system.css to the iframe-wrapper game pages (.game-frame-wrap);
+     the other games never render .site-header/.guide-wrap, so this is a
+     no-op there.
+
+     window.__JVDS_APP is stamped into every page by sync-arcade.mjs's
+     injectAppFlag() at bundle time -- the packaged app has no manifest
+     (stripSiteChrome strips it, and Capacitor isn't a browser-installed
+     PWA to begin with), so matchMedia('display-mode: standalone') can
+     never come back true there; that check only covers the separate case
+     of someone installing the *website itself* to their home screen. */
+  var isStandaloneApp = window.__JVDS_APP === true ||
+    window.matchMedia('(display-mode: standalone)').matches ||
     navigator.standalone === true;
   if (isStandaloneApp) document.documentElement.classList.add('arc-appmode');
 
