@@ -240,6 +240,14 @@
   .dmg-float.crit { font-size: 28px; color: var(--gold); }
   @keyframes floatUp { 0% { opacity:1; transform:translate(-50%,0) scale(1); } 100% { opacity:0; transform:translate(-50%,-40px) scale(1.2); } }
 
+  /* Kill-streak particle burst */
+  .kill-particle {
+    position: absolute; left: 50%; top: 40%; font-size: 16px; pointer-events: none;
+    animation: killPop 0.6s ease-out forwards; z-index: 9;
+    --dx: 0px; --dy: 0px;
+  }
+  @keyframes killPop { 0% { opacity:1; transform:translate(-50%,-50%) scale(0.6); } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.1); } }
+
   /* Crit flash on overlay box */
   .overlay-box.flash-crit { animation: critFlash 0.3s ease-out; }
   @keyframes critFlash { 0% { box-shadow: 0 0 0 6px rgba(255,215,0,0.5); } 100% { box-shadow: none; } }
@@ -996,7 +1004,14 @@ function enemyDefeated() {
   const wasBoss = currentEnemy.isBoss;
   const leveled = player.xp >= player.xpNeeded;
   levelUp();
-  if (leveled) sfx.levelUp(); else sfx.loot();
+  // Kill-streak escalation: same baseline reward sound at streak 1-2, but a
+  // rising-pitch extra tone plus a bigger particle burst once it's hot,
+  // instead of every kill sounding identical regardless of how well the
+  // floor is going.
+  const streakTier = Math.min(Math.floor(player.killStreak / 3), 4);
+  spawnKillBurst('enemy-display', wasBoss ? '💥' : '✨', 4 + streakTier*3);
+  if (leveled) sfx.levelUp();
+  else { sfx.loot(); if (streakTier > 0) playTone(500 + streakTier*90, 0.12, 'square', 0.1, 250); }
 
   dungeon.monsters = dungeon.monsters.filter(m=>m.id!==currentEnemy.id);
   showToast(currentEnemy.emoji+' '+currentEnemy.name+' defeated! +'+currentEnemy.xp+'xp +'+currentEnemy.gold+'g'+
@@ -1083,6 +1098,24 @@ function shakeEl(id) {
   const el = $(id);
   el.classList.add('shake');
   setTimeout(()=>el.classList.remove('shake'), 300);
+}
+
+// Kill-streak burst: scales with player.killStreak so a 5-kill streak
+// looks/sounds noticeably bigger than the first kill of a floor.
+function spawnKillBurst(targetId, emoji, count) {
+  const el = $(targetId);
+  if (!el) return;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('span');
+    p.className = 'kill-particle';
+    p.textContent = emoji;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 30 + Math.random() * 40;
+    p.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    p.style.setProperty('--dy', (Math.sin(angle) * dist) + 'px');
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 650);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════

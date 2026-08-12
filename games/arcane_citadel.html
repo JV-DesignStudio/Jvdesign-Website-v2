@@ -599,11 +599,13 @@ let waveKills=0,waveEnemiesTotal=0,waveCoinsEarned=0,waveSpawned=0;
 
 let player,tower;
 let playerHp=100, playerMaxHp=100, playerHpTimer=0;
+let killStreak=0, bestKillStreak=0;
 
 function bossHitPlayer(boss, dmg){
     if(playerHpTimer>0)return;
     playerHp=Math.max(0, playerHp-dmg);
     playerHpTimer=45;
+    killStreak=0;
     shakeAmt=Math.max(shakeAmt, 8+dmg*0.4);
     spawnParticles(player.x,player.y,'#ff4466',10,5);
     SFX.playerHit();
@@ -748,7 +750,7 @@ function initGame(){
     playerHp=playerMaxHp=100; playerHpTimer=0;
     score=0;wave=1;killCount=0;coins=0;
     waveKills=0;waveCoinsEarned=0;waveSpawned=0;
-    lastShot=0;shakeAmt=0;
+    lastShot=0;shakeAmt=0;killStreak=0;bestKillStreak=0;
     shopOwned={};
 
     // Floating ember motes
@@ -1139,8 +1141,14 @@ function killEnemy(en){
     pendingKills.add(en);
     en._dead=true;
 
-    spawnParticles(en.x,en.y,en.color,14,5);
-    spawnParticles(en.x,en.y,chosenSpell.color,8,6);
+    // Kill streak: builds on every kill, reset the instant the tower or
+    // player takes a hit, so the feedback ramps up during a clean run and
+    // drops back to baseline the moment that run gets interrupted.
+    killStreak++; bestKillStreak=Math.max(bestKillStreak,killStreak);
+    const streakTier=Math.min(Math.floor(killStreak/5),4); // 0-4, escalates every 5 kills
+    spawnParticles(en.x,en.y,en.color,14+streakTier*3,5);
+    spawnParticles(en.x,en.y,chosenSpell.color,8+streakTier*2,6);
+    if(streakTier>0){ shakeAmt=Math.max(shakeAmt,3+streakTier*2); playTone(280+streakTier*70,'square',0.06,0.12,0.005,0.08,160+streakTier*30); }
 
     // Voidling splits into 2 imps on death
     if(en.type==='voidling'&&en.splitOnDeath){
@@ -1169,7 +1177,7 @@ function killEnemy(en){
     const drop=en.coinDrop+player.coinBonus;
     coins+=drop;waveCoinsEarned+=drop;
     killCount++;waveKills++;
-    SFX.killEnemy();
+    if(streakTier===0) SFX.killEnemy(); // escalated tiers already played their own tone above
     // Voidheart relic, every 5th kill triggers triple next shot
     if(player._relicEvery5){
         player._relicKillCount=(player._relicKillCount||0)+1;
@@ -1535,7 +1543,7 @@ function update(dt){
                 const wTgtR=bossWaveActive?player.r:tower.r;
                 if(Math.hypot(en.x-wTgtX,en.y-wTgtY)<en.r+wTgtR){
                     if(bossWaveActive){bossHitPlayer(en,6);}
-                    else{tower.hp-=12;shakeAmt=Math.max(shakeAmt,8);updateHUD();if(tower.hp<=0){flushKills();gameOver();return;}}
+                    else{tower.hp-=12;killStreak=0;shakeAmt=Math.max(shakeAmt,8);updateHUD();if(tower.hp<=0){flushKills();gameOver();return;}}
                     en._dead=true;pendingKills.add(en);
                 }
                 continue;
@@ -1680,6 +1688,7 @@ function update(dt){
                 const baseDmg=en.type==='boss'?28:en.type==='golem'?18:en.type==='hexblade'?22:en.type==='cultist'?10:en.type==='imp'?4:9;
                 const dmg=Math.round(baseDmg*(1-(player.wardBonus||0)));
                 tower.hp-=dmg;
+                killStreak=0;
                 shakeAmt=Math.max(shakeAmt,10);
                 spawnParticles(en.x,en.y,'#ff3366',10,5);
                 en._dead=true; pendingKills.add(en);
@@ -1712,7 +1721,7 @@ function update(dt){
         // Cultist orb hits tower
         if(p.isCultistShot){
             if(Math.hypot(p.x-tower.x,p.y-tower.y)<tower.r+p.r){
-                tower.hp-=p.dmg;shakeAmt=Math.max(shakeAmt,7);
+                tower.hp-=p.dmg;killStreak=0;shakeAmt=Math.max(shakeAmt,7);
                 spawnParticles(tower.x+(Math.random()-.5)*tower.r,tower.y+(Math.random()-.5)*tower.r,'#aa00ff',8,4);
                 updateHUD();deadP.add(pi);
                 if(tower.hp<=0){flushKills();gameOver();return;}

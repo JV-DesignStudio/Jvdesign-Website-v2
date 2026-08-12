@@ -1158,6 +1158,10 @@ const state = {
   zone: 0,
   particles: [],
   trailTimer: 0,
+  bounceStreak: 0,
+  bestBounceStreak: 0,
+  shakeT: 0,
+  shakeMag: 0,
 };
 
 /* ---------- Hazards & power-ups ----------
@@ -1484,6 +1488,19 @@ function update() {
       if (hit) {
         p.y = plat.y - p.h;
 
+        // Bounce streak: every clean platform landing since the last hazard
+        // hit. Every 10 bounces, feedback escalates (bigger burst + a
+        // shake pulse) so a long clean climb feels different from the start.
+        state.bounceStreak++;
+        state.bestBounceStreak = Math.max(state.bestBounceStreak, state.bounceStreak);
+        const bounceTier = Math.min(Math.floor(state.bounceStreak / 10), 4);
+        if (bounceTier > 0 && state.bounceStreak % 10 === 0) {
+          state.shakeT = 0.15; state.shakeMag = 2 + bounceTier;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#ffd93d', 10 + bounceTier*4);
+          playTone(500 + bounceTier*120, 0.1, 'square', 0.12, 300);
+          setTimeout(() => playTone(700 + bounceTier*150, 0.08, 'square', 0.10, 200), 50);
+        }
+
         if (plat.type === 'spring') {
           p.vy = PHYS.jumpVel * 2.4;
           p.squish = 1.4;
@@ -1558,6 +1575,7 @@ function update() {
           p.vy = 6;
           p.vx += dx > 0 ? -3 : 3;
           state.invulnFrames = 45;
+          state.bounceStreak = 0;
           spawnParticles(hz.x, hz.y, '#ff6659', 10);
           SFX.gust();
         }
@@ -2345,6 +2363,13 @@ function drawGhost() {
 }
 
 function render() {
+  const shaking = state.shakeT > 0;
+  if (shaking) {
+    const k = state.shakeT / 0.25;
+    state.shakeT -= 1/60;
+    ctx.save();
+    ctx.translate((Math.random()-0.5)*state.shakeMag*k, (Math.random()-0.5)*state.shakeMag*k);
+  }
   drawSky();
   if (state.mode === 'playing' || state.mode === 'dead') {
     drawPlatforms();
@@ -2356,6 +2381,7 @@ function render() {
     if (state.player) drawPlayer();
     drawPlayerStatusFx();
   }
+  if (shaking) ctx.restore();
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -2404,6 +2430,7 @@ function startGame() {
   state.heightM = 0;
   state.zone = 0;
   state.trailTimer = 0;
+  state.bounceStreak = 0;
   seedPlatforms();
   for (const plat of state.platforms) maybeSpawnCoins(plat);
 

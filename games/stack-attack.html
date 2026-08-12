@@ -35,6 +35,8 @@ a{text-decoration:none;color:inherit;}
 .mute-btn{background:rgba(0,0,0,.4);border:none;color:var(--beige);font-size:1.1rem;padding:6px 10px;border-radius:10px;cursor:pointer;}
 #wrap{position:relative;width:100vw;height:100vh;}
 canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
+canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
+@keyframes toppleShake{0%{transform:translate(0,0);}20%{transform:translate(-8px,4px);}40%{transform:translate(7px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(3px,-1px);}100%{transform:translate(0,0);}}
 .hud{position:fixed;top:52px;left:0;right:0;text-align:center;z-index:15;pointer-events:none;}
 .hud #score{font-family:'Fredoka',cursive;font-weight:700;font-size:2.4rem;text-shadow:0 2px 8px rgba(0,0,0,.7);}
 .hud #lbl{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;opacity:.7;font-weight:700;}
@@ -276,6 +278,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
   let stack,cur,dir,speed,running,score,camY,fragments,particles,floaters;
   let lastFrameT=0;
   let streak,bestStreak,perfects,totalBlocks,slimCount,coinsEarned;
+  let shakeT=0,shakeMag=0;
   const HUES=[6,30,170,200,280,330];
   function baseY(){return H-60;}
 
@@ -287,7 +290,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
     stack=[{x,w,y:baseY(),h:BH,hue:HUES[0]}];
     score=0;scoreEl.textContent=0;camY=0;
     fragments=[];particles=[];floaters=[];
-    streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];
+    streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];shakeT=0;shakeMag=0;
     updateHud();spawnBlock();running=true;
   }
 
@@ -333,9 +336,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
       addF(cur.x+cur.w/2,cur.y-camY,'+'+ pts+' Perfect!','#FFD700');
       addP(cur.x+cur.w/2,cur.y-camY,'✨',8);
       if(cur.w<W*0.6){cur.w=Math.min(cur.w+12,top.w);cur.x=Math.max(top.x,cur.x-6);}
-      if(streak===3){sfxStreak();showToast('🔥','3x Streak!','+30 Bonus');score+=30;addF(W/2,H/3,'+30','#ff6b6b');}
-      if(streak===5){sfxStreak();showToast('🔥','5x Streak!','+50 Bonus');score+=50;speed=Math.max(2,speed-1.5);}
-      if(streak===10){sfxStreak();showToast('🌈','10x STREAK!','+100 Bonus!');score+=100;addF(W/2,H/3,'+100!!','#ff00ff');}
+      if(streak===3){sfxStreak();showToast('🔥','3x Streak!','+30 Bonus');score+=30;addF(W/2,H/3,'+30','#ff6b6b');shakeT=0.15;shakeMag=4;}
+      if(streak===5){sfxStreak();showToast('🔥','5x Streak!','+50 Bonus');score+=50;speed=Math.max(2,speed-1.5);shakeT=0.2;shakeMag=6;}
+      if(streak===10){sfxStreak();showToast('🌈','10x STREAK!','+100 Bonus!');score+=100;addF(W/2,H/3,'+100!!','#ff00ff');shakeT=0.3;shakeMag=10;}
       if(streak>=3)tryAch('p3');if(streak>=5)tryAch('p5');if(streak>=10)tryAch('p10');
       if(isPixel)tryAch('px');
     }else{
@@ -373,6 +376,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 
   // ── Draw ──
   function draw(){
+    const shaking=shakeT>0;
+    if(shaking){const k=shakeT/0.3;shakeT-=1/60;ctx.save();ctx.translate((Math.random()-0.5)*shakeMag*k,(Math.random()-0.5)*shakeMag*k);}
     const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#15224a');bg.addColorStop(1,'#0a1230');
     ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 
@@ -414,6 +419,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
     ctx.textAlign='center';
     particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.font='1rem serif';ctx.fillText(p.emoji,p.x,p.y);ctx.globalAlpha=1;});
     floaters.forEach(f=>{ctx.globalAlpha=f.life;ctx.font="bold 1rem 'Fredoka',cursive";ctx.fillStyle=f.color;ctx.fillText(f.text,f.x,f.y);ctx.globalAlpha=1;});
+    if(shaking)ctx.restore();
   }
 
   // ── Start / End ──
@@ -421,6 +427,12 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 
   function end(){
     running=false;hint.classList.add('hidden');sfxOver();
+    // A CSS shake on the canvas element itself, not the internal shakeT/
+    // shakeMag used mid-run — the render loop stops calling draw() the
+    // instant running=false, so an internal canvas-transform shake would
+    // never actually get painted.
+    document.getElementById('game').classList.add('topple-shake');
+    setTimeout(()=>document.getElementById('game').classList.remove('topple-shake'),400);
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
     if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());

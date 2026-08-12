@@ -372,10 +372,23 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   function gainCoin(n,x,y,gem){
     const mult=rushT>0?2:1;coinCount+=n*mult;
     coinsEl.innerHTML='🪙 '+coinCount+'<small>coins</small>';
-    if(gem){sGem();sparkle(x,y,'#5cdbff');floaters.push({x,y,life:1.1,txt:'+'+(5*mult)});}
-    else{sCoin();sparkle(x,y);floaters.push({x,y,life:1,txt:'+'+mult});}
+    // Rush doubles the coin value, so make it look/sound doubled too instead
+    // of an identical sparkle regardless of whether rush is active.
+    if(gem){sGem();sparkle(x,y,'#5cdbff');if(mult>1)sparkle(x,y,'#5cdbff');floaters.push({x,y,life:1.1,txt:'+'+(5*mult)});}
+    else{sCoin();sparkle(x,y);if(mult>1)sparkle(x,y,'#ffd23f');floaters.push({x,y,life:1,txt:'+'+mult});}
   }
-  function addCombo(){combo++;if(combo>=2){comboT=2.2;comboEl.classList.remove('hidden');comboEl.innerHTML='x'+combo+'<small>combo</small>';comboEl.style.transform='scale(1.25)';setTimeout(()=>comboEl.style.transform='scale(1)',100);}}
+  function addCombo(){
+    combo++;
+    if(combo>=2){
+      comboT=2.2;comboEl.classList.remove('hidden');comboEl.innerHTML='x'+combo+'<small>combo</small>';comboEl.style.transform='scale(1.25)';setTimeout(()=>comboEl.style.transform='scale(1)',100);
+      // Was a silent UI-only badge despite being called a "combo" — give it
+      // real feedback that escalates instead of the same beep every time.
+      const tier=Math.min(Math.floor(combo/3),4);
+      beep(500+tier*90,0.08,'square',0.05+tier*0.01);
+      sparkle(player.x+player.w*0.5,player.y+player.h*0.3,tier>=1?'#ffd23f':'#ffffff');
+      if(tier>=2)shake=Math.max(shake,2+tier);
+    }
+  }
 
   /* ---------- drawing ---------- */
   function draw(){
