@@ -72,8 +72,8 @@ canvas { display: block; width: 100%; height: 100%; touch-action: none; }
       <h1>📄 Paper Toss</h1>
       <div class="sub">Deluxe Edition</div>
       <div class="how">
-        <div>👉 <b>Drag anywhere</b> to aim the throw.</div>
-        <div>🎯 Watch the dotted arc and <b>release</b> to shoot.</div>
+        <div>👉 <b>Flick anywhere</b> to throw — speed and direction come from your swipe.</div>
+        <div>🎯 Watch the dotted arc update as you aim your flick.</div>
         <div>🌬️ Mind the <b>wind</b> arrow it pushes your paper.</div>
         <div>❤️ Miss the bin 3 times and it's game over.</div>
       </div>
@@ -121,9 +121,15 @@ window.addEventListener('resize', resize);
 
 // ── tunables (CSS px, seconds) ──
 const GRAVITY = 1500;
-const MAX_DRAG = 170;
 const MAX_SPEED = 1550;
 const PAPER_R = 12;
+// Flick tuning: throw power comes from how fast the finger was moving right
+// before release, not from total drag distance -- a real swipe/flick like
+// the original Paper Toss (and the Pokemon GO-style ball throw), not a
+// slingshot pull-and-release.
+const FLICK_WINDOW_MS = 100;   // only this much recent motion counts as "the flick"
+const MIN_FLICK_SPEED = 150;   // px/s below this: too slow, not a throw
+const MAX_FLICK_SPEED = 2400;  // px/s at/above this: full-power throw
 
 let launch = { x: 0, y: 0 };
 let bin = { x: 0, y: 0, w: 60, h: 74 };
@@ -145,7 +151,23 @@ let state = 'idle';   // idle | aiming | flying | dead
 let score = 0, best = 0, level = 1, lives = 3, hits = 0, combo = 0;
 let wind = 0;         // px/s² horizontal
 let paper = null;     // {x,y,vx,vy,rot,spin}
-let aim = { active: false, sx: 0, sy: 0, cx: 0, cy: 0 };
+let aim = { active: false, sx: 0, sy: 0, cx: 0, cy: 0, trail: [] };
+
+// Recent-motion velocity, not total drag distance -- this is what makes it
+// a flick. trail entries older than FLICK_WINDOW_MS are dropped as they
+// come in, so this always reflects "how fast were you moving just now."
+function pushTrail(x, y) {
+  const t = performance.now();
+  aim.trail.push({ x, y, t });
+  while (aim.trail.length > 1 && t - aim.trail[0].t > FLICK_WINDOW_MS) aim.trail.shift();
+}
+function flickVelocity() {
+  if (aim.trail.length < 2) return { vx: 0, vy: 0, speed: 0 };
+  const first = aim.trail[0], last = aim.trail[aim.trail.length - 1];
+  const dt = Math.max((last.t - first.t) / 1000, 1 / 240);   // guard div-by-~0
+  const vx = (last.x - first.x) / dt, vy = (last.y - first.y) / dt;
+  return { vx, vy, speed: Math.hypot(vx, vy) };
+}
 let particles = [];
 let shakeT = 0;
 let resultText = null; // {txt,color,t,x,y}
@@ -184,11 +206,13 @@ function startGame() {
 
 function throwPaper() {
   const dx = aim.cx - aim.sx, dy = aim.cy - aim.sy;
-  const len = Math.hypot(dx, dy);
-  if (len < 12) return;   // too small a drag, ignore
-  const power = Math.min(len, MAX_DRAG) / MAX_DRAG;
+  const dragLen = Math.hypot(dx, dy);
+  if (dragLen < 12) return;   // barely moved, ignore (accidental tap)
+  const { vx, vy, speed: flickSpeed } = flickVelocity();
+  if (flickSpeed < MIN_FLICK_SPEED) return;   // moved, but too slow to be a flick
+  const power = Math.min((flickSpeed - MIN_FLICK_SPEED) / (MAX_FLICK_SPEED - MIN_FLICK_SPEED), 1);
   const speed = power * MAX_SPEED;
-  const ang = Math.atan2(dy, dx);
+  const ang = Math.atan2(vy, vx);
   paper = { x: launch.x, y: launch.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, rot: 0, spin: (Math.random()*2-1)*8 };
   state = 'flying';
   audioEffects.playTap(360);
@@ -264,19 +288,24 @@ canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   const p = pos(e);
   aim.active = true; aim.sx = p.x; aim.sy = p.y; aim.cx = p.x; aim.cy = p.y;
+  aim.trail = [];
+  pushTrail(p.x, p.y);
   state = 'aiming';
 });
 canvas.addEventListener('pointermove', (e) => {
   if (state !== 'aiming' || !aim.active) return;
   e.preventDefault();
   const p = pos(e); aim.cx = p.x; aim.cy = p.y;
+  pushTrail(p.x, p.y);
 });
 canvas.addEventListener('pointerup', (e) => {
   if (state !== 'aiming') return;
   e.preventDefault();
+  const p = pos(e); aim.cx = p.x; aim.cy = p.y;
+  pushTrail(p.x, p.y);
   aim.active = false;
   throwPaper();
-  if (state === 'aiming') state = 'ready';   // drag too small, stay ready
+  if (state === 'aiming') state = 'ready';   // drag too small/slow, stay ready
 });
 canvas.addEventListener('pointercancel', () => { if (state === 'aiming') { aim.active = false; state = 'ready'; } });
 
@@ -403,11 +432,13 @@ function drawWind() {
 
 function drawAim() {
   const dx = aim.cx - aim.sx, dy = aim.cy - aim.sy;
-  const len = Math.hypot(dx, dy);
-  if (len < 8) return;
-  const power = Math.min(len, MAX_DRAG) / MAX_DRAG;
+  const dragLen = Math.hypot(dx, dy);
+  if (dragLen < 8) return;
+  const { vx: fvx, vy: fvy, speed: flickSpeed } = flickVelocity();
+  if (flickSpeed < 1) return;
+  const power = Math.min(Math.max(flickSpeed - MIN_FLICK_SPEED, 0) / (MAX_FLICK_SPEED - MIN_FLICK_SPEED), 1);
   const speed = power * MAX_SPEED;
-  const ang = Math.atan2(dy, dx);
+  const ang = Math.atan2(fvy, fvx);
   let px = launch.x, py = launch.y - PAPER_R*1.6;
   let vx = Math.cos(ang)*speed, vy = Math.sin(ang)*speed;
   const step = 1/60;
