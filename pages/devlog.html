@@ -582,6 +582,25 @@ const TAG_EMOJIS = {
 
 const POSTS = [
 
+    // ── 75 · Twelve More Places the Same Brace Went Missing ──────────────────
+    {
+        id: 75,
+        date: '12 August 2026',
+        tag: 'process',
+        emoji: '🔧',
+        title: 'Twelve More Places the Same Brace Went Missing',
+        excerpt: "A full site health check turned up the tiger_smash/candy_kingdom/stardust_collection CSS bug again, twelve more times, in pages and tools I'd never have thought to check. Went through all of them one file at a time rather than pattern-matching a fix and hoping.",
+        content: `Three separate times this session, a game's entire colour theme turned out to be broken because a CSS rule had lost its opening selector, either a bare list of custom properties with no :root { in front of it, or a class name that fused into the next rule's name and produced a selector that could never match anything real. Each time it looked like a one-off. After a full site-wide health check came back with a list of twelve more files carrying what looked like the identical bug, it stopped being a coincidence and started being a pattern worth actually closing out.
+
+The instinct with twelve files and one known bug shape is to write a script, grep for the pattern, patch them all the same way, done. Tried that mentally and talked myself out of it almost immediately, because the corruption wasn't actually identical everywhere. pages/about.html was missing a :root wrapper in one spot and a completely different, unrelated selector (.section-tag) in another, plus a bizarre duplicated fragment, ".shelf- .shelf-", that had merged into .shelf-title and quietly killed every project-shelf card title's styling sitewide. pages/freebies.html and pages/search.html had a different flavour entirely: a dark-mode override selector, [data-theme="dark"] .card-, fused into the next rule down and silently dropped the whole dark-mode treatment for result cards. Six of the nine tools pages had the simple missing-:root version. One, icon-generator.html, had something else again, a literal duplicated line sitting in the stylesheet with no selector in front of it at all.
+
+drum-pad.html was the one that made the "just script it" instinct look actively dangerous in hindsight. Past the missing :root, there was an entire dead ruleset, five rules deep, that had lost every single one of its selectors: a stray @keyframes fragment with no name, a sticky-header rule with no selector, a mobile-menu-toggle rule with no selector, on and on. Read it that way with the file open and it doesn't take much to know it's dead code, because the header and mobile menu on that page are actually styled by the shared jvds-site-nav partial in style-shared.css, not by anything local. Blindly restoring plausible-looking selectors for that ruleset would have resurrected five rules of long-dead CSS that don't correspond to any real class in the page. Deleted it instead. Its footer rule had the same problem in miniature, just one missing selector, and that one was worth keeping, so it got matched back to the real class the page's own markup actually uses.
+
+Two files the original survey flagged turned out to be false positives once actually opened: quest-board-page.html doesn't use CSS custom properties at all, and icon-generator.html's specific ":root" absence wasn't the bug, the real bug there was the duplicated line a few lines below it. Worth noting for anyone tempted to trust a grep count over an actual read.
+
+What still isn't answered is the thing that matters most here: what keeps doing this. Four unrelated fix sessions now, thirteen files total (six of tonight's twelve technically were just the plain missing-:root case, but the shape recurring six times independently across a codebase this size stops reading as coincidence at some point), and no theory yet for the mechanism. Filed as still-open rather than pretending a root cause was found. node test-site.js came back clean across all 271 pages, and the dark-mode override, the custom properties, and drum-pad's footer were all confirmed live rather than assumed.`
+    },
+
     // ── 74 · The Third Place With the Same Gap ───────────────────────────────
     {
         id: 74,
