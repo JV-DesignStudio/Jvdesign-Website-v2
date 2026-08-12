@@ -1272,7 +1272,7 @@ function renderCards(){
     const stars = p.plays===0 ? 0 : pct>=0.8 ? 3 : pct>=0.5 ? 2 : 1;
     const starRow = `<div class="card-stars">${[1,2,3].map(i=>`<span class="card-star${i<=stars?' on':''}">⭐</span>`).join('')}</div>`;
     const newBadge = s.isNew ? `<span class="badge-new">✨ NEW</span>` : '';
-    return `<div class="subject-card" onclick="openGame('${s.id}');sndClick()">
+    return `<div class="subject-card" role="button" tabindex="0" onclick="openGame('${s.id}');sndClick()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openGame('${s.id}');sndClick();}">
       <div class="card-stripe" style="background:${s.color}"></div>
       <div class="card-inner">
         <div class="card-header">
@@ -1308,7 +1308,7 @@ function illustratedCard(s,sceneSvg){
   const stars = p.plays===0 ? 0 : pct>=0.8 ? 3 : pct>=0.5 ? 2 : 1;
   const starRow = `<div class="card-stars">${[1,2,3].map(i=>`<span class="card-star${i<=stars?' on':''}">⭐</span>`).join('')}</div>`;
   const newBadge = s.isNew ? `<span class="badge-new">✨ NEW</span>` : '';
-  return `<div class="subject-card illustrated-card ${s.id}-card" onclick="openGame('${s.id}');sndClick()">
+  return `<div class="subject-card illustrated-card ${s.id}-card" role="button" tabindex="0" onclick="openGame('${s.id}');sndClick()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openGame('${s.id}');sndClick();}">
     <div class="illustrated-card-scene">
       ${sceneSvg}
       <div class="illustrated-card-badges">
@@ -2512,18 +2512,47 @@ function buildLumo(body){
       <div style="font-family:'Fredoka',cursive;font-size:1rem;color:#F5A623;font-weight:700;">Score: <span id="bubbleScore">0</span></div>
     </div>
     <div style="position:relative;">
-      <canvas id="bubbleCanvas" width="680" height="320" style="width:100%;display:block;cursor:pointer;border-radius:0 0 12px 12px;"></canvas>
+      <canvas id="bubbleCanvas" width="680" height="320" style="width:100%;display:block;cursor:pointer;border-radius:0 0 12px 12px;" tabindex="0" role="application" aria-label="Bubble pairs: use arrow keys to move between bubbles, Enter or Space to pick one"></canvas>
     </div>
     <div class="fb" id="bubbleFb" style="margin:8px 14px;" role="status" aria-live="polite"></div>
   </div>`;
   const round=BUBBLE_ROUNDS[0];
-  window.BP={roundIdx:0,found:0,score:0,selected:-1,raf:null,combo:0,particles:[],
+  window.BP={roundIdx:0,found:0,score:0,selected:-1,focusId:-1,raf:null,combo:0,particles:[],
     bubbles:[],pairs:round.pairs,target:round.target};
   document.getElementById('bubbleRoundLabel').textContent=round.label;
   document.getElementById('bubbleTotal').textContent=round.pairs;
   bubbleSpawn();
-  document.getElementById('bubbleCanvas').addEventListener('click',bubbleClick);
+  const bubbleCanvasEl=document.getElementById('bubbleCanvas');
+  bubbleCanvasEl.addEventListener('click',bubbleClick);
+  bubbleCanvasEl.addEventListener('keydown',bubbleKeyNav);
   bubbleLoop();
+}
+
+function bubbleAliveList(){
+  return window.BP.bubbles.filter(b=>!b.popping);
+}
+
+function bubbleMoveFocus(dir){
+  const BP=window.BP;
+  const alive=bubbleAliveList();
+  if(!alive.length){BP.focusId=-1;return;}
+  let idx=alive.findIndex(b=>b.id===BP.focusId);
+  if(idx===-1){ BP.focusId=alive[0].id; return; }
+  idx=(idx+dir+alive.length)%alive.length;
+  BP.focusId=alive[idx].id;
+}
+
+function bubbleKeyNav(e){
+  const BP=window.BP;
+  if(['ArrowRight','ArrowDown','Tab'].includes(e.key) && !e.shiftKey){
+    e.preventDefault(); bubbleMoveFocus(1);
+  } else if(['ArrowLeft','ArrowUp'].includes(e.key) || (e.key==='Tab' && e.shiftKey)){
+    e.preventDefault(); bubbleMoveFocus(-1);
+  } else if(e.key==='Enter' || e.key===' '){
+    e.preventDefault();
+    const hit=BP.bubbles.find(b=>b.id===BP.focusId && !b.popping);
+    if(hit) bubbleSelectBubble(hit);
+  }
 }
 
 function bubbleSpawn(){
@@ -2557,6 +2586,7 @@ function bubbleSpawn(){
       });
     });
   });
+  BP.focusId=BP.bubbles.length?BP.bubbles[0].id:-1;
 }
 
 function bubbleLoop(){
@@ -2601,6 +2631,10 @@ function bubbleLoop(){
     ctx.fillStyle=b.color;
     ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
     if(b.selected){ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();}
+    if(b.id===BP.focusId){
+      ctx.globalAlpha=1;ctx.strokeStyle='#F5A623';ctx.lineWidth=3;ctx.setLineDash([6,4]);
+      ctx.beginPath();ctx.arc(b.x,b.y,b.r+6,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    }
     // shine
     ctx.globalAlpha=0.3;ctx.fillStyle='#fff';
     ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.25,0,Math.PI*2);ctx.fill();
@@ -2635,6 +2669,12 @@ function bubbleClick(e){
   // find clicked bubble
   const hit=BP.bubbles.find(b=>!b.popping&&Math.hypot(b.x-mx,b.y-my)<b.r);
   if(!hit)return;
+  BP.focusId=hit.id;
+  bubbleSelectBubble(hit);
+}
+
+function bubbleSelectBubble(hit){
+  const BP=window.BP;
   if(BP.selected===-1){
     // first selection
     BP.bubbles.forEach(b=>b.selected=false);
