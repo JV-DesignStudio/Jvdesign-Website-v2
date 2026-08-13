@@ -117,6 +117,17 @@
   .j-down{bottom:0;left:50%;transform:translateX(-50%);}
   .j-left{top:50%;left:0;transform:translateY(-50%);}
   .j-right{top:50%;right:0;transform:translateY(-50%);}
+  .dash-btn{
+    width:64px;height:64px;border-radius:50%;margin-bottom:48px;
+    background:rgba(255,140,0,0.15);border:2px solid rgba(255,140,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;color:rgba(255,180,80,0.85);cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:background 0.08s,border-color 0.08s,transform 0.08s;
+  }
+  .dash-btn:active,.dash-btn.active{
+    background:rgba(255,140,0,0.35);border-color:#ff8c00;transform:scale(0.9);
+  }
   .joy-btn.j-up.active{transform:translateX(-50%) scale(0.92);}
   .joy-btn.j-down.active{transform:translateX(-50%) scale(0.92);}
   .joy-btn.j-left.active{transform:translateY(-50%) scale(0.92);}
@@ -386,8 +397,9 @@
     <div class="joy-btn j-left" data-dir="ml">◄</div>
     <div class="joy-btn j-right" data-dir="mr">►</div>
   </div>
+  <div class="dash-btn" id="dash-btn">💨</div>
   <div class="joy-zone" id="shoot-joy">
-    <div class="joy-label">SHOOT</div>
+    <div class="joy-label">SWING</div>
     <div class="joy-btn j-up" data-dir="su">▲</div>
     <div class="joy-btn j-down" data-dir="sd">▼</div>
     <div class="joy-btn j-left" data-dir="sl">◄</div>
@@ -406,7 +418,7 @@
     <button class="start-btn" id="open-shop-btn" style="background:linear-gradient(135deg,#6c3483,#9b59b6);font-size:14px;padding:14px 22px;letter-spacing:2px;">🏪 SHOP</button>
   </div>
   <div class="controls-info">
-    🎮 <b>WASD</b> to move · <b>Arrow Keys</b> to shoot<br>
+    🎮 <b>WASD</b> to move · <b>Arrow Keys</b> to swing · <b>Shift</b> to dash<br>
     Clear rooms · defeat bosses · reach floor 21!<br>
     <span style="color:#555">Coins carry over between runs · spend in the shop</span>
   </div>
@@ -465,21 +477,23 @@
 const ROOM_W = 13, ROOM_H = 9, TILE = 48;
 const CW = ROOM_W * TILE, CH = ROOM_H * TILE;
 const MAX_FLOORS = 21;
+const DASH_SPEED = 11;
+const SWING_ARC = Math.PI * 0.62;   // ~112 degrees wide
 
 // ── CHARACTERS ──────────────────────────────────────────────────
 // unlockFloor: earn by reaching that floor (free)
 // cost: buy with coins in pre-game shop (0 = free/floor unlock only)
 const HEROES = [
-  { name:"Knight",    icon:"🛡️", hp:8,  atk:2.5, speed:2.4, fireRate:350, shotSpeed:5,   color:"#4a90d9", desc:"Tanky & steady",       unlockFloor:0,  cost:0   },
-  { name:"Rogue",     icon:"🗡️", hp:5,  atk:3.5, speed:3.4, fireRate:250, shotSpeed:6,   color:"#e74c3c", desc:"Fast & deadly",         unlockFloor:5,  cost:0   },
-  { name:"Mage",      icon:"🔮", hp:4,  atk:4,   speed:2.6, fireRate:500, shotSpeed:4.5, color:"#9b59b6", desc:"Powerful shots",        unlockFloor:9,  cost:0   },
-  { name:"Ranger",    icon:"🏹", hp:6,  atk:2,   speed:3,   fireRate:200, shotSpeed:7,   color:"#27ae60", desc:"Rapid fire",            unlockFloor:14, cost:0   },
-  { name:"Paladin",   icon:"✨", hp:10, atk:2,   speed:2.0, fireRate:400, shotSpeed:4.5, color:"#f1c40f", desc:"Holy tank, heals on kill", unlockFloor:99, cost:40, passive:"healOnKill" },
-  { name:"Necro",     icon:"💀", hp:3,  atk:5,   speed:2.2, fireRate:600, shotSpeed:5,   color:"#8e44ad", desc:"Glass cannon summoner", unlockFloor:99, cost:55, passive:"deathBonus" },
-  { name:"Berserker", icon:"🪓", hp:6,  atk:3,   speed:4,   fireRate:180, shotSpeed:8,   color:"#e67e22", desc:"Faster when hurt",      unlockFloor:99, cost:50, passive:"rage"       },
-  { name:"Witch",     icon:"🧙", hp:4,  atk:3.5, speed:2.8, fireRate:300, shotSpeed:6,   color:"#16a085", desc:"Leaves poison trails",   unlockFloor:99, cost:60, passive:"poison"     },
-  { name:"Monk",      icon:"🥋", hp:7,  atk:2,   speed:3.5, fireRate:150, shotSpeed:9,   color:"#d35400", desc:"Lightning fast strikes",  unlockFloor:99, cost:45, passive:"multiShot"  },
-  { name:"Vampire",   icon:"🧛", hp:5,  atk:3,   speed:3,   fireRate:280, shotSpeed:6,   color:"#922b21", desc:"Heals 20% of damage dealt", unlockFloor:99, cost:65, passive:"lifesteal" },
+  { name:"Knight",    icon:"🛡️", hp:8,  atk:2.5, speed:2.4, fireRate:350, range:44, color:"#4a90d9", desc:"Tanky & steady",       unlockFloor:0,  cost:0   },
+  { name:"Rogue",     icon:"🗡️", hp:5,  atk:3.5, speed:3.4, fireRate:250, range:48, color:"#e74c3c", desc:"Fast & deadly",         unlockFloor:5,  cost:0   },
+  { name:"Mage",      icon:"🔮", hp:4,  atk:4,   speed:2.6, fireRate:500, range:40, color:"#9b59b6", desc:"Powerful strikes",      unlockFloor:9,  cost:0   },
+  { name:"Ranger",    icon:"🏹", hp:6,  atk:2,   speed:3,   fireRate:200, range:52, color:"#27ae60", desc:"Rapid strikes",         unlockFloor:14, cost:0   },
+  { name:"Paladin",   icon:"✨", hp:10, atk:2,   speed:2.0, fireRate:400, range:42, color:"#f1c40f", desc:"Holy tank, heals on kill", unlockFloor:99, cost:40, passive:"healOnKill" },
+  { name:"Necro",     icon:"💀", hp:3,  atk:5,   speed:2.2, fireRate:600, range:44, color:"#8e44ad", desc:"Glass cannon summoner", unlockFloor:99, cost:55, passive:"deathBonus" },
+  { name:"Berserker", icon:"🪓", hp:6,  atk:3,   speed:4,   fireRate:180, range:56, color:"#e67e22", desc:"Faster when hurt",      unlockFloor:99, cost:50, passive:"rage"       },
+  { name:"Witch",     icon:"🧙", hp:4,  atk:3.5, speed:2.8, fireRate:300, range:46, color:"#16a085", desc:"Leaves poison trails",   unlockFloor:99, cost:60, passive:"poison"     },
+  { name:"Monk",      icon:"🥋", hp:7,  atk:2,   speed:3.5, fireRate:150, range:60, color:"#d35400", desc:"Lightning fast strikes",  unlockFloor:99, cost:45, passive:"multiShot"  },
+  { name:"Vampire",   icon:"🧛", hp:5,  atk:3,   speed:3,   fireRate:280, range:46, color:"#922b21", desc:"Heals 20% of damage dealt", unlockFloor:99, cost:65, passive:"lifesteal" },
 ];
 
 // ── PASSIVES (permanent upgrades bought in pre-game shop) ────────
@@ -491,7 +505,7 @@ const PASSIVES_DEF = [
   { id:"coinBonus", icon:"🪙",  name:"Treasure Sense",desc:"+15% coins per level",   maxLevel:3, baseCost:15, costGrowth:10, apply:()=>{} }, // handled in dropLoot
   { id:"startHeal", icon:"🩹",  name:"Well Rested",   desc:"Start with +2 HP/level", maxLevel:3, baseCost:10, costGrowth:8,  apply:(lvl,p)=>{ p.hp=Math.min(p.maxHp,p.hp+lvl*2); } },
   { id:"retention", icon:"💎",  name:"Miser's Grip",  desc:"+15% coins kept on death", maxLevel:4, baseCost:20, costGrowth:12, apply:()=>{} }, // handled in bankCoins
-  { id:"shotSpeed", icon:"🌀",  name:"Arcane Force",  desc:"+0.5 shot spd/level",    maxLevel:4, baseCost:10, costGrowth:6,  apply:(lvl,p)=>{ p.shotSpeed+=lvl*0.5; } },
+  { id:"range",     icon:"🌀",  name:"Arcane Force",  desc:"+4 melee range/level",   maxLevel:4, baseCost:10, costGrowth:6,  apply:(lvl,p)=>{ p.range+=lvl*4; } },
 ];
 
 // In-run shop items (between bosses)
@@ -501,9 +515,9 @@ const SHOP_ITEMS = [
   { icon:"👟",   name:"Swift Boots",  desc:"+0.4 speed",        cost:8,  effect:()=>{ player.speed+=0.4; } },
   { icon:"⚡",   name:"Hair Trigger", desc:"-50ms fire rate",   cost:14, effect:()=>{ player.fireRate=Math.max(80,player.fireRate-50); } },
   { icon:"🔰",   name:"Magic Shield", desc:"Heal to full HP",   cost:20, effect:()=>{ player.hp=player.maxHp; } },
-  { icon:"🌀",   name:"Power Surge",  desc:"+1 shot speed",     cost:16, effect:()=>{ player.shotSpeed+=1; } },
+  { icon:"🌀",   name:"Power Surge",  desc:"+6 melee range",    cost:16, effect:()=>{ player.range+=6; } },
   { icon:"🪙",   name:"Coin Cache",   desc:"+10 to bank",       cost:5,  effect:()=>{ bank+=10; saveData(); } },
-  { icon:"🎯",   name:"Eagle Eye",    desc:"+0.3 atk, +1 spd",  cost:18, effect:()=>{ player.atk+=0.3; player.shotSpeed+=1; } },
+  { icon:"🎯",   name:"Eagle Eye",    desc:"+0.3 atk, +6 range",cost:18, effect:()=>{ player.atk+=0.3; player.range+=6; } },
 ];
 
 const ENEMY_TYPES = [
@@ -593,11 +607,12 @@ resize();window.addEventListener('resize',resize);
 // ═══════════════════════════════════════════════════════════════════
 let state='title';
 let player=null;
-let bullets=[],enemyBullets=[],enemies=[],pickups=[],particles=[],damageNumbers=[];
+let enemyBullets=[],enemies=[],pickups=[],particles=[],damageNumbers=[];
 let currentFloor=0,floorMap=null,roomX=0,roomY=0,doorsOpen=false;
 let totalKills=0,bossDefeated=false,iFrames=0,selectedHero=0;
 let killStreak=0,bestKillStreak=0;
 let lastShot=0,screenShake=0,time=0;
+let swingFx=null;   // {angle,life,maxLife} for the slash-arc render
 let coinsThisRun=0;
 let bank=0,highestFloor=0;
 let ownedChars=[0];         // indices into HEROES
@@ -630,6 +645,17 @@ document.querySelectorAll('.joy-btn').forEach(btn=>{
   btn.addEventListener('mouseup',release);
   btn.addEventListener('mouseleave',release);
 });
+const dashBtn=document.getElementById('dash-btn');
+if(dashBtn){
+  const dashPress=()=>{mobileKeys.dash=true;dashBtn.classList.add('active');};
+  const dashRelease=()=>{mobileKeys.dash=false;dashBtn.classList.remove('active');};
+  dashBtn.addEventListener('touchstart',e=>{e.preventDefault();dashPress();});
+  dashBtn.addEventListener('touchend',e=>{e.preventDefault();dashRelease();});
+  dashBtn.addEventListener('touchcancel',e=>{e.preventDefault();dashRelease();});
+  dashBtn.addEventListener('mousedown',dashPress);
+  dashBtn.addEventListener('mouseup',dashRelease);
+  dashBtn.addEventListener('mouseleave',dashRelease);
+}
 function isDown(k){return!!keys[k];}
 
 // ═══════════════════════════════════════════════════════════════════
@@ -827,9 +853,10 @@ function startGame(hero){
   player={
     x:CW/2,y:CH/2,
     hp:hero.hp,maxHp:hero.hp,atk:hero.atk,speed:hero.speed,
-    fireRate:hero.fireRate,shotSpeed:hero.shotSpeed,
+    fireRate:hero.fireRate,range:hero.range,
     icon:hero.icon,name:hero.name,color:hero.color,radius:14,
     passive:hero.passive||null,
+    facing:0,moveFacing:0,dashCD:0,dashTimer:0,dashDX:0,dashDY:0,
   };
   // Apply passive upgrades
   PASSIVES_DEF.forEach(p=>{
@@ -868,9 +895,57 @@ function enterRoom(){
   const room=floorMap.grid[roomY][roomX];
   enemies=spawnEnemiesForRoom(room,currentFloor);
   pickups=spawnPickupsForRoom(room);
-  bullets=[];enemyBullets=[];particles=[];damageNumbers=[];
+  enemyBullets=[];particles=[];damageNumbers=[];
   doorsOpen=room.cleared||room.type==='start'||room.type==='treasure'||room.type==='exit';
   iFrames=30;bossDefeated=false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MELEE SWING
+// ═══════════════════════════════════════════════════════════════════
+function meleeSwing(angle){
+  // Monk's old multi-shot spread doesn't map to a single weapon, so it
+  // becomes a wide sweep instead -- still "hits more stuff per swing",
+  // just as an arc instead of three bullets.
+  const wide=player.passive==='multiShot';
+  const arc=wide?SWING_ARC*1.7:SWING_ARC;
+  const dmg=wide?player.atk*0.85:player.atk;
+  swingFx={angle,life:10,maxLife:10,wide};
+  spawnParticles(player.x+Math.cos(angle)*player.range*0.55,player.y+Math.sin(angle)*player.range*0.55,player.color,3);
+  cryptFx.playTap(340);
+
+  let hitAny=false;
+  for(let j=enemies.length-1;j>=0;j--){
+    const e=enemies[j];
+    const dx=e.x-player.x,dy=e.y-player.y,dist=Math.hypot(dx,dy);
+    if(dist>player.range+e.size)continue;
+    const eang=Math.atan2(dy,dx);
+    let diff=Math.abs(eang-angle);if(diff>Math.PI)diff=Math.PI*2-diff;
+    if(diff>arc/2)continue;
+    hitAny=true;
+    e.hp-=dmg;e.flash=8;
+    damageNumbers.push({x:e.x,y:e.y-e.size,text:Math.ceil(dmg),life:40,color:'#ffd700'});
+    spawnParticles(e.x,e.y,e.color,4);
+    // Knockback away from the player -- melee needs to feel like it's
+    // pushing things back, or standing in the swing forever is free.
+    const ndx=dist?dx/dist:0,ndy=dist?dy/dist:0;
+    e.x+=ndx*10;e.y+=ndy*10;
+    if(e.hp<=0){
+      if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;cryptFx.playLevelUp();}
+      else{spawnParticles(e.x,e.y,e.color,12);cryptFx.playPop();}
+      totalKills++;
+      killStreak++;bestKillStreak=Math.max(bestKillStreak,killStreak);
+      if(killStreak>=3)coinsThisRun+=Math.min(killStreak-2,10);
+      // Paladin: heal on kill
+      if(player.passive==='healOnKill'){player.hp=Math.min(player.maxHp,player.hp+1);}
+      // Vampire: lifesteal
+      if(player.passive==='lifesteal'){player.hp=Math.min(player.maxHp,player.hp+dmg*0.2);}
+      dropLoot(e.x,e.y,e.isBoss);
+      if(e.isBoss)bossDefeated=true;
+      enemies.splice(j,1);
+    }
+  }
+  if(hitAny)screenShake=3;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -892,8 +967,26 @@ function update(dt){
   let speedMod=1;
   if(player.passive==='rage'&&player.hp<player.maxHp*0.5)speedMod=1.4;
 
-  player.x+=mx*player.speed*speedMod*dt*60;
-  player.y+=my*player.speed*speedMod*dt*60;
+  // Dash: a short i-framed burst, the core tool for closing distance on (or
+  // getting out from under) melee's short range without just eating a hit.
+  if(player.dashCD>0)player.dashCD-=dt*1000;
+  if(player.dashTimer>0){
+    player.dashTimer-=dt*1000;
+    player.x+=player.dashDX*DASH_SPEED*dt*60;
+    player.y+=player.dashDY*DASH_SPEED*dt*60;
+    if(Math.random()<0.6)particles.push({x:player.x,y:player.y,vx:0,vy:0,life:10,maxLife:10,color:'rgba(255,255,255,0.4)',size:6,glow:false});
+  }else{
+    const dashPressed=isDown('shift')||mobileKeys.dash;
+    if(dashPressed&&player.dashCD<=0&&(mx||my)){
+      player.dashTimer=140;player.dashDX=mx;player.dashDY=my;player.dashCD=750;
+      iFrames=Math.max(iFrames,14);
+      cryptFx.playTap(500);
+    }else{
+      player.x+=mx*player.speed*speedMod*dt*60;
+      player.y+=my*player.speed*speedMod*dt*60;
+    }
+  }
+  if(mx||my)player.moveFacing=Math.atan2(my,mx);
 
   // Footstep dust trail
   if((mx||my)&&Math.random()<0.3){
@@ -946,57 +1039,18 @@ function update(dt){
     }
   }
 
-  // Shooting
+  // Melee swing. The right stick/arrow keys aim it same as the old shots
+  // did; if it's not held, swing toward the last direction you moved so
+  // attacking never needs a second input on top of walking into range.
   let sx=0,sy=0;
   if(isDown('arrowup')||mobileKeys.su)sy=-1;if(isDown('arrowdown')||mobileKeys.sd)sy=1;
   if(isDown('arrowleft')||mobileKeys.sl)sx=-1;if(isDown('arrowright')||mobileKeys.sr)sx=1;
+  if(sx||sy)player.facing=Math.atan2(sy,sx);
+  else if(mx||my)player.facing=player.moveFacing;
   const now=performance.now();
-  if((sx||sy)&&now-lastShot>player.fireRate){
+  if((sx||sy||mx||my)&&now-lastShot>player.fireRate){
     lastShot=now;
-    const len=Math.sqrt(sx*sx+sy*sy)||1;
-    // Monk multi-shot passive
-    if(player.passive==='multiShot'){
-      for(const a of[-0.2,0,0.2]){
-        const cos=Math.cos(a),sin=Math.sin(a);
-        const bvx=(sx/len*cos-sy/len*sin)*player.shotSpeed;
-        const bvy=(sx/len*sin+sy/len*cos)*player.shotSpeed;
-        bullets.push({x:player.x,y:player.y,vx:bvx,vy:bvy,dmg:player.atk*0.7,life:120,radius:4,fromPlayer:true});
-      }
-    }else{
-      bullets.push({x:player.x,y:player.y,vx:(sx/len)*player.shotSpeed,vy:(sy/len)*player.shotSpeed,dmg:player.atk,life:120,radius:5,fromPlayer:true});
-    }
-    // Muzzle flash
-    spawnParticles(player.x+(sx/len)*16,player.y+(sy/len)*16,player.color,3);
-    cryptFx.playTap(340);
-  }
-
-  // Bullets
-  for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i];b.x+=b.vx*dt*60;b.y+=b.vy*dt*60;b.life--;
-    if(b.life<=0||b.x<0||b.x>CW||b.y<0||b.y>CH){bullets.splice(i,1);continue;}
-    for(let j=enemies.length-1;j>=0;j--){
-      const e=enemies[j];
-      if(Math.hypot(b.x-e.x,b.y-e.y)<e.size+b.radius){
-        e.hp-=b.dmg;e.flash=8;
-        damageNumbers.push({x:e.x,y:e.y-e.size,text:Math.ceil(b.dmg),life:40,color:'#ffd700'});
-        spawnParticles(b.x,b.y,e.color,4);bullets.splice(i,1);screenShake=3;
-        if(e.hp<=0){
-          if(e.isBoss){spawnParticles(e.x,e.y,e.color,40);spawnParticles(e.x,e.y,'#ffd700',24);screenShake=14;cryptFx.playLevelUp();}
-          else {spawnParticles(e.x,e.y,e.color,12);cryptFx.playPop();}
-          totalKills++;
-          killStreak++;bestKillStreak=Math.max(bestKillStreak,killStreak);
-          if(killStreak>=3)coinsThisRun+=Math.min(killStreak-2,10);
-          // Paladin: heal on kill
-          if(player.passive==='healOnKill'){player.hp=Math.min(player.maxHp,player.hp+1);}
-          // Vampire: lifesteal
-          if(player.passive==='lifesteal'){player.hp=Math.min(player.maxHp,player.hp+b.dmg*0.2);}
-          dropLoot(e.x,e.y,e.isBoss);
-          if(e.isBoss)bossDefeated=true;
-          enemies.splice(j,1);
-        }
-        break;
-      }
-    }
+    meleeSwing(player.facing);
   }
 
   // Enemy bullets
@@ -1044,6 +1098,7 @@ function update(dt){
   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.life--;p.vy+=0.05;if(p.life<=0)particles.splice(i,1);}
   for(let i=damageNumbers.length-1;i>=0;i--){damageNumbers[i].y-=0.8;damageNumbers[i].life--;if(damageNumbers[i].life<=0)damageNumbers.splice(i,1);}
   if(iFrames>0)iFrames--;
+  if(swingFx&&swingFx.life>0){swingFx.life--;if(swingFx.life<=0)swingFx=null;}
   if(screenShake>0){screenShake*=0.85;if(screenShake<0.2)screenShake=0;}
   updateHUD();
 }
@@ -1206,7 +1261,18 @@ function draw(){
     ctx.restore();
   }
 
-  for(const b of bullets){ctx.save();ctx.shadowColor=player.color;ctx.shadowBlur=8;ctx.fillStyle=player.color;ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x,b.y,b.radius*0.4,0,Math.PI*2);ctx.fill();ctx.restore();}
+  // Melee swing arc
+  if(swingFx&&swingFx.life>0){
+    const t=swingFx.life/swingFx.maxLife;
+    const arc=swingFx.wide?SWING_ARC*1.7:SWING_ARC;
+    ctx.save();
+    ctx.translate(player.x,player.y);ctx.rotate(swingFx.angle);
+    ctx.globalAlpha=0.5*t;ctx.fillStyle=player.color;
+    ctx.shadowColor=player.color;ctx.shadowBlur=10;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,player.range*(1-t*0.3),-arc/2,arc/2);ctx.closePath();ctx.fill();
+    ctx.restore();ctx.globalAlpha=1;
+  }
+
   for(const b of enemyBullets){ctx.save();ctx.shadowColor=b.color||'#e74c3c';ctx.shadowBlur=6;ctx.fillStyle=b.color||'#e74c3c';ctx.beginPath();ctx.arc(b.x,b.y,b.radius,0,Math.PI*2);ctx.fill();ctx.fillStyle='#faa';ctx.beginPath();ctx.arc(b.x,b.y,b.radius*0.4,0,Math.PI*2);ctx.fill();ctx.restore();}
 
   for(const p of particles){
