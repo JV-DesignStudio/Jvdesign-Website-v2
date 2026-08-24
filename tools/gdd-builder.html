@@ -281,11 +281,12 @@ input[type=color].inline-col{width:30px;height:30px;border:none;border-radius:7p
   <div class="hero-btns">
     <button class="hero-btn hb-p" onclick="exportPDF()">📄 Export PDF</button>
     <button class="hero-btn hb-p" onclick="exportJSON()" style="background:var(--accent3);color:#000;box-shadow:0 3px 0 #059669;">⬇ Export JSON</button>
+    <button class="hero-btn hb-s" onclick="importJSON()">⬆ Import JSON</button>
     <button class="hero-btn hb-g" onclick="saveProject()">💾 Save Progress</button>
     <button class="hero-btn hb-s" onclick="loadProject()">📂 Load Saved</button>
     <button class="hero-btn hb-s" onclick="clearAll()">🔄 Start Fresh</button>
   </div>
-</div>
+</section>
 
 <div class="gdd-layout">
 
@@ -600,6 +601,7 @@ input[type=color].inline-col{width:30px;height:30px;border:none;border-radius:7p
     <button class="ctrl-btn cb-s" onclick="loadProject()">📂 Load</button>
     <button class="ctrl-btn cb-g" onclick="exportPDF()">📄 Export PDF</button>
     <button class="ctrl-btn cb-g" onclick="exportJSON()" style="background:var(--accent3);color:#000;">⬇ Export JSON</button>
+    <button class="ctrl-btn cb-s" onclick="importJSON()">⬆ Import JSON</button>
   </div>
 </div>
 
@@ -644,6 +646,11 @@ let artPalette = ['#7c3aed','#f59e0b','#10b981','#ef4444','#3b82f6'];
 let selectedCoverColour = '#1e1e2e';
 let selectedCoverEmoji = '🎮';
 let progressTimer = null;
+let counterUpdaters = [];
+
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
 
 // ══════════════════════════════════════
 // INIT
@@ -663,7 +670,7 @@ function init(){
   addCharacter('Villain','👾','The bad guy','Controls enemies');
   updateCover();
   trackProgress();
-  charCounters();
+  initCounters();
 }
 
 // ══════════════════════════════════════
@@ -794,10 +801,10 @@ function renderCharacters(){
             ${CHAR_EMOJIS.map(e=>`<option value="${e}" ${e===c.emoji?'selected':''}>${e}</option>`).join('')}
           </select>
         </div>
-        <input class="char-name-input" type="text" value="${c.name}" placeholder="Character name" oninput="characters[${i}].name=this.value;trackProgress()">
+        <input class="char-name-input" type="text" value="${esc(c.name)}" placeholder="Character name" oninput="characters[${i}].name=this.value;trackProgress()">
       </div>
-      <input class="char-field" type="text" value="${c.role}" placeholder="Role (e.g. Hero, Boss, Friend)" oninput="characters[${i}].role=this.value">
-      <input class="char-field" type="text" value="${c.ability}" placeholder="Special ability or trait" oninput="characters[${i}].ability=this.value">
+      <input class="char-field" type="text" value="${esc(c.role)}" placeholder="Role (e.g. Hero, Boss, Friend)" oninput="characters[${i}].role=this.value">
+      <input class="char-field" type="text" value="${esc(c.ability)}" placeholder="Special ability or trait" oninput="characters[${i}].ability=this.value">
       <button class="char-del" onclick="characters.splice(${i},1);renderCharacters();" title="Remove">✕</button>
     `;
     container.appendChild(card);
@@ -821,7 +828,7 @@ function renderMilestones(){
     item.className = 'milestone-item';
     item.innerHTML = `
       <div class="milestone-check${m.done?' done':''}" onclick="milestones[${i}].done=!milestones[${i}].done;renderMilestones();">${m.done?'✓':''}</div>
-      <input class="milestone-input" type="text" value="${m.text}" placeholder="e.g. Build the main menu" oninput="milestones[${i}].text=this.value" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
+      <input class="milestone-input" type="text" value="${esc(m.text)}" placeholder="e.g. Build the main menu" oninput="milestones[${i}].text=this.value" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
       <button class="milestone-del" onclick="milestones.splice(${i},1);renderMilestones();">✕</button>
     `;
     list.appendChild(item);
@@ -843,7 +850,7 @@ function renderLevels(){
     item.className = 'level-item';
     item.innerHTML = `
       <div class="level-num">${i+1}</div>
-      <input class="level-input" type="text" value="${l.text}" placeholder="Level or area name..." oninput="levels[${i}].text=this.value">
+      <input class="level-input" type="text" value="${esc(l.text)}" placeholder="Level or area name..." oninput="levels[${i}].text=this.value">
       <button class="level-del" onclick="levels.splice(${i},1);renderLevels();">✕</button>
     `;
     list.appendChild(item);
@@ -888,14 +895,18 @@ function trackProgress(){
   }, 200);
 }
 
-function charCounters(){
+function initCounters(){
   const pairs = [['gameTitle','titleCount',60],['gamePitch','pitchCount',120]];
-  pairs.forEach(([inp,ctr,max]) => {
+  counterUpdaters = pairs.map(([inp,ctr,max]) => {
     const el = document.getElementById(inp);
     const ct = document.getElementById(ctr);
     const update = () => ct.textContent = el.value.length+' / '+max;
     el.addEventListener('input', update);
+    return update;
   });
+}
+function refreshCounters(){
+  counterUpdaters.forEach(u => u());
 }
 
 // ══════════════════════════════════════
@@ -962,7 +973,7 @@ function setData(d){
   if(d.musicMoodChips) setChips('musicMoodChips',d.musicMoodChips);
   if(d.musicStyleChips) setChips('musicStyleChips',d.musicStyleChips);
   buildCoverColours(); buildCoverEmojis();
-  updateCover(); trackProgress();
+  updateCover(); refreshCounters(); trackProgress();
 }
 
 function saveProject(){
@@ -991,35 +1002,55 @@ function clearAll(){
 // EXPORT PDF
 // ══════════════════════════════════════
 function exportPDF(){
-  // Show all sections before printing
+  // Show all sections before printing, restore collapse state afterwards
+  const hiddenIds = [...document.querySelectorAll('.section-body.hidden')].map(b => b.id);
   document.querySelectorAll('.section-body').forEach(b => b.classList.remove('hidden'));
   showToast('Opening print dialog…');
+  window.addEventListener('afterprint', () => {
+    hiddenIds.forEach(id => { const el = document.getElementById(id); if(el) el.classList.add('hidden'); });
+  }, {once:true});
   setTimeout(() => window.print(), 400);
 }
 
 function exportJSON(){
-  const gameTitle = document.getElementById('gameTitle').value || 'Game Design Document';
-  const data = {
-    gameTitle,
-    gamePitch: document.getElementById('gamePitch').value,
-    genre: document.getElementById('genre').value,
-    platforms: document.getElementById('platforms').value,
-    targetAudience: document.getElementById('targetAudience').value,
-    coreLoop: document.getElementById('coreLoop').value,
-    uniqueFeatures: document.getElementById('uniqueFeatures').value,
-    monetization: document.getElementById('monetization').value,
-    exportedDate: new Date().toISOString(),
-    exportedFrom: 'JVDesignStudio GDD Builder'
-  };
+  const data = getData();
+  data.exportedDate = new Date().toISOString();
+  data.exportedFrom = 'JVDesignStudio GDD Builder';
+  const name = (data.gameTitle || 'Game Design Document').trim();
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = gameTitle.replace(/\s+/g, '_') + '_GDD.json';
+  a.download = name.replace(/[^\w]+/g, '_') + '_GDD.json';
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
-  showToast('GDD exported as JSON! 📋');
+  showToast('GDD exported as JSON ✓');
+}
+
+function importJSON(){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.onchange = () => {
+    const file = inp.files && inp.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const d = JSON.parse(reader.result);
+        if(!d || typeof d !== 'object' || Array.isArray(d)){
+          showToast('Not a valid GDD file'); return;
+        }
+        setData(d);
+        showToast('GDD imported ✓ — hit Save to keep it');
+      }catch(e){ showToast('Could not read that file'); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
 }
 
 // ══════════════════════════════════════
@@ -1036,21 +1067,6 @@ function showToast(msg){
 // ══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', init);
 </script>
-<script>
-/* ── JVDS Site Nav ── */
-(function(){
-    var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsMobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNav(); });
-})();
-</script>
-
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
 </body>

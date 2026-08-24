@@ -1,11 +1,17 @@
 // make-public.js, generates quest-board.html (clean public version) from project-tracker.html
-// Run: node make-public.js
+// Run from anywhere: node make-public.js   (paths are resolved relative to this script)
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const { spawnSync } = require('child_process');
 
+const ROOT = __dirname;
+const TOOLS = path.join(ROOT, 'tools');
+const SRC_FILE = path.join(TOOLS, 'project-tracker.html');
+const OUT_FILE = path.join(TOOLS, 'quest-board.html');
+
 console.log('\n⚔️  Building quest-board.html...\n');
-let c = fs.readFileSync('project-tracker.html', 'utf8');
+let c = fs.readFileSync(SRC_FILE, 'utf8');
 const errs = [], done = [];
 
 function rep(from, to, label) {
@@ -13,10 +19,51 @@ function rep(from, to, label) {
   c = c.replace(from, to);
   done.push(label);
 }
+function repAll(from, to, label) {
+  if (!c.includes(from)) { errs.push('MISS: ' + label); return; }
+  c = c.split(from).join(to);
+  done.push(label);
+}
 
 // ── 1. Title & meta ──────────────────────────────────────────────────────────
 rep('<title>RPG Quest Board, JVDesignStudio</title>',
-    '<title>Quest Board RPG, Your Personal Adventure</title>', 'title');
+    '<title>QuestLog — Turn Your Work Into an RPG</title>', 'title');
+
+rep('<meta name="description" content="JVDesignStudio Project Tracker, organise and manage your creative game dev projects.">',
+    '<meta name="description" content="QuestLog by JVDesignStudio — a free browser RPG productivity app. Turn projects, tasks and daily habits into quests. Earn XP, level up, defeat boss quests. No account, works offline.">',
+    'meta description');
+
+// Manifest must be site-root absolute (works on jvdesignstudio.co.uk AND Netlify bundle)
+rep('<link rel="manifest" href="../manifest.json">',
+    '<link rel="manifest" href="/manifest.json">', 'manifest href');
+
+// The public app collects nothing (see privacy-policy), so no analytics here
+rep('<script src="../analytics-loader.js"></script>', '', 'strip site analytics');
+
+// Public build is indexable + gets social cards
+rep('<meta name="robots" content="noindex, nofollow">',
+    [
+      '<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/quest-board.html">',
+      '<meta property="og:type" content="website">',
+      '<meta property="og:site_name" content="JVDesignStudio">',
+      '<meta property="og:url" content="https://jvdesignstudio.co.uk/tools/quest-board.html">',
+      '<meta property="og:title" content="QuestLog — Turn Your Work Into an RPG">',
+      '<meta property="og:description" content="Turn your tasks and habits into quests. Earn XP, level up, build streaks. Free, no account, works offline.">',
+      '<meta property="og:image" content="https://jvdesignstudio.co.uk/og/tool-questboard.png">',
+      '<meta name="twitter:card" content="summary_large_image">',
+      '<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/tool-questboard.png">'
+    ].join('\n'),
+    'robots → canonical + OG tags');
+
+// Consistent product naming across installed-app surfaces
+rep('<meta name="apple-mobile-web-app-title" content="Quest Board">',
+    '<meta name="apple-mobile-web-app-title" content="QuestLog">', 'iOS app title');
+rep('<span class="header-title">RPG QUEST BOARD</span>',
+    '<span class="header-title">QUESTLOG</span>', 'header brand');
+
+// Root-relative asset refs so the same file works in the Netlify bundle
+repAll('../logo.png', '/logo.png', 'logo.png → root-relative');
+rep('../style-shared.css', '/style-shared.css', 'style-shared.css → root-relative');
 
 // ── 2. localStorage keys (keep owner's data separate) ────────────────────────
 rep("const SK='jvds-tracker-v2', RK='jvds-rpg-v1';",
@@ -87,6 +134,9 @@ c = c.split('`Josh- ${rpg.title}`').join("`${localStorage.getItem('qb-player-nam
 // In HTML default text
 c = c.split('Josh, The Novice').join('Adventurer, The Novice');
 c = c.split('Josh- the Novice').join('Adventurer, The Novice');
+// Title-equipped toast
+c = c.split('`🏆 Title: "Josh- ${t}"`')
+     .join("`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${t}`");
 done.push('player name → dynamic');
 
 // ── 7. Auth gate + auth script → Setup Wizard ─────────────────────────────────
@@ -178,7 +228,7 @@ function completeSetup(){
 }
 
 // ── 8. Write output ───────────────────────────────────────────────────────────
-fs.writeFileSync('quest-board.html', c);
+fs.writeFileSync(OUT_FILE, c);
 
 // ── 9. Syntax check all inline scripts ───────────────────────────────────────
 let idx = 0, scriptCount = 0, allOk = true;
@@ -206,5 +256,5 @@ done.forEach(d => console.log('  ✓', d));
 if (errs.length) { console.log('\nErrors:'); errs.forEach(e => console.log('  ✗', e)); }
 console.log('\n─────────────────────────────────────────────');
 console.log(`Scripts: ${scriptCount} | Syntax: ${allOk ? '✅ ALL OK' : '❌ HAS ERRORS'}`);
-console.log(`Size: ${(fs.statSync('quest-board.html').size / 1024).toFixed(0)}KB`);
+console.log(`Size: ${(fs.statSync(OUT_FILE).size / 1024).toFixed(0)}KB`);
 console.log('─────────────────────────────────────────────\n');

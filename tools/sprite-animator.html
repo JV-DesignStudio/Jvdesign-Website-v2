@@ -10,16 +10,16 @@
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sprite Animator | JVDesignStudio</title>
-<meta name="description" content="Upload a spritesheet, set frame size, preview your animation live in the browser. Export frame data as JSON for Godot or Unity. Free game dev tool.">
+<meta name="description" content="Upload a spritesheet, set frame size, preview your animation live. Export animated GIFs, ZIP frame packs, Godot SpriteFrames and Unity-friendly JSON. Free game dev tool.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://jvdesignstudio.co.uk/tools/sprite-animator.html">
 <meta property="og:title"       content="Sprite Animator | JVDesignStudio">
-<meta property="og:description" content="Upload a spritesheet, set frame size, preview your animation live in the browser. Export frame data as JSON for Godot or Unity. Free game dev tool.">
+<meta property="og:description" content="Upload a spritesheet, set frame size, preview your animation live. Export animated GIFs, ZIP frame packs, Godot SpriteFrames and Unity-friendly JSON. Free game dev tool.">
 <meta property="og:image"       content="https://jvdesignstudio.co.uk/og/tool-spriteanim.png">
 <meta property="og:site_name"   content="JVDesignStudio">
 <meta name="twitter:card"        content="summary_large_image">
 <meta name="twitter:title"       content="Sprite Animator | JVDesignStudio">
-<meta name="twitter:description" content="Upload a spritesheet, set frame size, preview your animation live in the browser. Export frame data as JSON for Godot or Unity. Free game dev tool.">
+<meta name="twitter:description" content="Upload a spritesheet, set frame size, preview your animation live. Export animated GIFs, ZIP frame packs, Godot SpriteFrames and Unity-friendly JSON. Free game dev tool.">
 <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/og/tool-spriteanim.png">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,11 +118,21 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .exp-json{background:var(--accent4);color:white;}
 .exp-png{background:var(--accent3);color:#000;}
 
+/* project + restore */
+.proj-row{display:flex;gap:4px;margin-top:6px;}
+.kbd-hint{font-size:.52rem;color:var(--muted);line-height:1.7;padding:7px 12px;border-top:1px solid var(--border2);}
+.restore-banner{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:.65rem;color:var(--text);}
+.restore-banner.hidden{display:none;}
+.restore-banner .icon-btn{padding:4px 10px;font-size:.6rem;flex-shrink:0;}
+
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
 
 @media(max-width:700px){
   #sidebar{width:100%;max-height:42vh;border-left:none;border-top:1px solid var(--border2);}
   #app{flex-direction:column;}
+  #preview-area{min-height:180px;}
+  #playback-bar{flex-wrap:wrap;height:auto;min-height:44px;padding:6px 10px;gap:6px;}
+  .frame-counter{margin-left:0;width:100%;text-align:center;}
 }
 
 
@@ -209,6 +219,11 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
         <div class="upload-text">Upload a spritesheet PNG to get started.<br>Works with transparent backgrounds too.</div>
         <label class="upload-btn-label" for="fileInput">Upload Spritesheet</label>
       </div>
+      <div class="restore-banner hidden" id="restoreBanner">
+        <span style="flex:1;">Found an autosaved session. Restore it?</span>
+        <button class="icon-btn primary" onclick="restoreAutosave()">Restore</button>
+        <button class="icon-btn" onclick="discardAutosave()">Discard</button>
+      </div>
       <canvas id="preview-canvas" width="128" height="128"></canvas>
     </div>
 
@@ -244,6 +259,12 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
       <div class="sb-title">Spritesheet</div>
       <label class="upload-btn-label" for="fileInput" style="display:inline-block;padding:6px 14px;font-size:.75rem;border-radius:7px;background:var(--accent4);color:white;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;margin-bottom:8px;">📂 Load Spritesheet</label>
       <button class="icon-btn" style="width:100%;background:rgba(16,185,129,.15);color:var(--accent3);border-color:rgba(16,185,129,.3);" onclick="importFromPixelStudio()">🎨 Import from Pixel Studio</button>
+      <div class="proj-row">
+        <button class="icon-btn" style="flex:1;" onclick="saveProjectLocal()" title="Save project to this browser">💾</button>
+        <button class="icon-btn" style="flex:1;" onclick="loadProjectLocal()" title="Load saved project">📂</button>
+        <button class="icon-btn" style="flex:1;" onclick="exportProjectFile()" title="Download project as .json file">📤</button>
+        <label class="icon-btn" style="flex:1;text-align:center;cursor:pointer;" title="Import a project .json file">📥<input type="file" id="projFileInput" accept=".json,application/json" style="display:none" onchange="importProjectFile(this)"></label>
+      </div>
       <div style="font-size:.55rem;color:var(--muted);margin-top:4px;" id="sheetInfo">No sheet loaded</div>
     </div>
 
@@ -322,8 +343,10 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
       <button class="exp-btn exp-json" onclick="exportJSON()">{ } JSON Frame Data</button>
       <button class="exp-btn exp-png" onclick="exportPNG()">📥 Current Frame PNG</button>
       <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Selected Frames Sheet</button>
-      <button class="exp-btn" style="background:rgba(245,158,11,.2);color:var(--accent2);" onclick="exportMultiPNG()">🎞️ Batch Frame PNGs</button>
+      <button class="exp-btn" style="background:rgba(245,158,11,.2);color:var(--accent2);" onclick="exportFramePack()">📦 Frame Pack (ZIP)</button>
+      <button class="exp-btn" style="background:rgba(124,58,237,.25);color:#a78bfa;" onclick="exportEnginePack()">🎮 Engine Pack (ZIP)</button>
     </div>
+    <div class="kbd-hint">Space play · ←/→ frame · +/− zoom · O onion · Ctrl+Z undo</div>
   </div>
 </div>
 <div id="toast"></div>
@@ -344,6 +367,8 @@ let bgMode='checker';
 let onionSkin=false;
 let drawMode=false, drawTool='pencil', drawStroking=false;
 let undoStack=[]; // sheet ImageData snapshots, newest last
+let layoutDirty=false, projectDirty=false, autosaveT=null, _jszipPromise=null;
+let sheetName='sheet'; // display name for sheetInfo
 
 const canvas=id('preview-canvas');
 const ctx=canvas.getContext('2d');
@@ -352,16 +377,27 @@ ctx.imageSmoothingEnabled=false;
 // ── LOAD ──
 function loadSheet(input){
   const file=input.files[0];if(!file) return;
+  if(!file.type.startsWith('image/')){toast('That file is not an image');return;}
   const url=URL.createObjectURL(file);
   const img=new Image();
   img.onload=()=>{
     sheetImg=img;sheetW=img.width;sheetH=img.height;
+    sheetName=file.name;
     initSheetCanvas(img);
-    id('sheetInfo').textContent=`${sheetW}×${sheetH}px · ${file.name}`;
+    updateSheetInfo();
     id('uploadPrompt').classList.add('hidden');
-    rebuildFrames();
+    id('restoreBanner').classList.add('hidden');
+    layoutDirty=false;
+    rebuildFrames(true);
+    markDirty();
+    toast(`Loaded ${sheetW}×${sheetH}px sheet`);
   };
+  img.onerror=()=>{toast('Could not load that image');URL.revokeObjectURL(url);};
   img.src=url;
+}
+
+function updateSheetInfo(){
+  id('sheetInfo').textContent=sheetImg?`${sheetW}×${sheetH}px · ${sheetName}`:'No sheet loaded';
 }
 
 function initSheetCanvas(source){
@@ -373,13 +409,21 @@ function initSheetCanvas(source){
   undoStack=[];
 }
 
-function rebuildFrames(){
+function rebuildFrames(force){
   if(!sheetImg) return;
-  frameW=+id('frameW').value||32;
-  frameH=+id('frameH').value||32;
-  offsetX=+id('offsetX').value||0;
-  offsetY=+id('offsetY').value||0;
-  spacing=+id('spacing').value||0;
+  // Warn before wiping manual edits (deleted/duplicated/reordered frames)
+  if(!force&&layoutDirty&&frames.length>0){
+    if(!confirm('Rebuilding the grid will reset frame selection, order and duplicates. Continue?')) return;
+  }
+  frameW=Math.min(1024,Math.max(1,Math.round(+id('frameW').value)||32));
+  frameH=Math.min(1024,Math.max(1,Math.round(+id('frameH').value)||32));
+  offsetX=Math.max(0,Math.round(+id('offsetX').value)||0);
+  offsetY=Math.max(0,Math.round(+id('offsetY').value)||0);
+  spacing=Math.max(0,Math.round(+id('spacing').value)||0);
+  id('frameW').value=frameW;id('frameH').value=frameH;
+  id('offsetX').value=offsetX;id('offsetY').value=offsetY;
+  id('spacing').value=spacing;
+  if(offsetX+frameW>sheetW||offsetY+frameH>sheetH){toast(`Frame grid (${frameW}×${frameH} at ${offsetX},${offsetY}) does not fit a ${sheetW}×${sheetH}px sheet`);return;}
   frames=[];
   const step=v=>v+spacing;
   for(let y=offsetY;y+frameH<=sheetH;y+=step(frameH)){
@@ -387,10 +431,12 @@ function rebuildFrames(){
       frames.push({x,y,enabled:true});
     }
   }
+  layoutDirty=false;
   buildStrip();
   updateActiveFrames();
   currentFrame=0;
   drawFrame();
+  markDirty();
 }
 
 function autoDetect(){
@@ -403,7 +449,7 @@ function autoDetect(){
   }
   id('frameW').value=bestW;id('frameH').value=bestH;
   id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
-  rebuildFrames();
+  rebuildFrames(true);
   toast(`Auto-detected: ${bestW}×${bestH} frames (${frames.length} total)`);
 }
 
@@ -436,43 +482,68 @@ function buildStrip(){
   id('totalFrameNum').textContent=frames.filter(f=>f.enabled).length;
 }
 
+function touchFrames(){layoutDirty=true;markDirty();}
+
 function toggleFrame(i){
   frames[i].enabled=!frames[i].enabled;
   id('ft-'+i).classList.toggle('on',frames[i].enabled);
   id('ft-'+i).classList.toggle('disabled',!frames[i].enabled);
   updateActiveFrames();
+  touchFrames();
 }
 
-function selectAll(){frames.forEach((f,i)=>{f.enabled=true;const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}});updateActiveFrames();}
-function selectNone(){frames.forEach((f,i)=>{f.enabled=false;const el=id('ft-'+i);if(el){el.classList.remove('on');el.classList.add('disabled');}});updateActiveFrames();}
-function invertSelection(){frames.forEach((f,i)=>{f.enabled=!f.enabled;const el=id('ft-'+i);if(el){el.classList.toggle('on',f.enabled);el.classList.toggle('disabled',!f.enabled);}});updateActiveFrames();}
+function selectAll(){frames.forEach((f,i)=>{f.enabled=true;const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}});updateActiveFrames();touchFrames();}
+function selectNone(){frames.forEach((f,i)=>{f.enabled=false;const el=id('ft-'+i);if(el){el.classList.remove('on');el.classList.add('disabled');}});updateActiveFrames();touchFrames();}
+function invertSelection(){frames.forEach((f,i)=>{f.enabled=!f.enabled;const el=id('ft-'+i);if(el){el.classList.toggle('on',f.enabled);el.classList.toggle('disabled',!f.enabled);}});updateActiveFrames();touchFrames();}
 function selectRange(){
   const start=Math.max(0,parseInt(id('rangeStart').value||0)-1);
   const end=Math.min(frames.length,parseInt(id('rangeEnd').value||frames.length));
+  if(isNaN(start)||isNaN(end)||end<=start){toast('Enter a valid frame range');return;}
   selectNone();
   for(let i=start;i<end;i++){
     frames[i].enabled=true;
     const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}
   }
   updateActiveFrames();
+  touchFrames();
   toast(`Selected frames ${start+1}-${end}`);
 }
-function reverseOrder(){frames.reverse();buildStrip();updateActiveFrames();}
+function reverseOrder(){frames.reverse();buildStrip();updateActiveFrames();touchFrames();}
 function deleteSelected(){
-  const toDelete=frames.map((f,i)=>f.enabled?i:-1).filter(i=>i>=0);
-  if(toDelete.length===0){toast('No frames selected');return;}
-  frames=frames.filter((f,i)=>!f.enabled);
+  const delCount=frames.filter(f=>f.enabled).length;
+  if(delCount===0){toast('No frames selected');return;}
+  frames=frames.filter(f=>!f.enabled);
   buildStrip();
   updateActiveFrames();
-  toast(`Deleted ${toDelete.length} frame(s)`);
+  touchFrames();
+  toast(`Deleted ${delCount} frame(s)`);
 }
 function duplicateSelected(){
-  const selected=frames.filter(f=>f.enabled);
-  if(selected.length===0){toast('No frames selected');return;}
-  frames=[...frames,...selected.map(f=>({...f}))];
+  const sel=activeFrames.slice();
+  if(sel.length===0){toast('No frames selected');return;}
+  // Copy pixels into a fresh strip appended below the sheet so clones are
+  // independent (edits on a clone must not affect the original)
+  const stripY=sheetH;
+  const needW=Math.max(sheetW,sel.length*frameW);
+  const nc=document.createElement('canvas');
+  nc.width=needW;nc.height=sheetH+frameH;
+  const nx=nc.getContext('2d',{willReadFrequently:true});
+  nx.imageSmoothingEnabled=false;
+  nx.drawImage(sheetCanvas,0,0);
+  sheetCanvas=nc;sheetCtx=nx;sheetW=needW;sheetH=nc.height;
+  const clones=sel.map((fi,k)=>{
+    const src=frames[fi];
+    const x=k*frameW,y=stripY;
+    sheetCtx.drawImage(sheetCanvas,src.x,src.y,frameW,frameH,x,y,frameW,frameH);
+    return {x,y,enabled:true,fps:src.fps||null};
+  });
+  frames=[...frames,...clones];
+  sheetName=sheetName.replace(/ \(extended\)$/,'')+' (extended)';
+  updateSheetInfo();
   buildStrip();
   updateActiveFrames();
-  toast(`Duplicated ${selected.length} frame(s)`);
+  touchFrames();
+  toast(`Duplicated ${sel.length} frame(s) as independent copies`);
 }
 
 // Frame inspector
@@ -494,8 +565,9 @@ function showFrameInspector(frameIdx){
 function applyFrameFps(){
   if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
   const fpsVal=parseInt(id('frameFps').value);
-  if(isNaN(fpsVal)){toast('Invalid FPS value');return;}
+  if(isNaN(fpsVal)||fpsVal<1||fpsVal>60){toast('FPS must be between 1 and 60');return;}
   activeFrames.forEach(fi=>{frames[fi].fps=fpsVal;});
+  touchFrames();
   toast(`Applied FPS ${fpsVal} to ${activeFrames.length} frames`);
 }
 
@@ -569,26 +641,19 @@ function scheduleNext(){
 
 function prevFrame(){currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;drawFrame();}
 function nextFrame(){currentFrame=(currentFrame+1)%activeFrames.length;drawFrame();}
-function toggleLoop(){looping=!looping;id('loopBtn').classList.toggle('on',looping);}
-function setFps(v){fps=+v;id('fpsVal').textContent=v;}
-function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();}
-function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();}
+function toggleLoop(){looping=!looping;id('loopBtn').classList.toggle('on',looping);markDirty();}
+function setFps(v){fps=+v;id('fpsVal').textContent=v;markDirty();}
+function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();markDirty();}
+function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();markDirty();}
 
 // ── EXPORT ──
 function exportJSON(){
   if(!sheetImg||frames.length===0){toast('No sheet loaded');return;}
-  const data={
-    spritesheet:{width:sheetW,height:sheetH},
-    frameSize:{width:frameW,height:frameH},
-    offset:{x:offsetX,y:offsetY},
-    spacing,
-    fps,
-    frameCount:activeFrames.length,
-    frames:activeFrames.map((fi,i)=>({
-      id:i,sourceX:frames[fi].x,sourceY:frames[fi].y,
-      width:frameW,height:frameH,duration:Math.round(1000/fps)
-    }))
-  };
+  const data=manifestJSON(
+    activeFrames.map(fi=>({x:frames[fi].x,y:frames[fi].y})),
+    sheetW,sheetH);
+  data.offset={x:offsetX,y:offsetY};
+  data.spacing=spacing;
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='animation.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
@@ -606,42 +671,333 @@ function exportPNG(){
 
 function exportSheet(){
   if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
-  const cols=Math.ceil(Math.sqrt(activeFrames.length));
-  const rows=Math.ceil(activeFrames.length/cols);
-  const c=document.createElement('canvas');c.width=cols*frameW;c.height=rows*frameH;
-  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
-  activeFrames.forEach((fi,i)=>{
-    const f=frames[fi];
-    const col=i%cols,row=Math.floor(i/cols);
-    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,col*frameW,row*frameH,frameW,frameH);
+  buildRepacked().canvas.toBlob(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');
   });
-  c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');});
 }
 
-function exportMultiPNG(){
-  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
-  // Export each selected frame as individual PNG
-  // Note: In a real implementation, you'd zip these or use a download manager
-  let exported=0;
-  activeFrames.forEach((fi,idx)=>{
-    setTimeout(()=>{
-      const f=frames[fi];
+// ── ZIP / ENGINE EXPORT ──
+function frameName(i){return 'frame_'+String(i).padStart(3,'0');}
+
+function loadJSZip(){
+  if(window.JSZip) return Promise.resolve(window.JSZip);
+  if(_jszipPromise) return _jszipPromise;
+  _jszipPromise=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>res(window.JSZip);
+    s.onerror=()=>{_jszipPromise=null;rej(new Error('JSZip failed to load'));};
+    document.head.appendChild(s);
+  });
+  return _jszipPromise;
+}
+
+function canvasBlob(c){return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('toBlob failed')),'image/png'));}
+
+async function downloadZip(zip,name){
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+// Repack active frames into a tight grid; returns {canvas,positions:[{x,y}]}
+function buildRepacked(){
+  const n=activeFrames.length;
+  const cols=Math.ceil(Math.sqrt(n));
+  const c=document.createElement('canvas');
+  c.width=cols*frameW;c.height=Math.ceil(n/cols)*frameH;
+  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+  const positions=activeFrames.map((fi,i)=>{
+    const f=frames[fi];
+    const x=(i%cols)*frameW,y=Math.floor(i/cols)*frameH;
+    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,x,y,frameW,frameH);
+    return {x,y};
+  });
+  return {canvas:c,positions};
+}
+
+// Generic frame-data manifest. positions/sheetSize let callers bind it to
+// either the original sheet or the repacked atlas.
+function manifestJSON(positions,sheetW2,sheetH2){
+  return {
+    spritesheet:{width:sheetW2,height:sheetH2},
+    frameSize:{width:frameW,height:frameH},
+    fps,
+    loop:looping,
+    frameCount:activeFrames.length,
+    frames:activeFrames.map((fi,i)=>({
+      id:i,name:frameName(i),
+      sourceX:positions[i].x,sourceY:positions[i].y,
+      width:frameW,height:frameH,
+      duration:Math.round(1000/(frames[fi].fps||fps))
+    }))
+  };
+}
+
+// Aseprite hash format (consumed by Aseprite importers/plugins)
+function buildAsepriteJSON(positions,sheetW2,sheetH2){
+  return JSON.stringify({
+    frames:Object.fromEntries(activeFrames.map((fi,i)=>[frameName(i),{
+      frame:{x:positions[i].x,y:positions[i].y,w:frameW,h:frameH},
+      rotated:false,trimmed:false,
+      spriteSourceSize:{x:0,y:0,w:frameW,h:frameH},
+      sourceSize:{w:frameW,h:frameH},
+      duration:Math.round(1000/(frames[fi].fps||fps))
+    }])),
+    meta:{
+      app:'JVDesignStudio Sprite Animator',version:'1.0',
+      image:'spritesheet.png',format:'RGBA8888',
+      size:{w:sheetW2,h:sheetH2},scale:'1',
+      frameTags:[{name:'default',from:0,to:Math.max(0,activeFrames.length-1),direction:'forward'}]
+    }
+  },null,2);
+}
+
+// TexturePacker JSON array format (Unity via TexturePacker importer)
+function buildTexturePackerJSON(positions,sheetW2,sheetH2){
+  return JSON.stringify({
+    frames:activeFrames.map((fi,i)=>({
+      filename:frameName(i),
+      frame:{x:positions[i].x,y:positions[i].y,w:frameW,h:frameH},
+      rotated:false,trimmed:false,
+      spriteSourceSize:{x:0,y:0,w:frameW,h:frameH},
+      sourceSize:{w:frameW,h:frameH},
+      pivot:{x:.5,y:.5}
+    })),
+    meta:{
+      app:'JVDesignStudio Sprite Animator',version:'1.0',
+      image:'spritesheet.png',format:'RGBA8888',
+      size:{w:sheetW2,h:sheetH2},scale:'1'
+    }
+  },null,2);
+}
+
+// Godot 4 SpriteFrames resource (.tres) referencing res://spritesheet.png
+function buildGodotTres(){
+  const n=activeFrames.length;
+  const subs=activeFrames.map((fi,i)=>{
+    const f=frames[fi];
+    return `[sub_resource type="AtlasTexture" id="AtlasTexture_${i}"]
+atlas = ExtResource("1_sheet")
+region = Rect2(${f.x}, ${f.y}, ${frameW}, ${frameH})
+`;
+  }).join('\n');
+  const framesSrc=activeFrames.map((fi,i)=>{
+    // Godot plays at `speed` FPS; per-frame duration is a multiplier of that
+    const mult=fps/(frames[fi].fps||fps);
+    return `{
+"duration": ${+(mult.toFixed(4))},
+"texture": SubResource("AtlasTexture_${i}")
+}`;
+  }).join(', ');
+  return `[gd_resource type="SpriteFrames" load_steps=${1+n} format=3]
+
+[ext_resource type="Texture2D" path="res://spritesheet.png" id="1_sheet"]
+
+${subs}
+[resource]
+animations = [{
+"frames": [${framesSrc}],
+"loop": ${looping?'true':'false'},
+"name": &"default",
+"speed": ${fps}.0
+}]
+`;
+}
+
+async function exportFramePack(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  try{
+    toast('Building ZIP...');
+    const JSZip=await loadJSZip();
+    const zip=new JSZip();
+    for(let i=0;i<activeFrames.length;i++){
+      const f=frames[activeFrames[i]];
       const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
       const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
       cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
-      c.toBlob(blob=>{
-        const a=document.createElement('a');
-        a.href=URL.createObjectURL(blob);
-        a.download=`frame_${fi+1}.png`;
-        a.click();
-        setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-        exported++;
-        if(exported===activeFrames.length) toast(`Exported ${activeFrames.length} frames!`);
-      });
-    },idx*200); // Stagger downloads
-  });
-  toast('Exporting frames...');
+      zip.file(`frames/${frameName(i)}.png`,await canvasBlob(c));
+    }
+    zip.file('animation.json',JSON.stringify(manifestJSON(
+      activeFrames.map(fi=>({x:frames[fi].x,y:frames[fi].y})),sheetW,sheetH),null,2));
+    await downloadZip(zip,'sprite-frames.zip');
+    toast(`ZIP exported! ${activeFrames.length} frames`);
+  }catch(err){
+    console.error('Frame pack failed:',err);
+    toast('ZIP export failed, check connection & try again');
+  }
 }
+
+async function exportEnginePack(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  try{
+    toast('Building engine pack...');
+    const JSZip=await loadJSZip();
+    const repacked=buildRepacked();
+    const rc=repacked.canvas,pos=repacked.positions;
+    const zip=new JSZip();
+    zip.file('spritesheet.png',await canvasBlob(rc));
+    zip.file('animation.json',JSON.stringify(manifestJSON(pos,rc.width,rc.height),null,2));
+    zip.file('godot/SpriteFrames.tres',buildGodotTres());
+    zip.file('aseprite/spritesheet.json',buildAsepriteJSON(pos,rc.width,rc.height));
+    zip.file('unity-texturepacker/spritesheet.json',buildTexturePackerJSON(pos,rc.width,rc.height));
+    zip.file('README.txt',
+`JVDesignStudio Sprite Animator - Engine Pack
+=============================================
+spritesheet.png            Packed atlas of your selected frames (${rc.width}x${rc.height}, ${frameW}x${frameH} cells).
+animation.json             Generic frame data (coords match spritesheet.png).
+
+godot/SpriteFrames.tres    Godot 4 SpriteFrames resource.
+                           1. Copy spritesheet.png into your project as res://spritesheet.png
+                              (or edit the ext_resource path inside the .tres).
+                           2. Drop the .tres anywhere in res:// and assign it to an
+                              AnimatedSprite2D node. Per-frame timing is baked in.
+
+aseprite/spritesheet.json  Aseprite hash-format JSON (for Aseprite importer plugins/tools).
+
+unity-texturepacker/*.json TexturePacker JSON array format. In Unity, import spritesheet.png +
+                           this JSON together (e.g. with a free TexturePacker importer asset),
+                           or read the frame rects from animation.json directly.
+
+Exported ${activeFrames.length} frames @ ${fps} FPS, loop ${looping?'on':'off'}.
+`);
+    await downloadZip(zip,'engine-pack.zip');
+    toast('Engine pack exported! Godot · Aseprite · Unity formats');
+  }catch(err){
+    console.error('Engine pack failed:',err);
+    toast('ZIP export failed, check connection & try again');
+  }
+}
+
+// ── PROJECT SAVE / LOAD / AUTOSAVE ──
+const LS_PROJECT='jvds_sprite_anim',LS_AUTOSAVE='jvds_sprite_anim_auto';
+
+function serializeProject(){
+  return JSON.stringify({
+    app:'jvds-sprite-animator',v:1,
+    sheet:sheetCanvas?sheetCanvas.toDataURL('image/png'):null,
+    sheetName,
+    frameW,frameH,offsetX,offsetY,spacing,
+    frames:frames.map(f=>({x:f.x,y:f.y,e:!!f.enabled,fps:f.fps||null})),
+    fps,zoom,bgMode,looping,currentFrame
+  });
+}
+
+function applyProject(d){
+  if(!d||d.app!=='jvds-sprite-animator'||!d.sheet) throw new Error('Not a Sprite Animator project');
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      sheetImg=img;sheetW=img.width;sheetH=img.height;
+      sheetName=d.sheetName||'restored project';
+      initSheetCanvas(img); // clears undo history
+      frameW=Math.min(1024,Math.max(1,+d.frameW||32));
+      frameH=Math.min(1024,Math.max(1,+d.frameH||32));
+      offsetX=Math.max(0,+d.offsetX||0);
+      offsetY=Math.max(0,+d.offsetY||0);
+      spacing=Math.max(0,+d.spacing||0);
+      id('frameW').value=frameW;id('frameH').value=frameH;
+      id('offsetX').value=offsetX;id('offsetY').value=offsetY;id('spacing').value=spacing;
+      frames=(Array.isArray(d.frames)?d.frames:[]).map(f=>({x:+f.x||0,y:+f.y||0,enabled:f.e!==false,fps:f.fps||null}));
+      setFps(Math.min(60,Math.max(1,+d.fps||12)));id('fpsSlider').value=fps;
+      zoom=Math.min(16,Math.max(1,+d.zoom||2));id('zoomVal').textContent=zoom+'×';
+      bgMode=['checker','black','white','dark'].includes(d.bgMode)?d.bgMode:'checker';
+      document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===bgMode));
+      looping=d.looping!==false;id('loopBtn').classList.toggle('on',looping);
+      layoutDirty=true; // restored layouts are custom by definition
+      updateSheetInfo();
+      id('uploadPrompt').classList.add('hidden');
+      id('restoreBanner').classList.add('hidden');
+      buildStrip();
+      updateActiveFrames();
+      currentFrame=Math.min(Math.max(0,+d.currentFrame||0),Math.max(0,activeFrames.length-1));
+      drawFrame();
+      resolve();
+    };
+    img.onerror=()=>reject(new Error('Could not decode sheet image'));
+    img.src=d.sheet;
+  });
+}
+
+function saveProjectLocal(){
+  if(!sheetImg){toast('Nothing to save yet');return;}
+  try{
+    localStorage.setItem(LS_PROJECT,serializeProject());
+    toast('Saved to browser ✓');
+  }catch(e){toast('Save failed (too large?) — use 📤 file export instead');}
+}
+
+function loadProjectLocal(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_PROJECT);}catch(e){}
+  if(!raw){toast('No saved project in this browser');return;}
+  applyProject(JSON.parse(raw)).then(()=>toast('Loaded ✓')).catch(()=>toast('Load failed'));
+}
+
+function exportProjectFile(){
+  if(!sheetImg){toast('Nothing to export yet');return;}
+  try{
+    const blob=new Blob([serializeProject()],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='sprite-animator-project.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast('Project file exported ✓');
+  }catch(e){toast('Export failed');}
+}
+
+function importProjectFile(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  input.value='';
+  file.text().then(txt=>{
+    try{
+      applyProject(JSON.parse(txt)).then(()=>{
+        markDirty();
+        toast('Project loaded ✓');
+      }).catch(()=>toast('Not a valid project file'));
+    }catch(e){toast('Not a valid project file');}
+  }).catch(()=>toast('Could not read file'));
+}
+
+// Debounced silent autosave (mirrors Pixel Studio's pattern)
+function markDirty(){
+  projectDirty=true;
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(autoSave,1500);
+}
+function autoSave(){
+  if(!projectDirty||!sheetImg) return;
+  try{
+    localStorage.setItem(LS_AUTOSAVE,serializeProject());
+    projectDirty=false;
+  }catch(e){/* quota exceeded — autosave silently disabled */}
+}
+function setupAutosaveRestore(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_AUTOSAVE);}catch(e){}
+  if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    if(d&&d.app==='jvds-sprite-animator'&&d.sheet) id('restoreBanner').classList.remove('hidden');
+  }catch(e){}
+}
+function restoreAutosave(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_AUTOSAVE);}catch(e){}
+  if(raw) applyProject(JSON.parse(raw)).then(()=>toast('Session restored ✓')).catch(()=>toast('Restore failed'));
+  else toast('Restore failed');
+}
+function discardAutosave(){
+  try{localStorage.removeItem(LS_AUTOSAVE);}catch(e){}
+  id('restoreBanner').classList.add('hidden');
+}
+window.addEventListener('beforeunload',()=>{if(projectDirty)autoSave();});
 
 // ── ONION SKIN ──
 function toggleOnion(){
@@ -689,6 +1045,7 @@ function undoDraw(){
   sheetCtx.putImageData(undoStack.pop(),0,0);
   drawFrame();
   refreshCurrentThumb();
+  markDirty();
   toast('Undone');
 }
 
@@ -744,6 +1101,7 @@ canvas.addEventListener('pointerup',e=>{
   if(!drawStroking) return;
   drawStroking=false;
   refreshCurrentThumb();
+  markDirty();
 });
 
 // ── EXPORT GIF ──
@@ -825,11 +1183,35 @@ function importFromPixelStudio(){
   initSheetCanvas(strip);
   id('frameW').value=fw;id('frameH').value=fh;
   id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
-  id('sheetInfo').textContent=`${sheetW}×${sheetH}px · Pixel Studio (${count} frame${count!==1?'s':''})`;
+  sheetName=`Pixel Studio (${count} frame${count!==1?'s':''})`;
+  updateSheetInfo();
   id('uploadPrompt').classList.add('hidden');
-  rebuildFrames();
+  id('restoreBanner').classList.add('hidden');
+  layoutDirty=false;
+  rebuildFrames(true);
+  markDirty();
   toast(`Imported ${count} frame${count!==1?'s':''} from Pixel Studio 🎨`);
 }
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+  if(!sheetImg) return;
+  switch(e.key){
+    case ' ':
+      if(t.tagName==='BUTTON'||t.tagName==='LABEL') return; // native click already toggles
+      e.preventDefault();togglePlay();break;
+    case 'ArrowLeft':prevFrame();break;
+    case 'ArrowRight':nextFrame();break;
+    case '+':case '=':setZoom(zoom+1);break;
+    case '-':case '_':setZoom(zoom-1);break;
+    case 'o':case 'O':toggleOnion();break;
+    case 'z':case 'Z':if(e.ctrlKey||e.metaKey){e.preventDefault();undoDraw();}break;
+  }
+});
+
+setupAutosaveRestore();
 
 // drag & drop
 const previewArea=id('preview-area');

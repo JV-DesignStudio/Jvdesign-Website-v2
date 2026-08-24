@@ -20,7 +20,7 @@ const { execFileSync } = require('child_process');
 
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs']);
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa']);
 const EXCLUDE_FILES = new Set(['games/game-template.html']); // dev templates w/o robots meta
 
 function walk(dir) {

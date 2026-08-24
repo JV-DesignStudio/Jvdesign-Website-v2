@@ -49,7 +49,13 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 
 /* CANVAS */
 #map-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden;position:relative;}
-#map-canvas{image-rendering:pixelated;max-width:100%;max-height:100%;border-radius:4px;}
+#map-canvas{image-rendering:pixelated;max-width:100%;max-height:100%;border-radius:4px;touch-action:none;cursor:crosshair;}
+.restore-bar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:rgba(15,15,30,.95);border:1px solid var(--accent);border-radius:9px;padding:7px 14px;font-size:.68rem;color:var(--text);z-index:5;white-space:nowrap;}
+.restore-bar button{padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;font-size:.68rem;font-weight:600;}
+.restore-bar button.restore-yes{background:var(--accent);color:#fff;border-color:var(--accent);}
+.mini-btns{display:flex;gap:4px;margin-bottom:8px;}
+.mini-btn{flex:1;padding:7px 2px;border-radius:8px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);cursor:pointer;font-family:'Fredoka',cursive;font-size:.72rem;font-weight:600;text-align:center;transition:all .12s;}
+.mini-btn:hover{background:var(--panel3);color:var(--text);}
 .map-overlay{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
 .map-overlay-btn{padding:5px 14px;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.75rem;font-weight:600;background:rgba(15,15,30,.9);color:var(--text);border:1px solid var(--border2);transition:all .12s;}
 .map-overlay-btn:hover{background:var(--panel3);}
@@ -182,6 +188,10 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
 <div id="app">
   <div id="map-wrap">
     <canvas id="map-canvas"></canvas>
+    <div class="restore-bar" id="restoreBar">💾 Previous session found
+      <button class="restore-yes" onclick="restoreAutosave();id('restoreBar').style.display='none'">Restore</button>
+      <button onclick="dismissRestore()">✕</button>
+    </div>
     <div class="spinner" id="spinner"><div class="spinner-inner">⟳</div></div>
     <div class="map-overlay">
       <button class="map-overlay-btn" onclick="generate()">↻ Regenerate</button>
@@ -256,6 +266,11 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
 
       <div class="ctrl-section">
         <div class="ctrl-section-title">✏ Edit Mode</div>
+        <div class="mini-btns">
+          <button class="mini-btn" onclick="undo()" title="Ctrl+Z">↶ Undo</button>
+          <button class="mini-btn" onclick="redo()" title="Ctrl+Y">↷ Redo</button>
+          <button class="mini-btn" onclick="copyShareLink()" title="Copy a link to this seed">🔗 Share</button>
+        </div>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
           <button class="mode-btn on" id="tool-place" onclick="setEditTool('place')" style="flex:1;flex-direction:row;gap:5px;justify-content:center;"><span>🖌</span><span style="font-size:.7rem;">Place</span></button>
           <button class="mode-btn" id="tool-erase" onclick="setEditTool('erase')" style="flex:1;flex-direction:row;gap:5px;justify-content:center;"><span>🗑</span><span style="font-size:.7rem;">Erase</span></button>
@@ -324,25 +339,57 @@ function setEditTool(tool){
   ['place','erase','pick'].forEach(t=>id('tool-'+t).classList.toggle('on',t===tool));
 }
 
+// ── Undo / redo ──
+let undoStack=[],redoStack=[],painting=false;
+function snapshot(){return currentMap?currentMap.map.slice():null;}
+function pushUndo(){
+  if(!currentMap) return;
+  undoStack.push(snapshot());
+  if(undoStack.length>50) undoStack.shift();
+  redoStack.length=0;
+}
+function undo(){
+  if(!undoStack.length||!currentMap) return;
+  redoStack.push(snapshot());
+  currentMap.map.set(undoStack.pop());
+  render(currentMap);autosave();toast('Undo');
+}
+function redo(){
+  if(!redoStack.length||!currentMap) return;
+  undoStack.push(snapshot());
+  currentMap.map.set(redoStack.pop());
+  render(currentMap);autosave();toast('Redo');
+}
+document.addEventListener('keydown',e=>{
+  if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='z'&&!e.shiftKey){e.preventDefault();undo();}
+  else if((e.ctrlKey||e.metaKey)&&(k==='y'||(k==='z'&&e.shiftKey))){e.preventDefault();redo();}
+});
+
 function clearMap(){
   if(!currentMap || !confirm('Clear entire map?')) return;
+  pushUndo();
   const {W,H,map}=currentMap;
   for(let i=0;i<map.length;i++) map[i]=0;
-  render(currentMap);
+  render(currentMap);autosave();
   toast('Map cleared!');
 }
 
-function editTile(x,y){
+function editTile(clientX,clientY){
   if(!currentMap) return;
   const {map,W,H}=currentMap;
-  const tileSize=+id('tileSizeSlider').value;
-  const tx=Math.floor(x/tileSize/zoom),ty=Math.floor(y/tileSize/zoom);
+  const rect=canvas.getBoundingClientRect();
+  if(!rect.width||!rect.height) return;
+  const tx=Math.floor((clientX-rect.left)/rect.width*W);
+  const ty=Math.floor((clientY-rect.top)/rect.height*H);
   if(tx<0||ty<0||tx>=W||ty>=H) return;
   const idx=ty*W+tx;
+  if(!painting){pushUndo();painting=true;}
   if(currentEditTool==='place') map[idx]=currentEditTile;
   else if(currentEditTool==='erase') map[idx]=0;
   else if(currentEditTool==='pick') {currentEditTile=map[idx];id('editTileSelect').value=map[idx];}
-  render(currentMap);
+  render(currentMap);autosave();
 }
 
 // ── Seeded RNG (mulberry32) ──
@@ -628,24 +675,13 @@ function shuffle(arr,rng){
 const canvas=id('map-canvas');
 const ctx=canvas.getContext('2d');
 
-canvas.addEventListener('click',e=>{
-  const rect=canvas.getBoundingClientRect();
-  editTile(e.clientX-rect.left,e.clientY-rect.top);
-});
-
-canvas.addEventListener('mousemove',e=>{
-  if(!(e.buttons&1)) return;
-  const rect=canvas.getBoundingClientRect();
-  editTile(e.clientX-rect.left,e.clientY-rect.top);
-});
-
-canvas.addEventListener('touchstart',e=>e.preventDefault(),false);
-canvas.addEventListener('touchmove',e=>{
+canvas.addEventListener('pointerdown',e=>{
   e.preventDefault();
-  const rect=canvas.getBoundingClientRect();
-  const touch=e.touches[0];
-  editTile(touch.clientX-rect.left,touch.clientY-rect.top);
-},false);
+  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+  editTile(e.clientX,e.clientY);
+});
+canvas.addEventListener('pointermove',e=>{if(painting)editTile(e.clientX,e.clientY);});
+['pointerup','pointercancel'].forEach(ev=>canvas.addEventListener(ev,()=>{painting=false;}));
 
 function render(mapData){
   const{map,W,H}=mapData;
@@ -675,8 +711,95 @@ function generate(){
   else if(currentMode==='world') mapData=generateWorld(rng);
   else mapData=generateIsland(rng);
   currentMap=mapData;
+  undoStack=[];redoStack=[];painting=false;
   render(mapData);
   buildLegend();
+  autosave();
+}
+
+// ── Autosave / restore ──
+const AS_KEY='jvds_mapgen_autosave';
+let asTimer;
+function autosave(){
+  if(!currentMap) return;
+  clearTimeout(asTimer);
+  asTimer=setTimeout(()=>{
+    try{
+      localStorage.setItem(AS_KEY,JSON.stringify({
+        mode:currentMode,seed:id('seedInput').value,
+        W:currentMap.W,H:currentMap.H,tiles:Array.from(currentMap.map),
+        ctrls:collectCtrls()
+      }));
+    }catch(_){}
+  },400);
+}
+function ctrlIdsFor(m){
+  if(m==='dungeon') return ['mapW','mapH','roomCount','roomMin','roomMax'];
+  if(m==='world') return ['worldW','worldH','noiseScale','seaLevel','mtnLevel','biomeScale'];
+  return ['islandSize','islandNoiseScale','islandShape','beachWidth'];
+}
+const TOGGLE_IDS=['tCorridors','tDoors','tEnemies','tLoot','tBoss','tCities','tDungeons','tForest','tVillage'];
+function collectCtrls(){
+  const o={};
+  ctrlIdsFor(currentMode).forEach(i=>o[i]=id(i).value);
+  o.tileSizeSlider=id('tileSizeSlider').value;
+  TOGGLE_IDS.forEach(i=>o[i]=id(i).classList.contains('on'));
+  return o;
+}
+function applyCtrls(c){
+  Object.keys(c).forEach(k=>{
+    if(TOGGLE_IDS.indexOf(k)>=0){id(k).classList.toggle('on',!!c[k]);}
+    else{const el=id(k);if(el){el.value=c[k];el.dispatchEvent(new Event('input'));}}
+  });
+}
+function restoreAutosave(){
+  let d;try{d=JSON.parse(localStorage.getItem(AS_KEY)||'null');}catch(_){}
+  if(!d||!Array.isArray(d.tiles)||!d.W||!d.H) return;
+  if(d.mode&&['dungeon','world','island'].indexOf(d.mode)>=0&&d.mode!==currentMode){
+    currentMode=d.mode;
+    ['dungeon','world','island'].forEach(x=>{
+      id('mode-'+x).classList.toggle('on',x===d.mode);
+      id(x+'Ctrls').style.display=x===d.mode?'block':'none';
+    });
+  }
+  id('seedInput').value=d.seed!=null?d.seed:'42';
+  if(d.ctrls) applyCtrls(d.ctrls);
+  generate();
+  const cp=new Uint8Array(currentMap.W*currentMap.H);
+  for(let y=0;y<Math.min(d.H,currentMap.H);y++)
+    for(let x=0;x<Math.min(d.W,currentMap.W);x++)
+      cp[y*currentMap.W+x]=d.tiles[y*d.W+x];
+  currentMap.map.set(cp);
+  render(currentMap);autosave();
+  toast('Previous session restored');
+}
+function dismissRestore(){
+  try{localStorage.removeItem(AS_KEY);}catch(_){}
+  id('restoreBar').style.display='none';
+}
+
+// ── Share link (?mode=&seed=) ──
+function buildShareURL(){
+  const u=new URL(location.href.split('?')[0].split('#')[0]);
+  u.searchParams.set('mode',currentMode);
+  u.searchParams.set('seed',id('seedInput').value||'42');
+  return u.toString();
+}
+function copyShareLink(){
+  if(!currentMap) return;
+  const url=buildShareURL();
+  const done=()=>toast('Share link copied!');
+  const fallback=()=>{window.prompt('Copy this link:',url);};
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(fallback);
+  else fallback();
+}
+function readShareParams(){
+  const p=new URLSearchParams(location.search);
+  let shared=false;
+  const s=p.get('seed'),m=p.get('mode');
+  if(s){id('seedInput').value=s;shared=true;}
+  if(m&&['dungeon','world','island'].indexOf(m)>=0&&m!==currentMode){setMode(m);shared=true;}
+  return shared;
 }
 
 function zoomIn(){zoom=Math.min(4,zoom*1.5);applyZoom();}
@@ -715,6 +838,16 @@ function exportJSON(){
 }
 
 // ── Init ──
+(function(){
+  if(readShareParams()){
+    try{history.replaceState(null,'',location.pathname);}catch(_){}
+    window.addEventListener('load',()=>toast('Loaded shared map'));
+  }else{
+    let hasSave=false;
+    try{hasSave=!!localStorage.getItem(AS_KEY);}catch(_){}
+    if(hasSave) id('restoreBar').style.display='flex';
+  }
+})();
 generate();
 let toastT;
 function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}

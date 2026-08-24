@@ -10,16 +10,16 @@
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Particle Designer | JVDesignStudio</title>
-<meta name="description" content="Design particle effects in your browser. Fire, smoke, sparks, magic and more. Export JSON for Godot or Unity. Free dev tool.">
+<meta name="description" content="Design particle effects in your browser. Save effects, edit curves & gradients, use sprite textures, record video, and export real Godot & Unity files. Free dev tool.">
 <meta property="og:type"        content="website">
 <meta property="og:url"         content="https://jvdesignstudio.co.uk/tools/particle-designer.html">
 <meta property="og:title"       content="Particle Designer | JVDesignStudio">
-<meta property="og:description" content="Design particle effects in your browser. Fire, smoke, sparks, magic and more. Export JSON for Godot or Unity. Free dev tool.">
+<meta property="og:description" content="Design particle effects in your browser. Save effects, edit curves & gradients, use sprite textures, record video, and export real Godot & Unity files. Free dev tool.">
 <meta property="og:image"       content="https://jvdesignstudio.co.uk/ParticleDesignCoverImage.png">
 <meta property="og:site_name"   content="JVDesignStudio">
 <meta name="twitter:card"        content="summary_large_image">
 <meta name="twitter:title"       content="Particle Designer | JVDesignStudio">
-<meta name="twitter:description" content="Design particle effects in your browser. Fire, smoke, sparks, magic and more. Export JSON for Godot or Unity. Free dev tool.">
+<meta name="twitter:description" content="Design particle effects in your browser. Save effects, edit curves & gradients, use sprite textures, record video, and export real Godot & Unity files. Free dev tool.">
 <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/ParticleDesignCoverImage.png">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,7 +42,10 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .hdr-logo img{height:26px;width:auto;flex-shrink:0;border-radius:5px;}
 .hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;}
 .hdr-title span{font-size:.6rem;background:var(--accent2);color:white;padding:2px 7px;border-radius:20px;}
-.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
+.hdr-actions{display:flex;gap:6px;align-items:center;}
+.hdr-icon{font-size:.78rem;color:var(--muted);background:transparent;border:1px solid var(--border2);border-radius:7px;padding:4px 9px;cursor:pointer;font-family:inherit;line-height:1;}
+.hdr-icon:hover{color:var(--text);}
+.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:5px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
 .hdr-back:hover{color:var(--text);}
 
 #app{flex:1;display:flex;min-height:0;overflow:hidden;}
@@ -52,11 +55,16 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 #canvas{display:block;width:100%;height:100%;}
 .emitter-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:.6rem;color:rgba(255,255,255,.2);pointer-events:none;white-space:nowrap;}
 .fps-badge{position:absolute;top:10px;left:10px;font-size:.6rem;color:rgba(255,255,255,.25);font-family:'JetBrains Mono',monospace;}
+.rec-badge{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:7px;background:rgba(239,68,68,.12);border:1px solid var(--accent4);color:var(--accent4);font-size:.65rem;padding:4px 11px;border-radius:20px;z-index:5;}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--accent4);animation:pulse 1s infinite;}
+@keyframes pulse{50%{opacity:.25;}}
 
 /* SIDEBAR */
 #sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
-.sb-tabs{display:flex;border-bottom:1px solid var(--border2);}
-.sb-tab{flex:1;padding:8px 4px;font-family:'Fredoka',cursive;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;text-align:center;transition:all .15s;}
+#sidebar.collapsed .sb-body,#sidebar.collapsed .export-section{display:none!important;}
+.sb-tabs{display:flex;border-bottom:1px solid var(--border2);overflow-x:auto;scrollbar-width:none;}
+.sb-tabs::-webkit-scrollbar{display:none;}
+.sb-tab{flex:1;padding:9px 4px;font-family:'Fredoka',cursive;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;text-align:center;transition:all .15s;white-space:nowrap;}
 .sb-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
 .sb-body{flex:1;overflow-y:auto;padding:12px;}
 
@@ -70,12 +78,15 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .ctrl-section{margin-bottom:14px;}
 .ctrl-section-title{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
 .ctrl-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
-.ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
+.ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;align-items:center;cursor:default;}
 .ctrl-row label span{color:var(--accent);font-weight:700;}
+.reset-btn{font-size:.55rem;color:var(--dim);background:none;border:none;cursor:pointer;padding:0 2px;font-family:inherit;line-height:1;opacity:0;transition:opacity .15s;}
+.ctrl-row:hover .reset-btn,.ctrl-row-h:hover .reset-btn{opacity:1;}
+.reset-btn:hover{color:var(--accent4);}
 .ctrl-row input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;height:3px;}
 .ctrl-row-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .ctrl-row-h label{font-size:.55rem;color:var(--muted);flex:1;}
-.color-swatch{width:28px;height:22px;border-radius:5px;border:1px solid var(--border2);cursor:pointer;flex-shrink:0;}
+.color-swatch{width:28px;height:22px;border-radius:5px;border:1px solid var(--border2);cursor:pointer;flex-shrink:0;background:none;padding:0;}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
 .toggle-label{font-size:.6rem;color:var(--muted);}
 .toggle{width:32px;height:17px;border-radius:999px;background:var(--dim);cursor:pointer;position:relative;transition:background .15s;flex-shrink:0;}
@@ -84,23 +95,73 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .toggle.on::after{left:17px;}
 select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:.65rem;cursor:pointer;margin-bottom:6px;}
 
+/* CURVE CARDS */
+.curve-card{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:9px;margin-bottom:10px;}
+.curve-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.curve-title{font-size:.55rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.curve-tools{display:flex;gap:4px;}
+.mini-btn{font-size:.55rem;padding:3px 8px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;}
+.mini-btn:hover{color:var(--accent);border-color:var(--accent);}
+.mini-btn.danger:hover{color:var(--accent4);border-color:var(--accent4);}
+.curve-cv{width:100%;height:110px;display:block;border-radius:6px;background:#0a0a16;cursor:crosshair;touch-action:none;}
+.grad-cv{height:58px;}
+.stop-color-row{display:flex;align-items:center;gap:8px;margin-top:7px;}
+.stop-color-row label{font-size:.55rem;color:var(--muted);flex:1;}
+.hint{font-size:.55rem;color:var(--muted);opacity:.75;line-height:1.6;margin-top:6px;}
+
+/* SAVES */
+.save-form{display:flex;gap:6px;margin-bottom:4px;}
+.save-form input{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:6px 9px;border-radius:7px;font-family:inherit;font-size:.68rem;min-width:0;}
+.save-form input:focus{outline:1px solid var(--accent);}
+.btn-accent{padding:6px 12px;border-radius:7px;border:none;background:var(--accent);color:#000;font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.autosave-note{font-size:.52rem;color:var(--muted);opacity:.7;margin-bottom:10px;}
+.save-row{display:flex;gap:8px;align-items:center;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);margin-bottom:6px;}
+.save-thumb{width:52px;height:30px;border-radius:5px;object-fit:cover;background:#000;flex-shrink:0;border:1px solid var(--border2);}
+.save-meta{flex:1;min-width:0;}
+.save-name{font-size:.65rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.save-date{font-size:.5rem;color:var(--muted);}
+.save-actions{display:flex;gap:3px;flex-shrink:0;}
+.save-actions button{font-size:.55rem;padding:3px 6px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;}
+.save-actions button:hover{color:var(--accent);border-color:var(--accent);}
+.save-actions button.del:hover{color:var(--accent4)!important;border-color:var(--accent4)!important;}
+.empty-note{font-size:.6rem;color:var(--muted);opacity:.7;text-align:center;padding:14px 0;}
+
+/* TEXTURE CHIPS */
+.tex-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px;}
+.tex-chip{font-size:.62rem;padding:5px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--panel2);color:var(--muted);cursor:pointer;font-family:inherit;}
+.tex-chip.on{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.12);}
+
 /* EXPORT */
 .export-section{padding:12px;border-top:1px solid var(--border2);}
-.exp-btn{width:100%;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.85rem;font-weight:600;margin-bottom:6px;transition:all .12s;}
+.exp-group{margin-bottom:12px;}
+.exp-label{font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;display:block;}
+.exp-btn{width:100%;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.85rem;font-weight:600;margin-bottom:6px;transition:all .12s;display:block;text-align:center;}
 .exp-godot{background:var(--accent3);color:#000;}
 .exp-unity{background:var(--accent2);color:white;}
 .exp-json{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
 .exp-json:hover{background:var(--dim);}
+.cap-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.cap-row select{background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:6px 6px;border-radius:7px;font-family:inherit;font-size:.65rem;cursor:pointer;flex-shrink:0;}
+.rec-btn{background:var(--accent4);color:white;}
+.rec-btn.recording{animation:pulse 1s infinite;opacity:.75;}
 
 /* BG PICKER */
 .bg-btns{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;}
 .bg-btn{width:26px;height:26px;border-radius:5px;border:2px solid transparent;cursor:pointer;transition:all .1s;}
 .bg-btn.on{border-color:var(--accent);}
 
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.modal-ov.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border2);border-radius:12px;max-width:400px;width:100%;padding:18px;}
+.modal-box h3{font-family:'Fredoka',cursive;color:var(--accent);font-size:1rem;margin-bottom:12px;}
+.kbd-row{display:flex;justify-content:space-between;align-items:center;font-size:.63rem;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border);gap:10px;}
+kbd{background:var(--panel3);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-family:inherit;font-size:.58rem;color:var(--text);white-space:nowrap;}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
 
 @media(max-width:680px){
-  #sidebar{width:100%;max-height:45vh;border-left:none;border-top:1px solid var(--border2);}
+  #sidebar{width:100%;max-height:52vh;border-left:none;border-top:1px solid var(--border2);}
   #app{flex-direction:column;}
   #preview-wrap{min-height:200px;}
 }
@@ -177,22 +238,30 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
 <!-- /BUILD:nav-tools -->
 <header class="hdr">
   <a href="../index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="../logo.png" alt="JV"><span>JVDesignStudio</span></a>
-  <div class="hdr-title">Particle Designer <span>NEW</span></div>
-  <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
+  <div class="hdr-title">Particle Designer <span>PRO</span></div>
+  <div class="hdr-actions">
+    <button class="hdr-icon" id="btnUndo" title="Undo (Ctrl+Z)">↶</button>
+    <button class="hdr-icon" id="btnRedo" title="Redo (Ctrl+Shift+Z)">↷</button>
+    <button class="hdr-icon" id="btnHelp" title="Keyboard shortcuts (?)">?</button>
+    <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
+  </div>
 </header>
 
 <div id="app">
   <div id="preview-wrap">
     <canvas id="canvas"></canvas>
     <div class="fps-badge" id="fpsBadge">60 fps</div>
-    <div class="emitter-hint">Click anywhere to move emitter</div>
+    <div class="rec-badge" id="recDot" style="display:none;"><span class="rec-dot"></span><span id="recTime">0.0s</span></div>
+    <div class="emitter-hint">Click anywhere to move emitter · B to burst</div>
   </div>
 
   <div id="sidebar">
     <div class="sb-tabs">
-      <div class="sb-tab on" data-tab="presets" onclick="sbTab('presets')">Presets</div>
-      <div class="sb-tab" data-tab="params" onclick="sbTab('params')">Params</div>
-      <div class="sb-tab" data-tab="export" onclick="sbTab('export')">Export</div>
+      <div class="sb-tab on" data-tab="presets">Presets</div>
+      <div class="sb-tab" data-tab="params">Params</div>
+      <div class="sb-tab" data-tab="curves">Curves</div>
+      <div class="sb-tab" data-tab="saves">Saves</div>
+      <div class="sb-tab" data-tab="export">Export</div>
     </div>
 
     <!-- PRESETS TAB -->
@@ -208,78 +277,150 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
     <div class="sb-body" id="tab-params" style="display:none;">
       <div class="ctrl-section">
         <div class="ctrl-section-title">Emission</div>
-        <div class="ctrl-row"><label>Rate (per sec) <span id="vRate">40</span></label><input type="range" id="pRate" min="1" max="200" value="40" oninput="P.rate=+this.value;id('vRate').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Burst Size <span id="vBurst">0</span></label><input type="range" id="pBurst" min="0" max="100" value="0" oninput="P.burst=+this.value;id('vBurst').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Max Particles <span id="vMax">300</span></label><input type="range" id="pMax" min="10" max="2000" value="300" oninput="P.maxParticles=+this.value;id('vMax').textContent=this.value"></div>
-        <div class="toggle-row"><span class="toggle-label">Loop</span><div class="toggle on" id="tLoop" onclick="toggleP('loop',this)"></div></div>
+        <div class="ctrl-row"><label>Rate (per sec) <span><span id="vRate">40</span><button class="reset-btn" data-reset="rate" title="Reset">⟲</button></span></label><input type="range" id="pRate" min="1" max="200" value="40"></div>
+        <div class="ctrl-row"><label>Burst Size <span><span id="vBurst">0</span><button class="reset-btn" data-reset="burst" title="Reset">⟲</button></span></label><input type="range" id="pBurst" min="0" max="100" value="0"></div>
+        <div class="ctrl-row"><label>Max Particles <span><span id="vMax">300</span><button class="reset-btn" data-reset="maxParticles" title="Reset">⟲</button></span></label><input type="range" id="pMax" min="10" max="2000" value="300"></div>
+        <div class="toggle-row"><span class="toggle-label">Loop</span><div class="toggle on" id="tLoop"></div></div>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Life & Speed</div>
-        <div class="ctrl-row"><label>Lifetime (s) <span id="vLife">1.5</span></label><input type="range" id="pLife" min="0.1" max="10" step="0.1" value="1.5" oninput="P.lifetime=+this.value;id('vLife').textContent=(+this.value).toFixed(1)"></div>
-        <div class="ctrl-row"><label>Life Variation <span id="vLifeVar">0.5</span></label><input type="range" id="pLifeVar" min="0" max="1" step="0.05" value="0.5" oninput="P.lifetimeVar=+this.value;id('vLifeVar').textContent=(+this.value).toFixed(2)"></div>
-        <div class="ctrl-row"><label>Speed <span id="vSpeed">120</span></label><input type="range" id="pSpeed" min="0" max="600" value="120" oninput="P.speed=+this.value;id('vSpeed').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Speed Variation <span id="vSpeedVar">60</span></label><input type="range" id="pSpeedVar" min="0" max="400" value="60" oninput="P.speedVar=+this.value;id('vSpeedVar').textContent=this.value"></div>
+        <div class="ctrl-row"><label>Lifetime (s) <span><span id="vLife">1.5</span><button class="reset-btn" data-reset="lifetime" title="Reset">⟲</button></span></label><input type="range" id="pLife" min="0.1" max="10" step="0.1" value="1.5"></div>
+        <div class="ctrl-row"><label>Life Variation <span><span id="vLifeVar">0.5</span><button class="reset-btn" data-reset="lifetimeVar" title="Reset">⟲</button></span></label><input type="range" id="pLifeVar" min="0" max="1" step="0.05" value="0.5"></div>
+        <div class="ctrl-row"><label>Speed <span><span id="vSpeed">120</span><button class="reset-btn" data-reset="speed" title="Reset">⟲</button></span></label><input type="range" id="pSpeed" min="0" max="600" value="120"></div>
+        <div class="ctrl-row"><label>Speed Variation <span><span id="vSpeedVar">60</span><button class="reset-btn" data-reset="speedVar" title="Reset">⟲</button></span></label><input type="range" id="pSpeedVar" min="0" max="400" value="60"></div>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Direction & Gravity</div>
-        <div class="ctrl-row"><label>Angle (°) <span id="vAngle">270</span></label><input type="range" id="pAngle" min="0" max="360" value="270" oninput="P.angle=+this.value;id('vAngle').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Spread (°) <span id="vSpread">40</span></label><input type="range" id="pSpread" min="0" max="360" value="40" oninput="P.spread=+this.value;id('vSpread').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Gravity X <span id="vGX">0</span></label><input type="range" id="pGX" min="-500" max="500" value="0" oninput="P.gravX=+this.value;id('vGX').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Gravity Y <span id="vGY">200</span></label><input type="range" id="pGY" min="-500" max="500" value="200" oninput="P.gravY=+this.value;id('vGY').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Drag <span id="vDrag">0.0</span></label><input type="range" id="pDrag" min="0" max="0.1" step="0.005" value="0" oninput="P.drag=+this.value;id('vDrag').textContent=(+this.value).toFixed(3)"></div>
-        <div class="ctrl-row"><label>Turbulence <span id="vTurb">0</span></label><input type="range" id="pTurb" min="0" max="200" value="0" oninput="P.turbulence=+this.value;id('vTurb').textContent=this.value"></div>
+        <div class="ctrl-row"><label>Angle (°) <span><span id="vAngle">270</span><button class="reset-btn" data-reset="angle" title="Reset">⟲</button></span></label><input type="range" id="pAngle" min="0" max="360" value="270"></div>
+        <div class="ctrl-row"><label>Spread (°) <span><span id="vSpread">40</span><button class="reset-btn" data-reset="spread" title="Reset">⟲</button></span></label><input type="range" id="pSpread" min="0" max="360" value="40"></div>
+        <div class="ctrl-row"><label>Gravity X <span><span id="vGX">0</span><button class="reset-btn" data-reset="gravX" title="Reset">⟲</button></span></label><input type="range" id="pGX" min="-500" max="500" value="0"></div>
+        <div class="ctrl-row"><label>Gravity Y <span><span id="vGY">200</span><button class="reset-btn" data-reset="gravY" title="Reset">⟲</button></span></label><input type="range" id="pGY" min="-500" max="500" value="200"></div>
+        <div class="ctrl-row"><label>Drag <span><span id="vDrag">0.0</span><button class="reset-btn" data-reset="drag" title="Reset">⟲</button></span></label><input type="range" id="pDrag" min="0" max="0.1" step="0.005" value="0"></div>
+        <div class="ctrl-row"><label>Turbulence <span><span id="vTurb">0</span><button class="reset-btn" data-reset="turbulence" title="Reset">⟲</button></span></label><input type="range" id="pTurb" min="0" max="200" value="0"></div>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Size</div>
-        <div class="ctrl-row"><label>Start Size <span id="vSzS">8</span></label><input type="range" id="pSzS" min="1" max="80" value="8" oninput="P.sizeStart=+this.value;id('vSzS').textContent=this.value"></div>
-        <div class="ctrl-row"><label>End Size <span id="vSzE">0</span></label><input type="range" id="pSzE" min="0" max="80" value="0" oninput="P.sizeEnd=+this.value;id('vSzE').textContent=this.value"></div>
-        <div class="ctrl-row"><label>Size Variation <span id="vSzVar">4</span></label><input type="range" id="pSzVar" min="0" max="40" value="4" oninput="P.sizeVar=+this.value;id('vSzVar').textContent=this.value"></div>
+        <div class="ctrl-row"><label>Start Size <span><span id="vSzS">8</span><button class="reset-btn" data-reset="sizeStart" title="Reset">⟲</button></span></label><input type="range" id="pSzS" min="1" max="80" value="8"></div>
+        <div class="ctrl-row"><label>End Size <span><span id="vSzE">0</span><button class="reset-btn" data-reset="sizeEnd" title="Reset">⟲</button></span></label><input type="range" id="pSzE" min="0" max="80" value="0"></div>
+        <div class="ctrl-row"><label>Size Variation <span><span id="vSzVar">4</span><button class="reset-btn" data-reset="sizeVar" title="Reset">⟲</button></span></label><input type="range" id="pSzVar" min="0" max="40" value="4"></div>
+        <p class="hint">For full control over size over lifetime, open the Curves tab.</p>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Colour & Opacity</div>
-        <div class="ctrl-row-h"><label>Start Colour</label><input type="color" class="color-swatch" id="pColorS" value="#ff6600" oninput="P.colorStart=this.value"></div>
-        <div class="ctrl-row-h"><label>End Colour</label><input type="color" class="color-swatch" id="pColorE" value="#ff0000" oninput="P.colorEnd=this.value"></div>
-        <div class="ctrl-row"><label>Start Alpha <span id="vAlphaS">1.0</span></label><input type="range" id="pAlphaS" min="0" max="1" step="0.05" value="1" oninput="P.alphaStart=+this.value;id('vAlphaS').textContent=(+this.value).toFixed(2)"></div>
-        <div class="ctrl-row"><label>End Alpha <span id="vAlphaE">0.0</span></label><input type="range" id="pAlphaE" min="0" max="1" step="0.05" value="0" oninput="P.alphaEnd=+this.value;id('vAlphaE').textContent=(+this.value).toFixed(2)"></div>
+        <div class="ctrl-row-h"><label>Start Colour</label><input type="color" class="color-swatch" id="pColorS" value="#ff6600"></div>
+        <div class="ctrl-row-h"><label>End Colour</label><input type="color" class="color-swatch" id="pColorE" value="#ff0000"></div>
+        <div class="ctrl-row"><label>Start Alpha <span><span id="vAlphaS">1.0</span><button class="reset-btn" data-reset="alphaStart" title="Reset">⟲</button></span></label><input type="range" id="pAlphaS" min="0" max="1" step="0.05" value="1"></div>
+        <div class="ctrl-row"><label>End Alpha <span><span id="vAlphaE">0.0</span><button class="reset-btn" data-reset="alphaEnd" title="Reset">⟲</button></span></label><input type="range" id="pAlphaE" min="0" max="1" step="0.05" value="0"></div>
+        <p class="hint">These are the first and last stops of the colour gradient — add more stops in the Curves tab.</p>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Shape & Blend</div>
-        <select class="ctrl-select" id="pShape" onchange="P.shape=this.value">
+        <select class="ctrl-select" id="pShape">
           <option value="circle">Circle</option>
           <option value="square">Square</option>
           <option value="star">Star</option>
           <option value="spark">Spark / Line</option>
+          <option value="sprite">Sprite / Texture</option>
         </select>
-        <select class="ctrl-select" id="pBlend" onchange="P.blend=this.value">
+        <select class="ctrl-select" id="pBlend">
           <option value="source-over">Normal</option>
           <option value="lighter">Additive (Glow)</option>
           <option value="screen">Screen</option>
           <option value="multiply">Multiply</option>
         </select>
-        <div class="ctrl-row"><label>Spin Speed <span id="vSpin">0</span></label><input type="range" id="pSpin" min="-10" max="10" step="0.5" value="0" oninput="P.spin=+this.value;id('vSpin').textContent=(+this.value).toFixed(1)"></div>
-        <div class="toggle-row"><span class="toggle-label">Trail effect</span><div class="toggle" id="tTrail" onclick="toggleP('trail',this)"></div></div>
+        <div class="ctrl-row"><label>Spin Speed <span><span id="vSpin">0</span><button class="reset-btn" data-reset="spin" title="Reset">⟲</button></span></label><input type="range" id="pSpin" min="-10" max="10" step="0.5" value="0"></div>
+        <div class="toggle-row"><span class="toggle-label">Trail effect</span><div class="toggle" id="tTrail"></div></div>
+      </div>
+      <div class="ctrl-section">
+        <div class="ctrl-section-title">Texture Sprite</div>
+        <div class="tex-chips" id="texChips"></div>
+        <label class="exp-btn exp-json" style="font-size:.68rem;padding:6px;cursor:pointer;">⬆ Upload PNG<input type="file" id="texFile" accept="image/*" style="display:none;"></label>
+        <button class="mini-btn danger" id="texClearCustom" style="display:none;width:100%;padding:5px;">Remove uploaded image</button>
+        <p class="hint">Picks up when Shape is set to “Sprite / Texture”. Built-ins are generated here — uploads stay on this device.</p>
       </div>
       <div class="ctrl-section">
         <div class="ctrl-section-title">Emitter Shape</div>
-        <select class="ctrl-select" id="pEmitShape" onchange="P.emitterShape=this.value">
+        <select class="ctrl-select" id="pEmitShape">
           <option value="point">Point</option>
           <option value="circle">Circle</option>
           <option value="rect">Rectangle</option>
           <option value="line">Line</option>
         </select>
-        <div class="ctrl-row"><label>Emitter Radius <span id="vEmitR">0</span></label><input type="range" id="pEmitR" min="0" max="200" value="0" oninput="P.emitterRadius=+this.value;id('vEmitR').textContent=this.value"></div>
+        <div class="ctrl-row"><label>Emitter Radius <span><span id="vEmitR">0</span><button class="reset-btn" data-reset="emitterRadius" title="Reset">⟲</button></span></label><input type="range" id="pEmitR" min="0" max="200" value="0"></div>
+      </div>
+    </div>
+
+    <!-- CURVES TAB -->
+    <div class="sb-body" id="tab-curves" style="display:none;">
+      <div class="curve-card">
+        <div class="curve-head">
+          <div class="curve-title">Size × Lifetime</div>
+          <div class="curve-tools">
+            <button class="mini-btn" data-curve-reset="size">Linear</button>
+            <button class="mini-btn danger" data-curve-clear="size">Off</button>
+          </div>
+        </div>
+        <canvas class="curve-cv" id="cvSize"></canvas>
+        <p class="hint">Multiplies the start→end size. Drag points · click empty space to add · drag off or double-click to remove.</p>
+      </div>
+      <div class="curve-card">
+        <div class="curve-head">
+          <div class="curve-title">Alpha × Lifetime</div>
+          <div class="curve-tools">
+            <button class="mini-btn" data-curve-reset="alpha">Linear</button>
+            <button class="mini-btn danger" data-curve-clear="alpha">Off</button>
+          </div>
+        </div>
+        <canvas class="curve-cv" id="cvAlpha"></canvas>
+        <p class="hint">Multiplies the start→end alpha fade.</p>
+      </div>
+      <div class="curve-card">
+        <div class="curve-head">
+          <div class="curve-title">Colour Gradient</div>
+          <div class="curve-tools">
+            <button class="mini-btn danger" id="gradReset">2 Stops</button>
+          </div>
+        </div>
+        <canvas class="curve-cv grad-cv" id="cvGrad"></canvas>
+        <div class="stop-color-row"><label>Selected stop</label><input type="color" class="color-swatch" id="stopColor" value="#ff6600"></div>
+        <p class="hint">Click the bar to add a stop · drag stops sideways · double-click a stop to delete (ends are locked).</p>
+      </div>
+    </div>
+
+    <!-- SAVES TAB -->
+    <div class="sb-body" id="tab-saves" style="display:none;">
+      <div class="save-form">
+        <input type="text" id="saveName" placeholder="Effect name…" maxlength="40">
+        <button class="btn-accent" id="btnSaveEffect">Save</button>
+      </div>
+      <div class="autosave-note" id="autosaveNote">Your current session auto-saves on this device.</div>
+      <div id="saveList"><div class="empty-note">No saved effects yet.</div></div>
+      <div class="exp-group" style="margin-top:12px;">
+        <span class="exp-label">Import</span>
+        <label class="exp-btn exp-json" style="font-size:.7rem;padding:6px;cursor:pointer;">📂 Import effect JSON<input type="file" id="importFile" accept=".json,application/json" style="display:none;"></label>
       </div>
     </div>
 
     <!-- EXPORT TAB -->
     <div class="sb-body" id="tab-export" style="display:none;">
-      <p style="font-size:.6rem;color:var(--muted);margin-bottom:12px;line-height:1.6;">Export your particle settings as a config file. Drop the JSON into Godot's ParticlesMaterial or Unity's Particle System importer.</p>
-      <button class="exp-btn exp-godot" onclick="exportGodot()">📥 Export for Godot</button>
-      <button class="exp-btn exp-unity" onclick="exportUnity()">📥 Export for Unity</button>
-      <button class="exp-btn exp-json" onclick="exportRaw()">{ } Export Raw JSON</button>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-        <div style="font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Share / Copy</div>
-        <button class="exp-btn exp-json" onclick="copyUrl()" style="font-size:.75rem;">🔗 Copy Share URL</button>
+      <div class="exp-group">
+        <span class="exp-label">Engine export</span>
+        <button class="exp-btn exp-godot" id="btnGodot">📥 Export for Godot 4</button>
+        <button class="exp-btn exp-unity" id="btnUnity">📥 Export for Unity</button>
+        <button class="exp-btn exp-json" id="btnRaw">{ } Export Raw JSON</button>
+        <p class="hint">Godot downloads a ready-made ParticlesMaterial + scene. Unity downloads an editor script — drop it in an Editor folder and use Tools ▸ JVDesign Studio.</p>
+      </div>
+      <div class="exp-group">
+        <span class="exp-label">Share / Copy</span>
+        <button class="exp-btn exp-json" id="btnShare" style="font-size:.75rem;">🔗 Copy Share URL</button>
+      </div>
+      <div class="exp-group">
+        <span class="exp-label">Capture</span>
+        <button class="exp-btn exp-json" id="btnShot" style="font-size:.75rem;">📸 PNG Snapshot</button>
+        <div class="cap-row">
+          <select id="recDur"><option value="3">3s</option><option value="5" selected>5s</option><option value="10">10s</option></select>
+          <button class="exp-btn rec-btn" id="btnRec" style="margin:0;">⏺ Record WebM</button>
+        </div>
       </div>
     </div>
 
@@ -291,189 +432,338 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
 </div>
 <div id="toast"></div>
 
+<div class="modal-ov" id="helpModal">
+  <div class="modal-box">
+    <h3>Keyboard shortcuts</h3>
+    <div class="kbd-row"><span>Undo / Redo</span><span><kbd>Ctrl+Z</kbd> <kbd>Ctrl+Shift+Z</kbd></span></div>
+    <div class="kbd-row"><span>Save effect</span><kbd>Ctrl+S</kbd></div>
+    <div class="kbd-row"><span>Burst emit</span><kbd>B</kbd></div>
+    <div class="kbd-row"><span>Delete selected curve point</span><kbd>Del</kbd></div>
+    <div class="kbd-row"><span>This panel</span><kbd>?</kbd></div>
+    <button class="btn-accent" id="helpClose" style="width:100%;margin-top:14px;">Got it</button>
+  </div>
+</div>
+
 <script>
-function id(x){return document.getElementById(x);}
-
-// ── Particle config ──
-const P = {
-  rate:40, burst:0, maxParticles:300, loop:true,
-  lifetime:1.5, lifetimeVar:.5,
-  speed:120, speedVar:60,
-  angle:270, spread:40,
-  gravX:0, gravY:200, drag:0, turbulence:0,
-  sizeStart:8, sizeEnd:0, sizeVar:4,
-  colorStart:'#ff6600', colorEnd:'#ff0000',
-  alphaStart:1, alphaEnd:0,
-  shape:'circle', blend:'lighter', spin:0, trail:false,
-  emitterShape:'point', emitterRadius:0,
-};
-
-// ── Canvas setup ──
-const canvas = id('canvas');
-const ctx = canvas.getContext('2d');
-let W, H, emitX, emitY;
-
-function resize(){
-  const wrap = id('preview-wrap');
-  W = canvas.width = wrap.clientWidth;
-  H = canvas.height = wrap.clientHeight;
-  emitX = emitX || W/2;
-  emitY = emitY || H*0.65;
-}
-window.addEventListener('resize', resize);
-resize();
-
-function setEmitFromPoint(clientX, clientY){
-  const r = canvas.getBoundingClientRect();
-  emitX = clientX - r.left;
-  emitY = clientY - r.top;
-}
-id('preview-wrap').addEventListener('click', e => setEmitFromPoint(e.clientX, e.clientY));
-id('preview-wrap').addEventListener('mousemove', e => { if(e.buttons === 1) setEmitFromPoint(e.clientX, e.clientY); });
-// Touch: tap and drag both reposition the emitter (mousemove never fires on mobile)
-id('preview-wrap').addEventListener('touchstart', e => { if(e.touches[0]){ setEmitFromPoint(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive:false });
-id('preview-wrap').addEventListener('touchmove', e => { if(e.touches[0]){ setEmitFromPoint(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive:false });
-
-// ── Particle pool ──
-let particles = [];
-let lastTime = 0, emitAccum = 0;
-let frameCount = 0, fpsTime = 0, fps = 60;
-
+'use strict';
+const id=x=>document.getElementById(x);
+const deep=o=>JSON.parse(JSON.stringify(o));
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const rand=(a,b)=>a+(b-a)*Math.random();
 function hexToRgb(hex){
-  const r = parseInt(hex.slice(1,3),16);
-  const g = parseInt(hex.slice(3,5),16);
-  const b = parseInt(hex.slice(5,7),16);
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
   return {r,g,b};
 }
-function lerpColor(a,b,t){
-  return {
-    r: a.r+(b.r-a.r)*t|0,
-    g: a.g+(b.g-a.g)*t|0,
-    b: a.b+(b.b-a.b)*t|0,
-  };
+function hexToRgba(hex,a){const c=hexToRgb(hex);return `rgba(${c.r},${c.g},${c.b},${a})`;}
+
+// ── Config ──
+const DEFAULT_CFG={
+  rate:40,burst:0,maxParticles:300,loop:true,
+  lifetime:1.5,lifetimeVar:.5,speed:120,speedVar:60,
+  angle:270,spread:40,gravX:0,gravY:200,drag:0,turbulence:0,
+  sizeStart:8,sizeEnd:0,sizeVar:4,
+  colorStart:'#ff6600',colorEnd:'#ff0000',
+  alphaStart:1,alphaEnd:0,
+  shape:'circle',blend:'lighter',spin:0,trail:false,
+  emitterShape:'point',emitterRadius:0,
+  colorStops:null,curves:{size:null,alpha:null},
+  texId:'none',texCustom:'',
+};
+let P=deep(DEFAULT_CFG);
+
+const SESSION_KEY='jvds_pd_session_v1';
+const SAVES_KEY='jvds_pd_saves_v1';
+
+function normalize(){
+  if(!Array.isArray(P.colorStops)||P.colorStops.length<2){
+    P.colorStops=[{t:0,c:P.colorStart||'#ff6600'},{t:1,c:P.colorEnd||'#ff0000'}];
+  }
+  P.colorStops=P.colorStops.map(s=>({t:clamp(+s.t||0,0,1),c:s.c})).sort((a,b)=>a.t-b.t);
+  P.colorStops[0].t=0;P.colorStops[P.colorStops.length-1].t=1;
+  P.curves=P.curves||{};
+  if(!Array.isArray(P.curves.size)||P.curves.size.length<2)P.curves.size=null;
+  if(!Array.isArray(P.curves.alpha)||P.curves.alpha.length<2)P.curves.alpha=null;
+  P.texId=P.texId||'none';
+  P.texCustom=P.texCustom||'';
 }
-function rand(a,b){return a+(b-a)*Math.random();}
+function syncEndColors(){
+  P.colorStart=P.colorStops[0].c;
+  P.colorEnd=P.colorStops[P.colorStops.length-1].c;
+}
+
+// ── Gradient cache & sampling ──
+let gradRGB=[];
+function bakeGradient(){
+  gradRGB=P.colorStops.map(s=>{const c=hexToRgb(s.c);return {t:s.t,r:c.r,g:c.g,b:c.b};});
+  markTintDirty();
+}
+const COL_TMP={r:255,g:255,b:255};
+function sampleGrad(t,out){
+  const g=gradRGB;
+  if(t<=g[0].t){out.r=g[0].r;out.g=g[0].g;out.b=g[0].b;return;}
+  for(let i=1;i<g.length;i++){
+    if(t<=g[i].t){
+      const a=g[i-1],b=g[i],s=(b.t-a.t)<1e-6?0:(t-a.t)/(b.t-a.t);
+      out.r=a.r+(b.r-a.r)*s|0;out.g=a.g+(b.g-a.g)*s|0;out.b=a.b+(b.b-a.b)*s|0;return;
+    }
+  }
+  const l=g[g.length-1];out.r=l.r;out.g=l.g;out.b=l.b;
+}
+function samplePts(pts,t){
+  if(!pts)return 1;
+  if(t<=pts[0].t)return pts[0].v;
+  for(let i=1;i<pts.length;i++){
+    if(t<=pts[i].t){
+      const a=pts[i-1],b=pts[i];
+      return b.t-a.t<1e-6?a.v:a.v+(b.v-a.v)*(t-a.t)/(b.t-a.t);
+    }
+  }
+  return pts[pts.length-1].v;
+}
+
+// ── Canvas setup ──
+const canvas=id('canvas');
+const ctx=canvas.getContext('2d');
+let W,H,emitX,emitY;
+
+function resize(){
+  const wrap=id('preview-wrap');
+  W=canvas.width=wrap.clientWidth;
+  H=canvas.height=wrap.clientHeight;
+  emitX=(emitX===undefined)?W/2:emitX;
+  emitY=(emitY===undefined)?H*.65:emitY;
+}
+window.addEventListener('resize',resize);
+resize();
+
+function setEmitFromPoint(clientX,clientY){
+  const r=canvas.getBoundingClientRect();
+  emitX=clientX-r.left;
+  emitY=clientY-r.top;
+}
+id('preview-wrap').addEventListener('click',e=>setEmitFromPoint(e.clientX,e.clientY));
+id('preview-wrap').addEventListener('mousemove',e=>{if(e.buttons===1)setEmitFromPoint(e.clientX,e.clientY);});
+id('preview-wrap').addEventListener('touchstart',e=>{if(e.touches[0]){setEmitFromPoint(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();}},{passive:false});
+id('preview-wrap').addEventListener('touchmove',e=>{if(e.touches[0]){setEmitFromPoint(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();}},{passive:false});
+
+// ── Textures ──
+function makeBuiltinTex(kind){
+  const c=document.createElement('canvas');c.width=c.height=64;
+  const x=c.getContext('2d');
+  if(kind==='glow'){
+    const g=x.createRadialGradient(32,32,1,32,32,30);
+    g.addColorStop(0,'rgba(255,255,255,1)');
+    g.addColorStop(.3,'rgba(255,255,255,.85)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g;x.fillRect(0,0,64,64);
+  }else if(kind==='puff'){
+    const blobs=[[32,34,22],[22,26,13],[42,24,11],[28,44,12],[44,40,10]];
+    blobs.forEach(b=>{
+      const g=x.createRadialGradient(b[0],b[1],1,b[0],b[1],b[2]);
+      g.addColorStop(0,'rgba(255,255,255,.5)');
+      g.addColorStop(1,'rgba(255,255,255,0)');
+      x.fillStyle=g;x.beginPath();x.arc(b[0],b[1],b[2],0,Math.PI*2);x.fill();
+    });
+  }else if(kind==='streak'){
+    x.save();x.translate(32,32);x.scale(.45,1);
+    const g=x.createRadialGradient(0,0,1,0,0,29);
+    g.addColorStop(0,'rgba(255,255,255,1)');
+    g.addColorStop(.55,'rgba(255,255,255,.7)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g;x.beginPath();x.arc(0,0,29,0,Math.PI*2);x.fill();x.restore();
+  }else if(kind==='star'){
+    x.fillStyle='rgba(255,255,255,1)';
+    x.translate(32,32);
+    x.beginPath();
+    for(let i=0;i<5;i++){
+      const a1=i*Math.PI*2/5-Math.PI/2,a2=a1+Math.PI/5;
+      i===0?x.moveTo(Math.cos(a1)*29,Math.sin(a1)*29):x.lineTo(Math.cos(a1)*29,Math.sin(a1)*29);
+      x.lineTo(Math.cos(a2)*13,Math.sin(a2)*13);
+    }
+    x.closePath();x.fill();
+  }
+  return c;
+}
+const TEX_BUILTINS=[['none','⬚ None'],['glow','◍ Glow'],['puff','☁ Puff'],['streak','╱ Streak'],['star','★ Star']];
+const builtinCache={};
+let texCanvas=null;
+let texImg=null;
+let tintDirty=true,tintFrames=[];
+const TINT_N=10;
+
+function markTintDirty(){tintDirty=true;}
+
+function bakeTints(){
+  tintDirty=false;tintFrames=[];
+  if(!texCanvas)return;
+  const w=texCanvas.width||texCanvas.naturalWidth||64;
+  const h=texCanvas.height||texCanvas.naturalHeight||64;
+  for(let i=0;i<TINT_N;i++){
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const x=c.getContext('2d');
+    x.drawImage(texCanvas,0,0,w,h);
+    x.globalCompositeOperation='source-atop';
+    sampleGrad(i/(TINT_N-1),COL_TMP);
+    x.fillStyle=`rgb(${COL_TMP.r},${COL_TMP.g},${COL_TMP.b})`;
+    x.fillRect(0,0,w,h);
+    tintFrames.push(c);
+  }
+}
+
+function resolveTexture(){
+  if(P.texId==='custom'){
+    if(!texImg)texImg=new Image();
+    if(texImg.src!==P.texCustom){
+      texImg.onload=()=>{markTintDirty();};
+      texImg.src=P.texCustom;
+    }
+    texCanvas=texImg.complete&&texImg.naturalWidth?texImg:null;
+  }else{
+    if(!builtinCache[P.texId])builtinCache[P.texId]=makeBuiltinTex(P.texId);
+    texCanvas=builtinCache[P.texId]||null;
+  }
+  if(P.texId!=='none'){
+    if(P.shape!=='sprite'){P.shape='sprite';}
+  }else if(P.shape==='sprite'){P.shape='circle';}
+  markTintDirty();
+  refreshTexChips();
+}
+
+function refreshTexChips(){
+  document.querySelectorAll('.tex-chip').forEach(ch=>ch.classList.toggle('on',ch.dataset.tex===P.texId));
+  id('texClearCustom').style.display=P.texCustom?'block':'none';
+}
+
+// ── Particle pool ──
+let particles=[];
+let lastTime=0,emitAccum=0;
+let frameCount=0,fpsTime=0,fps=60;
 
 function getEmitPos(){
   switch(P.emitterShape){
     case 'circle':{
-      const a=Math.random()*Math.PI*2, r=Math.random()*P.emitterRadius;
-      return {x:emitX+Math.cos(a)*r, y:emitY+Math.sin(a)*r};
+      const a=Math.random()*Math.PI*2,r=Math.random()*P.emitterRadius;
+      return {x:emitX+Math.cos(a)*r,y:emitY+Math.sin(a)*r};
     }
     case 'rect':{
       const r=P.emitterRadius;
-      return {x:emitX+rand(-r,r), y:emitY+rand(-r,r)};
+      return {x:emitX+rand(-r,r),y:emitY+rand(-r,r)};
     }
     case 'line':
-      return {x:emitX+rand(-P.emitterRadius,P.emitterRadius), y:emitY};
+      return {x:emitX+rand(-P.emitterRadius,P.emitterRadius),y:emitY};
     default:
-      return {x:emitX, y:emitY};
+      return {x:emitX,y:emitY};
   }
 }
 
 function spawnParticle(){
-  if(particles.length >= P.maxParticles) return;
-  const angleRad = (P.angle + rand(-P.spread/2, P.spread/2)) * Math.PI/180;
-  const speed = P.speed + rand(-P.speedVar, P.speedVar);
-  const life = Math.max(.05, P.lifetime * (1 + rand(-P.lifetimeVar, P.lifetimeVar)));
-  const pos = getEmitPos();
+  if(particles.length>=P.maxParticles)return;
+  const angleRad=(P.angle+rand(-P.spread/2,P.spread/2))*Math.PI/180;
+  const speed=Math.max(0,P.speed+rand(-P.speedVar,P.speedVar));
+  const life=Math.max(.05,P.lifetime*(1+rand(-P.lifetimeVar,P.lifetimeVar)));
+  const pos=getEmitPos();
   particles.push({
-    x: pos.x, y: pos.y,
-    vx: Math.cos(angleRad)*speed,
-    vy: Math.sin(angleRad)*speed,
-    life, maxLife: life,
-    size: P.sizeStart + rand(-P.sizeVar, P.sizeVar),
-    rotation: rand(0, Math.PI*2),
-    trail: [],
+    x:pos.x,y:pos.y,
+    vx:Math.cos(angleRad)*speed,
+    vy:Math.sin(angleRad)*speed,
+    life,maxLife:life,
+    size:Math.max(.5,P.sizeStart+rand(-P.sizeVar,P.sizeVar)),
+    rotation:rand(0,Math.PI*2),
   });
 }
 
 function burstEmit(){
-  const n = Math.max(20, P.burst || 50);
-  for(let i=0;i<n;i++) spawnParticle();
+  const n=Math.max(20,P.burst||50);
+  for(let i=0;i<n;i++)spawnParticle();
 }
 
-function clearParticles(){ particles = []; }
+function clearParticles(){particles=[];}
 
-function drawStar(ctx, x, y, r, a){
+function drawStar(x,y,r,a){
   ctx.save();ctx.translate(x,y);ctx.rotate(a);
   ctx.beginPath();
   for(let i=0;i<5;i++){
-    const a1=i*Math.PI*2/5-Math.PI/2;
-    const a2=a1+Math.PI/5;
+    const a1=i*Math.PI*2/5-Math.PI/2,a2=a1+Math.PI/5;
     i===0?ctx.moveTo(Math.cos(a1)*r,Math.sin(a1)*r):ctx.lineTo(Math.cos(a1)*r,Math.sin(a1)*r);
     ctx.lineTo(Math.cos(a2)*r*.45,Math.sin(a2)*r*.45);
   }
   ctx.closePath();ctx.fill();ctx.restore();
 }
 
-function drawSpark(ctx,x,y,vx,vy,sz,a){
+function drawSpark(x,y,vx,vy,sz){
   const len=sz*3;
-  ctx.save();ctx.globalAlpha*=a;
+  ctx.save();ctx.globalAlpha*=1;
   ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-vx*.015*len,y-vy*.015*len);
   ctx.lineWidth=Math.max(1,sz*.4);ctx.stroke();ctx.restore();
 }
 
-let bgColor = '#000000';
+let bgColor='#000000';
 function loop(ts){
   requestAnimationFrame(loop);
-  const dt = Math.min((ts-lastTime)/1000, .05);
+  const dt=Math.min((ts-lastTime)/1000,.05);
   lastTime=ts;
 
-  // FPS
   frameCount++;
   fpsTime+=dt;
   if(fpsTime>=.5){fps=Math.round(frameCount/fpsTime);frameCount=0;fpsTime=0;id('fpsBadge').textContent=fps+' fps';}
 
-  // Trail: semi-transparent clear
+  if(tintDirty)bakeTints();
+
   if(P.trail){
-    ctx.fillStyle=bgColor==='#000000'?'rgba(0,0,0,.12)':'rgba(0,0,0,.18)';
+    ctx.fillStyle=hexToRgba(bgColor,.14);
     ctx.fillRect(0,0,W,H);
-  } else {
+  }else{
     ctx.clearRect(0,0,W,H);
     ctx.fillStyle=bgColor;
     ctx.fillRect(0,0,W,H);
   }
 
-  // Emit
-  if(P.loop || particles.length===0){
-    emitAccum += P.rate*dt;
+  if(P.loop||particles.length===0){
+    emitAccum+=P.rate*dt;
     while(emitAccum>=1){spawnParticle();emitAccum--;}
   }
 
-  ctx.globalCompositeOperation = P.blend;
-  const cs=hexToRgb(P.colorStart), ce=hexToRgb(P.colorEnd);
+  ctx.globalCompositeOperation=P.blend;
 
-  particles = particles.filter(p=>{
+  particles=particles.filter(p=>{
     p.life-=dt;
-    if(p.life<=0) return false;
+    if(p.life<=0)return false;
     const t=1-p.life/p.maxLife;
 
-    // Physics
     const tv=Math.random()-.5;
-    p.vx += (P.gravX + tv*P.turbulence)*dt;
-    p.vy += (P.gravY + tv*P.turbulence)*dt;
-    p.vx *= (1-P.drag);
-    p.vy *= (1-P.drag);
-    p.x += p.vx*dt;
-    p.y += p.vy*dt;
-    p.rotation += P.spin*dt;
+    p.vx+=(P.gravX+tv*P.turbulence)*dt;
+    p.vy+=(P.gravY+tv*P.turbulence)*dt;
+    p.vx*=(1-P.drag);
+    p.vy*=(1-P.drag);
+    p.x+=p.vx*dt;
+    p.y+=p.vy*dt;
+    p.rotation+=P.spin*dt;
 
-    const c=lerpColor(cs,ce,t);
-    const a=(P.alphaStart+(P.alphaEnd-P.alphaStart)*t);
-    const sz=Math.max(0,p.size+(P.sizeEnd-P.sizeStart)*t);
-    ctx.globalAlpha=Math.max(0,Math.min(1,a));
-    ctx.fillStyle=`rgb(${c.r},${c.g},${c.b})`;
-    ctx.strokeStyle=`rgb(${c.r},${c.g},${c.b})`;
+    sampleGrad(t,COL_TMP);
+    let a=P.alphaStart+(P.alphaEnd-P.alphaStart)*t;
+    if(P.curves.alpha)a*=clamp(samplePts(P.curves.alpha,t),0,1);
+    a=clamp(a,0,1);
+    let sz=Math.max(0,p.size+(P.sizeEnd-P.sizeStart)*t);
+    if(P.curves.size)sz=Math.max(0,sz*samplePts(P.curves.size,t));
 
-    if(P.shape==='square'){
+    ctx.globalAlpha=a;
+    ctx.fillStyle=`rgb(${COL_TMP.r},${COL_TMP.g},${COL_TMP.b})`;
+    ctx.strokeStyle=`rgb(${COL_TMP.r},${COL_TMP.g},${COL_TMP.b})`;
+
+    if(texCanvas&&tintFrames.length){
+      const fr=tintFrames[Math.min(TINT_N-1,Math.round(t*(TINT_N-1)))];
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rotation);
+      ctx.drawImage(fr,-sz/2,-sz/2,sz,sz);ctx.restore();
+    }else if(P.shape==='square'){
       ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rotation);
       ctx.fillRect(-sz/2,-sz/2,sz,sz);ctx.restore();
-    } else if(P.shape==='star'){
-      drawStar(ctx,p.x,p.y,sz/2,p.rotation);
-    } else if(P.shape==='spark'){
-      drawSpark(ctx,p.x,p.y,p.vx,p.vy,sz,a);
-    } else {
+    }else if(P.shape==='star'){
+      drawStar(p.x,p.y,sz/2,p.rotation);
+    }else if(P.shape==='spark'){
+      drawSpark(p.x,p.y,p.vx,p.vy,sz);
+    }else{
       ctx.beginPath();ctx.arc(p.x,p.y,Math.max(.5,sz/2),0,Math.PI*2);ctx.fill();
     }
     return true;
@@ -483,151 +773,1011 @@ function loop(ts){
   ctx.globalAlpha=1;
 }
 
-requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
+// ── Undo / redo ──
+const undoStack=[],redoStack=[];
+let armed=null;
+const currentSnap=()=>JSON.stringify(P);
+function pushIfDiff(pre){
+  if(pre!==undefined&&pre!==currentSnap()){
+    undoStack.push(pre);
+    if(undoStack.length>60)undoStack.shift();
+    redoStack.length=0;
+  }
+}
+function arm(){armed=currentSnap();}
+function commitArm(){pushIfDiff(armed);armed=null;scheduleSessionSave();}
+function restoreSnap(s){
+  P=deep(JSON.parse(s));
+  normalize();
+  bakeGradient();
+  resolveTexture();
+  syncAllUI();
+  scheduleSessionSave();
+}
+function doUndo(){
+  if(!undoStack.length){toast('Nothing to undo');return;}
+  redoStack.push(currentSnap());
+  restoreSnap(undoStack.pop());
+  toast('Undone');
+}
+function doRedo(){
+  if(!redoStack.length){toast('Nothing to redo');return;}
+  undoStack.push(currentSnap());
+  restoreSnap(redoStack.pop());
+  toast('Redone');
+}
+id('btnUndo').onclick=doUndo;
+id('btnRedo').onclick=doRedo;
+
+// ── Session autosave ──
+let sessT=null;
+function scheduleSessionSave(){
+  clearTimeout(sessT);
+  sessT=setTimeout(()=>{
+    try{localStorage.setItem(SESSION_KEY,currentSnap());}catch{}
+  },900);
+}
+
+// ── Control bindings ──
+function fmtV(v,d){
+  if(d===0)return String(Math.round(v));
+  if(d===3)return (+v).toFixed(3);
+  if(d===2)return Math.abs(v)<1?(+v).toFixed(2):(+v).toFixed(2).replace(/\.?0+$/,'');
+  return (+v).toFixed(1);
+}
+const SLIDERS=[
+  ['pRate','rate','vRate',0],['pBurst','burst','vBurst',0],['pMax','maxParticles','vMax',0],
+  ['pLife','lifetime','vLife',1],['pLifeVar','lifetimeVar','vLifeVar',2],
+  ['pSpeed','speed','vSpeed',0],['pSpeedVar','speedVar','vSpeedVar',0],
+  ['pAngle','angle','vAngle',0],['pSpread','spread','vSpread',0],
+  ['pGX','gravX','vGX',0],['pGY','gravY','vGY',0],
+  ['pDrag','drag','vDrag',3],['pTurb','turbulence','vTurb',0],
+  ['pSzS','sizeStart','vSzS',0],['pSzE','sizeEnd','vSzE',0],['pSzVar','sizeVar','vSzVar',0],
+  ['pAlphaS','alphaStart','vAlphaS',2],['pAlphaE','alphaEnd','vAlphaE',2],
+  ['pSpin','spin','vSpin',1],['pEmitR','emitterRadius','vEmitR',0],
+];
+SLIDERS.forEach(([sid,key,vid,dec])=>{
+  const el=id(sid);
+  el.addEventListener('pointerdown',arm);
+  el.addEventListener('keydown',arm);
+  el.addEventListener('input',()=>{
+    P[key]=+el.value;
+    id(vid).textContent=fmtV(el.value,dec);
+    scheduleSessionSave();
+  });
+  el.addEventListener('change',commitArm);
+});
+document.querySelectorAll('.reset-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const key=btn.dataset.reset;
+    const def=DEFAULT_CFG[key];
+    arm();
+    P[key]=def;
+    const sl=SLIDERS.find(s=>s[1]===key);
+    if(sl){id(sl[0]).value=def;id(sl[2]).textContent=fmtV(def,sl[3]);}
+    commitArm();
+  });
+});
+[['pShape','shape'],['pBlend','blend'],['pEmitShape','emitterShape']].forEach(([sid,key])=>{
+  const el=id(sid);
+  el.addEventListener('focus',arm);
+  el.addEventListener('change',()=>{
+    if(key==='shape'&&el.value==='sprite'&&P.texId==='none'){P.texId='glow';resolveTexture();}
+    P[key]=el.value;commitArm();syncAllUI();
+  });
+});
+function toggleP(key,el){
+  arm();
+  P[key]=!P[key];
+  el.classList.toggle('on',P[key]);
+  commitArm();
+}
+id('tLoop').addEventListener('click',function(){toggleP('loop',this);});
+id('tTrail').addEventListener('click',function(){toggleP('trail',this);});
+
+function setStopColor(idx,c){
+  arm();
+  P.colorStops[idx].c=c;
+  syncEndColors();
+  bakeGradient();
+  commitArm();
+  GW.draw();
+  id('pColorS').value=P.colorStops[0].c;
+  id('pColorE').value=P.colorStops[P.colorStops.length-1].c;
+}
+id('pColorS').addEventListener('focus',arm);
+id('pColorE').addEventListener('focus',arm);
+id('pColorS').addEventListener('input',function(){setStopColorLive(0,this.value);});
+id('pColorE').addEventListener('input',function(){setStopColorLive(P.colorStops.length-1,this.value);});
+id('pColorS').addEventListener('change',commitArm);
+id('pColorE').addEventListener('change',commitArm);
+function setStopColorLive(idx,c){
+  P.colorStops[idx].c=c;
+  syncEndColors();
+  bakeGradient();
+  GW.draw();
+  scheduleSessionSave();
+}
+
+// ── Texture UI ──
+function buildTexChips(){
+  const box=id('texChips');
+  TEX_BUILTINS.forEach(([k,label])=>{
+    const b=document.createElement('button');
+    b.className='tex-chip';b.dataset.tex=k;b.textContent=label;
+    b.onclick=()=>{
+      arm();
+      P.texId=k;
+      resolveTexture();
+      commitArm();
+      syncAllUI();
+    };
+    box.appendChild(b);
+  });
+  id('texFile').addEventListener('change',e=>{
+    const f=e.target.files[0];
+    if(!f)return;
+    if(f.size>1200000){toast('Image too large (max ~1 MB)');e.target.value='';return;}
+    const rd=new FileReader();
+    rd.onload=()=>{
+      arm();
+      P.texCustom=rd.result;
+      P.texId='custom';
+      resolveTexture();
+      commitArm();
+      syncAllUI();
+      toast('Texture loaded');
+      e.target.value='';
+    };
+    rd.readAsDataURL(f);
+  });
+  id('texClearCustom').onclick=()=>{
+    arm();
+    P.texCustom='';
+    if(P.texId==='custom')P.texId='none';
+    resolveTexture();
+    commitArm();
+    syncAllUI();
+  };
+}
+
+// ── Curve widgets ──
+function setupCanvasCv(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||240,h=cv.clientHeight||110;
+  cv.width=w*dpr;cv.height=h*dpr;
+  const x=cv.getContext('2d');
+  x.setTransform(dpr,0,0,dpr,0,0);
+  return {x,w,h};
+}
+
+function curveWidget(cv,opt){
+  let sel=-1,drag=null,preSnap=null;
+  function pts(){return P.curves[opt.key];}
+  function enable(){
+    if(!pts())P.curves[opt.key]=[{t:0,v:opt.def},{t:1,v:opt.def}];
+  }
+  function posOf(e){
+    const r=cv.getBoundingClientRect();
+    return {x:e.clientX-r.left,y:e.clientY-r.top};
+  }
+  function hitPt(m){
+    const p=pts();if(!p)return -1;
+    const {w,h}=setupDims(cv);
+    for(let i=0;i<p.length;i++){
+      const px=p[i].t*w,py=(1-p[i].v/opt.max)*h;
+      if(Math.abs(px-m.x)<11&&Math.abs(py-m.y)<11)return i;
+    }
+    return -1;
+  }
+  function draw(){
+    const c=setupCanvasCv(cv),x=c.x,w=c.w,h=c.h,p=pts();
+    x.clearRect(0,0,w,h);
+    x.strokeStyle='rgba(255,255,255,.05)';x.lineWidth=1;
+    for(let i=1;i<4;i++){x.beginPath();x.moveTo(w*i/4,0);x.lineTo(w*i/4,h);x.stroke();x.beginPath();x.moveTo(0,h*i/4);x.lineTo(w,h*i/4);x.stroke();}
+    x.fillStyle='rgba(139,147,160,.55)';
+    x.font='9px JetBrains Mono';
+    x.fillText(opt.label,5,12);
+    if(!p){
+      x.strokeStyle='rgba(245,158,11,.35)';x.setLineDash([5,5]);
+      const y=(1-opt.def/opt.max)*h;
+      x.beginPath();x.moveTo(0,y);x.lineTo(w,y);x.stroke();x.setLineDash([]);
+      x.fillStyle='rgba(245,158,11,.5)';
+      x.textAlign='center';x.fillText('tap to enable',w/2,h-10);x.textAlign='left';
+      return;
+    }
+    x.strokeStyle='#f59e0b';x.lineWidth=2;
+    x.beginPath();
+    p.forEach((pt,i)=>{
+      const px=pt.t*w,py=clamp((1-pt.v/opt.max)*h,-40,h+40);
+      i===0?x.moveTo(px,py):x.lineTo(px,py);
+    });
+    x.stroke();
+    p.forEach((pt,i)=>{
+      const px=pt.t*w,py=clamp((1-pt.v/opt.max)*h,-40,h+40);
+      x.beginPath();x.arc(px,py,i===sel?6:4.5,0,Math.PI*2);
+      x.fillStyle=i===sel?'#ffffff':'#f59e0b';
+      x.fill();
+      x.strokeStyle='rgba(0,0,0,.5)';x.lineWidth=1;x.stroke();
+    });
+  }
+  cv.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    preSnap=currentSnap();
+    const m=posOf(e);
+    if(e.button===2)return;
+    const hi=hitPt(m);
+    const {w,h}=setupDims(cv);
+    if(hi>=0){
+      sel=hi;drag={i:hi,del:false};
+    }else{
+      enable();
+      const p=pts();
+      let t=clamp(m.x/w,.01,.99);
+      const v=clamp((1-m.y/h)*opt.max,0,opt.max);
+      let idx=0;
+      while(idx<p.length&&p[idx].t<t)idx++;
+      p.splice(idx,0,{t,v});
+      sel=idx;drag={i:idx,del:false};
+      draw();
+    }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const m=posOf(e);
+    const {w,h}=setupDims(cv);
+    const p=pts();
+    const pt=p[drag.i];
+    const lo=drag.i>0?p[drag.i-1].t+.02:0;
+    const hi2=drag.i<p.length-1?p[drag.i+1].t-.02:1;
+    pt.t=clamp(m.x/w,lo,hi2);
+    pt.v=clamp((1-m.y/h)*opt.max,0,opt.max);
+    drag.del=m.y<-28||m.y>h+28;
+    draw();
+  });
+  function finish(){
+    if(!drag)return;
+    const p=pts();
+    if(drag.del&&p.length>2)p.splice(drag.i,1);
+    drag=null;sel=-1;
+    pushIfDiff(preSnap);preSnap=null;
+    scheduleSessionSave();
+    draw();
+  }
+  cv.addEventListener('pointerup',finish);
+  cv.addEventListener('pointercancel',finish);
+  cv.addEventListener('dblclick',e=>{
+    const m=posOf(e);
+    const hi=hitPt(m);
+    if(hi>=0){
+      const p=pts();
+      if(p.length>2&&(hi!==0&&hi!==p.length-1)){arm();p.splice(hi,1);pushIfDiff(currentSnap()===''?undefined:preSnapFromArm());scheduleSessionSave();draw();}
+    }
+  });
+  function preSnapFromArm(){const s=armed;armed=null;return s;}
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+  return {draw,enable};
+}
+function setupDims(cv){return {w:cv.clientWidth||240,h:cv.clientHeight||110};}
+
+let CW,CW2,GW,GWsel=-1;
+function initCurveWidgets(){
+  CW=curveWidget(id('cvSize'),{key:'size',max:2,def:1,label:'multiplier 0–2'});
+  CW2=curveWidget(id('cvAlpha'),{key:'alpha',max:1,def:1,label:'multiplier 0–1'});
+  GW=gradientWidget();
+  document.querySelectorAll('[data-curve-reset]').forEach(b=>{
+    b.onclick=()=>{
+      const k=b.dataset.curveReset;
+      arm();
+      P.curves[k]=[{t:0,v:k==='alpha'?1:1},{t:1,v:1}];
+      pushIfDiff(currentSnap());armed=null;
+      redrawCurves();scheduleSessionSave();
+    };
+  });
+  document.querySelectorAll('[data-curve-clear]').forEach(b=>{
+    b.onclick=()=>{
+      const k=b.dataset.curveClear;
+      arm();
+      P.curves[k]=null;
+      pushIfDiff(currentSnap());armed=null;
+      redrawCurves();scheduleSessionSave();
+    };
+  });
+  id('gradReset').onclick=()=>{
+    arm();
+    const s0=P.colorStops[0].c,s1=P.colorStops[P.colorStops.length-1].c;
+    P.colorStops=[{t:0,c:s0},{t:1,c:s1}];
+    GWsel=-1;
+    bakeGradient();syncEndColors();
+    pushIfDiff(currentSnap());armed=null;
+    GW.draw();scheduleSessionSave();
+    id('pColorS').value=s0;id('pColorE').value=s1;
+  };
+  id('stopColor').addEventListener('input',function(){
+    if(GWsel>=0&&GWsel<P.colorStops.length)setStopColor(GWsel,this.value);
+  });
+}
+function redrawCurves(){CW.draw();CW2.draw();GW.draw();}
+
+function gradientWidget(){
+  const cv=id('cvGrad');
+  let drag=null,preSnap=null;
+  const BAR=26;
+  function chipPos(i){
+    const {w,h}=setupDims(cv);
+    return {x:P.colorStops[i].t*(w-16)+8,y:h-11};
+  }
+  function hitChip(m){
+    for(let i=0;i<P.colorStops.length;i++){
+      const p=chipPos(i);
+      if(Math.abs(p.x-m.x)<10&&Math.abs(p.y-m.y)<11)return i;
+    }
+    return -1;
+  }
+  function draw(){
+    const c=setupCanvasCv(cv),x=c.x,w=c.w,h=c.h;
+    x.clearRect(0,0,w,h);
+    for(let px=0;px<w;px++){
+      sampleGrad(px/(w-1||1),COL_TMP);
+      x.fillStyle=`rgb(${COL_TMP.r},${COL_TMP.g},${COL_TMP.b})`;
+      x.fillRect(px,4,1,BAR-6);
+    }
+    x.strokeStyle='rgba(255,255,255,.12)';x.strokeRect(.5,3.5,w-1,BAR-7);
+    P.colorStops.forEach((s,i)=>{
+      const p=chipPos(i);
+      x.beginPath();x.moveTo(p.x,BAR);x.lineTo(p.x,h-6);x.strokeStyle='rgba(255,255,255,.25)';x.lineWidth=1;x.stroke();
+      x.beginPath();x.arc(p.x,p.y,i===GWsel?7:5.5,0,Math.PI*2);
+      x.fillStyle=s.c;x.fill();
+      x.strokeStyle=i===GWsel?'#ffffff':'rgba(0,0,0,.6)';x.lineWidth=i===GWsel?2:1.5;x.stroke();
+    });
+  }
+  function posOf(e){
+    const r=cv.getBoundingClientRect();
+    return {x:e.clientX-r.left,y:e.clientY-r.top};
+  }
+  cv.addEventListener('pointerdown',e=>{
+    e.preventDefault();
+    cv.setPointerCapture(e.pointerId);
+    preSnap=currentSnap();
+    const m=posOf(e);
+    const hi=hitChip(m);
+    if(hi>=0){
+      GWsel=hi;drag={i:hi,moved:false};
+    }else if(m.y<BAR+6){
+      arm();
+      const t=clamp((m.x-8)/(cv.clientWidth-16),0,1);
+      sampleGrad(t,COL_TMP);
+      const col='#'+[COL_TMP.r,COL_TMP.g,COL_TMP.b].map(v=>v.toString(16).padStart(2,'0')).join('');
+      let idx=0;
+      while(idx<P.colorStops.length&&P.colorStops[idx].t<t)idx++;
+      P.colorStops.splice(idx,0,{t,c:col});
+      GWsel=idx;drag={i:idx,moved:true};
+      bakeGradient();draw();updateStopInput();
+    }else{
+      drag=null;
+    }
+    draw();
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const m=posOf(e);
+    const st=P.colorStops[drag.i];
+    drag.moved=true;
+    if(drag.i>0&&drag.i<P.colorStops.length-1){
+      const lo=P.colorStops[drag.i-1].t+.03,hi2=P.colorStops[drag.i+1].t-.03;
+      st.t=clamp((m.x-8)/(cv.clientWidth-16),lo,hi2);
+      P.colorStops.sort((a,b)=>a.t-b.t);
+      GWsel=P.colorStops.indexOf(st);
+      drag.i=GWsel;
+    }
+    bakeGradient();draw();updateStopInput();
+  });
+  function finish(){
+    if(!drag)return;
+    drag=null;
+    pushIfDiff(preSnap);preSnap=null;
+    scheduleSessionSave();
+    draw();updateStopInput();
+  }
+  cv.addEventListener('pointerup',finish);
+  cv.addEventListener('pointercancel',finish);
+  cv.addEventListener('dblclick',e=>{
+    const m=posOf(e);
+    const hi=hitChip(m);
+    if(hi>0&&hi<P.colorStops.length-1&&P.colorStops.length>2){
+      arm();
+      P.colorStops.splice(hi,1);
+      GWsel=-1;
+      bakeGradient();syncEndColors();
+      pushIfDiff(preSnapFromArm());armed=null;
+      scheduleSessionSave();
+      draw();updateStopInput();
+    }
+  });
+  function preSnapFromArm(){const s=armed;armed=null;return s;}
+  function updateStopInput(){
+    if(GWsel>=0&&GWsel<P.colorStops.length)id('stopColor').value=P.colorStops[GWsel].c;
+    id('pColorS').value=P.colorStops[0].c;
+    id('pColorE').value=P.colorStops[P.colorStops.length-1].c;
+  }
+  return {draw};
+}
 
 // ── Presets ──
 const PRESETS=[
   {id:'custom',label:'✏️ Custom',cfg:{rate:10,maxParticles:100,lifetime:1,lifetimeVar:.2,speed:100,speedVar:30,angle:270,spread:30,gravX:0,gravY:0,drag:0,turbulence:0,sizeStart:4,sizeEnd:4,sizeVar:1,colorStart:'#ffffff',colorEnd:'#ffffff',alphaStart:1,alphaEnd:.8,shape:'circle',blend:'source-over',spin:0,trail:false,emitterShape:'point',emitterRadius:0,loop:true,burst:0}},
   {id:'fire',label:'🔥 Fire',cfg:{rate:60,maxParticles:300,lifetime:1.2,lifetimeVar:.4,speed:140,speedVar:50,angle:270,spread:35,gravX:0,gravY:-60,drag:.01,turbulence:50,sizeStart:12,sizeEnd:0,sizeVar:5,colorStart:'#ffdd00',colorEnd:'#cc2200',alphaStart:1,alphaEnd:0,shape:'circle',blend:'lighter',spin:0,trail:false,emitterShape:'line',emitterRadius:30}},
-  {id:'smoke',label:'💨 Smoke',cfg:{rate:15,maxParticles:150,lifetime:4,lifetimeVar:.6,speed:40,speedVar:20,angle:270,spread:30,gravX:0,gravY:-20,drag:.005,turbulence:20,sizeStart:10,sizeEnd:50,sizeVar:5,colorStart:'#888888',colorEnd:'#333333',alphaStart:.6,alphaEnd:0,shape:'circle',blend:'source-over',spin:.5,trail:false,emitterShape:'point',emitterRadius:0}},
+  {id:'smoke',label:'💨 Smoke',cfg:{rate:15,maxParticles:150,lifetime:4,lifetimeVar:.6,speed:40,speedVar:20,angle:270,spread:30,gravX:0,gravY:-20,drag:.005,turbulence:20,sizeStart:10,sizeEnd:50,sizeVar:5,colorStart:'#888888',colorEnd:'#333333',alphaStart:.6,alphaEnd:0,shape:'circle',blend:'source-over',spin:.5,trail:false,emitterShape:'point',emitterRadius:0,texId:'puff'}},
   {id:'sparks',label:'✨ Sparks',cfg:{rate:80,maxParticles:400,lifetime:.8,lifetimeVar:.4,speed:250,speedVar:150,angle:270,spread:360,gravX:0,gravY:400,drag:.01,turbulence:0,sizeStart:4,sizeEnd:0,sizeVar:2,colorStart:'#ffffff',colorEnd:'#ff8800',alphaStart:1,alphaEnd:0,shape:'spark',blend:'lighter',spin:0,trail:true,emitterShape:'point',emitterRadius:0}},
   {id:'magic',label:'🌟 Magic',cfg:{rate:50,maxParticles:300,lifetime:2,lifetimeVar:.5,speed:80,speedVar:40,angle:270,spread:360,gravX:0,gravY:-30,drag:.005,turbulence:30,sizeStart:6,sizeEnd:0,sizeVar:3,colorStart:'#cc66ff',colorEnd:'#0088ff',alphaStart:1,alphaEnd:0,shape:'star',blend:'lighter',spin:3,trail:false,emitterShape:'circle',emitterRadius:40}},
-  {id:'snow',label:'❄️ Snow',cfg:{rate:30,maxParticles:400,lifetime:5,lifetimeVar:.4,speed:60,speedVar:20,angle:90,spread:30,gravX:0,gravY:60,drag:.002,turbulence:20,sizeStart:4,sizeEnd:3,sizeVar:2,colorStart:'#ddeeff',colorEnd:'#aaccff',alphaStart:.9,alphaEnd:.3,shape:'circle',blend:'source-over',spin:.3,trail:false,emitterShape:'line',emitterRadius:200}},
+  {id:'snow',label:'❄️ Snow',cfg:{rate:30,maxParticles:400,lifetime:5,lifetimeVar:.4,speed:60,speedVar:20,angle:90,spread:30,gravX:0,gravY:60,drag:.002,turbulence:20,sizeStart:4,sizeEnd:3,sizeVar:2,colorStart:'#ddeeff',colorEnd:'#aaccff',alphaStart:.9,alphaEnd:.3,shape:'circle',blend:'source-over',spin:.3,trail:false,emitterShape:'line',emitterRadius:200,texId:'glow'}},
   {id:'explosion',label:'💥 Explosion',cfg:{rate:0,burst:120,maxParticles:500,lifetime:.9,lifetimeVar:.3,speed:350,speedVar:200,angle:270,spread:360,gravX:0,gravY:300,drag:.02,turbulence:0,sizeStart:14,sizeEnd:0,sizeVar:6,colorStart:'#ffffff',colorEnd:'#ff4400',alphaStart:1,alphaEnd:0,shape:'circle',blend:'lighter',spin:0,trail:true,emitterShape:'point',emitterRadius:0}},
   {id:'rain',label:'🌧 Rain',cfg:{rate:120,maxParticles:800,lifetime:.8,lifetimeVar:.2,speed:500,speedVar:80,angle:85,spread:8,gravX:0,gravY:0,drag:0,turbulence:0,sizeStart:3,sizeEnd:2,sizeVar:1,colorStart:'#88aaff',colorEnd:'#4466cc',alphaStart:.7,alphaEnd:.3,shape:'spark',blend:'source-over',spin:0,trail:false,emitterShape:'line',emitterRadius:300}},
   {id:'leaves',label:'🍂 Leaves',cfg:{rate:8,maxParticles:100,lifetime:5,lifetimeVar:.5,speed:60,speedVar:30,angle:100,spread:40,gravX:0,gravY:40,drag:.005,turbulence:80,sizeStart:8,sizeEnd:6,sizeVar:3,colorStart:'#cc6600',colorEnd:'#884400',alphaStart:1,alphaEnd:.5,shape:'square',blend:'source-over',spin:2,trail:false,emitterShape:'line',emitterRadius:250}},
 ];
 
-function applyPreset(cfg){
-  Object.assign(P,cfg);
-  // Sync all sliders
-  const map={rate:'pRate',burst:'pBurst',maxParticles:'pMax',lifetime:'pLife',lifetimeVar:'pLifeVar',speed:'pSpeed',speedVar:'pSpeedVar',angle:'pAngle',spread:'pSpread',gravX:'pGX',gravY:'pGY',drag:'pDrag',turbulence:'pTurb',sizeStart:'pSzS',sizeEnd:'pSzE',sizeVar:'pSzVar',alphaStart:'pAlphaS',alphaEnd:'pAlphaE',emitterRadius:'pEmitR',spin:'pSpin'};
-  const dmap={rate:'vRate',burst:'vBurst',maxParticles:'vMax',lifetime:'vLife',lifetimeVar:'vLifeVar',speed:'vSpeed',speedVar:'vSpeedVar',angle:'vAngle',spread:'vSpread',gravX:'vGX',gravY:'vGY',drag:'vDrag',turbulence:'vTurb',sizeStart:'vSzS',sizeEnd:'vSzE',sizeVar:'vSzVar',alphaStart:'vAlphaS',alphaEnd:'vAlphaE',emitterRadius:'vEmitR',spin:'vSpin'};
-  Object.entries(map).forEach(([k,eid])=>{const el=id(eid);if(el) el.value=P[k];});
-  Object.entries(dmap).forEach(([k,eid])=>{const el=id(eid);if(el){
-    const v=P[k];
-    el.textContent=Number.isInteger(v)?v:(+v).toFixed(Math.abs(v)<1?2:1);
-  }});
-  if(id('pColorS')) id('pColorS').value=P.colorStart;
-  if(id('pColorE')) id('pColorE').value=P.colorEnd;
-  if(id('pShape')) id('pShape').value=P.shape;
-  if(id('pBlend')) id('pBlend').value=P.blend;
-  if(id('pEmitShape')) id('pEmitShape').value=P.emitterShape;
-  id('tLoop').classList.toggle('on',P.loop);
-  id('tTrail').classList.toggle('on',P.trail);
-  if(cfg.burst>0) setTimeout(burstEmit,100);
+function applyPreset(cfg,opts){
+  opts=opts||{};
+  if(!opts.silent){arm();}
+  const base=deep(DEFAULT_CFG);
+  Object.assign(base,cfg);
+  base.colorStops=[{t:0,c:cfg.colorStart||'#ffffff'},{t:1,c:cfg.colorEnd||'#ffffff'}];
+  P=base;
+  normalize();
+  bakeGradient();
+  resolveTexture();
+  syncAllUI();
   clearParticles();
+  if(P.burst>0)setTimeout(burstEmit,80);
+  scheduleSessionSave();
 }
 
-const pg=id('presetGrid');
-PRESETS.forEach(pr=>{
-  const b=document.createElement('button');
-  b.className='preset-btn';b.id='pr-'+pr.id;
-  b.innerHTML=`<span class="preset-icon">${pr.label.split(' ')[0]}</span>${pr.label.split(' ').slice(1).join(' ')}`;
-  b.onclick=()=>{
-    document.querySelectorAll('.preset-btn').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
-    applyPreset(pr.cfg);
-  };
-  pg.appendChild(b);
-});
-
-// first preset
-document.querySelector('.preset-btn').classList.add('on');
-applyPreset(PRESETS[0].cfg);
-
-// ── Background picker ──
-const bgs=['#000000','#0a0a12','#1a1a2e','#0d1117','#1a0a00','#001a0d','#ffffff','#1c1c2e'];
-const bgEl=id('bgBtns');
-bgs.forEach(c=>{
-  const b=document.createElement('div');
-  b.className='bg-btn'+(c==='#000000'?' on':'');
-  b.style.background=c;b.style.border=c==='#ffffff'?'2px solid #888':'';
-  b.onclick=()=>{bgColor=c;document.querySelectorAll('.bg-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');};
-  bgEl.appendChild(b);
-});
-
-function toggleP(key,el){P[key]=!P[key];el.classList.toggle('on',P[key]);}
-
-// ── Tabs ──
-function sbTab(t){
-  ['presets','params','export'].forEach(x=>{
-    id('tab-'+x).style.display=x===t?'block':'none';
-    document.querySelector(`.sb-tab[data-tab="${x}"]`).classList.toggle('on',x===t);
+function buildPresets(){
+  const pg=id('presetGrid');
+  PRESETS.forEach(pr=>{
+    const b=document.createElement('button');
+    b.className='preset-btn';b.id='pr-'+pr.id;
+    b.innerHTML=`<span class="preset-icon">${pr.label.split(' ')[0]}</span>${pr.label.split(' ').slice(1).join(' ')}`;
+    b.onclick=()=>{
+      document.querySelectorAll('.preset-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      applyPreset(pr.cfg);
+    };
+    pg.appendChild(b);
   });
 }
 
-// ── Export ──
-function getConfig(){return{...P};}
-function downloadJSON(data,name){
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+// ── Background picker ──
+function buildBg(){
+  const bgs=['#000000','#0a0a12','#1a1a2e','#0d1117','#1a0a00','#001a0d','#ffffff','#1c1c2e'];
+  const bgEl=id('bgBtns');
+  bgs.forEach(c=>{
+    const b=document.createElement('div');
+    b.className='bg-btn'+(c==='#000000'?' on':'');
+    b.style.background=c;b.style.border=c==='#ffffff'?'2px solid #888':'';
+    b.onclick=()=>{bgColor=c;document.querySelectorAll('.bg-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');};
+    bgEl.appendChild(b);
+  });
+}
+
+// ── Sync all UI from P ──
+function syncAllUI(){
+  SLIDERS.forEach(([sid,key,vid,dec])=>{
+    const el=id(sid);
+    if(el)el.value=P[key];
+    const vd=id(vid);
+    if(vd)vd.textContent=fmtV(P[key],dec);
+  });
+  id('pShape').value=P.shape;
+  id('pBlend').value=P.blend;
+  id('pEmitShape').value=P.emitterShape;
+  id('pColorS').value=P.colorStops[0].c;
+  id('pColorE').value=P.colorStops[P.colorStops.length-1].c;
+  id('tLoop').classList.toggle('on',!!P.loop);
+  id('tTrail').classList.toggle('on',!!P.trail);
+  refreshTexChips();
+  if(CW){CW.draw();CW2.draw();GW.draw();updateStopSel();}
+}
+function updateStopSel(){
+  if(GWsel>=0&&GWsel<P.colorStops.length)id('stopColor').value=P.colorStops[GWsel].c;
+}
+
+// ── Tabs ──
+let curTab='presets';
+function sbTab(t){
+  if(t===curTab&&window.matchMedia('(max-width:680px)').matches){
+    id('sidebar').classList.toggle('collapsed');
+    return;
+  }
+  curTab=t;
+  id('sidebar').classList.remove('collapsed');
+  ['presets','params','curves','saves','export'].forEach(x=>{
+    id('tab-'+x).style.display=x===t?'block':'none';
+    document.querySelector(`.sb-tab[data-tab="${x}"]`).classList.toggle('on',x===t);
+  });
+  if(t==='curves')redrawCurves();
+  if(t==='saves')renderSaves();
+}
+document.querySelectorAll('.sb-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>sbTab(tab.dataset.tab));
+});
+
+// ── Save system ──
+function getSaves(){
+  try{return JSON.parse(localStorage.getItem(SAVES_KEY))||[];}catch{return[];}
+}
+function persistSaves(arr){
+  try{
+    localStorage.setItem(SAVES_KEY,JSON.stringify(arr));
+    return true;
+  }catch{
+    toast('Storage full — remove some saves');
+    return false;
+  }
+}
+function snapThumb(){
+  try{
+    const c=document.createElement('canvas');c.width=96;c.height=54;
+    const x=c.getContext('2d');
+    x.fillStyle=bgColor;x.fillRect(0,0,96,54);
+    x.drawImage(canvas,0,0,96,54);
+    return c.toDataURL('image/jpeg',.65);
+  }catch{return'';}
+}
+function fmtDate(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function renderSaves(){
+  const list=getSaves();
+  const el=id('saveList');
+  el.innerHTML='';
+  if(!list.length){el.innerHTML='<div class="empty-note">No saved effects yet.</div>';return;}
+  list.forEach(entry=>{
+    const row=document.createElement('div');
+    row.className='save-row';
+    const img=document.createElement('img');
+    img.className='save-thumb';img.src=entry.thumb||'data:image/gif;base64,R0lGODlhAQABAAAAACw=';img.alt='';
+    const meta=document.createElement('div');
+    meta.className='save-meta';
+    const nm=document.createElement('div');nm.className='save-name';nm.textContent=entry.name;
+    const dt=document.createElement('div');dt.className='save-date';dt.textContent=fmtDate(entry.updated);
+    meta.append(nm,dt);
+    const acts=document.createElement('div');acts.className='save-actions';
+    function mkBtn(txt,cls,fn){
+      const b=document.createElement('button');
+      b.textContent=txt;if(cls)b.className=cls;
+      b.onclick=fn;
+      acts.appendChild(b);
+    }
+    mkBtn('Load','',()=>{
+      arm();
+      P=deep(entry.cfg);
+      normalize();bakeGradient();resolveTexture();syncAllUI();
+      commitArm();
+      clearParticles();
+      toast(`Loaded “${entry.name}”`);
+    });
+    mkBtn('⬇','',()=>{
+      downloadJSON({name:entry.name,cfg:entry.cfg},entry.name.replace(/[^\w\-]+/g,'_')+'_effect.json');
+    });
+    mkBtn('🗑','del',()=>{
+      persistSaves(getSaves().filter(s=>s.id!==entry.id));
+      renderSaves();
+    });
+    row.append(img,meta,acts);
+    el.appendChild(row);
+  });
+}
+function saveCurrentEffect(){
+  const name=id('saveName').value.trim()||('Effect '+new Date().toLocaleDateString());
+  const saves=getSaves();
+  saves.unshift({id:Date.now()+''+Math.floor(Math.random()*999),name,cfg:deep(P),thumb:snapThumb(),updated:Date.now()});
+  if(persistSaves(saves)){
+    id('saveName').value='';
+    renderSaves();
+    toast('Saved ✓');
+  }
+}
+id('btnSaveEffect').onclick=saveCurrentEffect;
+id('importFile').addEventListener('change',e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const obj=JSON.parse(rd.result);
+      const cfg=obj.cfg&&typeof obj.cfg==='object'?obj.cfg:obj;
+      if(typeof cfg.rate!=='number')throw new Error('bad');
+      arm();
+      P=Object.assign(deep(DEFAULT_CFG),cfg);
+      normalize();bakeGradient();resolveTexture();syncAllUI();
+      commitArm();
+      clearParticles();
+      document.querySelectorAll('.preset-btn').forEach(x=>x.classList.remove('on'));
+      toast('Effect imported');
+      sbTab('curves');sbTab('params');
+    }catch{toast('Not a valid effect JSON');}
+    e.target.value='';
+  };
+  rd.readAsText(f);
+});
+
+// ── Capture ──
+function download(data,name,type){
+  const blob=data instanceof Blob?data:new Blob([data],{type:type||'application/octet-stream'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
+function downloadJSON(data,name){download(JSON.stringify(data,null,2),name,'application/json');}
 
-function exportGodot(){
-  const cfg=getConfig();
-  const godot={
-    "_note":"Godot 4 ParticlesMaterial-compatible config",
-    "amount":cfg.maxParticles,
-    "lifetime":cfg.lifetime,
-    "spread":cfg.spread,
-    "gravity":{"x":cfg.gravX,"y":cfg.gravY},
-    "initial_velocity_min":cfg.speed-cfg.speedVar,
-    "initial_velocity_max":cfg.speed+cfg.speedVar,
-    "scale_min":cfg.sizeStart/16,
-    "scale_max":(cfg.sizeStart+cfg.sizeVar)/16,
-    "color_start":cfg.colorStart,
-    "color_end":cfg.colorEnd,
-    "emission_shape":cfg.emitterShape,
-    "emission_sphere_radius":cfg.emitterRadius,
-    "angular_velocity":cfg.spin*30,
-    "damping":cfg.drag*60,
+id('btnShot').onclick=()=>{
+  canvas.toBlob(b=>{
+    if(b){download(b,'particle_snapshot.png');toast('PNG saved');}
+  },'image/png');
+};
+
+let rec=null,recTimer=null,recStart=0;
+id('btnRec').onclick=function(){
+  if(rec){try{rec.stop();}catch{}return;}
+  if(!canvas.captureStream||typeof MediaRecorder==='undefined'){
+    toast('Video recording not supported in this browser');
+    return;
+  }
+  let mime='';
+  for(const m of ['video/webm;codecs=vp9','video/webm;codecs=vp8']){
+    if(MediaRecorder.isTypeSupported(m)){mime=m;break;}
+  }
+  try{
+    const stream=canvas.captureStream(60);
+    rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+  }catch{
+    toast('Recorder failed to start');
+    rec=null;return;
+  }
+  const chunks=[];
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  rec.onstop=()=>{
+    const b=new Blob(chunks,{type:'video/webm'});
+    download(b,'particle_effect.webm');
+    clearInterval(recTimer);
+    id('recDot').style.display='none';
+    this.classList.remove('recording');
+    this.textContent='⏺ Record WebM';
+    rec=null;
+    toast('WebM saved');
   };
-  downloadJSON(godot,'particle_godot.json');
-  toast('Godot config downloaded');
+  chunks.length=0;
+  rec.start();
+  recStart=Date.now();
+  id('recTime').textContent='0.0s';
+  id('recDot').style.display='flex';
+  this.classList.add('recording');
+  this.textContent='⏹ Stop';
+  recTimer=setInterval(()=>{id('recTime').textContent=((Date.now()-recStart)/1000).toFixed(1)+'s';},100);
+  const dur=+id('recDur').value;
+  setTimeout(()=>{if(rec&&rec.state!=='inactive')rec.stop();},dur*1000+150);
+};
+
+// ── Exports ──
+const fG=n=>String(Number((+n).toFixed(4)));
+const fU=n=>String(Number((+n).toFixed(5)));
+
+function rampSamples(n,fn){
+  const offs=[],vals=[];
+  for(let i=0;i<n;i++){const t=i/(n-1);offs.push(fG(t));vals.push(fn(t));}
+  return {offs,vals};
 }
 
-function exportUnity(){
-  const cfg=getConfig();
-  const unity={
-    "_note":"Unity ParticleSystem-compatible config, copy values into your ParticleSystem component",
-    "duration":cfg.lifetime,
-    "looping":cfg.loop,
-    "startLifetime":{"constant":cfg.lifetime},
-    "startSpeed":{"constant":cfg.speed},
-    "startSize":{"constant":cfg.sizeStart/16},
-    "startColor":{"color":cfg.colorStart},
-    "gravityModifier":cfg.gravY/500,
-    "maxParticles":cfg.maxParticles,
-    "emission":{"rateOverTime":cfg.rate},
-    "shape":{"shapeType":cfg.emitterShape,"radius":cfg.emitterRadius},
-    "colorOverLifetime":{"start":cfg.colorStart,"end":cfg.colorEnd},
-    "sizeOverLifetime":{"start":cfg.sizeStart/16,"end":cfg.sizeEnd/16},
-  };
-  downloadJSON(unity,'particle_unity.json');
-  toast('Unity config downloaded');
+function godotTres(){
+  const N=17;
+  const col=rampSamples(N,t=>{
+    sampleGrad(t,COL_TMP);
+    let a=P.alphaStart+(P.alphaEnd-P.alphaStart)*t;
+    if(P.curves.alpha)a*=clamp(samplePts(P.curves.alpha,t),0,1);
+    a=clamp(a,0,1);
+    return `${fG(COL_TMP.r/255)}, ${fG(COL_TMP.g/255)}, ${fG(COL_TMP.b/255)}, ${fG(a)}`;
+  });
+  const scl=rampSamples(N,t=>{
+    let m=P.curves.size?clamp(samplePts(P.curves.size,t),0,2):1;
+    const baseSize=Math.max(0,P.sizeStart+(P.sizeEnd-P.sizeStart)*t);
+    const norm=baseSize/Math.max(P.sizeStart,1);
+    const v=fG(clamp(m*norm,0,4));
+    return `${v}, ${v}, ${v}, 1`;
+  });
+  const rad=Math.PI/180;
+  const dirX=Math.cos(P.angle*rad),dirY=-Math.sin(P.angle*rad);
+  let emission='emission_shape = 0\n';
+  if(P.emitterShape==='circle')emission=`emission_shape = 1\nemission_sphere_radius = ${fG(P.emitterRadius)}\n`;
+  else if(P.emitterShape==='rect')emission=`emission_shape = 3\nemission_box_extents = Vector3(${fG(Math.max(P.emitterRadius,.5))}, ${fG(Math.max(P.emitterRadius,.5))}, 0)\n`;
+  else if(P.emitterShape==='line')emission=`emission_shape = 3\nemission_box_extents = Vector3(${fG(Math.max(P.emitterRadius,.5))}, 1, 0)\n`;
+  return `[gd_resource type="ParticlesMaterial" load_steps=5 format=3]
+
+[sub_resource type="Gradient" id="Gradient_col"]
+offsets = PackedFloat32Array(${col.offs.join(', ')})
+colors = PackedColorArray(${col.vals.join(', ')})
+
+[sub_resource type="GradientTexture1D" id="GradTex_col"]
+gradient = SubResource("Gradient_col")
+
+[sub_resource type="Gradient" id="Gradient_scale"]
+offsets = PackedFloat32Array(${scl.offs.join(', ')})
+colors = PackedFloat32Array(${scl.vals.join(', ')})
+
+[sub_resource type="GradientTexture1D" id="GradTex_scale"]
+gradient = SubResource("Gradient_scale")
+
+[resource]
+${emission}direction = Vector3(${fG(dirX)}, ${fG(dirY)}, 0)
+spread = ${fG(P.spread)}
+initial_velocity_min = ${fG(Math.max(0,P.speed-P.speedVar))}
+initial_velocity_max = ${fG(P.speed+P.speedVar)}
+gravity = Vector3(${fG(P.gravX)}, ${fG(-P.gravY)}, 0)
+angular_velocity_min = ${fG(P.spin*57.2958)}
+angular_velocity_max = ${fG(P.spin*57.2958)}
+damping_min = ${fG(P.drag*100)}
+damping_max = ${fG(P.drag*100)}
+scale_min = ${fG(P.sizeStart/16)}
+scale_max = ${fG((P.sizeStart+P.sizeVar)/16)}
+color_ramp = SubResource("GradTex_col")
+scale_curve = SubResource("GradTex_scale")
+metadata/jvdesign_hint = "Made with JVDesignStudio Particle Designer"
+`;
+}
+function godotTscn(){
+  return `[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Material" path="res://godot_particles_material.tres" id="1_mat"]
+
+[node name="JVDesignParticles" type="GPUParticles2D"]
+amount = ${P.maxParticles}
+lifetime = ${fG(P.lifetime)}
+lifetime_randomness = ${fG(clamp(P.lifetimeVar,0,1))}
+explosiveness = ${P.burst>0&&P.rate===0?fG(1):fG(0)}
+process_material = ExtResource("1_mat")
+metadata/setup_hint = "Keep godot_particles_material.tres beside this scene. Optionally set a texture on this node for sprite particles."
+`;
 }
 
-function exportRaw(){
-  downloadJSON(getConfig(),'particle_config.json');
+function unityCS(){
+  const N=24;
+  const ck={t:[],r:[],g:[],b:[]};
+  P.colorStops.forEach(s=>{
+    if(ck.t.length&&Math.abs(ck.t[ck.t.length-1]-s.t)<.001)return;
+    const c=hexToRgb(s.c);
+    ck.t.push(fU(s.t));ck.r.push(fU(c.r/255));ck.g.push(fU(c.g/255));ck.b.push(fU(c.b/255));
+  });
+  const ak={t:[],v:[]};
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    let a=P.alphaStart+(P.alphaEnd-P.alphaStart)*t;
+    if(P.curves.alpha)a*=clamp(samplePts(P.curves.alpha,t),0,1);
+    ak.t.push(fU(t));ak.v.push(fU(clamp(a,0,1)));
+  }
+  const sk={t:[],v:[]};
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    let m=P.curves.size?clamp(samplePts(P.curves.size,t),0,2):1;
+    const baseSize=Math.max(0,P.sizeStart+(P.sizeEnd-P.sizeStart)*t);
+    sk.t.push(fU(t));sk.v.push(fU(baseSize*m/Math.max(P.sizeStart,1)));
+  }
+  const arr=(name,values)=>`static readonly float[] ${name}=new float[]{ ${values.join('f,')}f };`;
+  const hasB64=!!P.texCustom&&P.texId==='custom';
+  const b64=hasB64?P.texCustom.split(',')[1]:'';
+  let b64Decl='""';
+  if(hasB64){
+    const parts=[];
+    for(let i=0;i<b64.length;i+=96)parts.push('"'+b64.slice(i,i+96)+'"');
+    b64Decl='(\n'+'        '+parts.join('+\n        ')+'\n      )';
+  }
+  const shapeBlock=P.emitterShape==='circle'
+    ?'sh.shapeType=ParticleSystemShapeType.Sphere; sh.radius='+fU(P.emitterRadius/50)+'f;'
+    :P.emitterShape==='rect'
+    ?'sh.shapeType=ParticleSystemShapeType.Box; sh.scale=new Vector3('+fU(P.emitterRadius/25)+'f, '+fU(P.emitterRadius/25)+'f, 0.1f);'
+    :P.emitterShape==='line'
+    ?'sh.shapeType=ParticleSystemShapeType.Edge; sh.radius='+fU(P.emitterRadius/50)+'f;'
+    :'sh.shapeType=ParticleSystemShapeType.Point;';
+  const solBlock=P.curves.size
+    ?'\n        var sol=ps.sizeOverLifetime; sol.enabled=true;\n        sol.size=new ParticleSystem.MinMaxCurve(1f, BuildCurve(SK_T, SK_V));'
+    :'';
+  const rotBlock=P.spin!==0
+    ?'\n        var rol=ps.rotationOverLifetime; rol.enabled=true;\n        rol.z=new ParticleSystem.MinMaxCurve('+fU(P.spin)+'f);'
+    :'';
+  return `// Generated by JVDesign Studio Particle Designer
+// Install: drop this file into Assets/Editor (create it if needed),
+// then menu Tools > JVDesign Studio > Import Particle Effect.
+#if UNITY_EDITOR
+using UnityEngine;
+using UnityEditor;
+using System.Globalization;
+
+public static class JvdsParticleImporter
+{
+${arr('CK_T',ck.t)}
+${arr('CK_R',ck.r)}
+${arr('CK_G',ck.g)}
+${arr('CK_B',ck.b)}
+${arr('AK_T',ak.t)}
+${arr('AK_V',ak.v)}${P.curves.size?'\n'+arr('SK_T',sk.t)+'\n'+arr('SK_V',sk.v):''}
+
+    [MenuItem("Tools/JVDesign Studio/Import Particle Effect")]
+    public static void Import()
+    {
+        var go=new GameObject("JvdsParticle");
+        var ps=go.AddComponent<ParticleSystem>();
+        var main=ps.main;
+        main.duration=${fU(Math.max(.5,P.lifetime))}f;
+        main.loop=${P.loop?'true':'false'};
+        main.startLifetime=new ParticleSystem.MinMaxCurve(${fU(Math.max(.05,P.lifetime*(1-P.lifetimeVar)))}f, ${fU(P.lifetime*(1+P.lifetimeVar))}f);
+        main.startSpeed=new ParticleSystem.MinMaxCurve(${fU(Math.max(0,P.speed-P.speedVar))}f, ${fU(P.speed+P.speedVar)}f);
+        main.startSize=new ParticleSystem.MinMaxCurve(${fU(Math.max(.01,(P.sizeStart-P.sizeVar)/50))}f, ${fU((P.sizeStart+P.sizeVar)/50)}f);
+        var sc=Hex("${P.colorStops[0].c}");
+        main.startColor=new Color(sc.r, sc.g, sc.b, ${fU(P.alphaStart)}f);
+        main.gravityModifier=${fU(P.gravY/500)}f; // X gravity not supported by Unity's modifier
+        main.maxParticles=${Math.round(P.maxParticles)};
+        main.simulationSpace=ParticleSystemSimulationSpace.Local;
+
+        var em=ps.emission; em.enabled=true;
+        em.rateOverTime=${fU(P.rate)}f;${P.burst>0?'\n        em.SetBursts(new[]{ new ParticleSystem.Burst(0f, (short)'+Math.round(P.burst)+' }); // rate is 0 for pure burst effects':''}
+
+        var sh=ps.shape; sh.enabled=true;
+        ${shapeBlock}
+
+        var col=ps.colorOverLifetime; col.enabled=true;
+        col.color=new ParticleSystem.MinMaxGradient(BuildGradient());
+${solBlock}${rotBlock}
+${hasB64?`        var renderer=go.GetComponent<ParticleSystemRenderer>();\n        var mat=new Material(Shader.Find("Sprites/Default"));\n        mat.mainTexture=EmbeddedTexture();\n        renderer.material=mat;`:'        // No custom texture: Unity default-particle material is used.'}
+
+        Selection.activeGameObject=go;
+        Debug.Log("JVDesign particle effect imported.");
+    }
+
+    static Gradient BuildGradient()
+    {
+        var g=new Gradient();
+        var cks=new GradientColorKey[CK_T.Length];
+        for(int i=0;i<CK_T.Length;i++)
+            cks[i]=new GradientColorKey(new Color(CK_R[i], CK_G[i], CK_B[i]), CK_T[i]);
+        var aks=new GradientAlphaKey[AK_T.Length];
+        for(int i=0;i<AK_T.Length;i++)
+            aks[i]=new GradientAlphaKey(AK_V[i], AK_T[i]);
+        g.SetKeys(cks,aks);
+        return g;
+    }
+
+    static AnimationCurve BuildCurve(float[] ts, float[] vs)
+    {
+        var keys=new Keyframe[ts.Length];
+        for(int i=0;i<ts.Length;i++) keys[i]=new Keyframe(ts[i], vs[i]);
+        return new AnimationCurve(keys);
+    }
+
+    static Color Hex(string h)
+    {
+        ColorUtility.TryParseHtmlString(h, out Color c);
+        return c;
+    }
+${hasB64?`
+    static Texture2D EmbeddedTexture()
+    {
+        var t=new Texture2D(2,2);
+        t.LoadImage(Convert.FromBase64String(B64));
+        return t;
+    }
+
+    const string B64=${b64Decl};`:'\n'}
+}
+#endif
+`;
+}
+
+id('btnGodot').onclick=()=>{
+  download(godotTres(),'godot_particles_material.tres','text/plain');
+  setTimeout(()=>download(godotTscn(),'godot_particles_scene.tscn','text/plain'),350);
+  toast('Godot .tres + .tscn downloaded — keep both files together');
+};
+id('btnUnity').onclick=()=>{
+  download(unityCS(),'JvdsParticleImporter.cs','text/plain');
+  toast('Unity importer downloaded — place inside Assets/Editor');
+};
+id('btnRaw').onclick=()=>{
+  downloadJSON({cfg:P},'particle_config.json');
   toast('Raw JSON downloaded');
-}
-
-function copyUrl(){
-  const data=btoa(JSON.stringify(P));
-  const url=`${location.origin}/particle-designer.html?p=${data}`;
+};
+id('btnShare').onclick=()=>{
+  const payload=Object.assign(deep(P),{texCustom:''});
+  let data;
+  try{data=btoa(JSON.stringify(payload));}catch{toast('Could not encode effect');return;}
+  if(data.length>60000)toast('Warning: very long URL');
+  const url=location.origin+location.pathname+'?p='+encodeURIComponent(data);
   navigator.clipboard.writeText(url).then(()=>toast('Share URL copied!')).catch(()=>toast('Copy failed, try manual'));
-}
+};
 
-// Load from URL
+// ── Keyboard ──
+document.addEventListener('keydown',e=>{
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){
+    e.preventDefault();
+    e.shiftKey?doRedo():doUndo();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();doRedo();return;}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){
+    e.preventDefault();
+    sbTab('saves');
+    id('saveName').focus();
+    toast('Name it and hit Save');
+    return;
+  }
+  if(typing)return;
+  if(e.key==='b'||e.key==='B')burstEmit();
+  if(e.key==='?'||(e.shiftKey&&e.key==='/')){id('helpModal').classList.add('open');}
+  if(e.key==='Escape')id('helpModal').classList.remove('open');
+  if((e.key==='Delete'||e.key==='Backspace')&&curTab==='curves'){
+    if(GWsel>0&&GWsel<P.colorStops.length-1&&P.colorStops.length>2){
+      arm();
+      P.colorStops.splice(GWsel,1);GWsel=-1;
+      bakeGradient();syncEndColors();
+      commitArm();GW.draw();
+    }
+  }
+});
+id('btnHelp').onclick=()=>id('helpModal').classList.add('open');
+id('helpClose').onclick=()=>id('helpModal').classList.remove('open');
+id('helpModal').addEventListener('click',e=>{if(e.target===id('helpModal'))id('helpModal').classList.remove('open');});
+
+// ── Boot ──
+buildPresets();
+buildBg();
+buildTexChips();
+initCurveWidgets();
+
+let restored=false;
 try{
-  const sp=new URLSearchParams(location.search);
-  if(sp.has('p')) applyPreset(JSON.parse(atob(sp.get('p'))));
+  const raw=localStorage.getItem(SESSION_KEY);
+  if(raw){
+    P=Object.assign(deep(DEFAULT_CFG),JSON.parse(raw));
+    normalize();
+    restored=true;
+  }
 }catch{}
 
+if(restored){
+  bakeGradient();
+  resolveTexture();
+  syncAllUI();
+  toast('Session restored');
+}else{
+  applyPreset(PRESETS[0].cfg,{silent:true});
+  const firstBtn=document.querySelector('.preset-btn');
+  if(firstBtn)firstBtn.classList.add('on');
+}
+
+try{
+  const sp=new URLSearchParams(location.search);
+  if(sp.has('p')){
+    P=Object.assign(deep(DEFAULT_CFG),JSON.parse(atob(decodeURIComponent(sp.get('p')))));
+    normalize();
+    bakeGradient();
+    resolveTexture();
+    syncAllUI();
+    document.querySelectorAll('.preset-btn').forEach(x=>x.classList.remove('on'));
+    history.replaceState(null,'',location.pathname);
+    toast('Shared effect loaded');
+  }
+}catch{}
+
+requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
+
 let toastT;
-function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+function toast(msg){
+  const el=id('toast');
+  el.textContent=msg;el.style.opacity=1;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.style.opacity=0,2600);
+}
 </script>
 
 <!-- BUILD:footer-tools -->

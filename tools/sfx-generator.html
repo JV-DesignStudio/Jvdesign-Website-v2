@@ -731,7 +731,7 @@ function selectCategory(catId){
     c.classList.toggle('active', CATEGORIES[i].id===catId);
   });
   const cat = CATEGORIES.find(c=>c.id===catId);
-  document.getElementById('variantsTitle').innerHTML = `${cat.icon} ${cat.name}, pick a variant`;
+  document.getElementById('variantsTitle').innerHTML = `${cat.icon} ${cat.name} — pick a variant`;
   buildVariants(catId);
 }
 
@@ -758,6 +758,7 @@ function selectAndPlay(catId, varIdx, btn){
   document.querySelectorAll('.variant-btn').forEach(b=>b.classList.remove('playing'));
   btn.classList.add('playing');
   const dur=previewCurrent();
+  syncHash();
   clearTimeout(selectAndPlay._t);
   selectAndPlay._t=setTimeout(()=>btn.classList.remove('playing'), Math.max(350,(dur||0.3)*1000+250));
 }
@@ -833,14 +834,8 @@ function sendToGameMaker(){
   const variant=VARIANTS[currentCat][currentVariant];
   const cat=CATEGORIES.find(c=>c.id===currentCat);
   showToast('Sending to Game Maker…');
-  const sr=44100;
-  const tv=readTweaks();
-  const offline=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,Math.ceil(sr*renderDuration(tv.speed,tv.rev)),sr);
-  const tw=applyTweaks(offline);
-  XF={origin:0.02, pitch:tw.pitchF, speed:tv.speed};
-  variant.fn(offline,tw.dest,0.02);
-  offline.startRendering().then(buf=>{
-    const wav=makeWav(trimBuffer(buf,sr),sr);
+  renderCurrentBuf(variant).then(buf=>{
+    const wav=makeWav(trimBuffer(buf,44100),44100);
     const bytes=new Uint8Array(wav);
     let binary='';
     for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
@@ -930,8 +925,8 @@ function makeZip(files){
 // ══════════════════════════════════════════════════
 // HISTORY
 // ══════════════════════════════════════════════════
-function addToHistory(cat, variant, filename){
-  history.unshift({catIcon:cat.icon,varIcon:variant.icon,name:`${cat.name}, ${variant.name}`,file:`jvds_${filename}.wav`,time:new Date().toLocaleTimeString(),params:{cat:cat.id,var:VARIANTS[cat.id].indexOf(variant),...readTweaks()}});
+function addToHistory(cat, variant, displayName){
+  history.unshift({catIcon:cat.icon,varIcon:variant.icon,name:`${cat.name}, ${variant.name}`,file:displayName,time:new Date().toLocaleTimeString(),params:{cat:cat.id,var:VARIANTS[cat.id].indexOf(variant),...readTweaks()}});
   history=history.slice(0,20);
   localStorage.setItem('jvds_sfx_history',JSON.stringify(history));
   renderHistory();
@@ -953,6 +948,7 @@ function restoreFromHistory(i){
   applyParams(h.params);
   selectCategory(h.params.cat);
   currentVariant=h.params.var;
+  syncHash();
   return true;
 }
 
@@ -1018,38 +1014,130 @@ function loadPreset(presetName, btn){
   if(btn){btn.style.background='rgba(99,102,241,.2)';btn.style.borderColor='var(--accent)';}
 }
 
-function downloadPresetPack(){
+async function downloadPresetPack(){
   if(!currentPreset){showToast('Select a preset pack first!');return;}
   const sounds = PRESETS[currentPreset];
-  showToast(`Rendering ${sounds.length} sounds…`);
-
-  const sr = 44100;
+  const fmt = exportFormat();
   const files = [];
-  let completed = 0;
 
-  sounds.forEach(sound=>{
+  for(let i=0;i<sounds.length;i++){
+    const sound=sounds[i];
     const cat = CATEGORIES.find(c=>c.id===sound.cat);
     const variant = VARIANTS[sound.cat][sound.var];
-    const tv = readTweaks();
-    const offline = new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1, Math.ceil(sr*renderDuration(tv.speed,tv.rev)), sr);
-    const tw = applyTweaks(offline);
-    XF={origin:0.02, pitch:tw.pitchF, speed:tv.speed};
-    variant.fn(offline, tw.dest, 0.02);
+    showToast(`Rendering ${i+1}/${sounds.length}…`);
+    const buf = await renderCurrentBuf(variant);
+    if(fmt==='wav'){
+      files.push({name:`${currentPreset}/${soundFileName(cat,variant)}.wav`, data:makeWav(trimBuffer(buf,44100),44100)});
+    }else{
+      const blob=await recordBuffer(buf);
+      files.push({name:`${currentPreset}/${soundFileName(cat,variant)}${extForMime(blob.type)}`, data:await blob.arrayBuffer()});
+    }
+  }
 
-    offline.startRendering().then(buf=>{
-      const name = `${cat.name}_${variant.name}`.replace(/\s+/g,'_').toLowerCase();
-      files.push({name:`${currentPreset}/jvds_${name}.wav`, data:makeWav(trimBuffer(buf,sr),sr)});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([makeZip(files)],{type:'application/zip'}));
+  a.download=`jvds_${currentPreset}_pack.zip`;
+  a.click();
+  showToast(`Downloaded ${sounds.length} sounds from ${currentPreset} pack (zip)!`);
+}
 
-      completed++;
-      if(completed === sounds.length){
-        const a=document.createElement('a');
-        a.href=URL.createObjectURL(new Blob([makeZip(files)],{type:'application/zip'}));
-        a.download=`jvds_${currentPreset}_pack.zip`;
-        a.click();
-        showToast(`Downloaded ${sounds.length} sounds from ${currentPreset} pack (zip)!`);
-      }
-    });
-  });
+// ══════════════════════════════════════════════════
+// SHAREABLE LINKS
+// ══════════════════════════════════════════════════
+function stateToSeed(){
+  if(currentCat===null||currentVariant===null) return null;
+  const t=readTweaks();
+  return [currentCat,currentVariant,t.vol,t.pitch,t.speed,t.rev,t.dist,t.crush].join(',');
+}
+
+function applySeed(s){
+  const p=s.split(',');
+  if(p.length!==8) return false;
+  const cat=p[0], v=parseInt(p[1],10);
+  if(!VARIANTS[cat]||!VARIANTS[cat][v]) return false;
+  applyParams({cat:cat,var:v,vol:parseInt(p[2],10),pitch:parseInt(p[3],10),speed:parseFloat(p[4]),rev:parseInt(p[5],10),dist:parseInt(p[6],10),crush:parseInt(p[7],10)});
+  selectCategory(cat);
+  currentVariant=v;
+  return true;
+}
+
+let hashTimer=null;
+function syncHash(){
+  clearTimeout(hashTimer);
+  hashTimer=setTimeout(()=>{
+    const s=stateToSeed();
+    const url=location.href.split('#')[0]+(s?'#s='+s:'');
+    if(url===location.href) return;
+    try{history.replaceState(null,'',url);}
+    catch(e){location.hash=s?'s='+s:'';}
+  },250);
+}
+
+function copyShareLink(){
+  if(currentCat===null||currentVariant===null){showToast('Pick a category and variant first!');return;}
+  syncHash();
+  const url=location.href.split('#')[0]+'#s='+stateToSeed();
+  const done=()=>showToast('Sound link copied ✓');
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopy(url,done));
+  else fallbackCopy(url,done);
+}
+
+function fallbackCopy(text,done){
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{document.execCommand('copy');done();}
+  catch(e){showToast('Copy failed — copy the URL manually');}
+  document.body.removeChild(ta);
+}
+
+// ══════════════════════════════════════════════════
+// ENGINE SNIPPETS
+// ══════════════════════════════════════════════════
+const CODE_TABS=[['godot','Godot'],['unity','Unity / C#'],['web','Web / JS']];
+let codeEngine='godot';
+
+function camel(s){return s.split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join('');}
+function slug(s){return s.replace(/[^a-z0-9_]/g,'_');}
+
+function engineSnippet(){
+  const cat=CATEGORIES.find(c=>c.id===currentCat);
+  const variant=VARIANTS[currentCat][currentVariant];
+  const base=soundFileName(cat,variant);
+  const title=`${cat.name} – ${variant.name}`;
+  if(codeEngine==='godot'){
+    return `# ${title}\nvar _sfx: AudioStream = preload("res://sfx/${base}.wav")\n\nfunc play_sfx() -> void:\n\tvar p := AudioStreamPlayer.new()\n\tp.stream = _sfx\n\tp.finished.connect(p.queue_free)\n\tadd_child(p)\n\tp.play()`;
+  }
+  if(codeEngine==='unity'){
+    return `// ${title}\nusing UnityEngine;\n\npublic class Play${camel(base)} : MonoBehaviour\n{\n    [SerializeField] private AudioClip clip; // assign ${base}.wav\n\n    public void Play()\n        => AudioSource.PlayClipAtPoint(clip, transform.position);\n}`;
+  }
+  return `// ${title}\nconst sfx_${slug(base)} = new Audio('sfx/${base}.wav');\n\nfunction playSfx() {\n  sfx_${slug(base)}.currentTime = 0;\n  sfx_${slug(base)}.play();\n}`;
+}
+
+function showEngineCode(){
+  if(currentCat===null||currentVariant===null){showToast('Pick a category and variant first!');return;}
+  document.getElementById('codeModal').style.display='flex';
+  renderCodeTabs();
+}
+
+function closeCodeModal(){document.getElementById('codeModal').style.display='none';}
+
+function setCodeEngine(id){codeEngine=id;renderCodeTabs();}
+
+function renderCodeTabs(){
+  document.getElementById('codeTabs').innerHTML=CODE_TABS.map(([id,label])=>
+    `<button type="button" class="variant-btn" style="width:auto;padding:7px 12px;flex:0 0 auto;${codeEngine===id?'border-color:var(--accent);background:rgba(99,102,241,.15);':''}" onclick="setCodeEngine('${id}')">${label}</button>`
+  ).join('');
+  document.getElementById('codeBody').textContent=engineSnippet();
+}
+
+function copySnippet(){
+  const txt=document.getElementById('codeBody').textContent;
+  const done=()=>showToast('Snippet copied ✓');
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));
+  else fallbackCopy(txt,done);
 }
 
 // ══════════════════════════════════════════════════
@@ -1058,6 +1146,10 @@ function downloadPresetPack(){
 document.addEventListener('DOMContentLoaded',()=>{
   buildCategories();
   renderHistory();
+  document.querySelectorAll('input.tw').forEach(el=>el.addEventListener('input',syncHash));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCodeModal();});
+  const m=location.hash.match(/^#s=([\w,.\-%]+)$/);
+  if(m&&!applySeed(decodeURIComponent(m[1]))) showToast('Invalid sound link ignored');
   document.body.addEventListener('pointerdown',()=>getCtx(),{once:true});
 });
 </script>

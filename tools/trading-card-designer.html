@@ -90,6 +90,19 @@ body{display:flex;flex-direction:column;}
 .range-row label span{color:var(--accent2);}
 .range-row input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer;}
 
+/* LIBRARY */
+.lib-actions{display:flex;gap:6px;margin-bottom:8px;}
+.lib-item{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border2);border-radius:9px;padding:6px;margin-bottom:6px;cursor:pointer;transition:border-color .12s;}
+.lib-item:hover{border-color:var(--accent);}
+.lib-thumb{width:34px;height:48px;border-radius:6px;object-fit:cover;background:var(--panel3);flex-shrink:0;}
+div.lib-thumb{display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--muted);}
+.lib-meta{flex:1;min-width:0;}
+.lib-name{font-size:.7rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lib-sub{font-size:.55rem;color:var(--muted);margin-top:2px;}
+.lib-del{width:20px;height:20px;border-radius:50%;border:1px solid var(--accent4);background:transparent;color:var(--accent4);cursor:pointer;font-size:.6rem;flex-shrink:0;line-height:1;}
+.lib-del:hover{background:var(--accent4);color:#fff;}
+.lib-empty{font-size:.62rem;color:var(--muted);text-align:center;padding:10px 0;border:1px dashed var(--border2);border-radius:9px;}
+
 /* PREVIEW */
 #preview-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:var(--bg);}
 #card-canvas{border-radius:14px;box-shadow:0 20px 80px rgba(0,0,0,.7);}
@@ -238,10 +251,31 @@ body{display:flex;flex-direction:column;}
     </div>
 
     <div class="ctrl-section">
-      <h3>Export & Save</h3>
+      <h3>Export</h3>
+      <div class="field"><label>PNG Resolution</label>
+        <select id="pngScale">
+          <option value="1">Preview &middot; 400&times;560</option>
+          <option value="2" selected>Hi-Res &middot; 800&times;1120</option>
+          <option value="3">Ultra &middot; 1200&times;1680</option>
+          <option value="4">Print &middot; 1600&times;2240</option>
+        </select>
+      </div>
       <button class="exp-btn exp-png" onclick="exportPNG()">📥 Download PNG</button>
-      <button class="exp-btn exp-save" onclick="saveCard()">💾 Save to Browser</button>
-      <button class="exp-btn exp-load" onclick="loadCard()">📂 Load Saved</button>
+      <button class="exp-btn exp-load" onclick="exportSheet()">🖨️ Print Sheet · 9-Up</button>
+      <button class="exp-btn exp-load" onclick="copyShareLink()">🔗 Copy Share Link</button>
+    </div>
+
+    <div class="ctrl-section">
+      <h3>Card Library</h3>
+      <div class="lib-actions">
+        <button class="exp-btn exp-save" style="margin-bottom:0;" onclick="saveToLibrary()">💾 Save Card</button>
+        <button class="exp-btn exp-load" style="margin-bottom:0;" onclick="newCard()">✨ New</button>
+      </div>
+      <div id="libraryList"></div>
+      <div class="lib-actions" style="margin-top:8px;margin-bottom:0;">
+        <button class="exp-btn exp-load" style="margin-bottom:0;font-size:.68rem;" onclick="exportDeck()">📤 Export Deck</button>
+        <button class="exp-btn exp-load" style="margin-bottom:0;font-size:.68rem;" onclick="importDeck()">📥 Import Deck</button>
+      </div>
     </div>
   </div>
 
@@ -364,10 +398,28 @@ function buildStats(){
 function addStat(){if(stats.length<6){stats.push({name:'Stat',val:50});buildStats();render();}}
 function removeStat(i){stats.splice(i,1);buildStats();render();}
 
+let artDataUrl=null;
+
 function loadArt(input){
   const file=input.files[0];if(!file) return;
-  const url=URL.createObjectURL(file);
-  const img=new Image();img.onload=()=>{artImage=img;render();};img.src=url;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      // Downscale for localStorage-friendly persistence
+      const max=480;
+      const sc=Math.min(1,max/Math.max(img.width,img.height));
+      const tc=document.createElement('canvas');
+      tc.width=Math.max(1,Math.round(img.width*sc));
+      tc.height=Math.max(1,Math.round(img.height*sc));
+      tc.getContext('2d').drawImage(img,0,0,tc.width,tc.height);
+      try{artDataUrl=tc.toDataURL('image/png');}catch{artDataUrl=null;}
+      artImage=img;
+      render();toast('Artwork added');
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(file);
 }
 
 const artZone=id('artUploadZone');
@@ -389,8 +441,10 @@ function hexToRgba(hex,a=1){
   return `rgba(${r},${g},${b},${a})`;
 }
 
-function render(){
-  ctx.clearRect(0,0,CW,CH);
+function render(targetCtx){
+  const c=targetCtx||ctx;
+  if(!targetCtx) scheduleAutosave();
+  c.clearRect(0,0,CW,CH);
   const style=TEMPLATE_STYLES[cardTemplate];
   const rarity=RARITIES.find(r=>r.id===cardRarity);
   const corner=+id('cornerR').value;
@@ -399,138 +453,138 @@ function render(){
   const artYOffset=+id('artY').value;
 
   // ── CARD BACKGROUND ──
-  const bgGrad=ctx.createLinearGradient(0,0,CW,CH);
+  const bgGrad=c.createLinearGradient(0,0,CW,CH);
   bgGrad.addColorStop(0,lighten(cardColor,20));
   bgGrad.addColorStop(.5,cardColor);
   bgGrad.addColorStop(1,darken(cardColor,20));
-  roundRect(ctx,4,4,CW-8,CH-8,corner-2,bgGrad);
+  roundRect(c,4,4,CW-8,CH-8,corner-2,bgGrad);
 
   // Texture overlay
-  ctx.save();
-  ctx.globalAlpha=.06;
+  c.save();
+  c.globalAlpha=.06;
   for(let y=0;y<CH;y+=4)for(let x=0;x<CW;x+=4){
-    if((x+y)%8===0){ctx.fillStyle='#fff';ctx.fillRect(x,y,1,1);}
+    if((x+y)%8===0){c.fillStyle='#fff';c.fillRect(x,y,1,1);}
   }
-  ctx.restore();
+  c.restore();
 
   // ── BORDER ──
-  const borderGrad=ctx.createLinearGradient(0,0,CW,CH);
-  style.borderGrad.forEach((c,i)=>borderGrad.addColorStop(i/2,c));
-  ctx.save();
-  ctx.lineWidth=5;ctx.strokeStyle=borderGrad;
-  roundRectStroke(ctx,2,2,CW-4,CH-4,corner);
-  ctx.restore();
+  const borderGrad=c.createLinearGradient(0,0,CW,CH);
+  style.borderGrad.forEach((gc,i)=>borderGrad.addColorStop(i/2,gc));
+  c.save();
+  c.lineWidth=5;c.strokeStyle=borderGrad;
+  roundRectStroke(c,2,2,CW-4,CH-4,corner);
+  c.restore();
 
   // Rarity glow
   if(glowI>0){
-    ctx.save();
-    ctx.shadowColor=rarity.color;ctx.shadowBlur=30*glowI;
-    ctx.lineWidth=2;ctx.strokeStyle=rarity.color;
-    roundRectStroke(ctx,3,3,CW-6,CH-6,corner-1);
-    ctx.restore();
+    c.save();
+    c.shadowColor=rarity.color;c.shadowBlur=30*glowI;
+    c.lineWidth=2;c.strokeStyle=rarity.color;
+    roundRectStroke(c,3,3,CW-6,CH-6,corner-1);
+    c.restore();
   }
 
   // ── TOP BAR (name + HP) ──
   const topBarH=56;
-  const topGrad=ctx.createLinearGradient(0,0,0,topBarH);
+  const topGrad=c.createLinearGradient(0,0,0,topBarH);
   topGrad.addColorStop(0,'rgba(0,0,0,.7)');topGrad.addColorStop(1,'rgba(0,0,0,.3)');
-  ctx.save();roundRect(ctx,6,6,CW-12,topBarH,corner-4,topBarH,topGrad,true);ctx.restore();
+  c.save();roundRect(c,6,6,CW-12,topBarH,corner-4,topBarH,topGrad,true);c.restore();
 
   // Name
-  ctx.save();
-  ctx.font=`bold ${style.nameFontSize}px ${style.nameFont}`;
-  ctx.fillStyle='#fff';
-  ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=6;
-  ctx.fillText(id('cardName').value||'Card Name',18,38);
-  ctx.restore();
+  c.save();
+  c.font=`bold ${style.nameFontSize}px ${style.nameFont}`;
+  c.fillStyle='#fff';
+  c.shadowColor='rgba(0,0,0,.8)';c.shadowBlur=6;
+  c.fillText(id('cardName').value||'Card Name',18,38);
+  c.restore();
 
   // HP badge
   const hp=id('cardHP').value||'0';
   const hpBadgeX=CW-14;
-  ctx.save();
-  ctx.font='bold 13px Fredoka,cursive';
-  const hpW=ctx.measureText('HP '+hp).width+16;
-  const hpGrad=ctx.createLinearGradient(hpBadgeX-hpW,20,hpBadgeX,44);
+  c.save();
+  c.font='bold 13px Fredoka,cursive';
+  const hpW=c.measureText('HP '+hp).width+16;
+  const hpGrad=c.createLinearGradient(hpBadgeX-hpW,20,hpBadgeX,44);
   hpGrad.addColorStop(0,rarity.color);hpGrad.addColorStop(1,darken(rarity.color,30));
-  roundRect(ctx,hpBadgeX-hpW,20,hpW,24,8,hpGrad);
-  ctx.fillStyle='#000';ctx.font='bold 13px Fredoka,cursive';
-  ctx.fillText('HP '+hp,hpBadgeX-hpW+8,37);
-  ctx.restore();
+  roundRect(c,hpBadgeX-hpW,20,hpW,24,8,hpGrad);
+  c.fillStyle='#000';c.font='bold 13px Fredoka,cursive';
+  c.fillText('HP '+hp,hpBadgeX-hpW+8,37);
+  c.restore();
 
   // Type badge
   const typeObj=TYPES.find(t=>t.id===cardType);
-  ctx.save();
-  ctx.font='11px Fredoka,cursive';
-  ctx.fillStyle='rgba(255,255,255,.55)';
-  ctx.fillText(typeObj?.label||'',18,52);
-  ctx.restore();
+  c.save();
+  c.font='11px Fredoka,cursive';
+  c.fillStyle='rgba(255,255,255,.55)';
+  c.fillText(typeObj?.label||'',18,52);
+  c.restore();
 
   // ── ART BOX ──
   const artX=14,artY=topBarH+12,artW=CW-28,artH=200;
-  ctx.save();
-  ctx.beginPath();roundRectPath(ctx,artX,artY,artW,artH,10);
-  ctx.clip();
+  c.save();
+  c.beginPath();roundRectPath(c,artX,artY,artW,artH,10);
+  c.clip();
   // art bg gradient
-  const artBg=ctx.createLinearGradient(artX,artY,artX+artW,artY+artH);
+  const artBg=c.createLinearGradient(artX,artY,artX+artW,artY+artH);
   artBg.addColorStop(0,darken(cardColor,10));artBg.addColorStop(1,lighten(cardColor,15));
-  ctx.fillStyle=artBg;ctx.fillRect(artX,artY,artW,artH);
+  c.fillStyle=artBg;c.fillRect(artX,artY,artW,artH);
   // decorative circles
-  ctx.fillStyle='rgba(255,255,255,.04)';
-  ctx.beginPath();ctx.arc(artX+artW*.3,artY+artH*.5,artH*.7,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(artX+artW*.8,artY+artH*.2,artH*.4,0,Math.PI*2);ctx.fill();
+  c.fillStyle='rgba(255,255,255,.04)';
+  c.beginPath();c.arc(artX+artW*.3,artY+artH*.5,artH*.7,0,Math.PI*2);c.fill();
+  c.beginPath();c.arc(artX+artW*.8,artY+artH*.2,artH*.4,0,Math.PI*2);c.fill();
 
   if(artImage){
     const sx=artW*artScale, sy=artH*artScale;
     const dx=artX+(artW-sx)/2, dy=artY+(artH-sy)/2+artYOffset;
-    ctx.drawImage(artImage,dx,dy,sx,sy);
+    c.drawImage(artImage,dx,dy,sx,sy);
   } else {
     const emoji=id('artEmoji').value||'⚔️';
-    ctx.font=`${Math.min(artW,artH)*.55*artScale}px serif`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.globalAlpha=.9;
-    ctx.fillText(emoji,artX+artW/2,artY+artH/2+artYOffset);
-    ctx.globalAlpha=1;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    c.font=`${Math.min(artW,artH)*.55*artScale}px serif`;
+    c.textAlign='center';c.textBaseline='middle';
+    c.globalAlpha=.9;
+    c.fillText(emoji,artX+artW/2,artY+artH/2+artYOffset);
+    c.globalAlpha=1;c.textAlign='left';c.textBaseline='alphabetic';
   }
-  ctx.restore();
+  c.restore();
 
   // Art border
-  ctx.save();ctx.lineWidth=2;ctx.strokeStyle='rgba(255,255,255,.15)';
-  roundRectStroke(ctx,artX,artY,artW,artH,10);ctx.restore();
+  c.save();c.lineWidth=2;c.strokeStyle='rgba(255,255,255,.15)';
+  roundRectStroke(c,artX,artY,artW,artH,10);c.restore();
 
   // ── SUBTITLE ──
   const subY=artY+artH+14;
-  ctx.save();
-  ctx.font='italic 13px JetBrains Mono,monospace';
-  ctx.fillStyle=rarity.color;ctx.textAlign='center';
-  ctx.fillText(id('cardSub').value||'',CW/2,subY);
-  ctx.restore();
+  c.save();
+  c.font='italic 13px JetBrains Mono,monospace';
+  c.fillStyle=rarity.color;c.textAlign='center';
+  c.fillText(id('cardSub').value||'',CW/2,subY);
+  c.restore();
 
   // ── STATS ──
   const statsY=subY+16;
   const statsAreaH=stats.length>0?stats.length*26+10:0;
   if(stats.length>0){
-    ctx.save();
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    roundRect(ctx,10,statsY-4,CW-20,statsAreaH,8,ctx.fillStyle);
-    ctx.restore();
+    c.save();
+    c.fillStyle='rgba(0,0,0,.35)';
+    roundRect(c,10,statsY-4,CW-20,statsAreaH,8,c.fillStyle);
+    c.restore();
 
     stats.forEach((s,i)=>{
       const sy=statsY+i*26+14;
       // label
-      ctx.save();ctx.font='bold 11px JetBrains Mono,monospace';ctx.fillStyle='rgba(255,255,255,.7)';
-      ctx.fillText(s.name,18,sy);
+      c.save();c.font='bold 11px JetBrains Mono,monospace';c.fillStyle='rgba(255,255,255,.7)';
+      c.fillText(s.name,18,sy);
       // bar bg
       const barX=100,barY=sy-10,barW=CW-120,barH=12;
-      ctx.fillStyle='rgba(0,0,0,.4)';roundRect(ctx,barX,barY,barW,barH,6,ctx.fillStyle);
+      c.fillStyle='rgba(0,0,0,.4)';roundRect(c,barX,barY,barW,barH,6,c.fillStyle);
       // bar fill
       const fillW=(s.val/100)*barW;
-      const barGrad=ctx.createLinearGradient(barX,0,barX+fillW,0);
+      const barGrad=c.createLinearGradient(barX,0,barX+fillW,0);
       barGrad.addColorStop(0,rarity.color);barGrad.addColorStop(1,lighten(rarity.color,20));
-      roundRect(ctx,barX,barY,fillW,barH,6,barGrad);
+      roundRect(c,barX,barY,fillW,barH,6,barGrad);
       // value
-      ctx.font='bold 11px JetBrains Mono,monospace';ctx.fillStyle='#fff';ctx.textAlign='right';
-      ctx.fillText(s.val,CW-14,sy);ctx.textAlign='left';
-      ctx.restore();
+      c.font='bold 11px JetBrains Mono,monospace';c.fillStyle='#fff';c.textAlign='right';
+      c.fillText(s.val,CW-14,sy);c.textAlign='left';
+      c.restore();
     });
   }
 
@@ -538,32 +592,32 @@ function render(){
   const flavourY=statsY+statsAreaH+10;
   const flavour=id('cardFlavour').value||'';
   if(flavour){
-    ctx.save();
-    ctx.fillStyle='rgba(0,0,0,.3)';roundRect(ctx,12,flavourY,CW-24,CH-flavourY-44,8,ctx.fillStyle);
-    ctx.font='italic 11px Georgia,serif';ctx.fillStyle='rgba(255,255,255,.55)';
-    wrapText(ctx,flavour,20,flavourY+14,CW-40,16);
-    ctx.restore();
+    c.save();
+    c.fillStyle='rgba(0,0,0,.3)';roundRect(c,12,flavourY,CW-24,CH-flavourY-44,8,c.fillStyle);
+    c.font='italic 11px Georgia,serif';c.fillStyle='rgba(255,255,255,.55)';
+    wrapText(c,flavour,20,flavourY+14,CW-40,16);
+    c.restore();
   }
 
   // ── FOOTER ──
   const footY=CH-36;
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,.5)';roundRect(ctx,6,footY,CW-12,28,corner-2,'',false,true);
+  c.save();
+  c.fillStyle='rgba(0,0,0,.5)';roundRect(c,6,footY,CW-12,28,corner-2,'',false,true);
   // rarity stars
   const starsMap={common:1,uncommon:2,rare:3,epic:4,legendary:5,mythic:6};
   const stars=starsMap[cardRarity]||3;
-  ctx.font='11px serif';
-  for(let k=0;k<stars;k++){ctx.fillStyle=rarity.color;ctx.fillText('★',20+k*16,footY+19);}
+  c.font='11px serif';
+  for(let k=0;k<stars;k++){c.fillStyle=rarity.color;c.fillText('★',20+k*16,footY+19);}
   // rarity label
-  ctx.font='bold 11px Fredoka,cursive';ctx.fillStyle=rarity.color;ctx.textAlign='right';
-  ctx.fillText(rarity.label.toUpperCase(),CW-16,footY+19);ctx.textAlign='left';
-  ctx.restore();
+  c.font='bold 11px Fredoka,cursive';c.fillStyle=rarity.color;c.textAlign='right';
+  c.fillText(rarity.label.toUpperCase(),CW-16,footY+19);c.textAlign='left';
+  c.restore();
 
   // Corner ornaments
-  drawCornerOrn(ctx,14,14,12,style.borderGrad[0]);
-  drawCornerOrn(ctx,CW-14,14,12,style.borderGrad[0]);
-  drawCornerOrn(ctx,14,CH-14,12,style.borderGrad[0]);
-  drawCornerOrn(ctx,CW-14,CH-14,12,style.borderGrad[0]);
+  drawCornerOrn(c,14,14,12,style.borderGrad[0]);
+  drawCornerOrn(c,CW-14,14,12,style.borderGrad[0]);
+  drawCornerOrn(c,14,CH-14,12,style.borderGrad[0]);
+  drawCornerOrn(c,CW-14,CH-14,12,style.borderGrad[0]);
 }
 
 function drawCornerOrn(ctx,x,y,r,color){
@@ -618,57 +672,267 @@ function darken(hex,pct){
   return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
 }
 
-// ── EXPORT & SAVE ──
-function exportPNG(){
-  canvas.toBlob(blob=>{
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`card_${(id('cardName').value||'card').replace(/\s+/g,'_')}.png`;
-    a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-    toast('Card downloaded!');
-  });
-}
-
-function saveCard(){
-  const data={
+// ── CARD DATA (collect / apply) ──
+function collectCardData(){
+  return {
+    v:2,
     cardTemplate,cardType,cardColor,cardRarity,
     cardName:id('cardName').value,cardSub:id('cardSub').value,
     cardHP:id('cardHP').value,cardFlavour:id('cardFlavour').value,
     artEmoji:id('artEmoji').value,artScale:id('artScale').value,artY:id('artY').value,
     cornerR:id('cornerR').value,glowI:id('glowI').value,
-    stats:[...stats],
+    stats:stats.map(s=>({name:s.name,val:s.val})),
+    art:artDataUrl||null,
   };
-  localStorage.setItem('jvds_trading_card',JSON.stringify(data));
-  toast('Card saved!');
 }
 
-function loadCard(){
+function applyCardData(d){
+  if(!d) return;
+  cardTemplate=d.cardTemplate||'classic';
+  cardType=d.cardType||'warrior';
+  cardColor=d.cardColor||'#1a0a2e';
+  cardRarity=d.cardRarity||'rare';
+  id('cardName').value=d.cardName||'';
+  id('cardSub').value=d.cardSub||'';
+  id('cardHP').value=(d.cardHP!==undefined)?d.cardHP:'0';
+  id('cardFlavour').value=d.cardFlavour||'';
+  id('artEmoji').value=d.artEmoji||'⚔️';
+  id('artScale').value=(d.artScale!==undefined)?d.artScale:1;
+  id('vArtScale').textContent=(+id('artScale').value).toFixed(2);
+  id('artY').value=(d.artY!==undefined)?d.artY:0;
+  id('vArtY').textContent=id('artY').value;
+  id('cornerR').value=(d.cornerR!==undefined)?d.cornerR:18;
+  id('vCorner').textContent=id('cornerR').value;
+  id('glowI').value=(d.glowI!==undefined)?d.glowI:0.6;
+  id('vGlow').textContent=(+id('glowI').value).toFixed(2);
+  stats=Array.isArray(d.stats)?d.stats.map(s=>({name:s.name,val:+s.val})):[];
+  if(d.art){
+    artDataUrl=d.art;
+    const im=new Image();
+    im.onload=()=>{artImage=im;render();};
+    im.src=d.art;
+  } else {artImage=null;artDataUrl=null;}
+  buildTemplateGrid();buildTypeGrid();buildColorRow();buildRarity();buildStats();
+  render();
+}
+
+// ── AUTOSAVE ──
+const AUTO_KEY='jvds_trading_card_autosave';
+let autoT=null,autosaveReady=false;
+function scheduleAutosave(){
+  if(!autosaveReady)return;
+  clearTimeout(autoT);
+  autoT=setTimeout(()=>{
+    try{localStorage.setItem(AUTO_KEY,JSON.stringify(collectCardData()));}catch(e){}
+  },500);
+}
+
+// ── CARD LIBRARY ──
+const LIB_KEY='jvds_trading_card_library';
+
+function getLibrary(){
+  try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]');}catch{return[];}
+}
+function setLibrary(lib){
+  localStorage.setItem(LIB_KEY,JSON.stringify(lib));
+  renderLibrary();
+}
+function makeThumb(){
+  const t=document.createElement('canvas');
+  t.width=80;t.height=112;
+  t.getContext('2d').drawImage(canvas,0,0,80,112);
+  return t.toDataURL('image/jpeg',.7);
+}
+function saveToLibrary(){
+  const lib=getLibrary();
+  const name=prompt('Card name:',id('cardName').value||'Card '+(lib.length+1));
+  if(!name) return;
+  const entry={name:name.trim(),ts:Date.now(),thumb:null,data:collectCardData()};
+  entry.thumb=makeThumb();
+  lib.unshift(entry);
   try{
-    const d=JSON.parse(localStorage.getItem('jvds_trading_card'));
-    if(!d) return toast('No saved card found');
-    cardTemplate=d.cardTemplate||'classic';
-    cardType=d.cardType||'warrior';
-    cardColor=d.cardColor||'#1a0a2e';
-    cardRarity=d.cardRarity||'rare';
-    id('cardName').value=d.cardName||'';
-    id('cardSub').value=d.cardSub||'';
-    id('cardHP').value=d.cardHP||'0';
-    id('cardFlavour').value=d.cardFlavour||'';
-    id('artEmoji').value=d.artEmoji||'⚔️';
-    id('artScale').value=d.artScale||1;id('vArtScale').textContent=(+d.artScale||1).toFixed(2);
-    id('artY').value=d.artY||0;id('vArtY').textContent=d.artY||0;
-    id('cornerR').value=d.cornerR||18;id('vCorner').textContent=d.cornerR||18;
-    id('glowI').value=d.glowI||0.6;id('vGlow').textContent=(+d.glowI||0.6).toFixed(2);
-    stats=d.stats||[];
-    buildStats();buildTemplateGrid();buildTypeGrid();buildColorRow();buildRarity();
-    // refresh active states
-    document.querySelectorAll('.template-btn').forEach(b=>b.classList.toggle('on',b.textContent.trim()===TEMPLATES.find(t=>t.id===cardTemplate)?.label));
-    render();toast('Card loaded!');
-  }catch{toast('Failed to load card');}
+    setLibrary(lib);toast('💾 Saved to library');
+  }catch(e){
+    // Storage full – retry without artwork/thumb
+    lib[0].data.art=null;lib[0].thumb=null;
+    try{setLibrary(lib);toast('Saved (without artwork — storage full)');}
+    catch(e2){toast('Storage full — export your deck as JSON');}
+  }
+}
+function loadFromLibrary(i){
+  const e=getLibrary()[i];
+  if(!e) return;
+  applyCardData(e.data);
+  toast('Loaded: '+e.name);
+}
+function deleteFromLibrary(i){
+  const e=getLibrary()[i];if(!e) return;
+  if(!confirm(`Delete "${e.name}" from the library?`)) return;
+  const lib=getLibrary();lib.splice(i,1);setLibrary(lib);toast('Card deleted');
+}
+function renderLibrary(){
+  const el=id('libraryList');if(!el) return;
+  const lib=getLibrary();
+  el.innerHTML='';
+  if(!lib.length){el.innerHTML='<div class="lib-empty">No cards saved yet</div>';return;}
+  lib.forEach((e,i)=>{
+    const row=document.createElement('div');row.className='lib-item';
+    row.innerHTML=`${e.thumb?`<img class="lib-thumb" src="${e.thumb}" alt="">`:`<div class="lib-thumb">🃏</div>`}
+      <div class="lib-meta"><div class="lib-name"></div><div class="lib-sub">${new Date(e.ts).toLocaleDateString()}</div></div>
+      <button class="lib-del" title="Delete">✕</button>`;
+    row.querySelector('.lib-name').textContent=e.name;
+    row.onclick=()=>loadFromLibrary(i);
+    row.querySelector('.lib-del').onclick=(ev)=>{ev.stopPropagation();deleteFromLibrary(i);};
+    el.appendChild(row);
+  });
+}
+function migrateLegacy(){
+  try{
+    const old=localStorage.getItem('jvds_trading_card');
+    if(old&&getLibrary().length===0){
+      const d=JSON.parse(old);
+      if(d&&d.cardName!==undefined) setLibrary([{name:d.cardName||'My card',ts:Date.now(),thumb:null,data:d}]);
+    }
+    localStorage.removeItem('jvds_trading_card');
+  }catch{}
+}
+function newCard(){
+  if(!confirm('Start a new card? Saved cards stay in the library.')) return;
+  cardTemplate='classic';cardType='warrior';cardColor='#1a0a2e';cardRarity='rare';
+  stats=[{name:'Attack',val:85},{name:'Defense',val:60},{name:'Speed',val:70}];
+  artImage=null;artDataUrl=null;
+  id('cardName').value='Shadow Knight';
+  id('cardSub').value='Legendary Warrior';
+  id('cardHP').value='120';
+  id('cardFlavour').value='Born from shadow, destined for glory.';
+  id('artEmoji').value='⚔️';
+  id('artScale').value='1';id('vArtScale').textContent='1.00';
+  id('artY').value='0';id('vArtY').textContent='0';
+  id('cornerR').value='18';id('vCorner').textContent='18';
+  id('glowI').value='0.6';id('vGlow').textContent='0.60';
+  buildTemplateGrid();buildTypeGrid();buildColorRow();buildRarity();buildStats();
+  render();toast('✨ New card');
+}
+
+// ── SHARE LINKS ──
+function packShare(d){
+  return {t:d.cardTemplate,y:d.cardType,c:(d.cardColor||'#1a0a2e').replace('#',''),r:d.cardRarity,
+    n:d.cardName,s:d.cardSub,hp:d.cardHP,f:d.cardFlavour,e:d.artEmoji,
+    as:+d.artScale,ay:+d.artY,cr:+d.cornerR,gi:+d.glowI,
+    st:(d.stats||[]).map(x=>({n:x.name,v:x.v!==undefined?x.v:x.val}))};
+}
+function expandShare(p){
+  return {cardTemplate:p.t,cardType:p.y,cardColor:p.c?'#'+p.c:'#1a0a2e',cardRarity:p.r||'rare',
+    cardName:p.n,cardSub:p.s,cardHP:p.hp,cardFlavour:p.f,artEmoji:p.e,
+    artScale:p.as,artY:p.ay,cornerR:p.cr,glowI:p.gi,
+    stats:Array.isArray(p.st)?p.st.map(x=>({name:x.n,val:x.v})):[],art:null};
+}
+function copyShareLink(){
+  const packed=packShare(collectCardData());
+  const b64=btoa(unescape(encodeURIComponent(JSON.stringify(packed)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const url=location.origin+location.pathname+'#card='+b64;
+  history.replaceState(null,'','#card='+b64);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>toast('🔗 Share link copied!')).catch(()=>prompt('Copy this link:',url));
+  } else prompt('Copy this link:',url);
+}
+function decodeShareHash(){
+  const m=location.hash.match(/#card=([A-Za-z0-9\-_]+)/);
+  if(!m) return null;
+  try{
+    let b=m[1].replace(/-/g,'+').replace(/_/g,'/');
+    while(b.length%4)b+='=';
+    return expandShare(JSON.parse(decodeURIComponent(escape(atob(b)))));
+  }catch{return null;}
+}
+
+// ── EXPORT ──
+function renderScaled(scale){
+  const oc=document.createElement('canvas');
+  oc.width=CW*scale;oc.height=CH*scale;
+  const octx=oc.getContext('2d');
+  octx.setTransform(scale,0,0,scale,0,0);
+  render(octx);
+  return oc;
+}
+function downloadCanvas(cv,name){
+  cv.toBlob(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  });
+}
+function exportPNG(){
+  const s=Math.max(1,+id('pngScale').value||1);
+  downloadCanvas(renderScaled(s),`card_${(id('cardName').value||'card').replace(/\s+/g,'_')}${s>1?'_'+s+'x':''}.png`);
+  toast('PNG downloaded!');
+}
+function exportSheet(){
+  // A4 @96dpi, 3×3 grid with cut guides
+  const card=renderScaled(2);
+  const sheet=document.createElement('canvas');
+  sheet.width=794;sheet.height=1123;
+  const sc=sheet.getContext('2d');
+  sc.fillStyle='#fff';sc.fillRect(0,0,794,1123);
+  const m=20,g=10,cw=Math.floor((sheet.width-m*2-g*2)/3),chh=Math.round(cw*CH/CW);
+  for(let r=0;r<3;r++)for(let col=0;col<3;col++){
+    const x=m+col*(cw+g),y=m+r*(chh+g);
+    sc.drawImage(card,x,y,cw,chh);
+    sc.strokeStyle='rgba(0,0,0,.25)';sc.lineWidth=1;
+    sc.strokeRect(x+.5,y+.5,cw-1,chh-1);
+  }
+  downloadCanvas(sheet,`card_sheet_${(id('cardName').value||'deck').replace(/\s+/g,'_')}.png`);
+  toast('Print sheet downloaded!');
+}
+
+// ── DECK IMPORT / EXPORT ──
+function exportDeck(){
+  const payload={app:'jvdesign-trading-cards',version:2,exported:new Date().toISOString(),
+    cards:getLibrary().map(e=>({name:e.name,data:e.data}))};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='trading_card_deck.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('Deck exported!');
+}
+function importDeck(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const j=JSON.parse(rd.result);
+        const cards=Array.isArray(j)?j:(j.cards||(j.cardName!==undefined?[j]:[]));
+        if(!cards.length) return toast('No cards found in file');
+        const lib=getLibrary();
+        cards.forEach(cd=>{
+          const d=cd.data||cd;
+          lib.unshift({name:cd.name||d.cardName||'Imported card',ts:Date.now(),thumb:null,data:d});
+        });
+        setLibrary(lib);
+        toast(`Imported ${cards.length} card${cards.length>1?'s':''}!`);
+      }catch{toast('Invalid deck file');}
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
 }
 
 // ── INIT ──
 buildTemplateGrid();buildTypeGrid();buildColorRow();buildRarity();buildStats();
+migrateLegacy();
+const sharedCard=decodeShareHash();
+if(sharedCard){
+  applyCardData(sharedCard);
+} else {
+  try{
+    const auto=JSON.parse(localStorage.getItem(AUTO_KEY));
+    if(auto) applyCardData(auto);
+  }catch{}
+}
 render();
+autosaveReady=true;
+renderLibrary();
 
 ['cardName','cardSub','cardHP','cardFlavour','artEmoji'].forEach(i=>{
   const el=id(i);if(el) el.addEventListener('input',render);

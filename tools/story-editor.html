@@ -36,14 +36,6 @@
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;touch-action:none;user-select:none;}
 body{display:flex;flex-direction:column;}
 
-/* ── HEADER ── */
-.site-header{height:46px;background:rgba(8,10,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;z-index:200;}
-.site-logo{display:flex;align-items:center;gap:7px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
-.site-logo img{height:26px;width:auto;flex-shrink:0;border-radius:5px;}
-.site-title{font-family:'Fredoka',cursive;font-size:.95rem;font-weight:600;color:var(--accent2);}
-.site-back{font-size:.62rem;font-weight:700;color:var(--muted);padding:4px 9px;border-radius:6px;border:1px solid var(--border2);text-decoration:none;}
-.site-back:hover{color:var(--text);}
-
 /* ── APP ── */
 #app{flex:1;display:flex;min-height:0;}
 
@@ -186,11 +178,6 @@ body{display:flex;flex-direction:column;}
 .bb-panel{display:none;gap:6px;align-items:flex-start;}
 .bb-panel.on{display:flex;}
 
-/* ── FOOTER ── */
-.site-footer{height:28px;background:rgba(8,10,18,.98);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:14px;flex-shrink:0;}
-.site-footer a{font-size:.55rem;color:rgba(255,255,255,.2);text-decoration:none;}
-.site-footer a:hover{color:rgba(255,255,255,.5);}
-
 /* ── SAVE SLOTS ── */
 .slot-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
 .save-slot{border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .12s;padding:5px;width:100%;font-family:'Inter',sans-serif;}
@@ -320,7 +307,7 @@ body{display:flex;flex-direction:column;}
       <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
       <a class="ab" href="arcade-game-maker.html" style="display:block;background:#16a34a;color:white;box-shadow:0 2px 0 #15803d;text-decoration:none;box-sizing:border-box;">↩ Back to Game Maker</a>
       <div class="pt" style="margin-top:6px;">Story Name</div>
-      <input type="text" id="storyNameInput" value="My Story" maxlength="32" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;" oninput="storyName=this.value">
+      <input type="text" id="storyNameInput" value="My Story" maxlength="32" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;" oninput="storyName=this.value;markDirty()">
       <div class="pt">Saved Stories</div>
       <div style="font-size:.48rem;color:var(--muted);margin-bottom:4px;">Tap empty = save · Tap filled = load · Long-press = overwrite</div>
       <div class="slot-grid" id="saveSlots"></div>
@@ -431,6 +418,83 @@ let nextId = 1;
 const CHAR_COLOURS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#f97316','#14b8a6'];
 const CHAR_EMOJIS  = ['🧑','👸','🧙','🤖','🦊','🐉','👾','🧝'];
 
+// Escape user content before it goes anywhere near innerHTML/attributes
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const safeColour = c => /^#[0-9a-f]{3,8}$/i.test(c||'') ? c : '#64748b';
+
+// ══════════════════════════════════════════════════
+// HISTORY (undo / redo)
+// ══════════════════════════════════════════════════
+let historyStack = [], futureStack = [];
+let _lastKey = null, _lastPush = 0;
+
+function snapshot() {
+  return JSON.stringify({storyName, nodes, chars, nextId});
+}
+function pushHistory(key) {
+  const now = Date.now();
+  // Consecutive pushes with the same key within 800ms collapse into one
+  // undo step, so typing a sentence doesn't create a keystroke per entry.
+  if (key && key === _lastKey && now - _lastPush < 800) { _lastPush = now; return; }
+  _lastKey = key || null; _lastPush = now;
+  historyStack.push(snapshot());
+  if (historyStack.length > 60) historyStack.shift();
+  futureStack = [];
+}
+function applySnapshot(s) {
+  const d = JSON.parse(s);
+  storyName = d.storyName || 'My Story';
+  nodes = Array.isArray(d.nodes) ? d.nodes : [];
+  chars = Array.isArray(d.chars) ? d.chars : [];
+  nextId = d.nextId || 1;
+  selectedNode = null; connectFrom = null;
+  const inp = document.getElementById('storyNameInput');
+  if (inp) inp.value = storyName;
+  renderAll(); buildEditPanel();
+}
+function undo() {
+  if (!historyStack.length) { showToast('Nothing to undo'); return; }
+  futureStack.push(snapshot());
+  applySnapshot(historyStack.pop());
+  markDirty();
+  showToast('Undo');
+}
+function redo() {
+  if (!futureStack.length) { showToast('Nothing to redo'); return; }
+  historyStack.push(snapshot());
+  applySnapshot(futureStack.pop());
+  markDirty();
+  showToast('Redo');
+}
+
+// ══════════════════════════════════════════════════
+// AUTOSAVE (crash / refresh protection)
+// ══════════════════════════════════════════════════
+const AUTOSAVE_KEY = 'jvds_story_editor_autosave_v1';
+let dirty = false;
+function markDirty(){ dirty = true; }
+function tryRestoreAutosave() {
+  try {
+    const s = localStorage.getItem(AUTOSAVE_KEY);
+    if (!s) return false;
+    const d = JSON.parse(s);
+    if (!d || !Array.isArray(d.nodes) || !d.nodes.length) return false;
+    storyName = d.storyName || 'My Story';
+    nodes = d.nodes;
+    chars = Array.isArray(d.chars) ? d.chars : [];
+    nextId = d.nextId || 1;
+    return true;
+  } catch { return false; }
+}
+setInterval(() => {
+  if (!dirty) return;
+  try { localStorage.setItem(AUTOSAVE_KEY, snapshot()); } catch {}
+  dirty = false;
+}, 2000);
+window.addEventListener('beforeunload', e => {
+  if (dirty && nodes.length) { e.preventDefault(); e.returnValue = ''; }
+});
+
 // ══════════════════════════════════════════════════
 // DEFAULT STORY
 // ══════════════════════════════════════════════════
@@ -524,17 +588,17 @@ function createNodeEl(node) {
 
   let choicesHTML = '';
   if (node.type === 'choice' && node.choices.length) {
-    choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">↳ ${c.text||'…'}</div>`).join('')}</div>`;
+    choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">↳ ${esc(c.text)||'…'}</div>`).join('')}</div>`;
   }
 
   el.innerHTML = `
     <div class="node-header">
       <span style="font-size:.85rem;">${ch.emoji}</span>
-      <span class="node-char" style="color:${ch.colour}">${node.char||'?'}</span>
+      <span class="node-char" style="color:${safeColour(ch.colour)}">${esc(node.char||'?')}</span>
       <span class="node-type-badge ${badgeClass[node.type]}">${typeLabels[node.type]}</span>
     </div>
     <div class="node-body">
-      <div class="node-text">${node.text || '<em style="opacity:.4">No text yet…</em>'}</div>
+      <div class="node-text">${node.text ? esc(node.text) : '<em style="opacity:.4">No text yet…</em>'}</div>
       ${choicesHTML}
     </div>
     <div class="node-footer">
@@ -580,8 +644,10 @@ function setupNodeDrag(el, node) {
     function onMove(ev) {
       const dx = (ev.clientX - startX) / canvasScale;
       const dy = (ev.clientY - startY) / canvasScale;
-      if (Math.abs(dx) + Math.abs(dy) > 4) wasDrag = true;
-      if (!wasDrag) return;
+      if (!wasDrag) {
+        if (Math.abs(dx) + Math.abs(dy) > 4) { wasDrag = true; pushHistory(); }
+        else return;
+      }
       node.x = snap(startNX + dx);
       node.y = snap(startNY + dy);
       el.style.left = node.x + 'px';
@@ -606,7 +672,7 @@ function drawArrows() {
   const svg = document.getElementById('arrow-svg');
   svg.innerHTML = `<defs><marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="rgba(99,102,241,.6)"/></marker></defs>`;
 
-  const NWIDTH = 200, NHEADER = 32;
+  const NHEADER = 32;
 
   nodes.forEach(node => {
     const drawArrow = (fromId, toId, colour='rgba(99,102,241,.5)', label='') => {
@@ -614,7 +680,9 @@ function drawArrows() {
       const to   = nodes.find(n=>n.id===toId);
       if (!from||!to) return;
 
-      const fx = (from.x + NWIDTH) * canvasScale + canvasOffset.x;
+      // Anchor on the node's real rendered width instead of a hardcoded guess
+      const gel = document.querySelector(`.story-node[data-id="${fromId}"]`);
+      const fx = (from.x + (gel ? gel.offsetWidth : 200)) * canvasScale + canvasOffset.x;
       const fy = (from.y + NHEADER) * canvasScale + canvasOffset.y;
       const tx = to.x * canvasScale + canvasOffset.x;
       const ty = (to.y + NHEADER) * canvasScale + canvasOffset.y;
@@ -669,19 +737,25 @@ function selectNode(id) {
   buildEditPanel();
 }
 
-function buildEditPanel() {
-  const panel = document.getElementById('editPanel');
-  const node = nodes.find(n=>n.id===selectedNode);
-  if (!node) { panel.innerHTML = '<div class="edit-empty">← Select a node to edit it</div>'; return; }
+// Write a message/panel into BOTH the desktop edit panel and the mobile one
+function setEditMessage(html) {
+  ['editPanel','bbEditPanel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
 
-  const ch = chars.find(c=>c.name===node.char);
-  const allNodeOpts = nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===node.to?'selected':''}>${n.id}, ${n.char}: ${(n.text||'').slice(0,20)}</option>`).join('');
+function buildEditPanel() {
+  const node = nodes.find(n=>n.id===selectedNode);
+  if (!node) { setEditMessage('<div class="edit-empty">← Select a node to edit it</div>'); return; }
+
+  const allNodeOpts = nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===node.to?'selected':''}>${n.id}, ${esc(n.char)}: ${esc((n.text||'').slice(0,20))}</option>`).join('');
 
   let typeSpecific = '';
   if (node.type === 'choice') {
     const choiceRows = node.choices.map((c,i)=>`
       <div class="choice-edit-row">
-        <input type="text" value="${c.text||''}" placeholder="Choice text..." oninput="updateChoice(${i},'text',this.value)">
+        <input type="text" value="${esc(c.text||'')}" placeholder="Choice text..." oninput="updateChoice(${i},'text',this.value)">
         <select onchange="updateChoice(${i},'to',this.value)" style="width:100px;padding:3px 5px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.58rem;outline:none;">
           <option value="">→ none</option>
           ${nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===c.to?'selected':''}>${n.id}</option>`).join('')}
@@ -692,7 +766,7 @@ function buildEditPanel() {
     typeSpecific = `
       <div class="field">
         <label>Choices (up to 4)</label>
-        <div class="choices-edit" id="choicesEdit">${choiceRows}</div>
+        <div class="choices-edit">${choiceRows}</div>
         ${node.choices.length<4?`<button class="add-choice-btn" onclick="addChoice()">+ Add Choice</button>`:''}
       </div>
     `;
@@ -708,39 +782,48 @@ function buildEditPanel() {
     `;
   }
 
-  panel.innerHTML = `
+  setEditMessage(`
     <div class="ps">
       <div class="pt">Edit Node, #${node.id}</div>
       <div class="field">
         <label>Character</label>
         <select onchange="updateNodeField('char',this.value)" style="width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;outline:none;">
-          ${chars.map(c=>`<option value="${c.name}" ${c.name===node.char?'selected':''}>${c.emoji} ${c.name}</option>`).join('')}
+          ${chars.map(c=>`<option value="${esc(c.name)}" ${c.name===node.char?'selected':''}>${c.emoji} ${esc(c.name)}</option>`).join('')}
           <option value="Narrator" ${node.char==='Narrator'?'selected':''}>📖 Narrator</option>
         </select>
       </div>
       <div class="field">
         <label>${node.type==='choice'?'Prompt / Context':'Dialogue Text'}</label>
-        <textarea oninput="updateNodeField('text',this.value)" placeholder="What does this character say?">${node.text||''}</textarea>
+        <textarea oninput="updateNodeField('text',this.value)" placeholder="What does this character say?">${esc(node.text||'')}</textarea>
       </div>
       ${typeSpecific}
       <button class="ab ab-r" style="margin-top:6px;" onclick="deleteNode('${node.id}')">🗑 Delete Node</button>
     </div>
-  `;
+  `);
 }
 
 function updateNodeField(field, value) {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node) return;
+  pushHistory(field==='text' ? 'txt'+node.id : null);
   node[field] = value;
-  renderAll();
-  buildEditPanel();
+  markDirty();
+  // Update the canvas card + lists WITHOUT rebuilding the edit panel,
+  // so the textarea/select keeps focus while typing.
+  const el = document.querySelector(`.story-node[data-id="${node.id}"]`);
+  if (el) el.replaceWith(createNodeEl(node));
+  renderNodeList();
+  drawArrows();
 }
 
 function updateChoice(i, field, value) {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node||!node.choices[i]) return;
+  pushHistory(field==='text' ? 'ch'+node.id+'-'+i : null);
   node.choices[i][field] = value;
+  markDirty();
   drawArrows();
+  renderNodeList();
   const el = document.querySelector(`.story-node[data-id="${node.id}"]`);
   if (el) el.replaceWith(createNodeEl(node));
 }
@@ -748,15 +831,19 @@ function updateChoice(i, field, value) {
 function addChoice() {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node||node.choices.length>=4) return;
+  pushHistory();
   node.choices.push({text:'', to:''});
+  markDirty();
   buildEditPanel();
 }
 
 function removeChoice(i) {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node) return;
+  pushHistory();
   node.choices.splice(i,1);
-  buildEditPanel(); drawArrows();
+  markDirty();
+  buildEditPanel(); drawArrows(); renderNodes();
 }
 
 // ══════════════════════════════════════════════════
@@ -777,6 +864,7 @@ function handleConnectDot(id) {
   if (!connectFrom) { connectFrom = id; showToast('Now click the destination node dot'); return; }
   if (connectFrom === id) { connectFrom = null; return; }
   // Connect from → to
+  pushHistory();
   const from = nodes.find(n=>n.id===connectFrom);
   if (from) {
     if (from.type === 'choice' && from.choices.length > 0) {
@@ -788,6 +876,7 @@ function handleConnectDot(id) {
     }
   }
   connectFrom = null;
+  markDirty();
   renderAll();
   if (selectedNode === from?.id) buildEditPanel();
   showToast('Connected!');
@@ -797,6 +886,7 @@ function handleConnectDot(id) {
 // ADD / DELETE NODES
 // ══════════════════════════════════════════════════
 function addNode(type) {
+  pushHistory();
   const area = document.getElementById('canvas-area');
   const cx = (area.clientWidth/2  - canvasOffset.x) / canvasScale - 100;
   const cy = (area.clientHeight/2 - canvasOffset.y) / canvasScale - 40;
@@ -805,10 +895,12 @@ function addNode(type) {
   nodes.push({id, type, x:cx+Math.random()*40-20, y:cy+Math.random()*40-20, char:defaultChar, text:'', choices: type==='choice'?[{text:'',to:''},{text:'',to:''}]:[], to:null});
   selectNode(id);
   renderAll();
+  markDirty();
   showToast(`${type} node added`);
 }
 
 function deleteNode(id) {
+  pushHistory();
   nodes = nodes.filter(n=>n.id!==id);
   // Remove references
   nodes.forEach(n=>{
@@ -816,8 +908,10 @@ function deleteNode(id) {
     n.choices?.forEach(c=>{if(c.to===id)c.to='';});
   });
   selectedNode = null;
+  connectFrom = null;
+  markDirty();
   renderAll();
-  document.getElementById('editPanel').innerHTML='<div class="edit-empty">Node deleted. Select another node.</div>';
+  setEditMessage('<div class="edit-empty">Node deleted. Select another node.</div>');
 }
 
 // ══════════════════════════════════════════════════
@@ -825,6 +919,7 @@ function deleteNode(id) {
 // ══════════════════════════════════════════════════
 function autoLayout(){
   if(!nodes.length) return;
+  pushHistory();
   const HGAP=260, VGAP=140;
   // BFS from start node
   const start=nodes.find(n=>n.type==='start')||nodes[0];
@@ -866,6 +961,7 @@ function autoLayout(){
   });
   renderAll();
   setTimeout(fitView,50);
+  markDirty();
   showToast('Layout applied!');
 }
 function setupCanvasPan() {
@@ -894,7 +990,7 @@ function setupCanvasPan() {
       if (!moved && !connectMode) {
         selectedNode=null;
         renderAll();
-        document.getElementById('editPanel').innerHTML='<div class="edit-empty">← Select a node to edit it<br><br>Drag nodes around the canvas.<br>Use <strong>Connect</strong> mode to link them.</div>';
+        setEditMessage('<div class="edit-empty">← Select a node to edit it<br><br>Drag nodes around the canvas.<br>Use <strong>Connect</strong> mode to link them.</div>');
       }
     }
   });
@@ -925,7 +1021,7 @@ function renderNodeList() {
     const el=document.createElement('div');
     el.className='node-list-item'+(node.id===selectedNode?' on':'');
     el.dataset.id = node.id;
-    el.innerHTML=`<span class="nli-icon">${icons[node.type]||'●'}</span><div><div class="nli-name">${node.char}: ${(node.text||'…').slice(0,24)}</div><div class="nli-type">${node.type} · #${node.id}</div></div>`;
+    el.innerHTML=`<span class="nli-icon">${icons[node.type]||'●'}</span><div><div class="nli-name">${esc(node.char)}: ${esc((node.text||'…').slice(0,24))}</div><div class="nli-type">${node.type} · #${node.id}</div></div>`;
     el.onclick=()=>selectNode(node.id);
     list.appendChild(el);
   });
@@ -937,7 +1033,7 @@ function renderCharList() {
   chars.forEach((c,i)=>{
     const el=document.createElement('div');
     el.className='char-item';
-    el.innerHTML=`<div class="ci-avatar" style="background:${c.colour}22;">${c.emoji}</div><span class="ci-name" style="color:${c.colour}">${c.name}</span><button class="ci-del" onclick="removeChar(${i})">✕</button>`;
+    el.innerHTML=`<div class="ci-avatar" style="background:${safeColour(c.colour)}22;">${c.emoji}</div><span class="ci-name" style="color:${safeColour(c.colour)}">${esc(c.name)}</span><button class="ci-del" onclick="removeChar(${i})">✕</button>`;
     list.appendChild(el);
   });
 }
@@ -949,13 +1045,22 @@ function addCharacter() {
   const i=chars.length%CHAR_COLOURS.length;
   chars.push({name, colour:CHAR_COLOURS[i], emoji:CHAR_EMOJIS[i]});
   inp.value='';
+  markDirty();
   renderCharList();
   showToast('Character added: '+name);
 }
 
 function removeChar(i) {
+  const name = chars[i]?.name;
+  pushHistory();
   chars.splice(i,1);
+  // Reassign nodes that used this character so they don't become orphaned
+  if (name) nodes.forEach(n=>{ if(n.char===name) n.char='Narrator'; });
+  markDirty();
   renderCharList();
+  renderNodes();
+  drawArrows();
+  buildEditPanel();
 }
 
 // ══════════════════════════════════════════════════
@@ -984,20 +1089,23 @@ function renderPreviewScene() {
   const ch=chars.find(c=>c.name===node.char)||{colour:'#64748b',emoji:'📖',name:node.char||'?'};
 
   if(node.type==='end'){
-    scene.innerHTML=`<div class="preview-end">${ch.emoji} ${ch.name}<br><br>"${node.text||'The End.'}"<br><br>— The End —</div>`;
+    scene.innerHTML=`<div class="preview-end">${ch.emoji} ${esc(ch.name)}<br><br>"${esc(node.text||'The End.')}"<br><br>— The End —</div>`;
     return;
   }
 
-  const choicesHTML = node.type==='choice' && node.choices.length
-    ? `<div class="preview-choices">${node.choices.filter(c=>c.text).map(c=>`<button class="preview-choice" onclick="previewGo('${c.to}')">${c.text}</button>`).join('')}</div>`
+  const choicesHTML = node.type==='choice' && node.choices.some(c=>c.text)
+    ? `<div class="preview-choices">` + node.choices.filter(c=>c.text).map(c=> c.to
+        ? `<button class="preview-choice" onclick="previewGo('${c.to}')">${esc(c.text)}</button>`
+        : `<button class="preview-choice" disabled title="Not connected yet — link this choice in the editor" style="opacity:.45;cursor:not-allowed;">${esc(c.text)} · unlinked</button>`
+      ).join('') + `</div>`
     : node.to ? `<div class="preview-choices"><button class="preview-choice" onclick="previewGo('${node.to}')">Continue →</button></div>` : '<div class="preview-end">The End.</div>';
 
   scene.innerHTML=`
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <span style="font-size:1.4rem;">${ch.emoji}</span>
-      <span class="preview-char-name" style="color:${ch.colour}">${ch.name}</span>
+      <span class="preview-char-name" style="color:${safeColour(ch.colour)}">${esc(ch.name)}</span>
     </div>
-    <div class="preview-text">${node.text||'…'}</div>
+    <div class="preview-text">${node.text?esc(node.text):'…'}</div>
     ${choicesHTML}
   `;
 }
@@ -1088,13 +1196,14 @@ function renderSaveSlots(){
       el.className='save-slot'+(slot?' filled':'');
       if(isMobile) el.style.cssText='flex-shrink:0;min-width:70px;min-height:44px;';
       if(slot){
-        el.innerHTML=`<div class="ss-name">${slot.name}</div><div class="ss-meta">${slot.nodeCount} nodes · ${slot.date}</div>`;
-        el.title='Click to load · Long-press to overwrite';
-        // Click = load, right-click/long-press = save
-        let pressTimer;
-        el.addEventListener('pointerdown',()=>{ pressTimer=setTimeout(()=>saveToSlot(i),600); });
-        el.addEventListener('pointerup',()=>{ clearTimeout(pressTimer); });
-        el.addEventListener('click',()=>loadFromSlot(i));
+        el.innerHTML=`<div class="ss-name">${esc(slot.name)}</div><div class="ss-meta">${slot.nodeCount} nodes · ${slot.date}</div>`;
+        el.title='Click to load · Long-press/right-click to overwrite';
+        // Click = load, right-click/long-press = overwrite.
+        // longFired stops the click that follows a long-press from ALSO loading.
+        let pressTimer=null, longFired=false;
+        el.addEventListener('pointerdown',()=>{ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; saveToSlot(i); },600); });
+        ['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,()=>clearTimeout(pressTimer)));
+        el.addEventListener('click',()=>{ if(longFired){ longFired=false; return; } loadFromSlot(i); });
         el.addEventListener('contextmenu',e=>{e.preventDefault();saveToSlot(i);});
       } else {
         el.innerHTML=`<div class="ss-empty">Slot ${i+1}</div><div class="ss-meta">tap to save</div>`;
@@ -1123,16 +1232,20 @@ function loadFromSlot(idx){
   const slots=getSlots();
   const slot=slots[idx];
   if(!slot) return;
+  pushHistory();
   const d=slot.data;
   storyName=d.storyName||'My Story';
   nodes=d.nodes||[];
   chars=d.chars||[];
   nextId=d.nextId||1;
   selectedNode=null;
+  markDirty();
   renderAll();
   fitView();
-  document.getElementById('editPanel').innerHTML='<div class="edit-empty">Loaded: '+storyName+'</div>';
-  showToast('Loaded: '+storyName);
+  const inp=document.getElementById('storyNameInput');
+  if(inp) inp.value=storyName;
+  setEditMessage('<div class="edit-empty">Loaded: '+esc(storyName)+'</div>');
+  showToast('Loaded: '+esc(storyName));
 }
 
 function saveStory(){ saveToSlot(findFirstEmptyOrLast()); }
@@ -1147,19 +1260,21 @@ function findFirstEmptyOrLast(){
 function newPage() {
   // Adds a fresh blank dialogue node to the current story
   addNode('dialogue');
-  showToast('New node added');
 }
 
 function clearStory() {
   if(!confirm('Clear everything and start a new story?')) return;
-  nodes=[]; chars=[]; nextId=1; selectedNode=null;
+  pushHistory();
+  nodes=[]; chars=[]; nextId=1; selectedNode=null; connectFrom=null;
+  try{ localStorage.removeItem(AUTOSAVE_KEY); }catch{}
+  dirty=false;
   const sc=document.getElementById('story-canvas');
   sc.innerHTML='';
   document.getElementById('arrow-svg').innerHTML='';
   renderNodeList();
   renderCharList();
   renderSaveSlots();
-  document.getElementById('editPanel').innerHTML='<div class="edit-empty">← Add your first node!</div>';
+  setEditMessage('<div class="edit-empty">← Add your first node!</div>');
   showToast('Story cleared');
 }
 
@@ -1172,9 +1287,9 @@ function bbTab(i,btn) {
   btn.classList.add('on');
   document.getElementById('bb'+i).classList.add('on');
   if(i===1) {
-    const ep=document.getElementById('editPanel').cloneNode(true);
-    document.getElementById('bbEditPanel').innerHTML='';
-    document.getElementById('bbEditPanel').appendChild(ep);
+    // Sync the desktop edit panel into the mobile tab (no cloneNode —
+    // a clone would go stale as soon as buildEditPanel updates the original)
+    document.getElementById('bbEditPanel').innerHTML = document.getElementById('editPanel').innerHTML;
   }
 }
 
@@ -1183,6 +1298,25 @@ function bbTab(i,btn) {
 // ══════════════════════════════════════════════════
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
+
+// ══════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const tag = (e.target.tagName||'').toLowerCase();
+  if (e.key === 'Escape') {
+    const open = document.querySelector('.modal-overlay.open');
+    if (open) { closeModal(open.id); return; }
+    if (connectMode) toggleConnectMode();
+    return;
+  }
+  // Don't hijack typing or undo inside form fields
+  if (tag==='input'||tag==='textarea'||tag==='select') return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey||e.metaKey) && k==='z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((e.ctrlKey||e.metaKey) && (k==='y' || (k==='z'&&e.shiftKey))) { e.preventDefault(); redo(); }
+  else if ((e.key==='Delete'||e.key==='Backspace') && selectedNode) { e.preventDefault(); deleteNode(selectedNode); }
+});
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -1194,11 +1328,16 @@ function showToast(msg){
 // INIT
 // ══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
-  loadDefaultStory();
+  // Restore the autosaved session if there is one, otherwise demo story
+  const restored = tryRestoreAutosave();
+  if (!restored) loadDefaultStory();
+  const inp=document.getElementById('storyNameInput');
+  if(inp) inp.value=storyName;
   setupCanvasPan();
   renderAll();
   renderSaveSlots();
   setTimeout(fitView, 100);
+  if (restored) showToast('Restored your last session ✓');
 });
 </script>
 

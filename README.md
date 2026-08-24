@@ -50,26 +50,30 @@ This repo also bundles the source for **QuestLog**, a separate free RPG-style ta
 ### Key Files
 
 ```
-quest-board.html         Public app (setup wizard, clean cards)
-quest-board-page.html    Landing page
-privacy-policy.html      Privacy policy
-manifest.json            PWA manifest
-sw.js                     Service worker
-make-public.js           Generates public version from private tracker
-make-app-bundle.js       Builds deploy bundle for Netlify / Play Store
-icons/                   App icons (192px + 512px PNG)
-quest-board-deploy/      Ready-to-deploy bundle
+tools/project-tracker.html  Private source (your own board + data)
+make-public.js              Generates public app → tools/quest-board.html
+tools/quest-board.html      Public app (setup wizard, clean cards)
+tools/quest-board-page.html QuestLog landing page (lives on the main site)
+questlog-pwa/               Canonical PWA sources (manifest, sw.js, privacy policy)
+icons/                      App icons (192px + 512px PNG)
+make-app-bundle.js          Builds deploy bundle for Netlify / Play Store
+quest-board-deploy/         Ready-to-deploy bundle (fully generated, safe to delete)
 ```
 
 ### Development
 
-No build step, no dependencies. Edit `quest-board.html`, then:
+Edit `tools/project-tracker.html` (the single source of truth), then rebuild both steps:
 
 ```bash
-node make-app-bundle.js   # rebuild deploy bundle
+node make-public.js       # tracker → public app (tools/quest-board.html)
+node make-app-bundle.js   # public app + PWA assets → quest-board-deploy/
 ```
 
-Push to GitHub → Netlify auto-deploys.
+Both scripts resolve paths via `__dirname`, so they run from any working directory.
+Never hand-edit `quest-board.html` or anything in `quest-board-deploy/` — changes get
+overwritten on the next build; edit the tracker or `questlog-pwa/` sources instead.
+
+Deploy: drag `quest-board-deploy/` into Netlify (or push and let auto-deploy pick it up).
 
 ### Privacy
 

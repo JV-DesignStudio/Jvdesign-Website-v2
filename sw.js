@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v9
-const CACHE='jvds-v9';
+// JVDesignStudio Service Worker v11
+const CACHE='jvds-v11';
 const CORE=[
   '/',
   '/index.html',
@@ -39,7 +39,17 @@ const CORE=[
   '/tools/pixel-studio-landing.html',
   '/icons/pixel-studio-192.png',
   '/icons/pixel-studio-512.png',
-  '/icons/pixel-studio-maskable-512.png'
+  '/icons/pixel-studio-maskable-512.png',
+  // JVDS Map Generator. Precached so maps can be generated and edited offline.
+  '/tools/map-generator.html',
+  '/tools/map-generator-landing.html',
+  // Level Designer installable app. Precached so the installed designer opens
+  // offline straight after install.
+  '/tools/level-designer.html',
+  '/tools/level-designer.webmanifest',
+  '/icons/level-designer-192.png',
+  '/icons/level-designer-512.png',
+  '/icons/level-designer-maskable-512.png'
 ];
 
 self.addEventListener('install',e=>{
