@@ -201,21 +201,9 @@ class GameSystem {
   }
 
   recordGamePlay(duration) {
-    // Most games call this from their real game-over AND unconditionally
-    // again from a beforeunload handler as a mobile-safety-net (beforeunload
-    // is unreliable on mobile). Without a guard, a normal finish-then-close
-    // session double-counts gamesPlayed/totalTime and fires this method's
-    // XP/analytics side effects twice. A call arriving moments after a prior
-    // one is that same safety-net firing on the same run, not a new run, so
-    // it's ignored rather than recorded again.
-    const now = Date.now();
-    if (this._lastRecordAt && (now - this._lastRecordAt) < 4000) {
-      return false;
-    }
-    this._lastRecordAt = now;
-
     // Most games pass Date.now() here (a timestamp, not a duration), so
     // anything implausible falls back to the engine's own run timer.
+    const now = Date.now();
     const MAX_RUN = 6 * 60 * 60 * 1000;
     let ms = duration;
     if (!(typeof ms === 'number' && ms > 0 && ms < MAX_RUN)) {
@@ -228,7 +216,6 @@ class GameSystem {
     this.updatePlayStreak();
     this.state.lastPlayed = new Date().toISOString();
     this.saveState();
-    return true;
   }
 
   // Must run before lastPlayed is overwritten with "now".
@@ -261,6 +248,34 @@ class GameSystem {
         name: '🎮 Getting Started',
         description: 'Play your first game',
         icon: '🎮',
+        unlocked: false
+      },
+      firstClick: {
+        id: 'firstClick',
+        name: '🍪 First Bake',
+        description: 'Bake your very first biscuit',
+        icon: '🍪',
+        unlocked: false
+      },
+      clicks100: {
+        id: 'clicks100',
+        name: '👋 Eager Baker',
+        description: 'Tap the tin 100 times',
+        icon: '👋',
+        unlocked: false
+      },
+      clicks1000: {
+        id: 'clicks1000',
+        name: '🔥 Baking Frenzy',
+        description: 'Tap the tin 1,000 times',
+        icon: '🔥',
+        unlocked: false
+      },
+      clicks10000: {
+        id: 'clicks10000',
+        name: '⚡ Tireless Tapper',
+        description: 'Tap the tin 10,000 times',
+        icon: '⚡',
         unlocked: false
       },
       tenGames: {
@@ -820,26 +835,6 @@ if (typeof document !== 'undefined') {
     ? scriptSrc.replace(/game-system\.js.*$/, 'player-profile.js')
     : '../player-profile.js';
 
-  /* ── Installed-app mode ──
-     Marks <html> as soon as this script runs (still mid-<head>, before
-     FOUC can happen) so CSS can drop marketing chrome that only makes
-     sense when a game is reached by scrolling a search result, not when
-     it's opened from inside the installed Arcade app. Scoped in
-     game-system.css to the iframe-wrapper game pages (.game-frame-wrap);
-     the other games never render .site-header/.guide-wrap, so this is a
-     no-op there.
-
-     window.__JVDS_APP is stamped into every page by sync-arcade.mjs's
-     injectAppFlag() at bundle time -- the packaged app has no manifest
-     (stripSiteChrome strips it, and Capacitor isn't a browser-installed
-     PWA to begin with), so matchMedia('display-mode: standalone') can
-     never come back true there; that check only covers the separate case
-     of someone installing the *website itself* to their home screen. */
-  var isStandaloneApp = window.__JVDS_APP === true ||
-    window.matchMedia('(display-mode: standalone)').matches ||
-    navigator.standalone === true;
-  if (isStandaloneApp) document.documentElement.classList.add('arc-appmode');
-
   function profile() {
     // player-profile.js declares a top-level `const playerProfile`
     // (a global lexical binding, not a window property).
@@ -884,8 +879,6 @@ if (typeof document !== 'undefined') {
     if (!document.body) return;
     var t = document.createElement('div');
     t.className = 'jvds-xp-toast';
-    t.setAttribute('role', 'status');
-    t.setAttribute('aria-live', 'polite');
     t.textContent = text;
     t.style.cssText =
       'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);' +
@@ -1150,7 +1143,6 @@ if (typeof document !== 'undefined') {
     // Capture before origRecord resets _runStart, so we can report run length.
     var startedAt = this._runStart;
     var r = origRecord.apply(this, arguments);
-    if (!r) return r; // debounced duplicate (see recordGamePlay's own guard) — no XP/analytics
     award(this.gameId, 'run', 15, 5, this.gameName + ', run finished');
 
     var secs = 0;
@@ -1174,26 +1166,13 @@ if (typeof document !== 'undefined') {
     return r;
   };
 
-  // Per-game achievement ids that were never registered via defineAchievements()
-  // (e.g. custom trackScore() tiers like 'score100') still deserve a real toast
-  // instead of the generic "Achievement unlocked!" — turn the id itself into
-  // a readable label: 'firstQuestion' -> 'First Question', 'score100' -> 'Score 100'.
-  function prettifyAchievementId(id) {
-    var s = String(id || '')
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .replace(/([a-zA-Z])(\d)/g, '$1 $2')
-      .replace(/(\d)([a-zA-Z])/g, '$1 $2');
-    s = s.charAt(0).toUpperCase() + s.slice(1);
-    return s + '!';
-  }
-
   // Per-game achievements mirror to global XP
   var origUnlock = GameSystem.prototype.unlockAchievement;
   GameSystem.prototype.unlockAchievement = function (achievementId) {
     var unlocked = origUnlock.apply(this, arguments);
     if (unlocked) {
       var ach = this.achievements && this.achievements[achievementId];
-      var name = (ach && ach.name) || prettifyAchievementId(achievementId);
+      var name = (ach && ach.name) || 'Achievement unlocked!';
       award(this.gameId, 'ach:' + achievementId, 20, 1, name);
       track('game_achievement', {
         game_id: this.gameId,
@@ -1239,50 +1218,4 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') flushAllState();
   });
-
-  /* ── Auto fullscreen toggle ──
-     Most games never wired the Fullscreen API, so tapping into them from the
-     Arcade just opened a normal page instead of filling the screen. Inject a
-     floating toggle for every page that loads this engine, unless the page
-     already ships its own (dungeon-delve, echo_fruit_catch). */
-  function initFullscreenToggle() {
-    // dungeon-delve.html and echo_fruit_catch.html ship their own toggle
-    // under different ids/fn names — don't double up on those two.
-    if (document.getElementById('btn-fullscreen') || document.getElementById('fsToggleBtn') ||
-        window.toggleFullscreen || window.toggleFS) return;
-    // Iframe-wrapper game pages (e.g. critter-whack-page.html) embed the
-    // actual game in a `.game-frame-wrap` box below a marketing header —
-    // fullscreening the whole document there would just blow up the hero
-    // text and footer around a small iframe, so fullscreen that box instead.
-    var target = document.querySelector('.game-frame-wrap') || document.documentElement;
-    var request = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
-    if (!request) return;
-
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'gs-fullscreen-btn';
-    btn.setAttribute('aria-label', 'Enter fullscreen');
-    btn.textContent = '⛶';
-    btn.addEventListener('click', function () {
-      var isFs = document.fullscreenElement || document.webkitFullscreenElement;
-      if (!isFs) {
-        (target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen).call(target);
-      } else {
-        (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
-      }
-    });
-    ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function (ev) {
-      document.addEventListener(ev, function () {
-        var isFs = document.fullscreenElement || document.webkitFullscreenElement;
-        btn.textContent = isFs ? '✕' : '⛶';
-        btn.setAttribute('aria-label', isFs ? 'Exit fullscreen' : 'Enter fullscreen');
-      });
-    });
-    (target === document.documentElement ? document.body : target).appendChild(btn);
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFullscreenToggle);
-  } else {
-    initFullscreenToggle();
-  }
 })();
