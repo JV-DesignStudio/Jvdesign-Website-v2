@@ -52,6 +52,21 @@ body{background:var(--bg);color:var(--text)}
 .name-save{background:linear-gradient(135deg,var(--gold),#e6a800);color:#000;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 20px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 2px 0 #b38600;transition:filter .15s}
 .name-save:hover{filter:brightness(1.1)}
 
+/* BACKUP & RESTORE */
+.backup-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 24px;margin-bottom:28px}
+.backup-title{font-family:'Fredoka',cursive;font-size:1.05rem;color:#fff;margin-bottom:4px}
+.backup-sub{font-size:.82rem;color:rgba(232,234,242,.5);line-height:1.6;margin-bottom:14px}
+.backup-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.bk-btn{display:inline-flex;align-items:center;gap:7px;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 20px;border-radius:10px;border:none;cursor:pointer;transition:filter .15s;text-decoration:none}
+.bk-btn:hover{filter:brightness(1.1)}
+.bk-export{background:linear-gradient(135deg,var(--gold),#e6a800);color:#000;box-shadow:0 2px 0 #b38600}
+.bk-file{background:rgba(255,255,255,.07);color:var(--text);border:1px solid rgba(255,255,255,.15)}
+.backup-textarea{width:100%;min-height:74px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.2);border-radius:10px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:rgba(232,234,242,.65);resize:vertical;outline:none}
+.backup-textarea:focus{border-color:rgba(255,209,102,.5)}
+.backup-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.bk-restore{background:linear-gradient(135deg,var(--teal),#3a8a8f);color:#fff;box-shadow:0 2px 0 #2e6366}
+.backup-status{font-size:.8rem;color:#ffd166;line-height:1.4}
+
 /* SERIES CARDS */
 .series-section{margin-bottom:32px}
 .series-title{font-family:'Fredoka',cursive;font-size:1.3rem;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:10px}
@@ -204,6 +219,21 @@ a.series-title:hover .st-go{color:#a5b4fc;border-color:rgba(165,180,252,.4)}
     <label>👤 Your Name:</label>
     <input type="text" class="name-input" id="playerName" placeholder="Type your name here (for certificates)..." maxlength="40">
     <button class="name-save" onclick="saveName()">Save</button>
+  </div>
+
+  <!-- BACKUP & RESTORE -->
+  <div class="backup-section">
+    <div class="backup-title">💾 Backup your progress</div>
+    <div class="backup-sub">Your XP, badges and certificates live only in this browser — clearing browser data erases them. Save a backup file to keep them safe, or use the code below to move your progress to another device.</div>
+    <div class="backup-actions">
+      <button class="bk-btn bk-export" id="bkExportBtn" onclick="exportProgress()">⬇️ Export backup file</button>
+      <label class="bk-btn bk-file">📂 Import backup file<input type="file" id="bkFileInput" accept=".json,application/json" hidden></label>
+    </div>
+    <textarea id="bkTextarea" class="backup-textarea" placeholder="…or paste a backup code (or file contents) in here, then press Restore." spellcheck="false" aria-label="Backup code"></textarea>
+    <div class="backup-row">
+      <button class="bk-btn bk-restore" id="bkRestoreBtn" onclick="importFromBox()">♻️ Restore from code above</button>
+      <span id="bkStatus" role="status" aria-live="polite" class="backup-status"></span>
+    </div>
   </div>
 
   <!-- HERO STATS -->
@@ -964,6 +994,84 @@ if (savedName) document.getElementById('playerName').value = savedName;
 // Close cert on escape or backdrop click
 document.getElementById('certOverlay').addEventListener('click', e => { if (e.target === document.getElementById('certOverlay')) closeCert(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCert(); });
+
+/* ── BACKUP & RESTORE ─────────────────────────────────────────
+   Everything the dashboard reads (and everything else this site
+   saves: profile, scores, consent) lives in localStorage on THIS
+   device only. Export wraps it in a versioned envelope; restore
+   writes it back after a confirm. No server involved. */
+const BK_APP_TAG = 'jvdesignstudio-progress';
+const BK_VERSION = 1;
+
+function bkStatus(msg) { document.getElementById('bkStatus').textContent = msg; }
+
+function collectProgress() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    data[k] = localStorage.getItem(k);
+  }
+  return { app: BK_APP_TAG, version: BK_VERSION, exportedAt: new Date().toISOString(), origin: location.origin, keys: Object.keys(data).length, data: data };
+}
+
+function exportProgress() {
+  try {
+    const json = JSON.stringify(collectProgress(), null, 2);
+    document.getElementById('bkTextarea').value = json;
+    const fname = 'jvdesignstudio-progress-' + new Date().toISOString().slice(0, 10) + '.json';
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    bkStatus('✓ Backup file downloading — the code below can also be copied to move progress manually.');
+  } catch (e) {
+    bkStatus('⚠️ Could not create backup: ' + e.message);
+  }
+}
+
+// Returns true if the backup was applied. Shared by file import and paste.
+function applyBundle(text) {
+  let b;
+  try { b = JSON.parse(text); } catch (e) {
+    bkStatus('⚠️ That does not look like a valid backup file.');
+    return false;
+  }
+  if (!b || b.app !== BK_APP_TAG || !b.data || typeof b.data !== 'object') {
+    bkStatus('⚠️ That is not a JVDesignStudio progress backup.');
+    return false;
+  }
+  const n = Object.keys(b.data).length;
+  const when = b.exportedAt ? new Date(b.exportedAt).toLocaleDateString('en-GB') : 'unknown date';
+  if (!confirm('Restore backup from ' + when + '? Its ' + n + ' saved entries will overwrite matching current progress.')) return false;
+  let applied = 0;
+  Object.keys(b.data).forEach(function (k) {
+    try { localStorage.setItem(k, String(b.data[k])); applied++; } catch (e) { /* skip */ }
+  });
+  bkStatus('✓ Restored ' + applied + ' entries from ' + when + '. Dashboard refreshed!');
+  buildDashboard();
+  const sn = b.data['jvds-player-name'];
+  if (sn) document.getElementById('playerName').value = sn;
+  return true;
+}
+
+function importFromBox() {
+  const t = document.getElementById('bkTextarea').value.trim();
+  if (!t) { bkStatus('Paste a backup code into the box first, or export one above.'); return; }
+  applyBundle(t);
+}
+
+document.getElementById('bkFileInput').addEventListener('change', function () {
+  const f = this.files && this.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function () { applyBundle(String(reader.result)); };
+  reader.onerror = function () { bkStatus('⚠️ Could not read that file.'); };
+  reader.readAsText(f);
+  this.value = ''; // allow re-selecting the same file later
+});
 
 buildDashboard();
 </script>

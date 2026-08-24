@@ -35,7 +35,76 @@ function walk(dir) {
   return out;
 }
 
+/* ── Static pre-pass ────────────────────────────────────────────────────────
+ * Catches corruption signatures the live cssRules ratio can't see:
+ *   1. Orphaned custom-property declarations — a lost ':root {' opener leaves
+ *      "--var: value;" pairs at brace depth 0. Browsers silently discard them,
+ *      so tokens vanish while the sheet still "parses".
+ *   2. Unbalanced braces per <style> block (comment/string aware).
+ * Returns a list of problem strings for the file.
+ * ────────────────────────────────────────────────────────────────────────── */
+const DECL_RE = /^--[a-zA-Z][\w-]*\s*:/;
+function skipComment(s, i) {
+  const end = s.indexOf('*/', i + 2);
+  return end === -1 ? s.length : end + 2;
+}
+function skipString(s, i) {
+  const q = s[i]; i++;
+  while (i < s.length) {
+    if (s[i] === '\\') { i += 2; continue; }
+    if (s[i] === q) { i++; break; }
+    i++;
+  }
+  return i;
+}
+// NB: callers use while-loops with explicit index management — skipString/
+// skipComment return the index just past the token, so a for-loop's auto-
+// increment would swallow the char after a string's closing quote.
+function staticStyleChecks(css) {
+  const problems = [];
+  let depth = 0, i = 0;
+  const n = css.length;
+  const lineAt = pos => css.slice(0, pos).split('\n').length;
+  while (i < n) {
+    const c = css[i];
+    if (c === '/' && css[i + 1] === '*') { i = skipComment(css, i); continue; }
+    if (c === '"' || c === "'") { i = skipString(css, i); continue; }
+    if (c === '{') { depth++; i++; continue; }
+    if (c === '}') { depth--; i++; continue; }
+    // depth-0 custom-property declaration whose preceding char isn't part of
+    // an identifier (avoids false positives on BEM names like .block--mod)
+    const prevCh = i > 0 ? css[i - 1] : ' ';
+    if (depth === 0 && c === '-' && css[i + 1] === '-' && !/[\w-]/.test(prevCh) && DECL_RE.test(css.slice(i, i + 120))) {
+      problems.push(`orphaned declaration at style-line ${lineAt(i)} (missing ':root {' opener?)`);
+      break; // one report per block is enough
+    }
+    i++;
+  }
+  if (depth !== 0) problems.push(`unbalanced braces (depth ${depth})`);
+  return problems;
+}
+
 (async () => {
+  // ── Static pre-pass (fast, no browser) ──
+  const pages = walk(ROOT);
+  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/g;
+  const staticBroken = [];
+  for (const fp of pages) {
+    const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
+    const src = fs.readFileSync(fp, 'utf8');
+    let m;
+    while ((m = styleRe.exec(src))) {
+      for (const p of staticStyleChecks(m[1])) {
+        staticBroken.push(`${rel}  <style>  ${p}`);
+      }
+    }
+  }
+  if (staticBroken.length) {
+    console.log(`✗ validate-css: ${staticBroken.length} static CSS problem(s):\n`);
+    staticBroken.forEach(b => console.log('  ' + b));
+    process.exit(1);
+  }
+
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p.endsWith('/')) p += 'index.html';
@@ -46,7 +115,6 @@ function walk(dir) {
     });
   }).listen(PORT);
 
-  const pages = walk(ROOT);
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const broken = [];
 

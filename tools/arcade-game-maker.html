@@ -339,6 +339,42 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 .wk-overlay.wk-split{left:auto;width:min(680px,58vw);min-width:380px;border-left:2px solid rgba(124,58,237,.45);box-shadow:-16px 0 56px rgba(0,0,0,.65);}
 .wk-overlay.wk-split .wk-hint{display:none;}
 @media(max-width:1024px){.wk-overlay.wk-split{left:0;width:100vw;min-width:0;border-left:none;box-shadow:none;}}
+/* ── PLAYER MODE: shared links open as a clean published game, not a dev studio ──
+   Editor chrome hides, a floating player bar appears (Fullscreen · Remix).
+   Removing the body class restores the full studio instantly. */
+body.player-mode .studio-panel,
+body.player-mode #studio-splitter,
+body.player-mode .panel-fab,
+body.player-mode #mobile-run-bar,
+body.player-mode .mission-strip,
+body.player-mode .vp-btn-row,
+body.player-mode .controls-hint,
+body.player-mode #controlsHint,
+body.player-mode #shortcutsHint,
+body.player-mode .handbook-fab{display:none!important;}
+#playerBar{display:none;}
+body.player-mode #playerBar{
+    display:flex;position:fixed;bottom:max(14px,calc(env(safe-area-inset-bottom,0px) + 10px));
+    left:50%;transform:translateX(-50%);z-index:6000;align-items:center;gap:9px;
+    background:rgba(5,3,15,.92);backdrop-filter:blur(10px);
+    border:1px solid rgba(124,58,237,.5);border-radius:999px;
+    padding:7px 8px 7px 16px;max-width:min(94vw,480px);
+    box-shadow:0 6px 28px rgba(0,0,0,.55),0 0 24px rgba(124,58,237,.18);
+    animation:pb-in .35s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes pb-in{from{opacity:0;transform:translateX(-50%) translateY(70px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+#playerBar .pb-title{
+    font-family:'Fredoka',sans-serif;font-weight:700;font-size:.82rem;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw;letter-spacing:.01em;
+}
+#playerBar button{
+    background:rgba(124,58,237,.25);border:1px solid rgba(167,139,250,.55);color:#e8e0ff;
+    border-radius:999px;padding:7px 14px;font-weight:700;font-size:.76rem;cursor:pointer;
+    font-family:'Fredoka',sans-serif;-webkit-tap-highlight-color:transparent;white-space:nowrap;
+    transition:background .14s,transform .1s;
+}
+#playerBar button:hover{background:rgba(124,58,237,.45);}
+#playerBar button:active{transform:scale(.94);}
 .wk-header{display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(10,8,22,.99);border-bottom:2px solid rgba(124,58,237,.35);flex-shrink:0;}
 .wk-logo{font-size:1.3rem;line-height:1;}
 .wk-title{font-size:.88rem;font-weight:800;color:var(--purple-lt);white-space:nowrap;}
@@ -3640,7 +3676,7 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                             <div style="font-size:.68rem;color:var(--fg);">🌋 Screen Shake</div>
                             <input type="range" aria-label="Screen Shake Intensity" min="1" max="24" value="3" id="juiceShakeSlider" style="width:72px;" oninput="liveConfig.juiceShakeIntensity=+this.value;this.nextElementSibling.textContent=this.value+'px';" title="Intensity">
                             <span style="font-size:.6rem;color:var(--muted);min-width:28px;">3px</span>
-                            <label class="toggle-switch" style="grid-column:span 3;justify-self:start;margin-top:2px;"><input type="checkbox" id="juiceShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;"><span class="toggle-knob"></span></label>
+                            <label class="toggle-switch" style="grid-column:span 3;justify-self:start;margin-top:2px;"><input type="checkbox" id="juiceShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;_scheduleAutoSave();"><span class="toggle-knob"></span></label>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;margin-bottom:6px;">
                             <div style="font-size:.68rem;color:var(--fg);">⏸ Hit-Stop Freeze</div>
@@ -4773,7 +4809,7 @@ score += bumper.pts;
                     <button class="btn-run" style="width:100%;font-size:.85rem;background:#1e293b;box-shadow:0 3px 0 #0f172a;" onclick="closePauseAndRestart()">↺ Restart</button>
                     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 4px;">
                         <span style="font-size:.72rem;color:var(--text);">📳 Screen shake</span>
-                        <label class="toggle-switch" title="Camera rumble on hits &amp; kills"><input type="checkbox" id="pauseShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;"><span class="toggle-knob"></span></label>
+                        <label class="toggle-switch" title="Camera rumble on hits &amp; kills"><input type="checkbox" id="pauseShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;_scheduleAutoSave();"><span class="toggle-knob"></span></label>
                     </div>
                     <div style="width:100%;border-top:1px solid var(--border);padding-top:8px;">
                         <div style="font-size:.65rem;color:var(--muted);margin-bottom:5px;text-align:center;">Volume</div>
@@ -5157,6 +5193,12 @@ score += bumper.pts;
     <!-- Footer -->
     <div style="text-align:center;font-size:.65rem;color:var(--muted);padding-top:8px;">🕹️ Made with love at <a href="https://jvdesignstudio.com" target="_blank" style="color:var(--purple-lt);">JVDesignStudio.com</a></div>
   </div>
+</div>
+<!-- PLAYER BAR — only visible in player mode (shared game links) -->
+<div id="playerBar">
+    <span class="pb-title" id="pbTitle">🎮</span>
+    <button onclick="toggleFullscreen()" title="Fullscreen">⛶ Full</button>
+    <button onclick="_goRemixShared()" title="Load this game into your own editor">🎨 Remix This</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -15758,6 +15800,11 @@ function _goRemixShared() {
     const ov = document.getElementById('goOverlay');
     if (ov) { ov.classList.remove('show'); ov.classList.remove('win'); }
     window._sharedFrom = null; // it's theirs now
+    // Leaving player mode: restore full studio chrome, strip ?game= from URL so a
+    // refresh doesn't drop them back into the stripped-down view
+    window._playerMode = false;
+    document.body.classList.remove('player-mode');
+    try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
     if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch (e) {} currentPhaserGame = null; }
     GameAudio.stopMusic();
     const gc = document.getElementById('game-container'); if (gc) gc.innerHTML = '';
@@ -17065,13 +17112,6 @@ function _tdResetTowers() {
     showToast('🗼 Tower stats reset to defaults');
 }
 
-// ── THEME TOGGLE ──────────────────────────────────────────────────────────────
-function toggleTheme() {
-    const isLight = document.body.classList.toggle('theme-light');
-    localStorage.setItem('jv_theme', isLight ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
-    try { const vs=document.getElementById('volumeSlider'); localStorage.setItem('jv_prefs',JSON.stringify({volume:vs?+vs.value:50,theme:isLight?'light':'dark'})); } catch(e){}
-}
 function _applyStoredTheme() {
     if (localStorage.getItem('jv_theme') === 'light') {
         document.body.classList.add('theme-light');
@@ -20401,7 +20441,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
                     liveConfig.jumpForce = _jp;
                 }
                 loadedOk = true;
-                if (!isRemix) window._shareAutoStart = true;
+                if (!isRemix) {
+                    window._shareAutoStart = true;
+                    // Player mode: friends get a clean published game, not the studio
+                    window._playerMode = true;
+                    document.body.classList.add('player-mode');
+                    const pbT = document.getElementById('pbTitle');
+                    if (pbT) pbT.textContent = '🎮 ' + (d.title || 'Arcade Game');
+                }
                 // Update page title + OG tags for social share previews
                 try {
                     const _sharedTitle = d.title || 'My Arcade Game';
