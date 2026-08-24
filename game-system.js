@@ -1000,12 +1000,14 @@ if (typeof document !== 'undefined') {
     t.setAttribute('role', 'status');
     t.setAttribute('aria-live', 'polite');
     t.textContent = text;
+    // Top-centred: the bottom of the screen is where mobile game controls
+    // live (pads, swipe zones, tap-to-flap) — toasts were covering them.
     t.style.cssText =
-      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);' +
-      'background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;' +
-      'padding:10px 22px;border-radius:999px;font:700 .85rem/1.2 Nunito,Inter,sans-serif;' +
-      'box-shadow:0 8px 24px rgba(124,58,237,.45);z-index:99999;pointer-events:none;' +
-      'opacity:0;transition:opacity .3s,transform .3s;';
+      'position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%) translateY(-12px);' +
+      'background:rgba(20,16,40,.92);color:#fff;border:1px solid rgba(167,131,206,.5);' +
+      'padding:7px 16px;border-radius:999px;font:700 .74rem/1.2 Inter,sans-serif;' +
+      'box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:99998;pointer-events:none;' +
+      'opacity:0;transition:opacity .3s,transform .3s;max-width:92vw;text-align:center;';
     document.body.appendChild(t);
     requestAnimationFrame(function () {
       t.style.opacity = '1';
@@ -1013,9 +1015,9 @@ if (typeof document !== 'undefined') {
     });
     setTimeout(function () {
       t.style.opacity = '0';
-      t.style.transform = 'translateX(-50%) translateY(16px)';
+      t.style.transform = 'translateX(-50%) translateY(-12px)';
       setTimeout(function () { t.remove(); }, 350);
-    }, 2600);
+    }, 2200);
   }
 
   /* ������ Score sharing (viral loop) ������
@@ -1156,7 +1158,7 @@ if (typeof document !== 'undefined') {
       if (prev == null) prev = 0;
       if (best > prev) {
         sessionPeak[inst.gameId] = best;
-        showShareChip(inst.gameName, best, gameShareUrl());
+        setTimeout(function () { showShareChip(inst.gameName, best, gameShareUrl()); }, 2500); // delay: let game-over celebrations land first
       }
     } catch (e) { /* sharing must never break game-over */ }
   }
@@ -1182,7 +1184,7 @@ if (typeof document !== 'undefined') {
         bits.push('Week ' + Math.min(w.current, w.goal) + '/' + w.goal + (w.done ? ' ok' : ''));
       }
     } catch (e) { /* optional */ }
-    return bits.length ? '  [ ' + bits.join('  |  ') + ' ]' : '';
+    return bits.length ? '  \u2022 ' + bits.join(' \u00B7 ') : '';
   }
 
   var pending = [];

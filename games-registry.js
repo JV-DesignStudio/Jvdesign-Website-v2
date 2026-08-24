@@ -240,18 +240,6 @@ window.JVDS_GAMES = [
     "desc": "Pilot your star, sweep up glittering stardust, and weave past hazards in this quick arcade mini-game."
   },
   {
-    "id": "millionaire-quiz",
-    "cat": "Chill",
-    "file": "millionaire-quiz.html",
-    "title": "Quiz Quest",
-    "tag": "Trivia",
-    "emoji": "🧠",
-    "cover": "MillionaireQuizCover.webp",
-    "bg": "linear-gradient(135deg,#1a1400,#3a2e05)",
-    "kids": false,
-    "desc": "A free browser trivia game. Climb the ladder of questions and see how far your knowledge takes you."
-  },
-  {
     "id": "critter-whack",
     "cat": "Action",
     "file": "critter-whack-page.html",
@@ -311,18 +299,5 @@ window.JVDS_GAMES = [
     "kids": true,
     "age": "Ages 3-8",
     "desc": "Help Echo the axolotl catch falling fruit and dodge rocks. Tilt your phone to steer bright, cheerful, and very forgiving."
-  },
-  {
-    "id": "cozy-creatures-alt",
-    "cat": "Chill",
-    "file": "cozy_creatures.html",
-    "title": "Cozy Creatures",
-    "tag": "Casual · Cozy",
-    "emoji": "",
-    "cover": "Cozy Creatures.webp",
-    "bg": "linear-gradient(135deg,#f5e8d0,#f0d8c0)",
-    "kids": true,
-    "age": "All Ages",
-    "desc": "A warm, gentle game about caring for cute little creatures. No pressure, just cosy."
   }
 ];
