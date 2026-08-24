@@ -253,6 +253,7 @@ a.series-title:hover .st-go{color:#a5b4fc;border-color:rgba(165,180,252,.4)}
     </div>
     <div class="xp-total-track"><div class="xp-total-fill" id="xpTotalFill"></div></div>
     <div class="xp-level-label" id="xpLevelLabel">0 / 100 XP to next level</div>
+    <div id="xpSourceNote" style="font-size:.72rem;color:rgba(232,234,242,.35);margin-top:6px;min-height:1em;"></div>
   </div>
 
   <!-- BADGES -->
@@ -367,6 +368,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <!-- /BUILD:footer-content -->
 
 <script src="../tracks.js"></script>
+<script src="../player-profile.js"></script>
 <script>
 const SERIES = [
   {
@@ -746,19 +748,35 @@ function buildDashboard() {
   const enginesUsed = Object.values(tagDone).filter(n => n > 0).length;
   const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
   const xpInLevel = totalXp % XP_PER_LEVEL;
+
+  // ── Unified XP: the player profile is the single ledger ──
+  // Workshop XP (scanned from progress keys) + game XP (jvds_game_* states)
+  // + bonus XP (challenges & tools). Falls back to the workshop-only sum if
+  // player-profile.js failed to load.
+  let shownXp = totalXp, shownLevel = level, gameBonusXp = 0;
+  if (typeof playerProfile !== 'undefined' && playerProfile.getStats) {
+    try {
+      const ps = playerProfile.getStats();
+      shownXp = ps.totalXP;
+      shownLevel = ps.level;
+      gameBonusXp = (ps.gameXP || 0) + (ps.bonusXP || 0);
+    } catch (e) { /* keep workshop-only totals */ }
+  }
   const accuracy = totalQuizzes > 0 ? Math.round(totalCorrect / totalQuizzes * 100) : 0;
 
-  document.getElementById('totalXpDisplay').textContent = totalXp.toLocaleString();
-  document.getElementById('globalLevel').textContent = level;
+  document.getElementById('totalXpDisplay').textContent = shownXp.toLocaleString();
+  document.getElementById('globalLevel').textContent = shownLevel;
   document.getElementById('completedCount').textContent = totalCompleted;
   document.getElementById('globalStreak').textContent = bestStreak;
   document.getElementById('globalAccuracy').textContent = accuracy + '%';
-  document.getElementById('xpTotalFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
-  document.getElementById('xpLevelLabel').textContent = xpInLevel + ' / ' + XP_PER_LEVEL + ' XP to Level ' + (level + 1);
+  document.getElementById('xpTotalFill').style.width = ((shownXp % XP_PER_LEVEL) / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevelLabel').textContent = (shownXp % XP_PER_LEVEL) + ' / ' + XP_PER_LEVEL + ' XP to Level ' + (shownLevel + 1);
+  const srcNote = document.getElementById('xpSourceNote');
+  if (srcNote) srcNote.textContent = gameBonusXp > 0 ? ('includes ' + gameBonusXp.toLocaleString() + ' XP from games, tools & challenges') : '';
 
   // Badges
   const badgeData = {
-    completed: totalCompleted, bestStreak, level, anyHighAccuracy, enginesUsed,
+    completed: totalCompleted, bestStreak, level: shownLevel, anyHighAccuracy, enginesUsed,
     scratchDone: tagDone.scratch || 0, robloxDone: tagDone.roblox || 0,
     godotDone: (tagDone.godot || 0) + (tagDone['godot-extra'] || 0),
     mugenDone: tagDone.mugen || 0, unityDone: tagDone.unity || 0,
@@ -1076,6 +1094,7 @@ function applyBundle(text) {
     try { localStorage.setItem(k, String(b.data[k])); applied++; } catch (e) { /* skip */ }
   });
   bkStatus('✓ Restored ' + applied + ' entries from ' + when + '. Dashboard refreshed!');
+  if (typeof playerProfile !== 'undefined' && playerProfile.refreshXP) { try { playerProfile.refreshXP(); } catch (e) {} }
   buildDashboard();
   const sn = b.data['jvds-player-name'];
   if (sn) document.getElementById('playerName').value = sn;

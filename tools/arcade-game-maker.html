@@ -17166,7 +17166,7 @@ function _parseResultCode(txt) {
         let b = t.slice(4).replace(/-/g, '+').replace(/_/g, '/');
         while (b.length % 4) b += '=';
         const o = JSON.parse(atob(b));
-        if (!o || typeof o.s !== 'number' || !o.g || !/^[A-Z0-9_]{2,12}$/.test(o.g)) return null;
+        if (!o || typeof o.s !== 'number' || !o.g || !/^[A-Z0-9_]{2,16}$/.test(o.g)) return null;
         if (o.s < 0 || o.s > 100000000) return null;
         return o;
     } catch (e) { return null; }
@@ -20665,13 +20665,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
             // Load Space Survival preset then auto-dismiss intro after 1s
             _loadTemplate('neon_wave');
             setTimeout(() => {
-                // Auto-dismiss intro overlay so game plays immediately
+                // Dismiss the intro through closeIntro() so the engine actually
+                // launches — fading the overlay out with CSS alone left new
+                // visitors staring at a dead viewport with no game running.
                 const io = document.getElementById('introOverlay');
-                if (io && io.classList.contains('show')) {
-                    io.style.transition = 'opacity .6s';
-                    io.style.opacity = '0';
-                    setTimeout(() => { io.classList.remove('show'); io.style.opacity=''; io.style.transition=''; }, 600);
-                }
+                if (io && io.classList.contains('show')) closeIntro();
                 showToast('👈 Change the genre, tweak the rules, hit ▶ Run, it\'s yours!', undefined, 5000);
             }, 1200);
         } else {

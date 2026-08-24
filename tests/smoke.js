@@ -166,6 +166,40 @@ async function scenario(name, fn) {
     record('workshop key survived round-trip', !!restored && restored.totalQuizzes === 1);
   });
 
+  /* ── 4b. Unified XP: legacy migration + game XP feed ONE level ── */
+  await scenario('unified XP: legacy profile migrates, game XP counts', async () => {
+    // Legacy (pre-schema) profile: globalXP 300 from challenges/tools, no
+    // xpSchema field. Plus workshop progress (210 XP) and a game state (150 XP).
+    await page.evaluate(() => {
+      localStorage.setItem('jvds-scratch-maze-v2', JSON.stringify({
+        completed: [1, 2], total: 8, xp: 210, level: 3, streak: 1, bestStreak: 2,
+        totalQuizzes: 5, correctFirst: 4, quizzesPassed: [], challengesPassed: []
+      }));
+      localStorage.setItem('jvds_game_gem_match', JSON.stringify({
+        xp: 150, level: 1, score: 0, highScore: 0, coins: 0, gamesPlayed: 1,
+        achievements: [], settings: {}
+      }));
+      localStorage.setItem('jvds_profile', JSON.stringify({
+        playerId: 'smoke-legacy', globalXP: 300, level: 1, completedWorkshops: [],
+        unlockedGameModes: [], unlockedGames: [], achievements: [], dailyStreak: 0,
+        lastPlayedDate: null, createdAt: new Date().toISOString(), questProgress: {},
+        dailyActivity: { date: null, games: [], runs: 0, workshops: 0, xp: 0, claimed: null },
+        weeklyActivity: { key: null, games: [], runs: 0, workshops: 0, xp: 0, claimed: null },
+        shareCode: null
+      }));
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    // 300 legacy bonus + (15 scratch + 210 maze) workshop + 150 game = 675
+    // (the scratch key from the earlier quiz scenario is still in storage)
+    await page.waitForFunction(() =>
+      document.getElementById('totalXpDisplay').textContent.replace(/,/g, '') === '675', { timeout: 8000 });
+    record('migration math: 300 + 225 + 150 = 675 XP', true);
+    const lvl = await page.$eval('#globalLevel', el => el.textContent.trim());
+    record('one level curve (100 XP/level) → level 7', lvl === '7', 'level=' + lvl);
+    const note = await page.$eval('#xpSourceNote', el => el.textContent);
+    record('source note shows non-workshop XP', /450 XP from games/.test(note), note);
+  });
+
   /* ── 5. Game page boots clean ── */
   await scenario('game page loads without uncaught errors', async () => {
     const g = await ctx.newPage();

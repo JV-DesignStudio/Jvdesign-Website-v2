@@ -275,6 +275,13 @@ input[type=range].kn{width:100%;accent-color:var(--accent);height:3px;}
     <option value="32">32</option>
   </select>
   <div class="t-sep"></div>
+  <div class="t-label">Loops</div>
+  <select id="loopsSelect" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);border-radius:5px;padding:3px 5px;font-size:.6rem;font-family:inherit;">
+    <option value="1">×1</option>
+    <option value="2" selected>×2</option>
+    <option value="4">×4</option>
+  </select>
+  <div class="t-sep"></div>
   <div class="beat-indicator" id="beatIndicator"></div>
   <div class="t-sep"></div>
   <button class="t-btn ab-p" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;background:var(--accent3);color:#000;" onclick="exportWAV()">⬇ WAV</button>
@@ -282,6 +289,9 @@ input[type=range].kn{width:100%;accent-color:var(--accent);height:3px;}
   <a href="arcade-game-maker.html" class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;background:#16a34a;color:white;text-decoration:none;display:inline-flex;align-items:center;">↩ Back to Game Maker</a>
   <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="saveProject()">💾 Save</button>
   <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="loadProject()">📂 Load</button>
+  <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="exportProject()" title="Download project as .json">⬇ Project</button>
+  <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" onclick="importProjectFile()" title="Open a saved .json project">📤 Import</button>
+  <input type="file" id="projectFileInput" accept=".json,application/json" style="display:none" onchange="handleProjectFile(this)">
 </div>
 
 <div id="app">
@@ -347,11 +357,23 @@ input[type=range].kn{width:100%;accent-color:var(--accent);height:3px;}
       <button class="ab ab-s" style="font-size:.65rem;margin-top:2px;" onclick="openPianoRoll()">🎹 Set Notes per Step</button>
 
       <div class="ipdiv"></div>
+      <div class="ipt">Pattern Tools</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+        <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="copyPattern()" title="Copy this track's pattern">📋 Copy</button>
+        <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="pastePattern()" title="Paste copied pattern">📄 Paste</button>
+      </div>
+      <button class="ab ab-s" style="font-size:.62rem;color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearTrack()" title="Clear all steps on this track">🧹 Clear Track</button>
+
+      <div class="ipdiv"></div>
       <div class="ipt">Effects</div>
-      <button class="fx-btn" id="fxBitcrush" onclick="toggleFX('bitcrush')"><span class="fx-dot"></span>Bit Crush (8-bit)</button>
-      <button class="fx-btn" id="fxReverb" onclick="toggleFX('reverb')"><span class="fx-dot"></span>Reverb</button>
-      <button class="fx-btn" id="fxDistort" onclick="toggleFX('distort')"><span class="fx-dot"></span>Distortion</button>
-      <button class="fx-btn" id="fxVibrato" onclick="toggleFX('vibrato')"><span class="fx-dot"></span>Vibrato</button>
+      <button class="fx-btn" id="fxBitcrush" data-fx="bitcrush" onclick="toggleFX('bitcrush')"><span class="fx-dot"></span>Bit Crush (8-bit)</button>
+      <button class="fx-btn" id="fxReverb" data-fx="reverb" onclick="toggleFX('reverb')"><span class="fx-dot"></span>Reverb</button>
+      <button class="fx-btn" id="fxDistort" data-fx="distort" onclick="toggleFX('distort')"><span class="fx-dot"></span>Distortion</button>
+      <button class="fx-btn" id="fxVibrato" data-fx="vibrato" onclick="toggleFX('vibrato')"><span class="fx-dot"></span>Vibrato</button>
+
+      <div class="ipdiv"></div>
+      <div class="ipt">Danger Zone</div>
+      <button class="ab ab-s" style="color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearAllPatterns()">🧹 Clear All Patterns</button>
 
       <div class="ipdiv"></div>
       <div class="ipt">Drum Type</div>
@@ -395,10 +417,10 @@ input[type=range].kn{width:100%;accent-color:var(--accent);height:3px;}
       <button class="ab ab-s" style="font-size:.6rem;padding:4px 8px;white-space:nowrap;" onclick="openPianoRoll()">🎹 Notes</button>
     </div>
     <div class="bb-panel" id="bb2">
-      <button class="fx-btn" onclick="toggleFX('bitcrush')" style="font-size:.55rem;">8-bit</button>
-      <button class="fx-btn" onclick="toggleFX('reverb')" style="font-size:.55rem;">Reverb</button>
-      <button class="fx-btn" onclick="toggleFX('distort')" style="font-size:.55rem;">Distort</button>
-      <button class="fx-btn" onclick="toggleFX('vibrato')" style="font-size:.55rem;">Vibrato</button>
+      <button class="fx-btn" data-fx="bitcrush" onclick="toggleFX('bitcrush')" style="font-size:.55rem;">8-bit</button>
+      <button class="fx-btn" data-fx="reverb" onclick="toggleFX('reverb')" style="font-size:.55rem;">Reverb</button>
+      <button class="fx-btn" data-fx="distort" onclick="toggleFX('distort')" style="font-size:.55rem;">Distort</button>
+      <button class="fx-btn" data-fx="vibrato" onclick="toggleFX('vibrato')" style="font-size:.55rem;">Vibrato</button>
     </div>
   </div>
 </div>
@@ -491,7 +513,7 @@ function loadDefaultPattern(){
 // ══════════════════════════════════════════
 // SYNTH ENGINE
 // ══════════════════════════════════════════
-function playNote(track, time, dur=0.15){
+function playNote(track, time, dur=0.15, step=null){
   const ac = getCtx();
   const t = tracks[track];
   if(!t || t.muted) return;
@@ -545,7 +567,8 @@ function playNote(track, time, dur=0.15){
     playClap(ac, gainNode, time, t);
   } else {
     // Synth note
-    const cell = grid[track] && grid[track][currentStep>=0?currentStep:0];
+    const stepIdx = (step!==null && step!==undefined) ? step : (currentStep>=0 ? currentStep : 0);
+    const cell = grid[track] && grid[track][stepIdx];
     const note = cell ? cell.note : 'C';
     const oct  = cell ? cell.oct  : t.oct;
     const freq = noteFreq(note, oct);
@@ -625,7 +648,7 @@ function scheduleStep(time){
   tracks.forEach((_,ti)=>{
     if(grid[ti]&&grid[ti][s]&&grid[ti][s].on){
       const secPerBeat=60/bpm;
-      playNote(ti,time,secPerBeat*0.9);
+      playNote(ti,time,secPerBeat*0.9,s);
     }
   });
   stepQueue.push({step:s,time});
@@ -638,7 +661,7 @@ function togglePlay(){
   currentStep=-1;
   nextStepTime=getCtx().currentTime+0.05;
   schedTimer=setInterval(scheduler,schedInterval);
-  document.getElementById('playBtn').textContent='⏸ Pause';
+  document.getElementById('playBtn').textContent='⏹ Stop';
   document.getElementById('playBtn').classList.add('playing');
   animFrame();
 }
@@ -745,13 +768,14 @@ function buildSeqGrid(){
 }
 
 function toggleCell(ti,s,cell,t){
+  pushHistory();
   grid[ti][s].on=!grid[ti][s].on;
   cell.classList.toggle('on',grid[ti][s].on);
   if(grid[ti][s].on){
     cell.style.background=t.color;
     cell.innerHTML=`<span class="note-label">${grid[ti][s].note}${grid[ti][s].oct}</span>`;
     // Preview sound
-    if(!isPlaying) playNote(ti, getCtx().currentTime+0.01, 0.15);
+    if(!isPlaying) playNote(ti, getCtx().currentTime+0.01, 0.15, s);
   } else {
     cell.style.background='';
     cell.innerHTML='';
@@ -776,6 +800,7 @@ const TRACK_COLOURS=['#ef4444','#f59e0b','#10b981','#3b82f6','#7c3aed','#ec4899'
 
 function addTrack(){
   if(tracks.length>=12){showToast('Max 12 tracks');return;}
+  pushHistory();
   const col=TRACK_COLOURS[tracks.length%TRACK_COLOURS.length];
   tracks.push({name:'Track '+(tracks.length+1),color:col,drum:'none',wave:'square',oct:4,vol:0.7,muted:false,fx:{bitcrush:false,reverb:false,distort:false,vibrato:false},env:{attack:0.01,decay:0.15,sustain:0.5,release:0.15},detune:0});
   grid.push(Array.from({length:steps},()=>({on:false,note:'C',oct:4})));
@@ -786,6 +811,7 @@ function addTrack(){
 
 function deleteTrack(){
   if(tracks.length<=1){showToast('Need at least 1 track');return;}
+  pushHistory();
   tracks.splice(activeTrack,1);
   grid.splice(activeTrack,1);
   activeTrack=Math.min(activeTrack,tracks.length-1);
@@ -825,11 +851,8 @@ function updateInstPanel(){
   // Pitch
   document.getElementById('octKnob').value=t.oct; document.getElementById('octVal').textContent=t.oct;
   document.getElementById('detKnob').value=t.detune; document.getElementById('detVal').textContent=t.detune+'¢';
-  // FX
-  ['bitcrush','reverb','distort','vibrato'].forEach(fx=>{
-    const btn=document.getElementById('fx'+fx.charAt(0).toUpperCase()+fx.slice(1));
-    if(btn) btn.classList.toggle('on',t.fx[fx]);
-  });
+  // FX (desktop + mobile buttons)
+  document.querySelectorAll('.fx-btn[data-fx]').forEach(b=>b.classList.toggle('on',!!t.fx[b.dataset.fx]));
 }
 
 function setWave(w){
@@ -875,6 +898,8 @@ function setBPM(v){
 }
 function changeBPM(d){ setBPM(bpm+d); }
 function setSteps(n){
+  if(n===steps) return;
+  pushHistory();
   steps=n;
   grid=tracks.map((_,ti)=>
     Array.from({length:steps},(_,si)=>grid[ti]&&grid[ti][si]?grid[ti][si]:{on:false,note:'C',oct:tracks[ti].oct})
@@ -908,6 +933,7 @@ function openPianoRoll(){
       key.addEventListener('pointerdown',e=>{
         e.preventDefault();
         // Set this note on this step
+        pushHistory();
         grid[activeTrack][s].note=note;
         grid[activeTrack][s].oct=t.oct;
         grid[activeTrack][s].on=true;
@@ -940,21 +966,7 @@ function closePianoRoll(){ document.getElementById('piano-modal').classList.remo
 function sendToGameMaker(){
   if(!tracks.length){showToast('Add some tracks first!');return;}
   showToast('Rendering for Game Maker…');
-  const totalBeats=steps/4;
-  const duration=totalBeats*(60/bpm)*2;
-  const sr=44100;
-  const offline=new OfflineAudioContext(2,Math.ceil(sr*duration),sr);
-  const secPerStep=(60/bpm)/4;
-  for(let loop=0;loop<2;loop++){
-    for(let s=0;s<steps;s++){
-      const t_start=(loop*steps+s)*secPerStep;
-      tracks.forEach((_,ti)=>{
-        if(!grid[ti]||!grid[ti][s]||!grid[ti][s].on||tracks[ti].muted) return;
-        renderNote(offline,ti,t_start,secPerStep*0.9,s);
-      });
-    }
-  }
-  offline.startRendering().then(buf=>{
+  renderMixdown().then(buf=>{
     const wav=bufferToWav(buf);
     const bytes=new Uint8Array(wav);
     let binary='';
@@ -962,35 +974,39 @@ function sendToGameMaker(){
     const dataUrl='data:audio/wav;base64,'+btoa(binary);
     localStorage.setItem('jvds_music_last',JSON.stringify({dataUrl,bpm,name:'Sound Studio Track'}));
     showToast('Sent to Game Maker ✓, Sounds tab → Import Music');
-  });
+  }).catch(()=>showToast('Render failed'));
 }
 
 function exportWAV(){
   showToast('Rendering audio…');
-  const totalBeats = steps/4;
-  const duration = totalBeats*(60/bpm)*2; // 2 loops
-  const sr = 44100;
-  const offline = new OfflineAudioContext(2, Math.ceil(sr*duration), sr);
+  renderMixdown().then(buf=>{
+    const wav=bufferToWav(buf);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
+    a.download='sound_studio_export.wav';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('WAV exported!');
+  }).catch(()=>showToast('Export failed'));
+}
 
-  const secPerStep = (60/bpm)/4;
-  for(let loop=0;loop<2;loop++){
+function renderMixdown(){
+  const loops=Math.max(1,Math.min(8,+document.getElementById('loopsSelect').value||2));
+  const totalBeats=steps/4;
+  const duration=totalBeats*(60/bpm)*loops + 2; // +2s tail so release/reverb rings out
+  const sr=44100;
+  const offline=new OfflineAudioContext(2,Math.ceil(sr*duration),sr);
+  const secPerStep=(60/bpm)/4;
+  for(let loop=0;loop<loops;loop++){
     for(let s=0;s<steps;s++){
-      const t_start = (loop*steps + s)*secPerStep;
+      const t_start=(loop*steps+s)*secPerStep;
       tracks.forEach((_,ti)=>{
         if(!grid[ti]||!grid[ti][s]||!grid[ti][s].on||tracks[ti].muted) return;
         renderNote(offline, ti, t_start, secPerStep*0.9, s);
       });
     }
   }
-
-  offline.startRendering().then(buf=>{
-    const wav=bufferToWav(buf);
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
-    a.download='sound_studio_export.wav';
-    a.click();
-    showToast('WAV exported!');
-  });
+  return offline.startRendering();
 }
 
 function renderNote(ac, ti, time, dur, step){
@@ -1049,7 +1065,138 @@ function bufferToWav(buffer){
 }
 
 // ══════════════════════════════════════════
-// SAVE / LOAD
+// HISTORY (UNDO / REDO)
+// ══════════════════════════════════════════
+const HIST_MAX = 50;
+let histUndo = [], histRedo = [];
+function snapshotState(){ return JSON.stringify({bpm,steps,tracks,grid}); }
+function pushHistory(){
+  histUndo.push(snapshotState());
+  if(histUndo.length>HIST_MAX) histUndo.shift();
+  histRedo.length = 0;
+}
+function syncTransportUI(){
+  document.getElementById('bpmVal').textContent=bpm;
+  document.getElementById('bpmSlider').value=bpm;
+  document.getElementById('stepsSelect').value=steps;
+}
+function restoreState(json){
+  const d=JSON.parse(json);
+  bpm=d.bpm; steps=d.steps; tracks=d.tracks; grid=d.grid;
+  activeTrack=Math.min(activeTrack, tracks.length-1);
+  syncTransportUI();
+  buildGrid();
+  updateInstPanel();
+}
+function undo(){
+  if(!histUndo.length){ showToast('Nothing to undo'); return; }
+  if(isPlaying) stopAll();
+  histRedo.push(snapshotState());
+  restoreState(histUndo.pop());
+  showToast('↩ Undo');
+}
+function redo(){
+  if(!histRedo.length){ showToast('Nothing to redo'); return; }
+  if(isPlaying) stopAll();
+  histUndo.push(snapshotState());
+  restoreState(histRedo.pop());
+  showToast('↪ Redo');
+}
+
+// ══════════════════════════════════════════
+// PATTERN TOOLS
+// ══════════════════════════════════════════
+let patternClipboard = null; // array of {on,note,oct}
+
+function copyPattern(){
+  patternClipboard = grid[activeTrack].map(c=>({...c}));
+  showToast('📋 Pattern copied');
+}
+function pastePattern(){
+  if(!patternClipboard){ showToast('Copy a pattern first'); return; }
+  pushHistory();
+  const row=[];
+  for(let s=0;s<steps;s++){
+    row.push(patternClipboard[s] ? {...patternClipboard[s]} : {on:false,note:'C',oct:tracks[activeTrack].oct});
+  }
+  grid[activeTrack]=row;
+  buildSeqGrid();
+  showToast('📄 Pattern pasted ✓');
+}
+function clearTrack(){
+  if(!grid[activeTrack].some(c=>c.on)){ showToast('Track already empty'); return; }
+  pushHistory();
+  const oct=tracks[activeTrack].oct;
+  grid[activeTrack]=Array.from({length:steps},()=>({on:false,note:'C',oct}));
+  buildSeqGrid();
+  showToast('🧹 Track cleared');
+}
+function clearAllPatterns(){
+  if(!confirm('Clear every pattern on every track?')) return;
+  pushHistory();
+  grid=tracks.map(t=>Array.from({length:steps},()=>({on:false,note:'C',oct:t.oct})));
+  buildSeqGrid();
+  showToast('🧹 All patterns cleared');
+}
+
+// ══════════════════════════════════════════
+// PROJECT FILE (.json EXPORT / IMPORT)
+// ══════════════════════════════════════════
+function exportProject(){
+  const data={
+    app:'JVDesignStudio Sound Studio',
+    version:1,
+    savedAt:new Date().toISOString(),
+    bpm,steps,tracks,grid
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='sound_studio_project.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('⬇ Project file downloaded ✓');
+}
+function importProjectFile(){
+  document.getElementById('projectFileInput').click();
+}
+function handleProjectFile(input){
+  const f=input.files && input.files[0];
+  if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=JSON.parse(reader.result);
+      if(!Array.isArray(d.tracks)||!Array.isArray(d.grid)) throw new Error('bad format');
+      pushHistory();
+      applyProject(d);
+      showToast('📤 Project imported ✓');
+    }catch(e){ showToast('Invalid project file'); }
+  };
+  reader.readAsText(f);
+  input.value='';
+}
+function normalizeGrid(g,trs){
+  return trs.map((t,ti)=>{
+    const src=(Array.isArray(g)&&Array.isArray(g[ti]))?g[ti]:[];
+    const row=src.slice(0,steps);
+    while(row.length<steps) row.push({on:false,note:'C',oct:t.oct});
+    return row.map(c=>({on:!!c.on, note:c.note||'C', oct:c.oct||t.oct}));
+  });
+}
+function applyProject(d){
+  bpm=Math.max(60,Math.min(200, +d.bpm||120));
+  steps=[8,16,32].includes(+d.steps)?+d.steps:16;
+  tracks=d.tracks;
+  grid=normalizeGrid(d.grid,tracks);
+  activeTrack=Math.min(activeTrack, tracks.length-1);
+  syncTransportUI();
+  buildGrid();
+  updateInstPanel();
+}
+
+// ══════════════════════════════════════════
+// SAVE / LOAD (BROWSER)
 // ══════════════════════════════════════════
 function saveProject(){
   try{
@@ -1060,12 +1207,10 @@ function saveProject(){
 function loadProject(){
   try{
     const d=JSON.parse(localStorage.getItem('jvds_sound'));
-    if(!d){showToast('No saved project');return;}
-    bpm=d.bpm;steps=d.steps;tracks=d.tracks;grid=d.grid;
-    document.getElementById('bpmVal').textContent=bpm;
-    document.getElementById('bpmSlider').value=bpm;
-    document.getElementById('stepsSelect').value=steps;
-    buildGrid();showToast('Loaded ✓');
+    if(!d||!d.tracks){showToast('No saved project');return;}
+    pushHistory();
+    applyProject(d);
+    showToast('Loaded ✓');
   }catch(e){showToast('Load failed');}
 }
 
@@ -1092,6 +1237,25 @@ function showToast(msg){
 // PIANO MODAL CLOSE
 // ══════════════════════════════════════════
 document.getElementById('piano-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closePianoRoll();});
+
+// ══════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='select'||tag==='textarea') return;
+  const mod=e.ctrlKey||e.metaKey;
+  if(e.code==='Space' && !mod){
+    e.preventDefault();
+    togglePlay();
+  } else if(mod && !e.shiftKey && e.key.toLowerCase()==='z'){
+    e.preventDefault();
+    undo();
+  } else if(mod && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))){
+    e.preventDefault();
+    redo();
+  }
+});
 
 // ══════════════════════════════════════════
 // INIT

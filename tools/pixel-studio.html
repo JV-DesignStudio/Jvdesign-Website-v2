@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="description" content="Draw and animate pixel art for free in your browser with the JVDesignStudio Pixel Studio.">
-<link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#BC4749">
+<link rel="manifest" href="pixel-studio.webmanifest">
+<meta name="theme-color" content="#0d0d14">
+<link rel="apple-touch-icon" href="../icons/pixel-studio-192.png">
 <script src="../analytics-loader.js"></script>
 
     <link rel="canonical" href="https://jvdesignstudio.co.uk/tools/pixel-studio.html">
@@ -291,6 +292,11 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
         <input type="range" min="1" max="16" value="1" id="brushSize" style="width:100%;accent-color:var(--accent);" oninput="brushSz=+this.value;document.getElementById('bsv').textContent=this.value+'px'">
         <div style="font-size:.55rem;color:var(--accent2);text-align:right;" id="bsv">1px</div>
       </div>
+      <div class="row-btns" style="margin-top:6px;">
+        <button class="lb" onclick="undo()" title="Ctrl+Z">↶ Undo</button>
+        <button class="lb" onclick="redo()" title="Ctrl+Y">↷ Redo</button>
+        <button class="lb" id="mirrorBtn" onclick="toggleMirror()" title="Mirror X (M)">⇋</button>
+      </div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
@@ -339,13 +345,17 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
       <div class="pdiv" style="margin:4px 0;"></div>
       <button class="ab ab-s" onclick="saveProject()">💾 Save</button>
       <button class="ab ab-s" onclick="loadProject()">📂 Load</button>
+      <button class="ab ab-s" onclick="exportProjectFile()">⬇ Project File</button>
+      <button class="ab ab-s" onclick="triggerImportProject()">⬆ Open Project</button>
       <button class="ab ab-r" onclick="confirmClear()">🗑 Clear</button>
       <div class="pdiv" style="margin:4px 0;"></div>
+      <button class="ab js-install" hidden style="background:#0ea5e9;color:white;box-shadow:0 2px 0 #0369a1;" onclick="installApp()">⬇ Install App</button>
       <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🕹️ Send to Game Maker</button>
       <a class="ab" href="arcade-game-maker.html" style="display:block;background:#16a34a;color:white;box-shadow:0 2px 0 #15803d;text-decoration:none;box-sizing:border-box;">↩ Back to Game Maker</a>
     </div>
     <input type="file" id="importPNGInput" accept="image/*" style="display:none;" onchange="handleImportPNG(this)">
     <input type="file" id="importSheetInput" accept="image/*" style="display:none;" onchange="handleImportSheet(this)">
+    <input type="file" id="importProjectInput" accept=".json,application/json" style="display:none;" onchange="handleImportProject(this)">
   </div>
 
   <!-- CANVAS -->
@@ -380,7 +390,7 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
       </div>
       <div class="fps-row">
         <span style="font-size:.5rem;color:var(--muted);">FPS</span>
-        <input type="number" id="fpsInput" value="8" min="1" max="60" oninput="fps=+this.value||8">
+        <input type="number" id="fpsInput" value="8" min="1" max="60" oninput="setFps(this.value)">
         <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
       </div>
       <label style="font-size:.5rem;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer;margin-top:5px;">
@@ -391,15 +401,15 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
     <div class="ps">
       <div class="pt">Info</div>
       <div id="infoBox" style="font-size:.5rem;color:var(--muted);line-height:1.7;">Pos: —<br>Tool: pencil</div>
+      <button class="lb" onclick="openModal('keysModal')" style="margin-top:4px;">⌨ Shortcuts</button>
     </div>
     <div class="pdiv"></div>
     <div class="ps" style="margin-top:auto;">
       <button class="ab ab-p" onclick="exportPNG()">⬇ PNG</button>
       <button class="ab ab-g" onclick="exportSheet()">⬇ Sheet</button>
-      <button class="ab ab-g" onclick="exportGIF()">▶ Preview GIF</button>
+      <button class="ab ab-g" onclick="openGifPreview()">▶ GIF Preview</button>
     </div>
   </div>
-</div>
 </section>
 
 <!-- BOTTOM BAR (mobile) -->
@@ -413,7 +423,10 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
   <div class="bb-content">
     <div class="bb-panel on" id="bb0">
       <div id="bbTools" style="display:flex;gap:4px;"></div>
-      <input type="range" min="1" max="8" value="1" id="bbBrush" style="width:60px;accent-color:var(--accent);" oninput="brushSz=+this.value">
+      <input type="range" min="1" max="16" value="1" id="bbBrush" style="width:60px;accent-color:var(--accent);" oninput="brushSz=+this.value">
+      <button class="z-btn" onclick="undo()">↶</button>
+      <button class="z-btn" onclick="redo()">↷</button>
+      <button class="z-btn" id="bbMirror" onclick="toggleMirror()">⇋</button>
       <button class="z-btn" onclick="changeZoom(-1)">−</button>
       <button class="z-btn" onclick="changeZoom(1)">+</button>
       <button class="z-btn" onclick="toggleGrid()">⊞</button>
@@ -436,7 +449,10 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
       <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="openImportSheet()">⬆ Spritesheet</button>
       <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="saveProject()">💾 Save</button>
       <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="loadProject()">📂 Load</button>
+      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="exportProjectFile()">⬇ Project</button>
+      <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="triggerImportProject()">⬆ Project</button>
       <button class="ab ab-r" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="confirmClear()">🗑 Clear</button>
+      <button class="ab js-install" hidden style="margin:0;padding:4px 8px;font-size:.65rem;background:#0ea5e9;color:white;" onclick="installApp()">⬇ Install</button>
     </div>
   </div>
 </div>
@@ -471,6 +487,7 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
     <canvas id="preview-canvas" width="128" height="128"></canvas>
     <div class="modal-btns" style="margin-top:8px;">
       <button class="m-cancel" onclick="closeModal('gifModal')">Close</button>
+      <button class="m-ok" onclick="downloadGIF()">⬇ Download GIF</button>
     </div>
   </div>
 </div>
@@ -515,6 +532,35 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
   </div>
 </div>
 
+<!-- SHORTCUTS MODAL -->
+<div class="modal-overlay" id="keysModal">
+  <div class="modal">
+    <h3>⌨️ Shortcuts</h3>
+    <p style="line-height:2;">
+      <b>B / P</b> pencil &middot; <b>E</b> eraser &middot; <b>F</b> fill<br>
+      <b>I / G</b> eyedropper &middot; <b>L</b> line &middot; <b>R</b> rect<br>
+      <b>M</b> mirror &middot; <b>X</b> swap colours &middot; <b>Space</b> play<br>
+      <b>+/&minus;</b> zoom &middot; <b>Ctrl+Z</b> undo &middot; <b>Ctrl+Y</b> redo<br>
+      Right-click draws with the background colour.
+    </p>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeModal('keysModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTOSAVE RESTORE MODAL -->
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal">
+    <h3>💾 Restore Last Session?</h3>
+    <p>Pixel Studio autosaved an in-progress project from your last visit. Restore it, or start fresh.</p>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="discardAutosave()">Discard</button>
+      <button class="m-ok" onclick="restoreAutosave()">Restore</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // STATE
@@ -528,11 +574,28 @@ let fps=8,onionSkin=false,isPlaying=false,playTimer=null;
 let recentColours=[];
 let frames=[],currentFrame=0,currentLayer=0;
 let layers=[{name:'Layer 1',visible:true}];
-let undoStack=[],MAX_UNDO=30;
+let undoStack=[],redoStack=[],MAX_UNDO=30;
+let mirrorX=false,dirty=false,autosaveT=null,deferredPrompt=null;
 let isPainting=false,lineStart=null,rectStart=null;
 let mainCanvas,onionCanvas,cursorCanvas,mainCtx,onionCtx,cursorCtx;
 // snapshot for line/rect preview
 let snapshot=null;
+// render caches (checkerboard + composited layers)
+let checkerCache=null;
+const compCanvas=document.createElement('canvas'),compCtx=compCanvas.getContext('2d');
+const tmpLayer=document.createElement('canvas'),tmpCtx=tmpLayer.getContext('2d');
+
+// ── PWA install prompt (register early so we never miss the event) ──
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  document.querySelectorAll('.js-install').forEach(b=>b.hidden=false);
+});
+function installApp(){
+  if(!deferredPrompt){showToast('Use your browser menu → Install app');return;}
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.finally(()=>{deferredPrompt=null;document.querySelectorAll('.js-install').forEach(b=>b.hidden=true);});
+}
 
 // ══════════════════════════════════════════════
 // INIT
@@ -555,6 +618,10 @@ function init(){
   buildUI();
   setCanvasSize(32,32,false);
   setupEvents();
+  setupAutosave();
+  if(matchMedia('(display-mode: standalone)').matches||navigator.standalone){
+    document.querySelectorAll('.js-install').forEach(b=>b.hidden=true);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -604,11 +671,14 @@ function applyCustomSize(){
 }
 
 function resizeCanvases(){
+  checkerCache=null;
   const pw=cW*zoomLevel,ph=cH*zoomLevel;
   [mainCanvas,onionCanvas,cursorCanvas].forEach(c=>{
     c.width=pw; c.height=ph;
     c.style.width=pw+'px'; c.style.height=ph+'px';
   });
+  compCanvas.width=cW; compCanvas.height=cH;
+  tmpLayer.width=cW; tmpLayer.height=cH;
   // stack them
   onionCanvas.style.position='absolute';
   onionCanvas.style.top='0'; onionCanvas.style.left='0';
@@ -636,15 +706,24 @@ function toggleGrid(){
 // ══════════════════════════════════════════════
 // RENDER
 // ══════════════════════════════════════════════
-function renderAll(){
+function buildChecker(pw,ph){
+  checkerCache=document.createElement('canvas');
+  checkerCache.width=pw; checkerCache.height=ph;
+  const cc=checkerCache.getContext('2d');
+  for(let y=0;y<cH;y++) for(let x=0;x<cW;x++){
+    cc.fillStyle=(x+y)%2===0?'#2a2a2a':'#222222';
+    cc.fillRect(x*zoomLevel,y*zoomLevel,zoomLevel,zoomLevel);
+  }
+}
+
+function renderAll(opts){
+  const full=opts!==false; // renderAll(false) = skip thumbs (used during strokes)
   const pw=cW*zoomLevel,ph=cH*zoomLevel;
   mainCtx.clearRect(0,0,pw,ph);
 
-  // Checkerboard
-  for(let y=0;y<cH;y++) for(let x=0;x<cW;x++){
-    mainCtx.fillStyle=(x+y)%2===0?'#2a2a2a':'#222222';
-    mainCtx.fillRect(x*zoomLevel,y*zoomLevel,zoomLevel,zoomLevel);
-  }
+  // Checkerboard (cached)
+  if(!checkerCache) buildChecker(pw,ph);
+  mainCtx.drawImage(checkerCache,0,0);
 
   // Onion skin
   onionCtx.clearRect(0,0,pw,ph);
@@ -663,25 +742,21 @@ function renderAll(){
     });
   }
 
-  // Layers, draw each pixel directly at zoom scale to avoid smoothing bleed
+  // Composite visible layers offscreen, then blit once at zoom scale.
+  // Much faster than per-pixel fillRect and avoids seam artefacts.
+  compCtx.clearRect(0,0,cW,cH);
   layers.forEach((_,li)=>{
     if(!layers[li].visible) return;
     const id=frames[currentFrame][li];
     if(!id) return;
-    for(let y=0;y<cH;y++){
-      for(let x=0;x<cW;x++){
-        const i=(y*cW+x)*4;
-        const a=id.data[i+3];
-        if(a===0) continue;
-        mainCtx.fillStyle='rgba('+id.data[i]+','+id.data[i+1]+','+id.data[i+2]+','+(a/255)+')';
-        mainCtx.fillRect(x*zoomLevel,y*zoomLevel,zoomLevel,zoomLevel);
-      }
-    }
+    tmpCtx.putImageData(id,0,0);
+    compCtx.drawImage(tmpLayer,0,0);
   });
+  mainCtx.imageSmoothingEnabled=false;
+  mainCtx.drawImage(compCanvas,0,0,pw,ph);
 
   if(showGrid&&zoomLevel>=4) drawGrid();
-  updateLayerThumbs();
-  updateFrameThumbs();
+  if(full){ updateLayerThumbs(); updateFrameThumbs(); }
 }
 
 function drawGrid(){
@@ -717,8 +792,10 @@ function paintPx(id,x,y,col,erase){
   const[r,g,b,a]=erase?[0,0,0,0]:hexRgba(col);
   const half=Math.floor(brushSz/2);
   for(let dy=-half;dy<=brushSz-1-half;dy++)
-    for(let dx=-half;dx<=brushSz-1-half;dx++)
+    for(let dx=-half;dx<=brushSz-1-half;dx++){
       setPixel(id,x+dx,y+dy,r,g,b,a);
+      if(mirrorX) setPixel(id,cW-1-(x+dx),y+dy,r,g,b,a);
+    }
 }
 function floodFill(id,sx,sy,col){
   const[tr,tg,tb,ta]=getPixel(id,sx,sy);
@@ -748,18 +825,32 @@ function drawRect(id,x0,y0,x1,y1,col,erase){
 }
 
 // ══════════════════════════════════════════════
-// UNDO
+// UNDO / REDO
 // ══════════════════════════════════════════════
 function pushUndo(){
   const id=getID();
   undoStack.push({f:currentFrame,l:currentLayer,data:new ImageData(new Uint8ClampedArray(id.data),id.width,id.height)});
   if(undoStack.length>MAX_UNDO) undoStack.shift();
+  redoStack.length=0;
+  markDirty();
 }
+function applyEntry(e){frames[e.f][e.l]=e.data;}
 function undo(){
   const e=undoStack.pop();
   if(!e) return;
-  frames[e.f][e.l]=e.data;
+  const cur=frames[e.f][e.l];
+  redoStack.push({f:e.f,l:e.l,data:cur?new ImageData(new Uint8ClampedArray(cur.data),cur.width,cur.height):null});
+  applyEntry(e);
   renderAll();
+}
+function redo(){
+  const e=redoStack.pop();
+  if(!e) return;
+  const cur=frames[e.f][e.l];
+  undoStack.push({f:e.f,l:e.l,data:cur?new ImageData(new Uint8ClampedArray(cur.data),cur.width,cur.height):null});
+  applyEntry(e);
+  renderAll();
+  markDirty();
 }
 
 // ══════════════════════════════════════════════
@@ -770,25 +861,27 @@ function setupEvents(){
 
   function getXY(e){
     const rect=mc.getBoundingClientRect();
-    const src=e.touches?e.touches[0]:e;
+    const src=(e.touches&&e.touches.length)?e.touches[0]:((e.changedTouches&&e.changedTouches.length)?e.changedTouches[0]:e);
     return[Math.floor((src.clientX-rect.left)/zoomLevel),Math.floor((src.clientY-rect.top)/zoomLevel)];
   }
 
   function down(e){
     e.preventDefault();
     const[x,y]=getXY(e);
+    if(x<0||y<0||x>=cW||y>=cH) return;
     const right=e.button===2;
     const col=right?bgColour:fgColour;
-    const erase=currentTool==='eraser';
+    const erase=right?false:currentTool==='eraser';
     isPainting=true;
 
     if(currentTool==='pencil'||currentTool==='eraser'){
-      pushUndo(); paintPx(getID(),x,y,col,erase); renderAll();
+      pushUndo(); paintPx(getID(),x,y,col,erase); renderAll(false);
     } else if(currentTool==='fill'){
       pushUndo(); floodFill(getID(),x,y,col); renderAll(); isPainting=false;
     } else if(currentTool==='eyedrop'){
-      const[r,g,b]=getPixel(getID(),x,y);
-      setFg('#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''));
+      const fx=Math.max(0,Math.min(cW-1,x)),fy=Math.max(0,Math.min(cH-1,y));
+      const px=flattenFrame(currentFrame).getContext('2d').getImageData(fx,fy,1,1).data;
+      setFg('#'+[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,'0')).join(''));
       isPainting=false;
     } else if(currentTool==='line'){
       pushUndo();
@@ -807,7 +900,7 @@ function setupEvents(){
     const[x,y]=getXY(e);
     const right=(e.buttons||0)===2;
     const col=right?bgColour:fgColour;
-    const erase=currentTool==='eraser';
+    const erase=right?false:currentTool==='eraser';
 
     document.getElementById('infoBox').innerHTML='Pos: '+x+','+y+'<br>Tool: '+currentTool;
 
@@ -816,20 +909,23 @@ function setupEvents(){
     cursorCtx.strokeStyle='rgba(255,255,255,0.5)';
     cursorCtx.lineWidth=1;
     cursorCtx.strokeRect(x*zoomLevel+.5,y*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+    if(mirrorX){
+      cursorCtx.strokeRect((cW-1-x)*zoomLevel+.5,y*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+    }
 
     if(!isPainting) return;
 
     if(currentTool==='pencil'||currentTool==='eraser'){
-      paintPx(getID(),x,y,col,erase); renderAll();
+      paintPx(getID(),x,y,col,erase); renderAll(false);
     } else if(currentTool==='line'&&lineStart&&snapshot){
       // restore snapshot then preview line
       frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawLine(getID(),lineStart[0],lineStart[1],x,y,col,erase);
-      renderAll();
+      renderAll(false);
     } else if(currentTool==='rect'&&rectStart&&snapshot){
       frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawRect(getID(),rectStart[0],rectStart[1],x,y,col,erase);
-      renderAll();
+      renderAll(false);
     }
   }
 
@@ -837,9 +933,9 @@ function setupEvents(){
     e.preventDefault();
     if(!isPainting){isPainting=false;return;}
     const[x,y]=getXY(e);
-    const right=(e.button||0)===2;
+    const right=e.button===2;
     const col=right?bgColour:fgColour;
-    const erase=currentTool==='eraser';
+    const erase=right?false:currentTool==='eraser';
     if(currentTool==='line'&&lineStart){
       if(snapshot) frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawLine(getID(),lineStart[0],lineStart[1],x,y,col,erase);
@@ -857,6 +953,8 @@ function setupEvents(){
   mc.addEventListener('mousedown',down);
   mc.addEventListener('mousemove',move);
   document.addEventListener('mouseup',up);
+  document.addEventListener('touchend',up,{passive:false});
+  document.addEventListener('touchcancel',()=>{isPainting=false;lineStart=null;rectStart=null;snapshot=null;});
   mc.addEventListener('mouseleave',()=>{cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);});
   mc.addEventListener('contextmenu',e=>e.preventDefault());
   mc.addEventListener('touchstart',down,{passive:false});
@@ -865,9 +963,17 @@ function setupEvents(){
 
   document.addEventListener('keydown',e=>{
     if(e.target.tagName==='INPUT') return;
-    if((e.ctrlKey||e.metaKey)&&e.key==='z'){undo();return;}
-    const m={p:'pencil',e:'eraser',f:'fill',g:'eyedrop',l:'line',r:'rect'};
-    if(m[e.key]) setTool(m[e.key]);
+    const k=e.key.toLowerCase();
+    if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
+    if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo();return;}
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    if(e.key==='?'){openModal('keysModal');return;}
+    if(e.key==='Escape'){['keysModal','restoreModal','gifModal','clearModal','importSheetModal'].forEach(id=>closeModal(id));return;}
+    const m={b:'pencil',p:'pencil',e:'eraser',f:'fill',i:'eyedrop',g:'eyedrop',l:'line',r:'rect'};
+    if(m[k]) setTool(m[k]);
+    if(k==='m') toggleMirror();
+    if(k==='x') swapFgBg();
+    if(e.key===' '){e.preventDefault();togglePlay();}
     if(e.key==='+') changeZoom(1);
     if(e.key==='-') changeZoom(-1);
   });
@@ -883,7 +989,7 @@ function addLayer(){
   layers.push({name:'Layer '+(layers.length+1),visible:true});
   frames.forEach(f=>f.push(null));
   currentLayer=layers.length-1;
-  renderLayerList(); renderAll();
+  renderLayerList(); renderAll(); markDirty();
 }
 function dupLayer(){
   if(layers.length>=8) return;
@@ -941,19 +1047,19 @@ function updateLayerThumbs(){
 function addFrame(){
   frames.splice(currentFrame+1,0,layers.map(()=>null));
   currentFrame++;
-  renderFrameList(); renderAll();
+  renderFrameList(); renderAll(); markDirty();
 }
 function dupFrame(){
   const copy=frames[currentFrame].map(l=>l?new ImageData(new Uint8ClampedArray(l.data),l.width,l.height):null);
   frames.splice(currentFrame+1,0,copy);
   currentFrame++;
-  renderFrameList(); renderAll();
+  renderFrameList(); renderAll(); markDirty();
 }
 function deleteFrame(){
   if(frames.length<=1) return;
   frames.splice(currentFrame,1);
   currentFrame=Math.min(currentFrame,frames.length-1);
-  renderFrameList(); renderAll();
+  renderFrameList(); renderAll(); markDirty();
 }
 function renderFrameList(){
   ['frameList','bbFrameList'].forEach(pid=>{
@@ -983,12 +1089,21 @@ function updateFrameThumbs(pid){
 // ══════════════════════════════════════════════
 // PLAYBACK
 // ══════════════════════════════════════════════
+function nextFrame(){
+  currentFrame=(currentFrame+1)%frames.length;
+  renderFrameList(); renderAll();
+}
+function setFps(v){
+  fps=Math.max(1,Math.min(60,Math.round(+v)||8));
+  document.getElementById('fpsInput').value=fps;
+  if(isPlaying){clearInterval(playTimer);playTimer=setInterval(nextFrame,1000/fps);}
+}
 function togglePlay(){
   isPlaying=!isPlaying;
   const btn=document.getElementById('playBtn');
   if(btn){btn.textContent=isPlaying?'⏹ Stop':'▶ Play';btn.className='play-btn'+(isPlaying?' playing':'');}
   if(isPlaying){
-    playTimer=setInterval(()=>{currentFrame=(currentFrame+1)%frames.length;renderFrameList();renderAll();},1000/fps);
+    playTimer=setInterval(nextFrame,1000/fps);
   } else {
     clearInterval(playTimer);
   }
@@ -1005,7 +1120,7 @@ function setFg(col){
   if(bbFg) bbFg.style.background=col;
   const bbPick=document.getElementById('bbPicker');
   if(bbPick) bbPick.value=col;
-  document.querySelectorAll('.sw,.bb-sw').forEach(s=>s.classList.toggle('on',s.dataset.col===col));
+  document.querySelectorAll('.sw,.bb-sw').forEach(s=>s.classList.toggle('on',(s.dataset.col||'').toLowerCase()===col.toLowerCase()));
 }
 function swapFgBg(){[fgColour,bgColour]=[bgColour,fgColour];setFg(fgColour);document.getElementById('bgSwatch').style.background=bgColour;}
 function addToRecent(col){
@@ -1023,12 +1138,23 @@ function setTool(t){
   currentTool=t;
   document.querySelectorAll('.tb,.bb-tb').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
 }
+function toggleMirror(){
+  mirrorX=!mirrorX;
+  ['mirrorBtn','bbMirror'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b) b.style.color=mirrorX?'var(--accent3)':'';
+  });
+  renderAll();
+  showToast(mirrorX?'Mirror X on':'Mirror X off');
+}
 function clearCanvas(){
   pushUndo();
   layers.forEach((_,li)=>{frames[currentFrame][li]=new ImageData(cW,cH);});
   renderAll();
+  markDirty();
 }
 function confirmClear(){document.getElementById('clearModal').classList.add('open');}
+function openModal(id){document.getElementById(id).classList.add('open');}
 
 // ══════════════════════════════════════════════
 // EXPORT
@@ -1070,6 +1196,115 @@ function exportGIF(){
     fi=(fi+1)%frames.length;
   },1000/fps);
 }
+function openGifPreview(){
+  if(frames.length<2){showToast('Add a second frame to animate');return;}
+  exportGIF();
+}
+
+// ══════════════════════════════════════════════
+// GIF ENCODER (GIF89a, ≤256 colours + transparency)
+// ══════════════════════════════════════════════
+function lzwEncode(pixels,minCodeSize){
+  const clear=1<<minCodeSize,eoi=clear+1;
+  let codeSize=minCodeSize+1,nextCode=eoi+1;
+  let dict=new Map();
+  const out=[];
+  let bitBuf=0,bitCnt=0;
+  const write=code=>{
+    bitBuf|=code<<bitCnt;bitCnt+=codeSize;
+    while(bitCnt>=8){out.push(bitBuf&255);bitBuf>>=8;bitCnt-=8;}
+  };
+  const reset=()=>{dict=new Map();codeSize=minCodeSize+1;nextCode=eoi+1;};
+  write(clear);
+  let prefix=String.fromCharCode(pixels[0]);
+  for(let i=1;i<pixels.length;i++){
+    const k=String.fromCharCode(pixels[i]);
+    const combo=prefix+k;
+    if(dict.has(combo)){prefix=combo;continue;}
+    write(prefix.length===1?prefix.charCodeAt(0):dict.get(prefix));
+    if(nextCode===4096){write(clear);reset();}
+    else{
+      if(nextCode>=(1<<codeSize)&&codeSize<12)codeSize++;
+      dict.set(combo,nextCode++);
+    }
+    prefix=k;
+  }
+  write(prefix.length===1?prefix.charCodeAt(0):dict.get(prefix));
+  write(eoi);
+  if(bitCnt>0)out.push(bitBuf&255);
+  return out;
+}
+
+function encodeGIF(canvases,delayCs){
+  const n=canvases.length,w=canvases[0].width,h=canvases[0].height;
+  const datas=canvases.map(c=>c.getContext('2d').getImageData(0,0,w,h));
+  // Palette: exact-match map, nearest-match fallback, index 255 = transparent
+  const palette=[],palMap=new Map(),nearMap=new Map();
+  const TRANSP=255;
+  function colourIndex(r,g,b){
+    const key=(r<<16)|(g<<8)|b;
+    let i=palMap.get(key);
+    if(i!==undefined)return i;
+    if(palette.length<765){
+      palette.push(r,g,b);i=palette.length/3-1;palMap.set(key,i);return i;
+    }
+    i=nearMap.get(key);
+    if(i!==undefined)return i;
+    let best=0,bd=Infinity;
+    for(let p=0;p<palette.length;p+=3){
+      const d=(palette[p]-r)*(palette[p]-r)+(palette[p+1]-g)*(palette[p+1]-g)+(palette[p+2]-b)*(palette[p+2]-b);
+      if(d<bd){bd=d;best=p/3;}
+    }
+    nearMap.set(key,best);
+    return best;
+  }
+  const frameIdx=datas.map(d=>{
+    const idx=new Uint8Array(w*h);
+    for(let i=0,j=0;i<d.data.length;i+=4,j++){
+      idx[j]=d.data[i+3]<128?TRANSP:colourIndex(d.data[i],d.data[i+1],d.data[i+2]);
+    }
+    return idx;
+  });
+  const bytes=[];
+  const push=(...b)=>{for(const v of b)bytes.push(v&255);};
+  const pushStr=s=>{for(let i=0;i<s.length;i++)bytes.push(s.charCodeAt(i)&255);};
+  const push16=v=>{push(v&255,(v>>8)&255);};
+  pushStr('GIF89a');
+  push16(w);push16(h);
+  push(0xF7,0,0); // GCT, 256 entries
+  for(let i=0;i<768;i+=3)push(palette[i]||0,palette[i+1]||0,palette[i+2]||0);
+  push(0x21,0xFF,0x0B);pushStr('NETSCAPE2.0');push(3,1,0,0,0); // loop forever
+  frameIdx.forEach(idx=>{
+    push(0x21,0xF9,4,0x09,delayCs&255,(delayCs>>8)&255,TRANSP,0); // disposal 2, transparency
+    push(0x2C);push16(0);push16(0);push16(w);push16(h);push(0);
+    const lzw=lzwEncode(idx,8);
+    push(8);
+    for(let i=0;i<lzw.length;i+=255){
+      const chunk=lzw.slice(i,Math.min(lzw.length,i+255));
+      push(chunk.length,...chunk);
+    }
+    push(0);
+  });
+  push(0x3B);
+  return new Blob([new Uint8Array(bytes)],{type:'image/gif'});
+}
+
+function downloadGIF(){
+  try{
+    if(frames.length<2){showToast('Add a second frame first');return;}
+    clearInterval(window._gifTimer);
+    const flats=[];for(let fi=0;fi<frames.length;fi++)flats.push(flattenFrame(fi));
+    const delayCs=Math.max(2,Math.round(100/(fps||8)));
+    const blob=encodeGIF(flats,delayCs);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='pixel_animation.gif';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    closeModal('gifModal');
+    showToast('GIF exported ✓');
+  }catch(e){showToast('GIF export failed');}
+}
 
 // ══════════════════════════════════════════════
 // IMPORT PNG / SPRITESHEET
@@ -1091,11 +1326,8 @@ function handleImportPNG(input){
     // Clamp to max canvas size
     const w = Math.min(128, img.naturalWidth);
     const h = Math.min(128, img.naturalHeight);
-    // Resize canvas to match image
-    cW = w; cH = h;
-    frames = frames.map(f => f.map(() => new ImageData(cW, cH)));
-    autoZoom();
-    resizeCanvases();
+    // Resize canvas to match image, KEEPING existing artwork on all frames/layers
+    setCanvasSize(w, h, true);
     // Draw image into current layer pixel-perfect (no smoothing)
     const tmp = document.createElement('canvas');
     tmp.width = w; tmp.height = h;
@@ -1103,7 +1335,7 @@ function handleImportPNG(input){
     tctx.imageSmoothingEnabled = false;
     tctx.drawImage(img, 0, 0, w, h);
     frames[currentFrame][currentLayer] = tctx.getImageData(0, 0, w, h);
-    renderLayerList(); renderFrameList(); renderAll();
+    renderLayerList(); renderFrameList(); renderAll(); markDirty();
     URL.revokeObjectURL(url);
     showToast('Imported ' + w + '×' + h + ' PNG ✓');
     // Update custom size inputs
@@ -1199,10 +1431,7 @@ function confirmImportSheet(){
   sctx.drawImage(_importSheetImg, 0, 0);
 
   if(doResize){
-    cW = Math.min(128, fw);
-    cH = Math.min(128, fh);
-    frames = frames.map(f => f.map(() => new ImageData(cW, cH)));
-    autoZoom(); resizeCanvases();
+    setCanvasSize(Math.min(128, fw), Math.min(128, fh), true);
     document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('on'));
   }
 
@@ -1238,12 +1467,12 @@ function confirmImportSheet(){
 
   _importSheetImg = null;
   closeModal('importSheetModal');
-  renderLayerList(); renderFrameList(); renderAll();
+  renderLayerList(); renderFrameList(); renderAll(); markDirty();
   showToast('Imported ' + total + ' frame' + (total!==1?'s':'') + ' ✓');
 }
 
 // ══════════════════════════════════════════════
-// SAVE / LOAD
+// SAVE / LOAD / AUTOSAVE / PROJECT FILES
 // ══════════════════════════════════════════════
 function sendToGameMaker(){
   try{
@@ -1252,23 +1481,105 @@ function sendToGameMaker(){
     showToast('Sent to Game Maker ✓, open Arcade Game Maker → Assets → Import from Pixel Studio');
   }catch(e){showToast('Export failed, try Export PNG instead');}
 }
+function serializeProject(){
+  return JSON.stringify({v:2,cW,cH,fps,layers,frames:frames.map(f=>f.map(l=>l?Array.from(l.data):null))});
+}
+function applyProject(d){
+  if(!d||!d.cW||!d.cH||!Array.isArray(d.frames)||!Array.isArray(d.layers)) throw new Error('Not a Pixel Studio project');
+  cW=Math.max(2,Math.min(128,d.cW));
+  cH=Math.max(2,Math.min(128,d.cH));
+  layers=d.layers;
+  fps=Math.max(1,Math.min(60,d.fps||8));
+  frames=d.frames.map(f=>f.map(l=>{
+    if(!l) return null;
+    const id=new ImageData(cW,cH);
+    id.data.set(l.slice(0,cW*cH*4));
+    return id;
+  }));
+  currentFrame=0;currentLayer=0;
+  undoStack.length=0;redoStack.length=0;
+  const fi=document.getElementById('fpsInput');if(fi)fi.value=fps;
+  const cw=document.getElementById('custW'),ch=document.getElementById('custH');
+  if(cw)cw.value=cW;if(ch)ch.value=cH;
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('on'));
+  resizeCanvases();renderLayerList();renderFrameList();renderAll();
+}
 function saveProject(){
   try{
-    localStorage.setItem('jvds_pixel',JSON.stringify({cW,cH,layers,frames:frames.map(f=>f.map(l=>l?Array.from(l.data):null))}));
+    localStorage.setItem('jvds_pixel',serializeProject());
     showToast('Saved ✓');
-  }catch(e){showToast('Save failed, export PNG instead');}
+  }catch(e){showToast('Save failed, export project file instead');}
 }
 function loadProject(){
   try{
     const raw=localStorage.getItem('jvds_pixel');
     if(!raw){showToast('No saved project');return;}
-    const d=JSON.parse(raw);
-    cW=d.cW;cH=d.cH;layers=d.layers;
-    frames=d.frames.map(f=>f.map(l=>{if(!l) return null;const id=new ImageData(cW,cH);id.data.set(l);return id;}));
-    currentFrame=0;currentLayer=0;
-    resizeCanvases();renderLayerList();renderFrameList();renderAll();
+    applyProject(JSON.parse(raw));
     showToast('Loaded ✓');
   }catch(e){showToast('Load failed');}
+}
+function exportProjectFile(){
+  try{
+    const blob=new Blob([serializeProject()],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='pixel-studio-project.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    showToast('Project file exported ✓');
+  }catch(e){showToast('Export failed');}
+}
+function triggerImportProject(){
+  const inp=document.getElementById('importProjectInput');
+  inp.value='';
+  inp.click();
+}
+function handleImportProject(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  file.text().then(txt=>{
+    try{
+      applyProject(JSON.parse(txt));
+      markDirty();
+      showToast('Project loaded ✓');
+    }catch(e){showToast('Not a valid project file');}
+  }).catch(()=>showToast('Could not read file'));
+}
+// ── Autosave (debounced, silent) ──
+function markDirty(){
+  dirty=true;
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(autoSave,1500);
+}
+function autoSave(){
+  if(!dirty) return;
+  try{
+    localStorage.setItem('jvds_pixel_auto',serializeProject());
+    dirty=false;
+  }catch(e){/* quota exceeded — autosave silently disabled */}
+}
+function setupAutosave(){
+  let raw=null;
+  try{raw=localStorage.getItem('jvds_pixel_auto');}catch(e){}
+  if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    if(d&&Array.isArray(d.frames)&&d.frames.length&&d.frames[0].some(l=>l)){
+      openModal('restoreModal');
+    }
+  }catch(e){}
+}
+function restoreAutosave(){
+  try{
+    const raw=localStorage.getItem('jvds_pixel_auto');
+    if(raw) applyProject(JSON.parse(raw));
+    showToast('Session restored ✓');
+  }catch(e){showToast('Restore failed');}
+  closeModal('restoreModal');
+}
+function discardAutosave(){
+  try{localStorage.removeItem('jvds_pixel_auto');}catch(e){}
+  closeModal('restoreModal');
 }
 
 // ══════════════════════════════════════════════
@@ -1330,21 +1641,6 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 
 document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(init)));
 </script>
-<script>
-/* ── JVDS Site Nav ── */
-(function(){
-    var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsMobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeNav(); });
-})();
-</script>
-
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
 </body>

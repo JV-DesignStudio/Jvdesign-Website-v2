@@ -5,14 +5,92 @@
 class PlayerProfile {
   constructor() {
     this.storageKey = 'jvds_profile';
+    // Read the RAW stored profile before defaults are merged: a legacy
+    // profile has no xpSchema field, but createDefaultProfile() supplies
+    // xpSchema:2 during the merge — which would silently skip migration.
+    var storedRaw = null;
+    try { storedRaw = JSON.parse(localStorage.getItem(this.storageKey) || 'null'); } catch (e) { storedRaw = null; }
+    var isLegacy = !!storedRaw && storedRaw.xpSchema === undefined;
     this.state = this.loadProfile() || this.createDefaultProfile();
+    this.migrateXP(isLegacy);
+    this.refreshXP();
+    if (isLegacy) this.saveProfile(); // persist the migration
   }
+
+  /* ─── UNIFIED XP LEDGER ───
+     Three XP systems used to exist side-by-side with three level curves
+     (profile 1000/lvl, per-game 1000/lvl, workshop dashboard 100/lvl) and
+     nothing fed each other. Now the profile is the single ledger:
+       workshopXP — re-scanned from per-workshop progress keys
+       gameXP     — re-scanned from jvds_game_* state keys
+       bonusXP    — challenges, tools, and anything awarded via addXP()
+     One curve: 100 XP per level. */
+
+  migrateXP(isLegacy) {
+    if (!isLegacy) return;
+    // Pre-schema profiles kept globalXP = 75/workshop-completion + challenges
+    // + tool XP. Everything that wasn't the completion bump becomes bonusXP;
+    // workshop and game XP are re-derived from their source keys below.
+    var legacy = this.state.globalXP || 0;
+    var completions = (this.state.completedWorkshops || []).length;
+    this.state.bonusXP = Math.max(0, legacy - 75 * completions);
+    this.state.workshopXP = 0;
+    this.state.gameXP = 0;
+    this.state.xpSchema = 2;
+  }
+
+  scanComponentXP() {
+    var workshopXP = 0, gameXP = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key === this.storageKey) continue;
+        if (key.indexOf('jvds_game_') === 0) {
+          var g = null;
+          try { g = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { g = null; }
+          if (g && typeof g.xp === 'number' && g.xp > 0) gameXP += Math.floor(g.xp);
+          continue;
+        }
+        // Workshop progress fingerprint (workshop-engine saveProgress shape):
+        // numeric xp + numeric total + completed array.
+        if (key.indexOf('jvds-') !== 0) continue;
+        var w = null;
+        try { w = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { w = null; }
+        if (w && typeof w.xp === 'number' && typeof w.total === 'number' && Array.isArray(w.completed)) {
+          workshopXP += Math.max(0, Math.floor(w.xp));
+        }
+      }
+    } catch (e) { /* private-mode / quota: keep last known values */ }
+    return { workshopXP: workshopXP, gameXP: gameXP };
+  }
+
+  refreshXP() {
+    var parts = this.scanComponentXP();
+    this.state.workshopXP = parts.workshopXP;
+    this.state.gameXP = parts.gameXP;
+    this.state.bonusXP = Math.max(0, this.state.bonusXP || 0);
+    var oldLevel = this.state.level;
+    this.state.globalXP = this.state.workshopXP + this.state.gameXP + this.state.bonusXP;
+    this.state.level = Math.floor(this.state.globalXP / this.XP_PER_LEVEL()) + 1;
+    return oldLevel !== this.state.level;
+  }
+
+  XP_PER_LEVEL() { return 100; }
 
   createDefaultProfile() {
     return {
       playerId: this.generateUUID(),
       globalXP: 0,
       level: 1,
+      // ── Unified XP ledger (xpSchema 2) ──
+      // globalXP = workshopXP + gameXP + bonusXP. workshopXP and gameXP are
+      // RECOMPUTED from their source keys (see scanComponentXP) so they can
+      // never drift; bonusXP collects challenge/tool XP awarded directly.
+      // One level curve site-wide: 100 XP per level.
+      xpSchema: 2,
+      workshopXP: 0,
+      gameXP: 0,
+      bonusXP: 0,
       totalPlayTime: 0, // minutes
       completedWorkshops: [],
       unlockedGameModes: [], // format: "gameId:cosmetic-id"
@@ -64,11 +142,16 @@ class PlayerProfile {
 
   /* ─── XP & LEVELING ─── */
   addXP(amount, source = 'game') {
-    const oldLevel = this.state.level;
-    this.state.globalXP += amount;
-    const newLevel = Math.floor(this.state.globalXP / 1000) + 1;
+    var oldLevel = this.state.level;
+    amount = Math.max(0, Math.floor(amount) || 0);
+    // Direct awards (challenges, tools, quest board) land in bonusXP.
+    // Workshop XP arrives via progress keys and game XP via jvds_game_* —
+    // both are re-scanned, so awarding them here would double-count.
+    this.state.bonusXP += amount;
+    this.refreshXP();
+    var newLevel = this.state.level;
 
-    const result = {
+    var result = {
       xpAdded: amount,
       source,
       totalXP: this.state.globalXP,
@@ -78,7 +161,6 @@ class PlayerProfile {
     };
 
     if (newLevel > oldLevel) {
-      this.state.level = newLevel;
       this.emitEvent('level-up', result);
     }
 
@@ -90,7 +172,7 @@ class PlayerProfile {
   }
 
   getXPProgress() {
-    const xpPerLevel = 1000;
+    const xpPerLevel = this.XP_PER_LEVEL();
     const currentXP = this.state.globalXP % xpPerLevel;
     return {
       current: currentXP,
@@ -101,13 +183,16 @@ class PlayerProfile {
     };
   }
 
-  /* ─── WORKSHOPS ─── */
-  markWorkshopCompleted(workshopId, xpEarned = 75) {
+  /* ─── WORKSHOPS ───
+     Completion is recorded for quest/achievement purposes. XP is NOT added
+     here — workshop XP is owned by the per-workshop progress keys and picked
+     up by scanComponentXP, so awarding a flat bonus would double-count. */
+  markWorkshopCompleted(workshopId) {
     if (!this.state.completedWorkshops.includes(workshopId)) {
       this.state.completedWorkshops.push(workshopId);
-      this.addXP(xpEarned, `workshop:${workshopId}`);
+      this.refreshXP();
       this.saveProfile();
-      this.emitEvent('workshop-completed', { workshopId, xpEarned });
+      this.emitEvent('workshop-completed', { workshopId, xpEarned: 0 });
       return true;
     }
     return false;
@@ -285,6 +370,9 @@ class PlayerProfile {
       level: this.state.level,
       totalXP: this.state.globalXP,
       xpProgress: this.getXPProgress(),
+      workshopXP: this.state.workshopXP,
+      gameXP: this.state.gameXP,
+      bonusXP: this.state.bonusXP,
       workshopsCompleted: this.state.completedWorkshops.length,
       achievementsUnlocked: this.state.achievements.length,
       dailyStreak: this.state.dailyStreak,

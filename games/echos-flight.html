@@ -5,7 +5,7 @@
 <meta name="description" content="Echo's Flight, a smooth flappy-style game. Tap to flap, weave through the pipes, earn medals, XP and achievements. Free to play by JVDesignStudio.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
-<meta name="theme-color" content="#63c7ff">
+<meta name="theme-color" content="#0e6e8e">
 <script src="../analytics-loader.js"></script>
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/echos-flight.html">
 <meta name="robots" content="index, follow">
@@ -24,7 +24,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #63c7ff; display: flex; align-items: center; justify-content: center; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0e6e8e; display: flex; align-items: center; justify-content: center; }
 .wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 520px; overflow: hidden; }
 canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
@@ -315,15 +315,26 @@ function draw() {
   ctx.save();
   if (shakeT > 0) { const k = shakeT / 0.35; ctx.translate((Math.random()-0.5)*shakeMag*k, (Math.random()-0.5)*shakeMag*k); }
 
-  // sky
+  // deep water
   const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#63c7ff'); sky.addColorStop(0.7, '#9fe0ff'); sky.addColorStop(1, '#d8f3ff');
+  sky.addColorStop(0, '#08425e'); sky.addColorStop(0.55, '#0e6e8e'); sky.addColorStop(1, '#17a3ad');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
 
-  // sun
-  ctx.fillStyle = 'rgba(255,245,190,0.9)'; ctx.beginPath(); ctx.arc(W * 0.8, H * 0.16, 34, 0, Math.PI*2); ctx.fill();
+  // swaying light shafts from the surface
+  const tNow = performance.now() * 0.001;
+  for (let i = 0; i < 3; i++) {
+    const bx = W * (0.18 + i * 0.3) + Math.sin(tNow * 0.35 + i * 2.1) * 26;
+    ctx.save();
+    ctx.globalAlpha = 0.07;
+    ctx.fillStyle = '#bdf3e8';
+    ctx.beginPath();
+    ctx.moveTo(bx - 14, -10); ctx.lineTo(bx + 14, -10);
+    ctx.lineTo(bx + 60 + i * 18, H); ctx.lineTo(bx - 60 - i * 18, H);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
 
-  // clouds
+  // bubble clusters
   clouds.forEach(c => drawCloud(c.x, c.y, c.s));
 
   // pipes
@@ -346,43 +357,64 @@ function draw() {
 }
 
 function drawCloud(x, y, s) {
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.beginPath();
-  ctx.arc(x, y, 18*s, 0, Math.PI*2);
-  ctx.arc(x + 20*s, y + 4*s, 22*s, 0, Math.PI*2);
-  ctx.arc(x + 44*s, y, 16*s, 0, Math.PI*2);
-  ctx.rect(x, y, 44*s, 18*s);
-  ctx.fill();
+  // bubble cluster
+  ctx.strokeStyle = 'rgba(190,240,230,0.5)'; ctx.lineWidth = 1.5;
+  const bub = (bx, by, br) => {
+    ctx.fillStyle = 'rgba(190,240,230,0.14)';
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.arc(bx - br*0.35, by - br*0.35, br*0.22, 0, Math.PI*2); ctx.fill();
+  };
+  bub(x, y, 12*s); bub(x + 22*s, y + 6*s, 8*s); bub(x + 12*s, y - 12*s, 6*s); bub(x + 34*s, y - 4*s, 5*s);
 }
 
 function drawPipe(p) {
-  const capH = 22, capOver = 5;
-  const bodyGrad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
-  bodyGrad.addColorStop(0, '#5bbf4a'); bodyGrad.addColorStop(0.5, '#7ee06a'); bodyGrad.addColorStop(1, '#4aa23c');
-  // top pipe
-  ctx.fillStyle = bodyGrad;
-  ctx.fillRect(p.x, 0, PIPE_W, p.top);
-  ctx.fillRect(p.x - capOver, p.top - capH, PIPE_W + capOver*2, capH);
-  // bottom pipe
+  // kelp column: soft rounded pillar with leaf nubs (collision box unchanged)
+  const grad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
+  grad.addColorStop(0, '#166357'); grad.addColorStop(0.5, '#2ea08a'); grad.addColorStop(1, '#124f46');
+  const r = 14;
+  ctx.fillStyle = grad;
   const by = p.top + p.gap;
-  ctx.fillStyle = bodyGrad;
-  ctx.fillRect(p.x, by, PIPE_W, H - GROUND_H - by);
-  ctx.fillRect(p.x - capOver, by, PIPE_W + capOver*2, capH);
-  // outline
-  ctx.strokeStyle = 'rgba(40,110,35,0.5)'; ctx.lineWidth = 2;
-  ctx.strokeRect(p.x, 0, PIPE_W, p.top);
-  ctx.strokeRect(p.x, by, PIPE_W, H - GROUND_H - by);
+  // top column (hangs from the surface, rounded tip at the bottom)
+  ctx.beginPath();
+  ctx.moveTo(p.x, -4); ctx.lineTo(p.x + PIPE_W, -4);
+  ctx.lineTo(p.x + PIPE_W, p.top - r);
+  ctx.quadraticCurveTo(p.x + PIPE_W/2, p.top + r*0.7, p.x, p.top - r);
+  ctx.closePath(); ctx.fill();
+  // bottom column (rounded tip at the top)
+  ctx.beginPath();
+  ctx.moveTo(p.x, H - GROUND_H + 4); ctx.lineTo(p.x + PIPE_W, H - GROUND_H + 4);
+  ctx.lineTo(p.x + PIPE_W, by + r);
+  ctx.quadraticCurveTo(p.x + PIPE_W/2, by - r*0.7, p.x, by + r);
+  ctx.closePath(); ctx.fill();
+  // leaf nubs
+  ctx.fillStyle = 'rgba(94,214,178,0.55)';
+  for (let k = 0; k < 3; k++) {
+    const ly = (p.top * 0.3) + k * (Math.max(p.top, 60) * 0.22);
+    ctx.beginPath(); ctx.ellipse(p.x + PIPE_W + 2, ly, 9, 4, -0.5, 0, Math.PI*2); ctx.fill();
+    const by2 = by + p.gap * 0.25 + k * (Math.max(H - GROUND_H - by, 60) * 0.22);
+    ctx.beginPath(); ctx.ellipse(p.x - 2, by2, 9, 4, 0.5, 0, Math.PI*2); ctx.fill();
+  }
+  // rim light
+  ctx.strokeStyle = 'rgba(124,245,210,0.35)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(p.x + 4, 0); ctx.lineTo(p.x + 4, p.top - r*0.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(p.x + 4, by + r*0.6); ctx.lineTo(p.x + 4, H - GROUND_H); ctx.stroke();
 }
 
 function drawGround() {
   const gy = H - GROUND_H;
   const g = ctx.createLinearGradient(0, gy, 0, H);
-  g.addColorStop(0, '#e6c56b'); g.addColorStop(1, '#c99b4a');
+  g.addColorStop(0, '#3a7d6f'); g.addColorStop(1, '#1e4f46');
   ctx.fillStyle = g; ctx.fillRect(0, gy, W, GROUND_H);
-  ctx.fillStyle = '#6fbf4a'; ctx.fillRect(0, gy, W, 10);
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  // glowing water line
+  ctx.fillStyle = 'rgba(124,245,210,0.5)'; ctx.fillRect(0, gy, W, 3);
+  ctx.fillStyle = 'rgba(124,245,210,0.12)'; ctx.fillRect(0, gy + 3, W, 8);
+  // drifting sand specks
+  ctx.fillStyle = 'rgba(230,215,170,0.35)';
   const off = (performance.now() * 0.05 * (pipeSpeed/165)) % 24;
-  for (let x = -off; x < W; x += 24) { ctx.fillRect(x, gy + 16, 12, 5); }
+  for (let x = -off; x < W; x += 24) { ctx.fillRect(x, gy + 16, 10, 4); }
+  for (let x = -off * 0.6; x < W; x += 36) { ctx.fillRect(x, gy + 34, 8, 3); }
 }
 
 function drawBird() {

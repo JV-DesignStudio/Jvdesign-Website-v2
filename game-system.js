@@ -191,6 +191,12 @@ class GameSystem {
   }
 
   getXPProgress() {
+    try {
+      if (typeof playerProfile !== 'undefined' && playerProfile.getXPProgress) {
+        var p = playerProfile.getXPProgress();
+        return { current: p.current, max: p.max, percentage: p.percentage };
+      }
+    } catch (e) { /* fall back to per-game xp */ }
     const xpPerLevel = 1000;
     const currentXP = this.state.xp % xpPerLevel;
     return {
@@ -505,11 +511,24 @@ class GameSystem {
   }
 
   /* ��������� UTILITY ��������� */
+  // The displayed player level is the SITE-WIDE unified level from
+  // player-profile.js (workshops + games + challenges, 100 XP/level).
+  // this.state.level remains the per-game progression stat used by
+  // per-game achievements (level10, masterGamer).
+  unifiedLevel() {
+    try {
+      if (typeof playerProfile !== 'undefined' && playerProfile.getStats) {
+        return playerProfile.getStats().level;
+      }
+    } catch (e) { /* fall back to per-game level */ }
+    return this.state.level;
+  }
+
   getStats() {
     return {
       score: this.state.score,
       highScore: this.state.highScore,
-      level: this.state.level,
+      level: this.unifiedLevel(),
       xp: this.state.xp,
       coins: this.state.coins,
       gamesPlayed: this.state.gamesPlayed,

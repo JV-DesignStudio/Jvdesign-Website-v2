@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v8
-const CACHE='jvds-v8';
+// JVDesignStudio Service Worker v9
+const CACHE='jvds-v9';
 const CORE=[
   '/',
   '/index.html',
@@ -31,7 +31,15 @@ const CORE=[
   '/audio-effects.js',
   '/icons/arcade-192.png',
   '/icons/arcade-512.png',
-  '/icons/arcade-180.png'
+  '/icons/arcade-180.png',
+  // Pixel Studio installable app. Precached so the installed editor opens
+  // offline straight after install.
+  '/tools/pixel-studio.html',
+  '/tools/pixel-studio.webmanifest',
+  '/tools/pixel-studio-landing.html',
+  '/icons/pixel-studio-192.png',
+  '/icons/pixel-studio-512.png',
+  '/icons/pixel-studio-maskable-512.png'
 ];
 
 self.addEventListener('install',e=>{
