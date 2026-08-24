@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,6 +7,7 @@
 <script src="../analytics-loader.js"></script>
 
     
+
 
 
 <link rel="icon" href="../logo.png" type="image/png">
@@ -376,6 +377,22 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
 .gamble-btns button{flex:1;border:none;border-radius:100px;padding:12px 8px;font-family:'Fraunces',serif;font-size:14px;font-weight:700;cursor:pointer;color:var(--cocoa)}
 #gambleSafe{background:var(--mint);}
 #gambleBet{background:linear-gradient(135deg,var(--sun),var(--rose-deep));color:#fff}
+
+/* ── v1.4 BOURBON: noticeboard, butter cabinet, today's regular ── */
+.notice-board{position:relative;background:#FFFDF5;border:1.5px solid #E8DCC4;border-radius:10px;padding:7px 26px 7px 12px;margin:6px 2px 0;box-shadow:0 2px 8px rgba(74,53,40,.08);transform:rotate(-.4deg);flex-shrink:0;cursor:pointer;min-height:34px;display:flex;align-items:center}
+.notice-board::before{content:'📌';position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:12px}
+.notice-board .notice-text{font-family:'Fraunces',serif;font-style:italic;font-size:11.5px;line-height:1.45;color:var(--cocoa-soft);transition:opacity .35s;width:100%;text-align:center}
+.notice-board.fading .notice-text{opacity:0}
+.notice-board .notice-pinned{color:var(--rose-deep)}
+.chip-row{display:flex;gap:6px;padding:0 2px;flex-shrink:0}
+.chip-row .quest-chip{margin:0;max-width:none;flex:1}
+.feed-grid{display:flex;gap:6px;margin-top:8px}
+.feed-btn{flex:1;background:var(--cream);border:2px solid var(--cream-deep);border-radius:100px;padding:8px 2px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:var(--cocoa-soft);cursor:pointer;text-align:center;line-height:1.3}
+.feed-btn.fed{background:#FFF4D6;border-color:var(--sun);color:var(--cocoa)}
+.cab-big{text-align:center;font-size:52px;margin-bottom:4px}
+.cab-count{font-family:'Fraunces',serif;font-weight:900;font-size:22px;color:var(--cocoa);text-align:center}
+.reg-face{font-size:46px;text-align:center;margin-bottom:2px}
+.reg-quote{font-family:'Fraunces',serif;font-style:italic;font-size:12.5px;color:var(--cocoa-soft);line-height:1.55;background:var(--milk);border:2px dashed var(--cream-deep);border-radius:12px;padding:10px 12px;margin:10px 0}
 @keyframes treasureDrift{
   0%{transform:translate(-70px,0) rotate(-10deg)}
   25%{transform:translate(24vw,-30px) rotate(8deg)}
@@ -542,7 +559,13 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     </div>
   </div>
 
-  <button class="quest-chip" id="questChip">📜 <span id="questChipText">Quests</span></button>
+  <div class="notice-board" id="noticeBoard" role="status"><span class="notice-text" id="noticeText">The cafe is waking up...</span></div>
+
+  <div class="chip-row">
+    <button class="quest-chip" id="questChip">📜 <span id="questChipText">Quests</span></button>
+    <button class="quest-chip" id="butterChip">🧈 <span id="butterChipText">Butter</span></button>
+    <button class="quest-chip" id="regularChip">👤 <span id="regularChipText">Regular</span></button>
+  </div>
 
   <div class="bottombar">
     <button class="bb-btn" id="bakeryBtn"><span class="bb-icon">🏡</span>Bakery</button>
@@ -566,6 +589,28 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
         <button id="gambleBet">Gamble! 🎲</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" role="dialog" aria-modal="true" id="cabinetModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🧈 <em>The Chilled Cabinet</em></div><button class="modal-close" data-close aria-label="Close">×</button></div>
+    <div class="cab-big">🧈</div>
+    <div class="cab-count"><span id="cabCount">0</span> butter · <span id="cabPending">0</span> setting</div>
+    <p style="font-size:11.5px;color:var(--cocoa-soft);text-align:center;margin:4px 0 10px;line-height:1.5">A new pat sets every 8 hours (up to 3 waiting).<br>Butter keeps the crew extra keen — but only until midnight.</p>
+    <div style="background:var(--cream-deep);border-radius:100px;height:9px;overflow:hidden;margin-bottom:12px"><div id="cabBar" style="height:100%;width:0%;background:linear-gradient(90deg,#FFE9A8,#E8BC4E);border-radius:100px;transition:width .4s"></div></div>
+    <button class="prestige-btn" id="harvestBtn" style="width:100%">Harvest 🧈</button>
+    <div class="quest-section-title" style="margin-top:14px">Feed a friend <span style="text-transform:none;letter-spacing:0">(🧈2 — their treat & Focus are doubled today)</span></div>
+    <div class="feed-grid" id="feedGrid"></div>
+    <div class="quest-section-title" style="margin-top:14px">Golden Batch <span style="text-transform:none;letter-spacing:0">(🧈7)</span></div>
+    <button class="prestige-btn" id="goldenBatchBtn" style="width:100%;background:linear-gradient(135deg,var(--sun),var(--rose-deep));color:#fff">Bake the Golden Batch ✨</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" role="dialog" aria-modal="true" id="regularModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Today's <em>Regular</em></div><button class="modal-close" data-close aria-label="Close">×</button></div>
+    <div id="regularBody"></div>
   </div>
 </div>
 
@@ -819,7 +864,7 @@ function defaultVault(){
     stats:{matches:0,guests_served:0,max_combo:0,max_streak:0,lifetime_coins:0,powerups_made:0,rainbows_made:0,guests_each:{}},
     crewEquipped:{},
     btStats:{found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0},
-    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{}}};
+    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{},butter:{count:0,pending:0,lastTick:Date.now()},fedToday:null,regular:null,regularWall:[]}};
 }
 function loadVault(){
   try{
@@ -840,6 +885,8 @@ function loadVault(){
     if(!v.biscuit.starPerks)v.biscuit.starPerks={};
     if(!v.biscuit.journalClaimed)v.biscuit.journalClaimed=[];
     if(!v.biscuit.helperMilestones)v.biscuit.helperMilestones={};
+    if(!v.biscuit.butter)v.biscuit.butter={count:0,pending:0,lastTick:Date.now()};
+    if(!v.biscuit.regularWall)v.biscuit.regularWall=[];
     return v;
   }catch{return defaultVault();}
 }
@@ -920,9 +967,9 @@ function toggleCrew(id){
 }
 
 // ══ SHARED MATH (offline / combo / treasure luck / featured helper) ══
-function offlineEff(){let e=0.6;if(crewOn('turtle'))e=0.8;e+=0.05*starLv('slow_bake');return Math.min(0.95,e);}
-function comboWindowMs(){let w=1300;if(crewOn('tiger'))w*=1.45;w*=1+0.15*starLv('golden_combo');if(activeChallenge()==='comboking')w*=3;return w;}
-function treasureLuck(){let l=1-0.15*starLv('lucky_tin');if(crewOn('axolotl'))l-=0.18;return Math.max(0.4,l);}
+function offlineEff(){const m=fedTodayId()==='turtle'?2:1;let e=0.6;if(crewOn('turtle'))e=0.6+0.2*m;e+=0.05*starLv('slow_bake');return Math.min(0.95,e);}
+function comboWindowMs(){const m=fedTodayId()==='tiger'?2:1;let w=1300;if(crewOn('tiger'))w*=1+(0.45*m);w*=1+0.15*starLv('golden_combo');if(activeChallenge()==='comboking')w*=3;return w;}
+function treasureLuck(){const m=fedTodayId()==='axolotl'?2:1;let l=1-0.15*starLv('lucky_tin');if(crewOn('axolotl'))l-=0.18*m;return Math.max(0.4,l);}
 function getFeaturedHelper(){
  const d=new Date(),day=(d.getDay()+6)%7,mon=new Date(d);
  mon.setDate(d.getDate()-day);
@@ -933,6 +980,172 @@ function getFeaturedHelper(){
 function btStats(){
  if(!vault.btStats)vault.btStats={found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0};
  return vault.btStats;
+}
+
+// ══ v1.4 BOURBON: BUTTER / NOTICEBOARD / TODAY'S REGULAR ══
+const BUTTER_INTERVAL_MS=8*3600*1000; // a pat sets every 8 hours
+const BUTTER_MAX_PENDING=3;
+const FED_COST=2, BATCH_COST=7;
+function butterState(){
+  if(!bv().butter)bv().butter={count:0,pending:0,lastTick:Date.now()};
+  return bv().butter;
+}
+// Accrue any fully-set pats since lastTick. Called on load + every 2s.
+function butterTick(){
+  const b=butterState(),now=Date.now();
+  if(b.pending>=BUTTER_MAX_PENDING){b.lastTick=now;return;} // cabinet full — hold, don't stack time
+  let pats=Math.floor((now-b.lastTick)/BUTTER_INTERVAL_MS);
+  if(pats>0){
+    b.pending=Math.min(BUTTER_MAX_PENDING,b.pending+pats);
+    b.lastTick+=pats*BUTTER_INTERVAL_MS;
+    if(b.pending>=BUTTER_MAX_PENDING)b.lastTick=now; // full cabinet resets the clock
+    saveVault();
+  }
+}
+function butterNextInMs(){
+  const b=butterState();
+  if(b.pending>=BUTTER_MAX_PENDING)return 0;
+  return Math.max(0,BUTTER_INTERVAL_MS-(Date.now()-b.lastTick));
+}
+function harvestButter(){
+  const b=butterState();
+  if(b.pending<1)return;
+  b.count+=b.pending;b.pending=0;b.lastTick=Date.now();
+  Sfx.init();Sfx.sfxPurchase();doHaptic(false);
+  showToast('🧈 Harvested! '+b.count+' butter in the dish');
+  saveVault();renderCabinet();updateButterChip();
+}
+function fedTodayId(){const f=bv().fedToday;return (f&&f.date===localDateStr())?f.who:null;}
+function feedFriend(cid){
+  const b=butterState();
+  if(fedTodayId()){showToast('Someone already ate today\'s extra butter!');return;}
+  if(b.count<FED_COST){showToast('Not enough butter yet 🧈');return;}
+  b.count-=FED_COST;bv().fedToday={date:localDateStr(),who:cid};
+  const c=CHARACTERS[cid];
+  showToast(c.emoji+' '+c.name+' is feeling EXTRA keen today!','achievement');
+  Sfx.sfxPurchase();recalc();saveVault();renderCabinet();updateHUD();
+}
+function goldenBatch(){
+  const b=butterState();
+  if(b.count<BATCH_COST){showToast('A Golden Batch needs '+BATCH_COST+' butter 🧈');return;}
+  b.count-=BATCH_COST;
+  const amount=Math.max(Math.floor(clickPower*250),Math.floor(productionRate*500+4000));
+  bv().total+=amount;bv().lifetime+=amount;
+  trackDailyProgress('earn',amount);
+  startFrenzy('✨ GOLDEN BATCH! 2x for 30 seconds!',30000);
+  jackpotFx();
+  showToast('✨ Golden Batch! +'+fmt(amount)+' biscuits','milestone');
+  updateHUD();saveNow();
+}
+
+// ── Today's Regular ──
+const REGULARS=[
+ {name:'Mrs. Bramble',emoji:'🦔',greet:'hedgehog jam enthusiast, first through the door',
+  thanks:'"Perfect, as always," writes Mrs. Bramble, licking her thumb with dignity.'},
+ {name:'Old Tom Badger',emoji:'🦡',greet:'takes his tea strong and his biscuits dunked precisely seven seconds',
+  thanks:'Old Tom Badger tips his cap. High praise, from him.'},
+ {name:'Snap & Syrup',emoji:'🐿️',greet:'squirrel twins who order in perfect unison',
+  thanks:'"TEN OUT OF TEN," write Snap & Syrup, in matching handwriting.'},
+ {name:'Postman Pigeon',emoji:'🕊️',greet:'delivers letters AND reviews',
+  thanks:'Postman Pigeon coos approvingly and files a five-star report.'},
+ {name:'Auntie Marigold',emoji:'🐓',greet:'hen about town, aunt to everyone',
+  thanks:'Auntie Marigold clucks warmly and tells the whole street.'},
+ {name:'Professor Crumb',emoji:'🐰',greet:'studies biscuit structural integrity as a hobby',
+  thanks:'"Structurally flawless," notes Professor Crumb, in triplicate.'},
+ {name:'The Ferry Mouse',emoji:'🐭',greet:'crosses the river daily just for these',
+  thanks:'The Ferry Mouse rows home happy. The biscuits made the crossing.'},
+ {name:'Beatrice Bear',emoji:'🐻‍❄️',greet:'very large, very gentle, very hungry',
+  thanks:'Beatrice Bear hugs the counter. The counter survives, somehow.'},
+];
+const REG_ORDER_TYPES=[
+ {key:'tap', icon:'👆', desc:n=>'Tap the tin '+fmt(n)+' times today', target:()=>60},
+ {key:'earn',icon:'🍪',desc:n=>'Bake '+fmt(n)+' biscuits today (any source)', target:()=>Math.max(500,Math.ceil(productionRate/50)*50)},
+ {key:'char',icon:'💛',desc:n=>'Visit your friends '+n+' times today', target:()=>4},
+];
+function regularState(){
+  const today=localDateStr();
+  let r=bv().regular;
+  if(!r||r.date!==today){
+    const seed=today.split('-').reduce((a,b)=>a*33+parseInt(b),0);
+    const npc=REGULARS[seed%REGULARS.length];
+    const ot=REG_ORDER_TYPES[Math.floor(seed/7)%REG_ORDER_TYPES.length];
+    r=bv().regular={date:today,who:npc.name,type:ot.key,target:ot.target(),progress:0,ready:false,claimed:false};
+  }
+  return r;
+}
+function regNpc(){return REGULARS.find(x=>x.name===regularState().who)||REGULARS[0];}
+function regDesc(){const r=regularState(),t=REG_ORDER_TYPES.find(t=>t.key===r.type);return t.desc(r.target);}
+function trackRegular(key,amount){
+  const r=regularState();
+  if(r.claimed||r.ready||r.type!==key)return;
+  r.progress=Math.min(r.target,r.progress+amount);
+  if(r.progress>=r.target){
+    r.ready=true;
+    const npc=regNpc();
+    showToast(npc.emoji+' '+npc.name+"'s order is ready — collect your thanks!",'achievement');
+    Sfx.init();Sfx.sfxAchievement();
+    updateRegularChip();
+  }
+}
+function claimRegular(){
+  const r=regularState();
+  if(!r.ready||r.claimed)return;
+  const npc=regNpc();
+  const b=butterState();
+  b.count+=2;
+  const amount=Math.max(Math.floor(clickPower*80),Math.floor(productionRate*150+300));
+  bv().total+=amount;bv().lifetime+=amount;
+  trackDailyProgress('earn',amount);
+  if(!bv().regularWall)bv().regularWall=[];
+  bv().regularWall.unshift({d:r.date,line:npc.thanks});
+  if(bv().regularWall.length>30)bv().regularWall.length=30;
+  r.claimed=true;
+  showToast(npc.emoji+' '+npc.name+' is delighted! +2🧈 +'+fmt(amount)+' 🍪','achievement');
+  paintNotice();
+  Sfx.init();Sfx.sfxJackpot();
+  updateHUD();saveNow();updateRegularChip();renderRegular();
+}
+// Hook: orders advance alongside daily challenges from the same call sites.
+const _trackDaily=trackDailyProgress;
+trackDailyProgress=function(key,amount=1){_trackDaily(key,amount);trackRegular(key,amount);};
+
+// ── Noticeboard ──
+function noticeLine(){
+  const st=btStats(),days=Math.max(1,Math.ceil((Date.now()-(bv().firstPlayTs||Date.now()))/86400000));
+  const top=(()=>{const e=Object.entries(bv().charTaps).sort((a,b)=>b[1]-a[1])[0];return e&&e[1]>0?CHARACTERS[e[0]].name:null;})();
+  const L=[
+    'Local paper reports a worldwide biscuit surplus. The crew look personally responsible.',
+    'Weather forecast: zero percent chance of running out of biscuits.',
+    '"'+(getFeaturedHelper()==='cat'?'That cat':'Someone')+'" left a five-star review on a napkin.',
+    top?('Regulars agree: '+top+' gives the warmest welcome this side of the river.'):'New faces are always welcome at the tin.',
+    'Day '+days+' of keeping the light on. Pip says hello.',
+    'Health inspector visited. Left smiling. Left with a doggy bag, too.',
+    'Someone asked for the secret ingredient. Lumo said "patience." Ember said "more biscuits."',
+    fmt(st.found||0)+' treasures have drifted through so far. The ceiling enjoys the company.',
+    'Echo re-glittered the ceiling lamps. Again. Nobody minds.',
+    'Season '+(bv().prestige+1)+' of the cafe. The tin hums approvingly.',
+    'Lost: one crumb, last seen near the good chair. Reward: one crumb.',
+    (bv().streak>1?'Day '+bv().streak+' of your streak. The crew pretend not to be impressed. They are.':'The kettle whistles a familiar tune.'),
+  ];
+  let i=Math.floor(Math.random()*L.length);
+  if(L[i]===noticeLast)i=(i+1)%L.length;
+  noticeLast=L[i];
+  return noticeLast;
+}
+let noticeLast=null,noticeTimer=null;
+function paintNotice(){
+  const el=document.getElementById('noticeText');if(!el)return;
+  const board=el.parentElement;if(!board)return;
+  const r=bv().regular;
+  let line=null;
+  if(r&&r.claimed){
+    const n=REGULARS.find(x=>x.name===r.who)||REGULARS[0];
+    line='<span class="notice-pinned">👤 '+n.thanks+'</span>';
+  } else {
+    line=noticeLine();
+  }
+  board.classList.add('fading');
+  setTimeout(()=>{el.innerHTML=line;board.classList.remove('fading');},350);
 }
 
 // Share prompt: idle games have no discrete "run" to hook the site-wide
@@ -1142,9 +1355,9 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'1.3.1',
-  build:6,
-  codename:'Jammy Dodger',
+  version:'1.4',
+  build:7,
+  codename:'Bourbon',
 };
 
 // ══ RUNTIME ══
@@ -1171,7 +1384,8 @@ function recalc(){
     if(up.type==='repeat_click'){const lvl=bv().repeatUpgrades?.[up.id]||0;if(lvl>0)cp*=Math.pow(up.mult,lvl);}
   }
   cp*=(1+0.2*starLv('eager_hands'));
-  if(crewOn('fox'))cp*=1.25;
+  // Focused Lumo: +25%; fed Lumo doubles the bonus (+50%).
+  if(crewOn('fox')){const fm=fedTodayId()==='fox'?2:1;cp*=1+(0.25*fm);}
   clickPower=cp*(bv().prestigeBonus||1)*rushMult;
   let gm=1;
   for(const up of UPGRADES){
@@ -1478,9 +1692,9 @@ document.querySelectorAll('.char-seat').forEach(el=>{
     charReady[id]=Date.now()+char.cooldown*1000*cdMult; charWasCD[id]=true;
     doHaptic(true);
     bv().charTaps[id]=(bv().charTaps[id]||0)+1;
-    // Character treats scale with the cafe: the larger of their flat value or
-    // a chunk of live production, so they never go trivial late game.
-    const gained=Math.max(char.biscuitValue*(bv().prestigeBonus||1), Math.ceil(productionRate*char.cooldown*0.15));
+    // Character treats scale with the cafe — and double if you fed them today.
+    const fed=fedTodayId()===id?2:1;
+    const gained=Math.max(char.biscuitValue*(bv().prestigeBonus||1), Math.ceil(productionRate*char.cooldown*0.15))*fed;
     bv().total+=gained; bv().lifetime+=gained;
     el.classList.add('excited'); setTimeout(()=>el.classList.remove('excited'),500);
     const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
@@ -2562,7 +2776,20 @@ function renderCollections(){
       <div class="stat-card"><div class="stat-card-value">${ownedTrails().length}/${TRAIL_SHOP.length}</div><div class="stat-card-label">Trails</div></div>
       <div class="stat-card"><div class="stat-card-value">${ownedHats().length}/${HAT_SHOP.filter(h=>!h.challenge).length}</div><div class="stat-card-label">Hats</div></div>
       <div class="stat-card"><div class="stat-card-value">${ownedAccs().length}/${ACC_SHOP.filter(a=>!a.challenge).length}</div><div class="stat-card-label">Accessories</div></div>
-    </div>`;
+    </div>
+    <div class="stats-section-title">👤 The Regulars Wall</div>`;
+  const wall=bv().regularWall||[];
+  if(wall.length===0){
+    document.getElementById('collectionsBody').insertAdjacentHTML('beforeend','<p style="font-size:12px;color:var(--cocoa-soft);font-style:italic;font-family:Fraunces,serif">No reviews yet. Serve today\'s Regular and the first note goes up. 👤</p>');
+  } else {
+    const wl=document.createElement('div');wl.className='quest-list';
+    wall.forEach(x=>{
+      const row=document.createElement('div');row.className='journal-tier claimed';
+      row.innerHTML='<span style="font-size:15px">🗒️</span><span class="jt-reward" style="font-weight:600;text-transform:none;letter-spacing:0;line-height:1.4">'+x.line+'</span>';
+      wl.appendChild(row);
+    });
+    document.getElementById('collectionsBody').appendChild(wl);
+  }
 }
 document.getElementById('collectionsBtn').addEventListener('click',()=>{
   renderCollections();
@@ -2900,6 +3127,8 @@ updateQuestChip();
 setInterval(()=>{
   refreshOpenModals();
   updateQuestChip();
+  updateButterChip();
+  updateRegularChip();
   const unlockedCh=STORY.filter(s=>s.when()).length;
   if(unlockedCh>(vault.btStorySeen||0)){vault.btStorySeen=unlockedCh;showToast('📖 A new page of the cafe story!','achievement');saveVault();}
   if(!foundSecrets().includes('s_patience')&&Date.now()-lastAnyTap>600000&&!document.hidden)awardSecret('s_patience');
@@ -2945,7 +3174,9 @@ function scheduleTreasure(delayMs){
   treasureTimer=setTimeout(spawnTreasure,delayMs||Math.round(base*treasureLuck()));
 }
 function spawnTreasure(){
-  scheduleTreasure();
+scheduleTreasure();
+
+
   if(treasureLive||document.hidden)return;
   if(bv().lifetime<150)return; // let brand-new bakers settle in first
   treasureLive=true;
@@ -3032,6 +3263,73 @@ document.getElementById('gambleModal').addEventListener('click',e=>{
 });
 scheduleTreasure();
 
+// ══ CABINET / REGULAR / NOTICEBOARD UI ══
+function fmtDur(ms){
+  const s=Math.max(0,Math.floor(ms/1000));
+  return s>=3600?Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m':s>=60?Math.floor(s/60)+'m '+(s%60)+'s':s+'s';
+}
+function updateButterChip(){
+  const el=document.getElementById('butterChipText');if(!el)return;
+  butterTick();
+  const b=butterState(),nx=butterNextInMs();
+  el.innerHTML=b.pending>0
+    ?`<span class="qc-ready">Collect ${b.pending}🧈!</span>`
+    :`Butter ${b.count} · next ${fmtDur(nx)}`;
+}
+function renderCabinet(){
+  butterTick();
+  const b=butterState();
+  document.getElementById('cabCount').textContent=b.count;
+  document.getElementById('cabPending').textContent=b.pending;
+  document.getElementById('cabBar').style.width=Math.round(100*(1-butterNextInMs()/BUTTER_INTERVAL_MS))+'%';
+  document.getElementById('harvestBtn').style.opacity=b.pending>0?1:.45;
+  const grid=document.getElementById('feedGrid');grid.innerHTML='';
+  CREW_ORDER.forEach(cid=>{
+    const fed=fedTodayId()===cid;
+    const btn=document.createElement('button');btn.type='button';
+    btn.className='feed-btn'+(fed?' fed':'');
+    btn.innerHTML=CHARACTERS[cid].emoji+'<br>'+CHARACTERS[cid].name+(fed?'<br><span style="color:var(--mint-deep)">fed ✓</span>':'');
+    btn.addEventListener('click',()=>feedFriend(cid));
+    grid.appendChild(btn);
+  });
+  document.getElementById('goldenBatchBtn').onclick=goldenBatch;
+  document.getElementById('harvestBtn').onclick=harvestButter;
+}
+document.getElementById('butterChip').addEventListener('click',()=>{renderCabinet();document.getElementById('cabinetModal').classList.add('show');});
+setInterval(()=>{if(modalShown('cabinetModal'))renderCabinet();},1000);
+
+function updateRegularChip(){
+  const el=document.getElementById('regularChipText');if(!el)return;
+  const r=regularState();
+  if(r.claimed){el.innerHTML=`👤 ${r.who} ✓ served`;return;}
+  if(r.ready){el.innerHTML=`<span class="qc-ready">👤 Collect ${r.who}'s thanks!</span>`;return;}
+  el.innerHTML=`👤 ${regDesc().split(' today')[0]} · ${fmt(Math.min(r.progress,r.target))}/${fmt(r.target)}`;
+}
+function renderRegular(){
+  const r=regularState(),npc=regNpc();
+  const pct=Math.min(100,Math.floor(r.progress/r.target*100));
+  const body=document.getElementById('regularBody');
+  const quote=r.claimed?npc.thanks:'"'+regDesc()+', and I\'ll leave a lovely review." — '+npc.name;
+  body.innerHTML=`
+    <div class="reg-face">${npc.emoji}</div>
+    <div style="text-align:center"><div style="font-family:Fraunces,serif;font-weight:900;font-size:19px">${npc.name}</div>
+    <div style="font-size:11.5px;color:var(--cocoa-soft);line-height:1.4">${npc.greet}</div></div>
+    <div class="reg-quote">${quote}</div>
+    <div style="background:var(--cream-deep);border-radius:100px;height:10px;overflow:hidden;margin-bottom:6px"><div style="height:100%;width:${r.ready||r.claimed?100:pct}%;background:linear-gradient(90deg,var(--sun),#E8A830);border-radius:100px;transition:width .5s"></div></div>
+    <div style="font-size:11px;font-weight:800;color:var(--cocoa-soft);margin-bottom:12px;text-align:center">${r.claimed?'Served! Come back tomorrow for a new regular.':r.ready?'Order complete!':'Reward: +2 🧈 + treat 🍪'}</div>`;
+  const old=body.querySelector('#regDoneBtn');if(old)old.remove();
+  if(r.ready&&!r.claimed){
+    const b=document.createElement('button');b.type='button';b.id='regDoneBtn';b.className='offline-collect-btn';b.style.width='100%';b.textContent='Collect the thanks! 🍪';
+    b.addEventListener('click',()=>{claimRegular();renderRegular();});
+    body.appendChild(b);
+  }
+}
+document.getElementById('regularChip').addEventListener('click',()=>{renderRegular();document.getElementById('regularModal').classList.add('show');});
+
+// Noticeboard: rotate every 45s; tap to flip manually.
+paintNotice();
+setInterval(paintNotice,45000);
+document.getElementById('noticeBoard').addEventListener('pointerdown',()=>{const r=bv().regular;if(!(r&&r.claimed))paintNotice();});
 // ══ INIT ══
 recalc(); seedMilestones();
 checkOffline(); // before tick so lastSave is fresh
