@@ -899,6 +899,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <!-- /BUILD:footer-content -->
 
 <script src="../player-profile.js"></script>
+<script src="../tracks.js"></script>
 
 <script>
 const TOTAL = 8;
@@ -1377,6 +1378,41 @@ updateXpDisplay();
 </script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"Don't Drop It! Build a Fruit Catch Game in Scratch","description":"Build your first Scratch game! A free parent & child workshop. Move a basket to catch falling fruit, add a score counter and game-over screen. Ages 6+.","url":"https://jvdesignstudio.co.uk/workshops/scratch-catch-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H"}}
+</script>
+
+<script>
+/* "Next on your track" — appears in the finish banner when all steps are done.
+   Track data lives in ../tracks.js (mirrors learn-hub Learning Tracks). */
+(function(){
+  var KEY='jvds-scratch-catch-v2';
+  var PAGE='workshops/scratch-catch-workshop.html';
+  function maybe(){
+    try{
+      if(!window.JVDS_trackPosition) return;
+      var banner=document.getElementById('finishBanner');
+      if(!banner||!banner.classList.contains('show')) return;
+      if(document.getElementById('finishNext')) return;
+      var pos=JVDS_trackPosition(PAGE);
+      if(!pos) return;
+      var a=document.createElement('a');
+      a.id='finishNext';
+      if(pos.next){
+        a.href='../'+pos.next.url;
+        a.innerHTML='<span style="color:#ffd166;font-weight:700">'+pos.track.icon+' '+pos.track.title+'</span> Next up: <strong>'+pos.next.name+'</strong> <span style="font-weight:800">&rarr;</span>';
+      } else {
+        a.href='my-progress.html';
+        a.innerHTML='<span style="color:#ffd166;font-weight:700">&#127942; Track complete: '+pos.track.title+'</span> See all your progress <span style="font-weight:800">&rarr;</span>';
+      }
+      a.style.cssText='display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px auto 0;max-width:560px;padding:14px 22px;border:2px dashed rgba(255,255,255,.35);border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font-size:.95rem;text-decoration:none;';
+      banner.appendChild(a);
+    }catch(e){}
+  }
+  var banner=document.getElementById('finishBanner');
+  if(banner&&window.MutationObserver){
+    new MutationObserver(maybe).observe(banner,{attributes:true,attributeFilter:['class']});
+  }
+  maybe();
+})();
 </script>
 </body>
 </html>

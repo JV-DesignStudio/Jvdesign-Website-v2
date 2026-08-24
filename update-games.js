@@ -25,9 +25,9 @@ const GAME_CONFIGS = {
       { id: 'score1000', name: '🏆 Score 1000', desc: 'Reach 1000 points' }
     ]
   },
-  'sky_high_squirt.html': {
+  'sky_high_with_friends.html': {
     id: 'sky-high-squirt',
-    name: 'Sky High Squirt',
+    name: 'Sky High With Friends',
     character: 'squirt',
     achievements: [
       { id: 'firstJump', name: '🎮 First Bounce', desc: 'Play your first game' },

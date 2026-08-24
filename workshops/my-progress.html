@@ -130,6 +130,11 @@ a.series-title:hover .st-go{color:#a5b4fc;border-color:rgba(165,180,252,.4)}
 .cert-actions{margin-top:20px;display:flex;gap:10px;justify-content:center}
 .cert-print-btn{background:linear-gradient(135deg,#d4af37,#b8941e);color:#fff;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 24px;border-radius:10px;border:none;cursor:pointer;box-shadow:0 2px 0 #8a6d14}
 .cert-print-btn:hover{filter:brightness(1.1)}
+.cert-next{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px;padding:12px 18px;border:1.5px dashed rgba(255,209,102,.45);border-radius:12px;background:rgba(255,209,102,.07);font-size:.88rem;color:rgba(240,234,214,.85);text-decoration:none;transition:background .15s,border-color .15s}
+.cert-next:hover{background:rgba(255,209,102,.13);border-color:rgba(255,209,102,.7)}
+.cert-next .cn-track{color:#ffd166;font-weight:700}
+.cert-next strong{color:#fff}
+.cert-next .cn-arrow{font-weight:800}
 
 .no-progress{text-align:center;padding:40px 20px;color:var(--muted);font-size:1rem}
 .no-progress a{color:var(--gold);text-decoration:underline}
@@ -303,6 +308,7 @@ a.series-title:hover .st-go{color:#a5b4fc;border-color:rgba(165,180,252,.4)}
       <button class="cert-print-btn" onclick="window.print()">🖨️ Print</button>
       <button class="cert-print-btn" id="certShareBtn" style="background:linear-gradient(135deg,#ff5e5b,#ff9966);box-shadow:0 2px 0 #cc4a48" onclick="shareCert()">📤 Share / Save image</button>
     </div>
+    <a id="certNext" class="cert-next" href="#" hidden></a>
   </div>
 </div>
 
@@ -360,6 +366,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
+<script src="../tracks.js"></script>
 <script>
 const SERIES = [
   {
@@ -817,7 +824,7 @@ function buildDashboard() {
       }
       html += '</div>';
       html += '<span class="ep-status ' + statusClass + '">' + statusText + '</span>';
-      if (status === 'done') html += '<button class="ep-cert-btn" onclick="event.preventDefault();event.stopPropagation();showCert(\'' + ep.key + '\',\'' + ep.name.replace(/'/g, "\\'") + '\')">🏆</button>';
+      if (status === 'done') html += '<button class="ep-cert-btn" onclick="event.preventDefault();event.stopPropagation();showCert(\'' + ep.key + '\',\'' + ep.name.replace(/'/g, "\\'") + '\',\'' + ep.url + '\')">🏆</button>';
       html += '</a>';
     });
     html += '</div></div>';
@@ -856,7 +863,7 @@ function buildDashboard() {
 }
 
 let currentCert = null;
-function showCert(key, workshopName) {
+function showCert(key, workshopName, url) {
   const d = getData(key);
   const name = localStorage.getItem('jvds-player-name') || 'Amazing Coder';
   const xp = d ? (d.xp || 0) : 0;
@@ -870,6 +877,24 @@ function showCert(key, workshopName) {
   document.getElementById('certLevel').textContent = level;
   document.getElementById('certAccuracy').textContent = acc;
   document.getElementById('certDate').textContent = date;
+  var certNext = document.getElementById('certNext');
+  if (certNext) {
+    certNext.hidden = true;
+    if (url && window.JVDS_trackPosition) {
+      var pos = JVDS_trackPosition(url);
+      if (pos && pos.next) {
+        certNext.hidden = false;
+        certNext.href = '../' + pos.next.url;
+        certNext.innerHTML = '<span class="cn-track">' + pos.track.icon + ' ' + pos.track.title + '</span>' +
+          ' Next up: <strong>' + pos.next.name + '</strong> <span class="cn-arrow">&rarr;</span>';
+      } else if (pos) {
+        certNext.hidden = false;
+        certNext.href = 'learn.html';
+        certNext.innerHTML = '<span class="cn-track">&#127942; Track complete: ' + pos.track.title + '</span>' +
+          ' <span class="cn-arrow">See what else &rarr;</span>';
+      }
+    }
+  }
   document.getElementById('certOverlay').classList.add('show');
 }
 
