@@ -1725,6 +1725,9 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                         <button class="btn-sm" style="flex:1;" onclick="startTutorial()" title="Replay the welcome guide">❓ Show Tutorial</button>
                         <button class="btn-sm" style="flex:1;" onclick="toggleFPSCounter()" title="Show performance metrics">📊 FPS Meter</button>
                     </div>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-sm" style="flex:1;background:rgba(0,212,170,.1);border-color:rgba(0,212,170,.3);color:#00d4aa;" onclick="openDebugModal()" title="Diagnostics: platform probes, error log, data tools">🛠 Debug</button>
+                    </div>
                 </div>
             </details>
             <!-- Controls Customization -->
@@ -4816,6 +4819,7 @@ score += bumper.pts;
                         <input type="range" aria-label="Pause Menu Volume" min="0" max="100" id="pauseVolumeSlider" style="width:100%;" value="50" oninput="GameAudio.volume=this.value/100;document.getElementById('volumeSlider').value=this.value;document.querySelector('#volumeSlider ~ .range-val').textContent=this.value+'%';">
                     </div>
                     <button class="btn-sm" style="width:100%;color:#f87171;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.08);font-size:.75rem;" onclick="quitGame()">✕ Quit to Editor</button>
+                    <div id="pauseVersion" style="font-size:.56rem;color:var(--muted);text-align:center;font-family:'JetBrains Mono',monospace;"></div>
                 </div>
             </div>
 
@@ -8256,6 +8260,12 @@ function pauseGame() {
         // Sync shake toggle with current juice setting
         const pst = document.getElementById('pauseShakeToggle');
         if (pst) pst.checked = liveConfig.juiceShake !== false;
+        // Version stamp so "which build am I running?" is always answerable
+        const pv = document.getElementById('pauseVersion');
+        if (pv) {
+            const b = window.APP_BUILD;
+            pv.textContent = 'v' + APP_VERSION + (b ? (b.codename ? ` “${b.codename}”` : '') + ' · build ' + b.build + ' · ' + new Date(b.at).toLocaleDateString('en-GB') : '');
+        }
         // Show game title
         const tEl = document.getElementById('pauseMenuTitle');
         const gTitle = document.getElementById('gameTitle');
@@ -20294,9 +20304,178 @@ function _runGenreSelfTest() {
     setTimeout(_next, 50);
 }
 
+// ── DEBUG MENU (?debug=1 or Build → More tools → 🛠 Debug) ───────────────────
+const APP_VERSION = '1.2';
+function openDebugModal() {
+    let ov = document.getElementById('debugModal');
+    if (ov) { ov.remove(); }
+    ov = document.createElement('div');
+    ov.id = 'debugModal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:14px;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--panel2);border:1px solid rgba(0,212,170,.4);border-radius:16px;padding:18px;width:min(420px,100%);max-height:90vh;overflow-y:auto;font-family:"JetBrains Mono",monospace;color:#d7e2ee;';
+    box.innerHTML = `<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">
+        <span style="font-size:1.3rem;">🛠</span>
+        <div style="flex:1;font-weight:800;color:#00d4aa;">DEBUG <span style="opacity:.5">v${APP_VERSION}${window.APP_BUILD ? (window.APP_BUILD.codename ? ` “${window.APP_BUILD.codename}”` : '') + ' · build ' + window.APP_BUILD.build : ''}</span>
+            ${window.APP_BUILD ? `<div style="opacity:.45;font-size:.56rem;font-weight:400;">code ${window.APP_BUILD.code} · built ${new Date(window.APP_BUILD.at).toLocaleString('en-GB')}</div>` : ''}
+        </div>
+        <button class="btn-sm" onclick="document.getElementById('debugModal').remove()">✕</button>
+    </div>
+    <div id="dbgBody" style="display:flex;flex-direction:column;gap:12px;font-size:.68rem;"><div style="opacity:.6;">probing…</div></div>`;
+    ov.appendChild(box);
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+    _dbgRender();
+}
+
+function _dbgRow(ok, label, extra) {
+    return `<div style="display:flex;gap:7px;align-items:baseline;">
+        <span style="color:${ok ? '#4ade80' : '#f87171'};">${ok ? '✓' : '✗'}</span>
+        <span style="flex:1;">${label}</span>
+        ${extra ? `<span style="opacity:.55;font-size:.62rem;">${extra}</span>` : ''}
+    </div>`;
+}
+
+async function _dbgRender() {
+    const body = document.getElementById('dbgBody');
+    if (!body) return;
+
+    // ── 1. Platform & capability probes ──
+    const cap = window.Capacitor || {};
+    const isNative = typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : false;
+    const sharePlugin = !!(cap.Plugins && cap.Plugins.Share && typeof cap.Plugins.Share.share === 'function');
+    const rows = [
+        _dbgRow(isNative, 'Native app (Capacitor)', isNative ? '' : 'web'),
+        _dbgRow(sharePlugin, '@capacitor/share wired', sharePlugin ? '' : 'UNAVAILABLE — shares fall back'),
+        _dbgRow(!!navigator.share, 'navigator.share (Web Share)'),
+        _dbgRow(!!(navigator.clipboard && navigator.clipboard.writeText), 'clipboard.writeText'),
+        _dbgRow(typeof qrcode !== 'undefined', 'QR library loaded'),
+        _dbgRow(typeof CompressionStream !== 'undefined', 'CompressionStream'),
+        _dbgRow(typeof Phaser !== 'undefined', 'Phaser engine'),
+        _dbgRow(!!currentPhaserGame, 'Game running', currentPhaserGame ? (_engineData && _engineData.genre) || '' : ''),
+        _dbgRow(!!window._playerMode, 'Player mode active'),
+        _dbgRow(/https?:/.test(location.protocol) && !/localhost|127\./.test(location.hostname), 'Real site origin', location.protocol + '//' + location.hostname),
+    ];
+    let html = `<div><div class="sec-label" style="margin-bottom:6px;">Platform</div>${rows.join('')}
+        <div style="opacity:.45;margin-top:4px;font-size:.58rem;word-break:break-all;">${navigator.userAgent.slice(0, 160)}</div></div>`;
+
+    // ── 2. Recent errors ──
+    const errs = (window._errLog || []).slice(-10).reverse();
+    html += `<div><div class="sec-label" style="margin-bottom:6px;">Errors (${(window._errLog || []).length})</div>` +
+        (errs.length
+            ? errs.map(e => `<div style="color:#f87171;word-break:break-word;border-bottom:1px solid var(--border);padding:3px 0;">${String(e.m).replace(/</g, '')}</div>`).join('')
+            : '<div style="opacity:.5;">none captured this session ✓</div>') + '</div>';
+
+    // ── 3. Data: storage map ──
+    let total = 0;
+    const keys = [];
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            const v = String(localStorage.getItem(k) || '');
+            total += k.length + v.length;
+            if (/^(jv_|jvds_)/.test(k)) keys.push([k, v.length]);
+        }
+        keys.sort((a, b) => b[1] - a[1]);
+    } catch (e) {}
+    const lbCount = keys.filter(([k]) => k.startsWith('jv_lb_')).length;
+    html += `<div><div class="sec-label" style="margin-bottom:6px;">Data</div>
+        ${_dbgRow(true, 'localStorage used', (total / 1024).toFixed(1) + ' KB')}
+        ${_dbgRow(!!localStorage.getItem('jv_arcade_autosave'), 'autosave present', localStorage.getItem('jv_arcade_autosave') ? ((localStorage.getItem('jv_arcade_autosave').length / 1024).toFixed(0) + ' KB') : '')}
+        ${_dbgRow(lbCount > 0, 'leaderboards', lbCount + ' genres')}
+        ${_dbgRow(keys.some(([k]) => k === 'jvds_sfx_last'), 'custom SFX imported')}
+        ${_dbgRow(keys.some(([k]) => k === 'jvds_music_last'), 'custom music imported')}
+        ${_dbgRow(!!customSpriteDataUrl, 'custom sprite loaded')}</div>`;
+
+    // ── 4. Live tools ──
+    html += `<div><div class="sec-label" style="margin-bottom:6px;">Tools</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn-sm" onclick="_runGenreSelfTest();document.getElementById('debugModal').remove();" style="text-align:left;">🧪 Run 21-genre self-test</button>
+            <button class="btn-sm" onclick="_dbgTestShare(this)" style="text-align:left;">📤 Test share sheet</button>
+            <button class="btn-sm" onclick="_dbgTestCodec(this)" style="text-align:left;">🔁 Test result-code round-trip</button>
+            <button class="btn-sm" onclick="_dbgTestPayload(this)" style="text-align:left;">📏 Measure share-link size &amp; QR</button>
+            <button class="btn-sm" onclick="_dbgCopyDiag(this)" style="text-align:left;background:rgba(124,58,237,.25);border-color:rgba(167,139,250,.5);color:#c4b5fd;">📋 Copy all diagnostics</button>
+            <button class="btn-sm" onclick="_dbgWipe('scores')" style="text-align:left;color:#f87171;border-color:rgba(248,113,113,.3);">🗑 Clear leaderboards</button>
+            <button class="btn-sm" onclick="_dbgWipe('autosave')" style="text-align:left;color:#f87171;border-color:rgba(248,113,113,.3);">🗑 Clear autosave</button>
+        </div></div>`;
+
+    body.innerHTML = html;
+}
+
+async function _dbgTestShare(btn) {
+    btn.textContent = 'sharing…';
+    const r = await _nativeShare({ title: 'Debug test', text: 'Share pipeline test from JVDS Game Maker ' + APP_VERSION });
+    btn.textContent = '📤 Test share sheet';
+    showToast('share result: ' + r, r === 'failed' ? 'error' : 'success', 5000);
+}
+function _dbgTestCodec(btn) {
+    const code = _makeResultCode(1234, 'DBG');
+    const o = _parseResultCode(code);
+    showToast(o && o.s === 1234 && o.n === 'DBG' ? '✓ codec round-trip OK' : '✗ codec BROKEN', o ? 'success' : 'error');
+}
+async function _dbgTestPayload(btn) {
+    btn.textContent = 'measuring…';
+    try {
+        const d = getPayload();
+        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
+        const url = _shareBaseUrl() + '?game=' + enc;
+        const kb = (url.length / 1024).toFixed(1);
+        let qr = 'no';
+        try { qr = (typeof qrcode !== 'undefined' && _makeQrDataUrl(url)) ? 'YES' : 'too long'; } catch (e) { qr = 'too long'; }
+        showToast(`📏 link ${kb}KB · QR scannable: ${qr}${url.length > 3000 ? ' · ⚠ over 3KB' : ''}`, undefined, 6000);
+    } catch (e) { showToast('measure failed: ' + e.message, 'error'); }
+    btn.textContent = '📏 Measure share-link size & QR';
+}
+async function _dbgCopyDiag() {
+    const cap = window.Capacitor || {};
+    const diag = {
+        v: APP_VERSION,
+        t: new Date().toISOString(),
+        ua: navigator.userAgent,
+        native: typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : false,
+        sharePlugin: !!(cap.Plugins && cap.Plugins.Share),
+        webShare: !!navigator.share,
+        clipboard: !!(navigator.clipboard && navigator.clipboard.writeText),
+        qrcodeLib: typeof qrcode !== 'undefined',
+        compression: typeof CompressionStream !== 'undefined',
+        href: location.href.slice(0, 200),
+        playerMode: !!window._playerMode,
+        genre: (document.getElementById('genreMode') || {}).value,
+        errors: (window._errLog || []).slice(-15),
+        storageKB: (() => { let n = 0; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); n += k.length + String(localStorage.getItem(k)).length; } } catch (e) {} return Math.round(n / 10.24) / 100; })(),
+        screen: window.innerWidth + 'x' + window.innerHeight + ' @' + (window.devicePixelRatio || 1) + 'x',
+    };
+    try {
+        await navigator.clipboard.writeText(JSON.stringify(diag, null, 2));
+        showToast('📋 Diagnostics copied — paste it to the dev!', 'success', 5000);
+    } catch (e) {
+        showToast(JSON.stringify(diag).slice(0, 140), 'warn', 12000);
+    }
+}
+function _dbgWipe(what) {
+    if (!confirm(what === 'scores' ? 'Clear ALL leaderboards?' : 'Clear the autosaved session?')) return;
+    try {
+        const kill = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (what === 'scores' && k.startsWith('jv_lb_')) kill.push(k);
+            if (what === 'scores' && k.startsWith('jv_best_')) kill.push(k);
+            if (what === 'autosave' && k === 'jv_arcade_autosave') kill.push(k);
+        }
+        kill.forEach(k => localStorage.removeItem(k));
+        renderSaveSlots();
+        showToast('Cleared ' + kill.length + ' key(s)', 'success');
+    } catch (e) { showToast('Wipe failed', 'error'); }
+}
+
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
     if (window.__exportMode) return; // exported game: injected boot script handles this
+    // ── Global error ring buffer (last 50) — surfaced in the Debug menu ──────
+    window._errLog = [];
+    const _errPush = (m) => { try { window._errLog.push({ t: Date.now(), m: String(m).slice(0, 300) }); if (window._errLog.length > 50) window._errLog.shift(); } catch (e) {} };
+    window.addEventListener('error', e => _errPush((e.message || 'error') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '?')));
+    window.addEventListener('unhandledrejection', e => _errPush('promise: ' + ((e.reason && e.reason.message) || e.reason)));
     _applyStoredTheme();
     _initPuRateDefaults();
     setupTouchControls();
@@ -20478,6 +20657,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         setTimeout(() => _runGenreSelfTest(), 700);
     } else if (!window.__exportMode) {
         // Normal studio load, boot immediately
+        if (params.has('debug')) { try { history.replaceState(null, '', location.pathname); } catch(e){} setTimeout(() => openDebugModal(), 1000); }
         const _hasAutosave = !!localStorage.getItem('jv_arcade_autosave');
         const _hasVisited  = !!localStorage.getItem('jv_tutorial_done');
         if (!_hasAutosave && !_hasVisited) {

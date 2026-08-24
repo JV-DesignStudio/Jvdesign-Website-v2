@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v6
-const CACHE='jvds-v7';
+// JVDesignStudio Service Worker v8
+const CACHE='jvds-v8';
 const CORE=[
   '/',
   '/index.html',

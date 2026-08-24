@@ -1096,6 +1096,12 @@ button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
         <div class="rpg-panel-title">🎒 Inventory Bag</div>
         <div class="inv-grid" id="invGrid"></div>
       </div>
+      <div class="rpg-panel">
+        <div class="rpg-panel-title">📖 Spellbook <span id="manaBadge" style="font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#60a5fa"></span></div>
+        <div id="manaBarWrap" style="margin-bottom:8px"></div>
+        <div style="font-size:.64rem;color:var(--muted);margin-bottom:8px;line-height:1.5">💙 Mana regenerates +1 per quest completed. A morning check-in restores it fully. Your class shapes every spell.</div>
+        <div id="spellList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="rpg-panel">
@@ -1108,6 +1114,7 @@ button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
       <div class="rpg-panel">
         <div class="rpg-panel-title">⚙️ Settings & Actions</div>
         <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="shop-row"><span id="verLabel">ℹ️ QuestLog</span><span style="font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted)" id="verNum"></span></div>
           <div class="shop-row"><span>🛒 Visit the Market</span><button class="btn btn-rose btn-sm" onclick="switchView('shop')">Open Market</button></div>
           <div class="shop-row">
             <span>🎨 Active Theme</span>
@@ -1122,6 +1129,19 @@ button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
           <div class="shop-row"><span>☀️ Morning Check-In</span><button class="btn btn-ghost btn-sm" onclick="document.getElementById('checkInModal').classList.add('open')">Check In</button></div>
           <div class="shop-row"><span>🎁 Quest Wrapped 2026</span><button class="btn btn-gold btn-sm" onclick="openWrapped()">Open</button></div>
           <div class="shop-row"><span>📤 What I Shipped (HTML portfolio)</span><button class="btn btn-ghost btn-sm" onclick="exportShipped()">Export</button></div>
+          <div class="shop-row">
+            <span>🛠️ Cheats</span>
+            <span style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="dbg('gold')" title="+1000 gold">+💰</button>
+              <button class="btn btn-ghost btn-sm" onclick="dbg('xp')" title="+500 XP">+⚡</button>
+              <button class="btn btn-ghost btn-sm" onclick="dbg('lv')" title="+5 levels">+⭐</button>
+              <button class="btn btn-ghost btn-sm" onclick="dbg('mana')" title="refill mana">💙</button>
+              <button class="btn btn-ghost btn-sm" onclick="dbg('tokens')" title="+10 raid tokens">+🎫</button>
+              <button class="btn btn-ghost btn-sm" onclick="dbg('streak')" title="+1 streak day">+🔥</button>
+            </span>
+          </div>
+          <div class="shop-row"><span>📊 Live Data</span><span id="dbgData" style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);text-align:right;line-height:1.6"></span></div>
+          <div class="shop-row"><span>🧨 Danger Zone</span><button class="btn btn-ghost btn-sm" style="color:#f87171;border-color:rgba(248,113,113,.4)" onclick="wipeAll()">Erase everything</button></div>
         </div>
         <!-- GitHub Gist Sync -->
         <div class="rpg-panel" style="margin-top:16px">
@@ -1588,6 +1608,7 @@ Complete real quests to boost your stats, then return here to slay monsters on y
 <script>
 /* ── DATA ── */
 const SK='qb-data-v1', RK='qb-rpg-v1';
+const APP_VERSION='1.2.0-dnd'; // bump every release
 let state={
   columns:[
     {id:'todo',  title:'📋 To Do',       colour:'#7c3aed'},
@@ -1602,7 +1623,7 @@ let state={
   ],
   nextId:10
 };
-let rpg={level:1,xp:0,prestige:0,gold:0,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[]};
+let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[]};
 
 /* ── STORAGE ── */
 function save(){
@@ -1661,8 +1682,14 @@ const GOLD_PER={high:30,med:15,low:8};
    CHA   → better haggling, cheaper Market prices */
 function _chaDiscountPct(){return Math.min(30,Math.max(0,Math.floor(((rpg.stats||{}).cha||10)/3)-3));}
 function _strDrainFactor(){return Math.max(.4,1-(((rpg.stats||{}).str||10)*.008));}
-function _dexLootBonus(){return Math.min(.12,((rpg.stats||{}).dex||10)*.002);}
+function _dexLootBonus(){var b=((rpg.stats||{}).dex||10)*.002;if(rpg.class==='Design Druid')b+=.10;return Math.min(.22,b);}
 function _intFocusMinutes(){return Math.floor(((rpg.stats||{}).int||10)/10);}
+function _manaMax(){return 10+Math.floor(((rpg.stats||{}).int||10)/2);}
+/* Class passives — each class plays differently:
+   Code Conjurer → spells cost 1 less mana
+   Pixel Paladin → +20% gold from all sources
+   Design Druid  → +10% loot drop chance
+   QA Ranger     → +1 Raid Token per dungeon kill */
 function _pomBaseSeconds(){return POM_WORK+_intFocusMinutes()*60;}
 function _dispName(){return (localStorage.getItem('qb-player-name')||'Adventurer')+', '+rpg.title+(rpg.prestige?' ⭐×'+rpg.prestige:'');}
 const AVATARS={'Code Conjurer':'🧙‍♂️','Pixel Paladin':'🗡️','Design Druid':'🦊','QA Ranger':'🏹'};
@@ -1704,6 +1731,8 @@ function addGold(n){
   // Apply gold buff if earning (not spending)
   if(n>0){
     if(rpg.shopUnlocked?.gold_eye)actual=Math.round(n*1.15);
+    if(hasActiveBuff('goldX2')){actual=Math.round(actual*2);consumeBuff('goldX2');}
+    if(rpg.class==='Pixel Paladin')actual=Math.round(actual*1.2); // class passive
     if(hasActiveBuff('goldBoost')){actual=Math.round(actual*1.5);consumeBuff('goldBoost');}
     rpg.lifetimeGold=(rpg.lifetimeGold||0)+actual;
   }
@@ -1760,6 +1789,8 @@ function updateRpgWidgets(){
     const sp=document.getElementById('statPerks');
     if(sp)sp.innerHTML='<strong style="color:var(--gold)">⚔️ Stat Perks:</strong> STR −'+Math.round((1-_strDrainFactor())*100)+'% gold drain · INT +'+_intFocusMinutes()+'min focus · DEX +'+Math.round(_dexLootBonus()*100)+'% loot · CHA −'+_chaDiscountPct()+'% shop prices';
     renderPrestige();
+    renderSpellbook();
+    refreshDbgData();
     renderEquip();renderInv();
   }
   // dash gold
@@ -1855,6 +1886,7 @@ function onQuestComplete(card){
   chance=Math.min(.65,chance+_dexLootBonus()); // DEX perk: keener eye for loot
   if(hasActiveBuff('lootGuar')){chance=1;consumeBuff('lootGuar');}
   if(Math.random()<chance)openLoot();
+  rpg.mana=Math.min(_manaMax(),(rpg.mana==null?_manaMax()-1:rpg.mana)+1); // quests restore mana
   // Record daily stats
   const todayKey=new Date().toDateString();
   if(!rpg.dailyStats)rpg.dailyStats={};
@@ -1889,15 +1921,37 @@ function startConfetti(){
 
 /* ── LOOT ── */
 const LOOT_POOL=[
-  {text:'⚔️ Excalibur Keyboard',slot:'weapon',stat:'str',val:5,icon:'⚔️'},
-  {text:'🧙 Mage Staff of Compilation',slot:'weapon',stat:'int',val:5,icon:'🧙'},
-  {text:'🛡️ Shield of Bug Resistance',slot:'armor',stat:'str',val:4,icon:'🛡️'},
-  {text:'🧥 Rogue Cloak of CSS',slot:'armor',stat:'cha',val:4,icon:'🧥'},
-  {text:'🔮 Amulet of Deployment',slot:'trinket',stat:'dex',val:3,icon:'🔮'},
-  {text:'💍 Ring of Monetisation',slot:'trinket',stat:'cha',val:3,icon:'💍'},
-  {text:'⌨️ Mechanical Key of Dexterity',slot:'weapon',stat:'dex',val:4,icon:'⌨️'},
-  {text:'👑 Crown of the Publisher',slot:'armor',stat:'cha',val:5,icon:'👑'}
+  /* ── LEGENDARY ── */
+  {text:'⚔️ Excalibur, Keyboard of Legends',slot:'weapon',stat:'str',val:7,icon:'⚔️',r:'legendary'},
+  {text:'🌟 Staff of Infinite Refactors',slot:'weapon',stat:'int',val:6,icon:'🪄',r:'legendary'},
+  {text:'👑 Crown of the Publisher Supreme',slot:'armor',stat:'cha',val:7,icon:'👑',r:'legendary'},
+  /* ── EPIC ── */
+  {text:'🗡️ Blade of Shipped Features',slot:'weapon',stat:'str',val:5,icon:'🗡️',r:'epic'},
+  {text:'🪄 Wand of One-Line Fixes',slot:'weapon',stat:'int',val:5,icon:'🪄',r:'epic'},
+  {text:'🏹 Bow of Pixel-Perfect Aim',slot:'weapon',stat:'dex',val:5,icon:'🏹',r:'epic'},
+  {text:'🛡️ Aegis of Zero Downtime',slot:'armor',stat:'str',val:5,icon:'🛡️',r:'epic'},
+  {text:'💎 Amulet of the Deep Focus',slot:'trinket',stat:'int',val:5,icon:'💎',r:'epic'},
+  /* ── RARE ── */
+  {text:'⌨️ Mechanical Key of Dexterity',slot:'weapon',stat:'dex',val:4,icon:'⌨️',r:'rare'},
+  {text:'🔨 Hammer of Regression Squashing',slot:'weapon',stat:'str',val:4,icon:'🔨',r:'rare'},
+  {text:'📜 Tome of Forgotten APIs',slot:'weapon',stat:'int',val:4,icon:'📜',r:'rare'},
+  {text:'🧥 Rogue Cloak of Clean CSS',slot:'armor',stat:'cha',val:4,icon:'🧥',r:'rare'},
+  {text:'🥾 Boots of the Morning Deploy',slot:'armor',stat:'dex',val:4,icon:'🥾',r:'rare'},
+  {text:'🎭 Mask of Confident Pitches',slot:'armor',stat:'cha',val:4,icon:'🎭',r:'rare'},
+  {text:'🔮 Orb of Foresight',slot:'trinket',stat:'int',val:4,icon:'🔮',r:'rare'},
+  {text:'💍 Ring of Monetisation',slot:'trinket',stat:'cha',val:4,icon:'💍',r:'rare'},
+  /* ── COMMON ── */
+  {text:'✏️ Trusty Pencil of Planning',slot:'weapon',stat:'int',val:2,icon:'✏️',r:'common'},
+  {text:'🖱️ Mouse of Many Clicks',slot:'weapon',stat:'dex',val:3,icon:'🖱️',r:'common'},
+  {text:'☕ Mug of Liquid Motivation',slot:'trinket',stat:'str',val:2,icon:'☕',r:'common'},
+  {text:'📓 Notebook of Half-Ideas',slot:'trinket',stat:'int',val:2,icon:'📓',r:'common'},
+  {text:'🧢 Cap of Quiet Confidence',slot:'armor',stat:'cha',val:3,icon:'🧢',r:'common'},
+  {text:'🦺 Vest of Bug Safety',slot:'armor',stat:'str',val:3,icon:'🦺',r:'common'},
+  {text:'🔑 Key of Small Wins',slot:'trinket',stat:'dex',val:3,icon:'🔑',r:'common'},
+  {text:'📎 Paperclip of Holding',slot:'trinket',stat:'dex',val:2,icon:'📎',r:'common'},
 ];
+const RAR_COL={common:'#9ca3af',rare:'#60a5fa',epic:'#a78bfa',legendary:'#fbbf24'};
+const RAR_LABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'LEGENDARY'};
 let pendingLoot=null;
 function openLoot(){
   pendingLoot=LOOT_POOL[Math.floor(Math.random()*LOOT_POOL.length)];
@@ -1929,7 +1983,7 @@ function renderInv(){
   const g=document.getElementById('invGrid');if(!g)return;g.innerHTML='';
   for(let i=0;i<10;i++){
     const c=document.createElement('div');const it=rpg.inventory[i];
-    if(it){c.className='inv-cell';c.textContent=it.icon;c.title=`${it.text} (+${it.val} ${it.stat.toUpperCase()}). Click to equip.`;c.onclick=()=>equipFromInv(i);}
+    if(it){c.className='inv-cell';c.textContent=it.icon;c.style.border='1px solid '+(RAR_COL[it.r]||RAR_COL.common);c.title='['+(RAR_LABEL[it.r]||'Common')+'] '+it.text+' (+'+it.val+' '+it.stat.toUpperCase()+'). Click to equip.';c.onclick=()=>equipFromInv(i);}
     else{c.className='inv-cell empty';c.textContent='·';}
     g.appendChild(c);
   }
@@ -1951,8 +2005,8 @@ function renderEquip(){
   ['weapon','armor','trinket'].forEach(slot=>{
     const el=document.getElementById(`eq-${slot}`);if(!el)return;
     const it=rpg.equipped[slot];
-    if(it){el.className='equip-slot filled';el.innerHTML=`<span class="equip-slot-icon">${it.icon}</span><span class="equip-slot-label">${slot}</span>`;el.title=`${it.text}. Click to unequip.`;}
-    else{el.className='equip-slot';el.innerHTML=`<span class="equip-slot-icon">🚫</span><span class="equip-slot-label">${slot}</span>`;el.title='';}
+    if(it){var rc=RAR_COL[it.r]||RAR_COL.common;el.className='equip-slot filled';el.style.borderColor=rc;el.innerHTML='<span class="equip-slot-icon">'+it.icon+'</span><span class="equip-slot-label">'+slot+'</span><span style="font-size:.5rem;font-weight:900;color:'+rc+'">'+(RAR_LABEL[it.r]||'COMMON').slice(0,4)+'</span>';el.title='['+(RAR_LABEL[it.r]||'Common')+'] '+it.text+' (+'+it.val+' '+it.stat.toUpperCase()+'). Click to unequip.';}
+    else{el.className='equip-slot';el.style.borderColor='';el.innerHTML=`<span class="equip-slot-icon">🚫</span><span class="equip-slot-label">${slot}</span>`;el.title='';}
   });
 }
 
@@ -2191,7 +2245,7 @@ function enemyTurn(){
   if(dg.playerHp<=0){playSfx('error');dgPrint('<br><strong style="color:#ff4444">☠️ You were defeated! Retreat and try again.</strong>');dg.active=false;showDgBtns(false);document.querySelector('.dungeon-controls button').style.display='';}
 }
 function checkMonsterDead(){
-  if(dg.monster.hp<=0){playSfx('quest');dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g`);addXp(dg.monster.xp);addGold(dg.monster.g);const tok=Math.max(1,Math.ceil(dg.floor/2));rpg.raidTokens=(rpg.raidTokens||0)+tok;dgPrint(' ⚔️ +'+tok+' Raid Token'+(tok>1?'s':''));dg.floor++;spawnMonster();return true;}
+  if(dg.monster.hp<=0){playSfx('quest');dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g`);addXp(dg.monster.xp);addGold(dg.monster.g);const tok=Math.max(1,Math.ceil(dg.floor/2))+(rpg.class==='QA Ranger'?1:0);rpg.raidTokens=(rpg.raidTokens||0)+tok;dgPrint(' ⚔️ +'+tok+' Raid Token'+(tok>1?'s':''));dg.floor++;spawnMonster();return true;}
   return false;
 }
 
@@ -4030,6 +4084,7 @@ function completeCheckIn(){
   _initSelfCare();
   const today=new Date().toDateString();
   rpg.selfCare.checkInDate=today;
+  rpg.mana=_manaMax(); // morning rest fully restores mana
   if(!rpg.selfCare.mood)rpg.selfCare.mood={};
   rpg.selfCare.mood[today]={mood:_ciMood,sleep:_ciSleep};
   const xp=(_ciMood-1)*10+(_ciSleep-1)*10;
@@ -4719,6 +4774,110 @@ function duplicateCard(id){
 }
 
 
+/* ═══ SPELLBOOK ═ cast spells that bend the productivity layer itself ═══ */
+const SPELLS=[
+  {id:'ward',    icon:'🛡️',name:'Ward',         lv:2,cost:3,desc:'Raise a shield: ignored bosses cannot drain your gold for 48h.'},
+  {id:'insight', icon:'🔮',name:'Insight',       lv:4,cost:2,desc:'Reveal today\'s single highest-leverage quest and open it.'},
+  {id:'chrono',  icon:'🕐',name:'Chrono Shift',  lv:3,cost:4,desc:'Shift every overdue quest one day into the future.'},
+  {id:'battlecry',icon:'⚡',name:'Battle Cry',   lv:5,cost:4,desc:'Your next 3 quests grant DOUBLE gold.'},
+  {id:'midas',   icon:'💰',name:'Midas Touch',   lv:6,cost:5,desc:'Conjure 100 gold from thin air.'},
+];
+function _spellCost(s){return Math.max(1,s.cost-(rpg.class==="Code Conjurer"?1:0));} // mage passive
+function castSpell(id){
+  const s=SPELLS.find(x=>x.id===id);if(!s)return;
+  if(rpg.level<s.lv){playSfx('error');showToast('🔒 '+s.name+' unlocks at Level '+s.lv);return;}
+  const cost=_spellCost(s);
+  if((rpg.mana||0)<cost){playSfx('error');showToast('💙 Not enough mana ('+cost+' needed) — complete quests & check in to restore it!');return;}
+  rpg.mana-=cost;
+  let msg='';
+  if(id==='ward'){
+    if(!rpg.activeBuffs)rpg.activeBuffs=[];
+    const ex=rpg.activeBuffs.find(b=>b.type==='bossShield');
+    if(ex)ex.expires=Date.now()+48*3600000;
+    else rpg.activeBuffs.push({type:'bossShield',name:'Boss Shield',icon:'🛡️',expires:Date.now()+48*3600000,_id:'buf'+Date.now()});
+    msg='🛡️ Ward raised — your gold is protected for 48 hours.';
+  } else if(id==='chrono'){
+    const tmr=_dateStr(new Date());let cnt=0;
+    state.cards.forEach(c=>{if(c.colId!=='done'&&c.date&&c.date<tmr&&(!c.repeat||c.repeat==='none')){const d=new Date(c.date+'T00:00:00');d.setDate(d.getDate()+1);c.date=_dateStr(d);cnt++;}});
+    msg='🕐 '+cnt+' quest'+(cnt===1?'':'s')+' shifted one day forward. Fresh start.';
+  } else if(id==='insight'){
+    const top=_top3Scored()[0];
+    if(top){flashScreen();openProjectSheet(top.c.id);}
+    msg='🔮 Insight reveals what matters most today.';
+  } else if(id==='battlecry'){
+    if(!rpg.activeBuffs)rpg.activeBuffs=[];
+    rpg.activeBuffs.push({type:'goldX2',name:'Battle Cry',icon:'⚡',uses:3,_id:'buf'+Date.now()});
+    msg='⚡ Battle Cry! Double gold on your next 3 quests.';
+  } else if(id==='midas'){
+    addGold(100);
+    spawnXpFloat('+100g MIDAS!','gold');
+    msg='💰 Midas Touch: +100g materialises in your pouch.';
+  }
+  playSfx('unlock');flashScreen();
+  spawnXpFloat('✨ '+s.name,'purple');
+  showToast(msg,'success');
+  save();renderActiveBuffs();renderDash();updateRpgWidgets();
+}
+function renderSpellbook(){
+  const list=document.getElementById('spellList');if(!list)return;
+  const badge=document.getElementById('manaBadge');
+  const bar=document.getElementById('manaBarWrap');
+  const mx=_manaMax(),cur=Math.min(rpg.mana==null?mx:rpg.mana,mx);
+  if(badge)badge.textContent='💙 '+cur+' / '+mx;
+  if(bar)bar.innerHTML='<div style="height:7px;background:rgba(96,165,250,.12);border-radius:4px;overflow:hidden;border:1px solid rgba(96,165,250,.3)"><div style="height:100%;width:'+Math.round(cur/mx*100)+'%;background:linear-gradient(90deg,#3b82f6,#93c5fd);transition:width .4s"></div></div>';
+  list.innerHTML='';
+  SPELLS.forEach(s=>{
+    const locked=rpg.level<s.lv;const cost=_spellCost(s);
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:9px;background:var(--bg3);border-radius:8px;padding:8px 10px;border:1px solid '+(locked?'rgba(255,255,255,.07)':'rgba(96,165,250,.28)');
+    row.innerHTML='<span style="font-size:1.25rem;flex-shrink:0;filter:'+(locked?'grayscale(1) opacity(.35)':'drop-shadow(0 0 6px rgba(96,165,250,.45))')+'">'+s.icon+'</span>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:.76rem;font-weight:900'+(locked?';opacity:.45':'')+'">'+s.name+' <span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:#60a5fa">'+cost+'💙</span>'+(locked?' <span style="font-size:.58rem;color:var(--muted)">🔒 LV'+s.lv+'</span>':'')+'</div>'+
+      '<div style="font-size:.62rem;color:var(--muted);line-height:1.4">'+(locked?'Unlocks at Level '+s.lv:s.desc)+'</div></div>'+      (locked?'':'<button class="btn btn-gold btn-sm" style="padding:3px 9px;font-size:.62rem" onclick="castSpell(\''+s.id+'\')">Cast</button>');
+    list.appendChild(row);
+  });
+}
+
+
+/* ── DEBUG TOOLS + VERSION LABEL ───────────────────────────────────────── */
+function dbg(what){
+  if(what==='gold'){addGold(1000);}
+  else if(what==='xp'){addXp(500);}
+  else if(what==='streak'){rpg.streak=(rpg.streak||0)+1;rpg.bestStreak=Math.max(rpg.bestStreak||0,rpg.streak);}
+  else if(what==='lv'){rpg.level+=5;rpg.mana=_manaMax();}
+  else if(what==='mana'){rpg.mana=_manaMax();}
+  else if(what==='tokens'){rpg.raidTokens=(rpg.raidTokens||0)+10;}
+  playSfx('coin');flashScreen();spawnXpFloat('🛠️ DEBUG','purple');
+  showToast('🛠️ '+what+' applied (v'+APP_VERSION+')','warn');
+  save();updateRpgWidgets();renderDash();refreshDbgData();
+}
+function refreshDbgData(){
+  var el=document.getElementById('dbgData');if(!el)return;
+  var done=state.cards.filter(function(c){return c.colId==='done';}).length;
+  var kb=Math.round(((localStorage.getItem(SK)||'').length+(localStorage.getItem(RK)||'').length)/1024*10)/10;
+  var lines=[
+    'quests '+state.cards.length+' ('+done+' done)',
+    'LV'+rpg.level+' · '+rpg.xp+'/'+(rpg.level*1000)+'xp',
+    'gold '+rpg.gold+' · streak '+rpg.streak,
+    'mana '+rpg.mana+' tokens '+(rpg.raidTokens||0),
+    'prestige '+(rpg.prestige||0)+' · notes '+(rpg.notes||[]).length,
+    'storage '+kb+'KB · v'+APP_VERSION
+  ];
+  el.innerHTML=lines.join('<br>');
+}
+function wipeAll(){
+  if(!confirm('ERASE EVERYTHING?\nAll quests, character progress and settings will be permanently deleted.'))return;
+  if(!confirm('Last chance — this cannot be undone. Really erase?'))return;
+  try{localStorage.removeItem(SK);}catch(e){}
+  try{localStorage.removeItem(RK);}catch(e){}
+  location.reload();
+}
+function _initVersionLabel(){
+  var vl=document.getElementById('verLabel'),vn=document.getElementById('verNum');
+  if(vl)vl.textContent='⚔️ QuestLog v'+APP_VERSION;
+  if(vn)vn.textContent=new Date().getFullYear()+' · D&D Update';
+}
+
+
 /* ── HOME-SCREEN WIDGET BRIDGE ─ no-op on web / when plugin absent ─────── */
 function _pushWidget(){
   try{
@@ -4728,6 +4887,7 @@ function _pushWidget(){
     P.update({json:JSON.stringify({
       name:(localStorage.getItem('qb-player-name')||'Adventurer'),
       lv:rpg.level,streak:rpg.streak||0,gold:rpg.gold,
+      av:(AVATARS[rpg.class]||'🧙‍♂️'),say:_companionSay(),
       q1:top[0]?top[0].t:'',i1:top[0]?top[0].id:'',
       q2:top[1]?top[1].t:'',i2:top[1]?top[1].id:'',
       q3:top[2]?top[2].t:'',i3:top[2]?top[2].id:''
@@ -4735,6 +4895,22 @@ function _pushWidget(){
   }catch(e){}
 }
 
+
+/* ── COMPANION ─ your character speaks from the home-screen widget ─────── */
+function _pick(a){return a[Math.floor(Math.random()*a.length)];}
+function _companionSay(){
+  try{
+    var today=_dateStr(new Date());
+    var overdue=state.cards.filter(function(c){return c.colId!=='done'&&c.date&&c.date<today&&!isLocked(c.id);}).length;
+    var dueT=state.cards.filter(function(c){return c.colId!=='done'&&c.date===today;}).length;
+    var open=state.cards.filter(function(c){return c.colId!=='done'&&!isLocked(c.id);}).length;
+    if((rpg.streak||0)>=7&&Math.random()<0.45)return '🔥 '+rpg.streak+'-day streak! Bards will sing of this.';
+    if(overdue>0)return '⚠️ '+overdue+' quest'+(overdue>1?'s':'')+' need thee, brave soul!';
+    if(dueT>0)return _pick(['⚔️ '+dueT+' await'+(dueT===1?'s':'')+' thy blade today!','📜 The scroll shows '+dueT+'. Slay, then rest.','🎯 '+dueT+' today. Thou hast got this.']);
+    if(open>0)return _pick(['🗺️ '+open+' quests on the board. Choose thy battle!','⚔️ The dungeon of duty calls...','✨ One small quest. That is how legends start.']);
+    return _pick(['🎉 All quests slain! Rest well, hero.','🛋️ Board clear. A rare treasure — enjoy it!','🌙 Nothing pending. Even dragons sleep.']);
+  }catch(e){return '⚔️ Ready for adventure!';}
+}
 
 /* ── WIDGET TAP ROUTING ─ open the tapped quest's sheet after launch ───── */
 function _initWidgetTap(){
@@ -4804,10 +4980,12 @@ if(!rpg.calEvents)rpg.calEvents=[];
 if(!rpg.activeBuffs)rpg.activeBuffs=[];
 if(!rpg.shopUnlocked)rpg.shopUnlocked={};
 if(!rpg.weeklyReviews)rpg.weeklyReviews=[];
+console.log('%cQuestLog v'+APP_VERSION,'color:#f5c842;font-weight:bold');
 if(!rpg.firstPlayTs)rpg.firstPlayTs=Date.now();
 // Lifetime counters for Year Wrapped — estimate XP from level history on first run
 if(rpg.lifetimeXp==null)rpg.lifetimeXp=(rpg.xp||0)+(rpg.level-1)*1000+20000*(rpg.prestige||0);
 if(rpg.lifetimeGold==null)rpg.lifetimeGold=0;
+if(rpg.mana==null)rpg.mana=5;
 // Ensure all cards have new fields
 state.cards.forEach((c,i)=>{
   c.colId=_normCol(c.colId); // rescue cards routed to legacy/deleted columns
@@ -4843,6 +5021,7 @@ generateDailyChallenge();
 checkWeeklyReview();
 _initWidgetTap();
 maybePromptWrapped();
+_initVersionLabel();
 // Add weekly review to modal close handlers
 document.getElementById('weeklyReviewModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('weeklyReviewModal').classList.remove('open');});
 // Hook export to record last export date

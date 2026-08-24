@@ -235,31 +235,31 @@
         <img loading="lazy" src="/logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
         <span class="logo-name">JVDesignStudio</span>
     </a>
-    <nav class="main-nav">
+    <nav class="main-nav" aria-label="Main">
         <a href="/index.html" class="nav-link" data-page="index.html">Home</a>
-        <a href="/pages/games.html" class="nav-link" data-page="games.html">🎮 Games</a>
-        <a href="/pages/books.html" class="nav-link" data-page="books.html">📚 Books</a>
-        <a href="/pages/learn-hub.html" class="nav-link" data-page="learn-hub.html">🎓 Learn</a>
-        <a href="/pages/workshop.html" class="nav-link" data-page="workshop.html">🔧 Workshop</a>
-        <a href="/pages/dev-tools.html" class="nav-link" data-page="dev-tools.html">🛠️ Tools</a>
-        <a href="/pages/freebies.html" class="nav-link" data-page="freebies.html">🎁 Freebies</a>
-        <a href="/workshops/my-progress.html" class="nav-link" data-page="my-progress.html">📊 Progress</a>
+        <a href="/pages/games.html" class="nav-link" data-page="games.html"><span aria-hidden="true">🎮</span> Games</a>
+        <a href="/pages/books.html" class="nav-link" data-page="books.html"><span aria-hidden="true">📚</span> Books</a>
+        <a href="/pages/learn-hub.html" class="nav-link" data-page="learn-hub.html"><span aria-hidden="true">🎓</span> Learn</a>
+        <a href="/pages/workshop.html" class="nav-link" data-page="workshop.html"><span aria-hidden="true">🔧</span> Workshop</a>
+        <a href="/pages/dev-tools.html" class="nav-link" data-page="dev-tools.html"><span aria-hidden="true">🛠️</span> Tools</a>
+        <a href="/pages/freebies.html" class="nav-link" data-page="freebies.html"><span aria-hidden="true">🎁</span> Freebies</a>
+        <a href="/workshops/my-progress.html" class="nav-link" data-page="my-progress.html"><span aria-hidden="true">📊</span> Progress</a>
     </nav>
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
 </div>
-<nav class="mobile-nav" id="mobileNav">
-    <a href="/index.html">🏠 Home</a>
-    <a href="/pages/games.html">🎮 Games</a>
-    <a href="/pages/books.html">📚 Books</a>
-    <a href="/pages/learn-hub.html">🎓 Learn</a>
-    <a href="/pages/workshop.html">🔧 Workshop</a>
-    <a href="/pages/dev-tools.html">🛠️ Tools</a>
-    <a href="/pages/freebies.html">🎁 Freebies</a>
-    <a href="/workshops/my-progress.html">📊 Progress</a>
-    <a href="/pages/about.html">👤 About</a>
-    <a href="/pages/contact.html">✉️ Contact</a>
-    <a href="/pages/search.html">🔍 Search</a>
-    <a href="/pages/sitemap.html">🗺️ Sitemap</a>
+<nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
+    <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
+    <a href="/pages/games.html"><span aria-hidden="true">🎮</span> Games</a>
+    <a href="/pages/books.html"><span aria-hidden="true">📚</span> Books</a>
+    <a href="/pages/learn-hub.html"><span aria-hidden="true">🎓</span> Learn</a>
+    <a href="/pages/workshop.html"><span aria-hidden="true">🔧</span> Workshop</a>
+    <a href="/pages/dev-tools.html"><span aria-hidden="true">🛠️</span> Tools</a>
+    <a href="/pages/freebies.html"><span aria-hidden="true">🎁</span> Freebies</a>
+    <a href="/workshops/my-progress.html"><span aria-hidden="true">📊</span> Progress</a>
+    <a href="/pages/about.html"><span aria-hidden="true">👤</span> About</a>
+    <a href="/pages/contact.html"><span aria-hidden="true">✉️</span> Contact</a>
+    <a href="/pages/search.html"><span aria-hidden="true">🔍</span> Search</a>
+    <a href="/pages/sitemap.html"><span aria-hidden="true">🗺️</span> Sitemap</a>
 </nav>
 </header>
 <script>
@@ -511,13 +511,21 @@ function doSearch(){
     const q = document.getElementById('searchInput').value.toLowerCase().trim();
     document.getElementById('clearBtn').classList.toggle('visible', q.length>0);
     if(!q){renderAll(ALL_PROJECTS,'');return;}
-    const results = ALL_PROJECTS.filter(p=>
-        p.title.toLowerCase().includes(q)||
-        p.desc.toLowerCase().includes(q)||
-        p.keywords.toLowerCase().includes(q)||
-        p.tags.some(t=>t.toLowerCase().includes(q))||
-        p.cat.toLowerCase().includes(q)
-    );
+    // Searching pools the curated showcase with the full-site index, so
+    // every workshop, game, tool and guide is findable — while the default
+    // view stays a friendly curated grid rather than a 250-card wall.
+    const pool = ALL_PROJECTS.concat(window.SITE_INDEX || []);
+    const seen = new Set();
+    const results = pool.filter(p=>{
+        const u = p.url.replace(/^(\.\.\/)+/,'');
+        if(seen.has(u)) return false; seen.add(u);
+        return p.title.toLowerCase().includes(q)||
+            p.desc.toLowerCase().includes(q)||
+            p.keywords.toLowerCase().includes(q)||
+            p.tags.some(t=>t.toLowerCase().includes(q))||
+            p.cat.toLowerCase().includes(q)
+        ;
+    });
     renderAll(results, q);
 }
 
@@ -527,6 +535,47 @@ function quickSearch(term, chip){
     document.getElementById('searchInput').value = term;
     doSearch();
 }
+
+/* ── FULL-SITE INDEX AUGMENTATION ─────────────────────────────────────────
+   ALL_PROJECTS above is the curated showcase shown by default. The generated
+   search-index.json (every public page, built alongside the sitemap) is kept
+   in window.SITE_INDEX and pooled into results only when the user types a
+   query — so search covers the whole site without turning the landing view
+   into a wall of cards. */
+(function(){
+    const CAT_STYLE = {
+        'games':     { cat:'Game',    emoji:'🎮', color:'linear-gradient(135deg,#0a0a1a,#1a1035)', badgeColor:'#4e7d80' },
+        'workshops': { cat:'Course',  emoji:'🎓', color:'linear-gradient(135deg,#0a1628,#1a2640)', badgeColor:'#c47f00' },
+        'books':     { cat:'Book',    emoji:'📚', color:'linear-gradient(135deg,#2a2838,#3d3952)', badgeColor:'#6b4fa0' },
+        'tools':     { cat:'Tool',    emoji:'🛠️', color:'linear-gradient(135deg,#0a0a0c,#18101e)', badgeColor:'#7c3aed' },
+        'pages':     { cat:'Page',    emoji:'📄', color:'linear-gradient(135deg,#1a1a24,#2a2838)', badgeColor:'#5a5449' }
+    };
+    const norm = u => u.replace(/^(\.\.\/)+/,'').replace(/^\//,'');
+    const known = new Set(ALL_PROJECTS.map(p=>norm(p.url)));
+    window.SITE_INDEX = [];
+    fetch('../search-index.json').then(r=>r.ok?r.json():Promise.reject()).then(idx=>{
+        const extra = (idx.pages||[]).filter(p=>!known.has(p.url)).map(p=>{
+            const parts = p.url.split('/');
+            const style = CAT_STYLE[parts[0]] || CAT_STYLE['pages'];
+            const fileName = (parts[parts.length-1]||'').replace(/\.html$/,'').replace(/-/g,' ');
+            return {
+                title: p.title || fileName,
+                cat: style.cat,
+                emoji: style.emoji,
+                color: style.color,
+                badge: style.cat,
+                badgeColor: style.badgeColor,
+                url: '../' + p.url,
+                desc: p.desc || ('Part of the free JVDesignStudio collection — ' + fileName + '.'),
+                tags: [style.cat, parts.length>1?parts[0]:'site'],
+                keywords: (p.title+' '+p.desc+' '+p.url).toLowerCase()
+            };
+        });
+        window.SITE_INDEX = extra;
+        // If the user already typed something, refresh results with the wider pool
+        if(document.getElementById('searchInput').value.trim()) doSearch();
+    }).catch(()=>{ /* index unavailable — curated list still works */ });
+}())
 function clearSearch(){
     document.getElementById('searchInput').value='';
     document.getElementById('clearBtn').classList.remove('visible');
