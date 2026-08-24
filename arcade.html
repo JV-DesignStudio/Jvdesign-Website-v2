@@ -26,7 +26,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="JVDS Arcade">
 <link rel="apple-touch-icon" href="icons/arcade-180.png">
-<link rel="icon" href="logo.png" type="image/png">
+<link rel="icon" href="icons/arcade-192.png" type="image/png">
 
 <link rel="stylesheet" href="style-shared.css">
 <style>
@@ -102,7 +102,12 @@ body.arc-appmode footer{display:none!important;}
 
 /* ── Views ── */
 .arc-view{display:none;}
-.arc-view.active{display:block;}
+.arc-view.active{display:block;animation:viewIn .18s ease;}
+@keyframes viewIn{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .arc-view.active{animation:none}
+  .exp-bar span,.hero-bar span{transition:none!important}
+}
 .arc-h{
   font-size:.78rem;font-weight:800;letter-spacing:.10em;text-transform:uppercase;
   color:var(--arc-faint);margin:26px 0 12px;
@@ -252,6 +257,66 @@ body.arc-appmode footer{display:none!important;}
   font-weight:800;font-size:.84rem;padding:11px 22px;border-radius:999px;cursor:pointer;
 }
 
+/* ── Collection explorer card ──
+   The hub's own meta layer: breadth of games played, with rank tiers. */
+.explore{
+  margin-top:12px;background:linear-gradient(150deg,#171a2c,#14161f 70%);
+  border:1px solid var(--arc-line);border-radius:17px;padding:15px 16px;
+}
+.exp-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--arc-faint);}
+.exp-top b{font-size:.95rem;color:var(--arc-text);letter-spacing:0;text-transform:none;
+  font-variant-numeric:tabular-nums;}
+.exp-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.10);
+  overflow:hidden;margin-top:9px;}
+.exp-bar span{display:block;height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--arc-pip),var(--arc-gold));
+  transition:width .5s cubic-bezier(.4,0,.2,1);}
+.exp-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:10px;}
+.exp-tier{font-size:.8rem;font-weight:800;color:var(--arc-pip);min-width:0;}
+.exp-week{margin-top:10px;font-size:.72rem;font-weight:700;color:var(--arc-faint);}
+/* Challenge widgets act as one big tap target into discovery order. */
+#dailyChallenge,#weeklyChallenge{cursor:pointer;}
+.dc-go{
+  display:block;width:100%;margin:-16px 0 24px;background:none;border:0;
+  color:var(--arc-gold);font:inherit;font-size:.74rem;font-weight:800;
+  letter-spacing:.05em;text-transform:uppercase;text-align:right;
+  padding:6px 4px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.dc-go:active{opacity:.7;}
+.surprise-btn{
+  flex:0 0 auto;background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.4);
+  color:var(--arc-gold);font:inherit;font-weight:800;font-size:.76rem;
+  padding:8px 14px;border-radius:999px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.surprise-btn:active{transform:translateY(1px);background:rgba(240,192,64,.22);}
+
+/* ── Hub toast (rank-ups, surprise pick) ── */
+.arc-toast{
+  position:fixed;left:50%;bottom:calc(var(--arc-tabh) + env(safe-area-inset-bottom,0px) + 18px);
+  transform:translateX(-50%) translateY(16px);
+  background:linear-gradient(135deg,var(--arc-lumo),#6b4b9e);color:#fff;
+  padding:12px 22px;border-radius:999px;font-weight:800;font-size:.88rem;
+  z-index:200;box-shadow:0 10px 28px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
+  max-width:92vw;text-align:center;
+}
+.arc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── Sort row + chip counts + lucky chip ── */
+.sortrow{display:flex;gap:6px;margin-top:12px;}
+.sortrow button{
+  flex:1;background:var(--arc-panel);border:1px solid var(--arc-line);
+  color:var(--arc-dim);font:inherit;font-size:.74rem;font-weight:700;
+  padding:8px 4px;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.sortrow button[aria-pressed="true"]{
+  background:rgba(165,131,206,.16);border-color:rgba(165,131,206,.55);color:#d9c9f2;
+}
+.chip .n{opacity:.55;font-weight:800;margin-left:5px;}
+.chip.lucky{background:rgba(240,192,64,.10);border-color:rgba(240,192,64,.35);color:var(--arc-gold);}
+
 /* ── Bottom tab bar ── */
 .arc-tabs{
   position:fixed;left:0;right:0;bottom:0;z-index:60;
@@ -260,6 +325,7 @@ body.arc-appmode footer{display:none!important;}
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 .arc-tabs button{
+  position:relative;
   flex:1;background:none;border:0;font:inherit;cursor:pointer;
   color:var(--arc-faint);padding:9px 4px 10px;
   display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -267,6 +333,11 @@ body.arc-appmode footer{display:none!important;}
 }
 .arc-tabs button .ic{font-size:1.22rem;line-height:1;}
 .arc-tabs button[aria-selected="true"]{color:var(--arc-lumo);}
+.arc-tabs .dot{
+  position:absolute;top:5px;left:calc(50% + 6px);
+  width:9px;height:9px;border-radius:50%;
+  background:var(--arc-gold);box-shadow:0 0 0 3px rgba(240,192,64,.18);
+}
 
 /* iOS install hint sheet */
 .ios-hint{
@@ -280,6 +351,110 @@ body.arc-appmode footer{display:none!important;}
 .ios-hint button{margin-top:11px;background:none;border:1px solid var(--arc-line);
   color:var(--arc-dim);font:inherit;font-size:.78rem;font-weight:700;
   padding:7px 15px;border-radius:999px;cursor:pointer;}
+
+/* ── Header gear ── */
+.arc-gear{
+  width:36px;height:36px;flex:0 0 36px;border-radius:50%;
+  background:var(--arc-panel);border:1px solid var(--arc-line);
+  color:var(--arc-dim);font-size:.95rem;line-height:1;cursor:pointer;
+  display:grid;place-items:center;-webkit-tap-highlight-color:transparent;
+}
+.arc-gear:active{transform:scale(.94);}
+
+/* ── Settings sheet ── */
+.sheet-backdrop{
+  position:fixed;inset:0;z-index:90;background:rgba(5,6,10,.62);
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+}
+.settings-sheet{
+  position:fixed;left:12px;right:12px;z-index:91;
+  bottom:calc(var(--arc-tabh) + env(safe-area-inset-bottom,0px) + 12px);
+  background:var(--arc-panel-2);border:1px solid var(--arc-line);
+  border-radius:18px;padding:16px;box-shadow:0 18px 44px rgba(0,0,0,.5);
+  animation:viewIn .18s ease;
+}
+.set-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.set-head b{font-size:.95rem;font-weight:800;}
+#settingsClose{background:none;border:0;color:var(--arc-dim);font-size:1.05rem;
+  cursor:pointer;padding:4px 8px;}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:13px 0;border-top:1px solid var(--arc-line);border-bottom:1px solid var(--arc-line);cursor:pointer;}
+.set-row .lab{display:flex;flex-direction:column;gap:2px;font-size:.85rem;font-weight:700;}
+.set-row .lab small{font-size:.68rem;color:var(--arc-faint);font-weight:600;}
+.switch{position:relative;width:46px;height:26px;flex:0 0 46px;}
+.switch input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;width:100%;height:100%;}
+.switch i{position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.16);
+  transition:background .18s;pointer-events:none;}
+.switch i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;
+  border-radius:50%;background:#fff;transition:transform .18s;}
+.switch input:checked + i{background:var(--arc-pip);}
+.switch input:checked + i::after{transform:translateX(20px);}
+.set-about{margin-top:12px;font-size:.74rem;color:var(--arc-dim);line-height:1.55;}
+.set-danger{
+  margin-top:14px;width:100%;background:rgba(188,71,73,.14);
+  border:1px solid rgba(188,71,73,.45);color:#ffb3b4;
+  font:inherit;font-weight:800;font-size:.82rem;padding:11px;border-radius:12px;cursor:pointer;
+}
+.set-danger:active{background:rgba(188,71,73,.26);}
+.set-actions{display:flex;gap:8px;margin-top:14px;}
+.set-btn{
+  flex:1;background:var(--arc-panel);border:1px solid var(--arc-line);
+  color:var(--arc-text);font:inherit;font-weight:800;font-size:.8rem;
+  padding:11px 8px;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.set-btn:active{transform:translateY(1px);}
+.set-btn.primary{background:rgba(165,131,206,.18);border-color:rgba(165,131,206,.55);color:#d9c9f2;}
+.set-btn.danger{background:rgba(188,71,73,.10);border-color:rgba(188,71,73,.4);color:#ffb3b4;}
+.upd-banner{
+  margin-top:12px;background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.45);
+  border-radius:12px;padding:11px 12px;font-size:.78rem;font-weight:700;color:var(--arc-gold);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.upd-banner button{
+  flex:0 0 auto;background:var(--arc-gold);color:#241c05;border:0;font:inherit;
+  font-weight:800;font-size:.72rem;padding:8px 12px;border-radius:999px;cursor:pointer;
+}
+.import-area{
+  width:100%;margin-top:4px;background:var(--arc-panel);border:1px solid var(--arc-line);
+  border-radius:12px;padding:11px;color:var(--arc-text);font:600 .72rem/1.5 ui-monospace,monospace;
+  resize:vertical;word-break:break-all;
+}
+/* ⓘ chip on game cards */
+.card .info-chip{
+  position:absolute;left:8px;top:8px;z-index:3;
+  width:26px;height:26px;border-radius:50%;
+  background:rgba(8,8,14,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  border:1px solid rgba(255,255,255,.28);color:#fff;
+  font:800 .72rem/1 system-ui,sans-serif;display:grid;place-items:center;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.card .info-chip:active{transform:scale(.9);}
+/* Detail sheet stats */
+.d-rows{border-top:1px solid var(--arc-line);}
+.d-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--arc-line);font-size:.82rem;}
+.d-row span{color:var(--arc-dim);}
+.d-row b{font-weight:800;text-align:right;}
+.d-desc{margin:12px 0;font-size:.8rem;color:var(--arc-dim);line-height:1.55;}
+
+/* ── Offline banner ── */
+.arc-offline{
+  position:fixed;top:0;left:0;right:0;z-index:80;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 8px;
+  background:#3a2510;color:#ffd894;text-align:center;
+  font-weight:700;font-size:.78rem;border-bottom:1px solid rgba(240,192,64,.25);
+}
+/* Push page content below the banner while it is up. */
+body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
+
+/* ── Confetti (rank-ups & level homecoming) ── */
+.arc-confetti{
+  position:fixed;width:9px;height:13px;border-radius:2px;
+  z-index:210;pointer-events:none;left:-20px;top:-20px;
+}
+
+/* Keyboard focus visibility (desktop / TV / a11y). */
+:focus-visible{outline:2px solid var(--arc-lumo);outline-offset:2px;}
 
 @media (min-width:700px){
   .tiles{grid-template-columns:repeat(4,1fr);}
@@ -348,15 +523,19 @@ body.arc-appmode footer{display:none!important;}
   <header class="arc-top">
     <div class="arc-brand"><span class="cab">🕹️</span> <span><b>JVDS</b> Arcade</span></div>
     <div class="spacer"></div>
+    <button class="arc-gear" id="arcSettingsBtn" type="button" aria-label="Arcade settings" aria-haspopup="dialog" aria-expanded="false">⚙️</button>
     <button class="arc-install" id="installBtn" type="button">⬇ Install</button>
   </header>
+
+  <!-- Offline notice: the whole bundle is local, so offline just works -->
+  <div class="arc-offline" id="offlineBanner" hidden>📴 You're offline — every game still plays.</div>
 
   <!-- ══ HOME ══ -->
   <section class="arc-view active" id="view-home" role="tabpanel" aria-label="Home">
     <div class="hero">
       <div class="hero-ring" id="heroRing"><i><span id="heroLevel">1</span><small>LEVEL</small></i></div>
       <div class="hero-meta">
-        <h1>Your Arcade</h1>
+        <h1 id="heroTitle">Your Arcade</h1>
         <p id="heroXP">0 XP</p>
         <div class="hero-bar"><span id="heroBar" style="width:0%"></span></div>
       </div>
@@ -364,12 +543,28 @@ body.arc-appmode footer{display:none!important;}
 
     <!-- DAILY CHALLENGE + STREAK -->
     <div id="dailyChallenge" class="jvds-daily"></div>
+    <button type="button" class="dc-go" data-fresh="daily">▶&nbsp;Play toward today’s goal</button>
+
+    <!-- WEEKLY CHALLENGE: bigger goal, bigger payout, 7-day window -->
+    <div id="weeklyChallenge"></div>
+    <button type="button" class="dc-go" data-fresh="weekly">▶&nbsp;Play toward this week’s goal</button>
 
     <div class="tiles">
       <div class="tile xp"><b id="stXP">0</b><span>Total XP</span></div>
       <div class="tile streak"><b id="stStreak">0</b><span>Streak</span></div>
       <div class="tile ach"><b id="stAch">0</b><span>Goals</span></div>
       <div class="tile plays"><b id="stPlays">0</b><span>Plays</span></div>
+    </div>
+
+    <!-- COLLECTION PROGRESS: breadth meta-layer, "play everything" -->
+    <div class="explore" id="exploreWrap">
+      <div class="exp-top"><span>Arcade explored</span><b id="expCount">0 / 0</b></div>
+      <div class="exp-bar"><span id="expBar"></span></div>
+      <div class="exp-foot">
+        <span class="exp-tier" id="expTier">🌱 Rookie</span>
+        <button type="button" class="surprise-btn" id="surpriseBtn">🎲 Surprise me</button>
+      </div>
+      <div class="exp-week" id="expWeek"></div>
     </div>
 
     <div id="continueWrap" hidden>
@@ -385,9 +580,11 @@ body.arc-appmode footer{display:none!important;}
   <section class="arc-view" id="view-play" role="tabpanel" aria-label="Play">
     <input class="arc-search" id="search" type="search" placeholder="Search games..." aria-label="Search games">
     <div class="chips" id="chips"></div>
+    <div class="sortrow" id="sortRow" role="group" aria-label="Sort games"></div>
     <div class="grid" id="grid"></div>
     <div id="noResults" hidden>
-      <div class="empty"><div class="ic">🔍</div><b>No games match</b><p>Try a different search or filter.</p></div>
+      <div class="empty"><div class="ic">🔍</div><b>No games match</b><p>Try a different search or filter.</p>
+        <button type="button" data-action="clear-filters">Clear search &amp; filters</button></div>
     </div>
   </section>
 
@@ -404,7 +601,7 @@ body.arc-appmode footer{display:none!important;}
 <nav class="arc-tabs" role="tablist" aria-label="Arcade sections">
   <button data-tab="home"  role="tab" aria-selected="true"><span class="ic">🏠</span>Home</button>
   <button data-tab="play"  role="tab" aria-selected="false"><span class="ic">🎮</span>Play</button>
-  <button data-tab="goals" role="tab" aria-selected="false"><span class="ic">🏆</span>Goals</button>
+  <button data-tab="goals" role="tab" aria-selected="false"><span class="ic">🏆<i class="dot" id="goalsDot" hidden></i></span>Goals</button>
 </nav>
 
 <div class="ios-hint" id="iosHint">
@@ -413,10 +610,68 @@ body.arc-appmode footer{display:none!important;}
   <button type="button" id="iosHintClose">Got it</button>
 </div>
 
+<!-- Settings sheet -->
+<div class="sheet-backdrop" id="settingsBackdrop" hidden></div>
+<div class="settings-sheet" id="settingsSheet" hidden role="dialog" aria-modal="true" aria-label="Arcade settings">
+  <div class="set-head">
+    <b>Arcade settings</b>
+    <button type="button" id="settingsClose" aria-label="Close settings">✕</button>
+  </div>
+  <label class="set-row">
+    <span class="lab">Sound effects<small>Blips and fanfares in every game</small></span>
+    <span class="switch"><input type="checkbox" id="soundToggle" checked><i></i></span>
+  </label>
+  <label class="set-row">
+    <span class="lab">Haptic feedback<small>Little vibrations on taps and wins</small></span>
+    <span class="switch"><input type="checkbox" id="hapticsToggle" checked><i></i></span>
+  </label>
+  <div class="set-actions">
+    <button type="button" class="set-btn" id="exportSaveBtn">⬆ Export save</button>
+    <button type="button" class="set-btn" id="importSaveBtn">⬇ Import save</button>
+  </div>
+  <p class="set-about" id="arcBuildInfo">Arcade</p>
+  <div class="upd-banner" id="updBanner" hidden>
+    ⬆ A newer Arcade build is available
+    <button type="button" id="updOpenBtn">Open Play Store</button>
+  </div>
+  <p class="set-about">One profile carries your XP, streaks and best scores across every JVDesignStudio game — even offline. Export your save before switching phones or reinstalling.</p>
+  <button type="button" class="set-danger" id="resetAllBtn">Reset all Arcade data…</button>
+</div>
+
+<!-- Import save sheet -->
+<div class="sheet-backdrop" id="importBackdrop" hidden></div>
+<div class="settings-sheet" id="importSheet" hidden role="dialog" aria-modal="true" aria-label="Import save">
+  <div class="set-head">
+    <b>Import save</b>
+    <button type="button" id="importClose" aria-label="Close import">✕</button>
+  </div>
+  <p class="set-about">Paste an exported save below. <b>This replaces everything</b> — current progress, bests and settings.</p>
+  <textarea class="import-area" id="importArea" rows="6" placeholder='{"app":"jvds-arcade", …}' spellcheck="false"></textarea>
+  <div class="set-actions">
+    <button type="button" class="set-btn" id="importPasteBtn">📋 Paste</button>
+    <button type="button" class="set-btn primary" id="importApplyBtn">Import</button>
+  </div>
+</div>
+
+<!-- Game detail sheet -->
+<div class="sheet-backdrop" id="detailBackdrop" hidden></div>
+<div class="settings-sheet" id="detailSheet" hidden role="dialog" aria-modal="true" aria-label="Game details">
+  <div class="set-head">
+    <b id="detailTitle">Game</b>
+    <button type="button" id="detailClose" aria-label="Close details">✕</button>
+  </div>
+  <div id="detailBody"></div>
+  <div class="set-actions">
+    <button type="button" class="set-btn primary" id="detailPlayBtn">▶ Play</button>
+    <button type="button" class="set-btn danger" id="detailResetBtn">Reset my data…</button>
+  </div>
+</div>
+
 <script src="player-profile.js"></script>
 <script src="game-system.js"></script>
 <script src="games-registry.js"></script>
 <script src="daily-challenge.js"></script>
+<script src="weekly-challenge.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
    Arcade hub logic.
@@ -428,8 +683,106 @@ body.arc-appmode footer{display:none!important;}
   'use strict';
 
   var GAMES = window.JVDS_GAMES || [];
-  var byId = {};
-  GAMES.forEach(function (g) { byId[g.id] = g; });
+
+  /* ── Tiny helpers ─────────────────────────────────────────── */
+
+  function lsGet(key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      return v == null ? fallback : v;
+    } catch (e) { return fallback; }
+  }
+  function lsSet(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) { /* private mode */ }
+  }
+  // Light haptic tick (Android webviews; silently ignored elsewhere).
+  // Respects the player's settings-sheet toggle.
+  function buzz(pattern) {
+    try {
+      if (lsGet('jvds_arc_haptics', '1') === '0') return;
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    } catch (e) {}
+  }
+
+  function fmt(n) { return (n || 0).toLocaleString(); }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmtAgo(ts) {
+    if (!ts) return '';
+    var s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 90) return 'just now';
+    var m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
+    var h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+    var d = Math.floor(h / 24); if (d < 7) return d + 'd ago';
+    return Math.floor(d / 7) + 'w ago';
+  }
+
+  // Bottom-of-screen shouts. Messages QUEUE rather than replace, so
+  // simultaneous celebrations (rank-up + weekly done + level homecoming)
+  // are each seen for their full moment instead of clobbering each other.
+  var toastQueue = [];
+  var toastActive = false;
+  function celebrate(msg) {
+    if (!document.body) return;
+    toastQueue.push(msg);
+    pumpToasts();
+  }
+  function pumpToasts() {
+    if (toastActive || !toastQueue.length || !document.body) return;
+    toastActive = true;
+    var t = document.createElement('div');
+    t.className = 'arc-toast';
+    t.setAttribute('role', 'status');
+    t.textContent = toastQueue.shift();
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () {
+        if (t.parentNode) t.remove();
+        toastActive = false;
+        pumpToasts();
+      }, 350);
+    }, 2400);
+  }
+
+  // Small celebratory particle burst for rank-ups and level homecomings.
+  // Skipped entirely when the OS asks for reduced motion.
+  var CONFETTI_COLORS = ['#A583CE', '#E8A9B4', '#8FCB7F', '#F6C6D4', '#F0C040'];
+  function confettiBurst(x, y) {
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (!document.body) return;
+      var cx = x == null ? window.innerWidth / 2 : x;
+      var cy = y == null ? window.innerHeight * 0.32 : y;
+      for (var i = 0; i < 18; i++) {
+        var p = document.createElement('i');
+        p.className = 'arc-confetti';
+        p.style.left = cx + 'px';
+        p.style.top = cy + 'px';
+        p.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        document.body.appendChild(p);
+        var ang = Math.random() * Math.PI * 2;
+        var dist = 60 + Math.random() * 90;
+        var dx = Math.cos(ang) * dist;
+        var dy = Math.sin(ang) * dist - 44;
+        var rot = Math.round(Math.random() * 520 - 260);
+        var anim = p.animate([
+          { transform: 'translate(-50%,-50%) rotate(0deg)', opacity: 1 },
+          { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px)) rotate(' + rot + 'deg)', opacity: 0 }
+        ], { duration: 900 + Math.random() * 500, easing: 'cubic-bezier(.16,.8,.32,1)' });
+        (function (el, a) {
+          a.onfinish = function () { if (el.parentNode) el.remove(); };
+          setTimeout(function () { if (el.parentNode) el.remove(); }, 2200); // safety net
+        })(p, anim);
+      }
+    } catch (e) { /* decoration must never break flow */ }
+  }
 
   /* ── Saved game state ─────────────────────────────────────── */
 
@@ -462,17 +815,88 @@ body.arc-appmode footer{display:none!important;}
     return out;
   }
 
-  function fmt(n) { return (n || 0).toLocaleString(); }
-
   /* ── Card art ─────────────────────────────────────────────── */
 
   // Cover art if the game has one, otherwise its emoji on the gradient.
   function artHTML(g) {
     if (g.cover) {
-      return '<img loading="lazy" src="' + encodeURI(g.cover) + '" alt="" ' +
+      return '<img loading="lazy" decoding="async" src="' + encodeURI(g.cover) + '" alt="" ' +
              'onerror="this.style.display=\'none\'">';
     }
     return g.emoji || '🎮';
+  }
+
+  /* ── Collection progress (the hub's own meta layer) ──────────
+     Long-game progression for a launcher: breadth, not grind.
+     Rank tiers celebrate playing across the whole catalogue, and the
+     bar itself is the "what should I play next" answer. */
+  var TIERS = [
+    [0,   'Rookie',      '🌱'],
+    [25,  'Explorer',    '🧭'],
+    [50,  'Veteran',     '🚀'],
+    [75,  'Arcade Hero', '🏅'],
+    [100, 'Full House',  '👑']
+  ];
+
+  function tierIdxFor(pct) {
+    var idx = 0;
+    TIERS.forEach(function (t, i) { if (pct >= t[0]) idx = i; });
+    return idx;
+  }
+
+  function renderExplore(played) {
+    var wrapEl = document.getElementById('exploreWrap');
+    if (!wrapEl || !GAMES.length) return;
+    var explored = played.length;
+    var pct = Math.round((explored / GAMES.length) * 100);
+    document.getElementById('expCount').textContent = explored + ' / ' + GAMES.length;
+    document.getElementById('expBar').style.width = pct + '%';
+
+    var idx = tierIdxFor(pct);
+    document.getElementById('expTier').textContent = TIERS[idx][2] + ' ' + TIERS[idx][1];
+
+    // Celebrate rank-ups exactly once, on the visit that crosses the tier.
+    var prev = parseInt(lsGet('jvds_arc_tier', '-1'), 10);
+    if (prev === -1) {
+      lsSet('jvds_arc_tier', String(idx));            // first run: baseline quietly
+    } else if (idx > prev) {
+      lsSet('jvds_arc_tier', String(idx));
+      celebrate(TIERS[idx][2] + ' Arcade rank up: ' + TIERS[idx][1] + '!');
+      buzz([12, 60, 24]);
+    }
+
+    document.getElementById('surpriseBtn').textContent =
+      explored < GAMES.length ? '🎲 Surprise me' : '🎲 Random game';
+
+    // This-week echo: ties the collection loop to the Weekly Challenge so
+    // the bar and the goal read as one system, not two unrelated widgets.
+    try {
+      var p = (typeof playerProfile !== 'undefined') ? playerProfile : null;
+      if (p && p.getWeeklyActivity) {
+        var wk = p.getWeeklyActivity();
+        var remaining = GAMES.length - explored;
+        document.getElementById('expWeek').textContent =
+          'This week: ' + (wk.games || []).length + ' game' + ((wk.games || []).length === 1 ? '' : 's') +
+          ' \u00B7 ' + (wk.runs || 0) + ' run' + ((wk.runs || 0) === 1 ? '' : 's') +
+          (remaining > 0
+            ? ' \u00B7 ' + remaining + ' left to explore'
+            : ' \u00B7 catalogue complete! \uD83D\uDC51');
+      }
+    } catch (e) { /* profile unavailable */ }
+  }
+
+  // Roll the dice, biased 70% toward games never played. The toast gives the
+  // pick a beat of ceremony before the jump so it never feels like a mis-tap.
+  function surpriseGame() {
+    var playedIds = {};
+    playedGames().forEach(function (p) { playedIds[p.game.id] = true; });
+    var unplayed = GAMES.filter(function (g) { return !playedIds[g.id]; });
+    var pool = (unplayed.length && Math.random() < 0.7) ? unplayed : GAMES;
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    if (!pick) return;
+    buzz(10);
+    celebrate('🎲 The dice say… ' + pick.title);
+    setTimeout(function () { location.href = 'games/' + pick.file; }, 550);
   }
 
   /* ── HOME ─────────────────────────────────────────────────── */
@@ -486,10 +910,26 @@ body.arc-appmode footer{display:none!important;}
     var played = playedGames();
     var totalPlays = played.reduce(function (n, p) { return n + p.save.plays; }, 0);
 
+    // Homecoming: if a game leveled the player up since their last hub visit,
+    // greet them with it. First-ever paint baselines quietly.
+    var prevLevel = parseInt(lsGet('jvds_arc_seen_level', '-1'), 10);
+    if (prevLevel === -1) {
+      lsSet('jvds_arc_seen_level', String(stats.level));
+    } else if (stats.level > prevLevel) {
+      lsSet('jvds_arc_seen_level', String(stats.level));
+      celebrate('⬆️ Welcome back, Level ' + stats.level + '!');
+      confettiBurst();
+      buzz([10, 40, 10, 40, 18]);
+    }
+
+    // Cold start speaks like a host, not a spreadsheet.
+    var fresh = totalPlays === 0;
+    document.getElementById('heroTitle').textContent = fresh ? 'Welcome in 👋' : 'Your Arcade';
     document.getElementById('heroLevel').textContent = stats.level;
-    document.getElementById('heroXP').textContent =
-      fmt(stats.xpProgress.current) + ' / ' + fmt(stats.xpProgress.max) +
-      ' XP to level ' + (stats.level + 1);
+    document.getElementById('heroXP').textContent = fresh
+      ? 'Every run earns XP here — pick any game to begin.'
+      : fmt(stats.xpProgress.current) + ' / ' + fmt(stats.xpProgress.max) +
+        ' XP to level ' + (stats.level + 1);
     document.getElementById('heroBar').style.width = stats.xpProgress.percentage + '%';
     document.getElementById('heroRing').style.setProperty('--p', stats.xpProgress.percentage);
 
@@ -499,7 +939,9 @@ body.arc-appmode footer{display:none!important;}
     document.getElementById('stPlays').textContent = fmt(totalPlays);
 
     if (window.DailyChallenge) DailyChallenge.render('dailyChallenge');
+    if (window.WeeklyChallenge) WeeklyChallenge.render('weeklyChallenge', { shout: celebrate });
 
+    renderExplore(played);
     renderContinue(played);
     renderScores(played);
   }
@@ -513,10 +955,11 @@ body.arc-appmode footer{display:none!important;}
     wrap.hidden = false;
 
     document.getElementById('continueRail').innerHTML = recent.map(function (p) {
+      var when = fmtAgo(p.save.last);
       return '<a href="games/' + p.game.file + '">' +
                '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '</div>' +
                '<div class="lab"><b>' + esc(p.game.title) + '</b>' +
-               '<span>' + fmt(p.save.high) + ' best</span></div>' +
+               '<span>' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best</span></div>' +
              '</a>';
     }).join('');
   }
@@ -551,6 +994,8 @@ body.arc-appmode footer{display:none!important;}
 
   var filter = 'All';
   var query = '';
+  var sortMode = lsGet('jvds_arc_sort', 'featured');
+  var SORTS = [['featured', 'Featured'], ['fresh', 'Fresh picks'], ['recent', 'Recent'], ['az', 'A–Z']];
 
   function categories() {
     var seen = ['All'];
@@ -560,14 +1005,73 @@ body.arc-appmode footer{display:none!important;}
   }
 
   function renderChips() {
-    document.getElementById('chips').innerHTML = categories().map(function (c) {
-      return '<button class="chip" type="button" data-cat="' + c + '" aria-pressed="' +
-             (c === filter) + '">' + c + '</button>';
+    var counts = {};
+    GAMES.forEach(function (g) {
+      var k = g.kids ? 'Little Players' : g.cat;
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    var html = categories().map(function (c) {
+      var n = counts[c] || 0;
+      return '<button class="chip" type="button" data-cat="' + esc(c) + '" aria-pressed="' +
+             (c === filter) + '">' + esc(c) +
+             (c !== 'All' ? '<span class="n">' + n + '</span>' : '') +
+             '</button>';
     }).join('');
+    html += '<button class="chip lucky" type="button" data-lucky="1">🎲 Surprise</button>';
+    document.getElementById('chips').innerHTML = html;
+  }
+
+  function renderSortRow() {
+    document.getElementById('sortRow').innerHTML = SORTS.map(function (s) {
+      return '<button type="button" data-sort="' + s[0] + '" aria-pressed="' +
+             (s[0] === sortMode) + '">' + s[1] + '</button>';
+    }).join('');
+  }
+
+  // 'featured' keeps the curated registry order; the others re-rank.
+  function applySort(list, smap) {
+    var arr = list.slice();
+    if (sortMode === 'az') {
+      arr.sort(function (a, b) { return a.title.localeCompare(b.title); });
+    } else if (sortMode === 'recent') {
+      arr.sort(function (a, b) {
+        var la = (smap[a.id] && smap[a.id].last) || 0;
+        var lb = (smap[b.id] && smap[b.id].last) || 0;
+        return lb - la;
+      });
+    } else if (sortMode === 'fresh') {
+      // Never-played first, then least-played — the "what should I try" order.
+      arr.sort(function (a, b) {
+        var sa = smap[a.id] || {}, sb = smap[b.id] || {};
+        var pa = (sa.plays || 0) > 0 ? 1 : 0;
+        var pb = (sb.plays || 0) > 0 ? 1 : 0;
+        if (pa !== pb) return pa - pb;
+        return (sa.plays || 0) - (sb.plays || 0);
+      });
+    }
+    return arr;
+  }
+
+  // Jump into the Play tab ordered for discovery — the action target for the
+  // daily/weekly challenge widgets ("play toward today's goal").
+  function goFresh() {
+    filter = 'All';
+    query = '';
+    document.getElementById('search').value = '';
+    sortMode = 'fresh';
+    lsSet('jvds_arc_sort', sortMode);
+    renderChips();
+    renderSortRow();
+    show('play');
+    buzz(8);
   }
 
   function renderGrid() {
     var q = query.trim().toLowerCase();
+    // One storage read per game per paint, shared by filter+sort+card markup.
+    var smap = {};
+    GAMES.forEach(function (g) { smap[g.id] = saveOf(g.id); });
+
     var list = GAMES.filter(function (g) {
       var okCat = filter === 'All' ? true
                 : filter === 'Little Players' ? g.kids
@@ -576,18 +1080,21 @@ body.arc-appmode footer{display:none!important;}
       if (!q) return true;
       return (g.title + ' ' + g.tag + ' ' + g.desc).toLowerCase().indexOf(q) >= 0;
     });
+    list = applySort(list, smap);
 
     document.getElementById('noResults').hidden = list.length > 0;
     document.getElementById('grid').innerHTML = list.map(function (g) {
-      var s = saveOf(g.id);
+      var s = smap[g.id];
       var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
       var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
+      var info = '<div class="info-chip" data-info="' + esc(g.id) + '" role="button" aria-label="' +
+                 esc(g.title) + ' details">i</div>';
       var plays = (s && s.plays > 0)
         ? s.plays + ' play' + (s.plays === 1 ? '' : 's')
         : 'Not played yet';
       return '<a class="card" href="games/' + g.file + '">' +
                '<div class="art" style="background:' + g.bg + '">' +
-                 artHTML(g) + best + kid +
+                 artHTML(g) + best + kid + info +
                '</div>' +
                '<div class="body">' +
                  '<div class="tag">' + esc(g.tag) + '</div>' +
@@ -609,16 +1116,39 @@ body.arc-appmode footer{display:none!important;}
     } catch (e) { return {}; }
   }
 
+  // Map of every shared achievement earned across all games.
+  function earnedGoalMap() {
+    var earned = {};
+    playedGames().forEach(function (p) {
+      p.save.achievements.forEach(function (a) { earned[a] = true; });
+    });
+    return earned;
+  }
+
+  function distinctGoalsEarned() {
+    return Object.keys(earnedGoalMap()).length;
+  }
+
+  // Gold dot on the Goals tab until the player has seen their new badges.
+  function refreshGoalDot() {
+    var dot = document.getElementById('goalsDot');
+    if (!dot) return;
+    var seen = parseInt(lsGet('jvds_arc_goals_seen', '0'), 10) || 0;
+    dot.hidden = !(distinctGoalsEarned() > seen);
+  }
+
+  function markGoalsSeen() {
+    lsSet('jvds_arc_goals_seen', String(distinctGoalsEarned()));
+    refreshGoalDot();
+  }
+
   function renderGoals() {
     var defs = sharedAchievements();
     var ids = Object.keys(defs);
     var played = playedGames();
 
     // An achievement counts as earned if any arcade game has unlocked it.
-    var earned = {};
-    played.forEach(function (p) {
-      p.save.achievements.forEach(function (a) { earned[a] = true; });
-    });
+    var earned = earnedGoalMap();
 
     var got = ids.filter(function (id) { return earned[id]; }).length;
     document.getElementById('goalCount').textContent = got + ' / ' + ids.length;
@@ -666,15 +1196,9 @@ body.arc-appmode footer{display:none!important;}
     });
     if (tab === 'home') renderHome();
     if (tab === 'play') renderGrid();
-    if (tab === 'goals') renderGoals();
+    if (tab === 'goals') { renderGoals(); markGoalsSeen(); }
     try { history.replaceState(null, '', '#' + tab); } catch (e) {}
     window.scrollTo(0, 0);
-  }
-
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   /* ── Install prompt ───────────────────────────────────────── */
@@ -720,27 +1244,349 @@ body.arc-appmode footer{display:none!important;}
   document.getElementById('chips').addEventListener('click', function (e) {
     var b = e.target.closest('.chip');
     if (!b) return;
+    if (b.dataset.lucky) { surpriseGame(); return; }
     filter = b.dataset.cat;
     renderChips();
     renderGrid();
   });
 
+  document.getElementById('sortRow').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-sort]');
+    if (!b || b.dataset.sort === sortMode) return;
+    sortMode = b.dataset.sort;
+    lsSet('jvds_arc_sort', sortMode);
+    renderSortRow();
+    renderGrid();
+    buzz(6);
+  });
+
+  // Debounced so fast typing doesn't rebuild the card grid (and its cover
+  // images) on every keystroke on slower phones.
+  var searchTimer = null;
   document.getElementById('search').addEventListener('input', function (e) {
     query = e.target.value;
-    renderGrid();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderGrid, 90);
   });
 
   document.querySelector('.arc-tabs').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-tab]');
-    if (b) show(b.dataset.tab);
+    if (!b || b.getAttribute('aria-selected') === 'true') return;
+    show(b.dataset.tab);
+    buzz(6);
+  });
+
+  // Keyboard support for the tab list (desktop / TV / a11y).
+  document.querySelector('.arc-tabs').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var tabs = ['home', 'play', 'goals'];
+    var cur = document.querySelector('.arc-tabs button[aria-selected="true"]');
+    if (!cur) return;
+    var i = tabs.indexOf(cur.dataset.tab);
+    var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    show(next);
+    var btn = document.querySelector('.arc-tabs button[data-tab="' + next + '"]');
+    if (btn) btn.focus();
   });
 
   document.addEventListener('click', function (e) {
+    var chip = e.target.closest('.info-chip');
+    if (chip) {
+      e.preventDefault();       // chip lives inside the card's <a>
+      openDetail(chip.dataset.info);
+      return;
+    }
     var b = e.target.closest('[data-goto]');
-    if (b) show(b.dataset.goto);
+    if (b) { show(b.dataset.goto); return; }
+    var c = e.target.closest('[data-action]');
+    if (c && c.dataset.action === 'clear-filters') {
+      filter = 'All';
+      query = '';
+      document.getElementById('search').value = '';
+      renderChips();
+      renderGrid();
+    }
+  });
+
+  // Tapping the streak tile scrolls to today's challenge.
+  document.querySelector('.tiles').addEventListener('click', function (e) {
+    if (!e.target.closest('.tile.streak')) return;
+    if (!document.getElementById('view-home').classList.contains('active')) return;
+    var dc = document.getElementById('dailyChallenge');
+    if (dc && dc.scrollIntoView) dc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  /* ── Settings sheet ───────────────────────────────────────── */
+  var sheet = document.getElementById('settingsSheet');
+  var backdrop = document.getElementById('settingsBackdrop');
+  var gearBtn = document.getElementById('arcSettingsBtn');
+
+  function openSettings() {
+    document.getElementById('soundToggle').checked =
+      lsGet('jvds_sound', '1') !== '0';
+    document.getElementById('hapticsToggle').checked =
+      lsGet('jvds_arc_haptics', '1') !== '0';
+    document.getElementById('arcBuildInfo').innerHTML = buildInfoText();
+    sheet.hidden = false;
+    backdrop.hidden = false;
+    gearBtn.setAttribute('aria-expanded', 'true');
+    checkForUpdates();
+  }
+  function closeSettings() {
+    sheet.hidden = true;
+    backdrop.hidden = true;
+    gearBtn.setAttribute('aria-expanded', 'false');
+  }
+  gearBtn.addEventListener('click', function () {
+    if (sheet.hidden) { openSettings(); buzz(6); } else closeSettings();
+  });
+  document.getElementById('settingsClose').addEventListener('click', closeSettings);
+  backdrop.addEventListener('click', closeSettings);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!sheet.hidden) closeSettings();
+    if (!detailSheet.hidden) closeDetail();
+    if (!importSheet.hidden) closeImportSheet();
+  });
+
+  document.getElementById('hapticsToggle').addEventListener('change', function (e) {
+    lsSet('jvds_arc_haptics', e.target.checked ? '1' : '0');
+    if (e.target.checked) buzz(12);
+  });
+
+  // Nuclear option: wipe every jvds_* key (profile, per-game saves, XP caps,
+  // leaderboards, hub prefs) after an explicit confirmation.
+  document.getElementById('resetAllBtn').addEventListener('click', function () {
+    var sure = confirm(
+      'Delete ALL Arcade progress?\n\n' +
+      'Every game\u2019s high scores, your XP, levels, streaks and achievements ' +
+      'will be erased. This cannot be undone.');
+    if (!sure) return;
+    try {
+      var doomed = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('jvds_') === 0) doomed.push(k);
+      }
+      doomed.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (err) { /* storage blocked; nothing more we can do */ }
+    location.reload();
+  });
+
+  /* ── Offline banner ───────────────────────────────────────── */
+  // The whole bundle is local, so offline is a feature, not a failure state.
+  function syncOfflineBanner() {
+    var off = navigator.onLine === false;
+    document.getElementById('offlineBanner').hidden = !off;
+    document.body.classList.toggle('arc-offline-on', off);
+  }
+  window.addEventListener('online', syncOfflineBanner);
+  window.addEventListener('offline', syncOfflineBanner);
+  syncOfflineBanner();
+
+  document.getElementById('surpriseBtn').addEventListener('click', surpriseGame);
+
+  // Challenge widgets → straight into discovery order.
+  document.querySelectorAll('[data-fresh]').forEach(function (b) {
+    b.addEventListener('click', goFresh);
+  });
+  document.getElementById('dailyChallenge').addEventListener('click', function (e) {
+    if (e.target.closest('a,button')) return;
+    goFresh();
+  });
+  document.getElementById('weeklyChallenge').addEventListener('click', goFresh);
+
+  // Sound toggle — one key every game's audio engine honors.
+  document.getElementById('soundToggle').addEventListener('change', function (e) {
+    lsSet('jvds_sound', e.target.checked ? '1' : '0');
+    buzz(8);
+  });
+
+  /* ── Game detail sheet ────────────────────────────────────── */
+  var detailSheet = document.getElementById('detailSheet');
+  var detailBackdrop = document.getElementById('detailBackdrop');
+  var currentDetail = null;
+
+  function dRow(k, v) {
+    return '<div class="d-row"><span>' + k + '</span><b>' + v + '</b></div>';
+  }
+
+  function openDetail(id) {
+    var g = null;
+    GAMES.forEach(function (x) { if (x.id === id) g = x; });
+    if (!g) return;
+    currentDetail = g;
+    var s = saveOf(g.id) || { high: 0, plays: 0, level: 1, last: 0, achievements: [] };
+    var shared = Object.keys(sharedAchievements());
+    var sharedGot = 0;
+    s.achievements.forEach(function (a) { if (shared.indexOf(a) >= 0) sharedGot++; });
+    var customGot = s.achievements.length - sharedGot;
+
+    document.getElementById('detailTitle').textContent =
+      (g.emoji ? g.emoji + ' ' : '') + g.title;
+    document.getElementById('detailBody').innerHTML =
+      '<div class="d-rows">' +
+        dRow('Type', esc(g.tag)) +
+        dRow('Your best', s.high > 0 ? fmt(s.high) : '—') +
+        dRow('Plays', String(s.plays)) +
+        dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
+        dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
+      '</div>' +
+      '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
+      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.</p>' : '');
+    detailSheet.hidden = false;
+    detailBackdrop.hidden = false;
+  }
+  function closeDetail() {
+    detailSheet.hidden = true;
+    detailBackdrop.hidden = true;
+    currentDetail = null;
+  }
+  document.getElementById('detailClose').addEventListener('click', closeDetail);
+  detailBackdrop.addEventListener('click', closeDetail);
+  document.getElementById('detailPlayBtn').addEventListener('click', function () {
+    if (currentDetail) { buzz(8); location.href = 'games/' + currentDetail.file; }
+  });
+  document.getElementById('detailResetBtn').addEventListener('click', function () {
+    if (!currentDetail) return;
+    var g = currentDetail;
+    if (!confirm('Reset your data for ' + g.title + '?\n\nThis game\u2019s best score, plays and goals will be erased.')) return;
+    try {
+      localStorage.removeItem('jvds_game_' + g.id);
+      localStorage.removeItem('jvds_lb_' + g.id);
+    } catch (e) {}
+    closeDetail();
+    renderGrid();
+    renderHome();
+    refreshGoalDot();
+    celebrate('🧹 ' + g.title + ' reset');
+    buzz(12);
+  });
+
+  /* ── Save export / import ─────────────────────────────────── */
+  var importSheet = document.getElementById('importSheet');
+  var importBackdrop = document.getElementById('importBackdrop');
+  var importArea = document.getElementById('importArea');
+
+  function snapshotSave() {
+    var data = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('jvds_') === 0) data[k] = localStorage.getItem(k);
+      }
+    } catch (e) { /* storage blocked */ }
+    return {
+      app: 'jvds-arcade',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      build: window.__JVDS_BUILD || null,
+      data: data
+    };
+  }
+
+  function openImportSheet(title, prefill) {
+    document.querySelector('#importSheet .set-head b').textContent = title;
+    importArea.value = prefill || '';
+    importSheet.hidden = false;
+    importBackdrop.hidden = false;
+    if (prefill) {
+      importArea.setAttribute('readonly', 'readonly');
+      try { importArea.select(); } catch (e) {}
+    } else {
+      importArea.removeAttribute('readonly');
+    }
+  }
+  function closeImportSheet() {
+    importSheet.hidden = true;
+    importBackdrop.hidden = true;
+    importArea.value = '';
+    importArea.removeAttribute('readonly');
+  }
+  document.getElementById('importClose').addEventListener('click', closeImportSheet);
+  importBackdrop.addEventListener('click', closeImportSheet);
+
+  document.getElementById('exportSaveBtn').addEventListener('click', function () {
+    var blob = JSON.stringify(snapshotSave());
+    // Best effort clipboard copy; the sheet always shows the blob so there is
+    // a manual path even where clipboard is blocked.
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(blob).then(function () {
+        celebrate('📋 Save copied to clipboard');
+      }).catch(function () { /* sheet is the fallback */ });
+    }
+    openImportSheet('Export save', blob);
+  });
+
+  document.getElementById('importPasteBtn').addEventListener('click', function () {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(function (t) {
+        if (t) importArea.value = t;
+      }).catch(function () { importArea.focus(); });
+    } else {
+      importArea.focus();
+    }
+  });
+
+  document.getElementById('importApplyBtn').addEventListener('click', function () {
+    var raw = importArea.value.trim();
+    if (!raw) return;
+    var parsed = null;
+    try { parsed = JSON.parse(raw); } catch (e) {}
+    if (!parsed || parsed.app !== 'jvds-arcade' || !parsed.data || typeof parsed.data !== 'object') {
+      alert('That doesn\u2019t look like a JVDS Arcade save. Paste the full export text.');
+      return;
+    }
+    if (!confirm('Replace ALL current Arcade data with this save?\n\nCurrent progress, bests and settings will be overwritten.')) return;
+    try {
+      var doomed = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('jvds_') === 0) doomed.push(k);
+      }
+      doomed.forEach(function (k) { localStorage.removeItem(k); });
+      Object.keys(parsed.data).forEach(function (k) {
+        try { localStorage.setItem(k, String(parsed.data[k])); } catch (e) {}
+      });
+    } catch (e) { /* storage blocked */ }
+    location.reload();
+  });
+
+  /* ── Build stamp + update check ───────────────────────────── */
+  // sync-arcade.mjs stamps window.__JVDS_BUILD into the hub; the site hosts
+  // arcade-app-version.json as the "what's published" marker.
+  function buildInfoText() {
+    var b = window.__JVDS_BUILD;
+    return b
+      ? 'Arcade build ' + esc(b.time) + ' \u00B7 ' + (window.JVDS_GAMES || []).length + ' games \u00B7 offline-ready'
+      : 'Arcade';
+  }
+  function checkForUpdates() {
+    if (navigator.onLine === false) return;
+    try {
+      fetch('https://jvdesignstudio.co.uk/arcade-app-version.json', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (info) {
+          if (!info || !info.buildTime) return;
+          var mine = window.__JVDS_BUILD && window.__JVDS_BUILD.time;
+          if (mine && String(info.buildTime) !== String(mine)) {
+            document.getElementById('updBanner').hidden = false;
+          }
+        })
+        .catch(function () { /* offline or not published yet */ });
+    } catch (e) { /* ancient webview */ }
+  }
+  document.getElementById('updOpenBtn').addEventListener('click', function () {
+    window.open('https://play.google.com/store/apps/details?id=uk.co.jvdesignstudio.arcade', '_system');
   });
 
   renderChips();
+  renderSortRow();
+  // Always hydrate Home once, even when another tab restores from the URL
+  // hash: the daily-challenge claim, rank-up celebrations and stat tiles all
+  // live there, and they must run on launch rather than waiting for a visit.
+  renderHome();
+  refreshGoalDot();
   var start = (location.hash || '').replace('#', '');
   show(['home', 'play', 'goals'].indexOf(start) >= 0 ? start : 'home');
 })();

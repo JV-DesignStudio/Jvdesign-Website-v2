@@ -558,6 +558,7 @@ function startLevel(level) {
 
 function newGame() {
   game.score = 0;
+  game._reportedScore = 0;
   game.bestGroup = 0;
   startLevel(1);
 }
@@ -568,6 +569,11 @@ function levelComplete() {
   const leftover = Math.max(0, game.moves);
   const bonus = leftover * 60;
   game.score += bonus;
+  // Feed the running total into the shared save so the Arcade hub's
+  // best-scores list can see it (this game never reported scores before).
+  // addScore expects a delta, so only report what hasn't been recorded yet.
+  const scoreDelta = game.score - (game._reportedScore || 0);
+  if (scoreDelta > 0) { gameSystem.addScore(scoreDelta); game._reportedScore = game.score; }
   const xp = Math.floor(game.levelScore / 20) + leftover * 3;
   gameSystem.addXP(xp);
   if (game.level >= 5) gameSystem.unlockAchievement('level5');
@@ -588,6 +594,8 @@ function gameOver() {
   game.over = true;
   clearHint();
   const xp = Math.floor(game.levelScore / 30);
+  const finalDelta = game.score - (game._reportedScore || 0);
+  if (finalDelta > 0) { gameSystem.addScore(finalDelta); game._reportedScore = game.score; }
   gameSystem.addXP(Math.max(0, xp));
   if (game.level >= 5) gameSystem.unlockAchievement('level5');
   if (game.bestGroup >= 10) gameSystem.unlockAchievement('bigGroup');

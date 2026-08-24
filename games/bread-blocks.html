@@ -138,6 +138,7 @@ let dropTime = 0, dropInterval = 800;
 let startTime = 0;
 let clearingRows = [];   // rows mid flash animation; drops pause while set
 let flashT = 0;
+let lastTime = performance.now();   // rAF clock (declared early: autoPause's resume writes it)
 
 function initGrid() {
   grid = [];
@@ -405,10 +406,33 @@ function endGame() {
 
   best = Math.max(best, score);
   document.getElementById('overSub').textContent = score >= 500 ? 'Master builder!' : 'Nice score!';
-  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalScore').textContent = score.toLocaleString();
+  GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalLevel').textContent = level;
+  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
+    [200, '🥉', 'Crumbler'],
+    [600, '🥈', 'Journeyman Baker'],
+    [1200, '🥇', 'Master Baker'],
+  ]);
   document.getElementById('overModal').classList.add('show');
 }
+
+// Auto-pause when the app is backgrounded mid-run (the classic way to lose a
+// stack), with the engine's standard tap-to-resume overlay.
+GameUI.autoPause({
+  pause: function () {
+    if (state !== 'playing') return false;
+    state = 'paused';
+    return true;
+  },
+  resume: function () {
+    if (state !== 'paused') return;
+    state = 'playing';
+    dropTime = 0;
+    lastTime = performance.now();
+    loop();
+  }
+});
 
 // touch/mouse: tap sides to move, tap middle to rotate, swipe down to hard drop
 let pressStart = null;
@@ -445,7 +469,6 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-let lastTime = performance.now();
 function loop() {
   const now = performance.now();
   update(now - lastTime);

@@ -334,6 +334,11 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 /* WORKSHOP OVERLAY */
 .wk-overlay{position:fixed;inset:0;z-index:900;background:rgba(5,3,18,.94);backdrop-filter:blur(8px);display:none;flex-direction:column;}
 .wk-overlay.open{display:flex;}
+/* Side-by-side Workshop: dock the tool to the right edge while the game keeps
+   running on the left — draw a sprite and watch it in-game without tab flipping */
+.wk-overlay.wk-split{left:auto;width:min(680px,58vw);min-width:380px;border-left:2px solid rgba(124,58,237,.45);box-shadow:-16px 0 56px rgba(0,0,0,.65);}
+.wk-overlay.wk-split .wk-hint{display:none;}
+@media(max-width:1024px){.wk-overlay.wk-split{left:0;width:100vw;min-width:0;border-left:none;box-shadow:none;}}
 .wk-header{display:flex;align-items:center;gap:10px;padding:11px 18px;background:rgba(10,8,22,.99);border-bottom:2px solid rgba(124,58,237,.35);flex-shrink:0;}
 .wk-logo{font-size:1.3rem;line-height:1;}
 .wk-title{font-size:.88rem;font-weight:800;color:var(--purple-lt);white-space:nowrap;}
@@ -937,6 +942,10 @@ select.sound-pick{flex:1;padding:5px 7px;font-size:.72rem;background:rgba(0,0,0,
 /* ACHIEVEMENTS in Game Over */
 .go-achs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:380px;}
 .go-ach{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.28);border-radius:8px;padding:5px 10px;font-size:.68rem;font-weight:700;color:#fbbf24;font-family:'JetBrains Mono',monospace;animation:go-pop .4s ease;}
+/* Attention pulse for the Result Code button after beating a friend's challenge */
+@keyframes attention-pulse{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.6);}70%{box-shadow:0 0 0 12px rgba(251,191,36,0);}}
+.btn-attention{animation:attention-pulse 1.5s ease-out infinite;}
+#goBeatCreator{display:none;font-size:.85rem;font-weight:800;color:#fbbf24;background:rgba(251,191,36,.12);border:1px dashed rgba(251,191,36,.45);border-radius:9px;padding:6px 14px;animation:go-pop .5s ease;}
 
 /* ── WIN CONFETTI ──────────────────────────────────────────── */
 .confetti-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:inherit;z-index:1;}
@@ -1530,6 +1539,11 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     <button class="preset-pill chaos"  onclick="applyPreset('chaos')">🔴 Chaos</button>
                 </div>
                 <button class="btn-sm" style="width:100%;margin-top:6px;background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.3);" onclick="surpriseMe()">🎲 Surprise Me, randomise everything!</button>
+                <div style="display:flex;gap:6px;margin-top:6px;">
+                    <button class="btn-sm" style="flex:2;background:rgba(0,212,170,.12);color:#00d4aa;border-color:rgba(0,212,170,.35);" title="Everyone worldwide gets the same mutations today — compare Daily scores with friends via Result Codes" onclick="_applyDailyChallenge()">📅 Daily Challenge</button>
+                    <button class="btn-sm" style="flex:1;" onclick="_clearDailyChallenge()" title="Restore your own settings">✕ Clear</button>
+                </div>
+                <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;">Daily state: <span id="dailyState">off</span></div>
             </div>
 
             <span class="sec-label">Speed &amp; Physics ⚡</span>
@@ -1687,6 +1701,7 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     <div><strong>P</strong> to pause</div>
                 </div>
             </div>
+            <button class="btn-sm" style="width:100%;margin-bottom:6px;background:rgba(0,212,170,.1);border-color:rgba(0,212,170,.3);color:#00d4aa;" title="Scores friends sent you today via result links & codes" onclick="_showTodayBoard()">🏁 Today's Board</button>
             <div id="hiscoreStrip" style="font-size:.63rem;color:var(--amber);font-family:'JetBrains Mono',monospace;text-align:center;min-height:14px;"></div>
         </div>
 
@@ -2104,9 +2119,16 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                         <button class="btn-sm" onclick="seNavFrame(1)" style="padding:2px 6px;font-size:.7rem;">▶</button>
                     </div>
                 </div>
+                <!-- Tool row: pencil / fill / undo -->
+                <div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;">
+                    <span style="font-size:.6rem;color:var(--muted);font-weight:700;">TOOL:</span>
+                    <button class="btn-sm" id="seTool_pencil" onclick="seSetTool('pencil')" style="padding:3px 12px;font-size:.62rem;background:rgba(124,58,237,.4);color:#a78bfa;">✏ Pencil</button>
+                    <button class="btn-sm" id="seTool_fill"   onclick="seSetTool('fill')"   style="padding:3px 12px;font-size:.62rem;">🪣 Fill</button>
+                    <button class="btn-sm" onclick="seUndo()" title="Undo last stroke" style="padding:3px 10px;font-size:.7rem;margin-left:auto;">↩ Undo</button>
+                </div>
                 <div class="se-wrap">
                     <div class="se-canvas-wrap">
-                        <canvas id="spriteEdCanvas" width="192" height="192"></canvas>
+                        <canvas id="spriteEdCanvas" width="256" height="256"></canvas>
                     </div>
                     <div class="se-tools">
                         <div class="se-palette" id="sePalette"></div>
@@ -3616,14 +3638,14 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;margin-bottom:6px;">
                             <div style="font-size:.68rem;color:var(--fg);">🌋 Screen Shake</div>
-                            <input type="range" aria-label="Screen Shake Intensity" min="1" max="24" value="8" id="juiceShakeSlider" style="width:72px;" oninput="liveConfig.juiceShakeIntensity=+this.value;this.nextElementSibling.textContent=this.value+'px';" title="Intensity">
-                            <span style="font-size:.6rem;color:var(--muted);min-width:28px;">8px</span>
+                            <input type="range" aria-label="Screen Shake Intensity" min="1" max="24" value="3" id="juiceShakeSlider" style="width:72px;" oninput="liveConfig.juiceShakeIntensity=+this.value;this.nextElementSibling.textContent=this.value+'px';" title="Intensity">
+                            <span style="font-size:.6rem;color:var(--muted);min-width:28px;">3px</span>
                             <label class="toggle-switch" style="grid-column:span 3;justify-self:start;margin-top:2px;"><input type="checkbox" id="juiceShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;"><span class="toggle-knob"></span></label>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;margin-bottom:6px;">
                             <div style="font-size:.68rem;color:var(--fg);">⏸ Hit-Stop Freeze</div>
-                            <input type="range" aria-label="Hit-Stop Freeze Duration" min="20" max="140" value="55" id="juiceHitStopSlider" style="width:72px;" oninput="liveConfig.juiceHitStopMs=+this.value;this.nextElementSibling.textContent=this.value+'ms';" title="Duration">
-                            <span style="font-size:.6rem;color:var(--muted);min-width:30px;">55ms</span>
+                            <input type="range" aria-label="Hit-Stop Freeze Duration" min="20" max="140" value="30" id="juiceHitStopSlider" style="width:72px;" oninput="liveConfig.juiceHitStopMs=+this.value;this.nextElementSibling.textContent=this.value+'ms';" title="Duration">
+                            <span style="font-size:.6rem;color:var(--muted);min-width:30px;">30ms</span>
                             <label class="toggle-switch" style="grid-column:span 3;justify-self:start;margin-top:2px;"><input type="checkbox" id="juiceHitStopToggle" checked onchange="liveConfig.juiceHitStop=this.checked;"><span class="toggle-knob"></span></label>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;margin-bottom:6px;">
@@ -4407,6 +4429,7 @@ score += bumper.pts;
             <span class="wk-logo">🛠</span>
             <span class="wk-title">Creative Workshop</span>
             <span class="wk-hint">Design your sprite, build your level, craft your sounds, click <strong style="color:var(--purple-lt);">🕹️ Send to Game Maker</strong> inside any tool and it auto-imports!</span>
+            <button class="wk-close" id="wkSplitBtn" onclick="toggleWorkshopSplit()" title="Dock this tool beside the running game" style="background:rgba(124,58,237,.15);color:#a78bfa;border-color:rgba(124,58,237,.35);margin-right:auto;">⇤ Side-by-side</button>
             <button class="wk-close" onclick="closeWorkshop()">✕ Back to Game</button>
         </div>
         <div class="wk-tabs">
@@ -4488,6 +4511,15 @@ score += bumper.pts;
                     <div style="display:flex;gap:6px;">
                         <button class="btn-sm" style="flex:1;" onclick="_shareNative()" id="shareNativeBtn">📲 Share…</button>
                         <button class="btn-sm" style="flex:1;" onclick="closeShareModal()">Done</button>
+                    </div>
+                    <!-- Friend result codes: paste a code a friend copied from their Game Over screen -->
+                    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:6px;">
+                        <div style="font-size:.66rem;font-weight:800;color:#fbbf24;">🏁 Add a Friend's Score</div>
+                        <div style="font-size:.58rem;color:var(--muted);line-height:1.5;">Friend played your game, tapped <strong style="color:#fbbf24;">📋 Result Code</strong> and sent you a JV1… code? Paste it here to put them on your leaderboard.</div>
+                        <div style="display:flex;gap:6px;">
+                            <input id="friendCodeInput" type="text" placeholder="JV1.…" autocomplete="off" spellcheck="false" style="flex:1;font-size:.65rem;padding:7px 9px;border-radius:6px;font-family:'JetBrains Mono',monospace;">
+                            <button class="btn-sm purple" style="white-space:nowrap;flex-shrink:0;" onclick="(function(){const el=document.getElementById('friendCodeInput');const r=_importFriendCode(el.value);if(!r){showToast('That is not a valid result code','error');return;}if(r.dup){showToast('Already on the board ✓');}else{showToast('🏁 '+(r.o.n||'---')+' entered at #'+r.rank+' with '+r.o.s.toLocaleString()+'!','success',4500);}el.value='';})()">➕ Add</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4642,6 +4674,7 @@ score += bumper.pts;
                     <div class="intro-genre-icon" id="introIcon">🕹️</div>
                     <div class="intro-game-title" id="introGameTitle">My Arcade Game</div>
                     <div class="intro-genre-sub" id="introGenreSub" style="font-size:.78rem;color:var(--purple-lt);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:-8px;"></div>
+                    <div id="introChallenge" style="display:none;font-size:.8rem;color:#fbbf24;font-family:'Fredoka',sans-serif;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);border-radius:9px;padding:7px 14px;"></div>
                     <div class="intro-story" id="introStoryText"></div>
                     <button class="btn-run intro-start" onclick="closeIntro()">🎮 Let's Play!</button>
                     <div id="introSpaceHint" style="font-size:.67rem;color:var(--muted);letter-spacing:.06em;animation:intro-blink 1.4s ease-in-out infinite;">Tap or press Space to start!</div>
@@ -4687,6 +4720,7 @@ score += bumper.pts;
                 <div class="go-box">
                     <div class="go-title" id="goTitle">GAME OVER</div>
                     <div id="goWinBanner" style="display:none;font-size:.95rem;margin-bottom:4px;">🎉 You reached the goal!</div>
+                    <div id="goBeatCreator"></div>
                     <div id="goGrade" style="display:none;"></div>
                     <div class="go-score" id="goScore">Score: 0</div>
                     <div id="goStoryMsg" style="display:none;font-size:.72rem;color:var(--muted);text-align:center;margin:4px 0 0;font-style:italic;line-height:1.4;max-width:260px;"></div>
@@ -4710,10 +4744,16 @@ score += bumper.pts;
                         <button class="btn-run go-play" style="flex:2;" onclick="closeGameOver()">▶ Play Again</button>
                         <button class="btn-run go-play" style="flex:1;background:#1e293b;box-shadow:0 3px 0 #0f172a;font-size:.78rem;" onclick="goNewGame()">↩ New Game</button>
                     </div>
+                    <button id="goRemixCta" class="btn-sm" style="display:none;width:100%;margin-top:8px;background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.45);color:#c4b5fd;font-size:.74rem;padding:10px 6px;" title="Load this game into your own editor and tweak anything" onclick="_goRemixShared()">🎨 Make Your Own Version — Remix</button>
                     <div style="display:flex;gap:8px;margin-top:6px;">
                         <button class="btn-sm" style="flex:1;font-size:.7rem;" onclick="generateShareLink()">🔗 Share Score</button>
                         <button class="btn-sm" style="flex:1;font-size:.7rem;" onclick="showAllScores()">📊 All Scores</button>
                         <button class="btn-sm" style="flex:1;font-size:.7rem;background:rgba(124,58,237,.2);border-color:rgba(124,58,237,.4);" onclick="_shareGameScore()">📤 Share</button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:6px;">
+                        <button class="btn-sm" style="flex:1.3;font-size:.7rem;background:rgba(251,191,36,.22);border-color:rgba(251,191,36,.5);color:#fbbf24;" title="Send your score to the creator as a link — they tap it and it lands on their leaderboard" onclick="_sendResultLink()">📤 Send Score Back</button>
+                        <button class="btn-sm" id="goResultCodeBtn" style="flex:1;font-size:.7rem;background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:#fbbf24;" title="Copy a code your friend can paste into their Game Maker to put your score on their leaderboard" onclick="_copyResultCode()">📋 Code</button>
+                        <button class="btn-sm" style="flex:1;font-size:.7rem;" title="Shareable picture card for WhatsApp/Instagram" onclick="_shareGameCard(_goPendingScore)">🖼 Card</button>
                     </div>
                     <a class="go-credit" href="https://jvdesignstudio.com" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">🕹️ Made with JVDesignStudio.com</a>
                 </div>
@@ -4731,6 +4771,10 @@ score += bumper.pts;
                     <div id="pauseMenuTitle" style="font-family:'Fredoka',sans-serif;font-size:1.1rem;font-weight:800;color:white;text-align:center;">PAUSED</div>
                     <button class="btn-run" style="width:100%;font-size:.85rem;" onclick="resumeGame()">▶ Resume</button>
                     <button class="btn-run" style="width:100%;font-size:.85rem;background:#1e293b;box-shadow:0 3px 0 #0f172a;" onclick="closePauseAndRestart()">↺ Restart</button>
+                    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 4px;">
+                        <span style="font-size:.72rem;color:var(--text);">📳 Screen shake</span>
+                        <label class="toggle-switch" title="Camera rumble on hits &amp; kills"><input type="checkbox" id="pauseShakeToggle" checked onchange="liveConfig.juiceShake=this.checked;"><span class="toggle-knob"></span></label>
+                    </div>
                     <div style="width:100%;border-top:1px solid var(--border);padding-top:8px;">
                         <div style="font-size:.65rem;color:var(--muted);margin-bottom:5px;text-align:center;">Volume</div>
                         <input type="range" aria-label="Pause Menu Volume" min="0" max="100" id="pauseVolumeSlider" style="width:100%;" value="50" oninput="GameAudio.volume=this.value/100;document.getElementById('volumeSlider').value=this.value;document.querySelector('#volumeSlider ~ .range-val').textContent=this.value+'%';">
@@ -5215,8 +5259,8 @@ const liveConfig = {
     customPowerUps: [],
     // ── Game Juice ────────────────────────────────────────────────
     juiceEnabled:   true,
-    juiceShake:     true,  juiceShakeIntensity: 8,  juiceShakeDuration: 220,
-    juiceHitStop:   true,  juiceHitStopMs: 55,
+    juiceShake:     true,  juiceShakeIntensity: 3,  juiceShakeDuration: 140,
+    juiceHitStop:   true,  juiceHitStopMs: 30,
     juiceBurst:     true,  juiceBurstCount: 10,
     juiceChroma:    true,
     juiceZoom:      false, juiceZoomScale: 1.06,
@@ -5522,7 +5566,8 @@ const _ACH_TOAST = {
     runner_survivor:'⏱ Runner Survivor (100s)', runner_centurion:'💯 Runner 1K',
     plat_clean:'🧹 Flawless Platformer', shooter_combo10:'🔥 10× Combo!',
     rogue_floor3:'⚔️ Floor 3 Reached!',
-    race_podium:'🏆 Podium Finish', race_clean:'🌟 Clean Lap (no off-road)', race_nitro3:'⚡ Nitro Triple', race_fast:'🏎️ Under 30s Lap'
+    race_podium:'🏆 Podium Finish', race_clean:'🌟 Clean Lap (no off-road)', race_nitro3:'⚡ Nitro Triple', race_fast:'🏎️ Under 30s Lap',
+    hop_100:'🐸 Height 100!', hop_500:'🌤 Cloud Jumper!'
 };
 function _achUnlock(id) {
     if (!_sessionAchs.has(id)) {
@@ -5577,7 +5622,9 @@ const GameAudio = {
     },
     previewMusic() {
         // Play 3 seconds of the current music (custom or built-in style)
-        const wasOn = this.musicOn;
+        // Read the REAL toggle state (this.musicOn was never defined, so the
+        // "already playing" branch could never trigger)
+        const wasOn = document.getElementById('musicToggle')?.checked || false;
         if (!wasOn) {
             const style = document.getElementById('musicStyle')?.value || 'chiptune';
             this.startMusic(style);
@@ -5585,6 +5632,11 @@ const GameAudio = {
         } else {
             showToast('Music is already playing!');
         }
+    },
+    // Missing method: preference restore called GameAudio.setVolume() on boot
+    // and silently failed inside its try/catch, so saved volume never applied
+    setVolume(v) {
+        this.volume = Math.max(0, Math.min(1, Number(v) || 0));
     },
 
     _osc(type, freq0, freq1, dur, vol) {
@@ -6133,7 +6185,7 @@ async function copyEmbedCode() {
     try {
         const d = _engineData;
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const _base2 = location.href.split('?')[0].split('#')[0];
+        const _base2 = _shareBaseUrl();
         const url = _base2 + '?game=' + enc;
         const embed = `<iframe src="${url}" width="660" height="440" style="border:none;border-radius:12px;" title="${d.title}" allowfullscreen></iframe>`;
         navigator.clipboard.writeText(embed).then(()=>showToast('Embed code copied! Paste into any webpage 🔗')).catch(()=>prompt('Copy embed code:',embed));
@@ -6553,6 +6605,161 @@ function surpriseMe() {
     // Sync the entire Custom tab UI so pills, toggles, and sliders reflect the new values
     _syncCustomTabUI(liveConfig);
     showToast('🎲 Randomised! Hit ▶ Run to see what you got!');
+}
+
+// ── DAILY CHALLENGE ───────────────────────────────────────────────────────────
+// Everyone on Earth gets the SAME mutation set for the day (seeded from the
+// local date), so friends can compare Daily scores fairly via result codes.
+// Zero backend, maximum "come back tomorrow".
+function _mulberry32(a) {
+    return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+function _dailyBadgeUpdate() {
+    const el = document.getElementById('dailyState');
+    if (!el) return;
+    if (liveConfig._dailySeed) {
+        el.textContent = 'ON — Daily #' + (liveConfig._dailySeed % 10000);
+        el.style.color = '#fbbf24';
+    } else {
+        el.textContent = 'off';
+        el.style.color = 'var(--muted)';
+    }
+}
+// Sync the Build-tab speed slider after config mutations
+function _syncSpeedSliders() {
+    ['playerSpeedRange', 'playerSpeed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.value = liveConfig.speed; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    });
+}
+function _applyDailyChallenge() {
+    const seed   = daysSinceEpochLocalMaker();
+    const g      = (document.getElementById('genreMode') || {}).value || 'SHOOTER';
+    const rnd    = _mulberry32(seed * 7919 + g.length * 131 + g.charCodeAt(0));
+    // Snapshot once so Clear can restore the player's own tuning
+    try {
+        if (!localStorage.getItem('jv_daily_bak')) {
+            localStorage.setItem('jv_daily_bak', JSON.stringify({
+                genre: g,
+                cfg: {
+                    speed: liveConfig.speed, gravity: liveConfig.gravity, jumpForce: liveConfig.jumpForce,
+                    enemySpeed: liveConfig.enemySpeed, spawnDelay: liveConfig.spawnDelay,
+                    lives: liveConfig.lives, playerScale: liveConfig.playerScale,
+                    difficultyScale: liveConfig.difficultyScale, bulletSpread: liveConfig.bulletSpread,
+                    doubleJump: liveConfig.doubleJump, enemyAI: liveConfig.enemyAI,
+                }
+            }));
+        }
+    } catch (e) {}
+
+    // Universal modifier pool — pick exactly 3
+    const MODS = [
+        { name: 'SLO-MO world',      fn: () => { liveConfig.speed *= 0.7; } },
+        { name: 'TURBO world',       fn: () => { liveConfig.speed *= 1.4; } },
+        { name: 'Hyper enemies',     fn: () => { liveConfig.enemySpeed = Math.round((liveConfig.enemySpeed || 150) * 1.5); } },
+        { name: 'Swarm spawns',      fn: () => { liveConfig.spawnDelay = Math.max(300, Math.round((liveConfig.spawnDelay || 1100) / 2)); } },
+        { name: 'ONE life',          fn: () => { liveConfig.lives = 1; } },
+        { name: 'Tiny player',       fn: () => { liveConfig.playerScale = 0.7; } },
+        { name: 'Giant player',      fn: () => { liveConfig.playerScale = 1.5; } },
+        { name: 'Hardcore ramp',     fn: () => { liveConfig.difficultyScale = Math.max(2, liveConfig.difficultyScale || 1); } },
+        { name: 'TRIPLE shot',       fn: () => { liveConfig.bulletSpread = 3; } },
+        { name: 'Double jump',       fn: () => { liveConfig.doubleJump = true; } },
+        { name: 'Chaser enemies',    fn: () => { liveConfig.enemyAI = 'chaser'; } },
+        { name: 'Zigzag enemies',    fn: () => { liveConfig.enemyAI = 'zigzag'; } },
+    ];
+    // Genre-flavoured extras replace generic picks when they match
+    const GRAV = ['PLATFORMER','RUNNER','FLAPPY'];
+    if (GRAV.includes(g)) MODS.push(
+        { name: 'Moon gravity',  fn: () => { liveConfig.gravity = Math.round(liveConfig.gravity * 0.55); } },
+        { name: 'Heavy gravity', fn: () => { liveConfig.gravity = Math.round(liveConfig.gravity * 1.35); } }
+    );
+    if (g === 'SHOOTER' || g === 'INVADERS') MODS.push({ name: 'Rapid fire', fn: () => { liveConfig.fireCooldown = Math.max(60, Math.round((liveConfig.fireCooldown || 180) / 3)); } });
+
+    // Fisher-Yates with the seeded rng, take 3 distinct mods
+    for (let i = MODS.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [MODS[i], MODS[j]] = [MODS[j], MODS[i]];
+    }
+    const picked = MODS.slice(0, 3);
+    picked.forEach(m => m.fn());
+    liveConfig._dailySeed = seed;
+
+    _syncSpeedSliders();
+    try { _syncCustomTabUI(liveConfig); } catch (e) {}
+    _dailyBadgeUpdate();
+    showToast(`📅 Daily #${seed % 10000}: ${picked.map(m => m.name).join(' · ')}`, undefined, 6000);
+}
+function _clearDailyChallenge() {
+    let hadMods = !!liveConfig._dailySeed;
+    try {
+        const raw = localStorage.getItem('jv_daily_bak');
+        if (raw) {
+            const d = JSON.parse(raw);
+            Object.assign(liveConfig, d.cfg);
+            localStorage.removeItem('jv_daily_bak');
+            hadMods = true;
+        }
+    } catch (e) {}
+    liveConfig._dailySeed = 0;
+    _syncSpeedSliders();
+    try { _syncCustomTabUI(liveConfig); } catch (e) {}
+    _dailyBadgeUpdate();
+    showToast(hadMods ? '↩ Daily cleared — your settings are back' : 'No daily active');
+}
+
+// ── TODAY'S BOARD: scores friends sent you today ──────────────────────────────
+// Reads every genre leaderboard and surfaces entries imported today (result
+// links/codes carry an `imp` day-tag). Makes Daily Challenges feel like an event.
+function _showTodayBoard() {
+    const today = daysSinceEpochLocalMaker();
+    const rows = [];
+    const GENRES = ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'];
+    GENRES.forEach(g => {
+        let board = [];
+        try { board = JSON.parse(localStorage.getItem('jv_lb_' + g) || '[]'); } catch (e) {}
+        board.forEach(e => {
+            if (e.imp === today) rows.push({ g, name: e.name || '---', score: e.score, daily: !!e.daily });
+        });
+    });
+    rows.sort((a, b) => b.score - a.score);
+
+    let html = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:1.4rem;">🏁</span>
+        <div style="flex:1;font-weight:800;color:#00d4aa;">Today's Board</div>
+        <button class="btn-sm" onclick="document.getElementById('todayBoardModal').remove()">✕</button>
+    </div>`;
+    if (!rows.length) {
+        html += `<div style="font-size:.78rem;color:var(--muted);line-height:1.8;text-align:center;padding:14px 4px;">
+            Nothing yet today.<br><br>
+            Share your game 📤 — when friends beat it they can tap<br>
+            <strong style="color:#fbbf24;">📤 Send Score Back</strong> and their score lands here.<br><br>
+            <span style="font-size:.68rem;opacity:.7;">Daily Challenge scores get a 📅 chip.</span>
+        </div>`;
+    } else {
+        const medals = ['🥇', '🥈', '🥉'];
+        html += '<div style="display:flex;flex-direction:column;gap:5px;">' + rows.map((r, i) => `
+            <div style="display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:9px;padding:7px 11px;">
+                <span style="width:26px;text-align:center;font-size:.95rem;">${medals[i] || '#' + (i + 1)}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-weight:800;color:#a78bfa;min-width:38px;letter-spacing:.05em;">${String(r.name).replace(/</g, '')}</span>
+                <span style="flex:1;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;font-size:.85rem;">${Number(r.score).toLocaleString()}</span>
+                ${r.daily ? '<span title="Daily Challenge run" style="font-size:.62rem;background:rgba(0,212,170,.15);border:1px solid rgba(0,212,170,.35);color:#00d4aa;border-radius:99px;padding:1px 8px;">📅 daily</span>' : ''}
+                <span style="font-size:1rem;" title="${r.g}">${_GENRE_ICONS[r.g] || '🎮'}</span>
+            </div>`).join('') + '</div>';
+    }
+    const ov = document.createElement('div');
+    ov.id = 'todayBoardModal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML = `<div style="background:var(--panel2);border:1px solid rgba(0,212,170,.35);border-radius:16px;padding:20px;width:min(360px,100%);max-height:86vh;overflow-y:auto;">
+        <style>.tb-row{animation:go-pop .35s ease backwards;}${rows.map((_, i) => `.tb-row:nth-child(${i + 1}){animation-delay:${Math.min(i * 60, 600)}ms;}`).join('')}</style>` + html + '</div>';
+    // Stagger animation class on rows
+    ov.querySelectorAll(':scope > div > div > div').forEach(r => { if (r.style && r.style.borderRadius) r.classList.add('tb-row'); });
+    ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
 }
 
 // ── ALL-TIME LEADERBOARD VIEW ─────────────────────────────────────────────────
@@ -7981,6 +8188,15 @@ function hotReloadConfig() {
     showToast('⚡ Config applied live!');
 }
 
+// Keep the on-canvas touch pause icon in sync with the single source of truth
+function _syncTcPauseIcon() {
+    const btn = document.getElementById('tc-pause');
+    if (!btn) return;
+    const paused = typeof _gamePaused !== 'undefined' && _gamePaused;
+    btn.textContent = paused ? '▶' : '⏸';
+    btn.style.background = paused ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.08)';
+}
+
 function pauseGame() {
     if (!currentPhaserGame || _gamePaused) return;
     _gamePaused = true;
@@ -7995,11 +8211,15 @@ function pauseGame() {
         const vol = document.getElementById('pauseVolumeSlider');
         const main = document.getElementById('volumeSlider');
         if (vol && main) vol.value = main.value;
+        // Sync shake toggle with current juice setting
+        const pst = document.getElementById('pauseShakeToggle');
+        if (pst) pst.checked = liveConfig.juiceShake !== false;
         // Show game title
         const tEl = document.getElementById('pauseMenuTitle');
         const gTitle = document.getElementById('gameTitle');
         if (tEl && gTitle) tEl.textContent = (gTitle.value || 'PAUSED').toUpperCase();
     }
+    _syncTcPauseIcon();
 }
 
 function resumeGame() {
@@ -8015,12 +8235,14 @@ function resumeGame() {
             GameAudio.startMusic(document.getElementById('musicStyle').value);
         }
     } catch(e) {}
+    _syncTcPauseIcon();
 }
 
 function closePauseAndRestart() {
     _gamePaused = false;
     const pm = document.getElementById('pauseMenu');
     if (pm) pm.style.display = 'none';
+    _syncTcPauseIcon();
     compileAndBootEngine();
 }
 
@@ -8028,6 +8250,7 @@ function quitGame() {
     _gamePaused = false;
     const pm = document.getElementById('pauseMenu');
     if (pm) pm.style.display = 'none';
+    _syncTcPauseIcon();
     if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch(e) {} currentPhaserGame = null; }
     const gw = document.getElementById('gameWrap');
     if (gw) gw.classList.add('idle');
@@ -8132,6 +8355,17 @@ function _showTitleScreen(data) {
     const _introTxt = liveConfig.storyIntro || ((currentStory && currentStory.intro) ? currentStory.intro : '');
     storyEl.textContent = _introTxt;
     storyEl.style.display = _introTxt ? '' : 'none';
+    // Named challenge from whoever shared this game (window._sharedFrom set at boot)
+    const _chal = document.getElementById('introChallenge');
+    if (_chal) {
+        const sf = window._sharedFrom;
+        if (sf && sf.score > 0) {
+            _chal.textContent = `🏁 ${sf.name}'s challenge: beat ${sf.score.toLocaleString()}!`;
+            _chal.style.display = '';
+        } else {
+            _chal.style.display = 'none';
+        }
+    }
     document.getElementById('introOverlay').classList.add('show');
     // Tint the intro box border/glow to match the genre's first palette colour
     const _introBox = document.querySelector('.intro-box');
@@ -8978,7 +9212,7 @@ function sceneWaveSurvival(data) {
             const _drops = this._wsDrops();
             _drops.forEach(d => {
                 if (!d._alive || !d.active) return;
-                d.y += 80 * delta / 1000;
+                // Physics body already integrates velocityY(80); moving manually doubled the fall speed
                 if (d.y > GH + 20) { d.destroy(); d._alive = false; return; }
                 const dx = Math.abs(d.x - actor.x), dy = Math.abs(d.y - actor.y);
                 if (dx < 24 && dy < 24) {
@@ -9292,10 +9526,11 @@ function _juiceKill(x, y, col) {
     if (liveConfig.juiceZoom) _zoomPulse();
 }
 
-/** Convenience: call when player takes damage */
+/** Convenience: call when player takes damage — stays MEATY even though the
+ *  default kill-shake is now subtle (damage feedback ≠ kill confetti) */
 function _juiceHit(x, y) {
     if (!liveConfig.juiceEnabled) return;
-    _shake(liveConfig.juiceShakeIntensity * 1.6, liveConfig.juiceShakeDuration * 1.3);
+    _shake(Math.max(liveConfig.juiceShakeIntensity * 2.5, 6), Math.max(liveConfig.juiceShakeDuration, 180));
     _burst(x, y, 0xef4444, Math.ceil((liveConfig.juiceBurstCount || 10) * 0.6));
     _chromaFlash(1.2);
 }
@@ -9304,8 +9539,8 @@ function _juiceHit(x, y) {
 function _juicePreset(preset) {
     const presets = {
         off:     { juiceEnabled:false, juiceShake:false, juiceHitStop:false, juiceBurst:false, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
-        subtle:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:4, juiceHitStop:false, juiceBurst:true, juiceBurstCount:6, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
-        arcade:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:8, juiceHitStop:true,  juiceHitStopMs:55, juiceBurst:true, juiceBurstCount:10, juiceChroma:true, juiceZoom:false, juiceComboFlash:true },
+        subtle:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:2, juiceHitStop:false, juiceBurst:true, juiceBurstCount:6, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
+        arcade:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:3, juiceHitStop:true,  juiceHitStopMs:30, juiceBurst:true, juiceBurstCount:10, juiceChroma:true, juiceZoom:false, juiceComboFlash:true },
         insane:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:18, juiceHitStop:true, juiceHitStopMs:90, juiceBurst:true, juiceBurstCount:20, juiceChroma:true, juiceZoom:true, juiceZoomScale:1.12, juiceComboFlash:true }
     };
     const p = presets[preset]; if (!p) return;
@@ -10083,6 +10318,8 @@ function sceneShooter(data) {
                 e.setData('hp',hp);
                 if(hp>0){ b.destroy(); e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return; }
                 const ex = e.x, ey = e.y;
+                // Capture score data BEFORE destroy(), Phaser wipes the data manager
+                const ePts = e.getData('pts') || 1;
                 this._burst(ex, ey, themeInt(1,0xa78bfa));
                 _spawnParticles(this, ex, ey);
                 b.destroy(); e.destroy();
@@ -10110,7 +10347,7 @@ function sceneShooter(data) {
                 this._combo++; if(this._comboTimer) this._comboTimer.remove(false);
                 this._comboTimer=this.time.delayedCall(2500,()=>{ this._combo=0; });
                 const mul=Math.min(4, 1+Math.floor(this._combo/3));
-                const pts = (liveConfig.pointsPerKill||10) * this._puScoreMul() * (e.getData('pts')||1) * mul;
+                const pts = (liveConfig.pointsPerKill||10) * this._puScoreMul() * ePts * mul;
                 this.score += pts;
                 if (typeof this._popText === 'function') this._popText(ex, ey - 10, '+' + Math.round(pts), '#fbbf24');
                 this.scoreText.setText('Score: '+this.score);
@@ -11066,14 +11303,11 @@ function sceneBreaker(data) {
             const ptr = this.input.activePointer;
             if (ptr && ptr.isDown) {
                 // Track pointer x while mouse button is held
-                const canv = this.sys.game.canvas;
-                const scaleX = canv ? (GW / canv.clientWidth) : 1;
-                const ptrGameX = ptr.x * scaleX;
-                if (ptrGameX > 0 && ptrGameX < GW) {
-                    const targetX = Phaser.Math.Clamp(ptrGameX, 50, GW-50);
-                    this.paddle.x = Phaser.Math.Linear(this.paddle.x, targetX, 0.35);
-                    this.paddle.setVelocityX((targetX - this.paddle.x) * 14);
-                }
+                // ptr.x is ALREADY in game coordinates (Phaser Scale.FIT transforms it),
+                // scaling again made the paddle lag behind the cursor on large screens
+                const targetX = Phaser.Math.Clamp(ptr.x, 50, GW-50);
+                this.paddle.x = Phaser.Math.Linear(this.paddle.x, targetX, 0.35);
+                this.paddle.setVelocityX((targetX - this.paddle.x) * 14);
             } else if (left.isDown||touchInput.left)       this.paddle.setVelocityX(-liveConfig.speed);
             else if (right.isDown||touchInput.right)       this.paddle.setVelocityX(liveConfig.speed);
             else                                           this.paddle.setVelocityX(0);
@@ -13762,6 +13996,9 @@ function sceneRacing(data) {
 
         // ── Minimap draw ───────────────────────────────────────────────────────
         _drawMinimap() {
+            // Redrawing 300 tiles + dots every frame is wasteful; ~10fps is plenty for a minimap
+            this._miniFrame = (this._miniFrame || 0) + 1;
+            if ((this._miniFrame % 6) !== 1) return;
             const g=this._miniGfx; g.clear();
             const mx=this._miniX, my=this._miniY, mw=this._miniW, mh=this._miniH;
             g.fillStyle(0x000000,0.65); g.fillRect(mx-2,my-2,mw+4,mh+4);
@@ -14237,10 +14474,16 @@ function applyStory(d) {
     currentStory = d;
     if (d.title) document.getElementById('gameTitle').value = d.title;
     const preview = d.intro || '(No intro text, add text to your Start node in the Story Editor)';
-    document.getElementById('missionText').innerHTML = `<strong>Story:</strong> ${preview}`;
-    document.getElementById('storyPreview').textContent = d.intro || '';
-    document.getElementById('storyTitlePreview').textContent = d.title || '';
-    document.getElementById('storyBadge').style.display = 'inline';
+    // Guard every element: storyPreview/storyTitlePreview/storyBadge only exist
+    // in some layouts, and a missing one aborted the rest of the import
+    const mt = document.getElementById('missionText');
+    if (mt) mt.innerHTML = `<strong>Story:</strong> ${preview}`;
+    const sp = document.getElementById('storyPreview');
+    if (sp) sp.textContent = d.intro || '';
+    const stp = document.getElementById('storyTitlePreview');
+    if (stp) stp.textContent = d.title || '';
+    const sb = document.getElementById('storyBadge');
+    if (sb) sb.style.display = 'inline';
 }
 
 // ── VISUAL THEME PICKER ───────────────────────────────────────────────────────
@@ -15080,7 +15323,7 @@ function _buildSharePayload(d) {
              map: isDefaultMap ? null : d.map,
              lc: lc,
              th:{c:gameTheme.cols.slice(),n:gameTheme.name},
-             bs:bestScore,fk:forkCount };
+             bs:bestScore, bn:(localStorage.getItem('jv_initials')||'').slice(0,3), fk:forkCount };
 }
 
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
@@ -15092,13 +15335,129 @@ function _shareGameScore() {
     const score = _goPendingScore || 0;
     const genre = _goPendingGenre || 'ARCADE';
     const title = _engineData ? (_engineData.title || 'My Game') : 'My Arcade Game';
-    if (navigator.share) {
-        navigator.share({ title: `${title}, Score: ${score}`, text: `I scored ${score} in ${title} (${genre})! Can you beat it? 🕹️`, url: location.href })
-            .catch(()=>{});
-    } else {
-        navigator.clipboard && navigator.clipboard.writeText(`I scored ${score} in ${title} (${genre})! 🕹️ ${location.href}`)
-            .then(()=>showToast('📤 Score copied to clipboard!','success'))
-            .catch(()=>showToast('Score: '+score));
+    const shareUrl = _shareBaseUrl();
+    _nativeShare({
+        title: `${title}, Score: ${score}`,
+        text: `I scored ${score} in ${title} (${genre})! Can you beat it? 🕹️`,
+        url: shareUrl,
+    }).then(r => _shareResultToast(r));
+}
+
+// ── GAME CARD: one shareable image for WhatsApp / Instagram ──────────────────
+// "Look what I made" needs an artefact, not a URL. Composes the player's
+// theme colours + live screenshot + title + score + QR (when a share link was
+// already generated) into a single PNG. Uses the native share sheet with the
+// file where supported; falls back to a normal download.
+async function _shareGameCard(score) {
+    try {
+        const genre  = (document.getElementById('genreMode') || {}).value || 'SHOOTER';
+        const icon   = _GENRE_ICONS[genre] || '🕹️';
+        const title  = ((document.getElementById('gameTitle') || {}).value || 'My Arcade Game');
+        const c1 = gameTheme.cols[0] || '#7c3aed';
+        const c2 = gameTheme.cols[1] || '#4ade80';
+
+        const cvs = document.createElement('canvas');
+        cvs.width = 900; cvs.height = 470;
+        const x = cvs.getContext('2d');
+
+        // Theme gradient backdrop
+        const grd = x.createLinearGradient(0, 0, 900, 470);
+        grd.addColorStop(0, c1); grd.addColorStop(1, c2);
+        x.fillStyle = grd; x.fillRect(0, 0, 900, 470);
+        // Darken for text contrast
+        x.fillStyle = 'rgba(5,3,15,.72)'; x.fillRect(0, 0, 900, 470);
+
+        // Live game screenshot strip (if the engine is running)
+        try {
+            const src = document.querySelector('#game-container canvas');
+            if (src) { x.save(); x.globalAlpha = 0.30; x.drawImage(src, 30, 90, 620, 350); x.restore(); }
+        } catch (e) {}
+
+        // Accent frame
+        x.strokeStyle = c2; x.lineWidth = 6;
+        if (x.roundRect) { x.beginPath(); x.roundRect(9, 9, 882, 452, 26); x.stroke(); }
+        else { x.strokeRect(9, 9, 882, 452); }
+
+        // Genre icon + label
+        x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+        x.font = '64px serif'; x.fillText(icon, 40, 92);
+        x.font = '700 17px Inter, sans-serif'; x.fillStyle = c2;
+        x.fillText(genre, 118, 84);
+
+        // Title (wrap to 2 lines)
+        x.fillStyle = '#ffffff';
+        x.font = '800 52px Fredoka, sans-serif';
+        const words = String(title).split(/\s+/);
+        let line = '', ly = 170;
+        for (const w of words) {
+            const test = line ? line + ' ' + w : w;
+            if (x.measureText(test).width > 600 && line) {
+                x.fillText(line.slice(0, 28), 40, ly);
+                line = w; ly += 60;
+                if (ly > 290) break;
+            } else line = test;
+        }
+        if (line && ly <= 300) x.fillText(line.slice(0, 28), 40, ly);
+
+        // Score line
+        x.font = '700 30px Inter, sans-serif';
+        x.fillStyle = '#fbbf24';
+        if (score !== undefined && score !== null && !isNaN(score)) {
+            let _isBest = false;
+            try { _isBest = score > 0 && score >= parseInt(localStorage.getItem('jv_best_' + genre) || '0', 10); } catch (e) {}
+            x.fillText((_isBest ? '🏆 ' : '') + 'Score: ' + Number(score).toLocaleString(), 40, 360);
+            x.font = '500 22px Inter, sans-serif'; x.fillStyle = 'rgba(255,255,255,.75)';
+            x.fillText('Can you beat it?', 40, 398);
+        } else {
+            x.fillText('Can you beat my game?', 40, 380);
+        }
+
+    // QR of the last generated share link. Short URLs scan easiest, but the
+    // qrcode lib happily encodes long ones too — previously we refused anything
+    // over 500 chars, which inside the app (no is.gd network) meant NO QR ever.
+    if (_shareCurrentUrl && typeof qrcode !== 'undefined') {
+        // Try full URL — dense QR but scannable; lib throws if truly too long
+        const qrData = _makeQrDataUrl(_shareCurrentUrl);
+        if (qrData) {
+                await new Promise((res, rej) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        x.fillStyle = '#fff';
+                        if (x.roundRect) { x.beginPath(); x.roundRect(700, 280, 168, 168, 14); x.fill(); }
+                        else x.fillRect(700, 280, 168, 168);
+                        x.drawImage(img, 712, 292, 144, 144);
+                        res();
+                    };
+                    img.onerror = res; // QR is optional — never block the card
+                    img.src = qrData;
+                });
+                x.font = '500 16px Inter, sans-serif'; x.fillStyle = 'rgba(255,255,255,.85)';
+                x.textAlign = 'center'; x.fillText('scan to play', 784, 462);
+                x.textAlign = 'left';
+            }
+        }
+
+        // Watermark
+        x.font = '600 18px Inter, sans-serif'; x.fillStyle = 'rgba(255,255,255,.55)';
+        x.fillText('🕹️ made with JVDesign Studio', 40, 448);
+
+        const blob = await new Promise(r => cvs.toBlob(r, 'image/png'));
+        const file = new File([blob], String(title).replace(/[^a-z0-9]/gi, '-').toLowerCase() + '-game-card.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: String(title) });
+            showToast('🖼 Game card shared!', 'success');
+        } else {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = file.name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+            showToast('🖼 Game card saved!', 'success');
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return; // user closed share sheet
+        console.warn('Game card:', e);
+        showToast('Could not make the game card', 'error');
     }
 }
 
@@ -15179,7 +15538,9 @@ function showGameOver(score) {
         race_podium:      '🏆 Podium Finish',
         race_clean:       '🌟 Clean Lap (no off-road)',
         race_nitro3:      '⚡ Nitro Triple',
-        race_fast:        '🏎️ Under 30s Lap'
+        race_fast:        '🏎️ Under 30s Lap',
+        hop_100:          '🐸 Height 100!',
+        hop_500:          '🌤 Cloud Jumper!'
     };
     const achEl = document.getElementById('goAchievements');
     if (achEl) {
@@ -15188,12 +15549,30 @@ function showGameOver(score) {
     const _statsEl = document.getElementById('goStats');
     if (_statsEl) {
         const _parts = [];
+        if (liveConfig._dailySeed) _parts.push(`<div class="go-stat"><span class="go-stat-val">📅</span><span class="go-stat-lbl">Daily #${liveConfig._dailySeed % 10000}</span></div>`);
         if (_sessionKills > 0) _parts.push(`<div class="go-stat"><span class="go-stat-val">${_sessionKills}</span><span class="go-stat-lbl">Kills</span></div>`);
         if (_sessionPeakCombo > 1) _parts.push(`<div class="go-stat"><span class="go-stat-val">${_sessionPeakCombo}×</span><span class="go-stat-lbl">Combo</span></div>`);
         if (score > 0) _parts.push(`<div class="go-stat"><span class="go-stat-val">${score.toLocaleString()}</span><span class="go-stat-lbl">Score</span></div>`);
         _statsEl.innerHTML = _parts.join('');
         _statsEl.style.display = _parts.length ? '' : 'none';
     }
+    // ── Beat-the-creator: name the win, spotlight the Result Code button ─────
+    const bcEl = document.getElementById('goBeatCreator');
+    if (bcEl) {
+        const sf = window._sharedFrom;
+        if (sf && score > sf.score && !_goIsVictory) {
+            bcEl.textContent = `⚔️ YOU BEAT ${String(sf.name).toUpperCase()}'S ${sf.score.toLocaleString()}! SEND THEM YOUR CODE →`;
+            bcEl.style.display = '';
+            try { GameAudio.play('victory'); } catch (e) {}
+            const rcb = document.getElementById('goResultCodeBtn');
+            if (rcb) { rcb.classList.add('btn-attention'); setTimeout(() => rcb.classList.remove('btn-attention'), 12000); }
+        } else {
+            bcEl.style.display = 'none';
+        }
+    }
+    // Remix invitation: only when playing someone else's shared game
+    const rcCta = document.getElementById('goRemixCta');
+    if (rcCta) rcCta.style.display = (window._sharedFrom) ? '' : 'none';
     _sessionAchs.clear(); _sessionHits = 0; _sessionKills = 0; _sessionPeakCombo = 0; _sessionStartTime = Date.now();
 
     // ── Grade calculation ────────────────────────────────────────────────────
@@ -15369,6 +15748,31 @@ function _updateLandscapeNudge(active) {
         // Auto-dismiss after 4 seconds, user can also tap ✕
         el._nudgeTimer = setTimeout(() => el.classList.remove('game-active'), 4000);
     }
+}
+
+// Player finished someone else's shared game and wants in on the fun: stop
+// playing, keep the loaded config, drop them into the editor with a remix title.
+function _goRemixShared() {
+    const nameRow = document.getElementById('goNameRow');
+    if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
+    const ov = document.getElementById('goOverlay');
+    if (ov) { ov.classList.remove('show'); ov.classList.remove('win'); }
+    window._sharedFrom = null; // it's theirs now
+    if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch (e) {} currentPhaserGame = null; }
+    GameAudio.stopMusic();
+    const gc = document.getElementById('game-container'); if (gc) gc.innerHTML = '';
+    const gw = document.getElementById('gameWrap');
+    if (gw) gw.classList.add('idle');
+    const ph = document.getElementById('idle-placeholder'); if (ph) ph.style.display = '';
+    const rb = document.getElementById('runGameBtn');
+    if (rb) { rb.classList.add('pulsing'); rb.innerHTML = '▶ Run Game <kbd class="run-kbd">[R]</kbd>'; }
+    const eb = document.getElementById('engine-branding');
+    if (eb) { eb.textContent = 'JV Engine · Ready'; eb.classList.remove('playing'); }
+    _updateLandscapeNudge(false);
+    const t = document.getElementById('gameTitle');
+    if (t && !/remix of/i.test(t.value)) t.value = '🎮 Remix of ' + (t.value || 'My Game').replace(/^🎮\s*/, '');
+    switchTab('build', document.querySelector('.tab-btn'));
+    showToast('🎨 It\u2019s yours now — tweak anything, then ▶ Run!', 'success', 5000);
 }
 
 function goNewGame() {
@@ -15751,32 +16155,15 @@ function setupTouchControls() {
         btn.addEventListener('pointercancel',e => { press(false); });
     });
 
-    // Pause button + P key
+    // Pause button — delegates to the single global togglePause() so the touch
+    // button, the P key and the pause menu share one state machine. Previously
+    // this had its own _tcPaused flag AND its own KeyP listener, so pressing P
+    // fired two toggles (= no-op) and button/menu states could desync.
+    // Icon syncing is handled by _syncTcPauseIcon() inside pause/resume.
     const pauseBtn = document.getElementById('tc-pause');
-    let _tcPaused = false;
-    function _togglePause() {
-        if (!currentPhaserGame) return;
-        _tcPaused = !_tcPaused;
-        try {
-            currentPhaserGame.scene.scenes.forEach(s => {
-                try {
-                    if (_tcPaused) { if (s.scene.isActive())  s.scene.pause();  }
-                    else           { if (s.scene.isPaused())  s.scene.resume(); }
-                } catch(ex) {}
-            });
-        } catch(ex) {}
-        if (pauseBtn) {
-            pauseBtn.textContent = _tcPaused ? '▶' : '⏸';
-            pauseBtn.style.background = _tcPaused ? 'rgba(124,58,237,.6)' : 'rgba(255,255,255,.08)';
-        }
-    }
     if (pauseBtn) {
-        pauseBtn.addEventListener('pointerdown', e => { e.preventDefault(); _togglePause(); });
+        pauseBtn.addEventListener('pointerdown', e => { e.preventDefault(); togglePause(); });
     }
-    // P key to pause/resume (ignored when typing in inputs)
-    document.addEventListener('keydown', e => {
-        if (e.code === 'KeyP' && !e.target.matches('input,textarea,select')) _togglePause();
-    });
 
     // Panel FAB, slide panel up/down on mobile
     const fab   = document.getElementById('panelFab');
@@ -15882,6 +16269,9 @@ function setupTouchControls() {
     // Pause/resume Phaser when tab is hidden/visible
     document.addEventListener('visibilitychange', () => {
         if (!currentPhaserGame) return;
+        // Don't auto-resume over a deliberate pause (menu/P key): the game
+        // would start running again behind the still-visible pause menu
+        if (!document.hidden && typeof _gamePaused !== 'undefined' && _gamePaused) return;
         try {
             if (document.hidden) {
                 currentPhaserGame.scene.scenes.forEach(s => { try { if (s.scene.isActive()) s.scene.pause(); } catch(e){} });
@@ -16004,17 +16394,48 @@ function _routeImportedSprite(dataUrl, label) {
     return slotName;
 }
 
-// When the window regains focus (user has returned from a Pixel Studio tab),
-// auto-import to the recorded slot so they never have to hunt for the right
-// "Import Last" button.
+// When the window regains focus (user has returned from a Workshop tab),
+// auto-import whatever the tool saved so they never have to hunt for the right
+// "Import Last" button. This is also the safety net for Android WebViews where
+// iframe→parent 'storage' events are unreliable: previously it only routed
+// player art and silently ignored backgrounds, levels, palettes and music.
+const _focusImportSeen = {}; // key -> raw payload already handled
 window.addEventListener('focus', () => {
+    // 1. Sprite art routes to whichever slot (player/enemy/bullet/block) the
+    //    user opened the Workshop from.
     const slot = localStorage.getItem('jvds_import_slot');
-    if (!slot) return;
-    // Only fire if there is actually new art waiting
-    const artReady = localStorage.getItem('jvds_sprite_player');
-    if (!artReady) return;
-    const slotName = _routeImportedSprite(artReady, 'Pixel Studio art');
-    showToast(`✅ Pixel Studio art → ${slotName} slot`);
+    if (slot && localStorage.getItem('jvds_sprite_player')) {
+        const slotName = _routeImportedSprite(localStorage.getItem('jvds_sprite_player'), 'Pixel Studio art');
+        showToast(`✅ Pixel Studio art → ${slotName} slot`);
+        return;
+    }
+    // 2. Everything else imports once per unique payload.
+    try {
+        const _auto = (key, fn, label) => {
+            const raw = localStorage.getItem(key);
+            if (!raw || _focusImportSeen[key] === raw) return;
+            fn(raw);
+            _focusImportSeen[key] = raw;
+            showToast('✅ ' + label);
+        };
+        _auto('jvds_sprite_bg', raw => _applyBgDataUrl(raw, 'Workshop background'), 'Background imported');
+        _auto('jvds_level_autosave', raw => _applyLevelData(JSON.parse(raw)), 'Level imported → pick Platformer & ▶ Run');
+        _auto('jvds_palette_last', raw => applyPalette(JSON.parse(raw)), 'Palette applied');
+        _auto('jvds_music_last', raw => {
+            const d = JSON.parse(raw);
+            GameAudio.customMusic = d.dataUrl;
+            const badge = document.getElementById('musicImportBadge');
+            if (badge) badge.style.display = 'inline';
+            const nm = document.getElementById('musicImportName');
+            if (nm) nm.textContent = d.name || 'Sound Studio Track';
+        }, 'Music imported → enable Background Music');
+        // SFX needs a target slot chosen by the user, so just nudge instead of guessing
+        const sfxRaw = localStorage.getItem('jvds_sfx_last');
+        if (sfxRaw && _focusImportSeen['jvds_sfx_last'] !== sfxRaw) {
+            _focusImportSeen['jvds_sfx_last'] = sfxRaw;
+            showToast('💥 New SFX ready → Sounds tab ▼ Studio to assign it', undefined, 4000);
+        }
+    } catch(e) { console.warn('Focus import:', e); }
 });
 
 // ── WORKSHOP ─────────────────────────────────────────────────────────────────
@@ -16027,6 +16448,19 @@ function openWorkshop(toolSrc) {
 }
 function closeWorkshop() {
     document.getElementById('wkOverlay').classList.remove('open');
+    // Always leave split mode off when fully closing, so the next open starts fullscreen
+    document.getElementById('wkOverlay').classList.remove('wk-split');
+    const btn = document.getElementById('wkSplitBtn');
+    if (btn) btn.textContent = '⇤ Side-by-side';
+}
+// Dock the Workshop to the right edge so the running game stays visible on the
+// left — iterate on art/sfx while it plays. Falls back to fullscreen below 1024px.
+function toggleWorkshopSplit() {
+    const ov  = document.getElementById('wkOverlay');
+    const btn = document.getElementById('wkSplitBtn');
+    if (!ov) return;
+    const on = ov.classList.toggle('wk-split');
+    if (btn) btn.textContent = on ? '⇥ Fullscreen' : '⇤ Side-by-side';
 }
 function switchWorkshopTool(btn) {
     document.querySelectorAll('.wk-tab').forEach(t => t.classList.remove('on'));
@@ -16043,11 +16477,13 @@ function showWorkshopBadge(msg) {
 
 // ── SPRITE EDITOR ─────────────────────────────────────────────────────────────
 const SE_SIZE = 8;  // grid is 8 × 8 cells
-const SE_CELL = 24; // display px per cell (canvas is 192 × 192)
+const SE_CELL = 32; // display px per cell (canvas is 256 × 256)
 let _sePixels   = Array(SE_SIZE * SE_SIZE).fill(null); // null = transparent
 let _seColor    = '#00d4aa';
 let _seErasing  = false;
 let _sePainting = false;
+let _seTool     = 'pencil';           // 'pencil' | 'fill'
+let _seHistory  = [];                 // undo stack (pixel snapshots, max 40)
 
 const SE_PALETTE = [
     '#00d4aa','#a78bfa','#f87171','#fbbf24',
@@ -16073,17 +16509,78 @@ function seInit() {
     }
     seRender();
 
-    // Mouse events
-    cvs.addEventListener('mousedown',  e => { _sePainting = true; _seErasing = e.button === 2; sePaint(e); });
+    // Mouse events — history is pushed once per stroke; Fill commits instantly
+    cvs.addEventListener('mousedown',  e => {
+        const p = _sePos(e); if (!p) return;
+        if (_seTool === 'fill' && !_seEraseMode) { _sePushHistory(); _seFlood(p.x, p.y); return; }
+        _sePushHistory();
+        _sePainting = true; _seErasing = e.button === 2 || _seEraseMode; sePaint(e);
+    });
     cvs.addEventListener('mousemove',  e => { if (_sePainting) sePaint(e); });
     cvs.addEventListener('mouseup',    () => { _sePainting = false; _seErasing = false; });
     cvs.addEventListener('mouseleave', () => { _sePainting = false; _seErasing = false; });
     cvs.addEventListener('contextmenu',e => e.preventDefault());
 
     // Touch events
-    cvs.addEventListener('touchstart', e => { e.preventDefault(); _sePainting = true; _seErasing = false; sePaintTouch(e); }, {passive:false});
+    cvs.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const p = _sePos(e.touches[0]); if (!p) return;
+        if (_seTool === 'fill' && !_seEraseMode) { _sePushHistory(); _seFlood(p.x, p.y); return; }
+        _sePushHistory();
+        _sePainting = true; _seErasing = _seEraseMode; sePaintTouch(e);
+    }, {passive:false});
     cvs.addEventListener('touchmove',  e => { e.preventDefault(); if (_sePainting) sePaintTouch(e); }, {passive:false});
     cvs.addEventListener('touchend',   () => _sePainting = false);
+}
+
+// Shared coordinate helper: event/touch → grid cell, or null when outside
+function _sePos(t) {
+    const cvs = document.getElementById('spriteEdCanvas');
+    const rect = cvs.getBoundingClientRect();
+    const x = Math.floor((t.clientX - rect.left) / rect.width  * SE_SIZE);
+    const y = Math.floor((t.clientY - rect.top)  / rect.height * SE_SIZE);
+    if (x < 0 || x >= SE_SIZE || y < 0 || y >= SE_SIZE) return null;
+    return { x, y };
+}
+
+// ── Editor tools: pencil/fill switch, undo stack, flood fill ────────────────
+function seSetTool(t) {
+    _seTool = t;
+    ['pencil','fill'].forEach(k => {
+        const b = document.getElementById('seTool_' + k);
+        if (!b) return;
+        const on = k === t;
+        b.style.background = on ? 'rgba(124,58,237,.4)' : '';
+        b.style.color      = on ? '#a78bfa' : '';
+    });
+}
+function _sePushHistory() {
+    _seHistory.push(_sePixels.slice());
+    if (_seHistory.length > 40) _seHistory.shift();
+}
+function seUndo() {
+    const prev = _seHistory.pop();
+    if (!prev) { showToast('Nothing to undo'); return; }
+    _sePixels = prev;
+    _seAllFrames[_seFrameIdx] = _sePixels.slice(); // keep current frame in sync
+    seRender();
+}
+// Flood-fill the connected region under (sx,sy) with the active colour
+function _seFlood(sx, sy) {
+    const target = _sePixels[sy * SE_SIZE + sx];
+    const repl   = _seEraseMode ? null : _seColor;
+    if (target === repl) return;
+    const q = [[sx, sy]], seen = new Set();
+    while (q.length) {
+        const [x, y] = q.pop();
+        if (x < 0 || x >= SE_SIZE || y < 0 || y >= SE_SIZE) continue;
+        const i = y * SE_SIZE + x;
+        if (seen.has(i) || _sePixels[i] !== target) continue;
+        seen.add(i);
+        _sePixels[i] = repl;
+        q.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+    }
+    seRender();
 }
 
 function sePaint(e) {
@@ -16585,14 +17082,106 @@ function _applyStoredTheme() {
 
 // ── SHARE MODAL + QR CODE ─────────────────────────────────────────────────────
 let _shareCurrentUrl = '';
+// Where shared links should point. Inside the packaged Android app
+// location.href is https://localhost/… which is meaningless to anyone who
+// opens the link on their own device — so fall back to the live tool URL.
+function _shareBaseUrl() {
+    const o = (location.protocol || '').toLowerCase();
+    const host = (location.hostname || '').toLowerCase();
+    const isRealSite = (o === 'https:' || o === 'http:')
+        && !host.startsWith('localhost') && !host.startsWith('127.') && host !== '';
+    if (isRealSite) return location.href.split('?')[0].split('#')[0];
+    return 'https://jvdesignstudio.co.uk/tools/arcade-game-maker.html';
+}
+
+// ── RESULT CODES: the score round-trip ───────────────────────────────────────
+// Share links are one-way, so competition died there. Result codes close the
+// loop with zero backend: a friend finishes your game, taps 📋 on the Game
+// Over screen, and gets a tiny code like  JV1.eyJnIjoiU0hPT1RFUiIsInMiOjE4MzAs…
+// They paste it to you on any messenger; you paste it into your Share window
+// and their score joins YOUR leaderboard with their initials. Verifiable-ish,
+// offline, and fits how kids already brag (screenshots → now real numbers).
+function _makeResultCode(score, initials) {
+    const g = (document.getElementById('genreMode') || {}).value || 'SHOOTER';
+    const payload = { g: g, s: Math.max(0, Math.round(score || 0)), n: String(initials || '---').toUpperCase().slice(0, 3), d: Date.now() };
+    // Daily runs are tagged so friend boards can tell them apart from normal runs
+    if (liveConfig._dailySeed) payload.w = liveConfig._dailySeed;
+    const b64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    return 'JV1.' + b64;
+}
+function _parseResultCode(txt) {
+    try {
+        const t = String(txt || '').trim();
+        if (!t.startsWith('JV1.')) return null;
+        let b = t.slice(4).replace(/-/g, '+').replace(/_/g, '/');
+        while (b.length % 4) b += '=';
+        const o = JSON.parse(atob(b));
+        if (!o || typeof o.s !== 'number' || !o.g || !/^[A-Z0-9_]{2,12}$/.test(o.g)) return null;
+        if (o.s < 0 || o.s > 100000000) return null;
+        return o;
+    } catch (e) { return null; }
+}
+function _copyResultCode() {
+    const initials = (localStorage.getItem('jv_initials') || '---');
+    const code = _makeResultCode(_goPendingScore, initials);
+    const title = _engineData ? (_engineData.title || 'My game') : 'My game';
+    navigator.clipboard.writeText(code)
+        .then(() => showToast('📋 Code copied — paste it to ' + title + '\'s creator!', 'success', 4500))
+        .catch(() => showToast('Copy failed — long-press to select: ' + code, 'warn', 8000));
+}
+// Zero-friction revenge: share the score AS A LINK. The creator taps it and the
+// score lands on their leaderboard automatically (?result= handled at boot) —
+// no copy/paste needed at all.
+async function _sendResultLink() {
+    const initials = localStorage.getItem('jv_initials') || '---';
+    const code  = _makeResultCode(_goPendingScore, initials);
+    const url   = _shareBaseUrl() + '?result=' + code;
+    const genre = _goPendingGenre || 'SHOOTER';
+    const title = _engineData ? (_engineData.title || 'My game') : 'My game';
+    const text  = `I scored ${Number(_goPendingScore || 0).toLocaleString()} in ${title} (${genre})! 🎮`;
+    const r = await _nativeShare({ title: title + ' — my score', text: text, url: url });
+    if (r === 'shared')            showToast('📤 Sent! They just tap the link.', 'success');
+    else if (r === 'copied')       showToast('🔗 Score link copied — paste it to the creator!', 'success', 4500);
+    else if (r !== 'cancelled')    showToast('Link ready: ' + url, 'warn', 9000);
+}
+function _importFriendCode(rawTxt) {
+    const o = _parseResultCode(rawTxt);
+    if (!o) return null;
+    const lbKey = 'jv_lb_' + o.g;
+    let board = [];
+    try { board = JSON.parse(localStorage.getItem(lbKey) || '[]'); } catch (e) {}
+    // Ignore exact duplicates (same name+score+day pasted twice)
+    const dayStr = new Date(o.d || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    if (board.some(e => e.name === (o.n || '---') && e.score === o.s && e.date === dayStr)) {
+        return { dup: true, o };
+    }
+    board.push({ score: o.s, date: dayStr, name: o.n || '---', imp: daysSinceEpochLocalMaker(), daily: o.w || 0 });
+    board.sort((a, b) => b.score - a.score);
+    const rank = board.findIndex(e => e.score === o.s && e.name === (o.n || '---')) + 1;
+    localStorage.setItem(lbKey, JSON.stringify(board.slice(0, 3)));
+    try {
+        const bestKey = 'jv_best_' + o.g;
+        if (o.s > parseInt(localStorage.getItem(bestKey) || '0', 10)) localStorage.setItem(bestKey, String(o.s));
+    } catch (e) {}
+    return { rank, total: board.length, o };
+}
+// Share links delta-encode settings only — custom art/audio data URLs are far
+// too large for a URL. Warn ONCE per generation, covering sprites AND sound,
+// otherwise users share a link and their sound design silently vanishes.
+function _warnShareAssetLimits() {
+    const hasAudio = GameAudio.customMusic || Object.values(GameAudio.customBuffers || {}).some(Boolean);
+    if (customSpriteDataUrl && hasAudio)      showToast('⚠️ Custom art + audio are too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
+    else if (hasAudio)                        showToast('⚠️ Custom audio is too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
+    else if (customSpriteDataUrl)             showToast('⚠️ Custom art is too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
+}
 async function generateShareLink() {
-    if (customSpriteDataUrl) showToast('⚠️ Note: custom sprite not included in share link');
+    _warnShareAssetLimits();
     const d = getPayload();
     try {
         showToast('Compressing…  ⏳');
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        // Use location.href base so file:// URLs don't produce "null/..." prefixes
-        const _base = location.href.split('?')[0].split('#')[0];
+        // Point at the live tool when running inside the packaged app
+        const _base = _shareBaseUrl();
         const longUrl = _base + '?game=' + enc;
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
@@ -16601,12 +17190,12 @@ async function generateShareLink() {
 }
 
 async function generateRemixLink() {
-    if (customSpriteDataUrl) showToast('⚠️ Custom sprite not included in remix link');
+    _warnShareAssetLimits();
     const d = getPayload();
     try {
         showToast('Compressing…  ⏳');
         const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const _base = location.href.split('?')[0].split('#')[0];
+        const _base = _shareBaseUrl();
         const longUrl = _base + '?remix=' + enc;
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
@@ -16652,7 +17241,10 @@ function _openShareModal(url, title, forkCount, shortUrl) {
     // QR code, only works if we have a short URL (long URLs produce unreadable QR codes)
     const qrEl = document.getElementById('shareQrImg');
     const qrWrap = qrEl ? qrEl.parentElement : null;
-    const qrData = _makeQrDataUrl(shortUrl && shortUrl.length < 500 ? shortUrl : null);
+    // QR: prefer the short URL (scans easiest). No network / no shortener?
+    // Encode the full link instead — dense but scannable. Previously anything
+    // over 500 chars was refused, so the in-app QR NEVER generated.
+    const qrData = _makeQrDataUrl(shortUrl) || _makeQrDataUrl(url);
     if (qrData) {
         qrEl.src = qrData;
         qrEl.style.display = '';
@@ -16689,8 +17281,54 @@ function _copyShareUrl() {
         })
         .catch(() => { document.getElementById('shareUrlInput').select(); document.execCommand('copy'); showToast('🔗 Copied!', 'success'); });
 }
+// ── UNIVERSAL SHARE HELPER ───────────────────────────────────────────────────
+// Android WebView has NO navigator.share — every share button silently fell
+// back to clipboard inside the packaged app. The @capacitor/share plugin ships
+// in this app but was never wired up. Order: Capacitor → Web Share → clipboard.
+async function _nativeShare(opts) {
+    // opts: { title, text, url }
+    const fullText = [opts.text, opts.url].filter(Boolean).join(' ');
+    // 1. Native Capacitor share (the actual Android share sheet)
+    try {
+        const cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+        if (cap && typeof cap.share === 'function') {
+            await cap.share({
+                title: opts.title || '',
+                text: fullText,
+                dialogTitle: 'Share',
+            });
+            return 'shared';
+        }
+    } catch (e) {
+        const msg = String((e && e.message) || e);
+        if (/cancel/i.test(msg)) return 'cancelled';
+        // plugin present but failed → keep trying other routes
+    }
+    // 2. Web Share API (desktop Chrome / mobile browsers)
+    if (navigator.share) {
+        try {
+            await navigator.share({ title: opts.title || '', text: opts.text || '', url: opts.url });
+            return 'shared';
+        } catch (e) {
+            if (e && e.name === 'AbortError') return 'cancelled';
+        }
+    }
+    // 3. Clipboard last resort
+    try {
+        await navigator.clipboard.writeText(fullText);
+        return 'copied';
+    } catch (e) {}
+    return 'failed';
+}
+// Toast wording per outcome, shared by all callers
+function _shareResultToast(result) {
+    if (result === 'shared')    showToast('📤 Shared!', 'success');
+    else if (result === 'copied') showToast('🔗 Copied to clipboard — paste it anywhere!', 'success', 4500);
+    else if (result !== 'cancelled') showToast('Sharing unavailable here — link shown instead', 'warn', 5000);
+}
 async function _shareNative() {
-    try { await navigator.share({ title: 'Play my game!', url: _shareCurrentUrl }); } catch(e) {}
+    const r = await _nativeShare({ title: 'Play my game!', url: _shareCurrentUrl });
+    _shareResultToast(r);
 }
 
 // ── ACHIEVEMENTS SHOWCASE ─────────────────────────────────────────────────────
@@ -19514,6 +20152,108 @@ function _getBossPhase(hpCurrent, hpMax) {
     return null;
 }
 
+// ── GENRE SELF-TEST (?selftest=1) ─────────────────────────────────────────────
+// Boots every genre scene in sequence, soaks each for ~1.2s of real frames and
+// reports pass/fail in an overlay + console.table. Open index.html?selftest=1
+// on desktop or on-device. Catches boot crashes and first-second runtime errors
+// per genre without needing any external test runner.
+const SELFTEST_GENRES = ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'];
+window._selftestErrors = [];
+function _runGenreSelfTest() {
+    const panel = document.createElement('div');
+    panel.id = 'selftestPanel';
+    panel.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99990;background:rgba(5,3,15,.96);border:1px solid rgba(124,58,237,.5);border-radius:10px;padding:10px 14px;font-family:"JetBrains Mono",monospace;font-size:.68rem;color:#e8edf8;max-height:92vh;overflow-y:auto;min-width:250px;';
+    document.body.appendChild(panel);
+    const _set = html => { panel.innerHTML = html; };
+    const _row = (r) => `<div style="color:${r.ok?'#4ade80':'#f87171'};margin:2px 0;">${r.ok?'✓':'✗'} ${r.g}${r.note?` — <span style="opacity:.75">${String(r.note).slice(0,80)}</span>`:''}</div>`;
+    _set('🧪 Self-test running…');
+
+    const _onErr = e => { window._selftestErrors.push((e.detail && e.detail.message) || e.message || String(e)); };
+    const _onRej = e => { window._selftestErrors.push((e.reason && e.reason.message) || String(e.reason || e)); };
+    window.addEventListener('error', _onErr);
+    window.addEventListener('unhandledrejection', _onRej);
+
+    // Neutralise systems that would otherwise end the run / fire overlays mid-test
+    const _saved = {
+        win: liveConfig.winCondition, boss: liveConfig.bossEnabled, loot: liveConfig.lootEnabled,
+        pus: liveConfig.powerupsEnabled, lv: liveConfig.levelsEnabled, cd: liveConfig.countdownEnabled,
+        cut: liveConfig.cutsceneSlides, ev: liveConfig.events, ach: liveConfig.achievements,
+        lives: liveConfig.lives, sfx: GameAudio.sfxEnabled,
+    };
+    Object.assign(liveConfig, {
+        winCondition:'none', bossEnabled:false, lootEnabled:false, powerupsEnabled:false,
+        levelsEnabled:false, countdownEnabled:false, cutsceneSlides:null, events:[], achievements:[],
+    });
+    GameAudio.sfxEnabled = false;
+    const _restore = () => {
+        Object.assign(liveConfig, {
+            winCondition:_saved.win, bossEnabled:_saved.boss, lootEnabled:_saved.loot,
+            powerupsEnabled:_saved.pus, levelsEnabled:_saved.lv, countdownEnabled:_saved.cd,
+            cutsceneSlides:_saved.cut, events:_saved.ev, achievements:_saved.ach, lives:_saved.lives,
+        });
+        gameState.lives = liveConfig.lives;
+        GameAudio.sfxEnabled = _saved.sfx;
+        window.removeEventListener('error', _onErr);
+        window.removeEventListener('unhandledrejection', _onRej);
+    };
+
+    const _results = [];
+    let _i = 0;
+    const _next = () => {
+        if (_i >= SELFTEST_GENRES.length) {
+            _restore();
+            const pass = _results.filter(r=>r.ok).length;
+            let html = `<div style="font-weight:700;color:${pass===SELFTEST_GENRES.length?'#4ade80':'#fbbf24'};margin-bottom:6px;">🧪 ${pass}/${SELFTEST_GENRES.length} genres passed</div>`;
+            html += _results.map(_row).join('');
+            html += '<div style="margin-top:6px;color:rgba(240,234,214,.45);">remove ?selftest=1 for the normal studio</div>';
+            _set(html);
+            console.table(_results);
+            return;
+        }
+        const g = SELFTEST_GENRES[_i++];
+        window._selftestErrors.length = 0;
+        const _done = (ok, note) => {
+            try { if (currentPhaserGame) currentPhaserGame.destroy(true); } catch(e){}
+            currentPhaserGame = null; window._phaserGame = null;
+            const gc = document.getElementById('game-container'); if (gc) gc.innerHTML='';
+            GameAudio.stopMusic();
+            _results.push({ g, ok, note: note||'' });
+            _set(`🧪 Self-test… ${Math.round(_results.length/SELFTEST_GENRES.length*100)}%<br>` + _results.map(_row).join(''));
+            setTimeout(_next, 60);
+        };
+        try {
+            ['introOverlay','goOverlay'].forEach(id => { const el=document.getElementById(id); if (el) el.classList.remove('show'); });
+            const errOv = document.getElementById('gameErrorOverlay'); if (errOv) errOv.style.display='none';
+            liveConfig.lives = 999; gameState.lives = 999;   // survive incidental hits
+            document.getElementById('genreMode').value = g;
+            onGenreChange();
+            _engineData = getPayload(); _engineData.genre = g;
+            Object.assign(liveConfig, { speed:_engineData.speed, gravity:_engineData.gravity, jumpForce:_engineData.jump });
+            _launchPhaserGame();
+            // Wait for an active scene (≤4s), then soak 1.2s of real frames
+            let waited = 0;
+            const _poll = () => {
+                let sc = null;
+                try { sc = currentPhaserGame && currentPhaserGame.scene.getScenes(true)[0]; } catch(e){}
+                if (sc) {
+                    setTimeout(() => {
+                        let alive = false;
+                        try { alive = sc.scene.isActive(); } catch(e){}
+                        const errs = window._selftestErrors.slice(0,2).join(' | ');
+                        _done(alive && !errs, alive ? errs : 'scene not active');
+                    }, 1200);
+                } else if ((waited += 100) > 4000) {
+                    _done(false, 'boot timeout');
+                } else {
+                    setTimeout(_poll, 100);
+                }
+            };
+            _poll();
+        } catch(e) { _done(false, String(e.message||e)); }
+    };
+    setTimeout(_next, 50);
+}
+
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', ()=>{
     if (window.__exportMode) return; // exported game: injected boot script handles this
@@ -19587,6 +20327,19 @@ window.addEventListener('DOMContentLoaded', ()=>{
     const params=new URLSearchParams(location.search);
     const enc=params.get('game')||params.get('remix');
     const isRemix=!!params.get('remix');
+    // ── Incoming result link (?result=JV1.…): a friend tapped the score link
+    // they sent back after playing. Import their score straight onto the board.
+    const _resultParam = params.get('result');
+    if (_resultParam) {
+        const r = _importFriendCode(_resultParam);
+        if (r && r.dup) showToast('That score was already on your board ✓');
+        else if (r) {
+            if (navigator.vibrate) { try { navigator.vibrate([40,30,80]); } catch(e){} }
+            showToast(`🏁 ${r.o.n || '---'} scored ${r.o.s.toLocaleString()} in ${r.o.g} — added to your board!`, 'success', 7000);
+        } else showToast('That score link looked broken', 'error', 6000);
+        // Strip ?result= from the address so a refresh doesn't double-import
+        try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    }
     if (enc) {
         (async () => {
             let loadedOk = false;
@@ -19613,12 +20366,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 // Seed the creator's best score so recipients have a target to beat
                 const _bs = d.bs !== undefined ? d.bs : (d.bestScore || 0);
                 if (_bs > 0) {
+                    // Remember who challenged us so intro + game-over can name them
+                    window._sharedFrom = { name: (d.bn || 'Creator'), score: _bs };
                     try {
                         const lbKey = 'jv_lb_' + (d.genre||'SHOOTER');
                         let board = [];
                         try { board = JSON.parse(localStorage.getItem(lbKey)||'[]'); } catch(e) {}
                         if (!board.some(e=>e.score===_bs && e.date==='🏆 Creator')) {
-                            board.push({ score: _bs, date: '🏆 Creator' });
+                            board.push({ score: _bs, date: '🏆 Creator', name: (d.bn||'CRE').toUpperCase().slice(0,3), imp: daysSinceEpochLocalMaker() });
                             board.sort((a,b)=>b.score-a.score);
                             localStorage.setItem(lbKey, JSON.stringify(board.slice(0,3)));
                         }
@@ -19671,6 +20426,9 @@ window.addEventListener('DOMContentLoaded', ()=>{
             } catch(e) { console.warn('Share URL parse:', e); }
             compileAndBootEngine();
         })();
+    } else if (!window.__exportMode && params.has('selftest')) {
+        // Diagnostic mode: boot every genre scene and report pass/fail
+        setTimeout(() => _runGenreSelfTest(), 700);
     } else if (!window.__exportMode) {
         // Normal studio load, boot immediately
         const _hasAutosave = !!localStorage.getItem('jv_arcade_autosave');
@@ -19749,6 +20507,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         const el = document.getElementById('gamepadStatus'); if (el) el.style.display='none';
     });
     setTimeout(() => { _pushLcHistory(); }, 500); // seed the undo history
+    _dailyBadgeUpdate();
     _initBuiltinSprites();
     setTimeout(tutInit, 1200); // slight delay so game boots first
     setTimeout(_tmInit, 100);  // init tilemap editor canvas

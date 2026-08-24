@@ -174,9 +174,12 @@
     var streak = streakInfo();
 
     var streakCls = 'jvds-streak' + (streak.atRisk ? ' risk' : '');
-    var streakLabel = streak.atRisk
-      ? '🔥 ' + streak.count + '-day streak at risk'
-      : '🔥 ' + streak.count + '-day streak';
+    // A brand-new player shouldn't be greeted by a sad "0-day streak".
+    var streakLabel = !streak.count
+      ? '✨ Start a streak today'
+      : streak.atRisk
+        ? '🔥 ' + streak.count + '-day streak at risk'
+        : '🔥 ' + streak.count + '-day streak';
 
     var countLine = ch.metric === 'xp'
       ? st.current + ' / ' + st.goal + ' XP'

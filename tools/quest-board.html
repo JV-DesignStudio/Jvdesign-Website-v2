@@ -11,6 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <script src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
 <title>Quest Board RPG, Your Personal Adventure</title>
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://jvdesignstudio.co.uk/tools/quest-board.html">
@@ -807,6 +808,22 @@ a{text-decoration:none;color:inherit}
 .loot-chest{font-size:5rem;cursor:pointer;animation:chestWobble 1.5s infinite;display:inline-block}
 @keyframes chestWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
 .loot-reveal{font-size:1.1rem;font-weight:800;color:var(--gold);text-align:center;display:none;animation:popIn .4s forwards}
+
+/* ── TOUCH / MOTION POLISH ── */
+/* Kill the grey/blue tap flash and double-tap-zoom delay on everything tappable. */
+button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
+.equip-slot,.inv-cell,.habit-check,.life-cb,.bounty-cb,.cal-qtag,.note-item,
+.template-card,.colour-swatch,.flag-btn,.mood-emoji,.sleep-btn,.shop-item,.search-result{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+/* Respect users who prefer minimal motion (accessibility + low-end devices). */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+.chain-chip{font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:700;padding:1px 6px;border-radius:4px;background:rgba(167,139,250,.15);color:#c4b5fd;border:1px solid rgba(167,139,250,.35)}
+.toast-act{background:none;border:none;color:var(--gold);font-weight:900;cursor:pointer;margin-left:10px;font-size:.78rem;text-decoration:underline;padding:0;font-family:inherit}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 </head>
@@ -856,6 +873,7 @@ a{text-decoration:none;color:inherit}
     <span class="filter-chip" data-f="high" onclick="setFilter('high',this)">🔴 Main</span>
     <span class="filter-chip" data-f="med" onclick="setFilter('med',this)">🟡 Side</span>
     <span class="filter-chip" data-f="low" onclick="setFilter('low',this)">🟢 Guild</span>
+    <select class="modal-select" id="sortMode" onchange="setSortMode(this.value)" style="width:auto;padding:4px 8px;font-size:.72rem" title="Sort quests within columns"><option value="manual">↕️ Manual</option><option value="due">📅 Due date</option><option value="pri">🔥 Priority</option><option value="new">🆕 Newest</option><option value="old">🕸️ Oldest</option></select>
     <span class="stat-pill" id="statTotal">0 quests</span>
     <span class="stat-pill" id="statDone">0 done</span>
   </div>
@@ -958,6 +976,7 @@ a{text-decoration:none;color:inherit}
         <div class="rpg-panel-title">
           <span>🏆 Top 3 Today</span>
           <button class="btn btn-ghost btn-sm" onclick="openFocusMode()" style="padding:2px 6px;font-size:.6rem">⚡ Focus</button>
+          <button class="btn btn-gold btn-sm" id="wagerBtn" onclick="placeWager()" style="padding:2px 6px;font-size:.6rem">🎲 Wager 100g</button>
         </div>
         <div id="top3Panel" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
@@ -1055,14 +1074,16 @@ a{text-decoration:none;color:inherit}
             <div class="xp-bar-wrap" style="width:100%;height:9px;margin-top:8px"><div class="xp-bar" id="pXpBar"></div></div>
             <div style="font-size:.6rem;color:var(--muted);text-align:right;margin-top:2px" id="pXpText">0 / 1000 XP</div>
             <div class="class-path" id="classPath"></div>
+          <div id="prestigeWrap"></div>
           </div>
         </div>
         <div class="stats-grid">
           <div class="stat-row"><span class="stat-icon">🗡️</span><span class="stat-name">STR, Bug Smashing</span><span class="stat-val" id="sStr">10</span></div>
           <div class="stat-row"><span class="stat-icon">🧙‍♂️</span><span class="stat-name">INT, Feature Craft</span><span class="stat-val" id="sInt">10</span></div>
           <div class="stat-row"><span class="stat-icon">🏹</span><span class="stat-name">DEX, Clean Deploy</span><span class="stat-val" id="sDex">10</span></div>
-          <div class="stat-row"><span class="stat-icon">🦊</span><span class="stat-name">CHA, Monetisation</span><span class="stat-val" id="sCha">10</span></div>
+          <div class="stat-row"><span class="stat-icon">🦊</span><span class="stat-name">CHA – Monetisation</span><span class="stat-val" id="sCha">10</span></div>
         </div>
+        <div id="statPerks" style="font-size:.66rem;color:var(--muted);line-height:1.7;border-top:1px dashed var(--border);padding-top:8px"></div>
         <div style="font-size:.72rem;font-weight:900;color:var(--gold);text-transform:uppercase;border-bottom:1px solid var(--border);padding-bottom:4px">Equipped Gear</div>
         <div class="equip-slots">
           <div class="equip-slot" id="eq-weapon" onclick="unequip('weapon')"><span class="equip-slot-icon">🚫</span><span class="equip-slot-label">Weapon</span></div>
@@ -1099,6 +1120,7 @@ a{text-decoration:none;color:inherit}
           </div>
           <div class="shop-row"><span>🔔 Push Notifications</span><button class="btn btn-ghost btn-sm" id="notifBtn" onclick="requestNotifications()">Enable</button></div>
           <div class="shop-row"><span>☀️ Morning Check-In</span><button class="btn btn-ghost btn-sm" onclick="document.getElementById('checkInModal').classList.add('open')">Check In</button></div>
+          <div class="shop-row"><span>🎁 Quest Wrapped 2026</span><button class="btn btn-gold btn-sm" onclick="openWrapped()">Open</button></div>
           <div class="shop-row"><span>📤 What I Shipped (HTML portfolio)</span><button class="btn btn-ghost btn-sm" onclick="exportShipped()">Export</button></div>
         </div>
         <!-- GitHub Gist Sync -->
@@ -1133,6 +1155,7 @@ a{text-decoration:none;color:inherit}
         <button class="btn btn-rose" onclick="createRaid()">Assemble</button>
       </div>
       <div style="font-size:.68rem;color:var(--muted)">Completing quests deals damage: low=25, med=50, high=150 HP per quest moved to Done.</div>
+        <div style="font-size:.72rem;font-weight:900;color:#f97316;margin-top:6px">⚔️ Dungeon Raid Tokens: <span id="raidTokenBalance">0</span> <span style="font-weight:700;color:var(--muted)">· slay monsters in the Coffee-Break Dungeon to earn them · 5 tokens = one 150-dmg Strike</span></div>
     </div>
     <div class="raids-list" id="raidsList"></div>
   </div>
@@ -1356,8 +1379,8 @@ Complete real quests to boost your stats, then return here to slay monsters on y
 </div>
 
 <!-- GLOBAL SEARCH OVERLAY -->
-<div class="search-overlay" id="searchOverlay" onclick="e=>e.target===this&&closeSearch()">
-  <div class="search-box" onclick="e=>e.stopPropagation()">
+<div class="search-overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-box" onclick="event.stopPropagation()">
     <div class="search-input-wrap">
       <span class="search-icon">🔍</span>
       <input class="search-input" id="searchGlobalInput" placeholder="Search quests, notes, projects…" oninput="runSearch()" onkeydown="handleSearchKey(event)" autocomplete="off" spellcheck="false">
@@ -1450,6 +1473,7 @@ Complete real quests to boost your stats, then return here to slay monsters on y
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
           <option value="monthly">Monthly</option>
+          <option value="weekday">Weekdays (Mon–Fri)</option>
         </select>
       </div>
     </div>
@@ -1531,8 +1555,20 @@ Complete real quests to boost your stats, then return here to slay monsters on y
   </div>
 </div>
 
+<!-- YEAR WRAPPED MODAL -->
+<div class="modal-overlay" id="wrappedModal">
+  <div class="modal" style="max-width:430px;text-align:center">
+    <div class="modal-title" style="justify-content:center">🎁 Quest Wrapped 2026</div>
+    <canvas id="wrappedCanvas" width="720" height="920" style="width:100%;border-radius:12px;border:1px solid var(--border2)"></canvas>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('wrappedModal').classList.remove('open')">Close</button>
+      <button class="btn btn-gold btn-sm" onclick="downloadWrapped()">💾 Save as PNG</button>
+    </div>
+  </div>
+</div>
+
 <!-- MORE MENU -->
-<div class="modal-overlay" id="moreModal" onclick="event.target===this&&closeMoreMenu()">
+<div class="modal-overlay" id="moreModal" onclick="if(event.target===this)closeMoreMenu()">
   <div class="modal" style="max-width:380px">
     <div class="modal-title">☰ More</div>
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -1566,12 +1602,13 @@ let state={
   ],
   nextId:10
 };
-let rpg={level:1,xp:0,gold:0,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[]};
+let rpg={level:1,xp:0,prestige:0,gold:0,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[]};
 
 /* ── STORAGE ── */
 function save(){
   try{localStorage.setItem(SK,JSON.stringify({columns:state.columns,cards:state.cards,nextId:state.nextId}));}catch(e){}
   try{localStorage.setItem(RK,JSON.stringify(rpg));}catch(e){}
+  try{_pushWidget();}catch(e){}
 }
 function load(){
   try{const r=localStorage.getItem(SK);if(r){const d=JSON.parse(r);if(d.columns)state.columns=d.columns;if(d.cards)state.cards=d.cards;if(d.nextId)state.nextId=d.nextId;}}catch(e){}
@@ -1617,6 +1654,17 @@ function toggleMusic(){
 /* ── RPG SYSTEM ── */
 const XP_PER={high:200,med:100,low:50};
 const GOLD_PER={high:30,med:15,low:8};
+/* ── STAT PERKS ─ core stats shape daily play, not just the dungeon ──
+   STR   → ignored boss quests drain less gold
+   INT   → longer Pomodoro focus sessions (+1 min per 10 INT)
+   DEX   → keener eye, higher loot drop chance
+   CHA   → better haggling, cheaper Market prices */
+function _chaDiscountPct(){return Math.min(30,Math.max(0,Math.floor(((rpg.stats||{}).cha||10)/3)-3));}
+function _strDrainFactor(){return Math.max(.4,1-(((rpg.stats||{}).str||10)*.008));}
+function _dexLootBonus(){return Math.min(.12,((rpg.stats||{}).dex||10)*.002);}
+function _intFocusMinutes(){return Math.floor(((rpg.stats||{}).int||10)/10);}
+function _pomBaseSeconds(){return POM_WORK+_intFocusMinutes()*60;}
+function _dispName(){return (localStorage.getItem('qb-player-name')||'Adventurer')+', '+rpg.title+(rpg.prestige?' ⭐×'+rpg.prestige:'');}
 const AVATARS={'Code Conjurer':'🧙‍♂️','Pixel Paladin':'🗡️','Design Druid':'🦊','QA Ranger':'🏹'};
 const LEVEL_UNLOCKS={
   2:{icon:'🎨',text:'Cyberpunk theme now available in the Shop!'},
@@ -1636,6 +1684,7 @@ function getXpMultiplier(){
   // Permanent shop upgrades
   if(rpg.shopUnlocked?.xp_tome)m+=.10;
   if(rpg.shopUnlocked?.xp_tome2)m+=.25;
+  m*=1+.10*(rpg.prestige||0); // Ascension prestige bonus
   // Active consumable buffs
   if(hasActiveBuff('xp2x'))m*=2;
   if(hasActiveBuff('xpDay'))m*=1.5;
@@ -1644,6 +1693,7 @@ function getXpMultiplier(){
 function addXp(n){
   const mult=getXpMultiplier();
   const actual=Math.round(n*mult);
+  rpg.lifetimeXp=(rpg.lifetimeXp||0)+actual;
   rpg.xp+=actual;const need=rpg.level*1000;
   if(rpg.xp>=need){rpg.xp-=need;rpg.level++;triggerLevelUp();}
   save();updateRpgWidgets();updateStreakDisplay();
@@ -1655,6 +1705,7 @@ function addGold(n){
   if(n>0){
     if(rpg.shopUnlocked?.gold_eye)actual=Math.round(n*1.15);
     if(hasActiveBuff('goldBoost')){actual=Math.round(actual*1.5);consumeBuff('goldBoost');}
+    rpg.lifetimeGold=(rpg.lifetimeGold||0)+actual;
   }
   rpg.gold=Math.max(0,rpg.gold+actual);
   if(rpg.gold>=500)unlockAch('wealthy');
@@ -1662,7 +1713,10 @@ function addGold(n){
   save();updateRpgWidgets();
 }
 function triggerLevelUp(){
+  try{if(navigator.vibrate)navigator.vibrate([20,60,30]);}catch(e){}
   playSfx('levelup');
+  if(rpg.level>=10)unlockAch('lv10');
+  if(rpg.level>=20)unlockAch('lv20');
   if(rpg.level===2){
     // First-ever level-up: a gentle toast instead of the full-screen overlay, so a
     // brand-new player isn't blindsided by a big celebration before they know what levelling means.
@@ -1686,13 +1740,13 @@ function updateRpgWidgets(){
   const pct=Math.round((rpg.xp/(rpg.level*1000))*100);
   const av=AVATARS[rpg.class]||'🧙‍♂️';
   document.getElementById('hAvatar').textContent=av;
-  document.getElementById('hName').textContent=`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${rpg.title}`;
+  document.getElementById('hName').textContent=`_dispName()`;
   document.getElementById('hLevel').textContent=`LV.${rpg.level} ${rpg.class}`;
   document.getElementById('hXp').style.width=pct+'%';
   document.getElementById('hGold').textContent=rpg.gold;
   if(document.getElementById('pAvatar')){
     document.getElementById('pAvatar').textContent=av;
-    document.getElementById('pName').textContent=`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${rpg.title}`;
+    document.getElementById('pName').textContent=`_dispName()`;
     document.getElementById('classSelect').value=rpg.class;
     document.getElementById('pXpBar').style.width=pct+'%';
     document.getElementById('pXpText').textContent=`${rpg.xp} / ${rpg.level*1000} XP`;
@@ -1703,6 +1757,9 @@ function updateRpgWidgets(){
     document.getElementById('sInt').innerHTML=rpg.stats.int+(ib?` <span style="color:var(--green);font-size:.7rem">+${ib}</span>`:'');
     document.getElementById('sDex').innerHTML=rpg.stats.dex+(db?` <span style="color:var(--green);font-size:.7rem">+${db}</span>`:'');
     document.getElementById('sCha').innerHTML=rpg.stats.cha+(cb?` <span style="color:var(--green);font-size:.7rem">+${cb}</span>`:'');
+    const sp=document.getElementById('statPerks');
+    if(sp)sp.innerHTML='<strong style="color:var(--gold)">⚔️ Stat Perks:</strong> STR −'+Math.round((1-_strDrainFactor())*100)+'% gold drain · INT +'+_intFocusMinutes()+'min focus · DEX +'+Math.round(_dexLootBonus()*100)+'% loot · CHA −'+_chaDiscountPct()+'% shop prices';
+    renderPrestige();
     renderEquip();renderInv();
   }
   // dash gold
@@ -1715,7 +1772,14 @@ function updateRpgWidgets(){
 }
 function onQuestComplete(card){
   if(card._wasDone)return;
+  // Snapshot BEFORE rewards, with the card's pre-completion column restored so
+  // 'undo complete' returns the quest to where it came from.
+  const _pc=card._prevCol||null;
+  if(_pc)card.colId=_pc;
+  pushUndo('quest completed');
+  if(_pc)card.colId='done';
   card._wasDone=true;
+  card.completedAt=Date.now(); // weekly boss / review stats count per-week completions
   // ── Streak tracking ──────────────────────────────────────────
   const today=new Date().toDateString();
   const yesterday=new Date(Date.now()-86400000).toDateString();
@@ -1746,6 +1810,7 @@ function onQuestComplete(card){
   const actualXp=Math.round(baseXp*mult);
   const actualG=Math.round(baseG*mult);
   // ── Visual juice ──────────────────────────────────────────────
+  try{if(navigator.vibrate)navigator.vibrate(card.isBoss?[18,40,28]:14);}catch(e){}
   flashScreen();
   playSfx('quest');
   spawnXpFloat(`+${actualXp} XP`,'gold');
@@ -1753,21 +1818,22 @@ function onQuestComplete(card){
   if(mult>1)setTimeout(()=>spawnXpFloat(`×${mult} STREAK!`,'purple'),420);
   if(rpg.comboCount>=3)setTimeout(()=>showCombo(rpg.comboCount),600);
   const streakMsg=rpg.streak>1?` 🔥 ${rpg.streak}-day streak!`:'';
-  showToast(`+${actualXp}XP  +${actualG}g${streakMsg}`,'xp');
+  showToast(`+${actualXp}XP  +${actualG}g${streakMsg}`,'xp',{label:'Undo',fn:undoLast});
   // Apply rewards (consume xp2x buff per quest)
   if(hasActiveBuff('xp2x'))consumeBuff('xp2x');
   addXp(baseXp); addGold(actualG);
   // Clear boss threat
   if(card.isBoss&&rpg.bossThreats)delete rpg.bossThreats[card.id];
-  // stat bumps
-  if(card.colId==='fix'||card.priority==='high')rpg.stats.str=Math.min(rpg.stats.str+1,99);
-  if(card.colId==='build')rpg.stats.int=Math.min(rpg.stats.int+1,99);
-  if(card.colId==='deploy')rpg.stats.dex=Math.min(rpg.stats.dex+1,99);
-  if(card.colId==='covers')rpg.stats.cha=Math.min(rpg.stats.cha+1,99);
+  // stat bumps — matched by quest keywords/tags, not legacy column ids
+  const hay=_cardHay(card);
+  if(/\b(fix|bug|debug|crash|error)\b/.test(hay)||card.priority==='high')rpg.stats.str=Math.min(rpg.stats.str+1,99);
+  if(/\b(build|page|feature|app|game|workshop|course|book|chapter|write)\b/.test(hay))rpg.stats.int=Math.min(rpg.stats.int+1,99);
+  if(/\b(deploy|publish|launch|ship|release)\b/.test(hay))rpg.stats.dex=Math.min(rpg.stats.dex+1,99);
+  if(/\b(art|cover|design|video|thumbnail|social|sticker)\b/.test(hay))rpg.stats.cha=Math.min(rpg.stats.cha+1,99);
   // achievements
   unlockAch('first_quest');
+  if(_countDone(/\b(fix|bug|debug)\b/)>=5)unlockAch('bug_crusher');
   const done=state.cards.filter(c=>c.colId==='done');
-  if(done.filter(c=>c.colId==='fix').length>=5)unlockAch('bug_crusher');
   if(done.length>=5)unlockAch('architect');
   if((rpg.streak||0)>=3)unlockAch('streak_3');
   if((rpg.streak||0)>=7)unlockAch('streak_7');
@@ -1776,15 +1842,17 @@ function onQuestComplete(card){
   if((rpg.comboCount||0)>=5)unlockAch('combo_king');
   if(rpg.gold>=500)unlockAch('wealthy');
   if(rpg.gold>=2000)unlockAch('rich');
-  if(done.filter(c=>c.colId==='videos').length>=5)unlockAch('video_creator');
-  if(done.filter(c=>c.colId==='books').length>=3)unlockAch('author');
+  if(_countDone(/\b(video|film|record|youtube)\b/)>=5)unlockAch('video_creator');
+  if(_countDone(/\b(book|chapter|kdp|illustrat)\b/)>=3)unlockAch('author');
   // Weekly boss
   updateWeeklyBossProgress();
+  checkWagerProgress();
   // raids damage
   dealRaidDamage(card.priority==='high'?150:card.priority==='med'?50:25);
   // loot drop
   let chance=card.isBoss?.35:.15;
   if(rpg.shopUnlocked?.lootluck)chance+=.10;
+  chance=Math.min(.65,chance+_dexLootBonus()); // DEX perk: keener eye for loot
   if(hasActiveBuff('lootGuar')){chance=1;consumeBuff('lootGuar');}
   if(Math.random()<chance)openLoot();
   // Record daily stats
@@ -1952,6 +2020,8 @@ const ACHS=[
   {id:'author',       title:'Published Author',    desc:'Complete 3 book quests',                       titleUnlock:'The Author',        icon:'📖'},
   {id:'weekly_boss',  title:'Weekly Hero',         desc:'Defeat your first weekly boss event',         titleUnlock:'Boss Killer',       icon:'🏆'},
   {id:'appiversary',  title:'A Year of Quests',    desc:'Complete a quest on the anniversary of your first day here', titleUnlock:'The Veteran', icon:'🎂'},
+  {id:'ascended',     title:'Ascended Being',      desc:'Prestige for the first time (reach LV20, then Ascend)', titleUnlock:'The Ascended',       icon:'⭐'},
+  {id:'high_roller',  title:'High Roller',         desc:'Win a streak wager',                           titleUnlock:'The Gambler',       icon:'🎲'},
 ];
 function unlockAch(id){
   if(rpg.achievements[id])return;
@@ -1991,7 +2061,7 @@ function openAchievements(){
   });
   document.getElementById('achModal').classList.add('open');
 }
-function equipTitle(t){rpg.title=t;save();updateRpgWidgets();showToast(`🏆 Title: "Josh- ${t}"`);document.getElementById('achModal').classList.remove('open');}
+function equipTitle(t){rpg.title=t;save();updateRpgWidgets();showToast(`🏆 Title equipped: "${t}"`);document.getElementById('achModal').classList.remove('open');}
 
 /* ── THEME SWITCHER ── */
 function switchTheme(themeId){
@@ -2039,11 +2109,12 @@ function createRaid(){
 }
 function renderRaids(){
   const c=document.getElementById('raidsList');if(!c)return;c.innerHTML='';
+  const tb=document.getElementById('raidTokenBalance');if(tb)tb.textContent=String(rpg.raidTokens||0);
   if(!rpg.raids.length){c.innerHTML='<div style="grid-column:span 2;text-align:center;color:var(--muted2);padding:20px;font-size:.8rem">No active raids. Spawn a dragon above!</div>';return;}
   rpg.raids.forEach(r=>{
     const pct=Math.round(r.hp/r.maxHp*100);
     const el=document.createElement('div');el.className='raid-card'+(r.slain?' slain':'');
-    el.innerHTML=`<div class="raid-boss-name">${r.name}</div><div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">${r.maxHp} HP Boss</div><div style="display:flex;justify-content:space-between;font-size:.7rem;font-weight:800;color:var(--rose);margin-top:4px"><span>HP</span><span>${r.hp}/${r.maxHp} (${pct}%)</span></div><div class="raid-hp-bg"><div class="raid-hp-bar" style="width:${pct}%;${r.slain?'background:var(--green)':''}"></div></div><div style="font-size:.62rem;color:var(--muted2);display:flex;justify-content:space-between;margin-top:4px"><span>Spawned: ${r.date}</span>${!r.slain?`<button class="btn btn-ghost btn-sm" onclick="abandonRaid('${r.id}')" style="padding:2px 6px;font-size:.55rem">Retreat</button>`:''}</div>`;
+    el.innerHTML=`<div class="raid-boss-name">${r.name}</div><div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">${r.maxHp} HP Boss</div><div style="display:flex;justify-content:space-between;font-size:.7rem;font-weight:800;color:var(--rose);margin-top:4px"><span>HP</span><span>${r.hp}/${r.maxHp} (${pct}%)</span></div><div class="raid-hp-bg"><div class="raid-hp-bar" style="width:${pct}%;${r.slain?'background:var(--green)':''}"></div></div><div style="font-size:.62rem;color:var(--muted2);display:flex;justify-content:space-between;margin-top:4px"><span>Spawned: ${r.date}</span>${!r.slain?`<button class="btn btn-ghost btn-sm" onclick="strikeRaid('${r.id}')" style="padding:2px 6px;font-size:.55rem;margin-right:4px;background:rgba(245,200,66,.12);color:var(--gold);border-color:rgba(245,200,66,.35)">⚔️ Strike (5)</button><button class="btn btn-ghost btn-sm" onclick="abandonRaid('${r.id}')" style="padding:2px 6px;font-size:.55rem">Retreat</button>`:''}</div>`;
     c.appendChild(el);
   });
 }
@@ -2055,6 +2126,14 @@ function dealRaidDamage(dmg){
   if(changed){save();renderRaids();}
 }
 function abandonRaid(id){if(!confirm('Retreat from this raid?'))return;rpg.raids=rpg.raids.filter(r=>r.id!==id);save();renderRaids();showToast('🛡️ Forces retreated.');}
+function strikeRaid(id){
+  const r=rpg.raids.find(x=>x.id===id);if(!r||r.slain)return;
+  if((rpg.raidTokens||0)<5){playSfx('error');showToast('⚔️ Need 5 Raid Tokens — slay dungeon monsters to earn them!');return;}
+  rpg.raidTokens-=5;
+  dealRaidDamage(150);
+  playSfx('quest');flashScreen();
+  spawnXpFloat('⚔️ STRIKE! −5 tokens','gold');
+}
 
 /* ── DUNGEON ── */
 let dg={active:false,floor:1,monster:null,playerHp:0,playerMana:0};
@@ -2112,12 +2191,12 @@ function enemyTurn(){
   if(dg.playerHp<=0){playSfx('error');dgPrint('<br><strong style="color:#ff4444">☠️ You were defeated! Retreat and try again.</strong>');dg.active=false;showDgBtns(false);document.querySelector('.dungeon-controls button').style.display='';}
 }
 function checkMonsterDead(){
-  if(dg.monster.hp<=0){playSfx('quest');dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g`);addXp(dg.monster.xp);addGold(dg.monster.g);dg.floor++;spawnMonster();return true;}
+  if(dg.monster.hp<=0){playSfx('quest');dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g`);addXp(dg.monster.xp);addGold(dg.monster.g);const tok=Math.max(1,Math.ceil(dg.floor/2));rpg.raidTokens=(rpg.raidTokens||0)+tok;dgPrint(' ⚔️ +'+tok+' Raid Token'+(tok>1?'s':''));dg.floor++;spawnMonster();return true;}
   return false;
 }
 
 /* ── CALENDAR ── */
-let calDate=new Date(2026,4,1);
+let calDate=new Date(); // always open on the current month
 function navMonth(d){calDate.setMonth(calDate.getMonth()+d);renderCalendar();}
 function renderCalendar(){
   const grid=document.getElementById('calGrid');if(!grid)return;grid.innerHTML='';
@@ -2182,6 +2261,8 @@ function getLockedBy(cardId){
   const c=state.cards.find(x=>x.id===cardId);if(!c||!c.prereqId)return '';
   const pre=state.cards.find(x=>x.id===c.prereqId);return pre?pre.title:'';
 }
+function _blockedCountSafe(id){return state.cards.filter(function(o){return o.prereqId===id&&o.colId!=='done';});}
+function _blockedCount(id){return _blockedCountSafe(id).length;}
 
 /* ── BOSS HP ── */
 function getBossHp(card){
@@ -2194,6 +2275,21 @@ function getBossHp(card){
 
 /* ── RENDER ── */
 let dragCard=null,dragPlaceholder=null,activeFilter='all',dragPrevCol=null;
+let activeSort='manual';
+try{activeSort=localStorage.getItem('qb-sort')||'manual';}catch(e){}
+function setSortMode(v){activeSort=v;try{localStorage.setItem('qb-sort',v);}catch(e){}render();}
+function _sortCards(arr){
+  if(activeSort==='manual'||!arr||arr.length<2)return arr;
+  var pri={high:0,med:1,low:2};
+  arr.sort(function(a,b){
+    if(activeSort==='due'){var av=a.date||'9999-99-99',bv=b.date||'9999-99-99';return av<bv?-1:(av>bv?1:0);}
+    if(activeSort==='pri')return (pri[a.priority]!=null?pri[a.priority]:1)-(pri[b.priority]!=null?pri[b.priority]:1);
+    if(activeSort==='new')return (b.createdAt||'').localeCompare(a.createdAt||'');
+    if(activeSort==='old')return (a.createdAt||'').localeCompare(b.createdAt||'');
+    return 0;
+  });
+  return arr;
+}
 function render(){
   const board=document.getElementById('board');
   const search=document.getElementById('searchInput')?.value?.toLowerCase()||'';
@@ -2205,6 +2301,7 @@ function render(){
       if(search&&!c.title.toLowerCase().includes(search)&&!c.desc.toLowerCase().includes(search)&&!c.tags.some(t=>t.text.toLowerCase().includes(search)))return false;
       return true;
     });
+    _sortCards(cards);
     const colEl=document.createElement('div');colEl.className='column';colEl.dataset.colId=col.id;
     colEl.addEventListener('dragover',e=>{e.preventDefault();colEl.classList.add('drag-over');insertPlaceholder(e,colEl.querySelector('.col-cards'));});
     colEl.addEventListener('dragleave',e=>{if(!colEl.contains(e.relatedTarget))colEl.classList.remove('drag-over');});
@@ -2233,10 +2330,12 @@ function buildCard(card){
   }else{
     el.addEventListener('click',()=>{playSfx('error');el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),400);showToast(`🔒 Requires: "${getLockedBy(card.id)}" first`);});
   }
+  const chainN=_blockedCount(card.id);
+  const chainChip=chainN?'<span class="chain-chip" title="Unlocks '+chainN+' locked quest'+(chainN>1?'s':'')+'">⛓️ '+chainN+'</span>':'';
   const pri={high:'pri-high',med:'pri-med',low:'pri-low'}[card.priority]||'pri-med';
   const priLabel={high:'Main Quest',med:'Side Quest',low:'Guild Quest'}[card.priority]||'Quest';
-  const tagsHtml=card.tags.map(t=>`<span class="card-tag" style="background:${t.col}22;color:${t.col};border:1px solid ${t.col}44">${t.text}</span>`).join('');
-  const dateHtml=card.date?`<span class="card-date">📅 ${card.date}</span>`:'';
+  const tagsHtml=card.tags.map(t=>`<span class="card-tag" style="background:${t.col}22;color:${escHtml(t.col)};border:1px solid ${escHtml(t.col)}44">${escHtml(t.text)}</span>`).join('');
+  const dateHtml=card.date?`<span class="card-date">📅 ${escHtml(card.date)}</span>`:'';
   const lockHtml=locked?`<div class="lock-banner">🔒 Requires: "${escHtml(getLockedBy(card.id))}"</div>`:'';
   let bossHtml='';
   if(card.isBoss){
@@ -2261,7 +2360,7 @@ function buildCard(card){
   const timeHtml=totalTime>60000||card.timerActive?`<span class="time-badge${card.timerActive?' active':''}" onclick="event.stopPropagation();startTimer('${card.id}')" title="Click to ${card.timerActive?'stop':'start'} timer">${card.timerActive?'⏱':'🕐'} ${_fmtTime?.(totalTime)||'0m'}</span>`:'';
   const commentCount=card.comments.length;
   const commentsHtml=card.comments.map((c,i)=>`<div class="comment"><div class="comment-meta">${c.date}</div><div>${escHtml(c.text)}</div><button class="comment-del" onclick="delComment('${card.id}',${i})">✕</button></div>`).join('');
-  el.innerHTML=`<div class="card-actions"><button class="card-action-btn" onclick="openCardModal(null,'${card.id}')" title="Edit">✏️</button><button class="card-action-btn" onclick="deleteCard('${card.id}')" title="Delete">🗑</button></div>${lockHtml}${threatHtml}${card.isBoss?'<span class="boss-badge">😈 Boss</span> ':''}${card.flag?`<span style="float:right;font-size:1rem" title="${card.flag}">${FLAG_MAP[card.flag]||''}</span>`:''}${tagsHtml?`<div class="card-tags">${tagsHtml}</div>`:''}${bossHtml}<div class="card-title" style="cursor:pointer" onclick="openProjectSheet('${card.id}')">${escHtml(card.title)}</div>${card.desc?`<div class="card-desc" style="cursor:pointer" onclick="openProjectSheet('${card.id}')">${escHtml(card.desc.split('\n')[0].replace(/^-\s*\[[ x]\]\s*/i,'').slice(0,100))}${card.desc.length>100?'…':''}</div>`:''}<div class="card-meta"><span class="card-priority ${pri}">${priLabel}</span>${rewardHtml}${repeatHtml}${ageHtml}${timeHtml}${dateHtml}<button class="card-action-btn" style="margin-left:auto" onclick="startTimer('${card.id}');event.stopPropagation()" title="Time tracker">⏱</button><button class="card-action-btn" onclick="toggleComments('${card.id}')">💬 ${commentCount}</button></div><div class="card-comments" id="cm-${card.id}">${commentsHtml}<div class="comment-input-row"><textarea class="comment-input" id="ci-${card.id}" rows="2" placeholder="Add a note…"></textarea><button class="comment-submit" onclick="addComment('${card.id}')">Post</button></div></div>`;
+  el.innerHTML=`<div class="card-actions"><button class="card-action-btn" onclick="openCardModal(null,'${card.id}')" title="Edit">✏️</button><button class="card-action-btn" onclick="deleteCard('${card.id}')" title="Delete">🗑</button></div>${lockHtml}${threatHtml}${card.isBoss?'<span class="boss-badge">😈 Boss</span> ':''}${card.flag?`<span style="float:right;font-size:1rem" title="${card.flag}">${FLAG_MAP[card.flag]||''}</span>`:''}${tagsHtml?`<div class="card-tags">${tagsHtml}</div>`:''}${bossHtml}<div class="card-title" style="cursor:pointer" onclick="openProjectSheet('${card.id}')">${escHtml(card.title)}</div>${card.desc?`<div class="card-desc" style="cursor:pointer" onclick="openProjectSheet('${card.id}')">${escHtml(card.desc.split('\n')[0].replace(/^-\s*\[[ x]\]\s*/i,'').slice(0,100))}${card.desc.length>100?'…':''}</div>`:''}<div class="card-meta"><span class="card-priority ${pri}">${priLabel}</span>${rewardHtml}${repeatHtml}${ageHtml}${timeHtml}${dateHtml}${chainChip}<button class="card-action-btn" style="margin-left:auto" onclick="startTimer('${card.id}');event.stopPropagation()" title="Time tracker">⏱</button><button class="card-action-btn" onclick="toggleComments('${card.id}')">💬 ${commentCount}</button></div><div class="card-comments" id="cm-${card.id}">${commentsHtml}<div class="comment-input-row"><textarea class="comment-input" id="ci-${card.id}" rows="2" placeholder="Add a note…"></textarea><button class="comment-submit" onclick="addComment('${card.id}')">Post</button></div></div>`;
   // Add swipe-to-complete on mobile
   if(!locked) addSwipeToCard(el, card);
   return el;
@@ -2279,6 +2378,8 @@ function removePlaceholder(){if(dragPlaceholder){dragPlaceholder.remove();dragPl
 function dropCard(colId,cardsEl){
   if(!dragCard)return;
   const wasNotDone=dragPrevCol!=='done';
+  pushUndo(dragPrevCol===colId?'reorder':'moved quest');
+  dragCard._prevCol=dragPrevCol;
   dragCard.colId=colId;
   const cards=[...cardsEl.querySelectorAll('.card:not(.dragging)')];
   const phIdx=dragPlaceholder?[...cardsEl.children].indexOf(dragPlaceholder):cards.length;
@@ -2288,10 +2389,14 @@ function dropCard(colId,cardsEl){
   state.cards=state.cards.filter(c=>c.id!==dragCard.id);
   state.cards.splice(insertIdx>=0?insertIdx:state.cards.length,0,dragCard);
   removePlaceholder();
-  if(colId==='done'&&wasNotDone){animCardComplete(dragCard.id);setTimeout(()=>onQuestComplete(dragCard),180);}
-  else if(colId!=='done'&&wasNotDone===false){/* moved back out of done */}
+  if(colId==='done'&&wasNotDone){
+    // Let the complete animation play before re-rendering (it needs ~600ms).
+    animCardComplete(dragCard.id);
+    setTimeout(()=>{onQuestComplete(dragCard);save();render();},320);
+  }else{
+    save();render();
+  }
   dragCard=null;dragPrevCol=null;
-  save();render();
 }
 
 /* ── CARD MODAL ── */
@@ -2340,13 +2445,20 @@ function saveCard(){
   const repeat=document.getElementById('cardRepeat')?.value||'none';
   if(editId){
     const c=state.cards.find(x=>x.id===editId);
-    if(c)Object.assign(c,{title,desc,colId,priority,date,tags:[...currentTags],isBoss,prereqId,repeat,flag:_modalFlag||c.flag||null});
+    if(c)Object.assign(c,{title,desc,colId:_normCol(colId),priority,date,tags:[...currentTags],isBoss,prereqId,repeat,flag:_modalFlag||c.flag||null});
   }else{
-    state.cards.push({id:'c'+(++state.nextId),colId,title,desc,priority,date,tags:[...currentTags],comments:[],isBoss,prereqId,repeat,timeLogs:[],flag:_modalFlag||null,createdAt:new Date().toISOString()});
+    state.cards.push({id:'c'+(++state.nextId),colId:_normCol(colId),title,desc,priority,date,tags:[...currentTags],comments:[],isBoss,prereqId,repeat,timeLogs:[],flag:_modalFlag||null,createdAt:new Date().toISOString()});
   }
   save();render();closeCardModal();showToast(editId?'✅ Quest updated!':'✅ Quest added!');
 }
-function deleteCard(id){if(!confirm('Delete this quest?'))return;state.cards=state.cards.filter(c=>c.id!==id);save();render();showToast('🗑 Quest deleted');}
+function deleteCard(id){
+  if(!confirm('Delete this quest?'))return;
+  pushUndo('quest deleted');
+  const w=rpg.wager;if(w&&w.status==='active'&&w.ids.includes(id)){w.status='cancelled';showToast('🎲 Wagered quest deleted — wager cancelled, stake safe');}
+  state.cards=state.cards.filter(c=>c.id!==id);
+  save();render();
+  showToast('🗑 Quest deleted','info',{label:'Undo',fn:undoLast});
+}
 function populatePrereqSelect(exclude=null){
   const sel=document.getElementById('cardPrereq');const cur=sel.value;
   sel.innerHTML='<option value="">None</option>';
@@ -2454,7 +2566,7 @@ function renderDash(){
   const hqAvatar=document.getElementById('hqAvatar');
   if(hqAvatar){
     hqAvatar.textContent=av;
-    document.getElementById('hqName').textContent=`${localStorage.getItem('qb-player-name')||'Adventurer'}, ${rpg.title}`;
+    document.getElementById('hqName').textContent=`_dispName()`;
     document.getElementById('hqClass').textContent=`LV.${rpg.level} ${rpg.class}`;
     document.getElementById('hqXpBar').style.width=pct+'%';
     document.getElementById('hqXpText').textContent=`${rpg.xp} / ${rpg.level*1000} XP`;
@@ -2464,7 +2576,7 @@ function renderDash(){
     const total=state.cards.length,done=state.cards.filter(c=>c.colId==='done').length;
     animCount(hqTotal,total);
     animCount(document.getElementById('hqDone2'),done);
-    animCount(document.getElementById('hqGold2'),rpg.gold);
+    animCount(document.getElementById('hqGold2'),rpg.gold,550,'g');
     animCount(document.getElementById('hqMain'),state.cards.filter(c=>c.priority==='high'&&c.colId!=='done').length);
   }
   // Today + week
@@ -2533,6 +2645,8 @@ function processQuick(){
     else if(/\btomorrow\b/i.test(lo)){d.setDate(d.getDate()+1);date=_dateStr(d);title=title.replace(/\btomorrow\b/gi,'').trim();}
     else if(/\bthis week\b/i.test(lo)){d.setDate(d.getDate()+(7-d.getDay()));date=_dateStr(d);title=title.replace(/\bthis week\b/gi,'').trim();}
     else if(/\bnext week\b/i.test(lo)){d.setDate(d.getDate()+(14-d.getDay()));date=_dateStr(d);title=title.replace(/\bnext week\b/gi,'').trim();}
+    else if(/\bin (\d+) (day|week)s?\b/i.test(lo)){var mIn=lo.match(/\bin (\d+) (day|week)s?\b/i);d.setDate(d.getDate()+parseInt(mIn[1],10)*(mIn[2]==='week'?7:1));date=_dateStr(d);title=title.replace(new RegExp('\\bin\\s+'+mIn[1]+'\\s+'+mIn[2]+'s?\\b','i'),'').trim();}
+    else { var mWd=lo.match(/\b(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i); if(mWd){ var WDmap={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6}; var tgt=WDmap[mWd[2].toLowerCase()]; var diff=(tgt-d.getDay()+7)%7; if(mWd[1]&&diff===0)diff=7; d.setDate(d.getDate()+diff); date=_dateStr(d); title=title.replace(new RegExp('\\b(?:next\\s+)?'+mWd[2]+'\\b','i'),'').trim(); } }
     // ── Smart column routing (if no @column given) ────────────────────────────
     if(!colAt){
       if(lo.match(/\b(fix|bug|broken|error|crash|dead link)\b/)){priority='high';colId='fix';}
@@ -2556,7 +2670,7 @@ function processQuick(){
     if(!title)return;
     if(title.length>65)title=title.slice(0,65)+'…';
     tags.unshift({text:'Quick',col:'#0284c7'});
-    state.cards.unshift({id:'q'+(++state.nextId),colId,title,desc:'',tags,priority,date,comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[]});
+    state.cards.unshift({id:'q'+(++state.nextId),colId:_normCol(colId),title,desc:'',tags,priority,date,comments:[],isBoss:false,prereqId:'',repeat:'none',timeLogs:[]});
     added++;
     playSfx('coin');
   });
@@ -2637,7 +2751,7 @@ function applyTemplate(i){
     document.getElementById('cardTitle').value=t.name.slice(t.name.indexOf(' ')+1)+', ';
     document.getElementById('cardDesc').value=t.desc;
     document.getElementById('cardPriority').value=t.priority;
-    document.getElementById('cardColumn').value=t.colId;
+    document.getElementById('cardColumn').value=_normCol(t.colId);
     currentTags=[...t.tags];renderTagPills();
     document.getElementById('cardTitle').focus();
     document.getElementById('cardTitle').setSelectionRange(9999,9999);
@@ -2749,12 +2863,10 @@ function spawnRecurring(card){
   // Set new due date
   if(card.date){
     const d=new Date(card.date);
-    if(card.repeat==='daily')d.setDate(d.getDate()+1);
-    else if(card.repeat==='weekly')d.setDate(d.getDate()+7);
-    else if(card.repeat==='monthly')d.setMonth(d.getMonth()+1);
+    _advanceDate(d,card.repeat);
     newCard.date=_dateStr(d);
   }
-  newCard.colId=card._originCol||'build';
+  newCard.colId=_normCol(card._originCol||card.colId);
   state.cards.push(newCard);
   setTimeout(()=>showToast(`🔄 "${card.title.slice(0,30)}" respawned (${card.repeat})!`),1200);
 }
@@ -2765,9 +2877,6 @@ function checkBackupNeeded(){
   const daysSince=Math.floor((Date.now()-new Date(rpg.lastExport).getTime())/86400000);
   if(daysSince>=14){document.getElementById('backupBanner')?.classList.add('show');}
 }
-// Hook exportData to record time
-const _origExport=exportData;
-// (Override after definition below)
 
 /* ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────── */
 function requestNotifications(){
@@ -2782,8 +2891,8 @@ function scheduleDailyCheck(){
   const now=new Date();const todayStr=_dateStr(now);
   const overdue=state.cards.filter(c=>c.colId!=='done'&&c.date&&c.date<todayStr);
   const dueToday=state.cards.filter(c=>c.colId!=='done'&&c.date===todayStr);
-  if(overdue.length)new Notification('⚔️ Quest Board',{body:`${overdue.length} overdue quest${overdue.length>1?'s':''}! Check your board.`,icon:'/manifest.json',tag:'overdue'});
-  else if(dueToday.length)new Notification('📅 Quest Board',{body:`${dueToday.length} quest${dueToday.length>1?'s':''} due today!`,icon:'/manifest.json',tag:'today'});
+  if(overdue.length)new Notification('⚔️ Quest Board',{body:`${overdue.length} overdue quest${overdue.length>1?'s':''}! Check your board.`,icon:'./logo.png',tag:'overdue'});
+  else if(dueToday.length)new Notification('📅 Quest Board',{body:`${dueToday.length} quest${dueToday.length>1?'s':''} due today!`,icon:'./logo.png',tag:'today'});
 }
 
 /* ── FAB ── */
@@ -2878,6 +2987,13 @@ function _renderSheet(card){
     </div>`;
   }
 
+  // Unlocks list (what this quest gates)
+  const blockedList=_blockedCountSafe(card.id);
+  if(blockedList.length){
+    bodyHtml+='<div class="sheet-section"><div class="sheet-section-label">⛓️ Unlocks ('+blockedList.length+')</div>'+
+      blockedList.map(function(b){return '<div class="sheet-note-item" onclick="closeProjectSheet();openProjectSheet(&quot;'+b.id+'&quot;)" ><div class="sheet-note-title">'+escHtml(b.title)+'</div></div>';}).join('')+'</div>';
+  }
+
   // Tags row
   if(tagsHtml)bodyHtml=`<div class="sheet-section"><div class="card-tags">${tagsHtml}</div></div>`+bodyHtml;
 
@@ -2888,6 +3004,8 @@ function _renderSheet(card){
   document.getElementById('sheetActions').innerHTML=`
     ${!isDone&&!locked?`<button class="btn btn-rose btn-sm" onclick="sheetComplete()" style="flex:1;justify-content:center">⚔️ Complete Quest</button>`:''}
     <button class="btn btn-ghost btn-sm" onclick="closeProjectSheet();openCardModal(null,'${card.id}')">✏️ Edit</button>
+    ${!isDone&&!locked?`<button class="btn btn-ghost btn-sm" onclick="snoozeCard('${card.id}',1)">⏰+1d</button><button class="btn btn-ghost btn-sm" onclick="snoozeCard('${card.id}',3)">+3d</button><button class="btn btn-ghost btn-sm" onclick="snoozeCard('${card.id}',7)">+1w</button>`:''}
+    <button class="btn btn-ghost btn-sm" onclick="duplicateCard('${card.id}')">⧉ Copy</button>
     <button class="btn btn-rose btn-sm" onclick="closeProjectSheet();openNoteModal();" style="background:rgba(245,200,66,.12);color:var(--gold);border-color:var(--gold)33">📝 Add Note</button>
     ${isDone?'<span style="color:var(--green);font-size:.75rem;font-weight:900;padding:0 6px">✅ Completed!</span>':''}
   `;
@@ -2900,6 +3018,7 @@ function sheetComplete(){
   const card=state.cards.find(c=>c.id===sheetCardId);
   if(!card||card.colId==='done')return;
   const prevCol=card.colId;
+  card._prevCol=prevCol;
   card.colId='done';
   if(prevCol!=='done')onQuestComplete(card);
   save();render();closeProjectSheet();
@@ -2951,7 +3070,7 @@ function addSwipeToCard(el,card){
       if(dx>80&&card.colId!=='done'){
         // Swipe right → complete
         el.classList.remove('swipe-right');
-        card.colId='done';onQuestComplete(card);save();render();
+        card._prevCol=card.colId;card.colId='done';onQuestComplete(card);save();render();
         if(document.getElementById('view-dash').classList.contains('active'))renderDash();
       } else if(dx<-80){
         // Swipe left → open edit
@@ -3026,7 +3145,9 @@ function renderShop(cat=_shopCat){
   el.innerHTML='';
   items.forEach(item=>{
     const owned=item.oneTime&&rpg.shopUnlocked?.[item.id];
-    const canAfford=rpg.gold>=item.cost;
+    const disc=_chaDiscountPct();
+    const effCost=Math.round(item.cost*(1-disc/100));
+    const canAfford=rpg.gold>=effCost;
     const reqMet=!item.req||rpg.shopUnlocked?.[item.req];
     const catLabels={consume:'Consumable',crate:'Mystery Crate',upgrade:'Upgrade',theme:'Theme'};
     const div=document.createElement('div');
@@ -3038,10 +3159,10 @@ function renderShop(cat=_shopCat){
       <div class="shop-item-cat">${catLabels[item.cat]||item.cat}</div>
       <div class="shop-item-desc">${item.desc}</div>
       ${item.req&&!reqMet?`<div style="font-size:.62rem;color:var(--rose);text-align:center">🔒 Requires: ${SHOP_ITEMS.find(x=>x.id===item.req)?.name||item.req}</div>`:''}
-      <div class="shop-item-cost ${canAfford?'':'cant-afford'}">${owned?'✓ Owned':item.cost+'g'}</div>
+      <div class="shop-item-cost ${canAfford?'':'cant-afford'}">${owned?'✓ Owned':(disc?'<s style="opacity:.45;font-size:.72rem">'+item.cost+'g</s> '+effCost+'g':item.cost+'g')}</div>
       ${!owned?`<button class="btn btn-rose btn-sm shop-buy-btn" onclick="buyShopItem('${item.id}')"
         ${!canAfford||!reqMet?'style="opacity:.45;cursor:not-allowed"':''}>
-        ${canAfford&&reqMet?'⚔️ Buy':'Need '+item.cost+'g'}
+        ${canAfford&&reqMet?'⚔️ Buy':'Need '+effCost+'g'}
       </button>`:''}`;
     el.appendChild(div);
   });
@@ -3051,14 +3172,15 @@ function setShopCat(cat){_shopCat=cat;renderShop(cat);}
 
 function buyShopItem(id){
   const item=SHOP_ITEMS.find(i=>i.id===id);if(!item)return;
-  if(rpg.gold<item.cost){showToast(`Need ${item.cost}g, you have ${rpg.gold}g`,'error');playSfx('error');return;}
+  const disc=_chaDiscountPct(),effCost=Math.round(item.cost*(1-disc/100));
+  if(rpg.gold<effCost){showToast(`Need ${effCost}g${disc?` (CHA −${disc}% from ${item.cost}g)`:''}, you have ${rpg.gold}g`,'error');playSfx('error');return;}
   if(item.oneTime&&rpg.shopUnlocked?.[id]){showToast('Already owned!','warn');return;}
   if(item.req&&!rpg.shopUnlocked?.[item.req]){showToast('Requirement not met!','error');return;}
 
   // Deduct cost
-  addGold(-item.cost);
+  addGold(-effCost);
   playSfx('coin');flashScreen();
-  spawnXpFloat(`-${item.cost}g`,'purple');
+  spawnXpFloat(`-${effCost}g`,'purple');
 
   // Mark as owned if one-time
   if(item.oneTime){if(!rpg.shopUnlocked)rpg.shopUnlocked={};rpg.shopUnlocked[id]=true;}
@@ -3089,8 +3211,6 @@ function buyShopItem(id){
   }
 
   save();renderShop();renderActiveBuffs();updateRpgWidgets();
-  // Unlock achievement if weekly boss defeated via loot
-  if(id==='chest_g')unlockAch('weekly_boss');
 }
 
 function _openCrate(id){
@@ -3241,7 +3361,7 @@ function focusNext(){
 function focusComplete(){
   const card=_focusQueue[_focusIdx];if(!card)return;
   if(card.colId==='done'){showToast('Already done!');focusNext();return;}
-  const prevCol=card.colId;card.colId='done';
+  const prevCol=card.colId;card._prevCol=prevCol;card.colId='done';
   if(prevCol!=='done')onQuestComplete(card);
   save();render();
   _focusQueue.splice(_focusIdx,1);
@@ -3250,19 +3370,16 @@ function focusComplete(){
   _renderFocusCard();playSfx('quest');spawnXpFloat('Quest Done!','gold');
 }
 // ── Pomodoro ──
-function _pomWorkDuration(){
-  // Check for Focus Tonic buff, extends to 35 min
-  return hasActiveBuff('pomBoost') ? 35*60 : POM_WORK;
-}
+let _pomWorkCur=POM_WORK; // current work-segment length (Focus Tonic extends to 35min)
 function togglePomodoro(){
   if(_pomRunning){
     clearInterval(_pomInterval);_pomRunning=false;
     document.getElementById('pomBtn').textContent='▶ Resume';
   } else {
-    // Apply Focus Tonic on first start of a work session
-    if(!_pomBreak && _pomSecs===POM_WORK && hasActiveBuff('pomBoost')){
+    // Apply Focus Tonic when starting a fresh (unstarted) work segment
+    if(!_pomBreak && _pomSecs===_pomWorkCur && hasActiveBuff('pomBoost')){
       consumeBuff('pomBoost');
-      _pomSecs=35*60;
+      _pomWorkCur=Math.max(35*60,_pomWorkCur);_pomSecs=_pomWorkCur;
       showToast('🧪 Focus Tonic active, 35 min session!','success');
       _updatePomDisplay();
     }
@@ -3272,7 +3389,7 @@ function togglePomodoro(){
       if(_pomSecs<=0){
         clearInterval(_pomInterval);_pomRunning=false;
         if(_pomBreak){
-          _pomBreak=false;_pomSecs=_pomWorkDuration();
+          _pomBreak=false;_pomSecs=_pomWorkCur;
           document.getElementById('pomCircle').style.stroke='#f5c842';
           document.getElementById('pomLabel').textContent='FOCUS';
         } else {
@@ -3287,7 +3404,7 @@ function togglePomodoro(){
 }
 function resetPomodoro(){
   clearInterval(_pomInterval);_pomRunning=false;_pomBreak=false;
-  _pomSecs=_pomWorkDuration();
+  _pomWorkCur=_pomBaseSeconds();_pomSecs=_pomWorkCur;
   document.getElementById('pomCircle').style.stroke='#f5c842';
   document.getElementById('pomLabel').textContent='FOCUS';
   document.getElementById('pomBtn').textContent='▶ Start';
@@ -3296,8 +3413,8 @@ function resetPomodoro(){
 function _updatePomDisplay(){
   const m=Math.floor(_pomSecs/60),s=_pomSecs%60;
   document.getElementById('pomTime').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  const total=_pomBreak?POM_BREAK:POM_WORK;
-  const offset=POM_CIRC*(1-_pomSecs/total);
+  const total=_pomBreak?POM_BREAK:_pomWorkCur;
+  const offset=Math.max(0,POM_CIRC*(1-_pomSecs/total));
   document.getElementById('pomCircle').style.strokeDashoffset=offset;
 }
 function _pomBell(){
@@ -3378,10 +3495,9 @@ function renderRival(){
 }
 
 /* ── 4. TOP 3 TODAY ──────────────────────────────────────────────────────── */
-function renderTop3(){
-  const el=document.getElementById('top3Panel');if(!el)return;
+function _top3Scored(){
   const today=_dateStr(new Date());
-  const scored=state.cards
+  return state.cards
     .filter(c=>c.colId!=='done'&&!isLocked(c.id))
     .map(c=>{
       let s=0;
@@ -3394,6 +3510,10 @@ function renderTop3(){
       return{c,s};
     })
     .sort((a,b)=>b.s-a.s).slice(0,3);
+}
+function renderTop3(){
+  const el=document.getElementById('top3Panel');if(!el)return;
+  const scored=_top3Scored();
   if(!scored.length){el.innerHTML='<div class="hq-empty">No active quests</div>';return;}
   el.innerHTML='';
   scored.forEach(({c},i)=>{
@@ -3411,13 +3531,82 @@ function renderTop3(){
     btn.textContent='🎯 Focus on #1';btn.onclick=()=>openFocusMode(scored[0].c.id);
     el.appendChild(btn);
   }
+  renderWagerUI(el);
 }
+/* ── STREAK WAGER ─ daily risk/reward bet on your Top 3 ─────────────────── */
+const WAGER_STAKE=100,WAGER_REWARD=250;
+function _wagerDayStart(ds){const p=ds.split('-');return new Date(+p[0],+p[1]-1,+p[2]).getTime();}
+function placeWager(){
+  const today=_dateStr(new Date());
+  const w=rpg.wager;
+  if(w&&w.date===today){showToast(w.status==='active'?"🎲 Today's wager is already live!":'One wager per day — come back tomorrow!');return;}
+  if(rpg.gold<WAGER_STAKE){playSfx('error');showToast('🎲 Need '+WAGER_STAKE+'g to wager (you have '+rpg.gold+'g)','error');return;}
+  const top=_top3Scored();
+  if(top.length<3){showToast('Need at least 3 active quests to wager!');return;}
+  if(!confirm('WAGER '+WAGER_STAKE+'g?\n\nComplete today\'s Top 3:\n'+top.map(x=>'• '+x.c.title.slice(0,40)).join('\n')+'\n\nWin: +'+WAGER_REWARD+'g · Lose: −'+WAGER_STAKE+'g'))return;
+  rpg.wager={date:today,ids:top.map(x=>x.c.id),status:'active',stake:WAGER_STAKE};
+  playSfx('coin');flashScreen();
+  spawnXpFloat('🎲 WAGER PLACED','purple');
+  showToast('🎲 Wager live! All 3 by midnight = +'+WAGER_REWARD+'g','success');
+  save();renderDash();
+}
+function _wagerSatisfied(w){
+  const start=_wagerDayStart(w.date);
+  return w.ids.every(id=>{
+    const c=state.cards.find(x=>x.id===id);
+    return !!c&&c.colId==='done'&&!!c.completedAt&&c.completedAt>=start&&c.completedAt<start+864e5;
+  });
+}
+function checkWagerProgress(){
+  const w=rpg.wager;if(!w||w.status!=='active')return;
+  if(w.date!==_dateStr(new Date())){resolveWagerOnBoot();return;}
+  if(_wagerSatisfied(w)){
+    w.status='won';
+    unlockAch('high_roller');
+    addGold(WAGER_REWARD);
+    playSfx('quest');startConfetti();
+    spawnXpFloat('+'+WAGER_REWARD+'g WAGER WON!','gold');
+    showToast('🎲 Wager WON! +'+WAGER_REWARD+'g — nerves of steel.','success');
+    save();renderDash();
+  } else { save(); }
+}
+function resolveWagerOnBoot(){
+  const w=rpg.wager;if(!w||w.status!=='active')return;
+  if(w.date===_dateStr(new Date()))return; // still live today
+  if(_wagerSatisfied(w)){
+    w.status='won';unlockAch('high_roller');addGold(WAGER_REWARD);
+    setTimeout(()=>{showToast("🎲 Yesterday's wager WON! +"+WAGER_REWARD+'g paid out.','success');spawnXpFloat('+'+WAGER_REWARD+'g WAGER WON!','gold');playSfx('coin');},800);
+  }else{
+    w.status='lost';addGold(-w.stake);
+    setTimeout(()=>{showToast('🎲 Wager lost. −'+w.stake+'g. Redemption awaits tomorrow.','error');playSfx('error');},800);
+  }
+  save();
+}
+function renderWagerUI(panelEl){
+  if(!panelEl)return;
+  const old=document.getElementById('wagerStatus');if(old)old.remove();
+  const w=rpg.wager;if(!w||w.date!==_dateStr(new Date()))return;
+  let html='';
+  if(w.status==='active'){
+    const doneN=w.ids.filter(id=>{const c=state.cards.find(x=>x.id===id);return c&&c.colId==='done';}).length;
+    html='<div class="challenge-card" id="wagerStatus" style="margin-top:6px"><div class="challenge-label">🎲 WAGER LIVE — '+doneN+'/'+w.ids.length+' done</div><div style="font-size:.72rem;font-weight:800;color:var(--gold)">All 3 today: <span style="color:#22c55e">+'+WAGER_REWARD+'g</span> · fail: <span style="color:var(--rose)">−'+w.stake+'g</span></div></div>';
+  }else if(w.status==='won'){
+    html='<div id="wagerStatus" style="font-size:.7rem;font-weight:900;color:#22c55e;margin-top:4px">🎲 Wager won · +'+WAGER_REWARD+'g — new wager tomorrow</div>';
+  }else if(w.status==='lost'){
+    html='<div id="wagerStatus" style="font-size:.7rem;font-weight:900;color:var(--rose);margin-top:4px">🎲 Wager lost · −'+w.stake+'g — redemption awaits tomorrow</div>';
+  }
+  if(html)panelEl.insertAdjacentHTML('beforeend',html);
+}
+
 function _weekEnd(){const d=new Date();d.setDate(d.getDate()+7);return _dateStr(d);}
 
 /* ── 5. MARKDOWN RENDERING ────────────────────────────────────────────────── */
 function renderMd(raw){
   if(!raw)return'';
   let t=raw;
+  // Escape HTML FIRST: descriptions are user input rendered via innerHTML,
+  // so raw angle brackets would allow injected markup/scripts.
+  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   // Code blocks first (don't process inside them)
   const codeBlocks=[];t=t.replace(/```[\s\S]*?```/g,m=>{codeBlocks.push(m.slice(3,-3));return`\x00CODE${codeBlocks.length-1}\x00`;});
   // Headings
@@ -3545,7 +3734,7 @@ function completeDailyChallenge(){
   const ch=rpg.dailyChallenge;if(!ch||ch.completed)return;
   const card=state.cards.find(c=>c.id===ch.cardId);
   if(!card||card.colId==='done'){showToast('Complete the quest first!');return;}
-  card.colId='done';onQuestComplete(card);
+  card._prevCol=card.colId;card.colId='done';onQuestComplete(card);
   ch.completed=true;addXp(ch.xpBonus);
   spawnXpFloat(`+${ch.xpBonus} CHALLENGE!`,'purple');
   showToast(`⚡ Daily Challenge complete! +${ch.xpBonus} bonus XP!`);
@@ -3576,20 +3765,6 @@ function exportShipped(){
   const html=`<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>What I Shipped, JV Design Studio</title>
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://jvdesignstudio.co.uk/tools/quest-board.html">
-    <meta name="description" content="Turn your daily tasks and projects into RPG quests. Earn XP, level up, and defeat boss challenges with QuestLog, your free personal adventure board.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://jvdesignstudio.co.uk/tools/quest-board.html">
-    <meta property="og:title" content="Quest Board RPG, Your Personal Adventure | JVDesignStudio">
-    <meta property="og:description" content="Turn your daily tasks and projects into RPG quests. Earn XP, level up, and defeat boss challenges with QuestLog, your free personal adventure board.">
-    <meta property="og:image" content="https://jvdesignstudio.co.uk/og/tool-questboard.png">
-    <meta property="og:site_name" content="JVDesignStudio">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Quest Board RPG, Your Personal Adventure | JVDesignStudio">
-    <meta name="twitter:description" content="Turn your daily tasks and projects into RPG quests. Earn XP, level up, and defeat boss challenges with QuestLog, your free personal adventure board.">
-    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/tool-questboard.png">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Nunito',sans-serif;background:#0a0a14;color:#f5eedc;max-width:860px;margin:0 auto;padding:40px 20px;line-height:1.6}
@@ -3616,10 +3791,9 @@ footer{margin-top:48px;font-size:.7rem;color:rgba(245,238,220,.25);text-align:ce
   <div class="stat"><div class="stat-n">${rpg.streak||0}</div><div class="stat-l">Day Streak</div></div>
   <div class="stat"><div class="stat-n">${Object.keys(rpg.achievements||{}).length}</div><div class="stat-l">Achievements</div></div>
 </div>
-${['fix','build','deploy','workshop','videos','books','games','covers'].map(col=>{
-  const items=done.filter(c=>c.colId===col);if(!items.length)return'';
-  const colTitle=state.columns.find(x=>x.id===col)?.title||col;
-  return`<div class="section-title">${colTitle}</div>${items.map(c=>`<div class="quest ${c.priority}"><div class="quest-title">${c.title}</div>${c.desc?`<div class="quest-desc">${c.desc.replace(/- \[.\] /g,'').slice(0,120)}${c.desc.length>120?'…':''}</div>`:''}<div style="margin-top:4px">${(c.tags||[]).map(t=>`<span class="tag" style="background:${t.col}22;color:${t.col}">${t.text}</span>`).join('')}</div></div>`).join('')}`;
+${[['high','🔴 Main Quests'],['med','🟡 Side Quests'],['low','🟢 Guild Quests']].map(([pri,label])=>{
+  const items=done.filter(c=>c.priority===pri);if(!items.length)return'';
+  return`<div class="section-title">${label} (${items.length})</div>${items.map(c=>`<div class="quest ${c.priority}"><div class="quest-title">${escHtml(c.title)}</div>${c.desc?`<div class="quest-desc">${escHtml(c.desc.replace(/- \[.\] /g,'').slice(0,120))}${c.desc.length>120?'…':''}</div>`:''}<div style="margin-top:4px">${(c.tags||[]).map(t=>`<span class="tag" style="background:${t.col}22;color:${t.col}">${escHtml(t.text)}</span>`).join('')}</div></div>`).join('')}`;
 }).join('')}
 <footer>Made with the JVDesignStudio Quest Board · jvdesignstudio.co.uk</footer>
 
@@ -3627,6 +3801,65 @@ ${['fix','build','deploy','workshop','videos','books','games','covers'].map(col=
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='what-i-shipped-'+_dateStr(new Date())+'.html';a.click();
   showToast('📤 Shipped portfolio exported!');playSfx('quest');
+}
+
+/* ── YEAR WRAPPED ─ shareable stats card ─────────────────────────────────── */
+function buildWrappedData(){
+  const year=new Date().getFullYear();
+  const jan=new Date(year,0,1).getTime();
+  const done=state.cards.filter(c=>c.colId==='done');
+  return{
+    year,name:(localStorage.getItem('qb-player-name')||'Adventurer'),cls:getEvolvedClass(),
+    questsAll:done.length,
+    questsYear:done.filter(c=>c.completedAt&&c.completedAt>=jan).length,
+    xp:rpg.lifetimeXp||0,gold:rpg.lifetimeGold||0,
+    streak:rpg.streak||0,best:rpg.bestStreak||rpg.streak||0,
+    bosses:done.filter(c=>c.isBoss).length,
+    ach:Object.keys(rpg.achievements||{}).length,achTotal:ACHS.length,
+    prestige:rpg.prestige||0,
+    days:Math.max(1,Math.ceil((Date.now()-rpg.firstPlayTs)/864e5)),
+  };
+}
+function drawWrapped(d){
+  const cv=document.getElementById('wrappedCanvas');if(!cv)return;
+  const x=cv.getContext('2d'),W=cv.width,H=cv.height;
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a08');g.addColorStop(1,'#0a0a14');
+  x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.strokeStyle='#f5c842';x.lineWidth=3;x.strokeRect(18,18,W-36,H-36);
+  x.textAlign='center';
+  x.fillStyle='#f5c842';x.font='900 54px Cinzel,serif';x.fillText('QUEST WRAPPED',W/2,110);
+  x.fillStyle='#fff';x.font='900 120px Cinzel,serif';x.fillText(String(d.year),W/2,230);
+  x.fillStyle='rgba(245,238,220,.75)';x.font='700 26px Nunito,sans-serif';x.fillText(d.name+' · '+d.cls,W/2,285);
+  const rows=[
+    ['Quests completed',String(d.questsYear)],['Quests all-time',String(d.questsAll)],
+    ['XP earned',d.xp.toLocaleString()],['Gold earned',d.gold.toLocaleString()+'g'],
+    ['Longest streak',d.best+' days'],['Bosses slain',String(d.bosses)],
+    ['Achievements',d.ach+' / '+d.achTotal],['Days adventuring',String(d.days)],
+  ];
+  if(d.prestige>0)rows.push(['Ascensions','×'+d.prestige]);
+  const y0=360,rh=56;
+  rows.forEach((r,i)=>{
+    const y=y0+i*rh;
+    x.textAlign='left';x.fillStyle='rgba(245,238,220,.55)';x.font='700 26px Nunito,sans-serif';x.fillText(r[0],90,y);
+    x.textAlign='right';x.fillStyle='#f5c842';x.font='900 30px Cinzel,serif';x.fillText(r[1],W-90,y);
+    x.strokeStyle='rgba(245,200,66,.15)';x.lineWidth=1;x.beginPath();x.moveTo(80,y+14);x.lineTo(W-80,y+14);x.stroke();
+  });
+  x.textAlign='center';x.fillStyle='rgba(245,238,220,.35)';x.font='700 22px Nunito,sans-serif';
+  x.fillText('⚔️ jvdesignstudio.co.uk',W/2,H-52);
+}
+function openWrapped(){
+  drawWrapped(buildWrappedData());
+  document.getElementById('wrappedModal').classList.add('open');
+  try{playSfx('unlock');}catch(e){}
+}
+function downloadWrapped(){
+  const cv=document.getElementById('wrappedCanvas');if(!cv)return;
+  cv.toBlob(b=>{
+    if(!b){showToast('Could not export image');return;}
+    const a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download='quest-wrapped-'+buildWrappedData().year+'.png';a.click();
+    showToast('💾 Wrapped card saved!','success');playSfx('coin');
+  },'image/png');
 }
 
 /* ── 11. MOTIVATIONAL HUD MESSAGE ─────────────────────────────────────────── */
@@ -3698,6 +3931,13 @@ function tickLifeItem(id){
   spawnXpFloat(`+${xpEarned} XP`,'gold');
   if(item.streak>1)setTimeout(()=>spawnXpFloat(`💖 ${item.streak}-day streak!`,'purple'),300);
   showToast(`✅ ${item.name.slice(0,28)}! +${xpEarned} XP${streakBonus?' (streak bonus!)':''}`);
+  // Life achievements
+  unlockAch('first_life');
+  if(item.category!=='medicine'&&item.streak>=7)unlockAch('life_streak7');
+  if(item.category==='medicine'&&item.streak>=14)unlockAch('med_streak14');
+  const todayKey=new Date().toDateString();
+  const items=rpg.selfCare.items||[];
+  if(items.length&&items.every(x=>x.lastDone===todayKey))unlockAch('full_life');
   addXp(item.xp);save();renderLifeTab();updateLifeBuffs();checkMedReminders();
 }
 function deleteLifeItem(id){if(!confirm('Remove this life quest?'))return;rpg.selfCare.items=rpg.selfCare.items.filter(x=>x.id!==id);save();renderLifeTab();}
@@ -3747,7 +3987,7 @@ function checkMedReminders(){
   if(!rpg.notificationsEnabled||Notification.permission!=='granted')return;
   const today=new Date().toDateString();
   (rpg.selfCare.items||[]).filter(x=>x.category==='medicine'&&x.time&&x.lastDone!==today&&_isTimeDue(x.time)).forEach(item=>{
-    new Notification('💊 Medicine Reminder',{body:`Time for: ${item.name}`,icon:'/manifest.json',tag:'med-'+item.id});
+    new Notification('💊 Medicine Reminder',{body:`Time for: ${item.name}`,icon:'./logo.png',tag:'med-'+item.id});
   });
 }
 
@@ -3825,6 +4065,31 @@ function renderClassPath(){
   }).join('');
 }
 
+/* ── PRESTIGE (ASCENSION) ─ LV20+: reset level for permanent +10% XP each ── */
+function renderPrestige(){
+  const el=document.getElementById('prestigeWrap');if(!el)return;
+  el.innerHTML=(rpg.prestige||0)>0?'<div style="font-size:.68rem;font-weight:900;color:#c084fc;text-shadow:0 0 8px rgba(168,85,247,.4);margin-bottom:6px">⭐ Ascended ×'+rpg.prestige+' — permanent +'+Math.round(rpg.prestige*10)+'% XP</div>':'';
+  if(rpg.level<20)return;
+  const b=document.createElement('button');
+  b.className='btn btn-gold btn-sm';
+  b.style.cssText='width:100%;justify-content:center;padding:9px 0;font-family:Cinzel,serif;letter-spacing:.04em';
+  b.textContent='⭐ ASCEND — Prestige LV.'+rpg.level+' → +10% XP forever';
+  b.onclick=ascend;
+  el.appendChild(b);
+}
+function ascend(){
+  if(rpg.level<20){showToast('Reach Level 20 to Ascend!');return;}
+  if(!confirm('ASCEND?\n\nResets Level & XP to 1.\nYou KEEP: gold, gear, quests, streak, achievements.\nYou GAIN: permanent +10% XP per Ascension, forever.'))return;
+  rpg.prestige=(rpg.prestige||0)+1;rpg.level=1;rpg.xp=0;
+  unlockAch('ascended');
+  save();updateRpgWidgets();updateStreakDisplay();renderDash();
+  document.getElementById('celebrateTitle').textContent='⭐ ASCENSION!';
+  document.getElementById('celebrateSub').innerHTML='Ascension <strong style="color:#c084fc">×'+rpg.prestige+'</strong>.<br>All XP now multiplied by <strong style="color:var(--gold)">×'+getXpMultiplier().toFixed(2)+'</strong>, forever.';
+  document.getElementById('celebrateOverlay').classList.add('show');
+  startConfetti();playSfx('levelup');
+  spawnXpFloat('⭐ ASCENDED!','purple');
+}
+
 /* ── STORY CHAPTERS ──────────────────────────────────────────────────────────── */
 const STORY_CHAPTERS=[
   {level:1, title:'The Awakening',      text:'"A lone creator opens a blank board. The cursor blinks. The adventure begins here."'},
@@ -3864,12 +4129,15 @@ function checkWeeklyBoss(){
 function updateWeeklyBossProgress(){
   _initSelfCare();
   const boss=rpg.selfCare.weeklyBoss;if(!boss||boss.slain)return;
-  const doneCards=state.cards.filter(c=>c._wasDone&&c.colId==='done');
+  // Only quests completed THIS week count (completedAt is stamped on completion).
+  // Counting all-time done cards made the boss insta-slay for veteran users.
+  const weekStart=new Date(boss.week).getTime();
+  const doneCards=state.cards.filter(c=>c.colId==='done'&&c.completedAt&&c.completedAt>=weekStart);
   boss.tasks.forEach(t=>{
     if(t.type==='any')t.current=Math.min(doneCards.length,t.target);
-    else if(t.type==='fix')t.current=Math.min(doneCards.filter(c=>c.colId==='fix'||c.tags?.some(x=>x.text.toLowerCase()==='bug')).length,t.target);
+    else if(t.type==='fix')t.current=Math.min(doneCards.filter(c=>/\b(fix|bug|debug)\b/.test(_cardHay(c))||c.tags?.some(x=>x.text.toLowerCase()==='bug')).length,t.target);
     else if(t.type==='high')t.current=Math.min(doneCards.filter(c=>c.priority==='high').length,t.target);
-    else t.current=Math.min(doneCards.filter(c=>c.colId===t.type).length,t.target);
+    else t.current=Math.min(doneCards.filter(c=>_cardHay(c).includes(t.type)||c.colId===t.type).length,t.target);
   });
   const allDone=boss.tasks.every(t=>t.current>=t.target);
   if(allDone&&!boss.slain){
@@ -3927,6 +4195,7 @@ function showCombo(count){
   setTimeout(()=>el.remove(),3500);
 }
 function updateStreakDisplay(){
+  if((rpg.streak||0)>(rpg.bestStreak||0))rpg.bestStreak=rpg.streak;
   const el=document.getElementById('hqStreak');if(!el)return;
   if((rpg.streak||0)>1){
     const mult=getXpMultiplier();
@@ -3945,7 +4214,7 @@ function checkBossThreats(){
   bosses.forEach(c=>{
     if(!rpg.bossThreats[c.id])rpg.bossThreats[c.id]=now;
     else if(now-rpg.bossThreats[c.id]>twoDays){
-      const drain=Math.max(5,Math.floor(rpg.gold*.05));
+      const drain=Math.max(5,Math.floor(rpg.gold*.05*_strDrainFactor()));
       addGold(-drain);
       showToast(`😈 "${c.title}" attacked while ignored! −${drain}g`);
       spawnXpFloat(`−${drain}g`,'purple');
@@ -4213,6 +4482,14 @@ function _pickCol(prefs){
   return ids[0]||'todo';
 }
 
+/* Coerce any card colId (legacy ids like 'videos'/'fix', deleted custom columns,
+   or '') to a column that actually exists, so cards can never end up routed to
+   a phantom column and silently disappear from the board. */
+function _normCol(id){
+  if(id&&(state.columns||[]).some(c=>c.id===id))return id;
+  return _pickCol(['todo']);
+}
+
 function importSelectedIcal(){
   const selected=_parsedIcalEvents.filter((_,i)=>document.getElementById('iev_'+i)?.checked);
   if(!selected.length){showToast('Select at least one event!');return;}
@@ -4283,45 +4560,6 @@ function quickConvertIcalEvent(id){
   _parsedIcalEvents=[ev];openIcalModal([ev]);
 }
 
-/* ── GOOGLE CALENDAR ── */
-function saveGCal(){
-  let url=(document.getElementById('gCalUrl').value||'').trim();
-  if(!url){showToast('Paste your Google Calendar embed URL first');return;}
-  // Auto-fix common URL issues
-  // If it's a plain calendar URL, convert to embed format
-  if(url.includes('calendar.google.com/calendar/r'))
-    url=url.replace('/calendar/r','/calendar/embed').replace(/\/[a-z]+$/,'');
-  if(!url.includes('/embed'))url=url.replace('/calendar/','/calendar/embed?');
-  // Ensure ctz is set (avoids auth redirect in some cases)
-  if(!url.includes('ctz=')){
-    try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;if(tz)url+=(url.includes('?')?'&':'?')+'ctz='+encodeURIComponent(tz);}catch(e){}
-  }
-  // Ensure output=embed is present
-  if(!url.includes('output='))url+=(url.includes('?')?'&':'?')+'output=embed';
-  localStorage.setItem('jvds_gcal_url',url);
-  document.getElementById('gCalUrl').value=url;
-  renderGCal(url);showToast('📅 Calendar synced!');
-}
-function renderGCal(url){
-  const frame=document.getElementById('gCalFrame');if(!frame)return;
-  if(!url){
-    frame.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:.8rem">🗓️ No calendar synced yet.<br><br><em>Google Calendar → Settings → [Your calendar] → "Integrate calendar" → copy the embed code src URL</em></div>';
-    return;
-  }
-  // Google Calendar embeds only work from their own domain due to their CSP, use a direct link instead
-  frame.innerHTML=`
-    <div style="padding:16px;text-align:center;border-radius:8px">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">⚠️ Google blocks embedding their calendar on other sites via iframe. Open your calendar in a new tab instead:</div>
-      <a href="${url.replace('&output=embed','').replace('?output=embed','').replace('/embed','/r')}" target="_blank" rel="noopener" class="btn btn-rose btn-sm" style="display:inline-flex;margin-bottom:16px">📅 Open Google Calendar</a>
-      <div style="font-size:.72rem;color:var(--muted2)">Or use the built-in Calendar tab to track quest due dates.</div>
-    </div>
-    <iframe src="${url.replace(/"/g,'%22')}" style="width:100%;height:500px;border:none;border-radius:0 0 8px 8px" frameborder="0" scrolling="no" loading="lazy" onerror="this.style.display='none'"></iframe>`;
-}
-function loadGCal(){
-  const url=localStorage.getItem('jvds_gcal_url');
-  if(url){const inp=document.getElementById('gCalUrl');if(inp)inp.value=url;renderGCal(url);}
-}
-
 /* ── TABS / VIEWS ── */
 function switchView(v){
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
@@ -4331,15 +4569,14 @@ function switchView(v){
   document.getElementById('tab-'+v)?.classList.add('active');
   document.getElementById('mobtab-'+v)?.classList.add('active');
   closeFab();
-  if(v==='calendar'){renderCalendar();loadGCal();}
-  if(v==='profile'){rollBounties();updateRpgWidgets();}
+  if(v==='calendar'){renderCalendar();}
   if(v==='raids')renderRaids();
   if(v==='dash'){renderDash();renderProgressCharts();}
   if(v==='notes'){renderNotesList(document.getElementById('notesSideSearch')?.value||'');}
   if(v==='habits'){renderHabits();}
   if(v==='life'){renderLifeTab();}
   if(v==='shop'){renderShop();renderActiveBuffs();}
-  if(v==='profile'){renderClassPath();initGistUI();_updateThemeSelect();}
+  if(v==='profile'){rollBounties();updateRpgWidgets();renderClassPath();initGistUI();_updateThemeSelect();}
   document.getElementById('mobtab-habits')?.classList[v==='habits'?'add':'remove']('active');
 }
 function openMoreMenu(){document.getElementById('moreModal').classList.add('open');}
@@ -4359,17 +4596,22 @@ function importData(){
 
 /* ── UTILS ── */
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+/* Searchable text for a card (title + tag names), used for stat bumps,
+   achievements, and weekly-boss task matching. */
+function _cardHay(c){return ((c&&c.title)||'')+' '+((c&&c.tags)||[]).map(t=>t.text).join(' ');}
+function _countDone(re){return state.cards.filter(c=>c.colId==='done'&&re.test(_cardHay(c))).length;}
 
 /* ── UPGRADED TOAST ── */
-const _toastQ=[];let _toastBusy=false;
-function showToast(msg,type='info'){
-  _toastQ.push({msg,type});
+const _toastQ=[];let _toastBusy=false;let _pendingAction=null;
+function showToast(msg,type='info',action=null){
+  _toastQ.push({msg,type,action});
   if(!_toastBusy)_nextToast();
 }
 function _nextToast(){
   if(!_toastQ.length){_toastBusy=false;return;}
   _toastBusy=true;
-  const{msg,type}=_toastQ.shift();
+  const{msg,type,action=null}=_toastQ.shift();
+  _pendingAction=action;
   const t=document.getElementById('toast');if(!t)return;
   const cfg={
     info:   {bg:'var(--bg3)',           bc:'var(--border2)',           icon:'💬'},
@@ -4381,24 +4623,26 @@ function _nextToast(){
     warn:   {bg:'rgba(245,158,11,.1)',  bc:'rgba(245,158,11,.4)',      icon:'⚠️'},
   }[type]||{bg:'var(--bg3)',bc:'var(--border2)',icon:'💬'};
   t.style.background=cfg.bg;t.style.borderColor=cfg.bc;
-  t.innerHTML=`<span style="font-size:1rem;flex-shrink:0">${cfg.icon}</span><span>${msg}</span>`;
+  t.innerHTML=`<span style="font-size:1.05rem;flex-shrink:0">${cfg.icon}</span><span>${msg}</span>${action?'<button class="toast-act">↩️ '+action.label+'</button>':''}`;
   t.classList.add('show');
-  setTimeout(()=>{t.classList.remove('show');setTimeout(_nextToast,320);},2700);
+  const actBtn=t.querySelector('.toast-act');
+  if(actBtn)actBtn.onclick=e=>{e.stopPropagation();const f=_pendingAction;_pendingAction=null;t.classList.remove('show');setTimeout(_nextToast,320);try{if(f&&f.fn)f.fn();}catch(err){}};
+  setTimeout(()=>{t.classList.remove('show');setTimeout(_nextToast,320);},action?6000:2700);
 }
 
 /* ── ANIMATED COUNTER ── */
-function animCount(el,target,dur=550){
+function animCount(el,target,dur=550,suffix=''){
   if(!el)return;
-  const start=parseFloat(el.textContent)||0;
+  const start=parseInt(el.textContent,10)||0;
   const diff=target-start;
-  if(Math.abs(diff)<1){el.textContent=target;return;}
+  if(Math.abs(diff)<1){el.textContent=target+suffix;return;}
   const t0=performance.now();
   const step=now=>{
     const p=Math.min((now-t0)/dur,1);
     const e=1-Math.pow(1-p,3);
-    el.textContent=Math.round(start+diff*e)+(target+'').includes('g')?'g':'';
+    el.textContent=Math.round(start+diff*e)+suffix;
     if(p<1)requestAnimationFrame(step);
-    else el.textContent=target;
+    else el.textContent=target+suffix;
   };
   requestAnimationFrame(step);
 }
@@ -4415,19 +4659,139 @@ function animCardComplete(cardId){
 }
 
 /* ── MODAL CLOSE ON OVERLAY ── */
-['cardModal','colModal','achModal','lootModal','noteModal','icalModal','checkInModal'].forEach(id=>{
+['cardModal','colModal','achModal','lootModal','noteModal','icalModal','checkInModal','wrappedModal'].forEach(id=>{
   document.getElementById(id)?.addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('open');});
 });
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeCardModal();closeColModal();closeNoteModal();closeSearch();document.getElementById('achModal').classList.remove('open');document.getElementById('lootModal').classList.remove('open');document.getElementById('shortcutsOverlay').classList.remove('open');document.getElementById('templatesModal').classList.remove('open');}
+  if(e.key==='Escape'){closeCardModal();closeColModal();closeNoteModal();closeSearch();document.getElementById('achModal').classList.remove('open');document.getElementById('lootModal').classList.remove('open');document.getElementById('shortcutsOverlay').classList.remove('open');document.getElementById('templatesModal').classList.remove('open');document.getElementById('wrappedModal')?.classList.remove('open');}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();openCardModal();}
   if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();openNoteModal();}
   if((e.metaKey||e.ctrlKey)&&e.key==='/'){e.preventDefault();openSearch();}
   if((e.metaKey||e.ctrlKey)&&e.key==='t'){e.preventDefault();openTemplates();}
   if(e.key==='?'&&!e.ctrlKey&&!e.metaKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){document.getElementById('shortcutsOverlay').classList.add('open');}
 });
+
+/* ── UNDO ─ one-tap reversal for deletes / completions / moves ──────────── */
+let _undoStack=[];
+function pushUndo(label){
+  try{
+    _undoStack.push({label,snap:JSON.stringify({cards:state.cards,columns:state.columns,nextId:state.nextId,rpg})});
+    if(_undoStack.length>20)_undoStack.shift();
+  }catch(e){}
+}
+function undoLast(){
+  const u=_undoStack.pop();
+  if(!u){showToast('Nothing left to undo');return;}
+  try{
+    const d=JSON.parse(u.snap);
+    state.cards=d.cards;state.columns=d.columns;state.nextId=d.nextId;rpg=d.rpg;
+    save();render();renderDash();updateRpgWidgets();updateStreakDisplay();renderActiveBuffs();
+    playSfx('coin');
+    showToast('↩️ Undone: '+u.label,'success');
+  }catch(e){showToast('Undo failed','error');}
+}
+function snoozeCard(id,days){
+  const c=state.cards.find(x=>x.id===id);if(!c)return;
+  pushUndo('snoozed quest');
+  const base=c.date?new Date(c.date+'T00:00:00'):new Date();
+  base.setDate(base.getDate()+days);
+  c.date=_dateStr(base);
+  save();render();renderDash();closeProjectSheet();
+  playSfx('coin');
+  showToast('⏰ Snoozed '+days+'d → '+c.date,'success',{label:'Undo',fn:undoLast});
+}
+function duplicateCard(id){
+  const c=state.cards.find(x=>x.id===id);if(!c)return;
+  const clone=JSON.parse(JSON.stringify(c));
+  clone.id='d'+(++state.nextId);
+  clone.title=c.title+' (copy)';
+  clone.colId=_normCol(c.colId);
+  clone.completedAt=null;delete clone._wasDone;
+  clone.timeLogs=[];clone.timerActive=false;clone.comments=[];
+  clone.createdAt=new Date().toISOString();
+  const idx=state.cards.indexOf(c);
+  state.cards.splice(idx+1,0,clone);
+  save();render();renderDash();closeProjectSheet();
+  playSfx('coin');
+  showToast('⧉ Duplicated: '+clone.title.slice(0,30),'success');
+}
+
+
+/* ── HOME-SCREEN WIDGET BRIDGE ─ no-op on web / when plugin absent ─────── */
+function _pushWidget(){
+  try{
+    const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.WidgetBridge;
+    if(!P||typeof P.update!=='function')return;
+    const top=_top3Scored().slice(0,3).map(x=>({t:x.c.title.replace(/\s+/g,' ').slice(0,30),id:x.c.id}));
+    P.update({json:JSON.stringify({
+      name:(localStorage.getItem('qb-player-name')||'Adventurer'),
+      lv:rpg.level,streak:rpg.streak||0,gold:rpg.gold,
+      q1:top[0]?top[0].t:'',i1:top[0]?top[0].id:'',
+      q2:top[1]?top[1].t:'',i2:top[1]?top[1].id:'',
+      q3:top[2]?top[2].t:'',i3:top[2]?top[2].id:''
+    })});
+  }catch(e){}
+}
+
+
+/* ── WIDGET TAP ROUTING ─ open the tapped quest's sheet after launch ───── */
+function _initWidgetTap(){
+  try{
+    const P=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.WidgetBridge;
+    if(!P)return;
+    if(typeof P.addListener==='function')P.addListener('widgetTap',e=>{try{const id=e&&e.questId;if(id)setTimeout(()=>openProjectSheet(id),350);}catch(err){}});
+    if(typeof P.consumePending==='function')P.consumePending().then(r=>{try{const id=r&&r.questId;if(id)setTimeout(()=>openProjectSheet(id),450);}catch(err){}}).catch(()=>{});
+  }catch(e){}
+}
+
+/* ── RECURRING BACKFILL ─ roll overdue repeating quests to next due date ── */
+function _advanceDate(d,repeat){
+  if(repeat==='daily')d.setDate(d.getDate()+1);
+  else if(repeat==='weekly')d.setDate(d.getDate()+7);
+  else if(repeat==='monthly')d.setMonth(d.getMonth()+1);
+  else if(repeat==='weekday'){do{d.setDate(d.getDate()+1);}while(d.getDay()===0||d.getDay()===6);}
+  return d;
+}
+function backfillRecurring(){
+  const today=(_dateStr(new Date()));
+  let changed=false;
+  state.cards.forEach(c=>{
+    if(!c.repeat||c.repeat==='none'||c.colId==='done'||!c.date||c.date>=today)return;
+    const d=new Date(c.date+'T00:00:00');
+    const now=new Date();now.setHours(0,0,0,0);
+    let guard=0;
+    while(d<now&&guard<400){_advanceDate(d,c.repeat);guard++;}
+    c.date=_dateStr(d);changed=true;
+  });
+  if(changed){save();setTimeout(()=>showToast('🔄 Recurring quests rolled to their next due dates'),600);}
+}
+
+/* ── DECEMBER WRAPPED PROMPT ─ once per year, dismissible by nature ─────── */
+function maybePromptWrapped(force){
+  try{
+    const now=new Date(),y=now.getFullYear();
+    if(!force&&now.getMonth()!==11)return;          // only December
+    if(rpg.wrappedShownYear===y&&!force)return;     // already shown this year
+    rpg.wrappedShownYear=y;
+    save();
+    setTimeout(()=>{try{openWrapped();showToast('🎁 Your Quest Wrapped is ready!','gold');}catch(e){}},force?50:4000);
+  }catch(e){}
+}
+
+
+/* ── ONBOARDING QUEST CHAIN ─ teaches board → bounty → market loop ────── */
+function spawnOnboarding(){
+  if(state.cards.length>1)return; // only fresh boards
+  const mk=(id,title,desc,prereq)=>({id,colId:_normCol('todo'),title,desc,tags:[{text:'Tutorial',col:'#70A3A7'}],priority:'med',date:'',comments:[],isBoss:false,prereqId:prereq||'',repeat:'none',timeLogs:[],flag:null,createdAt:new Date().toISOString()});
+  state.cards.push(
+    mk('ob1','⚔️ Complete your first quest','Drag this card to ✅ Done (or swipe it right / tap it and press Complete) to earn XP and gold.',''),
+    mk('ob2','🎯 Claim a Daily Bounty','Open 🎒 Character & Loot and tick off one Daily Bounty for bonus XP and gold.','ob1'),
+    mk('ob3','🛒 Buy Coffee at the Market','Spend your new gold in The Market — a Coffee Boost doubles XP on your next 3 quests.','ob2')
+  );
+  setTimeout(()=>showToast('📜 Tutorial chain added — follow the locks!','success'),900);
+}
 
 /* ── INIT ── */
 load();
@@ -4441,8 +4805,12 @@ if(!rpg.activeBuffs)rpg.activeBuffs=[];
 if(!rpg.shopUnlocked)rpg.shopUnlocked={};
 if(!rpg.weeklyReviews)rpg.weeklyReviews=[];
 if(!rpg.firstPlayTs)rpg.firstPlayTs=Date.now();
+// Lifetime counters for Year Wrapped — estimate XP from level history on first run
+if(rpg.lifetimeXp==null)rpg.lifetimeXp=(rpg.xp||0)+(rpg.level-1)*1000+20000*(rpg.prestige||0);
+if(rpg.lifetimeGold==null)rpg.lifetimeGold=0;
 // Ensure all cards have new fields
 state.cards.forEach((c,i)=>{
+  c.colId=_normCol(c.colId); // rescue cards routed to legacy/deleted columns
   if(!c.timeLogs)c.timeLogs=[];
   if(!c.repeat)c.repeat='none';
   if(!c.flag)c.flag=null;
@@ -4459,6 +4827,8 @@ checkBossThreats();
 checkBackupNeeded();
 scheduleDailyCheck();
 checkWeeklyBoss();
+backfillRecurring();
+resolveWagerOnBoot();
 renderDash();
 renderProgressCharts();
 renderClassPath();
@@ -4471,6 +4841,8 @@ if((rpg.calEvents||[]).length)renderIcalUpcoming();
 if(!rpg.weeklyReviews)rpg.weeklyReviews=[];
 generateDailyChallenge();
 checkWeeklyReview();
+_initWidgetTap();
+maybePromptWrapped();
 // Add weekly review to modal close handlers
 document.getElementById('weeklyReviewModal')?.addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById('weeklyReviewModal').classList.remove('open');});
 // Hook export to record last export date
@@ -4591,6 +4963,7 @@ function completeSetup(){
   if(!rpg.notes)rpg.notes=[];
   if(!rpg.selfCare)rpg.selfCare={items:[],checkInDate:'',mood:{},weeklyBoss:null};
   save();updateRpgWidgets();updateStreakDisplay();
+  spawnOnboarding();save();render();
   // Close gate
   const gate=document.getElementById('setupGate');
   if(gate){gate.style.transition='opacity .4s';gate.style.opacity='0';setTimeout(()=>{gate.style.display='none';document.body.style.overflow='';},420);}

@@ -141,7 +141,7 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 .process-block h3{font-family:'Fredoka',cursive;font-size:1.15rem;color:var(--charcoal);text-align:center;margin-bottom:22px;}
 
 /* Website stats (dark) */
-.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;max-width:820px;margin:0 auto;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:14px;max-width:860px;margin:0 auto;}
 @media(max-width:640px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
 .stat-cell{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:20px 12px;text-align:center;}
 .stat-n{font-family:'Fredoka',cursive;font-size:2rem;font-weight:700;color:var(--teal);line-height:1;}
@@ -193,17 +193,55 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 .social-pill{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;font-weight:700;color:var(--charcoal-lt);border:1.5px solid rgba(64,59,51,.15);border-radius:999px;padding:8px 15px;transition:all .15s;}
 .social-pill:hover{color:var(--charcoal);border-color:var(--teal);transform:translateY(-2px);}
 
-/* ── Interactive: scroll progress bar ── */
-.ds-progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:300;background:linear-gradient(90deg,var(--rose),var(--tan-dk),var(--teal));transition:width .08s linear;}
+/* ═══════════════ SLIDE DECK ═══════════════ */
+.deck{position:relative;height:calc(100vh - 68px);height:calc(100dvh - 68px);overflow:hidden;background:var(--beige);}
+[data-theme="dark"] .deck{background:#1e1c18;}
+.deck-track{display:flex;height:100%;transition:transform .55s cubic-bezier(.5,.05,.2,1);will-change:transform;}
+.deck.no-anim .deck-track{transition:none;}
+.slide{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:40px 26px 92px;}
+.slide-body{margin:auto;width:100%;max-width:1040px;}
+/* slide backgrounds reuse the ds-* palette classes; layout handled by .slide */
+.slide.ds-white{background:#fff;}
+.slide.ds-beige{background:var(--beige);}
+.slide.ds-dark{background:linear-gradient(135deg,var(--charcoal),#2c281f);}
+.slide.ds-teal{background:linear-gradient(135deg,var(--teal-dk),#3a6060);}
+.slide.ds-new{background:linear-gradient(135deg,#2b2436,#1f1b2e);}
+.slide.ds-apps{background:linear-gradient(135deg,#123a36,#0c2624);}
+[data-theme="dark"] .slide.ds-white{background:#1e1c18;}
+[data-theme="dark"] .slide.ds-beige{background:#141210;}
+/* apps slide text (dark bg) */
+.ds-apps .ds-h,.ds-apps .ds-sub{color:#fff;}
+.ds-apps .ds-sub{color:rgba(240,234,214,.74);}
+.ds-apps .ds-tag{background:var(--teal);}
+/* hero slide */
+.hero-slide{position:relative;overflow:hidden;text-align:center;}
+.hero-slide::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 80% 20%,rgba(112,163,167,.2) 0%,transparent 55%),radial-gradient(ellipse at 12% 88%,rgba(188,71,73,.16) 0%,transparent 50%);pointer-events:none;}
+.hero-slide .slide-body{position:relative;z-index:1;}
 
-/* ── Interactive: floating section nav ── */
-.ds-dotnav{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:250;display:flex;flex-direction:column;gap:15px;}
-.ds-dotnav a{position:relative;width:11px;height:11px;border-radius:50%;background:rgba(120,110,95,.4);transition:background .2s,transform .2s;}
-.ds-dotnav a:hover{transform:scale(1.35);background:var(--teal);}
-.ds-dotnav a.active{background:var(--rose);transform:scale(1.4);}
-.ds-dotnav a span{position:absolute;right:22px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.66rem;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--charcoal);padding:4px 10px;border-radius:7px;opacity:0;pointer-events:none;transition:opacity .18s;box-shadow:0 3px 12px rgba(0,0,0,.25);}
-.ds-dotnav a:hover span{opacity:1;}
-@media(max-width:960px){.ds-dotnav{display:none;}}
+/* Deck controls */
+.deck-progress{position:absolute;left:0;top:0;height:3px;width:100%;z-index:25;background:transparent;}
+.deck-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--rose),var(--tan-dk),var(--teal));transition:width .45s ease;}
+.deck-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:24;width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.86);border:1px solid rgba(0,0,0,.08);box-shadow:0 4px 16px rgba(0,0,0,.18);font-size:1.7rem;line-height:1;color:var(--charcoal);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,background .15s,opacity .2s;font-family:'Fredoka',cursive;}
+.deck-arrow:hover{background:#fff;transform:translateY(-50%) scale(1.08);}
+.deck-prev{left:14px;}.deck-next{right:14px;}
+.deck-arrow[disabled]{opacity:.28;cursor:default;pointer-events:none;}
+[data-theme="dark"] .deck-arrow{background:rgba(42,39,32,.9);color:#f0ead6;border-color:rgba(255,255,255,.1);}
+.deck-hud{position:absolute;left:0;right:0;bottom:0;z-index:24;display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 18px;background:linear-gradient(to top,rgba(0,0,0,.12),transparent);pointer-events:none;flex-wrap:wrap;}
+.deck-hud>*{pointer-events:auto;}
+.deck-dots{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:min(60%,560px);}
+.deck-dots button{width:9px;height:9px;border-radius:50%;background:rgba(120,110,95,.42);border:none;padding:0;cursor:pointer;transition:transform .18s,background .18s;}
+.deck-dots button:hover{transform:scale(1.3);background:var(--teal);}
+.deck-dots button.active{background:var(--rose);transform:scale(1.4);}
+.deck-count{font-family:'Fredoka',cursive;font-weight:700;font-size:.82rem;color:var(--charcoal-lt);background:rgba(255,255,255,.72);border-radius:999px;padding:4px 12px;white-space:nowrap;}
+[data-theme="dark"] .deck-count{background:rgba(42,39,32,.82);color:#c8bfaa;}
+.deck-present{display:inline-flex;align-items:center;gap:6px;font-family:'Inter',sans-serif;font-weight:700;font-size:.76rem;color:#fff;background:var(--rose);border:none;border-radius:999px;padding:7px 14px;cursor:pointer;box-shadow:0 3px 0 var(--rose-dk);transition:filter .15s,transform .1s;}
+.deck-present:hover{filter:brightness(1.08);transform:translateY(-1px);}
+.deck-hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:24;font-size:.72rem;font-weight:700;color:var(--charcoal-lt);background:rgba(255,255,255,.72);border-radius:999px;padding:5px 14px;opacity:0;transition:opacity .4s;pointer-events:none;}
+.deck-hint.show{opacity:1;}
+[data-theme="dark"] .deck-hint{background:rgba(42,39,32,.82);color:#c8bfaa;}
+.deck:fullscreen{height:100vh;}
+.deck:-webkit-full-screen{height:100vh;}
+@media(max-width:560px){.deck-arrow{width:38px;height:38px;font-size:1.4rem;}.deck-prev{left:8px;}.deck-next{right:8px;}.slide{padding:32px 18px 88px;}}
 
 /* ── Interactive: game filters ── */
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:26px;}
@@ -316,22 +354,14 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </script>
 <!-- /BUILD:nav-content -->
 
-<!-- Interactive: scroll progress + section nav -->
-<div class="ds-progress" id="dsProgress"></div>
-<nav class="ds-dotnav" id="dsDotnav" aria-label="Section navigation">
-    <a href="#main-content" data-label="Start"><span>Start</span></a>
-    <a href="#new2026" data-label="New in 2026"><span>New in 2026</span></a>
-    <a href="#books" data-label="Books"><span>Books</span></a>
-    <a href="#play" data-label="Games"><span>Games</span></a>
-    <a href="#learn" data-label="Learn"><span>Learn</span></a>
-    <a href="#tools" data-label="Tools"><span>Tools</span></a>
-    <a href="#studio" data-label="The Studio"><span>The Studio</span></a>
-    <a href="#connect" data-label="Connect"><span>Connect</span></a>
-</nav>
+<!-- ============ SLIDE DECK ============ -->
+<div class="deck" id="deck">
+<div class="deck-hint" id="deckHint">Use &larr; &rarr; arrow keys, or swipe</div>
+<div class="deck-track" id="deckTrack">
 
-<!-- HERO -->
-<section id="main-content" class="ds-hero">
-    <div class="hero-inner reveal">
+<!-- SLIDE 1: Hero -->
+<section id="main-content" class="slide ds-dark hero-slide">
+    <div class="hero-inner slide-body reveal">
         <span class="hero-eyebrow">✦ Discovery Session</span>
         <img class="hero-avatar" src="../logo.png" alt="J. Valentine" onerror="this.style.display='none'">
         <h1 class="hero-title">Hi, I'm <span>J. Valentine</span></h1>
@@ -352,8 +382,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- WHO I AM -->
-<section class="ds-section ds-white">
-    <div class="ds-inner">
+<section class="slide ds-white">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">Who Am I?</span>
             <h2 class="ds-h">More than one thing</h2>
@@ -361,16 +391,16 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
         </div>
         <div class="grid g4">
             <div class="fcard c-rose reveal"><div class="fcard-emoji">📚</div><div class="fcard-title">Children's Author</div><div class="fcard-text">Picture books about real feelings like fear, anxiety, resilience, belonging and online safety.</div></div>
-            <div class="fcard c-teal reveal"><div class="fcard-emoji">🎮</div><div class="fcard-title">Game Designer</div><div class="fcard-text">15+ browser games, co-operative card &amp; tabletop games, and projects in Godot, GameMaker &amp; Unity.</div></div>
-            <div class="fcard c-tan reveal"><div class="fcard-emoji">🎨</div><div class="fcard-title">Designer &amp; Builder</div><div class="fcard-text">Built jvdesignstudio.co.uk from scratch. 120+ pages of raw HTML, CSS &amp; JavaScript. No templates.</div></div>
+            <div class="fcard c-teal reveal"><div class="fcard-emoji">🎮</div><div class="fcard-title">Game Designer</div><div class="fcard-text">35+ browser games, 8 Android apps, co-operative card &amp; tabletop games, plus projects in Godot, GameMaker &amp; Unity.</div></div>
+            <div class="fcard c-tan reveal"><div class="fcard-emoji">🎨</div><div class="fcard-title">Designer &amp; Builder</div><div class="fcard-text">Built jvdesignstudio.co.uk from scratch. 270+ pages of raw HTML, CSS &amp; JavaScript. No templates.</div></div>
             <div class="fcard c-purple reveal"><div class="fcard-emoji">🌱</div><div class="fcard-title">Mentor &amp; Teacher</div><div class="fcard-text">1-to-1 mentoring for young creators, plus free workshops anyone can start today.</div></div>
         </div>
     </div>
 </section>
 
 <!-- NEW FOR 2026 -->
-<section id="new2026" class="ds-section ds-new">
-    <div class="ds-inner">
+<section id="new2026" class="slide ds-new">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">New in 2026</span>
             <h2 class="ds-h">The studio just levelled up</h2>
@@ -408,8 +438,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- THE BOOKS -->
-<section id="books" class="ds-section ds-beige">
-    <div class="ds-inner">
+<section id="books" class="slide ds-beige">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:var(--purple-dk)">The Books</span>
             <h2 class="ds-h">Stories that don't look away</h2>
@@ -459,8 +489,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- MEET THE CHARACTERS -->
-<section class="ds-section ds-white">
-    <div class="ds-inner">
+<section class="slide ds-white">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:var(--purple-dk)">Meet the Characters</span>
             <h2 class="ds-h">Built around real feelings</h2>
@@ -488,8 +518,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- THE GAMES (dark) -->
-<section id="play" class="ds-section ds-dark">
-    <div class="ds-inner">
+<section id="play" class="slide ds-dark">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">Browser Games</span>
             <h2 class="ds-h">Free to play, right now, in your browser</h2>
@@ -518,9 +548,78 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
     </div>
 </section>
 
+<!-- SLIDE: The Apps -->
+<section id="apps" class="slide ds-apps">
+    <div class="slide-body">
+        <div class="ds-head reveal">
+            <span class="ds-tag">Now on Mobile</span>
+            <h2 class="ds-h">The studio went pocket-sized</h2>
+            <p class="ds-sub">Eight apps built in-house and wrapped for Android. Same no-login, no-nonsense feel, now on your phone. More heading to Google Play through 2026.</p>
+        </div>
+        <div class="new-grid">
+            <a class="new-card reveal" href="../games/cozy-biscuit-clicker.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">🍪</div>
+                <div class="nc-title">Biscuit Tin Clicker</div>
+                <div class="nc-text">Cozy idle baking. Tap, brew and grow your little tin empire.</div>
+                <span class="nc-pill">Play the web version →</span>
+            </a>
+            <a class="new-card reveal" href="../games/cozy-cafe-match-game.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">☕</div>
+                <div class="nc-title">Cozy Cafe Match</div>
+                <div class="nc-text">A match game with a year-long café story and a crew to look after.</div>
+                <span class="nc-pill">Play the web version →</span>
+            </a>
+            <a class="new-card reveal" href="../arcade.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">🕹️</div>
+                <div class="nc-title">JVDS Arcade</div>
+                <div class="nc-text">Nearly 30 of the studio's games bundled into one offline arcade hub.</div>
+                <span class="nc-pill">Open the arcade →</span>
+            </a>
+            <div class="new-card reveal">
+                <span class="new-flag">In testing</span>
+                <div class="nc-emoji">⚔️</div>
+                <div class="nc-title">Rust Throne</div>
+                <div class="nc-text">A roguelite shooter with ascensions, boss phases, endless mode and a bestiary.</div>
+                <span class="nc-pill">Coming to Play</span>
+            </div>
+            <a class="new-card reveal" href="../tools/quest-board-page.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">📋</div>
+                <div class="nc-title">QuestLog</div>
+                <div class="nc-text">Turn real tasks and habits into quests. Earn XP, level up, no account needed.</div>
+                <span class="nc-pill">Open the web app →</span>
+            </a>
+            <div class="new-card reveal">
+                <span class="new-flag">In testing</span>
+                <div class="nc-emoji">🏮</div>
+                <div class="nc-title">Pocket Crew</div>
+                <div class="nc-text">A gentle, no-guilt companion app. Small check-ins, no streak pressure.</div>
+                <span class="nc-pill">Coming to Play</span>
+            </div>
+            <a class="new-card reveal" href="../games/sky_high_squirt.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">🚀</div>
+                <div class="nc-title">Sky High Squirt</div>
+                <div class="nc-text">An endless jumper. One tap, climb forever, chase your own best run.</div>
+                <span class="nc-pill">Play the web version →</span>
+            </a>
+            <a class="new-card reveal" href="../tools/arcade-game-maker.html">
+                <span class="new-flag" style="background:var(--teal-dk)">Android</span>
+                <div class="nc-emoji">🎮</div>
+                <div class="nc-title">Game Maker</div>
+                <div class="nc-text">Build a playable arcade game in the browser, then share the link.</div>
+                <span class="nc-pill">Make a game →</span>
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- TABLETOP -->
-<section class="ds-section ds-beige">
-    <div class="ds-inner">
+<section class="slide ds-beige">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:#d98a2b">Tabletop &amp; Card Games</span>
             <h2 class="ds-h">Games you can hold in your hands</h2>
@@ -534,8 +633,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- WHAT I TEACH -->
-<section class="ds-section ds-white">
-    <div class="ds-inner">
+<section class="slide ds-white">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:#4a8c5c">What I Teach</span>
             <h2 class="ds-h">How to make things that matter</h2>
@@ -553,8 +652,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- WORKSHOPS + LEARNING LAB -->
-<section id="learn" class="ds-section ds-beige">
-    <div class="ds-inner">
+<section id="learn" class="slide ds-beige">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">Free Learning Resources</span>
             <h2 class="ds-h">The Workshop</h2>
@@ -614,8 +713,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- DEV TOOLS -->
-<section id="tools" class="ds-section ds-white">
-    <div class="ds-inner">
+<section id="tools" class="slide ds-white">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:#4a8c5c">20+ Free Browser Tools</span>
             <h2 class="ds-h">The Dev Tools</h2>
@@ -635,8 +734,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- HOW IT'S MADE -->
-<section class="ds-section ds-beige">
-    <div class="ds-inner">
+<section class="slide ds-beige">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">The Process</span>
             <h2 class="ds-h">How it gets made</h2>
@@ -665,17 +764,19 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- THE WEBSITE (dark) -->
-<section id="studio" class="ds-section ds-dark">
-    <div class="ds-inner">
+<section id="studio" class="slide ds-dark">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag">The Website</span>
             <h2 class="ds-h">Built from scratch. Not a template.</h2>
         </div>
         <div class="stat-grid reveal">
-            <div class="stat-cell"><div class="stat-n" data-count="120" data-suffix="+">0</div><div class="stat-l">Pages</div></div>
-            <div class="stat-cell"><div class="stat-n" data-count="15" data-suffix="+">0</div><div class="stat-l">Games</div></div>
-            <div class="stat-cell"><div class="stat-n" data-count="6" data-suffix="+">0</div><div class="stat-l">Books</div></div>
+            <div class="stat-cell"><div class="stat-n" data-count="270" data-suffix="+">0</div><div class="stat-l">Pages</div></div>
+            <div class="stat-cell"><div class="stat-n" data-count="39" data-suffix="">0</div><div class="stat-l">Games</div></div>
+            <div class="stat-cell"><div class="stat-n" data-count="150" data-suffix="+">0</div><div class="stat-l">Workshop Lessons</div></div>
+            <div class="stat-cell"><div class="stat-n" data-count="8" data-suffix="">0</div><div class="stat-l">Mobile Apps</div></div>
             <div class="stat-cell"><div class="stat-n" data-count="25" data-suffix="+">0</div><div class="stat-l">Dev Tools</div></div>
+            <div class="stat-cell"><div class="stat-n" data-count="6" data-suffix="">0</div><div class="stat-l">Books</div></div>
             <div class="stat-cell"><div class="stat-n" data-count="0" data-suffix="">0</div><div class="stat-l">Frameworks</div></div>
         </div>
         <div class="tech-row reveal">
@@ -687,8 +788,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- EARLIER WORK / ITCH -->
-<section class="ds-section ds-white">
-    <div class="ds-inner">
+<section class="slide ds-white">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:var(--rose-dk)">Earlier Work</span>
             <h2 class="ds-h">Before JVDesignStudio: the Itch.io years</h2>
@@ -706,8 +807,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- WHAT COULD YOU MAKE -->
-<section class="ds-section ds-beige">
-    <div class="ds-inner">
+<section class="slide ds-beige">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:#d98a2b">Think About It</span>
             <h2 class="ds-h">If you could make anything, what would it be?</h2>
@@ -725,8 +826,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- BELIEFS (teal) -->
-<section class="ds-section ds-teal">
-    <div class="ds-inner">
+<section class="slide ds-teal">
+    <div class="ds-inner slide-body">
         <div class="ds-head reveal">
             <span class="ds-tag" style="background:rgba(255,255,255,.2)">Why I Do This</span>
             <h2 class="ds-h">"Every heart has a spark that can never be dimmed."</h2>
@@ -741,8 +842,8 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
 </section>
 
 <!-- CTA -->
-<section id="connect" class="ds-section ds-white">
-    <div class="cta-inner reveal">
+<section id="connect" class="slide ds-white">
+    <div class="cta-inner slide-body reveal">
         <h2>Like what you see?</h2>
         <p>If this feels like the kind of space you or your child would thrive in, reach out. No pressure, just a conversation.</p>
         <div class="cta-btns">
@@ -757,6 +858,19 @@ body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--beige
         </div>
     </div>
 </section>
+
+</div><!-- /deck-track -->
+
+<!-- Deck controls -->
+<div class="deck-progress"><span id="deckBar"></span></div>
+<button class="deck-arrow deck-prev" id="deckPrev" aria-label="Previous slide">&lsaquo;</button>
+<button class="deck-arrow deck-next" id="deckNext" aria-label="Next slide">&rsaquo;</button>
+<div class="deck-hud">
+    <div class="deck-dots" id="deckDots" role="tablist" aria-label="Slides"></div>
+    <div class="deck-count"><span id="deckCur">1</span> / <span id="deckTot">1</span></div>
+    <button class="deck-present" id="deckPresent" aria-label="Toggle fullscreen presentation">&#9974; Present</button>
+</div>
+</div><!-- /deck -->
 
 <!-- BUILD:footer-content -->
 <footer class="site-footer">
@@ -814,64 +928,128 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 
 <script>
 (function(){
-  /* Reveal on scroll (with safety fallback) */
-  var reveals=[].slice.call(document.querySelectorAll('.reveal'));
-  function showAll(){reveals.forEach(function(el){el.classList.add('visible');});}
-  if('IntersectionObserver' in window){
-    var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){var sib=[].slice.call(entry.target.parentElement.querySelectorAll('.reveal'));var idx=sib.indexOf(entry.target);setTimeout(function(){entry.target.classList.add('visible');},Math.min(idx*70,350));obs.unobserve(entry.target);}});},{threshold:.06});
-    reveals.forEach(function(el){obs.observe(el);});
-    setTimeout(showAll,1600);
-  } else { showAll(); }
+  /* ===== Slide deck engine ===== */
+  var deck=document.getElementById('deck');
+  var track=document.getElementById('deckTrack');
+  if(!deck||!track){ return; }
+  var slides=[].slice.call(track.querySelectorAll(':scope > .slide'));
+  var N=slides.length, idx=0;
+  var bar=document.getElementById('deckBar');
+  var curEl=document.getElementById('deckCur');
+  var totEl=document.getElementById('deckTot');
+  var dotsWrap=document.getElementById('deckDots');
+  var prevBtn=document.getElementById('deckPrev');
+  var nextBtn=document.getElementById('deckNext');
+  var presentBtn=document.getElementById('deckPresent');
+  var hint=document.getElementById('deckHint');
+  if(totEl) totEl.textContent=N;
 
-  /* Scroll progress bar + floating nav active state */
-  var bar=document.getElementById('dsProgress');
-  var dotLinks=[].slice.call(document.querySelectorAll('.ds-dotnav a'));
-  var sections=dotLinks.map(function(a){return document.querySelector(a.getAttribute('href'));});
-  function onScroll(){
-    var st=window.pageYOffset||document.documentElement.scrollTop;
-    var docH=document.documentElement.scrollHeight-window.innerHeight;
-    if(bar)bar.style.width=(docH>0?(st/docH*100):0)+'%';
-    var mid=st+window.innerHeight*0.35, active=0;
-    sections.forEach(function(sec,i){if(sec&&sec.offsetTop<=mid)active=i;});
-    dotLinks.forEach(function(a,i){a.classList.toggle('active',i===active);});
-  }
-  window.addEventListener('scroll',onScroll,{passive:true});
-  window.addEventListener('resize',onScroll);
-  onScroll();
+  /* Dots */
+  var dots=[];
+  slides.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label','Go to slide '+(i+1));
+    b.addEventListener('click',function(){ go(i); });
+    dotsWrap.appendChild(b); dots.push(b);
+  });
 
-  /* Count-up stats when they scroll into view */
-  var counted=false, statGrid=document.querySelector('.stat-grid');
-  function runCount(){
-    if(counted)return; counted=true;
-    [].slice.call(document.querySelectorAll('.stat-n[data-count]')).forEach(function(el){
-      var target=parseInt(el.getAttribute('data-count'),10)||0, suffix=el.getAttribute('data-suffix')||'', start=null, dur=1100;
-      function step(ts){if(!start)start=ts;var p=Math.min((ts-start)/dur,1);el.textContent=Math.round(p*target)+(p===1?suffix:'');if(p<1)requestAnimationFrame(step);}
-      requestAnimationFrame(step);
+  function revealSlide(s){
+    [].slice.call(s.querySelectorAll('.reveal')).forEach(function(el,k){
+      setTimeout(function(){ el.classList.add('visible'); }, Math.min(k*60,400));
     });
   }
-  if(statGrid&&'IntersectionObserver' in window){
-    var co=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){runCount();co.disconnect();}});},{threshold:.4});
-    co.observe(statGrid);
-  } else { runCount(); }
 
-  /* Game category filters */
+  /* Count-up stats (runs once, when the stats slide is first shown) */
+  var counted=false;
+  function runCount(){
+    if(counted) return; counted=true;
+    [].slice.call(document.querySelectorAll('.stat-n[data-count]')).forEach(function(el){
+      var target=parseInt(el.getAttribute('data-count'),10)||0, suffix=el.getAttribute('data-suffix')||'', start=null, dur=1100;
+      function step(ts){ if(!start)start=ts; var p=Math.min((ts-start)/dur,1); el.textContent=Math.round(p*target)+(p===1?suffix:''); if(p<1)requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+      /* snap to final value in case rAF is throttled (background tab / reduced motion) */
+      setTimeout(function(){ el.textContent=target+suffix; }, dur+300);
+    });
+  }
+
+  function go(n){
+    idx=Math.max(0,Math.min(N-1,n));
+    track.style.transform='translateX('+(-idx*100)+'%)';
+    dots.forEach(function(d,k){ d.classList.toggle('active',k===idx); d.setAttribute('aria-selected',k===idx?'true':'false'); });
+    if(curEl) curEl.textContent=idx+1;
+    if(bar) bar.style.width=(N>1?idx/(N-1)*100:100)+'%';
+    if(prevBtn) prevBtn.disabled=(idx===0);
+    if(nextBtn) nextBtn.disabled=(idx===N-1);
+    slides[idx].scrollTop=0;
+    revealSlide(slides[idx]);
+    if(slides[idx].querySelector('.stat-grid')) runCount();
+    var id=slides[idx].id;
+    if(id && history.replaceState){ try{ history.replaceState(null,'','#'+id); }catch(e){} }
+  }
+  function next(){ go(idx+1); }
+  function prev(){ go(idx-1); }
+  if(nextBtn) nextBtn.addEventListener('click',next);
+  if(prevBtn) prevBtn.addEventListener('click',prev);
+
+  /* Keyboard: left/right + page keys + home/end. Up/Down/Space left free for scrolling long slides. */
+  document.addEventListener('keydown',function(e){
+    if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    switch(e.key){
+      case 'ArrowRight': case 'PageDown': next(); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp':   prev(); e.preventDefault(); break;
+      case 'Home': go(0); e.preventDefault(); break;
+      case 'End':  go(N-1); e.preventDefault(); break;
+    }
+  });
+
+  /* Touch swipe (horizontal wins over vertical scroll) */
+  var x0=null,y0=null;
+  deck.addEventListener('touchstart',function(e){ x0=e.touches[0].clientX; y0=e.touches[0].clientY; },{passive:true});
+  deck.addEventListener('touchend',function(e){
+    if(x0===null) return;
+    var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.4){ dx<0?next():prev(); }
+    x0=y0=null;
+  },{passive:true});
+
+  /* Fullscreen present mode */
+  if(presentBtn){
+    presentBtn.addEventListener('click',function(){
+      var fs=document.fullscreenElement||document.webkitFullscreenElement;
+      if(!fs){ (deck.requestFullscreen||deck.webkitRequestFullscreen||function(){}).call(deck); }
+      else { (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+    });
+  }
+
+  /* Keyboard hint, auto-fades */
+  if(hint){ setTimeout(function(){hint.classList.add('show');},700); setTimeout(function(){hint.classList.remove('show');},4700); }
+
+  /* Init (jump straight to a slide if the URL has a matching #hash) */
+  var startId=(location.hash||'').replace('#',''), startIdx=0;
+  if(startId){ slides.forEach(function(s,i){ if(s.id===startId) startIdx=i; }); }
+  deck.classList.add('no-anim');
+  go(startIdx);
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ deck.classList.remove('no-anim'); }); });
+
+  /* ===== Game category filters ===== */
   var filters=[].slice.call(document.querySelectorAll('#gameFilters .filter-chip'));
   var cards=[].slice.call(document.querySelectorAll('#gameGrid .game-card'));
   filters.forEach(function(btn){
     btn.addEventListener('click',function(){
-      filters.forEach(function(b){b.classList.remove('active');});
+      filters.forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       var f=btn.getAttribute('data-filter');
-      cards.forEach(function(c){c.classList.toggle('filtered-out',!(f==='all'||c.getAttribute('data-cat')===f));});
+      cards.forEach(function(c){ c.classList.toggle('filtered-out',!(f==='all'||c.getAttribute('data-cat')===f)); });
     });
   });
 
-  /* Book flip: first tap flips on touch devices, second tap follows the link */
-  var canHover=window.matchMedia&&window.matchMedia('(hover: hover)').matches;
+  /* ===== Book flip: first tap flips on touch, second tap follows the link ===== */
+  var canHover=window.matchMedia && window.matchMedia('(hover: hover)').matches;
   if(!canHover){
     [].slice.call(document.querySelectorAll('.book-card.flip')).forEach(function(card){
       card.addEventListener('click',function(e){
-        if(!card.classList.contains('flipped')){e.preventDefault();card.classList.add('flipped');}
+        if(!card.classList.contains('flipped')){ e.preventDefault(); card.classList.add('flipped'); }
       });
     });
   }

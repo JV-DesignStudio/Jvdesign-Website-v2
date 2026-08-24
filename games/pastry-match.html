@@ -124,7 +124,13 @@ let timerInterval = null;
 
 function initCards() {
   const deck = [...PASTRIES, ...PASTRIES];
-  cards = deck.sort(() => Math.random() - 0.5).map((emoji, i) => ({ id: i, emoji, state: 'hidden' }));
+  // Fisher-Yates: the old sort-by-random shuffle was biased, letting sharp
+  // players predict pair positions from earlier deals.
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  cards = deck.map((emoji, i) => ({ id: i, emoji, state: 'hidden' }));
   matched = 0;
   flipped = [];
   score = 0;
@@ -261,9 +267,15 @@ function endGame() {
   ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18);
   audioEffects.playLevelUp();
   document.getElementById('winSub').textContent = (moves <= 16 ? 'Perfect memory! 🧠' : 'Great match!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
-  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalScore').textContent = score.toLocaleString();
+  GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalMoves').textContent = moves;
   document.getElementById('finalBest').textContent = best;
+  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
+    [300, '🥉', 'Bronze Baker'],
+    [600, '🥈', 'Silver Baker'],
+    [900, '🥇', 'Gold Baker'],
+  ]);
   document.getElementById('winModal').classList.add('show');
 }
 

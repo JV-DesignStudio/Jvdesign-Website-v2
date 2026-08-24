@@ -31,10 +31,16 @@ class AudioEffects {
   }
 
   // Effective volume, honoring the active game's sound settings when a
-  // GameSystem exists on the page. Returns 0 when muted.
+  // GameSystem exists on the page, and the hub-wide mute (jvds_sound) that
+  // every game shares. Returns 0 when muted.
   getVolume() {
     let volume = this.masterVolume;
     try {
+      // Global SFX toggle from the Arcade settings sheet — one key, all games.
+      const globalSound = localStorage.getItem('jvds_sound');
+      if (globalSound === '0') return 0;
+      // Legacy site preference, honored until the player touches the new toggle.
+      if (globalSound == null && localStorage.getItem('soundEnabled') === 'false') return 0;
       const gs = typeof GameSystem !== 'undefined' && GameSystem.lastInstance;
       if (gs) {
         if (gs.getSetting('soundEnabled') === false) return 0;

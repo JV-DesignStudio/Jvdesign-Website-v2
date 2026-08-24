@@ -199,12 +199,18 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     fx.playError();ScreenShake.shake(cv,9,280);
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
-    if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
-    if(score>best){best=score;localStorage.setItem('nibbleQuestBest',best);bestEl.textContent=best;}
+    if(typeof gameSystem!=='undefined'){
+      // Feed the shared save so the Arcade hub's best-scores list sees us
+      // (the private nibbleQuestBest key alone is invisible to the hub).
+      gameSystem.addScore(score);
+      gameSystem.recordGamePlay(Date.now());
+    }
+    var isNewBest=score>best;
+    if(isNewBest){best=score;localStorage.setItem('nibbleQuestBest',best);bestEl.textContent=best;}
     document.getElementById('bestStart').textContent='Best: '+best;
-    document.getElementById('endEmoji').textContent=score>=best&&score>0?'🌟':'🍎';
+    document.getElementById('endEmoji').textContent=isNewBest&&score>0?'🌟':'🍎';
     document.getElementById('endTitle').textContent=score>=200?'Mega Nibbler!':'Game Over';
-    document.getElementById('endMsg').textContent='You scored '+score+'.'+(score>=best&&score>0?' New best! 🎉':' Best: '+best);
+    document.getElementById('endMsg').textContent='You scored '+score+'.'+(isNewBest&&score>0?' New best! 🎉':' Best: '+best);
     endScreen.classList.remove('hidden');
   }
   document.getElementById('startBtn').addEventListener('click',startGame);

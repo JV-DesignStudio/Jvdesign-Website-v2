@@ -26,6 +26,8 @@ class PlayerProfile {
       // daily challenge can read it without any game-code changes. Resets
       // automatically when the calendar day changes (see getDailyActivity).
       dailyActivity: { date: null, games: [], runs: 0, workshops: 0, xp: 0, claimed: null },
+      // Same shape, but keyed by week number: feeds the Weekly Challenge.
+      weeklyActivity: { key: null, games: [], runs: 0, workshops: 0, xp: 0, claimed: null },
       shareCode: null
     };
   }
@@ -40,7 +42,11 @@ class PlayerProfile {
   loadProfile() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) : null;
+      const parsed = stored ? JSON.parse(stored) : null;
+      // Merge over defaults: profiles saved by older versions (or truncated
+      // by a full disk / private-mode eviction) must never crash consumers.
+      // A missing questProgress alone used to break getStats() everywhere.
+      return parsed ? Object.assign(this.createDefaultProfile(), parsed) : null;
     } catch (e) {
       console.error('Failed to load player profile:', e);
       return null;
@@ -204,21 +210,63 @@ class PlayerProfile {
     return d;
   }
 
+  // Week number: whole days since epoch / 7 — no timezone math, and every
+  // device computes the identical bucket, like the daily rotation.
+  getWeekNumber() {
+    const n = new Date();
+    const days = Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 86400000);
+    return Math.floor(days / 7);
+  }
+
+  getWeeklyActivity() {
+    const key = this.getWeekNumber();
+    let w = this.state.weeklyActivity;
+    if (!w || w.key !== key) {
+      w = { key: key, games: [], runs: 0, workshops: 0, xp: 0, claimed: null };
+      this.state.weeklyActivity = w;
+    }
+    return w;
+  }
+
   trackDailyActivity(amount, source) {
-    // Never count the challenge's own bonus, or it could self-complete the
-    // "earn N XP today" goal.
-    if (source === 'daily-challenge') return;
-    const d = this.getDailyActivity();
-    if (amount > 0) d.xp += amount;
-    if (typeof source === 'string') {
-      const parts = source.split(':');
-      if (parts[0] === 'game' && parts[1]) {
+    const parts = typeof source === 'string' ? source.split(':') : [];
+    const isGame = parts[0] === 'game' && !!parts[1];
+    const isRun = parts[2] === 'run';
+
+    // Today's totals. Never count a challenge's own bonus, or it could
+    // self-complete its own "earn N XP" goal.
+    if (source !== 'daily-challenge') {
+      const d = this.getDailyActivity();
+      if (amount > 0) d.xp += amount;
+      if (isGame) {
         if (d.games.indexOf(parts[1]) === -1) d.games.push(parts[1]);
-        if (parts[2] === 'run') d.runs += 1;
+        if (isRun) d.runs += 1;
       } else if (parts[0] === 'workshop') {
         d.workshops += 1;
       }
     }
+
+    // This week's totals (feeds the Weekly Challenge). Same self-feed guard.
+    if (source !== 'weekly-challenge') {
+      const w = this.getWeeklyActivity();
+      if (amount > 0) w.xp += amount;
+      if (isGame) {
+        if (w.games.indexOf(parts[1]) === -1) w.games.push(parts[1]);
+        if (isRun) w.runs += 1;
+      } else if (parts[0] === 'workshop') {
+        w.workshops += 1;
+      }
+    }
+  }
+
+  // Grants the weekly challenge bonus exactly once per week.
+  claimWeeklyChallenge(challengeId, xp) {
+    const w = this.getWeeklyActivity();
+    if (w.claimed) return false;
+    w.claimed = challengeId;
+    this.addXP(xp || 0, 'weekly-challenge'); // saves profile
+    this.emitEvent('weekly-challenge-complete', { challengeId, xp: xp || 0 });
+    return true;
   }
 
   // Grants the daily challenge bonus exactly once per day. Returns true only
