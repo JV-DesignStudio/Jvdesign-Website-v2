@@ -1,0 +1,5141 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Play Sky High With Friends, a fun free browser game by JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#BC4749">
+<script src="../analytics-loader.js"></script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Sky High With Friends | JVDesignStudio</title>
+<style>
+
+  /* ============================================================
+     SKY HIGH SQUIRT (synced from app build)
+     Adds: localStorage persistence, character unlocks at height
+     milestones, full shop screen with hats/skins/auras, equipped
+     loadouts per character, trail particles, achievement unlocks.
+     ============================================================ */
+
+  :root {
+    --ui-bg: rgba(20, 14, 38, 0.78);
+    --ui-bg-solid: #1a1140;
+    --ui-bg-dark: #0d0726;
+    --ui-stroke: rgba(255, 255, 255, 0.18);
+    --ui-text: #fdf6e3;
+    --accent: #ffd23f;
+    --accent-2: #ff7eb9;
+    --accent-3: #5cdbff;
+    --locked: #4a3d6b;
+    --owned: #4caf50;
+    --equipped: #ffd23f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #0a0617;
+    color: var(--ui-text);
+    font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  /* Fullscreen: the canvas IS the viewport. W/H in JS track it. */
+  #game {
+    display: block;
+    background: #87ceeb;
+    touch-action: none;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .hud {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .hud .pill {
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .hud .pill .label { opacity: 0.6; font-weight: 500; margin-right: 6px; font-size: 11px; text-transform: uppercase; }
+  .hud .pill.coins { color: var(--accent); }
+
+  /* Pause button lives in the HUD row; only exists while a run is live */
+  .hud .pill.hud-btn {
+    pointer-events: auto;
+    cursor: pointer;
+    display: none;
+    padding: 8px 13px;
+    font-size: 15px;
+    line-height: 1;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .hud .pill.hud-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+  body[data-mode="playing"] .hud .pill.hud-btn { display: block; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, rgba(10,6,23,0.55), rgba(10,6,23,0.9));
+    z-index: 10;
+    pointer-events: auto;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay:not(.hidden) { animation: overlayIn 0.22s ease both; }
+  @keyframes overlayIn { from { opacity: 0; } }
+
+  /* The menu sits toward the top so the meadow + character stay visible below.
+     Its scrim is strong over the panel and nearly clear at the bottom so the
+     mascot + meadow read brightly. */
+  #menu.overlay {
+    place-items: start center;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(10,6,23,0.88) 0%, rgba(10,6,23,0.62) 55%, rgba(10,6,23,0.18) 82%, rgba(10,6,23,0.05) 100%);
+  }
+
+  .panel {
+    background: linear-gradient(180deg, var(--ui-bg-solid), var(--ui-bg-dark));
+    border: 1px solid var(--ui-stroke);
+    border-radius: 18px;
+    padding: 28px 32px;
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .panel.shop-panel {
+    max-width: 540px;
+    text-align: left;
+  }
+  .panel h1 {
+    font-size: 30px;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  /* ── Menu juice ── */
+  .menu-panel {
+    position: relative;
+    /* tighter rhythm so the meadow + mascot stay visible below the panel */
+    padding: 20px 22px 14px;
+  }
+  .menu-panel .tagline { margin-bottom: 10px !important; }
+  .menu-panel .xp-bar-wrap { margin: 8px 0 4px; }
+  .menu-panel .streak-badge { margin-top: 6px; }
+  .menu-panel .btn-row { margin-top: 7px; }
+  .menu-panel .controls-hint { margin-top: 10px; }
+  .menu-panel .char-unlock-hint { margin-bottom: 8px; }
+  .menu-panel .daily-mod-badge { margin-top: 4px; }
+
+  /* ── Intro / splash ── */
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, rgba(10,6,23,0.95), rgba(10,6,23,0.8));
+    cursor: pointer;
+    transition: opacity 0.35s ease;
+  }
+  #intro.gone { opacity: 0; pointer-events: none; }
+  #intro.hide { display: none; }
+  .intro-inner { text-align: center; animation: introIn 0.6s cubic-bezier(.2,1.2,.3,1) both; }
+  @keyframes introIn { from { opacity: 0; transform: scale(0.88) translateY(12px); } }
+  .intro-pet {
+    font-size: 64px;
+    display: inline-block;
+    animation: introBounce 1.05s cubic-bezier(.35,0,.65,1) infinite alternate;
+    filter: drop-shadow(0 16px 10px rgba(0,0,0,0.45));
+  }
+  @keyframes introBounce {
+    from { transform: translateY(0) scale(1.08, 0.92); }
+    to   { transform: translateY(-28px) scale(0.94, 1.06); }
+  }
+  .intro-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: clamp(38px, 12vw, 54px);
+    line-height: 1.02;
+    margin-top: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 6px 18px rgba(255,126,185,0.35));
+  }
+  .intro-tap {
+    margin-top: 28px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent-3);
+    animation: tapPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes tapPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .intro-studio {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.38);
+  }
+
+  /* Big primary Play button */
+  .btn.play-big {
+    width: 100%;
+    padding: 15px 32px;
+    font-size: 20px;
+    margin: 0 0 2px;
+    animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) 0.08s both;
+  }
+
+  /* Settings gear pinned to the panel corner */
+  .panel-gear {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--ui-stroke);
+    font-size: 17px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .panel-gear:hover { background: rgba(255,255,255,0.12); }
+  .panel-gear:active { transform: scale(0.88); }
+
+  /* "Your jumper" mini-label */
+  .char-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    text-align: center;
+    margin: 10px 0 6px;
+  }
+
+  .game-title {
+    font-size: clamp(30px, 9vw, 40px) !important;
+    animation: titleIn 0.6s cubic-bezier(.2,1.4,.3,1) both, titleFloat 3.2s ease-in-out 0.6s infinite alternate;
+    filter: drop-shadow(0 4px 16px rgba(255,126,185,0.35));
+  }
+  @keyframes titleIn { from { opacity: 0; transform: translateY(-20px) scale(0.8); } }
+  @keyframes titleFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+  .tagline { margin-bottom: 14px !important; }
+
+  .menu-anim { animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+
+  /* Stat chips */
+  .menu-panel .stat {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 14px;
+    padding: 10px 12px;
+    min-width: 88px;
+  }
+
+  /* XP bar shimmer */
+  .xp-fill { position: relative; overflow: hidden; }
+  .xp-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.55) 50%, transparent 75%);
+    transform: translateX(-110%);
+    animation: xpShine 2.6s ease-in-out 1s infinite;
+  }
+  @keyframes xpShine { 55%, 100% { transform: translateX(110%); } }
+
+  /* Play button shine sweep */
+  #play-btn { position: relative; overflow: hidden; }
+  #play-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -70%;
+    width: 45%; height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3.4s ease-in-out 1.4s infinite;
+    pointer-events: none;
+  }
+  @keyframes shine { 0% { left: -70%; } 50%, 100% { left: 140%; } }
+
+  /* HUD pill pulse (coin pickup, milestone) */
+  .hud .pill.pulse { animation: pillPulse 0.32s cubic-bezier(.2,.9,.3,1.4); }
+  @keyframes pillPulse { 40% { transform: scale(1.16); } }
+
+  /* Character preview canvases inside select chips */
+  .char-btn canvas { display: block; width: 52px; height: 52px; }
+  .shop-char-select .char-btn { width: 56px; height: 56px; }
+  .shop-char-select .char-btn canvas { width: 44px; height: 44px; }
+  .char-btn.active canvas { animation: chipBob 1.6s ease-in-out infinite; }
+  @keyframes chipBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .panel h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; text-align: center; }
+
+  .char-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 18px 0 10px;
+  }
+  .char-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    font-size: 32px;
+    display: grid;
+    place-items: center;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .char-btn:hover:not(.locked) { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+  .char-btn.active {
+    border-color: var(--accent);
+    background: rgba(255, 210, 63, 0.15);
+    box-shadow: 0 0 20px rgba(255, 210, 63, 0.3);
+  }
+  .char-btn.locked {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.8);
+  }
+  .char-btn .lock {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--locked);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.4);
+  }
+  .char-name {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+    height: 16px;
+    text-align: center;
+  }
+  .char-unlock-hint {
+    font-size: 11px;
+    color: var(--accent-3);
+    height: 14px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .btn {
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.secondary {
+    background: linear-gradient(180deg, #6b4ba8, #483078);
+    color: #fff;
+    box-shadow: 0 6px 0 #2e1a4e, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.secondary:active { box-shadow: 0 3px 0 #2e1a4e, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.danger {
+    background: linear-gradient(180deg, #ef5350, #b71c1c);
+    color: #fff;
+    box-shadow: 0 6px 0 #7f1010, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.danger:active { box-shadow: 0 3px 0 #7f1010, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.blue {
+    background: linear-gradient(180deg, var(--accent-3), #0288d1);
+    color: #04222e;
+    box-shadow: 0 6px 0 #01579b, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.blue:active { box-shadow: 0 3px 0 #01579b, 0 5px 10px rgba(0,0,0,0.3); }
+
+  /* Daily missions */
+  .mission-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 12px;
+  }
+  .mission-row.done { border-color: var(--owned); background: rgba(76, 175, 80, 0.08); }
+  .mission-reward {
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(255, 210, 63, 0.12);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 4px;
+  }
+  .mission-bar {
+    height: 6px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .mission-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin: 18px 0;
+  }
+  .stat .v { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat .l { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* XP bar */
+  .xp-bar-wrap { margin: 14px 0 4px; }
+  .xp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .xp-row span:first-child { color: var(--accent-3); }
+  .xp-row span:last-child  { color: var(--accent); }
+  .xp-bar {
+    height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--ui-stroke);
+  }
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
+    box-shadow: 0 0 8px rgba(255, 210, 63, 0.5);
+  }
+  .xp-text {
+    font-size: 10px;
+    opacity: 0.6;
+    text-align: center;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Streak badge */
+  .streak-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 14px;
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff7043;
+  }
+  .streak-badge.zero { display: none; }
+
+  .daily-mod-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .daily-mod-badge .dm-name { color: var(--accent); }
+
+  /* New best banner */
+  .newbest-banner {
+    display: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #2a1a00;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    margin: 0 auto 12px;
+    width: fit-content;
+    letter-spacing: 1px;
+    animation: newbestpulse 1.2s ease-in-out infinite;
+    box-shadow: 0 4px 20px rgba(255, 210, 63, 0.5);
+  }
+  @keyframes newbestpulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .controls-hint {
+    margin-top: 16px;
+    font-size: 12px;
+    opacity: 0.55;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+  /* ── CONTROLS ──
+     Mobile is tilt-first (Doodle Jump style): no on-screen buttons. A silent
+     drag-anywhere fallback and desktop keyboard remain. */
+
+  /* ----- Shop ----- */
+  .shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--ui-stroke);
+  }
+  .shop-header h1 { text-align: left; font-size: 24px; }
+  .shop-coins {
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .shop-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .shop-tab {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    color: var(--ui-text);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .shop-tab:hover { background: rgba(255,255,255,0.1); }
+  .shop-tab.active {
+    background: rgba(255, 210, 63, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .shop-char-select {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+  }
+  .shop-char-select .char-btn { width: 48px; height: 48px; font-size: 24px; }
+
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px 4px 4px 0;
+  }
+  .shop-grid::-webkit-scrollbar { width: 6px; }
+  .shop-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  .shop-item {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid var(--ui-stroke);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .shop-item:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .shop-item:active { transform: scale(0.95); }
+  .shop-item.owned { border-color: var(--owned); }
+  .shop-item.equipped {
+    border-color: var(--equipped);
+    background: rgba(255, 210, 63, 0.1);
+    box-shadow: 0 0 16px rgba(255, 210, 63, 0.25);
+  }
+  .shop-item.locked { cursor: not-allowed; opacity: 0.5; }
+  .shop-item.cant-afford { opacity: 0.7; }
+
+  .shop-item-preview {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+  }
+  .shop-item-preview canvas {
+    width: 56px !important;
+    height: 56px !important;
+    display: block;
+  }
+  .shop-item-name {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shop-item-price {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .shop-item-status {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .shop-item.owned .shop-item-status { background: var(--owned); color: #fff; }
+  .shop-item.equipped .shop-item-status { background: var(--equipped); color: #2a1a00; }
+  .shop-item.locked .shop-item-status { background: var(--locked); color: #fff; }
+
+  /* Run modifier badge (shown under the HUD while a modified run is live) */
+  .runmod-badge {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(92, 219, 255, 0.12);
+    border: 1px solid rgba(92, 219, 255, 0.45);
+    color: var(--accent-3);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    z-index: 6;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .runmod-badge.hidden { display: none; }
+
+  /* Modifier chooser cards */
+  .mod-cards { display: flex; gap: 12px; margin: 6px 0 4px; }
+  .mod-card {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid var(--ui-stroke);
+    border-radius: 16px;
+    padding: 18px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  }
+  .mod-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); }
+  .mod-card:active { transform: scale(0.96); }
+  .mod-card.todays { border-color: var(--accent); }
+  .mod-card .m-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .mod-card .m-name { font-weight: 800; font-size: 14px; margin-bottom: 5px; }
+  .mod-card.todays .m-name { color: var(--accent); }
+  .mod-card .m-desc { font-size: 11px; opacity: 0.7; line-height: 1.4; }
+  .mod-card .m-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 210, 63, 0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  /* Upgrade rows in the shop */
+  .upg-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .upg-list::-webkit-scrollbar { width: 6px; }
+  .upg-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .upg-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .upg-icon { font-size: 26px; flex-shrink: 0; }
+  .upg-info { flex: 1; min-width: 0; }
+  .upg-name { font-size: 13px; font-weight: 800; }
+  .upg-desc { font-size: 11px; opacity: 0.65; margin-top: 2px; }
+  .upg-pips { margin-top: 6px; display: flex; gap: 4px; }
+  .upg-pip { width: 14px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.14); }
+  .upg-pip.on { background: var(--accent); box-shadow: 0 0 6px rgba(255, 210, 63, 0.5); }
+  .upg-buy {
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    border: none;
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #a86f00;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .upg-buy:active { transform: translateY(2px); box-shadow: 0 2px 0 #a86f00; }
+  .upg-buy.maxed { background: var(--owned); box-shadow: 0 4px 0 #2e6b31; cursor: default; }
+  .upg-buy.cant { filter: grayscale(0.6); opacity: 0.75; }
+
+  /* Panel entrance: every overlay pop feels intentional */
+  .overlay:not(.hidden) .panel { animation: panelIn 0.3s cubic-bezier(.2,.9,.3,1.15); }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(26px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .toast {
+    position: fixed;
+    top: calc(60px + env(safe-area-inset-top)); /* below the HUD pills, not under them */
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--ui-bg-solid);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    z-index: 100;
+    transition: transform 0.4s cubic-bezier(.2,1.5,.5,1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    pointer-events: none; /* never steal taps from the HUD underneath */
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ----- Settings ----- */
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ui-stroke);
+  }
+  .setting-row:last-of-type { border-bottom: none; }
+  .setting-label { font-size: 14px; font-weight: 600; }
+  .toggle-btn {
+    background: var(--owned);
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 60px;
+    transition: all 0.15s;
+  }
+  .toggle-btn.off { background: #555; }
+  .toggle-btn.danger { background: #d32f2f; }
+  .toggle-btn.danger:hover { background: #f44336; }
+  .btn.small {
+    padding: 10px 16px;
+    font-size: 12px;
+    box-shadow: 0 4px 0 #2e1a4e, 0 6px 12px rgba(0,0,0,0.3);
+  }
+  .btn.small:active { box-shadow: 0 2px 0 #2e1a4e, 0 3px 8px rgba(0,0,0,0.3); transform: translateY(2px); }
+
+  .version-row {
+    text-align: center;
+    font-size: 11px;
+    opacity: 0.45;
+    padding-top: 14px;
+    letter-spacing: 0.5px;
+  }
+  /* ----- Achievements ----- */
+  .ach-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .ach-grid::-webkit-scrollbar { width: 6px; }
+  .ach-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .ach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 12px;
+    transition: all 0.15s;
+  }
+  .ach-item.earned {
+    border-color: var(--accent);
+    background: rgba(255, 210, 63, 0.08);
+  }
+  .ach-item.locked { opacity: 0.45; }
+  .ach-icon {
+    font-size: 26px;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .ach-item.locked .ach-icon { filter: grayscale(1); }
+  .ach-info { flex: 1; }
+  .ach-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+  .ach-item.earned .ach-name { color: var(--accent); }
+  .ach-desc { font-size: 11px; opacity: 0.65; }
+  .ach-check { font-size: 18px; flex-shrink: 0; }
+
+.jvds-strip.open ~ * { transition: margin-top .25s ease; }
+/* ══════════════════════════════════════════════════════════ */
+
+/* ── MOBILE PATCH ── */
+@media(max-width:480px){
+  .hud{font-size:.72rem;padding:8px 10px;}
+  .pill{padding:4px 8px;font-size:.68rem;}
+  .shop-grid{grid-template-columns:1fr 1fr !important;}
+  .shop-item-name{font-size:.72rem;}
+  .shop-item-cost{font-size:.68rem;}
+  .overlay-title{font-size:1.4rem;}
+}
+
+</style>
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
+    <meta property="og:title"       content="Sky High With Friends">
+    <meta property="og:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/SkyHighCover.png">
+    <meta property="og:site_name"   content="JVDesignStudio">
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Sky High With Friends">
+    <meta name="twitter:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/SkyHighCover.png">
+<!-- Game System Integration -->
+<script src="../game-system.js"></script>
+<script src="../player-profile.js"></script>
+<link rel="stylesheet" href="../game-system.css"><style>
+  /* style-shared.css sets body{font-family:'Inter'...} and, loading after
+     this page's own inline <style>, wins the cascade on source order alone
+     — re-assert this game's own font here instead of touching the shared
+     stylesheet (which every other page also depends on). */
+  html, body { font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif; }
+</style>
+</head>
+<body>
+<!-- BUILD:nav-strip -->
+<div class="jvds-strip" id="jvdsStrip">
+  <div class="jvds-strip-inner">
+    <a href="/index.html" class="jvds-strip-logo">JVDesignStudio</a>
+    <nav class="jvds-strip-links">
+      <a href="/index.html">🏠 Home</a>
+      <a href="/pages/games.html">🎮 Games</a>
+      <a href="/pages/books.html">📚 Books</a>
+      <a href="/pages/learn-hub.html">🎓 Learn</a>
+      <a href="/pages/workshop.html">🔧 Workshop</a>
+      <a href="/pages/dev-tools.html">🛠️ Tools</a>
+      <a href="/pages/freebies.html">🎁 Freebies</a>
+    </nav>
+    <button class="jvds-strip-close" onclick="jvdsCloseStrip()" aria-label="Close menu">✕</button>
+  </div>
+</div>
+<button class="jvds-tab" id="jvdsTab" onclick="jvdsOpenStrip()">☰ JVDesignStudio</button>
+<script>
+(function(){
+  function jvdsOpenStrip(){document.getElementById('jvdsStrip').classList.add('open');document.getElementById('jvdsTab').classList.add('hidden');}
+  function jvdsCloseStrip(){document.getElementById('jvdsStrip').classList.remove('open');document.getElementById('jvdsTab').classList.remove('hidden');}
+  window.jvdsOpenStrip=jvdsOpenStrip;
+  window.jvdsCloseStrip=jvdsCloseStrip;
+})();
+</script>
+<!-- /BUILD:nav-strip -->
+
+<a href="../pages/games.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;font-family:sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);">← Games</a>
+
+<!-- ===== INTRO / SPLASH ===== -->
+<div id="intro">
+  <div class="intro-inner">
+    <div class="intro-pet">🐢</div>
+    <div class="intro-title">Sky High<br>With Friends</div>
+    <div class="intro-tap">Tap to start</div>
+  </div>
+  <div class="intro-studio">A JVDesignStudio game · <span id="intro-version"></span></div>
+</div>
+
+<div id="wrap">
+  <canvas id="game" width="420" height="700"></canvas>
+</div>
+
+<div class="hud">
+  <div class="pill"><span class="label">Height</span><span id="hud-height">0m</span></div>
+  <div class="pill coins"><span class="label">Coins</span><span id="hud-coins">0</span></div>
+  <button class="pill hud-btn" id="pause-btn" aria-label="Pause">&#9208;</button>
+</div>
+
+<div class="runmod-badge hidden" id="runmod-badge"></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===== START MENU ===== -->
+<div class="overlay hidden" id="menu">
+  <div class="panel menu-panel">
+    <button class="panel-gear" id="settings-btn" aria-label="Settings">⚙️</button>
+    <h1 class="game-title">Sky High With Friends</h1>
+    <p class="tagline">Bounce as high as you can. Collect coins. Don't fall.</p>
+
+    <button class="btn play-big menu-anim" id="play-btn">▶&nbsp; Play</button>
+
+    <div class="char-label menu-anim" style="animation-delay:.12s">Your jumper</div>
+    <div class="char-row menu-anim" id="char-row" style="animation-delay:.16s"></div>
+    <div class="char-name" id="char-name">Pip the Turtle</div>
+    <div class="char-unlock-hint" id="char-unlock-hint"></div>
+
+    <div class="daily-mod-badge menu-anim" id="dailyModBadge" style="animation-delay:.22s"></div>
+
+    <div class="stats menu-anim" style="animation-delay:.26s">
+      <div class="stat"><div class="v" id="menu-best">0m</div><div class="l">🏆 Best</div></div>
+      <div class="stat"><div class="v" id="menu-coins">0</div><div class="l">🪙 Coins</div></div>
+      <div class="stat"><div class="v" id="menu-level">Lv 1</div><div class="l">⭐ Level</div></div>
+    </div>
+
+    <div class="xp-bar-wrap menu-anim" style="animation-delay:.3s">
+      <div class="xp-bar"><div class="xp-fill" id="menu-xp-fill"></div></div>
+      <div class="xp-text" id="menu-xp-text">0 / 100 XP</div>
+    </div>
+
+    <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.34s">🔥 <span id="streak-num">0</span> day streak</div>
+
+    <div class="btn-row menu-anim" style="animation-delay:.38s">
+      <button class="btn secondary small" id="shop-btn">🛍️ Shop</button>
+      <button class="btn secondary small" id="missions-btn">📋 Missions</button>
+    </div>
+    <div class="btn-row menu-anim" style="animation-delay:.42s">
+      <button class="btn secondary small" id="weekly-btn">🗓️ Weekly</button>
+      <button class="btn secondary small" id="ach-btn">🏆 Achievements</button>
+    </div>
+
+    <div class="controls-hint menu-anim" id="controls-hint" style="animation-delay:.46s">
+      <span class="keys-hint"><span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to steer<br></span>
+      <span class="touch-hint">Tilt your phone to steer<br></span>
+      Wraps around screen edges · <span class="key">P</span>/<span class="key">Esc</span> to pause
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHOP ===== -->
+<div class="overlay hidden" id="shop">
+  <div class="panel shop-panel">
+    <div class="shop-header">
+      <h1>The Sky Shop</h1>
+      <div class="shop-coins">🪙 <span id="shop-coin-count">0</span></div>
+    </div>
+
+    <div class="shop-char-select" id="shop-char-select"></div>
+
+    <div class="shop-tabs">
+      <button class="shop-tab active" data-tab="hat">Hats</button>
+      <button class="shop-tab" data-tab="skin">Skins</button>
+      <button class="shop-tab" data-tab="aura">Auras</button>
+      <button class="shop-tab" data-tab="upgrade">Upgrades</button>
+    </div>
+
+    <div class="shop-grid" id="shop-grid"></div>
+    <div class="upg-list hidden" id="upg-list"></div>
+
+    <div class="btn-row" style="margin-top: 18px;">
+      <button class="btn secondary" id="shop-back-btn">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div class="overlay hidden" id="gameover">
+  <div class="panel">
+    <h2>You Fell!</h2>
+    <div class="newbest-banner" id="go-newbest">⭐ NEW BEST! ⭐</div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="go-height">0m</div><div class="l">Height</div></div>
+      <div class="stat"><div class="v" id="go-coins">0</div><div class="l">Coins</div></div>
+      <div class="stat"><div class="v" id="go-best">0m</div><div class="l" id="go-best-label">Best</div></div>
+    </div>
+
+    <div class="xp-bar-wrap">
+      <div class="xp-row">
+        <span id="go-level">Lv 1</span>
+        <span id="go-xp">+0 XP</span>
+      </div>
+      <div class="xp-bar"><div class="xp-fill" id="go-xp-bar"></div></div>
+    </div>
+    <div class="btn-row hidden" id="continue-row">
+      <button class="btn blue" id="continue-btn">🎬 Second Chance</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="retry-btn">Retry</button>
+      <button class="btn secondary" id="menu-btn">Menu</button>
+      <button class="btn secondary small hidden" id="boards-btn">🏆 Boards</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MISSIONS ===== -->
+<div class="overlay hidden" id="missions">
+  <div class="panel shop-panel">
+    <div class="shop-header">
+      <h1>Daily Missions</h1>
+      <div class="shop-coins" id="mission-count">0 / 3</div>
+    </div>
+    <div class="ach-grid" id="mission-list"></div>
+    <div class="btn-row" style="margin-top: 18px;">
+      <button class="btn secondary" id="missions-back-btn">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODIFIER CHOOSER ===== -->
+<div class="overlay hidden" id="modchooser">
+  <div class="panel">
+    <h2>Choose a Sky</h2>
+    <p>Every run gets a twist — pick yours.</p>
+    <div class="mod-cards" id="mod-cards"></div>
+    <div class="btn-row" style="margin-top: 16px;">
+      <button class="btn secondary small" id="mod-skip-btn">Plain Skies</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAUSE ===== -->
+<div class="overlay hidden" id="pause">
+  <div class="panel">
+    <h2>Paused</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="pz-height">0m</div><div class="l">Height</div></div>
+      <div class="stat"><div class="v" id="pz-coins">0</div><div class="l">Coins</div></div>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Sound Effects</span>
+      <button class="toggle-btn" id="pause-sound-toggle">ON</button>
+    </div>
+    <div class="btn-row" style="margin-top: 18px;">
+      <button class="btn" id="resume-btn">Resume</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary small" id="pz-restart-btn">Restart</button>
+      <button class="btn danger small" id="pz-quit-btn">Quit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="overlay hidden" id="settings">
+  <div class="panel">
+    <h2>Settings</h2>
+
+    <div class="setting-row">
+      <span class="setting-label">Sound Effects</span>
+      <button class="toggle-btn" id="sound-toggle">ON</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Music</span>
+      <button class="toggle-btn" id="music-toggle">ON</button>
+    </div>
+
+    <div class="setting-row hidden" id="tilt-row">
+      <span class="setting-label">Tilt Calibration</span>
+      <button class="toggle-btn" id="tilt-recal-btn">Recalibrate</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Reset All Progress</span>
+      <button class="toggle-btn danger" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="version-row">Version <span id="settings-version"></span></div>
+
+    <div class="btn-row" style="margin-top: 22px;">
+      <button class="btn secondary" id="settings-back-btn">Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACHIEVEMENTS ===== -->
+<div class="overlay hidden" id="achievements">
+  <div class="panel shop-panel">
+    <div class="shop-header">
+      <h1>Achievements</h1>
+      <div class="shop-coins" id="ach-count">0 / 0</div>
+    </div>
+    <div class="ach-grid" id="ach-grid"></div>
+    <div class="btn-row" style="margin-top: 18px;">
+      <button class="btn secondary" id="ach-back-btn">Back</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   SKY HIGH SQUIRT
+   Version lives in /version.json (single source of truth) and is stamped
+   here by release.mjs — `node release.mjs --notes "..."` does a full release.
+   ============================================================================ */
+const GAME_VERSION = { v: '1.1', code: 3, date: '2026-08-24', codename: 'Aurora' };
+const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+/* Logical playfield size — tracks the viewport (fullscreen game).
+   Updated by resize(); everything reads these live. */
+let W = 420, H = 700;
+
+const PHYS = {
+  gravity: 0.42,
+  jumpVel: -13.2,
+  superJumpVel: -19,
+  moveAccel: 0.7,
+  moveMax: 6.5,
+  friction: 0.86,
+  cameraLerp: 0.12,
+  scoreScale: 0.1,
+};
+
+/* Run constants (declared before `state`, whose initializer reads one) */
+const MAGNET_FRAMES = 360;        // 6s of coin attraction
+const MAGNET_RADIUS = 140;
+const MAX_PARTICLES = 220;        // hard cap so jetpack+aura spam can't grow unbounded
+const MILESTONE_STEP = 250;       // every 250m: banner + chime
+const COIN_COMBO_WINDOW = 50;     // frames between coins to keep the pitch combo alive
+
+/* ---------- Daily Modifier Run ----------
+   A different small twist each calendar day, picked deterministically from
+   the local date so it's the same for everyone on the same day without
+   needing a server. Applied as multipliers at existing spawn/reward points
+   rather than touching PHYS directly, so the base feel never drifts.
+   The same pool doubles as the pick-your-modifier deck before each run. */
+const DAILY_MODIFIERS = [
+  { id: 'coinRush',   name: 'Coin Rush',    icon: '🪙', desc: '+50% coins this run',        coinMult: 1.5 },
+  { id: 'feather',    name: 'Featherweight', icon: '🪶', desc: 'Lighter gravity today',     gravityMult: 0.82 },
+  { id: 'luckyJets',  name: 'Lucky Jets',   icon: '🚀', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
+  { id: 'hazardStorm',name: 'Hazard Storm', icon: '🌪️', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
+  { id: 'calmSkies',  name: 'Calm Skies',   icon: '🌤️', desc: 'Fewer hazards today',        hazardMult: 0.5 },
+  /* risk/reward cards only offered in the pre-run chooser */
+  { id: 'galeForce',  name: 'Gale Force',   icon: '🌀', desc: '2x hazards · +80% coins',    hazardMult: 2, coinMult: 1.8 },
+  { id: 'slippery',   name: 'Slippery Skies', icon: '🧼', desc: 'Slidey steering · +30% coins', frictionMult: 1.06, coinMult: 1.3 },
+  { id: 'headStart',  name: 'Head Start',   icon: '🚀', desc: 'Begin this run at 150m',     startM: 150 },
+];
+function daysSinceEpochLocal() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+}
+function getDailyModifier() {
+  return DAILY_MODIFIERS[daysSinceEpochLocal() % DAILY_MODIFIERS.length];
+}
+
+/* The modifier actually in effect for this run: the player's pre-run pick,
+   or today's daily modifier if they skipped the choice. */
+function activeModifiers() {
+  const list = [getDailyModifier()];
+  if (state.modifier) list.push(state.modifier);
+  return list;
+}
+function modMult(key) {
+  let v = 1;
+  for (const m of activeModifiers()) {
+    const x = m[key];
+    if (typeof x === 'number') v *= x;
+  }
+  return v;
+}
+
+const CHARS = {
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Pip the Turtle',    emoji: '🐢', unlockM: 0,
+             perk: 'sturdy', perkName: 'Sturdy Shell', perkDesc: 'Hazards hit 50% softer' },
+  fox:     { body: '#ff5722', accent: '#bf360c', eye: '#fff', name: 'Lumo the Fox',      emoji: '🦊', unlockM: 750,
+             perk: 'speed',  perkName: 'Agile',       perkDesc: 'Sharper steering' },
+  tiger:   { body: '#ff9800', accent: '#e65100', eye: '#fff', name: 'Ember the Tiger',   emoji: '🐯', unlockM: 2500,
+             perk: 'spring', perkName: 'Big Bounce',  perkDesc: 'Springs launch 15% higher' },
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Echo the Axolotl',  emoji: '🦎', unlockM: 4500,
+             perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
+};
+const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl'];
+function perkActive(p) {
+  const c = CHARS[state.character];
+  return !!(c && c.perk === p && save.unlockedChars.includes(state.character));
+}
+
+const COSMETICS = {
+  hat: [
+    { id: 'none',      name: 'No Hat',     price: 0, draw: null },
+    { id: 'cap',       name: 'Cap',        price: 50,  draw: drawHatCap },
+    { id: 'crown',     name: 'Crown',      price: 200, draw: drawHatCrown },
+    { id: 'wizard',    name: 'Wizard Hat', price: 350, draw: drawHatWizard },
+    { id: 'party',     name: 'Party Hat',  price: 150, draw: drawHatParty },
+    { id: 'bow',       name: 'Big Bow',    price: 100, draw: drawHatBow },
+    { id: 'halo',      name: 'Halo',       price: 500, draw: drawHatHalo },
+    { id: 'top',       name: 'Top Hat',    price: 0, draw: drawHatTop, levelReq: 5 },
+    { id: 'horns',     name: 'Devil Horns',price: 0, draw: drawHatHorns, levelReq: 10 },
+    { id: 'star',      name: 'Star Crown', price: 0, draw: drawHatStar, levelReq: 20 },
+    { id: 'flower',    name: 'Flower Crown', price: 120, draw: drawHatFlower },
+    { id: 'pirate',    name: 'Pirate Hat', price: 280, draw: drawHatPirate },
+    { id: 'santa',     name: 'Santa Hat', price: 200, draw: drawHatSanta },
+    { id: 'crown2',    name: 'Diamond Crown', price: 600, draw: drawHatDiamond },
+    { id: 'mushroom',  name: 'Mushroom Cap', price: 180, draw: drawHatMushroom },
+    { id: 'beanie',    name: 'Beanie', price: 250, draw: drawHatBeanie },
+    { id: 'headphones',name: 'Headphones', price: 400, levelReq: 6, draw: drawHatHeadphones },
+  ],
+  skin: [
+    { id: 'default',   name: 'Default',    price: 0,    tint: null },
+    { id: 'shadow',    name: 'Shadow',     price: 250,  tint: '#222' },
+    { id: 'ice',       name: 'Ice',        price: 300,  tint: '#9fdfff' },
+    { id: 'rose',      name: 'Rose',       price: 300,  tint: '#ff6b9d' },
+    { id: 'gold',      name: 'Gold Skin',  price: 0,    tint: '#ffd23f', achievement: 'reach10000' },
+    { id: 'galaxy',    name: 'Galaxy',     price: 0,    tint: '#5e35b1', levelReq: 15 },
+    { id: 'forest',    name: 'Forest',     price: 280,  tint: '#2d5016' },
+    { id: 'sunset',    name: 'Sunset',     price: 350,  tint: '#ff9d5c' },
+    { id: 'ocean',     name: 'Ocean',      price: 320,  tint: '#1e88e5' },
+    { id: 'candy',     name: 'Candy',      price: 0,    tint: '#ff69b4', levelReq: 12 },
+  ],
+  aura: [
+    { id: 'none',      name: 'No Aura',    price: 0, color: null },
+    { id: 'sparkle',   name: 'Sparkle',    price: 150, color: '#ffd23f' },
+    { id: 'fire',      name: 'Fire Trail', price: 250, color: '#ff5722' },
+    { id: 'frost',     name: 'Frost',      price: 250, color: '#5cdbff' },
+    { id: 'rainbow',   name: 'Rainbow',    price: 600, color: 'rainbow' },
+    { id: 'cosmic',    name: 'Cosmic',     price: 0, color: '#9966ff', levelReq: 25 },
+    { id: 'lightning', name: 'Lightning',  price: 350, color: '#ffff00' },
+    { id: 'emerald',   name: 'Emerald',    price: 300, color: '#00ff7f' },
+    { id: 'shadow2',   name: 'Dark Matter', price: 400, color: '#1a1a2e' },
+    { id: 'love',      name: 'Love',       price: 200, color: '#ff1493' },
+    { id: 'aurora',    name: 'Aurora',     price: 550, color: '#3ee6c4' },
+    { id: 'keepsake',  name: 'Keepsake',   price: 0, color: '#c9a96e', achievement: 'anniversary', lockedHint: 'A once-a-year gift' },
+  ],
+};
+
+/* ---------- Permanent upgrades ----------
+   The long-term coin sink: each track has 5 levels, cost scales geometrically,
+   and every level is felt in the run. */
+const UPGRADES = [
+  { id: 'coinValue',  name: 'Golden Touch',  icon: '🪙', desc: '+5% coin value per level',        max: 5, base: 60,  mult: 1.8, per: 0.05 },
+  { id: 'springBoost',name: 'Springy Soles', icon: '👟', desc: '+3% jump power per level',        max: 5, base: 80,  mult: 1.8, per: 0.03 },
+  { id: 'magnetTime', name: 'Magnet Master', icon: '🧲', desc: '+0.6s magnet duration per level', max: 5, base: 70,  mult: 1.8, per: 0.04 },
+  { id: 'luck',       name: 'Lucky Charm',   icon: '🍀', desc: '+4% power-up chance per level',   max: 5, base: 90,  mult: 1.8, per: 0.04 },
+];
+function upgradeLevel(id) {
+  return (save.upgrades && save.upgrades[id]) || 0;
+}
+function upgradeCost(u) {
+  return Math.round(u.base * Math.pow(u.mult, upgradeLevel(u.id)));
+}
+function upgradeMult(id, perLevel) {
+  return 1 + upgradeLevel(id) * perLevel;
+}
+
+const SAVE_KEY = 'skyHighSquirt:save:v2';
+
+function defaultSave() {
+  return {
+    bestHeight: 0,
+    lifetimeCoins: 0,
+    coins: 0,
+    unlockedChars: ['turtle'],
+    owned: { hat: ['none'], skin: ['default'], aura: ['none'] },
+    equipped: {
+      turtle:  { hat: 'none', skin: 'default', aura: 'none' },
+      fox:     { hat: 'none', skin: 'default', aura: 'none' },
+      tiger:   { hat: 'none', skin: 'default', aura: 'none' },
+      axolotl: { hat: 'none', skin: 'default', aura: 'none' },
+    },
+    upgrades: { coinValue: 0, springBoost: 0, magnetTime: 0, luck: 0 },
+    weeklyBest: { seed: 0, best: 0 },
+    missions: { date: null, best: {}, claimed: [] },
+    achievements: [],
+    // XP / level
+    xp: 0,
+    level: 1,
+    // Ghost: array of { t, x, y } samples from best run
+    ghostRun: null,
+    ghostChar: 'turtle',
+    // Streak
+    lastPlayDate: null,    // 'YYYY-MM-DD'
+    streak: 0,
+    bestStreak: 0,
+    settings: { sound: true, music: true },
+    firstPlayTs: Date.now(),
+    tutorialDone: false,
+  };
+}
+
+let save = loadSave();
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return defaultSave();
+    const parsed = JSON.parse(raw);
+    const def = defaultSave();
+    return Object.assign(def, parsed, {
+      owned: Object.assign(def.owned, parsed.owned || {}),
+      equipped: Object.assign(def.equipped, parsed.equipped || {}),
+      settings: Object.assign(def.settings, parsed.settings || {}),
+      upgrades: Object.assign(def.upgrades, parsed.upgrades || {}),
+      weeklyBest: Object.assign(def.weeklyBest, parsed.weeklyBest || {}),
+      missions: Object.assign(def.missions, parsed.missions || {}),
+    });
+  } catch (e) {
+    console.warn('Save load failed', e);
+    return defaultSave();
+  }
+}
+
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
+  catch (e) { console.warn('Save failed', e); }
+}
+
+/* ---------- Sound system ----------
+   Synthesized via Web Audio API, no audio files needed.
+   AudioContext is lazily created on first user interaction
+   (browsers block audio before that). */
+const sound = {
+  ctx: null,
+  enabled: true,
+};
+
+// Apply saved sound preference
+if (save.settings) sound.enabled = save.settings.sound !== false;
+
+function initAudio() {
+  if (sound.ctx) return;
+  try {
+    sound.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    startMusic(); // generative soundtrack rides on the same context
+  } catch (e) {
+    console.warn('Audio not supported');
+  }
+}
+
+function playTone(freq, duration, type = 'sine', volume = 0.15, slide = 0) {
+  if (!sound.enabled || !sound.ctx) return;
+  const t = sound.ctx.currentTime;
+  const osc = sound.ctx.createOscillator();
+  const gain = sound.ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), t + duration);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  osc.connect(gain);
+  gain.connect(sound.ctx.destination);
+  osc.start(t);
+  osc.stop(t + duration);
+}
+
+const SFX = {
+  bounce:    () => playTone(440, 0.08, 'square',   0.08, 200),
+  spring:    () => { playTone(300, 0.15, 'square', 0.12, 600); setTimeout(() => playTone(700, 0.1, 'square', 0.08, 300), 40); },
+  // step: consecutive-coin combo (0..12) → each pickup in a chain pitches up a semitone
+  coin:      (step = 0) => {
+    const f = 880 * Math.pow(1.059463, Math.min(step || 0, 12));
+    playTone(f, 0.06, 'sine', 0.12, 0);
+    setTimeout(() => playTone(f * 1.5, 0.08, 'sine', 0.10, 0), 40);
+  },
+  break:     () => playTone(180, 0.1,  'sawtooth', 0.10, -80),
+  cloud:     () => playTone(550, 0.12, 'sine',     0.07, -50),
+  vanishing: () => playTone(660, 0.08, 'triangle', 0.08, 200),
+  gust:      () => playTone(150, 0.16, 'sawtooth', 0.12, -100),
+  shieldHit: () => playTone(500, 0.1,  'triangle', 0.11, 300),
+  powerup:   () => { [700, 1000, 1300].forEach((f, i) => setTimeout(() => playTone(f, 0.08, 'sine', 0.11, 0), i * 60)); },
+  jetpack:   () => playTone(200, 0.25, 'sawtooth', 0.1, 500),
+  death:     () => { playTone(440, 0.15, 'sawtooth', 0.15, -300); setTimeout(() => playTone(220, 0.2, 'sawtooth', 0.12, -150), 100); setTimeout(() => playTone(110, 0.3, 'sawtooth', 0.12, -60), 250); },
+  levelUp:   () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => playTone(f, 0.12, 'square', 0.12, 0), i * 80)); },
+  unlock:    () => { [659, 880, 1175].forEach((f, i) => setTimeout(() => playTone(f, 0.15, 'sine', 0.13, 0), i * 100)); },
+  buy:       () => { playTone(600, 0.06, 'square', 0.10, 0); setTimeout(() => playTone(900, 0.08, 'square', 0.10, 0), 50); },
+  click:     () => playTone(800, 0.04, 'square', 0.06, 0),
+  error:     () => playTone(200, 0.12, 'sawtooth', 0.10, -50),
+  milestone: () => { playTone(784, 0.09, 'triangle', 0.12, 0); setTimeout(() => playTone(1175, 0.14, 'triangle', 0.12, 0), 90); },
+  near:      () => playTone(700, 0.06, 'sine', 0.07, 220),
+};
+
+/* ---------- Music ----------
+   Tiny generative soundtrack, no audio files. A lookahead scheduler lays
+   down a calm layer (soft pad + pentatonic plucks) and an intense layer
+   (bass pulse + arpeggio); the layer gains crossfade as you climb from
+   meadow into the night sky. Everything routes through the same
+   AudioContext as the SFX, so it starts on the first tap like they do. */
+const music = {
+  enabled: save.settings.music !== false,
+  playing: false,
+  master: null,
+  calmGain: null,
+  nightGain: null,
+  timer: null,
+  nextNoteTime: 0,
+  step: 0,
+  stepDur: 0.26,
+  chords: [
+    [57, 60, 64, 67], // Am7
+    [53, 57, 60, 64], // Fmaj7
+    [48, 52, 55, 59], // Cmaj7
+    [55, 59, 62, 64], // G6
+  ],
+  pluckScale: [69, 72, 74, 76, 79, 81], // A minor pentatonic, octave up
+};
+const midiHz = n => 440 * Math.pow(2, (n - 69) / 12);
+
+function musicNote(freq, t, dur, type, vol, dest, soft, lpFreq) {
+  const ctx = sound.ctx;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  if (lpFreq) {
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = lpFreq;
+    osc.connect(f);
+    f.connect(g);
+  } else {
+    osc.connect(g);
+  }
+  g.connect(dest);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + (soft ? 0.28 : 0.012));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+
+function scheduleMusic() {
+  if (!sound.ctx || !music.playing) return;
+  const ctx = sound.ctx;
+  while (music.nextNoteTime < ctx.currentTime + 0.45) {
+    const stepInBar = music.step % 8;
+    const chord = music.chords[Math.floor(music.step / 8) % music.chords.length];
+    const t = music.nextNoteTime;
+    // Calm layer: warm chord pad once per bar + a sparse plucked melody
+    if (stepInBar === 0) {
+      for (const n of chord) musicNote(midiHz(n), t, 2.2, 'triangle', 0.05, music.calmGain, true);
+    }
+    if (stepInBar === 2 || stepInBar === 5) {
+      musicNote(midiHz(music.pluckScale[Math.floor(Math.random() * music.pluckScale.length)]), t, 0.5, 'sine', 0.055, music.calmGain);
+    }
+    // Intense layer: bass pulse + bright arp (only audible once faded in)
+    if (stepInBar % 2 === 0) {
+      musicNote(midiHz(chord[0] - 24), t, 0.22, 'sawtooth', 0.1, music.nightGain, false, 300);
+    }
+    musicNote(midiHz(chord[music.step % chord.length] + 12), t, 0.13, 'square', 0.03, music.nightGain, false, 1500);
+    music.step++;
+    music.nextNoteTime += music.stepDur;
+  }
+}
+
+function startMusic() {
+  if (!sound.ctx || music.playing || !music.enabled) return;
+  music.master = sound.ctx.createGain();
+  music.master.gain.value = 0.14;
+  music.master.connect(sound.ctx.destination);
+  music.calmGain = sound.ctx.createGain();
+  music.calmGain.gain.value = 1;
+  music.calmGain.connect(music.master);
+  music.nightGain = sound.ctx.createGain();
+  music.nightGain.gain.value = 0;
+  music.nightGain.connect(music.master);
+  music.playing = true;
+  music.nextNoteTime = sound.ctx.currentTime + 0.1;
+  music.step = 0;
+  music.timer = setInterval(scheduleMusic, 140);
+}
+
+function stopMusic() {
+  if (music.timer) clearInterval(music.timer);
+  music.timer = null;
+  if (music.master) {
+    try { music.master.disconnect(); } catch (e) { /* already gone */ }
+  }
+  music.playing = false;
+}
+
+function setMusicEnabled(on) {
+  music.enabled = on;
+  save.settings.music = on;
+  persist();
+  if (on) startMusic();
+  else stopMusic();
+}
+
+/* Crossfade the layers toward the current zone; called from update() */
+function musicZoneTick() {
+  if (!music.playing || !sound.ctx) return;
+  const { nightA, auroraA } = zoneMix();
+  const intensity = Math.max(nightA, auroraA);
+  const target = state.mode === 'paused' ? 0.25 : 1;
+  music.nightGain.gain.setTargetAtTime(0.85 * intensity * target, sound.ctx.currentTime, 0.9);
+  music.calmGain.gain.setTargetAtTime((1 - 0.45 * intensity) * target, sound.ctx.currentTime, 0.9);
+}
+
+/* ---------- Achievements ----------
+   Each: id, name, desc, icon, check(save, runStats) → bool
+   Achievements unlock once and stay unlocked. */
+const ACHIEVEMENTS = [
+  { id: 'firstJump',    name: 'First Steps',     desc: 'Complete your first run',           icon: '👣', check: (s, r) => true },
+  { id: 'reach500',     name: 'Climber',         desc: 'Reach 500m',                        icon: '⛰️', check: (s) => s.bestHeight >= 500 },
+  { id: 'reach1000',    name: 'Sky Walker',      desc: 'Reach 1000m',                       icon: '☁️', check: (s) => s.bestHeight >= 1000 },
+  { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: '🚀', check: (s) => s.bestHeight >= 3000 },
+  { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: '⭐', check: (s) => s.bestHeight >= 5000 },
+  { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🌌', check: (s) => s.bestHeight >= 8000 },
+  { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
+  { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
+  { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
+  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: '👨‍👩‍👧‍👦', check: (s) => s.unlockedChars.length >= 4 },
+  { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: '🌱', check: (s) => s.level >= 5 },
+  { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: '🌿', check: (s) => s.level >= 10 },
+  { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: '🌳', check: (s) => s.level >= 20 },
+  { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '🔥', check: (s) => s.bestStreak >= 3 },
+  { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '💪', check: (s) => s.bestStreak >= 7 },
+  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: '🎂', check: (s) => {
+    if (!s.firstPlayTs) return false;
+    const first = new Date(s.firstPlayTs), now = new Date();
+    return now.getFullYear() > first.getFullYear() && now.getMonth() === first.getMonth() && now.getDate() === first.getDate();
+  } },
+];
+
+function checkAchievements(runStats) {
+  const newly = [];
+  for (const a of ACHIEVEMENTS) {
+    if (save.achievements.includes(a.id)) continue;
+    if (a.check(save, runStats)) {
+      save.achievements.push(a.id);
+      newly.push(a);
+    }
+  }
+  return newly;
+}
+
+/* ---------- Daily missions ----------
+   Three per day, deterministic from the date. All are "in a single run"
+   goals, evaluated when a run ends. Completing one auto-banks the coin
+   reward — no claim button to forget. */
+const MISSIONS = [
+  { id: 'height',  icon: '⛰️', name: 'Sky Walker',   reward: 30, target: () => 300 + (daysSinceEpochLocal() % 3) * 300, value: r => r.heightM,        fmt: t => `Reach ${t}m in one run` },
+  { id: 'coins',   icon: '🪙', name: 'Coin Purse',   reward: 30, target: () => 20 + (daysSinceEpochLocal() % 3) * 10,   value: r => r.runCoins,       fmt: t => `Collect ${t} coins in one run` },
+  { id: 'near',    icon: '💨', name: 'Daredevil',    reward: 35, target: () => 3,  value: r => r.nearMisses,             fmt: () => 'Bank 3 near-misses in one run' },
+  { id: 'hits',    icon: '🛡️', name: 'Storm Rider',  reward: 35, target: () => 2,  value: r => r.hazardHits,             fmt: () => 'Survive 2 hazard hits in one run' },
+  { id: 'springs', icon: '🌀', name: 'Spring Loaded',reward: 25, target: () => 5,  value: r => r.springBounces,          fmt: () => 'Bounce on 5 springs in one run' },
+  { id: 'power',   icon: '🚀', name: 'Fully Loaded', reward: 30, target: () => 2,  value: r => r.powerupsGrabbed,        fmt: () => 'Grab 2 power-ups in one run' },
+];
+function todaysMissions() {
+  const rand = mulberry32(daysSinceEpochLocal() + 7);
+  const pool = MISSIONS.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, 3);
+}
+function ensureMissions() {
+  const today = todayStr();
+  if (!save.missions || save.missions.date !== today) {
+    save.missions = { date: today, best: {}, claimed: [] };
+  }
+}
+function evaluateMissions() {
+  ensureMissions();
+  missionToasts.length = 0;
+  const runStats = {
+    heightM: state.heightM,
+    runCoins: state.runCoins,
+    nearMisses: state.nearMisses,
+    hazardHits: state.hazardHits,
+    springBounces: state.springBounces,
+    powerupsGrabbed: state.powerupsGrabbed,
+  };
+  for (const m of todaysMissions()) {
+    const v = m.value(runStats) || 0;
+    save.missions.best[m.id] = Math.max(save.missions.best[m.id] || 0, v);
+    if (v >= m.target() && !save.missions.claimed.includes(m.id)) {
+      save.missions.claimed.push(m.id);
+      save.coins += m.reward;
+      missionToasts.push(`✅ ${m.name} +${m.reward}🪙`);
+      setTimeout(() => SFX.buy(), 1800);
+    }
+  }
+  return missionToasts;
+}
+const missionToasts = [];
+function openMissions() {
+  ensureMissions();
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('missions').classList.remove('hidden');
+  const list = document.getElementById('mission-list');
+  list.innerHTML = '';
+  for (const m of todaysMissions()) {
+    const best = Math.min(save.missions.best[m.id] || 0, m.target());
+    const target = m.target();
+    const done = save.missions.claimed.includes(m.id);
+    const div = document.createElement('div');
+    div.className = 'mission-row' + (done ? ' done' : '');
+    div.innerHTML = `
+      <div class="ach-icon">${m.icon}</div>
+      <div class="ach-info">
+        <div class="ach-name">${m.name} <span class="mission-reward">+${m.reward}🪙</span></div>
+        <div class="ach-desc">${m.fmt(target)}</div>
+        <div class="mission-bar"><div class="mission-fill" style="width:${Math.round((best / target) * 100)}%"></div></div>
+        <div class="ach-desc">${best} / ${target}</div>
+      </div>
+      <div class="ach-check">${done ? '✅' : '📋'}</div>`;
+    list.appendChild(div);
+  }
+}
+function closeMissions() {
+  document.getElementById('missions').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+
+/* ---------- XP & Levels ----------
+   Curve: level N requires N * 100 XP cumulative growth
+   (i.e. L1→2 = 100 xp, L2→3 = 200 xp, L3→4 = 300 xp...)
+   Total XP for level N = 100 * (N-1) * N / 2 */
+function xpForLevel(level) {
+  return 100 * (level - 1) * level / 2;
+}
+function levelFromXp(xp) {
+  let lvl = 1;
+  while (xpForLevel(lvl + 1) <= xp) lvl++;
+  return lvl;
+}
+function xpProgressInLevel(xp) {
+  const lvl = levelFromXp(xp);
+  const base = xpForLevel(lvl);
+  const next = xpForLevel(lvl + 1);
+  return { lvl, current: xp - base, needed: next - base, pct: (xp - base) / (next - base) };
+}
+
+function awardXp(amount) {
+  const oldLevel = save.level;
+  save.xp += amount;
+  const newLevel = levelFromXp(save.xp);
+  if (newLevel > oldLevel) {
+    save.level = newLevel;
+    return newLevel; // signal level-up
+  }
+  return null;
+}
+
+/* ---------- Streak ---------- */
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysBetween(a, b) {
+  // Both YYYY-MM-DD
+  const da = new Date(a + 'T00:00:00');
+  const db = new Date(b + 'T00:00:00');
+  return Math.round((db - da) / (1000 * 60 * 60 * 24));
+}
+function updateStreak() {
+  const today = todayStr();
+  if (save.lastPlayDate === today) return { newDay: false, bonus: 0 };
+  const diff = save.lastPlayDate ? daysBetween(save.lastPlayDate, today) : null;
+  let bonus = 0;
+  if (diff === 1) {
+    save.streak++;
+    bonus = 25 + save.streak * 5; // 30, 35, 40...
+  } else {
+    save.streak = 1;
+    bonus = 25;
+  }
+  if (save.streak > save.bestStreak) save.bestStreak = save.streak;
+  save.lastPlayDate = today;
+  save.coins += bonus;
+  persist();
+  return { newDay: true, bonus };
+}
+
+/* ---------- Ghost ----------
+   Record samples every GHOST_SAMPLE_INTERVAL frames during a run.
+   Stored as flat array of [t, x, y] triples to save space. */
+const GHOST_SAMPLE_INTERVAL = 4; // every 4 frames @ 60fps = 15 samples/sec
+let ghostRecording = []; // built up during current run
+let ghostFrame = 0;
+
+function recordGhostSample() {
+  if (ghostFrame % GHOST_SAMPLE_INTERVAL === 0) {
+    const p = state.player;
+    ghostRecording.push(ghostFrame, Math.round(p.x), Math.round(p.y));
+  }
+  ghostFrame++;
+}
+
+function getGhostPosAtFrame(f) {
+  if (!save.ghostRun || save.ghostRun.length < 6) return null;
+  // ghostRun is flat: [f0,x0,y0, f1,x1,y1, ...]
+  // Replay frames advance monotonically, so keep a cursor and slide it
+  // forward instead of rescanning the array every frame.
+  const arr = save.ghostRun;
+  while (state.ghostCursor + 3 < arr.length && arr[state.ghostCursor + 3] <= f) {
+    state.ghostCursor += 3;
+  }
+  const i = state.ghostCursor;
+  if (i + 3 >= arr.length) return null; // ghost run is over
+  const f0 = arr[i],   x0 = arr[i+1], y0 = arr[i+2];
+  const f1 = arr[i+3], x1 = arr[i+4], y1 = arr[i+5];
+  const t = (f - f0) / (f1 - f0);
+  return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t };
+}
+
+const state = {
+  mode: 'menu',
+  character: 'turtle',
+  player: null,
+  platforms: [],
+  coins: [],
+  hazards: [],
+  powerups: [],
+  jetpackFrames: 0,
+  shieldActive: false,
+  invulnFrames: 0,
+  cameraY: 0,
+  highestY: 0,
+  runCoins: 0,
+  heightM: 0,
+  zone: 0,
+  particles: [],
+  trailTimer: 0,
+  /* ── v0.3 additions ── */
+  gameTime: 0,          // frames since run start (drives vanishing platforms, pause-safe)
+  shakeMag: 0,          // screen shake intensity, decays per step
+  shakeX: 0, shakeY: 0, // computed once per step so paused screens don't jitter
+  flashColor: null,     // full-screen feedback flash
+  flashAlpha: 0,
+  texts: [],            // floating world-space text popups
+  coinStreak: 0,        // consecutive quick pickups → rising coin pitch
+  coinStreakTimer: 0,
+  nextMilestone: MILESTONE_STEP,
+  bestBeaten: false,    // one-time NEW BEST fanfare per run
+  magnetFrames: 0,
+  lastZone: -1,
+  ghostCursor: 0,       // monotonic replay index for the ghost
+  lastHudH: -1, lastHudC: -1, // last values pushed to the HUD DOM
+  /* ── v1.1 additions ── */
+  modifier: null,       // run modifier picked in the pre-run chooser
+  weekly: false,        // weekly challenge mode
+  tower: null,          // prebuilt deterministic platform stack (weekly)
+  towerIdx: 0,
+  towerSeed: 0,
+  nearMisses: 0,        // close calls this run → bonus XP at death
+  /* ── v1.2 additions ── */
+  continueUsed: false,  // Second Chance consumed this run?
+  recordedRun: false,   // gameSystem.recordGamePlay guard for continued runs
+  bank: null,           // snapshot of what a death banked (rolled back on continue)
+  hazardHits: 0,
+  springBounces: 0,
+  powerupsGrabbed: 0,
+};
+
+/* HUD elements cached once — update() used to re-query the DOM every frame */
+const hudHeightEl = document.getElementById('hud-height');
+const hudCoinsEl = document.getElementById('hud-coins');
+
+/* ---------- Hazards & power-ups ----------
+   Hazards (gust puffs) start appearing once the climb has some height behind
+   it, drift left/right in open air (not on a landable platform), and on
+   contact knock the player downward instead of ending the run outright, a
+   real cost to dodge around without being an instant fail state.
+   Power-ups: jetpack (brief flight, ignores platforms) and shield (absorbs
+   one hazard hit). Both spawn like coins, off the platform's surface. */
+const HAZARD_START_M = 400;
+const POWERUP_START_M = 200;
+
+const ZONES = [
+  { name: 'Meadow',    minM: 0,    sky: ['#87ceeb', '#b3e5fc'], plat: '#66bb6a', platEdge: '#2e7d32' },
+  { name: 'Dusk',      minM: 1000, sky: ['#5d3a82', '#ff7043'], plat: '#8d6e63', platEdge: '#3e2723' },
+  { name: 'Night Sky', minM: 5000, sky: ['#0d0633', '#1a0a4a'], plat: '#7e57c2', platEdge: '#311b92' },
+  { name: 'Aurora',    minM: 8000, sky: ['#02131f', '#0b3d3b'], plat: '#26a69a', platEdge: '#004d40' },
+];
+
+function getZone(m) {
+  for (let i = ZONES.length - 1; i >= 0; i--) if (m >= ZONES[i].minM) return i;
+  return 0;
+}
+
+function makePlayer() {
+  // 38px: a touch bigger than the original 34 so the character reads strongly
+  // on fullscreen phones (pickup radii below were widened to match).
+  return { x: W / 2, y: H - 120, vx: 0, vy: 0, w: 38, h: 38, squish: 0, facing: 1 };
+}
+
+/* ---------- Platforms ----------
+   Types:
+     'static', normal green platform
+     'spring', trampoline, ~2.4x bounce
+     'moving', slides left/right
+     'breakable', one bounce, then it falls away
+     'cloud', soft, fades after a brief stand-time
+     'vanishing', phases in/out on a timer (only solid when visible)
+   Rarity scales with height. */
+/* ---------- Deterministic RNG (weekly challenge) ----------
+   mulberry32: tiny, fast, good enough for layout seeds. The weekly tower is
+   built once per run from the ISO-week seed so every player worldwide gets
+   the exact same platforms, coins, hazards and power-ups. */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function isoWeek(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+function weeklySeed() {
+  const d = new Date();
+  return d.getFullYear() * 100 + isoWeek(d);
+}
+
+/* Vertical gap between platforms. Grows gently with altitude so deep runs
+   demand more precise steering — but stays well under the ~207px max jump
+   height even at 3600m+. Shared by initial seeding and in-run generation so
+   the curve is continuous. */
+function gapFor(h, rand) {
+  rand = rand || Math.random;
+  return 58 + rand() * (36 + Math.min(30, h / 120));
+}
+
+function makePlatform(y, rand, heightMOvr) {
+  rand = rand || Math.random;
+  const w = 70;
+  const x = rand() * (W - w);
+  const r = rand();
+  const heightM = heightMOvr !== undefined ? heightMOvr : (state.heightM || 0);
+
+  // Probability bands, these are cumulative thresholds
+  const springChance    = 0.08 + Math.min(0.04, heightM / 25000);
+  const movingChance    = heightM > 500  ? Math.min(0.15, (heightM - 500)  / 7000) : 0;
+  const breakableChance = heightM > 300  ? Math.min(0.12, (heightM - 300)  / 6000) : 0;
+  const cloudChance     = heightM > 1500 ? Math.min(0.10, (heightM - 1500) / 6000) : 0;
+  const vanishingChance = heightM > 3000 ? Math.min(0.10, (heightM - 3000) / 8000) : 0;
+
+  let acc = 0;
+  let type = 'static';
+  if      (r < (acc += springChance))    type = 'spring';
+  else if (r < (acc += movingChance))    type = 'moving';
+  else if (r < (acc += breakableChance)) type = 'breakable';
+  else if (r < (acc += cloudChance))     type = 'cloud';
+  else if (r < (acc += vanishingChance)) type = 'vanishing';
+
+  return {
+    x, y, w, h: 14,
+    type,
+    bounced: false,
+    broken: false,             // breakable: true after one bounce → falls away
+    fallVy: 0,                 // breakable falling speed
+    cloudLife: 1,              // cloud: 1.0 → 0 fade over time after standing
+    cloudTouched: false,       // cloud: starts fading once stood on
+    phase: rand() * Math.PI * 2, // vanishing: timing offset
+    vx: type === 'moving'
+      ? (rand() < 0.5 ? -1 : 1) * (1 + rand() * 1.2) * (1 + Math.min(0.6, heightM / 8000))
+      : 0,
+  };
+}
+
+/* Vanishing platforms are only solid when their phase is in the "visible" half
+   of the cycle. Period: ~2 seconds. Uses run gameTime (frames @ 60fps), NOT
+   the wall clock, so pausing freezes them in place instead of letting them
+   phase under the player's feet. */function vanishingVisible(plat) {
+  const t = (state.gameTime / 60) + plat.phase;
+  return Math.sin(t * Math.PI) > 0;  // half on, half off
+}
+
+function vanishingAlpha(plat) {
+  const t = (state.gameTime / 60) + plat.phase;
+  // Smooth fade rather than hard pop
+  return Math.max(0.1, (Math.sin(t * Math.PI) + 1) / 2);
+}
+
+function seedPlatforms(rand) {
+  rand = rand || Math.random;
+  state.platforms.length = 0;
+  // Full-width grassy ground: the ground strip sprite spans the whole screen,
+  // so collision must too (a narrow ground platform would let players fall
+  // through visible grass at the very start of a run).
+  state.platforms.push({ x: 0, y: H - 60, w: W, h: 14, type: 'static', bounced: false, vx: 0, ground: true });
+  let y = H - 140;
+  let count = 0;
+  while (y > -200) {
+    let plat;
+    if (state.weekly && state.tower) {
+      // Weekly: the whole start of the run comes from the seeded tower
+      plat = state.tower[state.towerIdx++];
+      if (!plat) break;
+      y = plat.y;
+      state.platforms.push(plat);
+      materializeSpawns(plat);
+      count++;
+      continue;
+    }
+    if (count < 4) {
+      // First few platforms guaranteed static so the player can find their feet
+      const w = 70;
+      plat = { x: rand() * (W - w), y, w, h: 14, type: 'static', bounced: false, vx: 0 };
+      y -= gapFor(0, rand);
+    } else {
+      plat = makePlatform(y, rand);
+      attachSpawns(plat, state.heightM || 0, rand);
+      materializeSpawns(plat);
+      y -= gapFor(state.heightM || 0, rand);
+    }
+    state.platforms.push(plat);
+    count++;
+  }
+}
+
+/* ---------- Spawn pipeline ----------
+   Randomness is attached to a platform as data (attachSpawns), then turned
+   into live entities when the platform enters the world (materializeSpawns).
+   The split is what makes the weekly tower possible: a tower built with a
+   seeded RNG carries the same spawn data for every player. */
+function attachSpawns(plat, h, rand) {
+  rand = rand || Math.random;
+  const cx = plat.x + plat.w / 2;
+  if (rand() < 0.35 * modMult('coinMult')) {
+    const n = 3 + Math.floor(rand() * 3);
+    plat.coinRow = [];
+    for (let i = 0; i < n; i++) plat.coinRow.push({ ox: (i - (n - 1) / 2) * 16, oy: -28 });
+  }
+  if (h >= HAZARD_START_M) {
+    const chance = Math.min(0.3, ((h - HAZARD_START_M) / 9000) * modMult('hazardMult'));
+    if (rand() < chance) {
+      plat.hazardSpec = {
+        ox: 20 + rand() * (W - 40) - cx,
+        oy: -90 - rand() * 40,
+        vx: (rand() < 0.5 ? -1 : 1) * (0.8 + rand() * 0.9),
+      };
+    }
+  }
+  if (h >= POWERUP_START_M) {
+    const chance = Math.min(0.4, 0.07 * modMult('powerupMult') * upgradeMult('luck', 0.04));
+    if (rand() < chance) {
+      const roll = rand();
+      const type = roll < 0.35 ? 'jetpack' : roll < 0.7 ? 'shield' : 'magnet';
+      plat.powerupSpec = { ox: 0, oy: -30, type };
+    }
+  }
+}
+function materializeSpawns(plat) {
+  const cx = plat.x + plat.w / 2;
+  if (plat.coinRow) {
+    for (const c of plat.coinRow) {
+      state.coins.push({ x: cx + c.ox, y: plat.y + c.oy, r: 7, collected: false, bob: Math.random() * Math.PI * 2 });
+    }
+  }
+  if (plat.hazardSpec) {
+    state.hazards.push({
+      x: cx + plat.hazardSpec.ox,
+      y: plat.y + plat.hazardSpec.oy,
+      r: 16,
+      vx: plat.hazardSpec.vx,
+      bob: Math.random() * Math.PI * 2,
+      nearMissed: false,
+    });
+  }
+  if (plat.powerupSpec) {
+    state.powerups.push({
+      x: cx + plat.powerupSpec.ox,
+      y: plat.y + plat.powerupSpec.oy,
+      r: 12,
+      type: plat.powerupSpec.type,
+      collected: false,
+      bob: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function buildWeeklyTower(count) {
+  const rand = mulberry32(weeklySeed());
+  const tower = [];
+  let y = H - 140;
+  for (let i = 0; i < count; i++) {
+    if (i < 4) {
+      // Same "find your feet" statics as a normal run, but seeded
+      const w = 70;
+      const plat = { x: rand() * (W - w), y, w, h: 14, type: 'static', bounced: false, vx: 0 };
+      tower.push(plat);
+      y -= gapFor(0, rand);
+    } else {
+      const h = Math.max(0, Math.round((H - 120 - y) * PHYS.scoreScale));
+      const plat = makePlatform(y, rand, h);
+      attachSpawns(plat, h, rand);
+      tower.push(plat);
+      y -= gapFor(h, rand);
+    }
+  }
+  return tower;
+}
+
+const keys = { left: false, right: false };
+window.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+    if (state.mode === 'playing') pauseGame();
+    else if (state.mode === 'paused') resumeGame();
+  }
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+});
+
+/* ---------- Drag-anywhere steering ----------
+   A third control option alongside buttons and tilt: drag horizontally on
+   the canvas and the player follows your thumb. Relative deltas (not
+   absolute position) so the character never teleports under the finger.
+   Touches on the arrow buttons never reach the canvas (separate elements),
+   so both input styles can coexist. */
+let dragId = null, dragLastX = 0;
+canvas.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  dragId = t.identifier;
+  dragLastX = t.clientX;
+}, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  for (const t of e.changedTouches) {
+    if (t.identifier !== dragId) continue;
+    const dx = t.clientX - dragLastX;
+    dragLastX = t.clientX;
+    // Tilt owns the steering when it's active; drag is the fallback
+    if (!tilt.enabled && state.mode === 'playing' && state.player && Math.abs(dx) > 0.3) {
+      const p = state.player;
+      p.vx = Math.max(-PHYS.moveMax * 1.15, Math.min(PHYS.moveMax * 1.15, p.vx + dx * 0.24));
+      if (dx > 0) p.facing = 1; else p.facing = -1;
+    }
+  }
+  e.preventDefault(); // no scroll/refresh gestures mid-run
+}, { passive: false });
+['touchend', 'touchcancel'].forEach(ev =>
+  canvas.addEventListener(ev, () => { dragId = null; }, { passive: true }));
+// Long-press on the canvas used to open the Android text-selection menu mid-run
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---------- Controls ----------
+   Mobile is tilt-first (Doodle Jump style). No on-screen buttons: tilt is
+   requested automatically the first time Play is tapped (inside that user
+   gesture, which is what iOS's permission prompt requires). Drag-anywhere
+   remains as a silent fallback when tilt is unavailable or denied, and the
+   keyboard still works on desktop. */
+
+/* ---------- Tilt controls ----------
+   Uses DeviceOrientationEvent.gamma (left/right tilt in degrees).
+   iOS 13+ requires permission via user gesture.
+   Falls back gracefully, keyboard always works. */
+const tilt = {
+  enabled: false,
+  permissionNeeded: false,
+  value: 0,        // -1 (full left) to 1 (full right)
+  calibration: 0,  // gamma offset captured when enabled
+};
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function tiltSupported() {
+  return typeof DeviceOrientationEvent !== 'undefined';
+}
+
+function handleOrientation(e) {
+  if (e.gamma == null) return;
+  // gamma: -90 (left) to 90 (right). Most natural play in landscape-ish portrait
+  // is around ±25°. Subtract calibration so "neutral" = however you were holding it.
+  const raw = e.gamma - tilt.calibration;
+  const max = 25;
+  tilt.value = Math.max(-1, Math.min(1, raw / max));
+}
+
+async function enableTilt() {
+  if (!tiltSupported()) {
+    showToast('Tilt not supported on this device');
+    return false;
+  }
+  // iOS permission flow
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res !== 'granted') {
+        showToast('Tilt permission denied');
+        return false;
+      }
+    } catch (err) {
+      showToast('Could not enable tilt');
+      return false;
+    }
+  }
+  window.addEventListener('deviceorientation', handleOrientation);
+  tilt.enabled = true;
+  // Calibrate to current hold angle on first event
+  const calibrate = e => {
+    if (e.gamma != null) {
+      tilt.calibration = e.gamma;
+      window.removeEventListener('deviceorientation', calibrate);
+    }
+  };
+  window.addEventListener('deviceorientation', calibrate);
+  showToast('Tilt to steer — recalibrate anytime in Settings');
+  return true;
+}
+
+// Detect a touch-capable device (phones/tablets) — desktop never auto-tilts
+function isTouchDevice() {
+  return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+}
+
+// Hold the phone however is comfortable, then tilt left/right to steer
+function recalibrateTilt() {
+  tilt.calibration = 0;
+  const recal = e => {
+    if (e.gamma != null) {
+      tilt.calibration = e.gamma;
+      window.removeEventListener('deviceorientation', recal);
+    }
+  };
+  window.addEventListener('deviceorientation', recal);
+  showToast('Tilt recalibrated — hold your phone comfortably');
+}
+
+// Called from the Play/Retry tap so iOS's permission prompt opens inside
+// the user gesture. Desktop browsers are skipped (no tilt hardware).
+async function enableTiltForMobile() {
+  if (!isTouchDevice() || tilt.enabled) return;
+  const ok = await enableTilt();
+  if (ok) {
+    document.getElementById('tilt-row').classList.remove('hidden');
+  } else {
+    showToast('Tilt unavailable — drag the screen to steer');
+  }
+}
+document.getElementById('tilt-recal-btn').addEventListener('click', recalibrateTilt);
+
+function spawnParticles(x, y, color, n = 6) {
+  // Hard cap: jetpack + aura + bursts can otherwise stack into the hundreds
+  // on long runs, which shows up as frame drops on low-end phones.
+  if (state.particles.length > MAX_PARTICLES) {
+    state.particles.splice(0, state.particles.length - MAX_PARTICLES);
+  }
+  for (let i = 0; i < n; i++) {
+    state.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4 - 1,
+      life: 1,
+      color,
+    });
+  }
+}
+
+/* ── Game-feel helpers ──
+   Shake/flash values are computed once per physics step so a paused or
+   backgrounded frame can't leave the screen jittering behind an overlay. */
+function addShake(mag) {
+  state.shakeMag = Math.min(14, Math.max(state.shakeMag, mag));
+}
+function addFlash(color, alpha) {
+  state.flashColor = color;
+  state.flashAlpha = Math.min(0.5, Math.max(state.flashAlpha, alpha));
+}
+function addText(x, y, str, opts = {}) {
+  state.texts.push({
+    x, y, str,
+    color: opts.color || '#fff',
+    size: opts.size || 14,
+    life: 1,
+    decay: opts.decay || 0.02,
+    vy: opts.vy !== undefined ? opts.vy : -0.7,
+  });
+}
+function vib(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
+}
+
+function spawnTrailParticle() {
+  const p = state.player;
+  const eq = save.equipped[state.character];
+  const aura = COSMETICS.aura.find(a => a.id === eq.aura);
+  if (!aura || !aura.color) return;
+  let color = aura.color;
+  if (color === 'rainbow') {
+    const hues = ['#ff0066','#ff9900','#ffd23f','#66dd44','#5cdbff','#9966ff'];
+    color = hues[Math.floor(Math.random() * hues.length)];
+  }
+  state.particles.push({
+    x: p.x + p.w/2 + (Math.random() - 0.5) * 10,
+    y: p.y + p.h/2 + (Math.random() - 0.5) * 6,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: 1 + Math.random() * 1,
+    life: 1,
+    color,
+  });
+}
+
+function update() {
+  if (state.mode !== 'playing') return;
+  const p = state.player;
+  state.gameTime++;
+
+  // Screen shake decays here (not in render) so a paused frame never jitters.
+  if (state.shakeMag > 0.2) {
+    state.shakeX = (Math.random() * 2 - 1) * state.shakeMag;
+    state.shakeY = (Math.random() * 2 - 1) * state.shakeMag * 0.7;
+    state.shakeMag *= 0.85;
+  } else {
+    state.shakeX = 0; state.shakeY = 0;
+  }
+  if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - 0.045);
+  if (state.coinStreakTimer > 0) state.coinStreakTimer--; else state.coinStreak = 0;
+  if (state.gameTime % 30 === 0) musicZoneTick();
+
+  // Movement: tilt takes priority on mobile, keys otherwise
+  const maxV = PHYS.moveMax * (perkActive('speed') ? 1.12 : 1);
+  if (tilt.enabled) {
+    // Direct velocity from tilt, feels much more responsive than acceleration
+    p.vx = tilt.value * maxV;
+    if (tilt.value < -0.05) p.facing = -1;
+    else if (tilt.value > 0.05) p.facing = 1;
+  } else {
+    if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
+    if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
+    if (!keys.left && !keys.right) p.vx *= PHYS.friction * modMult('frictionMult');
+    p.vx = Math.max(-maxV, Math.min(maxV, p.vx));
+  }
+
+  if (state.jetpackFrames > 0) {
+    state.jetpackFrames--;
+    p.vy = PHYS.jumpVel * 1.2;
+    if (state.jetpackFrames % 2 === 0) spawnParticles(p.x + p.w/2, p.y + p.h, '#ff7043', 3);
+  } else {
+    p.vy += PHYS.gravity * modMult('gravityMult');
+  }
+  p.x += p.vx;
+  p.y += p.vy;
+
+  if (p.x < -p.w) p.x = W;
+  if (p.x > W) p.x = -p.w;
+
+  if (state.invulnFrames > 0) state.invulnFrames--;
+
+  // Move/update all platforms each frame
+  for (const plat of state.platforms) {
+    if (plat.type === 'moving') {
+      plat.x += plat.vx;
+      if (plat.x < 0) { plat.x = 0; plat.vx = Math.abs(plat.vx); }
+      if (plat.x + plat.w > W) { plat.x = W - plat.w; plat.vx = -Math.abs(plat.vx); }
+    }
+    if (plat.type === 'breakable' && plat.broken) {
+      // Falls away after being bounced once
+      plat.fallVy += 0.5;
+      plat.y += plat.fallVy;
+    }
+    if (plat.type === 'cloud' && plat.cloudTouched) {
+      plat.cloudLife -= 0.018;
+    }
+  }
+
+  if (p.vy > 0 && state.jetpackFrames <= 0) {
+    for (const plat of state.platforms) {
+      // Skip non-solid platforms
+      if (plat.type === 'breakable' && plat.broken) continue;
+      if (plat.type === 'cloud' && plat.cloudLife <= 0) continue;
+      if (plat.type === 'vanishing' && !vanishingVisible(plat)) continue;
+
+      const hit = p.x + p.w > plat.x && p.x < plat.x + plat.w && p.y + p.h > plat.y && p.y + p.h < plat.y + plat.h + 10;
+      if (hit) {
+        p.y = plat.y - p.h;
+        const jumpPow = upgradeMult('springBoost', 0.03); // permanent Springy Soles
+        if (plat.type === 'spring') {
+          // Tiger's Big Bounce perk stacks with the upgrade
+          p.vy = PHYS.jumpVel * 2.4 * jumpPow * (perkActive('spring') ? 1.15 : 1);
+          p.squish = 1.4;
+          state.springBounces++;
+          addShake(2);
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#5cdbff', 12);
+          SFX.spring();
+        } else if (plat.type === 'breakable') {
+          p.vy = PHYS.jumpVel * jumpPow;
+          p.squish = 1;
+          plat.broken = true;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#d4a574', 8);
+          SFX.break();
+        } else if (plat.type === 'cloud') {
+          p.vy = PHYS.jumpVel * 0.85 * jumpPow; // Slightly weaker bounce, clouds are soft
+          p.squish = 1;
+          plat.cloudTouched = true;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#ffffff', 6);
+          SFX.cloud();
+        } else if (plat.type === 'vanishing') {
+          p.vy = PHYS.jumpVel * jumpPow;
+          p.squish = 1;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#e1bee7', 8);
+          SFX.vanishing();
+        } else {
+          p.vy = PHYS.jumpVel * jumpPow;
+          p.squish = 1;
+          spawnParticles(p.x + p.w/2, p.y + p.h, '#e7dcc8', 5); // little dust puff
+          SFX.bounce();
+        }
+        break;
+      }
+    }
+  }
+
+  p.squish *= 0.82;
+
+  state.trailTimer++;
+  if (state.trailTimer % 3 === 0) spawnTrailParticle();
+
+  // Ghost recording
+  recordGhostSample();
+
+  // Coin magnet: pull nearby coins toward the player before collision checks
+  if (state.magnetFrames > 0) {
+    state.magnetFrames--;
+    for (const c of state.coins) {
+      if (c.collected) continue;
+      const dx = (p.x + p.w/2) - c.x;
+      const dy = (p.y + p.h/2) - c.y;
+      const d2 = dx*dx + dy*dy;
+      if (d2 < MAGNET_RADIUS * MAGNET_RADIUS && d2 > 1) {
+        const d = Math.sqrt(d2);
+        c.x += (dx / d) * 4.5;
+        c.y += (dy / d) * 4.5;
+      }
+    }
+  }
+
+  // Bubble's Magnetic perk: coins reach for the character, not the hitbox
+  const coinReach = 18 + (perkActive('magnet') ? 10 : 0);
+
+  for (const c of state.coins) {
+    if (c.collected) continue;
+    const dx = (p.x + p.w/2) - c.x;
+    const dy = (p.y + p.h/2) - c.y;
+    if (dx*dx + dy*dy < (c.r + coinReach) * (c.r + coinReach)) {
+      c.collected = true;
+      state.runCoins++;
+      save.lifetimeCoins++;
+      // Combo: quick consecutive pickups pitch the coin sound upward
+      state.coinStreak = state.coinStreakTimer > 0 ? state.coinStreak + 1 : 0;
+      state.coinStreakTimer = COIN_COMBO_WINDOW;
+      spawnParticles(c.x, c.y, '#ffd23f', 8);
+      addText(c.x, c.y - 12, '+1', { color: '#ffd23f', size: 13 });
+      SFX.coin(state.coinStreak);
+      pulseEl(hudCoinsEl.parentElement);
+    }
+    c.bob += 0.08;
+  }
+
+  for (const hz of state.hazards) {
+    hz.x += hz.vx;
+    if (hz.x < hz.r) { hz.x = hz.r; hz.vx = Math.abs(hz.vx); }
+    if (hz.x > W - hz.r) { hz.x = W - hz.r; hz.vx = -Math.abs(hz.vx); }
+    hz.bob += 0.06;
+    if (state.invulnFrames <= 0) {
+      const dx = (p.x + p.w/2) - hz.x;
+      const dy = (p.y + p.h/2) - hz.y;
+      const hitR = hz.r + 18;
+      const d2 = dx*dx + dy*dy;
+      if (d2 < hitR * hitR) {
+        if (state.shieldActive) {
+          state.shieldActive = false;
+          state.invulnFrames = 40;
+          state.hazardHits++;
+          spawnParticles(hz.x, hz.y, '#5cdbff', 10);
+          addShake(3);
+          addFlash('#5cdbff', 0.18);
+          vib(25);
+          SFX.shieldHit();
+          addText(p.x + p.w/2, p.y - 14, '🛡️ Absorbed!', { color: '#5cdbff', size: 15 });
+        } else {
+          // Pip's Sturdy Shell perk: hazards shove you down half as hard
+          const soft = perkActive('sturdy') ? 0.5 : 1;
+          p.vy = 6 * soft;
+          p.vx += (dx > 0 ? -3 : 3) * soft;
+          state.invulnFrames = 45;
+          state.hazardHits++;
+          spawnParticles(hz.x, hz.y, '#ff6659', 10);
+          addShake(6 * soft + 2);
+          addFlash('#ff5252', 0.28);
+          vib(45);
+          SFX.gust();
+        }
+      } else if (!hz.nearMissed && d2 < (hitR + 24) * (hitR + 24)) {
+        // Near miss: skimming a gust without touching it pays out at death
+        hz.nearMissed = true;
+        state.nearMisses++;
+        addText(hz.x, hz.y - hz.r - 8, 'Close!', { color: '#ffd23f', size: 13 });
+        SFX.near();
+      }
+    }
+  }
+
+  for (const pu of state.powerups) {
+    if (pu.collected) continue;
+    pu.bob += 0.07;
+    const dx = (p.x + p.w/2) - pu.x;
+    const dy = (p.y + p.h/2) - pu.y;
+    if (dx*dx + dy*dy < (pu.r + 18) * (pu.r + 18)) {
+      pu.collected = true;
+      state.powerupsGrabbed++;
+      SFX.powerup();
+      vib(20);
+      addShake(2);
+      if (pu.type === 'jetpack') {
+        state.jetpackFrames = 150;
+        spawnParticles(pu.x, pu.y, '#ff7043', 10);
+        addText(pu.x, pu.y - 18, '🚀 Jetpack!', { color: '#ff7043', size: 17 });
+      } else if (pu.type === 'magnet') {
+        // Bubble's perk + Magnet Master upgrade both extend the duration
+        state.magnetFrames = MAGNET_FRAMES * (perkActive('magnet') ? 1.5 : 1)
+          + Math.round(36 * upgradeLevel('magnetTime'));
+        spawnParticles(pu.x, pu.y, '#ff7eb9', 10);
+        addText(pu.x, pu.y - 18, '🧲 Coin Magnet!', { color: '#ff7eb9', size: 17 });
+      } else {
+        state.shieldActive = true;
+        spawnParticles(pu.x, pu.y, '#5cdbff', 10);
+        addText(pu.x, pu.y - 18, '🛡️ Shield up!', { color: '#5cdbff', size: 17 });
+      }
+    }
+  }
+
+  const targetCam = p.y - H * 0.45;
+  if (targetCam < state.cameraY) state.cameraY += (targetCam - state.cameraY) * PHYS.cameraLerp;
+
+  if (p.y < state.highestY) state.highestY = p.y;
+  state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
+  state.zone = getZone(state.heightM);
+
+  // ── In-run goal feedback ──
+  // Altitude milestones every MILESTONE_STEP metres (lower on screen than the
+  // zone banner so the two never overlap when they land together)
+  if (state.heightM >= state.nextMilestone) {
+    const m = state.nextMilestone;
+    state.nextMilestone += MILESTONE_STEP;
+    addText(W / 2, state.cameraY + H * 0.42, m + 'm!', { color: '#5cdbff', size: 26, decay: 0.012 });
+    SFX.milestone();
+    pulseEl(hudHeightEl.parentElement);
+  }
+  // Zone entrances get a big announcement the first time you climb into one
+  if (state.zone !== state.lastZone) {
+    state.lastZone = state.zone;
+    if (state.zone > 0) {
+      addText(W / 2, state.cameraY + H * 0.3, ZONES[state.zone].name.toUpperCase(), { color: '#ffd23f', size: 30, decay: 0.009 });
+      addFlash('#ffffff', 0.12);
+      SFX.unlock();
+    }
+  }
+  // Crossing your own best height mid-run: celebrate it loudly, once per run
+  if (!state.bestBeaten && save.bestHeight >= 50 && state.heightM > save.bestHeight) {
+    state.bestBeaten = true;
+    addText(W / 2, p.y - 60, '⭐ NEW BEST! ⭐', { color: '#ffd23f', size: 24, decay: 0.010 });
+    addFlash('#ffd23f', 0.22);
+    addShake(4);
+    SFX.unlock();
+    vib([20, 30, 40]);
+  }
+  // Steering tutorial retires itself once it's obvious the player has got it
+  if (!save.tutorialDone && state.heightM > 40) {
+    save.tutorialDone = true;
+  }
+
+  const topMost = state.platforms.reduce((m, pl) => pl.y < m ? pl.y : m, Infinity);
+  if (topMost > state.cameraY - 200) {
+    let y = topMost - gapFor(state.heightM);
+    while (y > state.cameraY - 400) {
+      let newP;
+      if (state.weekly && state.tower && state.towerIdx < state.tower.length) {
+        newP = state.tower[state.towerIdx++];
+        y = newP.y;
+      } else {
+        newP = makePlatform(y, Math.random, state.heightM);
+        attachSpawns(newP, state.heightM, Math.random);
+      }
+      state.platforms.push(newP);
+      materializeSpawns(newP);
+      y = newP.y - gapFor(state.heightM);
+    }
+  }
+  state.platforms = state.platforms.filter(pl => {
+    if (pl.y > state.cameraY + H + 200) return false;
+    if (pl.type === 'cloud' && pl.cloudLife <= 0) return false;
+    if (pl.type === 'breakable' && pl.broken && pl.fallVy > 30) return false;
+    return true;
+  });
+  state.coins = state.coins.filter(c => !c.collected && c.y < state.cameraY + H + 100);
+  state.hazards = state.hazards.filter(hz => hz.y < state.cameraY + H + 100 && hz.y > state.cameraY - 400);
+  state.powerups = state.powerups.filter(pu => !pu.collected && pu.y < state.cameraY + H + 100);
+
+  if (p.y > state.cameraY + H) die();
+
+  for (const pt of state.particles) {
+    pt.x += pt.vx;
+    pt.y += pt.vy;
+    pt.vy += 0.15;
+    pt.life -= 0.04;
+  }
+  state.particles = state.particles.filter(pt => pt.life > 0);
+
+  for (const tx of state.texts) {
+    tx.y += tx.vy;
+    tx.life -= tx.decay;
+  }
+  state.texts = state.texts.filter(tx => tx.life > 0);
+
+  // HUD: write to the DOM only when a value actually changed
+  if (state.heightM !== state.lastHudH) {
+    state.lastHudH = state.heightM;
+    hudHeightEl.textContent = state.heightM + 'm';
+  }
+  if (state.runCoins !== state.lastHudC) {
+    state.lastHudC = state.runCoins;
+    hudCoinsEl.textContent = state.runCoins;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VISUAL SPRITES — everything static is pre-rendered to small
+   offscreen canvases once, then blitted with drawImage each
+   frame. Cheaper than the multi-shape draws it replaces and
+   lets the art go much richer (rounded corners, grass, grain,
+   glows) for free.
+   ═══════════════════════════════════════════════════════════ */
+const SPR_SCALE = Math.min(window.devicePixelRatio || 1, 2);
+function makeSprite(w, h, drawFn) {
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(w * SPR_SCALE);
+  c.height = Math.ceil(h * SPR_SCALE);
+  const g = c.getContext('2d');
+  g.scale(SPR_SCALE, SPR_SCALE);
+  drawFn(g, w, h);
+  return { c, w, h };
+}
+
+/* ── Clouds (3 shapes × 3 zone tints) ── */
+function paintCloud(g, w, h, tint) {
+  g.fillStyle = tint;
+  g.beginPath();
+  g.arc(w * 0.20, h * 0.62, h * 0.30, 0, Math.PI * 2);
+  g.arc(w * 0.42, h * 0.44, h * 0.40, 0, Math.PI * 2);
+  g.arc(w * 0.66, h * 0.52, h * 0.34, 0, Math.PI * 2);
+  g.arc(w * 0.86, h * 0.66, h * 0.24, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = 'rgba(15,15,35,0.10)';
+  g.beginPath();
+  g.ellipse(w * 0.5, h * 0.9, w * 0.4, h * 0.12, 0, 0, Math.PI * 2);
+  g.fill();
+}
+const CLOUD_SHAPES = [[120, 50], [86, 38], [148, 62]];
+const cloudSprites = {
+  day:   CLOUD_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintCloud(g, w, h, '#ffffff'))),
+  dusk:  CLOUD_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintCloud(g, w, h, '#ffd9c2'))),
+  night: CLOUD_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintCloud(g, w, h, '#3a3660'))),
+};
+
+/* ── Celestial bodies ── */
+const sunSprite = makeSprite(130, 130, (g, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const rg = g.createRadialGradient(cx, cy, 4, cx, cy, 65);
+  rg.addColorStop(0, 'rgba(255,246,205,0.95)');
+  rg.addColorStop(0.3, 'rgba(255,224,140,0.5)');
+  rg.addColorStop(1, 'rgba(255,224,140,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = '#fff6cf';
+  g.beginPath(); g.arc(cx, cy, 15, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.8)';
+  g.beginPath(); g.arc(cx - 4, cy - 5, 5, 0, Math.PI * 2); g.fill();
+});
+const duskGlowSprite = makeSprite(260, 150, (g, w, h) => {
+  const rg = g.createRadialGradient(w / 2, h, 10, w / 2, h, 140);
+  rg.addColorStop(0, 'rgba(255,138,84,0.55)');
+  rg.addColorStop(0.5, 'rgba(255,112,67,0.22)');
+  rg.addColorStop(1, 'rgba(255,112,67,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, w, h);
+});
+const moonSprite = makeSprite(84, 84, (g, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  // crescent: cut a circle out of the disc, THEN add glow over the top
+  g.fillStyle = '#e9e6ff';
+  g.beginPath(); g.arc(cx, cy, 13, 0, Math.PI * 2); g.fill();
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.arc(cx + 7, cy - 4, 11.5, 0, Math.PI * 2); g.fill();
+  g.globalCompositeOperation = 'source-over';
+  const rg = g.createRadialGradient(cx, cy, 8, cx, cy, 40);
+  rg.addColorStop(0, 'rgba(210,205,255,0.5)');
+  rg.addColorStop(1, 'rgba(210,205,255,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, w, h);
+});
+
+/* ── Glow dots (fireflies / pollen motes) ── */
+const fireflySprite = makeSprite(16, 16, (g) => {
+  const rg = g.createRadialGradient(8, 8, 0.5, 8, 8, 8);
+  rg.addColorStop(0, 'rgba(228,255,150,0.95)');
+  rg.addColorStop(0.4, 'rgba(190,235,110,0.45)');
+  rg.addColorStop(1, 'rgba(190,235,110,0)');
+  g.fillStyle = rg; g.fillRect(0, 0, 16, 16);
+});
+const pollenSprite = makeSprite(16, 16, (g) => {
+  const rg = g.createRadialGradient(8, 8, 0.5, 8, 8, 7);
+  rg.addColorStop(0, 'rgba(255,255,255,0.9)');
+  rg.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = rg; g.fillRect(0, 0, 16, 16);
+});
+
+/* ── Platforms ──
+   Sprite is 4px wider / 12px taller than the 70×14 hitbox: 6px of headroom
+   for grass tufts, 6px below for the soft shadow. Hitbox origin inside the
+   sprite is (2, 6). */
+const PLAT_SPR_W = 74, PLAT_SPR_H = 26;
+function platBody(g, fill, edge) {
+  const x = 2, y = 6, w = 70, h = 14;
+  g.fillStyle = 'rgba(15,15,35,0.22)';
+  roundRect(g, x + 3, y + h - 1, w - 6, 6, 3); g.fill();
+  g.fillStyle = fill;
+  roundRect(g, x, y, w, h, 6); g.fill();
+  g.fillStyle = edge;
+  roundRect(g, x, y + h - 5, w, 5, 3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,0.32)';
+  roundRect(g, x + 3, y + 1.5, w - 6, 2.5, 1.5); g.fill();
+}
+function grassTufts(g, color) {
+  const y = 6;
+  g.fillStyle = color;
+  for (let i = 0; i < 7; i++) {
+    const gx = 7 + i * ((70 - 10) / 6);
+    const gh = 4 + ((i * 37) % 3);
+    g.beginPath();
+    g.moveTo(gx - 2.2, y + 2);
+    g.quadraticCurveTo(gx, y - gh - 2, gx + 2.2, y + 2);
+    g.fill();
+  }
+  g.fillStyle = 'rgba(255,255,255,0.9)';
+  g.beginPath(); g.arc(2 + 70 * 0.2, y - 3.5, 1.4, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(255,158,203,0.9)';
+  g.beginPath(); g.arc(2 + 70 * 0.8, y - 3, 1.4, 0, Math.PI * 2); g.fill();
+}
+const platSprites = {
+  static: ZONES.map((z) => makeSprite(PLAT_SPR_W, PLAT_SPR_H, (g) => {
+    platBody(g, z.plat, z.platEdge);
+    grassTufts(g, z.plat);
+  })),
+  spring: makeSprite(PLAT_SPR_W, PLAT_SPR_H + 6, (g) => {
+    const x = 2, y = 6, w = 70, h = 14;
+    g.strokeStyle = '#0277bd';
+    g.lineWidth = 2;
+    for (const lx of [x + w * 0.32, x + w * 0.68]) {
+      g.beginPath();
+      g.moveTo(lx, y + h - 2);
+      g.lineTo(lx - 4, y + h + 2);
+      g.lineTo(lx + 4, y + h + 5);
+      g.lineTo(lx - 2, y + h + 8);
+      g.stroke();
+    }
+    platBody(g, '#5cdbff', '#0288d1');
+    g.fillStyle = '#fff';
+    for (let i = 0; i < 4; i++) g.fillRect(x + 9 + i * 15, y + 4.5, 8, 2);
+    g.strokeStyle = 'rgba(92,219,255,0.55)';
+    g.lineWidth = 2;
+    roundRect(g, x - 1, y - 1, w + 2, h + 2, 7); g.stroke();
+  }),
+  moving: makeSprite(PLAT_SPR_W, PLAT_SPR_H, (g) => {
+    const x = 2, y = 6;
+    platBody(g, '#ab47bc', '#6a1b9a');
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath();
+    g.moveTo(x + 12, y + 7); g.lineTo(x + 17, y + 3.5); g.lineTo(x + 17, y + 10.5); g.closePath(); g.fill();
+    g.beginPath();
+    g.moveTo(x + 58, y + 7); g.lineTo(x + 53, y + 3.5); g.lineTo(x + 53, y + 10.5); g.closePath(); g.fill();
+  }),
+  breakable: makeSprite(PLAT_SPR_W, PLAT_SPR_H, (g) => {
+    const x = 2, y = 6, w = 70, h = 14;
+    platBody(g, '#a1887f', '#5d4037');
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let i = 1; i < 4; i++) g.fillRect(x + (w / 4) * i, y + 1, 1.5, h - 5);
+    g.strokeStyle = 'rgba(0,0,0,0.13)';
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x + 4, y + 5); g.quadraticCurveTo(x + 20, y + 3.5, x + 34, y + 5); g.stroke();
+    g.beginPath(); g.moveTo(x + 38, y + 8); g.quadraticCurveTo(x + 54, y + 6.5, x + 66, y + 8); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.4)';
+    g.fillRect(x + w * 0.3, y + 4, 1.2, 5);
+    g.fillRect(x + w * 0.56, y + 3.5, 1.2, 5);
+  }),
+  vanishing: makeSprite(PLAT_SPR_W, PLAT_SPR_H, (g) => {
+    const x = 2, y = 6, w = 70, h = 14;
+    platBody(g, '#ce93d8', '#7b1fa2');
+    g.strokeStyle = 'rgba(255,255,255,0.35)';
+    g.lineWidth = 1.5;
+    roundRect(g, x + 1, y + 1, w - 2, h - 2, 5); g.stroke();
+    g.fillStyle = '#fff';
+    for (let i = 0; i < 3; i++) {
+      const sx = x + 14 + i * 20, sy = y + 5;
+      g.fillRect(sx - 0.8, sy - 2.6, 1.6, 5.2);
+      g.fillRect(sx - 2.6, sy - 0.8, 5.2, 1.6);
+    }
+  }),
+  cloud: makeSprite(78, 28, (g) => {
+    g.fillStyle = '#ffffff';
+    g.beginPath();
+    g.arc(15, 16, 9, 0, Math.PI * 2);
+    g.arc(39, 12, 12, 0, Math.PI * 2);
+    g.arc(63, 16, 9, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.92)';
+    roundRect(g, 8, 13, 62, 9, 4.5); g.fill();
+    g.fillStyle = 'rgba(165,190,225,0.5)';
+    g.beginPath(); g.ellipse(39, 22.5, 26, 3.5, 0, 0, Math.PI * 2); g.fill();
+  }),
+};
+
+/* ── Coin: 8 spin frames ── */
+const coinFrames = [];
+for (let i = 0; i < 8; i++) {
+  const th = (i * Math.PI) / 4;
+  coinFrames.push(makeSprite(22, 22, (g) => {
+    const cx = 11, cy = 11, r = 7;
+    const rx = Math.max(1.4, Math.abs(Math.cos(th)) * r);
+    g.fillStyle = 'rgba(255,210,63,0.22)';
+    g.beginPath(); g.arc(cx, cy, r + 3.5, 0, Math.PI * 2); g.fill();
+    const grad = g.createLinearGradient(cx - rx, cy - r, cx + rx, cy + r);
+    grad.addColorStop(0, '#ffe98a');
+    grad.addColorStop(0.5, '#ffd23f');
+    grad.addColorStop(1, '#f0a500');
+    g.fillStyle = grad;
+    g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#c77c02';
+    g.lineWidth = 1;
+    g.stroke();
+    if (rx > 3.5) {
+      g.fillStyle = 'rgba(255,255,255,0.85)';
+      g.beginPath(); g.ellipse(cx - rx * 0.32, cy - 2.8, rx * 0.24, 1.6, -0.4, 0, Math.PI * 2); g.fill();
+    }
+    if (rx > r * 0.88) {
+      g.fillStyle = '#c77c02';
+      g.beginPath();
+      g.moveTo(cx, cy - 3); g.lineTo(cx + 1.6, cy); g.lineTo(cx, cy + 3); g.lineTo(cx - 1.6, cy);
+      g.closePath(); g.fill();
+    }
+  }));
+}
+
+/* ── Ground strip (start of every run) — rebuilt on resize to span W ── */
+function paintGround(g, w) {
+  const h = 52;
+  g.fillStyle = '#5d4037';
+  g.fillRect(0, 14, w, h - 14);
+  g.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let i = 0; i < Math.ceil(w / 30); i++) {
+    g.beginPath();
+    g.ellipse((i * 61 + 23) % w, 24 + ((i * 17) % 22), 2.5 + ((i * 7) % 3), 1.8, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.fillStyle = '#66bb6a';
+  g.fillRect(0, 6, w, 12);
+  g.fillStyle = '#4caf50';
+  g.fillRect(0, 6, w, 5);
+  g.fillStyle = 'rgba(255,255,255,0.25)';
+  g.fillRect(0, 6, w, 1.5);
+  g.fillStyle = '#66bb6a';
+  for (let i = 0; i < Math.ceil(w / 14); i++) {
+    const gx = (i * 14.5) + ((i * 29) % 7);
+    g.beginPath();
+    g.moveTo(gx - 3, 7);
+    g.quadraticCurveTo(gx, -2 - ((i * 13) % 4), gx + 3, 7);
+    g.fill();
+  }
+  for (let i = 0; i < Math.ceil(w / 70); i++) {
+    const fx = 30 + i * 68 + ((i * 31) % 20);
+    g.fillStyle = i % 2 ? '#ff9ecb' : '#fff';
+    g.beginPath(); g.arc(fx, 4 - (i % 3), 2, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#ffd23f';
+    g.beginPath(); g.arc(fx, 4 - (i % 3), 0.8, 0, Math.PI * 2); g.fill();
+  }
+}
+let groundSprite = null;
+
+/* ── Vignette — rebuilt on resize ── */
+let vignetteSprite = null;
+
+/* ── Ambient sky life (screen-space, persists across runs) ── */
+const AMBIENT = { clouds: [], birds: [], flies: [], shoot: null, shootCd: 500 };
+(function initAmbient() {
+  for (let i = 0; i < 10; i++) {
+    AMBIENT.clouds.push({
+      x: Math.random() * (W + 240),
+      y: Math.random() * (H + 180),
+      par: i < 5 ? 0.25 : 0.5,
+      drift: 0.08 + Math.random() * 0.16,
+      v: i % 3,
+      s: 0.7 + Math.random() * 0.7,
+    });
+  }
+  for (let i = 0; i < 3; i++) {
+    AMBIENT.birds.push({
+      x: Math.random() * W,
+      y: 60 + Math.random() * (H - 180),
+      sp: (0.35 + Math.random() * 0.35) * (Math.random() < 0.5 ? -1 : 1),
+      ph: Math.random() * 6.28,
+    });
+  }
+  for (let i = 0; i < 9; i++) {
+    AMBIENT.flies.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      ph: Math.random() * 6.28,
+      sp: 0.3 + Math.random() * 0.5,
+    });
+  }
+})();
+
+/* Twinkling star field — normalized 0..1 coords so it survives resize */
+const STARS = [];
+for (let i = 0; i < 46; i++) {
+  STARS.push({
+    nx: ((i * 97 + 13) % 420) / 420,
+    ny: ((i * 149 + 31) % 700) / 700,
+    s: i % 7 === 0 ? 2 : 1.4,
+    ph: (i * 0.71) % 6.28,
+    sp: 0.02 + (i % 5) * 0.009,
+  });
+}
+
+/* Zone blend factors — shared by the sky renderer and the music crossfade */
+function zoneMix() {
+  const z = ZONES[state.zone];
+  const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
+  const zoneRange = (zNext.minM - z.minM) || 1;
+  const t = state.zone < ZONES.length - 1 ? Math.min(1, (state.heightM - z.minM) / zoneRange) : 0;
+  return {
+    meadowA: state.zone === 0 ? 1 - t : 0,
+    duskA: state.zone === 0 ? t : state.zone === 1 ? 1 - t : 0,
+    nightA: state.zone === 1 ? t : state.zone === 2 ? 1 - t : 0,
+    auroraA: state.zone === 2 ? t : state.zone === 3 ? 1 : 0,
+  };
+}
+
+function drawSky() {
+  const { meadowA, duskA, nightA, auroraA } = zoneMix();
+  const z = ZONES[state.zone];
+  const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
+  const zoneRange = (zNext.minM - z.minM) || 1;
+  const t = state.zone < ZONES.length - 1 ? Math.min(1, (state.heightM - z.minM) / zoneRange) : 0;
+  const anim = state.mode === 'playing' || state.mode === 'dead' || state.mode === 'menu';
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, lerpColor(z.sky[0], zNext.sky[0], t));
+  grad.addColorStop(1, lerpColor(z.sky[1], zNext.sky[1], t));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Celestial bodies — fixed screen positions (infinitely far away)
+  if (meadowA > 0.02) {
+    ctx.globalAlpha = meadowA;
+    ctx.drawImage(sunSprite.c, W - 106, 6, sunSprite.w, sunSprite.h);
+  }
+  if (duskA > 0.02) {
+    ctx.globalAlpha = duskA;
+    ctx.drawImage(duskGlowSprite.c, W / 2 - 130, H - 150, duskGlowSprite.w, duskGlowSprite.h);
+  }
+  if (nightA > 0.02) {
+    ctx.globalAlpha = nightA;
+    ctx.drawImage(moonSprite.c, 22, 34, moonSprite.w, moonSprite.h);
+  }
+  ctx.globalAlpha = 1;
+
+  // Twinkling stars
+  const starA = Math.min(1, Math.max(0, (state.heightM - 800) / 1200));
+  if (starA > 0) {
+    ctx.fillStyle = '#fff';
+    for (const st of STARS) {
+      ctx.globalAlpha = starA * (0.45 + 0.55 * (0.5 + 0.5 * Math.sin(state.gameTime * st.sp + st.ph)));
+      ctx.fillRect(st.nx * W, st.ny * H, st.s, st.s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Aurora ribbons — three slow, layered waves (zone 4)
+  if (auroraA > 0.02) {
+    const tt = performance.now() / 1000;
+    const ribbons = [
+      { base: H * 0.15, amp: 24, freq: 5.5, speed: 0.32, color: 'rgba(62,230,196,', width: 30, phase: 0 },
+      { base: H * 0.25, amp: 32, freq: 4.2, speed: -0.24, color: 'rgba(129,212,250,', width: 24, phase: 2.1 },
+      { base: H * 0.37, amp: 20, freq: 6.4, speed: 0.19, color: 'rgba(165,214,167,', width: 20, phase: 4.2 },
+    ];
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const rb of ribbons) {
+      // three nested strokes fake a soft glow without expensive canvas blur
+      const layers = [[rb.width, 0.05], [rb.width * 0.55, 0.09], [rb.width * 0.22, 0.15]];
+      for (const [w2, a2] of layers) {
+        ctx.strokeStyle = rb.color + (a2 * auroraA) + ')';
+        ctx.lineWidth = w2;
+        ctx.beginPath();
+        for (let x = -10; x <= W + 10; x += 16) {
+          const y = rb.base
+            + Math.sin((x / W) * rb.freq * Math.PI * 2 + tt * rb.speed + rb.phase) * rb.amp
+            + Math.sin(x * 0.013 + tt * rb.speed * 1.7) * 9;
+          if (x === -10) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // Clouds — three parallax layers crossfading between zone tints
+  for (const c of AMBIENT.clouds) {
+    if (anim) c.x += c.drift;
+    const wrapW = W + 260;
+    const sx = ((c.x % wrapW) + wrapW) % wrapW - 130;
+    const wrapH = H + 200;
+    const sy = (((c.y - state.cameraY * c.par) % wrapH) + wrapH) % wrapH - 100;
+    const spr = cloudSprites.day[c.v];
+    const dw = spr.w * c.s, dh = spr.h * c.s;
+    if (meadowA > 0.02) {
+      ctx.globalAlpha = 0.9 * meadowA;
+      ctx.drawImage(spr.c, sx, sy, dw, dh);
+    }
+    if (duskA > 0.02) {
+      ctx.globalAlpha = 0.85 * duskA;
+      ctx.drawImage(cloudSprites.dusk[c.v].c, sx, sy, dw, dh);
+    }
+    if (nightA > 0.02) {
+      ctx.globalAlpha = 0.16 * nightA;
+      ctx.drawImage(cloudSprites.night[c.v].c, sx, sy, dw, dh);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Birds (day + dusk)
+  const birdA = Math.min(1, meadowA + duskA * 0.8);
+  if (birdA > 0.05) {
+    ctx.strokeStyle = `rgba(45,42,70,${0.55 * birdA})`;
+    ctx.lineWidth = 2;
+    for (const b of AMBIENT.birds) {
+      if (anim) {
+        b.x += b.sp;
+        if (b.x < -20) b.x = W + 20;
+        if (b.x > W + 20) b.x = -20;
+      }
+      const sy = ((b.y - state.cameraY * 0.4) % (H + 80) + (H + 80)) % (H + 80) - 40;
+      const flap = Math.sin(state.gameTime * 0.22 + b.ph) * 3;
+      ctx.beginPath();
+      ctx.moveTo(b.x - 7, sy + flap * 0.7);
+      ctx.quadraticCurveTo(b.x - 3, sy - 4 - flap, b.x, sy);
+      ctx.quadraticCurveTo(b.x + 3, sy - 4 - flap, b.x + 7, sy + flap * 0.7);
+      ctx.stroke();
+    }
+  }
+
+  // Fireflies (night) / pollen motes (day)
+  for (const f of AMBIENT.flies) {
+    if (anim) {
+      f.y -= f.sp * 0.35;
+      if (f.y < -20) f.y = H + 20;
+    }
+    const fx = f.x + Math.sin(state.gameTime * 0.017 + f.ph) * 20;
+    const sy = ((f.y - state.cameraY * 0.75) % (H + 60) + (H + 60)) % (H + 60) - 30;
+    const pulse = 0.5 + 0.5 * Math.sin(state.gameTime * 0.06 + f.ph * 3);
+    if (nightA > 0.05) {
+      ctx.globalAlpha = nightA * (0.35 + 0.65 * pulse);
+      ctx.drawImage(fireflySprite.c, fx - 6, sy - 6, 12, 12);
+    }
+    if (meadowA > 0.05) {
+      ctx.globalAlpha = meadowA * 0.5 * (0.4 + 0.6 * pulse);
+      ctx.drawImage(pollenSprite.c, fx - 5, sy - 5, 10, 10);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Occasional shooting star at night
+  if (anim && nightA > 0.5) {
+    if (AMBIENT.shoot) {
+      const s = AMBIENT.shoot;
+      s.x += s.vx; s.y += s.vy; s.life -= 0.028;
+      if (s.life <= 0) AMBIENT.shoot = null;
+    } else if (--AMBIENT.shootCd <= 0 && Math.random() < 0.03) {
+      AMBIENT.shoot = {
+        x: 60 + Math.random() * (W - 120),
+        y: 30 + Math.random() * 130,
+        vx: -(5 + Math.random() * 3),
+        vy: 1.6 + Math.random() * 1.2,
+        life: 1,
+      };
+      AMBIENT.shootCd = 600 + Math.random() * 900;
+    }
+  }
+  if (AMBIENT.shoot && nightA > 0.1) {
+    const s = AMBIENT.shoot;
+    const tailX = s.x - s.vx * 7, tailY = s.y - s.vy * 7;
+    const lg = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+    lg.addColorStop(0, `rgba(255,255,255,${0.9 * s.life * nightA})`);
+    lg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = lg;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(tailX, tailY);
+    ctx.stroke();
+  }
+}
+
+function drawGround() {
+  if (!groundSprite) return;
+  // -6: the strip's grass top sits 6px into the sprite, aligning it with the
+  // collision surface at H-60 so feet land exactly on the visible grass.
+  const y = (H - 66) - state.cameraY;
+  if (y > H + 60 || y < -60) return;
+  ctx.drawImage(groundSprite.c, 0, y, groundSprite.w, groundSprite.h);
+}
+
+/* ── Menu mascot: the selected character (with equipped skin/hat/aura)
+   idle-hopping on the meadow grass below the panel. Wall-clock driven so
+   it stays alive on the title screen and behind sub-menus. ── */
+function drawMenuPet() {
+  const t = performance.now();
+  const id = state.character;
+  const base = CHARS[id];
+  const eq = save.equipped[id] || { hat: 'none', skin: 'default', aura: 'none' };
+  const skin = COSMETICS.skin.find(s => s.id === eq.skin);
+  const hat = COSMETICS.hat.find(h => h.id === eq.hat);
+  const aura = COSMETICS.aura.find(a => a.id === eq.aura);
+  const bodyColor = skin && skin.tint ? skin.tint : base.body;
+  const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : base.accent;
+
+  const size = Math.min(62, Math.max(46, W * 0.14));
+  const groundY = H - 58;
+  const hop = Math.abs(Math.sin(t * 0.0026));
+  const lift = 22 * hop * hop; // hangs a little at the apex
+  const sq = 1 - 0.16 * (1 - hop);
+  const dw = size * (2 - sq); // wider when squashed
+  const dh = size * sq;
+  const dx = W / 2 - dw / 2;
+  const dy = groundY - dh - lift;
+
+  // Aura halo behind the character
+  if (aura && aura.color) {
+    const col = aura.color === 'rainbow'
+      ? ['#ff0066', '#ff9900', '#ffd23f', '#66dd44', '#5cdbff', '#9966ff'][Math.floor(t / 300) % 6]
+      : aura.color;
+    const gr = ctx.createRadialGradient(W / 2, dy + dh / 2, 4, W / 2, dy + dh / 2, size * 1.05);
+    gr.addColorStop(0, col);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = 0.22 + 0.08 * Math.sin(t * 0.004);
+    ctx.fillStyle = gr;
+    ctx.beginPath();
+    ctx.arc(W / 2, dy + dh / 2, size * 1.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Ground shadow shrinks as the hop rises
+  const shadowScale = 1 - (lift / 20) * 0.45;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(W / 2, groundY + 5, (dw / 2) * shadowScale, 4.5 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawCharacter(ctx, id, dx, dy, dw, dh, bodyColor, accentColor, Math.sin(t * 0.0011) > 0 ? 1 : -1);
+  if (hat && hat.draw) hat.draw(ctx, dx, dy, dw, dh);
+
+  // Name tag on the soil strip, so the menu mascot is unmistakably "yours"
+  ctx.font = '800 13px Fredoka, Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(10,6,23,0.75)';
+  ctx.strokeText(base.name, W / 2, groundY + 26);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(base.name, W / 2, groundY + 26);
+  ctx.textAlign = 'left';
+}
+
+/* Live character preview inside a select chip (menu + shop) */
+function drawCharChip(cv, id, cssSize) {
+  const s = 2;
+  cv.width = cssSize * s;
+  cv.height = cssSize * s;
+  cv.style.width = cssSize + 'px';
+  cv.style.height = cssSize + 'px';
+  const g = cv.getContext('2d');
+  g.scale(s, s);
+  const c = CHARS[id];
+  const eq = save.equipped[id] || { hat: 'none', skin: 'default' };
+  const skin = COSMETICS.skin.find(x => x.id === eq.skin);
+  const bodyColor = skin && skin.tint ? skin.tint : c.body;
+  const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : c.accent;
+  const pad = cssSize * 0.13;
+  const box = cssSize - pad * 2;
+  drawCharacter(g, id, pad, pad, box, box, bodyColor, accentColor, 1);
+  const hat = COSMETICS.hat.find(h => h.id === (eq.hat || 'none'));
+  if (hat && hat.draw) hat.draw(g, pad, pad, box, box);
+}
+
+function drawPlatforms() {
+  for (const plat of state.platforms) {
+    const y = plat.y - state.cameraY;
+    if (y < -40 || y > H + 40) continue;
+    if (plat.ground) continue; // drawn as part of the ground strip
+
+    let alpha = 1;
+    if (plat.type === 'vanishing') alpha = vanishingAlpha(plat);
+    else if (plat.type === 'cloud') alpha = Math.max(0, plat.cloudLife) * 0.95;
+    else if (plat.type === 'breakable' && plat.broken) alpha = Math.max(0, 1 - plat.fallVy / 30);
+
+    const spr = plat.type === 'static' ? platSprites.static[state.zone] : platSprites[plat.type];
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(spr.c, plat.x - 2, y - 6, spr.w, spr.h);
+
+    // Live direction arrow on moving platforms (the sprite is direction-neutral)
+    if (plat.type === 'moving') {
+      const dir = plat.vx > 0 ? 1 : -1;
+      const ax = plat.x + plat.w / 2;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(ax + dir * 6, y + 7);
+      ctx.lineTo(ax - dir * 4, y + 3);
+      ctx.lineTo(ax - dir * 4, y + 11);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawCoins() {
+  const frame = coinFrames[(state.gameTime >> 2) % 8];
+  for (const c of state.coins) {
+    if (c.collected) continue;
+    const y = c.y - state.cameraY + Math.sin(c.bob) * 2;
+    if (y < -20 || y > H + 20) continue;
+    ctx.drawImage(frame.c, c.x - 11, y - 11, frame.w, frame.h);
+  }
+}
+
+function drawHazards() {
+  for (const hz of state.hazards) {
+    const y = hz.y - state.cameraY + Math.sin(hz.bob) * 3;
+    if (y < -30 || y > H + 30) continue;
+    ctx.save();
+    // Slow sway so the puff reads as churning air, not a static ball
+    ctx.translate(hz.x, y);
+    ctx.rotate(Math.sin(state.gameTime * 0.03 + hz.bob) * 0.3);
+    ctx.fillStyle = 'rgba(120, 110, 130, 0.35)';
+    ctx.beginPath(); ctx.arc(0, 0, hz.r + 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8d7ea3';
+    ctx.beginPath(); ctx.arc(0, 0, hz.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5e5270';
+    ctx.beginPath(); ctx.arc(-hz.r * 0.4, -hz.r * 0.2, hz.r * 0.45, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hz.r * 0.45, hz.r * 0.15, hz.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      const sx = -hz.r - 4 - i * 5;
+      ctx.beginPath(); ctx.moveTo(sx, -4 + i * 4); ctx.lineTo(sx - 6, -4 + i * 4); ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawPowerups() {
+  for (const pu of state.powerups) {
+    if (pu.collected) continue;
+    const y = pu.y - state.cameraY + Math.sin(pu.bob) * 3;
+    if (y < -30 || y > H + 30) continue;
+    const color = pu.type === 'jetpack' ? '255,112,67'
+                : pu.type === 'magnet'  ? '255,126,185'
+                :                         '92,219,255';
+    // Pulsing halo announces "pick me up"
+    const pulse = 1 + Math.sin(state.gameTime * 0.1 + pu.bob) * 0.12;
+    ctx.fillStyle = `rgba(${color},0.28)`;
+    ctx.beginPath(); ctx.arc(pu.x, y, (pu.r + 5) * pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgb(${color})`;
+    ctx.beginPath(); ctx.arc(pu.x, y, pu.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    if (pu.type === 'jetpack') {
+      ctx.beginPath();
+      ctx.moveTo(pu.x, y - pu.r * 0.55);
+      ctx.lineTo(pu.x - pu.r * 0.4, y + pu.r * 0.35);
+      ctx.lineTo(pu.x + pu.r * 0.4, y + pu.r * 0.35);
+      ctx.closePath(); ctx.fill();
+    } else if (pu.type === 'magnet') {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(pu.x, y - 1, pu.r * 0.5, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillRect(pu.x - pu.r * 0.5 - 1.5, y - 1, 3, 5);
+      ctx.fillRect(pu.x + pu.r * 0.5 - 1.5, y - 1, 3, 5);
+    } else {
+      ctx.beginPath(); ctx.arc(pu.x, y, pu.r * 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgb(${color})`;
+      ctx.beginPath(); ctx.arc(pu.x, y, pu.r * 0.22, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawPlayerStatusFx() {
+  const p = state.player;
+  if (!p) return;
+  if (state.shieldActive) {
+    const y = p.y - state.cameraY;
+    ctx.strokeStyle = 'rgba(92,219,255,0.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(p.x + p.w/2, y + p.h/2, p.w * 0.85, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (state.jetpackFrames > 0) {
+    const y = p.y - state.cameraY;
+    ctx.fillStyle = 'rgba(255,152,0,0.7)';
+    ctx.beginPath();
+    ctx.moveTo(p.x + p.w * 0.3, y + p.h);
+    ctx.lineTo(p.x + p.w * 0.7, y + p.h);
+    ctx.lineTo(p.x + p.w * 0.5, y + p.h + 14 + Math.random() * 6);
+    ctx.closePath(); ctx.fill();
+  }
+  if (state.magnetFrames > 0) {
+    const cx = p.x + p.w/2;
+    const cy = p.y - state.cameraY + p.h/2;
+    // Blink when about to expire so the player knows it's ending
+    const expiring = state.magnetFrames < 90 && (state.magnetFrames % 20) < 10;
+    if (!expiring) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,126,185,0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 9]);
+      ctx.lineDashOffset = -(state.gameTime * 0.6);
+      ctx.beginPath();
+      ctx.arc(cx, cy, MAGNET_RADIUS * 0.45, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+/* ---------- Hat draw functions ----------
+   Each takes (ctx, x, y, w, h), the player body box */
+function drawHatCap(ctx, x, y, w, h) {
+  ctx.fillStyle = '#d32f2f';
+  roundRect(ctx, x + 2, y - 8, w - 4, 10, 4); ctx.fill();
+  ctx.fillStyle = '#b71c1c';
+  ctx.fillRect(x + w * 0.55, y - 4, w * 0.4, 4);
+}
+
+function drawHatCrown(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath();
+  ctx.moveTo(x + 4, y);
+  ctx.lineTo(x + 4, y - 6);
+  ctx.lineTo(x + w * 0.25, y - 2);
+  ctx.lineTo(x + w * 0.4, y - 10);
+  ctx.lineTo(x + w * 0.55, y - 2);
+  ctx.lineTo(x + w * 0.7, y - 10);
+  ctx.lineTo(x + w * 0.85, y - 2);
+  ctx.lineTo(x + w - 4, y - 6);
+  ctx.lineTo(x + w - 4, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ff5722';
+  ctx.beginPath(); ctx.arc(x + w * 0.4, y - 8, 1.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + w * 0.7, y - 8, 1.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatWizard(ctx, x, y, w, h) {
+  ctx.fillStyle = '#3949ab';
+  ctx.beginPath();
+  ctx.moveTo(x + 2, y + 1);
+  ctx.lineTo(x + w - 2, y + 1);
+  ctx.lineTo(x + w/2 + 2, y - 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillRect(x + 2, y - 2, w - 4, 3);
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath(); ctx.arc(x + w/2, y - 10, 1.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatParty(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ff7eb9';
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.2, y + 1);
+  ctx.lineTo(x + w * 0.8, y + 1);
+  ctx.lineTo(x + w/2, y - 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillRect(x + w * 0.3, y - 4, 2, 2);
+  ctx.fillRect(x + w * 0.55, y - 8, 2, 2);
+  ctx.fillStyle = '#5cdbff';
+  ctx.beginPath(); ctx.arc(x + w/2, y - 16, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatBow(ctx, x, y, w, h) {
+  ctx.fillStyle = '#ff5722';
+  ctx.beginPath();
+  ctx.ellipse(x + w * 0.3, y + 2, 5, 4, -0.3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + w * 0.7, y + 2, 5, 4, 0.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#bf360c';
+  ctx.fillRect(x + w/2 - 2, y, 4, 5);
+}
+
+function drawHatHalo(ctx, x, y, w, h) {
+  ctx.strokeStyle = '#ffd23f';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(x + w/2, y - 2, w * 0.55, 3, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 1;
+}
+
+function drawHatTop(ctx, x, y, w, h) {
+  // Brim
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(x, y - 2, w, 3);
+  // Tower
+  ctx.fillRect(x + w * 0.25, y - 14, w * 0.5, 12);
+  // Red band
+  ctx.fillStyle = '#d32f2f';
+  ctx.fillRect(x + w * 0.25, y - 5, w * 0.5, 2);
+}
+
+function drawHatHorns(ctx, x, y, w, h) {
+  ctx.fillStyle = '#b71c1c';
+  // Left horn
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.3, y + 1);
+  ctx.lineTo(x + w * 0.18, y - 10);
+  ctx.lineTo(x + w * 0.38, y - 2);
+  ctx.closePath();
+  ctx.fill();
+  // Right horn
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.7, y + 1);
+  ctx.lineTo(x + w * 0.82, y - 10);
+  ctx.lineTo(x + w * 0.62, y - 2);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawHatStar(ctx, x, y, w, h) {
+  // 5-pointed star above the head
+  const cx = x + w/2;
+  const cy = y - 8;
+  const outer = 7, inner = 3;
+  ctx.fillStyle = '#ffd23f';
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = (Math.PI / 5) * i - Math.PI / 2;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawHatFlower(ctx, x, y, w, h) {
+  // Flower crown with petals
+  const cx = x + w/2;
+  ctx.fillStyle = '#ff69b4';
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI * 2 / 6) * i;
+    const px = cx + Math.cos(a) * 6;
+    const py = y - 5 + Math.sin(a) * 5;
+    ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle = '#ffd700';
+  ctx.beginPath(); ctx.arc(cx, y - 5, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatPirate(ctx, x, y, w, h) {
+  // Pirate hat (tricorn)
+  const cx = x + w/2;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, y - 2);
+  ctx.lineTo(cx + 8, y - 2);
+  ctx.lineTo(cx + 7, y - 7);
+  ctx.lineTo(cx - 7, y - 7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffd700';
+  ctx.beginPath(); ctx.arc(cx, y - 4, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatSanta(ctx, x, y, w, h) {
+  // Santa hat - red with white trim
+  const cx = x + w/2;
+  ctx.fillStyle = '#dc143c';
+  ctx.beginPath();
+  ctx.moveTo(cx - 7, y - 2);
+  ctx.lineTo(cx + 7, y - 2);
+  ctx.lineTo(cx + 4, y - 10);
+  ctx.lineTo(cx - 4, y - 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(cx - 8, y - 2, 16, 2);
+  ctx.beginPath(); ctx.arc(cx + 5, y - 10, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawHatDiamond(ctx, x, y, w, h) {
+  // Diamond crown - sparkly
+  const cx = x + w/2;
+  ctx.fillStyle = '#00ffff';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 6 + i*6, y - 2);
+    ctx.lineTo(cx - 4 + i*6, y - 8);
+    ctx.lineTo(cx - 2 + i*6, y - 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawHatMushroom(ctx, x, y, w, h) {
+  // Mushroom cap
+  const cx = x + w/2;
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath(); ctx.arc(cx, y - 6, 7, 0, Math.PI, true); ctx.fill();
+  ctx.fillStyle = '#8B4513';
+  ctx.fillRect(cx - 1.5, y - 3, 3, 5);
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(cx - 4 + i*3, y - 6, 1, 0, Math.PI*2); ctx.fill(); }
+}
+
+function drawHatBeanie(ctx, x, y, w, h) {
+  // Knitted beanie with pompom
+  const cx = x + w/2;
+  ctx.fillStyle = '#5c6bc0';
+  ctx.beginPath(); ctx.arc(cx, y - 4, w * 0.32, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#3949ab';
+  ctx.fillRect(x + w * 0.18, y - 5, w * 0.64, 4);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, y - w * 0.32 - 4, 3, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawHatHeadphones(ctx, x, y, w, h) {
+  // Headband + ear cups
+  const cx = x + w/2;
+  ctx.strokeStyle = '#263238';
+  ctx.lineWidth = Math.max(2, w * 0.07);
+  ctx.beginPath(); ctx.arc(cx, y + 2, w * 0.42, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  ctx.fillStyle = '#ef5350';
+  ctx.beginPath(); ctx.ellipse(cx - w * 0.42, y + 2, 3, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + w * 0.42, y + 2, 3, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+/* ---------- Character drawing (shared) ----------
+   Sticker style: every major shape gets a soft dark outline and a subtle
+   top-left gradient, eyes blink and catch a shine, cheeks blush. Draws a
+   character at (x, y, w, h) on any ctx. bodyColor/accentColor allow skin
+   tints to work. facing: 1 = right, -1 = left. */
+function charGrad(c, x, y, w, h, color) {
+  const gr = c.createLinearGradient(x, y, x + w, y + h);
+  gr.addColorStop(0, lighten(color, 0.22));
+  gr.addColorStop(0.55, color);
+  gr.addColorStop(1, darken(color, 0.14));
+  return gr;
+}
+function charOutline(c, color, w) {
+  c.strokeStyle = darken(color, 0.52);
+  c.lineWidth = Math.max(1.2, w * 0.05);
+  c.lineJoin = 'round';
+}
+function charEye(c, ex, ey, r, blink, look) {
+  if (blink) {
+    c.strokeStyle = '#2a1a12';
+    c.lineWidth = Math.max(1.2, r * 0.5);
+    c.beginPath();
+    c.moveTo(ex - r, ey);
+    c.quadraticCurveTo(ex, ey + r * 0.8, ex + r, ey);
+    c.stroke();
+    return;
+  }
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(ex, ey, r, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#241a12';
+  c.beginPath(); c.arc(ex + look * r * 0.28, ey + r * 0.08, r * 0.52, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(ex + look * r * 0.28 - r * 0.2, ey - r * 0.24, r * 0.2, 0, Math.PI * 2); c.fill();
+}
+function charBlush(c, bx, by, rx, ry) {
+  c.fillStyle = 'rgba(255,110,150,0.28)';
+  c.beginPath(); c.ellipse(bx, by, rx, ry, 0, 0, Math.PI * 2); c.fill();
+}
+
+function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
+  const f = facing || 1;
+  const eo = f * (w * 0.06); // eye offset for facing
+  const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : 176;
+  // Wall-clock, not gameTime: previews and menus would otherwise freeze the
+  // blink shut. Blinking is cosmetic, so it's safe to run while paused.
+  const blink = ((performance.now() / 16.7 + blinkSeed) % 240) < 8;
+
+  if (charId === 'turtle') {
+    const cx = x + w * 0.5;
+    // Legs + tail (behind the shell)
+    c.fillStyle = darken(bodyColor, 0.08);
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.ellipse(x + w * 0.2, y + h * 0.84, w * 0.12, h * 0.09, -0.25, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(x + w * 0.8, y + h * 0.84, w * 0.12, h * 0.09, 0.25, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(cx - f * w * 0.42, y + h * 0.72, w * 0.09, h * 0.06, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    // Shell
+    c.fillStyle = charGrad(c, x, y, w, h, darken(bodyColor, 0.12));
+    c.beginPath(); c.ellipse(cx, y + h * 0.48, w * 0.5, h * 0.44, 0, 0, Math.PI * 2); c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Scutes
+    c.fillStyle = darken(bodyColor, 0.3);
+    c.beginPath(); c.ellipse(cx, y + h * 0.32, w * 0.13, h * 0.11, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(cx - w * 0.19, y + h * 0.56, w * 0.1, h * 0.09, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(cx + w * 0.19, y + h * 0.56, w * 0.1, h * 0.09, 0, 0, Math.PI * 2); c.fill();
+    // Shell rim
+    c.strokeStyle = lighten(accentColor, 0.18);
+    c.lineWidth = Math.max(1.2, w * 0.045);
+    c.beginPath(); c.ellipse(cx, y + h * 0.48, w * 0.5, h * 0.44, 0, Math.PI * 0.18, Math.PI * 0.82); c.stroke();
+    // Head
+    const hx = cx + f * w * 0.08;
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
+    c.beginPath(); c.ellipse(hx, y + h * 0.22, w * 0.24, h * 0.21, 0, 0, Math.PI * 2); c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Eyes
+    charEye(c, hx - w * 0.1, y + h * 0.19, w * 0.09, blink, f);
+    charEye(c, hx + w * 0.1, y + h * 0.19, w * 0.09, blink, f);
+    // Smile
+    c.strokeStyle = '#2a1a12';
+    c.lineWidth = Math.max(1, w * 0.035);
+    c.beginPath(); c.arc(hx + eo * 0.4, y + h * 0.26, w * 0.08, 0.15, Math.PI - 0.15); c.stroke();
+    // Blush
+    charBlush(c, hx - w * 0.2, y + h * 0.25, w * 0.05, h * 0.028);
+    charBlush(c, hx + w * 0.2, y + h * 0.25, w * 0.05, h * 0.028);
+
+  } else if (charId === 'fox') {
+    const cx = x + w * 0.5;
+    // Bushy tail with white tip (kept below ear level so it reads as tail)
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath();
+    c.moveTo(cx - f * w * 0.25, y + h * 0.52);
+    c.quadraticCurveTo(cx - f * w * 0.55, y + h * 0.28, cx - f * w * 0.42, y + h * 0.16);
+    c.quadraticCurveTo(cx - f * w * 0.22, y + h * 0.3, cx - f * w * 0.1, y + h * 0.56);
+    c.closePath();
+    c.fill(); c.stroke();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.ellipse(cx - f * w * 0.44, y + h * 0.2, w * 0.065, h * 0.055, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = darken(bodyColor, 0.52);
+    c.lineWidth = Math.max(1, w * 0.03); c.stroke();
+    // Body
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
+    roundRect(c, x + w * 0.15, y + h * 0.25, w * 0.7, h * 0.55, w * 0.18);
+    c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Belly
+    c.fillStyle = lighten(accentColor, 0.12);
+    c.beginPath();
+    c.ellipse(cx, y + h * 0.6, w * 0.2, h * 0.17, 0, 0, Math.PI * 2);
+    c.fill();
+    // Pointy ears
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.moveTo(x + w * 0.25, y + h * 0.3); c.lineTo(x + w * 0.2, y + h * 0.02); c.lineTo(x + w * 0.38, y + h * 0.22); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.75, y + h * 0.3); c.lineTo(x + w * 0.8, y + h * 0.02); c.lineTo(x + w * 0.62, y + h * 0.22); c.closePath(); c.fill(); c.stroke();
+    // Inner ears
+    c.fillStyle = '#ffab91';
+    c.beginPath(); c.moveTo(x + w * 0.27, y + h * 0.26); c.lineTo(x + w * 0.24, y + h * 0.1); c.lineTo(x + w * 0.34, y + h * 0.22); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(x + w * 0.73, y + h * 0.26); c.lineTo(x + w * 0.76, y + h * 0.1); c.lineTo(x + w * 0.66, y + h * 0.22); c.closePath(); c.fill();
+    // Snout + shiny nose
+    c.fillStyle = '#fff';
+    c.beginPath();
+    c.ellipse(cx + eo, y + h * 0.42, w * 0.14, h * 0.1, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#2a1a12';
+    c.beginPath(); c.ellipse(cx + eo * 1.5, y + h * 0.37, w * 0.045, h * 0.032, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.beginPath(); c.arc(cx + eo * 1.5 - w * 0.013, y + h * 0.358, w * 0.014, 0, Math.PI * 2); c.fill();
+    // Eyes
+    charEye(c, cx + eo - w * 0.15, y + h * 0.32, w * 0.09, blink, f);
+    charEye(c, cx + eo + w * 0.15, y + h * 0.32, w * 0.09, blink, f);
+    // Whiskers
+    c.strokeStyle = 'rgba(120,110,110,0.8)';
+    c.lineWidth = Math.max(0.6, w * 0.016);
+    const wx = cx + f * w * 0.15;
+    c.beginPath(); c.moveTo(wx, y + h * 0.4); c.lineTo(wx + f * w * 0.2, y + h * 0.36); c.stroke();
+    c.beginPath(); c.moveTo(wx, y + h * 0.42); c.lineTo(wx + f * w * 0.2, y + h * 0.44); c.stroke();
+    // Feet
+    c.fillStyle = darken(accentColor, 0.05);
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.ellipse(cx - w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(cx + w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    // Blush
+    charBlush(c, cx - w * 0.23, y + h * 0.38, w * 0.05, h * 0.028);
+    charBlush(c, cx + w * 0.23, y + h * 0.38, w * 0.05, h * 0.028);
+
+  } else if (charId === 'tiger') {
+    const cx = x + w * 0.5;
+    // Tail
+    c.strokeStyle = bodyColor;
+    c.lineWidth = Math.max(2.5, w * 0.09);
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(cx - f * w * 0.2, y + h * 0.65);
+    c.quadraticCurveTo(cx - f * w * 0.5, y + h * 0.4, cx - f * w * 0.35, y + h * 0.32);
+    c.stroke();
+    c.lineCap = 'butt';
+    // Body
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
+    roundRect(c, x + w * 0.12, y + h * 0.2, w * 0.76, h * 0.6, w * 0.2);
+    c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Stripes (rounded)
+    c.fillStyle = darken(accentColor, 0.05);
+    for (let i = 0; i < 3; i++) {
+      const sy = y + h * (0.32 + i * 0.14);
+      roundRect(c, x + w * 0.2, sy, w * 0.14, h * 0.045, h * 0.022); c.fill();
+      roundRect(c, x + w * 0.66, sy, w * 0.14, h * 0.045, h * 0.022); c.fill();
+    }
+    // Belly
+    c.fillStyle = '#fff3e0';
+    c.beginPath();
+    c.ellipse(cx, y + h * 0.58, w * 0.2, h * 0.17, 0, 0, Math.PI * 2);
+    c.fill();
+    // Round ears
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.arc(x + w * 0.22, y + h * 0.18, w * 0.12, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.arc(x + w * 0.78, y + h * 0.18, w * 0.12, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = '#ffab91';
+    c.beginPath(); c.arc(x + w * 0.22, y + h * 0.18, w * 0.06, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(x + w * 0.78, y + h * 0.18, w * 0.06, 0, Math.PI * 2); c.fill();
+    // Head
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
+    c.beginPath(); c.ellipse(cx, y + h * 0.28, w * 0.28, h * 0.18, 0, 0, Math.PI * 2); c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Forehead stripe
+    c.fillStyle = darken(accentColor, 0.05);
+    roundRect(c, cx - w * 0.04, y + h * 0.15, w * 0.08, h * 0.1, h * 0.02); c.fill();
+    // Muzzle + nose
+    c.fillStyle = '#fff3e0';
+    c.beginPath();
+    c.ellipse(cx + eo, y + h * 0.35, w * 0.12, h * 0.07, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#d84315';
+    c.beginPath(); c.ellipse(cx + eo * 1.3, y + h * 0.32, w * 0.042, h * 0.032, 0, 0, Math.PI * 2); c.fill();
+    // Eyes
+    charEye(c, cx + eo - w * 0.13, y + h * 0.27, w * 0.085, blink, f);
+    charEye(c, cx + eo + w * 0.13, y + h * 0.27, w * 0.085, blink, f);
+    // Whiskers
+    c.strokeStyle = 'rgba(140,130,130,0.8)';
+    c.lineWidth = Math.max(0.6, w * 0.016);
+    const twx = cx + f * w * 0.12;
+    c.beginPath(); c.moveTo(twx, y + h * 0.34); c.lineTo(twx + f * w * 0.2, y + h * 0.3); c.stroke();
+    c.beginPath(); c.moveTo(twx, y + h * 0.36); c.lineTo(twx + f * w * 0.2, y + h * 0.38); c.stroke();
+    // Feet
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.ellipse(cx - w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(cx + w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    // Blush
+    charBlush(c, cx - w * 0.22, y + h * 0.35, w * 0.05, h * 0.028);
+    charBlush(c, cx + w * 0.22, y + h * 0.35, w * 0.05, h * 0.028);
+
+  } else if (charId === 'axolotl') {
+    const cx = x + w * 0.5;
+    // Gills — the signature axolotl feature, 3 branches each side
+    c.strokeStyle = accentColor;
+    c.lineWidth = Math.max(2, w * 0.06);
+    c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x + w * 0.2, y + h * 0.35); c.lineTo(x + w * 0.02, y + h * 0.1); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.18, y + h * 0.3); c.lineTo(x - w * 0.02, y + h * 0.22); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.15, y + h * 0.35); c.lineTo(x - w * 0.03, y + h * 0.35); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.8, y + h * 0.35); c.lineTo(x + w * 0.98, y + h * 0.1); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.82, y + h * 0.3); c.lineTo(x + w * 1.02, y + h * 0.22); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.85, y + h * 0.35); c.lineTo(x + w * 1.03, y + h * 0.35); c.stroke();
+    c.lineCap = 'butt';
+    // Gill tips
+    c.fillStyle = accentColor;
+    for (const [tx, ty] of [[0.02, 0.1], [-0.02, 0.22], [-0.03, 0.35], [0.98, 0.1], [1.02, 0.22], [1.03, 0.35]]) {
+      c.beginPath(); c.arc(x + w * tx, y + h * ty, Math.max(1.5, w * 0.055), 0, Math.PI * 2); c.fill();
+    }
+    // Tail (behind body)
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath();
+    c.moveTo(cx - f * w * 0.15, y + h * 0.7);
+    c.quadraticCurveTo(cx - f * w * 0.5, y + h * 0.55, cx - f * w * 0.45, y + h * 0.45);
+    c.quadraticCurveTo(cx - f * w * 0.35, y + h * 0.6, cx - f * w * 0.1, y + h * 0.72);
+    c.closePath();
+    c.fill(); c.stroke();
+    // Body (rounded, chubby)
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
+    c.beginPath();
+    c.ellipse(cx, y + h * 0.5, w * 0.38, h * 0.35, 0, 0, Math.PI * 2);
+    c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Belly spots
+    c.fillStyle = darken(accentColor, 0.05);
+    c.beginPath(); c.arc(x + w * 0.36, y + h * 0.58, w * 0.032, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(x + w * 0.56, y + h * 0.62, w * 0.026, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(x + w * 0.66, y + h * 0.5, w * 0.022, 0, Math.PI * 2); c.fill();
+    // Head
+    c.fillStyle = charGrad(c, x, y, w, h, lighten(bodyColor, 0.06));
+    c.beginPath();
+    c.ellipse(cx, y + h * 0.33, w * 0.3, h * 0.2, 0, 0, Math.PI * 2);
+    c.fill();
+    charOutline(c, bodyColor, w); c.stroke();
+    // Wide smile
+    c.strokeStyle = '#2a1a12';
+    c.lineWidth = Math.max(1.1, w * 0.04);
+    c.beginPath(); c.arc(cx + eo * 0.5, y + h * 0.38, w * 0.12, 0.12, Math.PI - 0.12); c.stroke();
+    // Blush
+    charBlush(c, cx - w * 0.22, y + h * 0.38, w * 0.055, h * 0.03);
+    charBlush(c, cx + w * 0.22, y + h * 0.38, w * 0.055, h * 0.03);
+    // Eyes (big, shiny)
+    charEye(c, cx + eo - w * 0.13, y + h * 0.3, w * 0.08, blink, f);
+    charEye(c, cx + eo + w * 0.13, y + h * 0.3, w * 0.08, blink, f);
+    // Stubby legs
+    c.fillStyle = bodyColor;
+    charOutline(c, bodyColor, w);
+    c.beginPath(); c.ellipse(cx - w * 0.25, y + h * 0.8, w * 0.1, h * 0.08, -0.2, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(cx + w * 0.25, y + h * 0.8, w * 0.1, h * 0.08, 0.2, 0, Math.PI * 2); c.fill(); c.stroke();
+  }
+}
+
+function drawPlayer() {
+  const p = state.player;
+  const baseChar = CHARS[state.character];
+  const eq = save.equipped[state.character];
+  const skin = COSMETICS.skin.find(s => s.id === eq.skin);
+  const hat = COSMETICS.hat.find(h => h.id === eq.hat);
+
+  const bodyColor = skin && skin.tint ? skin.tint : baseChar.body;
+  const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : baseChar.accent;
+
+  const y = p.y - state.cameraY;
+  // Squash on landing + stretch when rising fast
+  const rise = Math.max(0, Math.min(1, (-p.vy - 9) / 8));
+  const sx = (1 + p.squish * 0.35) * (1 - 0.06 * rise);
+  const sy = (1 - p.squish * 0.35) * (1 + 0.09 * rise);
+  const drawW = p.w * sx;
+  const drawH = p.h * sy;
+  const drawX = p.x + (p.w - drawW) / 2;
+  const drawY = y + (p.h - drawH);
+
+  // Shadow (stays flat, never rotates with the body)
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(p.x + p.w/2, y + p.h + 2, drawW/2, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Lean into horizontal movement — sells the steering at a glance
+  const lean = Math.max(-0.26, Math.min(0.26, p.vx * 0.034));
+  ctx.save();
+  ctx.translate(p.x + p.w / 2, y + p.h / 2);
+  ctx.rotate(lean);
+  ctx.translate(-(p.x + p.w / 2), -(y + p.h / 2));
+
+  drawCharacter(ctx, state.character, drawX, drawY, drawW, drawH, bodyColor, accentColor, p.facing);
+
+  // Hat on top (leans with the character)
+  if (hat && hat.draw) hat.draw(ctx, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const pt of state.particles) {
+    ctx.globalAlpha = Math.max(0, pt.life);
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y - state.cameraY, 1.2 + pt.life * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawGhost() {
+  if (!save.ghostRun) return;
+  const pos = getGhostPosAtFrame(ghostFrame);
+  if (!pos) return;
+  const y = pos.y - state.cameraY;
+  if (y < -50 || y > H + 50) return;
+
+  const ghostCharId = save.ghostChar || 'turtle';
+  const ghostChar = CHARS[ghostCharId] || CHARS.turtle;
+  const w = 34, h = 34;
+
+  ctx.save();
+  ctx.globalAlpha = 0.3;
+  drawCharacter(ctx, ghostCharId, pos.x, y, w, h, ghostChar.body, ghostChar.accent, 1);
+  ctx.restore();
+
+  // "GHOST" label
+  const p = state.player;
+  if (p && Math.abs(pos.x - p.x) < 100 && Math.abs(pos.y - p.y) < 200) {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GHOST', pos.x + w/2, y - 4);
+    ctx.restore();
+  }
+}
+
+/* Dashed golden line at your all-time best height. A visible target to
+   chase is far more motivating than an abstract number in a menu. */
+function drawBestLine() {
+  const best = save.bestHeight;
+  if (!best || best < 50) return;
+  const sy = (H - 120 - best / PHYS.scoreScale) - state.cameraY;
+  if (sy < -30 || sy > H + 30) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,210,63,0.55)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([10, 8]);
+  ctx.beginPath();
+  ctx.moveTo(0, sy);
+  ctx.lineTo(W, sy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,210,63,0.95)';
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('BEST ' + best + 'm', W - 8, sy - 6);
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+
+function drawTexts() {
+  for (const tx of state.texts) {
+    const sy = tx.y - state.cameraY;
+    if (sy < -60 || sy > H + 60) continue;
+    ctx.globalAlpha = Math.min(1, tx.life * 1.5);
+    ctx.font = '800 ' + tx.size + 'px Fredoka, Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(10,6,23,0.75)';
+    ctx.strokeText(tx.str, tx.x, sy);
+    ctx.fillStyle = tx.color;
+    ctx.fillText(tx.str, tx.x, sy);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+/* First-run hint: fades away permanently once the player climbs above 40m */
+function drawTutorialHint() {
+  if (save.tutorialDone || state.heightM > 40 || !state.player) return;
+  const p = state.player;
+  const sy = p.y - state.cameraY - 44;
+  const pulse = 0.65 + Math.sin(state.gameTime * 0.08) * 0.25;
+  const hint = isTouchDevice() ? 'Tilt your phone to steer' : 'Hold ← → or A / D to steer';
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.font = '700 14px Fredoka, Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = 'rgba(10,6,23,0.8)';
+  ctx.strokeText(hint, W / 2, sy);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(hint, W / 2, sy);
+  ctx.restore();
+}
+
+function render() {
+  drawSky();
+  if (state.mode === 'menu') {
+    // Living title screen: the meadow + your character, idle-hopping on the grass
+    drawGround();
+    drawMenuPet();
+    // build version, bottom-left — always know what you're playing
+    ctx.font = '600 10px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(GAME_VERSION_STR, 8, H - 8);
+    ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
+  }
+  if (state.mode === 'playing' || state.mode === 'dead' || state.mode === 'paused') {
+    // Shake offset computed in update(), so paused frames hold still.
+    ctx.save();
+    ctx.translate(Math.round(state.shakeX), Math.round(state.shakeY));
+    drawGround();
+    drawPlatforms();
+    drawCoins();
+    drawHazards();
+    drawPowerups();
+    drawBestLine();
+    drawParticles();
+    drawGhost();
+    if (state.player) drawPlayer();
+    drawPlayerStatusFx();
+    drawTutorialHint();
+    drawTexts();
+    ctx.restore();
+
+    // Subtle static vignette focuses the eye on the play column
+    ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
+
+    // Full-screen feedback flash sits above the world, below the UI overlays
+    if (state.flashAlpha > 0 && state.flashColor) {
+      ctx.globalAlpha = Math.min(1, state.flashAlpha);
+      ctx.fillStyle = state.flashColor;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function lerpColor(a, b, t) {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ar = (pa >> 16) & 255, ag = (pa >> 8) & 255, ab = pa & 255;
+  const br = (pb >> 16) & 255, bg = (pb >> 8) & 255, bb = pb & 255;
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function darken(hex, amt) {
+  const p = parseInt(hex.slice(1), 16);
+  let r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
+  r = Math.round(r * (1 - amt));
+  g = Math.round(g * (1 - amt));
+  b = Math.round(b * (1 - amt));
+  return `rgb(${r},${g},${b})`;
+}
+
+function lighten(hex, amt) {
+  const p = parseInt(hex.slice(1), 16);
+  let r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
+  r = Math.round(r + (255 - r) * amt);
+  g = Math.round(g + (255 - g) * amt);
+  b = Math.round(b + (255 - b) * amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+function startGame(weekly) {
+  state.mode = 'playing';
+  state.weekly = !!weekly;
+  document.body.dataset.mode = 'playing';
+  state.modifier = state.pendingModifier || null;
+  state.player = makePlayer();
+  state.coins.length = 0;
+  state.hazards.length = 0;
+  state.powerups.length = 0;
+  state.jetpackFrames = 0;
+  state.shieldActive = false;
+  state.invulnFrames = 0;
+  state.particles.length = 0;
+  state.cameraY = 0;
+  state.highestY = state.player.y;
+  state.runCoins = 0;
+  state.heightM = 0;
+  state.zone = 0;
+  state.trailTimer = 0;
+  state.nearMisses = 0;
+  state.continueUsed = false;
+  state.recordedRun = false;
+  state.bank = null;
+  state.hazardHits = 0;
+  state.springBounces = 0;
+  state.powerupsGrabbed = 0;
+  // Reset per-run feedback state
+  state.gameTime = 0;
+  state.shakeMag = 0; state.shakeX = 0; state.shakeY = 0;
+  state.flashColor = null; state.flashAlpha = 0;
+  state.texts.length = 0;
+  state.coinStreak = 0; state.coinStreakTimer = 0;
+  state.nextMilestone = MILESTONE_STEP;
+  state.bestBeaten = false;
+  state.magnetFrames = 0;
+  state.lastZone = -1;
+  state.ghostCursor = 0;
+  state.lastHudH = -1; state.lastHudC = -1;
+
+  if (state.weekly) {
+    // Same seed → same tower for everyone, all week
+    if (!state.tower || state.towerSeed !== weeklySeed()) {
+      state.tower = buildWeeklyTower(500);
+      state.towerSeed = weeklySeed();
+    }
+    state.towerIdx = 0;
+  } else {
+    state.tower = null;
+  }
+
+  seedPlatforms(Math.random);
+
+  // Head Start modifier: score begins at altitude (milestones align to it)
+  const startM = activeModifiers().reduce((a, m) => a + (m.startM || 0), 0);
+  if (startM > 0) {
+    state.highestY = (H - 120) - startM / PHYS.scoreScale;
+    state.heightM = startM;
+    state.nextMilestone = Math.floor(startM / MILESTONE_STEP) * MILESTONE_STEP + MILESTONE_STEP;
+    // Don't fire the NEW BEST fanfare for altitude we didn't climb to
+    state.bestBeaten = state.heightM >= save.bestHeight || state.weekly;
+  }
+
+  // Reset ghost recording
+  ghostRecording = [];
+  ghostFrame = 0;
+
+  // Streak check (only awards on new day)
+  const streakResult = updateStreak();
+  if (streakResult.newDay && streakResult.bonus > 0) {
+    setTimeout(() => showToast(`🔥 Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
+  }
+
+  // Run modifier badge
+  const badge = document.getElementById('runmod-badge');
+  if (state.modifier) {
+    badge.textContent = `${state.modifier.icon} ${state.modifier.name}`;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('gameover').classList.add('hidden');
+  document.getElementById('shop').classList.add('hidden');
+  document.getElementById('pause').classList.add('hidden');
+  document.getElementById('modchooser').classList.add('hidden');
+
+  requestWakeLock();
+}
+
+/* ---------- Pause ----------
+   Halts update() (mode gate) while render() keeps drawing the frozen world
+   behind the overlay. Frame-counted effects (jetpack, vanishing platforms,
+   invulnerability) all live in update(), so they freeze correctly too. */
+function pauseGame() {
+  if (state.mode !== 'playing') return;
+  state.mode = 'paused';
+  document.body.dataset.mode = 'paused';
+  releaseWakeLock();
+  document.getElementById('pz-height').textContent = state.heightM + 'm';
+  document.getElementById('pz-coins').textContent = state.runCoins;
+  syncSoundButtons();
+  document.getElementById('pause').classList.remove('hidden');
+  musicZoneTick(); // duck the soundtrack while paused
+  SFX.click();
+}
+
+function resumeGame() {
+  if (state.mode !== 'paused') return;
+  state.mode = 'playing';
+  document.body.dataset.mode = 'playing';
+  document.getElementById('pause').classList.add('hidden');
+  musicZoneTick();
+  requestWakeLock();
+  SFX.click();
+}
+
+// Abandoning a run: no rewards, no death sequence — straight back to the menu.
+function quitToMenu() {
+  if (state.mode !== 'paused') return;
+  document.getElementById('pause').classList.add('hidden');
+  returnToMenu();
+}
+
+/* Death FX tick: update() is gated to 'playing', so without this the death
+   shake would never play out and the red flash would sit on the game-over
+   screen forever. Runs from the render loop while mode === 'dead'. */
+function deathFxTick() {
+  if (state.shakeMag > 0.2) {
+    state.shakeX = (Math.random() * 2 - 1) * state.shakeMag;
+    state.shakeY = (Math.random() * 2 - 1) * state.shakeMag * 0.7;
+    state.shakeMag *= 0.85;
+  } else {
+    state.shakeX = 0; state.shakeY = 0;
+  }
+  if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - 0.045);
+  for (const pt of state.particles) {
+    pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.15; pt.life -= 0.04;
+  }
+  state.particles = state.particles.filter(pt => pt.life > 0);
+  for (const tx of state.texts) {
+    tx.y += tx.vy; tx.life -= tx.decay;
+  }
+  state.texts = state.texts.filter(tx => tx.life > 0);
+}
+
+function die() {
+  state.mode = 'dead';
+  document.body.dataset.mode = 'dead';
+  // Death feedback: shake + red flash + haptic before the panel slides in
+  addShake(9);
+  addFlash('#ff5252', 0.32);
+  vib([60, 40, 90]);
+  SFX.death();
+  releaseWakeLock();
+  document.getElementById('runmod-badge').classList.add('hidden');
+
+  // Snapshot for Second Chance: if the player continues, everything banked
+  // here is rolled back so the resumed run can earn it again honestly.
+  state.bank = {
+    prevCoins: save.coins,
+    prevXp: save.xp,
+    prevBest: save.bestHeight,
+    prevWeekly: { seed: save.weeklyBest.seed, best: save.weeklyBest.best },
+  };
+
+  // Coins banked: run modifier multipliers + Golden Touch upgrade + perks
+  const coinMult = modMult('coinMult')
+    * upgradeMult('coinValue', 0.05);
+  const bankedCoins = Math.round(state.runCoins * coinMult);
+  save.coins += bankedCoins;
+
+  // Award XP, based on height + coins + near-miss bravery + a small completion bonus
+  const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10 + state.nearMisses * 5;
+  const levelUp = awardXp(xpEarned);
+  state.bank.xpEarned = xpEarned;
+  const runScore = Math.floor(state.heightM) + state.runCoins * 5;
+  window.__gsScore = (window.__gsScore || 0) + runScore;
+  window.__gsBestRun = Math.max(window.__gsBestRun || 0, runScore);
+  if (typeof gameSystem !== 'undefined' && !state.recordedRun) {
+    gameSystem.recordGamePlay(Date.now());
+    state.recordedRun = true; // a continued run must not count twice
+  }
+
+  let isNewBest;
+  if (state.weekly) {
+    // Weekly runs compete on their own board — the all-time best is untouched
+    if (save.weeklyBest.seed !== weeklySeed()) save.weeklyBest = { seed: weeklySeed(), best: 0 };
+    isNewBest = state.heightM > save.weeklyBest.best;
+    if (isNewBest) save.weeklyBest.best = state.heightM;
+  } else {
+    isNewBest = state.heightM > save.bestHeight;
+    if (isNewBest) {
+      save.bestHeight = state.heightM;
+      // Save ghost recording, but only if it's a meaningful run
+      if (ghostRecording.length >= 30) {
+        save.ghostRun = ghostRecording.slice();
+        save.ghostChar = state.character;
+      }
+    }
+  }
+
+  const newlyUnlocked = [];
+  for (const charId of CHAR_ORDER) {
+    const c = CHARS[charId];
+    if (!save.unlockedChars.includes(charId) && save.bestHeight >= c.unlockM) {
+      save.unlockedChars.push(charId);
+      newlyUnlocked.push(c.name);
+    }
+  }
+
+  // Check ALL achievements
+  const newAchievements = checkAchievements({ runCoins: state.runCoins, heightM: state.heightM });
+  const newlyUnlockedNames = [];
+  for (const a of newAchievements) {
+    newlyUnlockedNames.push(a.icon + ' ' + a.name);
+    // Special: gold skin grant
+    if (a.id === 'reach10000' && !save.owned.skin.includes('gold')) {
+      save.owned.skin.push('gold');
+    }
+  }
+
+  persist();
+
+  // Confetti burst behind the panel when it's a new best
+  if (isNewBest) {
+    const confettiColors = ['#ffd23f', '#ff7eb9', '#5cdbff', '#7bdc7f', '#ffffff'];
+    for (let i = 0; i < 46; i++) {
+      state.particles.push({
+        x: W / 2, y: H * 0.3,
+        vx: (Math.random() - 0.5) * 10,
+        vy: -3 - Math.random() * 5.5,
+        life: 1.5,
+        color: confettiColors[i % confettiColors.length],
+      });
+    }
+  }
+
+  document.getElementById('go-height').textContent = state.heightM + 'm';
+  document.getElementById('go-coins').textContent = state.runCoins;
+  document.getElementById('go-best').textContent = (state.weekly
+    ? (save.weeklyBest.seed === weeklySeed() ? save.weeklyBest.best : 0)
+    : save.bestHeight) + 'm';
+  // Numbers count up instead of appearing fully formed
+  animateNumber(document.getElementById('go-height'), 0, state.heightM, 700, 'm');
+  animateNumber(document.getElementById('go-coins'), 0, state.runCoins, 450, '');
+  document.getElementById('go-best-label').textContent = state.weekly ? 'Week Best' : 'Best';
+  document.getElementById('go-newbest').textContent = state.weekly ? '⭐ NEW WEEKLY BEST! ⭐' : '⭐ NEW BEST! ⭐';
+
+  // XP bar on game-over
+  const xpInfo = xpProgressInLevel(save.xp);
+  document.getElementById('go-level').textContent = 'Lv ' + xpInfo.lvl;
+  document.getElementById('go-xp').textContent = '+' + xpEarned + ' XP';
+  document.getElementById('go-xp-bar').style.width = (xpInfo.pct * 100) + '%';
+  document.getElementById('go-newbest').style.display = isNewBest ? 'block' : 'none';
+
+  evaluateMissions();
+
+  // Second Chance: one rewarded continue per run, only where an ad provider
+  // exists (the app). Worth it from 50m up.
+  const continueRow = document.getElementById('continue-row');
+  const canContinue = typeof window.squirtRewardedAd === 'function'
+    && !state.continueUsed && state.heightM >= 50;
+  continueRow.classList.toggle('hidden', !canContinue);
+
+  // Leaderboards: only where the Play Games bridge is active
+  document.getElementById('boards-btn').classList.toggle('hidden', !(window.playGames && window.playGames.available()));
+
+  // Submit scores to Play Games (fire-and-forget, never blocks the panel)
+  if (window.playGames && window.playGames.available()) {
+    if (state.weekly) window.playGames.submitWeekly(state.heightM);
+    window.playGames.submitBest(save.bestHeight);
+  }
+
+  document.getElementById('gameover').classList.remove('hidden');
+
+  const messages = [];
+  if (levelUp) { messages.push(`⭐ Level ${levelUp}!`); setTimeout(() => SFX.levelUp(), 600); }
+  if (state.nearMisses > 0) messages.push(`💨 ${state.nearMisses} near miss${state.nearMisses > 1 ? 'es' : ''}!`);
+  for (const m of missionToasts) messages.push(m);
+  if (newlyUnlocked.length) { messages.push('Unlocked: ' + newlyUnlocked.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1100 : 600); }
+  if (newlyUnlockedNames.length) { messages.push('🏆 ' + newlyUnlockedNames.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1500 : 900); }
+  if (messages.length) {
+    setTimeout(() => showToast(messages.join('  •  ')), 400);
+  }
+}
+
+/* ---------- Second Chance ----------
+   Rolls back everything the death banked, then drops the player onto the
+   highest platform below the camera with a grace shield. Once per run. */
+function continueRun() {
+  const bank = state.bank;
+  if (!bank) return;
+  save.coins = bank.prevCoins;
+  save.xp = bank.prevXp;
+  save.level = levelFromXp(save.xp);
+  if (state.weekly) {
+    save.weeklyBest = { seed: bank.prevWeekly.seed, best: bank.prevWeekly.best };
+  } else {
+    save.bestHeight = bank.prevBest;
+  }
+  persist();
+
+  state.continueUsed = true;
+  state.mode = 'playing';
+  document.body.dataset.mode = 'playing';
+  document.getElementById('gameover').classList.add('hidden');
+
+  // Land on the highest platform below the camera; spawn one if none survived
+  const p = state.player;
+  let plat = null;
+  for (const pl of state.platforms) {
+    if (pl.ground || pl.type === 'breakable' && pl.broken) continue;
+    if (pl.y > state.cameraY + H * 0.35 && pl.y < state.cameraY + H * 0.9) {
+      if (!plat || pl.y < plat.y) plat = pl;
+    }
+  }
+  if (!plat) {
+    plat = { x: W / 2 - 35, y: state.cameraY + H * 0.62, w: 70, h: 14, type: 'static', bounced: false, vx: 0 };
+    state.platforms.push(plat);
+  }
+  p.x = plat.x + plat.w / 2 - p.w / 2;
+  p.y = plat.y - p.h - 1;
+  p.vx = 0;
+  p.vy = 0;
+  p.squish = 0;
+  state.invulnFrames = 90;
+  state.shieldActive = true; // grace shield for the comeback
+  state.cameraY = p.y - H * 0.45;
+  state.shakeMag = 0; state.shakeX = 0; state.shakeY = 0;
+  state.flashAlpha = 0;
+
+  addFlash('#5cdbff', 0.25);
+  addText(W / 2, p.y - 70, '🎬 Second Chance!', { color: '#5cdbff', size: 24, decay: 0.012 });
+  SFX.powerup();
+  vib([20, 30, 20]);
+  musicZoneTick();
+  requestWakeLock();
+}
+
+function returnToMenu() {
+  state.mode = 'menu';
+  document.body.dataset.mode = 'menu';
+  // Menu backdrop is always the meadow, whatever altitude the run reached
+  state.heightM = 0;
+  state.zone = 0;
+  state.cameraY = 0;
+  document.getElementById('gameover').classList.add('hidden');
+  document.getElementById('shop').classList.add('hidden');
+  document.getElementById('pause').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  musicZoneTick(); // back to the calm menu mix
+  refreshMenu();
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* Eased count-up for score displays */
+function animateNumber(el, from, to, dur, suffix = '') {
+  if (!el) return;
+  const t0 = performance.now();
+  function step(t) {
+    const k = Math.min(1, (t - t0) / dur);
+    const eased = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(from + (to - from) * eased) + suffix;
+    if (k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* Retriggerable one-shot CSS animation on any element */
+function pulseEl(el, cls = 'pulse') {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth; // restart the animation
+  el.classList.add(cls);
+}
+
+function refreshMenu() {
+  document.getElementById('menu-best').textContent = save.bestHeight + 'm';
+  document.getElementById('menu-coins').textContent = save.coins;
+
+  const dm = getDailyModifier();
+  document.getElementById('dailyModBadge').innerHTML =
+    `${dm.icon} <span class="dm-name">${dm.name}</span> — ${dm.desc}`;
+
+  // Level + XP
+  const xpInfo = xpProgressInLevel(save.xp);
+  document.getElementById('menu-level').textContent = 'Lv ' + xpInfo.lvl;
+  document.getElementById('menu-xp-fill').style.width = (xpInfo.pct * 100) + '%';
+  document.getElementById('menu-xp-text').textContent =
+    `${xpInfo.current} / ${xpInfo.needed} XP`;
+
+  // Streak
+  const streakBadge = document.getElementById('streak-badge');
+  if (save.streak > 0) {
+    streakBadge.classList.remove('zero');
+    document.getElementById('streak-num').textContent = save.streak;
+  } else {
+    streakBadge.classList.add('zero');
+  }
+
+  const row = document.getElementById('char-row');
+  row.innerHTML = '';
+  for (const id of CHAR_ORDER) {
+    const c = CHARS[id];
+    const unlocked = save.unlockedChars.includes(id);
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (state.character === id ? ' active' : '') + (unlocked ? '' : ' locked');
+    btn.dataset.char = id;
+    const cv = document.createElement('canvas');
+    drawCharChip(cv, id, 52);
+    btn.appendChild(cv);
+    if (!unlocked) {
+      const lock = document.createElement('span');
+      lock.className = 'lock';
+      lock.textContent = c.unlockM + 'm';
+      btn.appendChild(lock);
+    }
+    btn.addEventListener('click', () => {
+      if (!unlocked) {
+        showToast(`Reach ${c.unlockM}m to unlock ${c.name}`);
+        return;
+      }
+      SFX.click();
+      state.character = id;
+      refreshMenu();
+    });
+    row.appendChild(btn);
+  }
+
+  const c = CHARS[state.character];
+  document.getElementById('char-name').textContent = c.name;
+  const hint = document.getElementById('char-unlock-hint');
+  if (save.unlockedChars.includes(state.character)) {
+    hint.textContent = `★ ${c.perkName} — ${c.perkDesc}`;
+  } else {
+    hint.textContent = `Unlocks at ${c.unlockM}m · ${c.perkName}: ${c.perkDesc}`;
+  }
+
+  // Weekly challenge entry shows this week's best
+  const wb = document.getElementById('weekly-btn');
+  const wBest = save.weeklyBest.seed === weeklySeed() ? save.weeklyBest.best : 0;
+  wb.textContent = wBest > 0 ? `🗓️ Weekly · best ${wBest}m` : '🗓️ Weekly Challenge';
+}
+
+let shopTab = 'hat';
+let shopChar = 'turtle';
+
+function openShop() {
+  shopChar = state.character;
+  if (!save.unlockedChars.includes(shopChar)) shopChar = 'turtle';
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('shop').classList.remove('hidden');
+  refreshShop();
+}
+
+function closeShop() {
+  document.getElementById('shop').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+
+function refreshShop() {
+  document.getElementById('shop-coin-count').textContent = save.coins;
+
+  const sel = document.getElementById('shop-char-select');
+  sel.innerHTML = '';
+  for (const id of CHAR_ORDER) {
+    const c = CHARS[id];
+    const unlocked = save.unlockedChars.includes(id);
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (shopChar === id ? ' active' : '') + (unlocked ? '' : ' locked');
+    const cv = document.createElement('canvas');
+    drawCharChip(cv, id, 44);
+    btn.appendChild(cv);
+    if (!unlocked) {
+      const lock = document.createElement('span');
+      lock.className = 'lock';
+      lock.textContent = '🔒';
+      btn.appendChild(lock);
+    }
+    btn.addEventListener('click', () => {
+      if (!unlocked) { showToast(`Reach ${c.unlockM}m to unlock ${c.name}`); return; }
+      SFX.click();
+      shopChar = id;
+      refreshShop();
+    });
+    sel.appendChild(btn);
+  }
+
+  document.querySelectorAll('.shop-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === shopTab);
+  });
+
+  const grid = document.getElementById('shop-grid');
+  const upgList = document.getElementById('upg-list');
+
+  if (shopTab === 'upgrade') {
+    grid.classList.add('hidden');
+    upgList.classList.remove('hidden');
+    upgList.innerHTML = '';
+    for (const u of UPGRADES) {
+      const lvl = upgradeLevel(u.id);
+      const maxed = lvl >= u.max;
+      const cost = upgradeCost(u);
+      const row = document.createElement('div');
+      row.className = 'upg-row';
+      const pips = Array.from({ length: u.max }, (_, i) =>
+        `<span class="upg-pip${i < lvl ? ' on' : ''}"></span>`).join('');
+      row.innerHTML = `
+        <div class="upg-icon">${u.icon}</div>
+        <div class="upg-info">
+          <div class="upg-name">${u.name}</div>
+          <div class="upg-desc">${u.desc}</div>
+          <div class="upg-pips">${pips}</div>
+        </div>`;
+      const buy = document.createElement('button');
+      buy.className = 'upg-buy' + (maxed ? ' maxed' : '') + (!maxed && save.coins < cost ? ' cant' : '');
+      buy.textContent = maxed ? 'MAX' : '🪙 ' + cost;
+      if (!maxed) {
+        buy.addEventListener('click', () => {
+          if (save.coins < cost) { SFX.error(); showToast('Not enough coins!'); return; }
+          SFX.buy();
+          save.coins -= cost;
+          save.upgrades[u.id] = lvl + 1;
+          persist();
+          showToast(`${u.name} → Lv ${lvl + 1}!`);
+          pulseEl(document.getElementById('shop-coin-count'));
+          refreshShop();
+        });
+      }
+      row.appendChild(buy);
+      upgList.appendChild(row);
+    }
+    document.getElementById('shop-coin-count').textContent = save.coins;
+    return;
+  }
+
+  grid.classList.remove('hidden');
+  upgList.classList.add('hidden');
+  grid.innerHTML = '';
+  const items = COSMETICS[shopTab];
+  const ownedList = save.owned[shopTab];
+  const equippedId = save.equipped[shopChar][shopTab];
+
+  for (const item of items) {
+    const owned = ownedList.includes(item.id);
+    const equipped = equippedId === item.id;
+    const lockedByAchievement = item.achievement && !save.achievements.includes(item.achievement);
+    const lockedByLevel = item.levelReq && save.level < item.levelReq;
+    const canAfford = save.coins >= item.price;
+
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    if (equipped) div.classList.add('equipped');
+    else if (owned) div.classList.add('owned');
+    if ((lockedByAchievement || lockedByLevel) && !owned) div.classList.add('locked');
+    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && item.price > 0) div.classList.add('cant-afford');
+
+    const previewWrap = document.createElement('div');
+    previewWrap.className = 'shop-item-preview';
+    const pcanvas = document.createElement('canvas');
+    pcanvas.width = 56; pcanvas.height = 56;
+    previewWrap.appendChild(pcanvas);
+    drawShopPreview(pcanvas, shopChar, shopTab, item);
+
+    const name = document.createElement('div');
+    name.className = 'shop-item-name';
+    name.textContent = item.name;
+
+    const status = document.createElement('div');
+    if (equipped) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Equipped';
+    } else if (owned) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Tap to equip';
+    } else if (lockedByAchievement) {
+      status.className = 'shop-item-status';
+      status.textContent = item.lockedHint || 'Reach 10000m';
+    } else if (lockedByLevel) {
+      status.className = 'shop-item-status';
+      status.textContent = 'Lv ' + item.levelReq;
+    } else {
+      status.className = 'shop-item-price';
+      status.textContent = item.price === 0 ? 'Free' : '🪙 ' + item.price;
+    }
+
+    div.appendChild(previewWrap);
+    div.appendChild(name);
+    div.appendChild(status);
+
+    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel));
+    grid.appendChild(div);
+  }
+}
+
+function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel) {
+  if (lockedByAchievement && !owned) {
+    SFX.error();
+    showToast((item.lockedHint || 'Reach 10000m') + ' to unlock!');
+    return;
+  }
+  if (lockedByLevel && !owned) {
+    SFX.error();
+    showToast(`Reach Level ${item.levelReq} to unlock!`);
+    return;
+  }
+  if (equipped) return;
+  if (owned) {
+    SFX.click();
+    save.equipped[shopChar][shopTab] = item.id;
+    persist();
+    refreshShop();
+    return;
+  }
+  if (save.coins < item.price) {
+    SFX.error();
+    showToast('Not enough coins!');
+    return;
+  }
+  SFX.buy();
+  save.coins -= item.price;
+  save.owned[shopTab].push(item.id);
+  save.equipped[shopChar][shopTab] = item.id;
+  persist();
+  showToast(`Bought ${item.name}!`);
+  pulseEl(document.getElementById('shop-coins'));
+  refreshShop();
+}
+
+function drawShopPreview(canvas, charId, tab, item) {
+  const pctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const baseChar = CHARS[charId];
+
+  const px = 12, py = 12, pw = 32, ph = 32;
+
+  let bodyColor = baseChar.body;
+  let accentColor = baseChar.accent;
+  if (tab === 'skin' && item.tint) {
+    bodyColor = item.tint;
+    accentColor = darken(item.tint, 0.3);
+  }
+
+  if (tab === 'aura' && item.color) {
+    const c = item.color === 'rainbow' ? '#ff7eb9' : item.color;
+    pctx.fillStyle = c;
+    pctx.globalAlpha = 0.4;
+    pctx.beginPath(); pctx.arc(w/2, h/2, 22, 0, Math.PI*2); pctx.fill();
+    pctx.globalAlpha = 1;
+  }
+
+  drawCharacter(pctx, charId, px, py, pw, ph, bodyColor, accentColor, 1);
+
+  if (tab === 'hat' && item.draw) {
+    item.draw(pctx, px, py, pw, ph);
+  }
+}
+
+document.getElementById('play-btn').addEventListener('click', () => { initAudio(); enableTiltForMobile(); openModChooser(false); });
+document.getElementById('shop-btn').addEventListener('click', () => { initAudio(); openShop(); });
+document.getElementById('shop-back-btn').addEventListener('click', closeShop);
+document.getElementById('retry-btn').addEventListener('click', () => { initAudio(); enableTiltForMobile(); startGame(state.weekly); });
+document.getElementById('menu-btn').addEventListener('click', returnToMenu);
+
+/* ---------- Pre-run modifier chooser ---------- */
+let chooserWeekly = false;
+function openModChooser(weekly) {
+  chooserWeekly = weekly;
+  const daily = getDailyModifier();
+  // Two random cards, always including today's daily as a safe pick
+  const others = DAILY_MODIFIERS.filter(m => m.id !== daily.id);
+  for (let i = others.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  const cards = [daily, others[Math.floor(Math.random() * others.length)]];
+  const wrap = document.getElementById('mod-cards');
+  wrap.innerHTML = '';
+  cards.forEach((m, idx) => {
+    const card = document.createElement('button');
+    card.className = 'mod-card' + (idx === 0 ? ' todays' : '');
+    card.innerHTML = `
+      <span class="m-icon">${m.icon}</span>
+      <div class="m-name">${m.name}</div>
+      <div class="m-desc">${m.desc}</div>
+      ${idx === 0 ? '<span class="m-tag">Today\'s Sky</span>' : ''}`;
+    card.addEventListener('click', () => {
+      SFX.click();
+      state.pendingModifier = m;
+      document.getElementById('modchooser').classList.add('hidden');
+      startGame(weekly);
+    });
+    wrap.appendChild(card);
+  });
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('modchooser').classList.remove('hidden');
+}
+document.getElementById('mod-skip-btn').addEventListener('click', () => {
+  SFX.click();
+  state.pendingModifier = null;
+  document.getElementById('modchooser').classList.add('hidden');
+  startGame(chooserWeekly);
+});
+
+/* ---------- Pause wiring ---------- */
+document.getElementById('pause-btn').addEventListener('click', pauseGame);
+document.getElementById('resume-btn').addEventListener('click', resumeGame);
+document.getElementById('pz-restart-btn').addEventListener('click', startGame);
+document.getElementById('pz-quit-btn').addEventListener('click', quitToMenu);
+document.getElementById('pause-sound-toggle').addEventListener('click', toggleSound);
+
+// One source of truth for both sound toggles (settings + pause menus)
+function syncSoundButtons() {
+  for (const id of ['sound-toggle', 'pause-sound-toggle']) {
+    const btn = document.getElementById(id);
+    if (!btn) continue;
+    btn.textContent = sound.enabled ? 'ON' : 'OFF';
+    btn.classList.toggle('off', !sound.enabled);
+  }
+  const mbtn = document.getElementById('music-toggle');
+  if (mbtn) {
+    mbtn.textContent = music.enabled ? 'ON' : 'OFF';
+    mbtn.classList.toggle('off', !music.enabled);
+  }
+}
+function toggleSound() {
+  sound.enabled = !sound.enabled;
+  save.settings.sound = sound.enabled;
+  persist();
+  syncSoundButtons();
+  if (sound.enabled) SFX.click();
+}
+document.getElementById('music-toggle').addEventListener('click', () => {
+  initAudio();
+  setMusicEnabled(!music.enabled);
+  syncSoundButtons();
+  if (music.enabled) SFX.click();
+});
+
+// Weekly challenge entry
+document.getElementById('weekly-btn').addEventListener('click', () => {
+  initAudio();
+  enableTiltForMobile();
+  openModChooser(true);
+});
+
+document.querySelectorAll('.shop-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    SFX.click();
+    shopTab = t.dataset.tab;
+    refreshShop();
+  });
+});
+
+/* ---------- Settings ---------- */
+function openSettings() {
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('settings').classList.remove('hidden');
+  document.getElementById('tilt-row').classList.toggle('hidden', !tilt.enabled);
+  refreshSettings();
+}
+function closeSettings() {
+  document.getElementById('settings').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+function refreshSettings() {
+  syncSoundButtons();
+}
+
+document.getElementById('settings-btn').addEventListener('click', () => { initAudio(); openSettings(); });
+document.getElementById('settings-back-btn').addEventListener('click', closeSettings);
+document.getElementById('sound-toggle').addEventListener('click', toggleSound);
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('This will erase ALL progress, coins, cosmetics, and achievements. Are you sure?')) {
+    localStorage.removeItem(SAVE_KEY);
+    save = defaultSave();
+    sound.enabled = true;
+    persist();
+    showToast('Progress reset');
+    closeSettings();
+  }
+});
+
+/* ---------- Achievements viewer ---------- */
+function openAchievements() {
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('achievements').classList.remove('hidden');
+  refreshAchievements();
+}
+function closeAchievements() {
+  document.getElementById('achievements').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  refreshMenu();
+}
+function refreshAchievements() {
+  const earned = save.achievements.length;
+  const total = ACHIEVEMENTS.length;
+  document.getElementById('ach-count').textContent = `${earned} / ${total}`;
+
+  const grid = document.getElementById('ach-grid');
+  grid.innerHTML = '';
+  for (const a of ACHIEVEMENTS) {
+    const done = save.achievements.includes(a.id);
+    const div = document.createElement('div');
+    div.className = 'ach-item' + (done ? ' earned' : ' locked');
+
+    div.innerHTML = `
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-info">
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+      <div class="ach-check">${done ? '✅' : '🔒'}</div>
+    `;
+    grid.appendChild(div);
+  }
+}
+
+document.getElementById('ach-btn').addEventListener('click', openAchievements);
+document.getElementById('ach-back-btn').addEventListener('click', closeAchievements);
+
+/* ---------- Daily missions wiring ---------- */
+document.getElementById('missions-btn').addEventListener('click', openMissions);
+document.getElementById('missions-back-btn').addEventListener('click', closeMissions);
+
+/* ---------- Second Chance wiring ---------- */
+document.getElementById('continue-btn').addEventListener('click', () => {
+  if (state.continueUsed) return;
+  SFX.click();
+  if (typeof window.squirtRewardedAd === 'function') {
+    window.squirtRewardedAd(continueRun);
+  } else {
+    continueRun(); // no ad provider (web/dev) — grant directly so the flow is testable
+  }
+});
+document.getElementById('boards-btn').addEventListener('click', () => {
+  SFX.click();
+  if (window.playGames && window.playGames.available()) {
+    if (state.weekly) window.playGames.showWeekly();
+    else window.playGames.showBest();
+  }
+});
+
+/* Fullscreen: the canvas backs the entire viewport. W/H become the CSS
+   pixel size, the backing store scales by DPR (capped at 2x), and the
+   world is kept inside the new bounds when the viewport changes shape
+   (rotation, split-screen, resized browser). */
+function buildScreenSprites() {
+  groundSprite = makeSprite(Math.max(320, W), 52, (g, w) => paintGround(g, w));
+  vignetteSprite = makeSprite(W, H, (g, w, h) => {
+    const rg = g.createRadialGradient(w / 2, h / 2, h * 0.34, w / 2, h / 2, h * 0.72);
+    rg.addColorStop(0, 'rgba(8,6,20,0)');
+    rg.addColorStop(1, 'rgba(8,6,20,0.22)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, w, h);
+  });
+}
+
+function resize() {
+  W = Math.max(320, Math.round(window.innerWidth));
+  H = Math.max(400, Math.round(window.innerHeight));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  buildScreenSprites();
+  if (state.player) {
+    state.player.x = Math.max(0, Math.min(W - state.player.w, state.player.x));
+    for (const pl of state.platforms) {
+      if (pl.ground) { pl.x = 0; pl.w = W; continue; } // ground always spans the screen
+      if (pl.x + pl.w > W) pl.x = Math.max(0, W - pl.w);
+    }
+    for (const c of state.coins) c.x = Math.max(10, Math.min(W - 10, c.x));
+    for (const hz of state.hazards) hz.x = Math.max(hz.r, Math.min(W - hz.r, hz.x));
+    for (const pu of state.powerups) pu.x = Math.max(12, Math.min(W - 12, pu.x));
+  }
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+resize();
+
+/* ---------- Cold-start warm-up ----------
+   The first Play used to jank: audio context creation, first-time GPU
+   uploads of every sprite, and a webfont swap all fired at once. The intro
+   screen gives us a quiet window to do all of it before a run can start. */
+let warmed = false;
+function warmUp() {
+  if (warmed) return;
+  warmed = true;
+  const all = [
+    sunSprite, duskGlowSprite, moonSprite, fireflySprite, pollenSprite,
+    vignetteSprite, groundSprite,
+    platSprites.spring, platSprites.moving, platSprites.breakable,
+    platSprites.vanishing, platSprites.cloud,
+  ].concat(platSprites.static, coinFrames);
+  // Force GPU texture upload: once onto the live context, once offscreen
+  ctx.globalAlpha = 0.01;
+  for (const s of all) { try { ctx.drawImage(s.c, 0, 0, 12, 12); } catch (e) { /* not ready */ } }
+  ctx.globalAlpha = 1;
+  const off = document.createElement('canvas');
+  off.width = 8; off.height = 8;
+  const g = off.getContext('2d');
+  for (const s of all) { try { g.drawImage(s.c, 0, 0, 8, 8); } catch (e) { /* ignore */ } }
+  // Pre-load the display fonts so canvas text doesn't swap mid-run
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('700 16px Fredoka');
+    document.fonts.load('800 16px Fredoka');
+    document.fonts.load('700 12px Inter');
+  }
+}
+setTimeout(warmUp, 400); // the intro screen covers this work
+
+// First tap anywhere brings the AudioContext to life (autoplay policies
+// require a gesture) — so Play never pays that cost.
+function warmAudio() {
+  initAudio();
+  if (sound.ctx && sound.ctx.state === 'suspended') sound.ctx.resume().catch(() => {});
+  document.removeEventListener('pointerdown', warmAudio);
+}
+document.addEventListener('pointerdown', warmAudio);
+
+/* ---------- Intro / splash ---------- */
+let introDone = false;
+function dismissIntro() {
+  if (introDone) return;
+  introDone = true;
+  const el = document.getElementById('intro');
+  el.classList.add('gone');
+  setTimeout(() => el.classList.add('hide'), 380);
+  document.body.dataset.mode = 'menu';
+  document.getElementById('menu').classList.remove('hidden');
+  SFX.click();
+}
+document.getElementById('intro').addEventListener('pointerdown', () => { dismissIntro(); });
+setTimeout(dismissIntro, 3600); // auto-continue for the patient ones
+
+document.body.dataset.mode = 'intro';
+refreshMenu();
+document.getElementById('intro-version').textContent = GAME_VERSION_STR;
+document.getElementById('settings-version').textContent = GAME_VERSION_STR;
+
+// Keep the screen awake while playing so the phone doesn't dim/sleep
+// mid-run. Progressive enhancement: no-ops where Wake Lock isn't supported.
+// The lock is auto-dropped when the tab hides, so we re-acquire on return.
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); }
+  catch (e) { /* denied or not allowed right now; harmless */ }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  // Auto-pause: coming back to the app should never mean finding out you
+  // fell while it was backgrounded. Audio is suspended too (battery).
+  if (document.visibilityState === 'hidden') {
+    if (state.mode === 'playing') pauseGame();
+    if (sound.ctx && sound.ctx.state === 'running') sound.ctx.suspend().catch(() => {});
+  } else {
+    if (sound.ctx && sound.ctx.state === 'suspended') sound.ctx.resume().catch(() => {});
+    if (state.mode === 'playing') requestWakeLock();
+  }
+});
+
+// Fixed-timestep loop: physics runs a fixed number of times per real
+// second no matter the display refresh rate. Without this, a 90/120Hz
+// phone fires requestAnimationFrame 1.5-2x more often and the whole game
+// (gravity, jumps, scrolling) runs that much faster. update() advances by
+// a fixed amount per call, so we call it on a wall-clock schedule instead.
+const STEP_MS = 1000 / 60;   // simulate at 60 Hz
+let simAccumulator = 0;
+let lastFrameTime = performance.now();
+
+function loop(now) {
+  let frameTime = now - lastFrameTime;
+  lastFrameTime = now;
+  // Clamp: after the tab is backgrounded, rAF resumes with a huge delta.
+  // Capping it stops the sim from fast-forwarding through the missed time.
+  if (frameTime > 250) frameTime = 250;
+  simAccumulator += frameTime;
+
+  // Run whole physics steps; cap the count so a slow device can't spiral.
+  let steps = 0;
+  while (simAccumulator >= STEP_MS && steps < 5) {
+    update();
+    simAccumulator -= STEP_MS;
+    steps++;
+  }
+  // If we hit the cap, drop the backlog rather than accumulating lag.
+  if (steps === 5) simAccumulator = 0;
+
+  // Let the death shake/flash/particles finish animating behind the overlay
+  if (state.mode === 'dead') deathFxTick();
+
+  render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+<script>
+function jvdsOpenStrip(){
+  document.getElementById('jvdsStrip').classList.add('open');
+  document.getElementById('jvdsTab').classList.add('hidden');
+}
+function jvdsCloseStrip(){
+  document.getElementById('jvdsStrip').classList.remove('open');
+  document.getElementById('jvdsTab').classList.remove('hidden');
+}
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <div class="footer-links">
+            <a href="/index.html">Home</a>
+            <a href="/pages/books.html">Books</a>
+            <a href="/pages/games.html">Games</a>
+            <a href="/pages/workshop.html">Workshop</a>
+            <a href="/pages/freebies.html">Freebies</a>
+            <a href="/pages/content_hub.html">All Projects</a>
+            <a href="/pages/devlog.html">Dev Log</a>
+            <a href="/pages/about.html">About</a>
+            <a href="/pages/contact.html">Contact</a>
+            <a href="/pages/videos.html">Videos</a>
+            <a href="/pages/faq.html">FAQ</a>
+            <a href="/pages/press.html">Press</a>
+            <a href="/pages/follow_along.html">Follow Along</a>
+            <a href="/pages/sitemap.html">Sitemap</a>
+        </div>
+        <nav class="footer-socials">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/pages/privacy-policy.html">Privacy Policy</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+<script>
+// ══ GAME SYSTEM INTEGRATION ══
+const gameSystem = new GameSystem('sky-high-with-friends', 'Sky High With Friends', 'pip');
+const soundManager = new SoundManager(gameSystem);
+
+// Score → XP + score-tier achievements, handled reactively by the engine
+// (replaces the two setInterval pollers this used to copy-paste).
+gameSystem.trackScore({ xpDivisor: 10, tiers: [[1, 'firstJump'], [100, 'height100'], [500, 'height500']] });
+
+window.addEventListener('beforeunload', () => {
+  gameSystem.recordGamePlay(Date.now());
+  gameSystem.saveState();
+});
+</script>
+</body>
+</html>
