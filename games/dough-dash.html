@@ -38,6 +38,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .tile { width: 100%; aspect-ratio: 1; border: none; border-radius: 10px; font-size: 2rem; background: linear-gradient(135deg, #ffe8ee 0%, #ffd1e0 100%); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.1); transition: transform .1s; }
 .tile:active { transform: scale(.92); }
 .tile.selected { outline: 3px solid #fff; transform: scale(1.08); box-shadow: 0 0 18px rgba(255,255,255,.7); z-index: 2; }
+.tile.swapping { transform: scale(1.22); box-shadow: 0 0 22px rgba(255,255,255,.85); z-index: 3; transition: transform .12s; }
+.tile.hint { animation: hintPulse 1s ease-in-out infinite; }
+@keyframes hintPulse { 0%,100% { box-shadow: 0 0 10px rgba(255,210,74,.4); } 50% { box-shadow: 0 0 22px rgba(255,210,74,.95); transform: scale(1.06); } }
 .tile.matched { animation: pop .3s ease-out forwards; }
 @keyframes pop { 0%{transform:scale(1);opacity:1;} 50%{transform:scale(1.25);} 100%{transform:scale(0);opacity:0;} }
 .tile.bad { animation: badShake .35s; }
@@ -168,17 +171,79 @@ function updateHud() {
   const movesEl = document.getElementById('movesHud');
   movesEl.textContent = left;
   movesEl.parentElement.classList.toggle('low', left <= 5);
+  movesDrama(left);
 }
 
 function floatText(txt, big) {
+  floatTextAt(window.innerWidth / 2, window.innerHeight * 0.38, txt, big);
+}
+function floatTextAt(x, y, txt, big) {
   const div = document.createElement('div');
   div.className = 'float-pop' + (big ? ' big' : '');
   div.textContent = txt;
+  div.style.left = x + 'px';
+  div.style.top = y + 'px';
   document.getElementById('wrapper').appendChild(div);
   setTimeout(() => div.remove(), 900);
 }
 
+/* ── low-moves drama ── */
+let lastMovesLeft = 999;
+function movesDrama(left) {
+  if (left === 3 && lastMovesLeft > 3) { floatText('3 MOVES LEFT!', true); audioEffects.playTap(300); }
+  if (left === 1 && lastMovesLeft > 1) { floatText('LAST MOVE!', true); audioEffects.playTap(220); ScreenShake.shake(document.getElementById('board'), 5, 200); }
+  lastMovesLeft = left;
+}
+
+/* ── idle hint: glow a valid swap after 7s ── */
+let hintTimer = null, hintPair = null;
+function clearHint() {
+  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
+  if (hintPair) {
+    const boardEl = document.getElementById('board');
+    hintPair.forEach(pt => {
+      const el = boardEl.children[pt.r * COLS + pt.c];
+      if (el) el.classList.remove('hint');
+    });
+    hintPair = null;
+  }
+}
+function scheduleHint() {
+  clearHint();
+  hintTimer = setTimeout(() => {
+    if (state !== 'playing' || busy) return;
+    const pair = findHintPair();
+    if (!pair) return;
+    hintPair = pair;
+    const boardEl = document.getElementById('board');
+    pair.forEach(pt => {
+      const el = boardEl.children[pt.r * COLS + pt.c];
+      if (el) el.classList.add('hint');
+    });
+  }, 7000);
+}
+function findHintPair() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (c < COLS - 1) {
+        [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
+        const found = findMatches().size > 0;
+        [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
+        if (found) return [{ r, c }, { r, c: c + 1 }];
+      }
+      if (r < ROWS - 1) {
+        [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
+        const found = findMatches().size > 0;
+        [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
+        if (found) return [{ r, c }, { r: r + 1, c }];
+      }
+    }
+  }
+  return null;
+}
+
 function selectTile(r, c) {
+  clearHint(); scheduleHint();
   if (state !== 'playing' || busy || !grid[r][c]) return;
   if (selected && selected.r === r && selected.c === c) {
     selected = null;
@@ -207,6 +272,12 @@ function doSwap(a, b) {
   busy = true;
   [grid[a.r][a.c], grid[b.r][b.c]] = [grid[b.r][b.c], grid[a.r][a.c]];
   renderBoard();
+  // swap pulse on both tiles so the exchange reads as a motion, not a teleport
+  const board0 = document.getElementById('board');
+  [a, b].forEach(pt => {
+    const el = board0.children[pt.r * COLS + pt.c];
+    if (el) { el.classList.add('swapping'); setTimeout(() => el.classList.remove('swapping'), 170); }
+  });
   setTimeout(() => {
     if (resolveMatches(1)) {
       moves++;
@@ -254,6 +325,15 @@ function resolveMatches(chain) {
   let pts = size * 10 * chain;
   if (size >= 4) pts += (size - 3) * 20;
   score += pts;
+  // float the points right where the match happened
+  if (chain === 1) {
+    let cx = 0, cy = 0;
+    toRemove.forEach(k => { const [r, c] = k.split(',').map(Number); cx += c; cy += r; });
+    cx /= size; cy /= size;
+    const boardEl = document.getElementById('board');
+    const br = boardEl.getBoundingClientRect();
+    floatTextAt(br.left + (cx + 0.5) * br.width / COLS, br.top + (cy + 0.5) * br.height / ROWS, '+' + pts);
+  }
 
   const board = document.getElementById('board');
   toRemove.forEach(k => {
@@ -287,6 +367,7 @@ function resolveMatches(chain) {
       busy = false;
       if (moves >= MOVES_LIMIT) endGame();
       else reshuffleIfStuck();
+      scheduleHint();
     }
   }, 320);
   return true;
@@ -348,6 +429,7 @@ function cascade() {
 function startGame() {
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('endModal').classList.remove('show');
+  lastMovesLeft = 999;
   state = 'playing';
   initGrid();
   renderBoard();
