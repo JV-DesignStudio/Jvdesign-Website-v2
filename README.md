@@ -8,6 +8,7 @@ Static HTML/CSS/JS, no framework, no build step required to view pages directly 
 
 ```
 index.html, pages/, games/, ...           Site pages
+pages/downloads.html                       Every file download on one page
 partials/                                  Shared nav/footer fragments
 build.js                                   Syncs partials into every page
 generate-sitemap.js                        Regenerates sitemap.xml from pages on disk

@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v11
-const CACHE='jvds-v11';
+// JVDesignStudio Service Worker v12
+const CACHE='jvds-v12';
 const CORE=[
   '/',
   '/index.html',
@@ -17,6 +17,7 @@ const CORE=[
   '/pages/learn-hub.html',
   '/pages/dev-tools.html',
   '/pages/freebies.html',
+  '/pages/downloads.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   // JVDS Arcade app shell. Precached so the installed Arcade opens offline
