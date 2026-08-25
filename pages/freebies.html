@@ -332,6 +332,7 @@
             <div class="hstat"><span class="hstat-val">4</span><span class="hstat-label">Free Games</span></div>
             <div class="hstat"><span class="hstat-val">6</span><span class="hstat-label">Godot Templates</span></div>
             <div class="hstat"><span class="hstat-val">17</span><span class="hstat-label">Free Guides</span></div>
+            <div class="hstat"><span class="hstat-val">5</span><span class="hstat-label">Books Coming</span></div>
             <div class="hstat"><span class="hstat-val">£0</span><span class="hstat-label">Total Cost</span></div>
         </div>
     </div>
@@ -340,9 +341,9 @@
 <div class="filter-bar">
     <div class="filter-inner">
         <button class="f-btn active" onclick="filterDl('all',this)">All Downloads</button>
-        <button class="f-btn" onclick="filterDl('books',this)">📚 Books</button>
         <button class="f-btn" onclick="filterDl('games',this)">🎲 Games</button>
         <button class="f-btn" onclick="filterDl('activities',this)">🎨 Activities</button>
+        <button class="f-btn" onclick="filterDl('books',this)">📚 Books</button>
         <button class="f-btn" onclick="filterDl('guides',this)">💻 Guides</button>
         <button class="f-btn" onclick="filterDl('templates',this)">🎮 Godot Templates</button>
     </div>
@@ -901,6 +902,30 @@ function filterDl(cat,btn){
         c.style.display=(cat==='all'||c.dataset.cat===cat)?'flex':'none';
     });
 }
+
+/* ── Sort the grid into a narrative order ──
+   Templates (featured) → Games → Activities → Books → Guides.
+   Within Guides (the cheat-sheet wall) cards are alphabetised by title
+   automatically, so new sheets drop into place without hand-sorting.
+   All other groups keep their source order. Runs BEFORE the reveal
+   observer below so staggered animations follow the sorted sequence. */
+(function(){
+    var grid = document.getElementById('dlGrid'); if(!grid) return;
+    var prio = { templates:0, games:1, activities:2, books:3, guides:4 };
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.dl-card'));
+    cards.sort(function(a,b){
+        var pa = (a.dataset.cat in prio) ? prio[a.dataset.cat] : 9;
+        var pb = (b.dataset.cat in prio) ? prio[b.dataset.cat] : 9;
+        if (pa !== pb) return pa - pb;
+        if (pa === 4) {
+            var ta = a.querySelector('.dl-title'), tb = b.querySelector('.dl-title');
+            return (ta && tb) ? ta.textContent.localeCompare(tb.textContent) : 0;
+        }
+        return 0;
+    });
+    cards.forEach(function(c){ grid.appendChild(c); });
+})();
+
 const obs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){const siblings=[...entry.target.parentElement.querySelectorAll('.reveal')];const idx=siblings.indexOf(entry.target);setTimeout(()=>entry.target.classList.add('visible'),Math.min(idx*80,300));obs.unobserve(entry.target);}});},{threshold:0});
 document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
