@@ -4553,6 +4553,11 @@ score += bumper.pts;
                         <div style="font-size:.85rem;font-weight:800;color:white;" id="shareModalTitle">Share Your Game</div>
                         <button onclick="closeShareModal()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
                     </div>
+                    <!-- Code legend: two code systems, two jobs -->
+                    <div style="font-size:.58rem;color:var(--muted);line-height:1.7;text-align:center;border-bottom:1px solid var(--border);padding-bottom:9px;">
+                        ℹ️ <strong style="color:#a78bfa;">Game Codes</strong> (JVGM1…) carry a whole game to a friend ·
+                        <strong style="color:#fbbf24;">Result Codes</strong> (JV1…) send a <em>score</em> back to the creator
+                    </div>
                     <div style="text-align:center;">
                         <img id="shareQrImg" src="" alt="QR Code" style="width:140px;height:140px;border-radius:8px;border:3px solid var(--purple);image-rendering:pixelated;background:#fff;">
                         <div style="font-size:.6rem;color:var(--muted);margin-top:5px;">Scan to open &amp; play on any device</div>
@@ -5395,10 +5400,7 @@ const liveConfig = {
     scoreStyle: 'default',
     livesStyle: 'hearts',
     scorePopups: true,
-    showTimer: false,
-    // ── Rhythm game ──────────────────────────────────────────────────────────
-    rhythmSpeed: 260,   // note fall speed px/s (Slow=160, Normal=260, Fast=380, Expert=520)
-    rhythmLanes: 4      // active lane count (2, 3, or 4)
+    showTimer: false
 };
 
 // Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
@@ -5629,13 +5631,8 @@ const _ACH_TOAST = {
     race_podium:'🏆 Podium Finish', race_clean:'🌟 Clean Lap (no off-road)', race_nitro3:'⚡ Nitro Triple', race_fast:'🏎️ Under 30s Lap',
     hop_100:'🐸 Height 100!', hop_500:'🌤 Cloud Jumper!'
 };
-function _achUnlock(id) {
-    if (!_sessionAchs.has(id)) {
-        _sessionAchs.add(id);
-        const label = _ACH_TOAST[id];
-        if (label) showToast('🏅 ' + label);
-    }
-}
+// NOTE: _achUnlock is defined ONCE, later in this file (with localStorage
+// persistence). Do not re-declare it here — the duplicate silently won.
 
 const fallbackLevel = [
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -7722,8 +7719,16 @@ const GENRE_PALETTES = {
     DEFENSE: ['#00d4aa','#ef4444','#2d3748','#fbbf24'],
     PINBALL: ['#a78bfa','#f87171','#0a1628','#fbbf24'],
 };
+// Per-genre preferred phone orientation. Vertical-flow games (falling notes,
+// upward hoppers, pinball lanes) read best upright; everything else landscape.
+const GENRE_ORIENTATION = {
+    FLAPPY:'portrait', HOPPER:'portrait', DODGE:'portrait', RHYTHM:'portrait',
+    PINBALL:'portrait', MEMORY:'portrait', CLICKER:'portrait', SNAKE:'portrait',
+};
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
+    // Per-genre preferred phone orientation — app-immersive locks accordingly
+    window.__gmOrientation = GENRE_ORIENTATION[g] || 'landscape';
     _syncGenrePicker(); // sync visual picker, genre description, mobile run bar
     const root = document.getElementById('studioRoot');
     ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'].forEach(c => root.classList.remove('genre-'+c));
@@ -11732,7 +11737,7 @@ function sceneInvaders(data) {
             this.enemies = this.physics.add.group();
             this._dir=1; this._descend=false;
             // Timers must be created before _buildFormation (which resets moveTimer.delay)
-            this.moveTimer  = this.time.addEvent({delay:700,loop:true,callback:this._moveFormation,callbackScope:this});
+            // Timers — formation movement is continuous in update() (no step timer)
             this.shootTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:this._enemyFire,callbackScope:this});
             this._buildFormation();
             // Bunkers, 3 shield walls the player can hide behind
@@ -11776,9 +11781,6 @@ function sceneInvaders(data) {
                 if (typeof this._popText === 'function') this._popText(ex, ey - 10, '+' + Math.round(pts), '#fbbf24');
                 this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
                 _sessionKills++; if (this.score===liveConfig.pointsPerKill) _achUnlock('first_blood');
-                // Classic "fewer invaders = faster march", but GRADUAL per kill
-                // (the old jump-on-descend read as the AI teleporting when one died)
-                if (this.moveTimer) this.moveTimer.delay = Math.max(180, this.moveTimer.delay * 0.97);
                 if(!this.enemies.countActive(true)) {
                     // Perfect wave: cleared without taking a hit since wave started
                     if (_sessionHits === this._hitsAtWaveStart) _achUnlock('invaders_perfect');
@@ -11907,7 +11909,9 @@ function sceneInvaders(data) {
             this.time.delayedCall(5500,()=>{ if(ufo&&ufo.active) ufo.destroy(); });
             this._ufoTimer=this.time.addEvent({delay:Phaser.Math.Between(12000,20000),callback:this._spawnUFO,callbackScope:this});
         }
-        update(time) {
+        update(time, delta) {
+            // Continuous formation glide (replaces the stuttery 700ms step timer)
+            if (this._moveFormation) this._moveFormation(delta);
             const {left,right}=this.cursors;
             if(left.isDown||touchInput.left)        this.actor.setVelocityX(-liveConfig.speed);
             else if(right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
@@ -16059,6 +16063,13 @@ function closeGameOver() {
 function _updateLandscapeNudge(active) {
     const el = document.getElementById('landscape-nudge');
     if (!el) return;
+    // In immersive mode the app layer's rotate tip owns guidance — showing both
+    // stacked the same message top AND bottom of the screen
+    if (active && document.body.classList.contains('gm-immersive')) { el.classList.remove('game-active'); return; }
+    // Portrait-preferred genres never get the "go sideways" nudge — upright IS
+    // the intended way to play them (the app's rotate tip handles guidance)
+    const g = (document.getElementById('genreMode') || {}).value;
+    if (active && GENRE_ORIENTATION[g] === 'portrait') { el.classList.remove('game-active'); return; }
     el.classList.toggle('game-active', !!active);
     clearTimeout(el._nudgeTimer);
     if (active) {
@@ -17684,8 +17695,7 @@ function _persistAch(id) {
         localStorage.setItem(_JV_ACH_KEY, JSON.stringify(all));
     } catch(e) {}
 }
-// Patch _achUnlock to also persist
-const _achUnlockOrig = window._achUnlock;
+// Achievement unlock — toast + persistent (survives reloads via localStorage)
 function _achUnlock(id) {
     if (!_sessionAchs.has(id)) {
         _sessionAchs.add(id);
@@ -19721,13 +19731,17 @@ function scenePinball(data) {
             this._drainCooldown = 0;
             this._lastFlipHit   = {L:0, R:0};
             this._launched      = false;
+            this._inPlay        = false;   // ball has committed through the entry arc
 
             this._doLaunch = () => {
                 this._launched = true;
+                this._inPlay    = false;
                 if (this._launchHint && this._launchHint.active) { this._launchHint.destroy(); this._launchHint = null; }
                 this.ball.body.setGravityY(0);
-                // Launch UP and LEFT through the shooter channel into the table
-                this.ball.setVelocity(Phaser.Math.Between(-120,-60), -Phaser.Math.Between(560,640));
+                // Launch UP-LEFT with enough sideways authority to commit through
+                // the entry — a skinny drift used to bounce off the wall corner
+                // and rattle in the lane forever
+                this.ball.setVelocity(Phaser.Math.Between(-210,-150), -Phaser.Math.Between(620,700));
                 GameAudio.play('shoot');
             };
             this._keySpace.once('down', this._doLaunch);
@@ -19822,6 +19836,18 @@ function scenePinball(data) {
             // Touch launch
             if (!this._launched&&touchInput.fire) { touchInput.fire=false; this._doLaunch(); }
 
+            // ── Lane guide: steer the climbing ball through the entry arc ────
+            // While the ball is still right of the table and rising, ease it
+            // leftward so it commits into play instead of kissing the wall corner
+            if (this._launched && !this._inPlay) {
+                if (this.ball.x > TABLE_R - 6) {
+                    if (this.ball.body.velocity.y < 0) this.ball.body.velocity.x -= 300 * dt;
+                    this.ball.x = Math.min(this.ball.x, GW - 12);
+                } else {
+                    this._inPlay = true;   // crossed over — pure physics from here
+                }
+            }
+
             // Flipper input
             const leftDown =this._keyZ.isDown||this._keyLeft.isDown||touchInput.left;
             const rightDown=this._keyX.isDown||this._keyRight.isDown||touchInput.right;
@@ -19848,6 +19874,7 @@ function scenePinball(data) {
                         this.ball.setVelocity(0,0);
                         this.ball.body.setGravityY(-GRAVITY);
                         this._launched=false;
+                        this._inPlay=false;
                         if (!this._launchHint||!this._launchHint.active) {
                             this._launchHint=this.add.text(PLUNGE_X,GH-62,'SPACE\nlaunch',{fontSize:'8px',fill:'#60a5fa',fontFamily:"'Fredoka',sans-serif",align:'center'}).setOrigin(0.5,1).setDepth(12).setScrollFactor(0);
                             this.tweens.add({targets:this._launchHint,alpha:0.2,duration:550,yoyo:true,repeat:-1});
