@@ -47,6 +47,7 @@ h1,h2,h3,.title{font-family:'Fredoka',sans-serif;}
 .back{color:#2e5a24;text-decoration:none;font-weight:700;font-size:.85rem;background:#ffffffaa;padding:6px 12px;border-radius:20px;}
 
 .stage{width:100%;max-width:600px;padding:0 10px 24px;flex:1;}
+@media (min-width:900px){.stage{max-width:780px}}
 
 /* HUD */
 .hud{display:flex;gap:6px;align-items:center;justify-content:space-between;margin:6px 2px 8px;flex-wrap:wrap;}
@@ -354,6 +355,7 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
     if(i>=0 && i<PICK_ORDER.length){ selectPlant(PICK_ORDER[i]); }
     else if(e.key===' '){ e.preventDefault(); togglePause(); }
     else if(e.key==='d'||e.key==='D'){ selectPlant('shovel'); }
+    else if(e.key==='s'||e.key==='S'){ const sb=document.getElementById('speedBtn'); if(sb) sb.click(); }
   });
 
   function placePlant(k,row,col){
@@ -860,6 +862,15 @@ canvas{width:100%;max-width:560px;height:auto;border-radius:14px;box-shadow:0 8p
       `<div class="sbox"><div class="v">${stats.placed}</div><div class="l">Planted</div></div>`+
       `<div class="sbox"><div class="v">${stats.bestStreak}</div><div class="l">Best Streak</div></div>`+
       `<div class="sbox"><div class="v">${stats.bestBoom}</div><div class="l">Best Boom</div></div>`;
+
+    // Shared engine juice: score counts up, depth medal stamps (campaign and
+    // Endless have separate ladders).
+    GameUI.countUp(document.querySelector('#endStats .sbox .v'), score);
+    const medalWave = endless ? waveIdx : (won ? 10 : reachedWave);
+    GameUI.showMedal(document.getElementById('endStats'), medalWave,
+      endless
+        ? [[10,'\uD83E\uDD39','Night Watcher'],[15,'\uD83E\uDD48','Moonlight Warden'],[20,'\uD83C\uDFC6','Eternal Garden']]
+        : [[3,'\uD83E\uDD39','Sprout Guardian'],[6,'\uD83E\uDD48','Bloom Warden'],[10,'\uD83C\uDFC6','Garden Legend']]);
     const names={gd_firstBloom:'🌱 First Bloom',gd_wave5:'🌿 Wave 5',gd_victory:'🏆 Garden Saved',gd_flawless:'💎 Flawless',gd_boomKing:'💥 Boom King',gd_streak5:'🔥 Streak ×5',gd_wave15:'⚡ Endless 15'};
     document.getElementById('endAchs').innerHTML=achUnlocked.map(a=>`<span class="a">${names[a]||a}</span>`).join('');
     const eb=document.getElementById('endlessBtn');
