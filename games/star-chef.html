@@ -38,9 +38,15 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .customer { text-align: center; animation: slideIn .4s ease-out; }
 .customer-emoji { font-size: 3rem; margin-bottom: 8px; }
 .customer-order { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
+.patience-label { font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  color:rgba(255,255,255,.85); margin-bottom:6px; text-shadow:0 1px 4px rgba(0,0,0,.35); }
+.patience-label.now { color:#baffc9; animation:pulseLabel .5s ease-in-out infinite; }
+@keyframes pulseLabel { 50% { transform:scale(1.08); } }
 .patience { width: 200px; height: 20px; background: rgba(255,255,255,.3); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
 .patience-bar { height: 100%; background: linear-gradient(90deg, #4caf50, #ffb300); transition: width .1s; }
 .serve-btn { background: linear-gradient(135deg, #fff, #ffe8d6); border: none; border-radius: 16px; padding: 16px 40px; font-size: 1.2rem; font-weight: 800; color: #fb5607; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.2); }
+.serve-btn.ready { animation: servePulse .8s ease-in-out infinite; box-shadow: 0 0 0 6px rgba(255,255,255,.35), 0 8px 20px rgba(0,0,0,.25); }
+@keyframes servePulse { 50% { transform: scale(1.07); box-shadow: 0 0 0 10px rgba(255,255,255,.18), 0 8px 20px rgba(0,0,0,.25); } }
 .serve-btn:active { transform: scale(.95); }
 .tip-float { position: fixed; pointer-events: none; font-weight: 800; font-size: 1.2rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.4); animation: tipFloat 1s ease-out forwards; z-index: 50; }
 .tip-float.big { font-size: 1.7rem; color: #ffd54f; }
@@ -140,6 +146,7 @@ function newCustomer() {
     <div class="customer">
       <div class="customer-emoji">${currentCustomer.emoji}</div>
       <div class="customer-order">Wants ${currentCustomer.order}</div>
+      <div class="patience-label" id="patienceLabel">⏳ Cooking…</div>
       <div class="patience">
         <div class="patience-bar"></div>
       </div>
@@ -170,7 +177,13 @@ function render() {
     const ready = cookProgress >= 0.9;
     btn.disabled = !ready;
     btn.style.opacity = ready ? 1 : 0.5;
-    btn.textContent = ready ? '🍽️ Serve' : '🍳 Cooking...';
+    btn.textContent = ready ? '🍽️ SERVE NOW!' : '🍳 Cooking… ' + Math.round(cookProgress*100) + '%';
+    btn.classList.toggle('ready', ready);
+    const lbl = document.getElementById('patienceLabel');
+    if (lbl) {
+      lbl.textContent = ready ? '🔔 SERVE NOW — before they get grumpy!' : '⏳ Cooking…';
+      lbl.classList.toggle('now', ready);
+    }
   }
 
   document.getElementById('moneyHud').textContent = money;
