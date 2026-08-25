@@ -75,7 +75,12 @@ html, body {
 .hit-pads span { flex:1; display:grid; place-items:center; transform:translateY(-50%); }
 .hit-pads span i { width:56%; height:26px; border-radius:9px; border:2px solid var(--pad,#7c5cff);
   background:linear-gradient(180deg, rgba(124,92,255,.10), rgba(124,92,255,.02));
-  box-shadow:0 0 14px color-mix(in srgb, var(--pad,#7c5cff) 45%, transparent); }
+  box-shadow:0 0 14px color-mix(in srgb, var(--pad,#7c5cff) 45%, transparent);
+  font:800 .8rem Inter,sans-serif; color:var(--pad,#7c5cff);
+  transition:transform .1s, filter .1s; }
+.hit-pads span.pulse i { transform:scale(1.14); filter:brightness(1.5); }
+.hit-pads span.press i { transform:scale(.9); filter:brightness(1.8); background:rgba(255,255,255,.14); }
+@media (pointer:coarse){ .hit-pads span i b { display:none; } }
 .hit-zone { position:absolute; left:0; right:0; bottom:14%; height:0; z-index:4; }
 
 /* TILES */
@@ -142,7 +147,7 @@ html, body {
   <div class="field" id="field">
     <div class="lane-lines"><div></div><div></div><div></div><div></div></div>
     <div class="hitline"></div>
-    <div class="hit-pads"><span style="--pad:#7c5cff"><i></i></span><span style="--pad:#34d399"><i></i></span><span style="--pad:#f472b6"><i></i></span><span style="--pad:#60a5fa"><i></i></span></div>
+    <div class="hit-pads"><span style="--pad:#7c5cff"><i><b>D</b></i></span><span style="--pad:#34d399"><i><b>F</b></i></span><span style="--pad:#f472b6"><i><b>J</b></i></span><span style="--pad:#60a5fa"><i><b>K</b></i></span></div>
     <div class="hit-zone" id="hitZone"></div>
     <div class="judge" id="judge"></div>
     <div class="countdown" id="countdown" style="display:none"><div class="countdown-num" id="cdNum">3</div></div>
@@ -156,7 +161,8 @@ html, body {
     <div class="modal-title" id="modalTitle">Neon Tiles</div>
     <div class="modal-sub" id="modalSub">Tap tiles as they cross the line</div>
     <div class="how" id="howBox">
-      <div>🎯 <b>Tap</b> each glowing tile as it reaches the white line.</div>
+      <div>🎯 <b>Tap</b> each glowing tile as it lands on the pads — tiles fall <b>on the beat</b>, so use the music!</div>
+      <div>⌨️ On desktop: <b>D F J K</b> hit the four lanes.</div>
       <div>🔥 Chain hits to build your <b>combo</b> multiplier.</div>
       <div>💛 <b>Gold</b> tiles are worth double. ⚠️ <b>Dashed traps</b>, don't tap them!</div>
       <div>❤️ Miss a tile or hit a trap and you lose a life.</div>
@@ -206,8 +212,12 @@ function applyLevel(level) {
   S.level = level;
   S.tilesCleared = 0;
   S.tilesForLevel = 10 + level * 2;
-  S.fallMs = Math.max(950, 2600 - (level - 1) * 170);
-  S.spawnMs = Math.max(430, 900 - (level - 1) * 55);
+  // Everything is measured in 8th-note steps of the soundtrack (250ms at
+  // 120 BPM) so tiles always land on the beat.
+  S.fallSteps = Math.max(3, 8 - Math.floor((level - 1) * 0.6));
+  S.spawnSteps = Math.max(1, 2 - Math.floor((level - 1) / 4));
+  S.fallMs = S.fallSteps * MUSIC.STEP_MS;
+  S.spawnMs = S.spawnSteps * MUSIC.STEP_MS;
   S.trapChance = level >= 3 ? Math.min(0.05 + (level - 3) * 0.02, 0.20) : 0;
   S.goldChance = 0.08;
 }
@@ -268,6 +278,41 @@ function spawnTile() {
 }
 
 /* ═══════════════ INPUT ═══════════════ */
+const LANE_KEYS = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
+window.addEventListener('keydown', (e) => {
+  if (!S.running) return;
+  const lane = LANE_KEYS[e.code];
+  if (lane === undefined) return;
+  e.preventDefault();
+  hitLane(lane);
+});
+function hitLane(lane) {
+  flashPad(lane);
+  let bestT = null, bestD = Infinity;
+  const win = fieldH() * HIT_WINDOW;
+  for (const t of tiles) {
+    if (t.lane !== lane || t.judged) continue;
+    const d = Math.abs((t.y + t.size / 2) - hitY());
+    if (d < bestD) { bestD = d; bestT = t; }
+  }
+  if (!bestT) { breakCombo(); judge('·', 'rgba(255,255,255,.4)'); return; }  // empty lane press
+  const center = bestT.y + bestT.size / 2;
+  if (bestT.type === 'trap' || bestD <= win || center < hitY()) { onTileTap(bestT); return; }
+  breakCombo(); judge('Late', '#ffd24a');   // past the line but not yet cleared
+}
+function flashPad(lane) {
+  const pad = document.querySelectorAll('.hit-pads span')[lane];
+  if (!pad) return;
+  pad.classList.add('press');
+  setTimeout(() => pad.classList.remove('press'), 120);
+}
+let padPulseT = null;
+function pulsePads() {
+  const pads = document.querySelectorAll('.hit-pads span');
+  pads.forEach(pad => pad.classList.add('pulse'));
+  if (padPulseT) clearTimeout(padPulseT);
+  padPulseT = setTimeout(() => pads.forEach(pad => pad.classList.remove('pulse')), 110);
+}
 function onTileTap(tile) {
   if (!S.running || tile.judged) return;
   gameSystem.unlockAchievement('firstTap');
@@ -356,9 +401,15 @@ function loop(t) {
   const dt = Math.min(t - lastT, 50);
   lastT = t;
 
-  // spawn
-  spawnTimer += dt;
-  if (spawnTimer >= S.spawnMs) { spawnTimer = 0; spawnTile(); }
+  // spawn on the music grid: consume scheduled beats as they arrive
+  if (MUSIC.ctx) {
+    const nowA = MUSIC.ctx.currentTime;
+    while (MUSIC.scheduled.length && MUSIC.scheduled[0].t <= nowA + 0.005) {
+      const ev = MUSIC.scheduled.shift();
+      pulsePads();
+      if (S.running && ev.step % S.spawnSteps === 0) spawnTile();
+    }
+  }
 
   // move tiles
   const limit = fieldH();
@@ -391,6 +442,99 @@ function clearTiles() {
   tiles = [];
 }
 
+/* ═══════════════ MUSIC + BEAT GRID ═══════════════
+   A procedural soundtrack: kick on the quarters, hats on the off-beats,
+   a rolling bass pattern and an arp on the B section. The spawn grid reads
+   the same clock, so tiles rise and land on the beat — the game finally
+   has a song because the song IS the level design. */
+const MUSIC = {
+  bpm: 120, STEP_MS: 250,          // 120 BPM, 8th-note steps
+  step: 0, nextTime: 0, timer: null, running: false,
+  ctx: null, master: null, scheduled: [],
+  bass: [110, 0, 110, 146.83, 110, 0, 164.81, 146.83],
+  arp:  [440, 0, 523.25, 0, 392, 0, 587.33, 0],
+};
+function musicMuted() {
+  try { if (localStorage.getItem('jvds_sound') === '0') return true; } catch (e) {}
+  try { if (localStorage.getItem('soundEnabled') === 'false') return true; } catch (e) {}
+  const gs = typeof GameSystem !== 'undefined' && GameSystem.lastInstance;
+  if (gs && gs.getSetting('soundEnabled') === false) return true;
+  return false;
+}
+function musicAudio() {
+  if (!MUSIC.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    MUSIC.ctx = new AC();
+    MUSIC.master = MUSIC.ctx.createGain();
+    MUSIC.master.gain.value = 0.5;
+    MUSIC.master.connect(MUSIC.ctx.destination);
+  }
+  if (MUSIC.ctx.state === 'suspended') MUSIC.ctx.resume();
+  return MUSIC.ctx;
+}
+function mNote(freq, t, dur, type, gain) {
+  const o = MUSIC.ctx.createOscillator(), g = MUSIC.ctx.createGain();
+  o.type = type; o.frequency.value = freq;
+  o.connect(g); g.connect(MUSIC.master);
+  g.gain.setValueAtTime(gain, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function mDrum(t, kind) {
+  const o = MUSIC.ctx.createOscillator(), g = MUSIC.ctx.createGain();
+  o.connect(g); g.connect(MUSIC.master);
+  if (kind === 'kick') {
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.start(t); o.stop(t + 0.18);
+  } else {
+    o.type = 'square'; o.frequency.value = 6000;
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    o.start(t); o.stop(t + 0.05);
+  }
+}
+function mScheduleStep(step, t) {
+  const s16 = step % 16;                                    // 2-bar loop
+  if (s16 % 4 === 0) mDrum(t, 'kick');
+  if (s16 % 2 === 1) mDrum(t, 'hat');
+  const b = MUSIC.bass[s16 % 8]; if (b) mNote(b, t, 0.22, 'triangle', 0.2);
+  if (Math.floor(step / 16) % 2 === 1) {                    // arp on the B section
+    const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.045);
+  }
+}
+function musicStart() {
+  if (musicMuted()) return;
+  const ac = musicAudio();
+  MUSIC.running = true;
+  MUSIC.step = 0;
+  MUSIC.scheduled = [];
+  MUSIC.nextTime = ac.currentTime + 0.1;
+  if (!MUSIC.timer) {
+    MUSIC.timer = setInterval(() => {
+      if (!MUSIC.running || !MUSIC.ctx) return;
+      while (MUSIC.nextTime < MUSIC.ctx.currentTime + 0.12) {
+        mScheduleStep(MUSIC.step, MUSIC.nextTime);
+        MUSIC.scheduled.push({ step: MUSIC.step, t: MUSIC.nextTime });
+        MUSIC.step++;
+        MUSIC.nextTime += MUSIC.STEP_MS / 1000;
+      }
+    }, 30);
+  }
+}
+function musicStop() {
+  MUSIC.running = false;
+  MUSIC.scheduled = [];
+}
+// hide music from the page while it's backgrounded
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') musicStop();
+  else if (S.running) musicStart();
+});
+
 /* ═══════════════ FLOW ═══════════════ */
 function startGame() {
   document.getElementById('modal').classList.remove('show');
@@ -399,10 +543,10 @@ function startGame() {
   clearTiles();
   renderLives();
   updateHud();
+  musicStart();                              // beat starts with the countdown
   countdown(3, () => {
     S.running = true;
     lastT = performance.now();
-    spawnTimer = S.spawnMs; // spawn first tile promptly
     rafId = requestAnimationFrame(loop);
   });
 }
@@ -418,7 +562,7 @@ function countdown(n, done) {
     num.style.animation = 'none'; void num.offsetWidth; num.style.animation = 'cd 1s ease-out';
     audioEffects.playTap(400 + (n - cur) * 100);
     cur--;
-    setTimeout(tick, 700);
+    setTimeout(tick, 500);
   };
   tick();
 }
@@ -434,6 +578,7 @@ function levelUp() {
 
 function gameOver() {
   S.running = false;
+  musicStop();
   cancelAnimationFrame(rafId);
   clearTiles();
 
