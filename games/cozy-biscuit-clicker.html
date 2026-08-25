@@ -10,6 +10,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -378,6 +379,16 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
 #gambleSafe{background:var(--mint);}
 #gambleBet{background:linear-gradient(135deg,var(--sun),var(--rose-deep));color:#fff}
 
+/* ── SPLASH (studio intro) ── */
+#splash{position:fixed;inset:0;background:var(--cream);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;transition:opacity .55s ease,visibility .55s}
+#splash.hide{opacity:0;visibility:hidden}
+.splash-studio{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--cocoa-soft);animation:splashFade .7s ease both}
+.splash-logo{width:104px;height:104px;border-radius:26px;box-shadow:var(--shadow-card);animation:splashPop .65s cubic-bezier(.34,1.56,.64,1) .3s both}
+.splash-title{font-family:'Fraunces',serif;font-weight:900;font-size:32px;letter-spacing:-.02em;color:var(--cocoa);animation:splashFade .7s ease .6s both}
+.splash-sub{font-family:'Fraunces',serif;font-style:italic;font-size:14px;color:var(--rose-deep);animation:splashFade .7s ease .85s both}
+@keyframes splashFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes splashPop{from{opacity:0;transform:scale(.55) rotate(-10deg)}to{opacity:1;transform:none}}
+
 /* ── v1.4 BOURBON: noticeboard, butter cabinet, today's regular ── */
 .notice-board{position:relative;background:#FFFDF5;border:1.5px solid #E8DCC4;border-radius:10px;padding:7px 26px 7px 12px;margin:6px 2px 0;box-shadow:0 2px 8px rgba(74,53,40,.08);transform:rotate(-.4deg);flex-shrink:0;cursor:pointer;min-height:34px;display:flex;align-items:center}
 .notice-board::before{content:'📌';position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:12px}
@@ -461,6 +472,28 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
 </script>
 <!-- /BUILD:nav-strip -->☰ JVDesignStudio</button>
 
+<div id="splash">
+  <div class="splash-studio">JVDesignStudio presents</div>
+  <img class="splash-logo" src="../logo.png" alt="">
+  <div class="splash-title">Biscuit Tin</div>
+  <div class="splash-sub">a cosy clicker · tap anywhere to begin</div>
+</div>
+<script>
+(function(){
+  var t0=Date.now(),done=false;
+  function hideSplash(){
+    if(done)return;done=true;
+    var wait=Math.max(0,2000-(Date.now()-t0));
+    setTimeout(function(){
+      var s=document.getElementById('splash');
+      if(s){s.classList.add('hide');setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},650);}
+    },wait);
+  }
+  ['pointerdown','keydown'].forEach(function(ev){document.addEventListener(ev,hideSplash,{once:true});});
+  if(document.readyState==='complete')hideSplash();else window.addEventListener('load',hideSplash);
+  setTimeout(hideSplash,4500); // failsafe
+})();
+</script>
 <div class="app">
   <div class="topbar">
     <div class="brand">Biscuit <em>Tin</em></div>
@@ -1242,9 +1275,9 @@ const UPGRADES=[
   {id:'secret_spice',  emoji:'🫙',name:'Secret Spice',     desc:'+15% all production each time',    cost:2000,    type:'repeat_global',mult:1.15,costMult:2.5},
   {id:'cozy_chair',    emoji:'🪑',name:'Cosy Chair',       desc:'+20% biscuits per tap each time',  cost:50000,   type:'repeat_click', mult:1.2, costMult:3.0},
   {id:'moon_yeast',    emoji:'🌙',name:'Moon Yeast',       desc:'+25% all production each time',    cost:500000,  type:'repeat_global',mult:1.25,costMult:3.5},
-  {id:'pantry',        emoji:'🏺',name:'Bigger Pantry',    desc:'+2h of away-baking storage each time (starts at 4h)', cost:50000, type:'repeat_offline',costMult:4},
+  {id:'pantry',        emoji:'🏺',name:'Bigger Pantry',    desc:'+1h of away-baking storage each time (starts at 3h)', cost:50000, type:'repeat_offline',costMult:3},
 ];
-function offlineCapHours(){return 4+2*((bv().repeatUpgrades&&bv().repeatUpgrades.pantry)||0)+1*starLv('deep_pantry');}
+function offlineCapHours(){return 3+1*((bv().repeatUpgrades&&bv().repeatUpgrades.pantry)||0)+1*starLv('deep_pantry');}
 // ══ HELPER MILESTONES: 25/50/100/250/500 owned → +8% output each, forever ══
 const HELPER_MS=[25,50,100,250,500];
 function helperMilestones(id){bv().helperMilestones=bv().helperMilestones||{};return bv().helperMilestones[id]||(bv().helperMilestones[id]=[]);}
@@ -1355,9 +1388,9 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'1.4',
-  build:7,
-  codename:'Bourbon',
+  version:'1.4.1',
+  build:8,
+  codename:'Custard Cream',
 };
 
 // ══ RUNTIME ══
@@ -2209,12 +2242,20 @@ document.getElementById('offlineCollect').addEventListener('click',()=>{
 // ══ WARM-RESUME EARNINGS ══
 // rAF pauses while the app is backgrounded, so tick() alone would silently
 // lose that time on mobile. Grant it here using the same rules as offline.
-let hiddenAtMs=0;
+let hiddenAtMs=0,musicWasPlaying=false;
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){hiddenAtMs=Date.now();saveNow();return;}
+  if(document.hidden){
+    hiddenAtMs=Date.now();saveNow();
+    // Silence music when locked/backgrounded — battery (and politeness) matter.
+    musicWasPlaying=Sfx.isMusicPlaying();
+    if(musicWasPlaying)Sfx.stopMusic();
+    return;
+  }
   if(!hiddenAtMs)return;
   const away=(Date.now()-hiddenAtMs)/1000; hiddenAtMs=0;
   lastTick=Date.now();
+  if(musicWasPlaying&&vault.musicOn!==false){Sfx.startMusic();audioBtn.classList.add('active-audio');}
+  musicWasPlaying=false;
   if(away<60||productionRate<=0)return;
   const cap=offlineCapHours()*3600,eff=Math.min(away,cap);
   const earned=Math.floor(productionRate*eff*offlineEff());
