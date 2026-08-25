@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="description" content="Play Biscuit Tin Clicker, a cosy free browser clicker game by JVDesignStudio. Click, upgrade, repeat.">
 <link rel="manifest" href="../manifest.json">
-<script src="../analytics-loader.js"></script>
+<script src="../game-system.js">
+<script src="../analytics-loader.js></script>
 
     
+
 
 
 
@@ -404,6 +406,8 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
 .cab-count{font-family:'Fraunces',serif;font-weight:900;font-size:22px;color:var(--cocoa);text-align:center}
 .reg-face{font-size:46px;text-align:center;margin-bottom:2px}
 .reg-quote{font-family:'Fraunces',serif;font-style:italic;font-size:12.5px;color:var(--cocoa-soft);line-height:1.55;background:var(--milk);border:2px dashed var(--cream-deep);border-radius:12px;padding:10px 12px;margin:10px 0}
+.ad-reset{display:block;width:100%;background:none;border:none;border-top:1.5px dashed var(--cream-deep);margin-top:10px;padding:9px 0 0;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:var(--cocoa-soft);cursor:pointer;text-align:center}
+.ad-reset:active{color:var(--rose-deep)}
 @keyframes treasureDrift{
   0%{transform:translate(-70px,0) rotate(-10deg)}
   25%{transform:translate(24vw,-30px) rotate(8deg)}
@@ -439,9 +443,10 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     <meta name="twitter:description" content="Tap the golden tin, hire cosy helpers and bake billions of biscuits. A free, relaxing clicker by JVDesignStudio.">
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Biscuit%20Tin%20Clicker.png">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
-<link rel="stylesheet" href="../game-system.css">
+<!-- App systems: rewarded ads, reminders. Site arcade system is intentionally
+     not part of the app. -->
 <link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
 
@@ -1100,8 +1105,10 @@ function regularState(){
   let r=bv().regular;
   if(!r||r.date!==today){
     const seed=today.split('-').reduce((a,b)=>a*33+parseInt(b),0);
-    const npc=REGULARS[seed%REGULARS.length];
-    const ot=REG_ORDER_TYPES[Math.floor(seed/7)%REG_ORDER_TYPES.length];
+    const rr=bv().regRerolls;
+    const off=(rr&&rr.key===today)?rr.n*3:0;
+    const npc=REGULARS[(seed+off)%REGULARS.length];
+    const ot=REG_ORDER_TYPES[Math.floor((seed+off)/7)%REG_ORDER_TYPES.length];
     r=bv().regular={date:today,who:npc.name,type:ot.key,target:ot.target(),progress:0,ready:false,claimed:false};
   }
   return r;
@@ -1179,24 +1186,6 @@ function paintNotice(){
   }
   board.classList.add('fading');
   setTimeout(()=>{el.innerHTML=line;board.classList.remove('fading');},350);
-}
-
-// Share prompt: idle games have no discrete "run" to hook the site-wide
-// share chip into (recordGamePlay only fires on tab-close, too late to be
-// seen), so this game decides for itself. "Best" = most biscuits baked in
-// one sitting, compared against the best sitting ever recorded, not lifetime
-// total (which only ever grows and would trigger on every check).
-const sessionBaseline=bv().lifetime;
-let bestSessionShared=false;
-const sessionStartTs=Date.now();
-function checkSessionShareMoment(){
-  if(bestSessionShared)return;
-  const sessionEarned=bv().lifetime-sessionBaseline;
-  if(sessionEarned<=0||sessionEarned<=(bv().bestSessionEarn||0))return;
-  bv().bestSessionEarn=sessionEarned;
-  bestSessionShared=true;
-  window.__gsBestRun=Math.max(window.__gsBestRun||0,sessionEarned);
-  if(window.jvdsCheckNewBest)window.jvdsCheckNewBest();
 }
 
 // ══ GAME DATA ══
@@ -1388,9 +1377,9 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'1.4.1',
-  build:8,
-  codename:'Custard Cream',
+  version:'1.4.2',
+  build:9,
+  codename:'Ginger Nut',
 };
 
 // ══ RUNTIME ══
@@ -1887,9 +1876,41 @@ function renderUpgrades(el){
 // Local calendar date (YYYY-MM-DD) so daily/weekly rolls happen at the
 // player's midnight, not UTC's.
 function localDateStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// ══ AD-WATCH RESETS (daily / weekly / today's regular) ══
+function watchAdReset(label,fn){
+  const go=()=>{fn();showToast('♻️ '+label+' reset! Fresh start granted.');Sfx.init();Sfx.sfxPurchase();};
+  if(typeof window.__btShowRewarded==='function')window.__btShowRewarded(go);
+  else go(); // web / dev fallback mirrors admob-boost behaviour
+}
+function bumpReroll(storeKey,periodKey){
+  const s=bv()[storeKey]||(bv()[storeKey]={});
+  if(s.key!==periodKey){s.key=periodKey;s.n=0;}
+  s.n++;
+  return s.n;
+}
+function resetDailyChallenge(){
+  const n=bumpReroll('dailyRerolls',localDateStr());
+  delete bv().dailyChallenge;
+  renderPanel();updateQuestChip();
+}
+function resetWeeklyChallenge(){
+  const d=new Date(),day=(d.getDay()+6)%7,mon=new Date(d);mon.setDate(d.getDate()-day);
+  bumpReroll('weeklyRerolls',localDateStr(mon));
+  delete bv().weeklyChallenge;
+  renderPanel();updateQuestChip();
+}
+function resetRegularOrder(){
+  const r=regularState();
+  bumpReroll('regRerolls',r.date);
+  delete bv().regular;
+  regularState();
+  updateRegularChip();
+}
 function getDailyChallenge(){
   const today=localDateStr();
-  const seed=today.split('-').reduce((a,b)=>a*31+parseInt(b),0);
+  let seed=today.split('-').reduce((a,b)=>a*31+parseInt(b),0);
+  const rr=bv().dailyRerolls;
+  if(rr&&rr.key===today)seed+=rr.n*5; // each ad-reset shifts to a fresh challenge
   const pool=DAILY_POOL,p=pool[seed%pool.length];
   const tier=(seed>>4)%3;
   return{...p,today,target:p.amounts[tier],reward:p.rewards[tier]};
@@ -1948,8 +1969,7 @@ function renderDaily(el){
     card.appendChild(done);
   } else {
     const btn=document.createElement('button');
-    btn.textContent=canClaim?'🎁 Claim Reward!':'Keep baking...';
-    btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--sun),#E8A830)':'var(--cream-deep)'};border:none;border-radius:100px;padding:11px;font-family:Fraunces,serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.5};box-shadow:${canClaim?'0 4px 12px rgba(245,199,106,.4)':'none'}`;
+    btn.textContent=canClaim?'🎁 Claim Reward!':'Keep baking...';    btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--sun),#E8A830)':'var(--cream-deep)'};border:none;border-radius:100px;padding:11px;font-family:Fraunces,serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.5};box-shadow:${canClaim?'0 4px 12px rgba(245,199,106,.4)':'none'}`;
     btn.addEventListener('click',()=>{
       if(!canClaim)return;
       if(!bv().dailyChallenge)bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
@@ -1962,6 +1982,13 @@ function renderDaily(el){
     });
     card.appendChild(btn);
   }
+
+  const adReset=document.createElement('button');
+  adReset.type='button';
+  adReset.className='ad-reset';
+  adReset.textContent='▶ Not feeling it? Watch an ad & reset';
+  adReset.addEventListener('click',()=>watchAdReset('Daily challenge',resetDailyChallenge));
+  card.appendChild(adReset);
 
   const howTitle=document.createElement('div');
   howTitle.style.cssText='font-family:Fraunces,serif;font-size:13px;font-weight:700;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px';
@@ -2628,7 +2655,9 @@ function getWeeklyChallenge(){
   const d=new Date(),day=(d.getDay()+6)%7,mon=new Date(d);
   mon.setDate(d.getDate()-day);
   const week=localDateStr(mon);
-  const seed=week.split('-').reduce((a,b)=>a*37+parseInt(b),0);
+  let seed=week.split('-').reduce((a,b)=>a*37+parseInt(b),0);
+  const rr=bv().weeklyRerolls;
+  if(rr&&rr.key===week)seed+=rr.n*5;
   const p=WEEKLY_POOL[seed%WEEKLY_POOL.length],tier=(seed>>3)%3;
   return{...p,week,target:p.amounts[tier],reward:p.rewards[tier]};
 }
@@ -2658,6 +2687,13 @@ function renderWeekly(el){
     });
     card.appendChild(btn);
   }
+  const adReset=document.createElement('button');
+  adReset.type='button';
+  adReset.className='ad-reset';
+  adReset.style.marginTop='8px';
+  adReset.textContent='▶ Watch an ad & reroll this week';
+  adReset.addEventListener('click',()=>watchAdReset('Weekly challenge',resetWeeklyChallenge));
+  card.appendChild(adReset);
   el.appendChild(card);
 }
 
@@ -3364,6 +3400,13 @@ function renderRegular(){
     b.addEventListener('click',()=>{claimRegular();renderRegular();});
     body.appendChild(b);
   }
+  const adReset=document.createElement('button');
+  adReset.type='button';
+  adReset.className='ad-reset';
+  adReset.style.marginTop=r.ready?'8px':'12px';
+  adReset.textContent='▶ Prefer a different customer? Watch an ad & reroll';
+  adReset.addEventListener('click',()=>watchAdReset('Today\'s Regular',()=>{resetRegularOrder();renderRegular();}));
+  body.appendChild(adReset);
 }
 document.getElementById('regularChip').addEventListener('click',()=>{renderRegular();document.getElementById('regularModal').classList.add('show');});
 
@@ -3401,43 +3444,6 @@ for(let i=0;i<8;i++)spawnBgCookie(true);
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
 
-// ══ GAME SYSTEM INTEGRATION ══
-const gameSystem = new GameSystem('biscuit-clicker', 'Biscuit Tin Clicker', 'pip');
-const soundManager = new SoundManager(gameSystem);
-
-// Save game state to progression system
-// Track XP on clicks: listen on the tin button directly
-// (pointerdown fires on both touch and mouse, unlike click which
-// the game's touchstart preventDefault suppresses on mobile)
-let lastXPTick = 0;
-document.getElementById('tinBtn').addEventListener('pointerdown', () => {
-  // Grant 1 XP per 10 clicks
-  lastXPTick++;
-  if (lastXPTick >= 10) {
-    gameSystem.addXP(1);
-    gameSystem.saveState();
-    lastXPTick = 0;
-  }
-});
-
-// Check for achievements
-function checkGameSystemAchievements() {
-  const clicks = bv().clicks || 0;
-  if (clicks === 1) gameSystem.unlockAchievement('firstClick');
-  if (clicks >= 100) gameSystem.unlockAchievement('clicks100');
-  if (clicks >= 1000) gameSystem.unlockAchievement('clicks1000');
-  if (clicks >= 10000) gameSystem.unlockAchievement('clicks10000');
-  gameSystem.checkAchievements();
-}
-
-// Run achievement check every 10 seconds
-setInterval(()=>{checkGameSystemAchievements();checkSessionShareMoment();}, 10000);
-
-// Save progression when game ends/tab closes
-window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now() - sessionStartTs);
-  gameSystem.saveState();
-});
 </script>
 <script>
 /* WOW hero juice: crumb burst + crew cheer on every cookie tap (visual only) */
