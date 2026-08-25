@@ -28,7 +28,12 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html{height:100%;}
-body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;touch-action:none;}
+body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none;}
+input,select{user-select:text;-webkit-user-select:text;}
+#canvas-area{touch-action:none;}
+#left-panel,#right-panel,.layer-list,.frame-scroll{touch-action:pan-y;}
+.bb-content,.bb-panel,#bbPal{touch-action:pan-x;}
+button,a,.tb,.bb-tb,.sw,.bb-sw,.rc,.frame-item,.layer-item,.z-btn,.lb,.size-btn,.play-btn,.ab,.bb-tab{touch-action:manipulation;}
 
 /* HEADER */
 .site-header{height:48px;background:rgba(10,10,20,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;}
@@ -125,12 +130,12 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
 .play-btn.playing{background:#555;}
 
 /* BOTTOM BAR (mobile) */
-#bottom-bar{display:none;flex-direction:column;background:var(--panel);border-top:1px solid var(--border2);flex-shrink:0;}
+#bottom-bar{display:none;flex-direction:column;background:var(--panel);border-top:1px solid var(--border2);flex-shrink:0;position:relative;z-index:20;}
 .bb-tabs{display:flex;}
 .bb-tab{flex:1;padding:5px 2px;font-size:.55rem;text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;border-bottom:2px solid transparent;font-family:inherit;}
 .bb-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
-.bb-content{padding:5px 8px;overflow-x:auto;}
-.bb-panel{display:none;gap:6px;align-items:center;flex-wrap:nowrap;}
+.bb-content{height:112px;padding:5px 8px;overflow-x:auto;overflow-y:auto;}
+.bb-panel{display:none;gap:6px;align-items:center;flex-wrap:wrap;row-gap:8px;}
 .bb-panel.on{display:flex;}
 .bb-tb{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 7px;border-radius:6px;border:1px solid transparent;background:rgba(255,255,255,.03);cursor:pointer;font-size:.45rem;color:var(--muted);flex-shrink:0;}
 .bb-tb.on{background:rgba(233,69,96,.15);border-color:var(--accent);color:var(--accent);}
@@ -164,7 +169,20 @@ input[type=color]{width:28px;height:22px;border:none;border-radius:4px;cursor:po
 /* MOBILE */
 @media(max-width:699px){
   #left-panel,#right-panel{display:none!important;}
-  #bottom-bar{display:flex!important;}
+  #bottom-bar{display:flex!important;padding-bottom:env(safe-area-inset-bottom);}
+  .bb-tab{padding:10px 2px;font-size:.65rem;}
+  .bb-tb{min-width:46px;padding:8px 10px;font-size:.5rem;gap:2px;}
+  .bb-tb .ico{font-size:1.05rem;}
+  #bb0 .z-btn{width:34px;height:34px;font-size:1.05rem;flex-shrink:0;}
+  .bb-sw{width:28px;height:28px;}
+  #bbFg{width:32px;height:32px;}
+  #bbBrush{width:90px;height:34px;}
+  #bb3 .ab{padding:9px 12px;font-size:.7rem;}
+  #bb2 .lb{height:30px;font-size:.75rem;}
+  .play-btn{padding:7px 14px;font-size:.8rem;}
+  .fps-row input{width:40px;padding:5px;}
+  .frame-thumb{width:40px;height:40px;}
+  .rc{width:18px;height:18px;}
 }
 @media(min-width:700px) and (max-width:899px){
   #left-panel,#right-panel{width:130px;}
@@ -697,6 +715,18 @@ function changeZoom(dir){
   renderAll();
 }
 
+function applyZoomTarget(target){
+  const steps=[1,2,3,4,6,8,10,12,16,20,24,32];
+  let best=steps[0];
+  for(const s of steps) if(Math.abs(s-target)<Math.abs(best-target)) best=s;
+  if(best!==zoomLevel){
+    zoomLevel=best;
+    document.getElementById('zoomVal').textContent=zoomLevel+'×';
+    resizeCanvases();
+    renderAll();
+  }
+}
+
 function toggleGrid(){
   showGrid=!showGrid;
   document.getElementById('gridBtn').style.color=showGrid?'var(--accent3)':'var(--muted)';
@@ -865,16 +895,55 @@ function setupEvents(){
     return[Math.floor((src.clientX-rect.left)/zoomLevel),Math.floor((src.clientY-rect.top)/zoomLevel)];
   }
 
+  let pinch=null;
+  let lastTouch=0;
+  let pendingStroke=null; // deferred first dot on touch (second finger = pinch, not draw)
+  const pinchDist=ts=>Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);
+  // Browsers synthesise mouse events after touch sequences; never let them draw.
+  const syntheticMouse=e=>e.type.startsWith('mouse')&&Date.now()-lastTouch<600;
+  function commitPendingStroke(){
+    if(!pendingStroke) return;
+    clearTimeout(pendingStroke.timer);
+    pushUndo();
+    paintPx(getID(),pendingStroke.x,pendingStroke.y,pendingStroke.col,pendingStroke.erase);
+    renderAll(false);
+    pendingStroke=null;
+  }
+  function cancelPendingStroke(){
+    if(pendingStroke){clearTimeout(pendingStroke.timer);pendingStroke=null;}
+  }
+
   function down(e){
+    if(syntheticMouse(e)) return;
     e.preventDefault();
-    const[x,y]=getXY(e);
-    if(x<0||y<0||x>=cW||y>=cH) return;
+    // Second finger → switch to pinch-zoom, cancel any active stroke
+    if(e.touches&&e.touches.length>=2){
+      cancelPendingStroke();
+      if(snapshot&&(lineStart||rectStart)){
+        frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
+        lineStart=null;rectStart=null;snapshot=null;
+      }
+      isPainting=false;
+      pinch={d:pinchDist(e.touches),z:zoomLevel};
+      return;
+    }
+    let[x,y]=getXY(e);
+    const inside=x>=0&&y>=0&&x<cW&&y<cH;
+    if(currentTool==='fill'&&!inside) return;
+    // Clamp instead of rejecting so strokes can start just off-canvas (fat-finger friendly)
+    x=Math.max(0,Math.min(cW-1,x));
+    y=Math.max(0,Math.min(cH-1,y));
     const right=e.button===2;
     const col=right?bgColour:fgColour;
     const erase=right?false:currentTool==='eraser';
     isPainting=true;
 
     if(currentTool==='pencil'||currentTool==='eraser'){
+      if(e.touches&&!pendingStroke){
+        // Defer the first dot: on touch, a quickly-following second finger means pinch
+        pendingStroke={x,y,col,erase,timer:setTimeout(commitPendingStroke,80)};
+        return;
+      }
       pushUndo(); paintPx(getID(),x,y,col,erase); renderAll(false);
     } else if(currentTool==='fill'){
       pushUndo(); floodFill(getID(),x,y,col); renderAll(); isPainting=false;
@@ -895,6 +964,15 @@ function setupEvents(){
   }
 
   function move(e){
+    if(syntheticMouse(e)) return;
+    // Pinch-zoom takes priority while two fingers are down
+    if(pinch){
+      e.preventDefault();
+      if(e.touches&&e.touches.length>=2){
+        applyZoomTarget(pinch.z*pinchDist(e.touches)/pinch.d);
+      }
+      return;
+    }
     e.preventDefault();
     if(e.touches===undefined&&e.buttons===0) isPainting=false;
     const[x,y]=getXY(e);
@@ -916,6 +994,7 @@ function setupEvents(){
     if(!isPainting) return;
 
     if(currentTool==='pencil'||currentTool==='eraser'){
+      if(pendingStroke) commitPendingStroke();
       paintPx(getID(),x,y,col,erase); renderAll(false);
     } else if(currentTool==='line'&&lineStart&&snapshot){
       // restore snapshot then preview line
@@ -930,12 +1009,19 @@ function setupEvents(){
   }
 
   function up(e){
-    e.preventDefault();
-    if(!isPainting){isPainting=false;return;}
+    if(syntheticMouse(e)) return;
+    // End of pinch: never paint, never suppress default (so taps still click)
+    if(pinch){
+      if(!e.touches||e.touches.length<2) pinch=null;
+      return;
+    }
+    if(!isPainting) return;
+    if(e.cancelable) e.preventDefault();
     const[x,y]=getXY(e);
     const right=e.button===2;
     const col=right?bgColour:fgColour;
     const erase=right?false:currentTool==='eraser';
+    if(pendingStroke) commitPendingStroke();
     if(currentTool==='line'&&lineStart){
       if(snapshot) frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawLine(getID(),lineStart[0],lineStart[1],x,y,col,erase);
@@ -946,6 +1032,7 @@ function setupEvents(){
       rectStart=null; snapshot=null;
     }
     isPainting=false;
+    cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
     renderAll();
     addToRecent(fgColour);
   }
@@ -953,13 +1040,12 @@ function setupEvents(){
   mc.addEventListener('mousedown',down);
   mc.addEventListener('mousemove',move);
   document.addEventListener('mouseup',up);
-  document.addEventListener('touchend',up,{passive:false});
-  document.addEventListener('touchcancel',()=>{isPainting=false;lineStart=null;rectStart=null;snapshot=null;});
+  document.addEventListener('touchend',e=>{lastTouch=Date.now();up(e);},{passive:false});
+  document.addEventListener('touchcancel',()=>{lastTouch=Date.now();isPainting=false;pinch=null;cancelPendingStroke();lineStart=null;rectStart=null;snapshot=null;});
   mc.addEventListener('mouseleave',()=>{cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);});
   mc.addEventListener('contextmenu',e=>e.preventDefault());
-  mc.addEventListener('touchstart',down,{passive:false});
-  mc.addEventListener('touchmove',move,{passive:false});
-  mc.addEventListener('touchend',up,{passive:false});
+  mc.addEventListener('touchstart',e=>{lastTouch=Date.now();down(e);},{passive:false});
+  mc.addEventListener('touchmove',e=>{lastTouch=Date.now();move(e);},{passive:false});
 
   document.addEventListener('keydown',e=>{
     if(e.target.tagName==='INPUT') return;

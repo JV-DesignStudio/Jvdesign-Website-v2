@@ -83,6 +83,10 @@ Differentiators: free + no account + no watermark · mobile touch-first · one-c
 | Draw/erase/fill/line/rect | ☐ | ☐ | ☐ | ☐ |
 | Right-click bg colour draw | ☐ | ☐ | n/a | n/a |
 | Touch draw + lift outside canvas (no crash) | n/a | n/a | ☐ | ☐ |
+| Pinch-zoom: zooms canvas, never paints a dot | n/a | n/a | ☐ | ☐ |
+| Bottom-bar taps all fire (tabs, swatches, undo) | n/a | n/a | ☐ | ☐ |
+| Tab bar stays put when switching panels (fixed height) | n/a | n/a | ☐ | ☐ |
+| Palette strip swipes horizontally | n/a | n/a | ☐ | ☐ |
 | Undo/redo (Ctrl+Z / Ctrl+Y) | ☐ | ☐ | ☐ (buttons) | ☐ (buttons) |
 | Mirror mode plots both sides | ☐ | ☐ | ☐ | ☐ |
 | Layers add/dup/merge/delete + visibility | ☐ | ☐ | ☐ | ☐ |

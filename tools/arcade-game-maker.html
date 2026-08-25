@@ -2308,10 +2308,24 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                     <input type="file" id="_audioFileInput" accept="audio/*" style="display:none;" onchange="uploadCustomAudio(this)">
                 </div>
                 <div class="form-group">
-                    <label for="volumeSlider">Volume</label>
+                    <label for="volumeSlider">🔊 Master Volume</label>
                     <div class="range-row">
-                        <input type="range" aria-label="Volume" id="volumeSlider" min="0" max="100" value="50" oninput="GameAudio.volume=this.value/100;this.nextElementSibling.textContent=this.value+'%';try{localStorage.setItem('jv_prefs',JSON.stringify({volume:+this.value,theme:document.body.classList.contains('theme-light')?'light':'dark'}));}catch(e){}">
+                        <input type="range" aria-label="Master Volume" id="volumeSlider" min="0" max="100" value="50" oninput="GameAudio.volume=this.value/100;this.nextElementSibling.textContent=this.value+'%';try{var p=JSON.parse(localStorage.getItem('jv_prefs')||'{}');p.volume=+this.value;p.theme=document.body.classList.contains('theme-light')?'light':'dark';localStorage.setItem('jv_prefs',JSON.stringify(p));}catch(e){}">
                         <span class="range-val">50%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="sfxVolSlider">🔊 Sound Effects</label>
+                    <div class="range-row">
+                        <input type="range" aria-label="SFX Volume" id="sfxVolSlider" min="0" max="100" value="100" oninput="GameAudio.sfxVol=this.value/100;this.nextElementSibling.textContent=this.value+'%';try{var p=JSON.parse(localStorage.getItem('jv_prefs')||'{}');p.sfx=+this.value;localStorage.setItem('jv_prefs',JSON.stringify(p));}catch(e){}">
+                        <span class="range-val">100%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="musicVolSlider">🎵 Music</label>
+                    <div class="range-row">
+                        <input type="range" aria-label="Music Volume" id="musicVolSlider" min="0" max="100" value="60" oninput="GameAudio.musicVol=this.value/100;this.nextElementSibling.textContent=this.value+'%';try{var p=JSON.parse(localStorage.getItem('jv_prefs')||'{}');p.music=+this.value;localStorage.setItem('jv_prefs',JSON.stringify(p));}catch(e){}">
+                        <span class="range-val">60%</span>
                     </div>
                 </div>
                 <div class="form-group">
@@ -5242,7 +5256,7 @@ score += bumper.pts;
 const liveConfig = {
     speed:200, rotateSpeed:190, bulletSpeed:540, fireCooldown:180,
     spawnDelay:1100, enemySpeed:150, gravity:600, jumpForce:450,
-    pointsPerKill:10, obstacleSpeed:220,
+    pointsPerKill:10, obstacleSpeed:220, fireRate:400,
     // Note: scoreMultiplier applied at runtime via liveConfig.scoreMultiplier
     // Custom tab options
     lives:3, playerScale:1.0, bgStyle:'dark', screenShake:true,
@@ -5640,6 +5654,8 @@ const _lcDefaults = JSON.parse(JSON.stringify(liveConfig));
 // ── AUDIO ENGINE ─────────────────────────────────────────────────────────────
 const GameAudio = {
     ctx: null, volume: 0.5, sfxEnabled: true,
+    sfxVol: 1.0,   // category multiplier (0-1), Sounds tab slider
+    musicVol: 0.6, // category multiplier (0-1), Sounds tab slider
     sounds: { shoot:'laser', jump:'boing', hit:'boom', score:'coin', levelup:'fanfare', death:'lose', powerup:'powerup', victory:'victory' },
     customBuffers: { shoot:null, jump:null, hit:null, score:null, levelup:null, death:null, powerup:null, victory:null },
     musicNodes: [], musicTimeout: null, musicStep: 0,
@@ -5696,7 +5712,7 @@ const GameAudio = {
         o.connect(g); g.connect(ac.destination);
         o.frequency.setValueAtTime(freq0, t);
         if (freq1) o.frequency.exponentialRampToValueAtTime(freq1, t + dur * 0.8);
-        g.gain.setValueAtTime(this.volume * vol, t);
+        g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
         g.gain.exponentialRampToValueAtTime(0.001, t + dur);
         o.start(t); o.stop(t + dur + 0.02);
     },
@@ -5708,7 +5724,7 @@ const GameAudio = {
         for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
         const src = ac.createBufferSource(), g = ac.createGain();
         src.buffer = buf; src.connect(g); g.connect(ac.destination);
-        g.gain.setValueAtTime(this.volume * vol, t);
+        g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
         g.gain.exponentialRampToValueAtTime(0.001, t + dur);
         src.start(t);
     },
@@ -5723,7 +5739,7 @@ const GameAudio = {
             o.type = 'square'; o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i * 0.03;
-            g.gain.setValueAtTime(this.volume * 0.15, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.15, st);
             g.gain.exponentialRampToValueAtTime(0.001, st + 0.05);
             o.start(st); o.stop(st + 0.07);
         });
@@ -5752,7 +5768,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i * 0.07;
-            g.gain.setValueAtTime(this.volume * 0.22, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.22, st);
             g.gain.exponentialRampToValueAtTime(0.001, st + 0.12);
             o.start(st); o.stop(st + 0.14);
         });
@@ -5765,7 +5781,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i * 0.055;
-            g.gain.setValueAtTime(this.volume * 0.18, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.18, st);
             g.gain.exponentialRampToValueAtTime(0.001, st + 0.14);
             o.start(st); o.stop(st + 0.16);
         });
@@ -5783,7 +5799,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i * 0.09;
-            g.gain.setValueAtTime(this.volume*0.22, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.22);
             o.start(st); o.stop(st+0.25);
         });
@@ -5797,7 +5813,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i * 0.08;
-            g.gain.setValueAtTime(this.volume*0.2, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
             o.start(st); o.stop(st+0.2);
         });
@@ -5811,7 +5827,7 @@ const GameAudio = {
                 o.type = window._soundPackType||'sine'; o.detune.value=window._soundPackDetune||0;
                 o.connect(g); g.connect(ac.destination); o.frequency.value = f;
                 const st = t + i * 0.25;
-                g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(this.volume*0.14, st+0.06);
+                g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime((this.volume * this.sfxVol)*0.14, st+0.06);
                 g.gain.exponentialRampToValueAtTime(0.001, st+0.45);
                 o.start(st); o.stop(st+0.5);
             });
@@ -5826,7 +5842,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i*0.07;
-            g.gain.setValueAtTime(this.volume*0.2, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
             o.start(st); o.stop(st+0.2);
         });
@@ -5841,7 +5857,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i*0.1;
-            g.gain.setValueAtTime(this.volume*0.2, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
             o.start(st); o.stop(st+0.22);
         });
@@ -5858,7 +5874,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i*0.065;
-            g.gain.setValueAtTime(this.volume*0.2, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.15);
             o.start(st); o.stop(st+0.18);
         });
@@ -5875,7 +5891,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i*0.1;
-            g.gain.setValueAtTime(this.volume*0.22, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.25);
             o.start(st); o.stop(st+0.28);
         });
@@ -5889,7 +5905,7 @@ const GameAudio = {
             o.connect(g); g.connect(ac.destination);
             o.frequency.value = f;
             const st = t + i*0.08;
-            g.gain.setValueAtTime(this.volume*0.2, st);
+            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
             g.gain.exponentialRampToValueAtTime(0.001, st+0.2);
             o.start(st); o.stop(st+0.22);
         });
@@ -5902,7 +5918,7 @@ const GameAudio = {
             ac.decodeAudioData(ab).then(buf => {
                 const src = ac.createBufferSource(), g = ac.createGain();
                 src.buffer = buf; src.connect(g); g.connect(ac.destination);
-                g.gain.value = this.volume; src.start();
+                g.gain.value = (this.volume * this.sfxVol); src.start();
             }).catch(() => {});
         };
         if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
@@ -5944,7 +5960,7 @@ const GameAudio = {
                 o.connect(g); g.connect(ac.destination);
                 o.frequency.value = p.notes[ni];
                 const t = ac.currentTime;
-                g.gain.setValueAtTime(this.volume * 0.08, t);
+                g.gain.setValueAtTime((this.volume * this.musicVol) * 0.08, t);
                 g.gain.exponentialRampToValueAtTime(0.001, t + interval / 1000 * 0.9);
                 o.start(t); o.stop(t + interval / 1000);
             }
@@ -5967,7 +5983,7 @@ const GameAudio = {
             const src = ac.createBufferSource(), g = ac.createGain();
             src.buffer = buf; src.loop = true;
             src.connect(g); g.connect(ac.destination);
-            g.gain.value = this.volume * 0.5;
+            g.gain.value = this.volume * this.musicVol * 0.5;
             src.start(); this._musicSource = src;
         };
         const url = this.customMusic;
@@ -8593,9 +8609,14 @@ function _launchPhaserGame() {
     };
 
     if (currentPhaserGame) {
-        // Save any in-progress score to the leaderboard before destroying
+        // Preserve the score ONLY when the run actually ended (game over /
+        // victory screen was shown). Restarting mid-run with R used to dump a
+        // partial score onto the leaderboard, and Play-After-GameOver could
+        // double-add alongside _saveGoScore().
+        const _runEnded = !!window._goRunEnded;
+        window._goRunEnded = false;
         try {
-            const _genre = _engineData ? _engineData.genre : null;
+            const _genre = (_engineData && _engineData.genre && _runEnded && !_goScoreSaved) ? _engineData.genre : null;
             if (_genre) {
                 currentPhaserGame.scene.getScenes(true).forEach(s => {
                     const sc = s.score !== undefined ? s.score : (s.pScore || 0);
@@ -8652,7 +8673,7 @@ function _runCountdown(cb) {
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
     _updateLandscapeNudge(true);
-    _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame()));
+    _maybeStoryIntro(() => _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame())));
 }
 function _autoCloseIntro() {
     const ov = document.getElementById('introOverlay');
@@ -8935,6 +8956,7 @@ function sceneMemory(data) {
             // Timer display (top-right)
             const _timerTxt = this.add.text(GW-10, 10, '⏱ 0s', {fontSize:'11px',fill:'#94a3b8',fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,0).setDepth(10);
             _timerTxt._isMemTimer = true;
+            this._memTimerRef = _timerTxt;
             this._memStart = Date.now();
 
             const timeTxt = this.add.text(GW - 10, 18, '', {
@@ -9043,9 +9065,9 @@ function sceneMemory(data) {
             }).setOrigin(0.5);
         }
         update() {
-            // Live timer display
-            const _timerTxt = this.children?.list?.find?.(c => c._isMemTimer);
-            if (_timerTxt) {
+            // Live timer display — direct reference (was an O(n) children scan/frame)
+            const _timerTxt = this._memTimerRef;
+            if (_timerTxt && _timerTxt.active) {
                 const secs = ((Date.now() - (this._memStart||Date.now())) / 1000).toFixed(1);
                 _timerTxt.setText('⏱ ' + secs + 's');
             }
@@ -9569,11 +9591,13 @@ function _juiceText(x, y, txt, col) {
     });
 }
 
-/** Convenience: call on enemy/obstacle kill */
+/** Convenience: call on enemy/obstacle kill.
+ *  NO hit-stop here: freezing the whole world on every kill made surviving
+ *  enemies appear to "lurch" the moment the freeze lifted (read as AI reacting
+ *  to a kill). Kills get burst+flash; damage keeps the heavy hit-stop. */
 function _juiceKill(x, y, col) {
     if (!liveConfig.juiceEnabled) return;
     _burst(x, y, col);
-    _hitStop();
     _chromaFlash(0.6);
     if (liveConfig.juiceZoom) _zoomPulse();
 }
@@ -10597,8 +10621,10 @@ function sceneShooter(data) {
             const bsz = 60;
             const bx = GW / 2;
             const boss = this.hazards.create(bx, -80, 'enemy');
-            boss.setScale(3); // 3× scale, about 90×90 with default enemy texture
-            boss.body.setSize(Math.round(bsz*.85), Math.round(bsz*.85), true);
+            boss.setScale(3); // 3× scale
+            // Hitbox matched to the VISUAL size — the old fixed 51px body was
+            // smaller than the ~78px sprite, so edge hits never registered
+            boss.body.setSize(Math.round(boss.displayWidth * 0.8), Math.round(boss.displayHeight * 0.8), true);
             if (!data.enemySprite) boss.setTint(0xff1111);
             boss.body.allowGravity = false;
             boss.setData('hp', hp); boss.setData('pts', 50); boss.setData('isBoss', true); boss.setData('isNewBoss', true);
@@ -11029,6 +11055,14 @@ function scenePlatformer(data) {
                 if (Math.abs(mp.x - homeX) > 120) mp.setVelocityX(-mp.body.velocity.x);
                 mp.body.velocity.x = mp.getData('dir')*Math.abs(mp.body.velocity.x);
                 if (mp.body.velocity.x > 0) mp.setData('dir',1); else mp.setData('dir',-1);
+                // Carry the player: kinematic platform movement alone leaves the
+                // rider behind, which squeezed them into walls (the "stuck" report)
+                const p = this.actor;
+                if (p && p.active && p.body.touching.down &&
+                    Math.abs(p.body.bottom - mp.body.top) < 6) {
+                    p.x += mp.body.velocity.x * delta / 1000;
+                    p.y += mp.body.velocity.y * delta / 1000;
+                }
             });
             // Score: distance-based + bonus (stomps/coins)
             if (this.actor.x > this._bestX) {
@@ -11414,10 +11448,13 @@ function sceneRunner(data) {
             const ground = this.add.rectangle(GW/2, GH-8, GW, 16, themeInt(2, 0x334155));
             this.physics.add.existing(ground, true);
             this.groundObj = ground;
-            // Player
+            // Player — deliberately LARGER than obstacles and a fixed high-contrast
+            // colour, so the hero never blends into the hazard palette
             this.actor = this.physics.add.sprite(100, GH-50, 'player');
-            { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
-            this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
+            { const _s=Math.round(30*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.72),Math.round(_s*.72),true); }
+            this._tint(this.actor, 0, 0xffffff);
+            if (!data.sprite) this.actor.setTint(0x00d4aa); // signature teal hero
+            this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
             this.downKey = this.input.keyboard.createCursorKeys().down;
             this._sliding = false;
@@ -11453,11 +11490,12 @@ function sceneRunner(data) {
                         ob.setTint(themeInt(1, 0xa78bfa)); ob.setVelocityX(spd);
                     });
                 } else {
-                    // Standard tall/normal block
+                    // Standard tall/normal block — slimmer than the player so
+                    // silhouettes stay readable at speed
                     const isTall = r < (coinFreq + 0.23);
                     const h = isTall ? Phaser.Math.Between(50,70) : Phaser.Math.Between(20,38);
-                    const ob = this.obstacles.create(GW+20, GH-8-h/2,'block').setDisplaySize(22,h);
-                    ob.body.setSize(22,h); ob.setImmovable(true); ob.body.allowGravity=false;
+                    const ob = this.obstacles.create(GW+20, GH-8-h/2,'block').setDisplaySize(16,h);
+                    ob.body.setSize(16,h); ob.setImmovable(true); ob.body.allowGravity=false;
                     ob.setTint(isTall ? themeInt(0, 0x7c3aed) : themeInt(1, 0xef4444));
                     ob.setData('tall', isTall); ob.setVelocityX(spd);
                 }
@@ -11482,25 +11520,44 @@ function sceneRunner(data) {
             const onGround = this.actor.body.blocked.down;
             if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
             const upNow = this.spaceKey.isDown || this.upKey.isDown || touchInput.up;
-            if (upNow && !this._upWasDown && this._jumpsLeft > 0) {
+            // Jump: press-edge OR hold-to-hop. Pure edge detection made mobile taps
+            // feel dead — holding the canvas should keep bouncing over obstacles.
+            const pressEdge = upNow && !this._upWasDown;
+            if (pressEdge) this._jumpBuf = 120;              // 120ms input buffer
+            this._jumpBuf = Math.max(0, (this._jumpBuf || 0) - 16);
+            this._holdHopT = Math.max(0, (this._holdHopT || 0) - 16);
+            const wantJump = (this._jumpBuf > 0) || (upNow && onGround && this._holdHopT <= 0);
+            if (wantJump && onGround) {
                 this.actor.setVelocityY(-liveConfig.jumpForce);
-                this._jumpsLeft--;
+                this._jumpBuf = 0; this._holdHopT = 240;     // auto-hop cadence
                 GameAudio.play('jump');
                 _triggerHaptic('jump');
+            } else if (pressEdge && !onGround && this._jumpsLeft > 0) {
+                // mid-air press → double jump when enabled
+                this.actor.setVelocityY(-liveConfig.jumpForce);
+                this._jumpsLeft--;
+                GameAudio.play('jump'); _triggerHaptic('jump');
             }
             this._upWasDown = upNow;
             // Slide: hold down to duck (halve hitbox height)
             const slideNow = this.downKey.isDown || touchInput.fire;
+            const _rs=Math.round(30*(liveConfig.playerScale||1));
             if (slideNow && onGround && !this._sliding) {
                 this._sliding = true;
-                const _s=Math.round(24*(liveConfig.playerScale||1));
-                this.actor.body.setSize(Math.round(_s*.78), Math.round(_s*.35), true);
-                this.actor.setDisplaySize(_s, Math.round(_s*0.5));
+                this.actor.body.setSize(Math.round(_rs*.72), Math.round(_rs*.35), true);
+                this.actor.setDisplaySize(_rs, Math.round(_rs*0.5));
             } else if (!slideNow && this._sliding) {
-                this._sliding = false;
-                const _s=Math.round(24*(liveConfig.playerScale||1));
-                this.actor.body.setSize(Math.round(_s*.78), Math.round(_s*.78), true);
-                this.actor.setDisplaySize(_s,_s);
+                // Don't stand up inside an overhead hazard — stay ducked until clear,
+                // otherwise restoring the full hitbox while overlapping embeds the player
+                const blockedAbove = this.obstacles.getChildren().some(o =>
+                    o.getData && o.getData('overhead') &&
+                    Math.abs(o.x - this.actor.x) < (o.displayWidth + this.actor.displayWidth) / 2 &&
+                    o.y + o.displayHeight/2 > this.actor.y - _rs);
+                if (!blockedAbove) {
+                    this._sliding = false;
+                    this.actor.body.setSize(Math.round(_rs*.72), Math.round(_rs*.72), true);
+                    this.actor.setDisplaySize(_rs,_rs);
+                }
             }
             if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
@@ -11719,6 +11776,9 @@ function sceneInvaders(data) {
                 if (typeof this._popText === 'function') this._popText(ex, ey - 10, '+' + Math.round(pts), '#fbbf24');
                 this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
                 _sessionKills++; if (this.score===liveConfig.pointsPerKill) _achUnlock('first_blood');
+                // Classic "fewer invaders = faster march", but GRADUAL per kill
+                // (the old jump-on-descend read as the AI teleporting when one died)
+                if (this.moveTimer) this.moveTimer.delay = Math.max(180, this.moveTimer.delay * 0.97);
                 if(!this.enemies.countActive(true)) {
                     // Perfect wave: cleared without taking a hit since wave started
                     if (_sessionHits === this._hitsAtWaveStart) _achUnlock('invaders_perfect');
@@ -11791,23 +11851,29 @@ function sceneInvaders(data) {
                 const e=this.enemies.create(sx+c*sw,sy+r*sh,'enemy').setDisplaySize(24,22);
                 e.body.setSize(22,20,true); if (!data.enemySprite) e.setTint(themeInt(r%4,rowCols[r%rowCols.length])); e.body.allowGravity=false;
             }
-            this.moveTimer.delay=700;
+            this._invTotal = this.enemies.countActive(true) || 1;
         }
-        _moveFormation() {
-            const all=this.enemies.getChildren(); if(!all.length) return;
-            if(this._descend) {
-                all.forEach(e=>e.y+=18); this._dir*=-1; this._descend=false;
-                this.moveTimer.delay=Math.max(120,700-(24-Math.min(all.length,24))*22);
-            } else {
-                const step=liveConfig.enemySpeed*0.25;
-                all.forEach(e=>e.x+=this._dir*step);
-                if(all.some(e=>e.x<18||e.x>GW-18)) this._descend=true;
-                // Enemies reaching the bottom = instant game over (classic Invaders rule)
-                if(all.some(e=>e.y>GH-70)&&!this._invaded){
-                    this._invaded=true; GameAudio.play('hit');
-                    if(liveConfig.screenShake) this.cameras.main.shake(420,0.02);
-                    this.time.delayedCall(380,()=>{ if(this.scene&&this.scene.isActive()) showGameOver(this.score); });
-                }
+        // Continuous formation flow — the old 700ms timer teleported the whole
+        // grid ~37px per tick, which read as stutter. Now it glides.
+        _moveFormation(delta) {
+            const all=this.enemies.getChildren().filter(e=>e.active); if(!all.length) return;
+            const ratio = 1 - (all.length / (this._invTotal || all.length)); // classic: fewer = faster
+            const spd = liveConfig.enemySpeed * 0.45 * (1 + ratio * 1.1);
+            const dx = this._dir * spd * (delta / 1000);
+            let minX = 1e9, maxX = -1e9;
+            all.forEach(e => { e.x += dx; if (e.x < minX) minX = e.x; if (e.x > maxX) maxX = e.x; });
+            const hitEdge = (this._dir > 0 && maxX >= GW - 16) || (this._dir < 0 && minX <= 16);
+            if (hitEdge && !this._descendCd) {
+                this._descendCd = 350;                       // debounce so one edge tick ≠ jitter
+                all.forEach(e => e.y += 16);
+                this._dir *= -1;
+            }
+            if (this._descendCd) this._descendCd -= delta;
+            // Enemies reaching the bottom = instant game over (classic Invaders rule)
+            if (all.some(e => e.y > GH - 70) && !this._invaded) {
+                this._invaded = true; GameAudio.play('hit');
+                if (liveConfig.screenShake) this.cameras.main.shake(420, 0.02);
+                this.time.delayedCall(380, () => { if (this.scene && this.scene.isActive()) showGameOver(this.score); });
             }
         }
         _enemyFire() {
@@ -14524,18 +14590,215 @@ function importStoryFromEditor() {
 }
 function applyStory(d) {
     currentStory = d;
+    _storyIntroPlayed = false; // new story -> play it on next Run
     if (d.title) document.getElementById('gameTitle').value = d.title;
     const preview = d.intro || '(No intro text, add text to your Start node in the Story Editor)';
-    // Guard every element: storyPreview/storyTitlePreview/storyBadge only exist
-    // in some layouts, and a missing one aborted the rest of the import
+    // Guard: missionText only exists in some layouts
     const mt = document.getElementById('missionText');
     if (mt) mt.innerHTML = `<strong>Story:</strong> ${preview}`;
+    // Summarise the full branching tree so users see what actually came across
+    let statsLine = '';
+    if (Array.isArray(d.nodes) && d.nodes.length) {
+        const nChars = Array.isArray(d.chars) ? d.chars.length : (Array.isArray(d.characters) ? d.characters.length : 0);
+        const endings = d.nodes.filter(n => n.type === 'end').length;
+        const choices = d.nodes.filter(n => n.type === 'choice').length;
+        statsLine = `\n\n📖 ${d.nodes.length} nodes · ${nChars} characters · ${choices} choice points · ${endings} ending${endings === 1 ? '' : 's'}${choices ? '\n🎬 Your branching story plays right before the game starts!' : ''}`;
+    }
     const sp = document.getElementById('storyPreview');
-    if (sp) sp.textContent = d.intro || '';
+    if (sp) sp.textContent = (d.intro || '') + statsLine;
+    // Guard every element: storyTitlePreview/storyBadge only exist in some layouts
     const stp = document.getElementById('storyTitlePreview');
     if (stp) stp.textContent = d.title || '';
     const sb = document.getElementById('storyBadge');
     if (sb) sb.style.display = 'inline';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── BRANCHING STORY RUNTIME — plays an imported Story Editor tree as a
+//    playable cutscene between the title screen and the game.
+//    Conditions lock choices, effects mutate variables, live chips shown.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function _stEscape(s){ return String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function _stEvalCond(c, V){
+    if (!c || !c.v) return true;
+    const cur = Number(V[c.v] != null ? V[c.v] : 0), val = Number(c.val != null ? c.val : 0);
+    switch (c.op) {
+        case 'true': return cur >= 1;  case 'false': return cur < 1;
+        case '==': return cur === val; case '!=': return cur !== val;
+        case '>=': return cur >= val;  case '<=': return cur <= val;
+        case '>':  return cur > val;   case '<':  return cur < val;
+        default: return true;
+    }
+}
+function _stCondLabel(c){
+    if (!c || !c.v) return '';
+    const sym = {'true':'is set','false':'is not set','==':'==','!=':'!=','>=':'≥','<=':'≤','>':'>','<':'<'}[c.op] || '?';
+    return sym.indexOf('is ') === 0 ? `${c.v} ${sym}` : `${c.v} ${sym} ${c.val}`;
+}
+function _stApplyFx(list, V){
+    (list || []).forEach(f => {
+        if (!f || !f.v) return;
+        const amt = Number(f.val != null ? f.val : 0);
+        V[f.v] = f.op === 'add' ? Number(V[f.v] || 0) + amt : amt;
+    });
+}
+function _stTagColour(t){ let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%360; return `hsl(${h},65%,55%)`; }
+function _stAvatar(ch, sizePx){
+    const s = sizePx || 34;
+    if (ch && ch.img) return `<img src="${ch.img}" alt="" style="width:${s}px;height:${s}px;border-radius:${Math.round(s/4)}px;object-fit:cover;">`;
+    return `<span style="font-size:${Math.round(s*0.82)}px;line-height:${s}px;">${(ch && ch.emoji) || '📖'}</span>`;
+}
+// Only worth an interactive cutscene when the tree actually branches,
+// and only once per import (restarts shouldn't force a replay)
+function _storyIsPlayable(){
+    return !!(currentStory && Array.isArray(currentStory.nodes) &&
+        currentStory.nodes.length >= 2 &&
+        currentStory.nodes.some(n => n.type === 'choice'));
+}
+let _stVars = {}, _stCur = null;
+let _storyIntroPlayed = false;
+
+function _maybeStoryIntro(cb) {
+    if (_storyIntroPlayed || !_storyIsPlayable()) { if (cb) cb(); return; }
+    try { _storyIntroPlayed = true; _playStoryIntro(cb); } catch(e) { if (cb) cb(); }
+}
+function _storyEnsureOverlay(){
+    let ov = document.getElementById('storyCutscene');
+    if (ov) return ov;
+    const st = document.createElement('style');
+    st.textContent = `
+#storyCutscene{position:fixed;inset:0;z-index:8100;background:rgba(4,6,12,.9);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}
+#storyCutscene .stc-card{width:min(600px,96vw);max-height:92vh;display:flex;flex-direction:column;background:#141a26;border:1px solid rgba(99,102,241,.35);border-radius:18px;padding:20px 20px 14px;box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 60px rgba(99,102,241,.12);}
+.stc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.stc-name{font-family:'Fredoka',sans-serif;font-weight:600;font-size:.95rem;color:#f59e0b;}
+.stc-tag{margin-left:auto;font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 9px;border-radius:8px;}
+.stc-text{font-size:.95rem;line-height:1.75;color:#e8edf8;white-space:pre-wrap;margin-bottom:16px;overflow-y:auto;}
+.stc-choices{display:flex;flex-direction:column;gap:7px;}
+.stc-btn{padding:11px 15px;border-radius:11px;border:1px solid rgba(255,255,255,.14);background:#232f45;cursor:pointer;font-size:.86rem;color:#e8edf8;text-align:left;font-family:'Inter',sans-serif;transition:all .13s;}
+.stc-btn:hover:not(:disabled){background:rgba(99,102,241,.18);border-color:#6366f1;transform:translateY(-1px);}
+.stc-btn:disabled{opacity:.42;cursor:not-allowed;}
+.stc-end{font-family:'Fredoka',sans-serif;text-align:center;padding:14px 6px 6px;}
+.stc-vars{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px;padding-top:10px;border-top:1px dashed rgba(255,255,255,.14);}
+.stc-chip{font-size:.62rem;padding:2px 9px;border-radius:10px;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.32);color:#a5b4fc;white-space:nowrap;}
+.stc-foot{display:flex;gap:8px;margin-top:14px;justify-content:space-between;align-items:center;}
+.stc-skip{background:none;border:1px solid rgba(255,255,255,.16);color:#8b93a0;border-radius:8px;padding:6px 13px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.68rem;}
+.stc-skip:hover{color:#e8edf8;border-color:rgba(255,255,255,.35);}
+.stc-go{background:linear-gradient(135deg,#16a34a,#15803d);border:none;color:white;border-radius:9px;padding:9px 22px;cursor:pointer;font-family:'Fredoka',sans-serif;font-weight:600;font-size:.88rem;}
+.stc-go:hover{filter:brightness(1.12);}
+`;
+    document.head.appendChild(st);
+    ov = document.createElement('div');
+    ov.id = 'storyCutscene';
+    ov.style.display = 'none';
+    ov.innerHTML = `<div class="stc-card">
+        <div class="stc-head" id="stcHead"></div>
+        <div class="stc-text" id="stcText"></div>
+        <div class="stc-choices" id="stcChoices"></div>
+        <div class="stc-vars" id="stcVars"></div>
+        <div class="stc-foot"><span style="font-size:.58rem;color:#5b6472;">1-4 pick · Esc skip</span><button class="stc-skip" id="stcSkip">Skip Story ▸</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('stcSkip').addEventListener('click', () => _storyFinish());
+    document.addEventListener('keydown', _storyKeyHandler);
+    return ov;
+}
+let _storyDoneCb = null;
+function _storyKeyHandler(e){
+    const ov = document.getElementById('storyCutscene');
+    if (!ov || ov.style.display === 'none' || !currentStory || !currentStory._live) return;
+    if (e.key === 'Escape') { e.preventDefault(); _storyFinish(); return; }
+    const n = currentStory._live.get(window._stCurrentId);
+    if (!n) return;
+    const num = parseInt(e.key, 10);
+    if (n.type === 'choice' && num >= 1 && num <= n.choices.length) {
+        const btn = document.getElementById('stcChoice' + (num - 1));
+        if (btn && !btn.disabled) btn.click();
+    } else if ((e.key === ' ' || e.key === 'Enter') && n.type !== 'choice') {
+        const cont = document.getElementById('stcContBtn');
+        // Only swallow the key when we act, so the focused Start Playing
+        // button still receives its native Enter/Space activation.
+        if (cont) { e.preventDefault(); cont.click(); }
+    }
+}
+function _playStoryIntro(done){
+    _storyDoneCb = done;
+    const nodes = currentStory.nodes.map(n => ({
+        id:String(n.id), type:n.type, char:n.char||'Narrator', text:n.text||'', tag:n.tag||'', to:n.to||null,
+        fx:Array.isArray(n.fx)?n.fx:[],
+        choices:(Array.isArray(n.choices)?n.choices:[]).map(c => ({
+            text:c.text||'', to:c.to||'', cond:c.cond||null, fx:Array.isArray(c.fx)?c.fx:[]
+        }))
+    }));
+    currentStory._live = new Map(nodes.map(n => [n.id, n]));
+    // Reset variables (flags are numeric 0/1 internally)
+    _stVars = {};
+    (currentStory.variables || []).forEach(v => { _stVars[v.name] = typeof v.start === 'boolean' ? (v.start?1:0) : Number(v.start||0); });
+    const start = nodes.find(n => n.type === 'start') || nodes[0];
+    window._stCurrentId = start.id;
+    _stApplyFx(start.fx, _stVars);
+    const ov = _storyEnsureOverlay();
+    ov.style.display = 'flex';
+    _renderStoryNode();
+}
+function _renderStoryNode(){
+    const n = currentStory._live.get(window._stCurrentId);
+    if (!n) return _storyFinish();
+    const chars = currentStory.chars || currentStory.characters || [];
+    const ch = chars.find(c => c.name === n.char) || {colour:'#64748b', emoji:'📖', name:n.char};
+    document.getElementById('stcHead').innerHTML =
+        `${_stAvatar(ch)}<span class="stc-name" style="color:${/^#[0-9a-f]{3,8}$/i.test(ch.colour||'')?ch.colour:'#64748b'}">${_stEscape(ch.name)}</span>` +
+        (n.tag ? `<span class="stc-tag" style="background:${_stTagColour(n.tag)}26;color:${_stTagColour(n.tag)};">${_stEscape(n.tag)}</span>` : '');
+    document.getElementById('stcText').textContent = n.text || '';
+
+    const choicesEl = document.getElementById('stcChoices');
+    const varsEl = document.getElementById('stcVars');
+    varsEl.innerHTML = Object.keys(_stVars).map(k =>
+        `<span class="stc-chip">${_stEscape(k)}: ${_stVars[k]}</span>`).join('');
+
+    if (n.type === 'end') {
+        choicesEl.innerHTML = `<div class="stc-end" style="color:#a78bfa;">— The End —</div>
+            <button class="stc-go" id="stcGoBtn" onclick="_storyFinish()">🎮 Start Playing</button>`;
+        document.getElementById('stcGoBtn').focus();
+        return;
+    }
+
+    if (n.type === 'choice' && n.choices.some(c => c.text)) {
+        choicesEl.innerHTML = '<div class="stc-choices">' + n.choices.map((c,i) => {
+            if (!c.text) return '';
+            if (_stEvalCond(c.cond, _stVars)) {
+                if (c.to) return `<button class="stc-btn" id="stcChoice${i}" onclick="_stPick(${i})">${i+1}. ${_stEscape(c.text)}</button>`;
+                return `<button class="stc-btn" disabled title="Writer left this choice unconnected">🔒 ${_stEscape(c.text)}</button>`;
+            }
+            return `<button class="stc-btn" disabled title="Requires ${_stEscape(_stCondLabel(c.cond))}">🔒 ${_stEscape(c.text)} <small>(${_stEscape(_stCondLabel(c.cond))})</small></button>`;
+        }).join('') + '</div>';
+    } else if (n.to && currentStory._live.has(n.to)) {
+        choicesEl.innerHTML = `<button class="stc-btn" id="stcContBtn" onclick="_stContinue()">Continue ▸</button>`;
+        const cb = document.getElementById('stcContBtn'); if (cb) cb.focus();
+    } else {
+        choicesEl.innerHTML = `<div class="stc-end">— The End —</div><button class="stc-go" id="stcGoBtn" onclick="_storyFinish()">🎮 Start Playing</button>`;
+        document.getElementById('stcGoBtn').focus();
+    }
+}
+function _stPick(i){
+    const n = currentStory._live.get(window._stCurrentId);
+    if (!n || !n.choices[i]) return;
+    _stApplyFx(n.choices[i].fx, _stVars);
+    _stGoto(n.choices[i].to);
+}
+function _stContinue(){ _stGoto((currentStory._live.get(window._stCurrentId) || {}).to); }
+function _stGoto(id){
+    const n = id ? currentStory._live.get(id) : null;
+    if (!n) return _storyFinish();
+    window._stCurrentId = id;
+    _stApplyFx(n.fx, _stVars);
+    _renderStoryNode();
+}
+function _storyFinish(){
+    const ov = document.getElementById('storyCutscene');
+    if (ov) ov.style.display = 'none';
+    const cb = _storyDoneCb; _storyDoneCb = null;
+    if (cb) cb();
 }
 
 // ── VISUAL THEME PICKER ───────────────────────────────────────────────────────
@@ -15382,6 +15645,7 @@ function _buildSharePayload(d) {
 let _goPendingScore = 0;
 let _goPendingGenre = 'SHOOTER';
 let _goScoreSaved   = false; // guard against double-save
+let _goRunEnded     = false; // true only after showGameOver/showVictory — mid-run restarts must NOT save scores
 
 function _shareGameScore() {
     const score = _goPendingScore || 0;
@@ -15514,6 +15778,7 @@ async function _shareGameCard(score) {
 }
 
 function showGameOver(score) {
+    _goRunEnded = true;
     _triggerHaptic('lose');
     _speedRunStop(score);
     GameAudio.stopMusic();
@@ -17989,6 +18254,11 @@ function sceneBeatEmUp(data) {
         _tickBase(score)  { _sceneTickBase(this, score); }
 
         _drawHP() {
+            // Redraw only when HP actually changed (was a full graphics rebuild
+            // every frame — wasteful on low-end phones)
+            const _sig = this._p1.hp + '|' + this._p2.hp;
+            if (_sig === this._hpSig) return;
+            this._hpSig = _sig;
             const g = this._hpGfx; g.clear();
             const BAR_W=220, BAR_H=14, BAR_Y=24;
             [[this._p1, 14, false],[this._p2, GW-14-BAR_W, true]].forEach(([f,bx,flip])=>{
@@ -18896,9 +19166,12 @@ function sceneTowerDefense(data) {
             // ── Input ──
             this._keyT     = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.T);
             this._keySpace = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-            // Click to place tower
+            // Click to place tower — ignore taps on the tower-selector strip,
+            // otherwise picking a tower type ALSO placed one underneath it
             this.input.on('pointerdown', (ptr) => {
                 if (!this._toPlace) return;
+                const stripLeft = GW - (TOWER_TYPES.length * 62 + 70);
+                if (ptr.y > GH - 52 && ptr.x > stripLeft) return;
                 const col = Math.floor(ptr.x / CELL);
                 const row = Math.floor(ptr.y / CELL);
                 this._placeTower(col, row);
@@ -19315,38 +19588,35 @@ function scenePinball(data) {
             };
             // Left wall
             addWall(TABLE_L-4, GH/2, 8, GH+20);
-            // Right wall (table right), gap at shooter entry (y=40-95)
-            addWall(TABLE_R+4, (GH+95)/2 + (95-40)/2*0.5, 8, GH - 95 + 40);
-            // Shooter channel separator (thin wall between plunger lane and table)
-            addWall(TABLE_R+4, (GH + 95)/2 + (GH-95)/4, 8, (GH-95)*0.5);
-            // Shooter lane right wall
-            addWall(GW-10, GH/2, 8, GH+20);
-            // Top wall
-            addWall(TABLE_L + TABLE_W/2, 8, TABLE_W, 16);
+            // Table right wall — single clean segment, entry gap above y=130
+            addWall(TABLE_R+4, (130+GH)/2, 8, GH - 130);
+            // Shooter channel separator (below the entry arc only)
+            addWall(GW-10, GH/2, 8, GH+20); // lane right wall
+            addWall(TABLE_L + TABLE_W/2, 8, TABLE_W, 16); // top wall
 
             // Visible wall graphics
             const wg = this.add.graphics().setDepth(3);
             wg.lineStyle(4, 0x2563eb, 0.85);
-            // Left wall line
             wg.lineBetween(TABLE_L, 0, TABLE_L, GH+10);
-            // Right wall line (with gap for shooter entry 40-95)
-            wg.lineBetween(TABLE_R, 95, TABLE_R, GH+10);
-            // Shooter entry arc/curve hint
+            wg.lineBetween(TABLE_R, 130, TABLE_R, GH+10);
             wg.lineStyle(3, 0x3b82f6, 0.6);
-            wg.lineBetween(TABLE_R, 40, GW-10, 40);  // top of shooter to table
-            // Plunger lane separator
+            wg.lineBetween(TABLE_R, 60, GW-10, 60);   // shooter entry arc hint
             wg.lineStyle(2, 0x1e3a5f, 0.7);
-            wg.lineBetween(TABLE_R, 100, TABLE_R, GH);
+            wg.lineBetween(TABLE_R, 140, TABLE_R, GH);
 
             // ── Bumpers ───────────────────────────────────────────────────────
+            // DYNAMIC + immovable (NOT staticGroup): StaticBody.refreshBody()
+            // after setCircle() snapped every bumper back to a 44px SQUARE,
+            // which turned the table into a maze of invisible boxes.
             const layout = liveConfig.pinballLayout || 'classic';
             const bumperPos = _LAYOUTS[layout] || _LAYOUTS.classic;
 
-            this._bumpers = this.physics.add.staticGroup();
+            this._bumpers = this.physics.add.group({ immovable: true, allowGravity: false });
             bumperPos.forEach(([bx,by],idx) => {
                 const b = this._bumpers.create(bx, by, bumpTex[idx % 5]);
-                b.setCircle(BUMPER_R+2, 0, 0);
-                b.refreshBody();
+                b.setCircle(BUMPER_R+2);
+                b.setImmovable(true);
+                b.body.moves = false;
                 b.setData('pts', [200,300,150,250,100,200,300][idx] || 150);
                 this.add.text(bx, by, ''+b.getData('pts'),
                     {fontSize:'8px',fill:'#fff',fontFamily:"'Fredoka',sans-serif"})
@@ -19354,10 +19624,11 @@ function scenePinball(data) {
             });
 
             // ── Score targets at top ──────────────────────────────────────────
-            this._targets = this.physics.add.staticGroup();
+            this._targets = this.physics.add.group({ immovable: true, allowGravity: false });
             [TABLE_L+TABLE_W*0.2, TABLE_L+TABLE_W*0.5, TABLE_L+TABLE_W*0.8].forEach(tx => {
                 const t = this._targets.create(tx, 36, '_pb_tgt');
-                t.body.setSize(40,18); t.refreshBody();
+                t.body.setSize(40,18);
+                t.setImmovable(true); t.body.moves = false;
                 t.setData('pts',500); t.setData('active',true); t.setDepth(5);
             });
 
@@ -19460,6 +19731,12 @@ function scenePinball(data) {
                 GameAudio.play('shoot');
             };
             this._keySpace.once('down', this._doLaunch);
+            // Self-test mode: auto-launch + flap flippers so collisions, bumpers
+            // and the drain path all get exercised headlessly
+            if (window._selftestActive) {
+                this.time.delayedCall(400, () => { if (this.scene && !this._launched) this._doLaunch(); });
+                this.time.addEvent({ delay: 420, loop: true, callback: () => { this._lfActive = !this._lfActive; this._rfActive = !this._lfActive; } });
+            }
             _updateLandscapeNudge(true);
         }
 
@@ -20209,6 +20486,7 @@ function _getBossPhase(hpCurrent, hpMax) {
 // per genre without needing any external test runner.
 const SELFTEST_GENRES = ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'];
 window._selftestErrors = [];
+window._selftestActive = true;   // scenes may auto-play (e.g. pinball launch)
 function _runGenreSelfTest() {
     const panel = document.createElement('div');
     panel.id = 'selftestPanel';
@@ -20252,6 +20530,7 @@ function _runGenreSelfTest() {
     const _next = () => {
         if (_i >= SELFTEST_GENRES.length) {
             _restore();
+            window._selftestActive = false;
             const pass = _results.filter(r=>r.ok).length;
             let html = `<div style="font-weight:700;color:${pass===SELFTEST_GENRES.length?'#4ade80':'#fbbf24'};margin-bottom:6px;">🧪 ${pass}/${SELFTEST_GENRES.length} genres passed</div>`;
             html += _results.map(_row).join('');
@@ -20491,6 +20770,17 @@ window.addEventListener('DOMContentLoaded', ()=>{
             if (p.volume !== undefined) {
                 const vs = document.getElementById('volumeSlider');
                 if (vs) { vs.value = p.volume; GameAudio.setVolume(p.volume / 100); }
+            }
+            // Music / SFX split (defaults: music 60%, sfx 100%)
+            if (p.music !== undefined) {
+                GameAudio.musicVol = Math.max(0, Math.min(1, p.music / 100));
+                const ms = document.getElementById('musicVolSlider');
+                if (ms) { ms.value = p.music; const nv = ms.nextElementSibling; if (nv) nv.textContent = p.music + '%'; }
+            }
+            if (p.sfx !== undefined) {
+                GameAudio.sfxVol = Math.max(0, Math.min(1, p.sfx / 100));
+                const ss = document.getElementById('sfxVolSlider');
+                if (ss) { ss.value = p.sfx; const nv = ss.nextElementSibling; if (nv) nv.textContent = p.sfx + '%'; }
             }
             if (p.theme === 'light') {
                 document.body.classList.add('theme-light');
@@ -20780,7 +21070,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
         } else if (e.key === 'jvds_story_last' && e.newValue) {
             try {
                 applyStory(JSON.parse(e.newValue));
-                showWorkshopBadge('✓ Story imported! Title & intro updated');
+                showWorkshopBadge('✓ Branching story imported! It plays before your game');
                 showToast('Story received from Story Editor ✓');
             } catch(er) {}
         } else if (e.key === 'jvds_palette_last' && e.newValue) {

@@ -531,7 +531,7 @@ body {
     <span style="font-size:.72rem;color:rgba(240,234,214,0.45);">Click the grid to place hits · rows follow the selected kit</span>
   </div>
   <div class="seq-scroll">
-    <div class="seq-grid" id="seqGrid" role="grid" aria-label="Step sequencer"></div>
+    <div class="seq-grid" id="seqGrid" role="group" aria-label="Step sequencer"></div>
   </div>
 </section>
 
@@ -603,6 +603,38 @@ function getCtx() {
 }
 function getDest() { getCtx(); return masterGain; }
 
+// ── NOISE BUFFER CACHE ─────────────────────────────────────────
+// Rebuilding a noise AudioBuffer on every hit causes GC churn on mobile,
+// so shapes are generated once and reused across BufferSources.
+const _bufCache = new Map();
+function whiteNoise(c, secs) {
+  const key = 'w' + Math.round(secs * 1000);
+  if (_bufCache.has(key)) return _bufCache.get(key);
+  const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  _bufCache.set(key, b);
+  return b;
+}
+function decayNoise(c, secs, pow) {
+  const key = 'd' + Math.round(secs * 1000) + '_' + pow;
+  if (_bufCache.has(key)) return _bufCache.get(key);
+  const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, pow);
+  _bufCache.set(key, b);
+  return b;
+}
+function fadeNoise(c, secs) {
+  const key = 'f' + Math.round(secs * 1000);
+  if (_bufCache.has(key)) return _bufCache.get(key);
+  const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  _bufCache.set(key, b);
+  return b;
+}
+
 // ── SOUND ENGINES (all accept an optional `at` AudioContext time
 //    as their LAST argument so the sequencer can schedule ahead) ──
 function playKick(vol=1, at) {
@@ -619,11 +651,8 @@ function playKick(vol=1, at) {
 function playSnare(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
   // noise burst
-  const buf = c.createBuffer(1, c.sampleRate * 0.2, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   const noise = c.createBufferSource();
-  noise.buffer = buf;
+  noise.buffer = whiteNoise(c, 0.2);
   const ng = c.createGain();
   noise.connect(ng); ng.connect(getDest());
   ng.gain.setValueAtTime(vol * 0.7, t);
@@ -639,11 +668,8 @@ function playSnare(vol=1, at) {
 }
 function playHihat(open=false, vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.08, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   const noise = c.createBufferSource();
-  noise.buffer = buf;
+  noise.buffer = whiteNoise(c, 0.08);
   const bpf = c.createBiquadFilter();
   bpf.type = 'bandpass'; bpf.frequency.value = 8000; bpf.Q.value = 1.5;
   const g = c.createGain();
@@ -656,11 +682,8 @@ function playHihat(open=false, vol=1, at) {
 function playClap(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
   [0, 0.01, 0.02].forEach(d => {
-    const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     const n = c.createBufferSource();
-    n.buffer = buf;
+    n.buffer = whiteNoise(c, 0.05);
     const bpf = c.createBiquadFilter();
     bpf.type = 'bandpass'; bpf.frequency.value = 1200; bpf.Q.value = 0.7;
     const g = c.createGain();
@@ -703,10 +726,7 @@ function playRimshot(vol=1, at) {
 }
 function playShaker(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.07, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = whiteNoise(c, 0.07);
   const hpf = c.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = 5000;
   const g = c.createGain();
   n.connect(hpf); hpf.connect(g); g.connect(getDest());
@@ -716,10 +736,7 @@ function playShaker(vol=1, at) {
 }
 function playCrash(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.8, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = whiteNoise(c, 0.8);
   const bpf = c.createBiquadFilter(); bpf.type = 'highpass'; bpf.frequency.value = 5000;
   const g = c.createGain();
   n.connect(bpf); bpf.connect(g); g.connect(getDest());
@@ -741,10 +758,7 @@ function playChime(freq=880, vol=1, at) {
 }
 function playWhoosh(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = fadeNoise(c, 0.3);
   const bpf = c.createBiquadFilter(); bpf.type = 'bandpass'; bpf.frequency.value = 600;
   const g = c.createGain();
   n.connect(bpf); bpf.connect(g); g.connect(getDest());
@@ -823,10 +837,7 @@ function playJump(vol=1, at) {
 }
 function playExplosion(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.6, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = decayNoise(c, 0.6, 2);
   const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 400;
   const g = c.createGain();
   n.connect(lpf); lpf.connect(g); g.connect(getDest());
@@ -884,10 +895,7 @@ function playPluck(freq, vol=0.6, at) {
 function playSlap(vol=1, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
   // thumb slap
-  const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = whiteNoise(c, 0.05);
   const lpf = c.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 300;
   const g = c.createGain();
   n.connect(lpf); lpf.connect(g); g.connect(getDest());
@@ -971,10 +979,7 @@ function playSqueak(vol=0.4, at) {
 }
 function playFart(vol=0.5, at) {
   const c = getCtx(), t = at == null ? c.currentTime : at;
-  const buf = c.createBuffer(1, c.sampleRate * 0.35, c.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  const n = c.createBufferSource(); n.buffer = buf;
+  const n = c.createBufferSource(); n.buffer = whiteNoise(c, 0.35);
   const o = c.createOscillator();
   o.type = 'sawtooth';
   o.frequency.setValueAtTime(90, t);
@@ -1236,6 +1241,7 @@ function animatePad(el) {
 // ── KEYBOARD ───────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
+  if (document.querySelector('.modal-overlay.open')) return; // typing in a dialog
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
   const key = e.key.toUpperCase();
@@ -1285,8 +1291,14 @@ let schedTimer = null;
 let visualQueue = [];
 let rafId = null;
 let lastPhStep = -1;
+let playStartWall = 0;        // Date.now() estimate for when step 0 sounds
 
 const playBtn = document.getElementById('playBtn');
+
+function scheduleAhead() {
+  // Background tabs throttle setInterval to ~1s; book further ahead there.
+  return document.hidden ? 1.5 : SCHEDULE_AHEAD_S;
+}
 
 function startPlayback() {
   if (playing) return;
@@ -1294,6 +1306,7 @@ function startPlayback() {
   playing = true;
   currentStep = 0;
   nextStepTime = ctx.currentTime + 0.06;
+  playStartWall = Date.now() + Math.max(0, nextStepTime - ctx.currentTime) * 1000;
   visualQueue = [];
   schedTimer = setInterval(schedulerTick, LOOKAHEAD_MS);
   schedulerTick();
@@ -1318,7 +1331,7 @@ function stopPlayback() {
 playBtn.addEventListener('click', () => { playing ? stopPlayback() : startPlayback(); });
 
 function schedulerTick() {
-  while (nextStepTime < ctx.currentTime + SCHEDULE_AHEAD_S) {
+  while (nextStepTime < ctx.currentTime + scheduleAhead()) {
     scheduleStep(currentStep, nextStepTime);
     visualQueue.push({ s: currentStep, t: nextStepTime });
     nextStepTime += stepDuration(currentStep);
@@ -1366,11 +1379,20 @@ recordBtn.addEventListener('click', () => {
     getCtx(); // unlock audio up-front
     recording = true;
     takeHits = [];
-    recordStart = Date.now();
+    if (playing) {
+      // Overdub: restart the bar so recorded hits quantise in phase
+      // with the loop (recordStart = wall-clock time step 0 sounds).
+      stopPlayback();
+      startPlayback();
+      recordStart = playStartWall;
+      showToast('⏺ Recording from step 1 — play along!');
+    } else {
+      recordStart = Date.now();
+      showToast('Recording… tap pads, then stop!');
+    }
     recordBtn.textContent = '⏹ Stop Recording';
     recordBtn.classList.add('recording');
     recordBtn.setAttribute('aria-pressed', 'true');
-    showToast('Recording… tap pads, then stop!');
   } else {
     recording = false;
     recordBtn.textContent = '⏺ Record Loop';
@@ -1385,6 +1407,7 @@ function commitTake() {
     showToast('Nothing recorded — tap the pads while recording!');
     return;
   }
+  const wasPlaying = playing;
   const stepMs = getStepMs();
   let added = 0;
   takeHits.forEach(h => {
@@ -1398,17 +1421,13 @@ function commitTake() {
   renderSeqStates();
   saveBtn.style.display = '';
   if (!playing) startPlayback(); // hear it straight away
-  showToast(`🎧 ${added} hit${added === 1 ? '' : 's'} quantised${playing ? ' onto the loop' : ' — loop playing!'}`);
+  showToast(`🎧 ${added} hit${added === 1 ? '' : 's'} quantised${wasPlaying ? ' onto the loop' : ' — loop playing!'}`);
 }
 
 clearBtn.addEventListener('click', () => {
-  stopPlayback();
   pattern = emptyPattern();
-  refreshLoopUI();
+  refreshLoopUI(); // stops playback and hides transport when empty
   renderSeqStates();
-  playBtn.style.display = 'none';
-  clearBtn.style.display = 'none';
-  saveBtn.style.display = 'none';
   showToast('Loop cleared');
 });
 
@@ -1425,9 +1444,11 @@ function refreshLoopUI() {
   });
   const show = hasPattern();
   document.getElementById('loopSection').style.display = show ? '' : 'none';
-  if (show) {
-    playBtn.style.display = '';
-    clearBtn.style.display = '';
+  playBtn.style.display = show ? '' : 'none';
+  clearBtn.style.display = show ? '' : 'none';
+  if (!show) {
+    stopPlayback();
+    saveBtn.style.display = 'none';
   }
 }
 
@@ -1462,7 +1483,6 @@ function renderSeq() {
       cell.className = 'seq-cell' + (s % 4 === 0 ? ' beat' : '');
       cell.dataset.step = s;
       cell.dataset.row = row;
-      cell.setAttribute('role', 'gridcell');
       cell.setAttribute('aria-label', `${pad.label} · step ${s + 1}`);
       syncCell(cell, row, s);
       cell.addEventListener('click', () => {
@@ -1484,8 +1504,9 @@ function renderSeq() {
 }
 
 function syncCell(cell, row, s) {
-  cell.classList.toggle('filled', pattern[s].some(h => h.kit === currentKit && h.idx === row));
-  cell.setAttribute('aria-selected', String(cell.classList.contains('filled')));
+  const on = pattern[s].some(h => h.kit === currentKit && h.idx === row);
+  cell.classList.toggle('filled', on);
+  cell.setAttribute('aria-pressed', String(on));
 }
 
 function renderSeqStates() {
@@ -1551,16 +1572,23 @@ function renderPatterns() {
   }
   patternsSection.style.display = '';
   savedPatterns.forEach((p, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'ctrl-btn';
-    btn.style.cssText = 'margin:4px;padding:6px 30px 6px 14px;font-size:.75rem;position:relative;';
-    btn.innerHTML = `${escapeHtml(p.name)}<span role="button" tabindex="-1" aria-label="Delete ${escapeHtml(p.name)}" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:.65rem;color:rgba(240,234,214,0.5);" data-del="${i}">✕</span>`;
-    btn.addEventListener('click', e => {
-      const del = e.target.closest('[data-del]');
-      if (del) { askDelete(parseInt(del.dataset.del, 10)); return; }
-      loadPattern(i);
-    });
-    patternsList.appendChild(btn);
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:inline-flex;margin:4px;';
+    const load = document.createElement('button');
+    load.type = 'button';
+    load.className = 'ctrl-btn pat-load';
+    load.style.cssText = 'padding:6px 14px;font-size:.75rem;border-radius:999px 0 0 999px;';
+    load.textContent = p.name;
+    load.addEventListener('click', () => loadPattern(i));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'pat-del';
+    del.setAttribute('aria-label', 'Delete ' + p.name);
+    del.style.cssText = 'padding:6px 10px;font-size:.7rem;background:rgba(255,255,255,.06);border:2px solid rgba(240,234,214,0.15);border-left:none;border-radius:0 999px 999px 0;color:rgba(240,234,214,0.5);cursor:pointer;';
+    del.textContent = '✕';
+    del.addEventListener('click', () => askDelete(i));
+    wrap.append(load, del);
+    patternsList.appendChild(wrap);
   });
 }
 
@@ -1583,10 +1611,6 @@ document.getElementById('confirmOkBtn').addEventListener('click', () => {
   pendingDelete = -1;
   closeModal(confirmModal);
 });
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
-}
 
 function loadPattern(idx) {
   if (idx < 0 || idx >= savedPatterns.length) return;

@@ -88,7 +88,7 @@ const CARDS = [
   { page: 'tools/bitmap-font-maker.html', slug: 'tool-bitmapfont', title: 'Bitmap Font Maker', tag: 'Draw pixel fonts, preview live, export PNG.',        accent: '#00b894', emoji: '🔤', eyebrow: 'Free Dev Tool' },
   { page: 'tools/game-logo-maker.html',   slug: 'tool-logomaker',  title: 'Game Logo Maker',   tag: 'Design your game logo right in the browser.',        accent: '#6c5ce7', emoji: '🎨', eyebrow: 'Free Dev Tool' },
   { page: 'tools/icon-generator.html',    slug: 'tool-icongen',    title: 'Icon Generator',    tag: 'Pixel-art icons for your Quest Board RPG.',          accent: '#F2A541', emoji: '🎯', eyebrow: 'Free Dev Tool' },
-  { page: 'tools/music-maker.html',       slug: 'tool-musicmaker', title: 'Music Maker',       tag: 'Make beats & melodies, FL-style, in your browser.',  accent: '#fd79a8', emoji: '🎹', eyebrow: 'Free Dev Tool' },
+  { page: 'tools/music-maker.html',       slug: 'tool-musicmaker', title: 'Music Maker',       tag: 'Make beats & melodies in your browser.',  accent: '#fd79a8', emoji: '🎹', eyebrow: 'Free Dev Tool' },
   { page: 'tools/sprite-animator.html',   slug: 'tool-spriteanim', title: 'Sprite Animator',   tag: 'Upload a spritesheet, preview animation live.',      accent: '#00d2ff', emoji: '🎞️', eyebrow: 'Free Dev Tool' },
   { page: 'tools/quest-board-page.html',  slug: 'tool-questlog',   title: 'QuestLog',          tag: 'Turn tasks & habits into an RPG. Earn XP, level up.',accent: '#8a5cf0', emoji: '⚔️', eyebrow: 'Free RPG App' },
   { page: 'tools/quest-board.html',       slug: 'tool-questboard', title: 'Quest Board RPG',   tag: 'Turn daily tasks into quests. Defeat boss challenges.',accent: '#8a5cf0', emoji: '🛡️', eyebrow: 'Free RPG App' },

@@ -47,7 +47,11 @@ for (const filePath of walk(ROOT)) {
     if (!clean) continue;                 // pure anchor / query
     if (!path.extname(clean)) continue;   // dir-style link, skip (no reliable target)
     refCount++;
-    const target = clean.startsWith('/') ? path.join(ROOT, clean) : path.resolve(dir, clean);
+    // Percent-decoding: browsers resolve "Muguen%20Cover.webp" to the file
+    // "Muguen Cover.webp" on disk, so decode before checking existence.
+    let decoded = clean;
+    try { decoded = decodeURIComponent(clean); } catch (e) { /* malformed escape — check as-is */ }
+    const target = decoded.startsWith('/') ? path.join(ROOT, decoded) : path.resolve(dir, decoded);
     if (!fs.existsSync(target)) {
       const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
       (broken[ref] = broken[ref] || []).push(rel);

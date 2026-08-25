@@ -1,12 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="description" content="Play Sky High With Friends, a fun free browser game by JVDesignStudio.">
-<link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#BC4749">
-<script src="../analytics-loader.js"></script>
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
     <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -67,6 +65,7 @@
   }
 
   .hud {
+    display: none;
     position: fixed;
     top: calc(14px + env(safe-area-inset-top));
     left: 50%;
@@ -77,14 +76,12 @@
     pointer-events: none;
   }
   .hud .pill {
-    background: var(--ui-bg);
+    background: rgba(20, 14, 38, 0.88);
     border: 1px solid var(--ui-stroke);
     border-radius: 999px;
     padding: 8px 16px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
     font-size: 14px;
     text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   }
@@ -119,14 +116,6 @@
   .overlay:not(.hidden) { animation: overlayIn 0.22s ease both; }
   @keyframes overlayIn { from { opacity: 0; } }
 
-  /* The menu sits toward the top so the meadow + character stay visible below.
-     Its scrim is strong over the panel and nearly clear at the bottom so the
-     mascot + meadow read brightly. */
-  #menu.overlay {
-    place-items: start center;
-    padding-top: calc(10px + env(safe-area-inset-top));
-    background: linear-gradient(180deg, rgba(10,6,23,0.88) 0%, rgba(10,6,23,0.62) 55%, rgba(10,6,23,0.18) 82%, rgba(10,6,23,0.05) 100%);
-  }
 
   .panel {
     background: linear-gradient(180deg, var(--ui-bg-solid), var(--ui-bg-dark));
@@ -154,6 +143,192 @@
   }
 
   /* ── Menu juice ── */
+  /* ── Loading screen ── */
+  #loading {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, #0a0617, #120a2b);
+    transition: opacity 0.35s ease;
+  }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  #loading.hide { display: none; }
+  .loading-inner { text-align: center; }
+  .loading-pet {
+    font-size: 54px;
+    display: inline-block;
+    animation: introBounce 0.9s cubic-bezier(.35,0,.65,1) infinite alternate;
+  }
+  .loading-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 8vw, 36px);
+    margin: 10px 0 26px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .loading-bar {
+    width: 210px;
+    height: 8px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .loading-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.18s ease;
+  }
+  .loading-pct {
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    opacity: 0.5;
+  }
+
+  /* ── Main menu: full-screen scene ── */
+  #menu.overlay {
+    display: block;
+    padding: 0;
+    background: linear-gradient(180deg, rgba(10,6,23,0.9) 0%, rgba(10,6,23,0.55) 42%, rgba(10,6,23,0.12) 78%, rgba(10,6,23,0.05) 100%);
+  }
+  /* ID specificity would beat .overlay.hidden — keep hide working */
+  #menu.overlay.hidden { display: none; }
+  .menu-top {
+    position: absolute;
+    top: calc(10px + env(safe-area-inset-top));
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .mchips { display: flex; flex-direction: row; gap: 6px; align-items: center; }
+  .mchip {
+    background: rgba(20, 14, 38, 0.88);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-weight: 800;
+    font-size: 13px;
+    pointer-events: auto;
+    white-space: nowrap;
+  }
+  .mini-xp {
+    width: 96px;
+    height: 5px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 2px;
+    border: 1px solid var(--ui-stroke);
+  }
+  .mini-xp-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
+  }
+  .mini-xp-text { font-size: 8px; opacity: 0.5; letter-spacing: 0.5px; }
+  .menu-topright { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+  .menu-topright .panel-gear { position: static; }
+
+  .menu-title-wrap {
+    position: absolute;
+    top: calc(74px + env(safe-area-inset-top));
+    left: 12px;
+    right: 12px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .menu-title-wrap .game-title {
+    font-size: clamp(26px, 8.5vw, 40px);
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 5px 16px rgba(10,6,23,0.65);
+  }
+  .title-under {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .corner-btn {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-stroke);
+    color: var(--ui-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 21px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 3;
+    transition: transform 0.12s, background 0.12s;
+  }
+  .corner-btn span {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .corner-btn:hover { background: rgba(30,22,54,0.85); }
+  .corner-btn:active { transform: scale(0.9); }
+  .corner-btn.l1 { left: 14px; top: 41%; }
+  .corner-btn.l2 { left: 14px; top: calc(41% + 70px); }
+  .corner-btn.r1 { right: 14px; top: 41%; }
+  .corner-btn.r2 { right: 14px; top: calc(41% + 70px); }
+
+  .menu-bottom {
+    position: absolute;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .menu-bottom > * { pointer-events: auto; }
+  .menu-bottom .char-label { margin: 0; }
+  .menu-bottom .char-unlock-hint { margin-bottom: 2px; }
+  .menu-hint { font-size: 11px; opacity: 0.55; text-align: center; pointer-events: none !important; }
+  .menu-hint .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: 10px; }
+  .keys-hint { display: none; }
+  @media (pointer: fine) { .keys-hint { display: inline; } .touch-hint { display: none; } }
+  .hidden-soft { position: absolute; left: -9999px; }
+
+  /* HUD is play/pause-only (menu has its own chips). High-specificity +
+     late placement so nothing in the cascade can resurrect it. */
+  html body .hud { display: none; }
+  html body[data-mode="playing"] .hud,
+  html body[data-mode="paused"] .hud { display: flex; }
+
   .menu-panel {
     position: relative;
     /* tighter rhythm so the meadow + mascot stay visible below the panel */
@@ -186,7 +361,7 @@
     font-size: 64px;
     display: inline-block;
     animation: introBounce 1.05s cubic-bezier(.35,0,.65,1) infinite alternate;
-    filter: drop-shadow(0 16px 10px rgba(0,0,0,0.45));
+    
   }
   @keyframes introBounce {
     from { transform: translateY(0) scale(1.08, 0.92); }
@@ -202,7 +377,7 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 6px 18px rgba(255,126,185,0.35));
+    text-shadow: 0 5px 16px rgba(10,6,23,0.65);
   }
   .intro-tap {
     margin-top: 28px;
@@ -267,7 +442,7 @@
   .game-title {
     font-size: clamp(30px, 9vw, 40px) !important;
     animation: titleIn 0.6s cubic-bezier(.2,1.4,.3,1) both, titleFloat 3.2s ease-in-out 0.6s infinite alternate;
-    filter: drop-shadow(0 4px 16px rgba(255,126,185,0.35));
+    text-shadow: 0 4px 14px rgba(10,6,23,0.6);
   }
   @keyframes titleIn { from { opacity: 0; transform: translateY(-20px) scale(0.8); } }
   @keyframes titleFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
@@ -419,6 +594,12 @@
     box-shadow: 0 6px 0 #01579b, 0 10px 20px rgba(0,0,0,0.3);
   }
   .btn.blue:active { box-shadow: 0 3px 0 #01579b, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.gold {
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.gold:active { box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
 
   /* Daily missions */
   .mission-row {
@@ -840,6 +1021,9 @@
   }
   .btn.small:active { box-shadow: 0 2px 0 #2e1a4e, 0 3px 8px rgba(0,0,0,0.3); transform: translateY(2px); }
 
+  #continue-row { margin-bottom: 12px; }
+  #continue-row .btn { width: 100%; padding: 15px; font-size: 16px; }
+
   .version-row {
     text-align: center;
     font-size: 11px;
@@ -920,6 +1104,7 @@
      stylesheet (which every other page also depends on). */
   html, body { font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif; }
 </style>
+
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -951,6 +1136,16 @@
 
 <a href="../pages/games.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;font-family:sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);">← Games</a>
 
+<!-- ===== LOADING ===== -->
+<div id="loading">
+  <div class="loading-inner">
+    <div class="loading-pet">🐢</div>
+    <div class="loading-title">Sky High With Friends</div>
+    <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+    <div class="loading-pct" id="loading-pct">0%</div>
+  </div>
+</div>
+
 <!-- ===== INTRO / SPLASH ===== -->
 <div id="intro">
   <div class="intro-inner">
@@ -975,52 +1170,47 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- ===== START MENU ===== -->
+<!-- ===== START MENU (full-screen scene) ===== -->
 <div class="overlay hidden" id="menu">
-  <div class="panel menu-panel">
-    <button class="panel-gear" id="settings-btn" aria-label="Settings">⚙️</button>
-    <h1 class="game-title">Sky High With Friends</h1>
-    <p class="tagline">Bounce as high as you can. Collect coins. Don't fall.</p>
-
-    <button class="btn play-big menu-anim" id="play-btn">▶&nbsp; Play</button>
-
-    <div class="char-label menu-anim" style="animation-delay:.12s">Your jumper</div>
-    <div class="char-row menu-anim" id="char-row" style="animation-delay:.16s"></div>
-    <div class="char-name" id="char-name">Pip the Turtle</div>
-    <div class="char-unlock-hint" id="char-unlock-hint"></div>
-
-    <div class="daily-mod-badge menu-anim" id="dailyModBadge" style="animation-delay:.22s"></div>
-
-    <div class="stats menu-anim" style="animation-delay:.26s">
-      <div class="stat"><div class="v" id="menu-best">0m</div><div class="l">🏆 Best</div></div>
-      <div class="stat"><div class="v" id="menu-coins">0</div><div class="l">🪙 Coins</div></div>
-      <div class="stat"><div class="v" id="menu-level">Lv 1</div><div class="l">⭐ Level</div></div>
+  <div class="menu-top">
+    <div class="mchips">
+      <div class="mchip" id="menu-best">🏆 0m</div>
+      <div class="mchip" id="menu-level">⭐ Lv 1</div>
+      <div class="mini-xp"><div class="mini-xp-fill" id="menu-xp-fill"></div></div>
+      <div class="mini-xp-text" id="menu-xp-text">0 / 100 XP</div>
     </div>
-
-    <div class="xp-bar-wrap menu-anim" style="animation-delay:.3s">
-      <div class="xp-bar"><div class="xp-fill" id="menu-xp-fill"></div></div>
-      <div class="xp-text" id="menu-xp-text">0 / 100 XP</div>
-    </div>
-
-    <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.34s">🔥 <span id="streak-num">0</span> day streak</div>
-
-    <div class="btn-row menu-anim" style="animation-delay:.38s">
-      <button class="btn secondary small" id="shop-btn">🛍️ Shop</button>
-      <button class="btn secondary small" id="missions-btn">📋 Missions</button>
-    </div>
-    <div class="btn-row menu-anim" style="animation-delay:.42s">
-      <button class="btn secondary small" id="weekly-btn">🗓️ Weekly</button>
-      <button class="btn secondary small" id="ach-btn">🏆 Achievements</button>
-    </div>
-
-    <div class="controls-hint menu-anim" id="controls-hint" style="animation-delay:.46s">
-      <span class="keys-hint"><span class="key">←</span> <span class="key">→</span> or <span class="key">A</span> <span class="key">D</span> to steer<br></span>
-      <span class="touch-hint">Tilt your phone to steer<br></span>
-      Wraps around screen edges · <span class="key">P</span>/<span class="key">Esc</span> to pause
+    <div class="menu-topright">
+      <div class="mchip coins" id="menu-coins">🪙 0</div>
+      <button class="panel-gear" id="settings-btn" aria-label="Settings">⚙️</button>
     </div>
   </div>
-</div>
 
+  <div class="menu-title-wrap">
+    <h1 class="game-title">Sky High With Friends</h1>
+    <div class="title-under">
+      <div class="daily-mod-badge menu-anim" id="dailyModBadge" style="animation-delay:.2s"></div>
+      <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.26s">🔥 <span id="streak-num">0</span> day streak</div>
+    </div>
+  </div>
+
+  <button class="corner-btn l1 menu-anim" id="shop-btn" style="animation-delay:.3s">🛍️<span>Shop</span></button>
+  <button class="corner-btn l2 menu-anim" id="missions-btn" style="animation-delay:.34s">📋<span>Missions</span></button>
+  <button class="corner-btn r1 menu-anim" id="weekly-btn" style="animation-delay:.3s">🗓️<span>Weekly</span></button>
+  <button class="corner-btn r2 menu-anim" id="ach-btn" style="animation-delay:.34s">🏆<span>Awards</span></button>
+
+  <div class="menu-bottom">
+    <div class="char-label menu-anim" style="animation-delay:.14s">Your jumper</div>
+    <div class="char-row menu-anim" id="char-row" style="animation-delay:.18s"></div>
+    <div class="char-unlock-hint" id="char-unlock-hint"></div>
+    <button class="btn play-big menu-anim" id="play-btn" style="animation-delay:.08s">▶&nbsp; Play</button>
+    <div class="menu-hint menu-anim" id="controls-hint" style="animation-delay:.4s">
+      <span class="keys-hint"><span class="key">←</span><span class="key">→</span> / <span class="key">A</span><span class="key">D</span> steer · wraps around edges</span>
+      <span class="touch-hint">Tilt to steer · wraps around edges</span>
+    </div>
+  </div>
+
+  <div class="char-name hidden-soft" id="char-name">Pip the Turtle</div>
+</div>
 <!-- ===== SHOP ===== -->
 <div class="overlay hidden" id="shop">
   <div class="panel shop-panel">
@@ -1835,6 +2025,36 @@ const state = {
 /* HUD elements cached once — update() used to re-query the DOM every frame */
 const hudHeightEl = document.getElementById('hud-height');
 const hudCoinsEl = document.getElementById('hud-coins');
+
+/* ---------- Auto quality governor ----------
+   Weak phones: drop render resolution before dropping frames. Steps the
+   backing-store scale down when a 2s window averages <45fps, back up after
+   sustained 57+. DPR_STEPS lives here (resize() reads it via currentDpr). */
+const DPR_STEPS = [2, 1.5, 1];
+let qualityStep = 0;
+let goodStreak = 0;
+let fpsFrames = 0;
+let fpsWindowStart = performance.now();
+function currentDpr() {
+  return Math.min(window.devicePixelRatio || 1, DPR_STEPS[qualityStep]);
+}
+function fpsTick(now) {
+  fpsFrames++;
+  const elapsed = now - fpsWindowStart;
+  if (elapsed < 2000) return;
+  const fps = (fpsFrames * 1000) / elapsed;
+  fpsFrames = 0;
+  fpsWindowStart = now;
+  if (fps < 45 && qualityStep < DPR_STEPS.length - 1) {
+    qualityStep++;
+    goodStreak = 0;
+    resize(); // re-applies the new DPR and rebuilds screen sprites
+  } else if (fps > 57 && qualityStep > 0) {
+    if (++goodStreak >= 4) { qualityStep--; goodStreak = 0; resize(); }
+  } else {
+    goodStreak = 0;
+  }
+}
 
 /* ---------- Hazards & power-ups ----------
    Hazards (gust puffs) start appearing once the climb has some height behind
@@ -2924,20 +3144,33 @@ function zoneMix() {
     duskA: state.zone === 0 ? t : state.zone === 1 ? 1 - t : 0,
     nightA: state.zone === 1 ? t : state.zone === 2 ? 1 - t : 0,
     auroraA: state.zone === 2 ? t : state.zone === 3 ? 1 : 0,
+    t,
   };
 }
 
+/* Sky gradient cache — creating gradients every frame showed up as jank on
+   low-end phones. Rebuilt only when the zone blend actually moves. */
+let skyGradCache = { key: '', grad: null };
+function getSkyGrad(t) {
+  const key = state.zone + ':' + Math.round(t * 40) + 'x' + H;
+  if (skyGradCache.key !== key) {
+    const z = ZONES[state.zone];
+    const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, lerpColor(z.sky[0], zNext.sky[0], t));
+    g.addColorStop(1, lerpColor(z.sky[1], zNext.sky[1], t));
+    skyGradCache = { key, grad: g };
+  }
+  return skyGradCache.grad;
+}
+
 function drawSky() {
-  const { meadowA, duskA, nightA, auroraA } = zoneMix();
-  const z = ZONES[state.zone];
-  const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
-  const zoneRange = (zNext.minM - z.minM) || 1;
-  const t = state.zone < ZONES.length - 1 ? Math.min(1, (state.heightM - z.minM) / zoneRange) : 0;
+  const mix = zoneMix();
+  const meadowA = mix.meadowA, duskA = mix.duskA, nightA = mix.nightA, auroraA = mix.auroraA;
+  const t = mix.t;
   const anim = state.mode === 'playing' || state.mode === 'dead' || state.mode === 'menu';
 
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, lerpColor(z.sky[0], zNext.sky[0], t));
-  grad.addColorStop(1, lerpColor(z.sky[1], zNext.sky[1], t));
+  const grad = getSkyGrad(t);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
@@ -2979,7 +3212,7 @@ function drawSky() {
     ctx.lineCap = 'round';
     for (const rb of ribbons) {
       // three nested strokes fake a soft glow without expensive canvas blur
-      const layers = [[rb.width, 0.05], [rb.width * 0.55, 0.09], [rb.width * 0.22, 0.15]];
+      const layers = qualityStep > 0 ? [[rb.width * 0.5, 0.12]] : [[rb.width, 0.05], [rb.width * 0.55, 0.09], [rb.width * 0.22, 0.15]];
       for (const [w2, a2] of layers) {
         ctx.strokeStyle = rb.color + (a2 * auroraA) + ')';
         ctx.lineWidth = w2;
@@ -3005,17 +3238,24 @@ function drawSky() {
     const sy = (((c.y - state.cameraY * c.par) % wrapH) + wrapH) % wrapH - 100;
     const spr = cloudSprites.day[c.v];
     const dw = spr.w * c.s, dh = spr.h * c.s;
-    if (meadowA > 0.02) {
-      ctx.globalAlpha = 0.9 * meadowA;
-      ctx.drawImage(spr.c, sx, sy, dw, dh);
-    }
-    if (duskA > 0.02) {
-      ctx.globalAlpha = 0.85 * duskA;
-      ctx.drawImage(cloudSprites.dusk[c.v].c, sx, sy, dw, dh);
-    }
-    if (nightA > 0.02) {
-      ctx.globalAlpha = 0.16 * nightA;
-      ctx.drawImage(cloudSprites.night[c.v].c, sx, sy, dw, dh);
+    if (qualityStep > 0) {
+      // reduced quality: one tint pass (the strongest one)
+      const spr2 = meadowA >= duskA ? cloudSprites.day[c.v] : cloudSprites.dusk[c.v];
+      const a2 = meadowA >= duskA ? meadowA * 0.9 : duskA * 0.85;
+      if (a2 > 0.03) { ctx.globalAlpha = a2; ctx.drawImage(spr2.c, sx, sy, dw, dh); }
+    } else {
+      if (meadowA > 0.02) {
+        ctx.globalAlpha = 0.9 * meadowA;
+        ctx.drawImage(spr.c, sx, sy, dw, dh);
+      }
+      if (duskA > 0.02) {
+        ctx.globalAlpha = 0.85 * duskA;
+        ctx.drawImage(cloudSprites.dusk[c.v].c, sx, sy, dw, dh);
+      }
+      if (nightA > 0.02) {
+        ctx.globalAlpha = 0.16 * nightA;
+        ctx.drawImage(cloudSprites.night[c.v].c, sx, sy, dw, dh);
+      }
     }
   }
   ctx.globalAlpha = 1;
@@ -3103,7 +3343,7 @@ function drawGround() {
 }
 
 /* ── Menu mascot: the selected character (with equipped skin/hat/aura)
-   idle-hopping on the meadow grass below the panel. Wall-clock driven so
+   idle-hopping on a floating cloud mid-screen. Wall-clock driven so
    it stays alive on the title screen and behind sub-menus. ── */
 function drawMenuPet() {
   const t = performance.now();
@@ -3116,50 +3356,61 @@ function drawMenuPet() {
   const bodyColor = skin && skin.tint ? skin.tint : base.body;
   const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : base.accent;
 
-  const size = Math.min(62, Math.max(46, W * 0.14));
-  const groundY = H - 58;
-  const hop = Math.abs(Math.sin(t * 0.0026));
-  const lift = 22 * hop * hop; // hangs a little at the apex
-  const sq = 1 - 0.16 * (1 - hop);
-  const dw = size * (2 - sq); // wider when squashed
-  const dh = size * sq;
-  const dx = W / 2 - dw / 2;
-  const dy = groundY - dh - lift;
+  const size = Math.min(58, Math.max(44, W * 0.14));
+  const cloudY = Math.round(H * 0.52);
+  const cs = platSprites.cloud;
+  const cw = cs.w * 1.7, chh = cs.h * 1.7;
+  const cloudTop = cloudY + 6;
 
-  // Aura halo behind the character
+  // Aura halo behind the character (gradient cached; drawn via translate)
   if (aura && aura.color) {
     const col = aura.color === 'rainbow'
       ? ['#ff0066', '#ff9900', '#ffd23f', '#66dd44', '#5cdbff', '#9966ff'][Math.floor(t / 300) % 6]
       : aura.color;
-    const gr = ctx.createRadialGradient(W / 2, dy + dh / 2, 4, W / 2, dy + dh / 2, size * 1.05);
-    gr.addColorStop(0, col);
-    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    const R = Math.round(size * 1.15);
+    const gkey = col + R;
+    if (auraGradCache.key !== gkey) {
+      const gr = ctx.createRadialGradient(0, 0, 4, 0, 0, R);
+      gr.addColorStop(0, col);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      auraGradCache = { key: gkey, grad: gr };
+    }
+    ctx.save();
+    ctx.translate(W / 2, cloudTop - size);
     ctx.globalAlpha = 0.22 + 0.08 * Math.sin(t * 0.004);
-    ctx.fillStyle = gr;
-    ctx.beginPath();
-    ctx.arc(W / 2, dy + dh / 2, size * 1.05, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = auraGradCache.grad;
+    ctx.fillRect(-R, -R, R * 2, R * 2);
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
-  // Ground shadow shrinks as the hop rises
-  const shadowScale = 1 - (lift / 20) * 0.45;
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  const hop = Math.abs(Math.sin(t * 0.0026));
+  const lift = 24 * hop * hop; // hangs a little at the apex
+  const sq = 1 - 0.16 * (1 - hop);
+  const dw = size * (2 - sq); // wider when squashed
+  const dh = size * sq;
+  const dx = W / 2 - dw / 2;
+  const dy = cloudTop - dh - lift;
+
+  // Cloud platform (scaled-up sprite) + soft shadow on it
+  ctx.drawImage(cs.c, W / 2 - cw / 2, cloudY, cw, chh);
+  const shadowScale = 1 - (lift / 24) * 0.5;
+  ctx.fillStyle = 'rgba(15,15,35,0.18)';
   ctx.beginPath();
-  ctx.ellipse(W / 2, groundY + 5, (dw / 2) * shadowScale, 4.5 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.ellipse(W / 2, cloudTop + 10, (dw / 2.4) * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
   ctx.fill();
 
   drawCharacter(ctx, id, dx, dy, dw, dh, bodyColor, accentColor, Math.sin(t * 0.0011) > 0 ? 1 : -1);
   if (hat && hat.draw) hat.draw(ctx, dx, dy, dw, dh);
 
-  // Name tag on the soil strip, so the menu mascot is unmistakably "yours"
+  // Name tag under the cloud
   ctx.font = '800 13px Fredoka, Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.lineWidth = 4;
   ctx.strokeStyle = 'rgba(10,6,23,0.75)';
-  ctx.strokeText(base.name, W / 2, groundY + 26);
+  ctx.strokeText(base.name, W / 2, cloudY + chh + 20);
   ctx.fillStyle = '#fff';
-  ctx.fillText(base.name, W / 2, groundY + 26);
+  ctx.fillText(base.name, W / 2, cloudY + chh + 20);
   ctx.textAlign = 'left';
 }
 
@@ -3967,12 +4218,13 @@ function render() {
     // Living title screen: the meadow + your character, idle-hopping on the grass
     drawGround();
     drawMenuPet();
-    // build version, bottom-left — always know what you're playing
+    // build version, bottom-right — always know what you're playing
     ctx.font = '600 10px Inter, sans-serif';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(GAME_VERSION_STR, 8, H - 8);
-    ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
+    ctx.fillText(GAME_VERSION_STR, W - 8, H - 8);
+    ctx.textAlign = 'left';
+    if (qualityStep === 0) ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
   }
   if (state.mode === 'playing' || state.mode === 'dead' || state.mode === 'paused') {
     // Shake offset computed in update(), so paused frames hold still.
@@ -3993,7 +4245,7 @@ function render() {
     ctx.restore();
 
     // Subtle static vignette focuses the eye on the play column
-    ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
+    if (qualityStep === 0) ctx.drawImage(vignetteSprite.c, 0, 0, vignetteSprite.w, vignetteSprite.h);
 
     // Full-screen feedback flash sits above the world, below the UI overlays
     if (state.flashAlpha > 0 && state.flashColor) {
@@ -4310,12 +4562,18 @@ function die() {
   continueRow.classList.toggle('hidden', !canContinue);
 
   // Leaderboards: only where the Play Games bridge is active
-  document.getElementById('boards-btn').classList.toggle('hidden', !(window.playGames && window.playGames.available()));
-
-  // Submit scores to Play Games (fire-and-forget, never blocks the panel)
-  if (window.playGames && window.playGames.available()) {
-    if (state.weekly) window.playGames.submitWeekly(state.heightM);
-    window.playGames.submitBest(save.bestHeight);
+  const boardsBtn = document.getElementById('boards-btn');
+  if (window.playGames) {
+    window.playGames.refreshAvailability().then(av => {
+      if (state.mode === 'dead') boardsBtn.classList.toggle('hidden', !av);
+    });
+    // Submit scores to Play Games (fire-and-forget, never blocks the panel):
+    // weekly board for weekly runs, plus all-time and the jumper's own board
+    if (window.playGames.available()) {
+      if (state.weekly) window.playGames.submitWeekly(state.heightM);
+      window.playGames.submitBest(save.bestHeight);
+      window.playGames.submitCharacter(state.character, save.bestHeight);
+    }
   }
 
   document.getElementById('gameover').classList.remove('hidden');
@@ -4491,10 +4749,12 @@ function refreshMenu() {
     hint.textContent = `Unlocks at ${c.unlockM}m · ${c.perkName}: ${c.perkDesc}`;
   }
 
-  // Weekly challenge entry shows this week's best
+  // Weekly challenge entry shows this week's best (span only — the button
+  // is a corner tile: emoji + label)
   const wb = document.getElementById('weekly-btn');
+  const wbLabel = wb.querySelector('span');
   const wBest = save.weeklyBest.seed === weeklySeed() ? save.weeklyBest.best : 0;
-  wb.textContent = wBest > 0 ? `🗓️ Weekly · best ${wBest}m` : '🗓️ Weekly Challenge';
+  if (wbLabel) wbLabel.textContent = wBest > 0 ? wBest + 'm best' : 'Weekly';
 }
 
 let shopTab = 'hat';
@@ -4892,10 +5152,10 @@ document.getElementById('continue-btn').addEventListener('click', () => {
 });
 document.getElementById('boards-btn').addEventListener('click', () => {
   SFX.click();
-  if (window.playGames && window.playGames.available()) {
-    if (state.weekly) window.playGames.showWeekly();
-    else window.playGames.showBest();
-  }
+  if (!(window.playGames && window.playGames.available())) return;
+  // weekly runs open the weekly board; normal runs open your jumper's board
+  if (state.weekly) window.playGames.showWeekly();
+  else window.playGames.showCharacter(state.character);
 });
 
 /* Fullscreen: the canvas backs the entire viewport. W/H become the CSS
@@ -4916,7 +5176,7 @@ function buildScreenSprites() {
 function resize() {
   W = Math.max(320, Math.round(window.innerWidth));
   H = Math.max(400, Math.round(window.innerHeight));
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = currentDpr();
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width = W + 'px';
@@ -4994,6 +5254,41 @@ function dismissIntro() {
 document.getElementById('intro').addEventListener('pointerdown', () => { dismissIntro(); });
 setTimeout(dismissIntro, 3600); // auto-continue for the patient ones
 
+/* ---------- Boot: loading → intro → menu ---------- */
+const loadingEl = document.getElementById('loading');
+const loadFillEl = document.getElementById('loading-fill');
+const loadPctEl = document.getElementById('loading-pct');
+let loadDone = false;
+let loadTimer = setInterval(() => {
+  let lp = parseFloat(loadFillEl.style.width) || 0;
+  lp = Math.min(100, lp + 9 + Math.random() * 15);
+  loadFillEl.style.width = lp + '%';
+  loadPctEl.textContent = Math.round(lp) + '%';
+  if (lp >= 100) {
+    clearInterval(loadTimer);
+    loadDone = true;
+    warmUp(); // sprites + fonts finish while the bar sits at 100%
+    setTimeout(() => {
+      loadingEl.classList.add('gone');
+      setTimeout(() => loadingEl.classList.add('hide'), 380);
+      // replay the intro entrance now that it's revealed
+      const inner = document.querySelector('#intro .intro-inner');
+      if (inner) { inner.style.animation = 'none'; void inner.offsetWidth; inner.style.animation = ''; }
+    }, 300);
+  }
+}, 150);
+
+// force-finish everything (used by tests and the impatient)
+function skipToMenu() {
+  if (!loadDone) {
+    clearInterval(loadTimer);
+    loadDone = true;
+    loadingEl.classList.add('hide');
+    warmUp();
+  }
+  dismissIntro();
+}
+
 document.body.dataset.mode = 'intro';
 refreshMenu();
 document.getElementById('intro-version').textContent = GAME_VERSION_STR;
@@ -5053,6 +5348,15 @@ function loop(now) {
   // Let the death shake/flash/particles finish animating behind the overlay
   if (state.mode === 'dead') deathFxTick();
 
+  // Auto quality governor (steps render resolution down/up on weak devices)
+  fpsTick(now);
+
+  // The loading screen is fully opaque — skip scene rendering underneath it
+  if (!loadDone) {
+    requestAnimationFrame(loop);
+    return;
+  }
+
   render();
   requestAnimationFrame(loop);
 }
@@ -5068,7 +5372,7 @@ function jvdsCloseStrip(){
   document.getElementById('jvdsTab').classList.remove('hidden');
 }
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 
 <!-- BUILD:footer-content -->
 <footer class="site-footer">
@@ -5083,6 +5387,7 @@ function jvdsCloseStrip(){
             <a href="/pages/games.html">Games</a>
             <a href="/pages/workshop.html">Workshop</a>
             <a href="/pages/freebies.html">Freebies</a>
+            <a href="/pages/downloads.html">Downloads</a>
             <a href="/pages/content_hub.html">All Projects</a>
             <a href="/pages/devlog.html">Dev Log</a>
             <a href="/pages/about.html">About</a>
