@@ -35,6 +35,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .home-btn:active { transform: scale(.92); }
 
 .board { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; align-content: center; justify-items: center; }
+.board.cols6 { grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .card-btn { width: 100%; aspect-ratio: 1; border: none; border-radius: 12px; font-size: 2.4rem; background: linear-gradient(135deg, #e8d5f2 0%, #d4a5e0 100%); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.15); transition: transform .15s; position: relative; }
 .card-btn:active { transform: scale(.92); }
 .card-btn.flipped { background: linear-gradient(135deg, #fff 0%, #f0e6ff 100%); box-shadow: 0 6px 16px rgba(0,0,0,.2); }
@@ -59,6 +60,10 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #c56cf0, #9b59b6); color: #fff; box-shadow: 0 8px 18px rgba(197, 108, 240, .4); margin-top: 10px; }
 .btn:active { transform: scale(.97); }
 .btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
+.mode-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.mode-row button { flex: 1; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.75); font: 700 .74rem Inter, sans-serif; padding: 10px 4px; border-radius: 12px; cursor: pointer; }
+.mode-row button.sel { background: rgba(255,210,74,.16); border-color: rgba(255,210,74,.6); color: #ffd24a; }
+.card .sub .mode-tag { font-size: .72rem; opacity: .8; }
 .how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffd24a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
 </style>
 </head>
@@ -83,8 +88,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
         <div>You get a quick <b>sneak peek</b> at the start — memorise the pastries!</div>
         <div style="margin-top:8px;">Match pairs back-to-back to build a <b>streak</b> for bonus points. Finish fast for a time bonus!</div>
       </div>
+      <div class="mode-row" id="modeRow"></div>
       <div class="stats">
-        <div class="stat"><div class="l">Best Score</div><div class="v" id="bestStart">0</div></div>
+        <div class="stat"><div class="l">Best (<span id="bestModeLabel">Baker</span>)</div><div class="v" id="bestStart">0</div></div>
         <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
       </div>
       <button class="btn" onclick="startGame()">Play</button>
@@ -95,7 +101,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   <div class="modal" id="winModal">
     <div class="card-modal">
       <h1>🎉 You Won!</h1>
-      <div class="sub" id="winSub">Perfect match!</div>
+      <div class="sub"><span id="winModeTag"></span></div>
+    <div class="sub" id="winSub">Perfect match!</div>
       <div class="stats">
         <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
         <div class="stat"><div class="l">Moves</div><div class="v" id="finalMoves">0</div></div>
@@ -112,7 +119,18 @@ const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
 const audioEffects = new AudioEffects(0.6);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
-const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥖', '🍩', '🧆', '🥯'];
+const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥖', '🍩', '🧆', '🥯', '🍫', '🍬', '🥞', '🍮'];
+const MODES = [
+  { id: 'easy', cols: 4, rows: 3, pairs: 6,  label: '🧒 Little Baker' },
+  { id: 'std',  cols: 4, rows: 4, pairs: 8,  label: '🧑 Baker' },
+  { id: 'hard', cols: 6, rows: 4, pairs: 12, label: '🔥 Head Chef' },
+];
+const PM_KEY = 'pastryMatch:v2';
+function loadModes() {
+  try { return JSON.parse(localStorage.getItem(PM_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveModes(m) { try { localStorage.setItem(PM_KEY, JSON.stringify(m)); } catch (e) {} }
+let chosenMode = 'std';
 let cards = [];
 let cardEls = [];
 let state = 'menu';
@@ -122,8 +140,11 @@ let matched = 0;
 let startTime = 0;
 let timerInterval = null;
 
+function currentMode() { return MODES.find(m => m.id === chosenMode) || MODES[1]; }
 function initCards() {
-  const deck = [...PASTRIES, ...PASTRIES];
+  const mode = currentMode();
+  const deck = [];
+  for (let i = 0; i < mode.pairs; i++) { deck.push(PASTRIES[i % PASTRIES.length]); deck.push(PASTRIES[i % PASTRIES.length]); }
   // Fisher-Yates: the old sort-by-random shuffle was biased, letting sharp
   // players predict pair positions from earlier deals.
   for (let i = deck.length - 1; i > 0; i--) {
@@ -136,6 +157,9 @@ function initCards() {
   score = 0;
   moves = 0;
   streak = 0;
+  const boardEl = document.getElementById('board');
+  boardEl.classList.toggle('cols6', currentMode().cols === 6);
+  boardEl.style.gridTemplateColumns = 'repeat(' + currentMode().cols + ', 1fr)';
 }
 
 function buildBoard() {
@@ -212,7 +236,7 @@ function checkMatch() {
       audioEffects.playSuccess(750);
     }
     updateHud();
-    if (matched === PASTRIES.length) endGame();
+    if (matched === currentMode().pairs) endGame();
   } else {
     cards[a].state = 'hidden';
     cards[b].state = 'hidden';
@@ -256,6 +280,10 @@ function endGame() {
   score += timeBonus;
   updateHud();
   gameSystem.addScore(score);
+  const mode = currentMode();
+  const modes = loadModes();
+  modes[mode.id] = Math.max(modes[mode.id] || 0, score);
+  saveModes(modes);
   gameSystem.addXP(Math.max(5, Math.floor(score / 20)));
   gameSystem.unlockAchievement('firstPlay');
   if (moves <= 16) gameSystem.unlockAchievement('perfectMemory');
@@ -270,17 +298,33 @@ function endGame() {
   document.getElementById('finalScore').textContent = score.toLocaleString();
   GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalMoves').textContent = moves;
-  document.getElementById('finalBest').textContent = best;
-  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
-    [300, '🥉', 'Bronze Baker'],
-    [600, '🥈', 'Silver Baker'],
-    [900, '🥇', 'Gold Baker'],
-  ]);
+  document.getElementById('finalBest').textContent = Math.max(best, modes[mode.id] || 0);
+  document.getElementById('winModeTag').textContent = mode.label;
+  const par = mode.pairs * 2;
+  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score,
+    [[par * 40, '🥉', 'Bronze Baker'], [par * 70, '🥈', 'Silver Baker'], [par * 100, '🥇', 'Gold Baker']]);
   document.getElementById('winModal').classList.add('show');
 }
 
 best = gameSystem.state.highScore || 0;
-document.getElementById('bestStart').textContent = best;
+function renderModeRow() {
+  const row = document.getElementById('modeRow');
+  const modes = loadModes();
+  row.innerHTML = MODES.map(m =>
+    '<button type="button" class="' + (m.id === chosenMode ? 'sel' : '') + '" data-mode="' + m.id + '">' + m.label + '</button>').join('');
+  row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    chosenMode = b.dataset.mode;
+    const m = currentMode();
+    best = Math.max(gameSystem.state.highScore || 0, modes[chosenMode] || 0);
+    document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
+    document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
+    renderModeRow();
+  }));
+  const m = currentMode();
+  document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
+  document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
+}
+renderModeRow();
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
 </body>
