@@ -48,6 +48,25 @@ html, body { width:100%; height:100%; overflow:hidden;
 
 /* BAKE BUTTON */
 .bake-area { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 0 8px; position:relative; }
+.bake-area::before { content:""; position:absolute; top:50%; left:50%; width:220px; height:220px;
+  transform:translate(-50%,-56%); border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(255,183,0,.18), rgba(255,183,0,0) 68%); }
+.steam { position:absolute; top:calc(50% - 74px); left:50%; width:0; pointer-events:none; }
+.steam span { position:absolute; bottom:0; width:10px; height:26px; border-radius:999px;
+  background:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0));
+  filter:blur(2px); opacity:0; animation:steamRise 2.6s ease-out infinite; }
+.steam span:nth-child(1) { left:-16px; animation-delay:0s; }
+.steam span:nth-child(2) { left:2px;  animation-delay:.9s; }
+.steam span:nth-child(3) { left:18px; animation-delay:1.7s; }
+@keyframes steamRise {
+  0%   { opacity:0; transform:translateY(6px) scaleX(1) rotate(-6deg); }
+  25%  { opacity:.85; }
+  100% { opacity:0; transform:translateY(-46px) scaleX(1.7) rotate(9deg); }
+}
+.crumb { position:fixed; width:7px; height:6px; border-radius:2px; pointer-events:none; z-index:50;
+  background:#a9743f; }
+.dough-bump { animation:doughBump .28s ease-out; }
+@keyframes doughBump { 40% { transform:scale(1.12); } 100% { transform:scale(1); } }
 .bake-btn { font-size:5rem; background:none; border:none; cursor:pointer; line-height:1; filter:drop-shadow(0 8px 14px rgba(169,116,63,.4)); transition:transform .08s; }
 .bake-btn:active { transform:scale(.86); }
 .bake-hint { font-size:.8rem; font-weight:700; color:var(--crust-dk); opacity:.8; }
@@ -128,6 +147,7 @@ html, body { width:100%; height:100%; overflow:hidden;
   </div>
 
   <div class="bake-area">
+    <div class="steam"><span></span><span></span><span></span></div>
     <button class="bake-btn" id="bakeBtn">🥐</button>
     <div class="bake-hint">Tap to bake!</div>
   </div>
@@ -287,6 +307,23 @@ function fmt(n) {
 }
 
 /* ═══════════════ ACTIONS ═══════════════ */
+function spawnCrumbs(x, y) {
+  for (let i = 0; i < 5; i++) {
+    const c = document.createElement('div');
+    c.className = 'crumb';
+    c.style.left = x + 'px'; c.style.top = y + 'px';
+    c.style.background = i % 2 ? '#a9743f' : '#c9936b';
+    document.body.appendChild(c);
+    const dx = (Math.random() - 0.5) * 90;
+    const dy = -(20 + Math.random() * 46);
+    c.animate([
+      { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+      { transform: 'translate(' + dx + 'px,' + (dy + 70) + 'px) rotate(' + (Math.random()*300-150) + 'deg)', opacity: 0 }
+    ], { duration: 520 + Math.random() * 260, easing: 'cubic-bezier(.3,.6,.6,1)' })
+      .onfinish = () => c.remove();
+  }
+}
+
 function bake(x, y) {
   const v = clickValue();
   state.dough += v; state.totalEarned += v; state.totalTaps++;
@@ -294,6 +331,9 @@ function bake(x, y) {
   gameSystem.unlockAchievement('firstBake');
   audioEffects.playTap(700 + Math.random()*120);
   if (x != null) floatText(x, y, '+' + fmt(v));
+  spawnCrumbs(x == null ? window.innerWidth/2 : x, y == null ? window.innerHeight*0.42 : y);
+  const dv = document.getElementById('doughVal');
+  if (dv) { dv.classList.remove('dough-bump'); void dv.offsetWidth; dv.classList.add('dough-bump'); }
   const btn = document.getElementById('bakeBtn');
   ScreenShake.pulse(btn, 1.18, 130);
   progressRush();
