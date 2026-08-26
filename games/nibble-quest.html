@@ -124,7 +124,8 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   }
   function reset(){
     snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};
-    score=0;speed=140;running=true;scoreEl.textContent=0;apples=0;golden=false;placeFood();
+    score=0;speed=140;running=true;
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;clearTimeout(tickT);return true;},resume:()=>{if(!running){running=true;tickT=setTimeout(step,speed);}}});scoreEl.textContent=0;apples=0;golden=false;placeFood();
   }
   function setDir(nx,ny){
     if(!running)return;
@@ -154,10 +155,10 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     if(head.x===food.x&&head.y===food.y){
       const pos=foodScreenPos();
       if(golden){
-        score+=30;fx.playCombo(4);
+        score+=30;speed=Math.max(55,speed-3);fx.playCombo(4);
         ParticleSystem.burst(pos.x,pos.y,'⭐',8);
       }else{
-        score+=10;fx.playSuccess(600+Math.min(snake.length*8,500));
+        score+=10;speed=Math.max(55,speed-1.5);fx.playSuccess(600+Math.min(snake.length*8,500));
         ParticleSystem.burst(pos.x,pos.y,'✨',4);
       }
       scoreEl.textContent=score;placeFood();if(speed>65)speed-=4;
