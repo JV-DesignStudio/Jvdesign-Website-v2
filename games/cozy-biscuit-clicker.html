@@ -4,14 +4,6 @@
 <meta charset="UTF-8">
 <meta name="description" content="Play Biscuit Tin Clicker, a cosy free browser clicker game by JVDesignStudio. Click, upgrade, repeat.">
 <link rel="manifest" href="../manifest.json">
-<script src="../game-system.js">
-<script src="../analytics-loader.js></script>
-
-    
-
-
-
-
 
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
@@ -735,6 +727,7 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     <div class="quest-section-title">🛟 Safety Backups</div>
     <p class="modal-sub">The game quietly keeps the last three days of saves. If anything ever goes wrong, restore one here.</p>
     <div id="backupList" class="more-actions"></div>
+    <button id="devReportBtn" class="ad-reset" style="margin-top:6px">📋 Copy dev report (testing feedback)</button>
     <div id="moreStats"></div>
     <p id="appVersion" style="text-align:center;font-size:10.5px;color:var(--cocoa-soft);padding-top:8px;opacity:.8"></p>
   </div>
@@ -1378,7 +1371,7 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
   version:'1.4.2',
-  build:9,
+  build:10,
   codename:'Ginger Nut',
 };
 
@@ -2824,6 +2817,55 @@ document.getElementById('achBtn').addEventListener('click',()=>{
   document.getElementById('achModal').classList.add('show');
 });
 document.getElementById('moreBtn').addEventListener('click',()=>{renderStats(document.getElementById('moreStats'));renderBackups();initVolumeSliders();document.getElementById('appVersion').textContent=`Biscuit Tin v${APP.version} · build ${APP.build} · “${APP.codename}”`;document.getElementById('moreModal').classList.add('show');});
+
+// ══ DEV REPORT: one-tap balance snapshot for playtest feedback ══
+function buildDevReport(){
+  const st=btStats(),b=butterState();
+  const perks=STAR_PERKS.filter(p=>starLv(p.id)>0).map(p=>`${p.id} L${starLv(p.id)}`).join(', ')||'none';
+  const dc=getDailyChallenge(),dcp=bv().dailyChallenge||{};
+  const r=regularState();
+  const focus=CREW_ORDER.filter(crewOn).join(',')||'none';
+  const days=Math.max(1,Math.ceil((Date.now()-(bv().firstPlayTs||Date.now()))/86400000));
+  return [
+   '🍪 BISCUIT TIN DEV REPORT',
+   `v${APP.version} build ${APP.build} "${APP.codename}" · ${localDateStr()} ${new Date().toTimeString().slice(0,5)}`,
+   '────────────────────────',
+   'PROGRESSION',
+   `Season: ${bv().prestige} done (bonus x${(bv().prestigeBonus||1).toFixed(1)}) | Stars now: ${bv().stars||0} | earned ever: ${st.starsEarned||0}`,
+   `Perks: ${perks}`,
+   `Lifetime baked: ${fmt(bv().lifetime)} | Per sec: ${fmt(productionRate)} | Taps: ${fmt(bv().clicks||0)} (this season: ${fmt(bv().seasonClicks||0)})`,
+   `Next prestige at: ${fmt(prestigeReq())}`,
+   '',
+   'RETENTION MARKERS  <-- the three numbers that matter',
+   `Days playing: ${days} | Streak: ${bv().streak||0}/best ${bv().bestStreak||0} | Dailies claimed: ${bv().dailyCount||0}`,
+   `Treasures: found ${st.found||0} · best ${fmt(st.bestLump||0)} · gambles ${(st.gamblesWon||0)}-${(st.gamblesLost||0)} · frenzies ${st.frenzies||0}`,
+   `Journal: ${(bv().journalClaimed||[]).length}/20 | Regulars served: ${(bv().regularWall||[]).length} | Butter now: ${b.count}(+${b.pending} setting)`,
+   '',
+   'TODAY',
+   `Featured helper: ${HELPERS.find(h=>h.id===getFeaturedHelper()).name}`,
+   `Challenge armed: ${activeChallenge()||'none'} | Fed crew: ${fedTodayId()||'none'}`,
+   `Regular: ${r.who} — ${r.type} ${fmt(Math.min(r.progress,r.target))}/${fmt(r.target)}${r.claimed?' (served)':r.ready?' (ready!)':''}`,
+   `Daily challenge: ${dc.name} ${fmt(Math.floor(dcp.progress||0))}/${fmt(dc.target)}${dcp.claimed?' claimed':''}${(bv().dailyRerolls&&bv().dailyRerolls.n)?` · rerolled x${bv().dailyRerolls.n}`:''}`,
+   `Weekly: ${fmt(Math.floor((bv().weeklyChallenge&&bv().weeklyChallenge.progress)||0))}/${fmt(getWeeklyChallenge().target)}${(bv().weeklyRerolls&&bv().weeklyRerolls.n)?` · rerolled x${bv().weeklyRerolls.n}`:''}`,
+   '',
+   'ECONOMY CONSTANTS',
+   `Combo window: ${Math.round(comboWindowMs())}ms | Treasure luck: ${Math.round((2-treasureLuck())*50)}% freq`,
+   `Offline: ${offlineCapHours()}h @ ${Math.round(offlineEff()*100)}% | Click power: ${fmt(clickPower)}`,
+   `Crew Focus: ${focus} | Legendary: +${Math.round((bv().legendary||0)*100)}%`,
+  ].join('\n');
+}
+function copyDevReport(){
+  const txt=buildDevReport();
+  const fallback=()=>{
+    const ta=document.getElementById('saveCode');
+    if(ta){ta.value=txt;ta.focus();ta.select();showToast('📋 Report placed in the Save Transfer box — long-press to copy');}
+    else showToast('Clipboard unavailable on this device');
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>showToast('📋 Dev report copied — paste it in the feedback chat!')).catch(fallback);
+  } else fallback();
+}
+document.getElementById('devReportBtn').addEventListener('click',copyDevReport);
 
 // ══ COLLECTIONS ══
 function renderCollections(){
