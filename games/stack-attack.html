@@ -36,6 +36,8 @@ a{text-decoration:none;color:inherit;}
 #wrap{position:relative;width:100vw;height:100vh;}
 canvas{display:block;width:100%;height:100%;touch-action:none;cursor:pointer;}
 canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
+.score-pop{animation:scorePop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes scorePop{0%{transform:scale(1.3);color:#FFD700}100%{transform:scale(1);color:inherit}}
 @keyframes toppleShake{0%{transform:translate(0,0);}20%{transform:translate(-8px,4px);}40%{transform:translate(7px,-3px);}60%{transform:translate(-5px,2px);}80%{transform:translate(3px,-1px);}100%{transform:translate(0,0);}}
 .hud{position:fixed;top:52px;left:0;right:0;text-align:center;z-index:15;pointer-events:none;}
 .hud #score{font-family:'Fredoka',cursive;font-weight:700;font-size:2.4rem;text-shadow:0 2px 8px rgba(0,0,0,.7);}
@@ -294,6 +296,7 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
     fragments=[];particles=[];floaters=[];
     streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];shakeT=0;shakeMag=0;
     updateHud();spawnBlock();running=true;
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;requestAnimationFrame(loop);}}});
   }
 
   function spawnBlock(){
@@ -347,7 +350,7 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
       const pts=1*multi;score+=pts;streak=0;
       sfxPlace();addF(cur.x+cur.w/2,cur.y-camY,'+'+pts,'#fff');addP(cur.x+cur.w/2,cur.y-camY,'💨',3);
     }
-    scoreEl.textContent=score;updateHud();
+    scoreEl.textContent=score;scoreEl.classList.remove('score-pop');void scoreEl.offsetWidth;scoreEl.classList.add('score-pop');updateHud();
 
     if(totalBlocks===1)tryAch('first');
     if(score>=10)tryAch('h10');if(score>=25)tryAch('h25');if(score>=50)tryAch('h50');
