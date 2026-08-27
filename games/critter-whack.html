@@ -124,13 +124,13 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 <div class="topbar">
   <a class="back" href="../pages/games.html">← All Games</a>
   <span class="brand">JVDesignStudio</span>
-  <button class="mute-btn" id="muteBtn">🔊</button>
+  <button class="mute-btn" id="pauseBtn" style="font-size:.9rem;margin-right:4px" onclick="togglePause()">⏸</button><button class="mute-btn" id="muteBtn">🔊</button>
 </div>
 
 <div class="wrap">
   <h1>🐹 Critter Whack</h1>
   <p class="sub">Whack critters, dodge bombs, survive the waves!</p>
-  <div class="hud">
+  <div class="hud" style="position:relative">
     <div class="stat"><div class="label">Score</div><div class="val" id="score">0</div></div>
     <div class="stat"><div class="label">Wave</div><div class="val" id="wave">1</div></div>
     <div class="stat"><div class="label">Time</div><div class="val" id="time">15</div></div>
@@ -186,7 +186,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 <script>
 (function(){
   const CRITTERS=['🦊','🐢','🦎','🐹','🐱','🐸','🦝'];
-  const HOLES=9, WAVE_TIME=15;
+  const HOLES=9, WAVE_TIME=20;
   const board=document.getElementById('board');
   const scoreEl=document.getElementById('score'),timeEl=document.getElementById('time'),livesEl=document.getElementById('lives'),waveEl=document.getElementById('wave');
   const streakBar=document.getElementById('streakBar');
@@ -215,7 +215,27 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 
   // ── Audio ──
   let audioCtx;
-  function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  function initAudio(){
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(!ambientStarted){ambientStarted=true;startAmbient();}
+  }
+  let ambientStarted=false,ambientNodes=null;
+  function startAmbient(){
+    try{
+      const ac=audioCtx;
+      const o1=ac.createOscillator(),o2=ac.createOscillator();
+      const g=ac.createGain(),f=ac.createBiquadFilter();
+      o1.type='sine';o1.frequency.value=110;
+      o2.type='triangle';o2.frequency.value=165;
+      f.type='lowpass';f.frequency.value=180;
+      g.gain.value=0.02;
+      o1.connect(f);o2.connect(f);f.connect(g);g.connect(ac.destination);
+      o1.start();o2.start();
+      ambientNodes={o1,o2,g};
+    }catch(e){}
+  }
+  function stopAmbient(){try{if(ambientNodes){ambientNodes.o1.stop();ambientNodes.o2.stop();ambientNodes=null;}}catch(e){}}
+  
   function tone(f,d,t='sine',v=0.2){
     if(muted||!audioCtx)return;
     const o=audioCtx.createOscillator(),g=audioCtx.createGain(),now=audioCtx.currentTime;
@@ -323,14 +343,27 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   let bombsHitThisWave=0,crittersWhackedThisWave=0,crittersSpawnedThisWave=0;
   let coinsEarned=0;
 
-  function setLives(){livesEl.textContent=lives>0?'❤'.repeat(lives):'💀';document.getElementById('game').classList.toggle('low-lives',lives===1&&running);}
+  function setLives(){livesEl.textContent=lives>0?'❤'.repeat(lives):'💀';document.body.classList.toggle('low-lives',lives===1&&running);}
   function getMulti(){return streak>=10?5:streak>=5?3:streak>=3?2:1;}
+  let comboTimerPct=0,comboTimerInterval=null;
   function updateStreak(){
+    clearInterval(comboTimerInterval);
+    const bar=document.getElementById('comboTimer');
+    if(streak>=3){comboTimerPct=100;if(bar){bar.style.width='100%';bar.style.opacity='1';}
+    comboTimerInterval=setInterval(()=>{comboTimerPct-=5;if(bar)bar.style.width=comboTimerPct+'%';if(comboTimerPct<=0)clearInterval(comboTimerInterval);},50);}else{if(bar){bar.style.width='0%';bar.style.opacity='0';}}
     if(streak>=3)streakBar.innerHTML=`<span class="fire">🔥 x${getMulti()} Streak: ${streak}</span>`;
     else if(streak>0)streakBar.textContent='Streak: '+streak;
     else streakBar.textContent='';
   }
 
+    function streakBreakFX(){
+    const el=document.createElement('div');
+    el.textContent='STREAK BROKEN!';
+    el.style.cssText="position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:'Fredoka',cursive;font-size:1.6rem;font-weight:900;color:#ff4444;text-shadow:0 0 20px rgba(255,68,68,.8);z-index:200;pointer-events:none;opacity:1;transition:all .5s ease-out";
+    document.body.appendChild(el);
+    requestAnimationFrame(()=>{el.style.opacity='0';el.style.transform='translate(-50%,-80%) scale(1.3)';});
+    setTimeout(()=>el.remove(),600);
+  }
   function shake(n=8){const x=(Math.random()-.5)*n,y=(Math.random()-.5)*n;board.style.transform=`translate(${x}px,${y}px)`;setTimeout(()=>{board.style.transform='';},50);}
   function addP(x,y,emoji,n=5){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=3+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,emoji,life:1});}}
   function addF(x,y,text,color='#FFD700'){floaters.push({x,y,text,color,life:1.2,vy:-2});}
@@ -345,7 +378,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
     if(cell.type==='bomb'){
       cell.active=false;sfxBomb();
       cell.c.textContent='💥';cell.c.classList.add('bonk');
-      addP(cx,cy,'💥',8);lives--;setLives();streak=0;updateStreak();
+      addP(cx,cy,'💥',8);lives--;setLives();if(streak>=3){streakBreakFX();} streak=0;updateStreak();
       bombsHitThisWave++;
       document.body.classList.add('flash');shake(12);
       setTimeout(()=>document.body.classList.remove('flash'),300);
@@ -462,32 +495,49 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
     },1500);
   }
 
-  // ── Particles / Floaters ──
+  // ── Particles / Floaters (pooled) ──
+  const pPool=[], fPool=[];
+  function mkPEmoji(){const el=document.createElement('div');el.style.cssText='position:fixed;pointer-events:none;font-size:1.3rem;z-index:100;transform:translate(-50%,-50%)';return el;}
+  function mkFText(){const el=document.createElement('div');el.style.cssText='position:fixed;pointer-events:none;font-weight:800;font-size:1.1rem;z-index:100;transform:translate(-50%,-50%);font-family:Fredoka,cursive';return el;}
   function updateFX(){
-    particles=particles.filter(p=>{
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
       p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life-=0.016;
-      if(p.life<=0)return false;
-      const el=document.createElement('div');el.textContent=p.emoji;
-      el.style.cssText=`position:fixed;left:${p.x}px;top:${p.y}px;pointer-events:none;font-size:1.3rem;opacity:${p.life};z-index:100;transform:translate(-50%,-50%)`;
-      document.body.appendChild(el);setTimeout(()=>el.remove(),16);return true;
-    });
-    floaters=floaters.filter(f=>{
+      if(p.life<=0){if(p.el){p.el.remove();pPool.push(p.el);}particles.splice(i,1);continue;}
+      if(!p.el){p.el=pPool.pop()||mkPEmoji();document.body.appendChild(p.el);}
+      p.el.textContent=p.emoji;
+      p.el.style.cssText=`position:fixed;left:${p.x}px;top:${p.y}px;pointer-events:none;font-size:1.3rem;opacity:${p.life};z-index:100;transform:translate(-50%,-50%)`;
+    }
+    for(let i=floaters.length-1;i>=0;i--){
+      const f=floaters[i];
       f.y+=f.vy;f.life-=0.016;
-      if(f.life<=0)return false;
-      const el=document.createElement('div');el.textContent=f.text;
-      el.style.cssText=`position:fixed;left:${f.x}px;top:${f.y}px;pointer-events:none;font-weight:800;color:${f.color};font-size:1.1rem;opacity:${f.life};z-index:100;transform:translate(-50%,-50%);font-family:'Fredoka',cursive`;
-      document.body.appendChild(el);setTimeout(()=>el.remove(),16);return true;
-    });
+      if(f.life<=0){if(f.el){f.el.remove();fPool.push(f.el);}floaters.splice(i,1);continue;}
+      if(!f.el){f.el=fPool.pop()||mkFText();document.body.appendChild(f.el);}
+      f.el.textContent=f.text;
+      f.el.style.cssText=`position:fixed;left:${f.x}px;top:${f.y}px;pointer-events:none;font-weight:800;color:${f.color};font-size:1.1rem;opacity:${f.life};z-index:100;transform:translate(-50%,-50%);font-family:'Fredoka',cursive`;
+    }
     if(running)requestAnimationFrame(updateFX);
   }
 
   // ── Start / End ──
+    let pauseOverlay=null;
+  function togglePause(){
+    if(!running)return;
+    running=false;clearTimeout(popTimer);clearTimeout(tickTimer);stopAmbient();clearInterval(comboTimerInterval);
+    document.getElementById('pauseBtn').textContent='▶';
+    if(!pauseOverlay){
+      pauseOverlay=document.createElement('div');
+      pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)';
+      pauseOverlay.innerHTML='<div style="text-align:center;color:white;font-family:Fredoka,cursive"><div style="font-size:2rem;margin-bottom:12px">⏸ PAUSED</div><button onclick="togglePause()" style="font-family:Fredoka,cursive;font-size:1.1rem;padding:10px 28px;border:none;border-radius:12px;background:#4e7d80;color:white;cursor:pointer">▶ RESUME</button></div>';
+      document.body.appendChild(pauseOverlay);
+    }
+  }
   function startGame(){
     initAudio();
-    score=0;lives=3;wave=1;timeLeft=WAVE_TIME;running=true;
+    score=0;lives=3+(upgrades.extralife||0);wave=1;timeLeft=WAVE_TIME+(upgrades.slowtime||0)*3;running=true;
     streak=0;bestStreak=0;totalWhacked=0;totalMissed=0;totalSpawned=0;
     bombsHitThisWave=0;crittersWhackedThisWave=0;crittersSpawnedThisWave=0;
-    coinsEarned=0;sessionAchs=[];particles=[];floaters=[];
+    coinsEarned=0;sessionAchs=[];particles.forEach(p=>{if(p.el){p.el.remove();pPool.push(p.el);}});floaters.forEach(f=>{if(f.el){f.el.remove();fPool.push(f.el);}});particles=[];floaters=[];
     scoreEl.textContent=0;waveEl.textContent=1;timeEl.textContent=WAVE_TIME;setLives();updateStreak();
     cells.forEach(c=>{c.active=false;c.c.classList.remove('up','bonk','hit');});
     startScreen.classList.add('hidden');endScreen.classList.add('hidden');
@@ -497,8 +547,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   }
 
   function endGame(){
-    running=false;clearTimeout(popTimer);clearTimeout(tickTimer);
+    running=false;clearTimeout(popTimer);clearTimeout(tickTimer);stopAmbient();
     cells.forEach(c=>{c.active=false;c.c.classList.remove('up');});
+    particles.forEach(p=>{if(p.el){p.el.remove();pPool.push(p.el);}});floaters.forEach(f=>{if(f.el){f.el.remove();fPool.push(f.el);}});particles=[];floaters=[];
     coins+=coinsEarned;saveCoins();
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
