@@ -259,6 +259,19 @@ footer a:hover{color:rgba(240,234,214,.85)}
 .upg-buy:disabled{opacity:.35;cursor:default;color:rgba(0,245,255,.4);border-color:rgba(0,245,255,.2)}
 .upg-buy.maxed{color:var(--neon-green);border-color:var(--neon-green)}
 .shop-title{font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:900;color:white;margin-bottom:18px;letter-spacing:.1em}
+.settings-list{max-width:380px;width:100%}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.settings-label{font-family:'Orbitron',sans-serif;font-size:.7rem;color:rgba(255,255,255,.7);letter-spacing:.05em}
+.settings-slider{-webkit-appearance:none;width:120px;height:4px;background:rgba(0,245,255,.2);border-radius:2px;outline:none;cursor:pointer}
+.settings-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--neon-cyan);border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(0,245,255,.5)}
+.settings-toggle{background:rgba(0,245,255,.15);border:1px solid rgba(0,245,255,.3);color:var(--neon-cyan);padding:4px 14px;border-radius:6px;font-family:'Orbitron',sans-serif;font-size:.65rem;cursor:pointer;transition:all .15s}
+.settings-toggle:hover{background:rgba(0,245,255,.25)}
+.settings-toggle.off{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.3)}
+.settings-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);padding:6px 16px;border-radius:6px;font-family:'Orbitron',sans-serif;font-size:.65rem;cursor:pointer;transition:all .15s}
+.settings-btn.danger{color:#ff4444;border-color:rgba(255,68,68,.3)}
+.settings-btn.danger:hover{background:rgba(255,68,68,.15)}
+.settings-divider{border-top:1px solid rgba(255,255,255,.08);margin:8px 0}
+.settings-info{font-size:.6rem;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:16px}
 .screen-sub-title{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:white;margin-bottom:14px;letter-spacing:.08em}
 .daily-challenge-box{background:rgba(102,0,255,.08);border:1px solid rgba(102,0,255,.3);border-radius:12px;padding:16px 18px;margin-bottom:16px;text-align:left}
 .daily-type{font-family:'Orbitron',sans-serif;font-size:.62rem;color:rgba(160,100,255,.7);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
@@ -669,6 +682,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
       <div class="start-btn-row">
         <button class="sbtn" onclick="openShop()">⬡ UPGRADES</button>
         <button class="sbtn daily" onclick="openDaily()">📅 DAILY</button>
+        <button class="sbtn" onclick="openSettings()">⚙ SETTINGS</button>
       </div>
       <button class="pbtn" id="startBtn">▶ INITIATE LAUNCH</button>
     </div>
@@ -710,6 +724,38 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
       <div class="shop-wallet" id="shop-wallet">⬡ 0 COINS</div>
       <div class="shop-grid" id="shop-grid"></div>
       <button class="pbtn" onclick="closeShop()">← BACK</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="g-scr off" id="scr-settings">
+    <div class="g-scr-inner">
+      <div class="shop-title">⚙ SETTINGS</div>
+      <div class="settings-list">
+        <div class="settings-row">
+          <span class="settings-label">🔊 Master Volume</span>
+          <input type="range" id="set-volume" min="0" max="100" value="80" class="settings-slider" oninput="applyVolume(this.value)">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">✨ Visual Effects</span>
+          <button class="settings-toggle" id="set-fx" onclick="toggleFX()">ON</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">🎵 Ambient Drone</span>
+          <button class="settings-toggle" id="set-drone" onclick="toggleDrone()">ON</button>
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">📳 Haptic Feedback</span>
+          <button class="settings-toggle" id="set-haptic" onclick="toggleHaptic()">ON</button>
+        </div>
+        <div class="settings-divider"></div>
+        <div class="settings-row">
+          <span class="settings-label">🗑 Reset All Progress</span>
+          <button class="settings-btn danger" onclick="resetProgress()">RESET</button>
+        </div>
+        <div class="settings-info">Wallet, upgrades, best score, and skins will be erased.</div>
+      </div>
+      <button class="pbtn" onclick="closeSettings()">← BACK</button>
     </div>
   </div>
 
@@ -925,6 +971,7 @@ window.togglePause=togglePause;
 function toggleMute(){masterMuted=!masterMuted;document.getElementById('muteBtn').textContent=masterMuted?'🔇':'🔊';}
 window.toggleMute=toggleMute;
 function startDrone(){
+  if(!droneEnabled)return;
   try{
     const ac=getAudio();
     const osc1=ac.createOscillator(), osc2=ac.createOscillator();
@@ -933,7 +980,7 @@ function startDrone(){
     osc2.type='sine'; osc2.frequency.value=82.5;
     filt.type='lowpass'; filt.frequency.value=200;
     gain.gain.value=0.06;
-    osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ac.destination);
+    osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(getMasterGain());
     osc1.start(); osc2.start();
     droneNodes={osc1,osc2,gain,filt};
   }catch(e){}
@@ -955,17 +1002,26 @@ function updateDrone(){
 /* ═══════════════════════════════════════════════
    AUDIO ENGINE
 ═══════════════════════════════════════════════ */
-let audioCtx = null, masterMuted = false, droneNodes = null;
+let audioCtx = null, masterMuted = false, droneNodes = null, masterGain = null;
 function getAudio(){
   if(!audioCtx) audioCtx = new(window.AudioContext||window.webkitAudioContext)();
   return audioCtx;
 }
+function getMasterGain(){
+  if(!masterGain){
+    const ac=getAudio();
+    masterGain=ac.createGain();
+    masterGain.gain.value=masterVolume;
+    masterGain.connect(ac.destination);
+  }
+  return masterGain;
+}
 const SFX = {
-  _play(fn){ try{ if(masterMuted)return; const ac=getAudio(); fn(ac); }catch(e){} },
+  _play(fn){ try{ if(masterMuted)return; const ac=getAudio(); fn(ac,getMasterGain()); }catch(e){} },
   launch(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='sawtooth';o.frequency.setValueAtTime(200,ac.currentTime);
       o.frequency.exponentialRampToValueAtTime(600,ac.currentTime+.15);
       o.frequency.exponentialRampToValueAtTime(900,ac.currentTime+.3);
@@ -974,9 +1030,9 @@ const SFX = {
     });
   },
   fuel(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='sine';o.frequency.setValueAtTime(660,ac.currentTime);
       o.frequency.exponentialRampToValueAtTime(880,ac.currentTime+.12);
       o.frequency.exponentialRampToValueAtTime(1100,ac.currentTime+.22);
@@ -985,10 +1041,10 @@ const SFX = {
     });
   },
   credit(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       [0,.08,.16].forEach((t,i)=>{
         const o=ac.createOscillator(), g=ac.createGain();
-        o.connect(g);g.connect(ac.destination);
+        o.connect(g);g.connect(mg);
         o.type='triangle';o.frequency.value=[660,880,1320][i];
         g.gain.setValueAtTime(.1,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+.18);
         o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.2);
@@ -996,21 +1052,21 @@ const SFX = {
     });
   },
   hit(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const buf=ac.createBuffer(1,ac.sampleRate*.25,ac.sampleRate);
       const data=buf.getChannelData(0);
       for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);
       const src=ac.createBufferSource(), g=ac.createGain();
       const filt=ac.createBiquadFilter();filt.type='lowpass';filt.frequency.value=800;
-      src.buffer=buf;src.connect(filt);filt.connect(g);g.connect(ac.destination);
+      src.buffer=buf;src.connect(filt);filt.connect(g);g.connect(mg);
       g.gain.setValueAtTime(.35,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.25);
       src.start();src.stop(ac.currentTime+.25);
     });
   },
   boost(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='sawtooth';o.frequency.setValueAtTime(300,ac.currentTime);
       o.frequency.exponentialRampToValueAtTime(1200,ac.currentTime+.2);
       g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3);
@@ -1018,18 +1074,18 @@ const SFX = {
     });
   },
   lowFuel(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='square';o.frequency.value=220;
       g.gain.setValueAtTime(.08,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.15);
       o.start();o.stop(ac.currentTime+.15);
     });
   },
   die(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='sawtooth';o.frequency.setValueAtTime(400,ac.currentTime);
       o.frequency.exponentialRampToValueAtTime(60,ac.currentTime+.8);
       g.gain.setValueAtTime(.2,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.85);
@@ -1037,13 +1093,13 @@ const SFX = {
     });
   },
   voidGroan(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
       const dist=ac.createWaveShaper();
       const curve=new Float32Array(256);
       for(let i=0;i<256;i++){ const x=i*2/256-1; curve[i]=x<0?-1:1; }
       dist.curve=curve;
-      o.connect(dist);dist.connect(g);g.connect(ac.destination);
+      o.connect(dist);dist.connect(g);g.connect(mg);
       o.type='sawtooth';o.frequency.setValueAtTime(40+Math.random()*20,ac.currentTime);
       o.frequency.linearRampToValueAtTime(30,ac.currentTime+1.5);
       g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+1.5);
@@ -1051,10 +1107,10 @@ const SFX = {
     });
   },
   combo(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       [0,.06,.12].forEach((t,i)=>{
         const o=ac.createOscillator(), g=ac.createGain();
-        o.connect(g);g.connect(ac.destination);
+        o.connect(g);g.connect(mg);
         o.type='triangle';o.frequency.value=[880,1100,1760][i];
         g.gain.setValueAtTime(.12,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+.2);
         o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.22);
@@ -1062,9 +1118,9 @@ const SFX = {
     });
   },
   closecall(){
-    this._play(ac=>{
+    this._play((ac,mg)=>{
       const o=ac.createOscillator(), g=ac.createGain();
-      o.connect(g);g.connect(ac.destination);
+      o.connect(g);g.connect(mg);
       o.type='sine';o.frequency.setValueAtTime(1200,ac.currentTime);
       o.frequency.exponentialRampToValueAtTime(600,ac.currentTime+.12);
       g.gain.setValueAtTime(.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.2);
@@ -1529,6 +1585,7 @@ function drawObs2(o){
 
 /* PARTICLES */
 function spawnParticles2(x,y,col,n=10){
+  if(!fxEnabled)return;
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2,s=2+Math.random()*6;
     particles2.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,col,r:2+Math.random()*3.5});
@@ -1556,6 +1613,7 @@ function flash2(type){
   el.className=''; void el.offsetWidth; el.className=type;
   setTimeout(()=>el.className='',150);
 }
+function vib(ms){if(hapticEnabled&&navigator.vibrate)try{navigator.vibrate(ms);}catch(e){}}
 
 /* COLLISION */
 function checkCol2(){
@@ -1577,7 +1635,7 @@ function checkCol2(){
         const comboWrap=document.getElementById('combo-panel');
         const comboEl=document.getElementById('h-combo');
         if(comboCount>=3){comboWrap.style.display='';comboEl.textContent='x'+comboCount;}
-        SFX.credit(); flash2('credit');
+        SFX.credit(); flash2('credit'); vib(8);
         spawnParticles2(p.sx,p.sy,'#ffc000',7);
         if(comboCount>=3){
           const bonus=comboCount-2;
@@ -1592,21 +1650,21 @@ function checkCol2(){
       } else if(o.type==='fuel'){
         const effMax=FUEL_MAX+cachedUpgrades.tank*25;
         fuel=Math.min(effMax,fuel+FUEL_PICKUP);
-        SFX.fuel(); flash2('fuel'); updateFuelHUD();
+        SFX.fuel(); flash2('fuel'); updateFuelHUD(); vib(10);
         spawnParticles2(p.sx,p.sy,'#00f5ff',9);
         spawnScorePop(p.sx,p.sy-20,'+FUEL','#00f5ff');
       } else if(o.type==='shield'){
         shieldCharges++;
         updatePowerupHUD();
-        SFX._play(ac=>{ const o2=ac.createOscillator(),g=ac.createGain(); o2.connect(g);g.connect(ac.destination); o2.type='sine';o2.frequency.setValueAtTime(880,ac.currentTime);o2.frequency.exponentialRampToValueAtTime(1760,ac.currentTime+.2); g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3); o2.start();o2.stop(ac.currentTime+.3); });
-        flash2('fuel');
+        SFX._play((ac,mg)=>{ const o2=ac.createOscillator(),g=ac.createGain(); o2.connect(g);g.connect(mg); o2.type='sine';o2.frequency.setValueAtTime(880,ac.currentTime);o2.frequency.exponentialRampToValueAtTime(1760,ac.currentTime+.2); g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3); o2.start();o2.stop(ac.currentTime+.3); });
+        flash2('fuel'); vib([10,20,10]);
         spawnParticles2(p.sx,p.sy,'#44aaff',10);
         spawnScorePop(p.sx,p.sy-20,'+SHIELD','#44aaff');
       } else if(o.type==='magnet'){
         magnetTimer=360;
         updatePowerupHUD();
-        SFX._play(ac=>{ const o2=ac.createOscillator(),g=ac.createGain(); o2.connect(g);g.connect(ac.destination); o2.type='triangle';o2.frequency.setValueAtTime(660,ac.currentTime);o2.frequency.exponentialRampToValueAtTime(1320,ac.currentTime+.15); g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.25); o2.start();o2.stop(ac.currentTime+.25); });
-        flash2('credit');
+        SFX._play((ac,mg)=>{ const o2=ac.createOscillator(),g=ac.createGain(); o2.connect(g);g.connect(mg); o2.type='triangle';o2.frequency.setValueAtTime(660,ac.currentTime);o2.frequency.exponentialRampToValueAtTime(1320,ac.currentTime+.15); g.gain.setValueAtTime(.12,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.25); o2.start();o2.stop(ac.currentTime+.25); });
+        flash2('credit'); vib([8,15,8]);
         spawnParticles2(p.sx,p.sy,'#ff44cc',10);
         spawnScorePop(p.sx,p.sy-20,'+MAGNET','#ff44cc');
       } else if(!inv){
@@ -1614,7 +1672,7 @@ function checkCol2(){
           shieldCharges--;
           updatePowerupHUD();
           inv=true; invFr=0; shake=12;
-          flash2('fuel');
+          flash2('fuel'); vib(20);
           spawnParticles2(ssx,ssy,'#44aaff',16);
           spawnScorePop(ssx,ssy-40,'SHIELD!','#44aaff');
           document.getElementById('void-edge').classList.add('active');
@@ -1623,7 +1681,7 @@ function checkCol2(){
           lives--; updateLivesHUD();
           fuel=Math.max(0,fuel-FUEL_HIT_PENALTY); updateFuelHUD();
           inv=true; invFr=0; shake=28;
-          SFX.hit(); flash2('hit');
+          SFX.hit(); flash2('hit'); vib(40);
           document.getElementById('void-edge').classList.add('active');
           setTimeout(()=>document.getElementById('void-edge').classList.remove('active'),600);
           spawnParticles2(ssx,ssy,'#ff2244',18);
@@ -1821,7 +1879,7 @@ function loop2(ts){
       const tdx=Math.abs(shipX-tentacleSweepX), tdy=Math.abs(shipY);
       if(tdx<3&&tdy<4&&!inv){
         lives--; updateLivesHUD(); inv=true; invFr=0; shake=14;
-        SFX.hit(); flash2('hit');
+        SFX.hit(); flash2('hit'); vib(30);
         spawnParticles2(shipX,shipY,'#ff00aa',12);
         if(lives<=0){ deathCause='void'; endGame2(); }
       }
@@ -1952,6 +2010,41 @@ function closeShop(){
   showStartScreen();
 }
 window.closeShop=closeShop;
+function openSettings(){
+  document.getElementById('scr-start').classList.add('off');
+  document.getElementById('scr-dead').classList.add('off');
+  document.getElementById('scr-settings').classList.remove('off');
+  // Sync toggle states
+  document.getElementById('set-volume').value=loadSetting('vol',80);
+  document.getElementById('set-fx').textContent=loadSetting('fx',1)?'ON':'OFF';
+  document.getElementById('set-fx').classList.toggle('off',!loadSetting('fx',1));
+  document.getElementById('set-drone').textContent=loadSetting('drone',1)?'ON':'OFF';
+  document.getElementById('set-drone').classList.toggle('off',!loadSetting('drone',1));
+  document.getElementById('set-haptic').textContent=loadSetting('haptic',1)?'ON':'OFF';
+  document.getElementById('set-haptic').classList.toggle('off',!loadSetting('haptic',1));
+}
+window.openSettings=openSettings;
+function closeSettings(){
+  document.getElementById('scr-settings').classList.add('off');
+  showStartScreen();
+}
+window.closeSettings=closeSettings;
+function loadSetting(key,def){try{return JSON.parse(localStorage.getItem('vr4_s_'+key))??def;}catch(e){return def;}}
+function saveSetting(key,val){try{localStorage.setItem('vr4_s_'+key,JSON.stringify(val));}catch(e){}}
+function applyVolume(v){saveSetting('vol',v);masterVolume=v/100;if(masterGain)masterGain.gain.value=masterVolume;}
+window.applyVolume=applyVolume;
+let masterVolume=loadSetting('vol',80)/100;
+let fxEnabled=!!loadSetting('fx',1);
+let droneEnabled=!!loadSetting('drone',1);
+let hapticEnabled=!!loadSetting('haptic',1);
+function toggleFX(){fxEnabled=!fxEnabled;saveSetting('fx',fxEnabled?1:0);const b=document.getElementById('set-fx');b.textContent=fxEnabled?'ON':'OFF';b.classList.toggle('off',!fxEnabled);}
+window.toggleFX=toggleFX;
+function toggleDrone(){droneEnabled=!droneEnabled;saveSetting('drone',droneEnabled?1:0);const b=document.getElementById('set-drone');b.textContent=droneEnabled?'ON':'OFF';b.classList.toggle('off',!droneEnabled);if(!droneEnabled)stopDrone();}
+window.toggleDrone=toggleDrone;
+function toggleHaptic(){hapticEnabled=!hapticEnabled;saveSetting('haptic',hapticEnabled?1:0);const b=document.getElementById('set-haptic');b.textContent=hapticEnabled?'ON':'OFF';b.classList.toggle('off',!hapticEnabled);}
+window.toggleHaptic=toggleHaptic;
+function resetProgress(){if(!confirm('Erase ALL progress? This cannot be undone.'))return;['vr4_wallet','vr4_upgrades','vr4_best','vr4_milestones','vr4_skin','vr4_daily'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});location.reload();}
+window.resetProgress=resetProgress;
 function renderShop(){
   const wallet=loadWallet();
   const upg=loadUpgrades();
