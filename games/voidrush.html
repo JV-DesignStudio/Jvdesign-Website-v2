@@ -174,6 +174,9 @@ footer a:hover{color:rgba(240,234,214,.85)}
 #void-bar-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#4400cc,var(--neon-mag));box-shadow:0 0 8px rgba(102,0,255,.6);transition:width .4s}
 .hud-back{position:absolute;top:14px;right:20px;z-index:20;pointer-events:all;cursor:pointer;background:rgba(0,0,10,.7);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 14px;font-family:'Orbitron',sans-serif;font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.1em;transition:color .15s,border-color .15s}
 .hud-back:hover{color:white;border-color:rgba(255,255,255,.4)}
+.hud-pause,.hud-mute{position:absolute;top:14px;z-index:20;pointer-events:all;cursor:pointer;background:rgba(0,0,10,.7);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px 10px;font-size:.75rem;color:rgba(255,255,255,.5);transition:color .15s,border-color .15s}
+.hud-pause{right:120px}.hud-mute{right:80px}
+.hud-pause:hover,.hud-mute:hover{color:white;border-color:rgba(255,255,255,.4)}
 
 /* Screens */
 .g-scr{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
@@ -632,7 +635,17 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
       <div class="hud-label">Void</div>
       <div id="void-bar-bg"><div id="void-bar-fill"></div></div>
     </div>
+    <div class="hud-panel" id="wave-panel">
+      <div class="hud-label">Wave</div>
+      <div class="hud-val" id="h-wave">1</div>
+    </div>
+    <div class="hud-panel" id="combo-panel" style="display:none">
+      <div class="hud-label">Combo</div>
+      <div class="hud-val" id="h-combo" style="color:#ffd700">x2</div>
+    </div>
     <button class="hud-back" onclick="exitGame()">✕ EXIT</button>
+    <button class="hud-pause" id="pauseBtn" onclick="togglePause()">⏸</button>
+    <button class="hud-mute" id="muteBtn" onclick="toggleMute()">🔊</button>
   </div>
 
   <div id="hint-bar">Arrow keys / WASD to move &nbsp;·&nbsp; SPACE to boost &nbsp;·&nbsp; Collect coins · Grab ⛽ fuel · Dodge asteroids &nbsp;·&nbsp; Swipe on mobile</div>
@@ -777,6 +790,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   for(let i=0;i<4;i++) htent.push({x:HW*.1+i*(HW*.25),wag:Math.random()*Math.PI*2,ws:.018+Math.random()*.015,len:60+Math.random()*80,ph:Math.random()*Math.PI*2});
 
   function heroLoop(){
+    if(!heroRunning) return;
     requestAnimationFrame(heroLoop);
     hfr++;
     hx.clearRect(0,0,HW,HH);
@@ -877,6 +891,7 @@ document.addEventListener('DOMContentLoaded',()=>{
    GAME LAUNCH / EXIT
 ═══════════════════════════════════════════════ */
 function launchGame(){
+  heroRunning=false;
   document.getElementById('game-container').classList.add('active');
   document.getElementById('siteHeader').style.display='none';
   document.body.style.overflow='hidden';
@@ -901,17 +916,52 @@ function exitGame(){
 }
 window.launchGame=launchGame;
 window.exitGame=exitGame;
+function togglePause(){
+  if(gameState!=='playing'&&gameState!=='paused')return;
+  if(!paused){gameState='paused';paused=true;document.getElementById('pauseBtn').textContent='▶';}
+  else{gameState='playing';paused=false;lastFrameT2=0;document.getElementById('pauseBtn').textContent='⏸';requestAnimationFrame(loop2);}
+}
+window.togglePause=togglePause;
+function toggleMute(){masterMuted=!masterMuted;document.getElementById('muteBtn').textContent=masterMuted?'🔇':'🔊';}
+window.toggleMute=toggleMute;
+function startDrone(){
+  try{
+    const ac=getAudio();
+    const osc1=ac.createOscillator(), osc2=ac.createOscillator();
+    const gain=ac.createGain(), filt=ac.createBiquadFilter();
+    osc1.type='sine'; osc1.frequency.value=55;
+    osc2.type='sine'; osc2.frequency.value=82.5;
+    filt.type='lowpass'; filt.frequency.value=200;
+    gain.gain.value=0.06;
+    osc1.connect(filt); osc2.connect(filt); filt.connect(gain); gain.connect(ac.destination);
+    osc1.start(); osc2.start();
+    droneNodes={osc1,osc2,gain,filt};
+  }catch(e){}
+}
+function stopDrone(){
+  try{ if(droneNodes){droneNodes.osc1.stop();droneNodes.osc2.stop();droneNodes=null;} }catch(e){}
+}
+function updateDrone(){
+  if(!droneNodes||masterMuted)return;
+  try{
+    const ac=getAudio();
+    const vp=Math.min(1,voidProx);
+    droneNodes.gain.gain.value=0.04+vp*0.08;
+    droneNodes.filt.frequency.value=150+vp*400;
+    droneNodes.osc2.frequency.value=82.5+vp*40;
+  }catch(e){}
+}
 
 /* ═══════════════════════════════════════════════
    AUDIO ENGINE
 ═══════════════════════════════════════════════ */
-let audioCtx = null;
+let audioCtx = null, masterMuted = false, droneNodes = null;
 function getAudio(){
   if(!audioCtx) audioCtx = new(window.AudioContext||window.webkitAudioContext)();
   return audioCtx;
 }
 const SFX = {
-  _play(fn){ try{ const ac=getAudio(); fn(ac); }catch(e){} },
+  _play(fn){ try{ if(masterMuted)return; const ac=getAudio(); fn(ac); }catch(e){} },
   launch(){
     this._play(ac=>{
       const o=ac.createOscillator(), g=ac.createGain();
@@ -1058,7 +1108,7 @@ function project3D(wx, wy, wz, sx, sy) {
 // World Y where obstacles at the ship's current altitude line up with the
 function randWy(margin){ return (Math.random()-0.5)*2*(TUNNEL_H-margin); }
 
-let gameInit = false, gameState = 'start';
+let gameInit = false, gameState = 'start', paused = false, heroRunning = true;
 let canvas2, cx2, W2, H2;
 let dist, spd, fr, scroll;
 let lastFrameT2 = 0;
@@ -1075,6 +1125,7 @@ let shipBankAngle = 0, comboCount = 0, comboTimer = 0;
 let shieldCharges = 0, magnetTimer = 0, shieldCD = 0, magnetCD = 0;
 let runCloseCalls = 0, runMaxCombo = 0, dailyMode = false;
 let activeSkin = null;
+let cachedUpgrades = {tank:0,engine:0,shield:0,magnet:0};
 const MILESTONES = [
   {dist:500,id:'scout',label:'SCOUT TRAIL',col:'#00f5ff'},
   {dist:2000,id:'pilot',label:'PILOT SHIP',col:'#ff00aa'},
@@ -1153,7 +1204,7 @@ function updateLivesHUD(){
 function updateFuelHUD(){
   const fill=document.getElementById('fuel-bar-fill');
   if(!fill) return;
-  const effMax=FUEL_MAX+(loadUpgrades().tank||0)*25;
+  const effMax=FUEL_MAX+(cachedUpgrades.tank||0)*25;
   fill.style.width=Math.max(0,fuel/effMax*100)+'%';
   fill.classList.toggle('low', fuel<effMax*0.25);
 }
@@ -1488,7 +1539,7 @@ function spawnScorePop(x,y,text,col){
 }
 function tickParticles2(f){
   f=f||1;
-  particles2=particles2.filter(p=>p.life>.02);
+  for(let i=particles2.length-1;i>=0;i--) if(particles2[i].life<=.02) particles2.splice(i,1);
   particles2.forEach(p=>{
     p.x+=p.vx*f; p.y+=p.vy*f; p.vy+=0.12*f; p.life*=Math.pow(0.87,f);
     cx2.save(); cx2.globalAlpha=p.life; cx2.fillStyle=p.col; cx2.shadowBlur=7; cx2.shadowColor=p.col;
@@ -1518,6 +1569,9 @@ function checkCol2(){
         if(comboTimer>0) comboCount++; else comboCount=1;
         comboTimer=50;
         if(comboCount>runMaxCombo) runMaxCombo=comboCount;
+        const comboWrap=document.getElementById('combo-panel');
+        const comboEl=document.getElementById('h-combo');
+        if(comboCount>=3){comboWrap.style.display='';comboEl.textContent='x'+comboCount;}
         SFX.credit(); flash2('credit');
         spawnParticles2(p.sx,p.sy,'#ffc000',7);
         if(comboCount>=3){
@@ -1531,8 +1585,7 @@ function checkCol2(){
         const el=document.getElementById('h-credits');
         el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),300);
       } else if(o.type==='fuel'){
-        const upg=loadUpgrades();
-        const effMax=FUEL_MAX+upg.tank*25;
+        const effMax=FUEL_MAX+cachedUpgrades.tank*25;
         fuel=Math.min(effMax,fuel+FUEL_PICKUP);
         SFX.fuel(); flash2('fuel'); updateFuelHUD();
         spawnParticles2(p.sx,p.sy,'#00f5ff',9);
@@ -1622,7 +1675,8 @@ function applyShipMovement(f){
 function startGame2(){
   loadBest2();
   // Apply upgrades
-  const upg=loadUpgrades();
+  cachedUpgrades=loadUpgrades();
+  const upg=cachedUpgrades;
   activeSkin=loadSkin();
   const effFuelMax=FUEL_MAX+upg.tank*25;
   // engine boost stored as multiplier applied to initial speed
@@ -1631,12 +1685,14 @@ function startGame2(){
   shipX=0; shipY=0; credits=0; totalCredits=0; lives=MAX_LIVES;
   voidProx=0; voidGroanTimer=0; inv=false; invFr=0; shake=0;
   fuel=effFuelMax; boosting=false; wasBoosting=false; lowFuelTimer=0; fuelCD=180; deathCause=null;
-  shipBankAngle=0; comboCount=0; comboTimer=0;
+  shipBankAngle=0; comboCount=0;
+      document.getElementById('h-combo-wrap').style.display='none'; comboTimer=0;
   shieldCharges=upg.shield; magnetTimer=0; shieldCD=500; magnetCD=600;
   runCloseCalls=0; runMaxCombo=0;
   obstacles=[]; particles2=[]; keys={}; recentSpawns=[];
   touchStartX=null; touchStartY=null;
   initStars3D(); initVoid2(); updateLivesHUD(); updateFuelHUD(); updateVoidHUD();
+    updateDrone();
   updatePowerupHUD();
   gameState='playing'; spawnCD=45;
   document.getElementById('scr-start').classList.add('off');
@@ -1645,6 +1701,7 @@ function startGame2(){
   document.getElementById('scr-daily').classList.add('off');
   document.getElementById('hud').classList.remove('off');
   SFX.launch();
+  startDrone();
 }
 window.startGame2=startGame2;
 function restartGame(){ showStartScreen(); startGame2(); }
@@ -1661,6 +1718,7 @@ function endGame2(){
   window.__gsBestRun=Math.max(window.__gsBestRun||0,runScore);
   if(typeof gameSystem!=='undefined'){gameSystem.addScore(runScore);gameSystem.recordGamePlay(Date.now());}
   SFX.die();
+  stopDrone();
   // Add coins to wallet
   let wallet=loadWallet()+totalCredits;
   saveWallet(wallet);
@@ -1731,7 +1789,7 @@ function loop2(ts){
   const f=dt*60;
   fr+=f;
   if(gameState==='playing'){
-    const _bspd=BASE_SPD*(1+(loadUpgrades().engine||0)*0.08);
+    const _bspd=BASE_SPD*(1+(cachedUpgrades.engine||0)*0.08);
     spd=Math.min(MAX_SPD,_bspd+fr*SPD_INC);
     boosting=(keys[' ']||keys['Spacebar'])&&fuel>BOOST_MIN_FUEL;
     if(boosting&&!wasBoosting) SFX.boost();
@@ -1739,9 +1797,9 @@ function loop2(ts){
     const effSpd=boosting?spd*BOOST_MULT:spd;
     fuel=Math.max(0,fuel-FUEL_DRAIN*(spd/BASE_SPD)*f-(boosting?BOOST_FUEL_COST*f:0));
     const newWave=Math.floor(dist/500);
-    if(newWave>wave){ wave=newWave; spawnScorePop(W2/2,H2*0.4,'WAVE '+(wave+1),'#00f5ff'); }
+    if(newWave>wave){ wave=newWave; spawnScorePop(W2/2,H2*0.4,'WAVE '+(wave+1),'#00f5ff'); document.getElementById('h-wave').textContent=wave; }
     dist+=effSpd*0.045*f; scroll+=effSpd*14*f;
-    const _effMax=FUEL_MAX+(loadUpgrades().tank||0)*25;
+    const _effMax=FUEL_MAX+(cachedUpgrades.tank||0)*25;
     const fuelDanger=1-fuel/_effMax;
     voidProx=Math.min(1,dist/15000+wave*0.025+fuelDanger*0.65);
     voidGroanTimer+=f;
@@ -1749,7 +1807,7 @@ function loop2(ts){
     lowFuelTimer+=f;
     if(fuel<25&&fuel>0&&lowFuelTimer>90){ SFX.lowFuel(); lowFuelTimer=0; }
     if(fuel<=0){ deathCause='fuel'; endGame2(); }
-    if(comboTimer>0) comboTimer=Math.max(0,comboTimer-f);
+    if(comboTimer>0){comboTimer=Math.max(0,comboTimer-f);if(comboTimer<=0){comboCount=0;const cp=document.getElementById('combo-panel');if(cp)cp.style.display='none';}}
     if(magnetTimer>0){ magnetTimer=Math.max(0,magnetTimer-f); updatePowerupHUD(); }
     if(inv){ invFr+=f; if(invFr>INV_FR){inv=false;invFr=0;} }
     if(shake>0) shake*=Math.pow(0.76,f);
@@ -1757,9 +1815,8 @@ function loop2(ts){
     const zSpd=effSpd*0.22;
     // Magnet pull
     if(magnetTimer>0){
-      const upg=loadUpgrades();
-      const mRad=(upg.magnet===2?22:12)*4;
-      const mFactor=0.06*(upg.magnet===2?1.5:1)*f;
+      const mRad=(cachedUpgrades.magnet===2?22:12)*4;
+      const mFactor=0.06*(cachedUpgrades.magnet===2?1.5:1)*f;
       obstacles.forEach(o=>{ if(o.type!=='coin'||!o.alive||o.wz>150) return; const dx=shipX-o.wx,dy=shipY-o.wy; const dd=Math.sqrt(dx*dx+dy*dy); if(dd<mRad){o.wx+=dx*mFactor;o.wy+=dy*mFactor;} });
     }
     obstacles.forEach(o=>{ o.wz-=zSpd*f; if(o.rot!==undefined) o.rot+=(o.rotSpd||0)*f; });
@@ -1776,7 +1833,7 @@ function loop2(ts){
       spawnCD=Math.max(22,Math.round(75-spd*0.45-wave*2));
     }
     fuelCD-=f;
-    if(fuelCD<=0){ spawnFuelCanister(); fuelCD=200+Math.floor(Math.random()*160); }
+    if(fuelCD<=0){ spawnFuelCanister(); const fuelRatio=fuel/FUEL_MAX; fuelCD=Math.round(60+(1-fuelRatio)*200+Math.random()*80); }
     shieldCD-=f;
     if(shieldCD<=0){ spawnShieldPowerup(); shieldCD=500+Math.floor(Math.random()*200); }
     magnetCD-=f;
@@ -1792,8 +1849,8 @@ function loop2(ts){
   drawStars3D();
   drawGrid2();
   if(gameState==='playing'||gameState==='dead'){
-    const sorted=[...obstacles].sort((a,b)=>b.wz-a.wz);
-    sorted.forEach(drawObs2);
+    obstacles.sort((a,b)=>b.wz-a.wz);
+    obstacles.forEach(drawObs2);
     if(gameState==='playing') drawShip2(shipX,shipY,inv,boosting);
     tickParticles2(f);
     drawVoidEntity2();
