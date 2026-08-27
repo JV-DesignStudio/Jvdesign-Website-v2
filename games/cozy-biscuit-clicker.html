@@ -7,6 +7,7 @@
 
 <script src="../analytics-loader.js"></script>
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -131,6 +132,9 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 @keyframes crewHeart{0%{opacity:0;transform:translate(-50%,0) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--hx,0px)),-42px) scale(1.1)}}
 .char-seat.crew-happy::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:radial-gradient(circle,rgba(245,199,106,.45),transparent 66%);z-index:-1;pointer-events:none;animation:glowPulse 1s ease-in-out infinite}
 .biscuit-tin.combo-hot .tin-glow{background:radial-gradient(circle,rgba(245,150,120,.6) 0%,transparent 70%);animation:glowPulse .9s ease-in-out infinite}
+.biscuit-tin[data-combo="t3"]{filter:drop-shadow(0 0 10px rgba(244,182,194,.45))}
+.biscuit-tin[data-combo="t4"]{filter:drop-shadow(0 0 16px rgba(176,123,208,.5))}
+.biscuit-tin[data-combo="t5"]{filter:drop-shadow(0 0 22px rgba(232,97,122,.6)) drop-shadow(0 0 44px rgba(245,199,106,.35))}
 @keyframes appShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 .hero-stage.shake{animation:appShake .3s ease}
 
@@ -423,6 +427,31 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
   .hero-table{height:46px;bottom:-8px}
   .quest-chip{margin:4px auto 2px;padding:4px 12px}
 }
+
+/* ── PRODUCTION FLOW: floating biscuits when helpers produce ── */
+.prod-particle{position:absolute;pointer-events:none;font-size:14px;z-index:5;animation:prodFloat 2.2s ease-out forwards;opacity:0}
+@keyframes prodFloat{0%{opacity:0;transform:translateY(0) scale(.7)}15%{opacity:.7}85%{opacity:.5}100%{opacity:0;transform:translateY(-60px) scale(1.1) rotate(var(--rot,10deg))}}
+
+/* ── PRESTIGE PROGRESS BAR ── */
+.prestige-bar-wrap{width:100%;max-width:200px;margin:2px auto 0;height:5px;background:rgba(74,53,40,.08);border-radius:100px;overflow:hidden;opacity:0;transition:opacity .4s}
+.prestige-bar-wrap.visible{opacity:1}
+.prestige-bar-fill{height:100%;background:linear-gradient(90deg,var(--sun),#E8A830);border-radius:100px;transition:width .6s ease;width:0%}
+
+/* ── HINT TEXT ── */
+.hint-text{font-size:11px;color:var(--cocoa-soft);font-weight:700;margin-top:4px;text-align:center;opacity:.7;transition:opacity .3s;min-height:1.4em}
+
+/* ── ACCESSIBILITY: reduced-motion ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+  .tin-emoji{animation:none !important}
+  .char-emoji{animation:none !important}
+  .bg-cookie,.petal,.prod-particle,.click-pop,.click-biscuit,.spark,.crew-heart,.char-rain-drop,.crumb2{display:none !important}
+  .tin-glow{animation:none !important;opacity:.5 !important}
+  .fairy-lights .bulb{animation:none !important;opacity:1 !important}
+}
+/* ── ACCESSIBILITY: focus-visible for keyboard nav ── */
+:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px;border-radius:8px}
+button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
 /* ══════════════════════════════════════════════════════════ */
 
 </style>
@@ -518,6 +547,8 @@ html body[data-btbg="mint"]{background-image:linear-gradient(180deg,rgba(123,214
     </svg>
     <div class="biscuits-label" id="biscuitsLabel">0 <span>biscuits</span></div>
     <div class="rate-label" id="rateLabel">tap to start baking!</div>
+    <div class="prestige-bar-wrap" id="prestigeBarWrap"><div class="prestige-bar-fill" id="prestigeBarFill"></div></div>
+    <div class="hint-text" id="hintText"></div>
     <div class="hero-stage">
       <div class="spotlight"></div>
       <div class="combo-badge" id="comboBadge">
@@ -891,11 +922,11 @@ const Sfx = (() => {
 // ══ VAULT ══
 const VAULT_KEY='jvds_player_vault';
 function defaultVault(){
-  return{schema:3,coins:0,happiness:0,haptic:true,
+  return{schema:3,happiness:0,haptic:true,
     unlocked_items:['cafe_default','trail_petal','skin_default'],
     equipped:{background:'cafe_default',trail:'trail_petal',skin:'skin_default'},
     achievements:[],
-    stats:{matches:0,guests_served:0,max_combo:0,max_streak:0,lifetime_coins:0,powerups_made:0,rainbows_made:0,guests_each:{}},
+    stats:{guests_served:0,max_combo:0,max_streak:0,guests_each:{}},
     crewEquipped:{},
     btStats:{found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0},
     biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{},butter:{count:0,pending:0,lastTick:Date.now()},fedToday:null,regular:null,regularWall:[]}};
@@ -1162,6 +1193,17 @@ function noticeLine(){
     'Season '+(bv().prestige+1)+' of the cafe. The tin hums approvingly.',
     'Lost: one crumb, last seen near the good chair. Reward: one crumb.',
     (bv().streak>1?'Day '+bv().streak+' of your streak. The crew pretend not to be impressed. They are.':'The kettle whistles a familiar tune.'),
+    'Ember dunked a biscuit for seven seconds. New personal best. She is inconsolable with joy.',
+    'Pip found a tiny frog on the windowsill. He has named it "Sir Croaks-a-Lot." It has not objected.',
+    'Lumo rated today\'s batch "ten out of ten, obviously." He rates every batch ten out of ten. Nobody has the heart to tell him.',
+    'Echo put glitter in the teapot again. The tea is now "extra magical." Nobody complains.',
+    'A pigeon tried to order a scone. Postman Pigeon escorted it out. The pigeon left a one-star review.',
+    'The biscuit tin made a small humming noise at 3am. Pip says it was "thinking." Nobody else was awake to verify.',
+    'Professor Crumb submitted a 47-page report on the structural integrity of today\'s batch. Verdict: "Sound."',
+    'Old Tom Badger brought his own biscuits. He rated them "adequate." This is the highest compliment he has ever given.',
+    'Beatrice Bear hugged the counter so hard it squeaked. The counter has filed a formal complaint. Beatrice did not notice.',
+    'Snap & Syrup wrote a haiku about today\'s biscuits. It was surprisingly moving.',
+    'The ferry mouse crossed the river twice today. Once for biscuits, once to tell the other side about the biscuits.',
   ];
   let i=Math.floor(Math.random()*L.length);
   if(L[i]===noticeLast)i=(i+1)%L.length;
@@ -1373,9 +1415,9 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'1.4.2',
-  build:10,
-  codename:'Ginger Nut',
+  version:'2.0',
+  build:11,
+  codename:'Hobnob',
 };
 
 // ══ RUNTIME ══
@@ -1386,11 +1428,10 @@ const charWasCD={fox:false,tiger:false,turtle:false,axolotl:false};
 const CIRC=138.2;
 let milestonesHit=new Set();
 
-const FMT_UNITS=['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+const FMT_UNITS=['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QaDc','QiDc'];
 function fmt(n){
   n=Math.floor(n);
   if(n<1e3)return n.toString();
-  // Step down in thousands so trillion+ (the late-game content) reads as T/Qa/...
   const tier=Math.min(Math.max(Math.floor(Math.log10(n)/3)-1,0),FMT_UNITS.length-1);
   return (n/Math.pow(1e3,tier+1)).toFixed(1)+FMT_UNITS[tier];
 }
@@ -1431,14 +1472,12 @@ function tick(){
   if(productionRate>0){
     const g=productionRate*dt;
     bv().total+=g; bv().lifetime+=g;
-    vault.coins+=g*0.1;
-    vault.stats.lifetime_coins=(vault.stats.lifetime_coins||0)+g*0.1;
     trackDailyProgress('earn',g);
   }
   requestAnimationFrame(tick);
 }
 // HUD/achievement polling on a light interval instead of every frame.
-setInterval(()=>{checkMilestones();updateHUD();},200);
+setInterval(()=>{checkMilestones();updateHUD();updatePrestigeBar();spawnProdParticle();},200);
 
 // ══ MILESTONES ══
 function checkMilestones(){
@@ -1625,6 +1664,9 @@ function bumpCombo(){
     const tEl=document.getElementById('comboTier'); if(tEl)tEl.textContent=tier.label+(atCap?' · MAX':' · '+combo);
     const f=document.getElementById('comboBarFill'); if(f)f.style.transform='scaleX(1)';
     b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+    // Visual escalation on the tin itself
+    const tin=document.getElementById('tinBtn');
+    if(tin)tin.dataset.combo=tier.cls;
   }
   // One-time nudge so new players discover combos by doing.
   if(!vault.comboHintSeen&&combo>=4){ vault.comboHintSeen=true; saveVault(); showToast('🔥 Combo! Keep tapping fast for bonus biscuits','achievement'); }
@@ -1634,7 +1676,7 @@ function endCombo(){
   combo=0;
   const b=document.getElementById('comboBadge'); if(b)b.classList.remove('show');
   document.querySelectorAll('.char-seat.crew-happy').forEach(s=>s.classList.remove('crew-happy'));
-  const tin=document.getElementById('tinBtn'); if(tin)tin.classList.remove('combo-hot');
+  const tin=document.getElementById('tinBtn'); if(tin){tin.classList.remove('combo-hot');delete tin.dataset.combo;}
 }
 function spawnSpark(x,y){
   if(fxSparks>50)return;
@@ -2214,7 +2256,7 @@ function checkAchievements(){
     if(a.check(vault)){
       vault.achievements.push(a.id); Sfx.sfxAchievement();
       const coinReward=a.coins||10;
-      vault.coins+=coinReward; vault.happiness+=1;
+      vault.happiness+=1;
       showToast(a.emoji+' '+a.name+' +'+coinReward+'✨','achievement');
       saveVault();
     }
@@ -2292,6 +2334,7 @@ document.addEventListener('visibilitychange',()=>{
 // ══ AMBIENCE ══
 const TRAIL_EMOJIS={trail_petal:['🌸','🌼','✿','❀'],trail_star:['⭐','✨','🌟','💫'],trail_heart:['💗','💕','💖','♡'],trail_bubble:['🫧','○','◯','⚪'],trail_leaf:['🍃','🌿','☘️','🍀'],trail_snow:['❄️','❅','❆','✻'],trail_fire:['🔥','✨','💥','⭐'],trail_biscuit:['🍪','🥐','🧁','🍩'],trail_rainbow:['🌈','✨','🌟','💫'],trail_music:['🎵','🎶','🎼','♪'],trail_moon:['🌙','⭐','✨','🌟']};
 function spawnPetal(){
+  if(prefersReducedMotion)return;
   const layer=document.getElementById('petalLayer'); if(!layer)return;
   const trail=vault.equipped?.trail||'trail_petal';
   if(trail==='trail_none')return;
@@ -3251,6 +3294,7 @@ setInterval(()=>{
   updateQuestChip();
   updateButterChip();
   updateRegularChip();
+  updateHint();
   const unlockedCh=STORY.filter(s=>s.when()).length;
   if(unlockedCh>(vault.btStorySeen||0)){vault.btStorySeen=unlockedCh;showToast('📖 A new page of the cafe story!','achievement');saveVault();}
   if(!foundSecrets().includes('s_patience')&&Date.now()-lastAnyTap>600000&&!document.hidden)awardSecret('s_patience');
@@ -3324,7 +3368,7 @@ function treasureReward(x,y){
   const roll=Math.random();
   if(roll<0.30){
     const amount=Math.max(Math.floor(clickPower*60),Math.floor(productionRate*120+250));
-    grantTreasureBiscuits(amount,x,y,'safe');
+    grantTreasureBiscuits(amount,x,y,false);
   } else if(roll<0.52){
     // Gamble: triple-or-bust at roughly one-in-three. Echo tips the odds.
     const safe=Math.max(Math.floor(clickPower*60),Math.floor(productionRate*120+250));
@@ -3344,11 +3388,11 @@ function treasureReward(x,y){
   }
   updateHUD(); saveVault();
 }
-function grantTreasureBiscuits(amount,x,y,kind){
+function grantTreasureBiscuits(amount,x,y,isBet){
   const st=btStats();
   bv().total+=amount; bv().lifetime+=amount;
   trackDailyProgress('earn',amount);
-  if(kind!=='bet')st.lumps=(st.lumps||0)+1;
+  if(!isBet)st.lumps=(st.lumps||0)+1;
   if(amount>(st.bestLump||0))st.bestLump=amount;
   showToast('🍪 Treasure! +'+fmt(amount)+' biscuits','achievement');
   spawnClickPop(x,y,'+'+fmt(amount));
@@ -3374,7 +3418,7 @@ function resolveGamble(bet){
   } else {
     amount=ctx.safe;
   }
-  if(amount>0)grantTreasureBiscuits(amount,window.innerWidth/2,window.innerHeight/2,bet?'bet':'take');
+  if(amount>0)grantTreasureBiscuits(amount,window.innerWidth/2,window.innerHeight/2,bet);
   else updateHUD();
 }
 document.getElementById('gambleSafe').addEventListener('click',()=>resolveGamble(false));
@@ -3459,10 +3503,64 @@ document.getElementById('regularChip').addEventListener('click',()=>{renderRegul
 paintNotice();
 setInterval(paintNotice,45000);
 document.getElementById('noticeBoard').addEventListener('pointerdown',()=>{const r=bv().regular;if(!(r&&r.claimed))paintNotice();});
-// ══ INIT ══
+// ══ PRODUCTION FLOW PARTICLES ══
+// When helpers are producing, small biscuit emojis float up from the scene.
+let lastProdParticle=0;
+const prefersReducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+function spawnProdParticle(){
+  if(prefersReducedMotion||productionRate<=0||document.hidden)return;
+  const now=Date.now();
+  const interval=Math.max(400,3000/Math.min(productionRate/2,10));
+  if(now-lastProdParticle<interval)return;
+  lastProdParticle=now;
+  const stage=document.querySelector('.hero-stage');
+  if(!stage)return;
+  const r=stage.getBoundingClientRect();
+  const el=document.createElement('div');
+  el.className='prod-particle';
+  el.textContent=['🍪','✨','💫'][Math.floor(Math.random()*3)];
+  el.style.left=(r.left+20+Math.random()*(r.width-40))+'px';
+  el.style.top=(r.top+r.height*0.3+Math.random()*r.height*0.4)+'px';
+  el.style.setProperty('--rot',(Math.random()*30-15)+'deg');
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2200);
+}
+
+// ══ PRESTIGE PROGRESS BAR ══
+function updatePrestigeBar(){
+  const wrap=document.getElementById('prestigeBarWrap');
+  const fill=document.getElementById('prestigeBarFill');
+  if(!wrap||!fill)return;
+  const req=prestigeReq();
+  const pct=Math.min(100,(bv().lifetime/req)*100);
+  wrap.classList.toggle('visible',bv().lifetime>0);
+  fill.style.width=pct+'%';
+}
+
+// ══ DYNAMIC HINT SYSTEM ══
+// Replaces "tap to start baking!" with contextual guidance.
+function updateHint(){
+  const el=document.getElementById('hintText');
+  if(!el)return;
+  const t=Math.floor(bv().total),lt=Math.floor(bv().lifetime),clicks=bv().clicks||0;
+  const helpers=Object.values(bv().helpers||{}).reduce((a,b)=>a+b,0);
+  const upgrades=bv().upgrades.length;
+  const prestige=bv().prestige||0;
+  let hint='';
+  if(lt<50) hint='👆 Tap the tin to start!';
+  else if(clicks<50) hint='🔥 Tap faster to build a combo!';
+  else if(helpers===0) hint='🏡 Hire your first helper in the Bakery!';
+  else if(upgrades===0&&t>200) hint='⚡ Buy an upgrade to multiply your output!';
+  else if(prestige===0&&lt>500000) hint='🌟 You can start a New Season soon!';
+  else if(bv().stars>0&&!bv().starPerks?.eager_hands) hint='⭐ Spend Season Stars in More → Prestige!';
+  else if(helpers>0&&helpers<5) hint='🏡 More helpers = more passive biscuits!';
+  else if(upgrades>0&&upgrades<5) hint='⚡ Stack upgrades for exponential growth!';
+  else hint='';
+  el.textContent=hint;
+}
 recalc(); seedMilestones();
 checkOffline(); // before tick so lastSave is fresh
-renderPanel(); updateHUD();
+renderPanel(); updateHUD(); updatePrestigeBar(); updateHint();
 lastTick=Date.now();
 requestAnimationFrame(tick);
 setInterval(spawnPetal,3500); spawnPetal();
@@ -3472,7 +3570,7 @@ const cookieRain=document.createElement('div'); cookieRain.id='cookieRain';
 document.body.prepend(cookieRain);
 const RAIN_EMOJI=['🍪','🍪','🍪','🍪','🥠','✨'];
 function spawnBgCookie(preroll){
-  if(document.hidden||cookieRain.childElementCount>=14)return;
+  if(prefersReducedMotion||document.hidden||cookieRain.childElementCount>=14)return;
   const c=document.createElement('div'); c.className='bg-cookie';
   c.textContent=RAIN_EMOJI[Math.floor(Math.random()*RAIN_EMOJI.length)];
   c.style.left=Math.random()*100+'%';
