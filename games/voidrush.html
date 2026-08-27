@@ -1125,6 +1125,7 @@ let shipBankAngle = 0, comboCount = 0, comboTimer = 0;
 let shieldCharges = 0, magnetTimer = 0, shieldCD = 0, magnetCD = 0;
 let runCloseCalls = 0, runMaxCombo = 0, dailyMode = false;
 let activeSkin = null;
+let tentacleAttack = false, tentacleSweepX = 0, tentacleSweepDir = 1, tentacleCooldown = 0;
 let cachedUpgrades = {tank:0,engine:0,shield:0,magnet:0};
 const MILESTONES = [
   {dist:500,id:'scout',label:'SCOUT TRAIL',col:'#00f5ff'},
@@ -1133,6 +1134,8 @@ const MILESTONES = [
 ];
 const UPG_DEFS = [
   {id:'tank',icon:'🛢',name:'FUEL TANK',desc:'+25 fuel cap per level',max:3,costs:[15,35,70]},
+  {id:'hull',icon:'🛡',name:'HULL PLATING',desc:'+1 max life',max:2,costs:[50,120]},
+  {id:'scanner',icon:'📡',name:'FUEL SCANNER',desc:'Fuel cans glow brighter + wider magnet for fuel',max:2,costs:[40,90]},
   {id:'engine',icon:'⚡',name:'ENGINE',desc:'+8% base speed per level',max:3,costs:[20,45,80]},
   {id:'shield',icon:'🛡',name:'SHIELD',desc:'Start with shield charges',max:2,costs:[30,75]},
   {id:'magnet',icon:'🧲',name:'MAGNET',desc:'Attract nearby coins',max:2,costs:[30,75]}
@@ -1195,11 +1198,12 @@ function resizeGame(){ if(!canvas2) return; canvas2.width=W2=window.innerWidth; 
 function updateLivesHUD(){
   const el=document.getElementById('h-lives');
   if(!el) return;
-  el.innerHTML=[0,1,2].map(i=>i<lives
+  const maxL=MAX_LIVES+(cachedUpgrades.hull||0);
+  el.innerHTML=Array.from({length:maxL},(_,i)=>i<lives
     ?'<span style="color:#ff2244;text-shadow:0 0 10px #ff2244">♥</span>'
     :'<span style="color:rgba(255,34,68,.2)">♥</span>').join(' ');
   const edge=document.getElementById('void-edge');
-  if(edge) edge.classList.toggle('critical', lives===1);
+  if(edge) edge.classList.toggle('critical', lives<=1);
 }
 function updateFuelHUD(){
   const fill=document.getElementById('fuel-bar-fill');
@@ -1262,7 +1266,6 @@ function drawStars3D(){
     const r=Math.max(0.3,s.r*(FOCAL/(s.wz+CAM_DIST))*0.4);
     cx2.save(); cx2.globalAlpha=0.6+Math.sin(fr*0.02+s.wx)*0.35;
     cx2.fillStyle=s.col;
-    if(r>1){cx2.shadowBlur=4;cx2.shadowColor=s.col;}
     cx2.beginPath(); cx2.arc(p.sx,p.sy,r,0,Math.PI*2); cx2.fill(); cx2.restore();
   });
 }
@@ -1322,7 +1325,7 @@ function drawShip2(_x,_y,_inv,_boost){
   // Scout trail
   if(activeSkin==='scout'){
     cx2.save();
-    cx2.globalAlpha=0.22; cx2.strokeStyle='#00f5ff'; cx2.lineWidth=sz*0.28; cx2.lineCap='round'; cx2.shadowBlur=10; cx2.shadowColor='#00f5ff';
+    cx2.globalAlpha=0.22; cx2.strokeStyle='#00f5ff'; cx2.lineWidth=sz*0.28; cx2.lineCap='round';
     cx2.beginPath(); cx2.moveTo(0,sz*0.9); cx2.lineTo(0,sz*2.8); cx2.stroke();
     cx2.restore();
   }
@@ -1471,7 +1474,7 @@ function drawObs2(o){
     cx2.beginPath(); cx2.arc(r*0.25,-r*0.2,r*0.3,0,Math.PI*2); cx2.stroke();
   } else if(o.shape==='saucer'){
     const r=Math.max(2,18*ps*(o.scale||1));
-    cx2.fillStyle='#200020'; cx2.strokeStyle='#ff00aa'; cx2.lineWidth=1.5; cx2.shadowBlur=14; cx2.shadowColor='#ff00aa';
+    cx2.fillStyle='#200020'; cx2.strokeStyle='#ff00aa'; cx2.lineWidth=1.5; cx2.shadowBlur=8; cx2.shadowColor='#ff00aa';
     cx2.beginPath(); cx2.ellipse(0,0,r,r*0.38,0,0,Math.PI*2); cx2.fill(); cx2.stroke();
     cx2.fillStyle='#3a002a'; cx2.beginPath(); cx2.ellipse(0,-r*0.15,r*0.42,r*0.28,0,0,Math.PI*2); cx2.fill();
     for(let i=0;i<4;i++){
@@ -1531,11 +1534,13 @@ function spawnParticles2(x,y,col,n=10){
     particles2.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,col,r:2+Math.random()*3.5});
   }
 }
+const scorePopPool=[];
 function spawnScorePop(x,y,text,col){
-  const el=document.createElement('div'); el.className='score-pop'; el.textContent=text;
-  el.style.cssText=`left:${x}px;top:${y}px;color:${col};text-shadow:0 0 10px ${col}`;
-  document.getElementById('game-container').appendChild(el);
-  setTimeout(()=>el.remove(),1300);
+  let el=scorePopPool.pop()||document.createElement('div'); el.className='score-pop'; el.textContent=text;
+  el.style.cssText=`left:${x}px;top:${y}px;color:${col};text-shadow:0 0 10px ${col};opacity:1;transform:translateY(0)`;
+  if(!el.parentNode) document.getElementById('game-container').appendChild(el);
+  requestAnimationFrame(()=>{el.style.transition='all .6s ease-out';el.style.transform='translateY(-40px)';el.style.opacity='0';});
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='';el.style.transform='';scorePopPool.push(el);},1300);
 }
 function tickParticles2(f){
   f=f||1;
@@ -1688,8 +1693,10 @@ function startGame2(){
   shipBankAngle=0; comboCount=0;
       document.getElementById('h-combo-wrap').style.display='none'; comboTimer=0;
   shieldCharges=upg.shield; magnetTimer=0; shieldCD=500; magnetCD=600;
+  const bonusLives=upg.hull||0; lives=MAX_LIVES+bonusLives; updateLivesHUD();
   runCloseCalls=0; runMaxCombo=0;
   obstacles=[]; particles2=[]; keys={}; recentSpawns=[];
+  tentacleAttack=false; tentacleSweepX=0; tentacleCooldown=0;
   touchStartX=null; touchStartY=null;
   initStars3D(); initVoid2(); updateLivesHUD(); updateFuelHUD(); updateVoidHUD();
     updateDrone();
@@ -1719,6 +1726,7 @@ function endGame2(){
   if(typeof gameSystem!=='undefined'){gameSystem.addScore(runScore);gameSystem.recordGamePlay(Date.now());}
   SFX.die();
   stopDrone();
+  tentacleAttack=false; tentacleCooldown=0;
   // Add coins to wallet
   let wallet=loadWallet()+totalCredits;
   saveWallet(wallet);
@@ -1804,6 +1812,21 @@ function loop2(ts){
     voidProx=Math.min(1,dist/15000+wave*0.025+fuelDanger*0.65);
     voidGroanTimer+=f;
     if(voidProx>.45&&voidGroanTimer>200){ SFX.voidGroan(); voidGroanTimer=0; }
+    // Void Entity tentacle sweep attack
+    if(voidProx>0.7&&!tentacleAttack&&tentacleCooldown<=0){ tentacleAttack=true; tentacleSweepX=-TUNNEL_W*0.4; tentacleSweepDir=1; }
+    if(tentacleAttack){
+      tentacleSweepX+=tentacleSweepDir*0.8*f;
+      if(tentacleSweepX>TUNNEL_W*0.4) tentacleSweepDir=-1;
+      if(tentacleSweepX<-TUNNEL_W*0.4){ tentacleAttack=false; tentacleCooldown=300; }
+      const tdx=Math.abs(shipX-tentacleSweepX), tdy=Math.abs(shipY);
+      if(tdx<3&&tdy<4&&!inv){
+        lives--; updateLivesHUD(); inv=true; invFr=0; shake=14;
+        SFX.hit(); flash2('hit');
+        spawnParticles2(shipX,shipY,'#ff00aa',12);
+        if(lives<=0){ deathCause='void'; endGame2(); }
+      }
+    }
+    if(tentacleCooldown>0) tentacleCooldown-=f;
     lowFuelTimer+=f;
     if(fuel<25&&fuel>0&&lowFuelTimer>90){ SFX.lowFuel(); lowFuelTimer=0; }
     if(fuel<=0){ deathCause='fuel'; endGame2(); }
@@ -1854,6 +1877,29 @@ function loop2(ts){
     if(gameState==='playing') drawShip2(shipX,shipY,inv,boosting);
     tickParticles2(f);
     drawVoidEntity2();
+  // Tentacle sweep attack visual
+  if(tentacleAttack){
+    const tx=project3D(tentacleSweepX,0,30,0,0);
+    if(tx){
+      cx2.save();
+      cx2.globalAlpha=0.6+Math.sin(fr*0.1)*0.2;
+      cx2.strokeStyle='#ff00aa';
+      cx2.lineWidth=6;
+      cx2.shadowBlur=16;cx2.shadowColor='#ff00aa';
+      cx2.beginPath();
+      cx2.moveTo(tx.sx,0);
+      cx2.quadraticCurveTo(tx.sx+Math.sin(fr*0.05)*40,H2*0.3,tx.sx,H2);
+      cx2.stroke();
+      cx2.shadowBlur=0;
+      // Warning indicator at ship level
+      if(voidProx>0.75){
+        cx2.globalAlpha=0.3+Math.sin(fr*0.15)*0.15;
+        cx2.fillStyle='#ff00aa';
+        cx2.fillRect(tx.sx-2,shipY-8,4,16);
+      }
+      cx2.restore();
+    }
+  }
   }
   cx2.restore();
 }
