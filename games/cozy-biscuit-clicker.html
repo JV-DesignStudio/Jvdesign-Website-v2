@@ -8,6 +8,7 @@
 <script src="../analytics-loader.js"></script>
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -748,6 +749,7 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
     <div class="more-actions">
       <button class="bb-btn" id="shareBtn"><span class="bb-icon">📤</span>Share</button>
       <button class="bb-btn" id="collectionsBtn"><span class="bb-icon">📚</span>Collections</button>
+      <button class="bb-btn" id="statsBtn"><span class="bb-icon">📊</span>Stats</button>
       <button class="bb-btn" id="skinBtn" style="display:none"><span class="bb-icon">🌌</span>Tin skin</button>
       <button class="bb-btn" id="resetBtn"><span class="bb-icon">🧹</span>Reset</button>
     </div>
@@ -764,6 +766,13 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
     <button id="devReportBtn" class="ad-reset" style="margin-top:6px">📋 Copy dev report (testing feedback)</button>
     <div id="moreStats"></div>
     <p id="appVersion" style="text-align:center;font-size:10.5px;color:var(--cocoa-soft);padding-top:8px;opacity:.8"></p>
+  </div>
+</div>
+
+<div class="modal-backdrop" role="dialog" aria-modal="true" id="statsModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📊 Lifetime Stats</div><button class="modal-close" data-close aria-label="Close">×</button></div>
+    <div id="statsBody" style="padding:0 8px 8px"></div>
   </div>
 </div>
 
@@ -1034,7 +1043,7 @@ function toggleCrew(id){
 // ══ SHARED MATH (offline / combo / treasure luck / featured helper) ══
 function offlineEff(){const m=fedTodayId()==='turtle'?2:1;let e=0.6;if(crewOn('turtle'))e=0.6+0.2*m;e+=0.05*starLv('slow_bake');return Math.min(0.95,e);}
 function comboWindowMs(){const m=fedTodayId()==='tiger'?2:1;let w=1300;if(crewOn('tiger'))w*=1+(0.45*m);w*=1+0.15*starLv('golden_combo');if(activeChallenge()==='comboking')w*=3;return w;}
-function treasureLuck(){const m=fedTodayId()==='axolotl'?2:1;let l=1-0.15*starLv('lucky_tin');if(crewOn('axolotl'))l-=0.18*m;return Math.max(0.4,l);}
+function treasureLuck(){const m=fedTodayId()==='axolotl'?2:1;let l=1-0.15*starLv('lucky_tin');l-=0.10*((bv().repeatUpgrades&&bv().repeatUpgrades.lucky_dip)||0);if(crewOn('axolotl'))l-=0.18*m;return Math.max(0.25,l);}
 function getFeaturedHelper(){
  const d=new Date(),day=(d.getDay()+6)%7,mon=new Date(d);
  mon.setDate(d.getDate()-day);
@@ -1248,6 +1257,7 @@ const HELPERS=[
   {id:'moon_oven',  emoji:'🌙',name:'Moon Oven',     desc:'Bakes gently by starlight',             baseCost:25000000,  baseRate:15000,  costMult:1.15},
   {id:'cloud_whisk',emoji:'☁️',name:'Cloud Whisk',   desc:'Whips clouds into meringue',            baseCost:100000000, baseRate:52000,  costMult:1.15},
   {id:'crystal_oven',emoji:'💠',name:'Crystal Oven', desc:'Bakes with slow, glittering heat',     baseCost:350000000, baseRate:150000, costMult:1.15},
+  {id:'cosmic_oven', emoji:'🔮',name:'Cosmic Oven',   desc:'Channel raw stardust into dough',       baseCost:1200000000,baseRate:480000, costMult:1.15},
   // Hidden until you prestige — a New Season reveals them.
   {id:'phoenix', emoji:'🔥',name:'Phoenix Oven',    desc:'Reborn from its own crumbs each dawn',  baseCost:400000000, baseRate:180000, costMult:1.15, prestige:1},
   {id:'comet',   emoji:'☄️',name:'Comet Kitchen',   desc:'Bakes a golden trail across the sky',   baseCost:2000000000,baseRate:750000, costMult:1.15, prestige:2},
@@ -1286,14 +1296,17 @@ const UPGRADES=[
   {id:'moon_dust',     emoji:'🌠',name:'Moon Dust',        desc:'2x Moon Oven output',              cost:250000000,type:'helper',target:'moon_oven',  mult:2},
   {id:'cloud_sugar',   emoji:'🍬',name:'Spun Cloud Sugar', desc:'2x Cloud Whisk output',            cost:1000000000,type:'helper',target:'cloud_whisk',mult:2},
   {id:'crystal_facet', emoji:'💎',name:'Crystal Facet',    desc:'2x Crystal Oven output',           cost:2000000000,type:'helper',target:'crystal_oven',mult:2},
+  {id:'cosmic_charge', emoji:'🔮',name:'Cosmic Charge',   desc:'2x Cosmic Oven output',            cost:8000000000,type:'helper',target:'cosmic_oven',mult:2},
   // Hidden until you prestige.
   {id:'star_flour',    emoji:'⭐',name:'Star Flour',       desc:'3x all biscuit output',            cost:100000000, type:'global',mult:3, prestige:1},
   {id:'phoenix_feather',emoji:'🪶',name:'Phoenix Feather', desc:'2x Phoenix Oven output',           cost:4000000000,type:'helper',target:'phoenix',mult:2, prestige:1},
   {id:'aurora_icing',  emoji:'🌈',name:'Aurora Icing',     desc:'4x all biscuit output',            cost:5000000000,type:'global',mult:4, prestige:2},
   {id:'galaxy_core',   emoji:'🌌',name:'Galaxy Core',      desc:'2x Galaxy Mill output',            cost:80000000000,type:'helper',target:'galaxy_mill',mult:2, prestige:2},
+  {id:'comet_tail',    emoji:'☄️',name:'Comet Tail',       desc:'2x Comet Kitchen output',          cost:20000000000,type:'helper',target:'comet',mult:2, prestige:2},
   {id:'cosmic_frosting',emoji:'💫',name:'Cosmic Frosting', desc:'5x all biscuit output',            cost:50000000000,type:'global',mult:5, prestige:2},
   {id:'nebula_core',   emoji:'🌠',name:'Nebula Core',     desc:'2x Nebula Forge output',           cost:400000000000,type:'helper',target:'nebula_forge',mult:2, prestige:2},
   {id:'stellar_wind',  emoji:'🌬️',name:'Stellar Wind',    desc:'6x all biscuit output',            cost:200000000000000,type:'global',mult:6, prestige:5},
+  {id:'nova_pulse',    emoji:'💥',name:'Nova Pulse',      desc:'2x Supernova Bakery output',       cost:200000000000000,type:'helper',target:'supernova',mult:2, prestige:5},
   {id:'event_horizon', emoji:'🕳️',name:'Event Horizon',   desc:'2x Singularity Oven output',       cost:1000000000000000000,type:'helper',target:'blackhole',mult:2, prestige:10},
   {id:'cosmic_ascendance',emoji:'👑',name:'Cosmic Ascendance',desc:'8x all biscuit output',         cost:5000000000000000,type:'global',mult:8, prestige:15},
   {id:'cosmic_kneading',emoji:'🌌',name:'Cosmic Kneading', desc:'+30% biscuits per tap each time',  cost:10000000,type:'repeat_click',mult:1.3,costMult:3.5},
@@ -1303,6 +1316,7 @@ const UPGRADES=[
   {id:'cozy_chair',    emoji:'🪑',name:'Cosy Chair',       desc:'+20% biscuits per tap each time',  cost:50000,   type:'repeat_click', mult:1.2, costMult:3.0},
   {id:'moon_yeast',    emoji:'🌙',name:'Moon Yeast',       desc:'+25% all production each time',    cost:500000,  type:'repeat_global',mult:1.25,costMult:3.5},
   {id:'pantry',        emoji:'🏺',name:'Bigger Pantry',    desc:'+1h of away-baking storage each time (starts at 3h)', cost:50000, type:'repeat_offline',costMult:3},
+  {id:'lucky_dip',     emoji:'🍀',name:'Lucky Dip',        desc:'+10% treasure frequency each time',  cost:15000,   type:'repeat_luck',costMult:2.8},
 ];
 function offlineCapHours(){return 3+1*((bv().repeatUpgrades&&bv().repeatUpgrades.pantry)||0)+1*starLv('deep_pantry');}
 // ══ HELPER MILESTONES: 25/50/100/250/500 owned → +8% output each, forever ══
@@ -1878,7 +1892,7 @@ function renderUpgrades(el){
   const list=document.createElement('div'); list.className='upgrade-list';
   UPGRADES.forEach(up=>{
     if(up.prestige&&(bv().prestige||0)<up.prestige)return;
-    const isRepeat=up.type==='repeat_click'||up.type==='repeat_global'||up.type==='repeat_offline';
+    const isRepeat=up.type==='repeat_click'||up.type==='repeat_global'||up.type==='repeat_offline'||up.type==='repeat_luck';
     if(isRepeat){
       if(!bv().repeatUpgrades)bv().repeatUpgrades={};
       const lvl=bv().repeatUpgrades[up.id]||0;
@@ -2209,7 +2223,11 @@ function renderStats(el){
       <div class="stat-card"><div class="stat-card-value" style="font-size:15px">${savedAgo}</div><div class="stat-card-label">Last saved</div></div>
       <div class="stat-card"><div class="stat-card-value">🔒</div><div class="stat-card-label">Stored on this device only</div></div>
     </div>
-    <p style="font-size:11px;color:var(--cocoa-soft);margin-top:6px;line-height:1.5">No account, no tracking. Move your bakery with the export code above; the Safety Backups keep the last few days automatically.</p>`;
+    <p style="font-size:11px;color:var(--cocoa-soft);margin-top:6px;line-height:1.5">No account, no tracking. Move your bakery with the export code above; the Safety Backups keep the last few days automatically.</p>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button onclick="(function(){const d=JSON.stringify({__v:APP.version,ts:Date.now(),vault:vault},null,2);const b=new Blob([d],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='biscuit-tin-save-v'+APP.version+'.json';a.click();URL.revokeObjectURL(u);showToast('💾 Save exported!','achievement');})()" style="flex:1;min-width:120px" class="btn btn--primary">📤 Export Save</button>
+      <button onclick="(function(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){try{const imported=JSON.parse(ev.target.result);const v2=imported.vault||imported;if(!v2.biscuit){showToast('❌ Invalid save file','error');return;}const db=defaultVault();for(const k of Object.keys(db)){if(v2[k]===undefined)v2[k]=db[k];if(db[k]&&typeof db[k]==='object'&&!Array.isArray(db[k])){for(const j of Object.keys(db[k]))if(v2[k][j]===undefined)v2[k][j]=db[k][j];}}vault=v2;recalc();seedMilestones();updateHUD();saveVault();showToast('📥 Save imported! v'+(imported.__v||'?'),'achievement');setTimeout(()=>location.reload(),1200);}catch(ex){showToast('❌ Could not parse save file','error');}};r.readAsText(f);};inp.click();})()" style="flex:1;min-width:120px" class="btn btn--secondary">📥 Import Save</button>
+    </div>`;
   el.appendChild(data);
 }
 
@@ -2960,6 +2978,50 @@ document.getElementById('collectionsBtn').addEventListener('click',()=>{
   renderCollections();
   document.getElementById('collectionsModal').classList.add('show');
 });
+
+// ══ LIFETIME STATS SCREEN ══
+document.getElementById('statsBtn').addEventListener('click',()=>{
+  renderLifetimeStats();
+  document.getElementById('statsModal').classList.add('show');
+});
+function renderLifetimeStats(){
+  const el=document.getElementById('statsBody'); if(!el)return;
+  const b=bv(), st=btStats();
+  const days=Math.max(1,Math.ceil((Date.now()-(b.firstPlayTs||Date.now()))/86400000));
+  const played=((Date.now()-(b.firstPlayTs||Date.now()))/3600000);
+  const helpers=HELPERS.reduce((s,h)=>(s+(b.helpers[h.id]||0)),0);
+  const upgCount=b.upgrades.length;
+  const repCount=Object.values(b.repeatUpgrades||{}).reduce((s,v)=>s+v,0);
+  const achCount=(b.achievements||[]).length;
+  const jornCount=(b.journalClaimed||[]).length;
+  const secs=(Date.now()-(b.lastSave||Date.now()))/1000;
+  const saved=secs<60?secs+'s ago':secs<3600?Math.floor(secs/60)+'m ago':Math.floor(secs/3600)+'h ago';
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value">${fmt(b.total)}</div><div class="stat-card-label">🍪 Biscuits in tin</div></div>
+      <div class="stat-card"><div class="stat-card-value">${fmt(b.lifetime)}</div><div class="stat-card-label">🍪 Baked all-time</div></div>
+      <div class="stat-card"><div class="stat-card-value">${fmt(b.clicks)}</div><div class="stat-card-label">👆 Total taps</div></div>
+      <div class="stat-card"><div class="stat-card-value">${helpers}</div><div class="stat-card-label">👥 Helpers hired</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value">${upgCount+repCount}</div><div class="stat-card-label">⚡ Upgrades bought</div></div>
+      <div class="stat-card"><div class="stat-card-value">${b.prestige||0}</div><div class="stat-card-label">🔄 Seasons completed</div></div>
+      <div class="stat-card"><div class="stat-card-value">${b.stars||0}</div><div class="stat-card-label">⭐ Stars available</div></div>
+      <div class="stat-card"><div class="stat-card-value">${achCount}</div><div class="stat-card-label">🏆 Goals achieved</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value">${st.found||0}</div><div class="stat-card-label">🍪 Treasures caught</div></div>
+      <div class="stat-card"><div class="stat-card-value">${st.frenzies||0}</div><div class="stat-card-label">⚡ Frenzies triggered</div></div>
+      <div class="stat-card"><div class="stat-card-value">${jornCount}/20</div><div class="stat-card-label">📖 Journal tiers</div></div>
+      <div class="stat-card"><div class="stat-card-value">${days}</div><div class="stat-card-label">📅 Days baking</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-value">${played<1?'<1':Math.round(played)}</div><div class="stat-card-label">⏱️ Hours played</div></div>
+      <div class="stat-card"><div class="stat-card-value" style="font-size:13px">${fmt(b.bestSessionEarn||0)}</div><div class="stat-card-label">📈 Best session earn</div></div>
+      <div class="stat-card"><div class="stat-card-value">${fmt(productionRate)}/s</div><div class="stat-card-label">🏭 Current output</div></div>
+      <div class="stat-card"><div class="stat-card-value" style="font-size:13px">${saved}</div><div class="stat-card-label">💾 Last saved</div></div>
+    </div>`;
+}
 
 // ══ SAVE SAFETY BACKUPS (rolling, last ~3 days) ══
 const BK_KEYS=['bt_bak_a','bt_bak_b','bt_bak_c'];
