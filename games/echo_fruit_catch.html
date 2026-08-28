@@ -179,7 +179,7 @@ footer a:hover{color:rgba(240,234,214,.85)}
 #game-canvas{display:block;width:100%;height:100%}
 
 /* HUD */
-#game-hud{position:absolute;top:0;left:0;right:0;z-index:10;pointer-events:none;display:flex;align-items:center;gap:10px;padding:12px 18px;background:linear-gradient(to bottom,rgba(255,255,255,.55) 0%,transparent 100%)}
+#game-hud{position:absolute;top:0;left:0;right:0;z-index:10;pointer-events:none;display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(255,255,255,.55);backdrop-filter:blur(12px) saturate(1.2);border-bottom:1px solid rgba(255,255,255,.6);box-shadow:0 4px 16px rgba(64,59,51,.12)}
 .hud-hearts{font-size:1.6rem;letter-spacing:2px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15))}
 .hud-score-wrap{flex:1;text-align:center}
 .hud-score{font-family:'Fredoka',cursive;font-size:2rem;font-weight:700;color:var(--charcoal);text-shadow:0 2px 0 rgba(255,255,255,.8);line-height:1}
@@ -192,7 +192,7 @@ footer a:hover{color:rgba(240,234,214,.85)}
 .hud-side{display:flex;gap:6px;pointer-events:all}
 
 /* Combo */
-.hud-combo{position:absolute;top:54px;left:50%;transform:translateX(-50%);font-family:'Fredoka',cursive;font-weight:700;font-size:.95rem;color:var(--fruit-orange);text-shadow:0 2px 6px rgba(0,0,0,.15);opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
+.hud-combo{position:absolute;top:54px;left:50%;transform:translateX(-50%);font-family:'Fredoka',cursive;font-weight:700;font-size:.95rem;color:var(--fruit-orange);text-shadow:0 1px 0 #fff, 0 2px 6px rgba(0,0,0,.18);-webkit-text-stroke:1px rgba(255,255,255,.6);opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
 .hud-combo.show{opacity:1}
 
 /* Power-up HUD icons */
@@ -1351,6 +1351,12 @@ function drawItem(it){
   else if(it.type==='powerup'){cx.shadowBlur=18+Math.sin(fr*.2)*6;cx.shadowColor=POWERUP_GLOW[it.pType]||'rgba(255,255,255,.8)';}
   else{cx.shadowBlur=10;cx.shadowColor='rgba(255,120,0,.3)';}
   cx.font=`${sz}px sans-serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(it.emoji,0,0);
+  // specular glint on fruit (not on rocks/bombs)
+  if(it.type==='fruit' || it.type==='star'){
+    cx.shadowBlur=0; cx.globalAlpha=.75; cx.fillStyle='rgba(255,255,255,.85)';
+    cx.beginPath(); cx.ellipse(-sz*.22,-sz*.22,sz*.12,sz*.1,-.6,0,Math.PI*2); cx.fill();
+    cx.globalAlpha=1;
+  }
   // Wobble ring on star / powerup
   if(it.type==='star'||it.type==='powerup'){
     cx.shadowBlur=0;cx.globalAlpha=.3+Math.sin(fr*.1)*.2;
