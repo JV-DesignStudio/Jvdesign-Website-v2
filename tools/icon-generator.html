@@ -103,7 +103,18 @@ body{display:flex;flex-direction:column;}
 .preview-hint{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.18);border-radius:10px;padding:10px 16px;max-width:520px;font-size:.62rem;color:rgba(240,234,255,.65);line-height:1.7;text-align:center;}
 .preview-hint strong{color:var(--accent2);}
 
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent2);color:var(--accent2);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+#ig-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10004;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;}
+#ig-overlay.show{display:flex;}
+.ig-box{background:var(--panel);border:1px solid var(--border2);border-radius:14px;padding:22px;max-width:620px;width:100%;max-height:88vh;overflow-y:auto;}
+.ig-title{font-family:'Fredoka',cursive;font-size:1.2rem;color:var(--accent2);margin-bottom:6px;}
+.ig-lead{font-size:.72rem;color:var(--muted);line-height:1.7;margin-bottom:16px;}
+.ig-sec{font-size:.48rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.ig-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;list-style:none;margin:0;padding:0;}
+.ig-steps li{background:rgba(255,255,255,.03);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.64rem;line-height:1.6;color:var(--text);}
+.ig-steps b{color:var(--accent2);display:block;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.ig-btn{padding:7px 16px;border-radius:7px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;}
+.ig-btn:hover{filter:brightness(1.12);}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent2);color:var(--accent2);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:10005;opacity:0;transition:opacity .3s;pointer-events:none;}
 
 @media(max-width:700px){
   #app{flex-direction:column;}
@@ -188,7 +199,10 @@ body{display:flex;flex-direction:column;}
 <header class="hdr">
   <a href="/index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="/logo.png" alt="JV"><span>JVDesignStudio</span></a>
   <div class="hdr-title">🖼️ Icon Generator</div>
-  <a href="/pages/dev-tools.html" class="hdr-back">← Tools</a>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <button class="hdr-back" style="background:rgba(255,255,255,.05);cursor:pointer;font-family:inherit;" onclick="openStart()" title="How Icon Generator works">? Help</button>
+    <a href="/pages/dev-tools.html" class="hdr-back">← Tools</a>
+  </div>
 </header>
 
 <div id="app">
@@ -264,6 +278,24 @@ body{display:flex;flex-direction:column;}
     <div class="preview-hint"><strong>Tip:</strong> these filenames match PWA conventions. Export, drop into your <b>icons/</b> folder, and reference them from your web manifest.</div>
   </div>
 </div>
+<div id="ig-overlay" onclick="if(event.target===this)closeStart()">
+  <div class="ig-box">
+    <div class="ig-title">🖼️ Welcome to Icon Generator</div>
+    <p class="ig-lead">Design a game or app icon from a symbol, a colour palette and a few effects, then export every size you need — including the exact filenames a website or PWA expects.</p>
+    <div class="ig-sec">How it works</div>
+    <ul class="ig-steps">
+      <li><b>1 · Shape</b>Pick a symbol — shield, sword, gem, crown and more.</li>
+      <li><b>2 · Colour</b>Choose a palette, or set your own background and trim colours.</li>
+      <li><b>3 · Style</b>Change the gradient, corner rounding and effects. The three previews update live.</li>
+      <li><b>4 · Export</b>Download 512, 192, apple-touch and favicon sizes, or grab all four at once.</li>
+    </ul>
+    <p class="ig-lead" style="margin:14px 0 0;font-size:.66rem;">Stuck? <b style="color:var(--accent2)">🎲 Randomise</b> makes a whole icon for you. Your design saves automatically.</p>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+      <button class="ig-btn" onclick="closeStart()">Start designing</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 </main>
 
@@ -636,12 +668,19 @@ let toastT;
 function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;
   clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
 
+/* ── start overlay ── */
+const IG_SEEN='jvds_icon_seen';
+function openStart(){ id('ig-overlay').classList.add('show'); }
+function closeStart(){ id('ig-overlay').classList.remove('show'); try{localStorage.setItem(IG_SEEN,'1');}catch(e){} }
+function igHasSeen(){ try{ return localStorage.getItem(IG_SEEN)==='1'; }catch(e){ return true; } }
+
 /* ── init ── */
 loadSaved();
 buildFx();
 syncInputs();
 syncUI();
 render();
+if(!igHasSeen()) openStart();
 </script>
 
 <!-- BUILD:footer-tools -->

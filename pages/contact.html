@@ -66,6 +66,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .submit-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--teal);color:white;font-weight:800;font-size:1rem;padding:14px;border:none;border-radius:12px;cursor:pointer;box-shadow:0 3px 0 var(--teal-dk);transition:filter .15s,transform .12s;font-family:'Inter',sans-serif;margin-top:6px}
 .submit-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 .form-note{font-size:.78rem;color:var(--muted);text-align:center;margin-top:16px;line-height:1.5}.form-note a{color:var(--teal);text-decoration:underline}
+/* Submit status. Only ever reports what actually happened. */
+.form-status{display:none;font-size:.88rem;line-height:1.55;padding:13px 16px;border-radius:11px;text-align:center;margin-top:14px}
+.form-status.show{display:block}
+.form-status.pending{background:rgba(112,163,167,.14);border:1.5px solid rgba(112,163,167,.55);color:#cfe6e7}
+.form-status.error{background:rgba(188,71,73,.14);border:1.5px solid rgba(188,71,73,.6);color:#f2c9c9}
+.form-status.done{background:rgba(45,122,74,.16);border:1.5px solid rgba(76,175,110,.6);color:#c9e9d5}
+.form-status a,.form-status button.linklike{color:inherit;font-weight:700;text-decoration:underline;background:none;border:none;padding:0;font:inherit;cursor:pointer}
 
 footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px solid rgba(240,234,214,.06);margin-top:auto}
 .footer-brand{margin-bottom:14px}.footer-logo{font-family:'Fredoka',cursive;font-size:1.2rem;color:var(--text)}.footer-tagline{font-size:.72rem;color:var(--muted);margin-top:2px}
@@ -198,7 +205,10 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
   <div class="form-card reveal">
     <div class="form-title">Send a message</div>
     <div class="form-sub">Fill in the form and I'll get back to you within 2-3 working days.</div>
-    <form action="mailto:joshhyyymakes@gmail.com" method="get" enctype="text/plain">
+    <!-- Submission is handled by the script at the bottom of this page. Set
+         CONTACT_ENDPOINT there to post properly in the background; leave it
+         empty and the form composes the message in the visitor's email app. -->
+    <form id="contactForm">
       <div class="form-row">
         <div class="form-group"><label class="form-label" for="name">Your Name</label><input class="form-input" type="text" id="name" name="name" placeholder="Jane Smith" required></div>
         <div class="form-group"><label class="form-label" for="email">Email Address</label><input class="form-input" type="email" id="email" name="email" placeholder="jane@example.com" required></div>
@@ -214,8 +224,9 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
         </select>
       </div>
       <div class="form-group"><label class="form-label" for="message">Message</label><textarea class="form-textarea" id="message" name="body" placeholder="Tell me what's on your mind..." required></textarea></div>
-      <button type="submit" class="submit-btn">✉️ Send Message</button>
-      <p class="form-note">This opens your email client. Or email directly: <a href="mailto:joshhyyymakes@gmail.com">joshhyyymakes@gmail.com</a></p>
+      <button type="submit" class="submit-btn" id="contactBtn">✉️ Send Message</button>
+      <p class="form-status" id="contactStatus" role="status" aria-live="polite"></p>
+      <p class="form-note" id="contactNote">Opens in your email app so you can see exactly what gets sent.</p>
     </form>
   </div>
 </section>
@@ -255,6 +266,119 @@ const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersec
 document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
 
 </script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   CONTACT FORM
+   ───────────────────────────────────────────────────────────────────
+   The old markup was <form action="mailto:..." method="get">, which does
+   not submit anything. Browsers either ignore it or hand the whole query
+   string to a mail client as one unreadable blob, and on mobile or webmail
+   nothing happens at all.
+
+   Two supported modes:
+
+   1. CONTACT_ENDPOINT set  -> the message is posted in the background and
+      the visitor gets a real confirmation only when the provider accepts it.
+        Formspree    https://formspree.io/f/YOURFORMID
+        Web3Forms    https://api.web3forms.com/submit   (also set ACCESS_KEY)
+        Netlify/etc  any endpoint that accepts a JSON or FormData POST
+
+   2. CONTACT_ENDPOINT empty (current) -> the form opens the visitor's email
+      app with everything filled in. That genuinely works without any account,
+      but the visitor still has to press send in their own client, so we say
+      that plainly instead of claiming the message was delivered.
+   ═══════════════════════════════════════════════════════════════════ */
+var CONTACT_ENDPOINT = '';
+var CONTACT_ACCESS_KEY = '';                       /* Web3Forms only */
+var CONTACT_TO = 'joshhyyymakes' + '@' + 'gmail.com';
+
+(function(){
+  var form   = document.getElementById('contactForm');
+  var btn    = document.getElementById('contactBtn');
+  var statusEl = document.getElementById('contactStatus');
+  var note   = document.getElementById('contactNote');
+  if(!form) return;
+
+  if(CONTACT_ENDPOINT) note.textContent = 'Sent straight to J. Valentine. Usually a reply within 2-3 working days.';
+
+  function setStatus(kind, html){
+    statusEl.className = 'form-status show ' + kind;
+    statusEl.innerHTML = html;
+  }
+  function val(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    var name = val('name'), email = val('email'),
+        reason = val('reason'), message = val('message');
+
+    if(!name || !message || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      setStatus('error', 'Please add your name, a valid email address and a message, then try again.');
+      return;
+    }
+
+    /* ── Mode 2: compose in the visitor's email app ── */
+    if(!CONTACT_ENDPOINT){
+      var subject = '[' + (reason || 'Website') + '] ' + name;
+      var body = message + '\n\n---\nFrom: ' + name + ' <' + email + '>\nReason: ' +
+                 (reason || 'Not given') + '\nSent from jvdesignstudio.co.uk/contact';
+      window.location.href = 'mailto:' + CONTACT_TO +
+        '?subject=' + encodeURIComponent(subject) +
+        '&body='    + encodeURIComponent(body);
+
+      setStatus('pending',
+        '<strong>Your email app should be opening now.</strong><br>' +
+        'Your message is not sent until you press send in there. ' +
+        'If nothing opened, email <a href="mailto:' + CONTACT_TO + '">' + CONTACT_TO + '</a> directly ' +
+        '(<button type="button" class="linklike" id="copyMail">copy address</button>).');
+
+      var copy = document.getElementById('copyMail');
+      if(copy) copy.addEventListener('click', function(){
+        var done = function(){ copy.textContent = 'copied'; };
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(CONTACT_TO).then(done, function(){ copy.textContent = CONTACT_TO; });
+        } else { copy.textContent = CONTACT_TO; }
+      });
+      return;
+    }
+
+    /* ── Mode 1: real background submit ── */
+    var payload = { name: name, email: email, subject: reason, message: message };
+    if(CONTACT_ACCESS_KEY) payload.access_key = CONTACT_ACCESS_KEY;
+
+    btn.disabled = true;
+    var original = btn.textContent;
+    btn.textContent = '✉️ Sending…';
+    setStatus('pending', 'Sending your message…');
+
+    fetch(CONTACT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(res){
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      setStatus('done', '<strong>Message sent.</strong><br>Thanks ' + name.replace(/[<>&]/g,'') +
+        ', you should get a reply within 2-3 working days.');
+      form.reset();
+      btn.textContent = '✅ Sent';
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = original;
+      setStatus('error',
+        '<strong>That did not go through.</strong><br>' +
+        'Nothing was sent. Please email <a href="mailto:' + CONTACT_TO + '">' + CONTACT_TO + '</a> instead.');
+    });
+  });
+})();
+</script>
+<noscript>
+  <p class="form-note" style="text-align:center">
+    The contact form needs JavaScript. You can email
+    <a href="mailto:joshhyyymakes@gmail.com">joshhyyymakes@gmail.com</a> directly instead.
+  </p>
+</noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
 </body>
 </html>

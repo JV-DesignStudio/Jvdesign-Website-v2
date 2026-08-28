@@ -5548,14 +5548,19 @@ const liveConfig = {
 liveConfig._base = { speed: liveConfig.speed, fireCooldown: liveConfig.fireCooldown };
 Object.defineProperty(liveConfig, 'speed', {
     enumerable: true, configurable: true,
-    get() { return this._base.speed * (typeof RunMods === 'undefined' ? 1 : RunMods.moveSpeedMul); },
+    get() {
+        let m = 1;
+        try { m = RunMods.moveSpeedMul; } catch (e) { m = 1; }   // RunMods may still be in its TDZ
+        return this._base.speed * (m || 1);
+    },
     set(v) { this._base.speed = v; },
 });
 Object.defineProperty(liveConfig, 'fireCooldown', {
     enumerable: true, configurable: true,
     get() {
-        const m = (typeof RunMods === 'undefined') ? 1 : RunMods.fireRateMul;
-        return Math.max(24, Math.round(this._base.fireCooldown / m));
+        let m = 1;
+        try { m = RunMods.fireRateMul; } catch (e) { m = 1; }     // RunMods may still be in its TDZ
+        return Math.max(24, Math.round(this._base.fireCooldown / (m || 1)));
     },
     set(v) { this._base.fireCooldown = v; },
 });
@@ -7081,7 +7086,7 @@ function tutClose() {
     }, 320);
 }
 function _updateHeartsDisplay(current, max) {
-    if (typeof RunMods !== 'undefined' && RunMods.bonusLives) max = Math.max(max || 0, RunMods.maxLives);
+    try { if (RunMods.bonusLives) max = Math.max(max || 0, RunMods.maxLives); } catch (e) {}
     const el = document.getElementById('heartsDisplay');
     if (!el) return;
     if (max >= 99) { el.textContent = '❤ ∞'; return; }
@@ -8276,6 +8281,11 @@ function _loadFPSCounterPreference() {
 function _showWelcomeOverlay() {
     // Only show if first visit
     if (localStorage.getItem('jv_arcade_visited')) return;
+
+    // tutInit() runs its own 4-step tour whenever the tutorial has not been
+    // completed, which is exactly the first visit. Showing this dialog too
+    // stacks two welcome overlays on a new student, so defer to the tour.
+    if (!localStorage.getItem('jv_tutorial_done')) return;
 
     const overlay = document.getElementById('welcome-overlay');
     if (overlay) {
