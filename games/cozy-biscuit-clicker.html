@@ -10,6 +10,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -516,7 +517,7 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
 
 <div id="splash">
   <div class="splash-studio">JVDesignStudio presents</div>
-  <img class="splash-logo" src="../logo.png" alt="">
+  <picture><source srcset="./logo.webp" type="image/webp"><img class="splash-logo" src="../logo.png" alt=""></picture>
   <div class="splash-title">Biscuit Tin</div>
   <div class="splash-sub">a cosy clicker · tap anywhere to begin</div>
 </div>
@@ -958,8 +959,9 @@ const Sfx = (() => {
 
 // ══ VAULT ══
 const VAULT_KEY='jvds_player_vault';
+const VAULT_SCHEMA=4;
 function defaultVault(){
-  return{schema:3,happiness:0,haptic:true,
+  return{schema:VAULT_SCHEMA,happiness:0,haptic:true,
     unlocked_items:['cafe_default','trail_petal','skin_default'],
     equipped:{background:'cafe_default',trail:'trail_petal',skin:'skin_default'},
     achievements:[],
@@ -968,35 +970,66 @@ function defaultVault(){
     btStats:{found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0},
     biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{},butter:{count:0,pending:0,lastTick:Date.now()},fedToday:null,regular:null,regularWall:[],cupboard:['classic'],seasonal:{}}};
 }
+function validateVault(v){
+  if(!v||typeof v!=='object')return false;
+  if(!v.biscuit||typeof v.biscuit!=='object')return false;
+  const b=v.biscuit;
+  if(typeof b.total!=='number'||!isFinite(b.total)||b.total<0)return false;
+  if(typeof b.lifetime!=='number'||!isFinite(b.lifetime)||b.lifetime<0)return false;
+  if(typeof b.clicks!=='number'||!isFinite(b.clicks)||b.clicks<0)return false;
+  return true;
+}
+function tryRestoreBackup(){
+  for(const k of ['bt_bak_a','bt_bak_b','bt_bak_c']){
+    try{const raw=localStorage.getItem(k);if(!raw)continue;
+      const snap=JSON.parse(raw);if(snap&&snap.data&&validateVault(snap.data))return snap.data;
+    }catch{}
+  }
+  return null;
+}
+function migrateVault(v){
+  if(v.schema===VAULT_SCHEMA)return v;
+  if(!v.biscuit)v.biscuit=defaultVault().biscuit;
+  const db=defaultVault().biscuit;
+  for(const k of Object.keys(db))if(v.biscuit[k]===undefined)v.biscuit[k]=db[k];
+  if(!v.biscuit.charTaps)v.biscuit.charTaps={fox:0,tiger:0,turtle:0,axolotl:0};
+  if(!v.stats)v.stats=defaultVault().stats;
+  if(!v.stats.guests_each)v.stats.guests_each={};
+  if(!v.unlocked_items)v.unlocked_items=['cafe_default','trail_petal','skin_default'];
+  if(!v.equipped)v.equipped={background:'cafe_default',trail:'trail_petal',skin:'skin_default'};
+  if(!v.crewEquipped)v.crewEquipped={};
+  if(!v.btStats)v.btStats={found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0};
+  if(v.biscuit.stars===undefined)v.biscuit.stars=0;
+  if(!v.biscuit.starPerks)v.biscuit.starPerks={};
+  if(!v.biscuit.journalClaimed)v.biscuit.journalClaimed=[];
+  if(!v.biscuit.helperMilestones)v.biscuit.helperMilestones={};
+  if(!v.biscuit.butter)v.biscuit.butter={count:0,pending:0,lastTick:Date.now()};
+  if(!v.biscuit.regularWall)v.biscuit.regularWall=[];
+  if(!v.biscuit.cupboard)v.biscuit.cupboard=['classic'];
+  if(!v.biscuit.seasonal)v.biscuit.seasonal={};
+  v.schema=VAULT_SCHEMA;
+  return v;
+}
 function loadVault(){
   try{
     const raw=localStorage.getItem(VAULT_KEY); if(!raw)return defaultVault();
     const v=JSON.parse(raw);
-    if(!v.biscuit)v.biscuit=defaultVault().biscuit;
-    const db=defaultVault().biscuit;
-    for(const k of Object.keys(db))if(v.biscuit[k]===undefined)v.biscuit[k]=db[k];
-    if(!v.biscuit.charTaps)v.biscuit.charTaps={fox:0,tiger:0,turtle:0,axolotl:0};
-    if(!v.stats)v.stats=defaultVault().stats;
-    if(!v.stats.guests_each)v.stats.guests_each={};
-    if(!v.unlocked_items)v.unlocked_items=['cafe_default','trail_petal','skin_default'];
-    if(!v.equipped)v.equipped={background:'cafe_default',trail:'trail_petal',skin:'skin_default'};
-    // Migrations for systems added after launch — old saves keep working.
-    if(!v.crewEquipped)v.crewEquipped={};
-    if(!v.btStats)v.btStats={found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0};
-    if(v.biscuit.stars===undefined)v.biscuit.stars=0;
-    if(!v.biscuit.starPerks)v.biscuit.starPerks={};
-    if(!v.biscuit.journalClaimed)v.biscuit.journalClaimed=[];
-    if(!v.biscuit.helperMilestones)v.biscuit.helperMilestones={};
-    if(!v.biscuit.butter)v.biscuit.butter={count:0,pending:0,lastTick:Date.now()};
-    if(!v.biscuit.regularWall)v.biscuit.regularWall=[];
-    if(!v.biscuit.cupboard)v.biscuit.cupboard=['classic'];
-    if(!v.biscuit.seasonal)v.biscuit.seasonal={};
-    return v;
-  }catch{return defaultVault();}
+    if(!validateVault(v)){
+      console.warn('[vault] main save failed validation, trying backup');
+      const bak=tryRestoreBackup(); if(bak)return migrateVault(bak);
+      console.warn('[vault] backup also invalid, starting fresh');
+      return defaultVault();
+    }
+    return migrateVault(v);
+  }catch(e){
+    console.warn('[vault] load failed:',e);
+    const bak=tryRestoreBackup(); if(bak){console.warn('[vault] restored from backup');return migrateVault(bak);}
+    return defaultVault();
+  }
 }
 let saveTimer=null;
-function saveVault(){bv().lastSave=Date.now();clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}},450);}
-function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}maybeBackup();}
+function saveVault(){bv().lastSave=Date.now();clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){if(e&&e.name==='QuotaExceededError')console.warn('[vault] storage full');}},450);}
+function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){if(e&&e.name==='QuotaExceededError'){console.warn('[vault] storage full on saveNow');try{localStorage.removeItem('bt_bak_c');localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}}}maybeBackup();}
 let vault=loadVault();
 const bv=()=>vault.biscuit;
 
@@ -1273,28 +1306,29 @@ const CHARACTERS={
   axolotl:{emoji:'🌸',name:'Echo',role:'Sparkle Baker',biscuit:'Mushroom Puff',        biscuitEmoji:'🍄',biscuitValue:250,cooldown:300,color:'#E48BA0',semi:12, desc:'Echo believes all biscuits should have at least a little sparkle on them. The mushroom puffs are her masterpiece.',facts:['Draws tiny pictures on napkins while waiting.','Falls asleep in the warm cafe corner sometimes.','Thinks everything is improved by edible glitter.']},
 };
 const HELPERS=[
-  {id:'oven',    emoji:'🫙',name:'Cookie Jar',     desc:'Biscuits appear as if by magic',          baseCost:10,     baseRate:0.1,  costMult:1.15},
-  {id:'kettle',  emoji:'🫖',name:'Kettle',         desc:'Hot tea makes everyone bake faster',      baseCost:80,     baseRate:0.5,  costMult:1.15},
-  {id:'mixer',   emoji:'🌀',name:'Stand Mixer',    desc:'Whips up batter in moments',              baseCost:450,    baseRate:2.2,  costMult:1.15},
-  {id:'cat',     emoji:'🐈',name:'Cafe Cat',       desc:'Somehow makes biscuits appear faster',    baseCost:2000,   baseRate:8,    costMult:1.15},
-  {id:'bee',     emoji:'🐝',name:'Honey Bees',     desc:'Sweeten every single batch',              baseCost:4500,   baseRate:15,   costMult:1.15},
-  {id:'recipe',  emoji:'📖',name:'Secret Recipe',  desc:'Ancient baking knowledge unlocked',       baseCost:9000,   baseRate:28,   costMult:1.15},
+  // costMult escalates with tier — early helpers get expensive faster, pushing you toward new tiers
+  {id:'oven',    emoji:'🫙',name:'Cookie Jar',     desc:'Biscuits appear as if by magic',          baseCost:10,     baseRate:0.1,  costMult:1.13},
+  {id:'kettle',  emoji:'🫖',name:'Kettle',         desc:'Hot tea makes everyone bake faster',      baseCost:80,     baseRate:0.5,  costMult:1.13},
+  {id:'mixer',   emoji:'🌀',name:'Stand Mixer',    desc:'Whips up batter in moments',              baseCost:450,    baseRate:2.2,  costMult:1.13},
+  {id:'cat',     emoji:'🐈',name:'Cafe Cat',       desc:'Somehow makes biscuits appear faster',    baseCost:2000,   baseRate:8,    costMult:1.14},
+  {id:'bee',     emoji:'🐝',name:'Honey Bees',     desc:'Sweeten every single batch',              baseCost:4500,   baseRate:15,   costMult:1.14},
+  {id:'recipe',  emoji:'📖',name:'Secret Recipe',  desc:'Ancient baking knowledge unlocked',       baseCost:9000,   baseRate:28,   costMult:1.14},
   {id:'fox_bake',emoji:'🦊',name:"Lumo's Kitchen",  desc:'Lumo leads a baking brigade',          baseCost:30000,  baseRate:80,   costMult:1.15},
   {id:'sparkle', emoji:'✨',name:'Magic Sprinkles', desc:'Enchanted sprinkles multiply output',    baseCost:100000, baseRate:220,  costMult:1.15},
   {id:'bakery',  emoji:'🏪',name:'Cozy Bakery',    desc:'A whole bakery dedicated to biscuits',   baseCost:400000, baseRate:600,  costMult:1.15},
-  {id:'wizard',  emoji:'🧙',name:'Biscuit Wizard',  desc:'Uses ancient spells to conjure biscuits',baseCost:1500000,baseRate:1600, costMult:1.15},
-  {id:'factory', emoji:'🏭',name:'Biscuit Factory', desc:'Industrial-scale cozy production',      baseCost:6000000,baseRate:4500, costMult:1.15},
-  {id:'moon_oven',  emoji:'🌙',name:'Moon Oven',     desc:'Bakes gently by starlight',             baseCost:25000000,  baseRate:15000,  costMult:1.15},
-  {id:'cloud_whisk',emoji:'☁️',name:'Cloud Whisk',   desc:'Whips clouds into meringue',            baseCost:100000000, baseRate:52000,  costMult:1.15},
-  {id:'crystal_oven',emoji:'💠',name:'Crystal Oven', desc:'Bakes with slow, glittering heat',     baseCost:350000000, baseRate:150000, costMult:1.15},
-  {id:'cosmic_oven', emoji:'🔮',name:'Cosmic Oven',   desc:'Channel raw stardust into dough',       baseCost:1200000000,baseRate:480000, costMult:1.15},
+  {id:'wizard',  emoji:'🧙',name:'Biscuit Wizard',  desc:'Uses ancient spells to conjure biscuits',baseCost:1500000,baseRate:1600, costMult:1.16},
+  {id:'factory', emoji:'🏭',name:'Biscuit Factory', desc:'Industrial-scale cozy production',      baseCost:6000000,baseRate:4500, costMult:1.16},
+  {id:'moon_oven',  emoji:'🌙',name:'Moon Oven',     desc:'Bakes gently by starlight',             baseCost:25000000,  baseRate:15000,  costMult:1.16},
+  {id:'cloud_whisk',emoji:'☁️',name:'Cloud Whisk',   desc:'Whips clouds into meringue',            baseCost:100000000, baseRate:52000,  costMult:1.17},
+  {id:'crystal_oven',emoji:'💠',name:'Crystal Oven', desc:'Bakes with slow, glittering heat',     baseCost:350000000, baseRate:150000, costMult:1.17},
+  {id:'cosmic_oven', emoji:'🔮',name:'Cosmic Oven',   desc:'Channel raw stardust into dough',       baseCost:1200000000,baseRate:480000, costMult:1.17},
   // Hidden until you prestige — a New Season reveals them.
-  {id:'phoenix', emoji:'🔥',name:'Phoenix Oven',    desc:'Reborn from its own crumbs each dawn',  baseCost:400000000, baseRate:180000, costMult:1.15, prestige:1},
-  {id:'comet',   emoji:'☄️',name:'Comet Kitchen',   desc:'Bakes a golden trail across the sky',   baseCost:2000000000,baseRate:750000, costMult:1.15, prestige:2},
-  {id:'galaxy_mill',emoji:'🌌',name:'Galaxy Mill',   desc:'Grinds stardust into flour',           baseCost:10000000000,baseRate:3000000,costMult:1.15, prestige:2},
-  {id:'nebula_forge',emoji:'🌠',name:'Nebula Forge', desc:'Bakes whole constellations of biscuits',baseCost:50000000000,baseRate:12000000,costMult:1.15, prestige:2},
-  {id:'supernova',   emoji:'💥',name:'Supernova Bakery', desc:'Bakes with the fury of a dying star',  baseCost:200000000000000,baseRate:50000000,costMult:1.15, prestige:5},
-  {id:'blackhole',   emoji:'🕳️',name:'Singularity Oven', desc:'Nothing escapes, not even crumbs',     baseCost:500000000000000000,baseRate:200000000000,costMult:1.15, prestige:10},
+  {id:'phoenix', emoji:'🔥',name:'Phoenix Oven',    desc:'Reborn from its own crumbs each dawn',  baseCost:400000000, baseRate:180000, costMult:1.18, prestige:1},
+  {id:'comet',   emoji:'☄️',name:'Comet Kitchen',   desc:'Bakes a golden trail across the sky',   baseCost:2000000000,baseRate:750000, costMult:1.18, prestige:2},
+  {id:'galaxy_mill',emoji:'🌌',name:'Galaxy Mill',   desc:'Grinds stardust into flour',           baseCost:10000000000,baseRate:3000000,costMult:1.19, prestige:2},
+  {id:'nebula_forge',emoji:'🌠',name:'Nebula Forge', desc:'Bakes whole constellations of biscuits',baseCost:50000000000,baseRate:12000000,costMult:1.19, prestige:2},
+  {id:'supernova',   emoji:'💥',name:'Supernova Bakery', desc:'Bakes with the fury of a dying star',  baseCost:80000000000000,baseRate:80000000000,costMult:1.20, prestige:5},
+  {id:'blackhole',   emoji:'🕳️',name:'Singularity Oven', desc:'Nothing escapes, not even crumbs',     baseCost:5000000000000000,baseRate:5000000000000,costMult:1.20, prestige:10},
 ];
 const UPGRADES=[
   // ── One-time click upgrades ──
@@ -1474,7 +1508,7 @@ function checkCupboard(){
   let changed=false;
   for(const t of CUPBOARD_TINS){
     if(bv().cupboard.includes(t.id))continue;
-    try{if(t.check()){bv().cupboard.push(t.id);changed=true;showToast(t.emoji+' Cupboard: '+t.name+' collected! +2% forever','achievement');Sfx.sfxAchievement();}}catch(e){}
+    try{if(t.check()){bv().cupboard.push(t.id);changed=true;showToast(t.emoji+' Cupboard: '+t.name+' collected! +2% forever','achievement');Sfx.sfxAchievement();}}catch{}
   }
   if(changed)recalc();
 }
@@ -2060,7 +2094,7 @@ function getDailyChallenge(){
   return{...p,today,target:p.amounts[tier],reward:p.rewards[tier]};
 }
 function trackDailyProgress(key,amount=1){
-  if(key==='earn')try{trackSeasonal(amount);}catch(e){}
+  if(key==='earn')try{trackSeasonal(amount);}catch{}
   const ch=getDailyChallenge();
   if(ch.key===key){
     if(!bv().dailyChallenge||bv().dailyChallenge.date!==ch.today){
@@ -2318,10 +2352,39 @@ function renderStats(el){
     </div>
     <p style="font-size:11px;color:var(--cocoa-soft);margin-top:6px;line-height:1.5">No account, no tracking. Move your bakery with the export code above; the Safety Backups keep the last few days automatically.</p>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <button onclick="(function(){const d=JSON.stringify({__v:APP.version,ts:Date.now(),vault:vault},null,2);const b=new Blob([d],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='biscuit-tin-save-v'+APP.version+'.json';a.click();URL.revokeObjectURL(u);showToast('💾 Save exported!','achievement');})()" style="flex:1;min-width:120px" class="btn btn--primary">📤 Export Save</button>
-      <button onclick="(function(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(ev){try{const imported=JSON.parse(ev.target.result);const v2=imported.vault||imported;if(!v2.biscuit){showToast('❌ Invalid save file','error');return;}const db=defaultVault();for(const k of Object.keys(db)){if(v2[k]===undefined)v2[k]=db[k];if(db[k]&&typeof db[k]==='object'&&!Array.isArray(db[k])){for(const j of Object.keys(db[k]))if(v2[k][j]===undefined)v2[k][j]=db[k][j];}}vault=v2;recalc();seedMilestones();updateHUD();saveVault();showToast('📥 Save imported! v'+(imported.__v||'?'),'achievement');setTimeout(()=>location.reload(),1200);}catch(ex){showToast('❌ Could not parse save file','error');}};r.readAsText(f);};inp.click();})()" style="flex:1;min-width:120px" class="btn btn--secondary">📥 Import Save</button>
+      <button id="exportJsonBtn" style="flex:1;min-width:120px" class="btn btn--primary">📤 Export Save</button>
+      <button id="importJsonBtn" style="flex:1;min-width:120px" class="btn btn--secondary">📥 Import Save</button>
     </div>`;
   el.appendChild(data);
+  // Delegated handlers for JSON export/import (replaces inline onclick)
+  el.querySelector('#exportJsonBtn').addEventListener('click',()=>{
+    const d=JSON.stringify({__v:APP.version,ts:Date.now(),vault:vault},null,2);
+    const b=new Blob([d],{type:'application/json'});const u=URL.createObjectURL(b);
+    const a=document.createElement('a');a.href=u;a.download='biscuit-tin-save-v'+APP.version+'.json';a.click();URL.revokeObjectURL(u);
+    showToast('💾 Save exported!','achievement');
+  });
+  el.querySelector('#importJsonBtn').addEventListener('click',()=>{
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=e=>{
+      const f=e.target.files[0];if(!f)return;
+      const r=new FileReader();r.onload=ev=>{
+        try{
+          const imported=JSON.parse(ev.target.result);const v2=imported.vault||imported;
+          if(!v2.biscuit){showToast('❌ Invalid save file','error');return;}
+          const db=defaultVault();
+          for(const k of Object.keys(db)){
+            if(v2[k]===undefined)v2[k]=db[k];
+            if(db[k]&&typeof db[k]==='object'&&!Array.isArray(db[k])){
+              for(const j of Object.keys(db[k]))if(v2[k][j]===undefined)v2[k][j]=db[k][j];
+            }
+          }
+          vault=v2;recalc();seedMilestones();updateHUD();saveVault();
+          showToast('📥 Save imported! v'+(imported.__v||'?'),'achievement');
+          setTimeout(()=>location.reload(),1200);
+        }catch(ex){showToast('❌ Could not parse save file','error');}
+      };r.readAsText(f);
+    };inp.click();
+  });
 }
 
 // ══ PRESTIGE ══
