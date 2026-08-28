@@ -763,6 +763,211 @@ class BPC{
   _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
 }
 let UID=0;
+/* Blueprint graphs for steps 12-30, one entry per step in order */
+const LATE_PZ=[
+/* 12 ZOMBIE VARIANTS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Spawn Zombie',x:4,y:34,w:150,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Random Integer in Range',x:176,y:8,w:170,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2i',type:'int',label:'Class'}]},
+  {id:'n3',type:'func',title:'Set Zombie Class',x:176,y:98,w:170,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'int',label:'Class'}],rp:[{id:'r3e',type:'exec',label:''}]},
+  {id:'n4',type:'vset',title:'Set Max Health',x:364,y:98,w:150,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Brute HP (e.g. 200)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2i',t:'l3c'},{f:'r3e',t:'l4e'}],
+ v:[{id:'n4',ok:v=>parseInt(v)>=150&&parseInt(v)<=400}],
+ msg:v=>'✅ Zombie variants live! Brutes spawn with '+v['n4']+' HP.'},
+
+/* 13 ZOMBIE ANIMATIONS */{
+ defs:[
+  {id:'n1',type:'event',title:'Update Animation',x:4,y:34,w:160,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get Velocity',x:186,y:10,w:155,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'vec3',label:'Velocity'}]},
+  {id:'n3',type:'vset',title:'Set Walk Speed',x:186,y:100,w:155,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vec3',label:'In'}],vf:{hint:'Blend space top speed (e.g. 400)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2v',t:'l3v'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=100&&parseInt(v)<=900}],
+ msg:v=>'✅ Anim Blueprint wired! Walk blend tops out at '+v['n3']+'.'},
+
+/* 14 BLOOD & HIT EFFECTS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Zombie Hit',x:4,y:26,w:150,rp:[{id:'r1e',type:'exec',label:''},{id:'r1h',type:'bool',label:'Headshot'}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Headshot?',x:176,y:8,w:124,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'bool',label:'Cond'}],rp:[{id:'r2t',type:'exec',label:'True'},{id:'r2f',type:'exec',label:'False'}]},
+  {id:'n3',type:'func',title:'Spawn Emitter: Headshot',x:322,y:0,w:190,lp:[{id:'l3e',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Spawn Emitter: Body Hit',x:322,y:88,w:190,lp:[{id:'l4e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r1h',t:'l2c'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'}],
+ v:[],
+ msg:()=>'✅ Blood FX wired! Headshots get their own burst.'},
+
+/* 15 HIT & ASSIST POINTS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Zombie Damaged',x:4,y:32,w:160,lp:[],rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Did it kill?',x:186,y:8,w:130,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2t',type:'exec',label:'True'},{id:'r2f',type:'exec',label:'False'}]},
+  {id:'n3',type:'math',title:'Add Kill Points',x:338,y:0,w:160,lp:[{id:'l3e',type:'exec',label:''}]},
+  {id:'n4',type:'math',title:'Add Hit Points',x:338,y:88,w:160,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Points per non-killing hit (e.g. 10)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'}],
+ v:[{id:'n4',ok:v=>parseInt(v)>=5&&parseInt(v)<=50}],
+ msg:v=>'✅ Assist points live! '+v['n4']+' points for a hit that does not kill.'},
+
+/* 16 POWER-UPS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Brute Killed',x:4,y:32,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Spawn Actor: Power-Up',x:181,y:8,w:180,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2a',type:'actor',label:'Return'}]},
+  {id:'n3',type:'func',title:'Set Life Span',x:181,y:100,w:180,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'actor',label:'Target'}],vf:{hint:'Seconds before it fades (e.g. 30)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2a',t:'l3a'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=5&&parseInt(v)<=60}],
+ msg:v=>'✅ Brutes drop power-ups that fade after '+v['n3']+'s.'},
+
+/* 17 MAP ZONES & DOORS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Door Interact',x:4,y:32,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Points >= Cost?',x:181,y:8,w:140,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2t',type:'exec',label:'True'},{id:'r2f',type:'exec',label:'False'}]},
+  {id:'n3',type:'func',title:'Open Zone Door',x:343,y:0,w:170,lp:[{id:'l3e',type:'exec',label:''}],vf:{hint:'Door cost in points (e.g. 1500)',val:''}},
+  {id:'n4',type:'func',title:'Show "Not Enough Points"',x:343,y:96,w:170,lp:[{id:'l4e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=250&&parseInt(v)<=5000}],
+ msg:v=>'✅ Zone doors open for '+v['n3']+' points.'},
+
+/* 18 FLASHLIGHT & DARK MAP */{
+ defs:[
+  {id:'n1',type:'event',title:'IA_Flashlight (Started)',x:4,y:30,w:175,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Toggle Visibility',sub:'SpotLight',x:201,y:8,w:160,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Set Outer Cone Angle',x:201,y:100,w:160,lp:[{id:'l3e',type:'exec',label:''}],vf:{hint:'Cone angle in degrees (e.g. 32)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=10&&parseInt(v)<=60}],
+ msg:v=>'✅ Flashlight toggles with a '+v['n3']+'° cone.'},
+
+/* 19 DYNAMIC AUDIO */{
+ defs:[
+  {id:'n1',type:'event',title:'Event Tick',x:4,y:34,w:130,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get Zombies In Range',x:156,y:8,w:170,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2i',type:'int',label:'Count'}]},
+  {id:'n3',type:'func',title:'Map Range Clamped',x:156,y:100,w:170,lp:[{id:'l3e',type:'exec',label:''},{id:'l3i',type:'int',label:'In'}],rp:[{id:'r3f',type:'float',label:'Out'}]},
+  {id:'n4',type:'vset',title:'Set Music Intensity',x:348,y:100,w:165,lp:[{id:'l4f',type:'float',label:'In'}],vf:{hint:'Zombie count for max intensity (e.g. 12)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2i',t:'l3i'},{f:'r3f',t:'l4f'}],
+ v:[{id:'n4',ok:v=>parseInt(v)>=4&&parseInt(v)<=40}],
+ msg:v=>'✅ Music ramps up, peaking at '+v['n4']+' nearby zombies.'},
+
+/* 20 PAUSE & RESTART MENU */{
+ defs:[
+  {id:'n1',type:'event',title:'IA_Pause (Started)',x:4,y:30,w:160,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Set Game Paused',sub:'Paused = true',x:186,y:6,w:155,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''}]},
+  {id:'n3',type:'func',title:'Create Widget',x:186,y:98,w:155,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3o',type:'object',label:'Return'}],vf:{hint:'Widget class (e.g. WBP_PauseMenu)',val:''}},
+  {id:'n4',type:'func',title:'Add to Viewport',x:363,y:98,w:150,lp:[{id:'l4e',type:'exec',label:''},{id:'l4o',type:'object',label:'Target'}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r3e',t:'l4e'},{f:'r3o',t:'l4o'}],
+ v:[{id:'n3',ok:v=>v.toLowerCase().includes('wbp')||v.toLowerCase().includes('pause')}],
+ msg:v=>'✅ Pause menu wired using '+v['n3']+'.'},
+
+/* 21 PACK-A-PUNCH (gold) */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Pack-a-Punch Use',x:4,y:28,w:170,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Points >= Cost?',x:196,y:6,w:140,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2t',type:'exec',label:'True'},{id:'r2f',type:'exec',label:'False'}]},
+  {id:'n3',type:'math',title:'Multiply Weapon Damage',x:348,y:0,w:168,lp:[{id:'l3e',type:'exec',label:''}],vf:{hint:'Pack-a-Punch cost (e.g. 2500)',val:''}},
+  {id:'n4',type:'func',title:'Show "Need More Points"',x:348,y:96,w:168,lp:[{id:'l4e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r2f',t:'l4e'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=1000&&parseInt(v)<=10000}],
+ msg:v=>'✅ Pack-a-Punch online at '+v['n3']+' points.'},
+
+/* 22 BOSS ROUND */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Round Start',x:4,y:34,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Is Boss Round (Round % 10)',x:181,y:10,w:195,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2b',type:'bool',label:'Result'}]},
+  {id:'n3',type:'branch',title:'Branch',x:181,y:104,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'True'}]},
+  {id:'n4',type:'func',title:'Spawn Boss',x:323,y:104,w:155,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Boss HP (e.g. 5000)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2b',t:'l3c'},{f:'r3t',t:'l4e'}],
+ v:[{id:'n4',ok:v=>parseInt(v)>=1000&&parseInt(v)<=30000}],
+ msg:v=>'✅ Boss arrives every 10th round with '+v['n4']+' HP.'},
+
+/* 23 LEADERBOARD & BEST ROUND */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Game Over',x:4,y:32,w:150,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'branch',title:'Branch',sub:'Round > Best?',x:176,y:8,w:140,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2t',type:'exec',label:'True'}]},
+  {id:'n3',type:'vset',title:'Set Best Round',x:338,y:8,w:165,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3e',type:'exec',label:''}]},
+  {id:'n4',type:'func',title:'Save Game to Slot',x:338,y:98,w:165,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Save slot name (e.g. ZombieSave)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2t',t:'l3e'},{f:'r3e',t:'l4e'}],
+ v:[{id:'n4',ok:v=>v.toLowerCase().includes('save')||v.toLowerCase().includes('zombie')}],
+ msg:v=>'✅ Best round persists to slot "'+v['n4']+'".'},
+
+/* 24 CAMERA SHAKE & RUMBLE */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Weapon Fired',x:4,y:32,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Play World Camera Shake',x:181,y:8,w:195,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''}],vf:{hint:'Shake scale (e.g. 0.6)',val:''}},
+  {id:'n3',type:'func',title:'Client Play Force Feedback',x:181,y:104,w:195,lp:[{id:'l3e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'}],
+ v:[{id:'n2',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=3}],
+ msg:v=>'✅ Camera shake at scale '+v['n2']+', plus controller rumble.'},
+
+/* 25 ZOMBIE SWARM BEHAVIOUR */{
+ defs:[
+  {id:'n1',type:'event',title:'Event Tick',sub:'Zombie AI',x:4,y:30,w:140,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get Nearby Zombies',x:166,y:8,w:175,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'vec3',label:'Avoid Dir'}]},
+  {id:'n3',type:'func',title:'Add Movement Input',x:166,y:100,w:175,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vec3',label:'World Dir'}],vf:{hint:'Separation radius in cm (e.g. 60)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2v',t:'l3v'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=40&&parseInt(v)<=250}],
+ msg:v=>'✅ Swarm separation at '+v['n3']+'cm, no more zombie stacking.'},
+
+/* 26 PROCEDURAL SPAWN POINTS */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Wave Start',x:4,y:32,w:150,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get All Actors of Class',sub:'BP_SpawnPoint',x:176,y:6,w:180,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2a',type:'actor',label:'Out Actors'}]},
+  {id:'n3',type:'func',title:'Filter: Out of Player View',x:176,y:104,w:180,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'actor',label:'In'}],rp:[{id:'r3e',type:'exec',label:''}],vf:{hint:'Min distance from player, cm (e.g. 1500)',val:''}},
+  {id:'n4',type:'func',title:'Spawn Zombie',x:368,y:104,w:145,lp:[{id:'l4e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2a',t:'l3a'},{f:'r3e',t:'l4e'}],
+ v:[{id:'n3',ok:v=>parseInt(v)>=500&&parseInt(v)<=4000}],
+ msg:v=>'✅ Zombies spawn out of sight, at least '+v['n3']+'cm away.'},
+
+/* 27 MOBILE OPTIMISATION */{
+ defs:[
+  {id:'n1',type:'event',title:'Event BeginPlay',x:4,y:34,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Is Mobile Platform',x:181,y:10,w:165,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2b',type:'bool',label:'Result'}]},
+  {id:'n3',type:'branch',title:'Branch',x:181,y:104,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'True'}]},
+  {id:'n4',type:'vset',title:'Cap Niagara Particles',x:323,y:104,w:180,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Particle cap on mobile (e.g. 200)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2b',t:'l3c'},{f:'r3t',t:'l4e'}],
+ v:[{id:'n4',ok:v=>parseInt(v)>=50&&parseInt(v)<=600}],
+ msg:v=>'✅ Mobile preset on, Niagara particles capped at '+v['n4']+'.'},
+
+/* 28 POST PROCESS & ATMOSPHERE */{
+ defs:[
+  {id:'n1',type:'event',title:'Event BeginPlay',x:4,y:34,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Get Post Process Volume',x:181,y:8,w:190,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2o',type:'object',label:'Volume'}]},
+  {id:'n3',type:'func',title:'Set Vignette Intensity',x:181,y:104,w:190,lp:[{id:'l3e',type:'exec',label:''},{id:'l3o',type:'object',label:'Target'}],vf:{hint:'Vignette intensity (e.g. 0.45)',val:''}},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2o',t:'l3o'}],
+ v:[{id:'n3',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)<=1.5}],
+ msg:v=>'✅ Atmosphere set, vignette at '+v['n3']+'.'},
+
+/* 29 PACKAGE & TEST */{
+ defs:[
+  {id:'n1',type:'event',title:'Event BeginPlay',sub:'Test Build',x:4,y:30,w:155,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'func',title:'Validate Game Systems',x:181,y:8,w:180,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2b',type:'bool',label:'All OK'}]},
+  {id:'n3',type:'branch',title:'Branch',x:181,y:104,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'True'}]},
+  {id:'n4',type:'func',title:'Print "Ready to Package"',x:323,y:104,w:190,lp:[{id:'l4e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2b',t:'l3c'},{f:'r3t',t:'l4e'}],
+ v:[],
+ msg:()=>'✅ Every system reports green. Ready to package.'},
+
+/* 30 SHARE YOUR ZOMBIES MAP */{
+ defs:[
+  {id:'n1',type:'custom',title:'On Publish',x:4,y:36,w:145,rp:[{id:'r1e',type:'exec',label:''}]},
+  {id:'n2',type:'vset',title:'Set Map Name',x:171,y:12,w:180,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''}],vf:{hint:'Name your map, then Apply',val:''}},
+  {id:'n3',type:'func',title:'Launch!',x:171,y:108,w:180,lp:[{id:'l3e',type:'exec',label:''}]},
+ ],
+ w:[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'}],
+ v:[{id:'n2',ok:v=>v.trim().length>=3}],
+ msg:v=>'🧟 "'+v['n2']+'" is ready to share. Outstanding work!'},
+];
+
 function mkPZ(defs,rW,rV,onDone,isGold=false){
   const uid=++UID;
   const hasW=rW.length>0,hasV=rV.length>0;
@@ -771,7 +976,7 @@ function mkPZ(defs,rW,rV,onDone,isGold=false){
     <div class="task-list">
     ${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wires</div>`:''}
     ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the fields</div>`:''}</div>`;
-  return{uid,html,init(cb){
+  return{uid,html,hasReq:hasW||hasV,init(cb){
     const el=document.getElementById('bpcw-'+uid);if(!el)return;
     const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);},isGold);bp.uid=uid;return bp;
   }};
@@ -1839,7 +2044,10 @@ onApply(){
   {tag:'STEP 28 · POLISH',title:'Post Process & Atmosphere',isBox:false,intro:`Set a Post Process Volume: film grain, slight vignette, colour grade (desaturate + green tint for horror), motion blur on fast movement.`,boxes:[{t:'box-c',tx:'Settings: Grain 0.18, Vignette 0.45, Chromatic Aberration 0.3 (spikes during damage), Color Grade (crush blacks, teal-orange horror split-tone).'},{t:'box-t',tx:'Drive Chromatic Aberration intensity via a MPC param tied to player HP: full HP = 0.2, near death = 1.5. The world distorts as you\'re about to die.'}]},
   {tag:'STEP 29 · LAUNCH',title:'Package & Test',isBox:false,intro:`Package for Windows or HTML5. Test all features: wall buys, mystery box, round escalation, boss round, mobile controls.`,boxes:[{t:'box-u',tx:'File → Package → Windows. Build Config: Development for testing, Shipping for release. Fix all redirectors first (Tools → Fix Up Redirectors in Content Browser).'},{t:'box-t',tx:'Test checklist: ✓ Wall buy deducts correct points ✓ Mystery Box gives random weapon ✓ Round 10 spawns boss ✓ Mobile D-pad fires and buys ✓ Fullscreen sync works'}]},
   {tag:'STEP 30 🚀 RELEASE',title:'Share Your Zombies Map',isBox:false,intro:`Upload to itch.io, add screenshots, write a devlog, and share your round record with the community!`,boxes:[{t:'box-c',tx:'Itch.io: pay-what-you-want, genre Survival/Horror, tags: zombies, wave-survival, unreal, blueprints, cod-style. A devlog describing your map sells it.'},{t:'box-t',tx:'Screenshot tip: night map, flashlight on, 8 zombies visible, Mystery Box glowing in background, HP at 20%. That tension in one frame sells the whole game.'},{t:'box-u',tx:'Share your itch.io link and tag @JV_DesignStudio! We\'d love to feature your zombie map on the site and in the devlog.'}]},
-].map(s=>({...s,pz:mkPZ([],[],[],()=>{})}))
+].map((s,i)=>{const q=LATE_PZ[i];
+    if(!q) return {...s,pz:mkPZ([],[],[],()=>{})};
+    return {...s,pz:mkPZ(q.defs,q.w,q.v,()=>{},!!s.isBox),onApply:v=>sout(q.msg(v))};
+  })
 ];
 
 /* ═══════════════════════════════════════════
@@ -1853,7 +2061,7 @@ function go(i){if(i<0||i>=STEPS.length)return;cur=i;renderStep();document.getEle
 
 function renderStep(){
   const s=STEPS[cur];
-  const hasInteractive=s.pz&&s.pz.uid&&cur<12;
+  const hasInteractive=s.pz&&s.pz.uid&&s.pz.hasReq;
   let boxes='';(s.boxes||[]).forEach(b=>{boxes+=`<div class="box ${b.t}">${b.tx}</div>`;});
   document.getElementById('stepBody').innerHTML=`
     <div class="step-tag${s.isBox?' gold':''}">${s.tag}</div>
@@ -1883,7 +2091,7 @@ function renderStep(){
 }
 
 function doApply(){
-  const s=STEPS[cur];const hasInteractive=s.pz&&s.pz.uid&&cur<12;
+  const s=STEPS[cur];const hasInteractive=s.pz&&s.pz.uid&&s.pz.hasReq;
   if(!hasInteractive){
     doneSet.add(cur);updateProg();saveProgress();
     if(cur<STEPS.length-1)go(cur+1);

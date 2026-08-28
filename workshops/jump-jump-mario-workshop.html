@@ -351,7 +351,7 @@ body{font-family:'Nunito',sans-serif;background:#0a0b10;color:#e8eaf2;min-height
       <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Understand what we're going to make, and get Godot open and ready!</p></div></div>
       <div class="two-col">
         <div class="col-box child"><h4>🧒 For the child</h4><p>We're going to make a REAL platform game like Mario! That means a little character who can run and JUMP over things. By the end, you'll have your very own game that you made yourself. That's amazing! Let's open Godot and get started! 🎉</p></div>
-        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>This is Episode 2 of the <em>My First Video Game</em> series, no prior Godot experience is needed. Key concepts over the 12 steps: CharacterBody2D for a physics-based player, move_and_slide() with gravity, TileMapLayer for level design, Camera2D to follow the player, Area2D for collectibles, and a simple group-based enemy stomp. Godot 4 must be installed (free at godotengine.org).</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>This is Episode 2 of the <em>My First Video Game</em> series, no prior Godot experience is needed. Key concepts over the 12 steps: CharacterBody2D for a physics-based player, move_and_slide() with gravity, StaticBody2D platforms for level design, Camera2D to follow the player, Area2D for collectibles, and a simple group-based enemy stomp. Godot 4 must be installed (free at godotengine.org).</p></div>
       </div>
       <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> Purple boxes like this one are just for you! The child can do most of the typing themselves, your job is to read the steps together and help when they get stuck. Celebrate every little win! 🎊</div></div>
 
@@ -570,11 +570,554 @@ move_and_slide()</div>
       </div>
     </div>
   </div>
+  <!-- STEP 5 -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">5</div>
+      <span class="step-icon-badge">🦘</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Add Gravity &amp; Jumping</div>
+        <div class="step-subtitle">Fall down, then press Space to leap!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Make your character fall down like a real person, and jump when you press the Space bar.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>Right now your character floats like they're in space! Let's add <strong>gravity</strong>, the invisible pull that brings everything back down. Then we'll give them a jump button. Gravity pulls down a tiny bit every single moment, which is why falling starts slow and gets faster.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>Gravity is added to <code>velocity.y</code> each physics frame, multiplied by <code>delta</code> so it's frame-rate independent. Jumping sets <code>velocity.y</code> to a negative value in one go. <code>is_on_floor()</code> is only reliable after <code>move_and_slide()</code> has run at least once, which it has by the second frame.</p></div>
+      </div>
+      <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> The confusing bit for kids is that <strong>up is negative</strong> in Godot. The top of the screen is y = 0 and numbers grow as you go down, so a jump has to be a minus number. It's worth saying out loud, it comes up in every 2D engine.</div></div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Open your <strong>Player</strong> script again (double-click it in the FileSystem panel).</span></li>
+        <li><span class="sn">2</span><span>Add the two new <strong>const</strong> lines at the top, under SPEED.</span></li>
+        <li><span class="sn">3</span><span>Add the gravity block and the jump block <strong>above</strong> the left/right code.</span></li>
+        <li><span class="sn">4</span><span>Press <strong>Ctrl+S</strong> to save.</span></li>
+      </ol></div>
+      <div class="code-block"><pre><span class="kw">extends</span> CharacterBody2D
+
+<span class="kw">const</span> SPEED = <span class="nu">220</span>
+<span class="kw">const</span> JUMP_FORCE = -<span class="nu">400</span>  <span class="cm"># minus, because UP is negative!</span>
+<span class="kw">const</span> GRAVITY = <span class="nu">1200</span>
+
+<span class="kw">func</span> <span class="fn">_physics_process</span>(delta):
+    <span class="cm"># gravity pulls us down a little bit every moment</span>
+    <span class="kw">if</span> <span class="kw">not</span> is_on_floor():
+        velocity.y += GRAVITY * delta
+
+    <span class="cm"># jump, but only if we are standing on something!</span>
+    <span class="kw">if</span> Input.is_action_just_pressed(<span class="st">"ui_accept"</span>) <span class="kw">and</span> is_on_floor():
+        velocity.y = JUMP_FORCE
+
+    <span class="kw">var</span> direction = Input.get_axis(<span class="st">"ui_left"</span>, <span class="st">"ui_right"</span>)
+    velocity.x = direction * SPEED
+
+    move_and_slide()</pre></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Press <strong>F5</strong> and tap the <strong>Space bar</strong>. Your character should shoot up and fall back down. They'll fall forever for now, because there's nothing to land on yet. We build the ground next!</div></div>
+
+      <!-- CONCEPT FILL -->
+      <div class="concept-fill" id="cf-5" data-step="5">
+        <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+        <div class="cf-sentence">Every moment we add <input class="cf-blank" data-a="R1JBVklUWQ==" placeholder="???????" size="9"> to velocity.y so the player falls. We only allow a jump when <input class="cf-blank" data-a="aXNfb25fZmxvb3I=" placeholder="???????????" size="13"> tells us the player is standing on something.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-5" data-step="5">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks to make the player fall and jump:</div>
+        <div class="cc-code-area"><span class="kw">if</span> <span class="kw">not</span> is_on_floor():
+    velocity.y += <input class="cc-blank" data-a="R1JBVklUWQ==" placeholder="???????" size="9"> * delta
+
+<span class="kw">if</span> Input.is_action_just_pressed(<span class="st">"ui_accept"</span>) <span class="kw">and</span> is_on_floor():
+    velocity.y = <input class="cc-blank" data-a="SlVNUF9GT1JDRQ==" placeholder="??????????" size="11"></div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Both are the constants you typed at the top of the script, in CAPITAL letters.</div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why is <code>JUMP_FORCE</code> a <strong>negative</strong> number like -400?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because the player jumps backwards</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because in Godot y gets smaller as you go UP the screen, so up is a minus number</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Because negative numbers make the game run faster</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">6</div>
+      <span class="step-icon-badge">🧱</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Build the Level &amp; Platforms</div>
+        <div class="step-subtitle">Somewhere to land, and platforms to jump between!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Make a Level scene with solid ground and a few floating platforms, then put your player in it.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>Your character needs a world! We're going to build the ground, then some platforms floating in the air to jump up onto, like the bricks in Mario. Each platform is made of two things: a coloured rectangle you can <em>see</em>, and an invisible solid shape you can <em>land on</em>.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>Level scene: Node2D root (save as <code>level.tscn</code>). Each platform is a StaticBody2D with a CollisionShape2D (RectangleShape2D) plus a ColorRect for the visual. Duplicate with Ctrl+D. Instance <code>player.tscn</code> and drop it above the ground. Godot will ask you to pick a main scene the first time you press F5, choose level.tscn.</p></div>
+      </div>
+      <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> Make the ColorRect and the RectangleShape2D the <strong>same size</strong>, or your child will land on invisible air (or fall through something that looks solid). It's the number one source of "why doesn't it work?" in platformers, and a good chance to talk about the difference between what a game <em>looks</em> like and what it <em>does</em>.</div></div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Click <strong>Scene → New Scene</strong>, then <strong>"Other Node"</strong> and choose <strong>Node2D</strong>. Rename it <strong>Level</strong> and save it as <strong>level.tscn</strong>.</span></li>
+        <li><span class="sn">2</span><span>Add a child <strong>StaticBody2D</strong> and rename it <strong>Ground</strong>.</span></li>
+        <li><span class="sn">3</span><span>Give Ground two children: a <strong>ColorRect</strong> (make it wide, green, and near the bottom) and a <strong>CollisionShape2D</strong> with a <strong>RectangleShape2D</strong> the same size.</span></li>
+        <li><span class="sn">4</span><span>Click Ground and press <strong>Ctrl+D</strong> to duplicate it. Drag the copy up and to the right, that's your first floating platform!</span></li>
+        <li><span class="sn">5</span><span>Duplicate two or three more. Put them at different heights so you have to jump up them like steps.</span></li>
+        <li><span class="sn">6</span><span>Find <strong>player.tscn</strong> in the FileSystem panel and <strong>drag it into the scene</strong>. Move it above the ground on the left.</span></li>
+        <li><span class="sn">7</span><span>Press <strong>F5</strong>. Godot will ask which scene to start with, choose <strong>level.tscn</strong>.</span></li>
+      </ol></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Run and off you go! Can you jump from the ground onto the first platform? If your platforms are too far apart to reach, drag them closer together, you're the level designer now.</div></div>
+
+      <!-- ORDER THE STEPS -->
+      <div class="order-challenge" id="oc-6" data-step="6">
+        <div class="oc-header"><div class="oc-icon">🔢</div><div class="oc-title">Put It In Order</div><div class="oc-xp-badge">+15 XP</div></div>
+        <div class="oc-prompt">Click these in the right order to build your level:</div>
+        <div class="oc-items">
+          <div class="oc-item" data-k="Mw==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Press Ctrl+D to duplicate the platform and drag the copy higher up</span></div>
+          <div class="oc-item" data-k="MQ==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Make a new scene with a Node2D root and save it as level.tscn</span></div>
+          <div class="oc-item" data-k="NA==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Drag player.tscn into the scene above the ground</span></div>
+          <div class="oc-item" data-k="Mg==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Add a StaticBody2D with a ColorRect and a CollisionShape2D</span></div>
+        </div>
+        <div><button class="oc-check-btn" onclick="checkOrder(this)">🔍 Check Order</button><button class="oc-reset-btn" onclick="resetOrder(this)">↺ Reset</button></div>
+        <div class="oc-feedback"></div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-k="MA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why does every platform need a <strong>CollisionShape2D</strong> as well as a ColorRect?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The ColorRect is only the colour you can see; the CollisionShape2D is the solid part you land on</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Godot will not let you save a scene unless every node has two children</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The CollisionShape2D is what paints the platform its colour</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card locked" id="step-7" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">7</div>
+      <span class="step-icon-badge">🎥</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">A Camera That Follows You</div>
+        <div class="step-subtitle">Make the level bigger than the screen!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Add a camera that follows your character so your level can be much wider than the window.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>At the moment your character can run off the edge of the screen and disappear! A <strong>camera</strong> fixes that. It's like a friend holding a video camera who always keeps you in the middle of the picture. Now your level can be enormous.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>A Camera2D added as a child of the Player inherits the parent's transform, so it follows for free with no code at all. Godot 4 makes the first Camera2D in the tree current automatically. Position Smoothing adds a little lag so the camera glides rather than snapping.</p></div>
+      </div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Open <strong>player.tscn</strong> (double-click it in the FileSystem panel).</span></li>
+        <li><span class="sn">2</span><span>Click the <strong>Player</strong> node, press the <strong>+</strong> button and add a <strong>Camera2D</strong> as a child.</span></li>
+        <li><span class="sn">3</span><span>With Camera2D selected, look in the Inspector for <strong>Zoom</strong> and set both numbers to <strong>2</strong>, everything gets nice and big.</span></li>
+        <li><span class="sn">4</span><span>Scroll down to <strong>Position Smoothing</strong> and tick <strong>Enabled</strong>.</span></li>
+        <li><span class="sn">5</span><span>Save with <strong>Ctrl+S</strong>, go back to <strong>level.tscn</strong> and stretch your ground much wider.</span></li>
+      </ol></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Run the game and hold the right arrow. The camera should glide along with you instead of leaving you behind. Try turning Position Smoothing off and on to feel the difference!</div></div>
+
+      <!-- CONCEPT FILL -->
+      <div class="concept-fill" id="cf-7" data-step="7">
+        <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+        <div class="cf-sentence">A Camera2D that is a <input class="cf-blank" data-a="Y2hpbGQ=" placeholder="?????" size="7"> of the Player follows it with no code at all. Turning on Position <input class="cf-blank" data-a="U21vb3RoaW5n" placeholder="?????????" size="11"> makes the camera glide instead of snapping.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-7" data-step="7" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we put the Camera2D <strong>inside</strong> the Player instead of in the Level?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because cameras only work inside a CharacterBody2D</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because a child node moves with its parent, so the camera follows the player for free</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Because the level is too big for a camera to fit inside it</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8 -->
+  <div class="step-card locked" id="step-8" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">8</div>
+      <span class="step-icon-badge">🪙</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Add Coins to Collect</div>
+        <div class="step-subtitle">Sprinkle treasure all over your level!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Make a coin that vanishes when you touch it and adds one to your score.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>Every platform game needs treasure! A coin is different from a platform: you don't <em>land</em> on it, you <em>walk through</em> it. In Godot that special "notice me but don't block me" node is called an <strong>Area2D</strong>.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>Coin scene: Area2D root + ColorRect + CollisionShape2D (CircleShape2D). Connect the built-in <code>body_entered</code> signal to a script on the coin. The player is added to a group called "player" so the coin can tell the difference between the hero and anything else that wanders in. <code>queue_free()</code> deletes the coin safely at the end of the frame.</p></div>
+      </div>
+      <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> Groups are Godot's simple name-tag system. Adding the Player to a group called "player" means every coin, flag and enemy can ask "was that the hero?" without needing to know where the hero lives in the scene tree.</div></div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Open <strong>player.tscn</strong>, click the <strong>Player</strong> node, then open the <strong>Node</strong> panel (next to the Inspector) and click <strong>Groups</strong>. Type <strong>player</strong> and click Add.</span></li>
+        <li><span class="sn">2</span><span>In the Player script, add the line <code>var score = 0</code> just under the const lines. Save.</span></li>
+        <li><span class="sn">3</span><span>Click <strong>Scene → New Scene</strong>, choose <strong>Area2D</strong>, rename it <strong>Coin</strong> and save it as <strong>coin.tscn</strong>.</span></li>
+        <li><span class="sn">4</span><span>Give Coin a small yellow <strong>ColorRect</strong> and a <strong>CollisionShape2D</strong> with a <strong>CircleShape2D</strong>.</span></li>
+        <li><span class="sn">5</span><span>Click Coin, attach a script, and type the code below.</span></li>
+        <li><span class="sn">6</span><span>With Coin selected, open the <strong>Node</strong> panel, double-click <strong>body_entered</strong> and press <strong>Connect</strong>.</span></li>
+        <li><span class="sn">7</span><span>Go back to <strong>level.tscn</strong> and drag <strong>coin.tscn</strong> in. Duplicate it with <strong>Ctrl+D</strong> and scatter coins along your platforms!</span></li>
+      </ol></div>
+      <div class="code-block"><pre><span class="kw">extends</span> Area2D
+
+<span class="kw">func</span> <span class="fn">_on_body_entered</span>(body):
+    <span class="cm"># was that the hero, and not a platform or an enemy?</span>
+    <span class="kw">if</span> body.is_in_group(<span class="st">"player"</span>):
+        body.score += <span class="nu">1</span>
+        queue_free()  <span class="cm"># the coin disappears!</span></pre></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Run and walk into a coin. It should vanish! You can't see the score yet, that's the very next step.</div></div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-8" data-step="8">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks so the coin scores a point and disappears:</div>
+        <div class="cc-code-area"><span class="kw">func</span> <span class="fn">_on_body_entered</span>(body):
+    <span class="kw">if</span> body.is_in_group(<span class="st">"</span><input class="cc-blank" data-a="cGxheWVy" placeholder="??????" size="7"><span class="st">"</span>):
+        body.score += <input class="cc-blank" data-a="MQ==" placeholder="?" size="3">
+        <input class="cc-blank" data-a="cXVldWVfZnJlZQ==" placeholder="??????????" size="11">()</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The group is the name tag we gave the hero. The last one is the command that safely deletes a node.</div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-8" data-step="8" data-k="MA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why does the coin check <code>body.is_in_group("player")</code> first?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>So an enemy wandering into the coin doesn't collect it for you</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because every Area2D in Godot must check a group before it works</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>To make the coin spin round as you walk past it</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(8)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 9 -->
+  <div class="step-card locked" id="step-9" data-step="9">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">9</div>
+      <span class="step-icon-badge">🔢</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Show the Score on Screen</div>
+        <div class="step-subtitle">Count those coins where everyone can see!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Put a coin counter in the corner of the screen that goes up as you collect.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>Collecting coins is more fun when you can see the number going up! We'll put some text in the corner. It needs to stay stuck to the screen even when the camera moves, so it goes in a special box called a <strong>CanvasLayer</strong>.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>A CanvasLayer draws its children in screen space, ignoring the camera, which is exactly what a HUD needs. The Level script reads <code>player.score</code> each frame. <code>@onready</code> grabs the node references once the scene tree is ready, and <code>str()</code> converts the number into text.</p></div>
+      </div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Open <strong>level.tscn</strong>. Click the <strong>Level</strong> root, then add a child <strong>CanvasLayer</strong>.</span></li>
+        <li><span class="sn">2</span><span>Add a <strong>Label</strong> inside the CanvasLayer and rename it <strong>ScoreLabel</strong>.</span></li>
+        <li><span class="sn">3</span><span>Drag the Label to the top-left corner. In the Inspector, open <strong>Theme Overrides → Font Sizes</strong> and make it nice and big.</span></li>
+        <li><span class="sn">4</span><span>Click the <strong>Level</strong> root, attach a script and type the code below.</span></li>
+        <li><span class="sn">5</span><span>Press <strong>Ctrl+S</strong> and run it!</span></li>
+      </ol></div>
+      <div class="code-block"><pre><span class="kw">extends</span> Node2D
+
+<span class="cm"># grab these two nodes when the scene is ready</span>
+@onready <span class="kw">var</span> player = $Player
+@onready <span class="kw">var</span> score_label = $CanvasLayer/ScoreLabel
+
+<span class="kw">func</span> <span class="fn">_process</span>(delta):
+    score_label.text = <span class="st">"Coins: "</span> + str(player.score)</pre></div>
+      <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> If you get an error mentioning a null instance, the node names don't match. <code>$Player</code> and <code>$CanvasLayer/ScoreLabel</code> have to be spelled <em>exactly</em> as they appear in the Scene tree, capital letters and all. Great first lesson in why programmers care about spelling!</div></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Run and grab a coin. Does "Coins: 1" appear in the corner? Try changing the word "Coins" to your own word, maybe "Treasure" or your name!</div></div>
+
+      <!-- CONCEPT FILL -->
+      <div class="concept-fill" id="cf-9" data-step="9">
+        <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+        <div class="cf-sentence">The Label goes inside a <input class="cf-blank" data-a="Q2FudmFzTGF5ZXI=" placeholder="???????????" size="13"> so it stays stuck to the screen when the camera moves. We turn the score number into text using <input class="cf-blank" data-a="c3Ry" placeholder="???" size="5">().</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-9" data-step="9" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What does <code>str(player.score)</code> do?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It adds one more point to the score</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It turns the score number into text, because a Label can only show text</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It saves the score onto your computer</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(9)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 10 -->
+  <div class="step-card locked" id="step-10" data-step="10">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">10</div>
+      <span class="step-icon-badge">🚩</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Add a Goal Flag</div>
+        <div class="step-subtitle">Give your level a finish line to reach!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Put a flag at the end of the level that shows a "You Win!" message when the player reaches it.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>A game needs a way to <em>win</em>! We'll pop a flag at the far end of your level. When your character touches it, big letters appear saying You Win, and everything stops. That's your level finished, properly finished.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>The Goal is another Area2D using the same <code>body_entered</code> pattern as the coin, so this step reinforces rather than introduces. It reveals a hidden Label and sets <code>get_tree().paused = true</code>. Rendering carries on while paused, so the message stays on screen.</p></div>
+      </div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>In <strong>level.tscn</strong>, add a <strong>Label</strong> inside your <strong>CanvasLayer</strong> and rename it <strong>WinLabel</strong>. Type <strong>You Win!</strong> in its Text and make the font huge.</span></li>
+        <li><span class="sn">2</span><span>With WinLabel selected, <strong>untick Visible</strong> in the Inspector so it's hidden at the start.</span></li>
+        <li><span class="sn">3</span><span>Click the <strong>Level</strong> root and add a child <strong>Area2D</strong>. Rename it <strong>Goal</strong>.</span></li>
+        <li><span class="sn">4</span><span>Give Goal a tall thin <strong>ColorRect</strong> (a flag!) and a <strong>CollisionShape2D</strong> the same size.</span></li>
+        <li><span class="sn">5</span><span>Drag Goal to the far right end of your level.</span></li>
+        <li><span class="sn">6</span><span>Attach a script to Goal, type the code below, then connect its <strong>body_entered</strong> signal in the Node panel.</span></li>
+      </ol></div>
+      <div class="code-block"><pre><span class="kw">extends</span> Area2D
+
+<span class="kw">func</span> <span class="fn">_on_body_entered</span>(body):
+    <span class="kw">if</span> body.is_in_group(<span class="st">"player"</span>):
+        <span class="cm"># show the message FIRST, then freeze the game</span>
+        get_node(<span class="st">"../CanvasLayer/WinLabel"</span>).visible = <span class="kw">true</span>
+        get_tree().paused = <span class="kw">true</span></pre></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Run the level and race to the flag. You Win! Now go back and move the flag somewhere trickier, maybe on top of the highest platform.</div></div>
+
+      <!-- TRUE/FALSE -->
+      <div class="tf-round" id="tf-10" data-step="10">
+        <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False?</div><div class="tf-xp-badge">+15 XP</div></div>
+        <div class="tf-item" data-a="dHJ1ZQ==">
+          <div class="tf-statement">The Goal is an <strong>Area2D</strong>, so the player walks through it instead of bumping into it.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <div class="tf-item" data-a="dHJ1ZQ==">
+          <div class="tf-statement">We show the win message <strong>before</strong> pausing, so the player can actually read it.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <div class="tf-item" data-a="ZmFsc2U=">
+          <div class="tf-statement"><code>get_tree().paused = true</code> makes the game run <strong>faster</strong>.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
+        <div class="tf-feedback"></div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-10" data-step="10" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why is the goal flag an <strong>Area2D</strong> and not a StaticBody2D?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because a StaticBody2D cannot be given a colour</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because an Area2D notices the player walking in without blocking them like a wall</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Because only an Area2D can be placed at the end of a level</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(10)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 11 -->
+  <div class="step-card locked" id="step-11" data-step="11">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">11</div>
+      <span class="step-icon-badge">👾</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Add an Enemy to Stomp</div>
+        <div class="step-subtitle">Bounce on its head, just like Mario!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Make a little enemy that walks back and forth. Land on top to squash it, touch it from the side and you go back to the start.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>Time for a baddie! It marches left and right on its own. Here's the clever bit: the enemy works out <em>how</em> you touched it. If you were falling downwards, you squashed it. If you weren't, it got you, and you go back to the start.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>The stomp check is <code>body.velocity.y &gt; 0</code>, meaning the player was moving downwards at the moment of contact. Remember y grows downwards, so falling is positive. We also add a <code>respawn()</code> function to the Player, its first custom function, and a lovely introduction to the idea that objects can be asked to do things.</p></div>
+      </div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Open the <strong>Player</strong> script and add the <code>start_pos</code> variable and the <code>respawn()</code> function shown below. Save.</span></li>
+        <li><span class="sn">2</span><span>Click <strong>Scene → New Scene</strong>, choose <strong>Area2D</strong>, rename it <strong>Enemy</strong> and save it as <strong>enemy.tscn</strong>.</span></li>
+        <li><span class="sn">3</span><span>Give Enemy a small red <strong>ColorRect</strong> and a <strong>CollisionShape2D</strong>.</span></li>
+        <li><span class="sn">4</span><span>Attach a script to Enemy, type the enemy code below, then connect its <strong>body_entered</strong> signal.</span></li>
+        <li><span class="sn">5</span><span>Drag <strong>enemy.tscn</strong> into <strong>level.tscn</strong> and stand it on one of your platforms.</span></li>
+      </ol></div>
+      <div class="code-block"><pre><span class="cm"># ADD THESE to your Player script</span>
+<span class="kw">var</span> start_pos = Vector2.ZERO
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+    start_pos = position
+
+<span class="kw">func</span> <span class="fn">respawn</span>():
+    position = start_pos
+    velocity = Vector2.ZERO</pre></div>
+      <div class="code-block"><pre><span class="cm"># The Enemy script</span>
+<span class="kw">extends</span> Area2D
+
+<span class="kw">const</span> SPEED = <span class="nu">60</span>
+<span class="kw">var</span> direction = <span class="nu">1</span>
+<span class="kw">var</span> start_x = <span class="nu">0.0</span>
+
+<span class="kw">func</span> <span class="fn">_ready</span>():
+    start_x = position.x
+
+<span class="kw">func</span> <span class="fn">_process</span>(delta):
+    position.x += direction * SPEED * delta
+    <span class="cm"># turn around after walking 80 pixels each way</span>
+    <span class="kw">if</span> position.x &gt; start_x + <span class="nu">80</span>:
+        direction = -<span class="nu">1</span>
+    <span class="kw">if</span> position.x &lt; start_x - <span class="nu">80</span>:
+        direction = <span class="nu">1</span>
+
+<span class="kw">func</span> <span class="fn">_on_body_entered</span>(body):
+    <span class="kw">if</span> body.is_in_group(<span class="st">"player"</span>):
+        <span class="kw">if</span> body.velocity.y &gt; <span class="nu">0</span>:
+            <span class="cm"># falling downwards, that's a stomp!</span>
+            queue_free()
+            body.velocity.y = -<span class="nu">300</span>  <span class="cm"># little bounce</span>
+        <span class="kw">else</span>:
+            body.respawn()</pre></div>
+      <div class="callout tryit"><span class="callout-icon">🕹️</span><div><strong>Try it!</strong> Jump on the enemy's head, you should squash it and bounce! Now walk into it from the side and you'll zip back to the start. Try changing SPEED to 120 to make a fast one.</div></div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-11" data-step="11">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks so the enemy can tell a stomp from a bump:</div>
+        <div class="cc-code-area"><span class="kw">if</span> body.is_in_group(<span class="st">"player"</span>):
+    <span class="kw">if</span> body.velocity.y &gt; <input class="cc-blank" data-a="MA==" placeholder="?" size="3">:
+        queue_free()
+        body.velocity.y = <input class="cc-blank" data-a="LTMwMA==" placeholder="????" size="6">
+    <span class="kw">else</span>:
+        body.<input class="cc-blank" data-a="cmVzcGF3bg==" placeholder="???????" size="9">()</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: Falling means velocity.y is bigger than zero. The bounce goes upwards, so it's a minus number. The last blank is the function you just added to the Player.</div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-11" data-step="11" data-k="MA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">How does the enemy know it was <strong>stomped</strong> rather than bumped into?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The player was falling downwards, so velocity.y was bigger than 0</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The enemy counts how many times it has been touched</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The player has to hold the down arrow key while touching it</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(11)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 12 -->
+  <div class="step-card locked" id="step-12" data-step="12">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">12</div>
+      <span class="step-icon-badge">🎨</span>
+      <div class="step-title-wrap">
+        <span class="step-tag tag-locked">🔒 Locked</span>
+        <div class="step-title">Design Your Level &amp; Play!</div>
+        <div class="step-subtitle">Make it truly yours, then show someone!</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="goal-box"><span class="goal-icon">🎯</span><div><strong>Goal for this step</strong><p>Use everything you've built to design a proper level, then tune it until it feels great to play.</p></div></div>
+      <div class="two-col">
+        <div class="col-box child"><h4>🧒 For the child</h4><p>You have all the pieces now: platforms, coins, a baddie and a flag. This step is the fun one, you're the <strong>level designer</strong>! Build a journey from the start to the flag. Make some coins easy and some really tricky to reach.</p></div>
+        <div class="col-box parent"><h4>👨‍👩‍👧 For the grown-up</h4><p>This is the playtesting step, and it's where the real learning lands. Encourage changing one number at a time (GRAVITY, JUMP_FORCE, SPEED) and playing after each change. That change-test-change loop is genuinely how professionals tune game feel.</p></div>
+      </div>
+      <div class="callout parent"><span class="callout-icon">👨‍👩‍👧</span><div><strong>Grown-up note:</strong> If a jump can't be made, don't reach for the code first, try moving the platform. Designers change the level far more often than they change the character. Saving the code for last keeps the game predictable.</div></div>
+      <div class="what-to-do"><h4>What to do:</h4><ol class="steps-list">
+        <li><span class="sn">1</span><span>Duplicate platforms with <strong>Ctrl+D</strong> and build a path from your player to the flag.</span></li>
+        <li><span class="sn">2</span><span>Scatter coins, put a few in places you have to jump for!</span></li>
+        <li><span class="sn">3</span><span>Add one or two more enemies on the platforms.</span></li>
+        <li><span class="sn">4</span><span>Play the whole level from start to flag. Can you actually finish it?</span></li>
+        <li><span class="sn">5</span><span>Tune the feel: bigger <strong>GRAVITY</strong> for a snappier fall, bigger <strong>JUMP_FORCE</strong> (more negative!) for a floatier jump.</span></li>
+        <li><span class="sn">6</span><span>Change the colours of everything until it looks like <em>your</em> game.</span></li>
+        <li><span class="sn">7</span><span>Get a grown-up or a friend to play it, and watch where they get stuck!</span></li>
+      </ol></div>
+      <div class="callout tryit"><span class="callout-icon">🏆</span><div><strong>You did it!</strong> You've built a real platform game from an empty project: a character who runs and jumps, solid platforms, a camera, coins with a score, a goal flag and an enemy you can stomp. That's the same set of ideas behind every Mario game ever made.</div></div>
+
+      <!-- ORDER THE STEPS -->
+      <div class="order-challenge" id="oc-12" data-step="12">
+        <div class="oc-header"><div class="oc-icon">🔢</div><div class="oc-title">Put It In Order</div><div class="oc-xp-badge">+15 XP</div></div>
+        <div class="oc-prompt">What's the best order for finishing a level?</div>
+        <div class="oc-items">
+          <div class="oc-item" data-k="Mg==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Play it yourself from the start all the way to the flag</span></div>
+          <div class="oc-item" data-k="NA==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Watch someone else play and see where they get stuck</span></div>
+          <div class="oc-item" data-k="MQ==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Build the platforms, coins, enemies and flag</span></div>
+          <div class="oc-item" data-k="Mw==" onclick="pickOrder(this)"><span class="oc-num"></span><span>Change one number, like GRAVITY, and play again to feel the difference</span></div>
+        </div>
+        <div><button class="oc-check-btn" onclick="checkOrder(this)">🔍 Check Order</button><button class="oc-reset-btn" onclick="resetOrder(this)">↺ Reset</button></div>
+        <div class="oc-feedback"></div>
+      </div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-12" data-step="12" data-k="MA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Your character hangs in the air too long and the jump feels floaty. What's the best thing to change first?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Make GRAVITY bigger, so the player is pulled back down faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Make SPEED bigger, so the player runs faster</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Add more coins to the level</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(12)">✅ Correct! Finish →</button>
+      </div>
+    </div>
+  </div>
       <!-- FINISH BANNER -->
       <div id="finishBanner" style="display:none;background:linear-gradient(135deg,#1a0a00,#2e1500);border:1px solid rgba(245,158,11,.35);border-radius:20px;padding:36px 28px;text-align:center;margin-top:28px;">
         <div style="font-size:2.4rem;margin-bottom:8px;">🎉🍄⭐</div>
         <div style="font-family:'Fredoka',cursive;font-size:1.7rem;font-weight:700;color:#fff;margin-bottom:8px;">You Built Jump Jump Mario!</div>
-        <p style="font-size:.92rem;color:rgba(255,255,255,.6);line-height:1.6;max-width:460px;margin:0 auto 24px;">Amazing work! You've built a side-scrolling platformer with gravity, jumping, tile platforms, a following camera and collectible coins — real game-dev skills used in every platform game.</p>
+        <p style="font-size:.92rem;color:rgba(255,255,255,.6);line-height:1.6;max-width:460px;margin:0 auto 24px;">Amazing work! You've built a side-scrolling platformer with gravity, jumping, solid platforms, a following camera, collectible coins, a goal flag and an enemy you can stomp — real game-dev skills used in every platform game.</p>
         <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;">
           <div style="min-width:78px;"><div id="finalXp" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">0</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Total XP</div></div>
           <div style="min-width:78px;"><div id="finalLevel" style="font-family:'Fredoka',cursive;font-size:1.8rem;font-weight:700;color:#fbbf24;">1</div><div style="font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.4);">Level</div></div>
@@ -605,14 +1148,14 @@ move_and_slide()</div>
       </div>
       <div class="about-card">
         <h3>👨‍👩‍👧 For the Grown-Up</h3>
-        <p>This is Episode 2 of the <em>My First Video Game</em> series, no prior Godot experience needed (start with Episode 1: Zoom Zoom if you're brand new!). New concepts introduced: CharacterBody2D, gravity &amp; jumping, TileMapLayer, Camera2D, and coins using Area2D. We keep code ultra-short and friendly.</p>
+        <p>This is Episode 2 of the <em>My First Video Game</em> series, no prior Godot experience needed (start with Episode 1: Zoom Zoom if you're brand new!). New concepts introduced: CharacterBody2D, gravity &amp; jumping, StaticBody2D platforms, Camera2D, Area2D for coins, goals and enemies, groups, and writing your first custom function. We keep code ultra-short and friendly.</p>
       </div>
       <div class="about-card">
         <h3>✨ What You'll Make</h3>
         <ul>
           <li>A character who runs left and right</li>
           <li>Gravity and a jump button</li>
-          <li>Solid platforms made from tiles</li>
+          <li>Solid platforms to jump between</li>
           <li>A camera that follows your character</li>
           <li>Coins to collect with a score counter</li>
           <li>A goal flag to finish the level</li>
@@ -744,7 +1287,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <script src="../player-profile.js"></script>
 
 <script>
-const TOTAL = 4;
+const TOTAL = 12;
 const STORAGE_KEY = 'jvds-jump-jump-mario-v2';
 
 let completed = new Set();

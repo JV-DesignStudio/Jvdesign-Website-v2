@@ -151,14 +151,14 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
 .bg-btn.on{border-color:var(--accent);}
 
 /* MODAL */
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:10004;padding:16px;}
 .modal-ov.open{display:flex;}
 .modal-box{background:var(--panel);border:1px solid var(--border2);border-radius:12px;max-width:400px;width:100%;padding:18px;}
 .modal-box h3{font-family:'Fredoka',cursive;color:var(--accent);font-size:1rem;margin-bottom:12px;}
 .kbd-row{display:flex;justify-content:space-between;align-items:center;font-size:.63rem;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border);gap:10px;}
 kbd{background:var(--panel3);border:1px solid var(--border2);border-radius:4px;padding:1px 6px;font-family:inherit;font-size:.58rem;color:var(--text);white-space:nowrap;}
 
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:10005;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
 
 @media(max-width:680px){
   #sidebar{width:100%;max-height:52vh;border-left:none;border-top:1px solid var(--border2);}
@@ -186,6 +186,7 @@ kbd{background:var(--panel3);border:1px solid var(--border2);border-radius:4px;p
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -433,8 +434,18 @@ kbd{background:var(--panel3);border:1px solid var(--border2);border-radius:4px;p
 <div id="toast"></div>
 
 <div class="modal-ov" id="helpModal">
-  <div class="modal-box">
-    <h3>Keyboard shortcuts</h3>
+  <div class="modal-box" style="max-width:520px;">
+    <h3>✨ Particle Designer</h3>
+    <p style="font-size:.68rem;color:var(--muted);line-height:1.7;margin:0 0 12px;">
+      Design a particle effect — fire, smoke, sparks, magic — then export it for Godot, Unity or as raw JSON.
+    </p>
+    <ol style="font-size:.66rem;line-height:1.8;color:var(--text);margin:0 0 14px;padding-left:18px;">
+      <li>Pick a <b style="color:var(--accent)">Preset</b> to start from, and click the preview to move the emitter.</li>
+      <li>Open <b style="color:var(--accent)">Params</b> to change speed, gravity, size, colour and shape.</li>
+      <li><b style="color:var(--accent)">Curves</b> shapes how size and alpha change over each particle's life.</li>
+      <li><b style="color:var(--accent)">Export</b> gives you a Godot .tres, a Unity importer, JSON, a PNG or a WebM.</li>
+    </ol>
+    <h3 style="margin-top:4px;">Keyboard shortcuts</h3>
     <div class="kbd-row"><span>Undo / Redo</span><span><kbd>Ctrl+Z</kbd> <kbd>Ctrl+Shift+Z</kbd></span></div>
     <div class="kbd-row"><span>Save effect</span><kbd>Ctrl+S</kbd></div>
     <div class="kbd-row"><span>Burst emit</span><kbd>B</kbd></div>
@@ -475,6 +486,9 @@ let P=deep(DEFAULT_CFG);
 
 const SESSION_KEY='jvds_pd_session_v1';
 const SAVES_KEY='jvds_pd_saves_v1';
+
+// Declared up here because toast() is called during module-scope init below.
+let toastT;
 
 function normalize(){
   if(!Array.isArray(P.colorStops)||P.colorStops.length<2){
@@ -536,6 +550,12 @@ function resize(){
   emitY=(emitY===undefined)?H*.65:emitY;
 }
 window.addEventListener('resize',resize);
+// The preview can change size without a window resize (cookie banner, footer,
+// panel reflow). Without this the canvas keeps a stale backing size, so the
+// preview is squashed and click-to-place-emitter lands in the wrong spot.
+if(typeof ResizeObserver==='function'){
+  try{ new ResizeObserver(()=>resize()).observe(id('preview-wrap')); }catch(e){}
+}
 resize();
 
 function setEmitFromPoint(clientX,clientY){
@@ -620,6 +640,11 @@ function resolveTexture(){
       texImg.src=P.texCustom;
     }
     texCanvas=texImg.complete&&texImg.naturalWidth?texImg:null;
+  }else if(P.texId==='none'){
+    // 'none' is not a texture: makeBuiltinTex would hand back a blank 64x64
+    // canvas, and the draw loop would then stamp fully transparent frames for
+    // every particle instead of falling through to the shape drawing.
+    texCanvas=null;
   }else{
     if(!builtinCache[P.texId])builtinCache[P.texId]=makeBuiltinTex(P.texId);
     texCanvas=builtinCache[P.texId]||null;
@@ -1725,6 +1750,13 @@ document.addEventListener('keydown',e=>{
   }
 });
 id('btnHelp').onclick=()=>id('helpModal').classList.add('open');
+// Greet a first-time student, but never on top of a restored session.
+try{
+  if(!restored && localStorage.getItem('jvds_pd_seen')!=='1'){
+    id('helpModal').classList.add('open');
+    localStorage.setItem('jvds_pd_seen','1');
+  }
+}catch(e){}
 id('helpClose').onclick=()=>id('helpModal').classList.remove('open');
 id('helpModal').addEventListener('click',e=>{if(e.target===id('helpModal'))id('helpModal').classList.remove('open');});
 
@@ -1771,7 +1803,6 @@ try{
 
 requestAnimationFrame(ts=>{lastTime=ts;loop(ts);});
 
-let toastT;
 function toast(msg){
   const el=id('toast');
   el.textContent=msg;el.style.opacity=1;

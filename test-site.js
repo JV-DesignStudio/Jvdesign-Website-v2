@@ -42,7 +42,7 @@ const ALL_PAGES = htmlFiles(ROOT);
 const WORKSHOP_PAGES = ALL_PAGES.filter(p => p.startsWith('workshops/'));
 
 /* ── 1. NAV LABELS (static) ── */
-const CANON_MAIN = ['Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies', '📊 Progress'];
+const CANON_MAIN = ['Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies', '📦 Downloads', '📊 Progress'];
 const CANON_STRIP = ['🏠 Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies'];
 function linkLabels(seg) {
   const out = [];
@@ -66,8 +66,8 @@ function checkNav() {
     if (seg && JSON.stringify(linkLabels(seg)) !== JSON.stringify(CANON_MAIN))
       fail('NAV', rel, `main-nav labels: ${linkLabels(seg).join(', ')}`);
     seg = navSegment(raw, /<(?:nav|div)[^>]*class="[^"]*jvds-nav-links/);
-    if (seg && JSON.stringify(linkLabels(seg).slice(0, 8)) !== JSON.stringify(CANON_MAIN))
-      fail('NAV', rel, `jvds-nav labels: ${linkLabels(seg).slice(0, 8).join(', ')}`);
+    if (seg && JSON.stringify(linkLabels(seg).slice(0, 9)) !== JSON.stringify(CANON_MAIN))
+      fail('NAV', rel, `jvds-nav labels: ${linkLabels(seg).slice(0, 9).join(', ')}`);
     seg = navSegment(raw, /<nav[^>]*class="[^"]*nav-strip/);
     if (seg) {
       const labels = linkLabels(seg).filter(l => l !== 'JVDesignStudio');
@@ -89,11 +89,14 @@ function checkKeys() {
       writers.get(m[1]).push(rel);
     }
     // engine pages: declared total must match step sections
-    const mt = raw.match(/WORKSHOP_TOTAL\s*=\s*(\d+)/);
+    // shared engine sets window.WORKSHOP_TOTAL; inline engines declare a script-scope `const TOTAL`
+    const mt = raw.match(/WORKSHOP_TOTAL\s*=\s*(\d+)/) || raw.match(/\bconst\s+TOTAL\s*=\s*(\d+)/);
     if (mt) {
-      const steps = new Set([...raw.matchAll(/data-step="(\d+)"/g)].map(m => m[1])).size;
+      // count step cards by id; `data-step` is also used by unrelated tab widgets on some pages
+      let steps = new Set([...raw.matchAll(/id="step-(\d+)"/g)].map(m => m[1])).size;
+      if (!steps) steps = new Set([...raw.matchAll(/class="[^"]*step-card[^"]*"[^>]*data-step="(\d+)"/g)].map(m => m[1])).size;
       if (steps && Number(mt[1]) !== steps)
-        fail('KEYS', rel, `WORKSHOP_TOTAL=${mt[1]} but ${steps} data-step sections`);
+        fail('KEYS', rel, `declared total=${mt[1]} but ${steps} data-step sections`);
     }
   }
   for (const b of prog.matchAll(/\{([^{}]*key:\s*'(jvds-[^']+)'[^{}]*)\}/g)) {
@@ -125,9 +128,38 @@ function serve() {
 const NOISE = /favicon|\.webp|\.png|\.jpe?g|\.wav|\.mp3|googletagmanager|google-analytics|youtube|fonts\.|manifest|ServiceWorker|ERR_BLOCKED_BY_CLIENT|\/cdn-cgi\/|printify/i;
 async function checkPages(base) {
   const pages = QUICK ? WORKSHOP_PAGES : ALL_PAGES;
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
-  let n = 0;
+  const browser = await puppeteer.launch({ headless: 'new', protocolTimeout: 30000 });
+  let page = await browser.newPage();
+  let n = 0, driven = 0;
+  const skips = [];
+
+  // shared by both drive paths: fill every code blank and answer any statically-keyed quiz in a container
+  const SOLVE = `(root, label, out) => {
+    const dec = s => { try { return decodeURIComponent(atob(s)); } catch (e) { return null; } };
+    root.querySelectorAll('.cc-blank, .cf-blank').forEach(inp => {
+      const raw = inp.dataset.a ? dec(inp.dataset.a) : (inp.dataset.answer || '');
+      if (raw == null) { out.failures.push(label + ': undecodable blank'); return; }
+      inp.value = raw.split('|')[0];
+    });
+    root.querySelectorAll('.cc-check-btn, .cf-check-btn').forEach(b => b.click());
+    root.querySelectorAll('.cc-feedback, .cf-feedback').forEach(fb => {
+      if (fb.textContent && /not quite|try again|incorrect|❌/i.test(fb.textContent))
+        out.failures.push(label + ': canonical answer rejected');
+    });
+    root.querySelectorAll('.quiz-gate').forEach(gate => {
+      // gates with no static key are rendered from a STEPS[] entry and are handled by the caller
+      if (!gate.dataset.k && !gate.dataset.correct) return;
+      const k = parseInt(gate.dataset.k ? dec(gate.dataset.k) : gate.dataset.correct, 10);
+      const opt = gate.querySelector('.quiz-opt[data-idx="' + k + '"]');
+      if (!opt) { out.failures.push(label + ': bad quiz key'); return; }
+      opt.click();
+      const submit = gate.querySelector('.quiz-submit'); if (submit) submit.click();
+      const next = gate.querySelector('.quiz-next-btn');
+      if (!next || getComputedStyle(next).display === 'none')
+        out.failures.push(label + ': correct answer did not unlock next');
+    });
+  }`;
+
   for (const rel of pages) {
     n++;
     const errors = [];
@@ -139,57 +171,106 @@ async function checkPages(base) {
     try {
       await page.goto(base + '/' + rel, { waitUntil: 'load', timeout: 30000 });
       await new Promise(r => setTimeout(r, 300));
-      const drive = await page.evaluate(() => {
-        const out = { failures: [] };
-        const dec = s => { try { return decodeURIComponent(atob(s)); } catch (e) { return null; } };
-        const total = window.WORKSHOP_TOTAL;
-        if (!total || typeof window.completeStep !== 'function') return out;
-        for (let s = 1; s <= total; s++) {
-          const card = document.getElementById('step-' + s) || document.querySelector(`.step-card[data-step="${s}"]`);
-          if (!card) { out.failures.push(`step ${s}: card missing`); continue; }
-          if (card.classList.contains('locked')) { out.failures.push(`step ${s}: locked when reached`); break; }
-          card.querySelectorAll('.cc-blank, .cf-blank').forEach(inp => {
-            const raw = inp.dataset.a ? dec(inp.dataset.a) : (inp.dataset.answer || '');
-            if (raw == null) { out.failures.push(`step ${s}: undecodable blank`); return; }
-            inp.value = raw.split('|')[0];
-          });
-          card.querySelectorAll('.cc-check-btn, .cf-check-btn').forEach(b => b.click());
-          card.querySelectorAll('.cc-feedback, .cf-feedback').forEach(fb => {
-            if (fb.textContent && /not quite|try again|incorrect|❌/i.test(fb.textContent))
-              out.failures.push(`step ${s}: canonical answer rejected`);
-          });
-          const gate = card.querySelector('.quiz-gate');
-          if (gate) {
-            const k = parseInt(gate.dataset.k ? dec(gate.dataset.k) : gate.dataset.correct, 10);
-            const opt = gate.querySelector(`.quiz-opt[data-idx="${k}"]`);
-            if (!opt) { out.failures.push(`step ${s}: bad quiz key`); }
-            else {
-              opt.click();
-              const submit = gate.querySelector('.quiz-submit'); if (submit) submit.click();
-              const next = gate.querySelector('.quiz-next-btn');
-              if (!next || getComputedStyle(next).display === 'none')
-                out.failures.push(`step ${s}: correct answer did not unlock next`);
-            }
-          }
-          try { window.completeStep(s); } catch (e) { out.failures.push(`step ${s}: completeStep threw`); }
+
+      // three engines ship on this site: the shared workshop-engine, an inline copy of it,
+      // and the builder/blueprint pages that render one step at a time out of a STEPS[] array
+      const shape = await page.evaluate(() => {
+        let steps = null;
+        try { steps = STEPS; } catch (e) {}
+        if (Array.isArray(steps) && steps.length && document.getElementById('stepBody')) {
+          const hasGo = typeof goStep === 'function';
+          const hasRender = typeof renderStep === 'function';
+          let idxVar = null;
+          if (typeof cur !== 'undefined') idxVar = 'cur';
+          else if (typeof currentStep !== 'undefined') idxVar = 'currentStep';
+          if (!hasGo && !(hasRender && idxVar)) return { kind: 'skip', why: 'STEPS page: render index not reachable from page scope' };
+          return { kind: 'steps', total: steps.length, hasGo, idxVar };
         }
-        try {
-          const saved = JSON.parse(localStorage.getItem(window.WORKSHOP_KEY) || 'null');
-          if (!saved || !Array.isArray(saved.completed) || saved.completed.length < total)
-            out.failures.push(`progress not fully saved (${saved && saved.completed ? saved.completed.length : 0}/${total})`);
-        } catch (e) { out.failures.push('localStorage read failed'); }
-        return out;
+        let total = window.WORKSHOP_TOTAL;
+        // inline engines keep the total in a script-scope `const TOTAL`, reachable as a bare identifier here
+        if (!total) { try { total = TOTAL; } catch (e) {} }
+        if (total && typeof window.completeStep === 'function') return { kind: 'cards', total };
+        return { kind: 'none' };
       });
-      drive.failures.forEach(f => fail('DRIVE', rel, f));
+
+      if (shape.kind === 'skip') skips.push(`${rel}: ${shape.why}`);
+
+      if (shape.kind === 'cards') {
+        driven++;
+        const drive = await page.evaluate((solveSrc, total) => {
+          const out = { failures: [] };
+          const solve = eval(solveSrc);
+          for (let s = 1; s <= total; s++) {
+            const card = document.getElementById('step-' + s) || document.querySelector(`.step-card[data-step="${s}"]`);
+            if (!card) { out.failures.push(`step ${s}: card missing`); continue; }
+            if (card.classList.contains('locked')) { out.failures.push(`step ${s}: locked when reached`); break; }
+            solve(card, `step ${s}`, out);
+            try { window.completeStep(s); } catch (e) { out.failures.push(`step ${s}: completeStep threw`); }
+          }
+          try {
+            let key = window.WORKSHOP_KEY;
+            if (!key) { try { key = STORAGE_KEY; } catch (e) {} }
+            const saved = JSON.parse(localStorage.getItem(key) || 'null');
+            if (!saved || !Array.isArray(saved.completed) || saved.completed.length < total)
+              out.failures.push(`progress not fully saved (${saved && saved.completed ? saved.completed.length : 0}/${total})`);
+          } catch (e) { out.failures.push('localStorage read failed'); }
+          return out;
+        }, SOLVE, shape.total);
+        drive.failures.forEach(f => fail('DRIVE', rel, f));
+      }
+
+      if (shape.kind === 'steps') {
+        driven++;
+        // one step per round trip: these pages finish rendering inside requestAnimationFrame,
+        // so racing through them in a single evaluate tears the DOM out from under their own init code
+        for (let i = 0; i < shape.total; i++) {
+          const res = await page.evaluate((solveSrc, i, hasGo, idxVar) => {
+            const out = { failures: [] };
+            const solve = eval(solveSrc);
+            try {
+              if (hasGo) goStep(i);
+              else { if (idxVar === 'cur') cur = i; else currentStep = i; renderStep(); }
+            } catch (e) { out.failures.push(`step ${i}: render threw (${String(e.message).slice(0, 60)})`); return out; }
+            const body = document.getElementById('stepBody');
+            if (!body || !body.innerHTML.trim()) { out.failures.push(`step ${i}: rendered empty`); return out; }
+            solve(body, `step ${i}`, out);
+            // these pages keep one shared gate, keyed off the STEPS entry rather than a data attribute
+            const qz = STEPS[i] && STEPS[i].quiz;
+            const gate = document.getElementById('quizGate');
+            if (gate && qz && typeof qz.correct === 'number') {
+              if (Array.isArray(qz.opts) && (qz.correct < 0 || qz.correct >= qz.opts.length))
+                out.failures.push(`step ${i}: quiz key ${qz.correct} out of range for ${qz.opts.length} options`);
+              const opt = gate.querySelector(`.quiz-opt[data-idx="${qz.correct}"]`);
+              if (opt) {
+                opt.click();
+                if (typeof checkQuiz === 'function') { try { checkQuiz(); } catch (e) { out.failures.push(`step ${i}: checkQuiz threw`); } }
+                if (!opt.classList.contains('correct')) out.failures.push(`step ${i}: declared answer not marked correct`);
+              }
+            }
+            return out;
+          }, SOLVE, i, shape.hasGo, shape.idxVar);
+          res.failures.forEach(f => fail('DRIVE', rel, f));
+          await new Promise(r => setTimeout(r, 60));
+        }
+      }
+
       try { await page.evaluate(() => localStorage.clear()); } catch (e) {}
     } catch (e) {
       errors.push('NAV FAIL: ' + e.message.slice(0, 120));
+      // a hung page poisons every page after it, so start the next one on a fresh tab
+      try { await page.close(); } catch (e2) {}
+      page = await browser.newPage();
     }
     page.off('pageerror', onErr); page.off('console', onCon); page.off('response', onResp);
     errors.forEach(e => fail('LOAD', rel, e));
     if (n % 25 === 0) process.stdout.write(`  ${n}/${pages.length}\n`);
   }
   await browser.close();
+  console.log(`  driven end-to-end: ${driven}/${pages.length}`);
+  if (skips.length) {
+    console.log(`  not drivable by this harness (${skips.length}):`);
+    skips.forEach(s => console.log(`    ${s}`));
+  }
 }
 
 /* ── main ── */

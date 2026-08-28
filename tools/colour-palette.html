@@ -66,6 +66,11 @@ body{display:flex;flex-direction:column;}
 .pal-btn:hover{background:var(--panel2);color:var(--text);}
 .pal-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);}
 .pal-btn.primary:hover{filter:brightness(1.1);}
+.harmony-mode-btn.on{background:rgba(245,158,11,.18);border-color:var(--accent);color:var(--accent);font-weight:700;}
+.swatch-contrast{margin-top:2px;text-align:center;}
+.cb{display:inline-block;font-size:.5rem;font-family:'JetBrains Mono',monospace;padding:1px 6px;border-radius:999px;white-space:nowrap;}
+.cb.ok{background:rgba(16,185,129,.14);color:#10b981;}
+.cb.warn{background:rgba(239,68,68,.14);color:#f87171;}
 
 /* SWATCHES */
 .swatches-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
@@ -155,6 +160,7 @@ input[type=range].adj{width:100%;accent-color:var(--accent);height:4px;cursor:po
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -475,7 +481,10 @@ const MOODS = [
 let currentMood = null;
 let palette = []; // [{hex, locked}]
 let paletteSize = 6;
-let saved = JSON.parse(localStorage.getItem('jvds_palettes')||'[]');
+let saved = (function(){
+  try{ const v=JSON.parse(localStorage.getItem('jvds_palettes')||'[]'); return Array.isArray(v)?v:[]; }
+  catch(e){ return []; }
+})();
 let harmonyMode = 'none';
 
 // ══════════════════════════════════════════════════
@@ -524,6 +533,29 @@ function applyAdjust(){
   renderPalette(sat,bri,con);
 }
 
+/* Relative luminance + WCAG contrast, used for the readability badge. */
+function relLum(hex){
+  const m=hex.replace('#','').match(/.{2}/g).map(v=>parseInt(v,16)/255)
+    .map(v=>v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4));
+  return 0.2126*m[0]+0.7152*m[1]+0.0722*m[2];
+}
+function contrastWith(hex,other){
+  const a=relLum(hex),b=relLum(other);
+  const hi=Math.max(a,b),lo=Math.min(a,b);
+  return (hi+0.05)/(lo+0.05);
+}
+function contrastBadge(hex){
+  const onWhite=contrastWith(hex,'#ffffff');
+  const onBlack=contrastWith(hex,'#000000');
+  const useWhite=onWhite>=onBlack;
+  const ratio=Math.max(onWhite,onBlack);
+  const label=useWhite?'white text':'black text';
+  const pass=ratio>=4.5;
+  const cls=pass?'ok':'warn';
+  const mark=pass?'\u2713':'\u26a0';
+  return `<span class="cb ${cls}">${mark} ${label} ${ratio.toFixed(1)}:1</span>`;
+}
+
 function renderPalette(sat,bri,con){
   if(!currentMood) return;
 
@@ -557,6 +589,7 @@ function renderPalette(sat,bri,con){
       </div>
       <div class="swatch-hex" role="button" tabindex="0" aria-label="Copy hex ${p.hex}" title="Click to copy">${p.hex}</div>
       <div class="swatch-name">${colourName(h,s,l)}</div>
+      <div class="swatch-contrast" title="Best text colour on this swatch, and its WCAG contrast ratio">${contrastBadge(p.hex)}</div>
     `;
     const swatch=wrap.querySelector('.swatch');
     swatch.addEventListener('click',()=>toggleLock(i));
@@ -807,8 +840,9 @@ function clearSaved(){
 // ══════════════════════════════════════════════════
 function setHarmonyMode(mode){
   harmonyMode=mode;
-  document.querySelectorAll('.harmony-mode-btn').forEach(b=>b.style.background='transparent');
-  document.getElementById('harmony-'+mode).style.background='rgba(245,158,11,.2)';
+  document.querySelectorAll('.harmony-mode-btn').forEach(b=>{b.classList.remove('on');b.style.background='';});
+  const el=document.getElementById('harmony-'+mode);
+  if(el) el.classList.add('on');
   applyAdjust();
 }
 

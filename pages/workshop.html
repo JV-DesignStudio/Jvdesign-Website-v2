@@ -1312,8 +1312,8 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         </div>
         <div style="display:flex;flex-direction:column;gap:16px;align-items:center;">
             <div class="ws-hero-imgwrap">
-                <img width="732" height="993" src="../The%20Workshop.webp" alt="The Workshop poster" style="width:100%;display:block;" fetchpriority="high"
-                 onerror="if(!this.dataset.f){this.dataset.f=1;this.src='../The%20Workshop.png';}else{this.remove();this.parentElement.classList.add('ws-img-fallback');}">
+                <img width="732" height="993" src="../the-workshop.webp" alt="The Workshop poster" style="width:100%;display:block;" fetchpriority="high"
+                 onerror="if(!this.dataset.f){this.dataset.f=1;this.src='../the-workshop.png';}else{this.remove();this.parentElement.classList.add('ws-img-fallback');}">
             </div>
             <div class="ws-stat-grid">
                 <div class="ws-stat-row"><span class="ws-stat-label">Courses</span><span class="ws-stat-val">45+</span></div>
@@ -1368,23 +1368,42 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         </div>
     </div>
 </section>
+
+<!-- Full-screen builder overlay -->
+<div class="ws-live-overlay" id="liveOverlay" role="dialog" aria-modal="true" aria-label="Live builder" hidden>
+    <div class="ws-live-modal">
+        <button class="ws-live-close" aria-label="Close builder">✕</button>
+        <div class="ws-live-stage"></div>
+    </div>
+</div>
+
 <script>
 (function(){
+    var overlay = document.getElementById('liveOverlay');
+    if (!overlay) return;
+    var stage  = overlay.querySelector('.ws-live-stage');
+    var closeBtn = overlay.querySelector('.ws-live-close');
+
+    function open(src, title){
+        overlay.removeAttribute('hidden');
+        document.body.style.overflow = 'hidden';
+        stage.innerHTML = '<iframe src="' + src + '" title="' + title + '" allow="fullscreen"></iframe>';
+    }
+    function close(){
+        overlay.setAttribute('hidden','');
+        document.body.style.overflow = '';
+        stage.innerHTML = '';
+    }
+
     document.querySelectorAll('.ws-live-frame').forEach(function(f){
-        function load(){
-            if (f.querySelector('iframe')) return;
-            var i = document.createElement('iframe');
-            i.src = f.dataset.src;
-            i.title = f.dataset.title || 'Live demo';
-            i.loading = 'lazy';
-            i.allow = 'fullscreen';
-            f.classList.add('loaded');
-            f.innerHTML = '';
-            f.appendChild(i);
-        }
+        function load(){ open(f.dataset.src, f.dataset.title || 'Live builder'); }
         f.addEventListener('click', load);
-        f.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); load(); } });
+        f.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); load(); }});
     });
+
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) close(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !overlay.hidden) close(); });
 })();
 </script>
 <style>
@@ -1406,14 +1425,39 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
     animation:live-ping 2s ease-out infinite;
 }
 .ws-live-frame:hover .ws-live-play{background:var(--rose);color:#fff;animation:none}
-.ws-live-frame.loaded{cursor:default;aspect-ratio:16/10}
-.ws-live-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .ws-live-meta{padding:14px 18px 16px;display:flex;flex-direction:column;gap:2px}
 .ws-live-meta strong{font-size:.95rem;font-weight:800;color:var(--charcoal)}
 [data-theme="dark"] .ws-live-meta strong{color:var(--text-primary)}
 .ws-live-meta span{font-size:.78rem;color:var(--charcoal-lt)}
 [data-theme="dark"] .ws-live-meta span{color:var(--text-secondary)}
 @media(max-width:640px){.ws-live-grid{grid-template-columns:1fr}}
+
+/* Full-screen overlay */
+.ws-live-overlay{
+    position:fixed;inset:0;z-index:999;
+    background:rgba(10,8,6,.88);
+    backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+}
+.ws-live-overlay[hidden]{display:none}
+.ws-live-modal{
+    position:relative;width:94vw;height:88vh;
+    max-width:1400px;max-height:920px;
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 40px 100px rgba(0,0,0,.6);
+}
+.ws-live-modal iframe{width:100%;height:100%;border:0;display:block}
+.ws-live-close{
+    position:absolute;top:12px;right:12px;z-index:10;
+    width:44px;height:44px;border-radius:50%;border:none;
+    background:rgba(255,255,255,.92);font-size:1.3rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 16px rgba(0,0,0,.35);
+    transition:background .15s,transform .15s;
+}
+.ws-live-close:hover{background:#fff;transform:scale(1.08)}
+[data-theme="dark"] .ws-live-close{background:rgba(42,39,32,.9);color:var(--text-primary)}
 </style>
 
 <style>
@@ -1529,7 +1573,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🐱 Scratch Series</div>
                 <h3 class="article-title">Fruit Catch Game</h3>
-                <p class="article-excerpt">Build a falling-fruit catching game with score tracking, lives, and increasing difficulty. Move left and right to catch the good fruit and dodge the bad. 8 interactive steps with quizzes.</p>
+                <p class="article-excerpt">Build a falling-fruit catching game with score tracking, lives, and fruit that falls faster the better you do. Move the basket left and right to catch every piece before it hits the floor. 8 interactive steps with quizzes.</p>
                 <div class="article-meta">
                     <span class="article-read-time">Scratch · 8 Steps · Ages 6+</span>
                     <span class="article-read-more" style="color:#ff7700">Start Building →</span>
@@ -1544,7 +1588,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🐱 Scratch Series</div>
                 <h3 class="article-title">Platformer Game</h3>
-                <p class="article-excerpt">Build a side-scrolling platformer with running, jumping, enemies, coins, and a goal flag. Learn about gravity, collision detection, and level design. 10 steps.</p>
+                <p class="article-excerpt">Build a side-scrolling platformer with running, jumping, spike hazards, coins, a finish flag and a timer. Learn about gravity, collision detection, and level design. 10 steps.</p>
                 <div class="article-meta">
                     <span class="article-read-time">Scratch · 10 Steps · Ages 7+</span>
                     <span class="article-read-more" style="color:#ff7700">Start Building →</span>
@@ -1559,7 +1603,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🐱 Scratch Series</div>
                 <h3 class="article-title">Quiz Game</h3>
-                <p class="article-excerpt">Create an interactive quiz show with multiple choice questions, a scoring system, timer, and sound effects. 9 steps.</p>
+                <p class="article-excerpt">Create an interactive quiz show with 10 typed-answer questions, a scoring system, countdown timer, sound effects and a results screen. 9 steps.</p>
                 <div class="article-meta">
                     <span class="article-read-time">Scratch · 9 Steps · Ages 7+</span>
                     <span class="article-read-more" style="color:#ff7700">Start Building →</span>
@@ -1574,7 +1618,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🐱 Scratch Series</div>
                 <h3 class="article-title">Maze Runner</h3>
-                <p class="article-excerpt">Design a maze game with walls the player can't walk through, collectible gems, a countdown timer, and a victory screen. 11 steps.</p>
+                <p class="article-excerpt">Design a maze game across 3 levels with walls the player can't walk through, a key that unlocks the exit door, a countdown timer, and a win screen. 11 steps.</p>
                 <div class="article-meta">
                     <span class="article-read-time">Scratch · 11 Steps · Ages 7+</span>
                     <span class="article-read-more" style="color:#ff7700">Start Building →</span>
@@ -1628,14 +1672,14 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         <a href="../workshops/roblox-obby-workshop.html" class="article-card reveal" data-cat="tutorial">
             <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#00b4ff,#0088cc)">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5rem;">🏃</div>
-                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 8+ · Episode 1</span>
+                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 7+ · Episode 1</span>
             </div>
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Obby Course</h3>
-                <p class="article-excerpt">Build an obstacle course with checkpoints, moving platforms, kill bricks, and a victory podium. The classic Roblox starter project. 10 steps.</p>
+                <p class="article-excerpt">Build an obstacle course with lava kill bricks, moving platforms, jump pads and a finish line that celebrates when players make it. The classic Roblox starter project. 8 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 10 Steps · Ages 8+</span>
+                    <span class="article-read-time">Roblox Studio · 8 Steps · Ages 7+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1643,14 +1687,14 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         <a href="../workshops/roblox-tycoon-workshop.html" class="article-card reveal" data-cat="tutorial">
             <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#00b4ff,#0088cc)">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5rem;">🏭</div>
-                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 8+ · Episode 2</span>
+                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 7+ · Episode 2</span>
             </div>
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Tycoon Game</h3>
-                <p class="article-excerpt">Create a tycoon with ore droppers, conveyor belts, upgraders, and a money system. Players build their factory from the ground up. 11 steps.</p>
+                <p class="article-excerpt">Create a tycoon with a brick dropper, a collector, buy pads that unlock upgrades, price signs and a cash total that saves between visits. 10 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 11 Steps · Ages 8+</span>
+                    <span class="article-read-time">Roblox Studio · 10 Steps · Ages 7+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1663,9 +1707,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Pet Simulator</h3>
-                <p class="article-excerpt">Build a pet simulator with collectible pets, rebirths, auto-collect, and rarity tiers. One of Roblox's most popular genres. 10 steps.</p>
+                <p class="article-excerpt">Build a pet simulator where players click to earn coins, hatch a pet from an egg, buy click upgrades and keep their progress between visits. One of Roblox's most popular genres. 11 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 10 Steps · Ages 8+</span>
+                    <span class="article-read-time">Roblox Studio · 11 Steps · Ages 8+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1673,14 +1717,14 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         <a href="../workshops/roblox-battle-workshop.html" class="article-card reveal" data-cat="tutorial">
             <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#00b4ff,#0088cc)">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5rem;">⚔️</div>
-                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 10+ · Episode 4</span>
+                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 8+ · Episode 4</span>
             </div>
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
-                <h3 class="article-title">Battle Royale</h3>
-                <p class="article-excerpt">Create a shrinking-zone battle royale with weapon pickups, damage, elimination, and last-player-standing victory. 12 steps.</p>
+                <h3 class="article-title">Sword Fight Arena</h3>
+                <p class="article-excerpt">Create a multiplayer sword-fighting arena with a kill leaderboard, health bars, a weapon shop, power-up pads and timed respawns. 12 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 12 Steps · Ages 10+</span>
+                    <span class="article-read-time">Roblox Studio · 12 Steps · Ages 8+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1693,9 +1737,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Horror Maze</h3>
-                <p class="article-excerpt">Build a dark maze with a flashlight mechanic, jumpscares, locked doors, keys, and an escape sequence. 10 steps.</p>
+                <p class="article-excerpt">Build a dark maze with a player torch, a chasing ghost, hidden keys, a locked escape door and a countdown timer. 11 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 10 Steps · Ages 10+</span>
+                    <span class="article-read-time">Roblox Studio · 11 Steps · Ages 10+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1703,14 +1747,14 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
         <a href="../workshops/roblox-adventure-workshop.html" class="article-card reveal" data-cat="tutorial">
             <div class="article-thumb" style="position:relative;overflow:hidden;background:linear-gradient(135deg,#00b4ff,#0088cc)">
                 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:5rem;">🗺️</div>
-                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 10+ · Episode 6</span>
+                <span class="article-tag-badge" style="background:#00b4ff;color:#fff;position:relative;z-index:2">Roblox Studio · Ages 9+ · Episode 6</span>
             </div>
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Island Quest RPG</h3>
-                <p class="article-excerpt">Create an open-world adventure RPG with NPCs, dialogue trees, quests, inventory, crafting, and a boss fight. 12 steps.</p>
+                <p class="article-excerpt">Create an island adventure RPG with NPCs, dialogue, quest tracking, collectible crystals, an item shop, loot inventory and a final boss fight. 14 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 12 Steps · Ages 10+</span>
+                    <span class="article-read-time">Roblox Studio · 14 Steps · Ages 9+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1723,9 +1767,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">🎮 Roblox Series</div>
                 <h3 class="article-title">Pirate Adventure</h3>
-                <p class="article-excerpt">Build a pirate-themed game with ships, treasure maps, cannon combat, and island exploration. 11 steps.</p>
+                <p class="article-excerpt">Build a pirate game with a sailing ship, cannon battles, treasure hidden across islands, and crew spawns with a leaderboard. 7 steps.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Roblox Studio · 11 Steps · Ages 8+</span>
+                    <span class="article-read-time">Roblox Studio · 7 Steps · Ages 8+</span>
                     <span class="article-read-more" style="color:#00b4ff">Start Building →</span>
                 </div>
             </div>
@@ -1741,7 +1785,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="ws-section-label" style="color:#047857">Godot Engine</div>
             <div class="ws-section-sub">Open-source 2D and 3D game engine. Build real games with GDScript, from your very first project to advanced mechanics. Parent-friendly beginner series included.</div>
         </div>
-        <span class="ws-section-count" style="background:#ecfdf5;color:#047857;border:1px solid #6ee7b7">11 Courses</span>
+        <span class="ws-section-count" style="background:#ecfdf5;color:#047857;border:1px solid #6ee7b7">10 Courses</span>
     </div>
     <div class="courses-grid">
         <a href="../workshops/godot-racing-workshop.html" class="article-card reveal" data-cat="tutorial">
@@ -1782,9 +1826,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">⭐ My First Video Game · Series 1</div>
                 <h3 class="article-title">Bang Bang! Build a Top-Down Shooter in Godot</h3>
-                <p class="article-excerpt">Make a character that shoots enemies, dodge waves of bad guys, and explore a randomly generated map inspired by Nuclear Throne. 12 steps, progress tracking, all free.</p>
+                <p class="article-excerpt">Make a character that shoots enemies, dodge waves of bad guys, and explore a randomly generated map inspired by Nuclear Throne. 13 steps, progress tracking, all free.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Godot 4 · 12 Steps · Ages 5+</span>
+                    <span class="article-read-time">Godot 4 · 13 Steps · Ages 5+</span>
                     <span class="article-read-more" style="color:#b34a00">Start Building →</span>
                 </div>
             </div>
@@ -1797,9 +1841,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">⭐ My First Video Game · Series 1</div>
                 <h3 class="article-title">Fairy Survivors! Build a Vampire Survivors-Style Game in Godot</h3>
-                <p class="article-excerpt">You move, the fairy attacks automatically! Survive waves of bugs, unlock 4 spells over time, collect XP gems and level up inspired by Vampire Survivors. 11 steps, all free.</p>
+                <p class="article-excerpt">You move, the fairy attacks automatically! Survive waves of bugs, unlock 4 spells over time, collect XP gems and level up inspired by Vampire Survivors. 12 steps, all free.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Godot 4 · 11 Steps · Ages 5+</span>
+                    <span class="article-read-time">Godot 4 · 12 Steps · Ages 5+</span>
                     <span class="article-read-more" style="color:#5a8a00">Start Building →</span>
                 </div>
             </div>
@@ -1913,7 +1957,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">2026</div>
                 <h3 class="article-title">Unity Top-Down Shooter. Build a Real Game with C# from Scratch</h3>
-                <p class="article-excerpt">Learn C# and Unity from absolute zero MonoBehaviour, variables, the game loop, Input, Instantiate, collision detection, coroutines, and wave spawning. WASD to move, Arrow Keys to shoot. 10 steps, complete beginner, live preview.</p>
+                <p class="article-excerpt">Learn C# and Unity from absolute zero MonoBehaviour, variables, the game loop, Input, Instantiate, collision detection, coroutines, and wave spawning. WASD or arrow keys to move, Space to shoot. 10 steps, complete beginner, live preview.</p>
                 <div class="article-meta">
                     <span class="article-read-time">C# · Unity · 10 Steps · Live Preview · Beginner</span>
                     <span class="article-read-more" style="color:#5bc0f8">Start Building →</span>
@@ -1927,7 +1971,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">2026</div>
                 <h3 class="article-title">Unity 2D Platformer. Characters, Physics &amp; Scene Management</h3>
-                <p class="article-excerpt">Physics-based movement with Rigidbody2D, colliders, jumping, animations, enemy AI, collectables, scene loading, and UI health bars. 10 steps, complete beginner, live preview.</p>
+                <p class="article-excerpt">Physics-based movement with Rigidbody2D, colliders, ground-checked jumping, Animator states, stomp-to-kill enemies, collectables, camera follow, and scene loading with a GameManager that keeps score and lives. 10 steps, complete beginner, live preview.</p>
                 <div class="article-meta">
                     <span class="article-read-time">C# · Unity · 10 Steps · Live Preview</span>
                     <span class="article-read-more" style="color:#9b72cb">Start Building →</span>
@@ -2023,9 +2067,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">2026</div>
                 <h3 class="article-title">Nuclear Blueprint. Wire Blueprints to Build a Roguelite</h3>
-                <p class="article-excerpt">Wire Unreal Blueprints to build a Nuclear Throne-style roguelite design your starting weapon, clear rooms, find new weapons, choose mutations, and fight bosses. 30 steps, live preview.</p>
+                <p class="article-excerpt">Wire Unreal Blueprints to build a Nuclear Throne-style roguelite design your starting weapon, clear rooms, find new weapons, choose mutations, and fight bosses. 37 steps, live preview.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Blueprints · UE5 · 30 Steps · Live Preview</span>
+                    <span class="article-read-time">Blueprints · UE5 · 37 Steps · Live Preview</span>
                     <span class="article-read-more" style="color:#e05a1e">Start Building →</span>
                 </div>
             </div>
@@ -2051,9 +2095,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">2026</div>
                 <h3 class="article-title">Racing Blueprint. Build a Racing Game in Unreal Engine 5</h3>
-                <p class="article-excerpt">Wire Unreal Blueprints to build a complete racing game car physics, track layout, rivals, lap counter, boost pads, and a finish line. Step-by-step, live preview.</p>
+                <p class="article-excerpt">Wire Unreal Blueprints to build a complete racing game car physics, track layout, rivals, lap counter, boost pads, and a finish line. 30 steps, live preview.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Blueprints · UE5 · Live Preview</span>
+                    <span class="article-read-time">Blueprints · UE5 · 30 Steps · Live Preview</span>
                     <span class="article-read-more" style="color:#e8c41a">Start Building →</span>
                 </div>
             </div>
@@ -2079,9 +2123,9 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
             <div class="article-body">
                 <div class="article-date">2026</div>
                 <h3 class="article-title">Arena Fighter Blueprint. Build a 2-Player Fighting Game in UE5</h3>
-                <p class="article-excerpt">Wire Blueprints to build a local 2-player fighting game characters, attacks, health bars, knockback and a round system. Step-by-step, live preview.</p>
+                <p class="article-excerpt">Wire Blueprints to build a local 2-player fighting game characters, light and heavy attacks, blocking, a combo counter, health bars and a best-of-3 round system. 14 steps, live preview.</p>
                 <div class="article-meta">
-                    <span class="article-read-time">Blueprints · UE5 · 2-Player · Live Preview</span>
+                    <span class="article-read-time">Blueprints · UE5 · 14 Steps · 2-Player</span>
                     <span class="article-read-more" style="color:#e8312b">Start Building →</span>
                 </div>
             </div>

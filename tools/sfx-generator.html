@@ -107,7 +107,7 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
 .empty-state{text-align:center;padding:24px;color:var(--muted);font-size:.75rem;}
 
 /* TOAST */
-#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);padding:5px 14px;border-radius:7px;font-size:.7rem;z-index:900;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);padding:5px 14px;border-radius:7px;font-size:.7rem;z-index:10005;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
@@ -151,6 +151,7 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -311,7 +312,7 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
 
-<div id="codeModal" onclick="if(event.target===this)closeCodeModal()" style="position:fixed;inset:0;background:rgba(4,6,12,.72);display:none;align-items:center;justify-content:center;z-index:950;padding:16px;">
+<div id="codeModal" onclick="if(event.target===this)closeCodeModal()" style="position:fixed;inset:0;background:rgba(4,6,12,.72);display:none;align-items:center;justify-content:center;z-index:10003;padding:16px;">
   <div style="background:var(--panel);border:1px solid var(--border2);border-radius:14px;max-width:600px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <span style="font-family:'Fredoka',cursive;font-size:1rem;font-weight:600;color:var(--accent2);">🧩 Engine Snippet</span>
@@ -707,7 +708,10 @@ function recordBuffer(buf){
 // ══════════════════════════════════════════════════
 let currentCat = null;
 let currentVariant = null;
-let history = JSON.parse(localStorage.getItem('jvds_sfx_history')||'[]');
+let history = (function(){
+  try{ const v=JSON.parse(localStorage.getItem('jvds_sfx_history')||'[]'); return Array.isArray(v)?v:[]; }
+  catch(e){ return []; }
+})();
 
 // ══════════════════════════════════════════════════
 // UI BUILD
@@ -840,11 +844,15 @@ function sendToGameMaker(){
     let binary='';
     for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
     const dataUrl='data:audio/wav;base64,'+btoa(binary);
-    localStorage.setItem('jvds_sfx_last',JSON.stringify({
-      dataUrl, cat:currentCat, variant:currentVariant,
-      name:`${cat.name}, ${variant.name}`
-    }));
-    showToast('Sent to Game Maker ✓, Sounds tab → ⬇ Studio to assign it');
+    try{
+      localStorage.setItem('jvds_sfx_last',JSON.stringify({
+        dataUrl, cat:currentCat, variant:currentVariant,
+        name:`${cat.name}, ${variant.name}`
+      }));
+      showToast('Sent to Game Maker ✓, Sounds tab → ⬇ Studio to assign it');
+    }catch(e){
+      showToast('Sound too large to send — use ⬇ Download WAV instead');
+    }
   });
 }
 
@@ -928,7 +936,7 @@ function makeZip(files){
 function addToHistory(cat, variant, displayName){
   history.unshift({catIcon:cat.icon,varIcon:variant.icon,name:`${cat.name}, ${variant.name}`,file:displayName,time:new Date().toLocaleTimeString(),params:{cat:cat.id,var:VARIANTS[cat.id].indexOf(variant),...readTweaks()}});
   history=history.slice(0,20);
-  localStorage.setItem('jvds_sfx_history',JSON.stringify(history));
+  try{ localStorage.setItem('jvds_sfx_history',JSON.stringify(history)); }catch(e){/* full or blocked */}
   renderHistory();
 }
 

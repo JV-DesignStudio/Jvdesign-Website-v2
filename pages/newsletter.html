@@ -46,7 +46,14 @@
         .nl-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(112,163,167,.25);}
         .nl-submit{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--rose);color:white;font-weight:800;font-size:1.05rem;padding:15px 24px;border-radius:13px;border:none;cursor:pointer;box-shadow:0 4px 0 var(--rose-dk);transition:filter .15s,transform .12s,box-shadow .12s;}
         .nl-submit:hover{filter:brightness(1.1);transform:translateY(-2px);box-shadow:0 6px 0 var(--rose-dk);}
-        .nl-note{font-size:.75rem;color:rgba(240,234,214,.38);text-align:center;}
+        .nl-note{font-size:.75rem;color:rgba(240,234,214,.55);text-align:center;}
+        /* Signup status. Never announces success unless the provider accepted the signup. */
+        .nl-status{display:none;font-size:.9rem;line-height:1.5;padding:13px 16px;border-radius:11px;text-align:center;}
+        .nl-status.show{display:block;}
+        .nl-status.pending{background:rgba(112,163,167,.14);border:1.5px solid rgba(112,163,167,.5);color:#cfe6e7;}
+        .nl-status.error{background:rgba(188,71,73,.14);border:1.5px solid rgba(188,71,73,.6);color:#f2c9c9;}
+        .nl-status.done{background:rgba(45,122,74,.16);border:1.5px solid rgba(76,175,110,.6);color:#c9e9d5;}
+        .nl-status a{color:inherit;font-weight:700;text-decoration:underline;}
         .nl-divider{display:flex;align-items:center;gap:12px;color:rgba(240,234,214,.25);font-size:.8rem;margin:8px 0;}
         .nl-divider::before,.nl-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1);}
         .btn-ig-nl{display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.08);color:rgba(240,234,214,.88);font-weight:700;font-size:1rem;padding:14px 24px;border-radius:13px;border:1.5px solid rgba(255,255,255,.15);transition:background .2s,transform .12s;}
@@ -201,17 +208,18 @@
             </div>
         </div>
 
-        <!-- Newsletter form, Buttondown integration
-             Sign up free at buttondown.email then replace YOUR-USERNAME below -->
+        <!-- Newsletter form. The provider endpoint is set in ONE place: NEWSLETTER_ENDPOINT
+             in the script at the bottom of this page. Until it is filled in, the form does
+             not pretend to work, it says so and offers the channels that do work. -->
         <form class="nl-form reveal" id="nlForm"
-              action="https://buttondown.email/api/emails/embed-subscribe/YOUR-USERNAME"
               method="post" target="popupwindow"
               onsubmit="return handleNewsletterSubmit(event)">
             <input type="hidden" name="embed" value="1">
             <input class="nl-input" id="nlName" name="metadata__name" type="text" placeholder="Your first name (optional)" aria-label="Your first name (optional)">
             <input class="nl-input" id="nlEmail" name="email" type="email" placeholder="Your email address" required aria-label="Your email address">
             <button class="nl-submit" id="nlBtn" type="submit">💌 Subscribe, It's Free</button>
-            <p class="nl-note">No spam. Unsubscribe any time. Usually 1-2 emails per month.</p>
+            <p class="nl-status" id="nlStatus" role="status" aria-live="polite"></p>
+            <p class="nl-note" id="nlNote">No spam. Unsubscribe any time. Usually 1-2 emails per month.</p>
             <div class="nl-divider">or follow on social instead</div>
             <a href="https://www.instagram.com/jv_design.studio/" target="_blank" class="btn-ig-nl" rel="noopener noreferrer">📸 Follow @jv_design.studio on Instagram</a>
         </form>
@@ -315,35 +323,77 @@ const _revObs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isInte
 document.querySelectorAll('.reveal').forEach(el=>_revObs.observe(el));
 
 /* ── Newsletter form handler ── */
-function handleNewsletterSubmit(e){
-  var email = document.getElementById('nlEmail').value.trim();
-  var name  = document.getElementById('nlName').value.trim();
-  var btn   = document.getElementById('nlBtn');
-  var form  = document.getElementById('nlForm');
+/* ═══════════════════════════════════════════════════════════════════
+   NEWSLETTER SIGNUP
+   ───────────────────────────────────────────────────────────────────
+   TO TURN THE FORM ON, fill in NEWSLETTER_ENDPOINT below. That is the
+   only line that needs changing.
 
-  if(!email || !email.includes('@') || !email.includes('.')){
-    document.getElementById('nlEmail').focus();
-    document.getElementById('nlEmail').style.borderColor = '#BC4749';
+     Buttondown  https://buttondown.com/api/emails/embed-subscribe/YOURNAME
+     Mailchimp   https://YOURLIST.us1.list-manage.com/subscribe/post?u=...&id=...
+     Formspree   https://formspree.io/f/YOURFORMID
+
+   While it is empty the form deliberately does NOT claim to have signed
+   anyone up. It says signups are not open and points at the channels
+   that genuinely work. Never replace that with a success message: an
+   unsent signup that reports success is worse than no form at all.
+   ═══════════════════════════════════════════════════════════════════ */
+var NEWSLETTER_ENDPOINT = '';
+
+(function(){
+  var form = document.getElementById('nlForm');
+  if (form && NEWSLETTER_ENDPOINT) form.action = NEWSLETTER_ENDPOINT;
+})();
+
+function nlSetStatus(kind, html){
+  var s = document.getElementById('nlStatus');
+  if(!s) return;
+  s.className = 'nl-status show ' + kind;
+  s.innerHTML = html;
+}
+
+function handleNewsletterSubmit(e){
+  var emailEl = document.getElementById('nlEmail');
+  var email   = emailEl.value.trim();
+  var btn     = document.getElementById('nlBtn');
+
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    emailEl.focus();
+    emailEl.style.borderColor = '#BC4749';
+    nlSetStatus('error', 'That email address does not look right. Check it and try again.');
     e.preventDefault(); return false;
   }
+  emailEl.style.borderColor = '';
 
-  /* Show success immediately */
-  btn.textContent = '✅ Subscribed! Welcome aboard.';
-  btn.style.background = '#2d7a4a';
-  btn.style.boxShadow  = '0 4px 0 #1a5c34';
-  btn.disabled = true;
-  document.getElementById('nlEmail').disabled = true;
-  document.getElementById('nlName').disabled  = true;
-
-  /* If Buttondown username not yet set, fall back to mailto */
-  if(form.action.includes('YOUR-USERNAME')){
+  /* Not configured: be honest, and offer the routes that do work. */
+  if(!NEWSLETTER_ENDPOINT){
     e.preventDefault();
-    var subject = encodeURIComponent('Newsletter signup' + (name ? ', ' + name : ''));
-    var body = encodeURIComponent('Email: ' + email + (name ? '\nName: ' + name : '') + '\n\n(via jvdesignstudio.co.uk/newsletter)');
-    window.open('mailto:hello@jvdesignstudio.co.uk?subject=' + subject + '&body=' + body);
+    nlSetStatus('error',
+      '<strong>Email signups are not open yet.</strong><br>' +
+      'Nothing was sent, so please do not wait on an email from us. ' +
+      'The <a href="devlog.html">Dev Log</a> and ' +
+      '<a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a> ' +
+      'are both up to date in the meantime.');
     return false;
   }
-  return true; /* let Buttondown handle the POST */
+
+  /* Configured: hand off to the provider. Most embed endpoints send no CORS
+     headers, so this is a real form POST into the named popup rather than a
+     fetch. We can see that we handed off; we cannot see the provider's answer,
+     so we say exactly that and no more. */
+  btn.textContent = '💌 Opening confirmation…';
+  btn.disabled = true;
+  nlSetStatus('pending',
+    '<strong>Almost there.</strong><br>' +
+    'Finish confirming in the window that just opened, then check your inbox ' +
+    'for the confirmation email.');
+
+  setTimeout(function(){
+    btn.disabled = false;
+    btn.textContent = '💌 Subscribe, It\'s Free';
+  }, 4000);
+
+  return true;
 }
 </script>
 

@@ -117,6 +117,7 @@ html,body{height:100%;}
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -201,6 +202,8 @@ html,body{height:100%;}
     <button class="sec-btn" id="rerollTheme">🔀 New Theme</button>
     <button class="sec-btn" id="rerollMechanic">🔀 New Mechanic</button>
     <button class="sec-btn" id="rerollTwist">🔀 New Twist</button>
+    <button class="sec-btn" id="copyIdea" title="Copy this idea as text">📋 Copy</button>
+    <button class="sec-btn" id="saveIdea" title="Keep this idea in Recent Ideas">⭐ Keep</button>
   </div>
 
   <!-- FILTERS -->
@@ -277,10 +280,18 @@ let history = [];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function getList(key) {
+  const d = DATA[key];
+  if (!d) return [];
+  if (Array.isArray(d)) return d;
   const e = filters.engine, c = filters.complex;
-  if (e !== 'any' && DATA[key][e]) return DATA[key][e];
-  if (c !== 'any' && DATA[key][c]) return DATA[key][c];
-  return DATA[key].any || DATA[key];
+  const eList = (e !== 'any' && d[e]) ? d[e] : null;
+  const cList = (c !== 'any' && d[c]) ? d[c] : null;
+  // Both set: honour both by intersecting, rather than letting engine win outright.
+  if (eList && cList) {
+    const both = eList.filter(x => cList.includes(x));
+    return both.length ? both : eList;
+  }
+  return eList || cList || d.any || [];
 }
 
 function buildTitle(genre, theme, mechanic) {
@@ -309,9 +320,55 @@ function generate(keepGenre=false, keepTheme=false, keepMechanic=false, keepTwis
 
   if (!keepGenre && !keepTheme && !keepMechanic && !keepTwist) {
     history.unshift(current);
-    if (history.length > 5) history.pop();
+    if (history.length > 12) history.pop();
+    saveHistory();
     renderHistory();
   }
+}
+
+const GI_KEY='jvds_gameidea_history';
+function saveHistory(){
+  try{ localStorage.setItem(GI_KEY, JSON.stringify(history.slice(0,12))); }catch(e){}
+}
+function loadHistory(){
+  try{
+    const v=JSON.parse(localStorage.getItem(GI_KEY)||'[]');
+    if(Array.isArray(v)) history=v.filter(h=>h&&h.title&&h.genre).slice(0,12);
+  }catch(e){ history=[]; }
+}
+
+function copyIdea(){
+  if(!current){ return; }
+  const txt=`${current.title}\nGenre: ${current.genre}\nTheme: ${current.theme}\nCore mechanic: ${current.mechanic}\nTwist: ${current.twist}`;
+  const done=()=>flash('Copied \u2713');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));
+  } else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){
+  const ta=document.createElement('textarea');
+  ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){}
+  document.body.removeChild(ta);
+}
+function keepIdea(){
+  if(!current) return;
+  if(!history.some(h=>h.title===current.title&&h.twist===current.twist)){
+    history.unshift(current);
+    if(history.length>12) history.pop();
+  }
+  saveHistory(); renderHistory(); flash('Kept \u2b50');
+}
+function flash(msg){
+  let t=document.getElementById('giToast');
+  if(!t){
+    t=document.createElement('div'); t.id='giToast';
+    t.style.cssText='position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1c2333;border:1px solid #e94560;color:#f5a623;padding:7px 18px;border-radius:8px;font-size:.8rem;z-index:10005;opacity:0;transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity=1;
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.opacity=0,1600);
 }
 
 function renderHistory() {
@@ -352,6 +409,12 @@ document.getElementById('rerollGenre').addEventListener('click',    () => genera
 document.getElementById('rerollTheme').addEventListener('click',    () => generate(true,false,true,true));
 document.getElementById('rerollMechanic').addEventListener('click', () => generate(true,true,false,true));
 document.getElementById('rerollTwist').addEventListener('click',    () => generate(true,true,true,false));
+document.getElementById('copyIdea').addEventListener('click', copyIdea);
+document.getElementById('saveIdea').addEventListener('click', keepIdea);
+
+// Bring back anything kept from a previous visit.
+loadHistory();
+renderHistory();
 
 // Filter chips
 document.querySelectorAll('.chip').forEach(chip => {

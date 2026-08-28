@@ -1177,7 +1177,7 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 .starter-btn:hover{background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.4);color:#a78bfa;}
 .genre-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 5px 8px;cursor:pointer;text-align:center;transition:background .14s,border-color .14s,transform .1s,box-shadow .14s;display:flex;flex-direction:column;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent;user-select:none;}
 .genre-card:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);transform:translateY(-1px);}
-.genre-card:active{transform:scale(.94);}
+.genre-card:active{transform:scale(.94);background:rgba(124,58,237,.25);transition-duration:.05s;}
 .genre-card.on{background:rgba(124,58,237,.22);border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,58,237,.28),inset 0 1px 0 rgba(167,139,250,.12);}
 .gc-icon{font-size:1.65rem;line-height:1;display:block;transition:transform .18s cubic-bezier(.2,1.4,.4,1);}
 .genre-card:hover .gc-icon{transform:scale(1.25) rotate(-8deg);}
@@ -1371,6 +1371,138 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 .ec-name{font-size:.6rem;font-weight:700;color:#a78bfa;text-align:center;line-height:1.2;}
 .extra-panel{display:none;background:rgba(0,0,0,.2);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:12px;margin-bottom:8px;flex-direction:column;gap:9px;}
 .extra-panel.open{display:flex;}
+/* ── POWER PICKS ────────────────────────────────────────────────────────────
+   The draft overlay sits inside #gameWrap, not over the whole page, so it
+   still reads correctly in immersive play, in the split-pane studio, and in a
+   shared player-mode link without three separate layouts. Sizes are in cqw/vmin
+   so a card is thumb-sized on a phone and still proportionate on a desktop. */
+#ppOverlay{
+  position:absolute;inset:0;z-index:210;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,2.2vmin,16px);
+  padding:clamp(10px,3vmin,26px);
+  background:radial-gradient(ellipse at 50% 40%,rgba(30,12,60,.93),rgba(5,3,15,.97));
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  font-family:'Fredoka',system-ui,sans-serif;text-align:center;
+  animation:pp-fade .18s ease;
+}
+@keyframes pp-fade{from{opacity:0}to{opacity:1}}
+#ppOverlay .pp-head{display:flex;flex-direction:column;gap:2px;}
+#ppOverlay .pp-title{
+  font-size:clamp(.95rem,3.4vmin,1.5rem);font-weight:800;letter-spacing:.10em;color:#fff;
+  text-shadow:0 0 18px rgba(192,132,252,.75);
+}
+#ppOverlay .pp-sub{font-size:clamp(.56rem,1.7vmin,.78rem);color:rgba(240,234,214,.62);}
+#ppOverlay .pp-cards{
+  display:flex;gap:clamp(6px,1.6vmin,12px);justify-content:center;align-items:stretch;
+  flex-wrap:nowrap;width:100%;max-width:640px;
+}
+#ppOverlay .pp-card{
+  flex:1 1 0;min-width:0;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:clamp(7px,1.8vmin,14px) clamp(4px,1.2vmin,10px);
+  border-radius:clamp(9px,1.8vmin,14px);
+  border:1.5px solid var(--rc);
+  background:linear-gradient(165deg,rgba(255,255,255,.10),rgba(255,255,255,.02));
+  box-shadow:0 0 0 rgba(0,0,0,0),0 6px 22px rgba(0,0,0,.45);
+  color:#e8edf8;cursor:pointer;font-family:inherit;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  animation:pp-deal .34s cubic-bezier(.2,1.3,.4,1) backwards;
+  transition:transform .12s ease,box-shadow .18s ease,background .18s ease;
+}
+@keyframes pp-deal{from{opacity:0;transform:translateY(26px) rotate(-4deg) scale(.9)}to{opacity:1;transform:none}}
+#ppOverlay .pp-card:hover,#ppOverlay .pp-card:focus-visible{
+  background:linear-gradient(165deg,rgba(255,255,255,.18),rgba(255,255,255,.05));
+  box-shadow:0 0 26px var(--rg),0 8px 26px rgba(0,0,0,.5);outline:none;
+}
+#ppOverlay .pp-card:active{transform:scale(.95);}
+#ppOverlay .pp-rar{
+  font-size:clamp(.4rem,1.05vmin,.5rem);font-weight:800;letter-spacing:.14em;color:var(--rc);
+}
+#ppOverlay .pp-icon{font-size:clamp(1.4rem,4.6vmin,2.1rem);line-height:1.1;
+  filter:drop-shadow(0 0 10px var(--rg));}
+#ppOverlay .pp-name{font-size:clamp(.62rem,1.9vmin,.9rem);font-weight:700;line-height:1.15;}
+#ppOverlay .pp-desc{font-size:clamp(.5rem,1.45vmin,.68rem);color:rgba(240,234,214,.7);line-height:1.3;}
+#ppOverlay .pp-owned{font-size:clamp(.45rem,1.2vmin,.58rem);color:rgba(240,234,214,.45);margin-top:2px;}
+#ppOverlay .pp-feeds{
+  margin-top:3px;font-size:clamp(.45rem,1.2vmin,.58rem);font-weight:700;color:#fbbf24;
+  text-shadow:0 0 8px rgba(251,191,36,.6);
+}
+#ppOverlay .pp-foot{display:flex;gap:10px;align-items:center;}
+#ppOverlay .pp-reroll,#ppOverlay .pp-skip{
+  font-family:inherit;font-size:clamp(.55rem,1.6vmin,.74rem);cursor:pointer;
+  padding:clamp(5px,1.2vmin,9px) clamp(11px,2.6vmin,20px);border-radius:999px;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#ppOverlay .pp-reroll{background:rgba(124,58,237,.28);border:1px solid rgba(167,139,250,.5);color:#ddd6fe;}
+#ppOverlay .pp-reroll:disabled{opacity:.35;cursor:default;}
+#ppOverlay .pp-skip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:rgba(240,234,214,.65);}
+
+/* Build strip — always-on readout of what the run has become. */
+#ppHud{
+  position:absolute;left:6px;bottom:6px;z-index:120;display:none;
+  gap:3px;flex-wrap:wrap;max-width:65%;pointer-events:none;
+}
+#ppHud .pp-chip{
+  display:inline-flex;align-items:center;gap:1px;
+  font-size:clamp(.6rem,1.7vmin,.8rem);line-height:1;
+  padding:2px 4px;border-radius:6px;
+  background:rgba(5,3,15,.62);border:1px solid var(--rc,rgba(255,255,255,.2));
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+#ppHud .pp-chip b{font-size:.62em;color:#fff;opacity:.85;}
+#ppHud .pp-chip-syn{
+  border-color:#fbbf24;background:rgba(251,191,36,.2);
+  animation:pp-syn-pulse 1.8s ease-in-out infinite;
+}
+@keyframes pp-syn-pulse{0%,100%{box-shadow:0 0 0 rgba(251,191,36,0)}50%{box-shadow:0 0 10px rgba(251,191,36,.8)}}
+
+/* Synergy announcement. Deliberately the loudest thing in the game. */
+#ppSynergy{
+  position:absolute;left:50%;top:34%;transform:translate(-50%,-50%) scale(.7);
+  z-index:230;pointer-events:none;opacity:0;text-align:center;
+  font-family:'Fredoka',system-ui,sans-serif;
+}
+#ppSynergy.show{animation:pp-syn-in 2.6s cubic-bezier(.2,1.4,.4,1) forwards;}
+@keyframes pp-syn-in{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.7) rotate(-6deg)}
+  12%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(2deg)}
+  20%{transform:translate(-50%,-50%) scale(1) rotate(0)}
+  80%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-58%) scale(.96)}
+}
+#ppSynergy .pp-syn-tag{
+  font-size:clamp(.5rem,1.5vmin,.66rem);font-weight:800;letter-spacing:.22em;color:#fbbf24;
+}
+#ppSynergy .pp-syn-name{
+  font-size:clamp(1.2rem,5.2vmin,2.3rem);font-weight:900;letter-spacing:.04em;color:#fff;
+  text-shadow:0 0 14px #fbbf24,0 0 38px rgba(251,191,36,.75),0 3px 0 rgba(0,0,0,.6);
+}
+#ppSynergy .pp-syn-desc{
+  font-size:clamp(.56rem,1.7vmin,.8rem);color:rgba(255,255,255,.85);margin-top:2px;
+  text-shadow:0 2px 8px rgba(0,0,0,.8);
+}
+
+/* Run summary on the game-over card. */
+.pp-summary{margin:8px 0 2px;display:flex;flex-direction:column;gap:5px;align-items:center;}
+.pp-sum-head{font-size:.54rem;font-weight:800;letter-spacing:.18em;color:rgba(240,234,214,.5);}
+.pp-sum-row{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;}
+.pp-sum-chip{
+  font-size:.58rem;padding:2px 7px;border-radius:999px;
+  border:1px solid var(--rc,rgba(255,255,255,.2));color:#e8edf8;
+  background:rgba(255,255,255,.05);
+}
+.pp-sum-chip.pp-sum-syn{border-color:#fbbf24;color:#fbbf24;background:rgba(251,191,36,.14);font-weight:700;}
+
+/* Very short landscape phones: drop the descriptions so three cards still fit. */
+@media (max-height:430px){
+  #ppOverlay .pp-desc{display:none;}
+  #ppOverlay .pp-icon{font-size:1.5rem;}
+}
+@media (prefers-reduced-motion:reduce){
+  #ppOverlay,#ppOverlay .pp-card,#ppSynergy.show{animation-duration:.01ms!important;}
+  #ppHud .pp-chip-syn{animation:none;}
+}
+
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 </head>
@@ -1391,6 +1523,7 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -5400,8 +5533,32 @@ const liveConfig = {
     scoreStyle: 'default',
     livesStyle: 'hearts',
     scorePopups: true,
-    showTimer: false
+    showTimer: false,
+    // Power Picks: the in-run perk draft. On by default — it is the thing that
+    // makes two runs of the same game play differently.
+    perksEnabled: true
 };
+
+/* Player movement speed and weapon cadence are read directly by all 21 scenes,
+   so rather than touching ~80 call sites the two values become accessors that
+   fold in the current run's perks. The raw author-set numbers live in
+   liveConfig._base and are what save/share/export always write, so a run can
+   never leak its buffs back into the studio sliders. With no perks taken both
+   multipliers are exactly 1 and every genre behaves as it did before. */
+liveConfig._base = { speed: liveConfig.speed, fireCooldown: liveConfig.fireCooldown };
+Object.defineProperty(liveConfig, 'speed', {
+    enumerable: true, configurable: true,
+    get() { return this._base.speed * (typeof RunMods === 'undefined' ? 1 : RunMods.moveSpeedMul); },
+    set(v) { this._base.speed = v; },
+});
+Object.defineProperty(liveConfig, 'fireCooldown', {
+    enumerable: true, configurable: true,
+    get() {
+        const m = (typeof RunMods === 'undefined') ? 1 : RunMods.fireRateMul;
+        return Math.max(24, Math.round(this._base.fireCooldown / m));
+    },
+    set(v) { this._base.fireCooldown = v; },
+});
 
 // Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
 if (!liveConfig.tdStartGold)    liveConfig.tdStartGold    = 150;
@@ -6924,6 +7081,7 @@ function tutClose() {
     }, 320);
 }
 function _updateHeartsDisplay(current, max) {
+    if (typeof RunMods !== 'undefined' && RunMods.bonusLives) max = Math.max(max || 0, RunMods.maxLives);
     const el = document.getElementById('heartsDisplay');
     if (!el) return;
     if (max >= 99) { el.textContent = '❤ ∞'; return; }
@@ -7893,7 +8051,9 @@ function getPayload() {
 }
 
 // ── PHASER ENGINE ─────────────────────────────────────────────────────────────
-const GW = 640, GH = 400;
+// Per-genre world size — set by _launchPhaserGame before each Phaser boot
+let GW = 640, GH = 400;
+const GENRE_DIMS = { FLAPPY:{w:400,h:640}, HOPPER:{w:400,h:640}, DODGE:{w:400,h:640}, RHYTHM:{w:400,h:640}, PINBALL:{w:400,h:640}, MEMORY:{w:400,h:640}, CLICKER:{w:400,h:640}, SNAKE:{w:400,h:640} };
 
 // Convert a data URL to a Blob Object URL for reliable loading in Phaser's XHR loader.
 // Phaser 3's ImageFile runs data URLs through XHR → Blob → ObjectURL internally,
@@ -8326,7 +8486,9 @@ function quitGame() {
     _syncTcPauseIcon();
     if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch(e) {} currentPhaserGame = null; }
     const gw = document.getElementById('gameWrap');
-    if (gw) gw.classList.add('idle');
+    if (gw) { gw.classList.add('idle'); gw.style.aspectRatio = ''; }
+    const gc = document.getElementById('game-container');
+    if (gc) gc.style.aspectRatio = '';
     const ph = document.getElementById('idle-placeholder');
     if (ph) ph.style.display = '';
     const rb = document.getElementById('runGameBtn');
@@ -8396,6 +8558,10 @@ function compileAndBootEngine() {
             if(btn){ btn.classList.add('just-revealed'); setTimeout(()=>btn.classList.remove('just-revealed'),3000); }
         }, 900);
     }
+    // Wipe the previous run's perks, synergies and temporary buffs. This is the
+    // single place a build ends, which is why a buff can no longer outlive the
+    // run that granted it.
+    RunMods.reset();
     // Reset new power-up state on each boot
     liveConfig._puSpeed = false; liveConfig._puShield = false; liveConfig._puMagnet = false; liveConfig._puDouble = false;
     // Reset multi-level progression on each boot
@@ -8458,6 +8624,16 @@ function _introOverlayClick(e) {
 }
 function _launchPhaserGame() {
     const data = _engineData;
+    // Per-genre world — portrait genres author at 400x640
+    const _dims = GENRE_DIMS[data.genre] || { w: 640, h: 400 };
+    GW = _dims.w; GH = _dims.h;
+    try {
+        const _wrap = document.getElementById('gameWrap');
+        const _con  = document.getElementById('game-container');
+        const _ar   = (GW / GH).toFixed(4) + ' / 1';
+        if (_wrap) _wrap.style.aspectRatio = _ar;
+        if (_con)  _con.style.aspectRatio  = _ar;
+    } catch (e) {}
     gameState.lives = liveConfig.lives;
     _updateHeartsDisplay(gameState.lives, liveConfig.lives);
     document.getElementById('goOverlay').classList.remove('show');
@@ -9003,9 +9179,16 @@ function sceneMemory(data) {
                     if (_locked) return;
                     const card = cardObjs[i];
                     if (card.revealed || matched.includes(i) || flipped.includes(i)) return;
-                    card.bg.setVisible(false);
-                    card.back.setVisible(true);
-                    card.txt.setVisible(true);
+                    // Flip-in: scale X to 0, swap faces, scale back
+                    this.tweens.add({
+                        targets: card.bg, scaleX: 0, duration: 100, ease: 'Cubic.easeIn',
+                        onComplete: () => {
+                            card.bg.setVisible(false); card.bg.setScale(1);
+                            card.back.setVisible(true); card.txt.setVisible(true);
+                            card.back.setScale(0); card.txt.setScale(0);
+                            this.tweens.add({ targets: [card.back, card.txt], scaleX: 1, scaleY: 1, duration: 100, ease: 'Cubic.easeOut' });
+                        }
+                    });
                     GameAudio.play('hit');
                     flipped.push(i);
                     if (flipped.length === 2) {
@@ -9054,11 +9237,19 @@ function sceneMemory(data) {
                         } else {
                             _streak = 0;
                             if (_streakTxt) _streakTxt.setVisible(false);
-                            this.time.delayedCall(liveConfig.memoryFlipDelay || 900, () => {
-                                cardObjs[a].bg.setVisible(true); cardObjs[a].back.setVisible(false); cardObjs[a].txt.setVisible(false);
-                                cardObjs[b].bg.setVisible(true); cardObjs[b].back.setVisible(false); cardObjs[b].txt.setVisible(false);
-                                flipped = []; _locked = false;
-                                GameAudio.play('hit');
+                        this.time.delayedCall(liveConfig.memoryFlipDelay || 900, () => {
+                            // Flip-out: scale faces to 0, swap, scale back
+                            [a, b].forEach(idx => {
+                                this.tweens.add({
+                                    targets: [cardObjs[idx].back, cardObjs[idx].txt], scaleX: 0, scaleY: 0, duration: 100, ease: 'Cubic.easeIn',
+                                    onComplete: () => {
+                                        cardObjs[idx].back.setVisible(false); cardObjs[idx].txt.setVisible(false);
+                                        cardObjs[idx].bg.setVisible(true); cardObjs[idx].bg.setScale(0);
+                                        this.tweens.add({ targets: cardObjs[idx].bg, scaleX: 1, duration: 100, ease: 'Cubic.easeOut' });
+                                    }
+                                });
+                            });
+                            flipped = []; _locked = false;
                             });
                         }
                     }
@@ -9471,11 +9662,12 @@ function _sceneTickBase(scene, score) {
     }
     if (_speedRunActive && !_speedRunStart) {
         const k = scene.cursors;
-        if (k && (k.left.isDown||k.right.isDown||k.up.isDown||k.space?.isDown)||touchInput.left||touchInput.right||touchInput.up||touchInput.fire) {
+        if ((k && (k.left.isDown||k.right.isDown||k.up.isDown||k.space?.isDown))||touchInput.left||touchInput.right||touchInput.up||touchInput.fire) {
             _speedRunBegin();
         }
     }
     if (score !== undefined) _sceneCheckWin(scene, score);
+    _ppTick(scene, score);
     _checkCustomAchs(scene);
     _runEventsRuntime(scene, score);
 }
@@ -9576,7 +9768,7 @@ function _zoomPulse(scale, duration) {
     const ms = duration !== undefined ? duration : 130;
     const cam = sc.cameras.main;
     sc.tweens.add({ targets: cam, zoom: s, duration: ms/2, ease: 'Quad.easeOut',
-        yoyo: true, onComplete: () => { cam.zoom = 1; } });
+        yoyo: true, onComplete: () => { cam.zoom = liveConfig.cameraZoom || 1; } });
 }
 
 /** Big floating combo/score text over the scene */
@@ -9652,6 +9844,640 @@ function _testJuice() {
     _chromaFlash(0.8);
     if (liveConfig.juiceZoom) _zoomPulse(liveConfig.juiceZoomScale, 150);
     _juiceText(cx, cy - 30, '💥 JUICE!', '#a78bfa');
+}
+
+// ── POWER PICKS: run-scoped perks, stacking, and synergies ───────────────────
+//
+// WHY THIS EXISTS
+// Every generated game used to play out identically from the first frame to the
+// last. The only branch point was the "Upgrade Shop" — which was never called
+// from anywhere (dead code), offered four flat options, one of which
+// (`shield`) set a `liveConfig` flag nothing ever read, and two of which
+// (`speed`, `damage`) permanently mutated the author's own game config so the
+// studio sliders drifted every time you played.
+//
+// Power Picks replaces it. The run offers a choice of three perks at the start
+// and at escalating score milestones. Perks stack, and specific pairs form
+// named Synergies that announce themselves loudly, because "wait, these two
+// work together" is the moment that makes someone start another run.
+//
+// THE HARD RULE: a perk never writes to liveConfig.
+// Everything a perk does is a multiplier or counter held in RunMods, which is
+// wiped on every boot. That is what makes the old config-corruption class of
+// bug impossible rather than merely fixed: there is no longer a write path from
+// a run into the author's saved game.
+
+/* ── RunMods: the entire mutable state of a run's build ────────────────────── */
+const RunMods = {
+    stacks: Object.create(null),   // perkId -> times taken
+    synergies: [],                 // ids of synergies currently active
+    bonusLives: 0,
+    picksTaken: 0,
+    nextPickScore: 0,
+    rerollsLeft: 0,
+    _timed: Object.create(null),   // key -> expiry timestamp, for temporary buffs
+
+    reset() {
+        this.stacks = Object.create(null);
+        this.synergies = [];
+        this.bonusLives = 0;
+        this.picksTaken = 0;
+        this.nextPickScore = 0;
+        this.rerollsLeft = 1;
+        this._timed = Object.create(null);
+        _ppHudRender();
+    },
+    count(id) { return this.stacks[id] || 0; },
+    has(id)   { return !!this.stacks[id]; },
+    isEmpty() { for (const k in this.stacks) return false; return true; },
+
+    /* Temporary buffs live here too, keyed by name with an absolute expiry.
+       Unlike the old setTimeout-per-powerup approach these cannot stack their
+       way into a permanent buff, cannot fire after the run they belong to has
+       ended, and are wiped by reset(). */
+    grantTimed(key, ms) { this._timed[key] = Math.max(this._timed[key] || 0, Date.now() + ms); },
+    timed(key) { return (this._timed[key] || 0) > Date.now(); },
+    timedRemaining(key) { return Math.max(0, (this._timed[key] || 0) - Date.now()); },
+
+    /* ── Derived stats. Every one returns its identity value on an empty build,
+       so a run with no perks behaves bit-for-bit as it did before. ────────── */
+    get damageBonus() {
+        return this.count('heavy_rounds') + this.count('siege') * 2 + (this.has('glass_cannon') ? 2 : 0);
+    },
+    get critChance() {
+        let c = this.count('keen_edge') * 0.12 + this.count('lucky_strike') * 0.07;
+        if (this.hasSyn('executioner')) c += 0.15;
+        return Math.min(0.85, c);
+    },
+    get critMul() {
+        return 2 + this.count('deep_cuts') * 0.9 + (this.hasSyn('executioner') ? 1 : 0);
+    },
+    get fireRateMul() {
+        let m = 1 + this.count('overclock') * 0.25 + this.count('hair_trigger') * 0.15;
+        if (this.timed('rapid')) m *= 2;
+        if (this.hasSyn('bullet_storm')) m *= 1.3;
+        if (this.has('siege')) m *= 0.7;           // siege trades cadence for damage
+        return m;
+    },
+    get moveSpeedMul() {
+        let m = 1 + this.count('light_step') * 0.14 + this.count('adrenaline') * 0.10;
+        if (this.timed('haste')) m *= 1.5;
+        if (this.has('heavy_plate')) m *= 0.85;
+        if (this.hasSyn('blur')) m *= 1.2;
+        return m;
+    },
+    get scoreMul() {
+        let m = 1 + this.count('greed') * 0.30 + this.count('showboat') * 0.20;
+        if (this.timed('frenzy')) m *= 2;
+        if (this.has('glass_cannon')) m *= 1.25;
+        if (this.hasSyn('jackpot')) m *= 1.5;
+        return m;
+    },
+    get coinMul()  { return 1 + this.count('greed') * 0.5 + (this.hasSyn('jackpot') ? 1 : 0); },
+    get pierce()   { return this.count('pierce') + (this.hasSyn('rail_gun') ? 2 : 0); },
+    get multishot(){ return this.count('split_shot') + (this.hasSyn('bullet_storm') ? 1 : 0); },
+    get spread()   { return 0.16 + this.count('split_shot') * 0.04; },
+    get lifesteal(){ return this.count('vampiric') * 0.045 + (this.hasSyn('bloodbound') ? 0.06 : 0); },
+    get dodgeChance() {
+        let d = this.count('phase') * 0.14;
+        if (this.hasSyn('blur')) d += 0.12;
+        return Math.min(0.7, d);
+    },
+    get thorns()   { return this.has('thorns') || this.hasSyn('bloodbound'); },
+    get magnet()   { return this.has('magnet') || this.timed('magnet'); },
+    get lootRateBonus() { return this.count('scavenger') * 0.22 + (this.hasSyn('jackpot') ? 0.25 : 0); },
+    get orbitals() { return this.count('orbital') + (this.hasSyn('rail_gun') ? 0 : 0); },
+    get maxLives() { return (liveConfig.lives || 3) + this.bonusLives; },
+
+    hasSyn(id) { return this.synergies.indexOf(id) !== -1; },
+};
+
+/* ── Perk pool ─────────────────────────────────────────────────────────────
+   `needs` lists the capabilities a genre must have for the perk to be worth
+   offering. Offering a Multishot in Pong is exactly the mistake the old shop
+   made with its dead Shield option, so perks are filtered, not padded.
+   `unlock` is the lifetime stat gate — the pool grows as the player plays. */
+const PERK_RARITY = {
+    common:    { w: 100, col: '#94a3b8', glow: 'rgba(148,163,184,.5)',  label: 'COMMON'    },
+    rare:      { w: 46,  col: '#60a5fa', glow: 'rgba(96,165,250,.65)',  label: 'RARE'      },
+    epic:      { w: 17,  col: '#c084fc', glow: 'rgba(192,132,252,.75)', label: 'EPIC'      },
+    legendary: { w: 5,   col: '#fbbf24', glow: 'rgba(251,191,36,.85)',  label: 'LEGENDARY' },
+};
+
+const PERKS = [
+    /* Offence — cadence and damage */
+    { id:'overclock',   name:'Overclock',    icon:'⚡', rarity:'common', needs:['shoot'], max:4, desc:'+25% fire rate' },
+    { id:'hair_trigger',name:'Hair Trigger', icon:'🎯', rarity:'common', needs:['shoot'], max:4, desc:'+15% fire rate' },
+    { id:'heavy_rounds',name:'Heavy Rounds', icon:'💥', rarity:'common', needs:['shoot'], max:4, desc:'+1 damage per shot' },
+    { id:'split_shot',  name:'Split Shot',   icon:'🔱', rarity:'rare',   needs:['shoot'], max:3, desc:'+1 extra projectile, fanned' },
+    { id:'pierce',      name:'Piercing',     icon:'➡️', rarity:'rare',   needs:['shoot'], max:3, desc:'Shots pass through 1 more enemy' },
+    { id:'siege',       name:'Siege Rounds', icon:'🛰', rarity:'epic',   needs:['shoot'], max:2, desc:'+2 damage, −30% fire rate' },
+
+    /* Offence — crit line */
+    { id:'keen_edge',   name:'Keen Edge',    icon:'🗡', rarity:'common', needs:['shoot'], max:5, desc:'+12% critical chance' },
+    { id:'lucky_strike',name:'Lucky Strike', icon:'🍀', rarity:'common', needs:['shoot'], max:4, desc:'+7% critical chance' },
+    { id:'deep_cuts',   name:'Deep Cuts',    icon:'🩸', rarity:'rare',   needs:['shoot'], max:4, desc:'Criticals hit +90% harder' },
+
+    /* Sustain */
+    { id:'vitality',    name:'Vitality',     icon:'❤️', rarity:'rare',   needs:['hp'],    max:3, desc:'+1 maximum life, healed now' },
+    { id:'vampiric',    name:'Vampiric',     icon:'🧛', rarity:'rare',   needs:['shoot','hp'], max:4, desc:'4.5% chance a kill heals you' },
+    { id:'heavy_plate', name:'Heavy Plate',  icon:'🛡', rarity:'common', needs:['hp'],    max:1, desc:'Ignore the first hit each wave, −15% speed' },
+    { id:'phase',       name:'Phase Shift',  icon:'👻', rarity:'rare',   needs:['hp'],    max:4, desc:'+14% chance to phase through a hit' },
+    { id:'thorns',      name:'Thornmail',    icon:'🌵', rarity:'epic',   needs:['hp'],    max:1, desc:'Taking a hit detonates everything near you' },
+
+    /* Movement */
+    { id:'light_step',  name:'Light Step',   icon:'👟', rarity:'common', needs:['move'],  max:4, desc:'+14% movement speed' },
+    { id:'adrenaline',  name:'Adrenaline',   icon:'🔥', rarity:'common', needs:['move'],  max:4, desc:'+10% movement speed' },
+
+    /* Economy and score */
+    { id:'greed',       name:'Greed',        icon:'💰', rarity:'common', needs:['score'], max:4, desc:'+30% score, +50% coin value' },
+    { id:'showboat',    name:'Showboat',     icon:'✨', rarity:'common', needs:['score'], max:4, desc:'+20% score' },
+    { id:'scavenger',   name:'Scavenger',    icon:'🔎', rarity:'common', needs:['loot'],  max:3, desc:'+22% loot drop chance' },
+    { id:'magnet',      name:'Loot Magnet',  icon:'🧲', rarity:'rare',   needs:['loot'],  max:1, desc:'Loot flies to you from anywhere' },
+
+    /* Risk / reward */
+    { id:'glass_cannon',name:'Glass Cannon', icon:'💎', rarity:'epic',   needs:['shoot','hp'], max:1, desc:'+2 damage, +25% score — but drop to 1 life' },
+    { id:'orbital',     name:'Orbital',      icon:'🪐', rarity:'epic',   needs:['shoot'], max:3, desc:'A shard orbits you and shatters enemies' },
+];
+
+/* Capability per genre. Anything not listed gets score only, which still makes
+   the Greed / Showboat line meaningful for Clicker, Memory, Rhythm and friends. */
+const GENRE_CAPS = {
+    SHOOTER:      ['shoot','move','hp','score','loot'],
+    INVADERS:     ['shoot','move','hp','score','loot'],
+    ASTEROIDS:    ['shoot','move','hp','score','loot'],
+    ROGUELIKE:    ['shoot','move','hp','score','loot'],
+    WAVESURVIVAL: ['shoot','move','hp','score','loot'],
+    PLATFORMER:   ['move','hp','score','loot'],
+    DODGE:        ['move','hp','score','loot'],
+    RUNNER:       ['move','hp','score'],
+    HOPPER:       ['move','hp','score'],
+    SNAKE:        ['move','hp','score'],
+    BREAKER:      ['move','hp','score'],
+    BEAT:         ['move','hp','score'],
+    FLAPPY:       ['hp','score'],
+    PONG:         ['move','score'],
+    RACING:       ['move','score'],
+    PINBALL:      ['score'],
+    PUZZLE:       ['score'],
+    RHYTHM:       ['score'],
+    DEFENSE:      ['score'],
+    CLICKER:      ['score'],
+    MEMORY:       ['score'],
+};
+
+/* ── Synergies ─────────────────────────────────────────────────────────────
+   Deliberately few and deliberately loud. Each one needs two perk lines the
+   player took for their own sake, so discovering it feels like a reward for
+   reading rather than a checklist. */
+const SYNERGIES = [
+    { id:'bullet_storm', name:'BULLET STORM',  icon:'🌪',
+      desc:'+30% fire rate and an extra projectile',
+      when: () => RunMods.count('overclock') + RunMods.count('hair_trigger') >= 3 && RunMods.has('split_shot') },
+    { id:'executioner',  name:'EXECUTIONER',   icon:'☠️',
+      desc:'+15% crit chance and +1× crit damage',
+      when: () => RunMods.count('keen_edge') + RunMods.count('lucky_strike') >= 3 && RunMods.has('deep_cuts') },
+    { id:'rail_gun',     name:'RAIL GUN',      icon:'🚄',
+      desc:'Shots pierce 2 more enemies',
+      when: () => RunMods.has('pierce') && (RunMods.has('siege') || RunMods.count('heavy_rounds') >= 2) },
+    { id:'bloodbound',   name:'BLOODBOUND',    icon:'🩸',
+      desc:'+6% lifesteal, and hits detonate around you',
+      when: () => RunMods.has('vampiric') && (RunMods.has('thorns') || RunMods.has('glass_cannon')) },
+    { id:'blur',         name:'BLUR',          icon:'💨',
+      desc:'+20% speed and +12% dodge',
+      when: () => RunMods.count('light_step') + RunMods.count('adrenaline') >= 3 && RunMods.has('phase') },
+    { id:'jackpot',      name:'JACKPOT',       icon:'🎰',
+      desc:'+50% score, double coins, more loot',
+      when: () => RunMods.count('greed') >= 2 && (RunMods.has('magnet') || RunMods.has('scavenger')) },
+];
+
+/* ── Meta progression ──────────────────────────────────────────────────────
+   Lifetime totals unlock nothing that changes power — only variety. A player
+   who has never finished a run still gets a complete, fair build; a player on
+   run twenty gets a wider pool and a codex of synergies they have found. */
+const _PP_META_KEY = 'jv_arcade_meta';
+function _ppMeta() {
+    try {
+        const m = JSON.parse(localStorage.getItem(_PP_META_KEY) || '{}');
+        m.runs = m.runs || 0; m.picks = m.picks || 0; m.best = m.best || 0;
+        m.synergies = m.synergies || {};
+        return m;
+    } catch (e) { return { runs: 0, picks: 0, best: 0, synergies: {} }; }
+}
+function _ppSaveMeta(m) { try { localStorage.setItem(_PP_META_KEY, JSON.stringify(m)); } catch (e) {} }
+
+/* ── Offer generation ──────────────────────────────────────────────────── */
+function _ppEligible() {
+    const caps = GENRE_CAPS[(_engineData && _engineData.genre) || ''] || ['score'];
+    return PERKS.filter(p => {
+        if (RunMods.count(p.id) >= (p.max || 99)) return false;
+        return p.needs.every(n => caps.indexOf(n) !== -1);
+    });
+}
+
+function _ppRollOffer(n) {
+    const pool = _ppEligible();
+    const out = [];
+    const used = Object.create(null);
+    // Weighted draw without replacement. Later picks tilt toward rarer perks so
+    // a long run keeps escalating instead of dribbling out commons.
+    const tilt = 1 + RunMods.picksTaken * 0.35;
+    for (let i = 0; i < n && out.length < pool.length; i++) {
+        let total = 0;
+        const weights = pool.map(p => {
+            if (used[p.id]) return 0;
+            const base = PERK_RARITY[p.rarity].w;
+            const w = (p.rarity === 'common') ? base : base * tilt;
+            total += w;
+            return w;
+        });
+        if (total <= 0) break;
+        let r = Math.random() * total;
+        for (let j = 0; j < pool.length; j++) {
+            r -= weights[j];
+            if (r <= 0) { out.push(pool[j]); used[pool[j].id] = 1; break; }
+        }
+    }
+    return out;
+}
+
+/* ── Granting ──────────────────────────────────────────────────────────── */
+function _ppGrant(perk) {
+    RunMods.stacks[perk.id] = RunMods.count(perk.id) + 1;
+    RunMods.picksTaken++;
+
+    // The few perks with an immediate, one-off effect apply it here. Everything
+    // else is read live from RunMods, so there is nothing to apply.
+    if (perk.id === 'vitality') {
+        RunMods.bonusLives++;
+        const sc = _activeScene;
+        if (sc && sc._maxHp !== undefined) { sc._maxHp++; sc._hp = Math.min(sc._maxHp, sc._hp + 1); sc._updateHud && sc._updateHud(); }
+        else { gameState.lives++; }
+        _updateHeartsDisplay(gameState.lives, RunMods.maxLives);
+    }
+    if (perk.id === 'glass_cannon') {
+        const sc = _activeScene;
+        if (sc && sc._maxHp !== undefined) { sc._maxHp = 1; sc._hp = 1; sc._updateHud && sc._updateHud(); }
+        else { gameState.lives = 1; RunMods.bonusLives = 1 - (liveConfig.lives || 3); }
+        _updateHeartsDisplay(gameState.lives, RunMods.maxLives);
+    }
+    if (perk.id === 'heavy_plate') RunMods.grantTimed('plate', 1e9);
+
+    const meta = _ppMeta();
+    meta.picks++;
+    _ppSaveMeta(meta);
+
+    _ppCheckSynergies();
+    _ppHudRender();
+}
+
+/* Fires once per synergy per run, with a deliberately large amount of noise —
+   this is the payoff moment the whole system exists to produce. */
+function _ppCheckSynergies() {
+    SYNERGIES.forEach(s => {
+        if (RunMods.hasSyn(s.id)) return;
+        let met = false;
+        try { met = !!s.when(); } catch (e) { met = false; }
+        if (!met) return;
+        RunMods.synergies.push(s.id);
+        const meta = _ppMeta();
+        const isNew = !meta.synergies[s.id];
+        meta.synergies[s.id] = Date.now();
+        _ppSaveMeta(meta);
+        _ppSynergyBanner(s, isNew);
+    });
+}
+
+function _ppSynergyBanner(syn, isNew) {
+    _shake(14, 420);
+    _chromaFlash(0.9);
+    _zoomPulse(1.08, 260);
+    _hitStop(90);
+    GameAudio.play('score');
+    if (navigator.vibrate) { try { navigator.vibrate([40, 30, 40, 30, 90]); } catch (e) {} }
+    let el = document.getElementById('ppSynergy');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'ppSynergy';
+        document.getElementById('gameWrap').appendChild(el);
+    }
+    el.innerHTML =
+        `<div class="pp-syn-inner">
+           <div class="pp-syn-tag">${isNew ? '★ NEW SYNERGY' : 'SYNERGY'}</div>
+           <div class="pp-syn-name">${syn.icon} ${_ppEsc(syn.name)}</div>
+           <div class="pp-syn-desc">${_ppEsc(syn.desc)}</div>
+         </div>`;
+    el.classList.remove('show');
+    void el.offsetWidth;               // restart the animation on a repeat fire
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function _ppEsc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+/* ── The draft overlay ─────────────────────────────────────────────────── */
+let _ppOpen = false;
+let _ppOnClose = null;
+
+function _ppShouldOffer(score) {
+    if (_ppOpen) return false;
+    if (!liveConfig.perksEnabled) return false;
+    if (RunMods.picksTaken >= 12) return false;
+    return score >= RunMods.nextPickScore;
+}
+
+/* Genres score on wildly different scales — a Clicker passes 1000 in seconds
+   while a Pong set tops out near 10 — so the ladder is seeded per genre and
+   then grows geometrically. */
+const _PP_PICK_BASE = {
+    SHOOTER: 300, INVADERS: 300, ASTEROIDS: 250, ROGUELIKE: 220, WAVESURVIVAL: 300,
+    PLATFORMER: 150, DODGE: 200, RUNNER: 400, HOPPER: 120, SNAKE: 60,
+    BREAKER: 200, BEAT: 3, FLAPPY: 8, PONG: 2, RACING: 1,
+    PINBALL: 2500, PUZZLE: 3, RHYTHM: 800, DEFENSE: 400, CLICKER: 900, MEMORY: 3,
+};
+function _ppScheduleNext() {
+    const base = _PP_PICK_BASE[(_engineData && _engineData.genre) || ''] || 300;
+    RunMods.nextPickScore = Math.ceil(base * Math.pow(2.05, RunMods.picksTaken));
+}
+
+function _ppOfferPicks(scene, opts) {
+    opts = opts || {};
+    if (_ppOpen) return;
+    const offer = _ppRollOffer(3);
+    if (!offer.length) { _ppScheduleNext(); return; }
+    _ppOpen = true;
+
+    if (scene && scene.scene && scene.scene.pause) { try { scene.scene.pause(); } catch (e) {} }
+    GameAudio.play && GameAudio.play('score');
+
+    const wrap = document.getElementById('gameWrap');
+    let ov = document.getElementById('ppOverlay');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'ppOverlay'; wrap.appendChild(ov); }
+
+    const heading = opts.loadout ? 'CHOOSE YOUR LOADOUT' : 'POWER PICK';
+    const sub = opts.loadout
+        ? 'Every run starts different. Pick one.'
+        : `Pick ${RunMods.picksTaken + 1} — your build is growing`;
+
+    ov.innerHTML =
+        `<div class="pp-head">
+           <div class="pp-title">${heading}</div>
+           <div class="pp-sub">${_ppEsc(sub)}</div>
+         </div>
+         <div class="pp-cards">${offer.map((p, i) => _ppCardHTML(p, i)).join('')}</div>
+         <div class="pp-foot">
+           <button class="pp-reroll" id="ppRerollBtn" ${RunMods.rerollsLeft > 0 ? '' : 'disabled'}
+                   onclick="_ppReroll()">🎲 Reroll (${RunMods.rerollsLeft})</button>
+           <button class="pp-skip" onclick="_ppPick(-1)">Skip →</button>
+         </div>`;
+    ov.style.display = 'flex';
+    ov._offer = offer;
+    _ppOnClose = opts.onClose || null;
+}
+
+function _ppCardHTML(p, i) {
+    const r = PERK_RARITY[p.rarity];
+    const owned = RunMods.count(p.id);
+    // Show the player which of their existing lines this feeds — the cheapest
+    // possible nudge toward discovering a synergy on purpose.
+    const feeds = SYNERGIES.filter(s => {
+        if (RunMods.hasSyn(s.id)) return false;
+        const before = RunMods.count(p.id);
+        RunMods.stacks[p.id] = before + 1;
+        let now = false;
+        try { now = !!s.when(); } catch (e) {}
+        if (before) RunMods.stacks[p.id] = before; else delete RunMods.stacks[p.id];
+        return now;
+    });
+    return `<button class="pp-card" style="--rc:${r.col};--rg:${r.glow};animation-delay:${i * 90}ms"
+                    onclick="_ppPick(${i})">
+              <div class="pp-rar">${r.label}</div>
+              <div class="pp-icon">${p.icon}</div>
+              <div class="pp-name">${_ppEsc(p.name)}</div>
+              <div class="pp-desc">${_ppEsc(p.desc)}</div>
+              ${owned ? `<div class="pp-owned">owned ×${owned}</div>` : ''}
+              ${feeds.length ? `<div class="pp-feeds">⚡ completes ${_ppEsc(feeds[0].name)}</div>` : ''}
+            </button>`;
+}
+
+function _ppPick(idx) {
+    const ov = document.getElementById('ppOverlay');
+    if (!ov || !_ppOpen) return;
+    const offer = ov._offer || [];
+    if (idx >= 0 && offer[idx]) {
+        _ppGrant(offer[idx]);
+        _burst(GW / 2, GH / 2, 0xfbbf24, 14);
+        showToast(offer[idx].icon + ' ' + offer[idx].name + ' acquired!', 'success');
+    }
+    _ppClose();
+}
+
+function _ppReroll() {
+    if (RunMods.rerollsLeft <= 0) return;
+    RunMods.rerollsLeft--;
+    const ov = document.getElementById('ppOverlay');
+    if (!ov) return;
+    const offer = _ppRollOffer(3);
+    if (!offer.length) return;
+    ov._offer = offer;
+    ov.querySelector('.pp-cards').innerHTML = offer.map((p, i) => _ppCardHTML(p, i)).join('');
+    const btn = document.getElementById('ppRerollBtn');
+    if (btn) { btn.textContent = `🎲 Reroll (${RunMods.rerollsLeft})`; if (!RunMods.rerollsLeft) btn.disabled = true; }
+}
+
+function _ppClose() {
+    const ov = document.getElementById('ppOverlay');
+    if (ov) ov.style.display = 'none';
+    _ppOpen = false;
+    _ppScheduleNext();
+    const cb = _ppOnClose; _ppOnClose = null;
+    const sc = _activeScene;
+    if (sc && sc.scene && sc.scene.resume) { try { sc.scene.resume(); } catch (e) {} }
+    if (cb) { try { cb(); } catch (e) {} }
+}
+
+/* ── Build HUD: a compact strip of what you are carrying ────────────────── */
+function _ppHudRender() {
+    let hud = document.getElementById('ppHud');
+    const wrap = document.getElementById('gameWrap');
+    if (!wrap) return;
+    if (!hud) { hud = document.createElement('div'); hud.id = 'ppHud'; wrap.appendChild(hud); }
+    if (RunMods.isEmpty()) { hud.style.display = 'none'; hud.innerHTML = ''; return; }
+    const items = PERKS.filter(p => RunMods.has(p.id)).map(p => {
+        const n = RunMods.count(p.id);
+        const col = PERK_RARITY[p.rarity].col;
+        return `<span class="pp-chip" style="--rc:${col}" title="${_ppEsc(p.name)}">${p.icon}${n > 1 ? `<b>${n}</b>` : ''}</span>`;
+    }).join('');
+    const syns = RunMods.synergies.map(id => {
+        const s = SYNERGIES.find(x => x.id === id);
+        return s ? `<span class="pp-chip pp-chip-syn" title="${_ppEsc(s.name)}">${s.icon}</span>` : '';
+    }).join('');
+    hud.innerHTML = items + syns;
+    hud.style.display = 'flex';
+}
+
+/* ── Combat maths, shared by every genre that has bullets and enemy HP ──── */
+
+/* Returns {dmg, crit}. Identity on an empty build: 1 damage, never a crit. */
+function _ppRollDamage() {
+    const crit = Math.random() < RunMods.critChance;
+    let dmg = 1 + RunMods.damageBonus;
+    if (crit) dmg = Math.max(dmg + 1, Math.round(dmg * RunMods.critMul));
+    return { dmg, crit };
+}
+
+/* Applies a bullet hit to an enemy carrying a 'hp' data value. Returns true
+   when the enemy died. Handles crit feedback and piercing centrally so every
+   genre reads the same. */
+function _ppApplyHit(scene, bullet, enemy) {
+    const { dmg, crit } = _ppRollDamage();
+    const hp = (enemy.getData('hp') || 1) - dmg;
+    enemy.setData('hp', hp);
+    if (crit) {
+        _juiceText(enemy.x, enemy.y - 14, 'CRIT ' + dmg, '#fbbf24');
+        _burst(enemy.x, enemy.y, 0xfbbf24, 6);
+        _shake(3, 90);
+    }
+    if (bullet && bullet.active) {
+        const used = (bullet.getData('pierced') || 0);
+        if (hp <= 0 && used < RunMods.pierce) bullet.setData('pierced', used + 1);
+        else bullet.destroy();
+    }
+    return hp <= 0;
+}
+
+/* Called on every enemy death from the genres that wire it up. */
+function _ppOnKill(scene, x, y) {
+    if (RunMods.lifesteal > 0 && Math.random() < RunMods.lifesteal) {
+        if (scene && scene._maxHp !== undefined) {
+            if (scene._hp < scene._maxHp) { scene._hp++; scene._updateHud && scene._updateHud(); }
+        } else if (gameState.lives < RunMods.maxLives) {
+            gameState.lives++;
+        }
+        _updateHeartsDisplay(scene && scene._hp !== undefined ? scene._hp : gameState.lives,
+                             scene && scene._maxHp !== undefined ? scene._maxHp : RunMods.maxLives);
+        _juiceText(x, y - 18, '🧛 +HP', '#ef4444');
+    }
+}
+
+/* Fans out extra projectiles around one the genre just fired. `spawn(angleOff)`
+   is genre-supplied so this stays ignorant of how each one builds a bullet. */
+function _ppMultishot(spawn) {
+    const extra = RunMods.multishot;
+    if (extra <= 0) return;
+    const spread = RunMods.spread;
+    for (let i = 1; i <= extra; i++) {
+        const side = (i % 2 === 1) ? 1 : -1;
+        const step = Math.ceil(i / 2);
+        try { spawn(side * spread * step); } catch (e) {}
+    }
+}
+
+/* Hit mitigation, consulted by _onHit before any life is lost. Returns true
+   when the hit should be ignored entirely. */
+function _ppMitigate(scene, actor) {
+    if (RunMods.timed('plate') && RunMods.has('heavy_plate')) {
+        RunMods._timed.plate = 0;                     // consumed until next wave
+        _juiceText(actor ? actor.x : GW / 2, actor ? actor.y - 20 : GH / 2, '🛡 BLOCKED', '#60a5fa');
+        _shake(5, 140);
+        return true;
+    }
+    if (RunMods.dodgeChance > 0 && Math.random() < RunMods.dodgeChance) {
+        _juiceText(actor ? actor.x : GW / 2, actor ? actor.y - 20 : GH / 2, '👻 PHASED', '#c084fc');
+        if (actor && actor.active && scene && scene.tweens) {
+            scene.tweens.add({ targets: actor, alpha: 0.3, duration: 90, yoyo: true });
+        }
+        return true;
+    }
+    return false;
+}
+
+/* Thornmail / Bloodbound: taking a hit clears the space around you. */
+function _ppThornsBlast(scene, actor) {
+    if (!RunMods.thorns || !scene || !actor) return;
+    const R = 130;
+    const groups = [scene.hazards, scene.enemies, scene._ghosts, scene.eBullets, scene._bossBullets];
+    let hits = 0;
+    groups.forEach(g => {
+        if (!g || !g.getChildren) return;
+        g.getChildren().slice().forEach(e => {
+            if (!e || !e.active) return;
+            const dx = e.x - actor.x, dy = e.y - actor.y;
+            if (dx * dx + dy * dy > R * R) return;
+            _burst(e.x, e.y, 0x22c55e, 5);
+            e.destroy();
+            hits++;
+        });
+    });
+    if (hits) { _shake(8, 200); _chromaFlash(0.5); _juiceText(actor.x, actor.y - 26, '🌵 ×' + hits, '#22c55e'); }
+}
+
+/* Orbitals: shards that circle the player and destroy what they touch. */
+function _ppInitOrbitals(scene) {
+    scene._ppOrbs = [];
+    scene._ppOrbAngle = 0;
+}
+function _ppUpdateOrbitals(scene, delta) {
+    const want = RunMods.orbitals;
+    if (!scene._ppOrbs) _ppInitOrbitals(scene);
+    const actor = scene.actor || scene.player || scene.car || null;
+    if (!actor || !actor.active) return;
+    while (scene._ppOrbs.length < want) {
+        const o = scene.add.circle(actor.x, actor.y, 6, 0xc084fc).setDepth(24);
+        o.setStrokeStyle(2, 0xffffff, 0.7);
+        scene._ppOrbs.push(o);
+    }
+    while (scene._ppOrbs.length > want) { const o = scene._ppOrbs.pop(); if (o) o.destroy(); }
+    if (!scene._ppOrbs.length) return;
+    scene._ppOrbAngle += delta * 0.0042;
+    const R = 52;
+    scene._ppOrbs.forEach((o, i) => {
+        if (!o.active) return;
+        const a = scene._ppOrbAngle + (Math.PI * 2 / scene._ppOrbs.length) * i;
+        o.x = actor.x + Math.cos(a) * R;
+        o.y = actor.y + Math.sin(a) * R;
+    });
+    [scene.hazards, scene.enemies, scene._ghosts].forEach(g => {
+        if (!g || !g.getChildren) return;
+        g.getChildren().slice().forEach(e => {
+            if (!e || !e.active) return;
+            for (const o of scene._ppOrbs) {
+                const dx = e.x - o.x, dy = e.y - o.y;
+                if (dx * dx + dy * dy < 260) {
+                    const died = ((e.getData('hp') || 1) - 1) <= 0;
+                    e.setData('hp', (e.getData('hp') || 1) - 1);
+                    if (died) { _burst(e.x, e.y, 0xc084fc, 6); const ex = e.x, ey = e.y; e.destroy(); _ppOnKill(scene, ex, ey); }
+                    break;
+                }
+            }
+        });
+    });
+}
+
+/* ── Per-frame driver, called from _sceneTickBase ───────────────────────── */
+function _ppTick(scene, score) {
+    if (!liveConfig.perksEnabled) return;
+    if (typeof score === 'number' && _ppShouldOffer(score)) _ppOfferPicks(scene, {});
+    if (RunMods.orbitals > 0) _ppUpdateOrbitals(scene, scene.game ? scene.game.loop.delta : 16);
+}
+
+/* ── Run-over summary, rendered into the game-over overlay ──────────────── */
+function _ppBuildSummaryHTML() {
+    if (RunMods.isEmpty()) return '';
+    const chips = PERKS.filter(p => RunMods.has(p.id)).map(p =>
+        `<span class="pp-sum-chip" style="--rc:${PERK_RARITY[p.rarity].col}">${p.icon} ${_ppEsc(p.name)}${RunMods.count(p.id) > 1 ? ' ×' + RunMods.count(p.id) : ''}</span>`).join('');
+    const syns = RunMods.synergies.map(id => {
+        const s = SYNERGIES.find(x => x.id === id);
+        return s ? `<span class="pp-sum-chip pp-sum-syn">${s.icon} ${_ppEsc(s.name)}</span>` : '';
+    }).join('');
+    return `<div class="pp-summary">
+              <div class="pp-sum-head">YOUR BUILD</div>
+              <div class="pp-sum-row">${chips}</div>
+              ${syns ? `<div class="pp-sum-row">${syns}</div>` : ''}
+            </div>`;
 }
 
 // ── LOOT & DROP SYSTEM ────────────────────────────────────────────────────────
@@ -10086,7 +10912,7 @@ function makeBaseScene(data) {
         }
         _addScore(n) {
             // Apply scoreMultiplier; clamp to avoid 0 if multiplier is 0
-            const mul = liveConfig.scoreMultiplier || 1;
+            const mul = (liveConfig.scoreMultiplier || 1) * RunMods.scoreMul;
             const pts = Math.max(1, Math.round(n * mul));
             this.score = (this.score || 0) + pts;
             if (this.scoreText) this.scoreText.setText('Score: ' + this.score);
@@ -10310,8 +11136,12 @@ function makeBaseScene(data) {
         }
         _onHit(actor) {
             if (this._invincible) return;
+            // Perks get first refusal on the hit: Heavy Plate eats it, Phase
+            // Shift rolls to ignore it. Neither costs an invincibility frame.
+            if (_ppMitigate(this, actor)) return;
             _triggerHaptic('hit');
             this._deathFiredEvt = true;
+            _ppThornsBlast(this, actor);
             if (this._puShield) {
                 this._puShield = false; _hidePuHud('shield');
                 if (liveConfig.screenShake) this.cameras.main.shake(120, 0.006);
@@ -11114,9 +11944,12 @@ function scenePlatformer(data) {
                 if (liveConfig.screenShake) this.cameras.main.shake(320, 0.016);
                 _achUnlock('goal_reached');
                 _chromaFlash(0.7);
+                // Save originals once so we can ramp relative to them (avoids permanent mutation)
+                if (!this._origSpeed) { this._origSpeed = liveConfig.speed; this._origESpeed = liveConfig.enemySpeed; this._origSpawn = liveConfig.spawnDelay; }
                 if (lvl >= 3) {
                     // Completed all 3 levels, full victory
-                    liveConfig.platLevel = 1; // reset for next play
+                    liveConfig.platLevel = 1;
+                    liveConfig.speed = this._origSpeed; liveConfig.enemySpeed = this._origESpeed; liveConfig.spawnDelay = this._origSpawn;
                     const vt = this.add.text(this.actor.x, GH/2, '🏆 WORLD CLEAR!',
                         {fontSize:'32px',fill:'#fbbf24',fontFamily:"'Fredoka One',sans-serif",stroke:'#000',strokeThickness:5})
                         .setOrigin(0.5).setDepth(20).setScrollFactor(0);
@@ -11125,8 +11958,8 @@ function scenePlatformer(data) {
                 } else {
                     // Advance to next level with ramped difficulty
                     liveConfig.platLevel = lvl + 1;
-                    liveConfig.speed        = Math.round(liveConfig.speed * 1.12);
-                    liveConfig.enemySpeed   = Math.round(liveConfig.enemySpeed * 1.18);
+                    liveConfig.speed        = Math.round(this._origSpeed * (1 + lvl * 0.12));
+                    liveConfig.enemySpeed   = Math.round(this._origESpeed * (1 + lvl * 0.18));
                     liveConfig.gravity      = Math.round(liveConfig.gravity * 1.05);
                     const lvlTxt = ['','','🌟 Level 2','🔥 Level 3'][liveConfig.platLevel];
                     const card = this.add.rectangle(GW/2, GH/2, 280, 110, 0x0a0c18, 0.92).setDepth(19).setScrollFactor(0);
@@ -11439,7 +12272,7 @@ function sceneRunner(data) {
     return class extends Base {
         constructor() { super({key:'RunnerScene'}); }
         create() {
-            this.score=0; this.surviveTimer=0; this._invincible=false;
+            this.score=0; this.surviveTimer=0; this._invincible=false; this._runTime=0;
             this._jumpsLeft=1; this._upWasDown=false;
             this._drawBg();
             this._buildRunnerParallax();
@@ -11471,7 +12304,7 @@ function sceneRunner(data) {
                 const coinFreq = liveConfig.runnerCoinFreq !== undefined ? liveConfig.runnerCoinFreq : 0.15;
                 const mix      = liveConfig.runnerObstacleMix || 'standard';
                 const r = Math.random();
-                const spd = -liveConfig.obstacleSpeed * (1 + this.score * 0.005);
+                const spd = -liveConfig.obstacleSpeed * (1 + this.score * 0.005) * _ramp;
                 if (coinFreq > 0 && r < coinFreq) {
                     // Floating coin row
                     for (let i=0;i<3;i++) {
@@ -11520,7 +12353,9 @@ function sceneRunner(data) {
             });
             this._initPowerUps();
         }
-        update() {
+        update(_t, delta) {
+            this._runTime = (this._runTime||0) + delta;
+            const _ramp = 1 + Math.min(2, (this._runTime / 1000) / 40) * (liveConfig.difficultyScale||1);
             this.actor.body.setGravityY(liveConfig.gravity);
             const onGround = this.actor.body.blocked.down;
             if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
@@ -11564,7 +12399,7 @@ function sceneRunner(data) {
                     this.actor.setDisplaySize(_rs,_rs);
                 }
             }
-            if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
+            if (this.spawnTimer) this.spawnTimer.delay = Math.max(300, liveConfig.spawnDelay / _ramp);
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
             this._coinGrp.getChildren().forEach(c=>{ if(c.x<-30) c.destroy(); });
             this.surviveTimer+=16;
@@ -15054,7 +15889,10 @@ function _buildSaveData() {
         sprite: customSpriteDataUrl, spriteFrameCount: customSpriteFrameCount||1, spriteFrameW: customSpriteFrameW||0,
         enemySprite: customEnemyDataUrl,
         bulletSprite: customBulletDataUrl, blockSprite: customBlockDataUrl, bgImage: customBgDataUrl,
-        liveConfig: Object.assign({}, liveConfig),
+        liveConfig: Object.assign({}, liveConfig, {
+            // Accessors above would otherwise serialise this run's buffed values.
+            speed: liveConfig._base.speed, fireCooldown: liveConfig._base.fireCooldown,
+        }),
         theme: { cols: gameTheme.cols.slice(), name: gameTheme.name },
         story: currentStory ? { title: currentStory.title, intro: currentStory.intro } : null,
         sounds: Object.assign({}, GameAudio.sounds),
@@ -15645,6 +16483,26 @@ function _buildSharePayload(d) {
              bs:bestScore, bn:(localStorage.getItem('jv_initials')||'').slice(0,3), fk:forkCount };
 }
 
+// Full-fidelity payload: includes custom art and (when small enough) audio.
+// Only used when a SHARE_BACKEND is configured.
+function _buildFullSharePayload(d) {
+    const p = _buildSharePayload(d);
+    p.assets = {
+        sprite:           customSpriteDataUrl || null,
+        spriteFrameCount: customSpriteFrameCount || 1,
+        spriteFrameW:     customSpriteFrameW || 0,
+        enemySprite:      customEnemyDataUrl || null,
+        bulletSprite:     customBulletDataUrl || null,
+        blockSprite:      customBlockDataUrl || null,
+        bgImage:          customBgDataUrl || null,
+    };
+    const bufs = {}; let audioBytes = 0;
+    Object.entries(GameAudio.customBuffers || {}).forEach(([k, v]) => { if (v) { bufs[k] = v; audioBytes += v.length; } });
+    if (GameAudio.customMusic) { bufs._music = GameAudio.customMusic; audioBytes += GameAudio.customMusic.length; }
+    if (audioBytes > 1_200_000) { p.audioStripped = true; } else { p.audio = bufs; }
+    return p;
+}
+
 // ── GAME OVER / INTRO / EXPORT ────────────────────────────────────────────────
 let _goPendingScore = 0;
 let _goPendingGenre = 'SHOOTER';
@@ -16093,9 +16951,9 @@ function _goRemixShared() {
     try { if (location.search) history.replaceState(null, '', location.pathname); } catch (e) {}
     if (currentPhaserGame) { try { currentPhaserGame.destroy(true); } catch (e) {} currentPhaserGame = null; }
     GameAudio.stopMusic();
-    const gc = document.getElementById('game-container'); if (gc) gc.innerHTML = '';
+    const gc = document.getElementById('game-container'); if (gc) { gc.innerHTML = ''; gc.style.aspectRatio = ''; }
     const gw = document.getElementById('gameWrap');
-    if (gw) gw.classList.add('idle');
+    if (gw) { gw.classList.add('idle'); gw.style.aspectRatio = ''; }
     const ph = document.getElementById('idle-placeholder'); if (ph) ph.style.display = '';
     const rb = document.getElementById('runGameBtn');
     if (rb) { rb.classList.add('pulsing'); rb.innerHTML = '▶ Run Game <kbd class="run-kbd">[R]</kbd>'; }
@@ -17409,6 +18267,11 @@ function _applyStoredTheme() {
 // ── SHARE MODAL + QR CODE ─────────────────────────────────────────────────────
 let _shareCurrentUrl = '';
 // Where shared links should point. Inside the packaged Android app
+// Optional Cloudflare Worker for full-fidelity game sharing (art + audio).
+// Set to your deployed worker URL, e.g. 'https://jv-share.example.workers.dev'
+// or leave empty to fall back to compressed paper-code links only.
+const SHARE_BACKEND = '';
+
 // location.href is https://localhost/… which is meaningless to anyone who
 // opens the link on their own device — so fall back to the live tool URL.
 function _shareBaseUrl() {
@@ -17495,20 +18358,45 @@ function _importFriendCode(rawTxt) {
 // too large for a URL. Warn ONCE per generation, covering sprites AND sound,
 // otherwise users share a link and their sound design silently vanishes.
 function _warnShareAssetLimits() {
+    const backend = (localStorage.getItem('jv_share_backend') || SHARE_BACKEND || '').trim();
+    if (backend) return; // backend shares carry full art — no warning needed
     const hasAudio = GameAudio.customMusic || Object.values(GameAudio.customBuffers || {}).some(Boolean);
-    if (customSpriteDataUrl && hasAudio)      showToast('⚠️ Custom art + audio are too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
-    else if (hasAudio)                        showToast('⚠️ Custom audio is too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
-    else if (customSpriteDataUrl)             showToast('⚠️ Custom art is too large for share links — use ⬇ Download HTML instead', 'warn', 5000);
+    if (customSpriteDataUrl && hasAudio)      showToast('⚠️ Custom art + audio are too large for paper links — use ⬇ Download HTML instead', 'warn', 5000);
+    else if (hasAudio)                        showToast('⚠️ Custom audio is too large for paper links — use ⬇ Download HTML instead', 'warn', 5000);
+    else if (customSpriteDataUrl)             showToast('⚠️ Custom art won\'t carry in paper links — share as full-game link for art', 'warn', 5000);
 }
 async function generateShareLink() {
     _warnShareAssetLimits();
     const d = getPayload();
+    const backend = (localStorage.getItem('jv_share_backend') || SHARE_BACKEND || '').trim();
     try {
+        if (backend) {
+            showToast('Uploading full game (art included)… ⏳');
+            const full = _buildFullSharePayload(d);
+            const res = await fetch(backend.replace(/\/$/,'') + '/share', {
+                method: 'POST',
+                headers: { 'content-type': 'text/plain' },
+                body: JSON.stringify(full)
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const j = await res.json();
+            if (!j.id) throw new Error('bad response');
+            const finalUrl = _shareBaseUrl() + '?g=' + j.id;
+            _openShareModal(finalUrl, d.title || 'My Game', 0, finalUrl);
+            showToast('☁ Shared WITH your custom art!', 'success', 4500);
+            return;
+        }
         showToast('Compressing…  ⏳');
-        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        // Point at the live tool when running inside the packaged app
-        const _base = _shareBaseUrl();
-        const longUrl = _base + '?game=' + enc;
+        let payload = _buildSharePayload(d);
+        let enc = await _compressPayload(JSON.stringify(payload));
+        let longUrl = _shareBaseUrl() + '?game=' + enc;
+        // If URL is too long (>2KB breaks some apps), strip the level map and retry
+        if (longUrl.length > 2000 && payload.map) {
+            payload.map = null;
+            enc = await _compressPayload(JSON.stringify(payload));
+            longUrl = _shareBaseUrl() + '?game=' + enc;
+            showToast('⚠️ Level map too large for share link — shared without map', 'warn', 4000);
+        }
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
         _openShareModal(finalUrl, d.title || 'My Game', 0, short);
@@ -17520,9 +18408,14 @@ async function generateRemixLink() {
     const d = getPayload();
     try {
         showToast('Compressing…  ⏳');
-        const enc = await _compressPayload(JSON.stringify(_buildSharePayload(d)));
-        const _base = _shareBaseUrl();
-        const longUrl = _base + '?remix=' + enc;
+        let payload = _buildSharePayload(d);
+        let enc = await _compressPayload(JSON.stringify(payload));
+        let longUrl = _shareBaseUrl() + '?remix=' + enc;
+        if (longUrl.length > 2000 && payload.map) {
+            payload.map = null;
+            enc = await _compressPayload(JSON.stringify(payload));
+            longUrl = _shareBaseUrl() + '?remix=' + enc;
+        }
         const short = await _shortenUrl(longUrl);
         const finalUrl = short || longUrl;
         _openShareModal(finalUrl, d.title || 'My Game', 0, short);
@@ -19374,7 +20267,7 @@ function sceneTowerDefense(data) {
                     toRemove.push(e);
                     GameAudio.play('hit');
                     if (this._lives <= 0) {
-                        setTimeout(()=>showGameOver(this.score), 300);
+                        this.time.delayedCall(300, () => showGameOver(this.score));
                         return;
                     }
                     return;
@@ -19490,17 +20383,17 @@ function scenePinball(data) {
     // Table geometry, narrower inner table gives portrait pinball feel
     const BALL_R     = 9;
     const GRAVITY    = 500;
-    const TABLE_L    = 115;          // left inner wall x
-    const TABLE_R    = 525;          // right inner wall x (plunger lane is TABLE_R→620)
-    const TABLE_W    = TABLE_R - TABLE_L;  // 410 px
-    const PLUNGE_X   = 572;          // ball rests here in plunger lane
-    const FL_Y       = GH - 68;      // flipper pivot y (332)
-    const LF_X       = TABLE_L + 85; // 200
-    const RF_X       = TABLE_R - 85; // 440
+    const TABLE_L    = Math.round(GW * 0.18);   // left inner wall x
+    const TABLE_R    = Math.round(GW * 0.82);   // right inner wall x (plunger lane is TABLE_R → GW-18)
+    const TABLE_W    = TABLE_R - TABLE_L;
+    const PLUNGE_X   = Math.round(GW * 0.895);  // ball rests here in plunger lane
+    const FL_Y       = GH - 68;
+    const LF_X       = TABLE_L + Math.round(TABLE_W * 0.207);
+    const RF_X       = TABLE_R - Math.round(TABLE_W * 0.207);
     const LF_REST    = 22;  const LF_ACT = -42;
     const RF_REST    = 158; const RF_ACT = 222;
     const FL_SPD     = 580;
-    const FLIPPER_L  = 88;
+    const FLIPPER_L  = Math.round(Math.min(88, TABLE_W * 0.215));
     const BUMPER_R   = 20;
     const TOUCH      = BALL_R + 20;
 
@@ -19859,7 +20752,6 @@ function scenePinball(data) {
 
             this._drawFlippers();
             this._checkFlipperBall(true);  this._checkFlipperBall(false);
-            this._checkFlipperBall(true);  this._checkFlipperBall(false);
 
             // Drain: ball falls below table bottom
             if (this.ball.y>GH+20&&this._drainCooldown<=0) {
@@ -20111,6 +21003,7 @@ const SEQ_ROWS   = 8;
 // Frequencies: C5 D5 E5 G5 A5 C6  and lower octave row by row
 const SEQ_FREQS  = [523.25,587.33,659.25,698.46,783.99,880,987.77,1046.5];
 let _seqGrid     = Array(SEQ_ROWS).fill(null).map(()=>Array(SEQ_STEPS).fill(false));
+let _seqCells    = [];
 let _seqPlaying  = false;
 let _seqStep     = 0;
 let _seqTimer    = null;
@@ -20133,6 +21026,7 @@ function _seqBuildGrid() {
     container.innerHTML = '';
     container.style.gridTemplateColumns = `repeat(${SEQ_STEPS}, 1fr)`;
     const noteNames = ['C5','D5','E5','F5','G5','A5','B5','C6'];
+    _seqCells = [];
     for (let r = 0; r < SEQ_ROWS; r++) {
         for (let s = 0; s < SEQ_STEPS; s++) {
             const cell = document.createElement('div');
@@ -20149,6 +21043,7 @@ function _seqBuildGrid() {
                 cell.style.background = _seqGrid[r][s] ? 'var(--purple)' : 'var(--panel3)';
             });
             container.appendChild(cell);
+            _seqCells.push(cell);
         }
     }
 }
@@ -20172,7 +21067,7 @@ function seqStop() {
     const btn = document.getElementById('seqPlayBtn');
     if (btn) btn.textContent = '▶ Play';
     // Highlight off
-    document.querySelectorAll('#seqGrid > div').forEach((c,i)=>{
+    _seqCells.forEach((c,i)=>{
         const r=Math.floor(i/SEQ_STEPS), s=i%SEQ_STEPS;
         c.style.background = _seqGrid[r][s] ? 'var(--purple)' : 'var(--panel3)';
     });
@@ -20202,7 +21097,7 @@ function _seqTick() {
         }
     }
     // Highlight current column
-    document.querySelectorAll('#seqGrid > div').forEach((c,i)=>{
+    _seqCells.forEach((c,i)=>{
         const r=Math.floor(i/SEQ_STEPS), s=i%SEQ_STEPS;
         if (s === _seqStep)       c.style.background = 'var(--amber)';
         else if (_seqGrid[r][s]) c.style.background = 'var(--purple)';
@@ -20278,10 +21173,10 @@ function _checkCustomAchs(scene) {
         if (a.unlocked) return;
         let val = 0;
         if      (a.trigger==='score')  val = scene.score || 0;
-        else if (a.trigger==='kills')  val = scene._killCount || 0;
+        else if (a.trigger==='kills')  val = _sessionKills || 0;
         else if (a.trigger==='laps')   val = scene._lap || scene._p2Lap || 0;
         else if (a.trigger==='height') val = scene.score || 0; // hopper uses score=height
-        else if (a.trigger==='time')   val = scene._elapsed ? Math.floor(scene._elapsed/1000) : 0;
+        else if (a.trigger==='time')   val = Math.floor(((scene._elapsed || 0) + (scene._timerStart ? Date.now() - scene._timerStart : 0)) / 1000) || 0;
         if (val >= a.target) {
             a.unlocked = true;
             _saveCustomAchs();
@@ -20691,12 +21586,14 @@ async function _dbgRender() {
         ${_dbgRow(lbCount > 0, 'leaderboards', lbCount + ' genres')}
         ${_dbgRow(keys.some(([k]) => k === 'jvds_sfx_last'), 'custom SFX imported')}
         ${_dbgRow(keys.some(([k]) => k === 'jvds_music_last'), 'custom music imported')}
-        ${_dbgRow(!!customSpriteDataUrl, 'custom sprite loaded')}</div>`;
+        ${_dbgRow(!!customSpriteDataUrl, 'custom sprite loaded')}
+        ${_dbgRow(!!(localStorage.getItem('jv_share_backend') || SHARE_BACKEND), 'share backend', (localStorage.getItem('jv_share_backend') || SHARE_BACKEND || 'not configured').slice(0,60))}</div>`;
 
     // ── 4. Live tools ──
     html += `<div><div class="sec-label" style="margin-bottom:6px;">Tools</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
             <button class="btn-sm" onclick="_runGenreSelfTest();document.getElementById('debugModal').remove();" style="text-align:left;">🧪 Run 21-genre self-test</button>
+            <button class="btn-sm" onclick="_dbgSetBackend(this)" style="text-align:left;">⚙ Set share backend URL</button>
             <button class="btn-sm" onclick="_dbgTestShare(this)" style="text-align:left;">📤 Test share sheet</button>
             <button class="btn-sm" onclick="_dbgTestCodec(this)" style="text-align:left;">🔁 Test result-code round-trip</button>
             <button class="btn-sm" onclick="_dbgTestPayload(this)" style="text-align:left;">📏 Measure share-link size &amp; QR</button>
@@ -20757,6 +21654,15 @@ async function _dbgCopyDiag() {
     } catch (e) {
         showToast(JSON.stringify(diag).slice(0, 140), 'warn', 12000);
     }
+}
+function _dbgSetBackend(btn) {
+    const cur = localStorage.getItem('jv_share_backend') || SHARE_BACKEND || '';
+    const v = prompt('Cloudflare Worker URL for full-art sharing (leave empty to disable):', cur);
+    if (v === null) return;
+    if (v.trim()) localStorage.setItem('jv_share_backend', v.trim());
+    else localStorage.removeItem('jv_share_backend');
+    showToast(v.trim() ? 'Backend saved — share links will carry custom art' : 'Backend cleared — using paper-code links', 'success');
+    _dbgRender();
 }
 function _dbgWipe(what) {
     if (!confirm(what === 'scores' ? 'Clear ALL leaderboards?' : 'Clear the autosaved session?')) return;
@@ -20861,8 +21767,30 @@ window.addEventListener('DOMContentLoaded', ()=>{
     } catch(e) {}
 
     const params=new URLSearchParams(location.search);
-    const enc=params.get('game')||params.get('remix');
+    // ── Full-art game share (?g=<id>): fetch from backend, then treat as regular payload
+    let enc = params.get('game')||params.get('remix');
     const isRemix=!!params.get('remix');
+    {
+        const _shareId = params.get('g');
+        if (_shareId && !enc) {
+            (async () => {
+                try {
+                    const _sb = (localStorage.getItem('jv_share_backend') || '').trim();
+                    if (_sb) {
+                        showToast('📥 Fetching shared game…');
+                        const _res = await fetch(_sb.replace(/\/$/,'') + '/share/' + encodeURIComponent(_shareId));
+                        const _jd = await _res.json();
+                        if (_jd && _jd.data) {
+                            enc = await _compressPayload(JSON.stringify(_jd.data));
+                            showToast('✅ Shared game loaded!', 'success', 3000);
+                        } else {
+                            showToast('That share link expired or was not found', 'error', 5000);
+                        }
+                    }
+                } catch(_e) { showToast('Could not reach share service', 'error', 5000); }
+            })();
+        }
+    }
     // ── Incoming result link (?result=JV1.…): a friend tapped the score link
     // they sent back after playing. Import their score straight onto the board.
     const _resultParam = params.get('result');
@@ -20899,6 +21827,22 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 // Support both old key (theme) and new short key (th)
                 const _dth = (d.th && d.th.c) ? {cols:d.th.c,name:d.th.n} : d.theme;
                 if(_dth && _dth.cols && _dth.cols.length) applyPalette(_dth);
+                // Apply shared custom art + audio when present (full-fidelity backend shares)
+                if (d.assets) {
+                    try {
+                        if (d.assets.sprite)          _applySpriteDataUrl(d.assets.sprite, 'Shared sprite', d.assets.spriteFrameCount||1, d.assets.spriteFrameW||0);
+                        if (d.assets.enemySprite)     _applyEnemyDataUrl(d.assets.enemySprite, 'Shared enemy');
+                        if (d.assets.bulletSprite)    _applyBulletDataUrl(d.assets.bulletSprite, 'Shared bullet');
+                        if (d.assets.blockSprite)     _applyBlockDataUrl(d.assets.blockSprite, 'Shared tile');
+                        if (d.assets.bgImage)         _applyBgDataUrl(d.assets.bgImage, 'Shared background');
+                    } catch(_a) { console.warn('Shared assets:', _a); }
+                }
+                if (d.audio) {
+                    try {
+                        Object.entries(d.audio).forEach(([k,v]) => { if (k==='_music') GameAudio.customMusic=v; else GameAudio.customBuffers[k]=v; });
+                        if (d.audio._music) { const mb=document.getElementById('musicImportBadge'); if(mb) mb.style.display='inline'; }
+                    } catch(_a) {}
+                }
                 // Seed the creator's best score so recipients have a target to beat
                 const _bs = d.bs !== undefined ? d.bs : (d.bestScore || 0);
                 if (_bs > 0) {

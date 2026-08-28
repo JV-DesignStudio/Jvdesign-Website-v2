@@ -2441,6 +2441,158 @@ let currentStep = 0;
 const stepsDone = new Set();
 const TOTAL = STEPS.length;
 
+/* ── KNOWLEDGE CHECKS, one per step ── */
+const QUIZZES = [
+  { q: "What does the Unity <strong>3D (URP)</strong> template give you the moment the project opens?",
+    opts: ["A completely empty scene you build from nothing",
+           "A Main Camera, a Directional Light and a Skybox, already set up",
+           "A finished platformer that only needs recolouring"], correct: 1 },
+
+  { q: "What is the relationship between a <strong>GameObject</strong> and a <strong>Component</strong>?",
+    opts: ["A GameObject is a container, and Components are what give it behaviour and appearance",
+           "A Component is a container that holds GameObjects inside it",
+           "They are two names for exactly the same thing"], correct: 0 },
+
+  { q: "How often does Unity call <code>Start()</code> and <code>Update()</code> on a MonoBehaviour?",
+    opts: ["Start() runs every frame, Update() runs once at the end",
+           "Both of them run once when the scene loads",
+           "Start() runs once when the object loads, Update() runs every frame"], correct: 2 },
+
+  { q: "What does <code>Input.GetAxisRaw(\"Horizontal\")</code> return?",
+    opts: ["The mouse position across the screen",
+           "-1, 0 or 1 with no smoothing, so movement starts and stops instantly",
+           "How many frames the key has been held down"], correct: 1 },
+
+  { q: "Why does this platformer use a <strong>CharacterController</strong> rather than a Rigidbody?",
+    opts: ["It handles slopes, steps and wall collisions the way a platformer needs",
+           "Rigidbody does not work in 3D Unity projects",
+           "CharacterController makes the game render at a higher frame rate"], correct: 0 },
+
+  { q: "Why do we have to write the gravity code ourselves in this project?",
+    opts: ["Because Unity has no gravity system at all",
+           "Because gravity only affects 2D objects",
+           "Because CharacterController does not apply gravity for you, unlike Rigidbody"], correct: 2 },
+
+  { q: "What does the formula <code>v = √(2 × height × |gravity|)</code> let you work out?",
+    opts: ["The jump velocity needed to reach an exact height",
+           "How fast the player runs along the ground",
+           "How many frames the jump animation should last"], correct: 0 },
+
+  { q: "On a Cinemachine FreeLook camera, what do the <strong>Follow</strong> and <strong>Look At</strong> fields do?",
+    opts: ["They set the camera's brightness and colour grading",
+           "Follow is the target the camera moves with; Look At is the target it aims at",
+           "They decide how fast the player character can move"], correct: 1 },
+
+  { q: "What changes when you rotate the <strong>Directional Light</strong>?",
+    opts: ["The size of the level",
+           "How fast the player can run",
+           "The direction the sunlight comes from, and so where the shadows fall"], correct: 2 },
+
+  { q: "Why is a coin's collider marked as a <strong>trigger</strong>?",
+    opts: ["So the player passes through it and OnTriggerEnter fires, instead of bumping into it",
+           "So the coin spins on the spot",
+           "Because Unity requires every collider in a scene to be a trigger"], correct: 0 },
+
+  { q: "What does <code>GameManager.Instance</code> give you?",
+    opts: ["A brand new GameManager every time you use it",
+           "One shared GameManager that any script can reach and that survives scene loads",
+           "A copy of the player's Transform"], correct: 1 },
+
+  { q: "What does a NavMeshAgent's <code>SetDestination()</code> do?",
+    opts: ["Teleports the enemy straight to that point",
+           "Sets the colour the enemy will turn when it arrives",
+           "Tells the enemy to walk there, finding its own way around obstacles"], correct: 2 },
+
+  { q: "Why does the player get <strong>invincibility frames</strong> after being hit?",
+    opts: ["To make the player move faster for a moment",
+           "So a single hazard can't drain all their health in a fraction of a second",
+           "Because coroutines will not run without them"], correct: 1 },
+
+  { q: "What does a checkpoint actually store when the player touches it?",
+    opts: ["The player's score at that moment",
+           "A copy of the entire level",
+           "A Vector3 respawn position to send the player back to"], correct: 2 },
+
+  { q: "How does your C# script tell the <strong>Animator</strong> which animation to play?",
+    opts: ["It calls PlayAnimation(\"Run\") on the Animator directly",
+           "It sets parameters like Speed and IsGrounded, and the state machine picks the clip",
+           "Unity works it out on its own from how fast the player is moving"], correct: 1 },
+
+  { q: "What happens when you call <code>Play()</code> on a ParticleSystem set up with a burst?",
+    opts: ["It fires off a puff of particles at that moment",
+           "It starts the background music",
+           "It pauses the game until the particles finish"], correct: 0 },
+
+  { q: "What is the difference between an <strong>AudioSource</strong> and an <strong>AudioClip</strong>?",
+    opts: ["They are the same thing under two different names",
+           "AudioClip is only for music and AudioSource is only for speech",
+           "The AudioClip is the sound file; the AudioSource is the component that plays it"], correct: 2 },
+
+  { q: "How does the blob shadow know where to sit on the ground?",
+    opts: ["A Raycast straight down finds the surface beneath the player",
+           "It copies the player's Y position exactly",
+           "It is drawn at a fixed height and never moves"], correct: 0 },
+
+  { q: "What makes a <strong>double jump</strong> work?",
+    opts: ["A counter tracking how many jumps have been used, reset when the player lands",
+           "Doubling the player's gravity while in mid-air",
+           "Pressing the jump key twice inside a single frame"], correct: 0 },
+
+  { q: "What is <code>Mathf.Sin()</code> doing to the collectible stars?",
+    opts: ["Counting how many stars are left in the level",
+           "Making them bob smoothly up and down over time",
+           "Destroying them after a few seconds"], correct: 1 },
+
+  { q: "Why does the moving platform use <code>Mathf.Lerp</code> with <code>Mathf.Sin</code>?",
+    opts: ["To glide smoothly back and forth between two points",
+           "To make the platform invisible to enemies",
+           "To choose what colour the platform should be"], correct: 0 },
+
+  { q: "What is a coroutine with <code>WaitForSeconds</code> used for in the speed power-up?",
+    opts: ["To make the boost last a set time and then wear off",
+           "To delay the whole game starting",
+           "To play the spring sound at a louder volume"], correct: 0 },
+
+  { q: "What does setting a Canvas to <strong>Screen Space, Overlay</strong> do?",
+    opts: ["Draws the UI flat on top of the 3D scene, wherever the camera looks",
+           "Places the UI inside the level as a real 3D object",
+           "Hides the UI until the player pauses the game"], correct: 0 },
+
+  { q: "What does turning the <strong>fog density</strong> up do to your level?",
+    opts: ["Makes the player move more slowly",
+           "Switches off all the lights in the scene",
+           "Hides distant platforms, so the level feels deeper and more mysterious"], correct: 2 },
+
+  { q: "How does the LevelManager load the next level?",
+    opts: ["Application.NextLevel()",
+           "SceneManager.LoadScene() using the current scene's buildIndex + 1",
+           "By reloading the same scene under a different name"], correct: 1 }
+];
+
+function quizHTML(i){
+  const q = QUIZZES[i];
+  if(!q) return '';
+  // the first render runs before the second script block declares these, so guard them
+  let passed = false;
+  try { passed = completedQuizzes.has(i); } catch(e) {}
+  let xpAmount = 15;
+  try { xpAmount = XP_QUIZ; } catch(e) {}
+  const letters = ['A','B','C','D'];
+  const opts = q.opts.map((t,j) => {
+    const cls = passed ? (j === q.correct ? ' correct' : ' disabled') : '';
+    return `<div class="quiz-opt${cls}" data-idx="${j}" onclick="selectQuizOpt(this)"><span class="opt-letter">${letters[j]}</span><span>${t}</span></div>`;
+  }).join('');
+  return `
+    <div class="quiz-gate${passed ? ' passed' : ''}" data-correct="${q.correct}">
+      <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+${xpAmount} XP</div></div>
+      <div class="quiz-question">${q.q}</div>
+      <div class="quiz-options">${opts}</div>
+      <div class="quiz-feedback${passed ? ' correct show' : ''}">${passed ? '<span class="fb-icon">✅</span><span>Correct!</span>' : ''}</div>
+      <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+      <button class="quiz-next-btn${passed ? ' show' : ''}" onclick="quizPassed(${i})">${i + 1 < STEPS.length ? '✅ Correct! Next Step →' : '✅ Correct! Finish →'}</button>
+    </div>`;
+}
+
 function goStep(i){
   if(i<0||i>=TOTAL) return;
   currentStep = i;
@@ -2450,11 +2602,18 @@ function goStep(i){
 
 function renderStep(){
   const s = STEPS[currentStep];
+  let bodyHtml = s.body();
+  // slot the knowledge check in above the back/next nav rather than below it
+  const gate = quizHTML(currentStep);
+  if (gate) {
+    const navAt = bodyHtml.lastIndexOf('<div class="step-nav">');
+    bodyHtml = navAt === -1 ? bodyHtml + gate : bodyHtml.slice(0, navAt) + gate + bodyHtml.slice(navAt);
+  }
   document.getElementById('stepBody').innerHTML = `
     <div class="step-num">${s.tag}</div>
     <div class="step-title">${s.title}</div>
     <p class="step-intro">${s.intro}</p>
-    ${s.body()}
+    ${bodyHtml}
   `;
   const tabs = document.getElementById('stepsTabs');
   tabs.innerHTML = STEPS.map((_,i) => `

@@ -84,14 +84,31 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 .bg-opt.on{border-color:var(--accent);}
 
 /* SIDEBAR */
-#sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;}
+#sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.sa-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:10004;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;}
+.sa-overlay.open{display:flex;}
+.sa-box{background:var(--panel);border:1px solid var(--border2);border-radius:14px;padding:22px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
+.sa-title{font-family:'Fredoka',cursive;font-size:1.2rem;color:var(--accent4);margin-bottom:6px;}
+.sa-lead{font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:16px;}
+.sa-sec{font-size:.48rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.sa-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;list-style:none;margin:0;padding:0;}
+.sa-steps li{background:rgba(255,255,255,.03);border-left:3px solid var(--accent3);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.62rem;line-height:1.6;color:var(--text);}
+.sa-steps b{color:var(--accent3);display:block;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.sa-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.sa-btn{padding:7px 16px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;font-size:.75rem;font-weight:600;}
+.sa-btn.primary{background:var(--accent4);color:#fff;border-color:transparent;}
+.sa-btn:hover{filter:brightness(1.15);}
 .sb-section{padding:12px;border-bottom:1px solid var(--border2);}
+#sb-sticky{position:sticky;bottom:0;margin-top:auto;background:var(--panel);border-top:1px solid var(--border2);padding:8px 10px;box-shadow:0 -8px 14px rgba(0,0,0,.45);z-index:6;display:flex;flex-direction:column;gap:5px;}
+#sb-sticky .exp-btn{margin:0;}
 .sb-title{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .ctrl-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
 .ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
 .ctrl-row label span{color:var(--accent2);font-weight:700;}
 .ctrl-row input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
-.ctrl-row-h{display:flex;gap:6px;margin-bottom:8px;}
+.ctrl-row-h{display:flex;gap:6px;margin-bottom:8px;min-width:0;}
+.ctrl-row-h label{flex:1;min-width:0;}
+.ctrl-row-h input[type=number]{min-width:0;width:100%;}
 .ctrl-row-h input[type=number]{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
 .ctrl-row-h label{font-size:.55rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
 .icon-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;font-family:inherit;transition:all .1s;}
@@ -155,6 +172,7 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
             <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
             <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
             <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
+            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
             <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
             <a href="/pages/about.html" data-page="about.html">About</a>
             <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
@@ -208,7 +226,10 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 <header class="hdr">
   <a href="../index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="../logo.png" alt="JV"><span>JVDesignStudio</span></a>
   <div class="hdr-title">🎞 Sprite Animator</div>
-  <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <button class="hdr-back" style="background:rgba(255,255,255,.05);border:1px solid var(--border2);cursor:pointer;font-family:inherit;" onclick="openStart()" title="How Sprite Animator works">? Help</button>
+    <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
+  </div>
 </header>
 
 <div id="app">
@@ -339,16 +360,35 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     </div>
 
     <div class="export-btns">
-      <button class="exp-btn exp-gif" onclick="exportGIF()">🎬 Animated GIF</button>
       <button class="exp-btn exp-json" onclick="exportJSON()">{ } JSON Frame Data</button>
       <button class="exp-btn exp-png" onclick="exportPNG()">📥 Current Frame PNG</button>
-      <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()">📤 Selected Frames Sheet</button>
       <button class="exp-btn" style="background:rgba(245,158,11,.2);color:var(--accent2);" onclick="exportFramePack()">📦 Frame Pack (ZIP)</button>
       <button class="exp-btn" style="background:rgba(124,58,237,.25);color:#a78bfa;" onclick="exportEnginePack()">🎮 Engine Pack (ZIP)</button>
     </div>
     <div class="kbd-hint">Space play · ←/→ frame · +/− zoom · O onion · Ctrl+Z undo</div>
+    <!-- Always-visible primary exports: never scrolls out of reach -->
+    <div id="sb-sticky">
+      <button class="exp-btn exp-gif" onclick="exportGIF()" title="Download the animation as a GIF">🎬 Animated GIF</button>
+      <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()" title="Download the selected frames as one spritesheet">📤 Frames Sheet</button>
+    </div>
   </div>
 </div>
+<div class="sa-overlay" id="startModal" onclick="if(event.target===this)closeStart()">
+  <div class="sa-box">
+    <div class="sa-title">🎞 Welcome to Sprite Animator</div>
+    <p class="sa-lead">Turn a spritesheet into a playable animation. Slice it into frames, preview the motion, tune the timing, then export a GIF or an engine-ready pack.</p>
+    <div class="sa-sec">How it works</div>
+    <ul class="sa-steps">
+      <li><b>1 · Load</b>Upload a spritesheet PNG, or press <b style="display:inline;text-transform:none;letter-spacing:0;">Import from Pixel Studio</b> to bring across what you drew there.</li>
+      <li><b>2 · Slice</b>Set the frame width and height, or hit Auto-detect frames and let it guess.</li>
+      <li><b>3 · Preview</b>Press Play. Adjust FPS, or give single frames their own timing under Per-Frame Timing.</li>
+      <li><b>4 · Export</b>Animated GIF and Frames Sheet sit at the bottom of this panel; scroll it for JSON and ZIP packs.</li>
+    </ul>
+    <p class="sa-lead" style="margin:14px 0 0;font-size:.6rem;">Space play · ←/→ frame · +/− zoom · O onion · Ctrl+Z undo</p>
+    <div class="sa-btns"><button class="sa-btn primary" onclick="closeStart()">Start animating</button></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -978,14 +1018,24 @@ function autoSave(){
     projectDirty=false;
   }catch(e){/* quota exceeded — autosave silently disabled */}
 }
+const SA_SEEN_KEY='jvds_spriteanim_seen';
+function saMarkSeen(){ try{ localStorage.setItem(SA_SEEN_KEY,'1'); }catch(e){} }
+function saHasSeen(){ try{ return localStorage.getItem(SA_SEEN_KEY)==='1'; }catch(e){ return true; } }
+function openStart(){ id('startModal').classList.add('open'); }
+function closeStart(){ id('startModal').classList.remove('open'); saMarkSeen(); }
+
 function setupAutosaveRestore(){
   let raw=null;
   try{raw=localStorage.getItem(LS_AUTOSAVE);}catch(e){}
-  if(!raw) return;
-  try{
-    const d=JSON.parse(raw);
-    if(d&&d.app==='jvds-sprite-animator'&&d.sheet) id('restoreBanner').classList.remove('hidden');
-  }catch(e){}
+  let offered=false;
+  if(raw){
+    try{
+      const d=JSON.parse(raw);
+      if(d&&d.app==='jvds-sprite-animator'&&d.sheet){ id('restoreBanner').classList.remove('hidden'); offered=true; }
+    }catch(e){}
+  }
+  // Only greet a genuinely new student, and never on top of a restore offer.
+  if(!offered && !saHasSeen()) openStart();
 }
 function restoreAutosave(){
   let raw=null;
