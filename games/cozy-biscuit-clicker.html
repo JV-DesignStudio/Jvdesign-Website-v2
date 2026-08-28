@@ -9,6 +9,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -158,6 +159,10 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .helper-count{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--rose-deep);line-height:1}
 .helper-cost{font-size:11px;font-weight:800;color:var(--cocoa-soft)}
 .helper-cost.too-much{color:var(--cream-deep)}
+.ms-bar.track{height:4px;background:rgba(74,53,40,.1);border-radius:100px;overflow:hidden;margin-top:4px}
+.ms-bar.fill{height:100%;background:linear-gradient(90deg,var(--mint-deep),#6BCB77);border-radius:100px;transition:width .4s}
+.ms-bar.fill.done{background:linear-gradient(90deg,#E8A830,var(--sun))}
+.ms-label{font-size:9px;font-weight:800;color:var(--cocoa-soft);margin-top:2px}
 
 /* UPGRADES */
 .upgrade-list{display:flex;flex-direction:column;gap:7px}
@@ -199,6 +204,13 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 .stats-section-title{font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--cocoa-soft);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px}
 .stats-section-title:first-child{margin-top:0}
 .prestige-panel{background:linear-gradient(135deg,#FFF9E8,#FFF0D8);border:2px solid var(--sun);border-radius:16px;padding:14px;text-align:center;margin-top:10px}
+.cup-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:6px}
+.cup-tin{aspect-ratio:1;background:var(--cream);border:2px solid var(--cream-deep);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;text-align:center}
+.cup-tin.got{border-color:var(--sun);background:linear-gradient(135deg,#FFF9E8,#FFF0D8)}
+.cup-tin.locked{opacity:.38}
+.cup-tin-emoji{font-size:22px;line-height:1}
+.cup-tin-name{font-size:9px;font-weight:800;color:var(--cocoa);line-height:1.1}
+.cup-tin-hint{font-size:8px;color:var(--cocoa-soft);line-height:1.2}
 .prestige-panel h3{font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:6px}
 .prestige-panel p{font-size:12px;color:var(--cocoa-soft);line-height:1.6;margin-bottom:8px}
 .prestige-btn{background:linear-gradient(135deg,var(--sun),#E8A830);border:none;border-radius:100px;padding:10px 24px;font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:pointer;box-shadow:0 4px 12px rgba(245,199,106,.4);transition:transform .15s}
@@ -790,6 +802,21 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
   </div>
 </div>
 
+<div class="modal-backdrop" role="dialog" aria-modal="true" id="tutorialModal">
+  <div class="modal">
+    <div class="offline-modal" id="tutorialBody">
+      <div class="big-emoji" id="tutEmoji">🍪</div>
+      <h3 id="tutTitle">Tap the tin!</h3>
+      <p id="tutDesc">Give it a tap — every biscuit counts.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px">
+        <button class="ad-reset" id="tutSkip" style="opacity:.6">Skip tour</button>
+        <button class="offline-collect-btn" id="tutNext">Next →</button>
+      </div>
+      <p id="tutDots" style="font-size:10px;letter-spacing:4px;margin-top:8px;opacity:.5">●○○○○</p>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" role="dialog" aria-modal="true" id="streakModal">
   <div class="modal">
     <div class="offline-modal">
@@ -840,6 +867,7 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
 </div>
 
 <script>
+
 // ══ AUDIO ENGINE (ported from Cozy Cafe) ══
 const Sfx = (() => {
   let ctx=null,masterGain=null,musicGain=null,sfxGain=null,musicPlaying=false,musicTimer=null,sfxEnabled=true;
@@ -938,7 +966,7 @@ function defaultVault(){
     stats:{guests_served:0,max_combo:0,max_streak:0,guests_each:{}},
     crewEquipped:{},
     btStats:{found:0,lumps:0,gamblesWon:0,gamblesLost:0,bestLump:0,frenzies:0,recharges:0,starsEarned:0},
-    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{},butter:{count:0,pending:0,lastTick:Date.now()},fedToday:null,regular:null,regularWall:[]}};
+    biscuit:{total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,bestSessionEarn:0,lastSave:Date.now(),stars:0,starPerks:{},seasonClicks:0,journalClaimed:[],challenge:null,helperMilestones:{},butter:{count:0,pending:0,lastTick:Date.now()},fedToday:null,regular:null,regularWall:[],cupboard:['classic'],seasonal:{}}};
 }
 function loadVault(){
   try{
@@ -961,6 +989,8 @@ function loadVault(){
     if(!v.biscuit.helperMilestones)v.biscuit.helperMilestones={};
     if(!v.biscuit.butter)v.biscuit.butter={count:0,pending:0,lastTick:Date.now()};
     if(!v.biscuit.regularWall)v.biscuit.regularWall=[];
+    if(!v.biscuit.cupboard)v.biscuit.cupboard=['classic'];
+    if(!v.biscuit.seasonal)v.biscuit.seasonal={};
     return v;
   }catch{return defaultVault();}
 }
@@ -1423,6 +1453,58 @@ const ACHIEVEMENTS=[
   {id:'bt_secrets_all',emoji:'🔮',name:'Keeper of Secrets', desc:'Find every secret in the cafe',        coins:300, check:v=>(v.btSecrets||[]).length>=SECRETS.length},
   {id:'bt_decorator',  emoji:'🎨',name:'Decorator',         desc:'Own 5 cafe backgrounds',               coins:100, check:v=>(v.btOwnedBgs||['cream']).length>=5},
 ];
+// ══ CUPBOARD: collectible tin wall (12 tins, each +2% global when collected) ══
+const CUPBOARD_TINS=[
+  {id:'classic',  emoji:'🫙',name:'Classic Red',   hint:'Welcome gift',            check:()=>true},
+  {id:'golden',   emoji:'🏆',name:'Golden Tin',    hint:'Bake 1,000 biscuits',     check:()=>bv().lifetime>=1000},
+  {id:'willow',   emoji:'🫖',name:'Blue Willow',   hint:'Bake 50,000 biscuits',    check:()=>bv().lifetime>=50000},
+  {id:'emerald',  emoji:'💚',name:'Emerald',       hint:'Bake 1M biscuits',         check:()=>bv().lifetime>=1000000},
+  {id:'royal',    emoji:'👑',name:'Royal Purple',  hint:'Bake 50M biscuits',       check:()=>bv().lifetime>=50000000},
+  {id:'sunset',   emoji:'🌅',name:'Sunset',        hint:'Bake 1B biscuits',         check:()=>bv().lifetime>=1000000000},
+  {id:'midnight', emoji:'🌙',name:'Midnight',      hint:'Bake 100B biscuits',       check:()=>bv().lifetime>=100000000000},
+  {id:'cosmic',   emoji:'🌌',name:'Cosmic',        hint:'Bake 1T biscuits',         check:()=>bv().lifetime>=1000000000000},
+  {id:'hunter',   emoji:'🍀',name:'Treasure Hunter',hint:'Catch 10 treasures',     check:()=>(btStats().found||0)>=10},
+  {id:'veteran',  emoji:'⭐',name:'Season Veteran', hint:'Complete 1 season',       check:()=>(bv().prestige||0)>=1},
+  {id:'master',   emoji:'🎖️',name:'Master Baker',  hint:'Own every helper type',   check:()=>HELPERS.filter(h=>!h.prestige).every(h=>(bv().helpers[h.id]||0)>=1)},
+  {id:'legend',   emoji:'💎',name:'Legend',        hint:'Complete 5 seasons',       check:()=>(bv().prestige||0)>=5},
+];
+function cupboardBonus(){const n=(bv().cupboard||[]).length;return 1+n*0.02;}
+function checkCupboard(){
+  if(!bv().cupboard)bv().cupboard=['classic'];
+  let changed=false;
+  for(const t of CUPBOARD_TINS){
+    if(bv().cupboard.includes(t.id))continue;
+    try{if(t.check()){bv().cupboard.push(t.id);changed=true;showToast(t.emoji+' Cupboard: '+t.name+' collected! +2% forever','achievement');Sfx.sfxAchievement();}}catch(e){}
+  }
+  if(changed)recalc();
+}
+// ══ SEASONAL EVENTS: monthly themed challenge (auto-rotates) ══
+const SEASONAL_EVENTS=[
+  {id:'spring', emoji:'🌸',name:'Spring Sprinkle',  months:[2,3,4], target:200000, desc:'Bake 200K this season — spring petals swirl!', reward:'+5% spring bonus'},
+  {id:'summer', emoji:'☀️',name:'Summer Bake',    months:[5,6,7], target:500000, desc:'Bake 500K under the summer sun!',    reward:'+5% summer bonus'},
+  {id:'autumn', emoji:'🍂',name:'Autumn Harvest', months:[8,9,10],target:1000000,desc:'Harvest 1M biscuits for autumn!',    reward:'+5% harvest bonus'},
+  {id:'winter', emoji:'❄️',name:'Winter Warmth',  months:[11,0,1],target:300000, desc:'Bake 300K to keep the cafe cozy!',   reward:'+5% winter bonus'},
+];
+function currentSeasonalEvent(){const m=new Date().getMonth();return SEASONAL_EVENTS.find(e=>e.months.includes(m))||SEASONAL_EVENTS[0];}
+function seasonalProgress(){
+  const ev=currentSeasonalEvent();
+  const key='se_'+ev.id;
+  if(!bv().seasonal)bv().seasonal={};
+  if(!bv().seasonal[key])bv().seasonal[key]={progress:0,claimed:false};
+  return {ev,data:bv().seasonal[key]};
+}
+function trackSeasonal(n){
+  const {ev,data}=seasonalProgress();
+  if(data.claimed)return;
+  data.progress=(data.progress||0)+n;
+  if(data.progress>=ev.target&&!data.claimed){
+    data.claimed=true;
+    showToast(ev.emoji+' '+ev.name+' complete! '+ev.reward+' active','milestone');
+    Sfx.sfxAchievement();
+    recalc();
+  }
+}
+function seasonalBonus(){try{const {ev,data}=seasonalProgress();return data.claimed?1.05:1;}catch{return 1;}}
 const HAT_EMOJIS={beanie:'🧢',sun_hat:'👒',wizard_hat:'🎩',flower:'🌸',party:'🎉',top_hat:'🎩',crown:'👑',chef:'🍳',graduation:'🎓',witch_hat:'🧙',halo:'😇',cowboy:'🤠',headphones:'🎧',mushroom:'🍄',pumpkin:'🎃',bunny:'🐰',snowman:'⛄',unicorn:'🦄',knit:'🧶',legend_crown:'👑',guest_crown:'👑',candy_corn:'🍬',laurel:'🥇'};
 const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:'🧣',sunglasses:'🕶️',monocle:'🧐',medal:'🎖️',sparkle:'⭐',butterfly:'🦋',beads:'📿',ring:'💍',mittens:'🧤',trophy:'🏆'};
 
@@ -1476,7 +1558,7 @@ function recalc(){
     if(h.id===featuredId)hm*=1.5;
     rate+=h.baseRate*cnt*hm;
   }
-  productionRate=rate*gm*(bv().prestigeBonus||1)*(1+(bv().legendary||0))*rushMult;
+  productionRate=rate*gm*(bv().prestigeBonus||1)*(1+(bv().legendary||0))*rushMult*cupboardBonus()*seasonalBonus();
 }
 
 // ══ TICK ══
@@ -1491,7 +1573,7 @@ function tick(){
   requestAnimationFrame(tick);
 }
 // HUD/achievement polling on a light interval instead of every frame.
-setInterval(()=>{checkMilestones();updateHUD();updatePrestigeBar();spawnProdParticle();},200);
+setInterval(()=>{checkMilestones();checkCupboard();updateHUD();updatePrestigeBar();spawnProdParticle();},200);
 
 // ══ MILESTONES ══
 function checkMilestones(){
@@ -1869,7 +1951,17 @@ function renderHelpers(el){
     const chLocked=activeChallenge()==='nohelpers';
     const bundleGain=eff*showN;
     const row=document.createElement('div'); row.className='helper-row '+(chLocked?'cant-afford':(canAfford?'affordable':'cant-afford'));
-    row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}${isFeatured?' <span style="font-size:10px;color:#E8A830;font-weight:800">⭐ FEATURED</span>':''}${showN>1?` <span style="font-size:11px;color:var(--mint-deep);font-weight:800">+${showN}</span>`:''}</div><div class="helper-desc">${chLocked?'⚔️ Challenge season — hiring disabled':(h.desc+' · '+(eff>=1?fmt(eff):eff.toFixed(1))+'/sec each'+(helperMilestones(h.id).length?' · 🏅+'+Math.round((helperMsBoost(h.id)-1)*100)+'%':'')+(showN>1?` · <span style="font-weight:800;color:var(--mint-deep)">+${fmt(bundleGain)}/sec total</span>`:''))}</div></div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(showCost)}</div></div>`;
+    // milestone progress bar
+    let msBar='';
+    if(cnt>0){
+      const done=helperMilestones(h.id).length, max=HELPER_MS.length;
+      if(done>=max) msBar=`<div class="ms-bar track"><div class="ms-bar fill done" style="width:100%"></div></div><div class="ms-label">🏅 MAX +${Math.round((helperMsBoost(h.id)-1)*100)}%</div>`;
+      else {
+        const next=HELPER_MS[done], pct=Math.min(100,Math.round(cnt/next*100));
+        msBar=`<div class="ms-bar track"><div class="ms-bar fill" style="width:${pct}%"></div></div><div class="ms-label">${cnt}/${next} → +8% at ${next}</div>`;
+      }
+    }
+    row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}${isFeatured?' <span style="font-size:10px;color:#E8A830;font-weight:800">⭐ FEATURED</span>':''}${showN>1?` <span style="font-size:11px;color:var(--mint-deep);font-weight:800">+${showN}</span>`:''}</div><div class="helper-desc">${chLocked?'⚔️ Challenge season — hiring disabled':(h.desc+' · '+(eff>=1?fmt(eff):eff.toFixed(1))+'/sec each'+(helperMilestones(h.id).length?' · 🏅+'+Math.round((helperMsBoost(h.id)-1)*100)+'%':'')+(showN>1?` · <span style="font-weight:800;color:var(--mint-deep)">+${fmt(bundleGain)}/sec total</span>`:''))}</div>${msBar}</div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(showCost)}</div></div>`;
     row.addEventListener('click',e=>{
       if(activeChallenge()==='nohelpers'){showToast('⚔️ Bare Bake season — the ovens are yours alone!');return;}
       const budget2=Math.floor(bv().total);
@@ -1968,6 +2060,7 @@ function getDailyChallenge(){
   return{...p,today,target:p.amounts[tier],reward:p.rewards[tier]};
 }
 function trackDailyProgress(key,amount=1){
+  if(key==='earn')try{trackSeasonal(amount);}catch(e){}
   const ch=getDailyChallenge();
   if(ch.key===key){
     if(!bv().dailyChallenge||bv().dailyChallenge.date!==ch.today){
@@ -2903,7 +2996,7 @@ function buildDevReport(){
    'RETENTION MARKERS  <-- the three numbers that matter',
    `Days playing: ${days} | Streak: ${bv().streak||0}/best ${bv().bestStreak||0} | Dailies claimed: ${bv().dailyCount||0}`,
    `Treasures: found ${st.found||0} · best ${fmt(st.bestLump||0)} · gambles ${(st.gamblesWon||0)}-${(st.gamblesLost||0)} · frenzies ${st.frenzies||0}`,
-   `Journal: ${(bv().journalClaimed||[]).length}/20 | Regulars served: ${(bv().regularWall||[]).length} | Butter now: ${b.count}(+${b.pending} setting)`,
+    `Journal: ${(bv().journalClaimed||[]).length}/20 | Regulars served: ${(bv().regularWall||[]).length} | Butter now: ${b.count}(+${b.pending} setting) | Cupboard: ${(bv().cupboard||[]).length}/${CUPBOARD_TINS.length}`,
    '',
    'TODAY',
    `Featured helper: ${HELPERS.find(h=>h.id===getFeaturedHelper()).name}`,
@@ -2913,7 +3006,7 @@ function buildDevReport(){
    `Weekly: ${fmt(Math.floor((bv().weeklyChallenge&&bv().weeklyChallenge.progress)||0))}/${fmt(getWeeklyChallenge().target)}${(bv().weeklyRerolls&&bv().weeklyRerolls.n)?` · rerolled x${bv().weeklyRerolls.n}`:''}`,
    '',
    'ECONOMY CONSTANTS',
-   `Combo window: ${Math.round(comboWindowMs())}ms | Treasure luck: ${Math.round((2-treasureLuck())*50)}% freq`,
+       `Combo window: ${Math.round(comboWindowMs())}ms | Treasure: ${(1/treasureLuck()).toFixed(1)}× freq (+${Math.round((1/treasureLuck()-1)*100)}%)`,
    `Offline: ${offlineCapHours()}h @ ${Math.round(offlineEff()*100)}% | Click power: ${fmt(clickPower)}`,
    `Crew Focus: ${focus} | Legendary: +${Math.round((bv().legendary||0)*100)}%`,
   ].join('\n');
@@ -2937,6 +3030,9 @@ function renderCollections(){
   const crew=CREW_ORDER.map(c=>CHARACTERS[c].emoji+' '+(bv().charTaps[c]||0)).join(' · ');
   const secrets=foundSecrets().length+'/'+SECRETS.length;
   document.getElementById('collectionsBody').innerHTML=`
+    <div class="stats-section-title">${(()=>{const {ev,data}=seasonalProgress();const pct=Math.min(100,Math.round((data.progress||0)/ev.target*100));return `${ev.emoji} ${ev.name} — ${fmt(Math.floor(data.progress||0))}/${fmt(ev.target)} ${data.claimed?'✅':''}`})()}</div>
+    <div class="ms-bar track" style="height:6px;margin-bottom:4px"><div class="ms-bar fill" style="width:${(()=>{const {ev,data}=seasonalProgress();return Math.min(100,Math.round((data.progress||0)/ev.target*100))})()}%"></div></div>
+    <p style="font-size:10px;color:var(--cocoa-soft);margin:0 0 8px">${(()=>{const {ev,data}=seasonalProgress();return data.claimed?`✅ ${ev.reward} active all season!`:ev.desc})()}</p>
     <div class="stats-section-title">🍪 Treasures</div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-card-value">${st.found||0}</div><div class="stat-card-label">Treasures caught</div></div>
@@ -2953,6 +3049,11 @@ function renderCollections(){
     </div>
     <div class="stats-section-title">👨‍👩‍👧 The Crew</div>
     <div class="prestige-panel" style="padding:10px"><p style="margin:0;font-size:13px;font-weight:800;color:var(--cocoa)">${crew}</p><p style="margin-top:4px;font-size:11px">Visits from friends — keep them coming for story quests.</p></div>
+    <div class="stats-section-title">🫙 Cupboard — ${(bv().cupboard||['classic']).length}/${CUPBOARD_TINS.length} tins (+${Math.round((cupboardBonus()-1)*100)}%)</div>
+    <div class="cup-grid">${CUPBOARD_TINS.map(t=>{
+      const got=(bv().cupboard||[]).includes(t.id);
+      return `<div class="cup-tin ${got?'got':'locked'}"><div class="cup-tin-emoji">${got?t.emoji:'🔒'}</div><div class="cup-tin-name">${t.name}</div><div class="cup-tin-hint">${got?'✅ +2%':t.hint}</div></div>`;
+    }).join('')}</div>
     <div class="stats-section-title">🎀 Wardrobe</div>
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-card-value">${ownedBgs().length}/${BG_THEMES.length}</div><div class="stat-card-label">Backgrounds</div></div>
@@ -3020,7 +3121,27 @@ function renderLifetimeStats(){
       <div class="stat-card"><div class="stat-card-value" style="font-size:13px">${fmt(b.bestSessionEarn||0)}</div><div class="stat-card-label">📈 Best session earn</div></div>
       <div class="stat-card"><div class="stat-card-value">${fmt(productionRate)}/s</div><div class="stat-card-label">🏭 Current output</div></div>
       <div class="stat-card"><div class="stat-card-value" style="font-size:13px">${saved}</div><div class="stat-card-label">💾 Last saved</div></div>
-    </div>`;
+    </div>
+    <p style="text-align:center;font-size:11px;color:var(--cocoa-soft);margin:8px 0 4px">🍀 Treasure: ${(1/treasureLuck()).toFixed(1)}× freq &nbsp;·&nbsp; Combo window: ${Math.round(comboWindowMs())}ms &nbsp;·&nbsp; Offline: ${offlineCapHours()}h @ ${Math.round(offlineEff()*100)}%</p>
+    <button id="statsExportBtn" class="ad-reset" style="margin-top:6px;width:100%">📋 Copy stats summary</button>`;
+  // bind after DOM insert
+  setTimeout(()=>{
+    const btn=document.getElementById('statsExportBtn');
+    if(!btn||btn._bound)return; btn._bound=true;
+    btn.addEventListener('click',()=>{
+      const days2=Math.max(1,Math.ceil((Date.now()-(bv().firstPlayTs||Date.now()))/86400000));
+      const txt=[
+        `🍪 Biscuit Tin — v${APP.version} build ${APP.build} "${APP.codename}"`,
+        `Baked: ${fmt(bv().lifetime)} all-time · ${fmt(bv().total)} in tin · ${fmt(bv().clicks)} taps`,
+        `Helpers: ${HELPERS.reduce((s,h)=>s+(bv().helpers[h.id]||0),0)} hired · ${fmt(productionRate)}/s`,
+        `Season: ${bv().prestige} prestige · ${bv().stars||0} stars · ${(bv().journalClaimed||[]).length}/20 journal`,
+        `Treasures: ${st.found||0} caught · ${st.frenzies||0} frenzies · ${(1/treasureLuck()).toFixed(1)}x freq`,
+        `Playing ${days2} day${days2===1?'':'s'} · Best session ${fmt(bv().bestSessionEarn||0)}`,
+      ].join('\n');
+      if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>showToast('📋 Stats copied!')).catch(()=>{const ta=document.getElementById('saveCode');if(ta){ta.value=txt;ta.focus();ta.select();showToast('📋 Stats in Save Transfer box');}});
+      else {const ta=document.getElementById('saveCode');if(ta){ta.value=txt;ta.focus();ta.select();showToast('📋 Stats in Save Transfer box');}}
+    });
+  },0);
 }
 
 // ══ SAVE SAFETY BACKUPS (rolling, last ~3 days) ══
@@ -3349,6 +3470,45 @@ if(!vault.btWelcomed){
 }
 // One-time "tap here" pulse until the very first bake
 if(!vault.btHintDone&&Math.floor(bv().lifetime)<1)document.getElementById('tinHint').classList.add('on');
+// ══ TUTORIAL (5-step guided tour for brand-new bakers) ══
+const TUT_STEPS=[
+  {emoji:'🍪',title:'Tap the tin!',desc:'Tap the golden tin to bake. Try tapping fast for a combo bonus!'},
+  {emoji:'🏡',title:'Hire a helper',desc:'Open the Bakery and hire your first helper — they bake even while you rest.'},
+  {emoji:'⚡',title:'Grab an upgrade',desc:'Upgrades make every tap and every helper stronger. The first one is cheap!'},
+  {emoji:'🐾',title:'Meet the crew',desc:'Tap a friend by the fireplace — each one has a favourite treat and a story.'},
+  {emoji:'⭐',title:'You\'re set!',desc:'Explore at your pace. Stars, treasures, and the Cupboard await. Happy baking! 💛'},
+];
+let tutStep=0;
+function showTut(n){
+  tutStep=n;
+  const s=TUT_STEPS[n];
+  document.getElementById('tutEmoji').textContent=s.emoji;
+  document.getElementById('tutTitle').textContent=s.title;
+  document.getElementById('tutDesc').textContent=s.desc;
+  document.getElementById('tutNext').textContent=n===TUT_STEPS.length-1?'Bake! 🍪':'Next →';
+  document.getElementById('tutDots').textContent=TUT_STEPS.map((_,i)=>i===n?'●':'○').join('');
+  document.getElementById('tutorialModal').classList.add('show');
+}
+function maybeStartTutorial(){
+  if(vault.btTutorialDone||bv().lifetime>=50||bv().clicks>=20)return;
+  showTut(0);
+}
+document.getElementById('tutNext').addEventListener('click',()=>{
+  document.getElementById('tutorialModal').classList.remove('show');
+  if(tutStep<TUT_STEPS.length-1) setTimeout(()=>showTut(tutStep+1),300);
+  else {vault.btTutorialDone=true;saveVault();}
+});
+document.getElementById('tutSkip').addEventListener('click',()=>{
+  document.getElementById('tutorialModal').classList.remove('show');
+  vault.btTutorialDone=true;saveVault();
+});
+// auto-advance: hiring / upgrading completes the relevant step
+const _tutCheck=setInterval(()=>{
+  if(vault.btTutorialDone)return clearInterval(_tutCheck);
+  if(tutStep===1 && Object.values(bv().helpers).reduce((a,b)=>a+b,0)>=1){document.getElementById('tutorialModal').classList.remove('show');setTimeout(()=>showTut(2),400);}
+  if(tutStep===2 && bv().upgrades.length>=1){document.getElementById('tutorialModal').classList.remove('show');setTimeout(()=>showTut(3),400);}
+},800);
+setTimeout(maybeStartTutorial,1500);
 updateQuestChip();
 
 setInterval(()=>{
@@ -3648,6 +3808,7 @@ setInterval(spawnBgCookie,900);
 for(let i=0;i<8;i++)spawnBgCookie(true);
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
+
 
 </script>
 <script>
