@@ -67,6 +67,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   <a class="back" href="../pages/games.html">← All Games</a>
   <span class="brand">JVDesignStudio</span>
   <button class="iconbtn" id="muteBtn" aria-label="Toggle sound">🔊</button>
+  <button class="iconbtn" id="pauseBtn" aria-label="Pause" style="margin-left:6px">⏸</button>
 </div>
 
 <div id="wrap">
@@ -132,13 +133,18 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
       o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+dur);
     }catch(e){}
   }
+  function getComboMult(){return combo>=10?2:combo>=5?1.5:combo>=3?1.2:1;}
   const sJump=()=>beep(520,0.12,'square',0.05);
   const sCoin=()=>{beep(880,0.07,'triangle',0.05);setTimeout(()=>beep(1320,0.07,'triangle',0.04),55);};
   const sGem =()=>{beep(700,0.09,'triangle',0.06);setTimeout(()=>beep(1050,0.09,'triangle',0.05),70);setTimeout(()=>beep(1570,0.1,'triangle',0.05),140);};
   const sPow =()=>{beep(440,0.1,'sawtooth',0.05);setTimeout(()=>beep(660,0.12,'sawtooth',0.05),90);};
   const sCrash=()=>beep(150,0.3,'sawtooth',0.09);
   const sShield=()=>beep(300,0.18,'square',0.07);
+  let ambientOsc=null;
+  function startAmbientMusic(){try{const ac2=new (window.AudioContext||window.webkitAudioContext)();const o1=ac2.createOscillator(),o2=ac2.createOscillator(),g=ac2.createGain(),f=ac2.createBiquadFilter();o1.type='sine';o1.frequency.value=130;o2.type='triangle';o2.frequency.value=195;f.type='lowpass';f.frequency.value=220;g.gain.value=0.015;o1.connect(f);o2.connect(f);f.connect(g);g.connect(ac2.destination);o1.start();o2.start();ambientOsc={o1,o2,ac:ac2};}catch(e){}}
+  function stopAmbientMusic(){try{if(ambientOsc){ambientOsc.o1.stop();ambientOsc.o2.stop();ambientOsc=null;}}catch(e){}}
   muteBtn.addEventListener('click',()=>{muted=!muted;localStorage.setItem('lumoDashMuted',muted?'1':'0');muteBtn.textContent=muted?'🔇':'🔊';if(!muted)beep(660,0.08,'triangle',0.05);});
+  document.getElementById('pauseBtn').addEventListener('click', toggleLumoPause);
 
   let best=+(localStorage.getItem('lumoDashBest')||0);
   document.getElementById('bestStart').textContent=best?('Best: '+best+' m'):'';
@@ -162,11 +168,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 
   function reset(){
     player.h=U;player.w=U*1.08;
-    player.x=W*0.20;player.y=GROUND-player.h;player.vy=0;player.onGround=true;player.jumps=0;player.sliding=false;
+    player.x=W*0.20;player.y=GROUND-player.h;player.vy=0;player.onGround=true;player.jumps=0;player.sliding=false;player.rotation=0;
     player.run=0;player.squash=1;player.coyote=0;player.buffer=0;
     obs=[];coins=[];gems=[];pows=[];parts=[];floaters=[];
     running=true;dist=0;coinCount=0;
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;last=0;requestAnimationFrame(loop);}}});speed=7.2*SCALE;spawnX=W*0.9;gravity=0.95*SCALE;shake=0;groundScroll=0;
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;document.getElementById('pauseBtn').textContent='\u23F8';last=0;requestAnimationFrame(loop);}}});speed=7.2*SCALE;spawnX=W*0.9;gravity=0.95*SCALE;shake=0;groundScroll=0;
     slideHeld=false;magnetT=0;rushT=0;shield=false;invT=0;combo=0;comboT=0;biome=0;biA=0;biB=0;biMix=0;
     bgFar=[];bgMid=[];
     for(let i=0;i<6;i++)bgFar.push({x:(i/6)*W*1.2,h:60+Math.random()*70});
@@ -178,7 +184,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   /* ---------- input ---------- */
   function jump(){
     if(!running)return;
-    if(player.onGround||player.coyote>0){player.vy=-15.5*SCALE;player.onGround=false;player.coyote=0;player.jumps=1;player.sliding=false;player.squash=0.7;sJump();}
+    if(player.onGround||player.coyote>0){player.vy=-15.5*SCALE;player.onGround=false;player.coyote=0;player.jumps=1;player.sliding=false;player.squash=0.7;player.vy=-8*SCALE;player.rotation=0;sJump();}
     else if(player.jumps<2){player.vy=-13.5*SCALE;player.jumps=2;player.squash=0.75;sJump();puff(player.x+player.w*0.3,player.y+player.h,4);}
     else player.buffer=8;
   }
@@ -280,7 +286,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     if(dt>0.05)dt=0.05;
     const f=dt*60;
 
-    speed+=0.18*SCALE*dt;
+    speed=Math.min(speed+0.18*SCALE*dt, 18*SCALE);
     dist+=speed*f*0.05;
     groundScroll=(groundScroll+speed*f)%(40*SCALE);
 
@@ -371,7 +377,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     draw();
   }
   function gainCoin(n,x,y,gem){
-    const mult=rushT>0?2:1;coinCount+=n*mult;
+    const mult=(rushT>0?2:1)*getComboMult();coinCount+=n*mult;
     coinsEl.innerHTML='🪙 '+coinCount+'<small>coins</small>';
     // Rush doubles the coin value, so make it look/sound doubled too instead
     // of an identical sparkle regardless of whether rush is active.
@@ -381,7 +387,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   function addCombo(){
     combo++;
     if(combo>=2){
-      comboT=2.2;comboEl.classList.remove('hidden');comboEl.innerHTML='x'+combo+'<small>combo</small>';comboEl.style.transform='scale(1.25)';setTimeout(()=>comboEl.style.transform='scale(1)',100);
+      comboT=2.2;comboEl.classList.remove('hidden');const cm=getComboMult();comboEl.innerHTML='x'+combo+(cm>1?' <small>('+cm+'x)</small>':'')+'<small>combo</small>';comboEl.style.transform='scale(1.25)';setTimeout(()=>comboEl.style.transform='scale(1)',100);
       // Was a silent UI-only badge despite being called a "combo" — give it
       // real feedback that escalates instead of the same beep every time.
       const tier=Math.min(Math.floor(combo/3),4);
@@ -477,6 +483,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
     const bodyH=H_*0.62*sh,bodyW=player.w*1.0*sw,bodyY=feet-bodyH-H_*0.18;
     const PUR='#7c5cbf',PURD='#5e44a0',CREAM='#f3e9d2';
     ctx.save();ctx.translate(cx,0);
+    if(player.rotation) ctx.rotate(player.rotation);
     if(invT>0){ctx.globalAlpha=0.45+0.35*Math.sin(invT*0.6);}     // blink while invulnerable
     if(shield){ctx.save();ctx.globalAlpha=0.4;ctx.strokeStyle='#9dd4d7';ctx.lineWidth=3*SCALE;ctx.beginPath();ctx.arc(0,bodyY+bodyH*0.4,player.w*0.85,0,7);ctx.stroke();ctx.restore();}
     const tw=Math.sin(player.run*0.6)*0.25;
@@ -504,12 +511,48 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   }
 
   /* ---------- flow ---------- */
-  function startGame(){reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');last=0;requestAnimationFrame(loop);}
+  let lumoPauseOverlay=null, lumoPaused=false;
+  function toggleLumoPause(){
+    if(lumoPaused){
+      lumoPaused=false; running=true;
+      document.getElementById('pauseBtn').textContent='\u23F8';
+      if(lumoPauseOverlay) lumoPauseOverlay.style.display='none';
+      last=0; requestAnimationFrame(loop);
+      return;
+    }
+    if(!running) return;
+    lumoPaused=true; running=false;
+    document.getElementById('pauseBtn').textContent='\u25B6';
+    if(!lumoPauseOverlay){
+      lumoPauseOverlay=document.createElement('div');
+      lumoPauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)';
+      lumoPauseOverlay.innerHTML='<div style="text-align:center;color:white;font-family:Fredoka,cursive"><div style="font-size:2rem;margin-bottom:12px">\u23F8 PAUSED</div><button id="resumeBtn" style="font-family:Fredoka,cursive;font-size:1.1rem;padding:10px 28px;border:none;border-radius:12px;background:#70A3A7;color:white;cursor:pointer">\u25B6 RESUME</button></div>';
+      document.body.appendChild(lumoPauseOverlay);
+      lumoPauseOverlay.querySelector('#resumeBtn').addEventListener('click', toggleLumoPause);
+    } else lumoPauseOverlay.style.display='flex';
+  }
+  function startGame(){if(lumoPauseOverlay) lumoPauseOverlay.style.display='none'; lumoPaused=false; reset();startAmbientMusic();startScreen.classList.add('hidden');endScreen.classList.add('hidden');last=0;requestAnimationFrame(loop);}
   function end(o){
-    running=false;sCrash();shake=14;
+    running=false;sCrash();shake=14;stopAmbientMusic();
     debris(player.x+player.w/2,player.y+player.h/2);
-    draw();
-    const raw=Math.floor(dist),total=raw+coinCount*5;
+    // Death tumble animation
+    let deathFrame=0;
+    const deathAnim=()=>{
+      deathFrame++;
+      player.vy+=0.3*SCALE;player.y+=player.vy;
+      player.rotation=(player.rotation||0)+0.15;
+      draw();
+      if(deathFrame<20)requestAnimationFrame(deathAnim);
+      else{
+        // Flash white
+        ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillRect(0,0,W,H);
+        showEndScreen(o);
+      }
+    };
+    deathAnim();
+  }
+  function showEndScreen(o){
+    const raw=Math.floor(dist),total=Math.floor(raw+coinCount*5);
     window.__gsScore=(window.__gsScore||0)+total;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,total);
     if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
