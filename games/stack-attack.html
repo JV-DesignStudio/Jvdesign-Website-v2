@@ -101,7 +101,7 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
 <div class="topbar">
   <a class="back" href="../pages/games.html">← All Games</a>
   <span class="brand">JVDesignStudio</span>
-  <button class="mute-btn" id="muteBtn">🔊</button>
+  <button class="mute-btn" id="pauseBtn" style="margin-right:6px">⏸</button><button class="mute-btn" id="muteBtn">🔊</button>
 </div>
 
 <div id="wrap"><canvas id="game"></canvas></div>
@@ -296,7 +296,8 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
     fragments=[];particles=[];floaters=[];
     streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];shakeT=0;shakeMag=0;
     updateHud();spawnBlock();running=true;
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;requestAnimationFrame(loop);}}});
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;return true;},resume:()=>{if(!running&&!paused){running=true;requestAnimationFrame(loop);}}});
+    document.getElementById('pauseBtn').onclick=togglePause;
   }
 
   function spawnBlock(){
@@ -364,6 +365,8 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
   addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();drop();}});
   cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
 
+  let paused=false, pauseOverlay=null;
+  function togglePause(){ if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; requestAnimationFrame(loop); return; } if(!running) return; paused=true; running=false; document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(8,12,30,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">▶ Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
   // ── Loop ──
   function loop(ts){
     if(!running)return;requestAnimationFrame(loop);
@@ -428,9 +431,9 @@ canvas.topple-shake{animation:toppleShake 0.4s ease-out;}
   }
 
   // ── Start / End ──
-  function startGame(){initAudio();reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);}
+  function startGame(){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);}
 
-  function end(){
+  function end(){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false;
     running=false;hint.classList.add('hidden');sfxOver();
     // A CSS shake on the canvas element itself, not the internal shakeT/
     // shakeMag used mid-run — the render loop stops calling draw() the
