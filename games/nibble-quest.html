@@ -63,16 +63,16 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
 <div class="topbar">
   <a class="back" href="../pages/games.html">← All Games</a>
   <span class="brand">JVDesignStudio</span>
-  <span style="width:80px"></span>
+  <span style="display:flex;gap:8px;align-items:center"><button class="iconbtn" id="muteBtn" aria-label="Mute" style="background:rgba(0,0,0,.3);border:none;color:var(--beige);padding:8px 12px;border-radius:10px;cursor:pointer;font-size:1rem">🔊</button><button class="iconbtn" id="pauseBtn" aria-label="Pause" style="background:rgba(0,0,0,.3);border:none;color:var(--beige);padding:8px 12px;border-radius:10px;cursor:pointer;font-size:1rem">⏸</button></span>
 </div>
 
 <div class="wrap">
   <h1>🐍 Nibble Quest</h1>
   <div class="hud">
     <div class="stat"><div class="label">Score</div><div class="val" id="score">0</div></div>
-    <div class="stat"><div class="label">Best</div><div class="val" id="best">0</div></div>
+    <div class="stat"><div class="label">Length</div><div class="val" id="len">3</div></div><div class="stat"><div class="label">Best</div><div class="val" id="best">0</div></div>
   </div>
-  <canvas id="board" width="420" height="420"></canvas>
+  <div id="goldBar" style="height:4px;background:linear-gradient(90deg,#ffd23f,#ff8c00);border-radius:4px;width:0%;margin:6px auto 0;max-width:420px;transition:width .1s linear;display:none"></div><canvas id="board" width="420" height="420"></canvas>
   <div class="pad">
     <div class="sp"></div><button data-dir="up">▲</button><div class="sp"></div>
     <button data-dir="left">◀</button><div class="sp"></div><button data-dir="right">▶</button>
@@ -105,9 +105,15 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best');
   const startScreen=document.getElementById('startScreen'),endScreen=document.getElementById('endScreen');
   let snake,dir,nextDir,food,score,running,tickT,speed;
+  let paused=false, pauseOverlay=null, goldInt=null;
   let golden=false,goldenTimer=null,apples=0;
   let best=+(localStorage.getItem('nibbleQuestBest')||0);
   const fx=new AudioEffects(0.6);
+  let muted=localStorage.getItem('nibbleMuted')==='1';
+  function updateGoldBar(isGold){ const bar=document.getElementById('goldBar'); if(!bar) return; if(isGold){ bar.style.display='block'; bar.style.width='100%'; let pct=100; clearInterval(goldInt); goldInt=setInterval(()=>{ pct-=1.65; bar.style.width=Math.max(0,pct)+'%'; if(pct<=0){clearInterval(goldInt); bar.style.display='none';}},100); } else { // non-golden, hide bar if not golden
+    if(!golden){ bar.style.display='none'; clearInterval(goldInt); }
+  }}
+  function setMuted(v){ muted=v; localStorage.setItem('nibbleMuted', v?'1':'0'); const b=document.getElementById('muteBtn'); if(b) b.textContent=v?'🔇':'🔊'; fx.setMuted&&fx.setMuted(v); }
   bestEl.textContent=best;document.getElementById('bestStart').textContent=best?('Best: '+best):'';
 
   function placeFood(){
@@ -122,10 +128,11 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     const r=cv.getBoundingClientRect();
     return {x:r.left+(food.x+0.5)*r.width/GRID,y:r.top+(food.y+0.5)*r.height/GRID};
   }
+  function togglePause(){ if(!running&&!paused) return; if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; tickT=setTimeout(step,speed); return; } if(!running) return; paused=true; running=false; clearTimeout(tickT); clearInterval(goldInt); document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(5,18,15,.93);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">▶ Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
   function reset(){
     snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};
     score=0;speed=140;running=true;
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;clearTimeout(tickT);return true;},resume:()=>{if(!running){running=true;tickT=setTimeout(step,speed);}}});scoreEl.textContent=0;apples=0;golden=false;placeFood();
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;clearTimeout(tickT);clearInterval(goldInt);return true;},resume:()=>{if(!running&&!paused){running=true;tickT=setTimeout(step,speed);}}});scoreEl.textContent=0;document.getElementById('len').textContent='3';apples=0;golden=false;clearInterval(goldInt);document.getElementById('goldBar').style.display='none';placeFood();
   }
   function setDir(nx,ny){
     if(!running)return;
@@ -155,13 +162,13 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     if(head.x===food.x&&head.y===food.y){
       const pos=foodScreenPos();
       if(golden){
-        score+=30;speed=Math.max(55,speed-3);fx.playCombo(4);
+        score+=30;speed=Math.max(55,speed-3.5);fx.playCombo(4); updateGoldBar(true);
         ParticleSystem.burst(pos.x,pos.y,'⭐',8);
       }else{
-        score+=10;speed=Math.max(55,speed-1.5);fx.playSuccess(600+Math.min(snake.length*8,500));
+        score+=10;speed=Math.max(55,speed-1.5);fx.playSuccess(600+Math.min(snake.length*8,500)); updateGoldBar(false);
         ParticleSystem.burst(pos.x,pos.y,'✨',4);
       }
-      scoreEl.textContent=score;placeFood();if(speed>65)speed-=4;
+      scoreEl.textContent=score;document.getElementById('len').textContent=snake.length;placeFood();
     }
     else snake.pop();
     draw();
@@ -196,9 +203,10 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   }
   function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 
-  function startGame(){reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');draw();clearTimeout(tickT);tickT=setTimeout(step,speed);}
+  function startGame(){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');draw();clearTimeout(tickT);tickT=setTimeout(step,speed);}
   function end(){
-    running=false;clearTimeout(tickT);
+    clearInterval(goldInt); document.getElementById('goldBar').style.display='none';
+    running=false;clearTimeout(tickT); paused=false;
     fx.playError();ScreenShake.shake(cv,9,280);
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
@@ -219,6 +227,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     endScreen.classList.remove('hidden');
   }
   document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('pauseBtn').addEventListener('click', togglePause);
+  document.getElementById('muteBtn').addEventListener('click', ()=> setMuted(!muted));
+  setMuted(muted);
   document.getElementById('againBtn').addEventListener('click',startGame);
   // initial idle draw
   snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};food={x:13,y:10};draw();
