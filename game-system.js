@@ -1,6 +1,6 @@
-/* ���������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
+/* ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    JVDS Game System, Progression, Achievements, Leaderboard
-   ��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������� */
+   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 class GameSystem {
   constructor(gameId, gameName, gameCharacter = 'squirt') {
@@ -44,7 +44,7 @@ class GameSystem {
     this.achievements = this.defineAchievements();
   }
 
-  /* ��������� STATE MANAGEMENT ��������� */
+  /* ── STATE MANAGEMENT ── */
   loadState() {
     try {
       const stored = localStorage.getItem(this.storageKey);
@@ -88,7 +88,7 @@ class GameSystem {
     this.saveState();
   }
 
-  /* ��������� SCORE & PROGRESSION ��������� */
+  /* ── SCORE & PROGRESSION ── */
   addScore(points) {
     this.state.score += points;
     this.state.totalScore = (this.state.totalScore || 0) + points;
@@ -131,7 +131,7 @@ class GameSystem {
     return this.state.coins;
   }
 
-  /* ��������� SCORE TRACKING ���������
+  /* --------- SCORE TRACKING ---------
      Replaces the two setInterval pollers every game used to copy-paste:
      one converting window.__gsScore deltas into XP, one checking
      window.__gsBestRun against score-tier achievements. This watches both
@@ -259,7 +259,7 @@ class GameSystem {
     }
   }
 
-  /* ��������� ACHIEVEMENTS ��������� */
+  /* ── ACHIEVEMENTS ── */
   defineAchievements() {
     return {
       firstPlay: {
@@ -329,7 +329,7 @@ class GameSystem {
         id: 'level10',
         name: '📈 Rising Star',
         description: 'Reach level 10',
-        icon: '�ƒ��',
+        icon: '-ƒ--',
         unlocked: false
       },
       // Global cross-game achievements
@@ -467,7 +467,7 @@ class GameSystem {
     }));
   }
 
-  /* ��������� LEADERBOARD ��������� */
+  /* ── LEADERBOARD ── */
   addToLeaderboard(playerName, score) {
     try {
       let leaderboard = this.getLeaderboard();
@@ -500,7 +500,7 @@ class GameSystem {
     }
   }
 
-  /* ��������� SETTINGS ��������� */
+  /* ── SETTINGS ── */
   updateSetting(key, value) {
     this.state.settings[key] = value;
     this.saveState();
@@ -510,7 +510,7 @@ class GameSystem {
     return this.state.settings[key];
   }
 
-  /* ��������� UTILITY ��������� */
+  /* ── UTILITY ── */
   // The displayed player level is the SITE-WIDE unified level from
   // player-profile.js (workshops + games + challenges, 100 XP/level).
   // this.state.level remains the per-game progression stat used by
@@ -572,9 +572,9 @@ class GameSystem {
   }
 }
 
-/* ������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
+/* ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    UI COMPONENTS, Modal, Achievement Notifications, etc
-   ��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������� */
+   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 class GameUI {
   static showAchievementNotification(achievement) {
@@ -732,9 +732,9 @@ class GameUI {
   }
 }
 
-/* ���������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
+/* ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    SOUND MANAGER, Audio effects and music
-   ��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������� */
+   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 class SoundManager {
   constructor(gameSystem) {
@@ -792,9 +792,9 @@ class SoundManager {
   }
 }
 
-/* ���������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
+/* ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    CSS STYLES FOR UI COMPONENTS
-   ��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������� */
+   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 
 const GAME_UI_STYLES = `
 .achievement-notification {
@@ -926,7 +926,7 @@ if (typeof document !== 'undefined') {
   });
 }
 
-/* ���������������������������������������������������������������������������������������������������������������������������������������������������������������������������������
+/* ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    GLOBAL PROFILE BRIDGE, feeds gameplay into the unified
    player profile (player-profile.js) so every game counts
    toward global XP, quests, and the global leaderboard.
@@ -939,7 +939,7 @@ if (typeof document !== 'undefined') {
 
    player-profile.js is loaded automatically if the page didn't
    include it; awards earned before it loads are queued.
-   ��������������������������������������������������������������������������������������������������������������������������������������������������������������������������������� */
+   --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- */
 (function () {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   if (typeof GameSystem === 'undefined') return;
@@ -949,7 +949,7 @@ if (typeof document !== 'undefined') {
     ? scriptSrc.replace(/game-system\.js.*$/, 'player-profile.js')
     : '../player-profile.js';
 
-  /* ������ Installed-app mode ������
+  /* ------ Installed-app mode ------
      Marks <html> as soon as this script runs (still mid-<head>, before
      FOUC can happen) so CSS can drop marketing chrome that only makes
      sense when a game is reached by scrolling a search result, not when
@@ -976,7 +976,7 @@ if (typeof document !== 'undefined') {
     catch (e) { return window.playerProfile || null; }
   }
 
-  /* ������ Daily caps (shared shape with tool-xp.js) ������ */
+  /* ------ Daily caps (shared shape with tool-xp.js) ------ */
   /* ── Daily caps (shared shape with tool-xp.js) ── */
   // Sweep away the old phantom "global leaderboard" key (it was never real).
   try { localStorage.removeItem('jvds_global_leaderboard'); } catch (e) {}
@@ -1000,7 +1000,7 @@ if (typeof document !== 'undefined') {
     } catch (e) { /* storage full/blocked, XP still awarded */ }
   }
 
-  /* ������ GA4 events ������
+  /* ------ GA4 events ------
      Games never loaded ga4-analytics.js, so game_start/game_end/
      game_achievement had never once fired. Emitting from here covers all
      ~34 games with no per-game edits. Consent is handled centrally by
@@ -1011,7 +1011,7 @@ if (typeof document !== 'undefined') {
     try { gtag('event', name, params || {}); } catch (e) { /* never break gameplay */ }
   }
 
-  /* ������ XP toast ������ */
+  /* ------ XP toast ------ */
   function showXPToast(text) {
     if (!document.body) return;
     var t = document.createElement('div');
@@ -1039,7 +1039,7 @@ if (typeof document !== 'undefined') {
     }, 2200);
   }
 
-  /* ������ Score sharing (viral loop) ������
+  /* ------ Score sharing (viral loop) ------
      When a player sets a new personal best during a session, offer a
      dismissible chip that shares their score. Uses the native share sheet
      on mobile (navigator.share) and falls back to clipboard copy. The
@@ -1182,7 +1182,7 @@ if (typeof document !== 'undefined') {
     } catch (e) { /* sharing must never break game-over */ }
   }
 
-  /* ������ Award queue (flushed once the profile is available) ������ */
+  /* ------ Award queue (flushed once the profile is available) ------ */
   /* ── Challenge progress suffix (daily + weekly) ──
      The hub's retention loop, echoed at the moment a run ends: every
      game-over toast now carries "Today 2/3 - Week 8/15" so players can
@@ -1241,7 +1241,7 @@ if (typeof document !== 'undefined') {
     });
   }
 
-  /* ������ Load player-profile.js if the page didn't include it ������ */
+  /* ------ Load player-profile.js if the page didn't include it ------ */
   // Load daily-challenge.js / weekly-challenge.js if the page didn't include
   // them — same directory as this engine — so run-end toasts can surface
   // challenge progress inside every game with no per-game script tags.
@@ -1275,7 +1275,7 @@ if (typeof document !== 'undefined') {
     ensureProfileLoaded();
   }
 
-  /* ������ Hook GameSystem ������ */
+  /* ------ Hook GameSystem ------ */
 
   // Session XP: loadState runs inside the constructor, after gameId is set
   var sessionTimers = {};
@@ -1309,7 +1309,7 @@ if (typeof document !== 'undefined') {
     // Capture before origRecord resets _runStart, so we can report run length.
     var startedAt = this._runStart;
     var r = origRecord.apply(this, arguments);
-    if (!r) return r; // debounced duplicate (see recordGamePlay's own guard) ��� no XP/analytics
+    if (!r) return r; // debounced duplicate (see recordGamePlay's own guard) --- no XP/analytics
     award(this.gameId, 'run', 15, 5,
       this.gameName + ', run finished' + challengeSuffix());
 
@@ -1350,7 +1350,7 @@ if (typeof document !== 'undefined') {
 
   // Per-game achievement ids that were never registered via defineAchievements()
   // (e.g. custom trackScore() tiers like 'score100') still deserve a real toast
-  // instead of the generic "Achievement unlocked!" ��� turn the id itself into
+  // instead of the generic "Achievement unlocked!" --- turn the id itself into
   // a readable label: 'firstQuestion' -> 'First Question', 'score100' -> 'Score 100'.
   function prettifyAchievementId(id) {
     var s = String(id || '')
@@ -1379,7 +1379,7 @@ if (typeof document !== 'undefined') {
     return unlocked;
   };
 
-  // In-game XP milestones: every 100 per-game XP ��� +10 global XP
+  // In-game XP milestones: every 100 per-game XP --- +10 global XP
   var origAddXP = GameSystem.prototype.addXP;
   GameSystem.prototype.addXP = function (amount) {
     var r = origAddXP.apply(this, arguments);
@@ -1393,7 +1393,7 @@ if (typeof document !== 'undefined') {
     return r;
   };
 
-  /* ������ Reliable persistence ������
+  /* ------ Reliable persistence ------
      beforeunload (used by ~29 games) is unreliable on mobile: browsers
      discard backgrounded tabs and fire it inconsistently on app-switch.
      Flush every active GameSystem when the page is hidden or unloaded so
@@ -1408,24 +1408,24 @@ if (typeof document !== 'undefined') {
     if (p) { try { p.saveProfile(); } catch (e) {} }
   }
   // pagehide is the reliable "leaving" signal (incl. bfcache); visibilitychange
-  // ���hidden is the one mobile actually delivers on app-switch/tab-discard.
+  // ---hidden is the one mobile actually delivers on app-switch/tab-discard.
   window.addEventListener('pagehide', flushAllState);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') flushAllState();
   });
 
-  /* ������ Auto fullscreen toggle ������
+  /* ------ Auto fullscreen toggle ------
      Most games never wired the Fullscreen API, so tapping into them from the
      Arcade just opened a normal page instead of filling the screen. Inject a
      floating toggle for every page that loads this engine, unless the page
      already ships its own (dungeon-delve, echo_fruit_catch). */
   function initFullscreenToggle() {
     // dungeon-delve.html and echo_fruit_catch.html ship their own toggle
-    // under different ids/fn names ��� don't double up on those two.
+    // under different ids/fn names --- don't double up on those two.
     if (document.getElementById('btn-fullscreen') || document.getElementById('fsToggleBtn') ||
         window.toggleFullscreen || window.toggleFS) return;
     // Iframe-wrapper game pages (e.g. critter-whack-page.html) embed the
-    // actual game in a `.game-frame-wrap` box below a marketing header ���
+    // actual game in a `.game-frame-wrap` box below a marketing header ---
     // fullscreening the whole document there would just blow up the hero
     // text and footer around a small iframe, so fullscreen that box instead.
     var target = document.querySelector('.game-frame-wrap') || document.documentElement;
