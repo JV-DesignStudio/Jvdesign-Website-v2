@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -203,6 +249,10 @@
 
 // obj_ball · Step:
 if (x &lt; 8 || x &gt; room_width - 8)  hspeed = -hspeed;
+if (y &lt; 8)                        vspeed = -vspeed;x = clamp(mouse_x, 55, room_width - 55);
+
+// obj_ball · Step:
+if (x &lt; 8 || x &gt; room_width - 8)  hspeed = -hspeed;
 if (y &lt; 8)                        vspeed = -vspeed;</pre>
   </div>
 
@@ -212,7 +262,7 @@ if (y &lt; 8)                        vspeed = -vspeed;</pre>
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">The built-in variable <input class="cf-blank" data-a="bW91c2VfeA==" placeholder="???????" size="8"> gives the cursor position, clamped between 55 and room_width - <input class="cf-blank" data-a="NTU=" placeholder="??" size="4"> because the paddle origin is centred.</div>
+        <div class="cf-sentence">The built-in variable <input class="cf-blank" data-a="bW91c2VfeA==" placeholder="???????" size="8"> gives the cursor position, clamped between 55 and room_width, <input class="cf-blank" data-a="NTU=" placeholder="??" size="4"> because the paddle origin is centred.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
@@ -268,6 +318,15 @@ for (var r = 0; r &lt; 5; r++) {
         b.image_blend = colors[r];
         b.points = (5 - r) * 10;
     }
+}var colors = [c_red, c_orange, c_yellow, c_lime, c_aqua];
+
+for (var r = 0; r &lt; 5; r++) {
+    for (var c = 0; c &lt; 10; c++) {
+        var b = instance_create_layer(
+            c * 68 + 44, r * 26 + 60, "Instances", obj_brick);
+        b.image_blend = colors[r];
+        b.points = (5 - r) * 10;
+    }
 }</pre>
   </div>
 
@@ -280,8 +339,9 @@ for (var r = 0; r &lt; 5; r++) {
         <div class="cc-prompt">Spawn and tint one brick:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Create</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">var b = <input class="cc-blank" data-a="aW5zdGFuY2VfY3JlYXRlX2xheWVy" placeholder="????????" size="22">(c * 68 + 44, r * 26 + 60, "Instances", obj_brick);
-b.<input class="cc-blank" data-a="aW1hZ2VfYmxlbmQ=" placeholder="????????" size="12"> = colors[r];</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">var b = var b = <input class="cc-blank" data-a="aW5zdGFuY2VfY3JlYXRlX2xheWVy" placeholder="????????" size="22">(c * 68 + 44, r * 26 + 60, "Instances", obj_brick);
+b.(c * 68 + 44, r * 26 + 60, "Instances", obj_brick);
+b.<input class="cc-blank" data-a="aW1hZ2VfYmxlbmQ=" placeholder="????????" size="12"> = colors[r]; = colors[r];</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -331,6 +391,15 @@ b.<input class="cc-blank" data-a="aW1hZ2VfYmxlbmQ=" placeholder="????????" size=
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_ball · Collision with obj_brick</span></div>
     <pre class="code-pre">vspeed = -vspeed;
+global.score += other.points;
+with (other) instance_destroy();
+
+/// Collision with obj_paddle:
+if (vspeed &gt; 0) {
+    vspeed = -vspeed;
+    hspeed = (x - other.x) / 12;
+    if (hspeed == 0) hspeed = 1;
+}vspeed = -vspeed;
 global.score += other.points;
 with (other) instance_destroy();
 
@@ -397,6 +466,16 @@ if (vspeed &gt; 0) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Create (particles)</span></div>
     <pre class="code-pre">global.ps = part_system_create();
+global.pt_spark = part_type_create();
+part_type_shape(global.pt_spark, pt_shape_square);
+part_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);
+part_type_speed(global.pt_spark, 2, 5, -0.1, 0);
+part_type_direction(global.pt_spark, 0, 359, 0, 0);
+part_type_life(global.pt_spark, 20, 35);
+
+// on brick death (in the collision event):
+part_particles_create(global.ps, other.x, other.y,
+                      global.pt_spark, 12);global.ps = part_system_create();
 global.pt_spark = part_type_create();
 part_type_shape(global.pt_spark, pt_shape_square);
 part_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);
@@ -473,6 +552,16 @@ part_particles_create(global.ps, other.x, other.y,
     camera_set_view_pos(cam,
         base_x + random_range(-shake, shake),
         base_y + random_range(-shake, shake));
+}if (shake &gt; 0) {
+    shake -= 0.3;
+    var cam = view_camera[0];
+    // static vars capture the camera's resting position once, so the
+    // wobble always offsets FROM there instead of overwriting it
+    static base_x = camera_get_view_x(cam);
+    static base_y = camera_get_view_y(cam);
+    camera_set_view_pos(cam,
+        base_x + random_range(-shake, shake),
+        base_y + random_range(-shake, shake));
 }</pre>
   </div>
 
@@ -486,9 +575,14 @@ part_particles_create(global.ps, other.x, other.y,
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Step</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (shake &gt; 0) {
+    shake -= if (shake &gt; 0) {
     shake -= <input class="cc-blank" data-a="MC4z" placeholder="???" size="4">;
     camera_set_view_pos(cam,
+        base_x + ;
+    camera_set_view_pos(cam,
         base_x + <input class="cc-blank" data-a="cmFuZG9tX3Jhbmdl" placeholder="????????" size="13">(-shake, shake),
+        base_y + random_range(-shake, shake));
+}(-shake, shake),
         base_y + random_range(-shake, shake));
 }</pre>
         </div>
@@ -540,6 +634,16 @@ part_particles_create(global.ps, other.x, other.y,
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Step</span></div>
     <pre class="code-pre">if (instance_number(obj_brick) == 0) {
+    room_goto(rm_win);
+}
+
+/// serve delay, obj_ball Create:
+hspeed = 0; vspeed = 0;
+alarm[0] = 60;              // fires in 1 second
+
+/// obj_ball · Alarm 0 event:
+hspeed = choose(-4, 4);
+vspeed = -4;if (instance_number(obj_brick) == 0) {
     room_goto(rm_win);
 }
 
@@ -653,8 +757,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -663,9 +782,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-gml-breakout-v2';
 window.WORKSHOP_PROFILE_ID='gml-breakout-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-gml-breakout-v2';
+window.WORKSHOP_PROFILE_ID='gml-breakout-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First GameMaker Game Ep 3: Breakout","description":"Build Breakout in GameMaker with instance spawning, particles and screen shake. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/gml-breakout-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First GameMaker Game Ep 3: Breakout","description":"Build Breakout in GameMaker with instance spawning, particles and screen shake. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/gml-breakout-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
 </script>
 </body>

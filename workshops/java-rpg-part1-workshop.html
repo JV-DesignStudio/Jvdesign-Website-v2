@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -195,11 +241,44 @@
       </ul><div class="callout tip"><div class="callout-icon">💡</div><div>Professional studios draw this exact diagram (a <em>class diagram</em>) before writing any code on a new game.</div></div>
 
       <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
-        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop. Use 700×560 for the RPG in <code>setPreferredSize</code>. Part 1 splits Hero and Item into their own files; the finished code below shows everything in one runnable file.</p>
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template , the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop. Use 700×560 for the RPG in <code>setPreferredSizesetPreferredSize</code>. Part 1 splits Hero and Item into their own files; the finished code below shows everything in one runnable file.</p>
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
           <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 560));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}// The starting template every game in this series uses.
 // Save as Main.java, then run:  javac Main.java   and   java Main
 import javax.swing.*;
 import java.awt.*;
@@ -309,6 +388,26 @@ class GamePanel extends JPanel implements ActionListener {
     public int getMaxHp() { return maxHp; }
     public int getAttack() { return attack; }
     public String getName() { return name; }
+}public class Hero {
+    private String name;
+    private int maxHp = 30, hp = 30;
+    private int attack = 5;
+    private int gold = 0, xp = 0, level = 1;
+
+    public Hero(String name) { this.name = name; }
+
+    public void takeDamage(int amount) {
+        hp = Math.max(0, hp - amount);
+    }
+    public void heal(int amount) {
+        hp = Math.min(maxHp, hp + amount);
+    }
+    public boolean isAlive() { return hp &gt; 0; }
+
+    public int getHp() { return hp; }
+    public int getMaxHp() { return maxHp; }
+    public int getAttack() { return attack; }
+    public String getName() { return name; }
 }</pre>
   </div>
 
@@ -322,10 +421,15 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Hero.java</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">public void takeDamage(int amount) {
+    hp = Math.public void takeDamage(int amount) {
     hp = Math.<input class="cc-blank" data-a="bWF4" placeholder="???" size="4">(0, hp - amount);
 }
 public void heal(int amount) {
+    hp = Math.(0, hp - amount);
+}
+public void heal(int amount) {
     hp = Math.<input class="cc-blank" data-a="bWlu" placeholder="???" size="4">(maxHp, hp + amount);
+}(maxHp, hp + amount);
 }</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -376,6 +480,29 @@ public void heal(int amount) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Item.java + Hero.java</span></div>
     <pre class="code-pre">public class Item {
+    String name, type;
+    int power;
+    public Item(String name, String type, int power) {
+        this.name = name; this.type = type; this.power = power;
+    }
+}
+
+// inside Hero:
+private java.util.List&lt;Item&gt; inventory = new java.util.ArrayList&lt;&gt;();
+
+public void pickUp(Item item) { inventory.add(item); }
+
+public boolean useItem(String itemName) {
+    for (Item it : inventory) {
+        if (it.name.equals(itemName)) {
+            if (it.type.equals("potion")) heal(it.power);
+            if (it.type.equals("weapon")) attack += it.power;
+            inventory.remove(it);
+            return true;
+        }
+    }
+    return false;   // did not have one
+}public class Item {
     String name, type;
     int power;
     public Item(String name, String type, int power) {
@@ -477,6 +604,28 @@ public boolean useItem(String itemName) {
                 case 3 -&gt; g.setColor(new Color(212, 175, 55));
             }
             g.fillRect(c*TILE, r*TILE, TILE, TILE);
+        }    int TILE = 40;
+    int[][] map = {
+        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+        {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1},
+        {1,0,1,1,0,0,0,2,2,2,0,0,1,1,0,0,1},
+        {1,0,1,0,0,0,0,2,2,2,0,0,0,1,0,0,1},
+        {1,0,0,0,0,1,0,0,2,0,0,0,0,0,0,0,1},
+        {1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1},
+        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+        // ... build yours 14 rows tall!
+    };
+
+    // paintComponent:
+    for (int r = 0; r &lt; map.length; r++)
+        for (int c = 0; c &lt; map[0].length; c++) {
+            switch (map[r][c]) {
+                case 0 -&gt; g.setColor(new Color(52, 120, 62));
+                case 1 -&gt; g.setColor(new Color(90, 90, 100));
+                case 2 -&gt; g.setColor(new Color(50, 90, 180));
+                case 3 -&gt; g.setColor(new Color(212, 175, 55));
+            }
+            g.fillRect(c*TILE, r*TILE, TILE, TILE);
         }</pre>
   </div>
 
@@ -489,7 +638,7 @@ public boolean useItem(String itemName) {
         <div class="cc-prompt">Convert a tile’s row/column into pixels on screen:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">g.fillRect(<input class="cc-blank" data-a="Yw==" placeholder="?" size="4">*TILE, <input class="cc-blank" data-a="cg==" placeholder="?" size="4">*TILE, TILE, TILE);</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">g.fillRect(g.fillRect(<input class="cc-blank" data-a="Yw==" placeholder="?" size="4">*TILE, *TILE, <input class="cc-blank" data-a="cg==" placeholder="?" size="4">*TILE, TILE, TILE);*TILE, TILE, TILE);</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -540,6 +689,23 @@ public boolean useItem(String itemName) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
     <pre class="code-pre">    int heroRow = 1, heroCol = 1;
+    Hero hero = new Hero("Aria");
+
+    boolean walkable(int r, int c) {
+        if (r &lt; 0 || r &gt;= map.length || c &lt; 0 || c &gt;= map[0].length)
+            return false;
+        return map[r][c] == 0 || map[r][c] == 3;
+    }
+
+    public void keyPressed(KeyEvent e) {
+        int r = heroRow, c = heroCol;
+        if (e.getKeyCode() == KeyEvent.VK_UP)    r--;
+        if (e.getKeyCode() == KeyEvent.VK_DOWN)  r++;
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  c--;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) c++;
+        if (walkable(r, c)) { heroRow = r; heroCol = c; }
+        repaint();
+    }    int heroRow = 1, heroCol = 1;
     Hero hero = new Hero("Aria");
 
     boolean walkable(int r, int c) {
@@ -626,6 +792,20 @@ public boolean useItem(String itemName) {
     g.setColor(new Color(6, 214, 160));
     g.fillRect(90, 10, 120 * hero.getHp() / hero.getMaxHp(), 14);
     g.setColor(Color.WHITE);
+    g.drawString(hero.getName(), 12, 22);    // after a successful move:
+    if (map[heroRow][heroCol] == 3) {
+        hero.pickUp(new Item("Potion", "potion", 12));
+        map[heroRow][heroCol] = 0;    // chest opened
+    }
+
+    // HUD in paintComponent:
+    g.setColor(new Color(0, 0, 0, 170));
+    g.fillRect(0, 0, 700, 34);
+    g.setColor(Color.RED);
+    g.fillRect(90, 10, 120, 14);
+    g.setColor(new Color(6, 214, 160));
+    g.fillRect(90, 10, 120 * hero.getHp() / hero.getMaxHp(), 14);
+    g.setColor(Color.WHITE);
     g.drawString(hero.getName(), 12, 22);</pre>
   </div>
 
@@ -638,7 +818,7 @@ public boolean useItem(String itemName) {
         <div class="cc-prompt">Scale the HP bar to the hero’s current health:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">g.fillRect(90, 10, 120 * hero.<input class="cc-blank" data-a="Z2V0SHA=" placeholder="?????" size="6">() / hero.<input class="cc-blank" data-a="Z2V0TWF4SHA=" placeholder="????????" size="9">(), 14);</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">g.fillRect(90, 10, 120 * hero.g.fillRect(90, 10, 120 * hero.<input class="cc-blank" data-a="Z2V0SHA=" placeholder="?????" size="6">() / hero.() / hero.<input class="cc-blank" data-a="Z2V0TWF4SHA=" placeholder="????????" size="9">(), 14);(), 14);</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -666,10 +846,361 @@ public boolean useItem(String itemName) {
 
   <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
     <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete RPG (the full game you finish by end of Part 3)</summary>
-    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Part 1 builds the hero, the tile world and loot — the foundation. This is where it all leads: the full three-part RPG with monsters, turn-based combat, a quest and a dragon boss, all classes in one runnable <code>Main.java</code>. Run <code>javac Main.java && java Main</code>. Use it to see how your Part 1 pieces fit the bigger picture.</p>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Part 1 builds the hero, the tile world and loot , the foundation. This is where it all leads: the full three-part RPG with monsters, turn-based combat, a quest and a dragon boss, all classes in one runnable <code>Main.javaMain.java</code>. Run <code>javac Main.java && java Mainjavac Main.java && java Main</code>. Use it to see how your Part 1 pieces fit the bigger picture.</p>
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
       <pre class="code-pre">// Complete Java RPG (the full game you finish by the end of Part 3).
+// All classes are in one file so it runs with:  javac Main.java  then  java Main
+// In the workshops you split Hero, Item and Monster into their own files, which also works.
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("RPG Quest");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class Item {
+    String name, type;
+    int power;
+    public Item(String name, String type, int power) {
+        this.name = name; this.type = type; this.power = power;
+    }
+}
+
+class Hero {
+    private String name;
+    private int maxHp = 30, hp = 30, attack = 5, gold = 0, xp = 0, level = 1;
+    private List&lt;Item&gt; inventory = new ArrayList&lt;&gt;();
+
+    public Hero(String name) { this.name = name; }
+
+    public void takeDamage(int amount) { hp = Math.max(0, hp - amount); }
+    public void heal(int amount)       { hp = Math.min(maxHp, hp + amount); }
+    public boolean isAlive()           { return hp &gt; 0; }
+
+    public void pickUp(Item item) { inventory.add(item); }
+    public boolean hasItem(String itemName) {
+        for (Item it : inventory) if (it.name.equals(itemName)) return true;
+        return false;
+    }
+    public boolean useItem(String itemName) {
+        for (Item it : inventory) {
+            if (it.name.equals(itemName)) {
+                if (it.type.equals("potion")) heal(it.power);
+                if (it.type.equals("weapon")) attack += it.power;
+                inventory.remove(it);
+                return true;
+            }
+        }
+        return false;
+    }
+    public void gainXp(int amount) {
+        xp += amount;
+        while (xp &gt;= level * 20) {          // level up
+            xp -= level * 20;
+            level++; maxHp += 10; hp = maxHp; attack += 2;
+        }
+    }
+    public void addGold(int amount) { gold += amount; }
+
+    public String getName() { return name; }
+    public int getHp()      { return hp; }
+    public int getMaxHp()   { return maxHp; }
+    public int getAttack()  { return attack; }
+    public int getGold()    { return gold; }
+    public int getLevel()   { return level; }
+    public int inventorySize() { return inventory.size(); }
+}
+
+class Monster {
+    String name;
+    int hp, maxHp, attack, xpReward, goldReward;
+    public Monster(String name, int hp, int attack, int xp, int gold) {
+        this.name = name; this.maxHp = hp; this.hp = hp;
+        this.attack = attack; this.xpReward = xp; this.goldReward = gold;
+    }
+    public static Monster create(String type) {
+        switch (type) {
+            case "slime":  return new Monster("Slime", 12, 3, 8, 5);
+            case "wolf":   return new Monster("Wolf", 20, 5, 15, 12);
+            case "goblin": return new Monster("Goblin", 28, 7, 25, 20);
+            case "dragon": return new Monster("Dragon", 80, 9, 100, 150);
+            default:       return new Monster("Slime", 12, 3, 8, 5);
+        }
+    }
+    public void takeDamage(int amount) { hp = Math.max(0, hp - amount); }
+    public boolean isAlive() { return hp &gt; 0; }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+    int TILE = 40;
+
+    // 0 grass, 1 wall, 2 water, 3 chest, 4 NPC, 5 gate, 6 dragon lair
+    int[][] map = {
+        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+        {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,1},
+        {1,0,0,4,0,0,0,2,2,2,0,0,0,0,0,0,1},
+        {1,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,1},
+        {1,0,0,0,0,1,1,0,0,0,1,1,0,0,0,0,1},
+        {1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1},
+        {1,0,0,0,0,1,0,0,3,0,0,1,0,0,0,0,1},
+        {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+        {1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1},
+        {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+        {1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+        {1,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,1},
+        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,6,1},
+        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+    };
+
+    Hero hero = new Hero("Aria");
+    int heroRow = 1, heroCol = 1;
+    int npcRow = 2, npcCol = 3;
+
+    String state = "EXPLORE";       // EXPLORE / BATTLE / DIALOGUE / WIN / GAMEOVER
+    Monster foe;
+    boolean isDragon = false, defending = false;
+    int safeSteps = 3;
+    String battleLog = "";
+
+    int dialogueLine = 0;
+    boolean questActive = false, keyGranted = false;
+    int goblinsSlain = 0;
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 560));
+        setBackground(new Color(20, 24, 30));
+        addKeyListener(this);
+        setFocusable(true);
+        timer.start();
+    }
+
+    public void actionPerformed(ActionEvent e) { repaint(); }   // turn-based: redraw only
+
+    boolean walkable(int r, int c) {
+        if (r &lt; 0 || r &gt;= map.length || c &lt; 0 || c &gt;= map[0].length) return false;
+        int t = map[r][c];
+        if (t == 5) return hero.hasItem("Dragon Key");          // gate needs the key
+        return t == 0 || t == 3 || t == 6;                      // grass, chest, dragon lair
+    }
+
+    boolean nextToNpc() {
+        return Math.abs(heroRow - npcRow) + Math.abs(heroCol - npcCol) == 1;
+    }
+
+    String[] elderLines() {
+        if (!questActive)      return new String[]{
+            "Elder: Aria... the Dragon stirs in the north-east.",
+            "Elder: Slay 3 goblins to prove yourself, then seek me again." };
+        if (goblinsSlain &lt; 3)  return new String[]{
+            "Elder: The goblins still roam. " + goblinsSlain + " of 3 felled." };
+        return new String[]{
+            "Elder: You are ready. Take this Dragon Key.",
+            "Elder: The gate in the north-east awaits. Good luck, hero." };
+    }
+
+    void tryMove(int dr, int dc) {
+        int r = heroRow + dr, c = heroCol + dc;
+        if (!walkable(r, c)) return;
+
+        if (map[r][c] == 5) { hero.useItem("Dragon Key"); map[r][c] = 0; battleLog = "The gate grinds open..."; }
+        heroRow = r; heroCol = c;
+
+        if (map[r][c] == 3) { hero.pickUp(new Item("Potion", "potion", 12)); hero.addGold(25); map[r][c] = 0; }
+
+        if (map[r][c] == 6) {                    // stepped into the lair
+            foe = Monster.create("dragon"); isDragon = true; defending = false;
+            battleLog = "The Dragon roars!"; state = "BATTLE"; return;
+        }
+
+        // random encounter on grass
+        if (map[r][c] == 0) {
+            if (safeSteps &gt; 0) safeSteps--;
+            else if (Math.random() &lt; 0.18) {
+                double roll = Math.random();
+                String type = roll &lt; 0.55 ? "slime" : (roll &lt; 0.85 ? "wolf" : "goblin");
+                foe = Monster.create(type); isDragon = false; defending = false;
+                battleLog = "A wild " + foe.name + " appears!";
+                state = "BATTLE";
+            }
+        }
+    }
+
+    void doBattle(char a) {
+        boolean acted = true;
+        if (a == 'a') {
+            int dmg = hero.getAttack();
+            foe.takeDamage(dmg);
+            battleLog = hero.getName() + " hits " + foe.name + " for " + dmg + "!";
+        } else if (a == 'd') {
+            defending = true;
+            battleLog = hero.getName() + " braces for the blow.";
+        } else if (a == 'p') {
+            battleLog = hero.useItem("Potion") ? "Aria drinks a Potion!" : "No potions left!";
+        } else if (a == 'f') {
+            if (isDragon) { battleLog = "The Dragon blocks your escape!"; }
+            else { state = "EXPLORE"; safeSteps = 6; battleLog = "You fled to safety."; return; }
+        } else { acted = false; }
+        if (!acted) return;
+
+        if (!foe.isAlive()) {                    // monster defeated
+            hero.gainXp(foe.xpReward);
+            hero.addGold(foe.goldReward);
+            if (isDragon) { state = "WIN"; return; }
+            if (questActive &amp;&amp; foe.name.equals("Goblin")) goblinsSlain++;
+            state = "EXPLORE"; safeSteps = 4;
+            return;
+        }
+
+        int dmg = foe.attack;                    // monster retaliates
+        if (defending) { dmg = dmg / 2; defending = false; }
+        hero.takeDamage(dmg);
+        battleLog += "  " + foe.name + " hits back for " + dmg + "!";
+        if (!hero.isAlive()) state = "GAMEOVER";
+    }
+
+    void restart() {
+        // rebuild everything for a fresh run
+        map[1][15] = 3; map[6][8] = 3; map[11][14] = 5; map[12][15] = 6;
+        hero = new Hero("Aria");
+        heroRow = 1; heroCol = 1; state = "EXPLORE"; safeSteps = 3;
+        questActive = false; keyGranted = false; goblinsSlain = 0; dialogueLine = 0;
+        battleLog = "";
+    }
+
+    public void keyPressed(KeyEvent e) {
+        int k = e.getKeyCode();
+        char ch = Character.toLowerCase(e.getKeyChar());
+
+        if (state.equals("WIN") || state.equals("GAMEOVER")) {
+            if (k == KeyEvent.VK_R) { restart(); repaint(); }
+            return;
+        }
+        if (state.equals("DIALOGUE")) {
+            if (k == KeyEvent.VK_E || k == KeyEvent.VK_ENTER) {
+                dialogueLine++;
+                String[] lines = elderLines();
+                if (dialogueLine &gt;= lines.length) {
+                    if (!questActive) questActive = true;
+                    else if (goblinsSlain &gt;= 3 &amp;&amp; !keyGranted) {
+                        hero.pickUp(new Item("Dragon Key", "key", 0));
+                        keyGranted = true;
+                    }
+                    state = "EXPLORE";
+                }
+            }
+            repaint(); return;
+        }
+        if (state.equals("BATTLE")) {
+            if (k == KeyEvent.VK_A) doBattle('a');
+            if (k == KeyEvent.VK_D) doBattle('d');
+            if (k == KeyEvent.VK_P) doBattle('p');
+            if (k == KeyEvent.VK_F) doBattle('f');
+            repaint(); return;
+        }
+        // EXPLORE
+        if (ch == 'e' &amp;&amp; nextToNpc()) { state = "DIALOGUE"; dialogueLine = 0; repaint(); return; }
+        if (k == KeyEvent.VK_UP)    tryMove(-1, 0);
+        if (k == KeyEvent.VK_DOWN)  tryMove(1, 0);
+        if (k == KeyEvent.VK_LEFT)  tryMove(0, -1);
+        if (k == KeyEvent.VK_RIGHT) tryMove(0, 1);
+        repaint();
+    }
+    public void keyReleased(KeyEvent e) {}
+    public void keyTyped(KeyEvent e) {}
+
+    void drawBar(Graphics g, int x, int y, int val, int max) {
+        g.setColor(Color.RED);
+        g.fillRect(x, y, 120, 14);
+        g.setColor(new Color(6, 214, 160));
+        g.fillRect(x, y, Math.max(0, 120 * val / max), 14);
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+
+        if (state.equals("BATTLE")) {
+            g.setColor(new Color(20, 12, 28));
+            g.fillRect(0, 0, 700, 560);
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 22));
+            g.drawString(hero.getName(), 60, 380);
+            g.drawString(foe.name, 470, 140);
+            drawBar(g, 60, 392, hero.getHp(), hero.getMaxHp());
+            drawBar(g, 470, 152, foe.hp, foe.maxHp);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString(battleLog, 60, 280);
+            g.drawString("[A]ttack   [D]efend   [P]otion   [F]lee", 60, 500);
+            return;
+        }
+
+        if (state.equals("DIALOGUE")) {
+            drawWorld(g);
+            g.setColor(new Color(0, 0, 0, 200));
+            g.fillRect(40, 420, 620, 110);
+            g.setColor(Color.WHITE);
+            String[] lines = elderLines();
+            g.drawString(lines[Math.min(dialogueLine, lines.length - 1)], 60, 470);
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+            g.drawString("Press E to continue", 60, 510);
+            return;
+        }
+
+        drawWorld(g);
+
+        if (state.equals("WIN") || state.equals("GAMEOVER")) {
+            g.setColor(new Color(0, 0, 0, 190));
+            g.fillRect(0, 0, 700, 560);
+            g.setColor(state.equals("WIN") ? new Color(255, 209, 102) : new Color(248, 113, 113));
+            g.setFont(new Font("Arial", Font.BOLD, 46));
+            g.drawString(state.equals("WIN") ? "THE REALM IS SAVED!" : "YOU HAVE FALLEN", 90, 270);
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 260, 310);
+        }
+    }
+
+    void drawWorld(Graphics g) {
+        for (int r = 0; r &lt; map.length; r++)
+            for (int c = 0; c &lt; map[0].length; c++) {
+                switch (map[r][c]) {
+                    case 0 -&gt; g.setColor(new Color(52, 120, 62));
+                    case 1 -&gt; g.setColor(new Color(90, 90, 100));
+                    case 2 -&gt; g.setColor(new Color(50, 90, 180));
+                    case 3 -&gt; g.setColor(new Color(212, 175, 55));
+                    case 4 -&gt; g.setColor(new Color(167, 139, 250));
+                    case 5 -&gt; g.setColor(new Color(120, 80, 40));
+                    case 6 -&gt; g.setColor(new Color(180, 40, 40));
+                }
+                g.fillRect(c * TILE, r * TILE, TILE, TILE);
+            }
+        // hero
+        g.setColor(new Color(230, 70, 60));
+        g.fillRect(heroCol * TILE + 6, heroRow * TILE + 6, TILE - 12, TILE - 12);
+
+        // HUD strip
+        g.setColor(new Color(0, 0, 0, 170));
+        g.fillRect(0, 0, 700, 34);
+        drawBar(g, 90, 10, hero.getHp(), hero.getMaxHp());
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        g.drawString(hero.getName(), 12, 24);
+        g.drawString("Lv" + hero.getLevel() + "  Gold " + hero.getGold()
+                + "  Goblins " + goblinsSlain + "/3", 230, 24);
+    }
+}// Complete Java RPG (the full game you finish by the end of Part 3).
 // All classes are in one file so it runs with:  javac Main.java  then  java Main
 // In the workshops you split Hero, Item and Monster into their own files, which also works.
 import javax.swing.*;
@@ -1095,8 +1626,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -1105,9 +1651,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-rpg-part1-v2';
 window.WORKSHOP_PROFILE_ID='java-rpg-part1-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-java-rpg-part1-v2';
+window.WORKSHOP_PROFILE_ID='java-rpg-part1-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 5: RPG Quest Part 1","description":"Start building a Java RPG: hero class, stats, inventory and a tile-map world. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-rpg-part1-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 5: RPG Quest Part 1","description":"Start building a Java RPG: hero class, stats, inventory and a tile-map world. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-rpg-part1-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>

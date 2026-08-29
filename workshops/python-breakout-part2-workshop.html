@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -211,15 +257,128 @@ if random.random() &lt; 0.2:
 for p in powerups[:]:
     p["rect"].y += 3
     if p["rect"].top &gt; 520:
+        powerups.remove(p)powerups = []
+KINDS = ["wide", "multi", "slow"]
+
+# when a brick is destroyed:
+if random.random() &lt; 0.2:
+    powerups.append({
+        "rect": pygame.Rect(b["rect"].centerx - 12, b["rect"].y, 24, 24),
+        "kind": random.choice(KINDS)
+    })
+
+for p in powerups[:]:
+    p["rect"].y += 3
+    if p["rect"].top &gt; 520:
         powerups.remove(p)</pre>
   </div>
 
       <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Starting point — your finished Episode 5 Breakout</summary>
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Starting point , your finished Episode 5 Breakout</summary>
         <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">This episode extends Episode 5. If you don't have your Part 1 file handy, here is the complete finished Breakout to start from. Every step below adds power-ups, multi-ball and juice to it.</p>
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
           <pre class="code-pre">import pygame
+pygame.init()
+screen = pygame.display.set_mode((700, 520))
+pygame.display.set_caption("Brick Breaker")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 64)
+
+colours = [(248, 113, 113), (251, 146, 60), (250, 204, 21), (74, 222, 128), (96, 165, 250)]
+
+def build_bricks():
+    b = []
+    for row in range(5):
+        for col in range(10):
+            b.append({"rect": pygame.Rect(col*68 + 12, row*26 + 50, 64, 22), "row": row})
+    return b
+
+paddle = pygame.Rect(295, 480, 110, 14)
+ball = pygame.Rect(340, 300, 14, 14)
+bvx, bvy = 4, -4
+bricks = build_bricks()
+score = 0
+lives = 3
+state = "PLAY"
+
+def reset():
+    global paddle, ball, bvx, bvy, bricks, score, lives, state
+    paddle = pygame.Rect(295, 480, 110, 14)
+    ball = pygame.Rect(340, 300, 14, 14)
+    bvx, bvy = 4, -4
+    bricks = build_bricks()
+    score = 0
+    lives = 3
+    state = "PLAY"
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r and state != "PLAY":
+            reset()
+
+    if state == "PLAY":
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            paddle.x -= 8
+        if keys[pygame.K_RIGHT]:
+            paddle.x += 8
+        paddle.x = max(0, min(700 - paddle.width, paddle.x))
+
+        ball.x += bvx
+        ball.y += bvy
+        if ball.left &lt;= 0 or ball.right &gt;= 700:
+            bvx = -bvx
+        if ball.top &lt;= 0:
+            bvy = -bvy
+
+        if ball.colliderect(paddle) and bvy &gt; 0:
+            bvy = -bvy
+            offset = ball.centerx - paddle.centerx
+            bvx = offset // 12
+            if bvx == 0:
+                bvx = 1
+
+        for b in bricks[:]:
+            if ball.colliderect(b["rect"]):
+                bricks.remove(b)
+                score += (5 - b["row"]) * 10
+                bvy = -bvy
+                break
+
+        if ball.top &gt; 520:
+            lives -= 1
+            ball.center = (350, 300)
+            bvx, bvy = 4, -4
+            if lives == 0:
+                state = "LOSE"
+
+        if len(bricks) == 0:
+            state = "WIN"
+
+    # draw
+    screen.fill((25, 30, 60))
+    for b in bricks:
+        pygame.draw.rect(screen, colours[b["row"]], b["rect"])
+    pygame.draw.rect(screen, (255, 119, 0), paddle)
+    pygame.draw.ellipse(screen, (255, 255, 255), ball)
+    screen.blit(font.render("Score: " + str(score), True, (255, 255, 255)), (12, 8))
+    screen.blit(font.render("Lives: " + str(max(0, lives)), True, (255, 255, 255)), (560, 8))
+    if state != "PLAY":
+        text = "YOU WIN!" if state == "WIN" else "GAME OVER"
+        msg = big_font.render(text, True, (255, 209, 102))
+        screen.blit(msg, msg.get_rect(center=(350, 235)))
+        sub = font.render("Press R to play again", True, (255, 255, 255))
+        screen.blit(sub, sub.get_rect(center=(350, 290)))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()import pygame
 pygame.init()
 screen = pygame.display.set_mode((700, 520))
 pygame.display.set_caption("Brick Breaker")
@@ -391,6 +550,21 @@ if wide_timer &gt; 0:
     wide_timer -= 1
     if wide_timer == 0:
         paddle.x += 30
+        paddle.width = 110wide_timer = 0
+
+for p in powerups[:]:
+    if p["rect"].colliderect(paddle):
+        if p["kind"] == "wide":
+            if wide_timer == 0:
+                paddle.x -= 30        # keep centred
+                paddle.width = 170
+            wide_timer = 600          # 10 seconds
+        powerups.remove(p)
+
+if wide_timer &gt; 0:
+    wide_timer -= 1
+    if wide_timer == 0:
+        paddle.x += 30
         paddle.width = 110</pre>
   </div>
 
@@ -404,7 +578,10 @@ if wide_timer &gt; 0:
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if wide_timer &gt; 0:
+    wide_timer -= if wide_timer &gt; 0:
     wide_timer -= <input class="cc-blank" data-a="MQ==" placeholder="?" size="4">
+    if wide_timer == 0:
+        paddle.width = 
     if wide_timer == 0:
         paddle.width = <input class="cc-blank" data-a="MTEw" placeholder="???" size="4"></pre>
         </div>
@@ -456,6 +633,20 @@ if wide_timer &gt; 0:
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
     <pre class="code-pre">balls = [{"rect": pygame.Rect(340, 300, 14, 14), "vx": 4, "vy": -4}]
+
+# "multi" effect:
+for bl in balls[:]:
+    for new_vx in (-3, 3):
+        balls.append({"rect": bl["rect"].copy(),
+                      "vx": new_vx, "vy": bl["vy"]})
+
+# dropped ball:
+for bl in balls[:]:
+    if bl["rect"].top &gt; 520:
+        balls.remove(bl)
+if len(balls) == 0:
+    lives -= 1
+    balls.append({"rect": pygame.Rect(340, 300, 14, 14), "vx": 4, "vy": -4})balls = [{"rect": pygame.Rect(340, 300, 14, 14), "vx": 4, "vy": -4}]
 
 # "multi" effect:
 for bl in balls[:]:
@@ -537,6 +728,18 @@ if b["hp"] == 0:
 
 # slow effect (move balls every other frame):
 frame += 1
+move_balls = (slow_timer == 0) or (frame % 2 == 0)# building the wall:
+hp = 2 if row == 0 else 1
+bricks.append({"rect": ..., "row": row, "hp": hp})
+
+# on hit:
+b["hp"] -= 1
+if b["hp"] == 0:
+    bricks.remove(b)
+    ...
+
+# slow effect (move balls every other frame):
+frame += 1
 move_balls = (slow_timer == 0) or (frame % 2 == 0)</pre>
   </div>
 
@@ -549,9 +752,11 @@ move_balls = (slow_timer == 0) or (frame % 2 == 0)</pre>
         <div class="cc-prompt">Damage a brick and only destroy it at zero HP:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">b["hp"] -= <input class="cc-blank" data-a="MQ==" placeholder="?" size="4">
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">b["hp"] -= b["hp"] -= <input class="cc-blank" data-a="MQ==" placeholder="?" size="4">
+if b["hp"] == 
 if b["hp"] == <input class="cc-blank" data-a="MA==" placeholder="?" size="4">:
-    bricks.<input class="cc-blank" data-a="cmVtb3Zl" placeholder="??????" size="7">(b)</pre>
+    bricks.:
+    bricks.<input class="cc-blank" data-a="cmVtb3Zl" placeholder="??????" size="7">(b)(b)</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -601,6 +806,26 @@ if b["hp"] == <input class="cc-blank" data-a="MA==" placeholder="?" size="4">:
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
     <pre class="code-pre">LEVELS = [
+    [ "##########",
+      "##########",
+      ".########.",
+      "..######..",],
+    [ "2222222222",
+      "#.#.#.#.#.",
+      ".#.#.#.#.#",
+      "##########",],
+]
+
+def build_wall(pattern):
+    wall = []
+    for r, line in enumerate(pattern):
+        for c, ch in enumerate(line):
+            if ch != ".":
+                wall.append({"rect": pygame.Rect(c*68+12, r*26+50, 64, 22),
+                             "row": r, "hp": 2 if ch == "2" else 1})
+    return wall
+
+bricks = build_wall(LEVELS[0])LEVELS = [
     [ "##########",
       "##########",
       ".########.",
@@ -685,6 +910,15 @@ if shake &gt; 0:
     shake -= 1
     offset = (random.randint(-4, 4), random.randint(-4, 4))
 screen.blit(world, offset)
+pygame.display.flip()world = pygame.Surface((700, 520))
+shake = 0
+
+# draw everything onto world instead of screen, then:
+offset = (0, 0)
+if shake &gt; 0:
+    shake -= 1
+    offset = (random.randint(-4, 4), random.randint(-4, 4))
+screen.blit(world, offset)
 pygame.display.flip()</pre>
   </div>
 
@@ -699,8 +933,11 @@ pygame.display.flip()</pre>
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if shake &gt; 0:
     shake -= 1
-    offset = (random.randint(<input class="cc-blank" data-a="LTQ=" placeholder="??" size="4">, 4), random.randint(-4, <input class="cc-blank" data-a="NA==" placeholder="?" size="4">))
-screen.blit(<input class="cc-blank" data-a="d29ybGQ=" placeholder="?????" size="6">, offset)</pre>
+    offset = (random.randint(if shake &gt; 0:
+    shake -= 1
+    offset = (random.randint(<input class="cc-blank" data-a="LTQ=" placeholder="??" size="4">, 4), random.randint(-4, , 4), random.randint(-4, <input class="cc-blank" data-a="NA==" placeholder="?" size="4">))
+screen.blit())
+screen.blit(<input class="cc-blank" data-a="d29ybGQ=" placeholder="?????" size="6">, offset), offset)</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -727,11 +964,218 @@ screen.blit(<input class="cc-blank" data-a="d29ybGQ=" placeholder="?????" size="
   </div>
 
   <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout Deluxe — all 6 steps assembled</summary>
-    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Falling power-up capsules (wide paddle, multi-ball, slow-mo), a multi-ball refactor, two-hit silver bricks, ASCII-pattern levels, and screen-shake &amp; flash juice — one file. Save it as <code>game.py</code>, run <code>python game.py</code>, and play. Stuck on a step? Compare your file against this.</p>
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout Deluxe , all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Falling power-up capsules (wide paddle, multi-ball, slow-mo), a multi-ball refactor, two-hit silver bricks, ASCII-pattern levels, and screen-shake &amp; flash juice , one file. Save it as <code>game.pygame.py</code>, run <code>python game.pypython game.py</code>, and play. Stuck on a step? Compare your file against this.</p>
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">game.py</span></div>
       <pre class="code-pre">import pygame, random
+pygame.init()
+screen = pygame.display.set_mode((700, 520))
+world = pygame.Surface((700, 520))
+pygame.display.set_caption("Brick Breaker Deluxe")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 32)
+big_font = pygame.font.SysFont(None, 64)
+
+colours = [(248, 113, 113), (251, 146, 60), (250, 204, 21), (74, 222, 128), (96, 165, 250)]
+KINDS = ["wide", "multi", "slow"]
+PU_COLOUR = {"wide": (96, 165, 250), "multi": (74, 222, 128), "slow": (250, 204, 21)}
+
+LEVELS = [
+    ["##########",
+     "##########",
+     ".########.",
+     "..######.."],
+    ["2222222222",
+     "#.#.#.#.#.",
+     ".#.#.#.#.#",
+     "##########"],
+]
+
+def build_wall(pattern):
+    wall = []
+    for r, line in enumerate(pattern):
+        for c, ch in enumerate(line):
+            if ch != ".":
+                wall.append({"rect": pygame.Rect(c*68 + 12, r*26 + 50, 64, 22),
+                             "row": r, "hp": 2 if ch == "2" else 1, "silver": ch == "2"})
+    return wall
+
+def serve_ball():
+    return {"rect": pygame.Rect(340, 300, 14, 14), "vx": serve_speed, "vy": -serve_speed}
+
+current = 0
+serve_speed = 4
+paddle = pygame.Rect(295, 480, 110, 14)
+balls = [serve_ball()]
+powerups = []
+bricks = build_wall(LEVELS[0])
+score = 0
+lives = 3
+wide_timer = 0
+slow_timer = 0
+frame = 0
+shake = 0
+flash = 0
+state = "PLAY"
+
+def reset():
+    global current, serve_speed, paddle, balls, powerups, bricks
+    global score, lives, wide_timer, slow_timer, shake, flash, state
+    current = 0
+    serve_speed = 4
+    paddle = pygame.Rect(295, 480, 110, 14)
+    balls = [serve_ball()]
+    powerups = []
+    bricks = build_wall(LEVELS[0])
+    score = 0
+    lives = 3
+    wide_timer = 0
+    slow_timer = 0
+    shake = 0
+    flash = 0
+    state = "PLAY"
+
+running = True
+while running:
+    frame += 1
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r and state != "PLAY":
+            reset()
+
+    if state == "PLAY":
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            paddle.x -= 8
+        if keys[pygame.K_RIGHT]:
+            paddle.x += 8
+        paddle.x = max(0, min(700 - paddle.width, paddle.x))
+
+        # timed effects
+        if wide_timer &gt; 0:
+            wide_timer -= 1
+            if wide_timer == 0:
+                paddle.x += 30
+                paddle.width = 110
+        if slow_timer &gt; 0:
+            slow_timer -= 1
+
+        move_balls = (slow_timer == 0) or (frame % 2 == 0)
+
+        if move_balls:
+            for bl in balls[:]:
+                r = bl["rect"]
+                r.x += bl["vx"]
+                r.y += bl["vy"]
+                if r.left &lt;= 0 or r.right &gt;= 700:
+                    bl["vx"] = -bl["vx"]
+                if r.top &lt;= 0:
+                    bl["vy"] = -bl["vy"]
+
+                if r.colliderect(paddle) and bl["vy"] &gt; 0:
+                    bl["vy"] = -bl["vy"]
+                    offset = r.centerx - paddle.centerx
+                    bl["vx"] = offset // 12
+                    if bl["vx"] == 0:
+                        bl["vx"] = 1
+
+                for b in bricks[:]:
+                    if r.colliderect(b["rect"]):
+                        b["hp"] -= 1
+                        bl["vy"] = -bl["vy"]
+                        if b["hp"] == 0:
+                            bricks.remove(b)
+                            score += (5 - b["row"]) * 10
+                            shake = 6
+                            if random.random() &lt; 0.2:
+                                powerups.append({"rect": pygame.Rect(b["rect"].centerx - 12, b["rect"].y, 24, 24),
+                                                 "kind": random.choice(KINDS)})
+                        break
+
+                if r.top &gt; 520:
+                    balls.remove(bl)
+
+        if len(balls) == 0:
+            lives -= 1
+            balls.append(serve_ball())
+            if lives == 0:
+                state = "LOSE"
+
+        # power-ups fall + catch
+        for p in powerups[:]:
+            p["rect"].y += 3
+            if p["rect"].colliderect(paddle):
+                flash = 8
+                if p["kind"] == "wide":
+                    if wide_timer == 0:
+                        paddle.x -= 30
+                        paddle.width = 170
+                    wide_timer = 600
+                elif p["kind"] == "multi":
+                    for bl in balls[:]:
+                        for new_vx in (-3, 3):
+                            balls.append({"rect": bl["rect"].copy(), "vx": new_vx, "vy": bl["vy"]})
+                elif p["kind"] == "slow":
+                    slow_timer = 400
+                powerups.remove(p)
+            elif p["rect"].top &gt; 520:
+                powerups.remove(p)
+
+        # level clear
+        if len(bricks) == 0:
+            current += 1
+            if current &lt; len(LEVELS):
+                serve_speed += 1
+                bricks = build_wall(LEVELS[current])
+                balls = [serve_ball()]
+                powerups = []
+            else:
+                state = "WIN"
+
+    # ---- draw onto the offscreen world ----
+    world.fill((25, 30, 60))
+    for b in bricks:
+        if b["silver"]:
+            colour = (200, 200, 210) if b["hp"] == 2 else (120, 120, 130)
+        else:
+            colour = colours[b["row"] % len(colours)]
+        pygame.draw.rect(world, colour, b["rect"])
+    pygame.draw.rect(world, (255, 119, 0), paddle)
+    for bl in balls:
+        pygame.draw.ellipse(world, (255, 255, 255), bl["rect"])
+    for p in powerups:
+        pygame.draw.rect(world, PU_COLOUR.get(p["kind"], (255, 255, 255)), p["rect"], border_radius=6)
+        letter = font.render(p["kind"][0].upper(), True, (10, 12, 20))
+        world.blit(letter, letter.get_rect(center=p["rect"].center))
+    world.blit(font.render("Score: " + str(score), True, (255, 255, 255)), (12, 8))
+    world.blit(font.render("Lives: " + str(max(0, lives)), True, (255, 255, 255)), (560, 8))
+    if wide_timer &gt; 0:
+        pygame.draw.rect(world, (96, 165, 250), (12, 500, int(120 * wide_timer / 600), 8))
+    if flash &gt; 0:
+        flash -= 1
+        glow = pygame.Surface((700, 520), pygame.SRCALPHA)
+        glow.fill((255, 255, 255, flash * 12))
+        world.blit(glow, (0, 0))
+    if state != "PLAY":
+        text = "YOU WIN!" if state == "WIN" else "GAME OVER"
+        msg = big_font.render(text, True, (255, 209, 102))
+        world.blit(msg, msg.get_rect(center=(350, 235)))
+        sub = font.render("Press R to play again", True, (255, 255, 255))
+        world.blit(sub, sub.get_rect(center=(350, 290)))
+
+    # ---- screen shake blit ----
+    offset = (0, 0)
+    if shake &gt; 0:
+        shake -= 1
+        offset = (random.randint(-4, 4), random.randint(-4, 4))
+    screen.fill((0, 0, 0))
+    screen.blit(world, offset)
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()import pygame, random
 pygame.init()
 screen = pygame.display.set_mode((700, 520))
 world = pygame.Surface((700, 520))
@@ -1013,8 +1457,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -1023,9 +1482,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-python-breakout2-v2';
 window.WORKSHOP_PROFILE_ID='python-breakout-part2-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-python-breakout2-v2';
+window.WORKSHOP_PROFILE_ID='python-breakout-part2-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First Python Game Ep 6: Breakout Part 2","description":"Add power-ups, multi-ball, tough bricks and levels to your Python Breakout. Free interactive workshop with quizzes and challenges.","url":"https://jvdesignstudio.co.uk/workshops/python-breakout-part2-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First Python Game Ep 6: Breakout Part 2","description":"Add power-ups, multi-ball, tough bricks and levels to your Python Breakout. Free interactive workshop with quizzes and challenges.","url":"https://jvdesignstudio.co.uk/workshops/python-breakout-part2-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
 </script>
 </body>

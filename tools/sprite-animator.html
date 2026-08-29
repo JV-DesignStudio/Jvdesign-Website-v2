@@ -153,6 +153,134 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 }
 
 
+
+:root{
+  --bg:#08080f;--panel:#0f0f1e;--panel2:#161628;--panel3:#1e1e38;
+  --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
+  --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#7c3aed;
+  --text:#f0f0ff;--muted:#8b93a0;--dim:#2a2a4a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
+
+.hdr{height:46px;background:rgba(8,8,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
+.hdr-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
+.hdr-logo img{height:26px;width:auto;flex-shrink:0;border-radius:5px;}
+.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);}
+.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
+
+#app{flex:1;display:flex;min-height:0;overflow:hidden;}
+
+/* UPLOAD / PREVIEW */
+#left{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+#preview-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--bg);}
+
+/* checkerboard bg */
+#preview-area::before{content:'';position:absolute;inset:0;background-image:repeating-conic-gradient(#1a1a2e 0% 25%,#0d0d18 0% 50%);background-size:16px 16px;opacity:.6;pointer-events:none;}
+
+#preview-canvas{position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--border2);border-radius:4px;}
+
+.upload-prompt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;pointer-events:none;}
+.upload-prompt.hidden{display:none;}
+.upload-icon{font-size:3rem;opacity:.4;}
+.upload-text{font-size:.75rem;color:var(--muted);text-align:center;line-height:1.6;}
+.upload-btn-label{padding:9px 24px;border-radius:9px;background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:700;cursor:pointer;pointer-events:all;transition:filter .12s;}
+.upload-btn-label:hover{filter:brightness(1.1);}
+
+/* playback controls */
+#playback-bar{height:52px;background:var(--panel);border-top:1px solid var(--border2);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0;}
+.pb-btn{width:34px;height:34px;border-radius:8px;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;}
+.pb-play{background:var(--accent);color:#000;}
+.pb-play:hover{filter:brightness(1.1);}
+.pb-prev,.pb-next{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
+.pb-prev:hover,.pb-next:hover{background:var(--dim);}
+.pb-loop{background:transparent;color:var(--muted);border:1px solid var(--border2);font-size:.7rem;padding:0 10px;width:auto;}
+.pb-loop.on{background:rgba(244,114,182,.15);border-color:var(--accent);color:var(--accent);}
+.pb-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.pb-val{font-size:.85rem;color:var(--accent2);font-weight:700;min-width:28px;text-align:center;}
+.fps-slider{accent-color:var(--accent);width:80px;cursor:pointer;}
+.frame-counter{font-size:.7rem;color:var(--muted);margin-left:auto;}
+.frame-counter span{color:var(--accent);}
+.zoom-btns{display:flex;gap:3px;}
+.z-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.z-btn:hover{color:var(--text);background:var(--panel3);}
+
+/* bg toggle */
+.bg-toggle{display:flex;gap:4px;}
+.bg-opt{width:20px;height:20px;border-radius:4px;border:2px solid transparent;cursor:pointer;}
+.bg-opt.on{border-color:var(--accent);}
+
+/* SIDEBAR */
+#sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.sa-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:10004;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;}
+.sa-overlay.open{display:flex;}
+.sa-box{background:var(--panel);border:1px solid var(--border2);border-radius:14px;padding:22px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
+.sa-title{font-family:'Fredoka',cursive;font-size:1.2rem;color:var(--accent4);margin-bottom:6px;}
+.sa-lead{font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:16px;}
+.sa-sec{font-size:.48rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.sa-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;list-style:none;margin:0;padding:0;}
+.sa-steps li{background:rgba(255,255,255,.03);border-left:3px solid var(--accent3);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.62rem;line-height:1.6;color:var(--text);}
+.sa-steps b{color:var(--accent3);display:block;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.sa-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
+.sa-btn{padding:7px 16px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;font-size:.75rem;font-weight:600;}
+.sa-btn.primary{background:var(--accent4);color:#fff;border-color:transparent;}
+.sa-btn:hover{filter:brightness(1.15);}
+.sb-section{padding:12px;border-bottom:1px solid var(--border2);}
+#sb-sticky{position:sticky;bottom:0;margin-top:auto;background:var(--panel);border-top:1px solid var(--border2);padding:8px 10px;box-shadow:0 -8px 14px rgba(0,0,0,.45);z-index:6;display:flex;flex-direction:column;gap:5px;}
+#sb-sticky .exp-btn{margin:0;}
+.sb-title{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.ctrl-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
+.ctrl-row label span{color:var(--accent2);font-weight:700;}
+.ctrl-row input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
+.ctrl-row-h{display:flex;gap:6px;margin-bottom:8px;min-width:0;}
+.ctrl-row-h label{flex:1;min-width:0;}
+.ctrl-row-h input[type=number]{min-width:0;width:100%;}
+.ctrl-row-h input[type=number]{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
+.ctrl-row-h label{font-size:.55rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.icon-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;font-family:inherit;transition:all .1s;}
+.icon-btn:hover{color:var(--text);background:var(--panel3);}
+.icon-btn.primary{background:var(--accent4);color:white;border-color:var(--accent4);}
+.dtool.on{background:rgba(244,114,182,.2);color:var(--accent);border-color:var(--accent);}
+#preview-canvas.drawing{cursor:crosshair;}
+
+/* Frame strip */
+#frame-strip-wrap{flex:1;overflow-y:auto;padding:8px;}
+.strip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:4px;}
+.frame-thumb{border-radius:6px;border:2px solid var(--border2);overflow:hidden;cursor:pointer;position:relative;aspect-ratio:1;background:var(--panel2);transition:all .1s;display:flex;align-items:center;justify-content:center;}
+.frame-thumb:hover{border-color:rgba(255,255,255,.3);}
+.frame-thumb.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+.frame-thumb.disabled{opacity:.35;}
+.frame-thumb canvas{image-rendering:pixelated;max-width:100%;max-height:100%;}
+.frame-num{position:absolute;bottom:2px;right:3px;font-size:.4rem;color:rgba(255,255,255,.5);}
+.frame-x{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:rgba(239,68,68,.8);color:white;font-size:.45rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+
+/* export */
+.export-btns{padding:10px 12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:6px;}
+.exp-btn{padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;transition:all .12s;}
+.exp-gif{background:var(--accent);color:#000;}
+.exp-json{background:var(--accent4);color:white;}
+.exp-png{background:var(--accent3);color:#000;}
+
+/* project + restore */
+.proj-row{display:flex;gap:4px;margin-top:6px;}
+.kbd-hint{font-size:.52rem;color:var(--muted);line-height:1.7;padding:7px 12px;border-top:1px solid var(--border2);}
+.restore-banner{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:.65rem;color:var(--text);}
+.restore-banner.hidden{display:none;}
+.restore-banner .icon-btn{padding:4px 10px;font-size:.6rem;flex-shrink:0;}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
+
+@media(max-width:700px){
+  #sidebar{width:100%;max-height:42vh;border-left:none;border-top:1px solid var(--border2);}
+  #app{flex-direction:column;}
+  #preview-area{min-height:180px;}
+  #playback-bar{flex-wrap:wrap;height:auto;min-height:44px;padding:6px 10px;gap:6px;}
+  .frame-counter{margin-left:0;width:100%;text-align:center;}
+}
+
+
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 </head>
@@ -196,6 +324,32 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     </nav>
 </header>
 <script>
+(function(){
+    var path = location.pathname;
+    var page = path.split('/').pop() || 'index.html';
+    // Highlight by exact page, with a section fallback so tool/workshop pages
+    // still show their parent section as active.
+    var links = document.querySelectorAll('.jvds-nav-links a[data-page]');
+    var matched = false;
+    links.forEach(function(a){ if(a.getAttribute('data-page') === page){ a.classList.add('active'); matched = true; } });
+    if(!matched){
+        var section = /\/tools\//.test(path) ? 'dev-tools.html'
+                    : /\/workshops\//.test(path) ? 'workshop.html'
+                    : /\/games\//.test(path) ? 'games.html'
+                    : /\/books\//.test(path) ? 'books.html' : null;
+        if(section) links.forEach(function(a){ if(a.getAttribute('data-page') === section) a.classList.add('active'); });
+    }
+    var btn = document.getElementById('jvdsNavToggle');
+    var nav = document.getElementById('jvdsMobileNav');
+    if(!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var path = location.pathname;
     var page = path.split('/').pop() || 'index.html';
@@ -349,7 +503,7 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     <div class="sb-section">
       <div class="sb-title">Per-Frame Timing</div>
       <div class="ctrl-row">
-        <label>Frame FPS: <span id="frameFpsVal">—</span></label>
+        <label>Frame FPS: <span id="frameFpsVal">, </span></label>
         <input type="number" id="frameFps" min="1" max="60" placeholder="FPS" style="width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:5px;font-size:.7rem;font-family:inherit;">
         <button class="icon-btn primary" style="width:100%;margin-top:4px;" onclick="applyFrameFps()">⏱️ Apply FPS</button>
       </div>
@@ -392,6 +546,81 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
 <div id="toast"></div>
 
 <script>
+function id(x){return document.getElementById(x);}
+
+let sheetImg=null, sheetW=0, sheetH=0;
+let sheetCanvas=null, sheetCtx=null; // editable copy of the sheet, all draws/exports read this
+let frameW=32, frameH=32, offsetX=0, offsetY=0, spacing=0;
+let frames=[]; // {x,y,enabled}
+let activeFrames=[];
+let currentFrame=0;
+let playing=false, looping=true;
+let fps=12, zoom=2;
+let animTimer=null;
+let bgMode='checker';
+let onionSkin=false;
+let drawMode=false, drawTool='pencil', drawStroking=false;
+let undoStack=[]; // sheet ImageData snapshots, newest last
+let layoutDirty=false, projectDirty=false, autosaveT=null, _jszipPromise=null;
+let sheetName='sheet'; // display name for sheetInfo
+
+const canvas=id('preview-canvas');
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+
+// ── LOAD ──
+function loadSheet(input){
+  const file=input.files[0];if(!file) return;
+  if(!file.type.startsWith('image/')){toast('That file is not an image');return;}
+  const url=URL.createObjectURL(file);
+  const img=new Image();
+  img.onload=()=>{
+    sheetImg=img;sheetW=img.width;sheetH=img.height;
+    sheetName=file.name;
+    initSheetCanvas(img);
+    updateSheetInfo();
+    id('uploadPrompt').classList.add('hidden');
+    id('restoreBanner').classList.add('hidden');
+    layoutDirty=false;
+    rebuildFrames(true);
+    markDirty();
+    toast(`Loaded ${sheetW}×${sheetH}px sheet`);
+  };
+  img.onerror=()=>{toast('Could not load that image');URL.revokeObjectURL(url);};
+  img.src=url;
+}
+
+function updateSheetInfo(){
+  id('sheetInfo').textContent=sheetImg?`${sheetW}×${sheetH}px · ${sheetName}`:'No sheet loaded';
+}
+
+function initSheetCanvas(source){
+  sheetCanvas=document.createElement('canvas');
+  sheetCanvas.width=sheetW;sheetCanvas.height=sheetH;
+  sheetCtx=sheetCanvas.getContext('2d',{willReadFrequently:true});
+  sheetCtx.imageSmoothingEnabled=false;
+  sheetCtx.drawImage(source,0,0);
+  undoStack=[];
+}
+
+function rebuildFrames(force){
+  if(!sheetImg) return;
+  // Warn before wiping manual edits (deleted/duplicated/reordered frames)
+  if(!force&&layoutDirty&&frames.length>0){
+    if(!confirm('Rebuilding the grid will reset frame selection, order and duplicates. Continue?')) return;
+  }
+  frameW=Math.min(1024,Math.max(1,Math.round(+id('frameW').value)||32));
+  frameH=Math.min(1024,Math.max(1,Math.round(+id('frameH').value)||32));
+  offsetX=Math.max(0,Math.round(+id('offsetX').value)||0);
+  offsetY=Math.max(0,Math.round(+id('offsetY').value)||0);
+  spacing=Math.max(0,Math.round(+id('spacing').value)||0);
+  id('frameW').value=frameW;id('frameH').value=frameH;
+  id('offsetX').value=offsetX;id('offsetY').value=offsetY;
+  id('spacing').value=spacing;
+  if(offsetX+frameW>sheetW||offsetY+frameH>sheetH){toast(`Frame grid (${frameW}×${frameH} at ${offsetX},${offsetY}) does not fit a ${sheetW}×${sheetH}px sheet`);return;}
+  frames=[];
+  const step=v=>v+spacing;
+  for(let y=offsetY;y+frameH
 function id(x){return document.getElementById(x);}
 
 let sheetImg=null, sheetW=0, sheetH=0;
@@ -516,10 +745,60 @@ function buildStrip(){
     xbtn.onclick=e=>{e.stopPropagation();toggleFrame(i);};
     div.appendChild(xbtn);
 
+    div.onclick=()=>{if(f.enabled){currentFrame=activeFrames.indexOf(i);if(currentFrame=2){bestW=s;bestH=s;break;}
+  }
+  id('frameW').value=bestW;id('frameH').value=bestH;
+  id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
+  rebuildFrames(true);
+  toast(`Auto-detected: ${bestW}×${bestH} frames (${frames.length} total)`);
+}
+
+// ── STRIP ──
+function buildStrip(){
+  const grid=id('stripGrid');
+  grid.innerHTML='';
+  frames.forEach((f,i)=>{
+    const div=document.createElement('div');
+    div.className='frame-thumb'+(f.enabled?' on':' disabled');
+    div.id='ft-'+i;
+
+    const c=document.createElement('canvas');
+    c.width=frameW;c.height=frameH;
+    const cx=c.getContext('2d');
+    cx.imageSmoothingEnabled=false;
+    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+    div.appendChild(c);
+
+    const num=document.createElement('div');num.className='frame-num';num.textContent=i+1;
+    div.appendChild(num);
+
+    const xbtn=document.createElement('div');xbtn.className='frame-x';xbtn.textContent='✕';
+    xbtn.onclick=e=>{e.stopPropagation();toggleFrame(i);};
+    div.appendChild(xbtn);
+
     div.onclick=()=>{if(f.enabled){currentFrame=activeFrames.indexOf(i);if(currentFrame<0) currentFrame=0;drawFrame();showFrameInspector(i);}};
     grid.appendChild(div);
   });
   id('totalFrameNum').textContent=frames.filter(f=>f.enabled).length;
+}
+
+function touchFrames(){layoutDirty=true;markDirty();}
+
+function toggleFrame(i){
+  frames[i].enabled=!frames[i].enabled;
+  id('ft-'+i).classList.toggle('on',frames[i].enabled);
+  id('ft-'+i).classList.toggle('disabled',!frames[i].enabled);
+  updateActiveFrames();
+  touchFrames();
+}
+
+function selectAll(){frames.forEach((f,i)=>{f.enabled=true;const el=id('ft-'+i);if(el){el.classList.add('on');el.classList.remove('disabled');}});updateActiveFrames();touchFrames();}
+function selectNone(){frames.forEach((f,i)=>{f.enabled=false;const el=id('ft-'+i);if(el){el.classList.remove('on');el.classList.add('disabled');}});updateActiveFrames();touchFrames();}
+function invertSelection(){frames.forEach((f,i)=>{f.enabled=!f.enabled;const el=id('ft-'+i);if(el){el.classList.toggle('on',f.enabled);el.classList.toggle('disabled',!f.enabled);}});updateActiveFrames();touchFrames();}
+function selectRange(){
+  const start=Math.max(0,parseInt(id('rangeStart').value||0)-1);
+  const end=Math.min(frames.length,parseInt(id('rangeEnd').value||frames.length));
+  if(isNaN(start)||isNaN(end)||endf.enabled).length;
 }
 
 function touchFrames(){layoutDirty=true;markDirty();}
@@ -588,14 +867,69 @@ function duplicateSelected(){
 
 // Frame inspector
 function showFrameInspector(frameIdx){
-  if(frameIdx<0||frameIdx>=frames.length){id('frameInspector').innerHTML='<div>Select a frame to view</div>';return;}
+  if(frameIdxf.enabled).length;
+  if(delCount===0){toast('No frames selected');return;}
+  frames=frames.filter(f=>!f.enabled);
+  buildStrip();
+  updateActiveFrames();
+  touchFrames();
+  toast(`Deleted ${delCount} frame(s)`);
+}
+function duplicateSelected(){
+  const sel=activeFrames.slice();
+  if(sel.length===0){toast('No frames selected');return;}
+  // Copy pixels into a fresh strip appended below the sheet so clones are
+  // independent (edits on a clone must not affect the original)
+  const stripY=sheetH;
+  const needW=Math.max(sheetW,sel.length*frameW);
+  const nc=document.createElement('canvas');
+  nc.width=needW;nc.height=sheetH+frameH;
+  const nx=nc.getContext('2d',{willReadFrequently:true});
+  nx.imageSmoothingEnabled=false;
+  nx.drawImage(sheetCanvas,0,0);
+  sheetCanvas=nc;sheetCtx=nx;sheetW=needW;sheetH=nc.height;
+  const clones=sel.map((fi,k)=>{
+    const src=frames[fi];
+    const x=k*frameW,y=stripY;
+    sheetCtx.drawImage(sheetCanvas,src.x,src.y,frameW,frameH,x,y,frameW,frameH);
+    return {x,y,enabled:true,fps:src.fps||null};
+  });
+  frames=[...frames,...clones];
+  sheetName=sheetName.replace(/ \(extended\)$/,'')+' (extended)';
+  updateSheetInfo();
+  buildStrip();
+  updateActiveFrames();
+  touchFrames();
+  toast(`Duplicated ${sel.length} frame(s) as independent copies`);
+}
+
+// Frame inspector
+function showFrameInspector(frameIdx){
+  if(frameIdx<0||frameIdx>=frames.length){id('frameInspector').innerHTML='=frames.length){id('frameInspector').innerHTML='<div>Select a frame to viewSelect a frame to view</div>';return;}
   const f=frames[frameIdx];
   const info=`
-    <div><b>Frame ${frameIdx+1}/${frames.length}</b></div>
-    <div>Position: (${f.x}, ${f.y})</div>
-    <div>Size: ${frameW}×${frameH}px</div>
-    <div>Status: ${f.enabled?'Active':'Hidden'}</div>
-    <div style="margin-top:4px;font-size:.6rem;color:var(--muted);">FPS: ${f.fps||fps}</div>
+    ';return;}
+  const f=frames[frameIdx];
+  const info=`
+    <div><b>Frame ${frameIdx+1}/${frames.length}Frame ${frameIdx+1}/${frames.length}</b></div>
+    
+    <div>Position: (${f.x}, ${f.y})Position: (${f.x}, ${f.y})</div>
+    
+    <div>Size: ${frameW}×${frameH}pxSize: ${frameW}×${frameH}px</div>
+    
+    <div>Status: ${f.enabled?'Active':'Hidden'}Status: ${f.enabled?'Active':'Hidden'}</div>
+    
+    <div style="margin-top:4px;font-size:.6rem;color:var(--muted);">FPS: ${f.fps||fps}FPS: ${f.fps||fps}</div>
+  `;
+  id('frameInspector').innerHTML=info;
+  id('frameFpsVal').textContent=f.fps||fps;
+  id('frameFps').value=f.fps||fps;
+}
+
+function applyFrameFps(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  const fpsVal=parseInt(id('frameFps').value);
+  if(isNaN(fpsVal)||fpsVal
   `;
   id('frameInspector').innerHTML=info;
   id('frameFpsVal').textContent=f.fps||fps;
@@ -630,6 +964,31 @@ function drawFrame(){
   // bg
   if(bgMode==='checker'){
     const s=Math.max(2,zoom);
+    for(let y=0;y60){toast('FPS must be between 1 and 60');return;}
+  activeFrames.forEach(fi=>{frames[fi].fps=fpsVal;});
+  touchFrames();
+  toast(`Applied FPS ${fpsVal} to ${activeFrames.length} frames`);
+}
+
+function updateActiveFrames(){
+  activeFrames=frames.map((f,i)=>f.enabled?i:-1).filter(i=>i>=0);
+  id('totalFrameNum').textContent=activeFrames.length;
+  if(id('selectedCount')) id('selectedCount').textContent=activeFrames.length;
+  if(currentFrame>=activeFrames.length) currentFrame=0;
+  drawFrame();
+}
+
+// ── PLAYBACK ──
+function drawFrame(){
+  if(!sheetImg||activeFrames.length===0){ctx.clearRect(0,0,canvas.width,canvas.height);return;}
+  const fi=activeFrames[currentFrame]??0;
+  const f=frames[fi];
+  canvas.width=frameW*zoom;canvas.height=frameH*zoom;
+  ctx.imageSmoothingEnabled=false;
+
+  // bg
+  if(bgMode==='checker'){
+    const s=Math.max(2,zoom);
     for(let y=0;y<canvas.height;y+=s*2)for(let x=0;x<canvas.width;x+=s*2){
       ctx.fillStyle='#333';ctx.fillRect(x,y,s,s);ctx.fillRect(x+s,y+s,s,s);
       ctx.fillStyle='#111';ctx.fillRect(x+s,y,s,s);ctx.fillRect(x,y+s,s,s);
@@ -638,6 +997,224 @@ function drawFrame(){
 
   // Onion skin: ghost previous (pink) and next (green) frames under the current one
   if(onionSkin&&!playing&&activeFrames.length>1){
+    const prevF=frames[activeFrames[(currentFrame-1+activeFrames.length)%activeFrames.length]];
+    const nextF=frames[activeFrames[(currentFrame+1)%activeFrames.length]];
+    ctx.globalAlpha=.28;
+    ctx.drawImage(sheetCanvas,prevF.x,prevF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.globalAlpha=.16;
+    ctx.drawImage(sheetCanvas,nextF.x,nextF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.globalAlpha=1;
+  }
+
+  ctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,canvas.width,canvas.height);
+  id('currentFrameNum').textContent=currentFrame+1;
+
+  // highlight in strip
+  document.querySelectorAll('.frame-thumb').forEach((el,i)=>{
+    el.style.outline=activeFrames[currentFrame]===i?`2px solid var(--accent)`:'';
+  });
+}
+
+function togglePlay(){
+  playing=!playing;
+  id('playBtn').textContent=playing?'⏸':'▶';
+  id('playBtn').style.background=playing?'var(--accent4)':'var(--accent)';
+  if(playing) scheduleNext();
+  else clearTimeout(animTimer);
+}
+
+function scheduleNext(){
+  if(!playing) return;
+  // Get current frame's FPS or use global FPS
+  const fi=activeFrames[currentFrame]??0;
+  const frameFps=frames[fi]?.fps||fps;
+
+  animTimer=setTimeout(()=>{
+    if(activeFrames.length===0){playing=false;return;}
+    currentFrame=(currentFrame+1)%activeFrames.length;
+    if(!looping&&currentFrame===0){playing=false;id('playBtn').textContent='▶';id('playBtn').style.background='var(--accent)';return;}
+    drawFrame();
+    scheduleNext();
+  },1000/frameFps);
+}
+
+function prevFrame(){currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;drawFrame();}
+function nextFrame(){currentFrame=(currentFrame+1)%activeFrames.length;drawFrame();}
+function toggleLoop(){looping=!looping;id('loopBtn').classList.toggle('on',looping);markDirty();}
+function setFps(v){fps=+v;id('fpsVal').textContent=v;markDirty();}
+function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();markDirty();}
+function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();markDirty();}
+
+// ── EXPORT ──
+function exportJSON(){
+  if(!sheetImg||frames.length===0){toast('No sheet loaded');return;}
+  const data=manifestJSON(
+    activeFrames.map(fi=>({x:frames[fi].x,y:frames[fi].y})),
+    sheetW,sheetH);
+  data.offset={x:offsetX,y:offsetY};
+  data.spacing=spacing;
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='animation.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('JSON exported!');
+}
+
+function exportPNG(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  const fi=activeFrames[currentFrame];const f=frames[fi];
+  const c=document.createElement('canvas');c.width=frameW;c.height=frameH;
+  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+  cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+  c.toBlob(blob=>{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`frame_${currentFrame+1}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Frame exported!');});
+}
+
+function exportSheet(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  buildRepacked().canvas.toBlob(blob=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selected_frames.png';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Sheet exported!');
+  });
+}
+
+// ── ZIP / ENGINE EXPORT ──
+function frameName(i){return 'frame_'+String(i).padStart(3,'0');}
+
+function loadJSZip(){
+  if(window.JSZip) return Promise.resolve(window.JSZip);
+  if(_jszipPromise) return _jszipPromise;
+  _jszipPromise=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+    s.onload=()=>res(window.JSZip);
+    s.onerror=()=>{_jszipPromise=null;rej(new Error('JSZip failed to load'));};
+    document.head.appendChild(s);
+  });
+  return _jszipPromise;
+}
+
+function canvasBlob(c){return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('toBlob failed')),'image/png'));}
+
+async function downloadZip(zip,name){
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+// Repack active frames into a tight grid; returns {canvas,positions:[{x,y}]}
+function buildRepacked(){
+  const n=activeFrames.length;
+  const cols=Math.ceil(Math.sqrt(n));
+  const c=document.createElement('canvas');
+  c.width=cols*frameW;c.height=Math.ceil(n/cols)*frameH;
+  const cx=c.getContext('2d');cx.imageSmoothingEnabled=false;
+  const positions=activeFrames.map((fi,i)=>{
+    const f=frames[fi];
+    const x=(i%cols)*frameW,y=Math.floor(i/cols)*frameH;
+    cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,x,y,frameW,frameH);
+    return {x,y};
+  });
+  return {canvas:c,positions};
+}
+
+// Generic frame-data manifest. positions/sheetSize let callers bind it to
+// either the original sheet or the repacked atlas.
+function manifestJSON(positions,sheetW2,sheetH2){
+  return {
+    spritesheet:{width:sheetW2,height:sheetH2},
+    frameSize:{width:frameW,height:frameH},
+    fps,
+    loop:looping,
+    frameCount:activeFrames.length,
+    frames:activeFrames.map((fi,i)=>({
+      id:i,name:frameName(i),
+      sourceX:positions[i].x,sourceY:positions[i].y,
+      width:frameW,height:frameH,
+      duration:Math.round(1000/(frames[fi].fps||fps))
+    }))
+  };
+}
+
+// Aseprite hash format (consumed by Aseprite importers/plugins)
+function buildAsepriteJSON(positions,sheetW2,sheetH2){
+  return JSON.stringify({
+    frames:Object.fromEntries(activeFrames.map((fi,i)=>[frameName(i),{
+      frame:{x:positions[i].x,y:positions[i].y,w:frameW,h:frameH},
+      rotated:false,trimmed:false,
+      spriteSourceSize:{x:0,y:0,w:frameW,h:frameH},
+      sourceSize:{w:frameW,h:frameH},
+      duration:Math.round(1000/(frames[fi].fps||fps))
+    }])),
+    meta:{
+      app:'JVDesignStudio Sprite Animator',version:'1.0',
+      image:'spritesheet.png',format:'RGBA8888',
+      size:{w:sheetW2,h:sheetH2},scale:'1',
+      frameTags:[{name:'default',from:0,to:Math.max(0,activeFrames.length-1),direction:'forward'}]
+    }
+  },null,2);
+}
+
+// TexturePacker JSON array format (Unity via TexturePacker importer)
+function buildTexturePackerJSON(positions,sheetW2,sheetH2){
+  return JSON.stringify({
+    frames:activeFrames.map((fi,i)=>({
+      filename:frameName(i),
+      frame:{x:positions[i].x,y:positions[i].y,w:frameW,h:frameH},
+      rotated:false,trimmed:false,
+      spriteSourceSize:{x:0,y:0,w:frameW,h:frameH},
+      sourceSize:{w:frameW,h:frameH},
+      pivot:{x:.5,y:.5}
+    })),
+    meta:{
+      app:'JVDesignStudio Sprite Animator',version:'1.0',
+      image:'spritesheet.png',format:'RGBA8888',
+      size:{w:sheetW2,h:sheetH2},scale:'1'
+    }
+  },null,2);
+}
+
+// Godot 4 SpriteFrames resource (.tres) referencing res://spritesheet.png
+function buildGodotTres(){
+  const n=activeFrames.length;
+  const subs=activeFrames.map((fi,i)=>{
+    const f=frames[fi];
+    return `[sub_resource type="AtlasTexture" id="AtlasTexture_${i}"]
+atlas = ExtResource("1_sheet")
+region = Rect2(${f.x}, ${f.y}, ${frameW}, ${frameH})
+`;
+  }).join('\n');
+  const framesSrc=activeFrames.map((fi,i)=>{
+    // Godot plays at `speed` FPS; per-frame duration is a multiplier of that
+    const mult=fps/(frames[fi].fps||fps);
+    return `{
+"duration": ${+(mult.toFixed(4))},
+"texture": SubResource("AtlasTexture_${i}")
+}`;
+  }).join(', ');
+  return `[gd_resource type="SpriteFrames" load_steps=${1+n} format=3]
+
+[ext_resource type="Texture2D" path="res://spritesheet.png" id="1_sheet"]
+
+${subs}
+[resource]
+animations = [{
+"frames": [${framesSrc}],
+"loop": ${looping?'true':'false'},
+"name": &"default",
+"speed": ${fps}.0
+}]
+`;
+}
+
+async function exportFramePack(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  try{
+    toast('Building ZIP...');
+    const JSZip=await loadJSZip();
+    const zip=new JSZip();
+    for(let i=0;i1){
     const prevF=frames[activeFrames[(currentFrame-1+activeFrames.length)%activeFrames.length]];
     const nextF=frames[activeFrames[(currentFrame+1)%activeFrames.length]];
     ctx.globalAlpha=.28;
@@ -1079,7 +1656,421 @@ function canvasToSheetPx(e){
   const rect=canvas.getBoundingClientRect();
   const px=Math.floor((e.clientX-rect.left)*(canvas.width/rect.width)/zoom);
   const py=Math.floor((e.clientY-rect.top)*(canvas.height/rect.height)/zoom);
+  if(px({x:frames[fi].x,y:frames[fi].y})),sheetW,sheetH),null,2));
+    await downloadZip(zip,'sprite-frames.zip');
+    toast(`ZIP exported! ${activeFrames.length} frames`);
+  }catch(err){
+    console.error('Frame pack failed:',err);
+    toast('ZIP export failed, check connection & try again');
+  }
+}
+
+async function exportEnginePack(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames selected');return;}
+  try{
+    toast('Building engine pack...');
+    const JSZip=await loadJSZip();
+    const repacked=buildRepacked();
+    const rc=repacked.canvas,pos=repacked.positions;
+    const zip=new JSZip();
+    zip.file('spritesheet.png',await canvasBlob(rc));
+    zip.file('animation.json',JSON.stringify(manifestJSON(pos,rc.width,rc.height),null,2));
+    zip.file('godot/SpriteFrames.tres',buildGodotTres());
+    zip.file('aseprite/spritesheet.json',buildAsepriteJSON(pos,rc.width,rc.height));
+    zip.file('unity-texturepacker/spritesheet.json',buildTexturePackerJSON(pos,rc.width,rc.height));
+    zip.file('README.txt',
+`JVDesignStudio Sprite Animator - Engine Pack
+=============================================
+spritesheet.png            Packed atlas of your selected frames (${rc.width}x${rc.height}, ${frameW}x${frameH} cells).
+animation.json             Generic frame data (coords match spritesheet.png).
+
+godot/SpriteFrames.tres    Godot 4 SpriteFrames resource.
+                           1. Copy spritesheet.png into your project as res://spritesheet.png
+                              (or edit the ext_resource path inside the .tres).
+                           2. Drop the .tres anywhere in res:// and assign it to an
+                              AnimatedSprite2D node. Per-frame timing is baked in.
+
+aseprite/spritesheet.json  Aseprite hash-format JSON (for Aseprite importer plugins/tools).
+
+unity-texturepacker/*.json TexturePacker JSON array format. In Unity, import spritesheet.png +
+                           this JSON together (e.g. with a free TexturePacker importer asset),
+                           or read the frame rects from animation.json directly.
+
+Exported ${activeFrames.length} frames @ ${fps} FPS, loop ${looping?'on':'off'}.
+`);
+    await downloadZip(zip,'engine-pack.zip');
+    toast('Engine pack exported! Godot · Aseprite · Unity formats');
+  }catch(err){
+    console.error('Engine pack failed:',err);
+    toast('ZIP export failed, check connection & try again');
+  }
+}
+
+// ── PROJECT SAVE / LOAD / AUTOSAVE ──
+const LS_PROJECT='jvds_sprite_anim',LS_AUTOSAVE='jvds_sprite_anim_auto';
+
+function serializeProject(){
+  return JSON.stringify({
+    app:'jvds-sprite-animator',v:1,
+    sheet:sheetCanvas?sheetCanvas.toDataURL('image/png'):null,
+    sheetName,
+    frameW,frameH,offsetX,offsetY,spacing,
+    frames:frames.map(f=>({x:f.x,y:f.y,e:!!f.enabled,fps:f.fps||null})),
+    fps,zoom,bgMode,looping,currentFrame
+  });
+}
+
+function applyProject(d){
+  if(!d||d.app!=='jvds-sprite-animator'||!d.sheet) throw new Error('Not a Sprite Animator project');
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      sheetImg=img;sheetW=img.width;sheetH=img.height;
+      sheetName=d.sheetName||'restored project';
+      initSheetCanvas(img); // clears undo history
+      frameW=Math.min(1024,Math.max(1,+d.frameW||32));
+      frameH=Math.min(1024,Math.max(1,+d.frameH||32));
+      offsetX=Math.max(0,+d.offsetX||0);
+      offsetY=Math.max(0,+d.offsetY||0);
+      spacing=Math.max(0,+d.spacing||0);
+      id('frameW').value=frameW;id('frameH').value=frameH;
+      id('offsetX').value=offsetX;id('offsetY').value=offsetY;id('spacing').value=spacing;
+      frames=(Array.isArray(d.frames)?d.frames:[]).map(f=>({x:+f.x||0,y:+f.y||0,enabled:f.e!==false,fps:f.fps||null}));
+      setFps(Math.min(60,Math.max(1,+d.fps||12)));id('fpsSlider').value=fps;
+      zoom=Math.min(16,Math.max(1,+d.zoom||2));id('zoomVal').textContent=zoom+'×';
+      bgMode=['checker','black','white','dark'].includes(d.bgMode)?d.bgMode:'checker';
+      document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===bgMode));
+      looping=d.looping!==false;id('loopBtn').classList.toggle('on',looping);
+      layoutDirty=true; // restored layouts are custom by definition
+      updateSheetInfo();
+      id('uploadPrompt').classList.add('hidden');
+      id('restoreBanner').classList.add('hidden');
+      buildStrip();
+      updateActiveFrames();
+      currentFrame=Math.min(Math.max(0,+d.currentFrame||0),Math.max(0,activeFrames.length-1));
+      drawFrame();
+      resolve();
+    };
+    img.onerror=()=>reject(new Error('Could not decode sheet image'));
+    img.src=d.sheet;
+  });
+}
+
+function saveProjectLocal(){
+  if(!sheetImg){toast('Nothing to save yet');return;}
+  try{
+    localStorage.setItem(LS_PROJECT,serializeProject());
+    toast('Saved to browser ✓');
+  }catch(e){toast('Save failed (too large?) — use 📤 file export instead');}
+}
+
+function loadProjectLocal(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_PROJECT);}catch(e){}
+  if(!raw){toast('No saved project in this browser');return;}
+  applyProject(JSON.parse(raw)).then(()=>toast('Loaded ✓')).catch(()=>toast('Load failed'));
+}
+
+function exportProjectFile(){
+  if(!sheetImg){toast('Nothing to export yet');return;}
+  try{
+    const blob=new Blob([serializeProject()],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='sprite-animator-project.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast('Project file exported ✓');
+  }catch(e){toast('Export failed');}
+}
+
+function importProjectFile(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  input.value='';
+  file.text().then(txt=>{
+    try{
+      applyProject(JSON.parse(txt)).then(()=>{
+        markDirty();
+        toast('Project loaded ✓');
+      }).catch(()=>toast('Not a valid project file'));
+    }catch(e){toast('Not a valid project file');}
+  }).catch(()=>toast('Could not read file'));
+}
+
+// Debounced silent autosave (mirrors Pixel Studio's pattern)
+function markDirty(){
+  projectDirty=true;
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(autoSave,1500);
+}
+function autoSave(){
+  if(!projectDirty||!sheetImg) return;
+  try{
+    localStorage.setItem(LS_AUTOSAVE,serializeProject());
+    projectDirty=false;
+  }catch(e){/* quota exceeded — autosave silently disabled */}
+}
+const SA_SEEN_KEY='jvds_spriteanim_seen';
+function saMarkSeen(){ try{ localStorage.setItem(SA_SEEN_KEY,'1'); }catch(e){} }
+function saHasSeen(){ try{ return localStorage.getItem(SA_SEEN_KEY)==='1'; }catch(e){ return true; } }
+function openStart(){ id('startModal').classList.add('open'); }
+function closeStart(){ id('startModal').classList.remove('open'); saMarkSeen(); }
+
+function setupAutosaveRestore(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_AUTOSAVE);}catch(e){}
+  let offered=false;
+  if(raw){
+    try{
+      const d=JSON.parse(raw);
+      if(d&&d.app==='jvds-sprite-animator'&&d.sheet){ id('restoreBanner').classList.remove('hidden'); offered=true; }
+    }catch(e){}
+  }
+  // Only greet a genuinely new student, and never on top of a restore offer.
+  if(!offered && !saHasSeen()) openStart();
+}
+function restoreAutosave(){
+  let raw=null;
+  try{raw=localStorage.getItem(LS_AUTOSAVE);}catch(e){}
+  if(raw) applyProject(JSON.parse(raw)).then(()=>toast('Session restored ✓')).catch(()=>toast('Restore failed'));
+  else toast('Restore failed');
+}
+function discardAutosave(){
+  try{localStorage.removeItem(LS_AUTOSAVE);}catch(e){}
+  id('restoreBanner').classList.add('hidden');
+}
+window.addEventListener('beforeunload',()=>{if(projectDirty)autoSave();});
+
+// ── ONION SKIN ──
+function toggleOnion(){
+  onionSkin=!onionSkin;
+  id('onionBtn').classList.toggle('on',onionSkin);
+  drawFrame();
+}
+
+// ── PIXEL EDITING ──
+function toggleDrawMode(){
+  drawMode=!drawMode;
+  id('drawBtn').classList.toggle('on',drawMode);
+  id('drawSection').style.display=drawMode?'':'none';
+  canvas.classList.toggle('drawing',drawMode);
+  if(drawMode&&playing) togglePlay();
+  if(drawMode&&!sheetImg) toast('Load a spritesheet first');
+}
+
+function setDrawTool(t){
+  drawTool=t;
+  document.querySelectorAll('.dtool').forEach(el=>el.classList.remove('on'));
+  id('dt-'+(t==='pencil'?'pencil':t==='eraser'?'eraser':'picker')).classList.add('on');
+}
+
+function canvasToSheetPx(e){
+  // Map a pointer event on the preview canvas to a pixel on the sheet
+  if(activeFrames.length===0) return null;
+  const f=frames[activeFrames[currentFrame]];
+  const rect=canvas.getBoundingClientRect();
+  const px=Math.floor((e.clientX-rect.left)*(canvas.width/rect.width)/zoom);
+  const py=Math.floor((e.clientY-rect.top)*(canvas.height/rect.height)/zoom);
   if(px<0||py<0||px>=frameW||py>=frameH) return null;
+  return {x:f.x+px,y:f.y+py};
+}
+
+function pushUndo(){
+  try{
+    undoStack.push(sheetCtx.getImageData(0,0,sheetW,sheetH));
+    if(undoStack.length>12) undoStack.shift();
+  }catch(e){}
+}
+
+function undoDraw(){
+  if(undoStack.length===0){toast('Nothing to undo');return;}
+  sheetCtx.putImageData(undoStack.pop(),0,0);
+  drawFrame();
+  refreshCurrentThumb();
+  markDirty();
+  toast('Undone');
+}
+
+function applyDrawAt(e){
+  const p=canvasToSheetPx(e);
+  if(!p) return;
+  if(drawTool==='picker'){
+    const d=sheetCtx.getImageData(p.x,p.y,1,1).data;
+    if(d[3]>0){
+      const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+      id('drawColor').value=hex;
+      setDrawTool('pencil');
+      toast('Picked '+hex);
+    }
+    return;
+  }
+  if(drawTool==='eraser'){
+    sheetCtx.clearRect(p.x,p.y,1,1);
+  }else{
+    sheetCtx.fillStyle=id('drawColor').value;
+    sheetCtx.fillRect(p.x,p.y,1,1);
+  }
+  drawFrame();
+}
+
+function refreshCurrentThumb(){
+  if(activeFrames.length===0) return;
+  const fi=activeFrames[currentFrame];
+  const thumb=id('ft-'+fi);
+  if(!thumb) return;
+  const c=thumb.querySelector('canvas');
+  if(!c) return;
+  const cx=c.getContext('2d');
+  cx.imageSmoothingEnabled=false;
+  cx.clearRect(0,0,c.width,c.height);
+  const f=frames[fi];
+  cx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,frameW,frameH);
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  if(!drawMode||!sheetImg) return;
+  e.preventDefault();
+  if(drawTool!=='picker') pushUndo();
+  drawStroking=true;
+  canvas.setPointerCapture(e.pointerId);
+  applyDrawAt(e);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!drawMode||!drawStroking||drawTool==='picker') return;
+  applyDrawAt(e);
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!drawStroking) return;
+  drawStroking=false;
+  refreshCurrentThumb();
+  markDirty();
+});
+
+// ── EXPORT GIF ──
+let _gifencModule=null;
+function exportGIF(){
+  if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
+  toast('Encoding GIF...');
+  const load=_gifencModule?Promise.resolve(_gifencModule):import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/+esm');
+  load.then(m=>{
+    _gifencModule=m;
+    const {GIFEncoder,quantize,applyPalette}=m;
+    const sc=Math.max(1,Math.floor(128/Math.max(frameW,frameH))); // upscale tiny sprites so the GIF is viewable
+    const gw=frameW*sc,gh=frameH*sc;
+    const tc=document.createElement('canvas');tc.width=gw;tc.height=gh;
+    const tctx=tc.getContext('2d',{willReadFrequently:true});
+    const enc=GIFEncoder();
+    const format='rgba4444';
+    activeFrames.forEach(fi=>{
+      const f=frames[fi];
+      tctx.clearRect(0,0,gw,gh);
+      tctx.imageSmoothingEnabled=false;
+      tctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,gw,gh);
+      const data=tctx.getImageData(0,0,gw,gh).data;
+      const palette=quantize(data,256,{format,oneBitAlpha:true});
+      const index=applyPalette(data,palette,format);
+      let transparentIndex=palette.findIndex(p=>p[3]===0);
+      enc.writeFrame(index,gw,gh,{
+        palette,
+        delay:Math.round(1000/(frames[fi].fps||fps)),
+        transparent:transparentIndex>=0,
+        transparentIndex:Math.max(0,transparentIndex),
+        disposal:2
+      });
+    });
+    enc.finish();
+    const blob=new Blob([enc.bytes()],{type:'image/gif'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='animation.gif';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    toast(`GIF exported! ${activeFrames.length} frames @ ${gw}×${gh}`);
+  }).catch(err=>{
+    console.error('GIF export failed:',err);
+    toast('GIF export failed, check connection & try again');
+  });
+}
+
+// ── IMPORT FROM PIXEL STUDIO ──
+function importFromPixelStudio(){
+  const raw=localStorage.getItem('jvds_pixel');
+  if(!raw){toast('No Pixel Studio project found, open Pixel Studio and hit Save first');return;}
+  let d;
+  try{d=JSON.parse(raw);}catch(e){toast('Could not read Pixel Studio project');return;}
+  if(!d.cW||!d.cH||!d.frames||d.frames.length===0){toast('Pixel Studio project is empty');return;}
+
+  // Flatten each frame's visible layers, lay frames out in a horizontal strip
+  const fw=d.cW,fh=d.cH,count=d.frames.length;
+  const strip=document.createElement('canvas');
+  strip.width=fw*count;strip.height=fh;
+  const sctx=strip.getContext('2d');
+  sctx.imageSmoothingEnabled=false;
+  const tmp=document.createElement('canvas');tmp.width=fw;tmp.height=fh;
+  const tmpCtx=tmp.getContext('2d');
+  d.frames.forEach((frameLayers,fi)=>{
+    frameLayers.forEach((layerData,li)=>{
+      if(!layerData) return;
+      if(d.layers&&d.layers[li]&&d.layers[li].visible===false) return;
+      const im=new ImageData(new Uint8ClampedArray(layerData),fw,fh);
+      tmpCtx.clearRect(0,0,fw,fh);
+      tmpCtx.putImageData(im,0,0);
+      sctx.drawImage(tmp,fi*fw,0);
+    });
+  });
+
+  // Load the strip as the current sheet
+  sheetW=strip.width;sheetH=strip.height;
+  sheetImg=strip; // truthy "loaded" flag; all rendering reads sheetCanvas
+  initSheetCanvas(strip);
+  id('frameW').value=fw;id('frameH').value=fh;
+  id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
+  sheetName=`Pixel Studio (${count} frame${count!==1?'s':''})`;
+  updateSheetInfo();
+  id('uploadPrompt').classList.add('hidden');
+  id('restoreBanner').classList.add('hidden');
+  layoutDirty=false;
+  rebuildFrames(true);
+  markDirty();
+  toast(`Imported ${count} frame${count!==1?'s':''} from Pixel Studio 🎨`);
+}
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown',e=>{
+  const t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+  if(!sheetImg) return;
+  switch(e.key){
+    case ' ':
+      if(t.tagName==='BUTTON'||t.tagName==='LABEL') return; // native click already toggles
+      e.preventDefault();togglePlay();break;
+    case 'ArrowLeft':prevFrame();break;
+    case 'ArrowRight':nextFrame();break;
+    case '+':case '=':setZoom(zoom+1);break;
+    case '-':case '_':setZoom(zoom-1);break;
+    case 'o':case 'O':toggleOnion();break;
+    case 'z':case 'Z':if(e.ctrlKey||e.metaKey){e.preventDefault();undoDraw();}break;
+  }
+});
+
+setupAutosaveRestore();
+
+// drag & drop
+const previewArea=id('preview-area');
+previewArea.addEventListener('dragover',e=>{e.preventDefault();previewArea.style.outline='2px dashed var(--accent)';});
+previewArea.addEventListener('dragleave',()=>{previewArea.style.outline='';});
+previewArea.addEventListener('drop',e=>{
+  e.preventDefault();previewArea.style.outline='';
+  const file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('image/')){
+    const fakeInput={files:[file]};loadSheet(fakeInput);
+  }
+});
+
+let toastT;
+function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+=frameW||py>=frameH) return null;
   return {x:f.x+px,y:f.y+py};
 }
 
@@ -1286,7 +2277,7 @@ function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;c
     <a href="/pages/dev-tools.html">🛠️ Tools</a>
     <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
 </footer>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
 <script src="../player-profile.js"></script>

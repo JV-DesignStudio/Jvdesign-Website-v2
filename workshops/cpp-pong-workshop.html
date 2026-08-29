@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -172,7 +218,7 @@
 
   <div class="callout warn" style="margin:0 0 16px">
     <div class="callout-icon">⚠️</div>
-    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Left</code> (add <code>::Key</code>), and <code>setPosition({x, y})</code> / <code>move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
+    <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Leftsf::Keyboard::Key::Left</code> (add <code>::Key::Key</code>), and <code>setPosition({x, y})setPosition({x, y})</code> / <code>move({dx, dy})move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
   </div>
 
   <!-- STEP 1 -->
@@ -200,6 +246,22 @@
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({800, 500}), "C++ Pong");
+    window.setFramerateLimit(60);
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent())
+            if (event-&gt;is&lt;sf::Event::Closed&gt;())
+                window.close();
+
+        window.clear(sf::Color(15, 18, 32));
+        window.display();
+    }
+    return 0;
+}#include &lt;SFML/Graphics.hpp&gt;
 #include &lt;optional&gt;
 
 int main() {
@@ -286,6 +348,21 @@ if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   paddle2.move({0, -speed
 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) paddle2.move({0,  speed});
 
 window.draw(paddle1);
+window.draw(paddle2);sf::RectangleShape paddle1(sf::Vector2f(14, 90));
+paddle1.setPosition({20, 205});
+paddle1.setFillColor(sf::Color::White);
+
+sf::RectangleShape paddle2 = paddle1;
+paddle2.setPosition({766, 205});
+
+// inside the loop, before drawing:
+float speed = 6.f;
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    paddle1.move({0, -speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    paddle1.move({0,  speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   paddle2.move({0, -speed});
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) paddle2.move({0,  speed});
+
+window.draw(paddle1);
 window.draw(paddle2);</pre>
   </div>
 
@@ -299,9 +376,12 @@ window.draw(paddle2);</pre>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+    paddle1.move({0, if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
     paddle1.move({0, <input class="cc-blank" data-a="LXNwZWVk" placeholder="??????" size="7">});
 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
-    paddle1.move({0, <input class="cc-blank" data-a="c3BlZWQ=" placeholder="?????" size="6">});</pre>
+    paddle1.move({0, });
+if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+    paddle1.move({0, <input class="cc-blank" data-a="c3BlZWQ=" placeholder="?????" size="6">});});</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -351,6 +431,16 @@ if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::CircleShape ball(7);
+ball.setPosition({393, 243});
+float bvx = 300.f, bvy = 180.f;
+sf::Clock clock;
+
+// in the loop:
+float dt = clock.restart().asSeconds();
+ball.move({bvx * dt, bvy * dt});
+
+if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
+    bvy = -bvy;sf::CircleShape ball(7);
 ball.setPosition({393, 243});
 float bvx = 300.f, bvy = 180.f;
 sf::Clock clock;
@@ -428,6 +518,18 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
     float padCentre  = paddle2.getPosition().y + 45;
     float ballCentre = ball.getPosition().y + 7;
     bvy = (ballCentre - padCentre) * 5.f;
+}sf::FloatRect b = ball.getGlobalBounds();
+if (b.findIntersection(paddle1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
+    bvx = -bvx * 1.05f;
+    float padCentre  = paddle1.getPosition().y + 45;
+    float ballCentre = ball.getPosition().y + 7;
+    bvy = (ballCentre - padCentre) * 5.f;
+}
+if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
+    bvx = -bvx * 1.05f;
+    float padCentre  = paddle2.getPosition().y + 45;
+    float ballCentre = ball.getPosition().y + 7;
+    bvy = (ballCentre - padCentre) * 5.f;
 }</pre>
   </div>
 
@@ -440,7 +542,8 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
         <div class="cc-prompt">Detect the ball hitting paddle 1:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.<input class="cc-blank" data-a="ZmluZEludGVyc2VjdGlvbg==" placeholder="????????????????" size="17">(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="????????" size="16">()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="?" size="4">)
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.if (b.<input class="cc-blank" data-a="ZmluZEludGVyc2VjdGlvbg==" placeholder="????????????????" size="17">(paddle1.(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="????????" size="16">()) &amp;&amp; bvx &lt; ()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="?" size="4">)
+    bvx = -bvx * 1.05f;)
     bvx = -bvx * 1.05f;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -491,6 +594,16 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::Font font;
+if (!font.openFromFile("arial.ttf")) return 1;
+sf::Text scoreText(font, "0   0", 48);
+scoreText.setPosition({330, 20});
+int s1 = 0, s2 = 0;
+
+// scoring:
+float bx = ball.getPosition().x;
+if (bx &lt; -20)  { s2++; ball.setPosition({393, 243}); bvx = 300;  bvy = 180; }
+if (bx &gt; 820)  { s1++; ball.setPosition({393, 243}); bvx = -300; bvy = 180; }
+scoreText.setString(std::to_string(s1) + "   " + std::to_string(s2));sf::Font font;
 if (!font.openFromFile("arial.ttf")) return 1;
 sf::Text scoreText(font, "0   0", 48);
 scoreText.setPosition({330, 20});
@@ -566,6 +679,16 @@ if (vsComputer) {
     if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, -aiSpeed});
 }
 
+bool gameOver = (s1 == 7 || s2 == 7);bool vsComputer = true;
+float aiSpeed = 5.f, deadZone = 18.f;
+
+if (vsComputer) {
+    float padCentre  = paddle2.getPosition().y + 45;
+    float ballCentre = ball.getPosition().y + 7;
+    if (padCentre &lt; ballCentre - deadZone) paddle2.move({0,  aiSpeed});
+    if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, -aiSpeed});
+}
+
 bool gameOver = (s1 == 7 || s2 == 7);</pre>
   </div>
 
@@ -578,8 +701,9 @@ bool gameOver = (s1 == 7 || s2 == 7);</pre>
         <div class="cc-prompt">Write the flawed-on-purpose AI chase:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - <input class="cc-blank" data-a="ZGVhZFpvbmU=" placeholder="????????" size="9">) paddle2.move({0, <input class="cc-blank" data-a="YWlTcGVlZA==" placeholder="???????" size="8">});
-if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, <input class="cc-blank" data-a="LWFpU3BlZWQ=" placeholder="????????" size="9">});</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - if (padCentre &lt; ballCentre - <input class="cc-blank" data-a="ZGVhZFpvbmU=" placeholder="????????" size="9">) paddle2.move({0, ) paddle2.move({0, <input class="cc-blank" data-a="YWlTcGVlZA==" placeholder="???????" size="8">});
+if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, });
+if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, <input class="cc-blank" data-a="LWFpU3BlZWQ=" placeholder="????????" size="9">});});</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -606,11 +730,90 @@ if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, <input class="cc-blan
   </div>
 
   <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game — full SFML 3, compiles today</summary>
-    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./pong</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished game , full SFML 3, compiles today</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The whole game in one file, written in current <strong>SFML 3</strong> (what the install step gives you today) and compiled with g++ + SFML 3.0 to confirm it builds. The step snippets above use classic SFML 2 names; this is your working reference. Build it with <code>g++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-systemg++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-system</code> then run <code>./pong./pong</code> (on Windows, from the MSYS2 MinGW terminal so it finds the SFML DLLs).</p>
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
       <pre class="code-pre">// Complete C++ Pong for SFML 3. Build with:
+//   g++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-system
+#include &lt;SFML/Graphics.hpp&gt;
+#include &lt;optional&gt;
+#include &lt;cstdlib&gt;
+#include &lt;string&gt;
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode({800, 500}), "C++ Pong");
+    window.setFramerateLimit(60);
+
+    sf::RectangleShape p1({14.f, 90.f});
+    sf::RectangleShape p2({14.f, 90.f});
+    sf::RectangleShape ball({14.f, 14.f});
+    p1.setPosition({20.f, 205.f});
+    p2.setPosition({766.f, 205.f});
+
+    float bx = 393, by = 243, bvx = 300, bvy = 180;
+    int p1Score = 0, p2Score = 0;
+
+    // Score text needs a font. Point this at any .ttf on your system.
+    sf::Font font;
+    bool haveFont = font.openFromFile("C:/Windows/Fonts/arial.ttf");
+
+    auto serve = [&amp;](int dir) {
+        bx = 393; by = 243;
+        bvx = 300.f * dir;
+        bvy = (std::rand() % 2 == 0) ? 180.f : -180.f;
+    };
+    serve((std::rand() % 2 == 0) ? 1 : -1);
+
+    sf::Clock clock;
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent())
+            if (event-&gt;is&lt;sf::Event::Closed&gt;())
+                window.close();
+
+        float dt = clock.restart().asSeconds();
+
+        // paddles: W/S and Up/Down, speed in pixels per second
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    p1.move({0.f, -360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    p1.move({0.f,  360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   p2.move({0.f, -360.f * dt});
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) p2.move({0.f,  360.f * dt});
+        auto clampY = [](sf::RectangleShape&amp; p) {
+            float y = p.getPosition().y;
+            if (y &lt; 0) p.setPosition({p.getPosition().x, 0.f});
+            if (y &gt; 410) p.setPosition({p.getPosition().x, 410.f});
+        };
+        clampY(p1); clampY(p2);
+
+        // ball: velocity is pixels per second, scaled by dt so speed stays the same at any frame rate
+        bx += bvx * dt; by += bvy * dt;
+        if (by &lt;= 0 || by + 14 &gt;= 500) bvy = -bvy;
+        ball.setPosition({bx, by});
+
+        sf::FloatRect br = ball.getGlobalBounds();
+        if (br.findIntersection(p1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
+            bvx = -bvx + 60.f;
+            bvy = (((by + 7) - (p1.getPosition().y + 45)) / 7.f) * 60.f;
+        }
+        if (br.findIntersection(p2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
+            bvx = -(bvx + 60.f);
+            bvy = (((by + 7) - (p2.getPosition().y + 45)) / 7.f) * 60.f;
+        }
+        if (bvx &gt; 720.f) bvx = 720.f; if (bvx &lt; -720.f) bvx = -720.f;
+
+        if (bx &lt; 0)   { p2Score++; serve(-1); }
+        if (bx &gt; 800) { p1Score++; serve(1); }
+
+        window.clear(sf::Color(12, 14, 24));
+        window.draw(p1); window.draw(p2); window.draw(ball);
+        if (haveFont) {
+            sf::Text s(font, std::to_string(p1Score) + "   " + std::to_string(p2Score), 40);
+            s.setPosition({360.f, 20.f});
+            window.draw(s);
+        }
+        window.display();
+    }
+}// Complete C++ Pong for SFML 3. Build with:
 //   g++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-system
 #include &lt;SFML/Graphics.hpp&gt;
 #include &lt;optional&gt;
@@ -764,8 +967,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -774,9 +992,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-cpp-pong-v2';
 window.WORKSHOP_PROFILE_ID='cpp-pong-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-cpp-pong-v2';
+window.WORKSHOP_PROFILE_ID='cpp-pong-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 1: Pong","description":"Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/cpp-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 1: Pong","description":"Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/cpp-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>

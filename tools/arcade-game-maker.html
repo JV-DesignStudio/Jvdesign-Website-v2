@@ -152,6 +152,12 @@ a{text-decoration:none;color:inherit;}
 .tab-btn.on{color:var(--purple-lt);border-bottom-color:var(--purple);background:rgba(124,58,237,.1);}
 .tab-icon{font-size:1.15rem;line-height:1;display:block;}
 .tab-lbl{font-size:.48rem;letter-spacing:.06em;display:block;}
+/* Very small phones: tab bar can scroll horizontally if 6 tabs don't fit */
+@media(max-width:360px){
+  .tab-bar{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .tab-bar::-webkit-scrollbar{display:none;}
+  .tab-btn{flex:0 0 56px;min-width:56px;}
+}
 
 /* TAB CONTENT */
 .tab-content{
@@ -1712,6 +1718,10 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
                     <button class="btn-sm" style="flex:2;background:rgba(0,212,170,.12);color:#00d4aa;border-color:rgba(0,212,170,.35);" title="Everyone worldwide gets the same mutations today — compare Daily scores with friends via Result Codes" onclick="_applyDailyChallenge()">📅 Daily Challenge</button>
                     <button class="btn-sm" style="flex:1;" onclick="_clearDailyChallenge()" title="Restore your own settings">✕ Clear</button>
                 </div>
+                <div style="display:flex;gap:6px;margin-top:4px;">
+                    <button class="btn-sm" style="flex:1;font-size:.62rem;" onclick="_showTodayBoard()">🏁 Today's Board</button>
+                    <button class="btn-sm" style="flex:1;font-size:.62rem;" onclick="_showStreakHistory()">🔥 Streak</button>
+                </div>
                 <div style="font-size:.6rem;color:var(--muted);text-align:center;margin-top:3px;">Daily state: <span id="dailyState">off</span></div>
             </div>
 
@@ -2911,6 +2921,15 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                     <input type="checkbox" id="hapticToggle" checked onchange="liveConfig.hapticEnabled=this.checked">
                     <span style="font-size:.8rem;color:var(--text-dim)">📳 Haptic feedback (vibrate on mobile)</span>
                 </label>
+                <div class="form-group" id="hapticIntensityRow" style="margin-bottom:10px;">
+                    <label>Haptics Intensity <span style="color:var(--muted);font-weight:400;">strength of vibrations</span></label>
+                    <div class="pill-row" id="pillHapticIntensity">
+                        <button class="pill" onclick="activePill('pillHapticIntensity',this);liveConfig.hapticIntensity=0.35;_triggerHaptic('hit');">Gentle</button>
+                        <button class="pill active" onclick="activePill('pillHapticIntensity',this);liveConfig.hapticIntensity=1.0;_triggerHaptic('hit');">Normal</button>
+                        <button class="pill" onclick="activePill('pillHapticIntensity',this);liveConfig.hapticIntensity=1.6;_triggerHaptic('hit');">Strong</button>
+                        <button class="pill" onclick="activePill('pillHapticIntensity',this);liveConfig.hapticIntensity=0;liveConfig.hapticEnabled=false;document.getElementById('hapticToggle').checked=false;showToast('Haptics off');">Off</button>
+                    </div>
+                </div>
                 <span class="sec-label">✨ Particles &amp; Effects</span>
                 <div class="form-group">
                     <label>Explosion Style</label>
@@ -4860,7 +4879,7 @@ score += bumper.pts;
             </div>
 
             <!-- INTRO SPLASH -->
-            <div class="intro-overlay" id="introOverlay" tabindex="0" onclick="_introOverlayClick(event)" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();closeIntro();}">
+            <div class="intro-overlay" id="introOverlay" tabindex="0" role="dialog" aria-modal="true" aria-label="Game intro — press Space or tap to start" onclick="_introOverlayClick(event)" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();closeIntro();}">
                 <div class="intro-box">
                     <div class="intro-genre-icon" id="introIcon">🕹️</div>
                     <div class="intro-game-title" id="introGameTitle">My Arcade Game</div>
@@ -4906,7 +4925,7 @@ score += bumper.pts;
             </div>
 
             <!-- GAME OVER / VICTORY -->
-            <div class="go-overlay" id="goOverlay">
+            <div class="go-overlay" id="goOverlay" role="dialog" aria-modal="true" aria-label="Game over — score and leaderboard">
                 <div class="confetti-wrap" id="goConfettiWrap"></div>
                 <div class="go-box">
                     <div class="go-title" id="goTitle">GAME OVER</div>
@@ -4986,7 +5005,7 @@ score += bumper.pts;
             </div>
 
             <!-- Dynamic joystick zone (left 58% of game, touch anywhere to spawn joystick) -->
-            <div id="tc-joy-zone" aria-hidden="true"></div>
+            <div id="tc-joy-zone" role="application" aria-label="Move with touch joystick — drag from anywhere on the left side" aria-hidden="false"></div>
 
             <!-- Pinball split-screen flipper zones (shown only for PINBALL genre) -->
             <div class="pb-flip-zone" id="pb-zone-l" aria-label="Left flipper">
@@ -5027,7 +5046,7 @@ score += bumper.pts;
                 <div style="font-size:.6rem;color:rgba(240,234,214,.25);margin-top:8px;font-family:'Inter',sans-serif;">Try simplifying your code or switching genre</div>
             </div>
 
-            <!-- FPS Counter -->
+            <!-- FPS Counter — enhanced with live entity/particle counts -->
     <div id="fps-counter">
         <div class="fps-metric">
             <span class="fps-label">FPS:</span>
@@ -5036,6 +5055,10 @@ score += bumper.pts;
         <div class="fps-metric" style="font-size:0.65rem;">
             <span class="fps-label">MS:</span>
             <span class="fps-value" id="ms-display">16</span>
+        </div>
+        <div class="fps-metric" style="font-size:0.62rem;border-top:1px solid rgba(255,255,255,.08);padding-top:4px;margin-top:2px;">
+            <span class="fps-label">Ents:</span>
+            <span class="fps-value" id="ents-display" style="color:#a78bfa">0</span>
         </div>
     </div>
 
@@ -5517,6 +5540,7 @@ const liveConfig = {
     powerupTypes: ['speed','shield','magnet','double'],
     weatherEffect: 'none',
     hapticEnabled: true,
+    hapticIntensity: 1.0, // 0.0–1.5 multiplier applied to all vibrate patterns
     // ── Patch3 HUD/Combat/Camera extras ──────────────────────────────────
     countdownEnabled: false,
     startLives: 3,
@@ -6843,12 +6867,13 @@ function _mulberry32(a) {
 function _dailyBadgeUpdate() {
     const el = document.getElementById('dailyState');
     if (!el) return;
+    const s=_getDailyStreak ? _getDailyStreak() : {streak:0};
     if (liveConfig._dailySeed) {
-        el.textContent = 'ON — Daily #' + (liveConfig._dailySeed % 10000);
+        el.textContent = 'ON — Daily #' + (liveConfig._dailySeed % 10000) + (s.streak? ' · 🔥'+s.streak : '');
         el.style.color = '#fbbf24';
     } else {
-        el.textContent = 'off';
-        el.style.color = 'var(--muted)';
+        el.textContent = s.streak? '🔥 '+s.streak+'-day streak' : 'off';
+        el.style.color = s.streak? '#f59e0b' : 'var(--muted)';
     }
 }
 // Sync the Build-tab speed slider after config mutations
@@ -6931,6 +6956,34 @@ function _clearDailyChallenge() {
     try { _syncCustomTabUI(liveConfig); } catch (e) {}
     _dailyBadgeUpdate();
     showToast(hadMods ? '↩ Daily cleared — your settings are back' : 'No daily active');
+}
+function _getDailyStreak(){
+    try{ const v=JSON.parse(localStorage.getItem('jv_daily_streak')||'null'); return v&&typeof v.streak==='number'?v:{streak:0,lastDay:0,history:[]}; }catch(e){ return {streak:0,lastDay:0,history:[]}; }
+}
+function _recordDailyStreak(score){
+    if(!liveConfig._dailySeed) return;
+    const today=daysSinceEpochLocalMaker();
+    let s=_getDailyStreak();
+    if(s.lastDay===today) return; // already recorded today
+    if(s.lastDay===today-1) s.streak++; else s.streak=1;
+    s.lastDay=today;
+    s.history.unshift({day:today, score:score||0, date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})});
+    if(s.history.length>14) s.history.pop();
+    try{ localStorage.setItem('jv_daily_streak', JSON.stringify(s)); }catch(e){}
+    _dailyBadgeUpdate();
+    if(s.streak>=3) showToast('🔥 '+s.streak+'-day streak!', 'success');
+}
+function _showStreakHistory(){
+    const s=_getDailyStreak();
+    let html=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:1.4rem;">🔥</span><div style="flex:1;font-weight:800;color:#f59e0b;">Streak History</div><button class="btn-sm" onclick="document.getElementById('streakModal').remove()">✕</button></div>`;
+    html+= `<div style="text-align:center;padding:6px 0 10px;font-size:1.6rem;font-weight:900;color:${s.streak>=3?'#f59e0b':'var(--muted)'}">${s.streak} day${s.streak===1?'':'s'} 🔥</div>`;
+    if(!s.history.length) html+= `<div style="font-size:.76rem;color:var(--muted);text-align:center;padding:10px;">No history yet — play a Daily Challenge and finish a run to start your streak.</div>`;
+    else html+= `<div style="display:flex;flex-direction:column;gap:4px;">`+s.history.map(h=>`<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;"><span style="font-size:.72rem;color:var(--muted);min-width:70px;">${h.date}</span><span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:#fff;">${Number(h.score).toLocaleString()}</span><span style="font-size:.62rem;background:rgba(245,158,11,.15);color:#fbbf24;border-radius:99px;padding:1px 7px;">Day ${h.day%10000}</span></div>`).join('')+`</div>`;
+    html+= `<div style="margin-top:10px;display:flex;gap:6px;"><button class="btn-sm" style="flex:1" onclick="document.getElementById('streakModal').remove();_showTodayBoard()">🏁 Today's Board</button><button class="btn-sm" style="flex:1" onclick="document.getElementById('streakModal').remove()">Close</button></div>`;
+    const ov=document.createElement('div'); ov.id='streakModal'; ov.style.cssText='position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;';
+    ov.innerHTML=`<div style="background:var(--panel2);border:1px solid rgba(245,158,11,.35);border-radius:16px;padding:20px;width:min(360px,100%);max-height:86vh;overflow-y:auto;">`+html+`</div>`;
+    ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
 }
 
 // ── TODAY'S BOARD: scores friends sent you today ──────────────────────────────
@@ -7530,6 +7583,8 @@ function _initWeather(scene) {
 // ── HAPTIC FEEDBACK ───────────────────────────────────────────────────────────
 function _triggerHaptic(type) {
     if (!liveConfig.hapticEnabled || !navigator.vibrate) return;
+    const intensity = (typeof liveConfig.hapticIntensity === 'number') ? liveConfig.hapticIntensity : 1.0;
+    if (intensity <= 0) return;
     const patterns = {
         hit:     [60],
         kill:    [25],
@@ -7539,7 +7594,9 @@ function _triggerHaptic(type) {
         powerup: [30, 20, 60],
         coin:    [10]
     };
-    try { navigator.vibrate(patterns[type] || [20]); } catch(e) {}
+    let pat = patterns[type] || [20];
+    if (intensity !== 1.0) pat = pat.map(v=> Math.max(5, Math.round(v*intensity)));
+    try { navigator.vibrate(pat); } catch(e) {}
 }
 
 const _GENRE_FIRST_TIPS = {
@@ -8252,8 +8309,16 @@ function _updateFPS() {
 
         const fpsDisplay = document.getElementById('fps-display');
         const msDisplay = document.getElementById('ms-display');
-        if (fpsDisplay) fpsDisplay.textContent = fpsCurrent;
+        const entsDisplay = document.getElementById('ents-display');
+        if (fpsDisplay) { fpsDisplay.textContent = fpsCurrent; fpsDisplay.style.color = fpsCurrent >=55 ? '#4ade80' : fpsCurrent>=40 ? '#fbbf24' : '#f87171'; }
         if (msDisplay) msDisplay.textContent = msPerFrame;
+        if (entsDisplay && currentPhaserGame && currentPhaserGame.scene) {
+            try {
+                let count=0;
+                currentPhaserGame.scene.scenes.forEach(s=>{ if(s.children) count+= s.children.list.length; });
+                entsDisplay.textContent = count;
+            } catch(_e) {}
+        }
 
         fpsFrameCount = 0;
         fpsLastTime = now;
@@ -8523,14 +8588,28 @@ function compileAndBootEngine() {
         return;
     }
     // Guard against rapid re-fires (mashed Run/Restart button or held 'R' key)
-    // racing the transition/boot sequence below.
+    // racing the transition/boot sequence below. 700ms matches the title-screen
+    // transition duration so a double-tap can't queue two boots.
     const _now = Date.now();
-    if (_now - (compileAndBootEngine._lastRun || 0) < 400) return;
+    if (_now - (compileAndBootEngine._lastRun || 0) < 700) return;
     compileAndBootEngine._lastRun = _now;
+    // Visual loading state: disable Run button, show spinner text, add overlay
+    const _runBtn = document.getElementById('runGameBtn');
+    const _mrbRun = document.getElementById('mrb-run');
+    if (_runBtn) { _runBtn.disabled = true; _runBtn.style.opacity = '.72'; _runBtn.style.pointerEvents = 'none'; }
+    if (_mrbRun) { _mrbRun.disabled = true; _mrbRun.style.opacity = '.6'; }
+    // Safely destroy previous Phaser instance before booting next one
+    // (prevents leaked canvases / event listeners when Run is mashed)
+    if (currentPhaserGame) {
+        try { currentPhaserGame.destroy(true); } catch(_e) {}
+        currentPhaserGame = null; window._phaserGame = null;
+        const _gc = document.getElementById('game-container');
+        if (_gc) _gc.innerHTML = '';
+    }
     const data = getPayload();
     _engineData = data;
     // ── Autosave: persist full config (incl. sprites & audio) so it survives a refresh ──
-    try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); } catch(_e) {}
+    try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); } catch(_e) { _handleAutosaveQuotaError(_e); }
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
     // Polish: hide idle placeholder, update branding, kill run-button pulse
     const _idlePh = document.getElementById('idle-placeholder');
@@ -8586,11 +8665,24 @@ function compileAndBootEngine() {
     _speedRunStart = 0;
     clearInterval(_speedRunInterval); _speedRunInterval = null;
     if (_speedRunActive) { const el=document.getElementById('speedRunTime'); if(el) el.textContent='0:00.000'; }
-    // Transition + title screen
+    // Transition + title screen — re-enable Run button once intro is visible
     _gamePaused = false;
     _cameraZoomApplied = false;
     const _pmReset = document.getElementById('pauseMenu'); if (_pmReset) _pmReset.style.display='none';
-    _runTransitionOut(()=>_showTitleScreen(data));
+    _runTransitionOut(()=>{
+        _showTitleScreen(data);
+        const _rb2 = document.getElementById('runGameBtn');
+        if (_rb2) { _rb2.disabled = false; _rb2.style.opacity = ''; _rb2.style.pointerEvents = ''; }
+        const _mrb2 = document.getElementById('mrb-run');
+        if (_mrb2) { _mrb2.disabled = false; _mrb2.style.opacity = ''; }
+    });
+    // Failsafe: if transition callback never fires, re-enable after 2.5s
+    setTimeout(()=>{
+        const _rb3 = document.getElementById('runGameBtn');
+        if (_rb3 && _rb3.disabled) { _rb3.disabled = false; _rb3.style.opacity = ''; _rb3.style.pointerEvents = ''; }
+        const _mrb3 = document.getElementById('mrb-run');
+        if (_mrb3 && _mrb3.disabled) { _mrb3.disabled = false; _mrb3.style.opacity = ''; }
+    }, 2500);
     
 }
 function _showTitleScreen(data) {
@@ -8624,13 +8716,34 @@ function _showTitleScreen(data) {
         _introBox.style.boxShadow = `0 0 48px ${_tc}22, 0 20px 60px rgba(0,0,0,.55)`;
     }
     // Focus the overlay so SPACE works immediately without clicking first
-    document.getElementById('introOverlay').focus();
+    const _introEl = document.getElementById('introOverlay');
+    _introEl.focus();
+    _a11yTrapFocus(_introEl);
+    // Any key (SPACE/ENTER) also starts — players often hammer keys expecting instant skip
+    _introEl.onkeydown = (e) => {
+        if (e.code === 'Space' || e.code === 'Enter' || e.key === ' ') { e.preventDefault(); closeIntro(); }
+        if (e.key === 'Escape') { e.preventDefault(); closeIntro(); }
+    };
     if (window._shareAutoStart) { window._shareAutoStart = false; _autoCloseIntro(); }
 }
 function _introOverlayClick(e) {
     // Don't dismiss if the actual Start button was clicked (it calls closeIntro itself)
     if (e.target.closest('.btn-run')) return;
     closeIntro();
+}
+// ── A11Y focus trap for intro / game-over dialogs ───────────────────────────
+function _a11yTrapFocus(container) {
+    const focusable = container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length-1];
+    function handler(e){
+        if(e.key!=='Tab' || !container.classList.contains('show')) return;
+        if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+    container._trapHandler && container.removeEventListener('keydown', container._trapHandler);
+    container._trapHandler = handler;
+    container.addEventListener('keydown', handler);
 }
 function _launchPhaserGame() {
     const data = _engineData;
@@ -14489,18 +14602,27 @@ function importSpriteFromCharacterDesigner() {
 }
 function importSpriteFromUpload(input) {
     const file=input.files[0]; if(!file) return;
-    const r=new FileReader(); r.onload=e=>_applySpriteDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+    if (file.size > 2_800_000) { showToast('⚠️ Image too large ('+(file.size/1024/1024).toFixed(1)+' MB) — try a smaller PNG (≤512×512)', 'error', 5000); input.value=''; return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ That file is not an image — use PNG/JPG', 'error'); input.value=''; return; }
+    const r=new FileReader(); r.onload=e=>_applySpriteDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read that file', 'error'); r.readAsDataURL(file);
 }
 function _applySpriteDataUrl(url, label, frameCount, frameW) {
+    // Validate data URL size (post-encode bloat ~33%)
+    const kb = Math.round(url.length*0.75/1024);
+    if (kb > 2200) showToast('⚠️ Sprite large (~'+kb+' KB) — may hit storage limit. Consider a smaller image.', 'warn', 5000);
     customSpriteDataUrl    = url;
-    // Multi-frame animation: caller passes frameCount/frameW; otherwise reset to still
     customSpriteFrameCount = frameCount || 1;
     customSpriteFrameW     = frameW     || 0;
     const th=document.getElementById('spriteThumb'); th.innerHTML='';
-    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
-    document.getElementById('spriteInfoName').textContent=label;
+    const img=new Image();
+    img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;';
+        if (img.naturalWidth>1024 || img.naturalHeight>1024) showToast('⚠️ Image big ('+img.naturalWidth+'×'+img.naturalHeight+') — will be downscaled in-game', 'warn');
+    };
+    img.onerror=()=>{ th.innerHTML='<div class="no-art" style="color:#f87171">⚠ load failed</div>'; document.getElementById('spriteStatus').textContent='⚠ Image failed to load — try another PNG'; document.getElementById('spriteStatus').className='asset-status err'; showToast('⚠️ Image failed to load — try another file', 'error'); customSpriteDataUrl=null; };
+    img.src=url;
+    document.getElementById('spriteInfoName').textContent=label + (kb? ' · '+kb+' KB':'');
     document.getElementById('spriteInfoDesc').textContent='Custom sprite ready, hit Run!';
-    document.getElementById('spriteStatus').textContent='✓ Sprite ready';
+    document.getElementById('spriteStatus').textContent='✓ Sprite ready ('+kb+' KB)';
     document.getElementById('spriteStatus').className='asset-status ok';
     showToast('✓ Sprite imported! Hit ▶ Run', 'success');
 }
@@ -14519,15 +14641,21 @@ function importEnemySprite() {
 }
 function importEnemyFromUpload(input) {
     const file=input.files[0]; if(!file) return;
-    const r=new FileReader(); r.onload=e=>_applyEnemyDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+    if (file.size > 2_800_000) { showToast('⚠️ Image too large — try ≤512×512 PNG', 'error'); input.value=''; return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ Not an image — use PNG/JPG', 'error'); input.value=''; return; }
+    const r=new FileReader(); r.onload=e=>_applyEnemyDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read file', 'error'); r.readAsDataURL(file);
 }
 function _applyEnemyDataUrl(url, label) {
+    const kb=Math.round(url.length*0.75/1024);
     customEnemyDataUrl=url;
     const th=document.getElementById('enemyThumb'); th.innerHTML='';
-    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
-    document.getElementById('enemyInfoName').textContent=label;
+    const img=new Image();
+    img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; if(img.naturalWidth>1024||img.naturalHeight>1024) showToast('⚠️ Enemy image big — will be downscaled', 'warn'); };
+    img.onerror=()=>{ th.innerHTML='<div class="no-art" style="color:#f87171">⚠ load failed</div>'; showToast('⚠️ Enemy image failed to load', 'error'); customEnemyDataUrl=null; };
+    img.src=url;
+    document.getElementById('enemyInfoName').textContent=label + (kb? ' · '+kb+' KB':'');
     document.getElementById('enemyInfoDesc').textContent='Custom enemy ready, hit Run!';
-    document.getElementById('enemyStatus').textContent='✓ Enemy sprite ready';
+    document.getElementById('enemyStatus').textContent='✓ Enemy sprite ready ('+kb+' KB)';
     document.getElementById('enemyStatus').className='asset-status ok';
     showToast('Enemy sprite imported! ▶ Hit Run');
 }
@@ -14555,15 +14683,21 @@ function importBulletFromPixelStudio() {
 }
 function importBulletFromUpload(input) {
     const file=input.files[0]; if(!file) return;
-    const r=new FileReader(); r.onload=e=>_applyBulletDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+    if (file.size > 2_800_000) { showToast('⚠️ Image too large — try ≤512×512 PNG', 'error'); input.value=''; return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ Not an image', 'error'); input.value=''; return; }
+    const r=new FileReader(); r.onload=e=>_applyBulletDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read file', 'error'); r.readAsDataURL(file);
 }
 function _applyBulletDataUrl(url, label) {
+    const kb=Math.round(url.length*0.75/1024);
     customBulletDataUrl=url;
     const th=document.getElementById('bulletThumb'); th.innerHTML='';
-    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
-    document.getElementById('bulletInfoName').textContent=label;
+    const img=new Image();
+    img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; };
+    img.onerror=()=>{ th.innerHTML='<div class="no-art" style="color:#f87171">⚠ load failed</div>'; showToast('⚠️ Bullet image failed to load', 'error'); customBulletDataUrl=null; };
+    img.src=url;
+    document.getElementById('bulletInfoName').textContent=label + (kb? ' · '+kb+' KB':'');
     document.getElementById('bulletInfoDesc').textContent='Custom bullet ready, hit Run!';
-    document.getElementById('bulletStatus').textContent='✓ Bullet ready';
+    document.getElementById('bulletStatus').textContent='✓ Bullet ready ('+kb+' KB)';
     document.getElementById('bulletStatus').className='asset-status ok';
     showToast('Bullet sprite imported! ▶ Hit Run');
 }
@@ -14591,15 +14725,21 @@ function importBlockFromPixelStudio() {
 }
 function importBlockFromUpload(input) {
     const file=input.files[0]; if(!file) return;
-    const r=new FileReader(); r.onload=e=>_applyBlockDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+    if (file.size > 2_800_000) { showToast('⚠️ Image too large — try ≤512×512 PNG', 'error'); input.value=''; return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ Not an image', 'error'); input.value=''; return; }
+    const r=new FileReader(); r.onload=e=>_applyBlockDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read file', 'error'); r.readAsDataURL(file);
 }
 function _applyBlockDataUrl(url, label) {
+    const kb=Math.round(url.length*0.75/1024);
     customBlockDataUrl=url;
     const th=document.getElementById('blockThumb'); th.innerHTML='';
-    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
-    document.getElementById('blockInfoName').textContent=label;
+    const img=new Image();
+    img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; };
+    img.onerror=()=>{ th.innerHTML='<div class="no-art" style="color:#f87171">⚠ load failed</div>'; showToast('⚠️ Tile image failed to load', 'error'); customBlockDataUrl=null; };
+    img.src=url;
+    document.getElementById('blockInfoName').textContent=label + (kb? ' · '+kb+' KB':'');
     document.getElementById('blockInfoDesc').textContent='Custom tile ready, hit Run!';
-    document.getElementById('blockStatus').textContent='✓ Tile ready';
+    document.getElementById('blockStatus').textContent='✓ Tile ready ('+kb+' KB)';
     document.getElementById('blockStatus').className='asset-status ok';
     showToast('Tile/block sprite imported! ▶ Hit Run');
 }
@@ -14615,15 +14755,21 @@ function clearBlockSprite() {
 // ── BACKGROUND IMAGE ──────────────────────────────────────────────────────────
 function importBgFromUpload(input) {
     const file=input.files[0]; if(!file) return;
-    const r=new FileReader(); r.onload=e=>_applyBgDataUrl(e.target.result,file.name); r.readAsDataURL(file);
+    if (file.size > 3_500_000) { showToast('⚠️ Background too large — try ≤800×600 JPG', 'error'); input.value=''; return; }
+    if (!file.type.startsWith('image/')) { showToast('⚠️ Not an image', 'error'); input.value=''; return; }
+    const r=new FileReader(); r.onload=e=>_applyBgDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read file', 'error'); r.readAsDataURL(file);
 }
 function _applyBgDataUrl(url, label) {
+    const kb=Math.round(url.length*0.75/1024);
     customBgDataUrl=url;
     const th=document.getElementById('bgThumb'); th.innerHTML='';
-    const img=new Image(); img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; }; img.src=url;
-    document.getElementById('bgInfoName').textContent=label;
+    const img=new Image();
+    img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;object-fit:cover;'; if(img.naturalWidth>1280||img.naturalHeight>1280) showToast('⚠️ Background big — will be downscaled', 'warn'); };
+    img.onerror=()=>{ th.innerHTML='<div class="no-art" style="color:#f87171">⚠ load failed</div>'; showToast('⚠️ Background failed to load', 'error'); customBgDataUrl=null; };
+    img.src=url;
+    document.getElementById('bgInfoName').textContent=label + (kb? ' · '+kb+' KB':'');
     document.getElementById('bgInfoDesc').textContent='Custom background ready, hit Run!';
-    document.getElementById('bgStatus').textContent='✓ Background ready';
+    document.getElementById('bgStatus').textContent='✓ Background ready ('+kb+' KB)';
     document.getElementById('bgStatus').className='asset-status ok';
     showToast('Background imported! ▶ Hit Run');
 }
@@ -15927,6 +16073,14 @@ function _captureGameThumbnail() {
     } catch(e) { return null; }
 }
 
+function _handleAutosaveQuotaError(e) {
+    const isQuota = e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || /quota/i.test(e.message||''));
+    if (isQuota) {
+        showToast('⚠️ Storage full — custom art too large. Try clearing a save slot or removing custom backgrounds.', 'warn', 6000);
+        // Offer one-tap clear for autosave
+        setTimeout(()=>{ if(confirm('Storage is full (custom art/audio too large). Clear the oldest autosave to free space?')){ try{ localStorage.removeItem('jv_arcade_autosave'); localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); showToast('Autosave cleared — try saving again', 'success'); }catch(_e2){ showToast('Still full — clear a manual slot or remove custom art', 'error'); } }}, 400);
+    }
+}
 function saveToSlot(slotIdx, silent=false) {
     try {
         const data = _buildSaveData();
@@ -15935,7 +16089,11 @@ function saveToSlot(slotIdx, silent=false) {
         renderSaveSlots();
         if (!silent) showToast(`Slot ${slotIdx+1} saved, "${data.title}" ✓`, 'success');
     } catch(e) {
-        if (!silent) showToast('Save failed, game may be too large (sprites/audio)', 'error');
+        if (!silent) {
+            const isQuota = e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message||''));
+            if (isQuota) showToast('⚠️ Storage full — remove custom art/audio or clear a slot, then try again', 'error', 5000);
+            else showToast('Save failed, game may be too large (sprites/audio)', 'error');
+        }
     }
 }
 
@@ -16096,7 +16254,7 @@ function _scheduleAutoSave() {
     clearTimeout(_autoSaveTimer);
     _autoSaveTimer = setTimeout(() => {
         // Write to hidden key so autosave never clobbers user-created slots
-        try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); _flashAutosaveBadge(); } catch(e) {}
+        try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); _flashAutosaveBadge(); } catch(e) { _handleAutosaveQuotaError(e); }
     }, 2500);
 }
 
@@ -16665,6 +16823,8 @@ function showGameOver(score) {
         const _lcKey = '_' + _goPendingGenre.toLowerCase() + 'Best';
         if (liveConfig[_lcKey] !== undefined && score > liveConfig[_lcKey]) liveConfig[_lcKey] = score;
     } catch(_e) {}
+    // ── Daily streak: record if this run was a Daily Challenge ───────────────
+    try { if(liveConfig._dailySeed) _recordDailyStreak(score); } catch(_e2){}
 
     document.getElementById('goScore').textContent = 'Score: ' + score;
 
@@ -16846,7 +17006,9 @@ function showGameOver(score) {
 
     // Play 'after' cutscene before showing game over screen
     _maybeCutscene('after', () => {
-        document.getElementById('goOverlay').classList.add('show');
+        const goEl = document.getElementById('goOverlay');
+        goEl.classList.add('show');
+        _a11yTrapFocus(goEl);
         // Only auto-focus initials on non-touch devices, on mobile, focus()
         // triggers the keyboard which obscures the game-over screen.
         const _isTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
@@ -17219,7 +17381,7 @@ function setupTouchControls() {
         if (!zone || !joy || !knob || !wrap) return;
 
         const R  = 62;   // base radius (half of 124px)
-        const DR = 18;   // dead-zone, must exceed to register a direction
+        const DR = 12;   // dead-zone — tuned for quick response without drift (was 18)
         let _joyId = -1, _cx = 0, _cy = 0;
 
         function _joyShow(clientX, clientY) {

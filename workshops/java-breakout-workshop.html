@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -208,15 +254,62 @@
 
     public void actionPerformed(ActionEvent e) { update(); repaint(); }
     void update() {}
+}public class GamePanel extends JPanel
+        implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 520));
+        setBackground(new Color(15, 18, 32));
+        addKeyListener(this);
+        setFocusable(true);
+        timer.start();
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+    void update() {}
 }</pre>
   </div><div class="callout tip"><div class="callout-icon">💡</div><div>Notice how fast setup is the second time? That JFrame + GamePanel + Timer pattern is your reusable game template for the whole series.</div></div>
 
       <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
-        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 700×520 for Breakout in <code>setPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Main</code>. Every step below adds to this file.</p>
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template , the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 700×520 for Breakout in <code>setPreferredSizesetPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Mainjavac Main.java && java Main</code>. Every step below adds to this file.</p>
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
           <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 520));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}// The starting template every game in this series uses.
 // Save as Main.java, then run:  javac Main.java   and   java Main
 import javax.swing.*;
 import java.awt.*;
@@ -302,11 +395,24 @@ class GamePanel extends JPanel implements ActionListener {
       <ul class="steps-list">
         <li><span class="num-badge">1</span><span>Add paddle variables: <strong>padX</strong>, plus fixed width 110, height 14, near the bottom (y = 470).</span></li>
         <li><span class="num-badge">2</span><span>Move it in update() while an arrow key is held, exactly like the platformer player.</span></li>
-        <li><span class="num-badge">3</span><span>Clamp it: never let padX go below 0 or beyond <strong>700 - padWidth</strong>.</span></li>
+        <li><span class="num-badge">3</span><span>Clamp it: never let padX go below 0 or beyond <strong>700, padWidth</strong>.</span></li>
         <li><span class="num-badge">4</span><span>Draw it as a rounded orange rectangle with <strong>fillRoundRect</strong>.</span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
     <pre class="code-pre">    int padX = 295, padW = 110, padH = 14;
+    boolean leftHeld, rightHeld;
+
+    void update() {
+        if (leftHeld)  padX -= 7;
+        if (rightHeld) padX += 7;
+        padX = Math.max(0, Math.min(700 - padW, padX));
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(new Color(255, 119, 0));
+        g.fillRoundRect(padX, 470, padW, padH, 8, 8);
+    }    int padX = 295, padW = 110, padH = 14;
     boolean leftHeld, rightHeld;
 
     void update() {
@@ -331,7 +437,7 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="cc-prompt">Stop the paddle sliding off the screen. Fill in the clamp:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">padX = Math.<input class="cc-blank" data-a="bWF4" placeholder="???" size="4">(0, Math.<input class="cc-blank" data-a="bWlu" placeholder="???" size="4">(700 - padW, padX));</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">padX = Math.padX = Math.<input class="cc-blank" data-a="bWF4" placeholder="???" size="4">(0, Math.(0, Math.<input class="cc-blank" data-a="bWlu" placeholder="???" size="4">(700 - padW, padX));(700 - padW, padX));</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -382,6 +488,23 @@ class GamePanel extends JPanel implements ActionListener {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
     <pre class="code-pre">    int bx = 340, by = 300, bs = 14;
+    int bvx = 4, bvy = -4;
+
+    void update() {
+        // ... paddle code ...
+        bx += bvx;  by += bvy;
+        if (bx &lt;= 0 || bx + bs &gt;= 700) bvx = -bvx;   // side walls
+        if (by &lt;= 0) bvy = -bvy;                     // ceiling
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        Rectangle pad  = new Rectangle(padX, 470, padW, padH);
+        if (ball.intersects(pad) &amp;&amp; bvy &gt; 0) {
+            bvy = -bvy;
+            int hit = (bx + bs/2) - (padX + padW/2);
+            bvx = hit / 12;              // steer with the paddle!
+            if (bvx == 0) bvx = 1;
+        }
+    }    int bx = 340, by = 300, bs = 14;
     int bvx = 4, bvy = -4;
 
     void update() {
@@ -470,6 +593,21 @@ class GamePanel extends JPanel implements ActionListener {
             if (bricks[r][c]) {
                 g.setColor(rowColors[r]);
                 g.fillRect(c*68 + 12, r*26 + 50, 64, 22);
+            }    boolean[][] bricks = new boolean[5][10];
+    Color[] rowColors = { new Color(248,113,113), new Color(251,146,60),
+        new Color(250,204,21), new Color(74,222,128), new Color(96,165,250) };
+
+    // in constructor:
+    for (int r = 0; r &lt; 5; r++)
+        for (int c = 0; c &lt; 10; c++)
+            bricks[r][c] = true;
+
+    // in paintComponent:
+    for (int r = 0; r &lt; 5; r++)
+        for (int c = 0; c &lt; 10; c++)
+            if (bricks[r][c]) {
+                g.setColor(rowColors[r]);
+                g.fillRect(c*68 + 12, r*26 + 50, 64, 22);
             }</pre>
   </div>
 
@@ -482,9 +620,11 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="cc-prompt">Complete the nested loop that walks every brick in the grid:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">for (int r = 0; r &lt; <input class="cc-blank" data-a="NQ==" placeholder="?" size="4">; r++)
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">for (int r = 0; r &lt; for (int r = 0; r &lt; <input class="cc-blank" data-a="NQ==" placeholder="?" size="4">; r++)
+    for (int c = 0; c &lt; ; r++)
     for (int c = 0; c &lt; <input class="cc-blank" data-a="MTA=" placeholder="??" size="4">; c++)
-        bricks[r][c] = <input class="cc-blank" data-a="dHJ1ZQ==" placeholder="????" size="5">;</pre>
+        bricks[r][c] = ; c++)
+        bricks[r][c] = <input class="cc-blank" data-a="dHJ1ZQ==" placeholder="????" size="5">;;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -534,6 +674,19 @@ class GamePanel extends JPanel implements ActionListener {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java (update)</span></div>
     <pre class="code-pre">    int score = 0;
+
+    outer:
+    for (int r = 0; r &lt; 5; r++)
+        for (int c = 0; c &lt; 10; c++)
+            if (bricks[r][c]) {
+                Rectangle brick = new Rectangle(c*68 + 12, r*26 + 50, 64, 22);
+                if (ball.intersects(brick)) {
+                    bricks[r][c] = false;
+                    score += (5 - r) * 10;
+                    bvy = -bvy;
+                    break outer;   // one brick per frame
+                }
+            }    int score = 0;
 
     outer:
     for (int r = 0; r &lt; 5; r++)
@@ -621,6 +774,24 @@ class GamePanel extends JPanel implements ActionListener {
             for (int c = 0; c &lt; 10; c++)
                 if (bricks[r][c]) alive++;
         if (alive == 0) won = true;
+    }    int lives = 3;
+    boolean gameOver = false, won = false;
+
+    void update() {
+        if (gameOver || won) return;    // freeze the game
+        // ... all previous code ...
+
+        if (by &gt; 520) {                 // ball lost!
+            lives--;
+            bx = 340; by = 300; bvx = 4; bvy = -4;
+            if (lives == 0) gameOver = true;
+        }
+
+        int alive = 0;
+        for (int r = 0; r &lt; 5; r++)
+            for (int c = 0; c &lt; 10; c++)
+                if (bricks[r][c]) alive++;
+        if (alive == 0) won = true;
     }</pre>
   </div>
 
@@ -634,9 +805,13 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (by &gt; 520) {
+    livesif (by &gt; 520) {
     lives<input class="cc-blank" data-a="LS0=" placeholder="??" size="4">;
     bx = 340; by = 300;
-    if (lives == <input class="cc-blank" data-a="MA==" placeholder="?" size="4">) gameOver = <input class="cc-blank" data-a="dHJ1ZQ==" placeholder="????" size="5">;
+    if (lives == ;
+    bx = 340; by = 300;
+    if (lives == <input class="cc-blank" data-a="MA==" placeholder="?" size="4">) gameOver = ) gameOver = <input class="cc-blank" data-a="dHJ1ZQ==" placeholder="????" size="5">;
+};
 }</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -664,11 +839,138 @@ class GamePanel extends JPanel implements ActionListener {
   </div>
 
   <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout — all 6 steps assembled</summary>
-    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A clamped paddle, a bouncing ball with paddle-spin steering, a colour-banded brick wall, break-and-score, three lives and win/lose screens — one runnable file. Save as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Breakout , all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">A clamped paddle, a bouncing ball with paddle-spin steering, a colour-banded brick wall, break-and-score, three lives and win/lose screens , one runnable file. Save as <code>Main.javaMain.java</code>, run <code>javac Main.java && java Mainjavac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
       <pre class="code-pre">// Complete Java Breakout. Run with:  javac Main.java  then  java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
+import java.util.ArrayList;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Brick Breaker");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+    Color[] rowColours = {
+        new Color(248,113,113), new Color(251,146,60), new Color(250,204,21),
+        new Color(74,222,128), new Color(96,165,250)
+    };
+
+    int padX = 295, padW = 110, padH = 14;
+    int bx = 340, by = 300, bs = 14, bvx = 4, bvy = -4;
+    boolean leftHeld, rightHeld;
+    int score = 0, lives = 3;
+    String state = "PLAY";           // PLAY / WIN / LOSE
+    List&lt;Rectangle&gt; bricks = new ArrayList&lt;&gt;();
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(700, 520));
+        setBackground(new Color(15, 18, 32));
+        addKeyListener(this);
+        setFocusable(true);
+        buildBricks();
+        timer.start();
+    }
+
+    void buildBricks() {
+        bricks.clear();
+        for (int row = 0; row &lt; 5; row++)
+            for (int col = 0; col &lt; 10; col++)
+                bricks.add(new Rectangle(col*68 + 12, row*26 + 50, 64, 22));
+    }
+    int rowOf(Rectangle b) { return (b.y - 50) / 26; }
+
+    void serve() { bx = 343; by = 300; bvx = 4; bvy = -4; }
+
+    void reset() {
+        padX = 295; score = 0; lives = 3; state = "PLAY";
+        buildBricks(); serve();
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+
+    void update() {
+        if (!state.equals("PLAY")) return;
+
+        if (leftHeld)  padX -= 7;
+        if (rightHeld) padX += 7;
+        padX = Math.max(0, Math.min(700 - padW, padX));
+
+        bx += bvx; by += bvy;
+        if (bx &lt;= 0 || bx + bs &gt;= 700) bvx = -bvx;
+        if (by &lt;= 0) bvy = -bvy;
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        Rectangle pad  = new Rectangle(padX, 470, padW, padH);
+        if (ball.intersects(pad) &amp;&amp; bvy &gt; 0) {
+            bvy = -bvy;
+            int hit = (bx + bs/2) - (padX + padW/2);
+            bvx = hit / 12;
+            if (bvx == 0) bvx = 1;
+        }
+
+        for (int i = 0; i &lt; bricks.size(); i++) {
+            Rectangle brick = bricks.get(i);
+            if (ball.intersects(brick)) {
+                score += (5 - rowOf(brick)) * 10;
+                bvy = -bvy;
+                bricks.remove(i);
+                break;
+            }
+        }
+
+        if (by - bs &gt; 520) {
+            lives--;
+            if (lives &lt;= 0) state = "LOSE";
+            else serve();
+        }
+        if (bricks.isEmpty()) state = "WIN";
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        for (Rectangle b : bricks) {
+            g.setColor(rowColours[rowOf(b) % rowColours.length]);
+            g.fillRect(b.x, b.y, b.width, b.height);
+        }
+        g.setColor(new Color(255, 119, 0));
+        g.fillRoundRect(padX, 470, padW, padH, 8, 8);
+        g.setColor(Color.WHITE);
+        g.fillOval(bx, by, bs, bs);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + score, 16, 26);
+        g.drawString("Lives: " + Math.max(0, lives), 590, 26);
+        if (!state.equals("PLAY")) {
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            g.drawString(state.equals("WIN") ? "YOU WIN!" : "GAME OVER", 200, 250);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 270, 290);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
+        if (e.getKeyCode() == KeyEvent.VK_R &amp;&amp; !state.equals("PLAY")) reset();
+    }
+    public void keyReleased(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
+        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}// Complete Java Breakout. Run with:  javac Main.java  then  java Main
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -870,8 +1172,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -880,9 +1197,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-breakout-v2';
 window.WORKSHOP_PROFILE_ID='java-breakout-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-java-breakout-v2';
+window.WORKSHOP_PROFILE_ID='java-breakout-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 2: Brick Breaker","description":"Build the classic Breakout brick-smashing game in Java. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-breakout-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 2: Brick Breaker","description":"Build the classic Breakout brick-smashing game in Java. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-breakout-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 </script>
 </body>

@@ -39,6 +39,23 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
 .float-cheat-btn .fcs-label{display:none;}
 @media(min-width:540px){.float-cheat-btn .fcs-label{display:inline;}}
 @media print{.float-cheat-btn,.step-time{display:none!important;}}
+
+body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
+.hero{padding:40px 20px 36px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#000d1a 0%,#04080f 100%)}.hero-inner{max-width:1100px;margin:0 auto}.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.3);color:var(--accent);font-size:.75rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:20px;margin-bottom:12px}
+.code-wrap{background:#020c14;border:1px solid rgba(14,165,233,.15);border-radius:12px;margin:12px 0;overflow:hidden}.code-label{background:var(--asphalt);padding:6px 14px;font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}.code-label .dot{width:8px;height:8px;border-radius:50%}.dot-r{background:#f87171}.dot-y{background:#ffd166}.dot-g{background:#06d6a0}.code-body{padding:14px 16px;font-family:'JetBrains Mono','Courier New',monospace;font-size:.82rem;line-height:1.7;overflow-x:auto;white-space:pre;color:#c9d1e0}.kw{color:#38bdf8}.fn{color:#60a5fa}.str{color:#ffd166}.num{color:#f87171}.cmt{color:#2d4a5e;font-style:italic}.var{color:#06d6a0}.prop{color:#f08050}
+/* ── CODE CHALLENGE ── */
+/* ── CONCEPT FILL ── */
+/* ── TRUE/FALSE ── */
+.copy-btn{margin-left:auto;flex-shrink:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(232,234,242,.4);font-size:.62rem;font-weight:700;font-family:'Inter',sans-serif;padding:2px 8px;border-radius:5px;cursor:pointer;transition:all .15s;text-transform:none;letter-spacing:0;}
+.copy-btn:hover{background:rgba(255,255,255,.14);color:#fff;}
+.copy-btn.copied{background:rgba(6,214,160,.18);border-color:rgba(6,214,160,.35);color:#06d6a0;}
+@media print{.copy-btn{display:none!important;}}
+.step-time{display:inline-block;font-size:.63rem;font-weight:700;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:1px 7px;margin-top:5px;letter-spacing:.02em;}
+.float-cheat-btn{position:fixed;bottom:22px;right:20px;z-index:999;display:flex;align-items:center;gap:6px;background:rgba(4,8,20,.93);backdrop-filter:blur(12px);border:1px solid rgba(0,180,255,.3);color:#00b4ff;font-size:.8rem;font-weight:700;padding:10px 14px;border-radius:12px;text-decoration:none;box-shadow:0 4px 24px rgba(0,0,0,.5);transition:all .18s;}
+.float-cheat-btn:hover{background:rgba(0,180,255,.14);border-color:rgba(0,180,255,.55);transform:translateY(-2px);}
+.float-cheat-btn .fcs-label{display:none;}
+@media(min-width:540px){.float-cheat-btn .fcs-label{display:inline;}}
+@media print{.float-cheat-btn,.step-time{display:none!important;}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
@@ -88,6 +105,28 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -106,6 +145,22 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -261,7 +316,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
     <div class="big-goal-icon">📊</div>
     <div class="big-goal-text">
       <strong>Goal: Gold, XP and Quest tracking</strong>
-      <p>We'll use the <code>leaderstats</code> folder so Roblox shows our stats on the leaderboard automatically.</p>
+      <p>We'll use the <code>leaderstatsleaderstats</code> folder so Roblox shows our stats on the leaderboard automatically.</p>
     </div>
   </div>
 
@@ -489,7 +544,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
     </div>
     <div class="tf-item" data-a="dHJ1ZQ==">
-      <div class="tf-statement"><code>task.wait(3)</code> pauses the script for 3 seconds before showing the next line.</div>
+      <div class="tf-statement"><code>task.wait(3)task.wait(3)</code> pauses the script for 3 seconds before showing the next line.</div>
       <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
     </div>
     <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
@@ -574,7 +629,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
     <li><span class="num-badge">7</span>Scatter them around the Ruins behind pillars, on ledges, hidden in corners</li>
   </ol>
 
-  <div class="callout warn"><span class="callout-icon">⚠️</span><div>Each Crystal has its own script with its own <code>collected</code> variable, so they work independently. Don't put one shared script outside it won't know which crystal was touched.</div></div>
+  <div class="callout warn"><span class="callout-icon">⚠️</span><div>Each Crystal has its own script with its own <code>collectedcollected</code> variable, so they work independently. Don't put one shared script outside it won't know which crystal was touched.</div></div>
 
   <!-- CODE CHALLENGE -->
   <div class="code-challenge" id="cc-5" data-step="5">
@@ -598,7 +653,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="quiz-title">Knowledge Check</div>
       <div class="quiz-xp-badge">+15 XP</div>
     </div>
-    <div class="quiz-question">Why does each Crystal have its <strong>own script</strong> with its own <code>collected</code> variable?</div>
+    <div class="quiz-question">Why does each Crystal have its <strong>own script</strong> with its own <code>collectedcollected</code> variable?</div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>So all crystals disappear at the same time</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Because Roblox only allows one script per model</span></div>
@@ -674,7 +729,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="pc-title">Predict What Happens</div>
       <div class="pc-xp-badge">+15 XP</div>
     </div>
-    <div class="pc-scenario">The player has collected 4 crystals. They touch the 5th crystal. The script sets <code>ActiveQuest</code> to <strong>"ReturnToElder"</strong>.<br><br><strong>What will the Quest Tracker display?</strong></div>
+    <div class="pc-scenario">The player has collected 4 crystals. They touch the 5th crystal. The script sets <code>ActiveQuestActiveQuest</code> to <strong>"ReturnToElder"</strong>.<br><br><strong>What will the Quest Tracker display?</strong></div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>"💎 Crystals: 5 / 5"</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>"🧙 Return to the Elder!"</span></div>
@@ -691,7 +746,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="quiz-title">Knowledge Check</div>
       <div class="quiz-xp-badge">+15 XP</div>
     </div>
-    <div class="quiz-question">What event fires the <code>updateQuest</code> function every time a player attribute changes?</div>
+    <div class="quiz-question">What event fires the <code>updateQuestupdateQuest</code> function every time a player attribute changes?</div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>player.AttributeChanged</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>player.CharacterAdded</span></div>
@@ -869,7 +924,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
     <span class="kw">local</span> <span class="var">nearest</span>, <span class="var">minDist</span> = <span class="kw">nil</span>, <span class="fn">math</span>.<span class="fn">huge</span>
     <span class="kw">for</span> _, <span class="var">p</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">Players</span>:<span class="fn">GetPlayers</span>()) <span class="kw">do</span>
         <span class="kw">if</span> <span class="var">p</span>.<span class="prop">Character</span> <span class="kw">then</span>
-            <span class="kw">local</span> <span class="var">d</span> = (<span class="var">body</span>.<span class="prop">Position</span> - <span class="var">p</span>.<span class="prop">Character</span>.<span class="prop">HumanoidRootPart</span>.<span class="prop">Position</span>).<span class="prop">Magnitude</span>
+            <span class="kw">local</span> <span class="var">d</span> = (<span class="var">body</span>.<span class="prop">Position</span>, <span class="var">p</span>.<span class="prop">Character</span>.<span class="prop">HumanoidRootPart</span>.<span class="prop">Position</span>).<span class="prop">Magnitude</span>
             <span class="kw">if</span> <span class="var">d</span> < <span class="var">minDist</span> <span class="kw">then</span> <span class="var">nearest</span> = <span class="var">p</span>.<span class="prop">Character</span>; <span class="var">minDist</span> = <span class="var">d</span> <span class="kw">end</span>
         <span class="kw">end</span>
     <span class="kw">end</span>
@@ -879,7 +934,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
 <span class="kw">end</span>)</div>
   </div>
 
-  <div class="callout warn"><span class="callout-icon">⚠️</span><div>The boss needs a <strong>Humanoid</strong> to use <code>MoveTo</code>. Without it the movement won't work. Make sure Humanoid is directly inside BossBody (the Part), not in the Model.</div></div>
+  <div class="callout warn"><span class="callout-icon">⚠️</span><div>The boss needs a <strong>Humanoid</strong> to use <code>MoveToMoveTo</code>. Without it the movement won't work. Make sure Humanoid is directly inside BossBody (the Part), not in the Model.</div></div>
 
   <!-- TRUE/FALSE -->
   <div class="tf-round" id="tf-8" data-step="8">
@@ -889,7 +944,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="tf-xp-badge">+15 XP</div>
     </div>
     <div class="tf-item" data-a="dHJ1ZQ==">
-      <div class="tf-statement">The boss needs a <strong>Humanoid</strong> inside BossBody for <code>MoveTo</code> to work.</div>
+      <div class="tf-statement">The boss needs a <strong>Humanoid</strong> inside BossBody for <code>MoveToMoveTo</code> to work.</div>
       <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
     </div>
     <div class="tf-item" data-a="ZmFsc2U=">
@@ -897,7 +952,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
     </div>
     <div class="tf-item" data-a="dHJ1ZQ==">
-      <div class="tf-statement"><code>RunService.Heartbeat</code> runs code every single frame, so the boss constantly chases players.</div>
+      <div class="tf-statement"><code>RunService.HeartbeatRunService.Heartbeat</code> runs code every single frame, so the boss constantly chases players.</div>
       <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
     </div>
     <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
@@ -1006,7 +1061,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="quiz-title">Knowledge Check</div>
       <div class="quiz-xp-badge">+15 XP</div>
     </div>
-    <div class="quiz-question">What is the difference between <code>FireClient</code> and <code>FireAllClients</code>?</div>
+    <div class="quiz-question">What is the difference between <code>FireClientFireClient</code> and <code>FireAllClientsFireAllClients</code>?</div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>FireClient sends to one specific player; FireAllClients sends to every player</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They do the same thing</span></div>
@@ -1100,7 +1155,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="pc-title">Predict What Happens</div>
       <div class="pc-xp-badge">+15 XP</div>
     </div>
-    <div class="pc-scenario">A player clicks a treasure chest. The <code>lootTable</code> randomly picks <code>{type = "Potion", amount = 50}</code>.<br><br><strong>What happens to the player?</strong></div>
+    <div class="pc-scenario">A player clicks a treasure chest. The <code>lootTablelootTable</code> randomly picks <code>{type = "Potion", amount = 50}{type = "Potion", amount = 50}</code>.<br><br><strong>What happens to the player?</strong></div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>They gain 50 Gold on the leaderboard</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They get a potion tool in their Backpack</span></div>
@@ -1117,7 +1172,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="quiz-title">Knowledge Check</div>
       <div class="quiz-xp-badge">+15 XP</div>
     </div>
-    <div class="quiz-question">What does <code>math.random(#lootTable)</code> do?</div>
+    <div class="quiz-question">What does <code>math.random(#lootTable)math.random(#lootTable)</code> do?</div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Always returns the first item in the table</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Picks a random number between 1 and the length of the table</span></div>
@@ -1223,7 +1278,7 @@ body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
       <div class="quiz-title">Knowledge Check</div>
       <div class="quiz-xp-badge">+15 XP</div>
     </div>
-    <div class="quiz-question">Why do we wrap DataStore calls in <code>pcall</code>?</div>
+    <div class="quiz-question">Why do we wrap DataStore calls in <code>pcallpcall</code>?</div>
     <div class="quiz-options">
       <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To make the code run faster</span></div>
       <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To encrypt the player's data</span></div>
@@ -1567,6 +1622,60 @@ function loadProgress() {
         card.querySelector('.step-body').style.display = 'none';
       });
       const next = getActiveStep();
+      if (next 
+const TOTAL = 14;
+const STORAGE_KEY = 'jvds-roblox-adventure-v2';
+
+let completed = new Set();
+let xp = 0;
+let level = 1;
+let streak = 0;
+let bestStreak = 0;
+let totalQuizzes = 0;
+let correctFirst = 0;
+
+const XP_PER_LEVEL = 100;
+const XP_QUIZ = 15;
+const XP_CODE = 20;
+const XP_STREAK_BONUS = 5;
+
+/* ── hardened answer decoding (base64 + alternates) ── */
+function _dec(el, k){ var e = el.dataset[k]; if (e !== undefined){ try { return decodeURIComponent(atob(e)); } catch(_){ return ''; } } return k === 'a' ? (el.dataset.answer || '') : (el.dataset.correct || ''); }
+function _answers(el){ return _dec(el,'a').split('|'); }
+function _canon(el){ return _answers(el)[0]; }
+function _match(el, val){ var v = val.trim().toLowerCase(); return _answers(el).some(function(a){ return a.trim().toLowerCase() === v; }); }
+function _key(el){ return parseInt(_dec(el,'k'), 10); }
+function _shuffleQuiz(){ document.querySelectorAll('.quiz-options').forEach(function(o){ var k = [].slice.call(o.children); for (var i = k.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = k[i]; k[i] = k[j]; k[j] = t; } k.forEach(function(c){ o.appendChild(c); }); var L = ['A','B','C','D','E']; o.querySelectorAll('.opt-letter').forEach(function(l, i){ l.textContent = L[i] || ''; }); }); }
+function _initKbd(){ function act(el){ return function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); } }; } document.querySelectorAll('.quiz-opt').forEach(function(o){ o.setAttribute('role','button'); o.setAttribute('tabindex','0'); o.addEventListener('keydown', act(o)); }); document.querySelectorAll('.step-header').forEach(function(h){ h.setAttribute('role','button'); h.setAttribute('tabindex','0'); h.addEventListener('keydown', act(h)); }); }
+
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed], total: TOTAL, xp, level, streak, bestStreak, totalQuizzes, correctFirst,
+      quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
+      challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id)
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!data) return;
+    if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
+    if (data.completed && data.completed.length) {
+      data.completed.forEach(n => {
+        completed.add(n);
+        const card = document.getElementById('step-' + n);
+        if (!card) return;
+        card.classList.remove('active-step', 'open', 'locked');
+        card.classList.add('completed');
+        card.querySelector('.step-status').className = 'step-status ss-done';
+        card.querySelector('.step-status').textContent = '✓ Done';
+        card.querySelector('.step-body').style.display = 'none';
+      });
+      const next = getActiveStep();
       if (next <= TOTAL) {
         const nc = document.getElementById('step-' + next);
         if (nc) { nc.classList.remove('locked'); nc.classList.add('active-step', 'open'); nc.querySelector('.step-status').className = 'step-status ss-active'; nc.querySelector('.step-status').textContent = 'Current'; }
@@ -1574,6 +1683,19 @@ function loadProgress() {
       if (data.completed.length === TOTAL) document.getElementById('finishBanner').classList.add('show');
     }
     if (data.quizzesPassed) data.quizzesPassed.forEach(id => {
+      const q = document.getElementById(id);
+      if (q) { q.classList.add('passed'); const nb = q.querySelector('.quiz-next-btn'); if(nb) nb.classList.add('show'); const sb = q.querySelector('.quiz-submit'); if(sb) sb.style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    if (data.challengesPassed) data.challengesPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); const cb = c.querySelector('.cc-check-btn'); if(cb) cb.disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = _canon(b); b.disabled = true; b.classList.add('correct'); }); }
+    });
+    updateXpDisplay();
+  } catch(e) {}
+}
+
+function getActiveStep() {
+  for (let i = 1; i  {
       const q = document.getElementById(id);
       if (q) { q.classList.add('passed'); const nb = q.querySelector('.quiz-next-btn'); if(nb) nb.classList.add('show'); const sb = q.querySelector('.quiz-submit'); if(sb) sb.style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
     });
@@ -1598,6 +1720,47 @@ function buildDots() {
     d.className = 'step-dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' active' : ''));
     d.textContent = i;
     d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    c.appendChild(d);
+  }
+}
+
+function updateProgress() {
+  const n = completed.size;
+  document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
+  document.getElementById('progressFill').style.width = (n / TOTAL * 100) + '%';
+  buildDots();
+}
+
+function updateXpDisplay() {
+  const xpInLevel = xp % XP_PER_LEVEL;
+  document.getElementById('xpLabel').textContent = xp + ' XP';
+  document.getElementById('xpFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevel').textContent = 'Level ' + level;
+  document.getElementById('streakCount').textContent = streak;
+  const streakEl = document.getElementById('xpStreak');
+  streakEl.classList.toggle('hot', streak >= 3);
+}
+
+function awardXp(amount, label) {
+  const oldLevel = level;
+  xp += amount;
+  level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  updateXpDisplay();
+  document.getElementById('xpLabel').classList.add('xp-pop');
+  setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
+  showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (streak >= 3) streakFx(streak);
+  if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
+  saveProgress();
+}
+
+function streakFx(s) {
+  const tier = Math.min(Math.floor(s / 3), 4);
+  const anchor = document.getElementById('xpLabel');
+  if (!anchor) return;
+  const r = anchor.getBoundingClientRect();
+  const n = 3 + tier * 2;
+  for (let i = 0; i  { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
     c.appendChild(d);
   }
 }
@@ -1665,7 +1828,28 @@ function showXpToast(text) {
 function showLevelUp(lvl) {
   const overlay = document.createElement('div');
   overlay.className = 'levelup-overlay';
-  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  overlay.innerHTML = ' p.remove(), 570);
+  }
+  if (tier >= 2) {
+    document.body.classList.add('streak-shake');
+    setTimeout(() => document.body.classList.remove('streak-shake'), 300);
+  }
+}
+
+function showXpToast(text) {
+  const existing = document.querySelector('.xp-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function showLevelUp(lvl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆🏆</div><div class="lvl-title">Level ' + lvl + '!Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">ContinueContinue</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
@@ -1692,7 +1876,34 @@ function checkQuiz(btn) {
   if (chosenIdx === correct) {
     selected.classList.add('correct');
     fb.className = 'quiz-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
+    fb.innerHTML = '';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── QUIZ SYSTEM ── */
+function selectQuizOpt(el) {
+  const gate = el.closest('.quiz-gate') || el.closest('.predict-challenge');
+  if (!gate || gate.classList.contains('passed')) return;
+  gate.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const submitBtn = gate.querySelector('.quiz-submit');
+  if (submitBtn) submitBtn.classList.add('show');
+}
+
+function checkQuiz(btn) {
+  const gate = btn.closest('.quiz-gate');
+  const selected = gate.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = _key(gate);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = gate.querySelector('.quiz-feedback');
+  totalQuizzes++;
+
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>That\'s right! Great job.That\'s right! Great job.</span>';
     gate.classList.add('passed');
     btn.style.display = 'none';
     gate.querySelector('.quiz-next-btn').classList.add('show');
@@ -1707,7 +1918,22 @@ function checkQuiz(btn) {
   } else {
     selected.classList.add('wrong');
     fb.className = 'quiz-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, try again!</span>';
+    fb.innerHTML = '';
+    gate.classList.add('passed');
+    btn.style.display = 'none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ;
+    let label = 'Quiz correct';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Not quite, try again!Not quite, try again!</span>';
     streak = 0;
     updateXpDisplay();
     setTimeout(() => {
@@ -1741,7 +1967,41 @@ function checkCodeChallenge(btn) {
 
   if (allCorrect) {
     fb.className = 'cc-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    fb.innerHTML = '';
+    streak = 0;
+    updateXpDisplay();
+    setTimeout(() => {
+      selected.classList.remove('wrong', 'selected');
+      fb.classList.remove('show');
+    }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── CODE CHALLENGE SYSTEM ── */
+function checkCodeChallenge(btn) {
+  const challenge = btn.closest('.code-challenge');
+  const blanks = challenge.querySelectorAll('.cc-blank');
+  const fb = challenge.querySelector('.cc-feedback');
+  const hint = challenge.querySelector('.cc-hint');
+  let allCorrect = true;
+
+  blanks.forEach(b => {
+    const userVal = b.value.trim().toLowerCase();
+    const answer = _canon(b);
+    if (_match(b, b.value)) {
+      b.classList.remove('wrong');
+      b.classList.add('correct');
+    } else {
+      b.classList.remove('correct');
+      b.classList.add('wrong');
+      allCorrect = false;
+    }
+  });
+
+  if (allCorrect) {
+    fb.className = 'cc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>Perfect! Your code is correct.Perfect! Your code is correct.</span>';
     challenge.classList.add('passed');
     btn.disabled = true;
     blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
@@ -1756,7 +2016,22 @@ function checkCodeChallenge(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'cc-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';
+    fb.innerHTML = '';
+    challenge.classList.add('passed');
+    btn.disabled = true;
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
+    if (hint) hint.classList.remove('show');
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    totalQuizzes++;
+    let bonus = XP_CODE;
+    let label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';
     if (hint) hint.classList.add('show');
     streak = 0;
     updateXpDisplay();
@@ -1779,7 +2054,30 @@ function checkConceptFill(btn) {
   });
   if (allCorrect) {
     fb.className = 'cf-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
+    fb.innerHTML = '';
+    if (hint) hint.classList.add('show');
+    streak = 0;
+    updateXpDisplay();
+    totalQuizzes++;
+  }
+  saveProgress();
+}
+
+function checkConceptFill(btn) {
+  const wrap = btn.closest('.concept-fill');
+  const blanks = wrap.querySelectorAll('.cf-blank');
+  const fb = wrap.querySelector('.cf-feedback');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    if (_match(b, b.value)) {
+      b.classList.remove('wrong'); b.classList.add('correct');
+    } else {
+      b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false;
+    }
+  });
+  if (allCorrect) {
+    fb.className = 'cf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>Perfect!Perfect!</span>';
     wrap.classList.add('passed'); btn.disabled = true;
     blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
     streak++; if (streak > bestStreak) bestStreak = streak;
@@ -1789,7 +2087,17 @@ function checkConceptFill(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'cf-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks aren\'t right, try again!</span>';
+    fb.innerHTML = '';
+    wrap.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Concept fill';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Some blanks aren\'t right, try again!Some blanks aren\'t right, try again!</span>';
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();
@@ -1821,10 +2129,45 @@ function checkTF(btn) {
       allCorrect = false;
     }
   });
-  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>'; return; }
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+function pickTF(btn, value) {
+  const item = btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  btn.dataset.picked = value;
+}
+
+function checkTF(btn) {
+  const round = btn.closest('.tf-round');
+  const items = round.querySelectorAll('.tf-item');
+  const fb = round.querySelector('.tf-feedback');
+  let allAnswered = true, allCorrect = true;
+  items.forEach(item => {
+    const selected = item.querySelector('.tf-btn.selected');
+    if (!selected) { allAnswered = false; return; }
+    const correct = _dec(item,'a').trim().toLowerCase();
+    const picked = selected.dataset.picked;
+    item.classList.add('answered');
+    if (picked === correct) {
+      selected.classList.add('correct-answer');
+    } else {
+      selected.classList.add('wrong-answer');
+      item.querySelectorAll('.tf-btn').forEach(b => { if (b.dataset.picked !== picked && b.textContent.toLowerCase() === correct) b.classList.add('correct-answer'); });
+      allCorrect = false;
+    }
+  });
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️⚠️</span><span>Answer all statements first!Answer all statements first!</span>'; return; }
   if (allCorrect) {
     fb.className = 'tf-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
+    fb.innerHTML = ''; return; }
+  if (allCorrect) {
+    fb.className = 'tf-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>All correct! Nice one.All correct! Nice one.</span>';
     round.classList.add('passed'); btn.disabled = true;
     streak++; if (streak > bestStreak) bestStreak = streak;
     correctFirst++; totalQuizzes++;
@@ -1833,7 +2176,16 @@ function checkTF(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'tf-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not all correct, look at the highlighted answers and try again next time.</span>';
+    fb.innerHTML = '';
+    round.classList.add('passed'); btn.disabled = true;
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'True/False';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'tf-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Not all correct, look at the highlighted answers and try again next time.Not all correct, look at the highlighted answers and try again next time.</span>';
     streak = 0; updateXpDisplay(); totalQuizzes++;
     setTimeout(() => {
       items.forEach(item => {
@@ -1882,10 +2234,62 @@ function checkOrder(btn) {
       item.classList.add('wrong-pos'); allCorrect = false;
     }
   });
-  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>'; return; }
+  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+    setTimeout(() => {
+      items.forEach(item => {
+        item.classList.remove('answered');
+        item.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('selected','correct-answer','wrong-answer'); });
+      });
+      fb.classList.remove('show');
+    }, 2500);
+  }
+  saveProgress();
+}
+
+let orderCounters = {};
+function pickOrder(el) {
+  const challenge = el.closest('.order-challenge');
+  const id = challenge.id;
+  if (!orderCounters[id]) orderCounters[id] = 0;
+  if (el.classList.contains('picked')) return;
+  orderCounters[id]++;
+  el.classList.add('picked');
+  el.querySelector('.oc-num').textContent = orderCounters[id];
+  el.dataset.userOrder = orderCounters[id];
+}
+
+function resetOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  orderCounters[challenge.id] = 0;
+  challenge.querySelectorAll('.oc-item').forEach(item => {
+    item.classList.remove('picked','correct-pos','wrong-pos');
+    item.querySelector('.oc-num').textContent = '';
+    delete item.dataset.userOrder;
+  });
+  challenge.querySelector('.oc-feedback').classList.remove('show');
+}
+
+function checkOrder(btn) {
+  const challenge = btn.closest('.order-challenge');
+  const items = challenge.querySelectorAll('.oc-item');
+  const fb = challenge.querySelector('.oc-feedback');
+  let allPicked = true, allCorrect = true;
+  items.forEach(item => {
+    if (!item.dataset.userOrder) { allPicked = false; return; }
+    if (parseInt(item.dataset.userOrder) === _key(item)) {
+      item.classList.add('correct-pos');
+    } else {
+      item.classList.add('wrong-pos'); allCorrect = false;
+    }
+  });
+  if (!allPicked) { fb.className = 'oc-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️⚠️</span><span>Click all items in order first!Click all items in order first!</span>'; return; }
   if (allCorrect) {
     fb.className = 'oc-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order!</span>';
+    fb.innerHTML = ''; return; }
+  if (allCorrect) {
+    fb.className = 'oc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>Perfect order!Perfect order!</span>';
     challenge.classList.add('passed'); btn.disabled = true;
     challenge.querySelector('.oc-reset-btn').style.display = 'none';
     streak++; if (streak > bestStreak) bestStreak = streak;
@@ -1895,7 +2299,17 @@ function checkOrder(btn) {
     awardXp(bonus, label);
   } else {
     fb.className = 'oc-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite right, hit Reset and try again!</span>';
+    fb.innerHTML = '';
+    challenge.classList.add('passed'); btn.disabled = true;
+    challenge.querySelector('.oc-reset-btn').style.display = 'none';
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ, label = 'Order challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'oc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Not quite right, hit Reset and try again!Not quite right, hit Reset and try again!</span>';
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();
@@ -1912,7 +2326,24 @@ function checkPredict(btn) {
   if (chosenIdx === correct) {
     selected.classList.add('correct');
     fb.className = 'quiz-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Great prediction! You really understand how this works.</span>';
+    fb.innerHTML = '';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+function checkPredict(btn) {
+  const challenge = btn.closest('.predict-challenge');
+  const selected = challenge.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = _key(challenge);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = challenge.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅✅</span><span>Great prediction! You really understand how this works.Great prediction! You really understand how this works.</span>';
     challenge.classList.add('passed'); btn.style.display = 'none';
     challenge.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
     streak++; if (streak > bestStreak) bestStreak = streak;
@@ -1923,7 +2354,68 @@ function checkPredict(btn) {
   } else {
     selected.classList.add('wrong');
     fb.className = 'quiz-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, think about it again!</span>';
+    fb.innerHTML = '';
+    challenge.classList.add('passed'); btn.style.display = 'none';
+    challenge.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ, label = 'Prediction';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌❌</span><span>Not quite, think about it again!Not quite, think about it again!</span>';
+    streak = 0; updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+/* ── STEP COMPLETION ── */
+function completeStep(n) {
+  completed.add(n);
+  const card = document.getElementById('step-' + n);
+  card.classList.remove('active-step', 'open');
+  card.classList.add('completed');
+  card.querySelector('.step-status').className = 'step-status ss-done';
+  card.querySelector('.step-status').textContent = '✓ Done';
+  card.querySelector('.step-body').style.display = 'none';
+  const next = document.getElementById('step-' + (n + 1));
+  if (next) {
+    next.classList.remove('locked');
+    next.classList.add('active-step', 'open');
+    next.querySelector('.step-status').className = 'step-status ss-active';
+    next.querySelector('.step-status').textContent = 'Current';
+    setTimeout(() => next.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  }
+  if (completed.size === TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    setTimeout(() => document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+  }
+  updateProgress();
+  saveProgress();
+}
+
+function toggleStep(header) {
+  const card = header.closest('.step-card');
+  if (card.classList.contains('locked')) return;
+  const body = card.querySelector('.step-body');
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
+}
+
+_shuffleQuiz();
+_initKbd();
+loadProgress();
+updateProgress();
+updateXpDisplay();
+';
     streak = 0; updateXpDisplay();
     setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
   }
@@ -1990,8 +2482,26 @@ updateXpDisplay();
     label.appendChild(btn);
   });
 })();
+
+(function(){
+  var COPY='Copy',DONE='Copied!';
+  document.querySelectorAll('.code-wrap').forEach(function(wrap){
+    var label=wrap.querySelector('.code-label'),body=wrap.querySelector('.code-body');
+    if(!label||!body)return;
+    var btn=document.createElement('button');btn.className='copy-btn';btn.textContent=COPY;
+    btn.addEventListener('click',function(){
+      var text=body.innerText||body.textContent;
+      function flash(){btn.textContent=DONE;btn.classList.add('copied');setTimeout(function(){btn.textContent=COPY;btn.classList.remove('copied');},2000);}
+      if(navigator.clipboard){navigator.clipboard.writeText(text).then(flash);}
+      else{var t=document.createElement('textarea');t.value=text;t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);flash();}
+    });
+    label.appendChild(btn);
+  });
+})();
 </script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Island Quest! Build an RPG Adventure Game in Roblox Studio","description":"Build a Roblox RPG island adventure! Talk to NPCs, complete quests, collect loot and defeat a final boss. Free parent & child workshop. Ages 9+.","url":"https://jvdesignstudio.co.uk/workshops/roblox-adventure-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"Island Quest! Build an RPG Adventure Game in Roblox Studio","description":"Build a Roblox RPG island adventure! Talk to NPCs, complete quests, collect loot and defeat a final boss. Free parent & child workshop. Ages 9+.","url":"https://jvdesignstudio.co.uk/workshops/roblox-adventure-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
 </script>
 </body>

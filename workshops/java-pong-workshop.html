@@ -30,10 +30,18 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
+
+.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
+.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
+.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
+@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
+@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -81,6 +89,28 @@
     });
     paint();
 })();
+
+(function(){
+    /* Restore saved theme before first paint of the toggle icon */
+    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var b = document.getElementById('themeToggle');
+    if (!b) return;
+    function paint(){
+        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+    }
+    b.addEventListener('click', function(){
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (dark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('jvds-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('jvds-theme', 'dark');
+        }
+        paint();
+    });
+    paint();
+})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -99,6 +129,22 @@
 </nav>
 </header>
 <script>
+(function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+        if(a.getAttribute('data-page') === page) a.classList.add('active');
+    });
+    var btn = document.getElementById('navToggle');
+    var nav = document.getElementById('mobileNav');
+    if (!btn || !nav) return;
+    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -190,7 +236,7 @@
         <li><span class="num-badge">1</span><span>New project, 800×500 window, black background, plus a dashed centre line drawn with a loop of small rectangles.</span></li>
         <li><span class="num-badge">2</span><span>Two paddles: <strong>p1Y</strong> on the left (x = 20), <strong>p2Y</strong> on the right (x = 766). Both 14×90.</span></li>
         <li><span class="num-badge">3</span><span>Player 1 holds <strong>W/S</strong>, player 2 holds <strong>Up/Down</strong>, four held-key booleans.</span></li>
-        <li><span class="num-badge">4</span><span>Clamp both paddles between 0 and <strong>500 - 90</strong>.</span></li>
+        <li><span class="num-badge">4</span><span>Clamp both paddles between 0 and <strong>500, 90</strong>.</span></li>
         <li><span class="num-badge">5</span><span>Draw everything white, like 1972.</span></li>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
@@ -208,15 +254,62 @@
 
     // centre line in paintComponent:
     for (int y = 0; y &lt; 500; y += 24)
+        g.fillRect(397, y, 6, 14);    int p1Y = 205, p2Y = 205;
+    boolean wHeld, sHeld, upHeld, downHeld;
+
+    void update() {
+        if (wHeld)    p1Y -= 6;
+        if (sHeld)    p1Y += 6;
+        if (upHeld)   p2Y -= 6;
+        if (downHeld) p2Y += 6;
+        p1Y = Math.max(0, Math.min(410, p1Y));
+        p2Y = Math.max(0, Math.min(410, p2Y));
+    }
+
+    // centre line in paintComponent:
+    for (int y = 0; y &lt; 500; y += 24)
         g.fillRect(397, y, 6, 14);</pre>
   </div>
 
       <details style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template — the Swing window + game loop</summary>
-        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 800×500 for Pong in <code>setPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Main</code>. Every step below adds to this file.</p>
+        <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">📦 Full starter template , the Swing window + game loop</summary>
+        <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">The Main.java launcher plus the GamePanel game loop from Episode 1. Set the window to 800×500 for Pong in <code>setPreferredSizesetPreferredSize</code>. Save as Main.java, run <code>javac Main.java && java Mainjavac Main.java && java Main</code>. Every step below adds to this file.</p>
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
           <pre class="code-pre">// The starting template every game in this series uses.
+// Save as Main.java, then run:  javac Main.java   and   java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("My Java Game");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener {
+    Timer timer = new Timer(16, this);         // ~60 FPS
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 500));
+        setBackground(new Color(25, 30, 60));   // night sky
+        timer.start();
+    }
+    public void actionPerformed(ActionEvent e) {
+        update();                               // move everything
+        repaint();                              // then draw everything
+    }
+    void update() { /* movement goes here */ }
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        // drawing goes here
+    }
+}// The starting template every game in this series uses.
 // Save as Main.java, then run:  javac Main.java   and   java Main
 import javax.swing.*;
 import java.awt.*;
@@ -330,6 +423,29 @@ class GamePanel extends JPanel implements ActionListener {
             bvy = ((by + bs/2) - (p2Y + 45)) / 7;
         }
         bvx = Math.max(-12, Math.min(12, bvx));
+    }    int bx = 393, by = 243, bs = 14;
+    int bvx = 5, bvy = 3;
+
+    void serve(int direction) {
+        bx = 393; by = 243;
+        bvx = 5 * direction;
+        bvy = Math.random() &lt; 0.5 ? 3 : -3;
+    }
+
+    void update() {
+        bx += bvx;  by += bvy;
+        if (by &lt;= 0 || by + bs &gt;= 500) bvy = -bvy;
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        if (ball.intersects(new Rectangle(20, p1Y, 14, 90)) &amp;&amp; bvx &lt; 0) {
+            bvx = -bvx + 1;                       // rally speeds up
+            bvy = ((by + bs/2) - (p1Y + 45)) / 7; // spin
+        }
+        if (ball.intersects(new Rectangle(766, p2Y, 14, 90)) &amp;&amp; bvx &gt; 0) {
+            bvx = -(bvx + 1);
+            bvy = ((by + bs/2) - (p2Y + 45)) / 7;
+        }
+        bvx = Math.max(-12, Math.min(12, bvx));
     }</pre>
   </div>
 
@@ -343,9 +459,13 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">void serve(int direction) {
+    bx = void serve(int direction) {
     bx = <input class="cc-blank" data-a="Mzkz" placeholder="???" size="4">; by = 243;              // back to centre
+    bvx = 5 * ; by = 243;              // back to centre
     bvx = 5 * <input class="cc-blank" data-a="ZGlyZWN0aW9u" placeholder="????????" size="10">;             // towards the scorer's opponent
+    bvy = Math.random() &lt; 0.5 ? 3 : ;             // towards the scorer's opponent
     bvy = Math.random() &lt; 0.5 ? 3 : <input class="cc-blank" data-a="LTM=" placeholder="??" size="4">;
+};
 }</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
@@ -396,6 +516,20 @@ class GamePanel extends JPanel implements ActionListener {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
     <pre class="code-pre">    int score1 = 0, score2 = 0;
+    boolean gameOver = false;
+
+    void update() {
+        if (gameOver) return;
+        // ... movement ...
+        if (bx &lt; -20)  { score2++; serve(-1); }
+        if (bx &gt; 820)  { score1++; serve(1);  }
+        if (score1 == 7 || score2 == 7) gameOver = true;
+    }
+
+    // paintComponent:
+    g.setFont(new Font("Monospaced", Font.BOLD, 56));
+    g.drawString("" + score1, 320, 70);
+    g.drawString("" + score2, 450, 70);    int score1 = 0, score2 = 0;
     boolean gameOver = false;
 
     void update() {
@@ -480,6 +614,20 @@ class GamePanel extends JPanel implements ActionListener {
             if (upHeld)   p2Y -= 6;
             if (downHeld) p2Y += 6;
         }
+    }    boolean vsComputer = true;
+    int aiSpeed = 5, deadZone = 12;
+
+    void update() {
+        // ...
+        if (vsComputer) {
+            int padCentre  = p2Y + 45;
+            int ballCentre = by + bs/2;
+            if (padCentre &lt; ballCentre - deadZone) p2Y += aiSpeed;
+            if (padCentre &gt; ballCentre + deadZone) p2Y -= aiSpeed;
+        } else {
+            if (upHeld)   p2Y -= 6;
+            if (downHeld) p2Y += 6;
+        }
     }</pre>
   </div><div class="callout tip"><div class="callout-icon">💡</div><div>This tiny "chase with flaws" pattern is genuinely how a LOT of game AI works: perfect logic, deliberately weakened until it is fun.</div></div>
 
@@ -492,8 +640,9 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="cc-prompt">Complete the AI chase logic:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - deadZone) p2Y <input class="cc-blank" data-a="JTJCJTNE" placeholder="??" size="4"> aiSpeed;
-if (padCentre &gt; ballCentre + deadZone) p2Y <input class="cc-blank" data-a="LSUzRA==" placeholder="??" size="4"> aiSpeed;</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (padCentre &lt; ballCentre - deadZone) p2Y if (padCentre &lt; ballCentre - deadZone) p2Y <input class="cc-blank" data-a="JTJCJTNE" placeholder="??" size="4"> aiSpeed;
+if (padCentre &gt; ballCentre + deadZone) p2Y  aiSpeed;
+if (padCentre &gt; ballCentre + deadZone) p2Y <input class="cc-blank" data-a="LSUzRA==" placeholder="??" size="4"> aiSpeed; aiSpeed;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -544,6 +693,23 @@ if (padCentre &gt; ballCentre + deadZone) p2Y <input class="cc-blank" data-a="LS
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
     <pre class="code-pre">    String state = "MENU";
+
+    void update() {
+        if (!state.equals("PLAYING")) return;
+        // ... all game code ...
+        if (score1 == 7 || score2 == 7) state = "GAME_OVER";
+    }
+
+    public void keyPressed(KeyEvent e) {
+        if (state.equals("MENU")) {
+            if (e.getKeyChar() == '1') { vsComputer = true;  state = "PLAYING"; }
+            if (e.getKeyChar() == '2') { vsComputer = false; state = "PLAYING"; }
+        } else if (state.equals("GAME_OVER") &amp;&amp; e.getKeyChar() == 'r') {
+            score1 = 0; score2 = 0; serve(1);
+            state = "MENU";
+        }
+        // ... held-key booleans ...
+    }    String state = "MENU";
 
     void update() {
         if (!state.equals("PLAYING")) return;
@@ -634,6 +800,23 @@ if (padCentre &gt; ballCentre + deadZone) p2Y <input class="cc-blank" data-a="LS
             g.fillRect(0, 0, 800, 500);
         }
         // ... everything else ...
+    }    int flash = 0;
+
+    // when a point is scored:
+    //   score2++; serve(-1); flash = 12;
+
+    void update() {
+        // ...
+        if (flash &gt; 0) flash--;
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (flash &gt; 0) {
+            g.setColor(new Color(255, 255, 255, 40));
+            g.fillRect(0, 0, 800, 500);
+        }
+        // ... everything else ...
     }</pre>
   </div><div class="callout tip"><div class="callout-icon">💡</div><div>Game developers call this <strong>juice</strong>, flashes, shakes, beeps. It costs a few lines and doubles how good a game feels.</div></div>
 
@@ -647,9 +830,12 @@ if (padCentre &gt; ballCentre + deadZone) p2Y <input class="cc-blank" data-a="LS
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">// when scoring:
+flash = // when scoring:
 flash = <input class="cc-blank" data-a="MTI=" placeholder="??" size="4">;
 // each frame:
-if (flash &gt; 0) flash<input class="cc-blank" data-a="LS0=" placeholder="??" size="4">;</pre>
+if (flash &gt; 0) flash;
+// each frame:
+if (flash &gt; 0) flash<input class="cc-blank" data-a="LS0=" placeholder="??" size="4">;;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -676,11 +862,130 @@ if (flash &gt; 0) flash<input class="cc-blank" data-a="LS0=" placeholder="??" si
   </div>
 
   <details id="ws-full-code" style="margin:14px 0;border:1px solid rgba(96,165,250,.3);border-radius:12px;background:rgba(96,165,250,.05);overflow:hidden">
-    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Pong — all 6 steps assembled</summary>
-    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Two paddles (W/S and the arrow keys), a serving ball that bounces off walls and paddles, paddle-spin plus rally speed-up, a scoreboard and first-to-7 win — one runnable file. Save as <code>Main.java</code>, run <code>javac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
+    <summary style="cursor:pointer;padding:12px 16px;font-family:'Fredoka',cursive;color:#bdd8ff;font-size:.95rem;user-select:none;list-style:none">✅ See the complete finished Pong , all 6 steps assembled</summary>
+    <p style="padding:0 16px;margin:6px 0 0;font-size:.82rem;color:rgba(232,234,242,.6)">Two paddles (W/S and the arrow keys), a serving ball that bounces off walls and paddles, paddle-spin plus rally speed-up, a scoreboard and first-to-7 win , one runnable file. Save as <code>Main.javaMain.java</code>, run <code>javac Main.java && java Mainjavac Main.java && java Main</code>, and play. Stuck? Compare your file against this.</p>
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
       <pre class="code-pre">// Complete Java Pong. Run with:  javac Main.java  then  java Main
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class Main {
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Pong");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new GamePanel());
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+}
+
+class GamePanel extends JPanel implements ActionListener, KeyListener {
+    Timer timer = new Timer(16, this);
+
+    int p1Y = 205, p2Y = 205;
+    boolean wHeld, sHeld, upHeld, downHeld;
+    int bx = 393, by = 243, bs = 14, bvx = 5, bvy = 3;
+    int p1Score = 0, p2Score = 0;
+    String state = "PLAY";
+
+    public GamePanel() {
+        setPreferredSize(new Dimension(800, 500));
+        setBackground(new Color(12, 14, 24));
+        addKeyListener(this);
+        setFocusable(true);
+        serve(Math.random() &lt; 0.5 ? 1 : -1);
+        timer.start();
+    }
+
+    void serve(int direction) {
+        bx = 393; by = 243;
+        bvx = 5 * direction;
+        bvy = Math.random() &lt; 0.5 ? 3 : -3;
+    }
+
+    void reset() {
+        p1Score = 0; p2Score = 0; state = "PLAY";
+        p1Y = 205; p2Y = 205;
+        serve(Math.random() &lt; 0.5 ? 1 : -1);
+    }
+
+    public void actionPerformed(ActionEvent e) { update(); repaint(); }
+
+    void update() {
+        if (!state.equals("PLAY")) return;
+
+        if (wHeld)    p1Y -= 6;
+        if (sHeld)    p1Y += 6;
+        if (upHeld)   p2Y -= 6;
+        if (downHeld) p2Y += 6;
+        p1Y = Math.max(0, Math.min(410, p1Y));
+        p2Y = Math.max(0, Math.min(410, p2Y));
+
+        bx += bvx; by += bvy;
+        if (by &lt;= 0 || by + bs &gt;= 500) bvy = -bvy;
+
+        Rectangle ball = new Rectangle(bx, by, bs, bs);
+        if (ball.intersects(new Rectangle(20, p1Y, 14, 90)) &amp;&amp; bvx &lt; 0) {
+            bvx = -bvx + 1;                          // rally speeds up
+            bvy = ((by + bs/2) - (p1Y + 45)) / 7;    // spin
+        }
+        if (ball.intersects(new Rectangle(766, p2Y, 14, 90)) &amp;&amp; bvx &gt; 0) {
+            bvx = -(bvx + 1);
+            bvy = ((by + bs/2) - (p2Y + 45)) / 7;
+        }
+        bvx = Math.max(-12, Math.min(12, bvx));
+
+        if (bx &lt; 0)   { p2Score++; checkWin(); if (state.equals("PLAY")) serve(-1); }
+        if (bx &gt; 800) { p1Score++; checkWin(); if (state.equals("PLAY")) serve(1); }
+    }
+
+    void checkWin() {
+        if (p1Score &gt;= 7 || p2Score &gt;= 7) state = "WIN";
+    }
+
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.setColor(new Color(60, 66, 90));
+        for (int y = 0; y &lt; 500; y += 24) g.fillRect(397, y, 6, 14);   // net
+
+        g.setColor(Color.WHITE);
+        g.fillRect(20, p1Y, 14, 90);
+        g.fillRect(766, p2Y, 14, 90);
+        g.fillOval(bx, by, bs, bs);
+
+        g.setFont(new Font("Arial", Font.BOLD, 40));
+        g.drawString(String.valueOf(p1Score), 340, 60);
+        g.drawString(String.valueOf(p2Score), 440, 60);
+
+        if (state.equals("WIN")) {
+            g.setFont(new Font("Arial", Font.BOLD, 44));
+            String who = p1Score &gt;= 7 ? "PLAYER 1 WINS!" : "PLAYER 2 WINS!";
+            g.drawString(who, 240, 260);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("Press R to play again", 300, 300);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_W)    wHeld = true;
+        if (k == KeyEvent.VK_S)    sHeld = true;
+        if (k == KeyEvent.VK_UP)   upHeld = true;
+        if (k == KeyEvent.VK_DOWN) downHeld = true;
+        if (k == KeyEvent.VK_R &amp;&amp; !state.equals("PLAY")) reset();
+    }
+    public void keyReleased(KeyEvent e) {
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_W)    wHeld = false;
+        if (k == KeyEvent.VK_S)    sHeld = false;
+        if (k == KeyEvent.VK_UP)   upHeld = false;
+        if (k == KeyEvent.VK_DOWN) downHeld = false;
+    }
+    public void keyTyped(KeyEvent e) {}
+}// Complete Java Pong. Run with:  javac Main.java  then  java Main
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -874,8 +1179,23 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
+
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -884,9 +1204,15 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-pong-v2';
 window.WORKSHOP_PROFILE_ID='java-pong-workshop';
+
+window.WORKSHOP_TOTAL=6;
+window.WORKSHOP_KEY='jvds-java-pong-v2';
+window.WORKSHOP_PROFILE_ID='java-pong-workshop';
 </script>
 <script src="workshop-engine.js"></script>
 <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 4: Pong Classic","description":"Build Pong in Java with two-player mode, a computer opponent and game states. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+
 {"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 4: Pong Classic","description":"Build Pong in Java with two-player mode, a computer opponent and game states. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
 </script>
 </body>
