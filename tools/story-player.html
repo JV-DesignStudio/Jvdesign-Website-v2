@@ -167,17 +167,7 @@ let nodes = [], chars = [], varsDef = [], storyName = 'Untitled Story';
 let currentId = null;
 let V = {};   // runtime variables (numeric internally; flags are 0/1)
 
-const esc = s => String(s ?? '').replace(/[&
-// ══════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════
-let nodes = [], chars = [], varsDef = [], storyName = 'Untitled Story';
-let currentId = null;
-let V = {};   // runtime variables (numeric internally; flags are 0/1)
-
-const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const safeColour = c => /^#[0-9a-f]{3,8}$/i.test(c||'') ? c : '#64748b';
-const tagColour = t => { let h=0; for(let i=0;i':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const safeColour = c => /^#[0-9a-f]{3,8}$/i.test(c||'') ? c : '#64748b';
 const tagColour = t => { let h=0; for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%360; return `hsl(${h},65%,55%)`; };
 
@@ -258,90 +248,16 @@ function evalCond(c){
   if(!c||!c.v) return true;
   const cur=Number(V[c.v]??0), val=Number(c.val??0);
   switch(c.op){
-    case 'true':return cur>=1; case 'false':return curt.style.opacity=0,2400);
-}
-
-// ══════════════════════════════════════════════════
-// LOADING (shared link hash OR local .json)
-// ══════════════════════════════════════════════════
-function decodePayload(b64url){
-  let b64=b64url.replace(/-/g,'+').replace(/_/g,'/');
-  while(b64.length%4) b64+='=';
-  return decodeURIComponent(escape(atob(b64)));
-}
-function loadFromData(d){
-  const nn=Array.isArray(d.nodes)?d.nodes:null;
-  if(!nn||!nn.length) throw new Error('Story has no nodes.');
-  storyName=d.meta?.name||d.title||'Untitled Story';
-  chars=Array.isArray(d.characters)?d.characters:(Array.isArray(d.chars)?d.chars:[]);
-  varsDef=Array.isArray(d.variables)?d.variables:(Array.isArray(d.vars)?d.vars:[]);
-  nodes=nn.map(n=>({
-    id:String(n.id), type:['start','dialogue','choice','end'].includes(n.type)?n.type:'dialogue',
-    char:n.char||'Narrator', text:n.text||'', tag:n.tag||'', to:n.to||null,
-    fx:Array.isArray(n.fx)?n.fx:[],
-    choices:(Array.isArray(n.choices)?n.choices:[]).map(c=>({
-      text:c.text||'', to:c.to||'', cond:c.cond||null, fx:Array.isArray(c.fx)?c.fx:[]
-    }))
-  }));
-  document.getElementById('empty').style.display='none';
-  document.getElementById('card').style.display='block';
-  document.getElementById('stTitle').textContent=storyName;
-  restart();
-}
-function boot(){
-  const m=location.hash.match(/^#s=(.+)$/);
-  if(m){
-    try{
-      const d=JSON.parse(decodePayload(m[1]));
-      loadFromData(d);
-      history.replaceState(null,'',location.pathname+location.search);
-    }catch(e){
-      showEmpty();
-      showErr('That story link looks broken or was cut short. Ask for a fresh link, or open a story .json below.');
-    }
-  } else showEmpty();
-}
-function showEmpty(){ document.getElementById('empty').style.display='block'; document.getElementById('card').style.display='none'; }
-function showErr(msg){ const b=document.getElementById('errBox'); b.textContent=msg; b.style.display='block'; }
-
-document.getElementById('fileIn').addEventListener('change',e=>{
-  const f=e.target.files&&e.target.files[0];
-  if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ try{ loadFromData(JSON.parse(r.result)); }catch(err){ showErr('Could not read that file as a story.'); } };
-  r.readAsText(f);
-});
-const dz=document.getElementById('dropzone');
-dz.addEventListener('click',()=>document.getElementById('fileIn').click());
-['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
-dz.addEventListener('drop',e=>{
-  const f=e.dataTransfer.files&&e.dataTransfer.files[0];
-  if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ try{ loadFromData(JSON.parse(r.result)); }catch(err){ showErr('Could not read that file as a story.'); } };
-  r.readAsText(f);
-});
-
-// ══════════════════════════════════════════════════
-// ENGINE
-// ══════════════════════════════════════════════════
-const find=id=>nodes.find(n=>n.id===id)||null;
-
-function evalCond(c){
-  if(!c||!c.v) return true;
-  const cur=Number(V[c.v]??0), val=Number(c.val??0);
-  switch(c.op){
     case 'true':return cur>=1; case 'false':return cur<1;
     case '==':return cur===val; case '!=':return cur!==val;
-    case '>=':return cur>=val; case '=':return cur>=val; case '<=':return cur<=val;
-    case '>':return cur>val;   case '':return cur>val;   case '<':return cur<val;
+    case '>=':return cur>=val; case '<=':return cur<=val;
+    case '>':return cur>val;   case '<':return cur<val;
     default:return true;
   }
 }
 function condLabel(c){
   if(!c||!c.v) return '';
-  const sym={'true':'is set','false':'is not set','==':'==','!=':'!=','>=':'≥','=':'≥','<=':'≤','>':'>','':'>','<':'<'}[c.op]??'?';
+  const sym={'true':'is set','false':'is not set','==':'==','!=':'!=','>=':'≥','<=':'≤','>':'>','<':'<'}[c.op]??'?';
   return sym.startsWith('is ') ? `${c.v} ${sym}` : `${c.v} ${sym} ${c.val}`;
 }
 function applyFx(list){
@@ -375,73 +291,22 @@ function pick(i){
 function varChips(){
   const keys=Object.keys(V);
   if(!keys.length) return '';
-  return '{
-    if(!f||!f.v) return;
-    const amt=Number(f.val??0);
-    V[f.v]= f.op==='add' ? Number(V[f.v]??0)+amt : amt;
-  });
-}
-const isFlag=name=>{ const d=varsDef.find(v=>v.name===name); return d?typeof d.start==='boolean':false; };
-
-function restart(){
-  V={};
-  varsDef.forEach(v=>{ V[v.name]=typeof v.start==='boolean'?(v.start?1:0):Number(v.start||0); });
-  const start=find((nodes.find(n=>n.type==='start')||nodes[0]||{}).id);
-  if(start){ currentId=start.id; applyFx(start.fx); renderScene(); }
-}
-
-function go(toId){
-  if(toId && find(toId)){ currentId=toId; applyFx(find(toId).fx); }
-  else currentId=null;
-  renderScene();
-}
-function pick(i){
-  const n=find(currentId);
-  if(!n||!n.choices[i]) return;
-  applyFx(n.choices[i].fx);
-  go(n.choices[i].to);
-}
-
-function varChips(){
-  const keys=Object.keys(V);
-  if(!keys.length) return '';
   return '<div class="pv-vars">'+keys.map(k=>{
     const flag=isFlag(k), on=Number(V[k])>=1;
-    return `'+keys.map(k=>{
-    const flag=isFlag(k), on=Number(V[k])>=1;
     return `<span class="fx-chip" style="${flag&&!on?'opacity:.45;':''}">${flag?(on?'🚩 ':'· '):''}${esc(k)}${flag?'':': '+V[k]}</span>`;
-  }).join('')+'`;
   }).join('')+'</div>';
 }
 
 function renderScene(){
   const scene=document.getElementById('scene');
   const n=currentId?find(currentId):null;
-  if(!n){ scene.innerHTML='';
-}
-
-function renderScene(){
-  const scene=document.getElementById('scene');
-  const n=currentId?find(currentId):null;
-  if(!n){ scene.innerHTML='<div class="sc-end">— The End —— The End —</div>'+varChips(); return; }
+  if(!n){ scene.innerHTML='<div class="sc-end">— The End —</div>'+varChips(); return; }
 
   const ch=chars.find(c=>c.name===n.char)||{colour:'#64748b',emoji:'📖',name:n.char||'?'};
-  const avatar=ch.img?`'+varChips(); return; }
-
-  const ch=chars.find(c=>c.name===n.char)||{colour:'#64748b',emoji:'📖',name:n.char||'?'};
-  const avatar=ch.img?`<img src="${ch.img}" alt="">`:``:`<span class="emoji">${esc(ch.emoji)}${esc(ch.emoji)}</span>`;
+  const avatar=ch.img?`<img src="${ch.img}" alt="">`:`<span class="emoji">${esc(ch.emoji)}</span>`;
 
   if(n.type==='end'){
-    scene.innerHTML=``;
-
-  if(n.type==='end'){
-    scene.innerHTML=`<div class="sc-end">${avatar} ${avatar} <br><br>"${esc(n.text||'The End.')}""${esc(n.text||'The End.')}"<br><br>— The End —— The End —</div>${varChips()}`;
-    return;
-  }
-
-  let choicesHTML='';
-  if(n.type==='choice'&&n.choices.some(c=>c.text)){
-    choicesHTML='${varChips()}`;
+    scene.innerHTML=`<div class="sc-end">${avatar} <br><br>"${esc(n.text||'The End.')}"<br><br>— The End —</div>${varChips()}`;
     return;
   }
 
@@ -450,61 +315,23 @@ function renderScene(){
     choicesHTML='<div class="sc-choices">'+n.choices.map((c,i)=>{
       if(!c.text) return '';
       const ok=evalCond(c.cond);
-      if(ok&&c.to) return `'+n.choices.map((c,i)=>{
-      if(!c.text) return '';
-      const ok=evalCond(c.cond);
-      if(ok&&c.to) return `<button class="sc-choice" onclick="pick(${i})">${esc(c.text)}${esc(c.text)}</button>`;
-      if(ok&&!c.to) return ``;
+      if(ok&&c.to) return `<button class="sc-choice" onclick="pick(${i})">${esc(c.text)}</button>`;
       if(ok&&!c.to) return `<button class="sc-choice" disabled title="Writer forgot to connect this choice">🔒 ${esc(c.text)}</button>`;
-      return ``;
-      return `<button class="sc-choice" disabled title="Requires ${esc(condLabel(c.cond))}">🔒 ${esc(c.text)} 🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})(${esc(condLabel(c.cond))})</small></button>`;
-    }).join('')+'`;
+      return `<button class="sc-choice" disabled title="Requires ${esc(condLabel(c.cond))}">🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
     }).join('')+'</div>';
   } else if(n.to&&find(n.to)){
-    choicesHTML=`';
-  } else if(n.to&&find(n.to)){
-    choicesHTML=`<div class="sc-choices"><button class="sc-choice" onclick="go('${n.to}')">Continue →Continue →</button></div>`;
+    choicesHTML=`<div class="sc-choices"><button class="sc-choice" onclick="go('${n.to}')">Continue →</button></div>`;
   } else {
-    choicesHTML='`;
-  } else {
-    choicesHTML='<div class="sc-end">The End.The End.</div>';
-  }
-
-  scene.innerHTML=`
-    ';
+    choicesHTML='<div class="sc-end">The End.</div>';
   }
 
   scene.innerHTML=`
     <div class="sc-head">
       ${avatar}
-      
-      ${avatar}
-      <span class="sc-name" style="color:${safeColour(ch.colour)}">${esc(ch.name)}${esc(ch.name)}</span>
-      ${n.tag?`
-      ${n.tag?`<span class="tag-chip" style="background:${tagColour(n.tag)}26;color:${tagColour(n.tag)};border:1px solid ${tagColour(n.tag)}66;">${esc(n.tag)}${esc(n.tag)}</span>`:''}
-    `:''}
+      <span class="sc-name" style="color:${safeColour(ch.colour)}">${esc(ch.name)}</span>
+      ${n.tag?`<span class="tag-chip" style="background:${tagColour(n.tag)}26;color:${tagColour(n.tag)};border:1px solid ${tagColour(n.tag)}66;">${esc(n.tag)}</span>`:''}
     </div>
-    
-    <div class="sc-text">${n.text?esc(n.text):'…'}${n.text?esc(n.text):'…'}</div>
-    ${choicesHTML}
-    ${varChips()}
-  `;
-}
-
-function showShare(){
-  const url=location.href.split('#')[0]+location.hash;
-  if(location.hash&&location.hash.startsWith('#s=')){
-    if(navigator.clipboard&&navigator.clipboard.writeText)
-      navigator.clipboard.writeText(url).then(()=>showToast('Link copied!'),()=>prompt('Copy this link:',url));
-    else prompt('Copy this link:',url);
-  } else {
-    prompt('Save this story as JSON and share a link made in the Story Editor:',storyName);
-  }
-}
-
-boot();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
-
+    <div class="sc-text">${n.text?esc(n.text):'…'}</div>
     ${choicesHTML}
     ${varChips()}
   `;

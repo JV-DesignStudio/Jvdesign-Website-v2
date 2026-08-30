@@ -1149,43 +1149,7 @@ window.JVDS.announce = function (msg) {
    Arcade hub logic.
    Reads the same localStorage the games already write, so it needs
    no per-game changes: jvds_profile for the global profile and
-   jvds_game_
-/* ══════════════════════════════════════════════════════════════
-   Arcade hub logic.
-   Reads the same localStorage the games already write, so it needs
-   no per-game changes: jvds_profile for the global profile and
    jvds_game_<id> for each game's best score / plays / achievements.
-   ══════════════════════════════════════════════════════════════ */
-(function () {
-  'use strict';
-
-  var GAMES = window.JVDS_GAMES || [];
-
-  /* ── Tiny helpers ─────────────────────────────────────────── */
-
-  function lsGet(key, fallback) {
-    try {
-      var v = localStorage.getItem(key);
-      return v == null ? fallback : v;
-    } catch (e) { return fallback; }
-  }
-  function lsSet(key, val) {
-    try { localStorage.setItem(key, val); } catch (e) { /* private mode */ }
-  }
-  // Light haptic tick (Android webviews; silently ignored elsewhere).
-  // Respects the player's settings-sheet toggle.
-  function buzz(pattern) {
-    try {
-      if (lsGet('jvds_arc_haptics', '1') === '0') return;
-      if (navigator.vibrate) navigator.vibrate(pattern);
-    } catch (e) {}
-  }
-
-  function fmt(n) { return (n || 0).toLocaleString(); }
-
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/ for each game's best score / plays / achievements.
    ══════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -1218,12 +1182,6 @@ window.JVDS.announce = function (msg) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function fmtAgo(ts) {
-    if (!ts) return '';
-    var s = Math.floor((Date.now() - ts) / 1000);
-    if (s /g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function fmtAgo(ts) {
@@ -1380,51 +1338,6 @@ window.JVDS.announce = function (msg) {
     }
 
     document.getElementById('surpriseBtn').textContent =
-      explored ';
-    }
-    return g.emoji || '🎮';
-  }
-
-  /* ── Collection progress (the hub's own meta layer) ──────────
-     Long-game progression for a launcher: breadth, not grind.
-     Rank tiers celebrate playing across the whole catalogue, and the
-     bar itself is the "what should I play next" answer. */
-  var TIERS = [
-    [0,   'Rookie',      '🌱'],
-    [25,  'Explorer',    '🧭'],
-    [50,  'Veteran',     '🚀'],
-    [75,  'Arcade Hero', '🏅'],
-    [100, 'Full House',  '👑']
-  ];
-
-  function tierIdxFor(pct) {
-    var idx = 0;
-    TIERS.forEach(function (t, i) { if (pct >= t[0]) idx = i; });
-    return idx;
-  }
-
-  function renderExplore(played) {
-    var wrapEl = document.getElementById('exploreWrap');
-    if (!wrapEl || !GAMES.length) return;
-    var explored = played.length;
-    var pct = Math.round((explored / GAMES.length) * 100);
-    document.getElementById('expCount').textContent = explored + ' / ' + GAMES.length;
-    document.getElementById('expBar').style.width = pct + '%';
-
-    var idx = tierIdxFor(pct);
-    document.getElementById('expTier').textContent = TIERS[idx][2] + ' ' + TIERS[idx][1];
-
-    // Celebrate rank-ups exactly once, on the visit that crosses the tier.
-    var prev = parseInt(lsGet('jvds_arc_tier', '-1'), 10);
-    if (prev === -1) {
-      lsSet('jvds_arc_tier', String(idx));            // first run: baseline quietly
-    } else if (idx > prev) {
-      lsSet('jvds_arc_tier', String(idx));
-      celebrate(TIERS[idx][2] + ' Arcade rank up: ' + TIERS[idx][1] + '!');
-      buzz([12, 60, 24]);
-    }
-
-    document.getElementById('surpriseBtn').textContent =
       explored < GAMES.length ? '🎲 Surprise me' : '🎲 Random game';
 
     // This-week echo: ties the collection loop to the Weekly Challenge so
@@ -1438,19 +1351,6 @@ window.JVDS.announce = function (msg) {
           'This week: ' + (wk.games || []).length + ' game' + ((wk.games || []).length === 1 ? '' : 's') +
           ' \u00B7 ' + (wk.runs || 0) + ' run' + ((wk.runs || 0) === 1 ? '' : 's') +
           (remaining > 0
-            ? ' \u00B7 ' + remaining + ' left to explore'
-            : ' \u00B7 catalogue complete! \uD83D\uDC51');
-      }
-    } catch (e) { /* profile unavailable */ }
-  }
-
-  // Roll the dice, biased 70% toward games never played. The toast gives the
-  // pick a beat of ceremony before the jump so it never feels like a mis-tap.
-  function surpriseGame() {
-    var playedIds = {};
-    playedGames().forEach(function (p) { playedIds[p.game.id] = true; });
-    var unplayed = GAMES.filter(function (g) { return !playedIds[g.id]; });
-    var pool = (unplayed.length && Math.random()  0
             ? ' \u00B7 ' + remaining + ' left to explore'
             : ' \u00B7 catalogue complete! \uD83D\uDC51');
       }
@@ -1528,55 +1428,10 @@ window.JVDS.announce = function (msg) {
 
     document.getElementById('continueRail').innerHTML = recent.map(function (p) {
       var when = fmtAgo(p.save.last);
-      return ' prevLevel) {
-      lsSet('jvds_arc_seen_level', String(stats.level));
-      celebrate('⬆️ Welcome back, Level ' + stats.level + '!');
-      confettiBurst();
-      buzz([10, 40, 10, 40, 18]);
-    }
-
-    // Cold start speaks like a host, not a spreadsheet.
-    var fresh = totalPlays === 0;
-    document.getElementById('heroTitle').textContent = fresh ? 'Welcome in 👋' : 'Your Arcade';
-    document.getElementById('heroLevel').textContent = stats.level;
-    document.getElementById('heroXP').textContent = fresh
-      ? 'Every run earns XP here — pick any game to begin.'
-      : fmt(stats.xpProgress.current) + ' / ' + fmt(stats.xpProgress.max) +
-        ' XP to level ' + (stats.level + 1);
-    document.getElementById('heroBar').style.width = stats.xpProgress.percentage + '%';
-    document.getElementById('heroRing').style.setProperty('--p', stats.xpProgress.percentage);
-
-    document.getElementById('stXP').textContent = fmt(stats.totalXP);
-    document.getElementById('stStreak').textContent = stats.dailyStreak || 0;
-    document.getElementById('stAch').textContent = stats.achievementsUnlocked || 0;
-    document.getElementById('stPlays').textContent = fmt(totalPlays);
-
-    if (window.DailyChallenge) DailyChallenge.render('dailyChallenge');
-    if (window.WeeklyChallenge) WeeklyChallenge.render('weeklyChallenge', { shout: celebrate });
-
-    renderExplore(played);
-    renderContinue(played);
-    renderScores(played);
-  }
-
-  function renderContinue(played) {
-    var recent = played.filter(function (p) { return p.save.last; })
-                       .sort(function (a, b) { return b.save.last - a.save.last; })
-                       .slice(0, 6);
-    var wrap = document.getElementById('continueWrap');
-    if (!recent.length) { wrap.hidden = true; return; }
-    wrap.hidden = false;
-
-    document.getElementById('continueRail').innerHTML = recent.map(function (p) {
-      var when = fmtAgo(p.save.last);
       return '<a href="games/' + p.game.file + '">' +
-               '' +
                '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '</div>' +
-               '' +
-               '<div class="lab"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
-               '' +
+               '<div class="lab"><b>' + esc(p.game.title) + '</b>' +
                '<span>' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best</span></div>' +
-             '' +
              '</a>';
     }).join('');
   }
@@ -1589,60 +1444,22 @@ window.JVDS.announce = function (msg) {
 
     if (!ranked.length) {
       wrap.innerHTML =
-        '';
-    }).join('');
-  }
-
-  function renderScores(played) {
-    var wrap = document.getElementById('scoresWrap');
-    var ranked = played.filter(function (p) { return p.save.high > 0; })
-                       .sort(function (a, b) { return b.save.high - a.save.high; })
-                       .slice(0, 10);
-
-    if (!ranked.length) {
-      wrap.innerHTML =
-        '<div class="empty"><div class="ic">🎮🎮</div>' +
-        '' +
-        '<b>No scores yetNo scores yet</b><p>Play anything in the Arcade and your bests land here.</p>' +
-        '' +
+        '<div class="empty"><div class="ic">🎮</div>' +
+        '<b>No scores yet</b><p>Play anything in the Arcade and your bests land here.</p>' +
         '<button type="button" data-goto="play">Browse games</button></div>';
-      return;
-    }
-
-    wrap.innerHTML = '';
       return;
     }
 
     wrap.innerHTML = '<div class="scores">' + ranked.map(function (p, i) {
       var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
-      return '' + ranked.map(function (p, i) {
-      var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
       return '<a class="srow" href="games/' + p.game.file + '">' +
-               '' +
                '<div class="rk' + (i < 3 ? ' top' : '') + '">' + medal + '</div>' +
-               '' +
-               '<div class="nm"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
-               '' +
+               '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
                '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') +
                ' · level ' + p.save.level + '</span></div>' +
-               '' +
-               '<div class="sc">' + fmt(p.save.high) + '' + fmt(p.save.high) + '<span>BestBest</span></div>' +
-             '' +
+               '<div class="sc">' + fmt(p.save.high) + '<span>Best</span></div>' +
              '</a>';
-    }).join('') + '';
     }).join('') + '</div>';
-  }
-
-  /* ── PLAY ─────────────────────────────────────────────────── */
-
-  var filter = 'All';
-  var query = '';
-  var sortMode = lsGet('jvds_arc_sort', 'featured');
-  var SORTS = [['featured', 'Featured'], ['fresh', 'Fresh picks'], ['recent', 'Recent'], ['az', 'A–Z']];
-
-  function categories() {
-    var seen = ['All'];
-    GAMES.forEach(function (g) { if (seen.indexOf(g.cat) ';
   }
 
   /* ── PLAY ─────────────────────────────────────────────────── */
@@ -1669,20 +1486,10 @@ window.JVDS.announce = function (msg) {
       var n = counts[c] || 0;
       return '<button class="chip" type="button" data-cat="' + esc(c) + '" aria-pressed="' +
              (c === filter) + '">' + esc(c) +
-             (c !== 'All' ? '' + esc(c) +
-             (c !== 'All' ? '<span class="n">' + n + '' + n + '</span>' : '') +
-             '' : '') +
+             (c !== 'All' ? '<span class="n">' + n + '</span>' : '') +
              '</button>';
     }).join('');
-    html += '';
-    }).join('');
-    html += '<button class="chip lucky" type="button" data-lucky="1">🎲 Surprise🎲 Surprise</button>';
-    document.getElementById('chips').innerHTML = html;
-  }
-
-  function renderSortRow() {
-    document.getElementById('sortRow').innerHTML = SORTS.map(function (s) {
-      return '';
+    html += '<button class="chip lucky" type="button" data-lucky="1">🎲 Surprise</button>';
     document.getElementById('chips').innerHTML = html;
   }
 
@@ -1750,96 +1557,22 @@ window.JVDS.announce = function (msg) {
     document.getElementById('noResults').hidden = list.length > 0;
     document.getElementById('grid').innerHTML = list.map(function (g) {
       var s = smap[g.id];
-      var best = (s && s.high > 0) ? '';
-    }).join('');
-  }
-
-  // 'featured' keeps the curated registry order; the others re-rank.
-  function applySort(list, smap) {
-    var arr = list.slice();
-    if (sortMode === 'az') {
-      arr.sort(function (a, b) { return a.title.localeCompare(b.title); });
-    } else if (sortMode === 'recent') {
-      arr.sort(function (a, b) {
-        var la = (smap[a.id] && smap[a.id].last) || 0;
-        var lb = (smap[b.id] && smap[b.id].last) || 0;
-        return lb - la;
-      });
-    } else if (sortMode === 'fresh') {
-      // Never-played first, then least-played — the "what should I try" order.
-      arr.sort(function (a, b) {
-        var sa = smap[a.id] || {}, sb = smap[b.id] || {};
-        var pa = (sa.plays || 0) > 0 ? 1 : 0;
-        var pb = (sb.plays || 0) > 0 ? 1 : 0;
-        if (pa !== pb) return pa - pb;
-        return (sa.plays || 0) - (sb.plays || 0);
-      });
-    }
-    return arr;
-  }
-
-  // Jump into the Play tab ordered for discovery — the action target for the
-  // daily/weekly challenge widgets ("play toward today's goal").
-  function goFresh() {
-    filter = 'All';
-    query = '';
-    document.getElementById('search').value = '';
-    sortMode = 'fresh';
-    lsSet('jvds_arc_sort', sortMode);
-    renderChips();
-    renderSortRow();
-    show('play');
-    buzz(8);
-  }
-
-  function renderGrid() {
-    var q = query.trim().toLowerCase();
-    // One storage read per game per paint, shared by filter+sort+card markup.
-    var smap = {};
-    GAMES.forEach(function (g) { smap[g.id] = saveOf(g.id); });
-
-    var list = GAMES.filter(function (g) {
-      var okCat = filter === 'All' ? true
-                : filter === 'Little Players' ? g.kids
-                : g.cat === filter;
-      if (!okCat) return false;
-      if (!q) return true;
-      return (g.title + ' ' + g.tag + ' ' + g.desc).toLowerCase().indexOf(q) >= 0;
-    });
-    list = applySort(list, smap);
-
-    document.getElementById('noResults').hidden = list.length > 0;
-    document.getElementById('grid').innerHTML = list.map(function (g) {
-      var s = smap[g.id];
       var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
-      var kid = g.kids ? '' : '';
       var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
-      var info = '' : '';
       var info = '<div class="info-chip" data-info="' + esc(g.id) + '" role="button" aria-label="' +
-                 esc(g.title) + ' details">ii</div>';
-      var plays = (s && s.plays > 0)
-        ? s.plays + ' play' + (s.plays === 1 ? '' : 's')
-        : 'Not played yet';
-      return '';
+                 esc(g.title) + ' details">i</div>';
       var plays = (s && s.plays > 0)
         ? s.plays + ' play' + (s.plays === 1 ? '' : 's')
         : 'Not played yet';
       return '<a class="card" href="games/' + g.file + '">' +
-               '' +
                '<div class="art" style="background:' + g.bg + '">' +
                  artHTML(g) + best + kid + info +
                '</div>' +
-               '' +
                '<div class="body">' +
-                 '' +
                  '<div class="tag">' + esc(g.tag) + '</div>' +
-                 '' +
                  '<div class="name">' + esc(g.title) + '</div>' +
-                 '' +
                  '<div class="plays">' + plays + '</div>' +
-               '' +
                '</div>' +
-             '' +
              '</a>';
     }).join('');
   }
@@ -1896,223 +1629,32 @@ window.JVDS.announce = function (msg) {
       var d = defs[id];
       var has = !!earned[id];
       var name = String(d.name || id).replace(/^\S+\s/, '');
-      return '';
-    }).join('');
-  }
-
-  /* ── GOALS ────────────────────────────────────────────────── */
-
-  // The shared achievement set lives in game-system.js. Read it off the
-  // prototype rather than constructing a GameSystem, which would create a
-  // bogus jvds_game_* save and award XP for merely opening the hub.
-  function sharedAchievements() {
-    try {
-      return GameSystem.prototype.defineAchievements.call({}) || {};
-    } catch (e) { return {}; }
-  }
-
-  // Map of every shared achievement earned across all games.
-  function earnedGoalMap() {
-    var earned = {};
-    playedGames().forEach(function (p) {
-      p.save.achievements.forEach(function (a) { earned[a] = true; });
-    });
-    return earned;
-  }
-
-  function distinctGoalsEarned() {
-    return Object.keys(earnedGoalMap()).length;
-  }
-
-  // Gold dot on the Goals tab until the player has seen their new badges.
-  function refreshGoalDot() {
-    var dot = document.getElementById('goalsDot');
-    if (!dot) return;
-    var seen = parseInt(lsGet('jvds_arc_goals_seen', '0'), 10) || 0;
-    dot.hidden = !(distinctGoalsEarned() > seen);
-  }
-
-  function markGoalsSeen() {
-    lsSet('jvds_arc_goals_seen', String(distinctGoalsEarned()));
-    refreshGoalDot();
-  }
-
-  function renderGoals() {
-    var defs = sharedAchievements();
-    var ids = Object.keys(defs);
-    var played = playedGames();
-
-    // An achievement counts as earned if any arcade game has unlocked it.
-    var earned = earnedGoalMap();
-
-    var got = ids.filter(function (id) { return earned[id]; }).length;
-    document.getElementById('goalCount').textContent = got + ' / ' + ids.length;
-
-    document.getElementById('goalGrid').innerHTML = ids.map(function (id) {
-      var d = defs[id];
-      var has = !!earned[id];
-      var name = String(d.name || id).replace(/^\S+\s/, '');
       return '<div class="goal' + (has ? ' got' : '') + '">' +
-               '' +
                '<div class="ic">' + (has ? (d.icon || '🏆') : '🔒') + '</div>' +
-               '' +
-               '<b>' + esc(name) + '' + esc(name) + '</b>' +
-               '' +
+               '<b>' + esc(name) + '</b>' +
                '<span>' + esc(d.description || '') + '</span>' +
-             '' +
              '</div>';
     }).join('');
 
     var wrap = document.getElementById('perGame');
     if (!played.length) {
-      wrap.innerHTML = '';
-    }).join('');
-
-    var wrap = document.getElementById('perGame');
-    if (!played.length) {
-      wrap.innerHTML = '<div class="empty"><div class="ic">🏆🏆</div><b>Nothing tracked yetNothing tracked yet</b>' +
-        '' +
+      wrap.innerHTML = '<div class="empty"><div class="ic">🏆</div><b>Nothing tracked yet</b>' +
         '<p>Goals unlock as you play. Pick a game to get started.</p>' +
-        '' +
         '<button type="button" data-goto="play">Browse games</button></div>';
-      return;
-    }
-
-    wrap.innerHTML = '';
       return;
     }
 
     wrap.innerHTML = '<div class="scores">' +
       played.sort(function (a, b) { return b.save.plays - a.save.plays; })
             .map(function (p) {
-        return '' +
-      played.sort(function (a, b) { return b.save.plays - a.save.plays; })
-            .map(function (p) {
         return '<a class="srow" href="games/' + p.game.file + '">' +
-                 '' +
                  '<div class="rk">' + (p.game.emoji || '🎮') + '</div>' +
-                 '' +
-                 '<div class="nm"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
-                 '' +
+                 '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
                  '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '</span></div>' +
-                 '' +
                  '<div class="sc">' + p.save.achievements.length +
-                 '' + p.save.achievements.length +
                  '<span>' + (p.save.achievements.length === 1 ? 'Goal' : 'Goals') + '</span></div>' +
-               '' +
                '</a>';
-      }).join('') + '';
       }).join('') + '</div>';
-  }
-
-  /* ── Tabs ─────────────────────────────────────────────────── */
-
-  function show(tab) {
-    ['home', 'play', 'goals'].forEach(function (t) {
-      document.getElementById('view-' + t).classList.toggle('active', t === tab);
-    });
-    document.querySelectorAll('.arc-tabs button').forEach(function (b) {
-      b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-    });
-    if (tab === 'home') renderHome();
-    if (tab === 'play') renderGrid();
-    if (tab === 'goals') { renderGoals(); markGoalsSeen(); }
-    try { history.replaceState(null, '', '#' + tab); } catch (e) {}
-    window.scrollTo(0, 0);
-  }
-
-  /* ── Install prompt ───────────────────────────────────────── */
-
-  var deferredPrompt = null;
-  var installBtn = document.getElementById('installBtn');
-
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.classList.add('show');
-  });
-
-  installBtn.addEventListener('click', function () {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function () {
-        deferredPrompt = null;
-        installBtn.classList.remove('show');
-      });
-      return;
-    }
-    document.getElementById('iosHint').classList.add('show');
-  });
-
-  document.getElementById('iosHintClose').addEventListener('click', function () {
-    document.getElementById('iosHint').classList.remove('show');
-  });
-
-  window.addEventListener('appinstalled', function () {
-    installBtn.classList.remove('show');
-  });
-
-  // iOS Safari has no beforeinstallprompt, so offer the manual route there.
-  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  var standalone = window.matchMedia('(display-mode: standalone)').matches ||
-                   navigator.standalone === true;
-  if (standalone) document.body.classList.add('arc-appmode');
-  else if (isIOS) installBtn.classList.add('show');
-
-  /* ── Boot ─────────────────────────────────────────────────── */
-
-  document.getElementById('chips').addEventListener('click', function (e) {
-    var b = e.target.closest('.chip');
-    if (!b) return;
-    if (b.dataset.lucky) { surpriseGame(); return; }
-    filter = b.dataset.cat;
-    renderChips();
-    renderGrid();
-  });
-
-  document.getElementById('sortRow').addEventListener('click', function (e) {
-    var b = e.target.closest('button[data-sort]');
-    if (!b || b.dataset.sort === sortMode) return;
-    sortMode = b.dataset.sort;
-    lsSet('jvds_arc_sort', sortMode);
-    renderSortRow();
-    renderGrid();
-    buzz(6);
-  });
-
-  // Debounced so fast typing doesn't rebuild the card grid (and its cover
-  // images) on every keystroke on slower phones.
-  var searchTimer = null;
-  document.getElementById('search').addEventListener('input', function (e) {
-    query = e.target.value;
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(renderGrid, 90);
-  });
-
-  document.querySelector('.arc-tabs').addEventListener('click', function (e) {
-    var b = e.target.closest('button[data-tab]');
-    if (!b || b.getAttribute('aria-selected') === 'true') return;
-    show(b.dataset.tab);
-    buzz(6);
-  });
-
-  // Keyboard support for the tab list (desktop / TV / a11y).
-  document.querySelector('.arc-tabs').addEventListener('keydown', function (e) {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    var tabs = ['home', 'play', 'goals'];
-    var cur = document.querySelector('.arc-tabs button[aria-selected="true"]');
-    if (!cur) return;
-    var i = tabs.indexOf(cur.dataset.tab);
-    var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
-    show(next);
-    var btn = document.querySelector('.arc-tabs button[data-tab="' + next + '"]');
-    if (btn) btn.focus();
-  });
-
-  document.addEventListener('click', function (e) {
-    var chip = e.target.closest('.info-chip');
-    if (chip) {
-      e.preventDefault();       // chip lives inside the card's ';
   }
 
   /* ── Tabs ─────────────────────────────────────────────────── */
@@ -2294,78 +1836,6 @@ window.JVDS.announce = function (msg) {
     if (!sure) return;
     try {
       var doomed = [];
-      for (var i = 0; i 
-      openDetail(chip.dataset.info);
-      return;
-    }
-    var b = e.target.closest('[data-goto]');
-    if (b) { show(b.dataset.goto); return; }
-    var c = e.target.closest('[data-action]');
-    if (c && c.dataset.action === 'clear-filters') {
-      filter = 'All';
-      query = '';
-      document.getElementById('search').value = '';
-      renderChips();
-      renderGrid();
-    }
-  });
-
-  // Tapping the streak tile scrolls to today's challenge.
-  document.querySelector('.tiles').addEventListener('click', function (e) {
-    if (!e.target.closest('.tile.streak')) return;
-    if (!document.getElementById('view-home').classList.contains('active')) return;
-    var dc = document.getElementById('dailyChallenge');
-    if (dc && dc.scrollIntoView) dc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-
-  /* ── Settings sheet ───────────────────────────────────────── */
-  var sheet = document.getElementById('settingsSheet');
-  var backdrop = document.getElementById('settingsBackdrop');
-  var gearBtn = document.getElementById('arcSettingsBtn');
-
-  function openSettings() {
-    document.getElementById('soundToggle').checked =
-      lsGet('jvds_sound', '1') !== '0';
-    document.getElementById('hapticsToggle').checked =
-      lsGet('jvds_arc_haptics', '1') !== '0';
-    document.getElementById('arcBuildInfo').innerHTML = buildInfoText();
-    sheet.hidden = false;
-    backdrop.hidden = false;
-    gearBtn.setAttribute('aria-expanded', 'true');
-    checkForUpdates();
-  }
-  function closeSettings() {
-    sheet.hidden = true;
-    backdrop.hidden = true;
-    gearBtn.setAttribute('aria-expanded', 'false');
-  }
-  gearBtn.addEventListener('click', function () {
-    if (sheet.hidden) { openSettings(); buzz(6); } else closeSettings();
-  });
-  document.getElementById('settingsClose').addEventListener('click', closeSettings);
-  backdrop.addEventListener('click', closeSettings);
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    if (!sheet.hidden) closeSettings();
-    if (!detailSheet.hidden) closeDetail();
-    if (!importSheet.hidden) closeImportSheet();
-  });
-
-  document.getElementById('hapticsToggle').addEventListener('change', function (e) {
-    lsSet('jvds_arc_haptics', e.target.checked ? '1' : '0');
-    if (e.target.checked) buzz(12);
-  });
-
-  // Nuclear option: wipe every jvds_* key (profile, per-game saves, XP caps,
-  // leaderboards, hub prefs) after an explicit confirmation.
-  document.getElementById('resetAllBtn').addEventListener('click', function () {
-    var sure = confirm(
-      'Delete ALL Arcade progress?\n\n' +
-      'Every game\u2019s high scores, your XP, levels, streaks and achievements ' +
-      'will be erased. This cannot be undone.');
-    if (!sure) return;
-    try {
-      var doomed = [];
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
         if (k && k.indexOf('jvds_') === 0) doomed.push(k);
@@ -2410,24 +1880,7 @@ window.JVDS.announce = function (msg) {
   var currentDetail = null;
 
   function dRow(k, v) {
-    return '<div class="d-row"><span>' + k + '' + k + '</span><b>' + v + '' + v + '</b></div>';
-  }
-
-  function openDetail(id) {
-    var g = null;
-    GAMES.forEach(function (x) { if (x.id === id) g = x; });
-    if (!g) return;
-    currentDetail = g;
-    var s = saveOf(g.id) || { high: 0, plays: 0, level: 1, last: 0, achievements: [] };
-    var shared = Object.keys(sharedAchievements());
-    var sharedGot = 0;
-    s.achievements.forEach(function (a) { if (shared.indexOf(a) >= 0) sharedGot++; });
-    var customGot = s.achievements.length - sharedGot;
-
-    document.getElementById('detailTitle').textContent =
-      (g.emoji ? g.emoji + ' ' : '') + g.title;
-    document.getElementById('detailBody').innerHTML =
-      '';
+    return '<div class="d-row"><span>' + k + '</span><b>' + v + '</b></div>';
   }
 
   function openDetail(id) {
@@ -2449,56 +1902,10 @@ window.JVDS.announce = function (msg) {
         dRow('Your best', s.high > 0 ? fmt(s.high) : '—') +
         dRow('Plays', String(s.plays)) +
         dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
-        dRow('Goals earned', sharedGot + (customGot > 0 ? ' ' +
-        dRow('Type', esc(g.tag)) +
-        dRow('Your best', s.high > 0 ? fmt(s.high) : '—') +
-        dRow('Plays', String(s.plays)) +
-        dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
         dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
-      '' : '')) +
       '</div>' +
-      '' +
       '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
-      (g.kids ? '' +
       (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.</p>' : '');
-    detailSheet.hidden = false;
-    detailBackdrop.hidden = false;
-  }
-  function closeDetail() {
-    detailSheet.hidden = true;
-    detailBackdrop.hidden = true;
-    currentDetail = null;
-  }
-  document.getElementById('detailClose').addEventListener('click', closeDetail);
-  detailBackdrop.addEventListener('click', closeDetail);
-  document.getElementById('detailPlayBtn').addEventListener('click', function () {
-    if (currentDetail) { buzz(8); location.href = 'games/' + currentDetail.file; }
-  });
-  document.getElementById('detailResetBtn').addEventListener('click', function () {
-    if (!currentDetail) return;
-    var g = currentDetail;
-    if (!confirm('Reset your data for ' + g.title + '?\n\nThis game\u2019s best score, plays and goals will be erased.')) return;
-    try {
-      localStorage.removeItem('jvds_game_' + g.id);
-      localStorage.removeItem('jvds_lb_' + g.id);
-    } catch (e) {}
-    closeDetail();
-    renderGrid();
-    renderHome();
-    refreshGoalDot();
-    celebrate('🧹 ' + g.title + ' reset');
-    buzz(12);
-  });
-
-  /* ── Save export / import ─────────────────────────────────── */
-  var importSheet = document.getElementById('importSheet');
-  var importBackdrop = document.getElementById('importBackdrop');
-  var importArea = document.getElementById('importArea');
-
-  function snapshotSave() {
-    var data = {};
-    try {
-      for (var i = 0; i ' : '');
     detailSheet.hidden = false;
     detailBackdrop.hidden = false;
   }
@@ -2654,8 +2061,6 @@ window.JVDS.announce = function (msg) {
   refreshGoalDot();
   var start = (location.hash || '').replace('#', '');
   show(['home', 'play', 'goals'].indexOf(start) >= 0 ? start : 'home');
-})();
-= 0 ? start : 'home');
 })();
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
