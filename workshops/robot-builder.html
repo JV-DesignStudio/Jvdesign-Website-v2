@@ -387,6 +387,20 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -429,28 +443,6 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -469,22 +461,6 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -714,139 +690,6 @@ input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
 <canvas id="pcardOffscreen" style="display:none;position:absolute"></canvas>
 
 <script>
-'use strict';
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   THREE.JS SCENE
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const canvas = document.getElementById('robotCanvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.setClearColor(0x070b12);
-
-const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x070b12, 14, 40);
-
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-camera.position.set(0, 2, 6);
-
-// Lights
-const ambient = new THREE.AmbientLight(0x445566, 0.6);
-scene.add(ambient);
-const sun = new THREE.DirectionalLight(0xfff5ee, 1.4);
-sun.position.set(5, 10, 6);
-sun.castShadow = true;
-scene.add(sun);
-const fill = new THREE.DirectionalLight(0x4466aa, 0.45);
-fill.position.set(-6, 2, -4);
-scene.add(fill);
-
-// Lab floor grid
-const grid = new THREE.GridHelper(20, 20, 0x1d4e6e, 0x141c2a);
-grid.position.y = -0.01;
-scene.add(grid);
-
-// Charging pad
-const padGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.08, 32);
-const padMat = new THREE.MeshStandardMaterial({ color: 0x161c28, roughness: 0.7, metalness: 0.3 });
-const pad = new THREE.Mesh(padGeo, padMat);
-pad.position.y = -0.04;
-pad.receiveShadow = true;
-scene.add(pad);
-const padRingGeo = new THREE.TorusGeometry(1.5, 0.03, 8, 32);
-const padRingMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.6, roughness: 0.4 });
-const padRing = new THREE.Mesh(padRingGeo, padRingMat);
-padRing.rotation.x = Math.PI / 2;
-padRing.position.y = 0.01;
-scene.add(padRing);
-
-// Reflective puddle under robot
-const puddleGeo = new THREE.CircleGeometry(2.2, 40);
-const puddleMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.95, roughness: 0.04, transparent: true, opacity: 0.14 });
-const puddle = new THREE.Mesh(puddleGeo, puddleMat);
-puddle.rotation.x = -Math.PI / 2;
-puddle.position.y = 0.001;
-scene.add(puddle);
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ROBOT STATE
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-const R = {
-  name: 'UNNAMED',
-  headStyle: 'dome',
-  torsoStyle: 'box',
-  bodyHeight: 1.2,
-  primaryCol: '#9ca3af',
-  secondaryCol: '#374151',
-  eyeCol: '#38bdf8',
-  armStyle: 'straight',
-  legStyle: 'biped',
-  antenna: false,
-  shoulderPads: false,
-  backpack: 'none',
-  chestPanel: false,
-  weapon: 'none',
-  stripeOn: false,
-  stripeCol: '#f5c842',
-  activated: false,
-};
-
-let robotGroup = null;
-let particles = null, particleVels = [], particleLife = 0;
-
-function hexToThree(hex) {
-  return new THREE.Color(hex);
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   OBJ EXPORT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function downloadRobot() {
-  if (!robotGroup) { sout('Build your robot first!'); return; }
-  robotGroup.updateMatrixWorld(true);
-
-  const name = (R.name && R.name !== 'UNNAMED' ? R.name : 'robot').replace(/\s+/g, '-').toLowerCase();
-  sout('â³ Preparing OBJ exportâ€¦');
-
-  let obj = '# ' + R.name + ', JV Robot Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '-robot.mtl\n';
-  let mtl = '# Materials for ' + R.name + '\n# jvdesignstudio.co.uk\n';
-
-  const matMap = {};
-  let matIdx = 0;
-  let vOff = 1; // OBJ is 1-indexed
-  let meshIdx = 0;
-
-  robotGroup.traverse(function(node) {
-    if (!node.isMesh) return;
-
-    // --- material ---
-    const col = node.material.color ? node.material.color : new THREE.Color(0x888888);
-    const hex = col.getHexString();
-    if (!matMap[hex]) {
-      const mName = 'm' + (matIdx++);
-      matMap[hex] = mName;
-      mtl += '\nnewmtl ' + mName + '\n';
-      mtl += 'Kd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\n';
-      mtl += 'Ka 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
-      if (node.material.transparent) {
-        mtl += 'd ' + (node.material.opacity != null ? node.material.opacity : 1).toFixed(4) + '\n';
-      }
-    }
-
-    // --- geometry ---
-    const g = node.geometry.clone();
-    g.applyMatrix4(node.matrixWorld);
-    if (!g.attributes.normal) g.computeVertexNormals();
-
-    const pos = g.attributes.position;
-    const nor = g.attributes.normal;
-    const idx = g.index;
-    const n = pos.count;
-
-    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
-
-    for (let i = 0; i 
 'use strict';
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1417,31 +1260,6 @@ function animate() {
     particleLife--;
     particles.material.opacity = Math.pow(particleLife / 60, 0.6);
     const pos = particles.geometry.attributes.position;
-    for (let i = 0; i = 1) { m.scale.setScalar(1); delete m.userData.born; return; }
-      // Ease-out-back curve
-      const c1 = 1.7, c3 = c1 + 1;
-      const s = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-      m.scale.setScalar(Math.max(0.001, s));
-    });
-  }
-
-  if (robotGroup && R.activated) {
-    const t = frame * 0.05;
-    robotGroup.position.y = Math.sin(t) * 0.04;
-    if (robotGroup.userData.headGroup) robotGroup.userData.headGroup.rotation.y = Math.sin(t * 0.5) * 0.25;
-    (robotGroup.userData.armGroups || []).forEach(function(g, i) {
-      g.rotation.x = Math.sin(t + i * Math.PI) * 0.15 - 0.1;
-    });
-    (robotGroup.userData.eyeGlow || []).forEach(function(m) {
-      m.emissiveIntensity = 1.4 + Math.sin(t * 2) * 0.5;
-    });
-  }
-
-  // Particle burst update
-  if (particles && particleLife > 0) {
-    particleLife--;
-    particles.material.opacity = Math.pow(particleLife / 60, 0.6);
-    const pos = particles.geometry.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       pos.setXYZ(i, pos.getX(i) + particleVels[i].x, pos.getY(i) + particleVels[i].y, pos.getZ(i) + particleVels[i].z);
       particleVels[i].y -= 0.0012;
@@ -1718,230 +1536,20 @@ function randomRobot() {
    STEP HELPERS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function opts(id, options, currentVal, onChange) {
-  return ` 0.35;
-    col[i*3]   = useEye ? eyeC.r : accC.r;
-    col[i*3+1] = useEye ? eyeC.g : accC.g;
-    col[i*3+2] = useEye ? eyeC.b : accC.b;
-  }
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 1, depthWrite: false });
-  particles = new THREE.Points(geo, mat);
-  scene.add(particles);
-  particleLife = 60;
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ROBOT STATS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function computeStats() {
-  let speed = 48, power = 48, armour = 48, tech = 48;
-  if (R.legStyle === 'hover')      { speed += 28; tech += 18; }
-  else if (R.legStyle === 'tank')  { speed -= 16; armour += 22; power += 8; }
-  else                              { speed += 6; }
-  if (R.bodyHeight === 0.9)        { speed += 12; }
-  else if (R.bodyHeight === 1.5)   { armour += 16; power += 6; speed -= 12; }
-  if (R.torsoStyle === 'barrel')   { armour += 12; power += 6; speed -= 6; }
-  else if (R.torsoStyle === 'slim'){ speed += 10; }
-  if (R.shoulderPads)  { armour += 16; speed -= 4; }
-  if (R.backpack === 'jetpack')    { speed += 22; tech += 10; }
-  else if (R.backpack === 'cargo') { armour += 6; }
-  if (R.weapon === 'blaster')      { power += 22; tech += 6; }
-  else if (R.weapon === 'sword')   { power += 16; }
-  else if (R.weapon === 'shield')  { armour += 22; }
-  if (R.armStyle === 'blaster')    { power += 16; tech += 10; }
-  else if (R.armStyle === 'claw')  { power += 10; armour += 6; }
-  if (R.antenna)   { tech += 16; }
-  if (R.chestPanel){ tech += 12; power += 6; }
-  if (R.headStyle === 'visor')    tech += 10;
-  if (R.headStyle === 'cyclops')  tech += 8;
-  if (R.headStyle === 'skull')    power += 8;
-  if (R.activated) { power += 12; tech += 8; }
-  return {
-    speed: Math.min(100, Math.max(0, Math.round(speed))),
-    power: Math.min(100, Math.max(0, Math.round(power))),
-    armour: Math.min(100, Math.max(0, Math.round(armour))),
-    tech:  Math.min(100, Math.max(0, Math.round(tech))),
-  };
-}
-
-function updateStats() {
-  const s = computeStats();
-  function setBar(rowId, val, color) {
-    const row = document.getElementById(rowId);
-    if (!row) return;
-    row.querySelector('.stat-fill').style.width = val + '%';
-    row.querySelector('.stat-fill').style.background = color;
-    row.querySelector('.stat-val').textContent = val;
-  }
-  setBar('statSpeed',  s.speed,  '#38bdf8');
-  setBar('statPower',  s.power,  '#fb923c');
-  setBar('statArmour', s.armour, '#4ade80');
-  setBar('statTech',   s.tech,   '#a78bfa');
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PNG / PROFILE CARD EXPORT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function downloadPNG() {
-  if (!robotGroup) { sout('Build your robot first!'); return; }
-  renderer.render(scene, camera);
-  const url = canvas.toDataURL('image/png');
-  const a = document.createElement('a'); a.href = url; a.download = (R.name || 'robot').toLowerCase() + '-robot.png'; a.click();
-  sout('ðŸ“¸ Screenshot saved as ' + a.download);
-}
-
-function _drawStatBar(ctx, x, y, w, label, val, color) {
-  ctx.fillStyle = 'rgba(232,238,248,0.4)';
-  ctx.font = '10px monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText(label, x, y + 9);
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.fillRect(x + 58, y, w - 58, 7);
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 58, y, (w - 58) * val / 100, 7);
-  ctx.fillStyle = color;
-  ctx.textAlign = 'right';
-  ctx.fillText(val, x + w, y + 9);
-}
-
-function showProfileCard() {
-  if (!robotGroup) { sout('Build your robot first!'); return; }
-  renderer.render(scene, camera);
-  const snapshot = canvas.toDataURL('image/png');
-  const stats = computeStats();
-  const oc = document.getElementById('pcardOffscreen');
-  oc.width = 400; oc.height = 540;
-  const ctx = oc.getContext('2d');
-
-  // Background
-  ctx.fillStyle = '#070b12';
-  ctx.fillRect(0, 0, 400, 540);
-  // Subtle glow bg
-  const grd = ctx.createRadialGradient(200, 130, 10, 200, 130, 160);
-  grd.addColorStop(0, 'rgba(56,189,248,0.12)');
-  grd.addColorStop(1, 'rgba(56,189,248,0)');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, 400, 280);
-  // Border
-  ctx.strokeStyle = 'rgba(56,189,248,0.5)';
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(1, 1, 398, 538);
-
-  const img = new Image();
-  img.onload = function() {
-    ctx.drawImage(img, 40, 16, 320, 240);
-    // Name
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 30px Bebas Neue, Impact, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(R.name || 'ROBOT', 200, 284);
-    // Tag line
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '10px monospace';
-    ctx.fillText('UNIT PROFILE  Â·  JVDESIGNSTUDIO.CO.UK', 200, 302);
-    // Divider
-    ctx.fillStyle = 'rgba(56,189,248,0.3)';
-    ctx.fillRect(40, 312, 320, 1);
-    // Stats
-    _drawStatBar(ctx, 40, 326, 320, 'SPEED',  stats.speed,  '#38bdf8');
-    _drawStatBar(ctx, 40, 352, 320, 'POWER',  stats.power,  '#fb923c');
-    _drawStatBar(ctx, 40, 378, 320, 'ARMOUR', stats.armour, '#4ade80');
-    _drawStatBar(ctx, 40, 404, 320, 'TECH',   stats.tech,   '#a78bfa');
-    // Footer
-    ctx.fillStyle = 'rgba(232,238,248,0.22)';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('jvdesignstudio.co.uk  Â·  Robot Builder  Â·  Free', 200, 520);
-
-    const cardUrl = oc.toDataURL('image/png');
-    document.getElementById('pcardImg').src = cardUrl;
-    document.getElementById('pcardDl').onclick = function() {
-      const a = document.createElement('a'); a.href = cardUrl;
-      a.download = (R.name || 'robot').toLowerCase() + '-profile-card.png'; a.click();
-    };
-    document.getElementById('profileCard').classList.add('show');
-  };
-  img.src = snapshot;
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   RANDOM ROBOT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function randomRobot() {
-  const pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
-  R.headStyle   = pick(['dome','visor','box','round','skull','cyclops','catears']);
-  R.torsoStyle  = pick(['box','barrel','slim']);
-  R.bodyHeight  = pick([0.9, 1.2, 1.5]);
-  R.primaryCol  = pick(['#9ca3af','#dc2626','#38bdf8','#4ade80','#a78bfa','#fb923c','#f5c842','#18181b','#e879f9','#14b8a6','#fbbf24']);
-  R.secondaryCol= pick(['#374151','#18181b','#1e3a5f','#3f3f46','#1c1917','#064e3b','#312e81']);
-  R.eyeCol      = pick(['#38bdf8','#ef4444','#84cc16','#a78bfa','#fbbf24','#ffffff','#e879f9','#4ade80']);
-  R.armStyle    = pick(['straight','claw','blaster']);
-  R.legStyle    = pick(['biped','tank','hover']);
-  R.antenna     = Math.random() > 0.48;
-  R.shoulderPads= Math.random() > 0.48;
-  R.backpack    = pick(['none','none','jetpack','cargo']);
-  R.chestPanel  = Math.random() > 0.42;
-  R.weapon      = pick(['none','none','blaster','sword','shield']);
-  R.stripeOn    = Math.random() > 0.38;
-  R.stripeCol   = pick(['#f5c842','#38bdf8','#4ade80','#dc2626','#a78bfa','#ffffff','#fb923c']);
-  R.activated   = false;
-  buildRobot();
-  sout('ðŸŽ² Random robot generated, hit Power Up at Step 16 to bring it to life!');
-  document.getElementById('liveStatus').textContent = 'Randomised!';
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   STEP HELPERS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-function opts(id, options, currentVal, onChange) {
   return `<div class="opt-grid">${options.map(o =>
-    `${options.map(o =>
     `<button class="opt-btn${currentVal===o.val?' sel':''}" onclick="(${onChange})('${o.val}',this)">
-      
-      <span class="opt-icon">${o.icon}${o.icon}</span>${o.label}${o.label}</button>`
-  ).join('')}`
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
   ).join('')}</div>`;
 }
 
 function swatchRow(id, colours, currentVal, onChange) {
-  return ``;
-}
-
-function swatchRow(id, colours, currentVal, onChange) {
   return `<div class="swatch-row">${colours.map(c =>
-    `${colours.map(c =>
     `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" onclick="(${onChange})('${c}',this)"></div>`
-  ).join('')}`
   ).join('')}</div>
-  
   <div class="custom-colour">
-    
-    <span>Custom:Custom:</span>
-    
+    <span>Custom:</span>
     <input type="color" value="${currentVal}" oninput="(${onChange})(this.value,null)">
-  
   </div>`;
-}
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   STEPS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-let currentStep = 0;
-const stepDone = new Array(16).fill(false);
-
-const STEPS = [
-
-/* 1 */ {
-  title: 'Name Your Robot',
-  tag: 'STEP 01 Â· IDENTITY',
-  intro: `Every robot needs a name. R2-D2. WALL-E. Atlas. Optimus. A good name tells you something about what your robot does or how it behaves.`,
-  boxes: [
-    { t:'box-c', tx:'Real robots are often named after their job or design series ASIMO stands for "Advanced Step in Innovative MObility". Spot, Atlas and Stretch are all Boston Dynamics robots named for how they move.' },
-    { t:'box-t', tx:'Keep it under 12 characters it looks best on the spec overlay.' },
-  ],
-  tasks: ['Enter a robot name', 'Press Apply to lock it in'],
-  html() { return ``;
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -2122,179 +1730,12 @@ const STEPS = [
   ],
   tasks: ['Toggle the antenna on or off'],
   html() {
-    return ``; },
-  onApply() { R.name = document.getElementById('robotName')?.value?.trim().toUpperCase() || 'UNIT-7'; buildRobot(); sout('ðŸ¤– ' + R.name + ' is registered. Now choose a head shape.'); document.getElementById('liveStatus').textContent = 'Named!'; }
-},
-
-/* 2 */ {
-  title: 'Head Shape',
-  tag: 'STEP 02 Â· HEAD UNIT',
-  intro: `The head houses the sensors and "brain". A Dome looks friendly and classic. A Visor gives a sleek glowing eye-strip. A Box Head looks industrial. Round gives a smooth android look.`,
-  boxes: [
-    { t:'box-c', tx:'WALL-E has a binocular box head. Boston Dynamics\' Atlas barely has a "head" at all just a sensor box. R2-D2 has a dome. The shape gives a robot personality before it even moves.' },
-    { t:'box-t', tx:'Try Visor for a sci-fi soldier look it adds a glowing eye-strip across the face.' },
-  ],
-  tasks: ['Choose a head shape'],
-  html() {
-    const o = `(function(v,el){R.headStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('head', [
-      { val:'dome',    icon:'ðŸ›¸', label:'Dome' },
-      { val:'visor',   icon:'ðŸ•¶ï¸', label:'Visor' },
-      { val:'box',     icon:'ðŸ“¦', label:'Box Head' },
-      { val:'round',   icon:'âšª', label:'Round' },
-      { val:'skull',   icon:'ðŸ’€', label:'Skull' },
-      { val:'cyclops', icon:'ðŸ‘ï¸', label:'Cyclops' },
-      { val:'catears', icon:'ðŸ±', label:'Cat Ears' },
-    ], R.headStyle, o);
-  },
-  onApply() { buildRobot(); sout('Head: ' + R.headStyle + '. Looking sharp!'); document.getElementById('liveStatus').textContent = 'Head set!'; }
-},
-
-/* 3 */ {
-  title: 'Body Type',
-  tag: 'STEP 03 Â· CHASSIS',
-  intro: `The torso houses the power core and main processors. Standard is a balanced box shape. Barrel is round and bulky like an industrial bot. Slim is narrow and agile.`,
-  boxes: [
-    { t:'box-c', tx:'A wider chassis can carry more battery and armour but is slower. A slim chassis is lighter and quicker industrial and service robots often use slim frames to fit through doorways.' },
-  ],
-  tasks: ['Choose a body type'],
-  html() {
-    const o = `(function(v,el){R.torsoStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('torso', [
-      { val:'box',    icon:'ðŸ¤–', label:'Standard' },
-      { val:'barrel', icon:'ðŸ›¢ï¸', label:'Barrel' },
-      { val:'slim',   icon:'ðŸ“', label:'Slim' },
-    ], R.torsoStyle, o);
-  },
-  onApply() { buildRobot(); sout('Chassis: ' + R.torsoStyle + ' torso fitted.'); document.getElementById('liveStatus').textContent = 'Chassis set!'; }
-},
-
-/* 4 */ {
-  title: 'Body Height',
-  tag: 'STEP 04 Â· SCALE',
-  intro: `How tall is your robot? Compact robots are nimble and good at squeezing into small spaces. Standard is balanced. Heavy robots are intimidating, slow, and built for power.`,
-  boxes: [
-    { t:'box-c', tx:'Height affects how everything else looks arms, legs and the head all scale with body height. Taller robots look more imposing but can seem top-heavy on hover legs.' },
-    { t:'box-t', tx:'Try Standard first you can always come back and change it.' },
-  ],
-  tasks: ['Pick a body height'],
-  html() {
-    const o = `(function(v,el){R.bodyHeight=parseFloat(v);el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('height', [
-      { val:'0.9', icon:'ðŸ“¦', label:'Compact' },
-      { val:'1.2', icon:'ðŸ¤–', label:'Standard' },
-      { val:'1.5', icon:'ðŸ—ï¸', label:'Heavy' },
-    ], String(R.bodyHeight), o);
-  },
-  onApply() { buildRobot(); sout('Body height set.'); document.getElementById('liveStatus').textContent = 'Height set!'; }
-},
-
-/* 5 */ {
-  title: 'Chassis Colour',
-  tag: 'STEP 05 Â· LIVERY',
-  intro: `The main body colour. Greyand whiteare classic robotic colours, but your robot can be any colour you like. This will be the main colour on the torso, legs and arms.`,
-  boxes: [
-    { t:'box-t', tx:'Pick a bold colour you\'ll add a contrasting accent colour in the next step.' },
-  ],
-  tasks: ['Choose a chassis colour'],
-  html() {
-    const o = `(function(c,el){R.primaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return swatchRow('pc', ['#9ca3af','#dc2626','#38bdf8','#4ade80','#a78bfa','#fb923c','#f5c842','#18181b'], R.primaryCol, o);
-  },
-  onApply() { buildRobot(); sout('Chassis colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
-},
-
-/* 6 */ {
-  title: 'Accent Colour',
-  tag: 'STEP 06 Â· CONTRAST',
-  intro: `The accent colour appears on the shoulders, knees, hands and joints. A contrasting colour makes the robot look more designed and helps the moving parts stand out.`,
-  boxes: [
-    { t:'box-t', tx:'Classic combos: grey body + dark joints. Red body + black accents. Or try matching colours for a sleek monochrome look.' },
-  ],
-  tasks: ['Choose an accent colour'],
-  html() {
-    const o = `(function(c,el){R.secondaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return swatchRow('sc', ['#374151','#18181b','#dc2626','#f5c842','#38bdf8','#4ade80','#a78bfa','#c0c0c0'], R.secondaryCol, o);
-  },
-  onApply() { buildRobot(); sout('Accent colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
-},
-
-/* 7 */ {
-  title: 'Eye / Visor Glow',
-  tag: 'STEP 07 Â· OPTICS',
-  intro: `Choose the glow colour for your robot's eyes (and visor, if you picked one). Blue feels calm and helpful. Red feels aggressive. Green and purple feel more alien or futuristic.`,
-  boxes: [
-    { t:'box-c', tx:'In films, glowing red eyes almost always signal a villain robot think the Terminator while blue or green often signals a friendly helper. You can use this trick to give your robot instant personality.' },
-    { t:'box-t', tx:'The glow gets brighter once you power up your robot in the final step!' },
-  ],
-  tasks: ['Pick an eye glow colour'],
-  html() {
-    const o = `(function(c,el){R.eyeCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return swatchRow('ec', ['#38bdf8','#ef4444','#84cc16','#a78bfa','#fbbf24','#ffffff','#ff88ff','#4ade80'], R.eyeCol, o);
-  },
-  onApply() { buildRobot(); sout('Eye glow set to ' + R.eyeCol + '.'); document.getElementById('liveStatus').textContent = 'Eyes set!'; }
-},
-
-/* 8 */ {
-  title: 'Arm Style',
-  tag: 'STEP 08 Â· MANIPULATORS',
-  intro: `What do the hands look like? Standard hands are simple and rounded good for general tasks. Claw Hands are mechanical pincers, great for gripping. Blaster Arms swap the hand for a built-in weapon.`,
-  boxes: [
-    { t:'box-c', tx:'Real robot "end effectors" (hand attachments) are chosen for the job warehouse robots use grippers or suction cups, while combat or industrial robots may use claws or specialised tools.' },
-  ],
-  tasks: ['Choose an arm/hand style'],
-  html() {
-    const o = `(function(v,el){R.armStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('arms', [
-      { val:'straight', icon:'ðŸ–ï¸', label:'Standard' },
-      { val:'claw',     icon:'ðŸ¦¾', label:'Claw Hands' },
-      { val:'blaster',  icon:'ðŸ”«', label:'Blaster Arms' },
-    ], R.armStyle, o);
-  },
-  onApply() { buildRobot(); sout('Arms: ' + R.armStyle + ' style fitted.'); document.getElementById('liveStatus').textContent = 'Arms set!'; }
-},
-
-/* 9 */ {
-  title: 'Leg Style',
-  tag: 'STEP 09 Â· LOCOMOTION',
-  intro: `How does your robot move? Biped legs walk like a human great for stairs and rough ground. Tank Treads are stable and powerful but can't climb steps. Hover thrusters let it float above the ground entirely.`,
-  boxes: [
-    { t:'box-c', tx:'Boston Dynamics\' Atlas and Asimo use biped legs because legs can step over obstacles. Tanks and some Mars rovers use treads for stability on rough terrain. Hover propulsion only exists in fiction so far but it\'s a fan favourite!' },
-    { t:'box-t', tx:'Tank treads and hover thrusters both look great with the Heavy body size from Step 4.' },
-  ],
-  tasks: ['Choose a leg/locomotion style', 'See how it changes the stance'],
-  html() {
-    const o = `(function(v,el){R.legStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('legs', [
-      { val:'biped', icon:'ðŸš¶', label:'Biped' },
-      { val:'tank',  icon:'ðŸšœ', label:'Tank Treads' },
-      { val:'hover', icon:'ðŸ›¸', label:'Hover' },
-    ], R.legStyle, o);
-  },
-  onApply() { buildRobot(); sout('Legs: ' + R.legStyle + ' locomotion fitted.'); document.getElementById('liveStatus').textContent = 'Legs set!'; }
-},
-
-/* 10 */ {
-  title: 'Antenna',
-  tag: 'STEP 10 Â· COMMS',
-  intro: `Add an antenna to the top of the head a classic robot communications array, used for sending and receiving radio signals.`,
-  boxes: [
-    { t:'box-t', tx:'An antenna with a glowing tip adds a nice extra light source that matches your eye colour.' },
-  ],
-  tasks: ['Toggle the antenna on or off'],
-  html() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
-      
-      <span style="font-size:.82rem;color:var(--muted)">Antenna:Antenna:</span>
-      
+      <span style="font-size:.82rem;color:var(--muted)">Antenna:</span>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
-        
         <input type="checkbox" ${R.antenna?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="R.antenna=this.checked;buildRobot()">
         Fit a communications antenna
-      
-        Fit a communications antenna
       </label>
-    
     </div>`;
   },
   onApply() { buildRobot(); sout(R.antenna ? 'ðŸ“¡ Antenna fitted receiving signal.' : 'No antenna, offline unit.'); document.getElementById('liveStatus').textContent = R.antenna ? 'Antenna fitted!' : 'No antenna'; }
@@ -2309,66 +1750,13 @@ const STEPS = [
   ],
   tasks: ['Toggle shoulder armour on or off'],
   html() {
-    return ``;
-  },
-  onApply() { buildRobot(); sout(R.antenna ? 'ðŸ“¡ Antenna fitted receiving signal.' : 'No antenna, offline unit.'); document.getElementById('liveStatus').textContent = R.antenna ? 'Antenna fitted!' : 'No antenna'; }
-},
-
-/* 11 */ {
-  title: 'Shoulder Armor',
-  tag: 'STEP 11 Â· PROTECTION',
-  intro: `Add chunky armour plates over the shoulders. They protect the shoulder joints the most vulnerable part of any robot arm and give a bulkier, tougher silhouette.`,
-  boxes: [
-    { t:'box-c', tx:'Shoulder joints take huge stress every time an arm lifts something. Armouring them is common on combat and heavy-industrial robot designs.' },
-  ],
-  tasks: ['Toggle shoulder armour on or off'],
-  html() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
-      
-      <span style="font-size:.82rem;color:var(--muted)">Shoulder Armor:Shoulder Armor:</span>
-      
+      <span style="font-size:.82rem;color:var(--muted)">Shoulder Armor:</span>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
-        
         <input type="checkbox" ${R.shoulderPads?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="R.shoulderPads=this.checked;buildRobot()">
         Fit shoulder armour plates
-      
-        Fit shoulder armour plates
       </label>
-    
     </div>`;
-  },
-  onApply() { buildRobot(); sout(R.shoulderPads ? 'ðŸ›¡ï¸ Shoulder armour fitted.' : 'No shoulder armour, lighter build.'); document.getElementById('liveStatus').textContent = R.shoulderPads ? 'Armour fitted!' : 'No armour'; }
-},
-
-/* 12 */ {
-  title: 'Backpack',
-  tag: 'STEP 12 Â· UTILITY',
-  intro: `Choose a backpack module. A Jetpack adds twin thrusters with a glowing exhaust for extra mobility. A Cargo Pod gives your robot a storage container for carrying equipment. Or leave the back clear.`,
-  boxes: [
-    { t:'box-t', tx:'The jetpack flames will glow brighter once you power up your robot at the end.' },
-  ],
-  tasks: ['Choose a backpack module or none'],
-  html() {
-    const o = `(function(v,el){R.backpack=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('backpack', [
-      { val:'none',    icon:'âŒ', label:'None' },
-      { val:'jetpack', icon:'ðŸš€', label:'Jetpack' },
-      { val:'cargo',   icon:'ðŸ“¦', label:'Cargo Pod' },
-    ], R.backpack, o);
-  },
-  onApply() { buildRobot(); sout(R.backpack === 'none' ? 'No backpack, clean profile.' : 'Backpack: ' + R.backpack + ' fitted.'); document.getElementById('liveStatus').textContent = 'Backpack set!'; }
-},
-
-/* 13 */ {
-  title: 'Chest Reactor',
-  tag: 'STEP 13 Â· POWER CORE',
-  intro: `Add a glowing reactor panel to the chest a power core that lights up in your eye-glow colour. It's the classic "heart" of a robot.`,
-  boxes: [
-    { t:'box-c', tx:'A visible power core is a common sci-fi design choice it shows the robot is alive and powered, and gives a clear "weak point" for storytelling.' },
-  ],
-  tasks: ['Toggle the chest reactor on or off'],
-  html() {
-    return ``;
   },
   onApply() { buildRobot(); sout(R.shoulderPads ? 'ðŸ›¡ï¸ Shoulder armour fitted.' : 'No shoulder armour, lighter build.'); document.getElementById('liveStatus').textContent = R.shoulderPads ? 'Armour fitted!' : 'No armour'; }
 },
@@ -2402,53 +1790,12 @@ const STEPS = [
   tasks: ['Toggle the chest reactor on or off'],
   html() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
-      
-      <span style="font-size:.82rem;color:var(--muted)">Chest Reactor:Chest Reactor:</span>
-      
+      <span style="font-size:.82rem;color:var(--muted)">Chest Reactor:</span>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
-        
         <input type="checkbox" ${R.chestPanel?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="R.chestPanel=this.checked;buildRobot()">
         Fit a glowing chest reactor
-      
-        Fit a glowing chest reactor
       </label>
-    
     </div>`;
-  },
-  onApply() { buildRobot(); sout(R.chestPanel ? 'âš¡ Chest reactor online.' : 'No chest reactor.'); document.getElementById('liveStatus').textContent = R.chestPanel ? 'Reactor fitted!' : 'No reactor'; }
-},
-
-/* 14 */ {
-  title: 'Weapon',
-  tag: 'STEP 14 Â· ARMAMENT',
-  intro: `Equip a weapon. A Blaster attaches to the right arm with a glowing muzzle. A Sword is a long blade for melee combat. A Shield protects the left arm. Or stay unarmed.`,
-  boxes: [
-    { t:'box-t', tx:'Combine a Shield with Claw Hands for a defensive bodyguard look, or a Sword with Blaster Arms for an all-out combat unit.' },
-  ],
-  tasks: ['Choose a weapon or stay unarmed'],
-  html() {
-    const o = `(function(v,el){R.weapon=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return opts('weapon', [
-      { val:'none',    icon:'ðŸš«', label:'Unarmed' },
-      { val:'blaster', icon:'ðŸ”«', label:'Blaster' },
-      { val:'sword',   icon:'âš”ï¸', label:'Sword' },
-      { val:'shield',  icon:'ðŸ›¡ï¸', label:'Shield' },
-    ], R.weapon, o);
-  },
-  onApply() { buildRobot(); sout(R.weapon === 'none' ? 'Unarmed configuration.' : 'Weapon equipped: ' + R.weapon + '.'); document.getElementById('liveStatus').textContent = 'Weapon set!'; }
-},
-
-/* 15 */ {
-  title: 'Stripe Decal',
-  tag: 'STEP 15 Â· MARKINGS',
-  intro: `Add a stripe band around the torso a paint marking used to show a robot's faction, unit number, or just for style.`,
-  boxes: [
-    { t:'box-t', tx:'A bright stripe in your eye-glow colour ties the whole design together.' },
-  ],
-  tasks: ['Toggle the stripe on/off', 'Choose a stripe colour'],
-  html() {
-    const o = `(function(c,el){R.stripeCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
-    return ``;
   },
   onApply() { buildRobot(); sout(R.chestPanel ? 'âš¡ Chest reactor online.' : 'No chest reactor.'); document.getElementById('liveStatus').textContent = R.chestPanel ? 'Reactor fitted!' : 'No reactor'; }
 },
@@ -2484,17 +1831,11 @@ const STEPS = [
   html() {
     const o = `(function(c,el){R.stripeCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildRobot();})`;
     return `<div style="display:flex;align-items:center;gap:9px;margin:8px 0">
-      
-      <span style="font-size:.78rem;color:var(--muted)">Stripe:Stripe:</span>
-      
+      <span style="font-size:.78rem;color:var(--muted)">Stripe:</span>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--text)">
-        
         <input type="checkbox" ${R.stripeOn?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)" onchange="R.stripeOn=this.checked;buildRobot()">
         Show stripe band
-      
-        Show stripe band
       </label>
-    
     </div>` + swatchRow('stc', ['#f5c842','#38bdf8','#4ade80','#dc2626','#a78bfa','#ffffff','#fb923c','#84cc16'], R.stripeCol, o);
   },
   onApply() { buildRobot(); sout(R.stripeOn ? 'ðŸŽ¨ Stripe added in ' + R.stripeCol : 'No stripe, clean chassis.'); document.getElementById('liveStatus').textContent = 'Markings set!'; }
@@ -2511,53 +1852,12 @@ const STEPS = [
   ],
   tasks: ['Press Power Up and watch it activate!'],
   html() {
-    return `` + swatchRow('stc', ['#f5c842','#38bdf8','#4ade80','#dc2626','#a78bfa','#ffffff','#fb923c','#84cc16'], R.stripeCol, o);
-  },
-  onApply() { buildRobot(); sout(R.stripeOn ? 'ðŸŽ¨ Stripe added in ' + R.stripeCol : 'No stripe, clean chassis.'); document.getElementById('liveStatus').textContent = 'Markings set!'; }
-},
-
-/* 16 */ {
-  title: 'Power Up!',
-  tag: 'STEP 16 Â· ACTIVATION',
-  intro: `All systems are ready. Hit the power button to bring your robot to life its eyes will glow brighter, the reactor will pulse, and it will start scanning the room.`,
-  boxes: [
-    { t:'box-r', tx: 'Initialisingâ€¦ Power core online. Optics calibrated. Servos active. Your robot is awake.' },
-    { t:'box-c', tx: 'A complete robot needs: a head (sensors), a torso (power and processing), arms (manipulation), legs (locomotion), and a power source. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit â¬‡ Export OBJin the header to download your robot as a .objfile, open it in Blender, MeshLab, or any 3D app. Hit âš¡ Quick Buildto reset and try a completely different design.' },
-  ],
-  tasks: ['Press Power Up and watch it activate!'],
-  html() {
     return `<div style="text-align:center;padding:8px 0">
-      
-      <div style="font-size:2.4rem;margin-bottom:7px">ðŸ¤–ðŸ¤–</div>
-      
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${R.name || 'YOUR ROBOT'}${R.name || 'YOUR ROBOT'}</div>
-      
-      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.All systems nominal.<br>Ready for activation.Ready for activation.</div>
-    
+      <div style="font-size:2.4rem;margin-bottom:7px">ðŸ¤–</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${R.name || 'YOUR ROBOT'}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for activation.</div>
     </div>
-    
-    <button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">âš¡ INITIATE, POWER UP!âš¡ INITIATE, POWER UP!</button>`;
-  },
-  onApply() { powerUp(); }
-},
-
-];
-
-function powerUp() {
-  R.activated = true;
-  buildRobot();
-  spawnParticles();
-  sout('âš¡ POWER UP! ' + (R.name || 'ROBOT') + ' is online!');
-  document.getElementById('liveStatus').textContent = 'ONLINE! ðŸ¤–';
-  document.getElementById('sceneHint').textContent = 'Drag to orbit your active robot';
-  stepDone[STEPS.length - 1] = true;
-  updateProgress();
-  renderStep();
-}
-
-function go(i) {
-  if (i `;
+    <button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">âš¡ INITIATE, POWER UP!</button>`;
   },
   onApply() { powerUp(); }
 },
@@ -2590,48 +1890,21 @@ function go(i) {
 function renderStep() {
   const s = STEPS[currentStep];
   const body = document.getElementById('stepBody');
-  let html = `= STEPS.length) return;
-  currentStep = i;
-  renderStep();
-  updateProgress();
-  const items = document.querySelectorAll('.si');
-  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
-  document.getElementById('navPrev').disabled = (i === 0);
-  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
-}
-
-function renderStep() {
-  const s = STEPS[currentStep];
-  const body = document.getElementById('stepBody');
-  let html = `<div class="step-tag">${s.tag}${s.tag}</div>
-    
-    <div class="step-title">${s.title}${s.title}</div>
-    
-    <div class="step-intro">${s.intro}${s.intro}</div>`;
-  (s.boxes || []).forEach(b => { html += ``;
-  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}${b.tx}</div>`; });
-  const stepHtml = s.html ? s.html() : '';
-  html += stepHtml;
-  if (s.tasks) {
-    html += ``; });
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
   const stepHtml = s.html ? s.html() : '';
   html += stepHtml;
   if (s.tasks) {
     html += `<div class="task-list">${s.tasks.map(t => {
       const done = stepDone[currentStep];
-      return `${s.tasks.map(t => {
-      const done = stepDone[currentStep];
-      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}${t}</div>`;
-    }).join('')}`;
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
     }).join('')}</div>`;
   }
   // Add apply button unless the step provides its own run-btn
   if (!stepHtml.includes('run-btn')) {
-    html += ``;
-  }
-  // Add apply button unless the step provides its own run-btn
-  if (!stepHtml.includes('run-btn')) {
-    html += `<button class="run-btn" onclick="applyStep(${currentStep})">â–¶ Apply to Robotâ–¶ Apply to Robot</button>`;
+    html += `<button class="run-btn" onclick="applyStep(${currentStep})">â–¶ Apply to Robot</button>`;
   }
   body.innerHTML = html;
   document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
@@ -2674,65 +1947,7 @@ function init() {
   STEPS.forEach((s, i) => {
     const item = document.createElement('div');
     item.className = 'si' + (i === 0 ? ' active' : '');
-    item.innerHTML = ``;
-  }
-  body.innerHTML = html;
-  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
-}
-
-function applyStep(i) {
-  STEPS[i].onApply();
-  stepDone[i] = true;
-  renderStep();
-  updateProgress();
-}
-
-function updateProgress() {
-  const done = stepDone.filter(Boolean).length;
-  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
-  document.getElementById('progFill').style.width = pct + '%';
-  document.getElementById('progCt').textContent = done + ' / ' + STEPS.length + ' steps';
-  document.querySelectorAll('.si').forEach((el, i) => {
-    el.classList.toggle('done', stepDone[i]);
-    el.classList.toggle('active', i === currentStep);
-    const sn = el.querySelector('.sn');
-    if (sn) sn.textContent = stepDone[i] ? 'âœ“' : (i + 1);
-  });
-}
-
-function quickBuild() {
-  R.name = 'UNIT-7'; R.headStyle = 'visor'; R.torsoStyle = 'box'; R.bodyHeight = 1.2;
-  R.primaryCol = '#9ca3af'; R.secondaryCol = '#374151'; R.eyeCol = '#38bdf8';
-  R.armStyle = 'claw'; R.legStyle = 'biped'; R.antenna = true; R.shoulderPads = true;
-  R.backpack = 'jetpack'; R.chestPanel = true; R.weapon = 'blaster';
-  R.stripeOn = true; R.stripeCol = '#f5c842';
-  R.activated = false;
-  buildRobot();
-  sout('âš¡ Quick build: UNIT-7 is ready. Press Power Up at Step 16!');
-  document.getElementById('liveStatus').textContent = 'Quick build active!';
-}
-
-function init() {
-  const listEl = document.getElementById('stepList');
-  STEPS.forEach((s, i) => {
-    const item = document.createElement('div');
-    item.className = 'si' + (i === 0 ? ' active' : '');
-    item.innerHTML = `<div class="sn">${i + 1}${i + 1}</div><div class="sl">${s.title}${s.title}</div>`;
-    item.onclick = () => go(i);
-    listEl.appendChild(item);
-  });
-
-  document.getElementById('navPrev').disabled = true;
-  document.getElementById('navNext').disabled = false;
-
-  buildRobot();
-  renderStep();
-  updateSpecCard();
-  syncRightBar();
-}
-
-init();
-`;
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
     item.onclick = () => go(i);
     listEl.appendChild(item);
   });
@@ -2799,6 +2014,7 @@ init();
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -2818,30 +2034,13 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
 <script>
-window.BQ={"key":"jvds-robot-builder-v2","name":"Robot Builder","profileId":"robot-builder","quiz":[{"q":"What changes when you swap your robotâ€™s parts?","opts":["Nothing, parts are only cosmetic","Only the colour","Its stats: Speed, Power, Armour and Tech","The music"],"a":2,"why":"Every head, body, arm, leg and weapon choice pushes the four stat bars up or down."},{"q":"Which of these is a 
 window.BQ={"key":"jvds-robot-builder-v2","name":"Robot Builder","profileId":"robot-builder","quiz":[{"q":"What changes when you swap your robotâ€™s parts?","opts":["Nothing, parts are only cosmetic","Only the colour","Its stats: Speed, Power, Armour and Tech","The music"],"a":2,"why":"Every head, body, arm, leg and weapon choice pushes the four stat bars up or down."},{"q":"Which of these is a <strong>leg optionleg option</strong> in the builder?","opts":["Tank Treads","Wings","Springs","Wheels"],"a":0,"why":"Legs come as Biped, Tank Treads or Hover, each with a different look and stat spread."},{"q":"Which arm style is built for grabbing?","opts":["Blaster","Claw","Standard","Shield"],"a":1,"why":"The claw arm trades firepower for grip."},{"q":"A design  in the builder?","opts":["Tank Treads","Wings","Springs","Wheels"],"a":0,"why":"Legs come as Biped, Tank Treads or Hover, each with a different look and stat spread."},{"q":"Which arm style is built for grabbing?","opts":["Blaster","Claw","Standard","Shield"],"a":1,"why":"The claw arm trades firepower for grip."},{"q":"A design <strong>trade-offtrade-off</strong> means:","opts":["Improving one thing often costs you another","Everything gets better at once","The robot trades with shops","You must restart the build"],"a":0,"why":"A heavy armoured body protects more but slows you down. Good design is choosing what matters."},{"q":"What does the  means:","opts":["Improving one thing often costs you another","Everything gets better at once","The robot trades with shops","You must restart the build"],"a":0,"why":"A heavy armoured body protects more but slows you down. Good design is choosing what matters."},{"q":"What does the <strong>ArmourArmour</strong> stat represent?","opts":["How fast the robot moves","How smart the robot is","How much protection the robot has","How shiny the robot is"],"a":2,"why":"Armour is your robotâ€™s protection. Tank treads and heavy plating raise it."}]};
- stat represent?","opts":["How fast the robot moves","How smart the robot is","How much protection the robot has","How shiny the robot is"],"a":2,"why":"Armour is your robotâ€™s protection. Tank treads and heavy plating raise it."}]};
 </script>
 <script src="../player-profile.js"></script>
 <script src="builder-quiz.js"></script>

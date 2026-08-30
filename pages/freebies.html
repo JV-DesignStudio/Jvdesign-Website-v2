@@ -168,6 +168,7 @@
             --header-bg:     rgba(255,255,255,.96);
             --card-bg:       #ffffff;
             --card-shadow:   0 5px 22px rgba(64,59,51,.07);
+            --teal-lt:       #e8f2f3;
         }
         [data-theme="dark"] {
             --bg-primary:    #1e1c18;
@@ -181,6 +182,7 @@
             --header-bg:     rgba(30,28,24,.97);
             --card-bg:       #2a2720;
             --card-shadow:   0 5px 22px rgba(0,0,0,.3);
+            --teal-lt:       #26302f;
         }
         /* Apply variables to body */
         
@@ -420,6 +422,7 @@
             --header-bg:     rgba(255,255,255,.96);
             --card-bg:       #ffffff;
             --card-shadow:   0 5px 22px rgba(64,59,51,.07);
+            --teal-lt:       #e8f2f3;
         }
         [data-theme="dark"] {
             --bg-primary:    #1e1c18;
@@ -433,6 +436,7 @@
             --header-bg:     rgba(30,28,24,.97);
             --card-bg:       #2a2720;
             --card-shadow:   0 5px 22px rgba(0,0,0,.3);
+            --teal-lt:       #26302f;
         }
         /* Apply variables to body */
         
@@ -542,6 +546,20 @@
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -563,28 +581,6 @@
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
 </div>
 <script>
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
-
 (function(){
     /* Restore saved theme before first paint of the toggle icon */
     if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -639,26 +635,10 @@
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
-
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
 </script>
 <!-- /BUILD:nav-content -->
 
-<section id="main-content" class="freebie-hero">
+<section id="main-content" role="main" class="freebie-hero">
     <div class="hero-inner">
         <span class="hero-emoji-big">🎁</span>
         <span class="hero-tag reveal">✦ JVDesignStudio · No Sign-Up Required</span>
@@ -1226,6 +1206,7 @@
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -1245,71 +1226,12 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
 <script>
-function filterDl(cat,btn){
-    document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.dl-card').forEach(c=>{
-        c.style.display=(cat==='all'||c.dataset.cat===cat)?'flex':'none';
-    });
-    var div=document.getElementById('guidesDivider');
-    if(div) div.style.display=(cat==='all'||cat==='guides')?'flex':'none';
-}
-
-/* ── Sort the grid into a narrative order ──
-   Templates (featured) → Games → Activities → Books → Guides.
-   Within Guides (the cheat-sheet wall) cards are alphabetised by title
-   automatically, so new sheets drop into place without hand-sorting.
-   All other groups keep their source order. Runs BEFORE the reveal
-   observer below so staggered animations follow the sorted sequence. */
-(function(){
-    var grid = document.getElementById('dlGrid'); if(!grid) return;
-    var prio = { templates:0, games:1, activities:2, books:3, guides:4 };
-    var cards = Array.prototype.slice.call(grid.querySelectorAll('.dl-card'));
-    cards.sort(function(a,b){
-        var pa = (a.dataset.cat in prio) ? prio[a.dataset.cat] : 9;
-        var pb = (b.dataset.cat in prio) ? prio[b.dataset.cat] : 9;
-        if (pa !== pb) return pa - pb;
-        if (pa === 4) {
-            var ta = a.querySelector('.dl-title'), tb = b.querySelector('.dl-title');
-            return (ta && tb) ? ta.textContent.localeCompare(tb.textContent) : 0;
-        }
-        return 0;
-    });
-    cards.forEach(function(c){ grid.appendChild(c); });
-})();
-
-const obs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){const siblings=[...entry.target.parentElement.querySelectorAll('.reveal')];const idx=siblings.indexOf(entry.target);setTimeout(()=>entry.target.classList.add('visible'),Math.min(idx*80,300));obs.unobserve(entry.target);}});},{threshold:0});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-
-
-
-/* ── Restore theme ── */
-(function(){
-    const saved = localStorage.getItem('jvds-theme');
-    if (saved === 'dark') document.documentElement.setAttribute('data-theme','dark');
-})();
-
 function filterDl(cat,btn){
     document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');

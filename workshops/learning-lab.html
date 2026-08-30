@@ -483,14 +483,37 @@ body.quiz-streak-shake{animation:quizStreakShake .35s ease-out;}
 @media print{body>*:not(.revision-section){display:none!important;}.revision-section{background:#fff;}.rev-card{background:#fff;border:1px solid #ccc;}.rev-fact{color:#333;background:#f5f5f5;}}
 
 </style>
-<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
+<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}
+/* ── Touch targets, ages 7 to 12 ──
+   Measured on a 390px phone: the subject filters were 29 to 30px tall and the
+   two buttons on every activity card were 32 and 38px. */
+@media (pointer: coarse), (max-width: 900px) {
+  .ll-scope .helper-btn { min-height: 44px; }
+  .ll-scope .card-cta { min-height: 48px; }
+  .ll-scope .card-study-btn { min-height: 44px; }
+}
+</style>
 <link rel="stylesheet" href="../style-shared.css">
 </head>
-<body>
+<body class="ll-scope">
 
 <!-- ═══ NAV ═══ -->
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -598,7 +621,7 @@ body.quiz-streak-shake{animation:quizStreakShake .35s ease-out;}
 </div>
 
 <!-- ═══ HERO ═══ -->
-<section id="main-content" class="hero">
+<section id="main-content" role="main" class="hero">
   <div class="hero-eyebrow">✦ JVDesignStudio · Learning Lab</div>
   <h1>Learn by <span>Playing</span></h1>
   <p class="hero-sub">Sixteen real mini-games, sixteen subjects. Play first, the explanation comes after. No logins, no downloads, just learning that feels like gaming.</p>
@@ -751,6 +774,7 @@ body.quiz-streak-shake{animation:quizStreakShake .35s ease-out;}
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>

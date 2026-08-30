@@ -41,6 +41,8 @@
             --tan:           #D2B48C;
             --tan-dk:        #b8956a;
         }
+        [data-theme="dark"] .demo-section .section-title--on-light,
+        [data-theme="dark"] .code-section .section-title--on-light { color:#f0ead6 !important; }
         [data-theme="dark"] {
             --bg-primary:    #1e1c18;
             --bg-secondary:  #2a2720;
@@ -185,6 +187,8 @@
             --tan:           #D2B48C;
             --tan-dk:        #b8956a;
         }
+        [data-theme="dark"] .demo-section .section-title--on-light,
+        [data-theme="dark"] .code-section .section-title--on-light { color:#f0ead6 !important; }
         [data-theme="dark"] {
             --bg-primary:    #1e1c18;
             --bg-secondary:  #2a2720;
@@ -320,6 +324,20 @@
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -341,28 +359,6 @@
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
 </div>
 <script>
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
-
 (function(){
     /* Restore saved theme before first paint of the toggle icon */
     if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -417,27 +413,11 @@
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
-
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
 </script>
 <!-- /BUILD:nav-content -->
 
 <!-- HERO -->
-<section id="main-content" class="dm-hero">
+<section id="main-content" role="main" class="dm-hero">
     <div class="hero-inner">
         <span class="hero-tag reveal">✦ Site Feature</span>
         <h1 class="hero-title reveal">Dark Mode</h1>
@@ -458,7 +438,7 @@
     <div class="section-inner">
         <div class="reveal">
             <span class="section-tag">✦ Live Preview</span>
-            <h2 class="section-title">See how everything adapts</h2>
+            <h2 class="section-title section-title--on-light">See how everything adapts</h2>
             <p class="section-sub">Cards, text, borders, and backgrounds all respond to your mode preference. The brand colours stay constant, only the backgrounds and text shift.</p>
         </div>
         <div class="demo-grid">
@@ -493,7 +473,7 @@
     <div class="section-inner">
         <div class="reveal">
             <span class="section-tag">✦ Implementation</span>
-            <h2 class="section-title">Add dark mode to any page</h2>
+            <h2 class="section-title section-title--on-light">Add dark mode to any page</h2>
             <p style="font-size:.97rem;color:var(--text-secondary);line-height:1.7;margin-bottom:32px;max-width:560px;">Three steps. Copy the CSS variables, add the toggle button to the header, and include the JS snippet before closing <code style="background:var(--bg-tertiary);padding:2px 6px;border-radius:5px;font-size:.85rem;">&lt;/body&gt;&lt;/body&gt;</code>.</p>
         </div>
 
@@ -521,7 +501,6 @@
             </div>
             <div class="code-body">
 <pre><span class="c-comment">// Dark mode toggle, JVDesignStudio
-// Persists preference via localStorage// Dark mode toggle, JVDesignStudio
 // Persists preference via localStorage</span>
 
 
@@ -548,19 +527,19 @@
     ;
     <span class="c-keyword">constconst</span> label = document. label = document.<span class="c-attr">getElementByIdgetElementById</span>((<span class="c-string">'modeLabel''modeLabel'</span>);
     );
-    <span class="c-keyword">ifif</span> (label) label.textContent = dark ?  (label) label.textContent = dark ? <span class="c-string">'Dark Mode''Dark Mode'</span> :  : <span class="c-string">'Light Mode''Light Mode'</span>;
+    <span class="c-keyword">ifif</span> (label) label.textContent = dark ?  (label) label.textContent = dark ? <span class="c-string">'Dark Mode''Dark Mode'</span> :  : <span class="c-string">'Light Mode'</span>;
 }
 
 ;
 }
 
-<span class="c-comment">// Apply saved preference on load// Apply saved preference on load</span>
+<span class="c-comment">// Apply saved preference on load</span>
 (
 (<span class="c-keyword">functionfunction</span>() {
     () {
     <span class="c-keyword">constconst</span> saved = localStorage. saved = localStorage.<span class="c-attr">getItemgetItem</span>((<span class="c-string">'jvds-theme''jvds-theme'</span>);
     );
-    <span class="c-keyword">constconst</span> prefersDark = window. prefersDark = window.<span class="c-attr">matchMediamatchMedia</span>((<span class="c-string">'(prefers-color-scheme: dark)''(prefers-color-scheme: dark)'</span>).).<span class="c-attr">matchesmatches</span>;
+    <span class="c-keyword">constconst</span> prefersDark = window. prefersDark = window.<span class="c-attr">matchMediamatchMedia</span>((<span class="c-string">'(prefers-color-scheme: dark)'</span>).).<span class="c-attr">matchesmatches</span>;
     ;
     <span class="c-keyword">constconst</span> theme = saved || (prefersDark ?  theme = saved || (prefersDark ? <span class="c-string">'dark''dark'</span> :  : <span class="c-string">'light''light'</span>);
     document.);
@@ -611,6 +590,7 @@
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -630,52 +610,12 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
 <script>
-function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.dataset.theme === 'dark';
-    html.dataset.theme = isDark ? 'light' : 'dark';
-    localStorage.setItem('jvds-theme', html.dataset.theme);
-    updateLabels();
-}
-function updateLabels() {
-    const dark = document.documentElement.dataset.theme === 'dark';
-    const label = document.getElementById('modeLabel');
-    const badge = document.getElementById('modeBadge');
-    if (label) label.textContent = dark ? 'Dark Mode' : 'Light Mode';
-}
-// Apply saved preference on load
-(function() {
-    const saved = localStorage.getItem('jvds-theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (prefersDark ? 'dark' : 'light');
-    document.documentElement.dataset.theme = theme;
-    updateLabels();
-})();
-// Scroll reveal
-const obs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){const siblings=[...entry.target.parentElement.querySelectorAll('.reveal')];const idx=siblings.indexOf(entry.target);setTimeout(()=>entry.target.classList.add('visible'),Math.min(idx*80,300));obs.unobserve(entry.target);}});},{threshold:.08});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
-
 function toggleTheme() {
     const html = document.documentElement;
     const isDark = html.dataset.theme === 'dark';

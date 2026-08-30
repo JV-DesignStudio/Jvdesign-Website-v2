@@ -482,64 +482,16 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
-
-(function(){
-    var path = location.pathname;
-    var page = path.split('/').pop() || 'index.html';
-    // Highlight by exact page, with a section fallback so tool/workshop pages
-    // still show their parent section as active.
-    var links = document.querySelectorAll('.jvds-nav-links a[data-page]');
-    var matched = false;
-    links.forEach(function(a){ if(a.getAttribute('data-page') === page){ a.classList.add('active'); matched = true; } });
-    if(!matched){
-        var section = /\/tools\//.test(path) ? 'dev-tools.html'
-                    : /\/workshops\//.test(path) ? 'workshop.html'
-                    : /\/games\//.test(path) ? 'games.html'
-                    : /\/books\//.test(path) ? 'books.html' : null;
-        if(section) links.forEach(function(a){ if(a.getAttribute('data-page') === section) a.classList.add('active'); });
-    }
-    var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsMobileNav');
-    if(!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
 </script>
 <!-- /BUILD:nav-tools -->
 
-<header class="site-header" id="siteHeader">
-<div class="header-inner">
-    <a href="../index.html" class="logo-link">
-      <img width="1088" height="960" loading="lazy" src="../logo.png" alt="JVDesignStudio" onerror="this.onerror=null;this.src='https://placehold.co/32x32/07080a/5bc0f8?text=JV'">
-      JVDesignStudio
-    </a>
-    <a href="../pages/workshop.html" class="btn-back">← Workshop</a>
-    <button class="nav-toggle" id="navToggle">☰</button>
-  </div>
-  <nav class="mobile-nav" id="mobileNav">
-        <a href="../index.html">🏠 Home</a>
-        <a href="../pages/games.html">🎮 Games</a>
-        <a href="../pages/books.html">📚 Books</a>
-        <a href="../pages/learn-hub.html">🎓 Learn</a>
-        <a href="../pages/workshop.html">🔧 Workshop</a>
-        <a href="../pages/dev-tools.html">🛠️ Tools</a>
-        <a href="../pages/freebies.html">🎁 Freebies</a>
-    <a href="my-progress.html">📊 Progress</a>
-        <a href="../pages/about.html">👤 About</a>
-        <a href="../pages/contact.html">✉️ Contact</a>
-        <a href="../pages/sitemap.html">🗺️ Sitemap</a>
-    </nav>
-</header>
+
 
 <div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#5bc0f8,#2563eb,#5bc0f8)">
   <span>🔷 My First Unity Game · Episode 2 of 8 · <a href="my-first-unity-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
 </div>
 
-<section id="main-content" class="hero">
+<section id="main-content" role="main" class="hero">
   <div class="hero-grid"></div>
   <div class="hero-inner">
     <div>
@@ -727,6 +679,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -746,168 +699,12 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
 <script>
-/* ══════════════════════════════════════════
-   GAME STATE
-══════════════════════════════════════════ */
-const game = {
-  running: false,
-  physicsEnabled: false,
-  jumpEnabled: false,
-  platformsEnabled: false,
-  coinsEnabled: false,
-  cameraEnabled: false,
-  enemiesEnabled: false,
-  hazardsEnabled: false,
-  sceneEnabled: false,
-
-  playerSpeed: 3,
-  jumpForce: 10,
-  gravity: 0.5,
-  coinValue: 10,
-
-  coins: 0,
-  lives: 3,
-  scene: 1,
-
-  player: { x: 60, y: 0, vx: 0, vy: 0, w: 22, h: 28, grounded: false, facing: 1, animFrame: 0, animTimer: 0, coyote: 0, jumpBuffer: 0 },
-  platforms: [],
-  coinObjs: [],
-  enemies: [],
-  particles: [],
-  keys: {},
-  camX: 0,
-  levelComplete: false,
-  levelTimer: 0,
-  deathTimer: 0,
-  flashTimer: 0,
-};
-
-/* ══════════════════════════════════════════
-   CANVAS
-══════════════════════════════════════════ */
-const canvas = document.getElementById('gameCanvas');
-const ctx    = canvas.getContext('2d');
-const WORLD_W = 1600;
-const WORLD_H = 320;
-
-function resizeCanvas(){
-  const wrap = canvas.parentElement;
-  const s = Math.min(wrap.clientWidth - 20, 460);
-  canvas.width  = s;
-  canvas.height = Math.round(s * (WORLD_H / (WORLD_W / 2)));
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-/* ══════════════════════════════════════════
-   LEVEL BUILDER
-══════════════════════════════════════════ */
-function buildLevel(n){
-  game.platforms = [];
-  game.coinObjs  = [];
-  game.enemies   = [];
-  game.levelComplete = false;
-  game.levelTimer = 0;
-
-  // Ground slabs
-  const ground = [
-    {x:0,   w:400}, {x:420, w:200}, {x:650, w:180}, {x:860, w:250},
-    {x:1150,w:200}, {x:1380,w:220}
-  ];
-  ground.forEach(g => game.platforms.push({x:g.x, y:WORLD_H-40, w:g.w, h:40, type:'ground'}));
-
-  // Floating platforms
-  const floaters = [
-    {x:120,y:200,w:90},{x:300,y:160,w:70},{x:480,y:190,w:80},{x:600,y:140,w:60},
-    {x:720,y:200,w:80},{x:850,y:160,w:70},{x:980,y:200,w:80},{x:1060,y:145,w:60},
-    {x:1180,y:185,w:90},{x:1290,y:155,w:70},{x:1420,y:190,w:80}
-  ];
-  floaters.forEach(f => game.platforms.push({x:f.x, y:f.y, w:f.w, h:14, type:'platform'}));
-
-  // Coins
-  if(game.coinsEnabled){
-    const coinPos = [
-      {x:135,y:170},{x:160,y:170},{x:185,y:170},
-      {x:310,y:130},{x:335,y:130},
-      {x:496,y:162},{x:521,y:162},
-      {x:615,y:112},{x:640,y:112},
-      {x:730,y:172},{x:755,y:172},
-      {x:860,y:133},{x:885,y:133},
-      {x:995,y:172},{x:1020,y:172},
-      {x:1190,y:158},{x:1215,y:158},
-      {x:1430,y:163},{x:1455,y:163}
-    ];
-    coinPos.forEach(c => game.coinObjs.push({x:c.x, y:c.y, r:8, collected:false, anim:0}));
-  }
-
-  // Enemies (scene 2+)
-  if(game.enemiesEnabled){
-    const enemyPos = [
-      {x:200,y:WORLD_H-64,dir:1},{x:500,y:WORLD_H-64,dir:-1},
-      {x:730,y:165,dir:1},{x:900,y:WORLD_H-64,dir:1},
-      {x:1200,y:WORLD_H-64,dir:-1}
-    ];
-    enemyPos.forEach(e => game.enemies.push({
-      x:e.x, y:e.y, w:20, h:22, vx:e.dir*1.2, vy:0, grounded:false, anim:0, dead:false
-    }));
-  }
-
-  // Reset player
-  game.player.x = 60;
-  game.player.y = WORLD_H - 100;
-  game.player.vx = 0;
-  game.player.vy = 0;
-  game.player.grounded = false;
-  game.camX = 0;
-  game.deathTimer = 0;
-}
-
-/* ══════════════════════════════════════════
-   INPUT
-══════════════════════════════════════════ */
-document.addEventListener('keydown', e => {
-  game.keys[e.code] = true;
-  if(e.code === 'Space') e.preventDefault();
-  // Jump buffer
-  if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){
-    game.player.jumpBuffer = 12;
-  }
-});
-document.addEventListener('keyup', e => { game.keys[e.code] = false; });
-
-/* ══════════════════════════════════════════
-   PHYSICS HELPERS
-══════════════════════════════════════════ */
-function resolveAABB(obj, platforms){
-  obj.grounded = false;
-  for(const p of platforms){
-    const ox = obj.x + obj.w/2, oy = obj.y + obj.h/2;
-    const px = p.x + p.w/2,    py = p.y + p.h/2;
-    const overlapX = (obj.w + p.w)/2 - Math.abs(ox - px);
-    const overlapY = (obj.h + p.h)/2 - Math.abs(oy - py);
-    if(overlapX > 0 && overlapY > 0){
-      if(overlapX 
 /* ══════════════════════════════════════════
    GAME STATE
 ══════════════════════════════════════════ */
@@ -1078,19 +875,8 @@ function update(dt){
   // Death / respawn
   if(game.deathTimer > 0){
     game.deathTimer -= dt;
-    if(game.deathTimer  0){
-    game.deathTimer -= dt;
     if(game.deathTimer <= 0){
       if(game.lives > 0) buildLevel(game.scene);
-      else { game.running = false; setOutput('💀 Game Over! Refresh to restart.'); }
-    }
-    return;
-  }
-
-  // Level complete
-  if(game.levelComplete){
-    game.levelTimer -= dt;
-    if(game.levelTimer  0) buildLevel(game.scene);
       else { game.running = false; setOutput('💀 Game Over! Refresh to restart.'); }
     }
     return;
@@ -1134,15 +920,6 @@ function update(dt){
     if(p.jumpBuffer > 0) p.jumpBuffer -= dt;
 
     // Variable jump height, release early = shorter jump
-    if(!game.keys['Space'] && !game.keys['ArrowUp'] && !game.keys['KeyW'] && p.vy  0 && p.coyote > 0){
-      p.vy = -game.jumpForce * 0.6;
-      p.coyote = 0;
-      p.jumpBuffer = 0;
-      spawnParticles(p.x + p.w/2, p.y + p.h, '#5bc0f8', 5);
-    }
-    if(p.jumpBuffer > 0) p.jumpBuffer -= dt;
-
-    // Variable jump height, release early = shorter jump
     if(!game.keys['Space'] && !game.keys['ArrowUp'] && !game.keys['KeyW'] && p.vy < -2) p.vy += 0.4 * dt;
 
     p.x += p.vx * dt;
@@ -1152,30 +929,6 @@ function update(dt){
 
     // Fall off bottom
     if(p.y > WORLD_H + 50) die();
-
-    // Animate
-    p.animTimer += dt;
-    if(p.grounded && Math.abs(p.vx) > 0.3){
-      if(p.animTimer > 8){ p.animFrame = (p.animFrame + 1) % 4; p.animTimer = 0; }
-    } else { p.animFrame = 0; p.animTimer = 0; }
-  } else {
-    // Simple walk without physics (step 1 preview)
-    p.x += moveX * game.playerSpeed * 0.5 * dt;
-    p.x = Math.max(0, Math.min(WORLD_W - p.w, p.x));
-    p.y = WORLD_H - 40 - p.h;
-    p.grounded = true;
-  }
-
-  // Clamp horizontal
-  p.x = Math.max(0, p.x);
-
-  // Coin collection
-  if(game.coinsEnabled){
-    game.coinObjs.forEach(c => {
-      if(!c.collected){
-        c.anim += 0.05 * dt;
-        const dx = (p.x + p.w/2) - c.x, dy = (p.y + p.h/2) - c.y;
-        if(Math.sqrt(dx*dx + dy*dy)  WORLD_H + 50) die();
 
     // Animate
     p.animTimer += dt;
@@ -1220,18 +973,7 @@ function update(dt){
       resolveAABB(e, game.platforms);
 
       // Bounce off edges
-      if(e.x  {
-      if(e.dead) return;
-      e.vy += game.gravity * dt;
-      e.x += e.vx * dt;
-      e.y += e.vy * dt;
-      resolveAABB(e, game.platforms);
-
-      // Bounce off edges
       if(e.x < 0 || e.x + e.w > WORLD_W) e.vx *= -1;
-      // Bounce off platform edges
-      const onPlatform = game.platforms.find(pl =>
-        e.x + e.w > pl.x && e.x  WORLD_W) e.vx *= -1;
       // Bounce off platform edges
       const onPlatform = game.platforms.find(pl =>
         e.x + e.w > pl.x && e.x < pl.x + pl.w &&
@@ -1247,7 +989,7 @@ function update(dt){
       const dist = Math.sqrt(dx*dx + dy*dy);
       if(dist < (p.w + e.w)/2){
         // Stomp (falling onto enemy)
-        if(p.vy > 0 && p.y + p.h  0 && p.y + p.h < e.y + e.h*0.6){
+        if(p.vy > 0 && p.y + p.h < e.y + e.h*0.6){
           e.dead = true;
           p.vy = -game.jumpForce * 0.4;
           game.coins += 20;
@@ -1260,54 +1002,6 @@ function update(dt){
       }
     });
     game.enemies = game.enemies.filter(e => !e.dead);
-  }
-
-  // Hazards (spike pits = fall off bottom, handled above)
-  if(game.hazardsEnabled && p.y > WORLD_H - 42 && !p.grounded){
-    die();
-  }
-
-  // Camera follow
-  if(game.cameraEnabled){
-    const targetX = p.x - canvas.width * 0.35;
-    game.camX += (targetX - game.camX) * 0.1 * dt;
-    game.camX = Math.max(0, Math.min(WORLD_W - canvas.width, game.camX));
-  } else {
-    game.camX = 0;
-  }
-
-  // Level complete, reach right side
-  if(game.sceneEnabled && p.x > WORLD_W - 60 && !game.levelComplete){
-    game.levelComplete = true;
-    game.levelTimer = 90;
-    setOutput('🚪 Level door reached! SceneManager.LoadScene() will run in 1.5s…');
-  }
-
-  // Particles
-  game.particles.forEach(pt => {
-    pt.x += pt.vx * dt; pt.y += pt.vy * dt;
-    pt.vy += 0.15 * dt;
-    pt.life -= 0.025 * dt;
-    pt.vx *= 0.96; pt.vy *= 0.96;
-  });
-  game.particles = game.particles.filter(pt => pt.life > 0);
-
-  document.getElementById('hudGrounded').textContent = p.grounded ? 'YES' : 'NO';
-  document.getElementById('hudGrounded').style.color = p.grounded ? 'var(--green)' : 'var(--muted)';
-}
-
-function die(){
-  if(game.deathTimer > 0) return;
-  game.lives = Math.max(0, game.lives - 1);
-  document.getElementById('hudLives').textContent = game.lives;
-  game.deathTimer = 80;
-  game.flashTimer = 20;
-  spawnParticles(game.player.x + game.player.w/2, game.player.y, '#f87171', 12);
-  setOutput('💀 OnTriggerEnter2D with hazard, lives: ' + game.lives);
-}
-
-function spawnParticles(x, y, col, n){
-  for(let i=0;i !e.dead);
   }
 
   // Hazards (spike pits = fall off bottom, handled above)
@@ -1411,17 +1105,7 @@ function draw(){
   // Platforms
   game.platforms.forEach(p => {
     const px = wx(p.x), py = wy(p.y), pw = ws(p.w), ph = wsh(p.h);
-    if(px + pw  {
-    const px = wx(p.x), py = wy(p.y), pw = ws(p.w), ph = wsh(p.h);
     if(px + pw < 0 || px > W) return;
-    if(p.type === 'ground'){
-      ctx.fillStyle = '#1a3a1a';
-      ctx.fillRect(px, py, pw, ph);
-      ctx.fillStyle = '#2d5a2d';
-      ctx.fillRect(px, py, pw, wsh(8));
-      // Grass tufts
-      ctx.fillStyle = '#3d8b3d';
-      for(let gx=px+4;gx W) return;
     if(p.type === 'ground'){
       ctx.fillStyle = '#1a3a1a';
       ctx.fillRect(px, py, pw, ph);
@@ -1443,115 +1127,6 @@ function draw(){
   // Coins
   if(game.coinsEnabled){
     game.coinObjs.forEach(c => {
-      if(c.collected) return;
-      const cx2 = wx(c.x), cy2 = wy(c.y) + Math.sin(c.anim * 3) * wsh(4);
-      const cr = ws(c.r);
-      ctx.save();
-      ctx.shadowColor = '#f5c842';
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = '#f5c842';
-      ctx.beginPath();
-      ctx.ellipse(cx2, cy2, cr, cr * 0.85, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = '#fde68a';
-      ctx.beginPath();
-      ctx.ellipse(cx2 - cr*0.2, cy2 - cr*0.2, cr*0.3, cr*0.3, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    });
-  }
-
-  // Goal door
-  if(game.sceneEnabled){
-    const dx = wx(WORLD_W - 55), dy = wy(WORLD_H - 40 - 56);
-    const dw = ws(28), dh = wsh(56);
-    ctx.fillStyle = '#1a0a30';
-    ctx.fillRect(dx, dy, dw, dh);
-    ctx.strokeStyle = game.levelComplete ? '#f5c842' : '#9b72cb';
-    ctx.lineWidth = ws(3);
-    ctx.strokeRect(dx, dy, dw, dh);
-    // Animated glow when complete
-    if(game.levelComplete){
-      ctx.save();
-      ctx.globalAlpha = 0.5 + 0.5*Math.sin(Date.now()/200);
-      ctx.shadowColor = '#f5c842';
-      ctx.shadowBlur = 20;
-      ctx.strokeStyle = '#f5c842';
-      ctx.strokeRect(dx - ws(4), dy - wsh(4), dw + ws(8), dh + wsh(8));
-      ctx.restore();
-    }
-    ctx.fillStyle = '#9b72cb';
-    ctx.font = `bold ${Math.round(ws(10))}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText('NEXT', dx + dw/2, dy + dh/2);
-  }
-
-  // Enemies
-  if(game.enemiesEnabled){
-    game.enemies.forEach(e => {
-      if(e.dead) return;
-      const ex = wx(e.x), ey = wy(e.y);
-      const ew = ws(e.w), eh = wsh(e.h);
-      // Slime-style enemy body
-      ctx.save();
-      ctx.translate(ex + ew/2, ey + eh/2);
-      const squish = 1 + 0.07 * Math.sin(e.anim * 6);
-      ctx.scale(squish, 2 - squish);
-      ctx.fillStyle = '#f87171';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, ew*0.55, eh*0.45, 0, 0, Math.PI*2);
-      ctx.fill();
-      // Eyes
-      ctx.fillStyle = 'white';
-      ctx.beginPath(); ctx.arc(-ew*0.15, -eh*0.1, ew*0.12, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( ew*0.15, -eh*0.1, ew*0.12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#1a0000';
-      const eyeDir = e.vx > 0 ? 1 : -1;
-      ctx.beginPath(); ctx.arc(-ew*0.15 + eyeDir*ew*0.03, -eh*0.1, ew*0.06, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc( ew*0.15 + eyeDir*ew*0.03, -eh*0.1, ew*0.06, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-    });
-  }
-
-  // Particles
-  game.particles.forEach(pt => {
-    ctx.globalAlpha = pt.life;
-    ctx.fillStyle = pt.col;
-    ctx.beginPath();
-    ctx.arc(wx(pt.x), wy(pt.y), pt.size * scaleX, 0, Math.PI*2);
-    ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-
-  // Player (flash on death)
-  const p = game.player;
-  if(game.deathTimer > 0){
-    game.flashTimer -= 1;
-    if(game.flashTimer > 0 && Math.floor(game.deathTimer / 6) % 2 === 0) {
-      // skip draw = flash
-    } else {
-      drawPlayer(wx(p.x), wy(p.y), ws(p.w), wsh(p.h), true);
-    }
-  } else {
-    drawPlayer(wx(p.x), wy(p.y), ws(p.w), wsh(p.h), false);
-  }
-
-  // HUD overlay
-  ctx.fillStyle = 'rgba(7,8,10,.75)';
-  ctx.fillRect(0, 0, W, wsh(28));
-  ctx.fillStyle = 'rgba(245,200,66,.8)';
-  ctx.font = `700 ${Math.round(wsh(10))}px JetBrains Mono, monospace`;
-  ctx.textAlign = 'left';
-  ctx.fillText('COINS: ' + game.coins, 8, wsh(18));
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(74,222,128,.8)';
-  ctx.fillText('LIVES: ' + game.lives, W-8, wsh(18));
-}
-
-function drawPlayer(px, py, pw, ph, hurt){
-  ctx.save();
-  ctx.translate(px + pw/2, py + ph/2);
-  if(game.player.facing  {
       if(c.collected) return;
       const cx2 = wx(c.x), cy2 = wy(c.y) + Math.sin(c.anim * 3) * wsh(4);
       const cr = ws(c.r);
@@ -1706,104 +1281,54 @@ const STEPS = [
     tag:"STEP 01 SETUP",
     intro:`<strong>Unityis a game engine that handles rendering, physics, and input for you. You writeC# scriptsthat attach to GameObjects in your scene. Every script starts the same way: inheriting fromMonoBehaviour.`,
     body:()=>`
-Unityis a game engine that handles rendering, physics, and input for you. You writeC# scriptsthat attach to GameObjects in your scene. Every script starts the same way: inheriting fromMonoBehaviour.`,
-    body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs The skeleton PlayerController.cs The skeleton <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">PlayerController.cs The skeleton <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">usingusing</span>  <span class="cm">UnityEngineUnityEngine</span>;
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">using</span> <span class="cm">UnityEngine</span>;
 
-;
-
-<span class="ck">public classpublic class</span>  <span class="cg">PlayerControllerPlayerController</span> :  : <span class="cm">MonoBehaviourMonoBehaviour</span>
+<span class="ck">public class</span> <span class="cg">PlayerController</span> : <span class="cm">MonoBehaviour</span>
 {
-    
-{
-    <span class="cc">// Unity calls these automatically:// Unity calls these automatically:</span>
+    <span class="cc">// Unity calls these automatically:</span>
 
-    
-
-    <span class="ck">voidvoid</span>  <span class="co">StartStart</span>()
+    <span class="ck">void</span> <span class="co">Start</span>()
     {
-        ()
-    {
-        <span class="cc">// Runs ONCE when the scene loads// Runs ONCE when the scene loads</span>
-        
-        <span class="cm">DebugDebug</span>..<span class="co">LogLog</span>((<span class="cs">"Player ready!""Player ready!"</span>);
+        <span class="cc">// Runs ONCE when the scene loads</span>
+        <span class="cm">Debug</span>.<span class="co">Log</span>(<span class="cs">"Player ready!"</span>);
     }
 
-    );
-    }
-
-    <span class="ck">voidvoid</span>  <span class="co">UpdateUpdate</span>()
+    <span class="ck">void</span> <span class="co">Update</span>()
     {
-        ()
-    {
-        <span class="cc">// Runs EVERY FRAME (~60x per second)// Runs EVERY FRAME (~60x per second)</span>
-        
-        <span class="cc">// Movement and input checks go here// Movement and input checks go here</span>
-    }
-}
+        <span class="cc">// Runs EVERY FRAME (~60x per second)</span>
+        <span class="cc">// Movement and input checks go here</span>
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-unity">In Unity, create a2D Project, add a Sprite for your player, then drag this script onto it. Unity auto-calls In Unity, create a2D Project, add a Sprite for your player, then drag this script onto it. Unity auto-calls <code style="color:var(--unity-lt)">Start()Start()</code> once and  once and <code style="color:var(--unity-lt)">Update()Update()</code> every frame you never call them yourself. every frame you never call them yourself.</div>
-
-<div class="box box-concept">The The <code style="color:var(--unity-lt)">::</code> meansinherits from your class gets all of MonoBehaviour's built-in Unity powers: transform, collision callbacks, coroutines, and more. meansinherits from your class gets all of MonoBehaviour's built-in Unity powers: transform, collision callbacks, coroutines, and more.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Start the Engine!▶ Apply Start the Engine!</button>
-
-
+<div class="box box-unity">In Unity, create a2D Project, add a Sprite for your player, then drag this script onto it. Unity auto-calls <code style="color:var(--unity-lt)">Start()</code> once and <code style="color:var(--unity-lt)">Update()</code> every frame you never call them yourself.</div>
+<div class="box box-concept">The <code style="color:var(--unity-lt)">:</code> meansinherits from your class gets all of MonoBehaviour's built-in Unity powers: transform, collision callbacks, coroutines, and more.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Start the Engine!</button>
 
 <!-- CONCEPT FILL -->
-
 <div class="concept-fill" id="cf-1" data-step="1">
-  
-  <div class="cf-header"><div class="cf-icon">✏️✏️</div><div class="cf-title">Fill in the BlanksFill in the Blanks</div><div class="cf-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="cf-sentence">Every Unity script inherits from Every Unity script inherits from <input class="cf-blank" data-answer="MonoBehaviour" placeholder="???????????" size="14">. Unity calls . Unity calls <input class="cf-blank" data-answer="Start" placeholder="?????" size="8"> once when the scene loads and  once when the scene loads and <input class="cf-blank" data-answer="Update" placeholder="??????" size="8"> every frame. every frame.</div>
-  
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers✏️ Check Answers</button>
-  
+  <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+  <div class="cf-sentence">Every Unity script inherits from <input class="cf-blank" data-answer="MonoBehaviour" placeholder="???????????" size="14">. Unity calls <input class="cf-blank" data-answer="Start" placeholder="?????" size="8"> once when the scene loads and <input class="cf-blank" data-answer="Update" placeholder="??????" size="8"> every frame.</div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
   <div class="cf-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-1" data-step="1" data-correct="1">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">How often does Unity call the How often does Unity call the <strong>Update()Update()</strong> method? method?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">How often does Unity call the <strong>Update()</strong> method?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Once when the scene loadsOnce when the scene loads</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Every frame (~60 times per second)Every frame (~60 times per second)</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>Only when the player presses a keyOnly when the player presses a key</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Once when the scene loads</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Every frame (~60 times per second)</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Only when the player presses a key</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(1)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(1)">✅ Correct! Next Step →</button>
 </div>
 `+nav(0),
     onApply(){
@@ -1818,138 +1343,65 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"Rigidbody2D Physics",
     tag:"STEP 02 PHYSICS",
-    intro:`A 
-`+nav(0),
-    onApply(){
-      game.running = true;
-      game.physicsEnabled = false;
-      buildLevel(1);
-      setOutput('✅ MonoBehaviour loaded Unity engine running! Use A/D to walk.');
-    }
-  },
-
-  // ── STEP 2 ──
-  {
-    title:"Rigidbody2D Physics",
-    tag:"STEP 02 PHYSICS",
-    intro:`A <code style="color:var(--unity-lt);font-size:.8rem">Rigidbody2DRigidbody2D</code> is a Unity component that addsgravity, velocity, and collisionto your GameObject. Instead of moving the transform directly, you apply forces Unity handles the rest.`,
-    body:()=>`
- is a Unity component that addsgravity, velocity, and collisionto your GameObject. Instead of moving the transform directly, you apply forces Unity handles the rest.`,
+    intro:`A <code style="color:var(--unity-lt);font-size:.8rem">Rigidbody2D</code> is a Unity component that addsgravity, velocity, and collisionto your GameObject. Instead of moving the transform directly, you apply forces Unity handles the rest.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs Physics setup PlayerController.cs Physics setup <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">PlayerController.cs Physics setup <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">public classpublic class</span>  <span class="cg">PlayerControllerPlayerController</span> :  : <span class="cm">MonoBehaviourMonoBehaviour</span>
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">public class</span> <span class="cg">PlayerController</span> : <span class="cm">MonoBehaviour</span>
 {
-    
-{
-    <span class="ck">privateprivate</span>  <span class="cm">Rigidbody2DRigidbody2D</span>  <span class="cy">_rb_rb</span>;
+    <span class="ck">private</span> <span class="cm">Rigidbody2D</span> <span class="cy">_rb</span>;
 
-    ;
-
-    <span class="ck">voidvoid</span>  <span class="co">StartStart</span>()
+    <span class="ck">void</span> <span class="co">Start</span>()
     {
-        ()
-    {
-        <span class="cc">// Get the Rigidbody2D component// Get the Rigidbody2D component</span>
-        
-        <span class="cc">// on this same GameObject:// on this same GameObject:</span>
-        
-        <span class="cy">_rb_rb</span> =  = <span class="co">GetComponentGetComponent</span>&lt;&lt;<span class="cm">Rigidbody2DRigidbody2D</span>&gt;();
+        <span class="cc">// Get the Rigidbody2D component</span>
+        <span class="cc">// on this same GameObject:</span>
+        <span class="cy">_rb</span> = <span class="co">GetComponent</span>&lt;<span class="cm">Rigidbody2D</span>&gt;();
 
-        &gt;();
-
-        <span class="cc">// Freeze Z rotation (2D games only):// Freeze Z rotation (2D games only):</span>
-        
-        <span class="cy">_rb_rb</span>..<span class="cy">constraintsconstraints</span> =
-             =
-            <span class="cm">RigidbodyConstraints2DRigidbodyConstraints2D</span>..<span class="cy">FreezeRotationFreezeRotation</span>;
+        <span class="cc">// Freeze Z rotation (2D games only):</span>
+        <span class="cy">_rb</span>.<span class="cy">constraints</span> =
+            <span class="cm">RigidbodyConstraints2D</span>.<span class="cy">FreezeRotation</span>;
     }
 
-    ;
-    }
-
-    <span class="ck">voidvoid</span>  <span class="co">FixedUpdateFixedUpdate</span>()
+    <span class="ck">void</span> <span class="co">FixedUpdate</span>()
     {
-        ()
-    {
-        <span class="cc">// Physics runs in FixedUpdate, NOT Update()// Physics runs in FixedUpdate, NOT Update()</span>
-        
-        <span class="cm">DebugDebug</span>..<span class="co">LogLog</span>((<span class="cs">"velocity: ""velocity: "</span> +  + <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>);
-    }
-});
+        <span class="cc">// Physics runs in FixedUpdate, NOT Update()</span>
+        <span class="cm">Debug</span>.<span class="co">Log</span>(<span class="cs">"velocity: "</span> + <span class="cy">_rb</span>.<span class="cy">linearVelocity</span>);
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-concept"><code style="color:var(--unity-lt)">GetComponent&lt;T&gt;()GetComponent&lt;T&gt;()</code> finds a component on the same GameObject one of Unity's most-used methods. Always cache it in  finds a component on the same GameObject one of Unity's most-used methods. Always cache it in <code style="color:var(--unity-lt)">Start()Start()</code> rather than calling it every frame. rather than calling it every frame.</div>
-
-<div class="box box-unity">In Unity: Add Component → Physics 2D → Rigidbody 2D on your player. SetGravity Scaleto 3. Also add aBoxCollider2Dfor ground detection. Gravity is now applied automatically!In Unity: Add Component → Physics 2D → Rigidbody 2D on your player. SetGravity Scaleto 3. Also add aBoxCollider2Dfor ground detection. Gravity is now applied automatically!</div>
-
-<div class="box box-tip">UseFixedUpdate()for physics code it runs at a fixed 50Hz rather than the variable frame rate, giving consistent physics behaviour.UseFixedUpdate()for physics code it runs at a fixed 50Hz rather than the variable frame rate, giving consistent physics behaviour.</div>
-
+<div class="box box-concept"><code style="color:var(--unity-lt)">GetComponent&lt;T&gt;()</code> finds a component on the same GameObject one of Unity's most-used methods. Always cache it in <code style="color:var(--unity-lt)">Start()</code> rather than calling it every frame.</div>
+<div class="box box-unity">In Unity: Add Component → Physics 2D → Rigidbody 2D on your player. SetGravity Scaleto 3. Also add aBoxCollider2Dfor ground detection. Gravity is now applied automatically!</div>
+<div class="box box-tip">UseFixedUpdate()for physics code it runs at a fixed 50Hz rather than the variable frame rate, giving consistent physics behaviour.</div>
 <div style="margin:10px 0;font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted)">
-  Gravity Scale: 
   Gravity Scale: <input class="blank" id="gravVal" type="number" value="0.5" min="0.2" max="1.5" step="0.1" style="--w:50px"> (higher = faster fall)
- (higher = faster fall)
 </div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Enable Physics!▶ Apply Enable Physics!</button>
-
-
+<button class="run-btn" onclick="doApply()">▶ Apply Enable Physics!</button>
 
 <!-- TRUE/FALSE -->
-
 <div class="tf-round" id="tf-2" data-step="2">
-  
-  <div class="tf-header"><div class="tf-icon">⚡⚡</div><div class="tf-title">True or FalseTrue or False</div><div class="tf-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="tf-item" data-answer="true"><div class="tf-statement">A Rigidbody2D adds gravity and velocity to a GameObject automatically.A Rigidbody2D adds gravity and velocity to a GameObject automatically.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <div class="tf-item" data-answer="false"><div class="tf-statement">You should call GetComponent&lt;T&gt;() every frame inside Update().You should call GetComponent&lt;T&gt;() every frame inside Update().</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <div class="tf-item" data-answer="true"><div class="tf-statement">FixedUpdate() runs at a fixed 50Hz rate, separate from the frame rate.FixedUpdate() runs at a fixed 50Hz rate, separate from the frame rate.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check Answers⚡ Check Answers</button>
-  
+  <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+15 XP</div></div>
+  <div class="tf-item" data-answer="true"><div class="tf-statement">A Rigidbody2D adds gravity and velocity to a GameObject automatically.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="false"><div class="tf-statement">You should call GetComponent&lt;T&gt;() every frame inside Update().</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><div class="tf-statement">FixedUpdate() runs at a fixed 50Hz rate, separate from the frame rate.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check Answers</button>
   <div class="tf-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-2" data-step="2" data-correct="2">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">Where should you cache the result of Where should you cache the result of <strong>GetComponent&lt;Rigidbody2D&gt;()GetComponent&lt;Rigidbody2D&gt;()</strong>??</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">Where should you cache the result of <strong>GetComponent&lt;Rigidbody2D&gt;()</strong>?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Inside Update() so it's always freshInside Update() so it's always fresh</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Inside OnCollisionEnter2D()Inside OnCollisionEnter2D()</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>Inside Start(), call it once and store in a fieldInside Start(), call it once and store in a field</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Inside Update() so it's always fresh</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Inside OnCollisionEnter2D()</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Inside Start(), call it once and store in a field</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(2)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(2)">✅ Correct! Next Step →</button>
 </div>
 `+nav(1),
     onApply(){
@@ -1964,130 +1416,61 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"Input Walk the Player",
     tag:"STEP 03 INPUT",
-    intro:`
-`+nav(1),
-    onApply(){
-      game.physicsEnabled = true;
-      game.gravity = parseFloat(document.getElementById('gravVal')?.value) || 0.5;
-      buildLevel(1);
-      setOutput('✅ Rigidbody2D active gravity pulling player down! Platforms loaded.');
-    }
-  },
-
-  // ── STEP 3 ──
-  {
-    title:"Input Walk the Player",
-    tag:"STEP 03 INPUT",
-    intro:`<code style="color:var(--unity-lt);font-size:.8rem">Input.GetAxisRaw()Input.GetAxisRaw()</code> returns-1, 0, or 1 perfect for snappy platformer movement. We set the Rigidbody's X velocity directly rather than using AddForce, giving us tighter control.`,
-    body:()=>`
- returns-1, 0, or 1 perfect for snappy platformer movement. We set the Rigidbody's X velocity directly rather than using AddForce, giving us tighter control.`,
+    intro:`<code style="color:var(--unity-lt);font-size:.8rem">Input.GetAxisRaw()</code> returns-1, 0, or 1 perfect for snappy platformer movement. We set the Rigidbody's X velocity directly rather than using AddForce, giving us tighter control.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs Horizontal movement PlayerController.cs Horizontal movement <span class="cs-badge">EditableEditable</span></div>
-  
+  <div class="code-area-label">PlayerController.cs Horizontal movement <span class="cs-badge">Editable</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">public floatpublic float</span>  <span class="cy">moveSpeedmoveSpeed</span> =  = <input class="blank" id="moveSpeed" type="number" value="5" min="2" max="12" step="0.5" style="--w:44px">;
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">public float</span> <span class="cy">moveSpeed</span> = <input class="blank" id="moveSpeed" type="number" value="5" min="2" max="12" step="0.5" style="--w:44px">;
 
-;
-
-<span class="ck">voidvoid</span>  <span class="co">FixedUpdateFixedUpdate</span>()
+<span class="ck">void</span> <span class="co">FixedUpdate</span>()
 {
-    ()
-{
-    <span class="cc">// GetAxisRaw = snappy (-1, 0, 1), no smoothing// GetAxisRaw = snappy (-1, 0, 1), no smoothing</span>
-    
-    <span class="ck">floatfloat</span>  <span class="cy">hh</span> =  = <span class="cm">InputInput</span>..<span class="co">GetAxisRawGetAxisRaw</span>((<span class="cs">"Horizontal""Horizontal"</span>);
+    <span class="cc">// GetAxisRaw = snappy (-1, 0, 1), no smoothing</span>
+    <span class="ck">float</span> <span class="cy">h</span> = <span class="cm">Input</span>.<span class="co">GetAxisRaw</span>(<span class="cs">"Horizontal"</span>);
 
+    <span class="cc">// Set X velocity, keep Y (for gravity):</span>
+    <span class="cy">_rb</span>.<span class="cy">linearVelocity</span> = <span class="ck">new</span> <span class="cm">Vector2</span>(
+        <span class="cy">h</span> * <span class="cy">moveSpeed</span>,
+        <span class="cy">_rb</span>.<span class="cy">linearVelocity</span>.<span class="cy">y</span>   <span class="cc">// keep vertical!</span>
     );
 
-    <span class="cc">// Set X velocity, keep Y (for gravity):// Set X velocity, keep Y (for gravity):</span>
-    
-    <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span> =  = <span class="ck">newnew</span>  <span class="cm">Vector2Vector2</span>(
-        (
-        <span class="cy">hh</span> *  * <span class="cy">moveSpeedmoveSpeed</span>,
-        ,
-        <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>..<span class="cy">yy</span>      <span class="cc">// keep vertical!// keep vertical!</span>
-    );
-
-    
-    );
-
-    <span class="cc">// Flip the sprite to face movement direction:// Flip the sprite to face movement direction:</span>
-    
-    <span class="ck">ifif</span> ( (<span class="cy">hh</span> !=  != <span class="cn">00</span>)
-        )
-        <span class="cm">transformtransform</span>..<span class="cy">localScalelocalScale</span> =  = <span class="ck">newnew</span>  <span class="cm">Vector3Vector3</span>(
-            (
-            <span class="cy">hh</span>, , <span class="cn">11</span>, , <span class="cn">11</span>);
-});
+    <span class="cc">// Flip the sprite to face movement direction:</span>
+    <span class="ck">if</span> (<span class="cy">h</span> != <span class="cn">0</span>)
+        <span class="cm">transform</span>.<span class="cy">localScale</span> = <span class="ck">new</span> <span class="cm">Vector3</span>(
+            <span class="cy">h</span>, <span class="cn">1</span>, <span class="cn">1</span>);
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-concept"><strong>Always preserve the Y velocitywhen setting Rigidbody2D velocity if you write Always preserve the Y velocitywhen setting Rigidbody2D velocity if you write <code style="color:var(--unity-lt)">new Vector2(h * speed, 0)new Vector2(h * speed, 0)</code>, gravity is cancelled every frame and the player never falls!, gravity is cancelled every frame and the player never falls!</div>
-
-<div class="box box-tip">Try cranking moveSpeed up to 10 notice how snappy it feels vs GetAxis() which smoothly accelerates. Platformers generally feel better with GetAxisRaw for immediate response.Try cranking moveSpeed up to 10 notice how snappy it feels vs GetAxis() which smoothly accelerates. Platformers generally feel better with GetAxisRaw for immediate response.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Walk!▶ Apply Walk!</button>
-
-
+<div class="box box-concept"><strong>Always preserve the Y velocitywhen setting Rigidbody2D velocity if you write <code style="color:var(--unity-lt)">new Vector2(h * speed, 0)</code>, gravity is cancelled every frame and the player never falls!</div>
+<div class="box box-tip">Try cranking moveSpeed up to 10 notice how snappy it feels vs GetAxis() which smoothly accelerates. Platformers generally feel better with GetAxisRaw for immediate response.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Walk!</button>
 
 <!-- CODE CHALLENGE -->
-
 <div class="code-challenge" id="cc-3" data-step="3">
-  
-  <div class="cc-header"><div class="cc-icon">💻💻</div><div class="cc-title">Code ChallengeCode Challenge</div><div class="cc-xp-badge">+20 XP+20 XP</div></div>
-  
-  <div class="cc-prompt">Fill in the blanks to set the Rigidbody2D's horizontal velocity while preserving gravity:Fill in the blanks to set the Rigidbody2D's horizontal velocity while preserving gravity:</div>
-  
-  <div class="cc-code-area">_rb.linearVelocity = new _rb.linearVelocity = new <input class="cc-blank" data-answer="Vector2" placeholder="??????" size="8">(
-    h * (
+  <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+  <div class="cc-prompt">Fill in the blanks to set the Rigidbody2D's horizontal velocity while preserving gravity:</div>
+  <div class="cc-code-area">_rb.linearVelocity = new <input class="cc-blank" data-answer="Vector2" placeholder="??????" size="8">(
     h * <input class="cc-blank" data-answer="moveSpeed" placeholder="?????????" size="11">,
-    _rb.linearVelocity.,
     _rb.linearVelocity.<input class="cc-blank" data-answer="y" placeholder="?" size="3">
-);
 );</div>
-  
-  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code💻 Check Code</button>
-  
-  <div class="cc-hint" onclick="this.textContent='Hint: Vector2 takes (x, y). We want h * speed for X, and keep the existing Y.'">🔍 Need a hint?🔍 Need a hint?</div>
-  
+  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+  <div class="cc-hint" onclick="this.textContent='Hint: Vector2 takes (x, y). We want h * speed for X, and keep the existing Y.'">🔍 Need a hint?</div>
   <div class="cc-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-3" data-step="3" data-correct="0">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">What does What does <strong>Input.GetAxisRaw("Horizontal")Input.GetAxisRaw("Horizontal")</strong> return? return?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">What does <strong>Input.GetAxisRaw("Horizontal")</strong> return?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>-1, 0, or 1, snappy with no smoothing-1, 0, or 1, snappy with no smoothing</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>A float that smoothly accelerates between -1 and 1A float that smoothly accelerates between -1 and 1</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>The mouse X position in world spaceThe mouse X position in world space</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>-1, 0, or 1, snappy with no smoothing</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A float that smoothly accelerates between -1 and 1</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The mouse X position in world space</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(3)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(3)">✅ Correct! Next Step →</button>
 </div>
 `+nav(2),
     onApply(){
@@ -2100,150 +1483,65 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"Jump & Ground Check",
     tag:"STEP 04 JUMPING",
-    intro:`Jumping in a platformer needs two things: anupward forcewhen Space is pressed, and aground checkso you can only jump when standing on something. We use 
-`+nav(2),
-    onApply(){
-      game.playerSpeed = parseFloat(document.getElementById('moveSpeed')?.value)||5;
-      setOutput('✅ Movement active! A/D or Arrow keys to walk. Speed: ' + game.playerSpeed);
-    }
-  },
-
-  // ── STEP 4 ──
-  {
-    title:"Jump & Ground Check",
-    tag:"STEP 04 JUMPING",
-    intro:`Jumping in a platformer needs two things: anupward forcewhen Space is pressed, and aground checkso you can only jump when standing on something. We use <code style="color:var(--unity-lt);font-size:.8rem">Physics2D.OverlapCircle()Physics2D.OverlapCircle()</code> to detect the ground.`,
-    body:()=>`
- to detect the ground.`,
+    intro:`Jumping in a platformer needs two things: anupward forcewhen Space is pressed, and aground checkso you can only jump when standing on something. We use <code style="color:var(--unity-lt);font-size:.8rem">Physics2D.OverlapCircle()</code> to detect the ground.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs Jump system PlayerController.cs Jump system <span class="cs-badge">EditableEditable</span></div>
-  
+  <div class="code-area-label">PlayerController.cs Jump system <span class="cs-badge">Editable</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">public floatpublic float</span>  <span class="cy">jumpForcejumpForce</span>   =    = <input class="blank" id="jumpForce" type="number" value="10" min="5" max="20" step="0.5" style="--w:44px">;
-;
-<span class="ck">publicpublic</span>  <span class="cm">TransformTransform</span>  <span class="cy">groundCheckgroundCheck</span>;   ;   <span class="cc">// empty child GameObject at feet// empty child GameObject at feet</span>
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">public float</span> <span class="cy">jumpForce</span>   = <input class="blank" id="jumpForce" type="number" value="10" min="5" max="20" step="0.5" style="--w:44px">;
+<span class="ck">public</span> <span class="cm">Transform</span> <span class="cy">groundCheck</span>;   <span class="cc">// empty child GameObject at feet</span>
+<span class="ck">public</span> <span class="cm">LayerMask</span>  <span class="cy">groundLayer</span>;
 
-<span class="ck">publicpublic</span>  <span class="cm">LayerMaskLayerMask</span>    <span class="cy">groundLayergroundLayer</span>;
+<span class="ck">private bool</span> <span class="cy">_grounded</span>;
 
-;
-
-<span class="ck">private boolprivate bool</span>  <span class="cy">_grounded_grounded</span>;
-
-;
-
-<span class="ck">voidvoid</span>  <span class="co">UpdateUpdate</span>()
+<span class="ck">void</span> <span class="co">Update</span>()
 {
-    ()
-{
-    <span class="cc">// Check ground every frame:// Check ground every frame:</span>
-    
-    <span class="cy">_grounded_grounded</span> =  = <span class="cm">Physics2DPhysics2D</span>..<span class="co">OverlapCircleOverlapCircle</span>(
-        (
-        <span class="cy">groundCheckgroundCheck</span>..<span class="cy">positionposition</span>, , <span class="cn">0.1f0.1f</span>, , <span class="cy">groundLayergroundLayer</span>);
+    <span class="cc">// Check ground every frame:</span>
+    <span class="cy">_grounded</span> = <span class="cm">Physics2D</span>.<span class="co">OverlapCircle</span>(
+        <span class="cy">groundCheck</span>.<span class="cy">position</span>, <span class="cn">0.1f</span>, <span class="cy">groundLayer</span>);
 
-    );
-
-    <span class="cc">// Only jump if grounded:// Only jump if grounded:</span>
-    
-    <span class="ck">ifif</span> ( (<span class="cm">InputInput</span>..<span class="co">GetButtonDownGetButtonDown</span>((<span class="cs">"Jump""Jump"</span>) && ) && <span class="cy">_grounded_grounded</span>)
+    <span class="cc">// Only jump if grounded:</span>
+    <span class="ck">if</span> (<span class="cm">Input</span>.<span class="co">GetButtonDown</span>(<span class="cs">"Jump"</span>) && <span class="cy">_grounded</span>)
     {
-        )
-    {
-        <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span> =  = <span class="ck">newnew</span>  <span class="cm">Vector2Vector2</span>(
-            (
-            <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>..<span class="cy">xx</span>,
-            ,
-            <span class="cy">jumpForcejumpForce</span>);
-    }
-});
+        <span class="cy">_rb</span>.<span class="cy">linearVelocity</span> = <span class="ck">new</span> <span class="cm">Vector2</span>(
+            <span class="cy">_rb</span>.<span class="cy">linearVelocity</span>.<span class="cy">x</span>,
+            <span class="cy">jumpForce</span>);
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-unity">In Unity: Create an empty child GameObject at the player's feet called "GroundCheck". Drag it into thegroundCheckfield. Create a "Ground" Layer and assign it to your platforms. Drag it intogroundLayer.In Unity: Create an empty child GameObject at the player's feet called "GroundCheck". Drag it into thegroundCheckfield. Create a "Ground" Layer and assign it to your platforms. Drag it intogroundLayer.</div>
-
-<div class="box box-concept"><code style="color:var(--unity-lt)">GetButtonDownGetButtonDown</code> fires only on the  fires only on the <em>first framefirst frame</em> the button is pressed (unlike GetKey which fires every frame). This prevents the jump from triggering repeatedly while held. the button is pressed (unlike GetKey which fires every frame). This prevents the jump from triggering repeatedly while held.</div>
-
-<div class="box box-tip">TryjumpForce 8for a floaty feel,15for a snappy arcade feel. Also increaseGravity Scaleon the Rigidbody2D alongside a higher jumpForce for that "fast-fall" Mario-style physics.TryjumpForce 8for a floaty feel,15for a snappy arcade feel. Also increaseGravity Scaleon the Rigidbody2D alongside a higher jumpForce for that "fast-fall" Mario-style physics.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Jump!▶ Apply Jump!</button>
-
-
+<div class="box box-unity">In Unity: Create an empty child GameObject at the player's feet called "GroundCheck". Drag it into thegroundCheckfield. Create a "Ground" Layer and assign it to your platforms. Drag it intogroundLayer.</div>
+<div class="box box-concept"><code style="color:var(--unity-lt)">GetButtonDown</code> fires only on the <em>first frame</em> the button is pressed (unlike GetKey which fires every frame). This prevents the jump from triggering repeatedly while held.</div>
+<div class="box box-tip">TryjumpForce 8for a floaty feel,15for a snappy arcade feel. Also increaseGravity Scaleon the Rigidbody2D alongside a higher jumpForce for that "fast-fall" Mario-style physics.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Jump!</button>
 
 <!-- PREDICT CHALLENGE -->
-
 <div class="predict-challenge" id="pc-4" data-step="4" data-correct="1">
-  
-  <div class="pc-header"><div class="pc-icon">🔮🔮</div><div class="pc-title">Predict What HappensPredict What Happens</div><div class="pc-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="pc-scenario"><strong>Scenario:Scenario:</strong> You remove the  You remove the <code style="color:var(--unity-lt)">_grounded_grounded</code> check from the jump code so the player can press Space at any time. What happens? check from the jump code so the player can press Space at any time. What happens?</div>
-  
+  <div class="pc-header"><div class="pc-icon">🔮</div><div class="pc-title">Predict What Happens</div><div class="pc-xp-badge">+15 XP</div></div>
+  <div class="pc-scenario"><strong>Scenario:</strong> You remove the <code style="color:var(--unity-lt)">_grounded</code> check from the jump code so the player can press Space at any time. What happens?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Nothing changes, the player still jumps normallyNothing changes, the player still jumps normally</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>The player can jump infinitely in mid-air (fly)The player can jump infinitely in mid-air (fly)</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>The game crashes with a null reference errorThe game crashes with a null reference error</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Nothing changes, the player still jumps normally</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The player can jump infinitely in mid-air (fly)</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The game crashes with a null reference error</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkPredict(this)">Check PredictionCheck Prediction</button>
-
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-4" data-step="4" data-correct="2">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">What Unity method detects if the player is standing on the ground?What Unity method detects if the player is standing on the ground?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">What Unity method detects if the player is standing on the ground?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Input.GetButtonDown("Ground")Input.GetButtonDown("Ground")</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Rigidbody2D.IsGrounded()Rigidbody2D.IsGrounded()</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>Physics2D.OverlapCircle() with a ground layerPhysics2D.OverlapCircle() with a ground layer</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Input.GetButtonDown("Ground")</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Rigidbody2D.IsGrounded()</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Physics2D.OverlapCircle() with a ground layer</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(4)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(4)">✅ Correct! Next Step →</button>
 </div>
-`+nav(3),
-    onApply(){
-      game.jumpEnabled = true;
-      game.jumpForce = parseFloat(document.getElementById('jumpForce')?.value)||10;
-      setOutput('✅ Jump enabled! Press SPACE to jump. JumpForce: ' + game.jumpForce);
-    }
-  },
-
-  // ── STEP 5 ──
-  {
-    title:"Animator Character States",
-    tag:"STEP 05 ANIMATION",
-    intro:`Unity'sAnimatorcomponent controls sprite animations using a state machine. You define states (Idle, Run, Jump) andtransitionsbetween them based on parameters. Your script sets those parameters from code.`,
-    body:()=>`
-
 `+nav(3),
     onApply(){
       game.jumpEnabled = true;
@@ -2259,121 +1557,63 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
     intro:`Unity'sAnimatorcomponent controls sprite animations using a state machine. You define states (Idle, Run, Jump) andtransitionsbetween them based on parameters. Your script sets those parameters from code.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs Animation states PlayerController.cs Animation states <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">PlayerController.cs Animation states <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">privateprivate</span>  <span class="cm">AnimatorAnimator</span>  <span class="cy">_anim_anim</span>;
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">private</span> <span class="cm">Animator</span> <span class="cy">_anim</span>;
 
-;
-
-<span class="ck">voidvoid</span>  <span class="co">StartStart</span>()
+<span class="ck">void</span> <span class="co">Start</span>()
 {
-    ()
-{
-    <span class="cy">_rb_rb</span>   =    = <span class="co">GetComponentGetComponent</span>&lt;&lt;<span class="cm">Rigidbody2DRigidbody2D</span>&gt;();
-    &gt;();
-    <span class="cy">_anim_anim</span> =  = <span class="co">GetComponentGetComponent</span>&lt;&lt;<span class="cm">AnimatorAnimator</span>&gt;();
+    <span class="cy">_rb</span>   = <span class="co">GetComponent</span>&lt;<span class="cm">Rigidbody2D</span>&gt;();
+    <span class="cy">_anim</span> = <span class="co">GetComponent</span>&lt;<span class="cm">Animator</span>&gt;();
 }
 
-&gt;();
-}
-
-<span class="ck">voidvoid</span>  <span class="co">UpdateUpdate</span>()
+<span class="ck">void</span> <span class="co">Update</span>()
 {
-    ()
-{
-    <span class="ck">floatfloat</span>  <span class="cy">hh</span> =  = <span class="cm">InputInput</span>..<span class="co">GetAxisRawGetAxisRaw</span>((<span class="cs">"Horizontal""Horizontal"</span>);
+    <span class="ck">float</span> <span class="cy">h</span> = <span class="cm">Input</span>.<span class="co">GetAxisRaw</span>(<span class="cs">"Horizontal"</span>);
 
-    );
+    <span class="cc">// Set Animator parameters:</span>
+    <span class="cy">_anim</span>.<span class="co">SetFloat</span>(<span class="cs">"Speed"</span>,
+        <span class="cm">Mathf</span>.<span class="co">Abs</span>(<span class="cy">_rb</span>.<span class="cy">linearVelocity</span>.<span class="cy">x</span>));
 
-    <span class="cc">// Set Animator parameters:// Set Animator parameters:</span>
-    
-    <span class="cy">_anim_anim</span>..<span class="co">SetFloatSetFloat</span>((<span class="cs">"Speed""Speed"</span>,
-        ,
-        <span class="cm">MathfMathf</span>..<span class="co">AbsAbs</span>((<span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>..<span class="cy">xx</span>));
+    <span class="cy">_anim</span>.<span class="co">SetBool</span>(<span class="cs">"IsGrounded"</span>, <span class="cy">_grounded</span>);
 
-    ));
-
-    <span class="cy">_anim_anim</span>..<span class="co">SetBoolSetBool</span>((<span class="cs">"IsGrounded""IsGrounded"</span>, , <span class="cy">_grounded_grounded</span>);
-
-    );
-
-    <span class="cy">_anim_anim</span>..<span class="co">SetFloatSetFloat</span>((<span class="cs">"VerticalVelocity""VerticalVelocity"</span>,
-        ,
-        <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>..<span class="cy">yy</span>);
-});
+    <span class="cy">_anim</span>.<span class="co">SetFloat</span>(<span class="cs">"VerticalVelocity"</span>,
+        <span class="cy">_rb</span>.<span class="cy">linearVelocity</span>.<span class="cy">y</span>);
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-unity">In Unity'sAnimator window: Create states "Idle", "Run", "Jump", "Fall". Add transitions: Idle → Run when Speed > 0.1; Run → Idle when Speed ≤ 0.1; Any State → Jump when IsGrounded=false and VerticalVelocity > 0; Any State → Fall when VerticalVelocity In Unity'sAnimator window: Create states "Idle", "Run", "Jump", "Fall". Add transitions: Idle → Run when Speed > 0.1; Run → Idle when Speed ≤ 0.1; Any State → Jump when IsGrounded=false and VerticalVelocity > 0; Any State → Fall when VerticalVelocity < -1.</div>
-
-<div class="box box-concept">TheAnimator Controlleris a state machine it decides which animation to play based on your parameters. Your C# script never plays animations directly; it just updates the data and Unity handles the transitions automatically.TheAnimator Controlleris a state machine it decides which animation to play based on your parameters. Your C# script never plays animations directly; it just updates the data and Unity handles the transitions automatically.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Animate!▶ Apply Animate!</button>
-
-
+<div class="box box-unity">In Unity'sAnimator window: Create states "Idle", "Run", "Jump", "Fall". Add transitions: Idle → Run when Speed > 0.1; Run → Idle when Speed ≤ 0.1; Any State → Jump when IsGrounded=false and VerticalVelocity > 0; Any State → Fall when VerticalVelocity < -1.</div>
+<div class="box box-concept">TheAnimator Controlleris a state machine it decides which animation to play based on your parameters. Your C# script never plays animations directly; it just updates the data and Unity handles the transitions automatically.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Animate!</button>
 
 <!-- ORDER CHALLENGE -->
-
 <div class="order-challenge" id="oc-5" data-step="5">
-  
-  <div class="oc-header"><div class="oc-icon">🔢🔢</div><div class="oc-title">Order the StepsOrder the Steps</div><div class="oc-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="oc-prompt">Click these in the correct order to set up the Animator system:Click these in the correct order to set up the Animator system:</div>
-  
+  <div class="oc-header"><div class="oc-icon">🔢</div><div class="oc-title">Order the Steps</div><div class="oc-xp-badge">+15 XP</div></div>
+  <div class="oc-prompt">Click these in the correct order to set up the Animator system:</div>
   <div class="oc-items">
-    
-    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span><span>Set parameters from C# code (_anim.SetFloat, _anim.SetBool)Set parameters from C# code (_anim.SetFloat, _anim.SetBool)</span></div>
-    
-    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span><span>Create animation states (Idle, Run, Jump, Fall)Create animation states (Idle, Run, Jump, Fall)</span></div>
-    
-    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span><span>Unity auto-transitions between states based on parameter valuesUnity auto-transitions between states based on parameter values</span></div>
-    
-    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span><span>Add transitions between states with parameter conditionsAdd transitions between states with parameter conditions</span></div>
-  
+    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span><span>Set parameters from C# code (_anim.SetFloat, _anim.SetBool)</span></div>
+    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span><span>Create animation states (Idle, Run, Jump, Fall)</span></div>
+    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span><span>Unity auto-transitions between states based on parameter values</span></div>
+    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span><span>Add transitions between states with parameter conditions</span></div>
   </div>
-  
-  <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order🔢 Check Order</button>
-  
-  <button class="oc-reset-btn" onclick="resetOrder(this)">ResetReset</button>
-  
+  <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order</button>
+  <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
   <div class="oc-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-5" data-step="5" data-correct="1">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">How does the Animator Controller decide which animation to play?How does the Animator Controller decide which animation to play?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">How does the Animator Controller decide which animation to play?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Your C# script directly calls PlayAnimation("Run")Your C# script directly calls PlayAnimation("Run")</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>It uses a state machine, transitions fire based on parameter values you set from codeIt uses a state machine, transitions fire based on parameter values you set from code</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>Unity automatically detects movement and picks the right animationUnity automatically detects movement and picks the right animation</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Your C# script directly calls PlayAnimation("Run")</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It uses a state machine, transitions fire based on parameter values you set from code</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Unity automatically detects movement and picks the right animation</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(5)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(5)">✅ Correct! Next Step →</button>
 </div>
 `+nav(4),
     onApply(){
@@ -2385,144 +1625,62 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"OnTriggerEnter2D Collectibles",
     tag:"STEP 06 TRIGGERS",
-    intro:`Unity fires 
-`+nav(4),
-    onApply(){
-      setOutput('✅ Animator wired watch the walk cycle and jump squash in the preview!');
-    }
-  },
-
-  // ── STEP 6 ──
-  {
-    title:"OnTriggerEnter2D Collectibles",
-    tag:"STEP 06 TRIGGERS",
-    intro:`Unity fires <code style="color:var(--unity-lt);font-size:.8rem">OnTriggerEnter2DOnTriggerEnter2D</code> automatically when two colliders overlap, as long as one hasIs Triggerchecked. This is how coins, health pickups, checkpoints, and doors work.`,
-    body:()=>`
- automatically when two colliders overlap, as long as one hasIs Triggerchecked. This is how coins, health pickups, checkpoints, and doors work.`,
+    intro:`Unity fires <code style="color:var(--unity-lt);font-size:.8rem">OnTriggerEnter2D</code> automatically when two colliders overlap, as long as one hasIs Triggerchecked. This is how coins, health pickups, checkpoints, and doors work.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">CoinController.cs Collectible CoinController.cs Collectible <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">CoinController.cs Collectible <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">CoinController.csCoinController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">public classpublic class</span>  <span class="cg">CoinControllerCoinController</span> :  : <span class="cm">MonoBehaviourMonoBehaviour</span>
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">CoinController.cs</span></div>
+    <div class="code-pre"><span class="ck">public class</span> <span class="cg">CoinController</span> : <span class="cm">MonoBehaviour</span>
 {
-    
-{
-    <span class="ck">public intpublic int</span>  <span class="cy">valuevalue</span> =  = <input class="blank" id="coinValue" type="number" value="10" min="5" max="50" step="5" style="--w:44px">;
+    <span class="ck">public int</span> <span class="cy">value</span> = <input class="blank" id="coinValue" type="number" value="10" min="5" max="50" step="5" style="--w:44px">;
 
-    ;
-
-    <span class="cc">// Runs when player overlaps this trigger:// Runs when player overlaps this trigger:</span>
-    
-    <span class="ck">voidvoid</span>  <span class="co">OnTriggerEnter2DOnTriggerEnter2D</span>((<span class="cm">Collider2DCollider2D</span>  <span class="cy">otherother</span>)
+    <span class="cc">// Runs when player overlaps this trigger:</span>
+    <span class="ck">void</span> <span class="co">OnTriggerEnter2D</span>(<span class="cm">Collider2D</span> <span class="cy">other</span>)
     {
-        )
-    {
-        <span class="cc">// Check it's actually the player:// Check it's actually the player:</span>
-        
-        <span class="ck">ifif</span> ( (<span class="cy">otherother</span>..<span class="co">CompareTagCompareTag</span>((<span class="cs">"Player""Player"</span>))
+        <span class="cc">// Check it's actually the player:</span>
+        <span class="ck">if</span> (<span class="cy">other</span>.<span class="co">CompareTag</span>(<span class="cs">"Player"</span>))
         {
-            ))
-        {
-            <span class="cc">// Add to score via GameManager:// Add to score via GameManager:</span>
-            
-            <span class="cm">GameManagerGameManager</span>..<span class="cy">instanceinstance</span>
-                .
-                .<span class="co">AddScoreAddScore</span>((<span class="cy">valuevalue</span>);
+            <span class="cc">// Add to score via GameManager:</span>
+            <span class="cm">GameManager</span>.<span class="cy">instance</span>
+                .<span class="co">AddScore</span>(<span class="cy">value</span>);
 
-            );
+            <span class="cc">// Play collect sound and destroy self:</span>
+            <span class="cm">AudioSource</span>.<span class="co">PlayClipAtPoint</span>(
+                <span class="cy">collectSound</span>,
+                <span class="cm">transform</span>.<span class="cy">position</span>);
 
-            <span class="cc">// Play collect sound and destroy self:// Play collect sound and destroy self:</span>
-            
-            <span class="cm">AudioSourceAudioSource</span>..<span class="co">PlayClipAtPointPlayClipAtPoint</span>(
-                (
-                <span class="cy">collectSoundcollectSound</span>,
-                ,
-                <span class="cm">transformtransform</span>..<span class="cy">positionposition</span>);
-
-            );
-
-            <span class="cm">DestroyDestroy</span>((<span class="cy">gameObjectgameObject</span>);
-        }
-    }
-});
+            <span class="cm">Destroy</span>(<span class="cy">gameObject</span>);
         }
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-unity">In Unity: Add aCircleCollider2Dto the coin prefab and checkIs Trigger. Make sure the player has the tag"Player". The In Unity: Add aCircleCollider2Dto the coin prefab and checkIs Trigger. Make sure the player has the tag"Player". The <code style="color:var(--unity-lt)">otherother</code> parameter gives you access to the colliding object. parameter gives you access to the colliding object.</div>
-
-<div class="box box-concept"><code style="color:var(--unity-lt)">CompareTag()CompareTag()</code> is faster than  is faster than <code style="color:var(--unity-lt)">other.tag == "Player"other.tag == "Player"</code> because it doesn't allocate a string always use CompareTag in trigger/collision callbacks. because it doesn't allocate a string always use CompareTag in trigger/collision callbacks.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Spawn Coins!▶ Apply Spawn Coins!</button>
-
-
+<div class="box box-unity">In Unity: Add aCircleCollider2Dto the coin prefab and checkIs Trigger. Make sure the player has the tag"Player". The <code style="color:var(--unity-lt)">other</code> parameter gives you access to the colliding object.</div>
+<div class="box box-concept"><code style="color:var(--unity-lt)">CompareTag()</code> is faster than <code style="color:var(--unity-lt)">other.tag == "Player"</code> because it doesn't allocate a string always use CompareTag in trigger/collision callbacks.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Spawn Coins!</button>
 
 <!-- CONCEPT FILL -->
-
 <div class="concept-fill" id="cf-6" data-step="6">
-  
-  <div class="cf-header"><div class="cf-icon">✏️✏️</div><div class="cf-title">Fill in the BlanksFill in the Blanks</div><div class="cf-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="cf-sentence">Unity fires Unity fires <input class="cf-blank" data-answer="OnTriggerEnter2D" placeholder="??????????????????" size="20"> when two colliders overlap. You should always use  when two colliders overlap. You should always use <input class="cf-blank" data-answer="CompareTag" placeholder="??????????" size="12"> instead of == to check tags in trigger callbacks. instead of == to check tags in trigger callbacks.</div>
-  
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers✏️ Check Answers</button>
-  
+  <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+  <div class="cf-sentence">Unity fires <input class="cf-blank" data-answer="OnTriggerEnter2D" placeholder="??????????????????" size="20"> when two colliders overlap. You should always use <input class="cf-blank" data-answer="CompareTag" placeholder="??????????" size="12"> instead of == to check tags in trigger callbacks.</div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
   <div class="cf-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-6" data-step="6" data-correct="0">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">What must be checked on a coin's Collider2D for What must be checked on a coin's Collider2D for <strong>OnTriggerEnter2DOnTriggerEnter2D</strong> to fire? to fire?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">What must be checked on a coin's Collider2D for <strong>OnTriggerEnter2D</strong> to fire?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>The "Is Trigger" checkboxThe "Is Trigger" checkbox</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>The "Is Kinematic" checkboxThe "Is Kinematic" checkbox</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>The "Use Gravity" checkboxThe "Use Gravity" checkbox</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The "Is Trigger" checkbox</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The "Is Kinematic" checkbox</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The "Use Gravity" checkbox</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(6)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(6)">✅ Correct! Next Step →</button>
 </div>
-`+nav(5),
-    onApply(){
-      game.coinsEnabled = true;
-      game.coinValue = parseInt(document.getElementById('coinValue')?.value)||10;
-      buildLevel(game.scene);
-      setOutput('✅ Coins spawned! Walk through them to collect. Coin value: ' + game.coinValue);
-    }
-  },
-
-  // ── STEP 7 ──
-  {
-    title:"Camera Follow Cinemachine",
-    tag:"STEP 07  CAMERA",
-    intro:`A platformer camera needs to follow the player smoothly without showing the edge of the world. Unity'sCinemachinepackage handles this in one line but understanding the math behind it makes you a better developer.`,
-    body:()=>`
-
 `+nav(5),
     onApply(){
       game.coinsEnabled = true;
@@ -2539,113 +1697,59 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
     intro:`A platformer camera needs to follow the player smoothly without showing the edge of the world. Unity'sCinemachinepackage handles this in one line but understanding the math behind it makes you a better developer.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">CameraFollow.cs Smooth follow CameraFollow.cs Smooth follow <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">CameraFollow.cs Smooth follow <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">CameraFollow.csCameraFollow.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">public classpublic class</span>  <span class="cg">CameraFollowCameraFollow</span> :  : <span class="cm">MonoBehaviourMonoBehaviour</span>
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">CameraFollow.cs</span></div>
+    <div class="code-pre"><span class="ck">public class</span> <span class="cg">CameraFollow</span> : <span class="cm">MonoBehaviour</span>
 {
-    
-{
-    <span class="ck">publicpublic</span>  <span class="cm">TransformTransform</span>  <span class="cy">targettarget</span>;
-    ;
-    <span class="ck">public floatpublic float</span>      <span class="cy">smoothSpeedsmoothSpeed</span>  =   = <span class="cn">0.12f0.12f</span>;
-    ;
-    <span class="ck">publicpublic</span>  <span class="cm">Vector3Vector3</span>    <span class="cy">offsetoffset</span>       =        = <span class="ck">newnew</span>  <span class="cm">Vector3Vector3</span>((<span class="cn">22</span>,,<span class="cn">11</span>,,<span class="cn">-10-10</span>);
+    <span class="ck">public</span> <span class="cm">Transform</span> <span class="cy">target</span>;
+    <span class="ck">public float</span>   <span class="cy">smoothSpeed</span>  = <span class="cn">0.12f</span>;
+    <span class="ck">public</span> <span class="cm">Vector3</span>  <span class="cy">offset</span>       = <span class="ck">new</span> <span class="cm">Vector3</span>(<span class="cn">2</span>,<span class="cn">1</span>,<span class="cn">-10</span>);
 
-    );
-
-    <span class="ck">voidvoid</span>  <span class="co">LateUpdateLateUpdate</span>()
+    <span class="ck">void</span> <span class="co">LateUpdate</span>()
     {
-        ()
-    {
-        <span class="cc">// Lerp = smoothly blend from A to B// Lerp = smoothly blend from A to B</span>
-        
-        <span class="cm">Vector3Vector3</span>  <span class="cy">desireddesired</span> =  = <span class="cy">targettarget</span>..<span class="cy">positionposition</span> +  + <span class="cy">offsetoffset</span>;
-        ;
-        <span class="cm">Vector3Vector3</span>  <span class="cy">smoothedsmoothed</span> =  = <span class="cm">Vector3Vector3</span>..<span class="co">LerpLerp</span>(
-            (
-            <span class="cm">transformtransform</span>..<span class="cy">positionposition</span>,
-            ,
-            <span class="cy">desireddesired</span>,
-            ,
-            <span class="cy">smoothSpeedsmoothSpeed</span>);
+        <span class="cc">// Lerp = smoothly blend from A to B</span>
+        <span class="cm">Vector3</span> <span class="cy">desired</span> = <span class="cy">target</span>.<span class="cy">position</span> + <span class="cy">offset</span>;
+        <span class="cm">Vector3</span> <span class="cy">smoothed</span> = <span class="cm">Vector3</span>.<span class="co">Lerp</span>(
+            <span class="cm">transform</span>.<span class="cy">position</span>,
+            <span class="cy">desired</span>,
+            <span class="cy">smoothSpeed</span>);
 
-        );
-
-        <span class="cm">transformtransform</span>..<span class="cy">positionposition</span> =  = <span class="cy">smoothedsmoothed</span>;
-    }
-};
+        <span class="cm">transform</span>.<span class="cy">position</span> = <span class="cy">smoothed</span>;
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-concept"><code style="color:var(--unity-lt)">Vector3.Lerp(a, b, t)Vector3.Lerp(a, b, t)</code> returns a pointt%of the way from a to b. With t=0.12, the camera moves 12% of the remaining distance each frame creating smooth, organic follow behaviour. returns a pointt%of the way from a to b. With t=0.12, the camera moves 12% of the remaining distance each frame creating smooth, organic follow behaviour.</div>
-
-<div class="box box-unity"><strong>LateUpdate()runs after all Update() calls always move cameras in LateUpdate so the target has already moved for this frame. Drag your player into thetargetfield in the Inspector.LateUpdate()runs after all Update() calls always move cameras in LateUpdate so the target has already moved for this frame. Drag your player into thetargetfield in the Inspector.</div>
-
-<div class="box box-tip">For production games, useCinemachine(Package Manager) it gives you dead zones, damping, confiner bounds, and much more. But knowing how to code it manually is excellent C# practice!For production games, useCinemachine(Package Manager) it gives you dead zones, damping, confiner bounds, and much more. But knowing how to code it manually is excellent C# practice!</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Follow Camera!▶ Apply Follow Camera!</button>
-
-
+<div class="box box-concept"><code style="color:var(--unity-lt)">Vector3.Lerp(a, b, t)</code> returns a pointt%of the way from a to b. With t=0.12, the camera moves 12% of the remaining distance each frame creating smooth, organic follow behaviour.</div>
+<div class="box box-unity"><strong>LateUpdate()runs after all Update() calls always move cameras in LateUpdate so the target has already moved for this frame. Drag your player into thetargetfield in the Inspector.</div>
+<div class="box box-tip">For production games, useCinemachine(Package Manager) it gives you dead zones, damping, confiner bounds, and much more. But knowing how to code it manually is excellent C# practice!</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Follow Camera!</button>
 
 <!-- CODE CHALLENGE -->
-
 <div class="code-challenge" id="cc-7" data-step="7">
-  
-  <div class="cc-header"><div class="cc-icon">💻💻</div><div class="cc-title">Code ChallengeCode Challenge</div><div class="cc-xp-badge">+20 XP+20 XP</div></div>
-  
-  <div class="cc-prompt">Fill in the blanks to make the camera smoothly follow the player:Fill in the blanks to make the camera smoothly follow the player:</div>
-  
-  <div class="cc-code-area">Vector3 smoothed = Vector3.Vector3 smoothed = Vector3.<input class="cc-blank" data-answer="Lerp" placeholder="????" size="6">(
+  <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+  <div class="cc-prompt">Fill in the blanks to make the camera smoothly follow the player:</div>
+  <div class="cc-code-area">Vector3 smoothed = Vector3.<input class="cc-blank" data-answer="Lerp" placeholder="????" size="6">(
     transform.position,
     desired,
-    (
-    transform.position,
-    desired,
-    <input class="cc-blank" data-answer="smoothSpeed" placeholder="???????????" size="13">););</div>
-  
-  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code💻 Check Code</button>
-  
-  <div class="cc-hint" onclick="this.textContent='Hint: Lerp blends from A to B by a fraction. The variable controlling how fast is declared at the top of the script.'">🔍 Need a hint?🔍 Need a hint?</div>
-  
+    <input class="cc-blank" data-answer="smoothSpeed" placeholder="???????????" size="13">);</div>
+  <button class="cc-check-btn" onclick="checkCodeChallenge(this)">💻 Check Code</button>
+  <div class="cc-hint" onclick="this.textContent='Hint: Lerp blends from A to B by a fraction. The variable controlling how fast is declared at the top of the script.'">🔍 Need a hint?</div>
   <div class="cc-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-7" data-step="7" data-correct="2">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">Why should you move the camera in Why should you move the camera in <strong>LateUpdate()LateUpdate()</strong> instead of Update()? instead of Update()?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">Why should you move the camera in <strong>LateUpdate()</strong> instead of Update()?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>LateUpdate runs faster than UpdateLateUpdate runs faster than Update</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Update is only for input, cameras are not allowed thereUpdate is only for input, cameras are not allowed there</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>LateUpdate runs after all Update calls, so the target has already movedLateUpdate runs after all Update calls, so the target has already moved</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>LateUpdate runs faster than Update</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Update is only for input, cameras are not allowed there</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>LateUpdate runs after all Update calls, so the target has already moved</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(7)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(7)">✅ Correct! Next Step →</button>
 </div>
 `+nav(6),
     onApply(){
@@ -2658,130 +1762,62 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"OnCollisionEnter2D Enemies",
     tag:"STEP 08 ENEMIES",
-    intro:`Unlike triggers, 
-`+nav(6),
-    onApply(){
-      game.cameraEnabled = true;
-      setOutput('✅ Camera follow active LateUpdate() smoothly tracks the player!');
-    }
-  },
-
-  // ── STEP 8 ──
-  {
-    title:"OnCollisionEnter2D Enemies",
-    tag:"STEP 08 ENEMIES",
-    intro:`Unlike triggers, <code style="color:var(--unity-lt);font-size:.8rem">OnCollisionEnter2DOnCollisionEnter2D</code> fires when solid colliders  fires when solid colliders <em>physically touchphysically touch</em>. We use it for stomp-kill logic jump on top of an enemy to defeat it, hit the side and you lose a life.`,
-    body:()=>`
-. We use it for stomp-kill logic jump on top of an enemy to defeat it, hit the side and you lose a life.`,
+    intro:`Unlike triggers, <code style="color:var(--unity-lt);font-size:.8rem">OnCollisionEnter2D</code> fires when solid colliders <em>physically touch</em>. We use it for stomp-kill logic jump on top of an enemy to defeat it, hit the side and you lose a life.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">PlayerController.cs Stomp logic PlayerController.cs Stomp logic <span class="cs-badge">C#C#</span></div>
-  
+  <div class="code-area-label">PlayerController.cs Stomp logic <span class="cs-badge">C#</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.csPlayerController.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">voidvoid</span>  <span class="co">OnCollisionEnter2DOnCollisionEnter2D</span>((<span class="cm">Collision2DCollision2D</span>  <span class="cy">colcol</span>)
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">PlayerController.cs</span></div>
+    <div class="code-pre"><span class="ck">void</span> <span class="co">OnCollisionEnter2D</span>(<span class="cm">Collision2D</span> <span class="cy">col</span>)
 {
-    )
-{
-    <span class="ck">ifif</span> ( (<span class="cy">colcol</span>..<span class="co">CompareTagCompareTag</span>((<span class="cs">"Enemy""Enemy"</span>))
+    <span class="ck">if</span> (<span class="cy">col</span>.<span class="co">CompareTag</span>(<span class="cs">"Enemy"</span>))
     {
-        ))
-    {
-        <span class="cc">// Where did we hit? Check contact normal// Where did we hit? Check contact normal</span>
-        
-        <span class="ck">boolbool</span>  <span class="cy">stompedFromAbovestompedFromAbove</span> =
-             =
-            <span class="cy">colcol</span>..<span class="cy">contactscontacts</span>[[<span class="cn">00</span>].].<span class="cy">normalnormal</span>..<span class="cy">yy</span> >  > <span class="cn">0.5f0.5f</span>;
+        <span class="cc">// Where did we hit? Check contact normal</span>
+        <span class="ck">bool</span> <span class="cy">stompedFromAbove</span> =
+            <span class="cy">col</span>.<span class="cy">contacts</span>[<span class="cn">0</span>].<span class="cy">normal</span>.<span class="cy">y</span> > <span class="cn">0.5f</span>;
 
-        ;
-
-        <span class="ck">ifif</span> ( (<span class="cy">stompedFromAbovestompedFromAbove</span>)
+        <span class="ck">if</span> (<span class="cy">stompedFromAbove</span>)
         {
-            )
-        {
-            <span class="cc">// Kill enemy, bounce player up:// Kill enemy, bounce player up:</span>
-            
-            <span class="cm">DestroyDestroy</span>((<span class="cy">colcol</span>..<span class="cy">gameObjectgameObject</span>);
-            );
-            <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span> =  = <span class="ck">newnew</span>  <span class="cm">Vector2Vector2</span>(
-                (
-                <span class="cy">_rb_rb</span>..<span class="cy">linearVelocitylinearVelocity</span>..<span class="cy">xx</span>, , <span class="cy">jumpForcejumpForce</span> *  * <span class="cn">0.6f0.6f</span>);
+            <span class="cc">// Kill enemy, bounce player up:</span>
+            <span class="cm">Destroy</span>(<span class="cy">col</span>.<span class="cy">gameObject</span>);
+            <span class="cy">_rb</span>.<span class="cy">linearVelocity</span> = <span class="ck">new</span> <span class="cm">Vector2</span>(
+                <span class="cy">_rb</span>.<span class="cy">linearVelocity</span>.<span class="cy">x</span>, <span class="cy">jumpForce</span> * <span class="cn">0.6f</span>);
         }
-        );
-        }
-        <span class="ck">elseelse</span>
+        <span class="ck">else</span>
         {
-            
-        {
-            <span class="cc">// Player takes damage:// Player takes damage:</span>
-            
-            <span class="cm">GameManagerGameManager</span>..<span class="cy">instanceinstance</span>..<span class="co">LoseLifeLoseLife</span>();
-        }
-    }
-}();
+            <span class="cc">// Player takes damage:</span>
+            <span class="cm">GameManager</span>.<span class="cy">instance</span>.<span class="co">LoseLife</span>();
         }
     }
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-concept"><code style="color:var(--unity-lt)">col.contacts[0].normalcol.contacts[0].normal</code> is the surface direction of the collision. If Y > 0.5 we hit from above a stomp. If Y is close to 0 we hit the side damage. This is the classic Mario stomp technique! is the surface direction of the collision. If Y > 0.5 we hit from above a stomp. If Y is close to 0 we hit the side damage. This is the classic Mario stomp technique!</div>
-
-<div class="box box-unity">Create an enemy prefab with aRigidbody2D,BoxCollider2D, and the tag"Enemy". Add a simple patrol script that flips direction when hitting a wall using Create an enemy prefab with aRigidbody2D,BoxCollider2D, and the tag"Enemy". Add a simple patrol script that flips direction when hitting a wall using <code style="color:var(--unity-lt)">OnCollisionEnter2DOnCollisionEnter2D</code> with the "Wall" layer. with the "Wall" layer.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Spawn Enemies!▶ Apply Spawn Enemies!</button>
-
-
+<div class="box box-concept"><code style="color:var(--unity-lt)">col.contacts[0].normal</code> is the surface direction of the collision. If Y > 0.5 we hit from above a stomp. If Y is close to 0 we hit the side damage. This is the classic Mario stomp technique!</div>
+<div class="box box-unity">Create an enemy prefab with aRigidbody2D,BoxCollider2D, and the tag"Enemy". Add a simple patrol script that flips direction when hitting a wall using <code style="color:var(--unity-lt)">OnCollisionEnter2D</code> with the "Wall" layer.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Spawn Enemies!</button>
 
 <!-- TRUE/FALSE -->
-
 <div class="tf-round" id="tf-8" data-step="8">
-  
-  <div class="tf-header"><div class="tf-icon">⚡⚡</div><div class="tf-title">True or FalseTrue or False</div><div class="tf-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="tf-item" data-answer="false"><div class="tf-statement">OnTriggerEnter2D and OnCollisionEnter2D do exactly the same thing.OnTriggerEnter2D and OnCollisionEnter2D do exactly the same thing.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <div class="tf-item" data-answer="true"><div class="tf-statement">If col.contacts[0].normal.y > 0.5, the player hit the enemy from above (a stomp).If col.contacts[0].normal.y > 0.5, the player hit the enemy from above (a stomp).</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <div class="tf-item" data-answer="true"><div class="tf-statement">After stomping an enemy, you should give the player an upward bounce force.After stomping an enemy, you should give the player an upward bounce force.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
-  
-  <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check Answers⚡ Check Answers</button>
-  
+  <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+15 XP</div></div>
+  <div class="tf-item" data-answer="false"><div class="tf-statement">OnTriggerEnter2D and OnCollisionEnter2D do exactly the same thing.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><div class="tf-statement">If col.contacts[0].normal.y > 0.5, the player hit the enemy from above (a stomp).</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <div class="tf-item" data-answer="true"><div class="tf-statement">After stomping an enemy, you should give the player an upward bounce force.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+  <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check Answers</button>
   <div class="tf-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-8" data-step="8" data-correct="1">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">What is the difference between What is the difference between <strong>OnCollisionEnter2DOnCollisionEnter2D</strong> and  and <strong>OnTriggerEnter2DOnTriggerEnter2D</strong>??</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">What is the difference between <strong>OnCollisionEnter2D</strong> and <strong>OnTriggerEnter2D</strong>?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>There is no difference, they are aliasesThere is no difference, they are aliases</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Collision is for solid physical contact; Trigger is for overlapping pass-through collidersCollision is for solid physical contact; Trigger is for overlapping pass-through colliders</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>Trigger is for 3D games, Collision is for 2D gamesTrigger is for 3D games, Collision is for 2D games</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>There is no difference, they are aliases</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Collision is for solid physical contact; Trigger is for overlapping pass-through colliders</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Trigger is for 3D games, Collision is for 2D games</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(8)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(8)">✅ Correct! Next Step →</button>
 </div>
 `+nav(7),
     onApply(){
@@ -2795,174 +1831,77 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
   {
     title:"SceneManager Load Next Level",
     tag:"STEP 09 SCENES",
-    intro:`In Unity, each level is a separateScene. The 
-`+nav(7),
-    onApply(){
-      game.enemiesEnabled = true;
-      buildLevel(game.scene);
-      setOutput('✅ Enemies active! Jump ON TOP to stomp them. Hit the side = lose a life!');
-    }
-  },
-
-  // ── STEP 9 ──
-  {
-    title:"SceneManager Load Next Level",
-    tag:"STEP 09 SCENES",
-    intro:`In Unity, each level is a separateScene. The <code style="color:var(--unity-lt);font-size:.8rem">SceneManagerSceneManager</code> class handles loading, unloading, and transitioning between them. AGameManagersingleton persists across scenes to keep your score and lives.`,
-    body:()=>`
- class handles loading, unloading, and transitioning between them. AGameManagersingleton persists across scenes to keep your score and lives.`,
+    intro:`In Unity, each level is a separateScene. The <code style="color:var(--unity-lt);font-size:.8rem">SceneManager</code> class handles loading, unloading, and transitioning between them. AGameManagersingleton persists across scenes to keep your score and lives.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">GameManager.cs + LevelDoor.cs GameManager.cs + LevelDoor.cs <span class="cs-badge">Two ScriptsTwo Scripts</span></div>
-  
+  <div class="code-area-label">GameManager.cs + LevelDoor.cs <span class="cs-badge">Two Scripts</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GameManager.csGameManager.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">usingusing</span>  <span class="cm">UnityEngineUnityEngine</span>;
-;
-<span class="ck">usingusing</span>  <span class="cm">UnityEngine.SceneManagementUnityEngine.SceneManagement</span>;
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GameManager.cs</span></div>
+    <div class="code-pre"><span class="ck">using</span> <span class="cm">UnityEngine</span>;
+<span class="ck">using</span> <span class="cm">UnityEngine.SceneManagement</span>;
 
-;
-
-<span class="ck">public classpublic class</span>  <span class="cg">GameManagerGameManager</span> :  : <span class="cm">MonoBehaviourMonoBehaviour</span>
+<span class="ck">public class</span> <span class="cg">GameManager</span> : <span class="cm">MonoBehaviour</span>
 {
-    
-{
-    <span class="ck">public staticpublic static</span>  <span class="cg">GameManagerGameManager</span>  <span class="cy">instanceinstance</span>;
+    <span class="ck">public static</span> <span class="cg">GameManager</span> <span class="cy">instance</span>;
 
-    ;
+    <span class="ck">public int</span> <span class="cy">lives</span> = <span class="cn">3</span>;
+    <span class="ck">public int</span> <span class="cy">score</span> = <span class="cn">0</span>;
 
-    <span class="ck">public intpublic int</span>  <span class="cy">liveslives</span> =  = <span class="cn">33</span>;
-    ;
-    <span class="ck">public intpublic int</span>  <span class="cy">scorescore</span> =  = <span class="cn">00</span>;
-
-    ;
-
-    <span class="ck">voidvoid</span>  <span class="co">AwakeAwake</span>()
+    <span class="ck">void</span> <span class="co">Awake</span>()
     {
-        ()
-    {
-        <span class="cc">// Singleton persist across scenes:// Singleton persist across scenes:</span>
-        
-        <span class="ck">ifif</span> ( (<span class="cy">instanceinstance</span> ==  == <span class="ck">nullnull</span>)
+        <span class="cc">// Singleton persist across scenes:</span>
+        <span class="ck">if</span> (<span class="cy">instance</span> == <span class="ck">null</span>)
         {
-            )
-        {
-            <span class="cy">instanceinstance</span> =  = <span class="ck">thisthis</span>;
-            ;
-            <span class="cm">DontDestroyOnLoadDontDestroyOnLoad</span>((<span class="cy">gameObjectgameObject</span>);
+            <span class="cy">instance</span> = <span class="ck">this</span>;
+            <span class="cm">DontDestroyOnLoad</span>(<span class="cy">gameObject</span>);
         }
-        );
-        }
-        <span class="ck">elseelse</span>  <span class="cm">DestroyDestroy</span>((<span class="cy">gameObjectgameObject</span>);
+        <span class="ck">else</span> <span class="cm">Destroy</span>(<span class="cy">gameObject</span>);
     }
 
-    );
-    }
-
-    <span class="ck">public voidpublic void</span>  <span class="co">LoadNextSceneLoadNextScene</span>()
+    <span class="ck">public void</span> <span class="co">LoadNextScene</span>()
     {
-        ()
-    {
-        <span class="ck">intint</span>  <span class="cy">nextnext</span> =  = <span class="cm">SceneManagerSceneManager</span>
-            .
-            .<span class="co">GetActiveSceneGetActiveScene</span>().().<span class="cy">buildIndexbuildIndex</span> +  + <span class="cn">11</span>;
-        ;
-        <span class="cm">SceneManagerSceneManager</span>..<span class="co">LoadSceneLoadScene</span>((<span class="cy">nextnext</span>);
-    }
-});
+        <span class="ck">int</span> <span class="cy">next</span> = <span class="cm">SceneManager</span>
+            .<span class="co">GetActiveScene</span>().<span class="cy">buildIndex</span> + <span class="cn">1</span>;
+        <span class="cm">SceneManager</span>.<span class="co">LoadScene</span>(<span class="cy">next</span>);
     }
 }</div>
-  
   </div>
-
 </div>
-
 <div class="code-area" style="margin-top:8px">
-  
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">LevelDoor.csLevelDoor.cs</span></div>
-    
-    <div class="code-pre"><span class="ck">voidvoid</span>  <span class="co">OnTriggerEnter2DOnTriggerEnter2D</span>((<span class="cm">Collider2DCollider2D</span>  <span class="cy">otherother</span>)
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">LevelDoor.cs</span></div>
+    <div class="code-pre"><span class="ck">void</span> <span class="co">OnTriggerEnter2D</span>(<span class="cm">Collider2D</span> <span class="cy">other</span>)
 {
-    )
-{
-    <span class="ck">ifif</span> ( (<span class="cy">otherother</span>..<span class="co">CompareTagCompareTag</span>((<span class="cs">"Player""Player"</span>))
-        ))
-        <span class="cm">GameManagerGameManager</span>..<span class="cy">instanceinstance</span>..<span class="co">LoadNextSceneLoadNextScene</span>();
-}();
+    <span class="ck">if</span> (<span class="cy">other</span>.<span class="co">CompareTag</span>(<span class="cs">"Player"</span>))
+        <span class="cm">GameManager</span>.<span class="cy">instance</span>.<span class="co">LoadNextScene</span>();
 }</div>
-  
   </div>
-
 </div>
-
-<div class="box box-unity">In Unity: Add all your scenes toFile → Build Settings → Scenes In Build. The build index is their order in that list. Scene 0 = main menu, Scene 1 = Level 1, Scene 2 = Level 2, etc.In Unity: Add all your scenes toFile → Build Settings → Scenes In Build. The build index is their order in that list. Scene 0 = main menu, Scene 1 = Level 1, Scene 2 = Level 2, etc.</div>
-
-<div class="box box-concept">TheSingleton pattern, TheSingleton pattern, <code style="color:var(--unity-lt)">if(instance == null)if(instance == null)</code> ensures only one GameManager exists.  ensures only one GameManager exists. <code style="color:var(--unity-lt)">DontDestroyOnLoad()DontDestroyOnLoad()</code> keeps it alive when a new scene loads, preserving score and lives across levels. keeps it alive when a new scene loads, preserving score and lives across levels.</div>
-
-<button class="run-btn" onclick="doApply()">▶ Apply Add Scene Door!▶ Apply Add Scene Door!</button>
-
-
+<div class="box box-unity">In Unity: Add all your scenes toFile → Build Settings → Scenes In Build. The build index is their order in that list. Scene 0 = main menu, Scene 1 = Level 1, Scene 2 = Level 2, etc.</div>
+<div class="box box-concept">TheSingleton pattern, <code style="color:var(--unity-lt)">if(instance == null)</code> ensures only one GameManager exists. <code style="color:var(--unity-lt)">DontDestroyOnLoad()</code> keeps it alive when a new scene loads, preserving score and lives across levels.</div>
+<button class="run-btn" onclick="doApply()">▶ Apply Add Scene Door!</button>
 
 <!-- CONCEPT FILL -->
-
 <div class="concept-fill" id="cf-9" data-step="9">
-  
-  <div class="cf-header"><div class="cf-icon">✏️✏️</div><div class="cf-title">Fill in the BlanksFill in the Blanks</div><div class="cf-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="cf-sentence">The The <input class="cf-blank" data-answer="Singleton" placeholder="?????????" size="11"> pattern ensures only one GameManager exists. Calling  pattern ensures only one GameManager exists. Calling <input class="cf-blank" data-answer="DontDestroyOnLoad" placeholder="??????????????????" size="20"> keeps it alive across scene transitions. keeps it alive across scene transitions.</div>
-  
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers✏️ Check Answers</button>
-  
+  <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+  <div class="cf-sentence">The <input class="cf-blank" data-answer="Singleton" placeholder="?????????" size="11"> pattern ensures only one GameManager exists. Calling <input class="cf-blank" data-answer="DontDestroyOnLoad" placeholder="??????????????????" size="20"> keeps it alive across scene transitions.</div>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
   <div class="cf-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-9" data-step="9" data-correct="0">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Knowledge CheckKnowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">How do you load the next scene in Unity using SceneManager?How do you load the next scene in Unity using SceneManager?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">How do you load the next scene in Unity using SceneManager?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>SceneManager.LoadScene(buildIndex + 1)SceneManager.LoadScene(buildIndex + 1)</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Application.NextLevel()Application.NextLevel()</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>GameObject.LoadScene("next")GameObject.LoadScene("next")</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>SceneManager.LoadScene(buildIndex + 1)</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Application.NextLevel()</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>GameObject.LoadScene("next")</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(9)">✅ Correct! Next Step →✅ Correct! Next Step →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(9)">✅ Correct! Next Step →</button>
 </div>
-`+nav(8),
-    onApply(){
-      game.sceneEnabled = true;
-      setOutput('✅ SceneManager enabled! Reach the purple door on the far right → next level!');
-    }
-  },
-
-  // ── STEP 10 ──
-  {
-    title:"Complete Platformer!",
-    tag:"STEP 10 FINISH",
-    intro:`You've built a complete Unity 2D platformer, writing three C# scripts and touching every core Unity system a beginner needs. Here's a full summary of everything you've learned.`,
-    body:()=>`
-
 `+nav(8),
     onApply(){
       game.sceneEnabled = true;
@@ -2977,149 +1916,66 @@ Unityis a game engine that handles rendering, physics, and input for you. You wr
     intro:`You've built a complete Unity 2D platformer, writing three C# scripts and touching every core Unity system a beginner needs. Here's a full summary of everything you've learned.`,
     body:()=>`
 <div class="code-area">
-  
-  <div class="code-area-label">Project Summary 3 Scripts Project Summary 3 Scripts <span class="cs-badge">CompleteComplete</span></div>
-  
+  <div class="code-area-label">Project Summary 3 Scripts <span class="cs-badge">Complete</span></div>
   <div class="code-block">
-    
-    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Project StructureProject Structure</span></div>
-    
-    <div class="code-pre"><span class="cc">📁 Assets/Scripts/📁 Assets/Scripts/</span>
+    <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Project Structure</span></div>
+    <div class="code-pre"><span class="cc">📁 Assets/Scripts/</span>
+<span class="cc">├── PlayerController.cs</span>
+<span class="cc">│   ├── Rigidbody2D physics + gravity</span>
+<span class="cc">│   ├── Input.GetAxisRaw(), horizontal movement</span>
+<span class="cc">│   ├── Physics2D.OverlapCircle(), ground check</span>
+<span class="cc">│   ├── Animator, Idle/Run/Jump/Fall states</span>
+<span class="cc">│   └── OnCollisionEnter2D(), stomp enemies</span>
+<span class="cc">│</span>
+<span class="cc">├── CoinController.cs</span>
+<span class="cc">│   ├── OnTriggerEnter2D(), collect on overlap</span>
+<span class="cc">│   ├── CompareTag("Player"), verify collector</span>
+<span class="cc">│   └── Destroy(gameObject), cleanup</span>
+<span class="cc">│</span>
+<span class="cc">└── GameManager.cs</span>
+<span class="cc">    ├── Singleton pattern</span>
+<span class="cc">    ├── DontDestroyOnLoad(), persist data</span>
+<span class="cc">    └── SceneManager.LoadScene(), next level</span>
 
-<span class="cc">├── PlayerController.cs├── PlayerController.cs</span>
-
-<span class="cc">│   ├── Rigidbody2D physics + gravity│   ├── Rigidbody2D physics + gravity</span>
-
-<span class="cc">│   ├── Input.GetAxisRaw(), horizontal movement│   ├── Input.GetAxisRaw(), horizontal movement</span>
-
-<span class="cc">│   ├── Physics2D.OverlapCircle(), ground check│   ├── Physics2D.OverlapCircle(), ground check</span>
-
-<span class="cc">│   ├── Animator, Idle/Run/Jump/Fall states│   ├── Animator, Idle/Run/Jump/Fall states</span>
-
-<span class="cc">│   └── OnCollisionEnter2D(), stomp enemies│   └── OnCollisionEnter2D(), stomp enemies</span>
-
-<span class="cc">││</span>
-
-<span class="cc">├── CoinController.cs├── CoinController.cs</span>
-
-<span class="cc">│   ├── OnTriggerEnter2D(), collect on overlap│   ├── OnTriggerEnter2D(), collect on overlap</span>
-
-<span class="cc">│   ├── CompareTag("Player"), verify collector│   ├── CompareTag("Player"), verify collector</span>
-
-<span class="cc">│   └── Destroy(gameObject), cleanup│   └── Destroy(gameObject), cleanup</span>
-
-<span class="cc">││</span>
-
-<span class="cc">└── GameManager.cs└── GameManager.cs</span>
-
-<span class="cc">    ├── Singleton pattern    ├── Singleton pattern</span>
-
-<span class="cc">    ├── DontDestroyOnLoad(), persist data    ├── DontDestroyOnLoad(), persist data</span>
-
-<span class="cc">    └── SceneManager.LoadScene(), next level    └── SceneManager.LoadScene(), next level</span>
-
-
-
-<span class="cc">📁 Assets/Scenes/📁 Assets/Scenes/</span>
-
-<span class="cc">├── Level1.unity├── Level1.unity</span>
-
-<span class="cc">├── Level2.unity├── Level2.unity</span>
-
-<span class="cc">└── Level3.unity└── Level3.unity</span></div>
-  
+<span class="cc">📁 Assets/Scenes/</span>
+<span class="cc">├── Level1.unity</span>
+<span class="cc">├── Level2.unity</span>
+<span class="cc">└── Level3.unity</span></div>
   </div>
-
 </div>
-
-<div class="box box-unity">🎉 In Unity: set up a 2D project, add Tilemap for your level, attach the scripts, configure the Animator, and build your world in the Scene view. All the systems you've learned connect together!🎉 In Unity: set up a 2D project, add Tilemap for your level, attach the scripts, configure the Animator, and build your world in the Scene view. All the systems you've learned connect together!</div>
-
-<div class="box box-tip">Next steps: add aCheckpoint systemusing OnTriggerEnter2D, addmoving platformsusing transform.Translate in Update, and tryadditive scene loadingwith SceneManager.LoadSceneAsync for smooth transitions!Next steps: add aCheckpoint systemusing OnTriggerEnter2D, addmoving platformsusing transform.Translate in Update, and tryadditive scene loadingwith SceneManager.LoadSceneAsync for smooth transitions!</div>
-
-<button class="run-btn" onclick="doApply()" style="background:linear-gradient(135deg,var(--unity),var(--cs-lt));color:#07080a">🎮 Launch Full Game!🎮 Launch Full Game!</button>
-
-
+<div class="box box-unity">🎉 In Unity: set up a 2D project, add Tilemap for your level, attach the scripts, configure the Animator, and build your world in the Scene view. All the systems you've learned connect together!</div>
+<div class="box box-tip">Next steps: add aCheckpoint systemusing OnTriggerEnter2D, addmoving platformsusing transform.Translate in Update, and tryadditive scene loadingwith SceneManager.LoadSceneAsync for smooth transitions!</div>
+<button class="run-btn" onclick="doApply()" style="background:linear-gradient(135deg,var(--unity),var(--cs-lt));color:#07080a">🎮 Launch Full Game!</button>
 
 <!-- ORDER CHALLENGE -->
-
 <div class="order-challenge" id="oc-10" data-step="10">
-  
-  <div class="oc-header"><div class="oc-icon">🔢🔢</div><div class="oc-title">Order the ScriptsOrder the Scripts</div><div class="oc-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="oc-prompt">Click in the order you built these systems throughout the workshop:Click in the order you built these systems throughout the workshop:</div>
-  
+  <div class="oc-header"><div class="oc-icon">🔢</div><div class="oc-title">Order the Scripts</div><div class="oc-xp-badge">+15 XP</div></div>
+  <div class="oc-prompt">Click in the order you built these systems throughout the workshop:</div>
   <div class="oc-items">
-    
-    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span><span>OnTriggerEnter2D, CollectiblesOnTriggerEnter2D, Collectibles</span></div>
-    
-    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span><span>Rigidbody2D, Physics &amp; GravityRigidbody2D, Physics &amp; Gravity</span></div>
-    
-    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span><span>OnCollisionEnter2D, EnemiesOnCollisionEnter2D, Enemies</span></div>
-    
-    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span><span>Input.GetAxisRaw, Movement &amp; JumpInput.GetAxisRaw, Movement &amp; Jump</span></div>
-    
-    <div class="oc-item" data-correct="5" onclick="pickOrder(this)"><span class="oc-num"></span><span>SceneManager, Load Next LevelSceneManager, Load Next Level</span></div>
-  
+    <div class="oc-item" data-correct="3" onclick="pickOrder(this)"><span class="oc-num"></span><span>OnTriggerEnter2D, Collectibles</span></div>
+    <div class="oc-item" data-correct="1" onclick="pickOrder(this)"><span class="oc-num"></span><span>Rigidbody2D, Physics &amp; Gravity</span></div>
+    <div class="oc-item" data-correct="4" onclick="pickOrder(this)"><span class="oc-num"></span><span>OnCollisionEnter2D, Enemies</span></div>
+    <div class="oc-item" data-correct="2" onclick="pickOrder(this)"><span class="oc-num"></span><span>Input.GetAxisRaw, Movement &amp; Jump</span></div>
+    <div class="oc-item" data-correct="5" onclick="pickOrder(this)"><span class="oc-num"></span><span>SceneManager, Load Next Level</span></div>
   </div>
-  
-  <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order🔢 Check Order</button>
-  
-  <button class="oc-reset-btn" onclick="resetOrder(this)">ResetReset</button>
-  
+  <button class="oc-check-btn" onclick="checkOrder(this)">🔢 Check Order</button>
+  <button class="oc-reset-btn" onclick="resetOrder(this)">Reset</button>
   <div class="oc-feedback"></div>
-
 </div>
-
-
 
 <!-- QUIZ GATE -->
-
 <div class="quiz-gate" id="quiz-10" data-step="10" data-correct="2">
-  
-  <div class="quiz-header"><div class="quiz-icon">🧠🧠</div><div class="quiz-title">Final Knowledge CheckFinal Knowledge Check</div><div class="quiz-xp-badge">+15 XP+15 XP</div></div>
-  
-  <div class="quiz-question">Which three C# scripts did we create in this workshop?Which three C# scripts did we create in this workshop?</div>
-  
+  <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Final Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+  <div class="quiz-question">Which three C# scripts did we create in this workshop?</div>
   <div class="quiz-options">
-    
-    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">AA</span><span>Main.cs, Level.cs, UI.csMain.cs, Level.cs, UI.cs</span></div>
-    
-    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">BB</span><span>Movement.cs, Physics.cs, Audio.csMovement.cs, Physics.cs, Audio.cs</span></div>
-    
-    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">CC</span><span>PlayerController.cs, CoinController.cs, GameManager.csPlayerController.cs, CoinController.cs, GameManager.cs</span></div>
-  
+    <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Main.cs, Level.cs, UI.cs</span></div>
+    <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Movement.cs, Physics.cs, Audio.cs</span></div>
+    <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>PlayerController.cs, CoinController.cs, GameManager.cs</span></div>
   </div>
-  
   <div class="quiz-feedback"></div>
-  
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
-  
-  <button class="quiz-next-btn" onclick="completeStepQuiz(10)">✅ Workshop Complete! →✅ Workshop Complete! →</button>
-
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+  <button class="quiz-next-btn" onclick="completeStepQuiz(10)">✅ Workshop Complete! →</button>
 </div>
-`+nav(9),
-    onApply(){
-      game.physicsEnabled = true;
-      game.jumpEnabled    = true;
-      game.coinsEnabled   = true;
-      game.cameraEnabled  = true;
-      game.enemiesEnabled = true;
-      game.sceneEnabled   = true;
-      buildLevel(game.scene);
-      setOutput('🎉 Complete game! A/D move, SPACE jump, stomp enemies, collect coins, reach the door!');
-    }
-  },
-];
-
-/* ══════════════════════════════════════════
-   STEP ENGINE
-══════════════════════════════════════════ */
-let currentStep = 0;
-const stepsDone = new Set();
-const TOTAL = STEPS.length;
-
-function nav(i){
-  return `
 `+nav(9),
     onApply(){
       game.physicsEnabled = true;
@@ -3143,16 +1999,9 @@ const TOTAL = STEPS.length;
 
 function nav(i){
   return `<div class="step-nav">
-    
-    <button class="btn-prev" onclick="goStep(${i-1})" ${i===0?'disabled':''}>← Back← Back</button>
-    
-    <button class="btn-next" onclick="goStep(${i+1})" ${i===TOTAL-1?'disabled':''}>Next Step →Next Step →</button>
-  
+    <button class="btn-prev" onclick="goStep(${i-1})" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-next" onclick="goStep(${i+1})" ${i===TOTAL-1?'disabled':''}>Next Step →</button>
   </div>`;
-}
-
-function goStep(i){
-  if(i`;
 }
 
 function goStep(i){
@@ -3165,49 +2014,14 @@ function goStep(i){
 function renderStep(){
   const s = STEPS[currentStep];
   document.getElementById('stepBody').innerHTML = `
-    =TOTAL) return;
-  currentStep=i;
-  renderStep();
-  document.getElementById('stepBody').scrollTop=0;
-}
-
-function renderStep(){
-  const s = STEPS[currentStep];
-  document.getElementById('stepBody').innerHTML = `
-    <div class="step-num">${s.tag}${s.tag}</div>
-    
-    <div class="step-title">${s.title}${s.title}</div>
-    
-    <p class="step-intro">${s.intro}${s.intro}</p>
+    <div class="step-num">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <p class="step-intro">${s.intro}</p>
     ${s.body()}
   `;
   const tabs = document.getElementById('stepsTabs');
   tabs.innerHTML = STEPS.map((_,i) => `
-    
-    ${s.body()}
-  `;
-  const tabs = document.getElementById('stepsTabs');
-  tabs.innerHTML = STEPS.map((_,i) => `
-    <button class="tab-btn${i===currentStep?' active':''}${stepsDone.has(i)?' done':''}" onclick="goStep(${i})">${i+1}${i+1}</button>
-  `).join('');
-  tabs.querySelector('.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
-  updateProgress();
-}
-
-function doApply(){
-  stepsDone.add(currentStep);
-  STEPS[currentStep].onApply();
-  updateProgress();
-  const btns = document.querySelectorAll('.run-btn');
-  btns.forEach(btn => { const o=btn.innerHTML; btn.innerHTML='✅ Applied!'; setTimeout(()=>{btn.innerHTML=o;},900); });
-  document.getElementById('liveStatus').textContent = 'Step '+(currentStep+1)+' applied ✓';
-}
-
-function updateProgress(){
-  const pct = Math.max(10, Math.round((stepsDone.size/TOTAL)*100));
-  document.getElementById('progFill').style.width = pct+'%';
-  document.getElementById('progDots').innerHTML = STEPS.map((_,i) =>
-    `
+    <button class="tab-btn${i===currentStep?' active':''}${stepsDone.has(i)?' done':''}" onclick="goStep(${i})">${i+1}</button>
   `).join('');
   tabs.querySelector('.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
   updateProgress();
@@ -3319,100 +2133,7 @@ function showXpToast(text){
 function showLevelUp(lvl){
   const overlay=document.createElement('div');
   overlay.className='levelup-overlay';
-  overlay.innerHTML='`
-  ).join('');
-}
-
-function setOutput(msg){ document.getElementById('outputBar').textContent = msg; }
-
-document.getElementById('navToggle').addEventListener('click', () => {
-  document.getElementById('mobileNav').classList.toggle('open');
-});
-
-// Step 2 gravity input (injected into body but referenced in onApply)
-// We add it dynamically when that step renders no-op otherwise
-
-// Init
-resizeCanvas();
-renderStep();
-requestAnimationFrame(gameLoop);
-
-/* ══════════════════════════════════════════
-   INTERACTIVE WORKSHOP SYSTEM
-══════════════════════════════════════════ */
-const STORAGE_KEY = 'jvds-unity-2d-platformer-v2';
-const TOTAL_STEPS = TOTAL;
-let wsCompleted = new Set();
-let xp = 0, wsLevel = 1, streak = 0, bestStreak = 0, totalQuizzes = 0, correctFirst = 0;
-const XP_PER_LEVEL = 100, XP_QUIZ = 15, XP_CODE = 20, XP_STREAK_BONUS = 5;
-
-function saveWsProgress(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      completed:[...wsCompleted], total:TOTAL, xp, level:wsLevel, streak, bestStreak, totalQuizzes, correctFirst,
-      quizzesPassed:[...document.querySelectorAll('.quiz-gate.passed')].map(q=>q.id),
-      challengesPassed:[...document.querySelectorAll('.code-challenge.passed')].map(c=>c.id),
-      conceptsPassed:[...document.querySelectorAll('.concept-fill.passed')].map(c=>c.id),
-      tfPassed:[...document.querySelectorAll('.tf-round.passed')].map(c=>c.id),
-      orderPassed:[...document.querySelectorAll('.order-challenge.passed')].map(c=>c.id),
-      predictPassed:[...document.querySelectorAll('.predict-challenge.passed')].map(c=>c.id),
-      gameStepsDone:[...stepsDone]
-    }));
-  }catch(e){}
-}
-
-function loadWsProgress(){
-  try{
-    const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(!data) return;
-    if(data.xp){xp=data.xp;wsLevel=data.level||1;streak=data.streak||0;bestStreak=data.bestStreak||0;totalQuizzes=data.totalQuizzes||0;correctFirst=data.correctFirst||0;}
-    if(data.completed) data.completed.forEach(n=>wsCompleted.add(n));
-    if(data.gameStepsDone) data.gameStepsDone.forEach(n=>stepsDone.add(n));
-    updateXpDisplay();
-    updateWsProgress();
-    if(wsCompleted.size===TOTAL_STEPS){document.getElementById('finishBanner').classList.add('show');showFinalStats();}
-  }catch(e){}
-}
-
-function updateWsProgress(){
-  const pct=Math.max(5,Math.round((wsCompleted.size/TOTAL_STEPS)*100));
-  document.getElementById('progFill').style.width=pct+'%';
-}
-
-function updateXpDisplay(){
-  const xpInLevel=xp%XP_PER_LEVEL;
-  document.getElementById('xpLabel').textContent=xp+' XP';
-  document.getElementById('xpFill').style.width=(xpInLevel/XP_PER_LEVEL*100)+'%';
-  document.getElementById('xpLevel').textContent='Level '+wsLevel;
-  document.getElementById('streakCount').textContent=streak;
-  document.getElementById('xpStreak').classList.toggle('hot',streak>=3);
-}
-
-function awardXp(amount,label){
-  const oldLevel=wsLevel;
-  xp+=amount;
-  wsLevel=Math.floor(xp/XP_PER_LEVEL)+1;
-  updateXpDisplay();
-  document.getElementById('xpLabel').classList.add('xp-pop');
-  setTimeout(()=>document.getElementById('xpLabel').classList.remove('xp-pop'),400);
-  showXpToast('+'+amount+' XP'+(label?' · '+label:''));
-  if(wsLevel>oldLevel)setTimeout(()=>showLevelUp(wsLevel),600);
-  saveWsProgress();
-}
-
-function showXpToast(text){
-  const existing=document.querySelector('.xp-toast');
-  if(existing)existing.remove();
-  const t=document.createElement('div');
-  t.className='xp-toast';t.textContent=text;
-  document.body.appendChild(t);
-  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2000);
-}
-
-function showLevelUp(lvl){
-  const overlay=document.createElement('div');
-  overlay.className='levelup-overlay';
-  overlay.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆🏆</div><div class="lvl-title">Level '+lvl+'!Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">ContinueContinue</button></div>';
+  overlay.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
 }
@@ -3438,33 +2159,7 @@ function checkQuiz(btn){
   if(chosenIdx===correct){
     selected.classList.add('correct');
     fb.className='quiz-feedback correct show';
-    fb.innerHTML='';
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
-}
-
-/* ── QUIZ SYSTEM ── */
-function selectQuizOpt(el){
-  const gate=el.closest('.quiz-gate')||el.closest('.predict-challenge');
-  if(!gate||gate.classList.contains('passed'))return;
-  gate.querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));
-  el.classList.add('selected');
-  const submitBtn=gate.querySelector('.quiz-submit');
-  if(submitBtn)submitBtn.classList.add('show');
-}
-
-function checkQuiz(btn){
-  const gate=btn.closest('.quiz-gate');
-  const selected=gate.querySelector('.quiz-opt.selected');
-  if(!selected)return;
-  const correct=parseInt(gate.dataset.correct);
-  const chosenIdx=parseInt(selected.dataset.idx);
-  const fb=gate.querySelector('.quiz-feedback');
-  totalQuizzes++;
-  if(chosenIdx===correct){
-    selected.classList.add('correct');
-    fb.className='quiz-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>That\'s right! Great job.That\'s right! Great job.</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
     gate.classList.add('passed');
     btn.style.display='none';
     gate.querySelector('.quiz-next-btn').classList.add('show');
@@ -3476,19 +2171,7 @@ function checkQuiz(btn){
   }else{
     selected.classList.add('wrong');
     fb.className='quiz-feedback wrong show';
-    fb.innerHTML='';
-    gate.classList.add('passed');
-    btn.style.display='none';
-    gate.querySelector('.quiz-next-btn').classList.add('show');
-    gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
-    let bonus=XP_QUIZ,label='Quiz correct';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    selected.classList.add('wrong');
-    fb.className='quiz-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, try again!Not quite, try again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, try again!</span>';
     streak=0;updateXpDisplay();
     setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
   }
@@ -3508,27 +2191,7 @@ function checkCodeChallenge(btn){
   });
   if(allCorrect){
     fb.className='cc-feedback correct show';
-    fb.innerHTML='';
-    streak=0;updateXpDisplay();
-    setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
-  }
-  saveWsProgress();
-}
-
-/* ── CODE CHALLENGE ── */
-function checkCodeChallenge(btn){
-  const challenge=btn.closest('.code-challenge');
-  const blanks=challenge.querySelectorAll('.cc-blank');
-  const fb=challenge.querySelector('.cc-feedback');
-  const hint=challenge.querySelector('.cc-hint');
-  let allCorrect=true;
-  blanks.forEach(b=>{
-    if(b.value.trim().toLowerCase()===b.dataset.answer.toLowerCase()){b.classList.remove('wrong');b.classList.add('correct');}
-    else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}
-  });
-  if(allCorrect){
-    fb.className='cc-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect! Your code is correct.Perfect! Your code is correct.</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
     challenge.classList.add('passed');btn.disabled=true;
     blanks.forEach(b=>b.disabled=true);
     if(hint)hint.classList.remove('show');
@@ -3538,17 +2201,7 @@ function checkCodeChallenge(btn){
     awardXp(bonus,label);
   }else{
     fb.className='cc-feedback wrong show';
-    fb.innerHTML='';
-    challenge.classList.add('passed');btn.disabled=true;
-    blanks.forEach(b=>b.disabled=true);
-    if(hint)hint.classList.remove('show');
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
-    let bonus=XP_CODE,label='Code challenge';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    fb.className='cc-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some answers aren\'t quite right, check the highlighted blanks.Some answers aren\'t quite right, check the highlighted blanks.</span>';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks.</span>';
     if(hint)hint.classList.add('show');
     streak=0;updateXpDisplay();totalQuizzes++;
   }
@@ -3566,25 +2219,7 @@ function checkConceptFill(btn){
   });
   if(allCorrect){
     fb.className='cf-feedback correct show';
-    fb.innerHTML='';
-    if(hint)hint.classList.add('show');
-    streak=0;updateXpDisplay();totalQuizzes++;
-  }
-  saveWsProgress();
-}
-
-function checkConceptFill(btn){
-  const wrap=btn.closest('.concept-fill');
-  const blanks=wrap.querySelectorAll('.cf-blank');
-  const fb=wrap.querySelector('.cf-feedback');
-  let allCorrect=true;
-  blanks.forEach(b=>{
-    if(b.value.trim().toLowerCase()===b.dataset.answer.toLowerCase()){b.classList.remove('wrong');b.classList.add('correct');}
-    else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}
-  });
-  if(allCorrect){
-    fb.className='cf-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect!Perfect!</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>';
     wrap.classList.add('passed');btn.disabled=true;
     blanks.forEach(b=>b.disabled=true);
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
@@ -3593,16 +2228,7 @@ function checkConceptFill(btn){
     awardXp(bonus,label);
   }else{
     fb.className='cf-feedback wrong show';
-    fb.innerHTML='';
-    wrap.classList.add('passed');btn.disabled=true;
-    blanks.forEach(b=>b.disabled=true);
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
-    let bonus=XP_QUIZ,label='Concept fill';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    fb.className='cf-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some blanks aren\'t right, try again!Some blanks aren\'t right, try again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Some blanks aren\'t right, try again!</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
   }
   saveWsProgress();
@@ -3628,39 +2254,10 @@ function checkTF(btn){
     if(picked===correct){selected.classList.add('correct-answer');}
     else{selected.classList.add('wrong-answer');allCorrect=false;}
   });
-  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='';
-    streak=0;updateXpDisplay();totalQuizzes++;
-  }
-  saveWsProgress();
-}
-
-function pickTF(btn,value){
-  const item=btn.closest('.tf-item');
-  item.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');btn.dataset.picked=value;
-}
-
-function checkTF(btn){
-  const round=btn.closest('.tf-round');
-  const items=round.querySelectorAll('.tf-item');
-  const fb=round.querySelector('.tf-feedback');
-  let allAnswered=true,allCorrect=true;
-  items.forEach(item=>{
-    const selected=item.querySelector('.tf-btn.selected');
-    if(!selected){allAnswered=false;return;}
-    const correct=item.dataset.answer;
-    const picked=selected.dataset.picked;
-    item.classList.add('answered');
-    if(picked===correct){selected.classList.add('correct-answer');}
-    else{selected.classList.add('wrong-answer');allCorrect=false;}
-  });
-  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Answer all statements first!Answer all statements first!</span>';return;}
+  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>';return;}
   if(allCorrect){
     fb.className='tf-feedback correct show';
-    fb.innerHTML='';return;}
-  if(allCorrect){
-    fb.className='tf-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>All correct! Nice one.All correct! Nice one.</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
     round.classList.add('passed');btn.disabled=true;
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
     let bonus=XP_QUIZ,label='True/False';
@@ -3668,15 +2265,7 @@ function checkTF(btn){
     awardXp(bonus,label);
   }else{
     fb.className='tf-feedback wrong show';
-    fb.innerHTML='';
-    round.classList.add('passed');btn.disabled=true;
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
-    let bonus=XP_QUIZ,label='True/False';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    fb.className='tf-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not all correct, check the highlighted answers.Not all correct, check the highlighted answers.</span>';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not all correct, check the highlighted answers.</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
     setTimeout(()=>{
       items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});
@@ -3720,57 +2309,10 @@ function checkOrder(btn){
     if(parseInt(item.dataset.userOrder)===parseInt(item.dataset.correct)){item.classList.add('correct-pos');}
     else{item.classList.add('wrong-pos');allCorrect=false;}
   });
-  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='';
-    streak=0;updateXpDisplay();totalQuizzes++;
-    setTimeout(()=>{
-      items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});
-      fb.classList.remove('show');
-    },2500);
-  }
-  saveWsProgress();
-}
-
-/* ── ORDER CHALLENGE ── */
-let orderCounters={};
-function pickOrder(el){
-  const challenge=el.closest('.order-challenge');
-  const id=challenge.id;
-  if(!orderCounters[id])orderCounters[id]=0;
-  if(el.classList.contains('picked'))return;
-  orderCounters[id]++;
-  el.classList.add('picked');
-  el.querySelector('.oc-num').textContent=orderCounters[id];
-  el.dataset.userOrder=orderCounters[id];
-}
-
-function resetOrder(btn){
-  const challenge=btn.closest('.order-challenge');
-  orderCounters[challenge.id]=0;
-  challenge.querySelectorAll('.oc-item').forEach(item=>{
-    item.classList.remove('picked','correct-pos','wrong-pos');
-    item.querySelector('.oc-num').textContent='';
-    delete item.dataset.userOrder;
-  });
-  challenge.querySelector('.oc-feedback').classList.remove('show');
-}
-
-function checkOrder(btn){
-  const challenge=btn.closest('.order-challenge');
-  const items=challenge.querySelectorAll('.oc-item');
-  const fb=challenge.querySelector('.oc-feedback');
-  let allPicked=true,allCorrect=true;
-  items.forEach(item=>{
-    if(!item.dataset.userOrder){allPicked=false;return;}
-    if(parseInt(item.dataset.userOrder)===parseInt(item.dataset.correct)){item.classList.add('correct-pos');}
-    else{item.classList.add('wrong-pos');allCorrect=false;}
-  });
-  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Click all items in order first!Click all items in order first!</span>';return;}
+  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Click all items in order first!</span>';return;}
   if(allCorrect){
     fb.className='oc-feedback correct show';
-    fb.innerHTML='';return;}
-  if(allCorrect){
-    fb.className='oc-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect order!Perfect order!</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect order!</span>';
     challenge.classList.add('passed');btn.disabled=true;
     challenge.querySelector('.oc-reset-btn').style.display='none';
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
@@ -3779,16 +2321,7 @@ function checkOrder(btn){
     awardXp(bonus,label);
   }else{
     fb.className='oc-feedback wrong show';
-    fb.innerHTML='';
-    challenge.classList.add('passed');btn.disabled=true;
-    challenge.querySelector('.oc-reset-btn').style.display='none';
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
-    let bonus=XP_QUIZ,label='Order challenge';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    fb.className='oc-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite right, hit Reset and try again!Not quite right, hit Reset and try again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite right, hit Reset and try again!</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
   }
   saveWsProgress();
@@ -3806,25 +2339,7 @@ function checkPredict(btn){
   if(chosenIdx===correct){
     selected.classList.add('correct');
     fb.className='quiz-feedback correct show';
-    fb.innerHTML='';
-    streak=0;updateXpDisplay();totalQuizzes++;
-  }
-  saveWsProgress();
-}
-
-/* ── PREDICT ── */
-function checkPredict(btn){
-  const challenge=btn.closest('.predict-challenge');
-  const selected=challenge.querySelector('.quiz-opt.selected');
-  if(!selected)return;
-  const correct=parseInt(challenge.dataset.correct);
-  const chosenIdx=parseInt(selected.dataset.idx);
-  const fb=challenge.querySelector('.quiz-feedback');
-  totalQuizzes++;
-  if(chosenIdx===correct){
-    selected.classList.add('correct');
-    fb.className='quiz-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Great prediction! You really understand this.Great prediction! You really understand this.</span>';
+    fb.innerHTML='<span class="fb-icon">✅</span><span>Great prediction! You really understand this.</span>';
     challenge.classList.add('passed');btn.style.display='none';
     challenge.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
@@ -3834,38 +2349,7 @@ function checkPredict(btn){
   }else{
     selected.classList.add('wrong');
     fb.className='quiz-feedback wrong show';
-    fb.innerHTML='';
-    challenge.classList.add('passed');btn.style.display='none';
-    challenge.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
-    streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
-    let bonus=XP_QUIZ,label='Prediction';
-    if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
-    awardXp(bonus,label);
-  }else{
-    selected.classList.add('wrong');
-    fb.className='quiz-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, think about it again!Not quite, think about it again!</span>';
-    streak=0;updateXpDisplay();
-    setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
-  }
-  saveWsProgress();
-}
-
-/* ── STEP COMPLETION VIA QUIZ ── */
-function completeStepQuiz(n){
-  wsCompleted.add(n);
-  stepsDone.add(n-1);
-  updateWsProgress();
-  updateProgress();
-  renderStep();
-  showFinalStats();
-  saveWsProgress();
-  if(wsCompleted.size===TOTAL_STEPS){
-    document.getElementById('finishBanner').classList.add('show');
-    showFinalStats();
-    if(typeof playerProfile !== 'undefined') playerProfile.markWorkshopCompleted('unity-2d-platformer', 75);
-    setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);
-  }else if(n';
+    fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, think about it again!</span>';
     streak=0;updateXpDisplay();
     setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
   }
@@ -3893,15 +2377,6 @@ function completeStepQuiz(n){
 
 function showFinalStats(){
   const el=id=>document.getElementById(id);
-  if(el('finalXp'))el('finalXp').textContent=xp;
-  if(el('finalLevel'))el('finalLevel').textContent=wsLevel;
-  if(el('finalStreak'))el('finalStreak').textContent=bestStreak;
-  if(el('finalAccuracy'))el('finalAccuracy').textContent=totalQuizzes?Math.round(correctFirst/totalQuizzes*100)+'%':'0%';
-}
-
-loadWsProgress();
-updateXpDisplay();
-document.getElementById(id);
   if(el('finalXp'))el('finalXp').textContent=xp;
   if(el('finalLevel'))el('finalLevel').textContent=wsLevel;
   if(el('finalStreak'))el('finalStreak').textContent=bestStreak;

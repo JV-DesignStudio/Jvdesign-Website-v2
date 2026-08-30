@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script src="./analytics-loader.js"></script>
 <title>JVDS Arcade | JVDesignStudio</title>
-<meta name="description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak, achievements and best scores across all 29 games. Install it and play offline.">
+<meta name="description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak, achievements and best scores across all 25 games. Install it and play offline.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/arcade.html">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/arcade.html">
 <meta property="og:title" content="JVDS Arcade | JVDesignStudio">
-<meta property="og:description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak and best scores across all 29 games.">
+<meta property="og:description" content="Every JVDesignStudio game in one place. One profile carries your XP, level, streak and best scores across all 25 games.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/arcade.png">
 <meta property="og:site_name" content="JVDesignStudio">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="JVDS Arcade | JVDesignStudio">
-<meta name="twitter:description" content="Every JVDesignStudio game in one place. One profile, 29 games, playable offline.">
+<meta name="twitter:description" content="Every JVDesignStudio game in one place. One profile, 25 games, playable offline.">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/arcade.png">
 
 <!-- Installable app shell: its own manifest, separate from the site-wide one. -->
@@ -898,6 +898,20 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -940,28 +954,6 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -980,22 +972,6 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -1595,11 +1571,11 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
       var when = fmtAgo(p.save.last);
       return '<a href="games/' + p.game.file + '">' +
                '' +
-               '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '' + artHTML(p.game) + '</div>' +
+               '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '</div>' +
                '' +
                '<div class="lab"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
                '' +
-               '<span>' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best</span></div>' +
+               '<span>' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best</span></div>' +
              '' +
              '</a>';
     }).join('');
@@ -1627,9 +1603,9 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
       wrap.innerHTML =
         '<div class="empty"><div class="ic">🎮🎮</div>' +
         '' +
-        '<b>No scores yetNo scores yet</b><p>Play anything in the Arcade and your bests land here.Play anything in the Arcade and your bests land here.</p>' +
+        '<b>No scores yetNo scores yet</b><p>Play anything in the Arcade and your bests land here.</p>' +
         '' +
-        '<button type="button" data-goto="play">Browse gamesBrowse games</button></div>';
+        '<button type="button" data-goto="play">Browse games</button></div>';
       return;
     }
 
@@ -1643,12 +1619,11 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
       var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
       return '<a class="srow" href="games/' + p.game.file + '">' +
                '' +
-               '<div class="rk' + (i < 3 ? ' top' : '') + '">' + medal + '' + medal + '</div>' +
+               '<div class="rk' + (i < 3 ? ' top' : '') + '">' + medal + '</div>' +
                '' +
                '<div class="nm"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
                '' +
                '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') +
-               ' · level ' + p.save.level + '' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') +
                ' · level ' + p.save.level + '</span></div>' +
                '' +
                '<div class="sc">' + fmt(p.save.high) + '' + fmt(p.save.high) + '<span>BestBest</span></div>' +
@@ -1714,7 +1689,7 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
   function renderSortRow() {
     document.getElementById('sortRow').innerHTML = SORTS.map(function (s) {
       return '<button type="button" data-sort="' + s[0] + '" aria-pressed="' +
-             (s[0] === sortMode) + '">' + s[1] + '' + s[1] + '</button>';
+             (s[0] === sortMode) + '">' + s[1] + '</button>';
     }).join('');
   }
 
@@ -1836,9 +1811,9 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
     document.getElementById('noResults').hidden = list.length > 0;
     document.getElementById('grid').innerHTML = list.map(function (g) {
       var s = smap[g.id];
-      var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '★ ' + fmt(s.high) + '</div>' : '';
+      var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
       var kid = g.kids ? '' : '';
-      var kid = g.kids ? '<div class="kidflag">Little PlayersLittle Players</div>' : '';
+      var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
       var info = '' : '';
       var info = '<div class="info-chip" data-info="' + esc(g.id) + '" role="button" aria-label="' +
                  esc(g.title) + ' details">ii</div>';
@@ -1853,17 +1828,15 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
                '' +
                '<div class="art" style="background:' + g.bg + '">' +
                  artHTML(g) + best + kid + info +
-               '' +
-                 artHTML(g) + best + kid + info +
                '</div>' +
                '' +
                '<div class="body">' +
                  '' +
-                 '<div class="tag">' + esc(g.tag) + '' + esc(g.tag) + '</div>' +
+                 '<div class="tag">' + esc(g.tag) + '</div>' +
                  '' +
-                 '<div class="name">' + esc(g.title) + '' + esc(g.title) + '</div>' +
+                 '<div class="name">' + esc(g.title) + '</div>' +
                  '' +
-                 '<div class="plays">' + plays + '' + plays + '</div>' +
+                 '<div class="plays">' + plays + '</div>' +
                '' +
                '</div>' +
              '' +
@@ -1981,11 +1954,11 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
       var name = String(d.name || id).replace(/^\S+\s/, '');
       return '<div class="goal' + (has ? ' got' : '') + '">' +
                '' +
-               '<div class="ic">' + (has ? (d.icon || '🏆') : '🔒') + '' + (has ? (d.icon || '🏆') : '🔒') + '</div>' +
+               '<div class="ic">' + (has ? (d.icon || '🏆') : '🔒') + '</div>' +
                '' +
                '<b>' + esc(name) + '' + esc(name) + '</b>' +
                '' +
-               '<span>' + esc(d.description || '') + '' + esc(d.description || '') + '</span>' +
+               '<span>' + esc(d.description || '') + '</span>' +
              '' +
              '</div>';
     }).join('');
@@ -1999,9 +1972,9 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
     if (!played.length) {
       wrap.innerHTML = '<div class="empty"><div class="ic">🏆🏆</div><b>Nothing tracked yetNothing tracked yet</b>' +
         '' +
-        '<p>Goals unlock as you play. Pick a game to get started.Goals unlock as you play. Pick a game to get started.</p>' +
+        '<p>Goals unlock as you play. Pick a game to get started.</p>' +
         '' +
-        '<button type="button" data-goto="play">Browse gamesBrowse games</button></div>';
+        '<button type="button" data-goto="play">Browse games</button></div>';
       return;
     }
 
@@ -2017,15 +1990,15 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
             .map(function (p) {
         return '<a class="srow" href="games/' + p.game.file + '">' +
                  '' +
-                 '<div class="rk">' + (p.game.emoji || '🎮') + '' + (p.game.emoji || '🎮') + '</div>' +
+                 '<div class="rk">' + (p.game.emoji || '🎮') + '</div>' +
                  '' +
                  '<div class="nm"><b>' + esc(p.game.title) + '' + esc(p.game.title) + '</b>' +
                  '' +
-                 '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '</span></div>' +
+                 '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '</span></div>' +
                  '' +
                  '<div class="sc">' + p.save.achievements.length +
                  '' + p.save.achievements.length +
-                 '<span>' + (p.save.achievements.length === 1 ? 'Goal' : 'Goals') + '' + (p.save.achievements.length === 1 ? 'Goal' : 'Goals') + '</span></div>' +
+                 '<span>' + (p.save.achievements.length === 1 ? 'Goal' : 'Goals') + '</span></div>' +
                '' +
                '</a>';
       }).join('') + '';
@@ -2481,13 +2454,13 @@ body.arc-offline-on .arc{padding-top:calc(env(safe-area-inset-top,0px) + 58px);}
         dRow('Your best', s.high > 0 ? fmt(s.high) : '—') +
         dRow('Plays', String(s.plays)) +
         dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
-        dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game+' + customGot + ' in-game</span>' : '')) +
+        dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
       '' : '')) +
       '</div>' +
       '' +
-      '<p class="d-desc">' + esc(g.desc || '') + '' + esc(g.desc || '') + '</p>' +
+      '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
       (g.kids ? '' +
-      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.</p>' : '');
+      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.</p>' : '');
     detailSheet.hidden = false;
     detailBackdrop.hidden = false;
   }

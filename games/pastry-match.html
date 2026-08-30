@@ -115,6 +115,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .card .sub .mode-tag { font-size: .72rem; opacity: .8; }
 .how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffd24a; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Flip cards to find matching pastries. Test your memory, match pairs quickly, and earn high scores.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
 </head>
 <body>
 <div class="wrapper" id="wrapper">
@@ -164,36 +165,6 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 </div>
 
 <script>
-const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
-const audioEffects = new AudioEffects(0.6);
-if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
-
-const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥖', '🍩', '🧆', '🥯', '🍫', '🍬', '🥞', '🍮'];
-const MODES = [
-  { id: 'easy', cols: 4, rows: 3, pairs: 6,  label: '🧒 Little Baker' },
-  { id: 'std',  cols: 4, rows: 4, pairs: 8,  label: '🧑 Baker' },
-  { id: 'hard', cols: 6, rows: 4, pairs: 12, label: '🔥 Head Chef' },
-];
-const PM_KEY = 'pastryMatch:v2';
-function loadModes() {
-  try { return JSON.parse(localStorage.getItem(PM_KEY)) || {}; } catch (e) { return {}; }
-}
-function saveModes(m) { try { localStorage.setItem(PM_KEY, JSON.stringify(m)); } catch (e) {} }
-let chosenMode = 'std';
-let cards = [];
-let cardEls = [];
-let state = 'menu';
-let score = 0, moves = 0, best = 0, streak = 0;
-let flipped = [];
-let matched = 0;
-let startTime = 0;
-let timerInterval = null;
-
-function currentMode() { return MODES.find(m => m.id === chosenMode) || MODES[1]; }
-function initCards() {
-  const mode = currentMode();
-  const deck = [];
-  for (let i = 0; i 
 const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
 const audioEffects = new AudioEffects(0.6);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
@@ -365,145 +336,6 @@ function endGame() {
   saveModes(modes);
   gameSystem.addXP(Math.max(5, Math.floor(score / 20)));
   gameSystem.unlockAchievement('firstPlay');
-  if (moves  0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  cards = deck.map((emoji, i) => ({ id: i, emoji, state: 'hidden' }));
-  matched = 0;
-  flipped = [];
-  score = 0;
-  moves = 0;
-  streak = 0;
-  const boardEl = document.getElementById('board');
-  boardEl.classList.toggle('cols6', currentMode().cols === 6);
-  boardEl.style.gridTemplateColumns = 'repeat(' + currentMode().cols + ', 1fr)';
-}
-
-function buildBoard() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-  cardEls = cards.map((c, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'card-btn';
-    btn.textContent = '?';
-    btn.onclick = () => flipCard(i);
-    board.appendChild(btn);
-    return btn;
-  });
-  updateHud();
-}
-
-function updateCard(i, animate) {
-  const c = cards[i], btn = cardEls[i];
-  const shown = c.state !== 'hidden';
-  btn.className = 'card-btn' + (shown ? ' flipped' : '') + (c.state === 'matched' ? ' matched' : '');
-  btn.disabled = c.state === 'matched';
-  btn.textContent = shown ? c.emoji : '?';
-  if (animate) {
-    btn.classList.add('reveal');
-    setTimeout(() => btn.classList.remove('reveal'), 300);
-  }
-}
-
-function updateHud() {
-  document.getElementById('scoreHud').textContent = score;
-  document.getElementById('movesHud').textContent = moves;
-}
-
-function floatText(txt, big) {
-  const div = document.createElement('div');
-  div.className = 'float-pop' + (big ? ' big' : '');
-  div.textContent = txt;
-  document.getElementById('wrapper').appendChild(div);
-  setTimeout(() => div.remove(), 900);
-}
-
-function flipCard(i) {
-  if (state !== 'playing' || cards[i].state !== 'hidden' || flipped.length >= 2) return;
-  audioEffects.playTap(600);
-  cards[i].state = 'flipped';
-  flipped.push(i);
-  updateCard(i, true);
-
-  if (flipped.length === 2) {
-    moves++;
-    updateHud();
-    setTimeout(checkMatch, 550);
-  }
-}
-
-function checkMatch() {
-  const [a, b] = flipped;
-  flipped = [];
-  if (cards[a].emoji === cards[b].emoji) {
-    cards[a].state = 'matched';
-    cards[b].state = 'matched';
-    matched++;
-    streak++;
-    const bonus = (streak - 1) * 25;
-    score += Math.max(100 - moves * 2, 10) + bonus;
-    updateCard(a);
-    updateCard(b);
-    ParticleSystem.sparkle(cardEls[a], 5);
-    ParticleSystem.sparkle(cardEls[b], 5);
-    if (streak >= 2) {
-      floatText('STREAK ×' + streak + '  +' + bonus, streak >= 3);
-      audioEffects.playCombo(streak);
-    } else {
-      audioEffects.playSuccess(750);
-    }
-    updateHud();
-    if (matched === currentMode().pairs) endGame();
-  } else {
-    cards[a].state = 'hidden';
-    cards[b].state = 'hidden';
-    streak = 0;
-    updateCard(a, true);
-    updateCard(b, true);
-    audioEffects.playError();
-  }
-}
-
-function startGame() {
-  document.getElementById('startModal').classList.remove('show');
-  document.getElementById('winModal').classList.remove('show');
-  initCards();
-  buildBoard();
-  clearInterval(timerInterval);
-  document.getElementById('timeHud').textContent = 0;
-
-  // sneak peek: show every pastry briefly, then flip back and start
-  state = 'peek';
-  floatText('👀 Memorise!', true);
-  cardEls.forEach((btn, i) => {
-    btn.classList.add('flipped', 'reveal');
-    btn.textContent = cards[i].emoji;
-  });
-  setTimeout(() => {
-    cardEls.forEach((btn, i) => updateCard(i, true));
-    state = 'playing';
-    startTime = performance.now();
-    timerInterval = setInterval(() => {
-      document.getElementById('timeHud').textContent = Math.round((performance.now() - startTime) / 1000);
-    }, 500);
-  }, 1600);
-}
-
-function endGame() {
-  state = 'won';
-  clearInterval(timerInterval);
-  const time = Math.round((performance.now() - startTime) / 1000);
-  const timeBonus = Math.max(0, 90 - time) * 2;
-  score += timeBonus;
-  updateHud();
-  gameSystem.addScore(score);
-  const mode = currentMode();
-  const modes = loadModes();
-  modes[mode.id] = Math.max(modes[mode.id] || 0, score);
-  saveModes(modes);
-  gameSystem.addXP(Math.max(5, Math.floor(score / 20)));
-  gameSystem.unlockAchievement('firstPlay');
   if (moves <= 16) gameSystem.unlockAchievement('perfectMemory');
   gameSystem.recordGamePlay(time * 1000);
   gameSystem.saveState();
@@ -529,39 +361,7 @@ function renderModeRow() {
   const row = document.getElementById('modeRow');
   const modes = loadModes();
   row.innerHTML = MODES.map(m =>
-    ' 0 ? ' ⏱ Time bonus +' + timeBonus : '');
-  document.getElementById('finalScore').textContent = score.toLocaleString();
-  GameUI.countUp(document.getElementById('finalScore'), score);
-  document.getElementById('finalMoves').textContent = moves;
-  document.getElementById('finalBest').textContent = Math.max(best, modes[mode.id] || 0);
-  document.getElementById('winModeTag').textContent = mode.label;
-  const par = mode.pairs * 2;
-  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score,
-    [[par * 40, '🥉', 'Bronze Baker'], [par * 70, '🥈', 'Silver Baker'], [par * 100, '🥇', 'Gold Baker']]);
-  document.getElementById('winModal').classList.add('show');
-}
-
-best = gameSystem.state.highScore || 0;
-function renderModeRow() {
-  const row = document.getElementById('modeRow');
-  const modes = loadModes();
-  row.innerHTML = MODES.map(m =>
-    '<button type="button" class="' + (m.id === chosenMode ? 'sel' : '') + '" data-mode="' + m.id + '">' + m.label + '' + m.label + '</button>').join('');
-  row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-    chosenMode = b.dataset.mode;
-    const m = currentMode();
-    best = Math.max(gameSystem.state.highScore || 0, modes[chosenMode] || 0);
-    document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
-    document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
-    renderModeRow();
-  }));
-  const m = currentMode();
-  document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
-  document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
-}
-renderModeRow();
-document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
-').join('');
+    '<button type="button" class="' + (m.id === chosenMode ? 'sel' : '') + '" data-mode="' + m.id + '">' + m.label + '</button>').join('');
   row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
     chosenMode = b.dataset.mode;
     const m = currentMode();
@@ -577,5 +377,6 @@ document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed
 renderModeRow();
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
+<script src="../cookie-consent.js"></script>
 </body>
 </html>

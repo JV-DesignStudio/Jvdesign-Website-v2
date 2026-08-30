@@ -308,6 +308,20 @@ footer a{color:var(--muted)}.footer a:hover{color:var(--text)}
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -350,28 +364,6 @@ footer a{color:var(--muted)}.footer a:hover{color:var(--text)}
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -390,22 +382,6 @@ footer a{color:var(--muted)}.footer a:hover{color:var(--text)}
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -534,6 +510,7 @@ footer a{color:var(--muted)}.footer a:hover{color:var(--text)}
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -553,23 +530,8 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -656,91 +618,8 @@ class BPC{
   _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
   _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
   _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
-  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d
-'use strict';
-
-/* ══════════════════════════════════════
-   WEAPON POOLS
-══════════════════════════════════════ */
-const GUN_POOL=[
-  {name:'Hand Crossbow', dmg:8,  fireRate:.35,projSpd:7, range:200,col:'#c0c8d8',special:null,       pierce:false,spread:0},
-  {name:'Heavy Crossbow',dmg:16, fireRate:.9, projSpd:9, range:260,col:'#d0d8e8',special:'knockback',pierce:false,spread:0},
-  {name:'Repeating Bow', dmg:5,  fireRate:.2, projSpd:6, range:180,col:'#b0c890',special:null,       pierce:false,spread:5},
-  {name:'Poison Dart',   dmg:4,  fireRate:.28,projSpd:5, range:220,col:'#60c040',special:'poison',   pierce:false,spread:0},
-  {name:'Hell Cannon',   dmg:28, fireRate:1.6,projSpd:10,range:160,col:'#e04020',special:'explosive',pierce:false,spread:8},
-  {name:'Elven Longbow', dmg:11, fireRate:.55,projSpd:12,range:320,col:'#90d870',special:null,       pierce:true, spread:0},
-  {name:'Triple Shot',   dmg:7,  fireRate:.45,projSpd:7, range:190,col:'#c0b880',special:'triple',   pierce:false,spread:0},
-  {name:'Shadow Bolt',   dmg:14, fireRate:.6, projSpd:8, range:240,col:'#8050c0',special:'slow',     pierce:false,spread:0},
-  {name:'Iron Musket',   dmg:22, fireRate:1.2,projSpd:13,range:280,col:'#a0a8b0',special:null,       pierce:true, spread:0},
-  {name:'Scatter Shot',  dmg:6,  fireRate:.5, projSpd:7, range:130,col:'#d0a060',special:'scatter',  pierce:false,spread:0},
-];
-const MELEE_POOL=[
-  {name:'Rusty Dagger', dmg:6,  reach:42,atkSpd:.22,sweep:45, col:'#a8a8b8',special:null},
-  {name:'Short Sword',  dmg:9,  reach:56,atkSpd:.32,sweep:70, col:'#c0c8d8',special:null},
-  {name:'Broad Sword',  dmg:14, reach:62,atkSpd:.45,sweep:80, col:'#b0b8c8',special:null},
-  {name:'War Axe',      dmg:18, reach:54,atkSpd:.6, sweep:55, col:'#907050',special:'armour_break'},
-  {name:'Battle Axe',   dmg:24, reach:56,atkSpd:.85,sweep:60, col:'#806040',special:'armour_break'},
-  {name:'Mace',         dmg:12, reach:48,atkSpd:.42,sweep:65, col:'#a09080',special:'stun'},
-  {name:'War Hammer',   dmg:20, reach:50,atkSpd:.75,sweep:70, col:'#888090',special:'stun'},
-  {name:'Rapier',       dmg:8,  reach:72,atkSpd:.18,sweep:25, col:'#a0c0e0',special:'pierce'},
-  {name:'Halberd',      dmg:16, reach:80,atkSpd:.65,sweep:90, col:'#708060',special:'sweep'},
-  {name:'Greatsword',   dmg:22, reach:74,atkSpd:.8, sweep:110,col:'#c0c8d8',special:'sweep'},
-  {name:'Hell Blade',   dmg:30, reach:66,atkSpd:.9, sweep:85, col:'#dd3020',special:'fire'},
-  {name:'Shadowfang',   dmg:13, reach:52,atkSpd:.28,sweep:55, col:'#503860',special:'lifesteal'},
-];
-const WAND_POOL=[
-  {name:'Apprentice Wand',dmg:10,castTime:.5, projSpd:6, range:210,aoeR:0,  col:'#8080ff',special:null,    elem:'arcane'},
-  {name:'Fire Staff',     dmg:14,castTime:.6, projSpd:7, range:190,aoeR:32, col:'#f06020',special:'burn',  elem:'fire'},
-  {name:'Ice Shard',      dmg:9, castTime:.4, projSpd:8, range:240,aoeR:0,  col:'#60c0ff',special:'freeze',elem:'ice'},
-  {name:'Lightning Rod',  dmg:18,castTime:.7, projSpd:13,range:260,aoeR:20, col:'#f0f060',special:'chain', elem:'lightning'},
-  {name:'Chaos Wand',     dmg:20,castTime:.8, projSpd:5, range:170,aoeR:52, col:'#c040c0',special:'random',elem:'chaos'},
-  {name:'Bone Staff',     dmg:12,castTime:.5, projSpd:7, range:210,aoeR:0,  col:'#d0c0b0',special:'pierce',elem:'necro'},
-  {name:'Poison Orb',     dmg:8, castTime:.45,projSpd:4, range:150,aoeR:42, col:'#40c020',special:'poison',elem:'nature'},
-  {name:'Holy Symbol',    dmg:11,castTime:.5, projSpd:8, range:210,aoeR:0,  col:'#f0d040',special:'heal',  elem:'holy'},
-  {name:'Void Sceptre',   dmg:25,castTime:1.0,projSpd:10,range:290,aoeR:0,  col:'#6020c0',special:'drain', elem:'void'},
-  {name:'Storm Wand',     dmg:16,castTime:.6, projSpd:9, range:230,aoeR:36, col:'#80c0ff',special:'chain', elem:'lightning'},
-];
-const WPN_ICON={gun:'🔫',melee:'⚔',wand:'🪄'};
-const WPN_COL={gun:'#5a9ed9',melee:'#c87820',wand:'#9060c8'};
-
-/* ══════════════════════════════════════
-   BLUEPRINT ENGINE (from Nuclear)
-══════════════════════════════════════ */
-const PC={exec:'#fff',bool:'#dd4444',int:'#44aaee',float:'#88ee44',vec3:'#eebb44',actor:'#ee8833',object:'#4488ee',string:'#ee55aa',any:'#aaa'};
-const NS={
-  event:{h:'#5a1010',b:'#1a0808',e:'#cc3030'},
-  func:{h:'#142030',b:'#080e18',e:'#3070c0'},
-  vset:{h:'#2a1808',b:'#100804',e:'#a06030'},
-  vget:{h:'#101828',b:'#080810',e:'#3050a8'},
-  branch:{h:'#282828',b:'#101010',e:'#888'},
-  math:{h:'#1c1c1c',b:'#0c0c0c',e:'#555'},
-  custom:{h:'#200e18',b:'#0c0608',e:'#904858'},
-  gun:{h:'#0e1e30',b:'#060c12',e:'#2870b0'},
-  melee:{h:'#281808',b:'#100804',e:'#a06828'},
-  wand:{h:'#180820',b:'#080610',e:'#7038b0'},
-  loot:{h:'#201808',b:'#0c0c04',e:'#908028'},
-};
-class BPC{
-  constructor(el,defs,rW,rV,onDone){
-    this.el=el;this.defs=defs;this.rW=rW;this.rV=rV;this.onDone=onDone;
-    this.wires=[];this.pins={};this.drag=null;this.done=false;this.vals={};
-    this.DPR=Math.min(window.devicePixelRatio||1,2);
-    this.cv=document.createElement('canvas');this.cx=this.cv.getContext('2d');
-    el.appendChild(this.cv);
-    this.nodes=defs.map(d=>({...d,lp:d.lp||[],rp:d.rp||[],vf:d.vf||null,w:d.w||155}));
-    this.nodes.forEach(n=>{const r=Math.max(n.lp.length,n.rp.length,1);n.h=26+(n.sub?12:0)+r*19+(n.vf?25:0)+12;});
-    this.cv.addEventListener('mousedown',e=>this._dn(e));
-    this._mmv=e=>this._mv(e);this._mup=e=>this._up(e);
-    document.addEventListener('mousemove',this._mmv);document.addEventListener('mouseup',this._mup);
-    ['touchstart','touchmove','touchend'].forEach(t=>this.cv.addEventListener(t,e=>{e.preventDefault();const m=t==='touchend'?'up':t==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
-    this._resize();window.addEventListener('resize',()=>this._resize());
-    this.render();
-  }
-  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
-  _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
-  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
   _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
-  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;if(x>n.x+4&&xn.x+4&&x<n.x+n.w-4&&y>vy-8&&yvy-8&&y<vy+24)return n.id;}return null;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;if(x>n.x+4&&x<n.x+n.w-4&&y>vy-8&&y<vy+24)return n.id;}return null;}
   _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showVal(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const src=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[src];this.drag={pid:src,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
   _showVal(nid,e){
     const n=this.nodes.find(n=>n.id===nid);if(!n?.vf)return;
@@ -749,41 +628,7 @@ class BPC{
     const cr=outer.getBoundingClientRect();
     const pop=document.createElement('div');pop.className='bp-valinput';
     pop.style.left=Math.min(e.clientX-cr.left,cr.width-200)+'px';pop.style.top=(e.clientY-cr.top+10)+'px';
-    pop.innerHTML=`w.t===pid);if(wi>=0){const src=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[src];this.drag={pid:src,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
-  _showVal(nid,e){
-    const n=this.nodes.find(n=>n.id===nid);if(!n?.vf)return;
-    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
-    const outer=this.el.closest('.bp-outer');if(!outer)return;
-    const cr=outer.getBoundingClientRect();
-    const pop=document.createElement('div');pop.className='bp-valinput';
-    pop.style.left=Math.min(e.clientX-cr.left,cr.width-200)+'px';pop.style.top=(e.clientY-cr.top+10)+'px';
-    pop.innerHTML=`<label>${n.vf.hint}${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set✓ Set</button><button class="bp-valinput-cancel">✕✕</button></div>`;
-    outer.appendChild(pop);
-    const inp=pop.querySelector('input');inp.focus();inp.select();
-    const commit=()=>{const v=inp.value.trim();if(v){n.vf.val=v;this._chk();this.render();}pop.remove();};
-    pop.querySelector('.bp-valinput-ok').onclick=commit;
-    pop.querySelector('.bp-valinput-cancel').onclick=()=>pop.remove();
-    inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')pop.remove();};
-    pop.onmousedown=ev=>ev.stopPropagation();
-  }
-  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
-  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
-  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt2=this.pins[t];if(!pf||!pt2||pf.side!=='right'||pt2.side!=='left')return this._err();const ok=pf.type===pt2.type||pf.type==='any'||pt2.type==='any'||(pf.type==='exec'&&pt2.type==='exec');if(!ok)return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
-  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
-  _chk(){
-    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
-    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
-    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
-    const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);
-    if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);
-    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
-    else if(!(wOk&&vOk))this.done=false;
-  }
-  render(){
-    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
-    cx.fillStyle='#0e0c1a';cx.fillRect(0,0,540,H);
-    cx.strokeStyle='rgba(180,100,20,.028)';cx.lineWidth=1;
-    for(let x=0;x`;
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
     outer.appendChild(pop);
     const inp=pop.querySelector('input');inp.focus();inp.select();
     const commit=()=>{const v=inp.value.trim();if(v){n.vf.val=v;this._chk();this.render();}pop.remove();};
@@ -846,147 +691,10 @@ class BPC{
 let UID=0;
 function mkPZ(defs,rW,rV,onDone,theme=''){
   const uid=++UID;const hasW=rW.length>0,hasV=rV.length>0;
-  const html=`this._node(cx,n));
-    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
-    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
-  }
-  _node(cx,n){
-    const st=NS[n.type]||NS.func,HDR=22,GAP=19;
-    const rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
-    cx.fillStyle='rgba(0,0,0,.4)';this._rr(cx,x+3,y+3,w,h,6);cx.fill();
-    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,6);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
-    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,6);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
-    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
-    if(n.sub){cx.fillStyle='rgba(255,255,255,.26)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
-    if(n.vf){
-      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
-      cx.fillStyle='rgba(0,0,0,.5)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
-      cx.strokeStyle=n.vf.val?'#88ee44':'rgba(200,120,32,.6)';cx.lineWidth=1;cx.stroke();
-      cx.fillStyle=n.vf.val?'#88ee44':'rgba(220,130,40,.85)';
-      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
-      cx.fillText(n.vf.val?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint),x+w/2,vy+10);
-      cx.fillStyle='rgba(255,255,255,.13)';cx.font='6.5px JetBrains Mono,monospace';
-      cx.fillText(n.vf.val?'✓ set':'▼ click to type',x+w/2,vy+20);
-    }
-    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
-    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.55)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
-    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.55)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
-    cx.textAlign='left';
-  }
-  _pin(cx,x,y,col,exec,conn,side){cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}cx.fillStyle=col+'28';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();}
-  _wire(cx,x1,y1,x2,y2,col,dash){const mx=(x1+x2)/2;cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=dash?0:6;if(dash){cx.setLineDash([5,4]);cx.globalAlpha=.45;}cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(mx,y1,mx,y2,x2,y2);cx.stroke();cx.restore();}
-  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
-}
-let UID=0;
-function mkPZ(defs,rW,rV,onDone,theme=''){
-  const uid=++UID;const hasW=rW.length>0,hasV=rV.length>0;
   const html=`<div class="bp-outer${theme?' '+theme:''}" id="bpo-${uid}"><div class="bp-canvas-wrap" id="bpcw-${uid}"></div>
-    
-    <div class="bp-hint${theme?' '+theme:''}">🖱 Drag output → input pin to connect${hasV?' · Click amber fields to type':''}🖱 Drag output → input pin to connect${hasV?' · Click amber fields to type':''}</div></div>
-    
-    <div class="task-list">${hasW?`${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wiresConnect the required wires</div>`:''}
-    ${hasV?``:''}
-    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the amber fieldsType values in the amber fields</div>`:''}`:''}</div>`;
-  return{uid,html,init(cb){const el=document.getElementById('bpcw-'+uid);if(!el)return;const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);});bp.uid=uid;return bp;}};
-}
-
-/* ══════════════════════════════════════
-   GAME ENGINE
-   Simple top-down like Nuclear.
-   Walls = rectangles. WASD moves in
-   screen directions. No tile grid math.
-══════════════════════════════════════ */
-const canvas=document.getElementById('gc');
-const ctx=canvas.getContext('2d');
-let CW=420,CH=420;
-
-function resizeGame(){
-  const wrap=canvas.parentElement;
-  const s=Math.min(wrap.clientWidth-14,wrap.clientHeight||420,440);
-  CW=s;CH=s;canvas.width=s;canvas.height=s;
-}
-window.addEventListener('resize',resizeGame);
-
-/* ── DUNGEON ROOMS ── */
-// A room is defined in normalised 0-1 space, walls as {x,y,w,h}
-// Player navigates room to room like Nuclear, but the dungeon is thematic
-const ROOM_DEFS=[
-  // Entrance Hall, empty open room
-  {name:'Entrance Hall',walls:[{x:.04,y:.04,w:.04,h:.92},{x:.92,y:.04,w:.04,h:.92},{x:.04,y:.04,w:.92,h:.04},{x:.04,y:.88,w:.92,h:.04}],chestChance:.3},
-  // Pillared Chamber
-  {name:'Pillared Chamber',walls:[{x:.04,y:.04,w:.04,h:.92},{x:.92,y:.04,w:.04,h:.92},{x:.04,y:.04,w:.92,h:.04},{x:.04,y:.88,w:.92,h:.04},{x:.22,y:.22,w:.08,h:.08},{x:.7,y:.22,w:.08,h:.08},{x:.22,y:.7,w:.08,h:.08},{x:.7,y:.7,w:.08,h:.08}],chestChance:.4},
-  // Narrow Corridors
-  {name:'Dungeon Corridors',walls:[{x:.04,y:.04,w:.04,h:.92},{x:.92,y:.04,w:.04,h:.92},{x:.04,y:.04,w:.92,h:.04},{x:.04,y:.88,w:.92,h:.04},{x:.04,y:.35,w:.55,h:.1},{x:.41,y:.55,w:.55,h:.1}],chestChance:.35},
-  // Boss Chamber, wide open
-  {name:'Boss Chamber',walls:[{x:.02,y:.02,w:.04,h:.96},{x:.94,y:.02,w:.04,h:.96},{x:.02,y:.02,w:.96,h:.04},{x:.02,y:.94,w:.96,h:.04}],chestChance:0},
-  // Crypt
-  {name:'Ancient Crypt',walls:[{x:.04,y:.04,w:.04,h:.92},{x:.92,y:.04,w:.04,h:.92},{x:.04,y:.04,w:.92,h:.04},{x:.04,y:.88,w:.92,h:.04},{x:.3,y:.04,w:.06,h:.4},{x:.64,y:.56,w:.06,h:.4}],chestChance:.45},
-  // Throne Room
-  {name:'Throne Room',walls:[{x:.04,y:.04,w:.04,h:.92},{x:.92,y:.04,w:.04,h:.92},{x:.04,y:.04,w:.92,h:.04},{x:.04,y:.88,w:.92,h:.04},{x:.22,y:.04,w:.08,h:.3},{x:.7,y:.04,w:.08,h:.3},{x:.22,y:.66,w:.08,h:.3},{x:.7,y:.66,w:.08,h:.3}],chestChance:.5},
-];
-
-const ENEMY_TYPES=[
-  {name:'Fallen',    col:'#c84030',r:10,hp:18,atk:5, spd:1.4,xp:12,gold:[1,4]},
-  {name:'Skeleton',  col:'#c8c0b0',r:11,hp:28,atk:7, spd:1.1,xp:20,gold:[2,6]},
-  {name:'Goatman',   col:'#907050',r:13,hp:48,atk:11,spd:0.9,xp:38,gold:[4,10]},
-  {name:'Soul',      col:'#6050c0',r:9, hp:14,atk:5, spd:1.8,xp:10,gold:[1,3]},
-  {name:'Succubus',  col:'#c05090',r:11,hp:32,atk:9, spd:1.5,xp:30,gold:[5,12]},
-  {name:'StoneDemp', col:'#708090',r:15,hp:85,atk:17,spd:0.7,xp:75,gold:[8,20]},
-];
-const BOSS_TYPES=[
-  {name:'Lich King', col:'#8060c0',r:22,hp:250,atk:22,spd:1.1,xp:400,gold:[30,60]},
-  {name:'Dungeon Wyrm',col:'#506030',r:24,hp:320,atk:18,spd:0.9,xp:500,gold:[40,70]},
-  {name:'DIABLO',    col:'#dd2020',r:26,hp:500,atk:30,spd:1.2,xp:800,gold:[60,100]},
-];
-
-function rng(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
-function sout(m){const o=document.getElementById('obar');if(o)o.textContent=m;const f=document.getElementById('fsFoot');if(f)f.textContent=m;}
-
-/* ── GAME STATE ── */
-const G={
-  phase:'title',
-  p:{
-    x:210,y:210,r:12,
-    hp:80,maxHp:80,armour:3,
-    xp:0,xpNext:100,level:1,gold:0,kills:0,potions:3,
-    name:'???',
-    atkTimer:0,atkAlpha:0,atkAngle:0,angle:0,
-    weapon:null,weaponType:null,
-  },
-  room:{def:null,walls:[],enemies:[],drops:[],chest:null,stairs:null,cleared:false,roomNum:0},
-  floor:1,roomNum:0,
-  projs:[],particles:[],
-  keys:{},mx:210,my:100,
-  shakeTimer:0,shakeAmt:0,animF:0,
-  f_move:false,f_attack:false,f_enemies:false,f_loot:false,f_stairs:false,
-};
-
-/* ── ROOM SETUP ── */
-function loadRoom(){
-  const p=G.p;G.room.cleared=false;
-  G.projs=[];G.particles=[];G.room.drops=[];G.room.chest=null;
-
-  const isBoss=G.floor%5===0;
-  const defIdx=isBoss?3:Math.floor(Math.random()*(ROOM_DEFS.length-1));// skip boss for non-boss
-  const def=ROOM_DEFS[isBoss?3:defIdx];
-  G.room.def=def;
-
-  // Convert normalised walls to pixel walls
-  G.room.walls=def.walls.map(w=>({x:w.x*CW,y:w.y*CH,w:w.w*CW,h:w.h*CH}));
-
-  // Spawn player in centre-left clear area
-  p.x=CW*.15;p.y=CH*.5;
-  // If that's inside a wall, nudge
-  if(hitWall(p.x,p.y,p.r)){p.x=CW*.5;p.y=CH*.5;}
-
-  // Enemies
-  G.room.enemies=[];
-  if(G.f_enemies){
-    const cnt=isBoss?1:Math.min(3+G.floor*2,12);
-    const pool=ENEMY_TYPES.slice(0,Math.min(3+Math.floor(G.floor/2),ENEMY_TYPES.length));
-    const sc=1+G.floor*.07;
-    for(let i=0;i`;
+    <div class="bp-hint${theme?' '+theme:''}">🖱 Drag output → input pin to connect${hasV?' · Click amber fields to type':''}</div></div>
+    <div class="task-list">${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wires</div>`:''}
+    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the amber fields</div>`:''}</div>`;
   return{uid,html,init(cb){const el=document.getElementById('bpcw-'+uid);if(!el)return;const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);});bp.uid=uid;return bp;}};
 }
 
@@ -1116,7 +824,7 @@ function loadRoom(){
 }
 
 function hitWall(x,y,r){
-  return G.room.walls.some(w=>x+r>w.x&&x-rx+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-rw.y&&y-r<w.y+w.h);
+  return G.room.walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h);
 }
 
 /* ── PARTICLES / SPARKS ── */
@@ -1138,25 +846,11 @@ function doAttack(mx,my){
     p.atkTimer=w.fireRate*60;
     spawnProj(p.x,p.y,ang,w);
     if(w.special==='triple'){spawnProj(p.x,p.y,ang-.22,w);spawnProj(p.x,p.y,ang+.22,w);}
-    if(w.special==='scatter'){for(let i=0;i0)return;
-  const ang=Math.atan2(my-p.y,mx-p.x);
-  p.atkAngle=ang;p.angle=ang;p.atkAlpha=1;
-  const w=p.weapon,wt=p.weaponType;
-
-  if(wt==='gun'){
-    p.atkTimer=w.fireRate*60;
-    spawnProj(p.x,p.y,ang,w);
-    if(w.special==='triple'){spawnProj(p.x,p.y,ang-.22,w);spawnProj(p.x,p.y,ang+.22,w);}
     if(w.special==='scatter'){for(let i=0;i<5;i++)spawnProj(p.x,p.y,ang+(Math.random()-.5)*1.1,w);}
   } else if(wt==='melee'){
     p.atkTimer=w.atkSpd*60;
     const sw=(w.sweep||70)*Math.PI/180;
     G.room.enemies.forEach(e=>{
-      if(e.dead)return;
-      const dx=e.x-p.x,dy=e.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist>w.reach+e.r)return;
-      let df=Math.atan2(dy,dx)-ang;
-      while(df>Math.PI)df-=Math.PI*2;while(df{
       if(e.dead)return;
       const dx=e.x-p.x,dy=e.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
       if(dist>w.reach+e.r)return;
@@ -1198,25 +892,10 @@ function killEnemy(e){
   G.p.kills++;G.p.xp+=e.xp;G.p.gold+=rng(e.gold[0],e.gold[1]);
   if(G.p.xp>=G.p.xpNext)levelUp();
   spark(e.x,e.y,e.col,14,3.5);
-  if(G.f_loot&&Math.random()=G.p.xpNext)levelUp();
-  spark(e.x,e.y,e.col,14,3.5);
   if(G.f_loot&&Math.random()<.38)dropWeapon(e.x,e.y);
   if(Math.random()<.22){const g=rng(2,10);G.p.gold+=g;G.room.drops.push({x:e.x+rng(-12,12),y:e.y+rng(-12,12),type:'gold',gold:g,col:'#d4a520',picked:false,bobP:Math.random()*Math.PI*2});}
   updateHUD();
   if(G.room.enemies.every(e=>e.dead)&&!G.room.cleared){G.room.cleared=true;sout('✅ Room cleared! Find the stairs ▼ or press Quick Descent.');}
-  else sout('💀 '+e.name+' slain! '+G.p.xp+'/'+G.p.xpNext+' XP');
-}
-
-function levelUp(){
-  const p=G.p;p.level++;p.xp-=p.xpNext;p.xpNext=Math.round(p.xpNext*1.6);
-  p.maxHp+=10;p.hp=p.maxHp;p.armour++;
-  spark(p.x,p.y,'#f5c840',20,4);
-  sout('⬆ LEVEL UP! Lv.'+p.level+', +10 MaxHP, +1 Armour!');updateHUD();
-}
-
-function dropWeapon(wx,wy){
-  const r=Math.random();let pool,wtype;
-  if(re.dead)&&!G.room.cleared){G.room.cleared=true;sout('✅ Room cleared! Find the stairs ▼ or press Quick Descent.');}
   else sout('💀 '+e.name+' slain! '+G.p.xp+'/'+G.p.xpNext+' XP');
 }
 
@@ -1300,52 +979,9 @@ function update(dt){
     }
     G.room.enemies.forEach(e=>{
       if(e.dead||!pr.alive)return;
-      if(Math.sqrt((pr.x-e.x)**2+(pr.y-e.y)**2)0)G.shakeTimer-=dt;
-  update(dt);gameDraw();syncFS();
-  requestAnimationFrame(loop);
-}
-
-function update(dt){
-  if(G.phase!=='playing')return;
-  const p=G.p;
-
-  // WASD, simple screen-direction movement, no tile math
-  if(G.f_move){
-    const SPD=3.2;
-    let vx=0,vy=0;
-    if(G.keys['KeyW']||G.keys['ArrowUp'])   vy=-1;
-    if(G.keys['KeyS']||G.keys['ArrowDown']) vy= 1;
-    if(G.keys['KeyA']||G.keys['ArrowLeft']) vx=-1;
-    if(G.keys['KeyD']||G.keys['ArrowRight'])vx= 1;
-    if(vx&&vy){vx*=.707;vy*=.707;}
-    const spd=SPD*dt;
-    const nx=p.x+vx*spd,ny=p.y+vy*spd;
-    // Separate axis collision, slide along walls
-    if(!hitWall(nx,p.y,p.r))p.x=nx;
-    if(!hitWall(p.x,ny,p.r))p.y=ny;
-    p.x=Math.max(p.r,Math.min(CW-p.r,p.x));
-    p.y=Math.max(p.r,Math.min(CH-p.r,p.y));
-    if(vx||vy)p.angle=Math.atan2(vy,vx);
-  }
-
-  // Attack timer
-  if(p.atkTimer>0)p.atkTimer-=dt;
-  if(p.atkAlpha>0)p.atkAlpha-=dt*.07;
-
-  // Projectiles
-  G.projs.forEach(pr=>{
-    if(!pr.alive)return;
-    pr.x+=pr.vx*dt;pr.y+=pr.vy*dt;
-    pr.dist+=Math.sqrt(pr.vx*pr.vx+pr.vy*pr.vy)*dt;
-    if(pr.dist>pr.range||hitWall(pr.x,pr.y,4)){
-      if(hitWall(pr.x,pr.y,4))spark(pr.x,pr.y,'#888',4,2);
-      pr.alive=false;return;
-    }
-    G.room.enemies.forEach(e=>{
-      if(e.dead||!pr.alive)return;
       if(Math.sqrt((pr.x-e.x)**2+(pr.y-e.y)**2)<e.r+6){
         hurtEnemy(e,pr.dmg);
-        if(pr.aoeR>0){G.room.enemies.forEach(e2=>{if(e2.dead||e2===e)return;if(Math.sqrt((e.x-e2.x)**2+(e.y-e2.y)**2)0){G.room.enemies.forEach(e2=>{if(e2.dead||e2===e)return;if(Math.sqrt((e.x-e2.x)**2+(e.y-e2.y)**2)<pr.aoeR)hurtEnemy(e2,Math.round(pr.dmg*.6));});spark(pr.x,pr.y,pr.col,10,3);}
+        if(pr.aoeR>0){G.room.enemies.forEach(e2=>{if(e2.dead||e2===e)return;if(Math.sqrt((e.x-e2.x)**2+(e.y-e2.y)**2)<pr.aoeR)hurtEnemy(e2,Math.round(pr.dmg*.6));});spark(pr.x,pr.y,pr.col,10,3);}
         if(!pr.pierce)pr.alive=false;
       }
     });
@@ -1356,20 +992,6 @@ function update(dt){
     }
   });
   G.projs=G.projs.filter(pr=>pr.alive);
-
-  // Enemies chase player
-  if(G.f_enemies){
-    G.room.enemies.forEach(e=>{
-      if(e.dead)return;
-      if(e.dmgT>0)e.dmgT-=dt;
-      const dx=p.x-e.x,dy=p.y-e.y,dist=Math.sqrt(dx*dx+dy*dy);
-      e.angle=Math.atan2(dy,dx);
-      const spd=e.spd*dt;
-      const nx=e.x+Math.cos(e.angle)*spd,ny=e.y+Math.sin(e.angle)*spd;
-      if(!hitWall(nx,e.y,e.r))e.x=nx;
-      if(!hitWall(e.x,ny,e.r))e.y=ny;
-      // Contact damage
-      if(distpr.alive);
 
   // Enemies chase player
   if(G.f_enemies){
@@ -1394,7 +1016,6 @@ function update(dt){
   // Loot pickup
   if(G.f_loot){
     G.room.drops.forEach(d=>{
-      if(!d.picked&&Math.sqrt((d.x-p.x)**2+(d.y-p.y)**2){
       if(!d.picked&&Math.sqrt((d.x-p.x)**2+(d.y-p.y)**2)<18)pickupDrop(d);
     });
   }
@@ -1404,55 +1025,6 @@ function update(dt){
     const st=G.room.stairs;
     if(Math.sqrt((p.x-st.x)**2+(p.y-st.y)**2)<22){
       if(G.room.enemies.every(e=>e.dead)||G.room.cleared||G.room.enemies.length===0){
-        G.floor++;p.hp=Math.min(p.maxHp,p.hp+20);// small heal between rooms
-        loadRoom();
-      }else sout('⚔ Clear the room first!');
-    }
-  }
-
-  // Particles
-  G.particles.forEach(pt=>{pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.l-=.025*dt;pt.vx*=.88;pt.vy*=.88;});
-  G.particles=G.particles.filter(pt=>pt.l>0);
-  updateHUD();
-}
-
-/* ── DRAW ── */
-function gameDraw(){
-  const cx=ctx,W=CW,H=CH;
-  cx.save();
-  if(G.shakeTimer>0)cx.translate((Math.random()-.5)*G.shakeAmt,(Math.random()-.5)*G.shakeAmt);
-
-  // Background
-  cx.fillStyle='#0a0812';cx.fillRect(0,0,W,H);
-
-  // Title / dead / win screens
-  if(G.phase==='title'){
-    const g=cx.createRadialGradient(W/2,H/2,10,W/2,H/2,W*.7);
-    g.addColorStop(0,'#180808');g.addColorStop(1,'#0a0812');
-    cx.fillStyle=g;cx.fillRect(0,0,W,H);
-    cx.strokeStyle='rgba(200,80,32,.15)';cx.lineWidth=1;cx.strokeRect(10,10,W-20,H-20);
-    cx.fillStyle='#e03030';cx.font='bold 30px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText('HELLFIRE DESCENT',W/2,H/2-28);
-    cx.fillStyle='#c87820';cx.font='14px Georgia,serif';
-    cx.fillText('🔫 Guns  ⚔ Melee  🪄 Wands',W/2,H/2+2);
-    cx.fillStyle='rgba(240,200,150,.4)';cx.font='11px monospace';
-    cx.fillText('WASD move · Click to attack · H for potion',W/2,H/2+26);
-    cx.textAlign='left';cx.textBaseline='alphabetic';cx.restore();return;
-  }
-  if(G.phase==='dead'||G.phase==='win'){
-    cx.fillStyle=G.phase==='win'?'rgba(5,15,5,.88)':'rgba(20,5,5,.86)';cx.fillRect(0,0,W,H);
-    cx.fillStyle=G.phase==='win'?'#40c060':'#dd2020';
-    cx.font='bold 28px Georgia,serif';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(G.phase==='win'?'VICTORY!':'YOU DIED',W/2,H/2-18);
-    cx.fillStyle='rgba(240,200,100,.6)';cx.font='10px monospace';
-    cx.fillText('Floor '+G.floor+' · Lv.'+G.p.level+' · '+G.p.kills+' kills · '+G.p.gold+' gold',W/2,H/2+8);
-    cx.fillText('Click or Quick Descent to try again',W/2,H/2+26);
-    cx.textAlign='left';cx.textBaseline='alphabetic';cx.restore();return;
-  }
-
-  // Floor tiles, dark stone pattern
-  const ts=40;
-  for(let y=0;ye.dead)||G.room.cleared||G.room.enemies.length===0){
         G.floor++;p.hp=Math.min(p.maxHp,p.hp+20);// small heal between rooms
         loadRoom();
       }else sout('⚔ Clear the room first!');
@@ -1512,14 +1084,6 @@ function gameDraw(){
 
   // Walls, stone blocks with depth
   G.room.walls.forEach(w=>{
-    cx.fillStyle='#1c1428';cx.fillRect(w.x,w.y,w.w,w.h);
-    // Top edge highlight
-    cx.fillStyle='rgba(255,255,255,.06)';cx.fillRect(w.x,w.y,w.w,2);
-    // Left edge
-    cx.fillStyle='rgba(255,255,255,.04)';cx.fillRect(w.x,w.y,2,w.h);
-    // Inner texture lines
-    cx.strokeStyle='rgba(60,40,100,.3)';cx.lineWidth=1;
-    for(let i=w.y+12;i{
     cx.fillStyle='#1c1428';cx.fillRect(w.x,w.y,w.w,w.h);
     // Top edge highlight
     cx.fillStyle='rgba(255,255,255,.06)';cx.fillRect(w.x,w.y,w.w,2);
@@ -1676,137 +1240,6 @@ canvas.addEventListener('click',e=>{
   const r=canvas.getBoundingClientRect(),sc=CW/r.width;
   doAttack((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);
   // Click chest
-  if(G.room.chest&&!G.room.chest.open){const ch=G.room.chest,dx=ch.x-(e.clientX-r.left)*sc,dy=ch.y-(e.clientY-r.top)*sc;if(Math.sqrt(dx*dx+dy*dy)e.dead)||G.room.enemies.length===0;
-    for(let i=3;i>=0;i--){
-      cx.strokeStyle=canUse?`rgba(160,100,255,${.15+i*.1})`:`rgba(100,80,100,${.1+i*.06})`;
-      cx.lineWidth=1.5;cx.beginPath();cx.ellipse(st.x,st.y,10+i*6,6+i*3,0,0,Math.PI*2);cx.stroke();
-    }
-    cx.fillStyle=canUse?'rgba(160,100,255,.7)':'rgba(100,80,100,.4)';
-    cx.font='16px serif';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText('▼',st.x,st.y);cx.textAlign='left';cx.textBaseline='alphabetic';
-  }
-
-  // Drops, glowing orbs
-  G.room.drops.forEach(d=>{
-    if(d.picked)return;
-    const bob=Math.sin(G.animF*.06+d.bobP)*3;
-    const grd=cx.createRadialGradient(d.x,d.y+bob,2,d.x,d.y+bob,18);
-    grd.addColorStop(0,d.col+'88');grd.addColorStop(1,'transparent');
-    cx.fillStyle=grd;cx.beginPath();cx.arc(d.x,d.y+bob,18,0,Math.PI*2);cx.fill();
-    cx.fillStyle=d.col;cx.beginPath();cx.arc(d.x,d.y+bob,5,0,Math.PI*2);cx.fill();
-    cx.strokeStyle='rgba(255,255,255,.3)';cx.lineWidth=1.5;cx.stroke();
-    if(d.type==='weapon'){
-      cx.font='10px serif';cx.textAlign='center';cx.textBaseline='middle';
-      cx.fillText(WPN_ICON[d.weaponType]||'⚔',d.x,d.y+bob-14);
-      cx.textAlign='left';cx.textBaseline='alphabetic';
-    }
-  });
-
-  // Enemies
-  G.room.enemies.forEach(e=>{
-    if(e.dead)return;
-    const flash=e.dmgT>10;
-    // Shadow
-    cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(e.x,e.y+e.r*.4,e.r*.8,e.r*.35,0,0,Math.PI*2);cx.fill();
-    // Body
-    cx.fillStyle=flash?'#fff':e.col;cx.beginPath();cx.arc(e.x,e.y,e.r,0,Math.PI*2);cx.fill();
-    if(!flash){cx.strokeStyle=e.col+'88';cx.lineWidth=1.5;cx.stroke();}
-    // Eyes
-    cx.fillStyle=flash?'#000':'rgba(255,60,60,.9)';
-    const ex=e.x+Math.cos(e.angle)*e.r*.5,ey=e.y+Math.sin(e.angle)*e.r*.5;
-    cx.beginPath();cx.arc(ex-Math.sin(e.angle)*3,ey+Math.cos(e.angle)*3,2.5,0,Math.PI*2);cx.fill();
-    cx.beginPath();cx.arc(ex+Math.sin(e.angle)*3,ey-Math.cos(e.angle)*3,2.5,0,Math.PI*2);cx.fill();
-    // HP bar
-    const bw=e.r*2.2;cx.fillStyle='rgba(0,0,0,.65)';cx.fillRect(e.x-e.r*1.1,e.y-e.r-9,bw,5);
-    cx.fillStyle=e.hp/e.maxHp>.5?'#40a050':'#cc3030';cx.fillRect(e.x-e.r*1.1,e.y-e.r-9,bw*(e.hp/e.maxHp),5);
-  });
-
-  // Player
-  const p=G.p;
-  cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(p.x,p.y+p.r*.4,p.r*.85,p.r*.38,0,0,Math.PI*2);cx.fill();
-  const wcol=WPN_COL[p.weaponType]||'#f0a030';
-  if(p.weaponType){cx.strokeStyle=wcol+'55';cx.lineWidth=2.5;cx.beginPath();cx.arc(p.x,p.y,p.r+4,0,Math.PI*2);cx.stroke();}
-  cx.fillStyle='#c87820';cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fill();
-  cx.strokeStyle='rgba(255,220,100,.55)';cx.lineWidth=1.5;cx.stroke();
-  cx.strokeStyle='rgba(255,255,255,.65)';cx.lineWidth=2;
-  cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(p.x+Math.cos(p.angle)*p.r*1.3,p.y+Math.sin(p.angle)*p.r*1.3);cx.stroke();
-  // Attack arc
-  if(p.atkAlpha>0&&p.weapon){
-    const w=p.weapon;
-    const reach=p.weaponType==='melee'?(w.reach||50):58;
-    const sweep=p.weaponType==='melee'?(w.sweep||70)*Math.PI/180:Math.PI*.3;
-    cx.save();cx.globalAlpha=p.atkAlpha*.55;
-    cx.strokeStyle=wcol;cx.lineWidth=3;
-    cx.beginPath();cx.arc(p.x,p.y,reach,p.atkAngle-sweep/2,p.atkAngle+sweep/2);cx.stroke();
-    cx.fillStyle=wcol+'18';cx.beginPath();cx.moveTo(p.x,p.y);cx.arc(p.x,p.y,reach,p.atkAngle-sweep/2,p.atkAngle+sweep/2);cx.closePath();cx.fill();
-    cx.restore();
-  }
-  // HP bar below player
-  cx.fillStyle='rgba(0,0,0,.55)';cx.fillRect(p.x-14,p.y+p.r+4,28,5);
-  cx.fillStyle=p.hp/p.maxHp>.5?'#40c060':'#e04040';cx.fillRect(p.x-14,p.y+p.r+4,28*(p.hp/p.maxHp),5);
-
-  // Projectiles
-  G.projs.forEach(pr=>{
-    const grd=cx.createRadialGradient(pr.x,pr.y,1,pr.x,pr.y,pr.s*2);
-    grd.addColorStop(0,pr.col+'ff');grd.addColorStop(1,pr.col+'00');
-    cx.fillStyle=grd;cx.beginPath();cx.arc(pr.x,pr.y,pr.s*2,0,Math.PI*2);cx.fill();
-  });
-
-  // Particles
-  G.particles.forEach(pt=>{cx.globalAlpha=pt.l*.9;cx.fillStyle=pt.col;cx.beginPath();cx.arc(pt.x,pt.y,pt.s,0,Math.PI*2);cx.fill();});
-  cx.globalAlpha=1;
-
-  // XP bar
-  cx.fillStyle='rgba(0,0,0,.4)';cx.fillRect(8,H-5,W-16,5);
-  cx.fillStyle='#d4a520';cx.fillRect(8,H-5,(W-16)*(p.xp/p.xpNext),5);
-
-  cx.restore();
-}
-
-/* ── HUD ── */
-function updateHUD(){
-  const p=G.p;
-  const set=(id,v,col)=>{const el=document.getElementById(id);if(el){el.textContent=v;if(col)el.style.color=col;}};
-  const hpPct=p.hp/p.maxHp;
-  const hpCol=hpPct>.6?'var(--green)':hpPct>.3?'var(--amber-lt)':'var(--blood-lt)';
-  set('hudHP',Math.ceil(p.hp)+'/'+p.maxHp,hpCol);set('hudLvl',p.level);
-  set('hudFloor',G.floor);set('hudGold',p.gold);set('hudKills',p.kills);
-  set('fsHP',Math.ceil(p.hp),hpCol);set('fsLvl',p.level);set('fsFloor',G.floor);set('fsGold',p.gold);set('fsKills',p.kills);
-  set('hw-hp',Math.ceil(p.hp)+'/'+p.maxHp);
-  if(p.weapon){
-    const wc=WPN_COL[p.weaponType]||'var(--amber-lt)';
-    set('hw-wtype',p.weaponType.toUpperCase());document.getElementById('hw-wtype').style.color=wc;
-    set('hw-wpn',p.weapon.name);set('hw-dmg',p.weapon.dmg+' dmg');
-    set('hw-spec',p.weapon.special||p.weapon.elem||'none');set('hw-name',p.name);
-  }
-}
-
-function updateWeaponBar(){
-  const p=G.p;if(!p.weapon)return;
-  const icon=document.getElementById('wpnIcon');
-  // wpnIcon in wpn-card area, reuse hw elements instead
-  updateHUD();
-}
-
-/* ── INPUT ── */
-window.addEventListener('keydown',e=>{
-  G.keys[e.code]=true;
-  if(['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
-  if(e.code==='KeyH'){
-    const p=G.p;
-    if(p.potions>0){p.potions--;p.hp=Math.min(p.maxHp,p.hp+Math.round(p.maxHp*.4));sout('🧪 Potion! +'+Math.round(p.maxHp*.4)+' HP');updateHUD();}
-    else sout('No potions!');
-  }
-  if(e.code==='Escape')closeFS();
-  if(e.code==='KeyR'&&(G.phase==='dead'||G.phase==='win'))quickPlay();
-});
-window.addEventListener('keyup',e=>G.keys[e.code]=false);
-canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),sc=CW/r.width;G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;});
-canvas.addEventListener('click',e=>{
-  if(G.phase==='dead'||G.phase==='win'){quickPlay();return;}
-  const r=canvas.getBoundingClientRect(),sc=CW/r.width;
-  doAttack((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);
-  // Click chest
   if(G.room.chest&&!G.room.chest.open){const ch=G.room.chest,dx=ch.x-(e.clientX-r.left)*sc,dy=ch.y-(e.clientY-r.top)*sc;if(Math.sqrt(dx*dx+dy*dy)<30)openChest();}
 });
 
@@ -1823,16 +1256,6 @@ function syncFS(){
 function openFS(){document.getElementById('fsOverlay').classList.add('open');}
 function closeFS(){document.getElementById('fsOverlay').classList.remove('open');}
 canvasFS.addEventListener('click',e=>{
-  if(G.phase==='dead'||G.phase==='win'){quickPlay();return;}
-  const r=canvasFS.getBoundingClientRect(),sc=CW/canvasFS.width;
-  doAttack((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);
-});
-
-/* ── QUICK PLAY ── */
-function quickPlay(){
-  const names=['Aldric Hellbane','Mira Curseborn','Kael Voidwalker','Isolde Dawnbreak','Dex Shadowfang'];
-  const r=Math.random();let pool,wtype;
-  if(r{
   if(G.phase==='dead'||G.phase==='win'){quickPlay();return;}
   const r=canvasFS.getBoundingClientRect(),sc=CW/canvasFS.width;
   doAttack((e.clientX-r.left)*sc,(e.clientY-r.top)*sc);
@@ -1862,54 +1285,43 @@ function quickPlay(){
 /* ══════════════════════════════════════
    STEPS, 30 total
 ══════════════════════════════════════ */
-function nav(i){const T=STEPS.length;return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →Next →</button></div>`;}
+function nav(i){const T=STEPS.length;return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →</button></div>`;}
 
 const STEPS=[
 {title:'Event BeginPlay',tag:'STEP 01 · SETUP',tc:'def',
-intro:`Connect `;}
-
-const STEPS=[
-{title:'Event BeginPlay',tag:'STEP 01 · SETUP',tc:'def',
-intro:`Connect <strong>Event BeginPlayEvent BeginPlay</strong> →  → <strong>Print StringPrint String</strong>. Every Blueprint starts here, fires once when the game loads.`,
+intro:`Connect <strong>Event BeginPlay</strong> → <strong>Print String</strong>. Every Blueprint starts here, fires once when the game loads.`,
 pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:16,y:28,w:152,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Print String',sub:'Hellfire: Ready',x:200,y:28,w:162,lp:[{id:'l1',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l1'}],[]),
 boxes:[{t:'box-c',tx:'The exec wire (white arrow) controls node order. BeginPlay fires once then flows right through every connected node, the starting fuse for all three weapon systems.'}],
 onApply(){sout('✅ Engine started! Continue building all three weapon types.');}},
 
 {title:'Hero Stats, HP & Armour',tag:'STEP 02 · HERO',tc:'def',
 intro:`Connect BeginPlay → Set MaxHP → Set Armour. Type your hero's starting values.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'vset',title:'Set MaxHP',x:175,y:12,w:112,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 60-150 (e.g. 80)',val:''}},{id:'n3',type:'vset',title:'Set Armour',x:307,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Armour'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Armour 0-8 (e.g. 3)',val:''}},{id:'n4',type:'vset',title:'Set Level=1',x:445,y:12,w:93,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=30&&parseInt(v). Every Blueprint starts here, fires once when the game loads.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:16,y:28,w:152,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Print String',sub:'Hellfire: Ready',x:200,y:28,w:162,lp:[{id:'l1',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]}],[{f:'r1',t:'l1'}],[]),
-boxes:[{t:'box-c',tx:'The exec wire (white arrow) controls node order. BeginPlay fires once then flows right through every connected node, the starting fuse for all three weapon systems.'}],
-onApply(){sout('✅ Engine started! Continue building all three weapon types.');}},
-
-{title:'Hero Stats, HP & Armour',tag:'STEP 02 · HERO',tc:'def',
-intro:`Connect BeginPlay → Set MaxHP → Set Armour. Type your hero's starting values.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'vset',title:'Set MaxHP',x:175,y:12,w:112,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 60-150 (e.g. 80)',val:''}},{id:'n3',type:'vset',title:'Set Armour',x:307,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Armour'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Armour 0-8 (e.g. 3)',val:''}},{id:'n4',type:'vset',title:'Set Level=1',x:445,y:12,w:93,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=30&&parseInt(v)<=200},{id:'n3',ok:v=>parseInt(v)>=0&&parseInt(v)parseInt(v)>=0&&parseInt(v)<=15}]),
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'vset',title:'Set MaxHP',x:175,y:12,w:112,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'HP'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'HP 60-150 (e.g. 80)',val:''}},{id:'n3',type:'vset',title:'Set Armour',x:307,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Armour'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Armour 0-8 (e.g. 3)',val:''}},{id:'n4',type:'vset',title:'Set Level=1',x:445,y:12,w:93,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=30&&parseInt(v)<=200},{id:'n3',ok:v=>parseInt(v)>=0&&parseInt(v)<=15}]),
 boxes:[{t:'box-c',tx:'Armour reduces every hit, 5 armour vs 9-damage = 4 actual damage. Always minimum 1. Armour +1 on every level up, so by level 5 you absorb nearly twice as much.'}],
 onApply(v){G.p.maxHp=parseInt(v['n2'])||80;G.p.hp=G.p.maxHp;G.p.armour=parseInt(v['n3'])||3;updateHUD();sout('✅ HP='+v['n2']+' Armour='+v['n3']+'.');}},
 
 {title:'WASD Movement',tag:'STEP 03 · MOVEMENT',tc:'def',
 intro:`Connect IA_Move → Multiply Speed × Delta → Add Movement Input. W=up, S=down, A=left, D=right, simple and intuitive.`,
-pz:mkPZ([{id:'n1',type:'event',title:'IA_Move (WASD)',x:4,y:26,w:155,rp:[{id:'r1e',type:'exec',label:''},{id:'r1v',type:'vec3',label:'Axis'}]},{id:'n2',type:'math',title:'× Speed × Delta',x:180,y:8,w:130,lp:[{id:'l2a',type:'vec3',label:'Dir'},{id:'l2b',type:'float',label:'Speed'}],rp:[{id:'r2',type:'vec3',label:'Velocity'}],vf:{hint:'Speed 200-350 (e.g. 280)',val:''}},{id:'n3',type:'func',title:'Add Movement Input',x:331,y:8,w:162,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vec3',label:'World Dir'}],rp:[{id:'r3',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1v',t:'l2a'},{f:'r2',t:'l3v'}],[{id:'n2',ok:v=>parseFloat(v)>=80&&parseFloat(v)parseFloat(v)>=80&&parseFloat(v)<=500}]),
+pz:mkPZ([{id:'n1',type:'event',title:'IA_Move (WASD)',x:4,y:26,w:155,rp:[{id:'r1e',type:'exec',label:''},{id:'r1v',type:'vec3',label:'Axis'}]},{id:'n2',type:'math',title:'× Speed × Delta',x:180,y:8,w:130,lp:[{id:'l2a',type:'vec3',label:'Dir'},{id:'l2b',type:'float',label:'Speed'}],rp:[{id:'r2',type:'vec3',label:'Velocity'}],vf:{hint:'Speed 200-350 (e.g. 280)',val:''}},{id:'n3',type:'func',title:'Add Movement Input',x:331,y:8,w:162,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'vec3',label:'World Dir'}],rp:[{id:'r3',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1v',t:'l2a'},{f:'r2',t:'l3v'}],[{id:'n2',ok:v=>parseFloat(v)>=80&&parseFloat(v)<=500}]),
 boxes:[{t:'box-c',tx:'Collision: separately check X and Y movement each frame. If the new X position hits a wall, block X only, the hero slides along the wall instead of stopping dead. This makes movement feel smooth.'}],
 onApply(){G.f_move=true;G.phase='playing';G.projs=[];G.particles=[];loadRoom();updateHUD();sout('✅ Movement active! WASD to explore the dungeon.');}},
 
 // ─── GUNS ───
 {title:'Gun System, Click to Fire',tag:'STEP 04 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
 intro:`Connect On LMB → Get Cursor Direction → Spawn Projectile. Click anywhere on screen to fire toward that point.`,
-pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'gun',title:'Spawn Projectile\nAt Hero',x:337,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Direction'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Proj speed 400-1000',val:''}},{id:'n4',type:'gun',title:'Set Lifetime',x:507,y:8,w:31,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=200&&parseFloat(v)parseFloat(v)>=200&&parseFloat(v)<=1500}],'gun-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'gun',title:'Spawn Projectile\nAt Hero',x:337,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Direction'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Proj speed 400-1000',val:''}},{id:'n4',type:'gun',title:'Set Lifetime',x:507,y:8,w:31,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=200&&parseFloat(v)<=1500}],'gun-t'),
 boxes:[{t:'box-gun',tx:'Gun Pool (10): Hand Crossbow · Heavy Crossbow · Repeating Bow · Poison Dart · Hell Cannon · Elven Longbow · Triple Shot · Shadow Bolt · Iron Musket · Scatter Shot. Every run picks a random one.'}],
 onApply(){G.f_attack=true;sout('✅ Guns active! Click to fire.');}},
 
 {title:'Gun Stats, Damage & Fire Rate',tag:'STEP 05 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
 intro:`Connect BeginPlay → Set GunDamage → Set FireRate → Set Range. Type your starting crossbow stats.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'gun',title:'Set Gun Damage',x:175,y:12,w:125,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 5-30 (e.g. 8)',val:''}},{id:'n3',type:'gun',title:'Set Fire Rate',x:320,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Rate(s)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Rate 0.2-1.5 (e.g. 0.35)',val:''}},{id:'n4',type:'gun',title:'Set Range',x:460,y:12,w:78,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Range 130-320 (px)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=2&&parseInt(v)parseInt(v)>=2&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)parseFloat(v)>=0.1&&parseFloat(v)<=2},{id:'n4',ok:v=>parseInt(v)>=60&&parseInt(v)parseInt(v)>=60&&parseInt(v)<=400}],'gun-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'gun',title:'Set Gun Damage',x:175,y:12,w:125,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 5-30 (e.g. 8)',val:''}},{id:'n3',type:'gun',title:'Set Fire Rate',x:320,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Rate(s)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Rate 0.2-1.5 (e.g. 0.35)',val:''}},{id:'n4',type:'gun',title:'Set Range',x:460,y:12,w:78,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Range 130-320 (px)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=2&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=2},{id:'n4',ok:v=>parseInt(v)>=60&&parseInt(v)<=400}],'gun-t'),
 boxes:[{t:'box-gun',tx:'Fire rate is cooldown between shots. Lower = faster. Hell Cannon (28dmg, 1.6s) vs Hand Crossbow (8dmg, 0.35s). Range is how far the bolt travels before disappearing.'}],
 onApply(v){const w={...GUN_POOL[0]};w.dmg=parseInt(v['n2'])||8;w.fireRate=parseFloat(v['n3'])||.35;w.range=parseInt(v['n4'])||200;if(!G.p.weapon){G.p.weapon=w;G.p.weaponType='gun';updateHUD();}sout('✅ Gun: '+v['n2']+'dmg, '+v['n3']+'s, '+v['n4']+'px!');}},
 
 {title:'Gun Specials, Pierce & Explosive',tag:'STEP 06 · 🔫 GUN',tc:'gun',tabCls:'gun-t',
 intro:`Connect On Proj Hit → Switch on Special → Pierce (continue) or AoE Explosion. Type the blast radius.`,
-pz:mkPZ([{id:'n1',type:'event',title:'On Proj Hit Enemy',x:4,y:28,w:150,rp:[{id:'r1e',type:'exec',label:''},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:175,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'pierce'},{id:'r2b',type:'exec',label:'explosive'},{id:'r2c',type:'exec',label:'triple'}]},{id:'n3',type:'gun',title:'AoE Explosion',x:343,y:4,w:125,lp:[{id:'l3e',type:'exec',label:''},{id:'l3r',type:'float',label:'Radius'}],vf:{hint:'AoE radius (e.g. 32)',val:''}},{id:'n4',type:'gun',title:'Continue Travel',x:343,y:72,w:125,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2b',t:'l3e'},{f:'r2a',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=5&&parseFloat(v)parseFloat(v)>=5&&parseFloat(v)<=100}],'gun-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'On Proj Hit Enemy',x:4,y:28,w:150,rp:[{id:'r1e',type:'exec',label:''},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:175,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'pierce'},{id:'r2b',type:'exec',label:'explosive'},{id:'r2c',type:'exec',label:'triple'}]},{id:'n3',type:'gun',title:'AoE Explosion',x:343,y:4,w:125,lp:[{id:'l3e',type:'exec',label:''},{id:'l3r',type:'float',label:'Radius'}],vf:{hint:'AoE radius (e.g. 32)',val:''}},{id:'n4',type:'gun',title:'Continue Travel',x:343,y:72,w:125,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2b',t:'l3e'},{f:'r2a',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=5&&parseFloat(v)<=100}],'gun-t'),
 boxes:[{t:'box-gun',tx:'Pierce (Longbow, Musket): bolt continues through enemies, great in tight rooms. Explosive (Hell Cannon): AoE blast on impact. Triple Shot: 3 bolts at ±13°. Scatter: 5-bolt cone.'}],
 onApply(){sout('✅ Gun specials active!');}},
 
@@ -1922,26 +1334,19 @@ onApply(){G.f_loot=true;sout('✅ Loot drops active! Blue=gun, Amber=melee, Purp
 // ─── MELEE ───
 {title:'Melee System, Sweep Arc',tag:'STEP 08 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
 intro:`Connect On LMB → Get Cursor Angle → Sweep Arc Hit Detection → Apply Damage. The blade swings a cone in the click direction.`,
-pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Angle',x:169,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2a',type:'float',label:'Angle'}]},{id:'n3',type:'melee',title:'Sweep Arc\nDetection',x:334,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'float',label:'Angle'},{id:'l3r',type:'float',label:'Reach'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3h',type:'object',label:'Hit Actors'}],vf:{hint:'Reach 42-82 (e.g. 56)',val:''}},{id:'n4',type:'melee',title:'Apply Dmg Each',x:504,y:8,w:34,lp:[{id:'l4e',type:'exec',label:''},{id:'l4a',type:'object',label:'Actors'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2a',t:'l3a'},{f:'r3e',t:'l4e'},{f:'r3h',t:'l4a'}],[{id:'n3',ok:v=>parseInt(v)>=20&&parseInt(v) Greater',x:342,y:8,w:104,lp:[{id:'l3a',type:'float',label:'New'},{id:'l3b',type:'float',label:'Old'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:466,y:8,w:72,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'gun-t'),
-boxes:[{t:'box-gun',tx:'Blue = gun drop. Amber = melee. Purple = wand. All three share the 38% drop pool, any kill might give any weapon type. The minimap would show coloured dots for drops.'}],
-onApply(){G.f_loot=true;sout('✅ Loot drops active! Blue=gun, Amber=melee, Purple=wand. Walk over to equip.');}},
-
-// ─── MELEE ───
-{title:'Melee System, Sweep Arc',tag:'STEP 08 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
-intro:`Connect On LMB → Get Cursor Angle → Sweep Arc Hit Detection → Apply Damage. The blade swings a cone in the click direction.`,
 pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Angle',x:169,y:8,w:145,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2a',type:'float',label:'Angle'}]},{id:'n3',type:'melee',title:'Sweep Arc\nDetection',x:334,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3a',type:'float',label:'Angle'},{id:'l3r',type:'float',label:'Reach'}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3h',type:'object',label:'Hit Actors'}],vf:{hint:'Reach 42-82 (e.g. 56)',val:''}},{id:'n4',type:'melee',title:'Apply Dmg Each',x:504,y:8,w:34,lp:[{id:'l4e',type:'exec',label:''},{id:'l4a',type:'object',label:'Actors'}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2a',t:'l3a'},{f:'r3e',t:'l4e'},{f:'r3h',t:'l4a'}],[{id:'n3',ok:v=>parseInt(v)>=20&&parseInt(v)<=120}],'melee-t'),
 boxes:[{t:'box-melee',tx:'Melee Pool (12): Rusty Dagger · Short Sword · Broad Sword · War Axe · Battle Axe · Mace · War Hammer · Rapier · Halberd · Greatsword · Hell Blade · Shadowfang. Reach = arc radius. Sweep = cone width.'}],
 onApply(){G.f_attack=true;sout('✅ Melee sweep active! Click to swing.');}},
 
 {title:'Melee Stats, Damage, Speed & Sweep',tag:'STEP 09 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
 intro:`Connect BeginPlay → Set MeleeDamage → Set AttackSpeed → Set SweepAngle.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'melee',title:'Set Damage',x:175,y:12,w:115,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 6-35 (e.g. 12)',val:''}},{id:'n3',type:'melee',title:'Set AtkSpeed',x:310,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cooldown'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'0.2-0.9 (e.g. 0.4)',val:''}},{id:'n4',type:'melee',title:'Set Sweep °',x:450,y:12,w:88,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'25-120 (e.g. 70)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)parseInt(v)>=3&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)parseFloat(v)>=0.1&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=15&&parseInt(v)parseInt(v)>=15&&parseInt(v)<=130}],'melee-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'melee',title:'Set Damage',x:175,y:12,w:115,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 6-35 (e.g. 12)',val:''}},{id:'n3',type:'melee',title:'Set AtkSpeed',x:310,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cooldown'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'0.2-0.9 (e.g. 0.4)',val:''}},{id:'n4',type:'melee',title:'Set Sweep °',x:450,y:12,w:88,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'25-120 (e.g. 70)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)<=50},{id:'n3',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=15&&parseInt(v)<=130}],'melee-t'),
 boxes:[{t:'box-melee',tx:'Fast (0.2s dagger) = frantic close-range. Slow (0.8s greatsword) = powerful heavy hits. Wide sweep (90°+) clears groups. Narrow (25° rapier) requires precision but reaches further.'}],
 onApply(v){const w={...MELEE_POOL[1]};w.dmg=parseInt(v['n2'])||12;w.atkSpd=parseFloat(v['n3'])||.4;w.sweep=parseInt(v['n4'])||70;if(!G.p.weapon){G.p.weapon=w;G.p.weaponType='melee';updateHUD();}G.f_attack=true;sout('✅ Melee: '+v['n2']+'dmg, '+v['n3']+'s, '+v['n4']+'°!');}},
 
 {title:'Melee Specials',tag:'STEP 10 · ⚔ MELEE',tc:'melee',tabCls:'melee-t',
 intro:`Connect On Melee Hit → Switch on Special → Apply Effect. Stun, armour break, lifesteal, fire.`,
-pz:mkPZ([{id:'n1',type:'event',title:'On Melee Hit',x:4,y:28,w:135,rp:[{id:'r1e',type:'exec',label:''},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:159,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'stun'},{id:'r2b',type:'exec',label:'armour_break'},{id:'r2c',type:'exec',label:'lifesteal'},{id:'r2d',type:'exec',label:'fire'}]},{id:'n3',type:'melee',title:'Apply Stun',x:327,y:4,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'float',label:'Duration(s)'}],vf:{hint:'Stun secs (e.g. 1.2)',val:''}},{id:'n4',type:'melee',title:'Reduce Armour\n−3',x:327,y:76,w:118,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2a',t:'l3e'},{f:'r2b',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)parseFloat(v)>=0.3&&parseFloat(v)<=3}],'melee-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'On Melee Hit',x:4,y:28,w:135,rp:[{id:'r1e',type:'exec',label:''},{id:'r1s',type:'string',label:'Special'}]},{id:'n2',type:'func',title:'Switch on Special',x:159,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'string',label:''}],rp:[{id:'r2a',type:'exec',label:'stun'},{id:'r2b',type:'exec',label:'armour_break'},{id:'r2c',type:'exec',label:'lifesteal'},{id:'r2d',type:'exec',label:'fire'}]},{id:'n3',type:'melee',title:'Apply Stun',x:327,y:4,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'float',label:'Duration(s)'}],vf:{hint:'Stun secs (e.g. 1.2)',val:''}},{id:'n4',type:'melee',title:'Reduce Armour\n−3',x:327,y:76,w:118,lp:[{id:'l4',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1s',t:'l2s'},{f:'r2a',t:'l3e'},{f:'r2b',t:'l4'}],[{id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)<=3}],'melee-t'),
 boxes:[{t:'box-melee',tx:'Stun (Mace/Hammer): freeze enemy briefly. Armour Break (Axes): −3 to target armour. Lifesteal (Shadowfang): restore HP on hit. Fire (Hell Blade): burn DoT (3×4 ticks). Pierce (Rapier): arc extends through.'}],
 onApply(v){sout('✅ Melee specials active! Stun: '+v['n3']+'s.');}},
 
@@ -1954,20 +1359,13 @@ onApply(){sout('✅ Melee drops active! Amber orbs = melee weapons.');}},
 // ─── WANDS ───
 {title:'Wand System, Magic Orb',tag:'STEP 12 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
 intro:`Connect On LMB → Get Direction → Spawn Magic Orb with AoE Radius and Element. Wands fire slow orbs that explode with elemental effects.`,
-pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'wand',title:'Spawn Magic Orb',x:337,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Dir'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Orb speed 200-600',val:''}},{id:'n4',type:'wand',title:'Set Element\n+ AoE',x:507,y:8,w:31,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=100&&parseFloat(v) Greater',x:342,y:8,w:104,lp:[{id:'l3a',type:'float',label:'New'},{id:'l3b',type:'float',label:'Old'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:466,y:8,w:72,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'melee-t'),
-boxes:[{t:'box-melee',tx:'Rapier (8dmg, 0.18s) = 44 DPS. Greatsword (22dmg, 0.8s) = 27.5 DPS. Speed wins on raw DPS, but specials make slower weapons situationally better.'}],
-onApply(){sout('✅ Melee drops active! Amber orbs = melee weapons.');}},
-
-// ─── WANDS ───
-{title:'Wand System, Magic Orb',tag:'STEP 12 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
-intro:`Connect On LMB → Get Direction → Spawn Magic Orb with AoE Radius and Element. Wands fire slow orbs that explode with elemental effects.`,
 pz:mkPZ([{id:'n1',type:'event',title:'On LMB Pressed',x:4,y:28,w:145,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'func',title:'Get Cursor Direction',x:169,y:8,w:148,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2d',type:'vec3',label:'Dir'}]},{id:'n3',type:'wand',title:'Spawn Magic Orb',x:337,y:8,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3d',type:'vec3',label:'Dir'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Orb speed 200-600',val:''}},{id:'n4',type:'wand',title:'Set Element\n+ AoE',x:507,y:8,w:31,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r2d',t:'l3d'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=100&&parseFloat(v)<=1000}],'wand-t'),
 boxes:[{t:'box-wand',tx:'Wand Pool (10): Apprentice Wand · Fire Staff · Ice Shard · Lightning Rod · Chaos Wand · Bone Staff · Poison Orb · Holy Symbol · Void Sceptre · Storm Wand. Elements: arcane, fire, ice, lightning, chaos, necro, nature, holy, void.'}],
 onApply(){G.f_attack=true;sout('✅ Wand orbs active! Purple glowing projectile.');}},
 
 {title:'Wand Stats, Damage, Cast & AoE',tag:'STEP 13 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
 intro:`Connect BeginPlay → Set WandDamage → Set CastTime → Set AoERadius. AoE 0 = single target. AoE 50 = massive room blast.`,
-pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'wand',title:'Set Damage',x:175,y:12,w:115,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 8-28 (e.g. 12)',val:''}},{id:'n3',type:'wand',title:'Set Cast Time',x:310,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cast(s)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'0.4-1.0 (e.g. 0.5)',val:''}},{id:'n4',type:'wand',title:'Set AoE Radius',x:450,y:12,w:88,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'AoE 0-60 (e.g. 0)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)parseInt(v)>=3&&parseInt(v)<=40},{id:'n3',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)parseFloat(v)>=0.2&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=0&&parseInt(v)parseInt(v)>=0&&parseInt(v)<=80}],'wand-t'),
+pz:mkPZ([{id:'n1',type:'event',title:'Event BeginPlay',x:6,y:36,w:148,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'wand',title:'Set Damage',x:175,y:12,w:115,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Dmg'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Dmg 8-28 (e.g. 12)',val:''}},{id:'n3',type:'wand',title:'Set Cast Time',x:310,y:12,w:120,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Cast(s)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'0.4-1.0 (e.g. 0.5)',val:''}},{id:'n4',type:'wand',title:'Set AoE Radius',x:450,y:12,w:88,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'AoE 0-60 (e.g. 0)',val:''}}],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[{id:'n2',ok:v=>parseInt(v)>=3&&parseInt(v)<=40},{id:'n3',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)<=1.5},{id:'n4',ok:v=>parseInt(v)>=0&&parseInt(v)<=80}],'wand-t'),
 boxes:[{t:'box-wand',tx:'Chaos Wand (AoE 52) can clear an entire room. But secondary targets take 60% damage and the cast time is 0.8s. Pure power vs timing, the tradeoff defines the weapon.'}],
 onApply(v){const w={...WAND_POOL[0]};w.dmg=parseInt(v['n2'])||12;w.castTime=parseFloat(v['n3'])||.5;w.aoeR=parseInt(v['n4'])||0;if(!G.p.weapon){G.p.weapon=w;G.p.weaponType='wand';updateHUD();}sout('✅ Wand: '+v['n2']+'dmg, '+v['n3']+'s, AoE '+v['n4']+'px!');}},
 
@@ -1980,13 +1378,6 @@ onApply(){sout('✅ Elemental effects wired!');}},
 {title:'Wand Drops, Purple Orbs',tag:'STEP 15 · 🪄 WAND',tc:'wand',tabCls:'wand-t',
 intro:`Wands drop as PURPLE orbs. Score = dmg ÷ castTime × (1+aoeR/40). Walk over to auto-equip.`,
 pz:mkPZ([{id:'n1',type:'loot',title:'On Wand Drop\nOverlap Hero',x:4,y:28,w:152,rp:[{id:'r1e',type:'exec',label:''},{id:'r1w',type:'object',label:'Wand'}]},{id:'n2',type:'wand',title:'Get Score\n(dmg÷cast×aoe)',x:177,y:8,w:152,lp:[{id:'l2w',type:'object',label:'Wand'}],rp:[{id:'r2n',type:'float',label:'New'},{id:'r2o',type:'float',label:'Old'}]},{id:'n3',type:'math',title:'> Greater',x:349,y:8,w:104,lp:[{id:'l3a',type:'float',label:'New'},{id:'l3b',type:'float',label:'Old'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:473,y:8,w:65,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'wand-t'),
-boxes:[{t:'box-wand',tx:'Any kill can drop any weapon type. Start with a crossbow, find a greatsword by room 3, switch to a Chaos Wand in room 6. Each weapon completely changes how you play.'}],
-onApply(){sout('✅ Wand drops active! Purple orbs = wands.');}},
-
-// ─── DUNGEON SYSTEMS ───
-{title:'Enemy Spawn, Room Population',tag:'STEP 16 · ENEMIES',tc:'def',
-intro:`Connect On Room Load → For Loop → Spawn Enemies. Enemies spawn in the right half of each room so you always have a moment to orient.`,
-pz:mkPZ([{id:'n1',type:'custom',title:'On Room Loaded',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''}]},{id:'n2',type:'func',title:'For Loop\n0→Count',x:172,y:8,w:128,lp:[{id:'l2e',type:'exec',label:''},{id:'l2c',type:'int',label:'Count'}],rp:[{id:'r2e',type:'exec',label:'Loop Body'}],vf:{hint:'Base count (e.g. 5)',val:''}},{id:'n3',type:'func',title:'Get Random\nSpawn Point',x:320,y:8,w:148,lp:[{id:'l3e',type:'exec',label:''}],rp:[{id:'r3e',type:'exec',label:''},{id:'r3p',type:'vec3',label:'Pos'}]},{id:'n4',type:'func',title:'Spawn Enemy\nAt Location',x:488,y:8,w:50,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'vec3',label:'Pos'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l3e'},{f:'r3e',t:'l4e'},{f:'r3p',t:'l4p'}],[{id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v) Greater',x:349,y:8,w:104,lp:[{id:'l3a',type:'float',label:'New'},{id:'l3b',type:'float',label:'Old'}],rp:[{id:'r3',type:'bool',label:'Better?'}]},{id:'n4',type:'branch',title:'Branch',x:473,y:8,w:65,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Equip'},{id:'r4f',type:'exec',label:'Skip'}]}],[{f:'r1e',t:'l4e'},{f:'r2n',t:'l3a'},{f:'r2o',t:'l3b'},{f:'r3',t:'l4c'}],[],'wand-t'),
 boxes:[{t:'box-wand',tx:'Any kill can drop any weapon type. Start with a crossbow, find a greatsword by room 3, switch to a Chaos Wand in room 6. Each weapon completely changes how you play.'}],
 onApply(){sout('✅ Wand drops active! Purple orbs = wands.');}},
 
@@ -2029,12 +1420,6 @@ onApply(){sout('✅ XP active! Watch the gold bar at the bottom.');}},
 
 {title:'Health Potion (H Key)',tag:'STEP 22 · SURVIVAL',tc:'def',
 intro:`Connect H key → Branch potions > 0 → Heal % MaxHP. Start with 3 potions. Type heal percentage.`,
-pz:mkPZ([{id:'n1',type:'event',title:'IA_Potion (H)',x:4,y:28,w:135,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'math',title:'Potions > 0',x:159,y:10,w:110,lp:[{id:'l2a',type:'int',label:'Potions'},{id:'l2b',type:'int',label:'0'}],rp:[{id:'r2',type:'bool',label:''}]},{id:'n3',type:'branch',title:'Branch',x:289,y:10,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:''}],rp:[{id:'r3t',type:'exec',label:'Drink'},{id:'r3f',type:'exec',label:'Empty'}]},{id:'n4',type:'func',title:'Heal % MaxHP',x:409,y:10,w:129,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'float',label:'Percent'}],vf:{hint:'Heal % 0.3-0.6 (e.g. 0.4)',val:''}}],[{f:'r1',t:'l3e'},{f:'r2',t:'l3c'},{f:'r3t',t:'l4e'}],[{id:'n4',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)= Threshold',x:286,y:10,w:118,lp:[{id:'l3a',type:'int',label:'XP'},{id:'l3b',type:'int',label:'Thresh'}],rp:[{id:'r3',type:'bool',label:'LvlUp?'}]},{id:'n4',type:'branch',title:'Branch',x:424,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'Lvl Up!'},{id:'r4f',type:'exec',label:''}]}],[{f:'r1e',t:'l2e'},{f:'r1x',t:'l2b'},{f:'r2e',t:'l4e'},{f:'r2x',t:'l3a'},{f:'r3',t:'l4c'}],[]),
-boxes:[{t:'box-c',tx:'XP bar fills at the bottom of the screen. Level up = gold particle burst. Fallen 12xp, Stone Demon 75xp, bosses 400-800xp. First level at 100xp, a few clears.'}],
-onApply(){sout('✅ XP active! Watch the gold bar at the bottom.');}},
-
-{title:'Health Potion (H Key)',tag:'STEP 22 · SURVIVAL',tc:'def',
-intro:`Connect H key → Branch potions > 0 → Heal % MaxHP. Start with 3 potions. Type heal percentage.`,
 pz:mkPZ([{id:'n1',type:'event',title:'IA_Potion (H)',x:4,y:28,w:135,rp:[{id:'r1',type:'exec',label:''}]},{id:'n2',type:'math',title:'Potions > 0',x:159,y:10,w:110,lp:[{id:'l2a',type:'int',label:'Potions'},{id:'l2b',type:'int',label:'0'}],rp:[{id:'r2',type:'bool',label:''}]},{id:'n3',type:'branch',title:'Branch',x:289,y:10,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:''}],rp:[{id:'r3t',type:'exec',label:'Drink'},{id:'r3f',type:'exec',label:'Empty'}]},{id:'n4',type:'func',title:'Heal % MaxHP',x:409,y:10,w:129,lp:[{id:'l4e',type:'exec',label:''},{id:'l4p',type:'float',label:'Percent'}],vf:{hint:'Heal % 0.3-0.6 (e.g. 0.4)',val:''}}],[{f:'r1',t:'l3e'},{f:'r2',t:'l3c'},{f:'r3t',t:'l4e'}],[{id:'n4',ok:v=>parseFloat(v)>=0.1&&parseFloat(v)<=0.9}]),
 boxes:[{t:'box-t',tx:'Potion timing is the biggest skill expression in ARPGs. Too early = wasted. Too late = dead. Three starting potions plus drops creates constant resource tension.'}],
 onApply(v){sout('✅ H key: potion restores '+Math.round(parseFloat(v['n4'])*100)+'% HP.');}},
@@ -2053,7 +1438,7 @@ onApply(){sout('✅ Boss rooms active! Something enormous waits every 5 floors.'
 
 {title:'Camera Shake + Blood FX',tag:'STEP 25 · POLISH',tc:'def',
 intro:`Connect On Damage Applied → Scale Shake → Play Camera Shake. Every hit should feel visceral.`,
-pz:mkPZ([{id:'n1',type:'custom',title:'On Damage Applied',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'}]},{id:'n2',type:'math',title:'Clamp\nDmg/8→0.1-2',x:172,y:10,w:122,lp:[{id:'l2v',type:'float',label:'Dmg/8'}],rp:[{id:'r2',type:'float',label:'Scale'}]},{id:'n3',type:'func',title:'Play Camera\nShake',x:314,y:10,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3s',type:'float',label:'Scale'},{id:'l3d',type:'float',label:'Duration'}],vf:{hint:'Duration (e.g. 0.12)',val:''}},{id:'n4',type:'func',title:'Spawn Blood\nParticles',x:484,y:10,w:54,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1d',t:'l2v'},{f:'r2',t:'l3s'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=0.05&&parseFloat(v)parseFloat(v)>=0.05&&parseFloat(v)<=0.5}]),
+pz:mkPZ([{id:'n1',type:'custom',title:'On Damage Applied',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'}]},{id:'n2',type:'math',title:'Clamp\nDmg/8→0.1-2',x:172,y:10,w:122,lp:[{id:'l2v',type:'float',label:'Dmg/8'}],rp:[{id:'r2',type:'float',label:'Scale'}]},{id:'n3',type:'func',title:'Play Camera\nShake',x:314,y:10,w:150,lp:[{id:'l3e',type:'exec',label:''},{id:'l3s',type:'float',label:'Scale'},{id:'l3d',type:'float',label:'Duration'}],vf:{hint:'Duration (e.g. 0.12)',val:''}},{id:'n4',type:'func',title:'Spawn Blood\nParticles',x:484,y:10,w:54,lp:[{id:'l4e',type:'exec',label:''}]}],[{f:'r1e',t:'l3e'},{f:'r1d',t:'l2v'},{f:'r2',t:'l3s'},{f:'r3',t:'l4e'}],[{id:'n3',ok:v=>parseFloat(v)>=0.05&&parseFloat(v)<=0.5}]),
 boxes:[{t:'box-t',tx:'ARPG impact formula: particle burst + camera shake + damage number = satisfying kill. All three must fire every hit, regardless of weapon type.'}],
 onApply(v){shake(5,8);sout('✅ Camera shake active! '+v['n3']+'s duration.');}},
 
@@ -2065,7 +1450,7 @@ onApply(){sout('✅ Damage numbers wired!');}},
 
 {title:'Critical Hits',tag:'STEP 27 · COMBAT',tc:'def',
 intro:`On Calculate Damage → Random Float → Less Than CritChance → Branch → Multiply × 2. Type crit chance (0-1).`,
-pz:mkPZ([{id:'n1',type:'custom',title:'On Calc Damage',x:4,y:28,w:142,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'BaseDmg'}]},{id:'n2',type:'func',title:'Random Float\n0-1',x:166,y:10,w:118,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2f',type:'float',label:'Roll'}]},{id:'n3',type:'math',title:'< CritChance',x:304,y:10,w:118,lp:[{id:'l3a',type:'float',label:'Roll'},{id:'l3b',type:'float',label:'Chance'}],rp:[{id:'r3',type:'bool',label:'Crit?'}],vf:{hint:'Crit chance 0-1 (e.g. 0.15)',val:''}},{id:'n4',type:'branch',title:'Branch',x:442,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'CRIT!'},{id:'r4f',type:'exec',label:'Normal'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2f',t:'l3a'},{f:'r3',t:'l4c'}],[{id:'n3',ok:v=>parseFloat(v)>=0&&parseFloat(v)parseFloat(v)>=0&&parseFloat(v)<=1}]),
+pz:mkPZ([{id:'n1',type:'custom',title:'On Calc Damage',x:4,y:28,w:142,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'BaseDmg'}]},{id:'n2',type:'func',title:'Random Float\n0-1',x:166,y:10,w:118,lp:[{id:'l2e',type:'exec',label:''}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2f',type:'float',label:'Roll'}]},{id:'n3',type:'math',title:'< CritChance',x:304,y:10,w:118,lp:[{id:'l3a',type:'float',label:'Roll'},{id:'l3b',type:'float',label:'Chance'}],rp:[{id:'r3',type:'bool',label:'Crit?'}],vf:{hint:'Crit chance 0-1 (e.g. 0.15)',val:''}},{id:'n4',type:'branch',title:'Branch',x:442,y:10,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:''}],rp:[{id:'r4t',type:'exec',label:'CRIT!'},{id:'r4f',type:'exec',label:'Normal'}]}],[{f:'r1e',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2f',t:'l3a'},{f:'r3',t:'l4c'}],[{id:'n3',ok:v=>parseFloat(v)>=0&&parseFloat(v)<=1}]),
 boxes:[{t:'box-c',tx:'15% crit × 2× = 30% average damage bonus. The big yellow number on a crit, even expected, is satisfying every single time.'}],
 onApply(v){sout('✅ Crits active! '+Math.round(parseFloat(v['n3'])*100)+'% chance.');}},
 
@@ -2082,24 +1467,7 @@ boxes:[{t:'box-c',tx:'Room variety: Entrance Hall (open), Pillared Chamber (4 co
 onApply(){sout('✅ Room variety wired!');}},
 
 {title:'Descend Into Hell ⚔',tag:'STEP 30 · LAUNCH',tc:'def',
-intro:`Every system is live. WASD movement, three weapon types with loot drops, enemies, XP, bosses. Press <strong>Begin DescentBegin Descent</strong> or  or <strong>Quick DescentQuick Descent</strong> for an instant random run.`,
-pz:null,launchBtn:true,
-boxes:[
-  {t:'box-gun',tx:'🔫 Guns: WASD + click to fire bolts. 10 types, pierce, explosive, triple shot, scatter. Range limits shots.'},
-  {t:'box-melee',tx:'⚔ Melee: click to sweep an arc. Wide sweep clears groups. Narrow + long reach = precision. Stun, armour break, lifesteal, fire.'},
-  {t:'box-wand',tx:'🪄 Wands: magic orbs with AoE and elements. Fire burns, ice freezes, lightning chains, void drains, holy heals.'},
-  {t:'box-r',tx:'Every run: random starting weapon from any pool, random enemy positions, random loot drops. Clear the room → find the ▼ stairs → descend to the next floor.'},
-],
-onApply(){quickPlay();}},
-];
-
-/* ══════════════════════════════════════
-   STEP RENDERER + TABS
-══════════════════════════════════════ */
-let curStep=0;const bpInsts={};
-
-function go(i){
-  if(i for an instant random run.`,
+intro:`Every system is live. WASD movement, three weapon types with loot drops, enemies, XP, bosses. Press <strong>Begin Descent</strong> or <strong>Quick Descent</strong> for an instant random run.`,
 pz:null,launchBtn:true,
 boxes:[
   {t:'box-gun',tx:'🔫 Guns: WASD + click to fire bolts. 10 types, pierce, explosive, triple shot, scatter. Range limits shots.'},
@@ -2125,26 +1493,12 @@ function go(i){
 function renderStep(i){
   const s=STEPS[i];
   const body=document.getElementById('stepBody');
-  let html=`=STEPS.length)return;
-  curStep=i;renderStep(i);
-  document.querySelectorAll('.tb').forEach((el,j)=>el.classList.toggle('active',j===i));
-  document.getElementById('stepBody').scrollTop=0;
-}
-
-function renderStep(i){
-  const s=STEPS[i];
-  const body=document.getElementById('stepBody');
-  let html=`<div class="step-tag ${s.tc||'def'}">${s.tag}${s.tag}</div>`;
-  html+=``;
-  html+=`<div class="step-title">${s.title}${s.title}</div>`;
-  html+=``;
-  html+=`<p class="step-intro">${s.intro}${s.intro}</p>`;
+  let html=`<div class="step-tag ${s.tc||'def'}">${s.tag}</div>`;
+  html+=`<div class="step-title">${s.title}</div>`;
+  html+=`<p class="step-intro">${s.intro}</p>`;
   if(s.pz)html+=s.pz.html;
-  (s.boxes||[]).forEach(b=>{html+=``;
-  if(s.pz)html+=s.pz.html;
-  (s.boxes||[]).forEach(b=>{html+=`<div class="box ${b.t}">${b.tx}${b.tx}</div>`;});
-  if(s.launchBtn)html+=``;});
-  if(s.launchBtn)html+=`<button class="run-btn" onclick="quickPlay()">⚔ BEGIN DESCENT⚔ BEGIN DESCENT</button>`;
+  (s.boxes||[]).forEach(b=>{html+=`<div class="box ${b.t}">${b.tx}</div>`;});
+  if(s.launchBtn)html+=`<button class="run-btn" onclick="quickPlay()">⚔ BEGIN DESCENT</button>`;
   html+=nav(i);
   body.innerHTML=html;
   if(s.pz){
@@ -2158,26 +1512,7 @@ function renderStep(i){
 
 function buildTabs(){
   const tabs=document.getElementById('stepTabs');
-  tabs.innerHTML=STEPS.map((s,i)=>``;
-  html+=nav(i);
-  body.innerHTML=html;
-  if(s.pz){
-    const inst=s.pz.init(vals=>{
-      document.querySelectorAll('.tb')[i].classList.add('done');window.bqStepDone&&window.bqStepDone(i);
-      s.onApply&&s.onApply(vals);
-    });
-    if(inst)bpInsts[i]=inst;
-  }
-}
-
-function buildTabs(){
-  const tabs=document.getElementById('stepTabs');
-  tabs.innerHTML=STEPS.map((s,i)=>`<button class="tb${s.tabCls?' '+s.tabCls:''}${i===0?' active':''}" onclick="go(${i})">${i+1}${i+1}</button>`).join('');
-}
-
-buildTabs();go(0);
-resizeGame();requestAnimationFrame(loop);
-`).join('');
+  tabs.innerHTML=STEPS.map((s,i)=>`<button class="tb${s.tabCls?' '+s.tabCls:''}${i===0?' active':''}" onclick="go(${i})">${i+1}</button>`).join('');
 }
 
 buildTabs();go(0);

@@ -609,7 +609,7 @@
         [data-theme="dark"] .contact-row         { background: var(--card-bg) !important; box-shadow: var(--card-shadow) !important; }
         [data-theme="dark"] .contact-row h3      { color: var(--text-primary) !important; }
         [data-theme="dark"] .contact-row p       { color: var(--text-secondary) !important; }
-        [data-theme="dark"] .section-tag         { border-color: var(--border) !important; color: var(--text-muted) !important; }
+        [data-theme="dark"] .section-tag         { border-color: var(--border) !important; color: #fff !important; }
         [data-theme="dark"] .section-header h2   { color: var(--text-primary) !important; }
         [data-theme="dark"] .section-header p    { color: var(--text-secondary) !important; }
         [data-theme="dark"] .merch-section       { background: var(--bg-secondary) !important; }
@@ -1381,7 +1381,7 @@
         [data-theme="dark"] .contact-row         { background: var(--card-bg) !important; box-shadow: var(--card-shadow) !important; }
         [data-theme="dark"] .contact-row h3      { color: var(--text-primary) !important; }
         [data-theme="dark"] .contact-row p       { color: var(--text-secondary) !important; }
-        [data-theme="dark"] .section-tag         { border-color: var(--border) !important; color: var(--text-muted) !important; }
+        [data-theme="dark"] .section-tag         { border-color: var(--border) !important; color: #fff !important; }
         [data-theme="dark"] .section-header h2   { color: var(--text-primary) !important; }
         [data-theme="dark"] .section-header p    { color: var(--text-secondary) !important; }
         [data-theme="dark"] .merch-section       { background: var(--bg-secondary) !important; }
@@ -2363,6 +2363,20 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -2384,28 +2398,6 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
 </div>
 <script>
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
-
 (function(){
     /* Restore saved theme before first paint of the toggle icon */
     if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -2460,26 +2452,10 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
-
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
 </script>
 <!-- /BUILD:nav-content -->
 
-<section id="main-content" class="ws-hero">
+<section id="main-content" role="main" class="ws-hero">
     <div class="ws-hero-deco" aria-hidden="true">
         <span style="--x:6%;--y:16%;--s:2.6rem;--d:9s;--dl:0s;--r1:14deg">🔨</span>
         <span style="--x:13%;--y:74%;--s:2.2rem;--d:11s;--dl:1.2s;--r1:-10deg">⚙️</span>
@@ -4317,6 +4293,7 @@ Google listing: title, description, difficulty, and "Free" price.
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -4336,23 +4313,8 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 

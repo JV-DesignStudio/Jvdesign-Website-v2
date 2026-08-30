@@ -106,6 +106,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
 .how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffb3d9; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Dough Dash","url":"https://jvdesignstudio.co.uk/games/dough-dash.html","description":"Match 3+ tiles in rows or columns to clear the board. Mind the move limit and chain combos!","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/DoughDashCover.webp"}</script>
 </head>
 <body>
 <div class="wrapper" id="wrapper">
@@ -180,36 +181,6 @@ function randomTileAvoiding(r, c) {
 
 function initGrid() {
   grid = [];
-  for (let r = 0; r 
-const gameSystem = new GameSystem('dough-dash', 'Dough Dash', 'squirt');
-const audioEffects = new AudioEffects(0.6);
-if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
-
-const TILES = ['🍪', '🧁', '🥐', '🍰', '🍩'];
-const COLS = 5, ROWS = 8;
-const MOVES_LIMIT = 30;
-
-let grid = [];
-let state = 'menu';
-let score = 0, moves = 0, best = 0;
-let selected = null;
-let busy = false;   // true while swaps/cascades animate
-let startTime = 0;
-
-function randomTileAvoiding(r, c) {
-  // avoid spawning a ready-made match when filling the board
-  let t;
-  do {
-    t = TILES[Math.floor(Math.random() * TILES.length)];
-  } while (
-    (c >= 2 && grid[r][c-1] === t && grid[r][c-2] === t) ||
-    (r >= 2 && grid[r-1] && grid[r-2] && grid[r-1][c] === t && grid[r-2][c] === t)
-  );
-  return t;
-}
-
-function initGrid() {
-  grid = [];
   for (let r = 0; r < ROWS; r++) {
     grid[r] = [];
     for (let c = 0; c < COLS; c++) {
@@ -231,18 +202,6 @@ function renderBoard() {
       btn.className = 'tile' + (selected && selected.r === r && selected.c === c ? ' selected' : '');
       btn.textContent = grid[r][c] || '';
       btn.onclick = () => selectTile(r, c);
-      board.appendChild(btn);
-    }
-  }
-  updateHud();
-}
-
-function updateHud() {
-  document.getElementById('scoreHud').textContent = score;
-  const left = Math.max(0, MOVES_LIMIT - moves);
-  const movesEl = document.getElementById('movesHud');
-  movesEl.textContent = left;
-  movesEl.parentElement.classList.toggle('low', left  selectTile(r, c);
       board.appendChild(btn);
     }
   }
@@ -307,45 +266,6 @@ function scheduleHint() {
   }, 7000);
 }
 function findHintPair() {
-  for (let r = 0; r  div.remove(), 900);
-}
-
-/* ── low-moves drama ── */
-let lastMovesLeft = 999;
-function movesDrama(left) {
-  if (left === 3 && lastMovesLeft > 3) { floatText('3 MOVES LEFT!', true); audioEffects.playTap(300); }
-  if (left === 1 && lastMovesLeft > 1) { floatText('LAST MOVE!', true); audioEffects.playTap(220); ScreenShake.shake(document.getElementById('board'), 5, 200); }
-  lastMovesLeft = left;
-}
-
-/* ── idle hint: glow a valid swap after 7s ── */
-let hintTimer = null, hintPair = null;
-function clearHint() {
-  if (hintTimer) { clearTimeout(hintTimer); hintTimer = null; }
-  if (hintPair) {
-    const boardEl = document.getElementById('board');
-    hintPair.forEach(pt => {
-      const el = boardEl.children[pt.r * COLS + pt.c];
-      if (el) el.classList.remove('hint');
-    });
-    hintPair = null;
-  }
-}
-function scheduleHint() {
-  clearHint();
-  hintTimer = setTimeout(() => {
-    if (state !== 'playing' || busy) return;
-    const pair = findHintPair();
-    if (!pair) return;
-    hintPair = pair;
-    const boardEl = document.getElementById('board');
-    pair.forEach(pt => {
-      const el = boardEl.children[pt.r * COLS + pt.c];
-      if (el) el.classList.add('hint');
-    });
-  }, 7000);
-}
-function findHintPair() {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       if (c < COLS - 1) {
@@ -354,79 +274,9 @@ function findHintPair() {
         [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
         if (found) return [{ r, c }, { r, c: c + 1 }];
       }
-      if (r  0;
-        [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
-        if (found) return [{ r, c }, { r, c: c + 1 }];
-      }
       if (r < ROWS - 1) {
         [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
         const found = findMatches().size > 0;
-        [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
-        if (found) return [{ r, c }, { r: r + 1, c }];
-      }
-    }
-  }
-  return null;
-}
-
-function selectTile(r, c) {
-  clearHint(); scheduleHint();
-  if (state !== 'playing' || busy || !grid[r][c]) return;
-  if (selected && selected.r === r && selected.c === c) {
-    selected = null;
-    renderBoard();
-    return;
-  }
-  if (!selected) {
-    selected = { r, c };
-    audioEffects.playTap(500);
-    renderBoard();
-    return;
-  }
-  const s = selected;
-  const adjacent = (Math.abs(s.r - r) === 1 && s.c === c) || (Math.abs(s.c - c) === 1 && s.r === r);
-  if (!adjacent) {
-    selected = { r, c };
-    audioEffects.playTap(500);
-    renderBoard();
-    return;
-  }
-  selected = null;
-  doSwap(s, { r, c });
-}
-
-function doSwap(a, b) {
-  busy = true;
-  [grid[a.r][a.c], grid[b.r][b.c]] = [grid[b.r][b.c], grid[a.r][a.c]];
-  renderBoard();
-  // swap pulse on both tiles so the exchange reads as a motion, not a teleport
-  const board0 = document.getElementById('board');
-  [a, b].forEach(pt => {
-    const el = board0.children[pt.r * COLS + pt.c];
-    if (el) { el.classList.add('swapping'); setTimeout(() => el.classList.remove('swapping'), 170); }
-  });
-  setTimeout(() => {
-    if (resolveMatches(1)) {
-      moves++;
-      updateHud();
-    } else {
-      // no match: bounce the swap back, move is not spent
-      [grid[a.r][a.c], grid[b.r][b.c]] = [grid[b.r][b.c], grid[a.r][a.c]];
-      audioEffects.playError();
-      renderBoard();
-      const board = document.getElementById('board');
-      [a, b].forEach(p => {
-        const btn = board.children[p.r * COLS + p.c];
-        if (btn) btn.classList.add('bad');
-      });
-      setTimeout(() => { busy = false; renderBoard(); }, 350);
-    }
-  }, 170);
-}
-
-function findMatches() {
-  const toRemove = new Set();
-  for (let r = 0; r  0;
         [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
         if (found) return [{ r, c }, { r: r + 1, c }];
       }
@@ -567,66 +417,11 @@ function resolveMatches(chain) {
 }
 
 function hasAnyMove() {
-  for (let r = 0; r = 4) pts += (size - 3) * 20;
-  score += pts;
-  // float the points right where the match happened
-  if (chain === 1) {
-    let cx = 0, cy = 0;
-    toRemove.forEach(k => { const [r, c] = k.split(',').map(Number); cx += c; cy += r; });
-    cx /= size; cy /= size;
-    const boardEl = document.getElementById('board');
-    const br = boardEl.getBoundingClientRect();
-    floatTextAt(br.left + (cx + 0.5) * br.width / COLS, br.top + (cy + 0.5) * br.height / ROWS, '+' + pts);
-  }
-
-  const board = document.getElementById('board');
-  toRemove.forEach(k => {
-    const [r, c] = k.split(',').map(Number);
-    const btn = board.children[r * COLS + c];
-    if (btn) {
-      btn.classList.add('matched');
-      const rect = btn.getBoundingClientRect();
-      ParticleSystem.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, '✨', 3);
-    }
-  });
-
-  if (chain >= 2) {
-    floatText('CHAIN ×' + chain + '  +' + pts, chain >= 3);
-    audioEffects.playCombo(chain);
-    if (chain >= 3) ScreenShake.shake(board, 6, 200);
-  } else {
-    audioEffects.playSuccess(600 + size * 40);
-    if (size >= 4) floatText('SWEET! +' + pts, true);
-  }
-  updateHud();
-
-  setTimeout(() => {
-    toRemove.forEach(k => {
-      const [r, c] = k.split(',').map(Number);
-      grid[r][c] = null;
-    });
-    cascade();
-    renderBoard();
-    if (!resolveMatches(chain + 1)) {
-      busy = false;
-      if (moves >= MOVES_LIMIT) endGame();
-      else reshuffleIfStuck();
-      scheduleHint();
-    }
-  }, 320);
-  return true;
-}
-
-function hasAnyMove() {
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       if (c < COLS - 1) {
         [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
         const found = findMatches().size > 0;
-        [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
-        if (found) return true;
-      }
-      if (r  0;
         [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
         if (found) return true;
       }
@@ -651,29 +446,8 @@ function reshuffleIfStuck() {
   let tries = 0, ok = false;
   do {
     const flat = [];
-    for (let r = 0; r  0;
-        [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
-        if (found) return true;
-      }
-    }
-  }
-  return false;
-}
-
-// Deadlock safety net: cascades/refills can settle into a board with no
-// valid swap left. Reshuffle in place until a clean, playable layout
-// turns up, rather than softlocking the session (same pattern as
-// cozy-cafe-match-game.html's autoReshuffleIfStuck).
-function reshuffleIfStuck() {
-  if (hasAnyMove()) return;
-  floatText('😅 No moves, shuffling!');
-  let tries = 0, ok = false;
-  do {
-    const flat = [];
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) flat.push(grid[r][c]);
     for (let i = flat.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [flat[i], flat[j]] = [flat[j], flat[i]]; }
-    let k = 0;
-    for (let r = 0; r  0; i--) { const j = Math.floor(Math.random() * (i + 1)); [flat[i], flat[j]] = [flat[j], flat[i]]; }
     let k = 0;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = flat[k++];
     tries++;
@@ -686,12 +460,6 @@ function cascade() {
   for (let c = 0; c < COLS; c++) {
     let write = ROWS - 1;
     for (let r = ROWS - 1; r >= 0; r--) {
-      if (grid[r][c]) {
-        if (r !== write) grid[write][c] = grid[r][c];
-        write--;
-      }
-    }
-    for (let r = 0; r = 0; r--) {
       if (grid[r][c]) {
         if (r !== write) grid[write][c] = grid[r][c];
         write--;
@@ -739,28 +507,7 @@ function endGame() {
 best = gameSystem.state.highScore || 0;
 document.getElementById('bestStart').textContent = best;
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
-= 200) gameSystem.unlockAchievement('matchMaster');
-  gameSystem.recordGamePlay(performance.now() - startTime);
-  gameSystem.saveState();
-
-  best = Math.max(best, score);
-  if (score >= 200) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 16);
-  document.getElementById('endTitle').textContent = score >= 200 ? '🎉 Excellent!' : 'Game Over';
-  document.getElementById('endSub').textContent = score >= 200 ? 'Master matcher!' : moves >= MOVES_LIMIT ? 'Out of moves!' : 'Nice score!';
-  document.getElementById('finalScore').textContent = score.toLocaleString();
-  GameUI.countUp(document.getElementById('finalScore'), score);
-  document.getElementById('finalBest').textContent = best;
-  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
-    [100, '🥉', 'Bronze Crumb'],
-    [250, '🥈', 'Silver Icing'],
-    [500, '🥇', 'Gold Crust'],
-  ]);
-  document.getElementById('endModal').classList.add('show');
-}
-
-best = gameSystem.state.highScore || 0;
-document.getElementById('bestStart').textContent = best;
-document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
+<script src="../cookie-consent.js"></script>
 </body>
 </html>

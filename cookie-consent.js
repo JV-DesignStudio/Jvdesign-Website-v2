@@ -1,7 +1,21 @@
 (function(){
   var CONSENT_KEY = 'jvds-cookie-consent';
-  var saved = localStorage.getItem(CONSENT_KEY);
 
+  /* UK GDPR requires withdrawing consent to be as easy as giving it. Before this,
+     the choice was stored once and the banner never returned, with no control
+     anywhere to change it. Any page can now offer a "Cookie settings" link:
+       <a href="#" onclick="JVDSCookies.reopen();return false">Cookie settings</a> */
+  window.JVDSCookies = {
+    status: function(){ return localStorage.getItem(CONSENT_KEY) || 'unset'; },
+    reopen: function(){
+      localStorage.removeItem(CONSENT_KEY);
+      if(typeof gtag === 'function'){ gtag('consent','update',{analytics_storage:'denied'}); }
+      if(document.getElementById('cookie-banner')) return;
+      location.reload();
+    }
+  };
+
+  var saved = localStorage.getItem(CONSENT_KEY);
   if(saved === 'accepted'){ grant(); return; }
   if(saved === 'declined'){ return; }
 

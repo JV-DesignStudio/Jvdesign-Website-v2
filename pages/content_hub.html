@@ -466,6 +466,20 @@
 <!-- ══ HEADER ══════════════════════════════════ -->
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -508,28 +522,6 @@
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -548,22 +540,6 @@
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -1735,6 +1711,7 @@
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -1754,137 +1731,12 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
 <script>
-const cards    = Array.from(document.querySelectorAll('.card'));
-const sections = Array.from(document.querySelectorAll('[data-sec]'));
-const grids    = { games:'grid-games', books:'grid-books', workshop:'grid-workshop', tools:'grid-tools', freebies:'grid-freebies', learn:'grid-learn' };
-
-let activeCat = 'all';
-let activeSub = 'all';
-
-function countIn(cat) {
-  return cards.filter(c => cat === 'all' || c.dataset.cat === cat).length;
-}
-
-function updateCounts() {
-  ['all','games','books','workshop','tools','freebies','learn'].forEach(cat => {
-    const el = document.getElementById('cnt-' + cat);
-    if (el) el.textContent = countIn(cat);
-  });
-}
-
-function filterCards() {
-  const query = document.getElementById('searchInput').value.toLowerCase().trim();
-  let visible = 0;
-
-  cards.forEach(card => {
-    const cat   = card.dataset.cat;
-    const sub   = (card.dataset.sub || '').toLowerCase();
-    const title = (card.dataset.title || '').toLowerCase();
-    const desc  = (card.querySelector('.card-desc')?.textContent || '').toLowerCase();
-    const tags  = Array.from(card.querySelectorAll('.card-tags span')).map(s => s.textContent).join(' ').toLowerCase();
-
-    const catOk = activeCat === 'all' || cat === activeCat;
-    const subOk = activeSub === 'all' || sub.includes(activeSub);
-    const qOk   = !query || title.includes(query) || desc.includes(query) || tags.includes(query) || sub.includes(query);
-
-    const show = catOk && subOk && qOk;
-    card.style.display = show ? '' : 'none';
-    if (show) visible++;
-  });
-
-  // show/hide section headers
-  sections.forEach(sec => {
-    const secCat = sec.dataset.sec;
-    const gridEl = document.getElementById(grids[secCat]) || document.getElementById('grid-' + secCat);
-    const anyVisible = cards.some(c => c.dataset.cat === secCat && c.style.display !== 'none');
-    const show = (activeCat === 'all' || activeCat === secCat) && anyVisible;
-    sec.style.display = show ? 'flex' : 'none';
-    if (gridEl) gridEl.style.display = show ? 'grid' : 'none';
-  });
-
-  // update per-section counts
-  Object.entries(grids).forEach(([cat, gridId]) => {
-    const el = document.getElementById('sec-cnt-' + cat);
-    if (!el) return;
-    const cnt = cards.filter(c => c.dataset.cat === cat && c.style.display !== 'none').length;
-    const total = cards.filter(c => c.dataset.cat === cat).length;
-    el.textContent = (query || activeSub !== 'all') ? cnt + ' of ' + total : total;
-  });
-
-  document.getElementById('resultCount').textContent = 'Showing ' + visible + ' item' + (visible !== 1 ? 's' : '');
-
-  const empty = document.getElementById('emptyState');
-  const qEl   = document.getElementById('emptyQuery');
-  empty.style.display = visible === 0 ? 'block' : 'none';
-  if (qEl) qEl.textContent = query;
-}
-
-// category tabs
-document.querySelectorAll('.ftab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeCat = btn.dataset.cat;
-    activeSub = 'all';
-    const wf = document.getElementById('workshopFilter');
-    wf.style.display = activeCat === 'workshop' ? 'flex' : 'none';
-    document.querySelectorAll('.stag').forEach(b => b.classList.remove('active'));
-    const allStag = document.querySelector('.stag[data-sub="all"]');
-    if (allStag) allStag.classList.add('active');
-    filterCards();
-  });
-});
-
-// workshop sub-filter
-document.querySelectorAll('.stag').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.stag').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeSub = btn.dataset.sub;
-    filterCards();
-  });
-});
-
-// search
-document.getElementById('searchInput').addEventListener('input', filterCards);
-
-function clearSearch() {
-  document.getElementById('searchInput').value = '';
-  filterCards();
-}
-
-// sticky header shadow
-window.addEventListener('scroll', () => {
-  document.getElementById('siteHeader').classList.toggle('scrolled', scrollY > 10);
-}, { passive: true });
-
-
-
-// init
-updateCounts();
-filterCards();
-
 const cards    = Array.from(document.querySelectorAll('.card'));
 const sections = Array.from(document.querySelectorAll('[data-sec]'));
 const grids    = { games:'grid-games', books:'grid-books', workshop:'grid-workshop', tools:'grid-tools', freebies:'grid-freebies', learn:'grid-learn' };

@@ -88,6 +88,7 @@ canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0
 .float-pop.big { font-size: 1.7rem; color: #ffd54f; }
 @keyframes floatPop { 0%{opacity:0; transform:translate(-50%,-50%) scale(.6);} 20%{opacity:1; transform:translate(-50%,-70%) scale(1.15);} 100%{opacity:0; transform:translate(-50%,-160%) scale(1);} }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Bread Blocks","url":"https://jvdesignstudio.co.uk/games/bread-blocks.html","description":"Stack falling blocks to complete rows. Don't let them reach the top!","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/BreadBlocksCover.webp"}</script>
 </head>
 <body>
 <div class="wrapper" id="wrapper">
@@ -176,45 +177,6 @@ let lastTime = performance.now();   // rAF clock (declared early: autoPause's re
 
 function initGrid() {
   grid = [];
-  for (let r = 0; r 
-const gameSystem = new GameSystem('bread-blocks', 'Bread Blocks', 'squirt');
-const audioEffects = new AudioEffects(0.6);
-
-const W = 10, H = 20, CELL = 24;
-if(!CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;};
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const container = document.getElementById('container');
-
-canvas.width = W * CELL;
-canvas.height = H * CELL;
-
-const COLORS = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7'];
-const SHAPES = [
-  [[1, 1, 1, 1]],  // I
-  [[1, 1], [1, 1]],  // O
-  [[0, 1, 1], [1, 1, 0]],  // Z
-  [[1, 1, 0], [0, 1, 1]],  // S
-  [[1, 0, 0], [1, 1, 1]],  // L
-  [[0, 0, 1], [1, 1, 1]],  // J
-  [[0, 1, 0], [1, 1, 1]],  // T
-];
-
-const nextCanvas = document.getElementById('nextCanvas');
-const nctx = nextCanvas.getContext('2d');
-
-let grid = [];
-let state = 'menu';
-let score = 0, lines = 0, level = 1, best = 0, combo = 0;
-let piece = null, nextPiece = null;
-let dropTime = 0, dropInterval = 800;
-let startTime = 0;
-let clearingRows = [];   // rows mid flash animation; drops pause while set
-let flashT = 0;
-let lastTime = performance.now();   // rAF clock (declared early: autoPause's resume writes it)
-
-function initGrid() {
-  grid = [];
   for (let r = 0; r < H; r++) grid[r] = new Array(W).fill(0);
 }
 
@@ -247,67 +209,9 @@ function collision(x, y, shape = piece.shape) {
 function rotateShape(shape) {
   const rows = shape.length, cols = shape[0].length;
   const out = [];
-  for (let c = 0; c = W || ny >= H || (ny >= 0 && grid[ny][nx])) return true;
-    }
-  }
-  return false;
-}
-
-function rotateShape(shape) {
-  const rows = shape.length, cols = shape[0].length;
-  const out = [];
   for (let c = 0; c < cols; c++) {
     out[c] = [];
     for (let r = rows - 1; r >= 0; r--) out[c].push(shape[r][c]);
-  }
-  return out;
-}
-
-function tryRotate() {
-  if (!piece || clearingRows.length) return;
-  const rotated = rotateShape(piece.shape);
-  for (const kick of [0, -1, 1, -2, 2]) {
-    if (!collision(piece.x + kick, piece.y, rotated)) {
-      piece.shape = rotated;
-      piece.x += kick;
-      audioEffects.playTap(650);
-      return;
-    }
-  }
-  audioEffects.playTap(250);
-}
-
-function tryMove(dir) {
-  if (!piece || clearingRows.length) return;
-  if (!collision(piece.x + dir, piece.y)) {
-    piece.x += dir;
-    audioEffects.playTap(400);
-  }
-}
-
-function softDrop() {
-  if (!piece || clearingRows.length) return;
-  if (!collision(piece.x, piece.y + 1)) { piece.y++; score++; updateHud(); dropTime = 0; }
-}
-
-function hardDrop() {
-  if (!piece || clearingRows.length) return;
-  let dropped = 0;
-  while (!collision(piece.x, piece.y + 1)) { piece.y++; dropped++; }
-  score += dropped * 2;
-  audioEffects.playPop();
-  ScreenShake.shake(container, 4, 120);
-  placePiece();
-}
-
-function ghostY() {
-  let y = piece.y;
-  while (!collision(piece.x, y + 1)) y++;
-  return y;
-}
-
-function placePiece() {
-  for (let r = 0; r = 0; r--) out[c].push(shape[r][c]);
   }
   return out;
 }
@@ -371,105 +275,8 @@ function placePiece() {
 const LINE_POINTS = [0, 100, 300, 500, 800];
 function checkLines() {
   const full = [];
-  for (let r = 0; r = 0) grid[ny][nx] = piece.color;
-      }
-    }
-  }
-  dropTime = 0;
-  checkLines();
-}
-
-const LINE_POINTS = [0, 100, 300, 500, 800];
-function checkLines() {
-  const full = [];
   for (let r = 0; r < H; r++) {
     if (grid[r].every(c => c)) full.push(r);
-  }
-  if (!full.length) {
-    combo = 0;
-    newPiece();
-    updateHud();
-    return;
-  }
-
-  combo++;
-  let pts = LINE_POINTS[full.length] * level;
-  if (combo > 1) pts += 50 * combo * level;
-  score += pts;
-  lines += full.length;
-  level = Math.floor(lines / 4) + 1;
-  dropInterval = Math.max(180, 800 - (level - 1) * 60);
-
-  // feedback: flash rows, then collapse
-  clearingRows = full;
-  flashT = 0;
-  const rect = canvas.getBoundingClientRect();
-  const midRow = full[Math.floor(full.length / 2)];
-  const px = rect.left + rect.width / 2;
-  const py = rect.top + (midRow + 0.5) * (rect.height / H);
-  if (full.length >= 4) {
-    floatText('🍞 BREAD BASKET! +' + pts, true);
-    audioEffects.playLevelUp();
-    ParticleSystem.confetti(px, py, 16);
-    ScreenShake.shake(container, 9, 300);
-  } else {
-    floatText('+' + pts + (combo > 1 ? '  COMBO ×' + combo : ''), full.length >= 2);
-    audioEffects.playSuccess(700 + full.length * 120);
-    if (combo > 1) audioEffects.playCombo(combo);
-    ParticleSystem.burst(px, py, '✨', 4 + full.length * 3);
-    if (full.length >= 2) ScreenShake.shake(container, 6, 200);
-  }
-
-  setTimeout(() => {
-    clearingRows.forEach(r => grid.splice(r, 1));
-    grid.unshift(...new Array(clearingRows.length).fill(null).map(() => new Array(W).fill(0)));
-    clearingRows = [];
-    newPiece();
-    updateHud();
-  }, 280);
-}
-
-function updateHud() {
-  document.getElementById('scoreHud').textContent = score;
-  document.getElementById('levelHud').textContent = level;
-}
-
-function floatText(txt, big) {
-  const div = document.createElement('div');
-  div.className = 'float-pop' + (big ? ' big' : '');
-  div.textContent = txt;
-  div.style.left = '50%';
-  div.style.top = '40%';
-  document.getElementById('wrapper').appendChild(div);
-  setTimeout(() => div.remove(), 900);
-}
-
-function update(delta) {
-  if (state !== 'playing' || clearingRows.length) { flashT += delta; return; }
-  dropTime += delta;
-  if (dropTime >= dropInterval) {
-    dropTime = 0;
-    if (!collision(piece.x, piece.y + 1)) piece.y++;
-    else placePiece();
-  }
-}
-
-function drawCell(x, y, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath(); ctx.roundRect(x*CELL+1, y*CELL+1, CELL-3, CELL-3, 4); ctx.fill();
-  // highlight
-  ctx.fillStyle = 'rgba(255,255,255,.32)';
-  ctx.beginPath(); ctx.roundRect(x*CELL+2, y*CELL+2, CELL-5, 5, 2); ctx.fill();
-  // bottom AO
-  ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.fillRect(x*CELL+1, y*CELL+CELL-4, CELL-3, 3);
-}
-
-function draw() {
-  ctx.fillStyle = '#f5f5f5';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // grid
-  for (let r = 0; r  c)) full.push(r);
   }
   if (!full.length) {
     combo = 0;
@@ -569,14 +376,6 @@ function draw() {
     const alpha = 0.55 + 0.45 * Math.sin(flashT * 0.05);
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     clearingRows.forEach(r => ctx.fillRect(0, r * CELL, canvas.width, CELL));
-  }
-
-  if (piece && !clearingRows.length) {
-    // ghost piece
-    const gy = ghostY();
-    if (gy > piece.y) {
-      ctx.globalAlpha = 0.22;
-      for (let r = 0; r  ctx.fillRect(0, r * CELL, canvas.width, CELL));
   }
 
   if (piece && !clearingRows.length) {
@@ -691,59 +490,6 @@ canvas.addEventListener('pointerup', (e) => {
 
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
-  if (x = 500) gameSystem.unlockAchievement('builder');
-  gameSystem.recordGamePlay(Math.round((performance.now() - startTime) / 1000));
-  gameSystem.saveState();
-
-  best = Math.max(best, score);
-  document.getElementById('overSub').textContent = score >= 500 ? 'Master builder!' : 'Nice score!';
-  document.getElementById('finalScore').textContent = score.toLocaleString();
-  GameUI.countUp(document.getElementById('finalScore'), score);
-  document.getElementById('finalLevel').textContent = level;
-  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
-    [200, '🥉', 'Crumbler'],
-    [600, '🥈', 'Journeyman Baker'],
-    [1200, '🥇', 'Master Baker'],
-  ]);
-  document.getElementById('overModal').classList.add('show');
-}
-
-// Auto-pause when the app is backgrounded mid-run (the classic way to lose a
-// stack), with the engine's standard tap-to-resume overlay.
-GameUI.autoPause({
-  pause: function () {
-    if (state !== 'playing') return false;
-    state = 'paused';
-    return true;
-  },
-  resume: function () {
-    if (state !== 'paused') return;
-    state = 'playing';
-    dropTime = 0;
-    lastTime = performance.now();
-    loop();
-  }
-});
-
-// touch/mouse: tap sides to move, tap middle to rotate, swipe down to hard drop
-let pressStart = null;
-canvas.addEventListener('pointerdown', (e) => {
-  if (state !== 'playing') return;
-  e.preventDefault();
-  pressStart = { x: e.clientX, y: e.clientY, t: performance.now() };
-}, { passive: false });
-
-canvas.addEventListener('pointerup', (e) => {
-  if (state !== 'playing' || !pressStart) return;
-  const dx = e.clientX - pressStart.x;
-  const dy = e.clientY - pressStart.y;
-  pressStart = null;
-
-  if (dy > 40 && dy > Math.abs(dx)) { hardDrop(); return; }   // swipe down
-  if (Math.abs(dx) > 40 || Math.abs(dy) > 40) return;         // other swipes ignored
-
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
   if (x < rect.width / 3) tryMove(-1);
   else if (x > rect.width * 2 / 3) tryMove(1);
   else tryRotate();
@@ -771,32 +517,7 @@ function loop() {
 best = gameSystem.state.highScore || 0;
 document.getElementById('bestStart').textContent = best;
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
- rect.width * 2 / 3) tryMove(1);
-  else tryRotate();
-});
-
-window.addEventListener('keydown', (e) => {
-  if (state !== 'playing') return;
-  switch (e.code) {
-    case 'ArrowLeft': e.preventDefault(); tryMove(-1); break;
-    case 'ArrowRight': e.preventDefault(); tryMove(1); break;
-    case 'ArrowUp': case 'KeyZ': e.preventDefault(); tryRotate(); break;
-    case 'ArrowDown': e.preventDefault(); softDrop(); break;
-    case 'Space': e.preventDefault(); hardDrop(); break;
-  }
-});
-
-function loop() {
-  const now = performance.now();
-  update(now - lastTime);
-  lastTime = now;
-  draw();
-  if (state === 'playing') requestAnimationFrame(loop);
-}
-
-best = gameSystem.state.highScore || 0;
-document.getElementById('bestStart').textContent = best;
-document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
+<script src="../cookie-consent.js"></script>
 </body>
 </html>

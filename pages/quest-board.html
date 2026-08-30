@@ -281,8 +281,8 @@
     }
 
     .quest-step input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       margin-top: 2px;
       flex-shrink: 0;
       cursor: pointer;
@@ -453,6 +453,20 @@
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -531,7 +545,7 @@
 </script>
 <!-- /BUILD:nav-content -->
 
-  <section id="main-content" class="hero">
+  <section id="main-content" role="main" class="hero">
 
   <!-- HERO -->
   <section class="hero">
@@ -816,6 +830,18 @@
       }
     }
 
+    /* Quest requirements store file slugs ("scratch-catch-workshop"). Children
+       should never see those, so turn them into readable titles. */
+    function prettyName(slug) {
+      if (!slug) return 'this activity';
+      return String(slug)
+        .replace(/[-_]/g, ' ')
+        .replace(/workshop/gi, '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/\w/g, function (c) { return c.toUpperCase(); });
+    }
+
     function createQuestCard(quest, status) {
       const card = document.createElement('div');
       card.className = `quest-card ${status === 'locked' ? 'locked' : ''}`;
@@ -829,18 +855,18 @@
         let isComplete = false;
 
         if (req.type === 'workshop') {
-          stepLabel = `Complete "${playerProfile.state.completedWorkshops.includes(req.id) ? '✓' : ''} ${req.id}" workshop`;
+          stepLabel = `Complete the ${prettyName(req.id)} workshop`;
           isComplete = playerProfile.isWorkshopCompleted(req.id);
         } else if (req.type === 'game-score') {
           const gameState = gameStates[req.gameId] || {};
           const currentScore = gameState.highScore || 0;
           isComplete = currentScore >= req.minScore;
-          stepLabel = `Score ${req.minScore} in ${req.gameId}`;
+          stepLabel = `Score ${req.minScore} in ${prettyName(req.gameId)}`;
           stepsHTML += `
             <div class="quest-step">
-              <input type="checkbox" ${isComplete ? 'checked' : ''} disabled>
+              <input type="checkbox" ${isComplete ? 'checked' : ''} disabled aria-hidden="true" tabindex="-1">
               <div class="step-content">
-                <div class="step-label">${stepLabel}</div>
+                <div class="step-label"><span class="sr-only">${isComplete ? 'Done: ' : 'Not done yet: '}</span>${stepLabel}</div>
                 <div class="progress-bar">
                   <div class="progress-fill" style="width: ${Math.min((currentScore / req.minScore) * 100, 100)}%"></div>
                 </div>
@@ -859,9 +885,9 @@
         if (req.type !== 'game-score') {
           stepsHTML += `
             <div class="quest-step">
-              <input type="checkbox" ${isComplete ? 'checked' : ''} disabled>
+              <input type="checkbox" ${isComplete ? 'checked' : ''} disabled aria-hidden="true" tabindex="-1">
               <div class="step-content">
-                <div class="step-label">${stepLabel}</div>
+                <div class="step-label"><span class="sr-only">${isComplete ? 'Done: ' : 'Not done yet: '}</span>${stepLabel}</div>
               </div>
             </div>
           `;
@@ -1062,5 +1088,6 @@
       initQuestBoard();
     }
   </script>
+<script src="../cookie-consent.js"></script>
 </body>
 </html>

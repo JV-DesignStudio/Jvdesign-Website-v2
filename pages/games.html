@@ -59,7 +59,7 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
 .genre-pills {
     display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
 }
-.genre-pill {
+.genre-pill { font-family:inherit; cursor:pointer; 
     font-size: 0.72rem; font-weight: 700; padding: 6px 14px;
     border-radius: 999px; color: rgba(240,234,214,0.85);
     background: rgba(255,255,255,0.10);
@@ -246,7 +246,7 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
 .genre-pills {
     display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
 }
-.genre-pill {
+.genre-pill { font-family:inherit; cursor:pointer; 
     font-size: 0.72rem; font-weight: 700; padding: 6px 14px;
     border-radius: 999px; color: rgba(240,234,214,0.85);
     background: rgba(255,255,255,0.10);
@@ -414,6 +414,20 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
 <!-- HEADER -->
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -435,28 +449,6 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">☰</button>
 </div>
 <script>
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
-
 (function(){
     /* Restore saved theme before first paint of the toggle icon */
     if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
@@ -511,38 +503,38 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
-
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
 </script>
 <!-- /BUILD:nav-content -->
 
 <!-- HERO -->
-<section id="main-content" class="page-hero">
+<section id="main-content" role="main" class="page-hero">
     <p class="page-hero-eyebrow">JVDesignStudio · Free Browser Games</p>
     <h1>Play Free,<br>Play Now</h1>
     <p>Every game is built for your phone tap, tilt and swipe. Free to play right in your browser, no downloads, no accounts. Works great on desktop too.</p>
+    <!-- These used to be inert <span>s that looked exactly like the filter chips
+         further down the page, so tapping one did nothing. They are now real
+         controls driving the same filter, using the same taxonomy. -->
     <div class="genre-pills">
-        <span class="genre-pill">🧩 Puzzle</span>
-        <span class="genre-pill">💎 Match-3</span>
-        <span class="genre-pill">🏰 Tower Defence</span>
-        <span class="genre-pill">🚀 Runner</span>
-        <span class="genre-pill">🎯 Shooter</span>
-        <span class="genre-pill">👶 Ages 3-8</span>
+        <button type="button" class="genre-pill" data-jump="puzzle">🧩 Puzzle &amp; Match</button>
+        <button type="button" class="genre-pill" data-jump="arcade">🎯 Arcade &amp; Action</button>
+        <button type="button" class="genre-pill" data-jump="runner">🏃 Runner</button>
+        <button type="button" class="genre-pill" data-jump="adventure">⚔️ Adventure</button>
+        <button type="button" class="genre-pill" data-jump="idle">⏳ Idle &amp; Clicker</button>
+        <button type="button" class="genre-pill" data-jump="brain">🧠 Brain</button>
     </div>
+    <script>
+    (function(){
+      document.addEventListener('click', function(e){
+        var pill = e.target.closest('.genre-pill[data-jump]');
+        if (!pill) return;
+        var want = pill.getAttribute('data-jump');
+        var chip = document.querySelector('.game-chip[data-filter="' + want + '"]');
+        var grid = document.getElementById('games');
+        if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (chip) chip.click();
+      });
+    })();
+    </script>
 </section>
 
 <!-- INSTALL THE ARCADE -->
@@ -592,7 +584,7 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
         <img class="arcade-cta-icon" src="../icons/arcade-192.png" alt="" width="56" height="56" loading="lazy">
         <div class="arcade-cta-copy">
             <h2>Get the JVDS Arcade app</h2>
-            <p>All 29 games in one place, one profile across them all, and it plays offline. Install it to your home screen, free.</p>
+            <p>Every arcade game in one place, one profile across them all, and it plays offline. Install it to your home screen, free.</p>
         </div>
         <div class="arcade-cta-actions">
             <button type="button" class="arcade-cta-btn primary" id="arcadeInstallBtn">⬇ Install app</button>
@@ -1678,6 +1670,7 @@ body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -1697,23 +1690,8 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 

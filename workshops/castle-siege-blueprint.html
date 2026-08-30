@@ -376,6 +376,20 @@ footer a{color:var(--gold);text-decoration:none}
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -418,28 +432,6 @@ footer a{color:var(--gold);text-decoration:none}
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -458,22 +450,6 @@ footer a{color:var(--gold);text-decoration:none}
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -602,6 +578,7 @@ footer a{color:var(--gold);text-decoration:none}
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -621,23 +598,8 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -680,47 +642,8 @@ class BPC{
   _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
   _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
   _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
-  _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d
-'use strict';
-/* ════════════════════════════════════════════════════════
-   BLUEPRINT CANVAS ENGINE
-════════════════════════════════════════════════════════ */
-const PC={exec:'#fff',bool:'#dd4444',int:'#44aaee',float:'#88ee44',vec3:'#eebb44',rot:'#aaccff',actor:'#ee8833',object:'#4488ee',string:'#ee55aa',cls:'#ee9922',any:'#aaa'};
-const NS={
-  event:{h:'#5a3a00',b:'#1a1000',e:'#c89020'},
-  func:{h:'#1a3050',b:'#0e1520',e:'#3a70cc'},
-  macro:{h:'#1a4a1a',b:'#0e160e',e:'#3aaa50'},
-  vset:{h:'#2a2a20',b:'#0e0e08',e:'#8080a0'},
-  vget:{h:'#1a3a30',b:'#0e1510',e:'#30aaaa'},
-  branch:{h:'#303030',b:'#141414',e:'#888'},
-  cast:{h:'#1a2848',b:'#0e1218',e:'#3060aa'},
-  custom:{h:'#401840',b:'#160e16',e:'#aa40aa'},
-  math:{h:'#2c2c2c',b:'#111',e:'#666'},
-  weapon:{h:'#4a3000',b:'#1a1000',e:'#c07810'},
-};
-class BPC{
-  constructor(el,defs,rW,rV,onDone){
-    this.el=el;this.defs=defs;this.rW=rW;this.rV=rV;this.onDone=onDone;
-    this.wires=[];this.pins={};this.drag=null;this.done=false;this.vals={};
-    this.DPR=Math.min(window.devicePixelRatio||1,2);
-    this.cv=document.createElement('canvas');this.cx=this.cv.getContext('2d');
-    el.appendChild(this.cv);
-    this.nodes=defs.map(d=>({...d,lp:d.lp||[],rp:d.rp||[],vf:d.vf||null,w:d.w||155}));
-    this.nodes.forEach(n=>{const r=Math.max(n.lp.length,n.rp.length,1);n.h=26+(n.sub?12:0)+r*19+(n.vf?25:0)+12;});
-    this.cv.addEventListener('mousedown',e=>this._dn(e));
-    this._mmv=e=>this._mv(e);this._mup=e=>this._up(e);
-    document.addEventListener('mousemove',this._mmv);
-    document.addEventListener('mouseup',this._mup);
-    ['touchstart','touchmove','touchend'].forEach(ev=>this.cv.addEventListener(ev,e=>{e.preventDefault();const m=ev==='touchend'?'up':ev==='touchstart'?'dn':'mv';this['_'+m](e,1);},{passive:false}));
-    this._resize();window.addEventListener('resize',()=>this._resize());
-    document.addEventListener('keydown',e=>{if(e.key==='Escape')this._cancel();});
-    this.render();
-  }
-  _pt(e,t){const r=this.cv.getBoundingClientRect();const s=t?(e.touches[0]||e.changedTouches[0]||{clientX:0,clientY:0}):e;return{x:(s.clientX-r.left)/this.sc,y:(s.clientY-r.top)/this.sc};}
-  _lh(){let m=150;this.nodes.forEach(n=>{m=Math.max(m,n.y+n.h+18);});return m;}
-  _resize(){const W=Math.max(this.el.getBoundingClientRect().width||540,200);this.sc=W/540;const H=this._lh()*this.sc;this.cv.width=W*this.DPR;this.cv.height=H*this.DPR;this.cv.style.height=H+'px';this.cx.setTransform(this.DPR*this.sc,0,0,this.DPR*this.sc,0,0);this.render();}
   _pinAt(x,y){const hr=Math.max(13,16/this.sc);let best=null,bd=hr;for(const id in this.pins){const p=this.pins[id];const d=Math.sqrt((p.x-x)**2+(p.y-y)**2);if(d<bd){bd=d;best=id;}}return best;}
-  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&xn.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&yvy-8&&y<vy+24;const inNode=x>n.x&&xn.x&&x<n.x+n.w&&y>n.y&&yn.y&&y<n.y+n.h;const belowPins=y>n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
+  _valAt(x,y){for(const n of this.nodes){if(!n.vf)continue;const rows=Math.max(n.lp.length,n.rp.length,1);const vy=n.y+22+(n.sub?12:0)+rows*19+5;const inX=x>n.x+4&&x<n.x+n.w-4;const inY=y>vy-8&&y<vy+24;const inNode=x>n.x&&x<n.x+n.w&&y>n.y&&y<n.y+n.h;const belowPins=y>n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
   _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
   _showValInput(nodeId,e){
     const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
@@ -731,46 +654,7 @@ class BPC{
     const pop=document.createElement('div');pop.className='bp-valinput';
     pop.style.left=Math.min(ex,cr.width-200)+'px';
     pop.style.top=(ey+10)+'px';
-    pop.innerHTML=`n.y+22+(n.sub?12:0)+rows*19-4;if(inX&&inY)return n.id;if(inNode&&belowPins&&inX)return n.id;}return null;}
-  _dn(e,t){const{x,y}=this._pt(e,t);const vi=this._valAt(x,y);if(vi){this._showValInput(vi,e);return;}const pid=this._pinAt(x,y);if(pid){const pp=this.pins[pid];if(pp?.side==='left'){const wi=this.wires.findIndex(w=>w.t===pid);if(wi>=0){const srcPid=this.wires[wi].f;this.wires.splice(wi,1);this._chk();const sp=this.pins[srcPid];this.drag={pid:srcPid,mx:sp?sp.x:x,my:sp?sp.y:y};this.render();return;}}this.drag={pid,mx:pp.x,my:pp.y};this.render();}}
-  _showValInput(nodeId,e){
-    const n=this.nodes.find(n=>n.id===nodeId);if(!n||!n.vf)return;
-    const old=this.el.parentElement?.querySelector('.bp-valinput');if(old)old.remove();
-    const outer=this.el.closest('.bp-outer');if(!outer)return;
-    const cr=outer.getBoundingClientRect();
-    const ex=e.clientX-cr.left,ey=e.clientY-cr.top;
-    const pop=document.createElement('div');pop.className='bp-valinput';
-    pop.style.left=Math.min(ex,cr.width-200)+'px';
-    pop.style.top=(ey+10)+'px';
-    pop.innerHTML=`<label>${n.vf.hint}${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set✓ Set</button><button class="bp-valinput-cancel">✕✕</button></div>`;
-    outer.appendChild(pop);
-    const inp=pop.querySelector('input');inp.focus();inp.select();
-    const commit=()=>{const v=inp.value.trim();if(v!==''){n.vf.val=v;this._chk();this.render();}pop.remove();};
-    const cancel=()=>pop.remove();
-    pop.querySelector('.bp-valinput-ok').addEventListener('click',commit);
-    pop.querySelector('.bp-valinput-cancel').addEventListener('click',cancel);
-    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit();}if(ev.key==='Escape')cancel();});
-    pop.addEventListener('mousedown',ev=>ev.stopPropagation());
-  }
-  _mv(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);this.drag.mx=x;this.drag.my=y;this.render();}
-  _up(e,t){if(!this.drag)return;const{x,y}=this._pt(e,t);const tid=this._pinAt(x,y);if(tid&&tid!==this.drag.pid)this._conn(this.drag.pid,tid);this.drag=null;this.render();}
-  _cancel(){if(this.drag){this.drag=null;this.render();}}
-  _conn(a,b){const pa=this.pins[a],pb=this.pins[b];if(!pa||!pb)return;let f=a,t=b;if(pa.side==='left'){f=b;t=a;}const pf=this.pins[f],pt=this.pins[t];if(!pf||!pt)return;if(pf.side!=='right'||pt.side!=='left')return this._err();const compatible=pf.type===pt.type||pf.type==='any'||pt.type==='any'||(pf.type==='exec'&&pt.type==='exec');if(!compatible)return this._err();this.wires=this.wires.filter(w=>w.t!==t);this.wires.push({f,t});this._chk();this.render();}
-  _err(){const o=this.el.closest('.bp-outer');if(o){o.classList.add('shake');setTimeout(()=>o.classList.remove('shake'),380);}}
-  _chk(){
-    const wOk=this.rW.every(r=>this.wires.some(w=>w.f===r.f&&w.t===r.t));
-    const vOk=this.rV.every(r=>{const n=this.nodes.find(n=>n.id===r.id);return n&&n.vf&&r.ok(n.vf.val);});
-    this.nodes.forEach(n=>{if(n.vf)this.vals[n.id]=n.vf.val;});
-    const tw=document.getElementById('tw-'+this.uid),tv=document.getElementById('tv-'+this.uid);
-    if(tw)tw.classList.toggle('done',wOk);if(tv)tv.classList.toggle('done',vOk);
-    if(wOk&&vOk&&!this.done){this.done=true;this.onDone(this.vals);}
-    else if(!(wOk&&vOk))this.done=false;
-  }
-  render(){
-    const cx=this.cx,H=this._lh();cx.clearRect(0,0,540,H);
-    cx.fillStyle='#0d0b06';cx.fillRect(0,0,540,H);
-    cx.strokeStyle='rgba(212,165,32,.03)';cx.lineWidth=1;
-    for(let x=0;x`;
+    pop.innerHTML=`<label>${n.vf.hint}</label><input type="text" value="${n.vf.val||''}" placeholder="${n.vf.hint}"><div class="bp-valinput-btns"><button class="bp-valinput-ok">✓ Set</button><button class="bp-valinput-cancel">✕</button></div>`;
     outer.appendChild(pop);
     const inp=pop.querySelector('input');inp.focus();inp.select();
     const commit=()=>{const v=inp.value.trim();if(v!==''){n.vf.val=v;this._chk();this.render();}pop.remove();};
@@ -847,154 +731,10 @@ let UID=0;
 function mkPZ(defs,rW,rV,onDone,isW=false){
   const uid=++UID;
   const hasW=rW.length>0,hasV=rV.length>0;
-  const html=`this._drawNode(cx,n));
-    this.wires.forEach(w=>{const a=this.pins[w.f],b=this.pins[w.t];if(a&&b)this._wire(cx,a.x,a.y,b.x,b.y,PC[a.type]||'#fff',false);});
-    if(this.drag){const a=this.pins[this.drag.pid];if(a)this._wire(cx,a.x,a.y,this.drag.mx,this.drag.my,PC[a.type]||'#fff',true);}
-  }
-  _drawNode(cx,n){
-    const st=NS[n.type]||NS.func,HDR=22,GAP=19;
-    const rows=Math.max(n.lp.length,n.rp.length,1);const{x,y,w,h}=n;
-    cx.fillStyle='rgba(0,0,0,.4)';this._rr(cx,x+3,y+3,w,h,7);cx.fill();
-    cx.fillStyle=st.b;this._rr(cx,x,y,w,h,7);cx.fill();cx.strokeStyle=st.e;cx.lineWidth=1.5;cx.stroke();
-    cx.fillStyle=st.h;this._rr(cx,x,y,w,HDR,7);cx.fill();cx.fillRect(x,y+HDR-5,w,5);
-    cx.fillStyle='#fff';cx.font='bold 8.5px JetBrains Mono,monospace';cx.textAlign='center';cx.fillText(n.title,x+w/2,y+15);
-    if(n.sub){cx.fillStyle='rgba(255,255,255,.28)';cx.font='7.5px JetBrains Mono,monospace';cx.fillText(n.sub,x+w/2,y+HDR+8);}
-    if(n.vf){
-      const vy=y+HDR+(n.sub?12:0)+rows*GAP+5;
-      cx.fillStyle='rgba(0,0,0,.5)';this._rr(cx,x+6,vy,w-12,15,4);cx.fill();
-      cx.strokeStyle=n.vf.val?'#88ee44':'rgba(212,165,32,.5)';cx.lineWidth=1;cx.stroke();
-      cx.fillStyle=n.vf.val?'#88ee44':'rgba(212,165,32,.85)';
-      cx.font='bold 7.5px JetBrains Mono,monospace';cx.textAlign='center';
-      const d=n.vf.val?n.vf.val:(n.vf.hint.length>22?n.vf.hint.slice(0,20)+'…':n.vf.hint);
-      cx.fillText(d,x+w/2,vy+10);
-      cx.fillStyle='rgba(255,255,255,.15)';cx.font='6.5px JetBrains Mono,monospace';
-      cx.fillText(n.vf.val?'✓ set':'▼ click to type',x+w/2,vy+20);
-    }
-    const pt0=y+HDR+(n.sub?12:0)+GAP*.45;
-    n.lp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.t===p.id);this._pin(cx,x,py,col,p.type==='exec',conn,'l');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='left';cx.fillText(p.label||'',x+11,py+3);this.pins[p.id]={x,y:py,type:p.type,side:'left'};});
-    n.rp.forEach((p,i)=>{const py=pt0+i*GAP;const col=PC[p.type]||PC.any;const conn=this.wires.some(w=>w.f===p.id);this._pin(cx,x+w,py,col,p.type==='exec',conn,'r');cx.fillStyle='rgba(255,255,255,.58)';cx.font='7.5px JetBrains Mono,monospace';cx.textAlign='right';cx.fillText(p.label||'',x+w-11,py+3);this.pins[p.id]={x:x+w,y:py,type:p.type,side:'right'};});
-    cx.textAlign='left';
-  }
-  _pin(cx,x,y,col,exec,conn,side){
-    cx.strokeStyle=col;cx.fillStyle=conn?col:'transparent';cx.lineWidth=1.5;
-    if(exec){const d=side==='r'?1:-1;cx.beginPath();cx.moveTo(x+d,y-5);cx.lineTo(x+d*8,y);cx.lineTo(x+d,y+5);cx.closePath();cx.stroke();if(conn)cx.fill();}
-    else{cx.beginPath();cx.arc(x,y,5,0,Math.PI*2);cx.stroke();if(conn)cx.fill();}
-    cx.fillStyle=col+'28';cx.beginPath();cx.arc(x,y,11,0,Math.PI*2);cx.fill();
-  }
-  _wire(cx,x1,y1,x2,y2,col,dash){
-    const mx=(x1+x2)/2;cx.save();cx.strokeStyle=col;cx.lineWidth=2;cx.shadowColor=col;cx.shadowBlur=dash?0:7;
-    if(dash){cx.setLineDash([5,4]);cx.globalAlpha=.48;}
-    cx.beginPath();cx.moveTo(x1,y1);cx.bezierCurveTo(mx,y1,mx,y2,x2,y2);cx.stroke();cx.restore();
-  }
-  _rr(cx,x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();}
-}
-
-let UID=0;
-function mkPZ(defs,rW,rV,onDone,isW=false){
-  const uid=++UID;
-  const hasW=rW.length>0,hasV=rV.length>0;
   const html=`<div class="bp-outer${isW?' wm':''}" id="bpo-${uid}"><div id="bpcw-${uid}"></div>
-    
-    <div class="bp-hint${isW?' wm':''}">🖱 Drag output pin → input pin to connect${hasV?' · Click gold fields to type':''}🖱 Drag output pin → input pin to connect${hasV?' · Click gold fields to type':''}</div></div>
-    
-    <div class="task-list">${hasW?`${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wiresConnect the required wires</div>`:''}
-    ${hasV?``:''}
-    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the gold fieldsType values in the gold fields</div>`:''}`:''}</div>`;
-  return{uid,html,init(cb){
-    const el=document.getElementById('bpcw-'+uid);if(!el)return;
-    const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);});bp.uid=uid;return bp;
-  }};
-}
-
-/* ════════════════════════════════════════════════════════
-   WEAPON SYSTEM
-════════════════════════════════════════════════════════ */
-const WEAPONS_POOL=[
-  {name:'Longsword',    dmg:8,  reach:38, spd:0.45, sweep:70, col:'#c0c0d0', special:null},
-  {name:'War Axe',      dmg:14, reach:30, spd:0.65, sweep:50, col:'#8a7050', special:'armour_break'},
-  {name:'Mace',         dmg:10, reach:28, spd:0.5,  sweep:60, col:'#a09080', special:'stun'},
-  {name:'Rapier',       dmg:5,  reach:46, spd:0.25, sweep:25, col:'#a0c0e0', special:'pierce'},
-  {name:'Halberd',      dmg:11, reach:52, spd:0.7,  sweep:90, col:'#708060', special:'sweep'},
-  {name:'Flail',        dmg:9,  reach:42, spd:0.5,  sweep:80, col:'#806040', special:'stun'},
-  {name:'Greatsword',   dmg:16, reach:44, spd:0.85, sweep:100,col:'#c0c8d8', special:'sweep'},
-  {name:'Dagger x2',   dmg:4,  reach:22, spd:0.2,  sweep:30, col:'#d0a050', special:'double'},
-  {name:'Morning Star', dmg:12, reach:34, spd:0.6,  sweep:60, col:'#b08060', special:'stun'},
-  {name:'Spear',        dmg:7,  reach:58, spd:0.38, sweep:20, col:'#80a060', special:'pierce'},
-  {name:'Battle Axe',   dmg:18, reach:32, spd:1.0,  sweep:55, col:'#907050', special:'armour_break'},
-  {name:'Arming Sword', dmg:6,  reach:36, spd:0.35, sweep:65, col:'#b0b8c8', special:null},
-];
-
-// Student-designed starting weapon
-const startWPN={name:'???',dmg:5,reach:36,spd:0.45,sweep:65,col:'#d4a520',special:null};
-let perk1=null,perk2=null;
-
-function updateKnightCard(){
-  document.getElementById('hw-name').textContent=G.p.name||'??? Unnamed ???';
-  document.getElementById('hw-hp').textContent=G.p.maxHp>0?G.p.maxHp+'pts':'???';
-  document.getElementById('hw-spd').textContent=G.p.speed>0?Math.round(G.p.speed*100)+'%':'???';
-  document.getElementById('hw-wpn').textContent=startWPN.name==='???'?'???':startWPN.name;
-  document.getElementById('hw-dmg').textContent=startWPN.dmg+'dmg / '+startWPN.reach+'px';
-  const m=[];
-  if(perk1)m.push({heavy:'HEAVY',swift:'SWIFT',iron_skin:'IRON SKIN'}[perk1]||perk1);
-  if(perk2)m.push({berserk:'BERSERK',shield_bash:'SHIELD',second_wind:'REGEN',berserker_rage:'RAGE'}[perk2]||perk2);
-  if(startWPN.special)m.push(startWPN.special.toUpperCase());
-  document.getElementById('hw-mod').textContent=m.length?m.join(' · '):'none';
-}
-
-/* ════════════════════════════════════════════════════════
-   ROOM TEMPLATES, Castle zones
-════════════════════════════════════════════════════════ */
-const ROOM_TEMPLATES=[
-  // Courtyard, open with corner towers
-  {walls:[{x:.04,y:.04,w:.1,h:.1},{x:.86,y:.04,w:.1,h:.1},{x:.04,y:.86,w:.1,h:.1},{x:.86,y:.86,w:.1,h:.1}],name:'Courtyard',chestChance:.4},
-  // Great Hall, pillars down centre
-  {walls:[{x:.4,y:.15,w:.08,h:.08},{x:.52,y:.15,w:.08,h:.08},{x:.4,y:.77,w:.08,h:.08},{x:.52,y:.77,w:.08,h:.08}],name:'Great Hall',chestChance:.5},
-  // Gatehouse, narrow corridor
-  {walls:[{x:.05,y:.05,w:.9,h:.12},{x:.05,y:.83,w:.9,h:.12}],name:'Gatehouse',chestChance:.45},
-  // Barracks, L-shaped barricade
-  {walls:[{x:.12,y:.12,w:.28,h:.08},{x:.12,y:.12,w:.08,h:.28}],name:'Barracks',chestChance:.4},
-  // Treasury, cross obstruction
-  {walls:[{x:.44,y:.18,w:.12,h:.64},{x:.18,y:.44,w:.64,h:.12}],name:'Treasury',chestChance:.55},
-  // Ramparts, two tower blocks
-  {walls:[{x:.14,y:.3,w:.12,h:.4},{x:.74,y:.3,w:.12,h:.4}],name:'Ramparts',chestChance:.35},
-  // Chapel, scattered pillars
-  {walls:[{x:.22,y:.22,w:.1,h:.1},{x:.68,y:.22,w:.1,h:.1},{x:.22,y:.68,w:.1,h:.1},{x:.68,y:.68,w:.1,h:.1},{x:.45,y:.45,w:.1,h:.1}],name:'Chapel',chestChance:.3},
-  // Throne Room, open (boss room)
-  {walls:[],name:'Throne Room',chestChance:0},
-];
-
-/* ════════════════════════════════════════════════════════
-   GAME ENGINE, Castle Siege Top-Down Brawler
-════════════════════════════════════════════════════════ */
-const canvas=document.getElementById('gc');
-const ctx=canvas.getContext('2d');
-let CW=420,CH=420;
-
-function resizeGame(){
-  const wrap=canvas.parentElement;
-  const s=Math.min(wrap.clientWidth-14,wrap.clientHeight||420,440);
-  CW=s;CH=s;canvas.width=s;canvas.height=s;
-}
-window.addEventListener('resize',resizeGame);resizeGame();
-
-const G={
-  phase:'title',
-  p:{x:210,y:210,r:11,hp:100,maxHp:100,name:'???',
-     angle:0,speed:1,stamBar:100,maxStam:100,
-     wpn0:null,wpn1:null,
-     attackTimer:0,attacking:false,attackAngle:0,attackSweepLeft:0,
-     shield:false,berserk:false,regen:0,speedMult:1},
-  room:{world:1,index:1,template:null,walls:[],enemies:[],chest:null,door:null,cleared:false,transitioning:false,transTimer:0},
-  particles:[],bloodDecals:[],
-  score:0,shakeTimer:0,shakeAmt:0,
-  keys:{},mx:200,my:200,
-  // Feature flags
-  f_player:false,f_aim:false,f_attack:false,f_enemies:false,
-  f_collision:false,f_doors:false,f_chests:false,f_hud:false,f_stam:false,
-};
-
-const FTILES=[];
-function genTiles(){FTILES.length=0;for(let x=0;x`;
+    <div class="bp-hint${isW?' wm':''}">🖱 Drag output pin → input pin to connect${hasV?' · Click gold fields to type':''}</div></div>
+    <div class="task-list">${hasW?`<div class="task-item" id="tw-${uid}"><div class="task-dot"></div>Connect the required wires</div>`:''}
+    ${hasV?`<div class="task-item" id="tv-${uid}"><div class="task-dot"></div>Type values in the gold fields</div>`:''}</div>`;
   return{uid,html,init(cb){
     const el=document.getElementById('bpcw-'+uid);if(!el)return;
     const bp=new BPC(el,defs,rW,rV,v=>{cb&&cb(v);});bp.uid=uid;return bp;
@@ -1115,36 +855,10 @@ function update(dt){
   if(G.phase!=='playing')return;
 
   const p=G.p,room=G.room;
-  if(room.transitioning){room.transTimer-=dt;if(room.transTimer.7?1:0});}
-genTiles();
-
-function wpn(){return G.p.wpn0||{...startWPN};}
-
-// Input
-window.addEventListener('keydown',e=>{
-  G.keys[e.code]=true;
-  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
-  if(e.code==='KeyR'&&(G.phase==='dead'||G.phase==='win'))startGame();
-  if(e.code==='Escape')closeFS();
-});
-window.addEventListener('keyup',e=>G.keys[e.code]=false);
-canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect(),sc=CW/r.width;G.mx=(e.clientX-r.left)*sc;G.my=(e.clientY-r.top)*sc;});
-canvas.addEventListener('mousedown',e=>{if(!e.button)G.keys['LMB']=true;});
-canvas.addEventListener('mouseup',e=>{if(!e.button)G.keys['LMB']=false;});
-canvas.addEventListener('click',()=>{if(G.phase==='dead'||G.phase==='win')startGame();});
-
-let lastT=0;
-function loop(ts){const dt=Math.min((ts-lastT)/16,3);lastT=ts;update(dt);gameDraw();syncFS();requestAnimationFrame(loop);}
-
-function update(dt){
-  if(G.shakeTimer>0)G.shakeTimer-=dt;
-  if(G.phase!=='playing')return;
-
-  const p=G.p,room=G.room;
   if(room.transitioning){room.transTimer-=dt;if(room.transTimer<=0){room.transitioning=false;loadNextRoom();}return;}
 
   // Regen
-  if(p.regen>0&&p.hp0&&p.hp<p.maxHp){p.hp=Math.min(p.maxHp,p.hp+p.regen*dt*0.01);}
+  if(p.regen>0&&p.hp<p.maxHp){p.hp=Math.min(p.maxHp,p.hp+p.regen*dt*0.01);}
 
   // Player movement
   if(G.f_player){
@@ -1178,11 +892,6 @@ function update(dt){
   // Melee attack
   if(G.f_attack){
     const w=wpn();
-    if((G.keys['Space']||G.keys['LMB'])&&p.attackTimer0)p.attackTimer-=dt;
-
-  // Melee attack
-  if(G.f_attack){
-    const w=wpn();
     if((G.keys['Space']||G.keys['LMB'])&&p.attackTimer<=0){
       p.attackTimer=(w.spd||0.5)*60;
       p.attacking=true;
@@ -1199,20 +908,8 @@ function update(dt){
           const ang=Math.atan2(dy,dx);
           let diff=ang-p.angle;
           while(diff>Math.PI)diff-=Math.PI*2;
-          while(diff{
-          if(e.dead)return;
-          const dx=e.x-p.x,dy=e.y-p.y,dist=Math.sqrt(dx*dx+dy*dy);
-          if(dist>w.reach+e.r+6)return;
-          const ang=Math.atan2(dy,dx);
-          let diff=ang-p.angle;
-          while(diff>Math.PI)diff-=Math.PI*2;
           while(diff<-Math.PI)diff+=Math.PI*2;
           if(Math.abs(diff)>sweepR)return;
-          let dmg=w.dmg*(p.berserk?1.6:1);
-          e.hp-=dmg;e.dmgT=15;
-          spawnParts(e.x,e.y,'#cc3333',10,3);
-          shake(5,4);
-          if(e.hpsweepR)return;
           let dmg=w.dmg*(p.berserk?1.6:1);
           e.hp-=dmg;e.dmgT=15;
           spawnParts(e.x,e.y,'#cc3333',10,3);
@@ -1230,14 +927,6 @@ function update(dt){
   // Enemy contact damage
   if(G.f_enemies){
     room.enemies.forEach(e=>{
-      if(e.dead)return;
-      if(e.dmgT>0)e.dmgT-=dt;
-      // Movement toward player
-      const dx=p.x-e.x,dy=p.y-e.y,dist=Math.sqrt(dx*dx+dy*dy);
-      e.angle=Math.atan2(dy,dx);
-      let spd=e.spd;
-      if(e.type==='archer'){// Archers keep distance
-        if(dist{
       if(e.dead)return;
       if(e.dmgT>0)e.dmgT-=dt;
       // Movement toward player
@@ -1272,25 +961,12 @@ function update(dt){
         a.x+=a.vx*dt;a.y+=a.vy*dt;a.age+=dt;
         if(hitWall(a.x,a.y,4)){a.life=0;return;}
         const dx=a.x-p.x,dy=a.y-p.y;
-        if(Math.sqrt(dx*dx+dy*dy){
-        a.x+=a.vx*dt;a.y+=a.vy*dt;a.age+=dt;
-        if(hitWall(a.x,a.y,4)){a.life=0;return;}
-        const dx=a.x-p.x,dy=a.y-p.y;
         if(Math.sqrt(dx*dx+dy*dy)<p.r+4){
           if(p.shield){p.shield=false;spawnParts(p.x,p.y,'#d4a520',6,2);}
           else p.hp-=a.dmg;
           a.life=0;if(p.hp<=0)gameOver();
         }
         if(a.age>180)a.life=0;
-      });
-      G.room.arrows=G.room.arrows.filter(a=>a.life>0);
-    }
-  }
-
-  // Door
-  if(G.f_doors&&room.door&&room.door.open&&!room.transitioning){
-    const d=room.door;
-    if(Math.sqrt((p.x-d.x)**2+(p.y-d.y)**2)180)a.life=0;
       });
       G.room.arrows=G.room.arrows.filter(a=>a.life>0);
     }
@@ -1315,12 +991,7 @@ function update(dt){
 }
 
 /* ── HELPERS ── */
-function hitWall(x,y,r){return G.room.walls.some(w=>x+r>w.x&&x-r{pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.l-=.028*dt;pt.vx*=.9;pt.vy*=.9;});
-  G.particles=G.particles.filter(pt=>pt.l>0);
-}
-
-/* ── HELPERS ── */
-function hitWall(x,y,r){return G.room.walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-rw.y&&y-r<w.y+w.h);}
+function hitWall(x,y,r){return G.room.walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h);}
 function shake(a,d){G.shakeTimer=d;G.shakeAmt=a;}
 function sout(m){const o=document.getElementById('obar');if(o)o.textContent=m;const f=document.getElementById('fsFoot');if(f)f.textContent=m;}
 function spawnParts(x,y,col,n=8,spd=3){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2;G.particles.push({x,y,vx:Math.cos(a)*(spd+Math.random()*spd),vy:Math.sin(a)*(spd+Math.random()*spd),col,l:1,s:2+Math.random()*3});}}
@@ -1376,46 +1047,6 @@ function loadRoom(world,index){
   const doorX=CW-22,doorY=CH/2;
   room.door={x:doorX,y:doorY,r:18,open:false};
 
-  if(!isBoss&&Math.random()e.dead)&&!G.room.cleared){
-    G.room.cleared=true;
-    if(G.room.door)G.room.door.open=true;
-    sout('⚔ Zone cleared! Advance through the gate to the next zone!');
-  }
-}
-
-function updateHUD(){
-  const p=G.p;
-  const hpEl=document.getElementById('hudHP');
-  if(hpEl){hpEl.textContent=Math.max(0,Math.ceil(p.hp));hpEl.style.color=p.hp>60?'var(--green)':p.hp>30?'var(--gold)':'var(--red)';}
-  const stamEl=document.getElementById('hudStamBar');
-  if(stamEl){const pct=Math.round(p.stamBar);stamEl.textContent=pct+'%';stamEl.style.color=pct>50?'var(--gold)':pct>20?'var(--fire-lt)':'var(--red)';}
-  const rEl=document.getElementById('hudRoom');
-  if(rEl){const tmpl=G.room.template;rEl.textContent=tmpl?tmpl.name.substring(0,6):G.room.world+'-'+G.room.index;}
-  const sEl=document.getElementById('hudScore');if(sEl)sEl.textContent=G.score;
-  const wEl=document.getElementById('hudWpn');if(wEl)wEl.textContent=wpn()?wpn().name:'—';
-  ['HP','Room','Score','Stam'].forEach(k=>{
-    const el=document.getElementById('fs'+k);
-    const src=document.getElementById('hud'+(k==='Stam'?'StamBar':k));
-    if(el&&src){el.textContent=src.textContent;el.style.color=src.style.color;}
-  });
-  const fwpn=document.getElementById('fsWpn');if(fwpn)fwpn.textContent=wpn()?wpn().name:'—';
-}
-
-/* ── ROOM LOADING ── */
-function loadRoom(world,index){
-  const room=G.room;
-  room.world=world;room.index=index;
-  room.cleared=false;room.transitioning=false;
-  room.enemies=[];room.arrows=[];G.particles=[];
-
-  const isBoss=(index%5===0);
-  const tmpl=isBoss?ROOM_TEMPLATES[7]:ROOM_TEMPLATES[Math.floor(Math.random()*7)];
-  room.template=tmpl;
-  room.walls=tmpl.walls.map(w=>({x:w.x*CW,y:w.y*CH,w:w.w*CW,h:w.h*CH}));
-
-  const doorX=CW-22,doorY=CH/2;
-  room.door={x:doorX,y:doorY,r:18,open:false};
-
   if(!isBoss&&Math.random()<(tmpl.chestChance||0.4)){
     room.chest={x:CW/2+(Math.random()-.5)*80,y:CH/2+(Math.random()-.5)*80,taken:false};
   } else room.chest=null;
@@ -1432,23 +1063,6 @@ function loadNextRoom(){
   let{world,index}=G.room;
   index++;
   if(index>5){
-    if(world>=3){G.phase='win';return;}
-    world++;index=1;
-    showPerkScreen();return;
-  }
-  loadRoom(world,index);
-}
-
-function spawnRoomEnemies(world,index,isBoss){
-  const diff=world*5+index;
-  if(isBoss){
-    const boss={type:'boss',x:CW*0.75,y:CH/2,r:26,hp:60+world*40,maxHp:60+world*40,col:'#aa2020',spd:1.1,cDmg:18,angle:0,age:0,dmgT:0,dead:false,fireRate:2,shotTimer:60};
-    G.room.enemies.push(boss);
-  } else {
-    const count=Math.min(2+Math.floor(diff/2),10);
-    const types=['grunt','brute','archer'];
-    const avail=world>=3?types:world>=2?types.slice(0,3):types.slice(0,2);
-    for(let i=0;i5){
     if(world>=3){G.phase='win';return;}
     world++;index=1;
     showPerkScreen();return;
@@ -1529,55 +1143,6 @@ function gameDraw(){
   });
   // Stone grid
   ctx.strokeStyle='rgba(255,220,100,.022)';ctx.lineWidth=.5;
-  for(let x=0;xw.name!==G.p.wpn0?.name&&w.name!==G.p.wpn1?.name);
-  const found=available[Math.floor(Math.random()*available.length)];
-  if(!G.p.wpn1){G.p.wpn1={...found};updateHUD();spawnParts(ch.x,ch.y,'#d4a520',16,4);sout('📦 Found: '+found.name+' (press Q to swap weapon slots!)');}
-  else{
-    const choice=confirm('Found '+found.name+'!\n\nDmg:'+found.dmg+' Reach:'+found.reach+'\n\nCurrent: '+G.p.wpn0.name+' / '+G.p.wpn1.name+'\n\nSwap active weapon for '+found.name+'?');
-    if(choice){G.p.wpn0={...found};}
-    spawnParts(ch.x,ch.y,'#d4a520',14,4);updateHUD();
-    sout('📦 '+(choice?'Equipped '+found.name+'!':'Kept your weapon.'));
-  }
-}
-
-function showPerkScreen(){
-  G.phase='perk';
-  sout('✨ Choose a Perk, pick a card in the blueprint panel!');
-}
-
-function gameOver(){G.phase='dead';sout('💀 Fallen in battle! Score: '+G.score+', press R or click to charge again');}
-
-function startGame(){
-  G.particles=[];G.bloodDecals=[];G.score=0;G.shakeTimer=0;
-  G.p.hp=G.p.maxHp;G.p.shield=false;G.p.berserk=false;
-  G.p.wpn0={...startWPN};G.p.wpn1=null;
-  G.p.stamBar=G.p.maxStam;G.p.speedMult=1;G.p.regen=0;
-  if(perk1==='swift')G.p.speedMult=1.35;
-  if(perk2==='berserk')G.p.berserk=true;
-  if(perk2==='second_wind')G.p.regen=0.8;
-  if(perk2==='shield_bash'){G.p.shield=true;}
-  G.phase='playing';
-  loadRoom(1,1);
-  updateHUD();
-  sout('⚔ Zone 1-1, WASD to move, mouse to aim, Space/Click to swing!');
-}
-
-/* ════════════════════════════════════════════════════════
-   DRAW
-════════════════════════════════════════════════════════ */
-function gameDraw(){
-  const W=CW,H=CH;
-  ctx.save();
-  if(G.shakeTimer>0){ctx.translate((Math.random()-.5)*G.shakeAmt,(Math.random()-.5)*G.shakeAmt);G.shakeTimer--;}
-
-  // Stone floor
-  ctx.fillStyle='#141008';ctx.fillRect(0,0,W,H);
-  FTILES.forEach(t=>{
-    ctx.fillStyle=t.ofs?'rgba(255,220,100,.016)':t.v>.85?'rgba(255,255,255,.022)':t.v>.7?'rgba(255,255,255,.01)':'rgba(0,0,0,.06)';
-    ctx.fillRect(t.x,t.y,27,27);
-  });
-  // Stone grid
-  ctx.strokeStyle='rgba(255,220,100,.022)';ctx.lineWidth=.5;
   for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
@@ -1587,11 +1152,6 @@ function gameDraw(){
   const room=G.room;
   // Draw walls (castle stone)
   room.walls.forEach(w=>{
-    ctx.fillStyle='#2a2015';ctx.fillRect(w.x,w.y,w.w,w.h);
-    // Stone texture
-    ctx.strokeStyle='rgba(212,165,32,.15)';ctx.lineWidth=1.2;ctx.strokeRect(w.x,w.y,w.w,w.h);
-    ctx.strokeStyle='rgba(100,80,40,.25)';ctx.lineWidth=.5;
-    for(let iy=w.y+10;iy{
     ctx.fillStyle='#2a2015';ctx.fillRect(w.x,w.y,w.w,w.h);
     // Stone texture
     ctx.strokeStyle='rgba(212,165,32,.15)';ctx.lineWidth=1.2;ctx.strokeRect(w.x,w.y,w.w,w.h);
@@ -1606,57 +1166,6 @@ function gameDraw(){
 
   // Blood decals
   G.bloodDecals.forEach(d=>{ctx.globalAlpha=d.a*.28;ctx.fillStyle='#6b0000';ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fill();});
-  ctx.globalAlpha=1;
-
-  // Chest
-  if(room.chest&&!room.chest.taken){
-    const ch=room.chest;
-    ctx.save();ctx.translate(ch.x,ch.y);
-    ctx.fillStyle='#4a3800';ctx.fillRect(-12,-8,24,16);
-    ctx.strokeStyle='#d4a520';ctx.lineWidth=1.5;ctx.strokeRect(-12,-8,24,16);
-    ctx.fillStyle='#d4a520';ctx.fillRect(-3,-3,6,6);
-    ctx.fillStyle='rgba(212,165,32,.4)';ctx.beginPath();ctx.arc(0,0,20,0,Math.PI*2);ctx.fill();
-    ctx.restore();
-  }
-
-  // Door
-  if(room.door){
-    const d=room.door;
-    ctx.save();ctx.translate(d.x,d.y);
-    ctx.fillStyle=d.open?'rgba(74,173,96,.3)':'rgba(80,60,30,.5)';
-    ctx.strokeStyle=d.open?'#4aad60':'#8a6020';
-    ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.fillStyle=d.open?'#4aad60':'#8a6020';
-    ctx.font='bold 14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(d.open?'⟹':'🚪',0,0);
-    ctx.restore();
-  }
-
-  // Arrows
-  if(room.arrows){
-    room.arrows.forEach(a=>{
-      ctx.save();ctx.translate(a.x,a.y);ctx.rotate(Math.atan2(a.vy,a.vx));
-      ctx.strokeStyle='#c0a060';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-8,0);ctx.lineTo(8,0);ctx.stroke();
-      ctx.fillStyle='#c0a060';ctx.beginPath();ctx.moveTo(8,-3);ctx.lineTo(14,0);ctx.lineTo(8,3);ctx.closePath();ctx.fill();
-      ctx.restore();
-    });
-  }
-
-  // Enemies
-  room.enemies.forEach(e=>{
-    if(e.dead)return;
-    ctx.save();ctx.translate(e.x,e.y);
-    const flash=e.dmgT>0;
-    if(flash){ctx.fillStyle='#fff';}
-    else ctx.fillStyle=e.col;
-    if(e.type==='boss'){
-      // Boss, armoured knight with crown
-      ctx.beginPath();ctx.arc(0,0,e.r,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#d4a520';ctx.lineWidth=2.5;ctx.stroke();
-      ctx.fillStyle='rgba(212,165,32,.6)';ctx.beginPath();ctx.arc(0,-e.r-5,5,0,Math.PI*2);ctx.fill();
-    } else if(e.type==='brute'){
-      // Brute, hexagon
-      ctx.beginPath();for(let i=0;i{ctx.globalAlpha=d.a*.28;ctx.fillStyle='#6b0000';ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,Math.PI*2);ctx.fill();});
   ctx.globalAlpha=1;
 
   // Chest
@@ -1722,44 +1231,6 @@ function gameDraw(){
     const bw=e.r*2.2,bx=-e.r*1.1,by=-e.r-8;
     ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,4);
     ctx.fillStyle=e.hp/e.maxHp>0.5?'#4aad60':'#cc3333';
-    ctx.fillRect(bx,by,bw*(e.hp/e.maxHp),4);
-    ctx.restore();
-  });
-
-  // Player
-  const p=G.p;
-  ctx.save();ctx.translate(p.x,p.y);
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(3,5,p.r,p.r*.5,0,0,Math.PI*2);ctx.fill();
-  // Body
-  ctx.fillStyle=p.berserk?'#cc4422':'#d4a520';
-  ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.stroke();
-  // Direction indicator
-  ctx.strokeStyle='#fff';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(p.angle)*p.r,Math.sin(p.angle)*p.r);ctx.stroke();
-  // Shield visual
-  if(p.shield){
-    ctx.strokeStyle='rgba(212,165,32,.7)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,p.r+4,0,Math.PI*2);ctx.stroke();
-  }
-  // Attack arc
-  if(p.attacking){
-    const w=wpn();
-    const sweep=(w.sweep||70)*Math.PI/180;
-    ctx.save();ctx.rotate(p.attackAngle);
-    ctx.strokeStyle=w.col||'#d4a520';ctx.lineWidth=3;ctx.globalAlpha=0.7*(p.attackSweepLeft/70);
-    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,w.reach||36,-sweep/2,sweep/2);ctx.closePath();ctx.stroke();
-    ctx.fillStyle=(w.col||'#d4a520')+'22';ctx.fill();
-    ctx.restore();
-  }
-  ctx.restore();
-
-  // Particles
-  G.particles.forEach(pt=>{ctx.globalAlpha=pt.l*.9;ctx.fillStyle=pt.col;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.s,0,Math.PI*2);ctx.fill();});
-  ctx.globalAlpha=1;
-
-  // Stamina bar (below player, only when low)
-  if(G.f_stam&&p.stamBar0.5?'#4aad60':'#cc3333';
     ctx.fillRect(bx,by,bw*(e.hp/e.maxHp),4);
     ctx.restore();
   });
@@ -1884,91 +1355,7 @@ function quickPlay(){
 /* ════════════════════════════════════════════════════════
    STEPS SYSTEM
 ════════════════════════════════════════════════════════ */
-function nav(i){const T=STEPS.length;return`40?'#d4a520':'#e06020';
-    ctx.fillRect(bx,by,bw*(p.stamBar/p.maxStam),4);
-  }
-
-  if(G.phase==='dead'||G.phase==='win'){drawEndScreen();}
-  ctx.restore();
-}
-
-function drawTitle(){
-  ctx.fillStyle='rgba(10,8,4,.85)';ctx.fillRect(0,0,CW,CH);
-  ctx.fillStyle='#d4a520';ctx.font='bold 28px Cinzel,serif';ctx.textAlign='center';ctx.fillText('CASTLE SIEGE',CW/2,CH/2-40);
-  ctx.fillStyle='rgba(212,165,32,.5)';ctx.font='11px Cinzel,serif';ctx.fillText('Complete the blueprint steps',CW/2,CH/2-10);
-  ctx.fillStyle='rgba(240,232,208,.3)';ctx.font='9px JetBrains Mono,monospace';ctx.fillText('or press Quick Play to storm the gates',CW/2,CH/2+10);
-  ctx.textAlign='left';
-}
-
-function drawPerkScreen(){
-  ctx.fillStyle='rgba(10,8,4,.9)';ctx.fillRect(0,0,CW,CH);
-  ctx.fillStyle='#d4a520';ctx.font='bold 22px Cinzel,serif';ctx.textAlign='center';
-  ctx.fillText('CHOOSE YOUR PERK',CW/2,CH/2-30);
-  ctx.fillStyle='rgba(212,165,32,.5)';ctx.font='10px JetBrains Mono,serif';
-  ctx.fillText('Select a perk card in the blueprint panel →',CW/2,CH/2+5);
-  ctx.textAlign='left';
-}
-
-function drawEndScreen(){
-  ctx.fillStyle=G.phase==='win'?'rgba(10,30,10,.82)':'rgba(30,5,5,.82)';ctx.fillRect(0,0,CW,CH);
-  ctx.fillStyle=G.phase==='win'?'#4aad60':'#cc3333';
-  ctx.font='bold 28px Cinzel,serif';ctx.textAlign='center';
-  ctx.fillText(G.phase==='win'?'VICTORY!':'FALLEN',CW/2,CH/2-20);
-  ctx.fillStyle='rgba(212,165,32,.7)';ctx.font='10px JetBrains Mono,monospace';
-  ctx.fillText('Score: '+G.score+', Press R or click to try again',CW/2,CH/2+14);
-  ctx.textAlign='left';
-}
-
-/* ── FULLSCREEN SYNC ── */
-const canvasFS=document.getElementById('gcFS');
-const ctxFS=canvasFS?canvasFS.getContext('2d'):null;
-function syncFS(){
-  if(!document.getElementById('fsOverlay').classList.contains('open'))return;
-  const wrap=document.querySelector('.fs-canvas-wrap');
-  if(!wrap)return;
-  const s=Math.min(wrap.clientWidth-20,wrap.clientHeight-20,720);
-  canvasFS.width=s;canvasFS.height=s;
-  if(ctxFS)ctxFS.drawImage(canvas,0,0,s,s);
-}
-function openFS(){document.getElementById('fsOverlay').classList.add('open');}
-function closeFS(){document.getElementById('fsOverlay').classList.remove('open');}
-
-/* ════════════════════════════════════════════════════════
-   QUICK PLAY
-════════════════════════════════════════════════════════ */
-function quickPlay(){
-  // Randomise everything
-  const names=['Sir Aldric','Lady Mira','The Iron Fist','Ser Roland','Vex the Bold','Dame Isolde'];
-  G.p.name=names[Math.floor(Math.random()*names.length)];
-  G.p.maxHp=80+Math.floor(Math.random()*60);
-  G.p.speed=0.9+Math.random()*.4;
-  G.f_player=true;G.f_aim=true;G.f_attack=true;G.f_enemies=true;
-  G.f_collision=true;G.f_doors=true;G.f_chests=true;G.f_hud=true;G.f_stam=true;
-
-  // Random starting weapon
-  const wpnPick=WEAPONS_POOL[Math.floor(Math.random()*WEAPONS_POOL.length)];
-  Object.assign(startWPN,wpnPick);
-
-  // Random perks
-  const p1s=['heavy','swift','iron_skin'];
-  const p2s=['berserk','shield_bash','second_wind'];
-  perk1=p1s[Math.floor(Math.random()*p1s.length)];
-  perk2=p2s[Math.floor(Math.random()*p2s.length)];
-
-  if(perk1==='iron_skin')G.p.maxHp=Math.round(G.p.maxHp*1.5);
-  G.p.hp=G.p.maxHp;G.p.maxStam=100;
-
-  updateKnightCard();
-  startGame();
-  sout('⚡ Quick Play! Randomised knight: '+G.p.name+'. WASD + Space/Click to fight!');
-  // Jump to step 30 in UI
-  go(STEPS.length-1);
-}
-
-/* ════════════════════════════════════════════════════════
-   STEPS SYSTEM
-════════════════════════════════════════════════════════ */
-function nav(i){const T=STEPS.length;return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →Next →</button></div>`;}
+function nav(i){const T=STEPS.length;return`<div class="step-nav"><button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button><button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next →</button></div>`;}
 
 const mutPZs={};
 
@@ -1976,31 +1363,7 @@ const STEPS=[
 
 // ── SECTION 1: ACTOR SETUP ──
 {title:'Blueprint Actor Event Graph',tag:'STEP 01 · ACTOR',isW:false,
-intro:`Connect `;}
-
-const mutPZs={};
-
-const STEPS=[
-
-// ── SECTION 1: ACTOR SETUP ──
-{title:'Blueprint Actor Event Graph',tag:'STEP 01 · ACTOR',isW:false,
-intro:`Connect <strong>Event BeginPlayEvent BeginPlay</strong> to  to <strong>Print StringPrint String</strong>. This is the first node in every Blueprint, it confirms the engine has started and the castle siege can begin.`,
-pz:mkPZ([
-  {id:'n1',type:'event',title:'Event BeginPlay',x:16,y:28,w:152,rp:[{id:'r1',type:'exec',label:''}]},
-  {id:'n2',type:'func',title:'Print String',sub:'Castle Siege Starting!',x:200,y:28,w:162,lp:[{id:'l1',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
-],[{f:'r1',t:'l1'}],[]),
-boxes:[{t:'box-c',tx:'The white arrow pins are exec wires, they control the order nodes run. BeginPlay fires once when the game starts, then flows right to every connected node.'}],
-onApply(){sout('✅ Engine started! Complete more steps to storm the castle.');}
-},
-
-{title:'Knight Variables: Stamina & Speed',tag:'STEP 02 · VARIABLES',isW:false,
-intro:`Connect BeginPlay → Set Stamina → Set MoveSpeed. Type your knight's starting values in the gold fields, these define how tough and fast your warrior is.`,
-pz:mkPZ([
-  {id:'n1',type:'event',title:'Event BeginPlay',x:8,y:36,w:145,rp:[{id:'r1',type:'exec',label:''}]},
-  {id:'n2',type:'vset',title:'Set Stamina',x:174,y:14,w:122,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Value'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Stamina 60-200 (e.g.100)',val:''}},
-  {id:'n3',type:'vset',title:'Set MoveSpeed',x:316,y:14,w:132,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Value'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Speed 200-500 (e.g.300)',val:''}},
-],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[
-  {id:'n2',ok:v=>v&&!isNaN(parseInt(v))&&parseInt(v)>=30&&parseInt(v). This is the first node in every Blueprint, it confirms the engine has started and the castle siege can begin.`,
+intro:`Connect <strong>Event BeginPlay</strong> to <strong>Print String</strong>. This is the first node in every Blueprint, it confirms the engine has started and the castle siege can begin.`,
 pz:mkPZ([
   {id:'n1',type:'event',title:'Event BeginPlay',x:16,y:28,w:152,rp:[{id:'r1',type:'exec',label:''}]},
   {id:'n2',type:'func',title:'Print String',sub:'Castle Siege Starting!',x:200,y:28,w:162,lp:[{id:'l1',type:'exec',label:''}],rp:[{id:'r2',type:'exec',label:''}]},
@@ -2017,7 +1380,7 @@ pz:mkPZ([
   {id:'n3',type:'vset',title:'Set MoveSpeed',x:316,y:14,w:132,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Value'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Speed 200-500 (e.g.300)',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[
   {id:'n2',ok:v=>v&&!isNaN(parseInt(v))&&parseInt(v)>=30&&parseInt(v)<=300},
-  {id:'n3',ok:v=>v&&!isNaN(parseFloat(v))&&parseFloat(v)>=100&&parseFloat(v)v&&!isNaN(parseFloat(v))&&parseFloat(v)>=100&&parseFloat(v)<=600},
+  {id:'n3',ok:v=>v&&!isNaN(parseFloat(v))&&parseFloat(v)>=100&&parseFloat(v)<=600},
 ]),
 boxes:[{t:'box-c',tx:'Integer pins (blue) = whole numbers. Float pins (green) = decimals. Higher stamina = more hits taken. Higher speed = faster movement, but dodge timing matters more.'}],
 onApply(v){G.p.maxHp=parseInt(v['n2'])||100;G.p.hp=G.p.maxHp;G.p.speed=(parseFloat(v['n3'])||300)/110;G.p.maxStam=100;G.p.stamBar=100;G.f_player=true;updateKnightCard();updateHUD();sout('✅ Stamina='+v['n2']+' Speed='+v['n3']+', WASD to move!');}
@@ -2079,7 +1442,7 @@ pz:mkPZ([
   {id:'n3',type:'func',title:'RInterp To',x:344,y:6,w:125,lp:[{id:'l3c',type:'rot',label:'Current'},{id:'l3t',type:'rot',label:'Target'},{id:'l3s',type:'float',label:'Speed'}],rp:[{id:'r3',type:'rot',label:'Result'}],vf:{hint:'Rot speed 8-20 (e.g.12)',val:''}},
   {id:'n4',type:'func',title:'Set Actor Rotation',x:492,y:6,w:46,lp:[{id:'l4',type:'rot',label:''}]},
 ],[{f:'r1',t:'l2t'},{f:'r2',t:'l3t'},{f:'r3',t:'l4'}],[
-  {id:'n3',ok:v=>parseFloat(v)>=4&&parseFloat(v)parseFloat(v)>=4&&parseFloat(v)<=30},
+  {id:'n3',ok:v=>parseFloat(v)>=4&&parseFloat(v)<=30},
 ]),
 boxes:[{t:'box-t',tx:'RInterp To smooths rotation over time rather than snapping instantly. Low speed = slow lazy turn, high speed = snappy. A value around 12 feels like a responsive but physical warrior.'}],
 onApply(){G.f_aim=true;sout('✅ Rotation smooth! Knight now turns towards your cursor.');}
@@ -2095,9 +1458,8 @@ pz:mkPZ([
   {id:'n4',type:'weapon',title:'Set WeaponReach',x:482,y:14,w:58,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Reach 20-60 (e.g.36)',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
   {id:'n2',ok:v=>v&&v.trim().length>=2},
-  {id:'n3',ok:v=>parseInt(v)>=1&&parseInt(v)v&&v.trim().length>=2},
   {id:'n3',ok:v=>parseInt(v)>=1&&parseInt(v)<=25},
-  {id:'n4',ok:v=>parseInt(v)>=15&&parseInt(v)parseInt(v)>=15&&parseInt(v)<=65},
+  {id:'n4',ok:v=>parseInt(v)>=15&&parseInt(v)<=65},
 ],true),
 boxes:[{t:'box-w',tx:'Long reach weapons can hit enemies through castle pillars and around corners, powerful but the arc is narrow. Short reach weapons sweep wider arcs and are better in tight corridors.'}],
 onApply(v){
@@ -2117,8 +1479,8 @@ pz:mkPZ([
   {id:'n2',type:'weapon',title:'Set SweepAngle',x:178,y:18,w:150,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'int',label:'Degrees'}],rp:[{id:'r2',type:'exec',label:''}],vf:{hint:'Sweep 20-120 (e.g.70)',val:''}},
   {id:'n3',type:'weapon',title:'Set WeaponColor',sub:'visual only',x:350,y:18,w:140,lp:[{id:'l3e',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'}],[
-  {id:'n1',ok:v=>parseFloat(v)>=0.15&&parseFloat(v)parseFloat(v)>=0.15&&parseFloat(v)<=1.5},
-  {id:'n2',ok:v=>parseInt(v)>=15&&parseInt(v)parseInt(v)>=15&&parseInt(v)<=130},
+  {id:'n1',ok:v=>parseFloat(v)>=0.15&&parseFloat(v)<=1.5},
+  {id:'n2',ok:v=>parseInt(v)>=15&&parseInt(v)<=130},
 ]),
 boxes:[
   {t:'box-w',tx:'A wide sweep angle (90°+) is great for groups of grunts in open courtyards. A narrow angle (20°-30°) means precision strikes, good for high-damage slow weapons like great axes.'},
@@ -2143,9 +1505,6 @@ pz:mkPZ([
   {id:'n3',type:'math',title:'>= Check',sub:'Stam >= 0',x:340,y:14,w:118,lp:[{id:'l3a',type:'float',label:'A'},{id:'l3b',type:'float',label:'B (0)'}],rp:[{id:'r3',type:'bool',label:'OK?'}]},
   {id:'n4',type:'branch',title:'Branch',x:340,y:96,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:'Cond'}],rp:[{id:'r4t',type:'exec',label:'Swing'},{id:'r4f',type:'exec',label:'Exhausted'}]},
 ],[{f:'r1',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2v',t:'l3a'},{f:'r3',t:'l4c'}],[
-  {id:'n2',ok:v=>parseFloat(v)>=2&&parseFloat(v)= Check',sub:'Stam >= 0',x:340,y:14,w:118,lp:[{id:'l3a',type:'float',label:'A'},{id:'l3b',type:'float',label:'B (0)'}],rp:[{id:'r3',type:'bool',label:'OK?'}]},
-  {id:'n4',type:'branch',title:'Branch',x:340,y:96,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:'Cond'}],rp:[{id:'r4t',type:'exec',label:'Swing'},{id:'r4f',type:'exec',label:'Exhausted'}]},
-],[{f:'r1',t:'l2e'},{f:'r2e',t:'l4e'},{f:'r2v',t:'l3a'},{f:'r3',t:'l4c'}],[
   {id:'n2',ok:v=>parseFloat(v)>=2&&parseFloat(v)<=25},
 ]),
 boxes:[
@@ -2163,7 +1522,7 @@ pz:mkPZ([
   {id:'n4',type:'branch',title:'Branch',x:284,y:90,w:100,lp:[{id:'l4e',type:'exec',label:''},{id:'l4c',type:'bool',label:'Cond'}],rp:[{id:'r4t',type:'exec',label:'True'}]},
   {id:'n5',type:'vset',title:'Set Stamina',x:406,y:90,w:130,lp:[{id:'l5e',type:'exec',label:''},{id:'l5v',type:'float',label:'Regen Value'}],vf:{hint:'Regen 0.5-2 (e.g. 0.8)',val:''}},
 ],[{f:'r1',t:'l4e'},{f:'r2',t:'l3a'},{f:'r3',t:'l4c'},{f:'r4t',t:'l5e'}],[
-  {id:'n5',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)parseFloat(v)>=0.2&&parseFloat(v)<=3},
+  {id:'n5',ok:v=>parseFloat(v)>=0.2&&parseFloat(v)<=3},
 ]),
 boxes:[{t:'box-t',tx:'Fast regen (1.5+) favours aggressive play, you can swing freely as long as you rest between rooms. Slow regen (0.5) creates tense resource decisions mid-fight.'}],
 onApply(v){sout('✅ Stamina regen set to '+v['n5']+'/tick!');}
@@ -2178,9 +1537,9 @@ pz:mkPZ([
   {id:'n3',type:'vset',title:'Set Speed',x:320,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Speed'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Spd 1.0-2.5 (e.g.1.3)',val:''}},
   {id:'n4',type:'vset',title:'Set ContactDmg',x:458,y:12,w:78,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Dmg'}],vf:{hint:'Dmg 3-12',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
-  {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)parseInt(v)>=1&&parseInt(v)<=20},
-  {id:'n3',ok:v=>parseFloat(v)>=0.5&&parseFloat(v)parseFloat(v)>=0.5&&parseFloat(v)<=3},
-  {id:'n4',ok:v=>parseInt(v)>=2&&parseInt(v)parseInt(v)>=2&&parseInt(v)<=20},
+  {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)<=20},
+  {id:'n3',ok:v=>parseFloat(v)>=0.5&&parseFloat(v)<=3},
+  {id:'n4',ok:v=>parseInt(v)>=2&&parseInt(v)<=20},
 ]),
 boxes:[{t:'box-c',tx:'Guards (red circles) appear in every zone. Their HP matters: weak guards die easily but swarm you in numbers. Strong guards force you to commit stamina, dangerous in later zones.'}],
 onApply(){G.f_enemies=true;sout('✅ Guards are spawning! They rush your position from the right.');}
@@ -2194,9 +1553,9 @@ pz:mkPZ([
   {id:'n3',type:'vset',title:'Set Speed',x:320,y:14,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Speed (low)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Spd 0.5-1.2 (e.g.0.8)',val:''}},
   {id:'n4',type:'vset',title:'Set ContactDmg',x:458,y:14,w:78,lp:[{id:'l4e',type:'exec',label:''}],vf:{hint:'Dmg 10-25',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
-  {id:'n2',ok:v=>parseInt(v)>=5&&parseInt(v)parseInt(v)>=5&&parseInt(v)<=50},
-  {id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)parseFloat(v)>=0.3&&parseFloat(v)<=1.5},
-  {id:'n4',ok:v=>parseInt(v)>=6&&parseInt(v)parseInt(v)>=6&&parseInt(v)<=30},
+  {id:'n2',ok:v=>parseInt(v)>=5&&parseInt(v)<=50},
+  {id:'n3',ok:v=>parseFloat(v)>=0.3&&parseFloat(v)<=1.5},
+  {id:'n4',ok:v=>parseInt(v)>=6&&parseInt(v)<=30},
 ]),
 boxes:[{t:'box-c',tx:'Brutes (brown hexagons) force resource decisions, you need multiple swings to kill one. Weapons with high damage-per-hit (war axe, greatsword) are effective. Low-damage daggers will exhaust you.'}],
 onApply(){sout('✅ Brutes are set! They appear from Zone 2, hard to kill, hard hits.');}
@@ -2210,9 +1569,9 @@ pz:mkPZ([
   {id:'n3',type:'vset',title:'Set FireRate',x:320,y:12,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'float',label:'Rate (secs)'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'Rate 1.0-3 (e.g.1.6)',val:''}},
   {id:'n4',type:'vset',title:'Set ArrowDmg',x:458,y:12,w:78,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Dmg'}],vf:{hint:'Dmg 4-14(e.g.6)',val:''}},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
-  {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)parseInt(v)>=1&&parseInt(v)<=12},
-  {id:'n3',ok:v=>parseFloat(v)>=0.6&&parseFloat(v)parseFloat(v)>=0.6&&parseFloat(v)<=4},
-  {id:'n4',ok:v=>parseInt(v)>=2&&parseInt(v)parseInt(v)>=2&&parseInt(v)<=18},
+  {id:'n2',ok:v=>parseInt(v)>=1&&parseInt(v)<=12},
+  {id:'n3',ok:v=>parseFloat(v)>=0.6&&parseFloat(v)<=4},
+  {id:'n4',ok:v=>parseInt(v)>=2&&parseInt(v)<=18},
 ]),
 boxes:[{t:'box-r',tx:'Archers (green triangles) appear from Zone 1-3 onward. They retreat when you close in. Rooms with the cross or L-shaped walls make archers deadly, they can hide and shoot from cover positions.'}],
 onApply(){G.f_enemies=true;sout('✅ Archers set! They fire arrows from range, use pillars as cover!');}
@@ -2228,17 +1587,6 @@ pz:mkPZ([
   {id:'n4',type:'func',title:'Spawn Blood FX',x:382,y:108,w:148,lp:[{id:'l4e',type:'exec',label:''}]},
 ],[{f:'r1e',t:'l2e'},{f:'r1a',t:'l2o'},{f:'r2s',t:'l3e'},{f:'r2en',t:'l3a'},{f:'r3',t:'l4e'}],[
   {id:'n3',ok:v=>parseFloat(v)>0},
-]),
-boxes:[{t:'box-c',tx:'Cast to BP_Enemy fails when the sword arc hits a wall, the Fail exec pin fires. Leave it unconnected unless you want a wall-hit spark effect (a great extra touch!).'}],
-onApply(){G.f_collision=true;sout('✅ Collision live! Your sword damages enemies. Space/Click to swing!');}
-},
-
-{title:'Enemy Takes Damage, HP Check & Death',tag:'STEP 16 · COLLISION',isW:false,
-intro:`In BP_Enemy: Connect ApplyDamage Event → Subtract HP → Branch (HP ≤ 0) → True: Play Death FX → Destroy Actor and Broadcast OnEnemyDied.`,
-pz:mkPZ([
-  {id:'n1',type:'event',title:'AnyDamage Event',sub:'BP_Enemy',x:4,y:36,w:160,rp:[{id:'r1e',type:'exec',label:''},{id:'r1d',type:'float',label:'Damage'}]},
-  {id:'n2',type:'math',title:'- Subtract',sub:'HP - Damage',x:186,y:14,w:118,lp:[{id:'l2e',type:'exec',label:''},{id:'l2v',type:'float',label:'Damage'}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'float',label:'New HP'}]},
-  {id:'n3',type:'math',title:'parseFloat(v)>0},
 ]),
 boxes:[{t:'box-c',tx:'Cast to BP_Enemy fails when the sword arc hits a wall, the Fail exec pin fires. Leave it unconnected unless you want a wall-hit spark effect (a great extra touch!).'}],
 onApply(){G.f_collision=true;sout('✅ Collision live! Your sword damages enemies. Space/Click to swing!');}
@@ -2384,7 +1732,7 @@ pz:mkPZ([
   {id:'n3',type:'vset',title:'Set Health',x:310,y:8,w:118,lp:[{id:'l3e',type:'exec',label:''},{id:'l3v',type:'int',label:'Boss HP'}],rp:[{id:'r3',type:'exec',label:''}],vf:{hint:'HP 120-300 (e.g.180)',val:''}},
   {id:'n4',type:'func',title:'Start Phase 1\nAttack Pattern',x:450,y:8,w:86,lp:[{id:'l4e',type:'exec',label:''}]},
 ],[{f:'r1',t:'l2e'},{f:'r2',t:'l3e'},{f:'r3',t:'l4e'}],[
-  {id:'n3',ok:v=>parseInt(v)>=80&&parseInt(v)parseInt(v)>=80&&parseInt(v)<=400},
+  {id:'n3',ok:v=>parseInt(v)>=80&&parseInt(v)<=400},
 ]),
 boxes:[
   {t:'box-c',tx:'Phase 1: The Baron charges in wide arcs and summons archers. Phase 2 (below 50%): Baron enrages, speed increases, attacks get faster, he summons a brute escort.'},
@@ -2445,60 +1793,7 @@ onApply(){sout('✅ Score system wired! Kills give points. Check the HUD score.'
 
 // ── FINAL STEP ──
 {title:'Launch the Siege! ⚔',tag:'STEP 30 · LAUNCH',isW:false,
-intro:`All systems are active. Your knight is forged, your blade is ready, the castle gates are ahead. Hit = Check',sub:'Dmg >= KillThreshold',x:190,y:12,w:130,lp:[{id:'l2a',type:'float',label:'Dmg'},{id:'l2b',type:'float',label:'Threshold'}],rp:[{id:'r2',type:'bool',label:'Kill?'}]},
-  {id:'n3',type:'branch',title:'Branch',x:190,y:94,w:100,lp:[{id:'l3e',type:'exec',label:''},{id:'l3c',type:'bool',label:'Cond'}],rp:[{id:'r3t',type:'exec',label:'Heavy'},{id:'r3f',type:'exec',label:'Light'}]},
-  {id:'n4',type:'func',title:'Play Camera Shake',sub:'Heavy (0.6 scale)',x:312,y:80,w:168,lp:[{id:'l4e',type:'exec',label:''}]},
-  {id:'n5',type:'func',title:'Play Camera Shake',sub:'Light (0.2 scale)',x:312,y:140,w:168,lp:[{id:'l5e',type:'exec',label:''}]},
-],[{f:'r1e',t:'l3e'},{f:'r1d',t:'l2a'},{f:'r2',t:'l3c'},{f:'r3t',t:'l4e'},{f:'r3f',t:'l5e'}],[]),
-boxes:[{t:'box-t',tx:'Two shake intensities: a light tremor for regular hits and a heavy rumble for killing blows. This gives instant feedback, the player feels the difference between chipping and ending a fight.'}],
-onApply(){shake(5,8);sout('✅ Camera shake active! Check how it feels when you kill a brute.');}
-},
-
-{title:'Particle FX, Blood & Impact Sparks',tag:'STEP 28 · POLISH',isW:false,
-intro:`Connect Apply Damage → Spawn Niagara System (NS_BloodSplat) at Enemy Location. Wire the hit direction for directional blood spray.`,
-pz:mkPZ([
-  {id:'n1',type:'event',title:'On Hit Success',x:4,y:28,w:148,rp:[{id:'r1e',type:'exec',label:''},{id:'r1l',type:'vec3',label:'Hit Location'},{id:'r1n',type:'vec3',label:'Hit Normal'}]},
-  {id:'n2',type:'func',title:'Spawn Niagara\nSystem at Location',x:174,y:8,w:168,lp:[{id:'l2e',type:'exec',label:''},{id:'l2s',type:'object',label:'Niagara Asset'},{id:'l2l',type:'vec3',label:'Location'},{id:'l2n',type:'vec3',label:'Rotation'}],rp:[{id:'r2',type:'exec',label:''}]},
-  {id:'n3',type:'func',title:'Spawn Blood Decal',x:362,y:8,w:160,lp:[{id:'l3e',type:'exec',label:''},{id:'l3l',type:'vec3',label:'Location'}]},
-],[{f:'r1e',t:'l2e'},{f:'r1l',t:'l2l'},{f:'r1n',t:'l2n'},{f:'r2',t:'l3e'},{f:'r1l',t:'l3l'}],[]),
-boxes:[{t:'box-c',tx:'Blood decals are static sprites that persist on the floor for ~30 seconds. Niagara particles are dynamic, the blood spray launches in the direction away from the hit normal for realistic direction.'}],
-onApply(){spawnParts(CW/2,CH/2,'#cc3333',20,5);sout('✅ Blood FX active! See the test particles on the arena!');}
-},
-
-{title:'Score System, Enemy Kill Value',tag:'STEP 29 · SCORING',isW:false,
-intro:`Connect On Enemy Died → Get Enemy Score Value → Add to Total Score → Update HUD Score Widget. Different enemies are worth different points.`,
-pz:mkPZ([
-  {id:'n1',type:'custom',title:'OnEnemyDied',sub:'Custom Event',x:4,y:34,w:145,rp:[{id:'r1e',type:'exec',label:''},{id:'r1e2',type:'object',label:'Enemy Ref'}]},
-  {id:'n2',type:'func',title:'Get Score Value',x:172,y:14,w:148,lp:[{id:'l2e',type:'exec',label:''},{id:'l2r',type:'object',label:'Enemy'}],rp:[{id:'r2e',type:'exec',label:''},{id:'r2v',type:'int',label:'Points'}]},
-  {id:'n3',type:'math',title:'+ Add',sub:'Score + Points',x:342,y:14,w:112,lp:[{id:'l3a',type:'int',label:'Score'},{id:'l3b',type:'int',label:'Points'}],rp:[{id:'r3',type:'int',label:'New Score'}]},
-  {id:'n4',type:'func',title:'Set Score',x:476,y:14,w:60,lp:[{id:'l4e',type:'exec',label:''},{id:'l4v',type:'int',label:'Value'}]},
-],[{f:'r1e',t:'l2e'},{f:'r1e2',t:'l2r'},{f:'r2e',t:'l4e'},{f:'r2v',t:'l3b'},{f:'r3',t:'l4v'}],[]),
-boxes:[{t:'box-r',tx:'Score values: Guard = 50pts, Brute = 150pts, Archer = 75pts, Baron = 500pts. Zone clear bonus: +200pts. No-damage zone: +500pts bonus. These create replayability, can you beat your high score?'}],
-onApply(){sout('✅ Score system wired! Kills give points. Check the HUD score.');}
-},
-
-// ── FINAL STEP ──
-{title:'Launch the Siege! ⚔',tag:'STEP 30 · LAUNCH',isW:false,
-intro:`All systems are active. Your knight is forged, your blade is ready, the castle gates are ahead. Hit <strong>Launch SiegeLaunch Siege</strong> to charge, or press  to charge, or press <strong>Quick PlayQuick Play</strong> in the header for an instant random run.`,
-pz:null,launchBtn:true,
-boxes:[
-  {t:'box-r',tx:'Zone structure: 3 Worlds × 5 Zones = 15 zones + 3 Baron boss fights. Find weapon chests, choose perks between worlds, and reach the Throne Room.'},
-  {t:'box-m',tx:'Perks: check your selections from steps 23 and 24, they activate now. Berserk + Heavy Hitter is the most explosive combo.'},
-  {t:'box-t',tx:'Every run is different, enemy counts, chest positions, and zone layouts are all randomised. Can you complete a full siege without dying?'},
-],
-onApply(){startGame();}
-},
-
-]; // end STEPS
-
-/* ════════════════════════════════════════════════════════
-   STEP RENDERER
-════════════════════════════════════════════════════════ */
-let curStep=0;
-const bpInsts={};
-
-function go(i){
-  if(i in the header for an instant random run.`,
+intro:`All systems are active. Your knight is forged, your blade is ready, the castle gates are ahead. Hit <strong>Launch Siege</strong> to charge, or press <strong>Quick Play</strong> in the header for an instant random run.`,
 pz:null,launchBtn:true,
 boxes:[
   {t:'box-r',tx:'Zone structure: 3 Worlds × 5 Zones = 15 zones + 3 Baron boss fights. Find weapon chests, choose perks between worlds, and reach the Throne Room.'},
@@ -2531,34 +1826,9 @@ function renderStep(i){
   const s=STEPS[i];
   const body=document.getElementById('stepBody');
 
-  let html=`=STEPS.length)return;
-  curStep=i;
-  renderStep(i);
-  // Update tabs
-  document.querySelectorAll('.tb').forEach((el,j)=>{
-    el.classList.toggle('active',j===i);
-  });
-  document.getElementById('stepBody').scrollTop=0;
-}
-
-function renderStep(i){
-  const s=STEPS[i];
-  const body=document.getElementById('stepBody');
-
-  let html=`<div class="step-tag">${s.tag}${s.tag}</div>`;
-  html+=``;
-  html+=`<div class="step-title">${s.title}${s.title}</div>`;
-  html+=``;
-  html+=`<p class="step-intro">${s.intro}${s.intro}</p>`;
-
-  // Blueprint puzzle
-  if(s.pz){
-    html+=s.pz.html;
-  }
-
-  // Mutation/perk cards
-  if(s.mutCards&&s.cards){
-    html+=``;
+  let html=`<div class="step-tag">${s.tag}</div>`;
+  html+=`<div class="step-title">${s.title}</div>`;
+  html+=`<p class="step-intro">${s.intro}</p>`;
 
   // Blueprint puzzle
   if(s.pz){
@@ -2570,42 +1840,23 @@ function renderStep(i){
     html+=`<div class="mut-grid">`;
     s.cards.forEach(c=>{
       const sel=s.mutId==='perk1'?perk1===c.id:perk2===c.id;
-      html+=``;
-    s.cards.forEach(c=>{
-      const sel=s.mutId==='perk1'?perk1===c.id:perk2===c.id;
       html+=`<div class="mut-card${sel?' sel':''}" onclick="selectPerk('${s.mutId}','${c.id}',${i})">
-        
-        <div class="mut-icon">${c.icon}${c.icon}</div>
-        
-        <div class="mut-name">${c.name}${c.name}</div>
-        
-        <div class="mut-desc">${c.desc}${c.desc}</div>
-      
+        <div class="mut-icon">${c.icon}</div>
+        <div class="mut-name">${c.name}</div>
+        <div class="mut-desc">${c.desc}</div>
       </div>`;
-    });
-    html+=``;
     });
     html+=`</div>`;
   }
 
   // Info boxes
   (s.boxes||[]).forEach(b=>{
-    html+=``;
-  }
-
-  // Info boxes
-  (s.boxes||[]).forEach(b=>{
-    html+=`<div class="box ${b.t}">${b.tx}${b.tx}</div>`;
+    html+=`<div class="box ${b.t}">${b.tx}</div>`;
   });
 
   // Launch button
   if(s.launchBtn){
-    html+=``;
-  });
-
-  // Launch button
-  if(s.launchBtn){
-    html+=`<button class="run-btn" onclick="startGame()">⚔ LAUNCH THE SIEGE⚔ LAUNCH THE SIEGE</button>`;
+    html+=`<button class="run-btn" onclick="startGame()">⚔ LAUNCH THE SIEGE</button>`;
   }
 
   html+=nav(i);
@@ -2640,48 +1891,7 @@ function selectPerk(mutId,id,stepI){
 // Build tabs
 function buildTabs(){
   const tabs=document.getElementById('stepTabs');
-  tabs.innerHTML=STEPS.map((s,i)=>``;
-  }
-
-  html+=nav(i);
-  body.innerHTML=html;
-
-  // Init blueprint puzzle
-  if(s.pz){
-    const inst=s.pz.init(vals=>{
-      document.querySelectorAll('.tb')[i].classList.add('done');window.bqStepDone&&window.bqStepDone(i);
-      s.onApply&&s.onApply(vals);
-    });
-    if(inst)bpInsts[i]=inst;
-  }
-}
-
-function selectPerk(mutId,id,stepI){
-  if(mutId==='perk1'){
-    perk1=id;
-    if(id==='iron_skin'){G.p.maxStam=150;G.p.stamBar=Math.min(G.p.stamBar,150);}
-    if(id==='heavy'){}// applied in startGame
-    if(id==='swift'){}
-  } else {
-    perk2=id;
-  }
-  updateKnightCard();
-  document.querySelectorAll('.tb')[stepI].classList.add('done');window.bqStepDone&&window.bqStepDone(stepI);
-  STEPS[stepI].onApply&&STEPS[stepI].onApply({});
-  sout('✅ Perk selected: '+id+'! Continue to the next step.');
-  renderStep(stepI);
-}
-
-// Build tabs
-function buildTabs(){
-  const tabs=document.getElementById('stepTabs');
-  tabs.innerHTML=STEPS.map((s,i)=>`<button class="tb${i===0?' active':''}" onclick="go(${i})">${i+1}${i+1}</button>`).join('');
-}
-
-buildTabs();
-go(0);
-requestAnimationFrame(loop);
-`).join('');
+  tabs.innerHTML=STEPS.map((s,i)=>`<button class="tb${i===0?' active':''}" onclick="go(${i})">${i+1}</button>`).join('');
 }
 
 buildTabs();
@@ -2691,9 +1901,7 @@ requestAnimationFrame(loop);
 
 
 <script>
-window.BQ={"key":"jvds-castle-siege-v2","name":"Castle Siege Blueprint","profileId":"castle-siege-blueprint","quiz":[{"q":"What does 
-window.BQ={"key":"jvds-castle-siege-v2","name":"Castle Siege Blueprint","profileId":"castle-siege-blueprint","quiz":[{"q":"What does <strong>Event BeginPlayEvent BeginPlay</strong> do in a Blueprint?","opts":["Fires every frame","Fires once when the game starts","Fires when the player clicks","Fires when an enemy dies"],"a":1,"why":"BeginPlay runs a single time as the game starts, which is why all setup logic connects to it."},{"q":"What do the white arrow pins (exec wires) control?","opts":["The colour of each node","How much damage is dealt","The order nodes run in","The frame rate"],"a":2,"why":"Exec wires are the flow of the program. Execution travels along them from left to right."},{"q":"Why multiply movement speed by  do in a Blueprint?","opts":["Fires every frame","Fires once when the game starts","Fires when the player clicks","Fires when an enemy dies"],"a":1,"why":"BeginPlay runs a single time as the game starts, which is why all setup logic connects to it."},{"q":"What do the white arrow pins (exec wires) control?","opts":["The colour of each node","How much damage is dealt","The order nodes run in","The frame rate"],"a":2,"why":"Exec wires are the flow of the program. Execution travels along them from left to right."},{"q":"Why multiply movement speed by <strong>Delta SecondsDelta Seconds</strong>?","opts":["So movement is the same speed at any frame rate","To make the knight stronger","To save memory","To zoom the camera"],"a":0,"why":"Delta Seconds is the time since the last frame, so speed × delta gives units per second instead of units per frame."},{"q":"Which node works like ?","opts":["So movement is the same speed at any frame rate","To make the knight stronger","To save memory","To zoom the camera"],"a":0,"why":"Delta Seconds is the time since the last frame, so speed × delta gives units per second instead of units per frame."},{"q":"Which node works like <strong>if / elseif / else</strong> in Blueprints?","opts":["Print String","Multiply","Set Stamina","Branch"],"a":3,"why":"Branch checks a boolean condition and sends execution down the True or False pin."},{"q":"What does  in Blueprints?","opts":["Print String","Multiply","Set Stamina","Branch"],"a":3,"why":"Branch checks a boolean condition and sends execution down the True or False pin."},{"q":"What does <strong>RInterp ToRInterp To</strong> do?","opts":["Teleports the actor instantly","Smoothly rotates from the current rotation towards a target","Adds two vectors","Spawns an enemy"],"a":1,"why":"RInterp To interpolates rotation over time. Low speed = lazy turn, high speed = snappy."},{"q":"What happens if you never call  do?","opts":["Teleports the actor instantly","Smoothly rotates from the current rotation towards a target","Adds two vectors","Spawns an enemy"],"a":1,"why":"RInterp To interpolates rotation over time. Low speed = lazy turn, high speed = snappy."},{"q":"What happens if you never call <strong>Add Mapping ContextAdd Mapping Context</strong> on BeginPlay?","opts":["The game runs faster","Enemies stop spawning","No keyboard input works at all","The camera detaches"],"a":2,"why":"Enhanced Input needs a Mapping Context registered before any Input Action can fire."}]};
- on BeginPlay?","opts":["The game runs faster","Enemies stop spawning","No keyboard input works at all","The camera detaches"],"a":2,"why":"Enhanced Input needs a Mapping Context registered before any Input Action can fire."}]};
+window.BQ={"key":"jvds-castle-siege-v2","name":"Castle Siege Blueprint","profileId":"castle-siege-blueprint","quiz":[{"q":"What does <strong>Event BeginPlay</strong> do in a Blueprint?","opts":["Fires every frame","Fires once when the game starts","Fires when the player clicks","Fires when an enemy dies"],"a":1,"why":"BeginPlay runs a single time as the game starts, which is why all setup logic connects to it."},{"q":"What do the white arrow pins (exec wires) control?","opts":["The colour of each node","How much damage is dealt","The order nodes run in","The frame rate"],"a":2,"why":"Exec wires are the flow of the program. Execution travels along them from left to right."},{"q":"Why multiply movement speed by  do in a Blueprint?","opts":["Fires every frame","Fires once when the game starts","Fires when the player clicks","Fires when an enemy dies"],"a":1,"why":"BeginPlay runs a single time as the game starts, which is why all setup logic connects to it."},{"q":"What do the white arrow pins (exec wires) control?","opts":["The colour of each node","How much damage is dealt","The order nodes run in","The frame rate"],"a":2,"why":"Exec wires are the flow of the program. Execution travels along them from left to right."},{"q":"Why multiply movement speed by <strong>Delta Seconds</strong>?","opts":["So movement is the same speed at any frame rate","To make the knight stronger","To save memory","To zoom the camera"],"a":0,"why":"Delta Seconds is the time since the last frame, so speed × delta gives units per second instead of units per frame."},{"q":"Which node works like ?","opts":["So movement is the same speed at any frame rate","To make the knight stronger","To save memory","To zoom the camera"],"a":0,"why":"Delta Seconds is the time since the last frame, so speed × delta gives units per second instead of units per frame."},{"q":"Which node works like <strong>if / elseif / else</strong> in Blueprints?","opts":["Print String","Multiply","Set Stamina","Branch"],"a":3,"why":"Branch checks a boolean condition and sends execution down the True or False pin."},{"q":"What does  in Blueprints?","opts":["Print String","Multiply","Set Stamina","Branch"],"a":3,"why":"Branch checks a boolean condition and sends execution down the True or False pin."},{"q":"What does <strong>RInterp ToRInterp To</strong> do?","opts":["Teleports the actor instantly","Smoothly rotates from the current rotation towards a target","Adds two vectors","Spawns an enemy"],"a":1,"why":"RInterp To interpolates rotation over time. Low speed = lazy turn, high speed = snappy."},{"q":"What happens if you never call  do?","opts":["Teleports the actor instantly","Smoothly rotates from the current rotation towards a target","Adds two vectors","Spawns an enemy"],"a":1,"why":"RInterp To interpolates rotation over time. Low speed = lazy turn, high speed = snappy."},{"q":"What happens if you never call <strong>Add Mapping Context</strong> on BeginPlay?","opts":["The game runs faster","Enemies stop spawning","No keyboard input works at all","The camera detaches"],"a":2,"why":"Enhanced Input needs a Mapping Context registered before any Input Action can fire."}]};
 </script>
 <script src="../player-profile.js"></script>
 <script src="builder-quiz.js"></script>

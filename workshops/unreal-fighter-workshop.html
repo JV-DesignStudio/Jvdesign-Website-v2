@@ -460,6 +460,20 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 <body>
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+     counts or game-over states to a screen reader; this gives every page one
+     place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+    var el = document.getElementById('jvds-announce');
+    if (!el || !msg) return;
+    /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+    el.textContent = '';
+    setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
     <a href="/index.html" class="logo-link">
@@ -502,28 +516,6 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
     });
     paint();
 })();
-
-(function(){
-    /* Restore saved theme before first paint of the toggle icon */
-    if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var b = document.getElementById('themeToggle');
-    if (!b) return;
-    function paint(){
-        b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
-    b.addEventListener('click', function(){
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (dark) {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('jvds-theme', 'light');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('jvds-theme', 'dark');
-        }
-        paint();
-    });
-    paint();
-})();
 </script>
 <nav class="mobile-nav" id="mobileNav" aria-label="Mobile">
     <a href="/index.html"><span aria-hidden="true">🏠</span> Home</a>
@@ -542,22 +534,6 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 </nav>
 </header>
 <script>
-(function(){
-    var page = location.pathname.split('/').pop() || 'index.html';
-    document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-        if(a.getAttribute('data-page') === page) a.classList.add('active');
-    });
-    var btn = document.getElementById('navToggle');
-    var nav = document.getElementById('mobileNav');
-    if (!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-
 (function(){
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
@@ -757,6 +733,7 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
             <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
             <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
             <a href="/pages/privacy-policy.html">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
         </nav>
         <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
     </div>
@@ -776,23 +753,8 @@ const footerRevealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0 });
 document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
 })();
-
-(function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-})();
 </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
@@ -890,7 +852,7 @@ function showXpToast(text){
 }
 function showLevelUp(lvl){
   const o=document.createElement('div');o.className='levelup-overlay';
-  o.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆🏆</div><div class="lvl-title">Level '+lvl+'!Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">ContinueContinue</button></div>';
+  o.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">ContinueContinue</button></div>';
   document.body.appendChild(o);o.addEventListener('click',e=>{if(e.target===o)o.remove();});
 }
 
@@ -928,7 +890,7 @@ function checkQuiz(btn){
   const fb=gate.querySelector('.quiz-feedback');totalQuizzes++;
   if(chosen===correct){
     sel.classList.add('correct');fb.className='quiz-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>That\'s right!That\'s right!</span>';
+    fb.innerHTML='<span class="fb-icon">✅✅</span><span>That\'s right!</span>';
     gate.classList.add('passed');btn.style.display='none';
     gate.querySelector('.quiz-next-btn').classList.add('show');
     gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
@@ -948,7 +910,7 @@ function checkQuiz(btn){
     awardXp(bonus,label);
   } else {
     sel.classList.add('wrong');fb.className='quiz-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, try again!Not quite, try again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, try again!</span>';
     streak=0;updateXpDisplay();
     setTimeout(()=>{sel.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
   }
@@ -982,7 +944,7 @@ function checkCodeChallenge(btn){
     else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}
   });
   if(allCorrect){
-    fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect! Your code is correct.Perfect! Your code is correct.</span>';
+    fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect! Your code is correct.</span>';
     ch.classList.add('passed');btn.disabled=true;blanks.forEach(b=>b.disabled=true);
     if(hint)hint.classList.remove('show');
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
@@ -1000,7 +962,7 @@ function checkCodeChallenge(btn){
     awardXp(bonus,label);
   } else {
     fb.className='cc-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some answers aren\'t right, check the highlighted blanks.Some answers aren\'t right, check the highlighted blanks.</span>';
+    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some answers aren\'t right, check the highlighted blanks.</span>';
     if(hint)hint.classList.add('show');streak=0;updateXpDisplay();totalQuizzes++;
   }
   saveProgress();
@@ -1046,7 +1008,7 @@ function checkConceptFill(btn){
     awardXp(bonus,label);
   } else {
     fb.className='cf-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some blanks aren\'t right, try again!Some blanks aren\'t right, try again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Some blanks aren\'t right, try again!</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
   }
   saveProgress();
@@ -1092,11 +1054,11 @@ function checkTF(btn){
     if(picked===correct){sel.classList.add('correct-answer');}
     else{sel.classList.add('wrong-answer');item.querySelectorAll('.tf-btn').forEach(b=>{if(b.dataset.picked!==picked&&b.textContent.toLowerCase()===correct)b.classList.add('correct-answer');});allCorrect=false;}
   });
-  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Answer all statements first!Answer all statements first!</span>';return;}
+  if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Answer all statements first!</span>';return;}
   if(allCorrect){
     fb.className='tf-feedback correct show';fb.innerHTML='';return;}
   if(allCorrect){
-    fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>All correct!All correct!</span>';
+    fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>All correct!</span>';
     round.classList.add('passed');btn.disabled=true;
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
     let bonus=XP_QUIZ,label='True/False';
@@ -1110,7 +1072,7 @@ function checkTF(btn){
     if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
     awardXp(bonus,label);
   } else {
-    fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not all correct, check the highlighted answers.Not all correct, check the highlighted answers.</span>';
+    fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not all correct, check the highlighted answers.</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
     setTimeout(()=>{items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});fb.classList.remove('show');},2500);
   }
@@ -1168,11 +1130,11 @@ function checkOrder(btn){
     if(parseInt(item.dataset.userOrder)===parseInt(item.dataset.correct)){item.classList.add('correct-pos');}
     else{item.classList.add('wrong-pos');allCorrect=false;}
   });
-  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Click all items in order first!Click all items in order first!</span>';return;}
+  if(!allPicked){fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️⚠️</span><span>Click all items in order first!</span>';return;}
   if(allCorrect){
     fb.className='oc-feedback correct show';fb.innerHTML='';return;}
   if(allCorrect){
-    fb.className='oc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect order!Perfect order!</span>';
+    fb.className='oc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅✅</span><span>Perfect order!</span>';
     ch.classList.add('passed');btn.disabled=true;
     ch.querySelector('.oc-reset-btn').style.display='none';
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;
@@ -1188,7 +1150,7 @@ function checkOrder(btn){
     if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + 🔥 streak bonus';}
     awardXp(bonus,label);
   } else {
-    fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, hit Reset and try again!Not quite, hit Reset and try again!</span>';
+    fb.className='oc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, hit Reset and try again!</span>';
     streak=0;updateXpDisplay();totalQuizzes++;
   }
   saveProgress();
@@ -1216,7 +1178,7 @@ function checkPredict(btn){
   const fb=ch.querySelector('.quiz-feedback');totalQuizzes++;
   if(chosen===correct){
     sel.classList.add('correct');fb.className='quiz-feedback correct show';
-    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Great prediction!Great prediction!</span>';
+    fb.innerHTML='<span class="fb-icon">✅✅</span><span>Great prediction!</span>';
     ch.classList.add('passed');btn.style.display='none';
     ch.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});
     streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;
@@ -1234,7 +1196,7 @@ function checkPredict(btn){
     awardXp(bonus,label);
   } else {
     sel.classList.add('wrong');fb.className='quiz-feedback wrong show';
-    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, think again!Not quite, think again!</span>';
+    fb.innerHTML='<span class="fb-icon">❌❌</span><span>Not quite, think again!</span>';
     streak=0;updateXpDisplay();
     setTimeout(()=>{sel.classList.remove('wrong','selected');fb.classList.remove('show');},1500);
   }
@@ -1794,7 +1756,7 @@ function mkPZ(nodes,reqWires=[],reqVals=[]){
     
     <div class="bp-canvas-wrap" id="w${id}"></div>
     
-    <div class="bp-hint">Drag pins to wire · Click value nodes to type · Complete to unlockDrag pins to wire · Click value nodes to type · Complete to unlock</div>
+    <div class="bp-hint">Drag pins to wire · Click value nodes to type · Complete to unlock</div>
   
   </div>
   
@@ -2055,9 +2017,9 @@ extraHTML:`<div id="modePicker" style="margin:8px 0">
   
   <div class="mode-grid">
     
-    <div class="mode-card" data-mode="ai"><div class="mode-icon">🤖🤖</div><div class="mode-name">AI OpponentAI Opponent</div><div class="mode-desc">Solo play. The AI reacts, blocks, and attacks using a Behaviour Tree.Solo play. The AI reacts, blocks, and attacks using a Behaviour Tree.</div></div>
+    <div class="mode-card" data-mode="ai"><div class="mode-icon">🤖🤖</div><div class="mode-name">AI OpponentAI Opponent</div><div class="mode-desc">Solo play. The AI reacts, blocks, and attacks using a Behaviour Tree.</div></div>
     
-    <div class="mode-card" data-mode="human"><div class="mode-icon">👤👤</div><div class="mode-name">2-Player Local2-Player Local</div><div class="mode-desc">Two players, one keyboard. P1: WASD+F+G+S. P2: Arrows+,+.+↓Two players, one keyboard. P1: WASD+F+G+S. P2: Arrows+,+.+↓</div></div>
+    <div class="mode-card" data-mode="human"><div class="mode-icon">👤👤</div><div class="mode-name">2-Player Local</div><div class="mode-desc">Two players, one keyboard. P1: WASD+F+G+S. P2: Arrows+,+.+↓</div></div>
   
   </div>
 
@@ -2069,9 +2031,9 @@ boxes:[{t:'box-c',tx:'In Unreal, create a BP_GameMode, a BP_FighterP1 and a BP_F
 quizHTML:`
 <div class="quiz-gate" id="quiz-s1" data-correct="1">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">In Unreal Engine, what determines which Pawn Controller gets possessed at game start?In Unreal Engine, what determines which Pawn Controller gets possessed at game start?</p>
+  <p class="quiz-question">In Unreal Engine, what determines which Pawn Controller gets possessed at game start?</p>
   
   <div class="quiz-options">
     
@@ -2085,7 +2047,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2093,15 +2055,15 @@ quizHTML:`
 
 <div class="tf-round" id="tf-s1">
   
-  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or FalseTrue or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">AI opponents use a Behaviour Tree to make decisions.AI opponents use a Behaviour Tree to make decisions.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">AI opponents use a Behaviour Tree to make decisions.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="false"><span class="tf-statement">You can only have one player in an Unreal fighting game.You can only have one player in an Unreal fighting game.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">You can only have one player in an Unreal fighting game.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
   <div class="tf-feedback"></div>
   
-  <button class="tf-check-btn" onclick="checkTF(this)">Check AnswersCheck Answers</button>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -2138,9 +2100,9 @@ boxes:[{t:'box-t',tx:'Set gravity to around -980 for a snappy arcade feel or -12
 quizHTML:`
 <div class="quiz-gate" id="quiz-s2" data-correct="2">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">What camera setup is standard for a 2D fighting game?What camera setup is standard for a 2D fighting game?</p>
+  <p class="quiz-question">What camera setup is standard for a 2D fighting game?</p>
   
   <div class="quiz-options">
     
@@ -2154,7 +2116,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2162,13 +2124,13 @@ quizHTML:`
 
 <div class="concept-fill" id="cf-s2">
   
-  <div class="cf-header"><span class="cf-icon">📝📝</span><span class="cf-title">Fill in the BlankFill in the Blank</span><span class="cf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="cf-header"><span class="cf-icon">📝📝</span><span class="cf-title">Fill in the Blank</span><span class="cf-xp-badge">+15 XP+15 XP</span></div>
   
   <p class="cf-sentence">In Unreal Engine, gravity is measured in cm/s² and a typical value is In Unreal Engine, gravity is measured in cm/s² and a typical value is <input class="cf-blank" data-answer="-980" placeholder="???">. The camera should be fixed on the . The camera should be fixed on the <input class="cf-blank" data-answer="Y" placeholder="?">-axis.-axis.</p>
   
   <div class="cf-feedback"></div>
   
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check AnswersCheck Answers</button>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -2199,9 +2161,9 @@ boxes:[{t:'box-t',tx:'500 UU/s is a solid starting speed. Wire the same action f
 quizHTML:`
 <div class="quiz-gate" id="quiz-s3" data-correct="0">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">Which Unreal node feeds the direction value for character movement?Which Unreal node feeds the direction value for character movement?</p>
+  <p class="quiz-question">Which Unreal node feeds the direction value for character movement?</p>
   
   <div class="quiz-options">
     
@@ -2215,7 +2177,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2223,9 +2185,9 @@ quizHTML:`
 
 <div class="code-challenge" id="cc-s3">
   
-  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code ChallengeBlueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
+  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
   
-  <p class="cc-prompt">Complete the Blueprint pseudocode for player movement:Complete the Blueprint pseudocode for player movement:</p>
+  <p class="cc-prompt">Complete the Blueprint pseudocode for player movement:</p>
   
   <div class="cc-code-area">IA_Move (Triggered) → IA_Move (Triggered) → <input class="cc-blank" data-answer="Add Movement Input" placeholder="???" style="min-width:140px"> → Set Max Walk Speed( → Set Max Walk Speed(<input class="cc-blank" data-answer="500" placeholder="???">))</div>
   
@@ -2233,7 +2195,7 @@ quizHTML:`
   
   <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check CodeCheck Code</button>
   
-  <div class="cc-hint">Hint: The node that moves the character is "Add Movement Input". A good walk speed is 500.Hint: The node that moves the character is "Add Movement Input". A good walk speed is 500.</div>
+  <div class="cc-hint">Hint: The node that moves the character is "Add Movement Input". A good walk speed is 500.</div>
 
 </div>`,
 onApply(v){
@@ -2264,7 +2226,7 @@ boxes:[{t:'box-t',tx:'700 gives a floaty Street Fighter feel. 1000+ gives a fast
 quizHTML:`
 <div class="predict-challenge" id="pred-s4" data-correct="1">
   
-  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What HappensPredict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
   
   <div class="pc-scenario">You set Launch Character Z Velocity to You set Launch Character Z Velocity to <strong>14001400</strong> with gravity at -980. What happens? with gravity at -980. What happens?</div>
   
@@ -2280,23 +2242,23 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkPredict(this)">Check PredictionCheck Prediction</button>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
 
 </div>
 
 <div class="tf-round" id="tf-s4">
   
-  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or FalseTrue or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">Launch Character uses a Z velocity value to control jump height.Launch Character uses a Z velocity value to control jump height.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Launch Character uses a Z velocity value to control jump height.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">Both fighters need separate IA_Jump input bindings.Both fighters need separate IA_Jump input bindings.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Both fighters need separate IA_Jump input bindings.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="false"><span class="tf-statement">A Z velocity of 100 gives a high, floaty jump.A Z velocity of 100 gives a high, floaty jump.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">A Z velocity of 100 gives a high, floaty jump.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
   <div class="tf-feedback"></div>
   
-  <button class="tf-check-btn" onclick="checkTF(this)">Check AnswersCheck Answers</button>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -2333,9 +2295,9 @@ boxes:[{t:'box-c',tx:'Add BP_HealthComp to both fighter Blueprints. OnDeath shou
 quizHTML:`
 <div class="quiz-gate" id="quiz-s5" data-correct="2">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">Why should OnDeath use a Broadcast Dispatcher instead of directly ending the game?Why should OnDeath use a Broadcast Dispatcher instead of directly ending the game?</p>
+  <p class="quiz-question">Why should OnDeath use a Broadcast Dispatcher instead of directly ending the game?</p>
   
   <div class="quiz-options">
     
@@ -2349,7 +2311,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2357,9 +2319,9 @@ quizHTML:`
 
 <div class="order-challenge" id="oc-s5">
   
-  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the StepsOrder the Steps</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the Steps</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="oc-prompt">Put the health system flow in the correct order:Put the health system flow in the correct order:</p>
+  <p class="oc-prompt">Put the health system flow in the correct order:</p>
   
   <div class="oc-items">
     
@@ -2412,9 +2374,9 @@ boxes:[{t:'box-t',tx:'Bind F for P1. Light attacks should be fast (0.3s) and saf
 quizHTML:`
 <div class="quiz-gate" id="quiz-s6" data-correct="1">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">Why should you use an Animation Notify to open/close the hitbox instead of leaving it always active?Why should you use an Animation Notify to open/close the hitbox instead of leaving it always active?</p>
+  <p class="quiz-question">Why should you use an Animation Notify to open/close the hitbox instead of leaving it always active?</p>
   
   <div class="quiz-options">
     
@@ -2428,7 +2390,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2436,13 +2398,13 @@ quizHTML:`
 
 <div class="concept-fill" id="cf-s6">
   
-  <div class="cf-header"><span class="cf-icon">📝📝</span><span class="cf-title">Fill in the BlankFill in the Blank</span><span class="cf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="cf-header"><span class="cf-icon">📝📝</span><span class="cf-title">Fill in the Blank</span><span class="cf-xp-badge">+15 XP+15 XP</span></div>
   
   <p class="cf-sentence">A light attack should be A light attack should be <input class="cf-blank" data-answer="fast" placeholder="???"> (fast/slow) with a startup around  (fast/slow) with a startup around <input class="cf-blank" data-answer="0.3" placeholder="???"> seconds. Light attacks are safe on  seconds. Light attacks are safe on <input class="cf-blank" data-answer="block" placeholder="???">..</p>
   
   <div class="cf-feedback"></div>
   
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check AnswersCheck Answers</button>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -2475,7 +2437,7 @@ boxes:[{t:'box-t',tx:'Bind G for P1. Heavy attacks should feel weighty, use a lo
 quizHTML:`
 <div class="predict-challenge" id="pred-s7" data-correct="2">
   
-  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What HappensPredict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
   
   <div class="pc-scenario">A heavy attack deals A heavy attack deals <strong>40 damage40 damage</strong> with a  with a <strong>0.7s windup0.7s windup</strong>. The opponent has a fast light attack (0.3s). What is most likely to happen if both attack at the same time?. The opponent has a fast light attack (0.3s). What is most likely to happen if both attack at the same time?</div>
   
@@ -2491,23 +2453,23 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkPredict(this)">Check PredictionCheck Prediction</button>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
 
 </div>
 
 <div class="tf-round" id="tf-s7">
   
-  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or FalseTrue or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">Heavy attacks should deal roughly 2x the damage of light attacks.Heavy attacks should deal roughly 2x the damage of light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">Heavy attacks should deal roughly 2x the damage of light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">A longer windup animation is the tradeoff for higher damage.A longer windup animation is the tradeoff for higher damage.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A longer windup animation is the tradeoff for higher damage.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="false"><span class="tf-statement">Heavy attacks should have the same startup speed as light attacks.Heavy attacks should have the same startup speed as light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">Heavy attacks should have the same startup speed as light attacks.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
   <div class="tf-feedback"></div>
   
-  <button class="tf-check-btn" onclick="checkTF(this)">Check AnswersCheck Answers</button>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -2543,9 +2505,9 @@ boxes:[{t:'box-t',tx:'Bind S (hold) for P1 block, ↓ for P2. In TakeDamage, Bra
 quizHTML:`
 <div class="quiz-gate" id="quiz-s8" data-correct="1">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">In the TakeDamage Blueprint, what does the Branch node check when blocking is implemented?In the TakeDamage Blueprint, what does the Branch node check when blocking is implemented?</p>
+  <p class="quiz-question">In the TakeDamage Blueprint, what does the Branch node check when blocking is implemented?</p>
   
   <div class="quiz-options">
     
@@ -2559,7 +2521,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2567,9 +2529,9 @@ quizHTML:`
 
 <div class="code-challenge" id="cc-s8">
   
-  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code ChallengeBlueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
+  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
   
-  <p class="cc-prompt">Complete the block damage reduction logic:Complete the block damage reduction logic:</p>
+  <p class="cc-prompt">Complete the block damage reduction logic:</p>
   
   <div class="cc-code-area">TakeDamage → Branch(IsBlocking)
   True → Damage × TakeDamage → Branch(IsBlocking)
@@ -2581,7 +2543,7 @@ quizHTML:`
   
   <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check CodeCheck Code</button>
   
-  <div class="cc-hint">Hint: Blocking reduces damage by 85%, so only 15% gets through (0.15). Unblocked is full damage (1).Hint: Blocking reduces damage by 85%, so only 15% gets through (0.15). Unblocked is full damage (1).</div>
+  <div class="cc-hint">Hint: Blocking reduces damage by 85%, so only 15% gets through (0.15). Unblocked is full damage (1).</div>
 
 </div>`,
 onApply(){
@@ -2616,9 +2578,9 @@ boxes:[{t:'box-t',tx:'Use a Delay or Timer to reset the combo if no hit lands wi
 quizHTML:`
 <div class="quiz-gate" id="quiz-s9" data-correct="0">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">What should reset the combo counter in a fighting game?What should reset the combo counter in a fighting game?</p>
+  <p class="quiz-question">What should reset the combo counter in a fighting game?</p>
   
   <div class="quiz-options">
     
@@ -2632,7 +2594,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2640,9 +2602,9 @@ quizHTML:`
 
 <div class="order-challenge" id="oc-s9">
   
-  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the Combo FlowOrder the Combo Flow</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the Combo Flow</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="oc-prompt">Put the combo system steps in order:Put the combo system steps in order:</p>
+  <p class="oc-prompt">Put the combo system steps in order:</p>
   
   <div class="oc-items">
     
@@ -2704,7 +2666,7 @@ boxes:[
 quizHTML:`
 <div class="predict-challenge" id="pred-s10" data-correct="0">
   
-  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What HappensPredict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
   
   <div class="pc-scenario">Your Input Buffer stores the last 0.3 seconds of inputs. The player presses Your Input Buffer stores the last 0.3 seconds of inputs. The player presses <strong>↓, →, F↓, →, F</strong> in 0.2 seconds. What happens? in 0.2 seconds. What happens?</div>
   
@@ -2720,23 +2682,23 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkPredict(this)">Check PredictionCheck Prediction</button>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
 
 </div>
 
 <div class="tf-round" id="tf-s10">
   
-  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or FalseTrue or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">An Input Buffer is an array of recent inputs stamped with time.An Input Buffer is an array of recent inputs stamped with time.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">An Input Buffer is an array of recent inputs stamped with time.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="false"><span class="tf-statement">You should keep old inputs in the buffer forever.You should keep old inputs in the buffer forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">You should keep old inputs in the buffer forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">A good beginner special-move trigger is pressing two buttons simultaneously.A good beginner special-move trigger is pressing two buttons simultaneously.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A good beginner special-move trigger is pressing two buttons simultaneously.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
   <div class="tf-feedback"></div>
   
-  <button class="tf-check-btn" onclick="checkTF(this)">Check AnswersCheck Answers</button>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
 
 </div>`,
 onApply(){
@@ -2780,9 +2742,9 @@ boxes:[
 quizHTML:`
 <div class="quiz-gate" id="quiz-s11" data-correct="2">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">In a Behaviour Tree, what node type tries children in order and stops at the first success?In a Behaviour Tree, what node type tries children in order and stops at the first success?</p>
+  <p class="quiz-question">In a Behaviour Tree, what node type tries children in order and stops at the first success?</p>
   
   <div class="quiz-options">
     
@@ -2796,7 +2758,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2804,9 +2766,9 @@ quizHTML:`
 
 <div class="order-challenge" id="oc-s11">
   
-  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the AI PriorityOrder the AI Priority</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="oc-header"><span class="oc-icon">🔢🔢</span><span class="oc-title">Order the AI Priority</span><span class="oc-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="oc-prompt">Put the AI Behaviour Tree actions in priority order (highest first):Put the AI Behaviour Tree actions in priority order (highest first):</p>
+  <p class="oc-prompt">Put the AI Behaviour Tree actions in priority order (highest first):</p>
   
   <div class="oc-items">
     
@@ -2860,9 +2822,9 @@ boxes:[{t:'box-t',tx:'Bind the P1HP ProgressBar percent to (CurrentHP / MaxHP) u
 quizHTML:`
 <div class="quiz-gate" id="quiz-s12" data-correct="0">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge CheckKnowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">How do you bind a health bar's fill percentage to the fighter's current HP in Unreal?How do you bind a health bar's fill percentage to the fighter's current HP in Unreal?</p>
+  <p class="quiz-question">How do you bind a health bar's fill percentage to the fighter's current HP in Unreal?</p>
   
   <div class="quiz-options">
     
@@ -2876,7 +2838,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -2884,9 +2846,9 @@ quizHTML:`
 
 <div class="code-challenge" id="cc-s12">
   
-  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code ChallengeBlueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
+  <div class="cc-header"><span class="cc-icon">💻💻</span><span class="cc-title">Blueprint Code Challenge</span><span class="cc-xp-badge">+20 XP+20 XP</span></div>
   
-  <p class="cc-prompt">Complete the HUD setup flow:Complete the HUD setup flow:</p>
+  <p class="cc-prompt">Complete the HUD setup flow:</p>
   
   <div class="cc-code-area">BeginPlay → BeginPlay → <input class="cc-blank" data-answer="Create Widget" placeholder="???" style="min-width:110px"> →  → <input class="cc-blank" data-answer="Add to Viewport" placeholder="???" style="min-width:120px"> → Bind HP → Bind HP</div>
   
@@ -2894,7 +2856,7 @@ quizHTML:`
   
   <button class="cc-check-btn" onclick="checkCodeChallenge(this)">Check CodeCheck Code</button>
   
-  <div class="cc-hint">Hint: First you create the widget, then add it to the viewport.Hint: First you create the widget, then add it to the viewport.</div>
+  <div class="cc-hint">Hint: First you create the widget, then add it to the viewport.</div>
 
 </div>`,
 onApply(){
@@ -2934,9 +2896,9 @@ boxes:[{t:'box-f',tx:'Best of 3 means first to 2 round wins takes the match. Sho
 quizHTML:`
 <div class="predict-challenge" id="pred-s13" data-correct="1">
   
-  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What HappensPredict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
+  <div class="pc-header"><span class="pc-icon">🔮🔮</span><span class="pc-title">Predict What Happens</span><span class="pc-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="pc-scenario">P1 has won 1 round. P2 has won 1 round. P1 knocks out P2 in Round 3. What should the game do?P1 has won 1 round. P2 has won 1 round. P1 knocks out P2 in Round 3. What should the game do?</div>
+  <div class="pc-scenario">P1 has won 1 round. P2 has won 1 round. P1 knocks out P2 in Round 3. What should the game do?</div>
   
   <div class="quiz-options">
     
@@ -2950,23 +2912,23 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkPredict(this)">Check PredictionCheck Prediction</button>
+  <button class="quiz-submit" onclick="checkPredict(this)">Check Prediction</button>
 
 </div>
 
 <div class="tf-round" id="tf-s13">
   
-  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or FalseTrue or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
+  <div class="tf-header"><span class="tf-icon">⚡⚡</span><span class="tf-title">True or False</span><span class="tf-xp-badge">+15 XP+15 XP</span></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">"Best of 3" means the first player to win 2 rounds takes the match."Best of 3" means the first player to win 2 rounds takes the match.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">"Best of 3" means the first player to win 2 rounds takes the match.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="true"><span class="tf-statement">A round timer prevents matches from going on forever.A round timer prevents matches from going on forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="true"><span class="tf-statement">A round timer prevents matches from going on forever.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
-  <div class="tf-item" data-answer="false"><span class="tf-statement">When the timer runs out, the round is a draw with no winner.When the timer runs out, the round is a draw with no winner.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
+  <div class="tf-item" data-answer="false"><span class="tf-statement">When the timer runs out, the round is a draw with no winner.</span><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">TrueTrue</button><button class="tf-btn" onclick="pickTF(this,'false')">FalseFalse</button></div></div>
   
   <div class="tf-feedback"></div>
   
-  <button class="tf-check-btn" onclick="checkTF(this)">Check AnswersCheck Answers</button>
+  <button class="tf-check-btn" onclick="checkTF(this)">Check Answers</button>
 
 </div>`,
 onApply(){
@@ -3004,7 +2966,7 @@ pz:mkPZ([
   {id:'n6',type:'func',title:'Start Round 1',x:293,y:182,w:105,h:48,lp:[{id:'l6',type:'exec',label:''}],rp:[]},
   {id:'n7',type:'custom',title:'Set Fighter Name',sub:'Fighter Designer',x:418,y:60,w:120,h:58,lp:[{id:'l7e',type:'exec',label:''},{id:'l7n',type:'string',label:'Name'}],rp:[],vf:{hint:'Name your fighter!',val:''}},
 ],[{f:'r1',t:'l2'},{f:'r2a',t:'l3'},{f:'r2b',t:'l4'},{f:'r2c',t:'l5'},{f:'r2d',t:'l6'},{f:'r2d',t:'l7e'}],[{id:'n7',ok:v=>v.trim().length>=2}]),
-extraHTML:`<div class="fname-wrap"><div class="fname-lbl">Or type your fighter's name here:Or type your fighter's name here:</div><input class="fname-input" id="fighterNameInput" placeholder="e.g. Iron Fist"></div>`,
+extraHTML:`<div class="fname-wrap"><div class="fname-lbl">Or type your fighter's name here:</div><input class="fname-input" id="fighterNameInput" placeholder="e.g. Iron Fist"></div>`,
 boxes:[
   {t:'box-f',tx:'Your fighter: Speed '+F.speed+' UU/s · '+F.dmg+' heavy damage · '+F.hp+' HP · '+F.combo+' max combo · Opponent: '+(F.opponentMode==='ai'?'AI Bot':'Human P2')},
   {t:'box-t',tx:'Best of 3 rounds · 99 second timer · light + heavy + block + special + combos. Press R after KO to restart the round. Fullscreen for the best experience!'},
@@ -3018,9 +2980,9 @@ boxes:[
 quizHTML:`
 <div class="quiz-gate" id="quiz-s14" data-correct="2">
   
-  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Final Knowledge CheckFinal Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
+  <div class="quiz-header"><span class="quiz-icon">🧠🧠</span><span class="quiz-title">Final Knowledge Check</span><span class="quiz-xp-badge">+15 XP+15 XP</span></div>
   
-  <p class="quiz-question">What does the Sequence node do in Unreal Blueprints?What does the Sequence node do in Unreal Blueprints?</p>
+  <p class="quiz-question">What does the Sequence node do in Unreal Blueprints?</p>
   
   <div class="quiz-options">
     
@@ -3034,7 +2996,7 @@ quizHTML:`
   
   <div class="quiz-feedback"></div>
   
-  <button class="quiz-submit" onclick="checkQuiz(this)">Check AnswerCheck Answer</button>
+  <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
   
   <button class="quiz-next-btn" onclick="this.closest('.quiz-gate').style.display='none'">Continue →Continue →</button>
 
@@ -3048,7 +3010,7 @@ quizHTML:`
   
   <div class="cf-feedback"></div>
   
-  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check AnswersCheck Answers</button>
+  <button class="cf-check-btn" onclick="checkConceptFill(this)">Check Answers</button>
 
 </div>`,
 onApply(v){
@@ -3110,7 +3072,7 @@ function renderStep(){
     ${s.pz.html}${s.extraHTML||''}${boxes}
     
     ${s.pz.html}${s.extraHTML||''}${boxes}
-    <button class="run-btn" id="applyBtn" disabled>🔗 Complete Blueprint to Apply🔗 Complete Blueprint to Apply</button>
+    <button class="run-btn" id="applyBtn" disabled>🔗 Complete Blueprint to Apply</button>
     ${s.quizHTML||''}
     ${nav(cur)}`;
 

@@ -1423,7 +1423,15 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
 #ppOverlay .pp-card:active{transform:scale(.95);}
 #ppOverlay .pp-rar{
   font-size:clamp(.4rem,1.05vmin,.5rem);font-weight:800;letter-spacing:.14em;color:var(--rc);
+  display:flex;align-items:center;justify-content:center;gap:4px;
 }
+#ppOverlay .pp-key{
+  display:inline-flex;align-items:center;justify-content:center;min-width:11px;height:11px;
+  border-radius:3px;border:1px solid var(--rc);color:var(--rc);
+  font-size:.42rem;letter-spacing:0;opacity:.8;
+}
+/* Touch devices have no keyboard, so the hint is noise there. */
+@media (hover:none) and (pointer:coarse){ #ppOverlay .pp-key{display:none;} }
 #ppOverlay .pp-icon{font-size:clamp(1.4rem,4.6vmin,2.1rem);line-height:1.1;
   filter:drop-shadow(0 0 10px var(--rg));}
 #ppOverlay .pp-name{font-size:clamp(.62rem,1.9vmin,.9rem);font-weight:700;line-height:1.15;}
@@ -2885,16 +2893,14 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
                     </div>
                 </div>
                 <div class="form-group" style="flex-direction:row;align-items:center;justify-content:space-between;">
-                    <label>Upgrade Shop between waves</label>
-                    <label class="toggle-switch"><input type="checkbox" id="shopEnabledToggle" onchange="liveConfig.shopEnabled=this.checked;document.getElementById('shopUpgradesRow').style.display=this.checked?'flex':'none';"><span class="toggle-knob"></span></label>
+                    <label>⚡ Power Picks <span style="color:var(--muted);font-size:.6rem;display:block;">Offer a choice of perks each run</span></label>
+                    <label class="toggle-switch"><input type="checkbox" id="perksEnabledToggle" checked onchange="liveConfig.perksEnabled=this.checked;document.getElementById('perkInfoRow').style.display=this.checked?'':'none';"><span class="toggle-knob"></span></label>
                 </div>
-                <div class="form-group" id="shopUpgradesRow" style="display:none;">
-                    <label>Available Upgrades</label>
-                    <div class="pill-row" id="pillShopUpgrades" style="flex-wrap:wrap;">
-                        <button class="pill active" onclick="this.classList.toggle('active');_toggleShopUpgrade('speed');">💨 Speed</button>
-                        <button class="pill active" onclick="this.classList.toggle('active');_toggleShopUpgrade('health');">❤️ Extra Life</button>
-                        <button class="pill active" onclick="this.classList.toggle('active');_toggleShopUpgrade('damage');">⚡ Damage</button>
-                        <button class="pill active" onclick="this.classList.toggle('active');_toggleShopUpgrade('shield');">🛡️ Shield</button>
+                <div class="form-group" id="perkInfoRow">
+                    <div style="font-size:.62rem;color:var(--muted);line-height:1.5;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:8px 10px;">
+                        Players choose 1 of 3 perks at the start of a run and again at score milestones.
+                        Perks stack, and certain pairs combine into <strong style="color:#fbbf24;">Synergies</strong>.
+                        <button class="pill" style="margin-top:7px;" onclick="openPerkCodex()">📖 Perk Codex</button>
                     </div>
                 </div>
             </div>
@@ -4949,6 +4955,7 @@ score += bumper.pts;
                     </div>
                     <div class="go-lb" id="goLeaderboard" style="display:none;"></div>
                     <div class="go-stats" id="goStats"></div>
+                    <div id="goPerkBuild" style="display:none;"></div>
                     <div class="go-achs" id="goAchievements"></div>
                     <div style="display:flex;gap:8px;margin-top:4px;">
                         <button class="btn-run go-play" style="flex:2;" onclick="closeGameOver()">▶ Play Again</button>
@@ -5515,8 +5522,6 @@ const liveConfig = {
     coinsEnabled: true,
     coinEmoji: '🪙',
     coinValue: 10,
-    shopEnabled: false,
-    shopUpgrades: ['speed','health','damage','shield'],
     // ── Achievements ──────────────────────────────────────────────
     achievements: [],
     // ── Particle System ───────────────────────────────────────────
@@ -7162,67 +7167,6 @@ function showToast(msg, type, duration) {
     const ms = duration || (type === 'error' ? 4500 : 2800);
     t._to = setTimeout(() => t.classList.remove('show'), ms);
 }
-// ── COLLECTIBLES & SHOP HELPERS ───────────────────────────────────────────────
-function _toggleShopUpgrade(key) {
-    const idx = liveConfig.shopUpgrades.indexOf(key);
-    if (idx === -1) liveConfig.shopUpgrades.push(key);
-    else liveConfig.shopUpgrades.splice(idx, 1);
-}
-
-function _showShop(scene, onClose) {
-    const wrap = document.getElementById('gameWrap');
-    let overlay = document.getElementById('shopOverlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'shopOverlay';
-        overlay.style.cssText = 'position:absolute;inset:0;z-index:200;background:rgba(5,3,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;font-family:"Fredoka",sans-serif;';
-        wrap.appendChild(overlay);
-    }
-    const ups = liveConfig.shopUpgrades.length ? liveConfig.shopUpgrades : ['speed','health','damage','shield'];
-    const chosen = [...ups].sort(() => Math.random() - 0.5).slice(0, 3);
-    const COSTS  = {speed:15, health:20, damage:18, shield:25};
-    const ICONS  = {speed:'💨', health:'❤️', damage:'⚡', shield:'🛡️'};
-    const LABELS = {speed:'+Speed', health:'+1 Life', damage:'+Damage', shield:'10s Shield'};
-    overlay.innerHTML = `
-      <div style="font-size:1.4rem;color:#a78bfa;font-weight:700;">🛒 Upgrade Shop</div>
-      <div style="font-size:.8rem;color:rgba(240,234,214,.6);">${liveConfig.coinEmoji||'🪙'} Coins: <span id="shopCoinsDisplay">${scene._coins||0}</span></div>
-      <div id="shopCards" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">${chosen.map(u=>`
-        <div onclick="_buyUpgrade('${u}',${COSTS[u]||15},this)" style="cursor:pointer;background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.4);border-radius:12px;padding:14px 18px;text-align:center;min-width:80px;transition:background .15s;">
-          <div style="font-size:1.6rem;">${ICONS[u]||'⭐'}</div>
-          <div style="font-size:.78rem;font-weight:700;color:#e8edf8;margin-top:4px;">${LABELS[u]||u}</div>
-          <div style="font-size:.7rem;color:#a78bfa;margin-top:2px;">${liveConfig.coinEmoji||'🪙'} ${COSTS[u]||15}</div>
-        </div>`).join('')}
-      </div>
-      <button onclick="_closeShop()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(240,234,214,.7);padding:8px 24px;border-radius:8px;font-size:.8rem;cursor:pointer;font-family:'Fredoka',sans-serif;">Skip →</button>`;
-    overlay.style.display = 'flex';
-    if (scene && scene.scene) scene.scene.pause();
-    window._shopOnClose = () => {
-        overlay.style.display = 'none';
-        if (scene && scene.scene) scene.scene.resume();
-        if (onClose) onClose();
-    };
-}
-
-function _buyUpgrade(key, cost, el) {
-    const scene = window._shopScene;
-    if (!scene) return;
-    const coins = scene._coins || 0;
-    if (coins < cost) { el.style.borderColor = '#ef4444'; return; }
-    scene._coins -= cost;
-    const disp = document.getElementById('shopCoinsDisplay');
-    if (disp) disp.textContent = scene._coins;
-    if (key === 'speed')  { liveConfig.speed = Math.min(600, (liveConfig.speed||200) + 30); }
-    if (key === 'damage') { liveConfig.bulletSpeed = Math.min(1000, (liveConfig.bulletSpeed||540) + 80); }
-    if (key === 'health') { if(scene._lives !== undefined) { scene._lives++; scene._updateHud && scene._updateHud(); } }
-    if (key === 'shield') { liveConfig.shieldActive = true; scene._shieldTimer = 600; }
-    el.style.background = 'rgba(34,197,94,.3)';
-    el.style.borderColor = '#22c55e';
-    el.onclick = null;
-    showToast('✅ ' + key + ' upgraded!', 'success');
-}
-
-function _closeShop() { if (window._shopOnClose) window._shopOnClose(); }
-
 // ── ACHIEVEMENT HELPERS ───────────────────────────────────────────────────────
 function _addAchievement() {
     if (liveConfig.achievements.length >= 4) { showToast('Max 4 achievements'); return; }
@@ -8574,6 +8518,9 @@ function quitGame() {
 }
 
 function togglePause() {
+    // The Power Picks draft already pauses the scene; letting the pause menu in
+    // on top of it leaves two owners of scene.resume() and one of them loses.
+    if (_ppOpen) return;
     if (!currentPhaserGame) return;
     const goVisible = document.getElementById('goOverlay')?.classList.contains('show');
     const introVisible = document.getElementById('introOverlay')?.classList.contains('show');
@@ -9390,6 +9337,7 @@ function sceneMemory(data) {
                 const secs = ((Date.now() - (this._memStart||Date.now())) / 1000).toFixed(1);
                 _timerTxt.setText('⏱ ' + secs + 's');
             }
+            _sceneTickBase(this, this.score || 0);
         }
     };
 }
@@ -9725,6 +9673,7 @@ function sceneWaveSurvival(data) {
             _checkPowerupPickup(this, this._wsActor);
             this._wsScoreTxt.setText(`Score: ${st.score()}`);
             this._wsHpTxt.setText('❤️'.repeat(Math.max(0, st.hp())));
+            _sceneTickBase(this, st.score());
         }
     };
 }
@@ -9778,7 +9727,8 @@ function _sceneTickBase(scene, score) {
         scene.cameras.main.setZoom(liveConfig.cameraZoom);
         _cameraZoomApplied = true;
     }
-    const spd = liveConfig.gameSpeed || 1.0;
+    const spd = (liveConfig.gameSpeed || 1.0) * RunMods.gameSpeedMul
+              * (RunMods.timed('warp') ? (RunMods._warpVal || 1) : 1);
     if (!_hitStop._active) {
         _setPhysicsSpeed(scene, spd);
         if (scene.time) scene.time.timeScale = spd;
@@ -10007,6 +9957,8 @@ const RunMods = {
         this.picksTaken = 0;
         this.nextPickScore = 0;
         this.rerollsLeft = 1;
+        this._loadoutDone = false;
+        this._windUsed = 0;
         this._timed = Object.create(null);
         _ppHudRender();
     },
@@ -10051,10 +10003,22 @@ const RunMods = {
     },
     get scoreMul() {
         let m = 1 + this.count('greed') * 0.30 + this.count('showboat') * 0.20;
+        // Momentum rewards staying alive; Snowball rewards drafting greedily.
+        if (this.has('momentum')) {
+            const secs = (Date.now() - (_gameStartTime || Date.now())) / 1000;
+            m += Math.min(0.60, Math.floor(secs / 15) * 0.03) * this.count('momentum');
+        }
+        if (this.has('snowball')) m += 0.08 * this.picksTaken * this.count('snowball');
+        if (this.has('overdrive')) m += 0.40 * this.count('overdrive');
         if (this.timed('frenzy')) m *= 2;
         if (this.has('glass_cannon')) m *= 1.25;
         if (this.hasSyn('jackpot')) m *= 1.5;
         return m;
+    },
+    /* Feeds the shared timeScale in _sceneTickBase, which every genre honours. */
+    get gameSpeedMul() {
+        return Math.max(0.5, Math.min(1.8,
+            1 - this.count('dilation') * 0.15 + this.count('overdrive') * 0.20));
     },
     get coinMul()  { return 1 + this.count('greed') * 0.5 + (this.hasSyn('jackpot') ? 1 : 0); },
     get pierce()   { return this.count('pierce') + (this.hasSyn('rail_gun') ? 2 : 0); },
@@ -10118,35 +10082,46 @@ const PERKS = [
     { id:'scavenger',   name:'Scavenger',    icon:'🔎', rarity:'common', needs:['loot'],  max:3, desc:'+22% loot drop chance' },
     { id:'magnet',      name:'Loot Magnet',  icon:'🧲', rarity:'rare',   needs:['loot'],  max:1, desc:'Loot flies to you from anywhere' },
 
+    /* Universal — score, pacing and time. These are what make a Clicker or a
+       Rhythm run branch, and they stay meaningful in the combat genres too. */
+    { id:'momentum',    name:'Momentum',     icon:'📈', rarity:'common', needs:['score'], max:3, desc:'+3% score per 15s survived, up to +60%' },
+    { id:'snowball',    name:'Snowball',     icon:'⛄', rarity:'rare',   needs:['score'], max:2, desc:'+8% score for every perk you hold' },
+    { id:'kindling',    name:'Kindling',     icon:'🔥', rarity:'common', needs:['score'], max:3, desc:'Power Picks arrive 25% sooner' },
+    { id:'dilation',    name:'Time Dilation',icon:'⏳', rarity:'rare',   needs:['timing'],max:2, desc:'−15% game speed — everything is easier to read' },
+
     /* Risk / reward */
+    { id:'overdrive',   name:'Overdrive',    icon:'⏩', rarity:'epic',   needs:['timing'],max:2, desc:'+20% game speed and +40% score' },
+    { id:'second_wind', name:'Second Wind',  icon:'🕊', rarity:'epic',   needs:['hp'],    max:2, desc:'Cheat death once per stack' },
     { id:'glass_cannon',name:'Glass Cannon', icon:'💎', rarity:'epic',   needs:['shoot','hp'], max:1, desc:'+2 damage, +25% score — but drop to 1 life' },
     { id:'orbital',     name:'Orbital',      icon:'🪐', rarity:'epic',   needs:['shoot'], max:3, desc:'A shard orbits you and shatters enemies' },
 ];
 
 /* Capability per genre. Anything not listed gets score only, which still makes
    the Greed / Showboat line meaningful for Clicker, Memory, Rhythm and friends. */
+const _CAP_ALL = ['score','timing'];   // every genre scores and every genre
+                                       // runs on the shared timeScale
 const GENRE_CAPS = {
-    SHOOTER:      ['shoot','move','hp','score','loot'],
-    INVADERS:     ['shoot','move','hp','score','loot'],
-    ASTEROIDS:    ['shoot','move','hp','score','loot'],
-    ROGUELIKE:    ['shoot','move','hp','score','loot'],
-    WAVESURVIVAL: ['shoot','move','hp','score','loot'],
-    PLATFORMER:   ['move','hp','score','loot'],
-    DODGE:        ['move','hp','score','loot'],
-    RUNNER:       ['move','hp','score'],
-    HOPPER:       ['move','hp','score'],
-    SNAKE:        ['move','hp','score'],
-    BREAKER:      ['move','hp','score'],
-    BEAT:         ['move','hp','score'],
-    FLAPPY:       ['hp','score'],
-    PONG:         ['move','score'],
-    RACING:       ['move','score'],
-    PINBALL:      ['score'],
-    PUZZLE:       ['score'],
-    RHYTHM:       ['score'],
-    DEFENSE:      ['score'],
-    CLICKER:      ['score'],
-    MEMORY:       ['score'],
+    SHOOTER:      ['shoot','move','hp','loot'],
+    INVADERS:     ['shoot','move','hp','loot'],
+    ASTEROIDS:    ['shoot','move','hp','loot'],
+    ROGUELIKE:    ['shoot','move','hp','loot'],
+    WAVESURVIVAL: ['shoot','move','hp','loot'],
+    PLATFORMER:   ['move','hp','loot'],
+    DODGE:        ['move','hp','loot'],
+    RUNNER:       ['move','hp'],
+    HOPPER:       ['move','hp'],
+    SNAKE:        ['move','hp'],
+    BREAKER:      ['move','hp'],
+    BEAT:         ['move','hp'],
+    FLAPPY:       ['hp'],
+    PONG:         ['move'],
+    RACING:       ['move'],
+    PINBALL:      [],
+    PUZZLE:       [],
+    RHYTHM:       [],
+    DEFENSE:      [],
+    CLICKER:      [],
+    MEMORY:       [],
 };
 
 /* ── Synergies ─────────────────────────────────────────────────────────────
@@ -10191,7 +10166,7 @@ function _ppSaveMeta(m) { try { localStorage.setItem(_PP_META_KEY, JSON.stringif
 
 /* ── Offer generation ──────────────────────────────────────────────────── */
 function _ppEligible() {
-    const caps = GENRE_CAPS[(_engineData && _engineData.genre) || ''] || ['score'];
+    const caps = (GENRE_CAPS[(_engineData && _engineData.genre) || ''] || []).concat(_CAP_ALL);
     return PERKS.filter(p => {
         if (RunMods.count(p.id) >= (p.max || 99)) return false;
         return p.needs.every(n => caps.indexOf(n) !== -1);
@@ -10323,7 +10298,8 @@ const _PP_PICK_BASE = {
 };
 function _ppScheduleNext() {
     const base = _PP_PICK_BASE[(_engineData && _engineData.genre) || ''] || 300;
-    RunMods.nextPickScore = Math.ceil(base * Math.pow(2.05, RunMods.picksTaken));
+    const haste = 1 + RunMods.count('kindling') * 0.25;
+    RunMods.nextPickScore = Math.ceil(base * Math.pow(2.05, RunMods.picksTaken) / haste);
 }
 
 function _ppOfferPicks(scene, opts) {
@@ -10377,7 +10353,7 @@ function _ppCardHTML(p, i) {
     });
     return `<button class="pp-card" style="--rc:${r.col};--rg:${r.glow};animation-delay:${i * 90}ms"
                     onclick="_ppPick(${i})">
-              <div class="pp-rar">${r.label}</div>
+              <div class="pp-rar"><span class="pp-key">${i + 1}</span> ${r.label}</div>
               <div class="pp-icon">${p.icon}</div>
               <div class="pp-name">${_ppEsc(p.name)}</div>
               <div class="pp-desc">${_ppEsc(p.desc)}</div>
@@ -10421,6 +10397,13 @@ function _ppClose() {
     if (sc && sc.scene && sc.scene.resume) { try { sc.scene.resume(); } catch (e) {} }
     if (cb) { try { cb(); } catch (e) {} }
 }
+
+document.addEventListener('keydown', e => {
+    if (!_ppOpen) return;
+    if (e.key === '1' || e.key === '2' || e.key === '3') { e.preventDefault(); _ppPick(+e.key - 1); }
+    else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); _ppReroll(); }
+    else if (e.key === 'Escape') { e.preventDefault(); _ppPick(-1); }
+}, true);
 
 /* ── Build HUD: a compact strip of what you are carrying ────────────────── */
 function _ppHudRender() {
@@ -10497,6 +10480,24 @@ function _ppMultishot(spawn) {
         const step = Math.ceil(i / 2);
         try { spawn(side * spread * step); } catch (e) {}
     }
+}
+
+/* Consulted at the exact moment a run would end. Returns true when Second Wind
+   pulls the player back, which is the loudest possible use of an epic perk. */
+function _ppCheatDeath(scene, actor) {
+    const left = RunMods.count('second_wind') - (RunMods._windUsed || 0);
+    if (left <= 0) return false;
+    RunMods._windUsed = (RunMods._windUsed || 0) + 1;
+    _shake(18, 520); _chromaFlash(1.0); _zoomPulse(1.12, 300); _hitStop(120);
+    GameAudio.play('victory');
+    if (navigator.vibrate) { try { navigator.vibrate([60, 40, 120]); } catch (e) {} }
+    _juiceText(actor ? actor.x : GW / 2, actor ? actor.y - 24 : GH / 2, '🕊 SECOND WIND', '#fbbf24');
+    showToast('🕊 Second Wind — you are still standing!', 'success', 3000);
+    if (scene && scene._maxHp !== undefined) { scene._hp = Math.max(1, Math.ceil(scene._maxHp / 2)); scene._updateHud && scene._updateHud(); }
+    else { gameState.lives = Math.max(1, Math.ceil(RunMods.maxLives / 2)); }
+    _updateHeartsDisplay(scene && scene._hp !== undefined ? scene._hp : gameState.lives,
+                         scene && scene._maxHp !== undefined ? scene._maxHp : RunMods.maxLives);
+    return true;
 }
 
 /* Hit mitigation, consulted by _onHit before any life is lost. Returns true
@@ -10583,6 +10584,13 @@ function _ppUpdateOrbitals(scene, delta) {
 /* ── Per-frame driver, called from _sceneTickBase ───────────────────────── */
 function _ppTick(scene, score) {
     if (!liveConfig.perksEnabled) return;
+    // The very first choice happens before the player has scored anything, so
+    // that even a 20-second run has a build decision in it.
+    if (!RunMods._loadoutDone && !_ppOpen && !window._selftestActive) {
+        RunMods._loadoutDone = true;
+        _ppOfferPicks(scene, { loadout: true });
+        return;
+    }
     if (typeof score === 'number' && _ppShouldOffer(score)) _ppOfferPicks(scene, {});
     if (RunMods.orbitals > 0) _ppUpdateOrbitals(scene, scene.game ? scene.game.loop.delta : 16);
 }
@@ -10611,7 +10619,7 @@ function _dropLoot(x, y, forceType) {
     const scene = _activeScene;
     if (!scene || !scene.add) return;
     // Roll drop
-    if (!forceType && Math.random() > (liveConfig.lootDropRate || 0.4)) return;
+    if (!forceType && Math.random() > Math.min(1, (liveConfig.lootDropRate || 0.4) + RunMods.lootRateBonus)) return;
     // Pick type
     let type = forceType;
     if (!type) {
@@ -10636,8 +10644,8 @@ function _dropLoot(x, y, forceType) {
         if (puDef) { icon = puDef.icon || '⚡'; col = puDef.color || '#a78bfa'; }
         else { type = 'coin'; icon = '⭐'; col = '#fbbf24'; }
     }
-    const val = type === 'coin' ? (liveConfig.lootCoinValue || 25)
-              : type === 'gem'  ? (liveConfig.lootGemValue  || 100) : 0;
+    const val = Math.round((type === 'coin' ? (liveConfig.lootCoinValue || 25)
+              : type === 'gem'  ? (liveConfig.lootGemValue  || 100) : 0) * RunMods.coinMul);
     const lbl_txt = type === 'heal' ? '+HP' : type === 'custom_pu' ? (puDef?.name||'PU')+'!' : '+'+val;
 
     const loot = scene.add.text(x, y - 4, icon, {fontSize:'18px', fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5).setDepth(22);
@@ -10706,7 +10714,7 @@ function _updateLootTick(delta) {
             // Attract toward player once settled
             const dx = px - loot.x, dy = py - loot.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            if (dist < ATTRACT_R || liveConfig._lootMagnet) {
+            if (dist < ATTRACT_R || liveConfig._lootMagnet || RunMods.magnet) {
                 const spd = 160 + (ATTRACT_R - dist) * 2.5;
                 loot.x += (dx / dist) * spd * dt;
                 loot.y += (dy / dist) * spd * dt;
@@ -10762,20 +10770,13 @@ function _applyCustomPu(scene, puDef) {
     const val = parseFloat(puDef.value) || 2;
     _showCustomPuBar((puDef.icon||'⚡') + ' ' + (puDef.name||'Power-Up'), dur, puDef.color||'#a78bfa');
     switch (puDef.effect) {
-        case 'rapid_fire': {
-            const o = liveConfig.fireCooldown;
-            liveConfig.fireCooldown = Math.max(30, Math.round(o / val));
-            setTimeout(() => { liveConfig.fireCooldown = o; }, dur); break;
-        }
-        case 'speed_boost': {
-            const o = liveConfig.speed;
-            liveConfig.speed = Math.min(900, Math.round(o * val));
-            setTimeout(() => { liveConfig.speed = o; }, dur); break;
-        }
-        case 'score_frenzy': {
-            liveConfig._customPuScoreMul = val;
-            setTimeout(() => { delete liveConfig._customPuScoreMul; }, dur); break;
-        }
+        // These four are expressed as timed entries in RunMods rather than as
+        // saved-and-restored liveConfig writes. Stacking now extends the timer
+        // instead of baking the buff in permanently, and nothing survives the
+        // run that granted it.
+        case 'rapid_fire':   RunMods.grantTimed('rapid', dur);  break;
+        case 'speed_boost':  RunMods.grantTimed('haste', dur);  break;
+        case 'score_frenzy': RunMods.grantTimed('frenzy', dur); break;
         case 'freeze': {
             const grp = scene.hazards || scene.enemies;
             if (grp) grp.getChildren().forEach(e => {
@@ -10790,10 +10791,7 @@ function _applyCustomPu(scene, puDef) {
                 });
             }); break;
         }
-        case 'magnet': {
-            liveConfig._lootMagnet = true;
-            setTimeout(() => { delete liveConfig._lootMagnet; }, dur); break;
-        }
+        case 'magnet':       RunMods.grantTimed('magnet', dur); break;
         case 'shield': {
             if (scene._puShield !== undefined) {
                 scene._puShield = true; _showPuHud('shield');
@@ -10806,11 +10804,9 @@ function _applyCustomPu(scene, puDef) {
                 scene.time.delayedCall(dur, () => { scene._invincible = false; });
             } break;
         }
-        case 'time_warp': {
-            const o = liveConfig.gameSpeed;
-            liveConfig.gameSpeed = Math.min(1, val);
-            setTimeout(() => { liveConfig.gameSpeed = o; }, dur); break;
-        }
+        case 'time_warp':
+            RunMods._warpVal = Math.max(0.1, Math.min(1, val));
+            RunMods.grantTimed('warp', dur); break;
     }
 }
 
@@ -11283,7 +11279,9 @@ function makeBaseScene(data) {
                 GameAudio._osc('sine', 220, 110, 0.12, 0.22);
                 setTimeout(() => GameAudio._osc('sine', 220, 110, 0.12, 0.22), 240);
             }
-            if (gameState.lives <= 0) {
+            if (gameState.lives <= 0 && _ppCheatDeath(this, actor)) {
+                this.time.delayedCall(700, () => { this._invincible = false; });
+            } else if (gameState.lives <= 0) {
                 gameState.lives = liveConfig.lives;
                 this.time.delayedCall(180, () => {
                     if (this.scene && this.scene.isActive()) showGameOver(this.score || this.pScore || 0);
@@ -11348,15 +11346,20 @@ function sceneShooter(data) {
                 e.body.allowGravity=false; e.setData('hp',c.hp); e.setData('pts',c.hp===2?3:c.spd>1?2:1);
             }});
             this.physics.add.overlap(this.bullets, this.hazards, (b,e)=>{
-                const hp=(e.getData('hp')||1)-1;
-                e.setData('hp',hp);
-                if(hp>0){ b.destroy(); e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return; }
+                if (!b.active || !e.active) return;
+                // Damage, criticals and piercing all resolve in one shared place
+                // so every combat genre reads identically. _ppApplyHit owns the
+                // bullet's fate: it survives only when Piercing is stacked.
+                if (!_ppApplyHit(this, b, e)) {
+                    e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return;
+                }
                 const ex = e.x, ey = e.y;
                 // Capture score data BEFORE destroy(), Phaser wipes the data manager
                 const ePts = e.getData('pts') || 1;
                 this._burst(ex, ey, themeInt(1,0xa78bfa));
                 _spawnParticles(this, ex, ey);
-                b.destroy(); e.destroy();
+                e.destroy();
+                _ppOnKill(this, ex, ey);
                 _juiceKill(ex, ey, themeInt(0, 0xa78bfa));
                 _triggerHaptic('kill');
                 _spawnPowerup(this, ex, ey);
@@ -11369,7 +11372,7 @@ function sceneShooter(data) {
                     coin.body.setVelocity((Math.random()-0.5)*60, -80);
                     coin.body.setGravityY(200);
                     this.physics.add.overlap(this.actor, coin, () => {
-                        this._coins++;
+                        this._coins += Math.max(1, Math.round(RunMods.coinMul));
                         _triggerHaptic('coin');
                         this._coinHud.setText((liveConfig.coinEmoji||'🪙')+' ×'+this._coins);
                         const ft = this.add.text(coin.x, coin.y-10, '+'+(liveConfig.coinEmoji||'🪙'), {fontSize:'12px',color:'#fbbf24'}).setDepth(26);
@@ -11400,10 +11403,14 @@ function sceneShooter(data) {
             // Collectibles HUD
             this._coins = 0;
             this._coinHud = this.add.text(GW - 8, 8, '', {fontFamily:'Fredoka',fontSize:'14px',color:'#fbbf24',align:'right'}).setOrigin(1,0).setDepth(30);
-            window._shopScene = this;
         }
         _spawnBullets(spread) {
-            const offsets = spread===3 ? [-14,0,14] : spread===2 ? [-10,10] : [0];
+            const offsets = (spread===3 ? [-14,0,14] : spread===2 ? [-10,10] : [0]).slice();
+            // Split Shot fans additional barrels outward from the existing ones.
+            for (let i = 1; i <= RunMods.multishot; i++) {
+                const side = (i % 2 === 1) ? 1 : -1;
+                offsets.push(side * (18 + Math.ceil(i / 2) * 12));
+            }
             offsets.forEach(xOff => {
                 const b=this.bullets.create(this.actor.x+xOff*0.7, this.actor.y-10,'laser').setDisplaySize(7,20);
                 b.body.setSize(7,20); b.body.allowGravity=false;
@@ -12875,8 +12882,12 @@ function sceneInvaders(data) {
             else if(right.isDown||touchInput.right) this.actor.setVelocityX(liveConfig.speed);
             else                                    this.actor.setVelocityX(0);
             if((this.fireKey.isDown||touchInput.fire)&&time>this.lastFired) {
-                const b=this.bullets.create(this.actor.x,this.actor.y-16,'laser').setDisplaySize(6,14);
-                b.body.setSize(6,14); b.setTint(themeInt(0,0x00d4aa)); b.setVelocityY(-liveConfig.bulletSpeed); b.body.allowGravity=false;
+                const _fire = (angOff) => {
+                    const b=this.bullets.create(this.actor.x,this.actor.y-16,'laser').setDisplaySize(6,14);
+                    b.body.setSize(6,14); b.setTint(themeInt(0,0x00d4aa)); b.body.allowGravity=false;
+                    b.setVelocity(Math.sin(angOff)*liveConfig.bulletSpeed, -Math.cos(angOff)*liveConfig.bulletSpeed);
+                };
+                _fire(0); _ppMultishot(_fire);
                 this.lastFired=time+liveConfig.fireCooldown; GameAudio.play('shoot');
             }
             if (this.shootTimer && this.shootTimer.delay !== liveConfig.spawnDelay) this.shootTimer.delay = liveConfig.spawnDelay;
@@ -13745,11 +13756,19 @@ function sceneRoguelike(data) {
         }
         _hitEnemy(bullet, enemy) {
             if(enemy.getData('isBoss')){ this._hitBoss(bullet,enemy); return; }
-            // Multi-HP enemies: flash on non-lethal hit
-            const dmg = this._weapon.damageLevel || 1;
+            // Multi-HP enemies: flash on non-lethal hit. The dungeon's own
+            // weapon upgrades and the run's perks stack rather than compete.
+            const _crit = Math.random() < RunMods.critChance;
+            let dmg = (this._weapon.damageLevel || 1) + RunMods.damageBonus;
+            if (_crit) {
+                dmg = Math.max(dmg + 1, Math.round(dmg * RunMods.critMul));
+                _juiceText(enemy.x, enemy.y - 14, 'CRIT ' + dmg, '#fbbf24');
+                _burst(enemy.x, enemy.y, 0xfbbf24, 6); _shake(3, 90);
+            }
             const hp  = (enemy.getData('hp') || 1) - dmg;
             enemy.setData('hp', Math.max(0, hp));
-            if(!bullet.getData('piercing')) bullet.destroy();
+            if(!bullet.getData('piercing') && !(hp <= 0 && (bullet.getData('ppPierced')||0) < RunMods.pierce)) bullet.destroy();
+            else if (hp <= 0) bullet.setData('ppPierced', (bullet.getData('ppPierced')||0) + 1);
             if(hp > 0) {
                 // Took a hit but survived, flash white briefly
                 this.tweens.add({ targets:enemy, alpha:0.15, duration:55, yoyo:true });
@@ -13767,14 +13786,16 @@ function sceneRoguelike(data) {
                     se.setData('type','slime'); se.setData('hp',1); se.setData('maxHp',1); se.setData('split',true);
                 }
             }
+            const _kx = enemy.x, _ky = enemy.y;
             enemy.destroy();
+            _ppOnKill(this, _kx, _ky);
             const pts=Math.max(1,10*this._floor)*(liveConfig.pointsPerKill||10)*dmg;
             this.score+=pts; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
             this._popText(enemy.x, enemy.y-10, '+'+pts, '#fbbf24');
             GameAudio.play('score'); _sessionKills++; _achUnlock('first_blood');
             // Loot drops, tanks and ghosts give more
             const goldBonus = (type==='tank'||type==='ghost') ? Phaser.Math.Between(8,20) : Phaser.Math.Between(2,8);
-            this._gold += goldBonus;
+            this._gold += Math.round(goldBonus * RunMods.coinMul);
             if(Math.random()<0.15) this._spawnKeyDrop(enemy.x,enemy.y);
             this._updateHud();
             // Check room clear, ghosts + regular enemies both count
@@ -13972,7 +13993,7 @@ function sceneRoguelike(data) {
         _fireBullet(vx,vy) {
             const now=this.time.now;
             const baseCd=this._weapon.rapidFire?130:270;
-            const cd=Math.max(55,baseCd-this._floor*6);
+            const cd=Math.max(40, (baseCd-this._floor*6) / RunMods.fireRateMul);
             if(now-this._lastFired<cd) return;
             this._lastFired=now;
             const spd=400;
@@ -13989,6 +14010,7 @@ function sceneRoguelike(data) {
                 shoot(vx,vy);
                 shoot(Math.cos(a+sp),Math.sin(a+sp));
             } else { shoot(vx,vy); }
+            _ppMultishot(off => { const a = Math.atan2(vy, vx) + off; shoot(Math.cos(a), Math.sin(a)); });
             GameAudio.play('score');
         }
 
@@ -14332,9 +14354,13 @@ function sceneAsteroids(data) {
             // Fire (rapid = 80ms cd, normal = fireCooldown)
             const cd = this._rapidActive ? 80 : liveConfig.fireCooldown;
             if ((this.fireKey.isDown||touchInput.fire) && time > this.lastFired) {
-                const b=this.bullets.create(this.actor.x, this.actor.y, 'laser').setDisplaySize(6,6);
-                b.body.setSize(6,6); b.body.allowGravity=false;
-                this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2, liveConfig.bulletSpeed, b.body.velocity); this.lastFired=time+cd; GameAudio.play('shoot');
+                const _fire = (angOff) => {
+                    const b=this.bullets.create(this.actor.x, this.actor.y, 'laser').setDisplaySize(6,6);
+                    b.body.setSize(6,6); b.body.allowGravity=false;
+                    this.physics.velocityFromRotation(this.actor.rotation-Math.PI/2+angOff, liveConfig.bulletSpeed, b.body.velocity);
+                };
+                _fire(0); _ppMultishot(_fire);
+                this.lastFired=time+cd; GameAudio.play('shoot');
             }
             this.bullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
             this._saucerBullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
@@ -15385,6 +15411,7 @@ function sceneRacing(data) {
 
             // ── 2-player split-screen update ──────────────────────────────────
             _racingUpdate2P(this, time, delta);
+            _sceneTickBase(this, this.score || 0);
         }
     };
 }
@@ -16259,6 +16286,13 @@ function _scheduleAutoSave() {
 }
 
 function _syncCustomTabUI(cfg) {
+    // Power Picks
+    const _pt = document.getElementById('perksEnabledToggle');
+    if (_pt) {
+        _pt.checked = cfg.perksEnabled !== false;
+        const _pr = document.getElementById('perkInfoRow');
+        if (_pr) _pr.style.display = _pt.checked ? '' : 'none';
+    }
     // Difficulty ramp
     const diffRange = document.querySelector('#tab-custom input[min="0"][max="3"]');
     if (diffRange && cfg.difficultyScale!==undefined) {
@@ -16905,6 +16939,20 @@ function showGameOver(score) {
         _statsEl.innerHTML = _parts.join('');
         _statsEl.style.display = _parts.length ? '' : 'none';
     }
+    // The build that produced this score, so a player can see what worked and
+    // deliberately chase it (or avoid it) on the next run.
+    const _ppSumEl = document.getElementById('goPerkBuild');
+    if (_ppSumEl) {
+        const _h = _ppBuildSummaryHTML();
+        _ppSumEl.innerHTML = _h;
+        _ppSumEl.style.display = _h ? '' : 'none';
+    }
+    try {
+        const _m = _ppMeta();
+        _m.runs++;
+        if (score > _m.best) _m.best = score;
+        _ppSaveMeta(_m);
+    } catch (_e) {}
     // ── Beat-the-creator: name the win, spotlight the Result Code button ─────
     const bcEl = document.getElementById('goBeatCreator');
     if (bcEl) {
@@ -18786,6 +18834,58 @@ function openAchModal() {
 }
 function closeAchModal() { document.getElementById('achModal').style.display = 'none'; }
 
+// ── PERK CODEX ────────────────────────────────────────────────────────────────
+// A reference for the whole perk pool plus a record of which synergies the
+// player has discovered. Undiscovered synergies show their requirement but not
+// their payoff, so there is still something to find.
+function openPerkCodex() {
+    const meta = _ppMeta();
+    let ov = document.getElementById('perkCodex');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'perkCodex';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:8100;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
+        ov.addEventListener('click', e => { if (e.target === ov) closePerkCodex(); });
+        document.body.appendChild(ov);
+    }
+    const byRarity = ['legendary','epic','rare','common'];
+    const perkHTML = byRarity.map(r => {
+        const list = PERKS.filter(p => p.rarity === r);
+        if (!list.length) return '';
+        const c = PERK_RARITY[r];
+        return `<div style="margin-bottom:10px;">
+            <div style="font-size:.56rem;font-weight:800;letter-spacing:.16em;color:${c.col};margin-bottom:5px;">${c.label}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">${list.map(p =>
+                `<div style="background:rgba(255,255,255,.04);border:1px solid ${c.col}44;border-radius:8px;padding:6px 8px;">
+                   <div style="font-size:.7rem;font-weight:700;color:#e8edf8;">${p.icon} ${_ppEsc(p.name)}</div>
+                   <div style="font-size:.56rem;color:var(--muted);line-height:1.35;">${_ppEsc(p.desc)}</div>
+                 </div>`).join('')}</div></div>`;
+    }).join('');
+    const synHTML = SYNERGIES.map(sy => {
+        const found = !!meta.synergies[sy.id];
+        return `<div style="background:${found?'rgba(251,191,36,.12)':'rgba(255,255,255,.03)'};border:1px solid ${found?'rgba(251,191,36,.35)':'rgba(255,255,255,.08)'};border-radius:8px;padding:7px 9px;">
+            <div style="font-size:.72rem;font-weight:700;color:${found?'#fbbf24':'var(--muted)'};">${found ? sy.icon + ' ' + _ppEsc(sy.name) : '🔒 ???'}</div>
+            <div style="font-size:.56rem;color:var(--muted);line-height:1.35;">${found ? _ppEsc(sy.desc) : 'Undiscovered — keep stacking perks'}</div>
+        </div>`;
+    }).join('');
+    ov.innerHTML = `<div style="background:var(--panel,#12101f);border:1px solid rgba(124,58,237,.4);border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;padding:16px 18px;font-family:'Fredoka',sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-size:1rem;font-weight:800;color:#a78bfa;">📖 Perk Codex</div>
+          <button onclick="closePerkCodex()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div style="font-size:.6rem;color:var(--muted);margin-bottom:12px;">
+          ${meta.runs} run${meta.runs===1?'':'s'} · ${meta.picks} perk${meta.picks===1?'':'s'} taken ·
+          ${Object.keys(meta.synergies).length}/${SYNERGIES.length} synergies found
+        </div>
+        <div style="font-size:.62rem;font-weight:800;letter-spacing:.16em;color:#fbbf24;margin-bottom:6px;">SYNERGIES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:14px;">${synHTML}</div>
+        <div style="font-size:.62rem;font-weight:800;letter-spacing:.16em;color:rgba(240,234,214,.6);margin-bottom:6px;">PERKS</div>
+        ${perkHTML}
+      </div>`;
+    ov.style.display = 'flex';
+}
+function closePerkCodex() { const o = document.getElementById('perkCodex'); if (o) o.style.display = 'none'; }
+
 // ── TUTORIAL OVERLAY ──────────────────────────────────────────────────────────
 // (startTutorial defined earlier, uses card overlay with TUT_STEPS)
 function _checkFirstVisit() {
@@ -19152,6 +19252,7 @@ function sceneHopper(data) {
                 this._dead = true;
                 this.time.delayedCall(350, ()=>showGameOver(this.score));
             }
+            _sceneTickBase(this, this.score || 0);
         }
 
         shutdown() { _updateLandscapeNudge(false); }
@@ -21580,8 +21681,10 @@ function _getBossPhase(hpCurrent, hpMax) {
 // per genre without needing any external test runner.
 const SELFTEST_GENRES = ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'];
 window._selftestErrors = [];
-window._selftestActive = true;   // scenes may auto-play (e.g. pinball launch)
+window._selftestActive = false;  // armed only while the self-test is running,
+                                 // where scenes may auto-play (e.g. pinball launch)
 function _runGenreSelfTest() {
+    window._selftestActive = true;
     const panel = document.createElement('div');
     panel.id = 'selftestPanel';
     panel.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99990;background:rgba(5,3,15,.96);border:1px solid rgba(124,58,237,.5);border-radius:10px;padding:10px 14px;font-family:"JetBrains Mono",monospace;font-size:.68rem;color:#e8edf8;max-height:92vh;overflow-y:auto;min-width:250px;';
@@ -21628,9 +21731,14 @@ function _runGenreSelfTest() {
             const pass = _results.filter(r=>r.ok).length;
             let html = `<div style="font-weight:700;color:${pass===SELFTEST_GENRES.length?'#4ade80':'#fbbf24'};margin-bottom:6px;">🧪 ${pass}/${SELFTEST_GENRES.length} genres passed</div>`;
             html += _results.map(_row).join('');
-            html += '<div style="margin-top:6px;color:rgba(240,234,214,.45);">remove ?selftest=1 for the normal studio</div>';
             _set(html);
             console.table(_results);
+            // Boot-testing cannot reach the run modifier layer, so the system
+            // checks run straight afterwards and share the panel.
+            const _sys = _showSystemSelfTest(panel);
+            panel.insertAdjacentHTML('beforeend',
+                '<div style="margin-top:6px;color:rgba(240,234,214,.45);">remove ?selftest=1 for the normal studio</div>');
+            window._selftestResult = { genres: _results, system: _sys };
             return;
         }
         const g = SELFTEST_GENRES[_i++];
@@ -21675,6 +21783,177 @@ function _runGenreSelfTest() {
         } catch(e) { _done(false, String(e.message||e)); }
     };
     setTimeout(_next, 50);
+}
+
+// ── SYSTEM SELF-TEST ─────────────────────────────────────────────────────────
+// The genre self-test above only proves each scene boots. It deliberately turns
+// off win conditions, bosses, loot, power-ups, levels, events and achievements,
+// so none of those were ever covered. These assertions cover the logic that
+// boot-testing cannot reach: the run modifier layer, perk stacking and caps,
+// synergy conditions, and — most importantly — that a run can no longer write
+// anything back into the author's saved configuration.
+//
+// Runs headlessly in a fraction of a second, needs no frames, and is safe to
+// run at any time: it snapshots and restores everything it touches.
+function _runSystemSelfTest() {
+    const R = [];
+    const ok = (name, pass, detail) => R.push({ name, pass: !!pass, detail: detail || '' });
+    const eq = (name, got, want) => ok(name, JSON.stringify(got) === JSON.stringify(want),
+                                      JSON.stringify(got) + ' ≠ ' + JSON.stringify(want));
+    const near = (name, got, want, tol) => ok(name, Math.abs(got - want) < (tol || 1e-6),
+                                              got + ' ≠ ~' + want);
+    const P = id => PERKS.find(p => p.id === id);
+
+    // Snapshot everything this test touches so a run in progress is unharmed.
+    const snap = {
+        genre: _engineData && _engineData.genre,
+        speed: liveConfig._base.speed, cd: liveConfig._base.fireCooldown,
+        lives: liveConfig.lives, gsLives: gameState.lives,
+        stacks: Object.assign({}, RunMods.stacks), syns: RunMods.synergies.slice(),
+        picks: RunMods.picksTaken, bonus: RunMods.bonusLives, timed: Object.assign({}, RunMods._timed),
+        start: _gameStartTime,
+    };
+    if (!_engineData) _engineData = { genre: 'SHOOTER' };
+
+    try {
+        /* ── 1. An empty build must be a mathematical no-op ─────────────── */
+        RunMods.reset();
+        liveConfig.speed = 200; liveConfig.fireCooldown = 180;
+        eq('empty build: speed passthrough', liveConfig.speed, 200);
+        eq('empty build: cooldown passthrough', liveConfig.fireCooldown, 180);
+        eq('empty build: score ×1', RunMods.scoreMul, 1);
+        eq('empty build: crit 0%', RunMods.critChance, 0);
+        eq('empty build: damage +0', RunMods.damageBonus, 0);
+        eq('empty build: gameSpeed ×1', RunMods.gameSpeedMul, 1);
+        eq('empty build: 1 damage per shot', _ppRollDamage().dmg, 1);
+
+        /* ── 2. Stacking ───────────────────────────────────────────────── */
+        _ppGrant(P('overclock')); _ppGrant(P('overclock'));
+        near('overclock ×2 → +50% fire rate', RunMods.fireRateMul, 1.5);
+        eq('cooldown follows fire rate', liveConfig.fireCooldown, 120);
+        eq('base cooldown untouched', liveConfig._base.fireCooldown, 180);
+
+        /* ── 3. The regression that matters most: a run must never write into
+              the author's config. This is what the old Upgrade Shop did. ── */
+        const saved = _buildSaveData();
+        eq('save writes BASE speed, not buffed', saved.liveConfig.speed, 200);
+        eq('save writes BASE cooldown, not buffed', saved.liveConfig.fireCooldown, 180);
+
+        /* ── 4. Caps ───────────────────────────────────────────────────── */
+        RunMods.reset();
+        for (let i = 0; i < 8; i++) _ppGrant(P('magnet'));       // max 1
+        ok('perk cap keeps maxed perks out of the pool',
+           !_ppEligible().some(p => p.id === 'magnet'));
+
+        /* ── 5. Synergies fire on their exact conditions ────────────────── */
+        RunMods.reset();
+        _ppGrant(P('overclock')); _ppGrant(P('overclock')); _ppGrant(P('hair_trigger'));
+        eq('no synergy before its last piece', RunMods.synergies, []);
+        _ppGrant(P('split_shot'));
+        eq('BULLET STORM fires', RunMods.synergies, ['bullet_storm']);
+        eq('BULLET STORM grants its extra projectile', RunMods.multishot, 2);
+
+        RunMods.reset();
+        _ppGrant(P('keen_edge')); _ppGrant(P('keen_edge'));
+        _ppGrant(P('lucky_strike')); _ppGrant(P('deep_cuts'));
+        eq('EXECUTIONER fires', RunMods.synergies, ['executioner']);
+        near('EXECUTIONER crit chance', RunMods.critChance, 0.46);
+
+        RunMods.reset();
+        _ppGrant(P('greed')); _ppGrant(P('greed')); _ppGrant(P('scavenger'));
+        eq('JACKPOT fires', RunMods.synergies, ['jackpot']);
+        eq('JACKPOT doubles coins', RunMods.coinMul, 3);
+
+        /* ── 6. Every synergy must be reachable from the pool ───────────── */
+        SYNERGIES.forEach(sy => {
+            RunMods.reset();
+            // Take every perk to its cap; if the condition still cannot be met
+            // the synergy is unreachable and would never appear in play.
+            PERKS.forEach(p => { for (let i = 0; i < (p.max || 1); i++) RunMods.stacks[p.id] = i + 1; });
+            let met = false; try { met = !!sy.when(); } catch (e) {}
+            ok('synergy reachable: ' + sy.name, met);
+        });
+
+        /* ── 7. reset() truly ends a run ────────────────────────────────── */
+        RunMods.reset();
+        ok('reset clears stacks', RunMods.isEmpty());
+        eq('reset clears synergies', RunMods.synergies, []);
+        eq('reset clears bonus lives', RunMods.bonusLives, 0);
+        eq('reset clears cheated deaths', RunMods._windUsed, 0);
+        RunMods.grantTimed('rapid', 60000);
+        ok('timed buff applies', RunMods.timed('rapid'));
+        RunMods.reset();
+        ok('reset clears timed buffs', !RunMods.timed('rapid'));
+
+        /* ── 8. Timed buffs extend rather than compound into permanence.
+              The old power-up code saved the current value and restored it on a
+              setTimeout, so two of the same buff left it applied forever. ── */
+        RunMods.reset();
+        RunMods.grantTimed('haste', 5000);
+        const firstExpiry = RunMods._timed.haste;
+        RunMods.grantTimed('haste', 3000);
+        ok('shorter re-grant does not shorten a buff', RunMods._timed.haste === firstExpiry);
+        near('haste is a multiplier, not a write', RunMods.moveSpeedMul, 1.5);
+        eq('haste never touched the base speed', liveConfig._base.speed, 200);
+
+        /* ── 9. Every genre can actually draft three distinct cards ─────── */
+        Object.keys(GENRE_CAPS).forEach(g => {
+            _engineData.genre = g;
+            RunMods.reset();
+            const pool = _ppEligible();
+            ok('pool ≥3 for ' + g, pool.length >= 3, pool.length + ' perks');
+            const offer = _ppRollOffer(3);
+            ok('draft offers 3 distinct for ' + g,
+               offer.length === 3 && new Set(offer.map(p => p.id)).size === 3);
+            // A perk must never be offered where its effect cannot exist.
+            const caps = GENRE_CAPS[g].concat(_CAP_ALL);
+            ok('no dead perks offered in ' + g,
+               pool.every(p => p.needs.every(n => caps.indexOf(n) !== -1)));
+        });
+
+        /* ── 10. Pick ladder is monotonic and finite ────────────────────── */
+        _engineData.genre = 'SHOOTER';
+        RunMods.reset();
+        let last = -1, monotonic = true;
+        for (let i = 0; i < 8; i++) {
+            _ppScheduleNext();
+            if (RunMods.nextPickScore <= last) monotonic = false;
+            last = RunMods.nextPickScore;
+            RunMods.picksTaken++;
+        }
+        ok('pick thresholds always increase', monotonic);
+
+    } catch (e) {
+        ok('system test crashed: ' + (e.message || e), false);
+    } finally {
+        // Restore. A test that leaves the studio altered is worse than no test.
+        RunMods.reset();
+        RunMods.stacks = snap.stacks; RunMods.synergies = snap.syns;
+        RunMods.picksTaken = snap.picks; RunMods.bonusLives = snap.bonus;
+        RunMods._timed = snap.timed;
+        liveConfig.speed = snap.speed; liveConfig.fireCooldown = snap.cd;
+        liveConfig.lives = snap.lives; gameState.lives = snap.gsLives;
+        _gameStartTime = snap.start;
+        if (snap.genre) _engineData.genre = snap.genre;
+        _ppHudRender();
+    }
+
+    const failed = R.filter(r => !r.pass);
+    if (typeof console !== 'undefined' && console.table) console.table(R);
+    return { total: R.length, passed: R.length - failed.length, failed, results: R };
+}
+
+/* Renders the system test into the same panel the genre test uses. */
+function _showSystemSelfTest(panel) {
+    const res = _runSystemSelfTest();
+    const rows = res.failed.length
+        ? res.failed.map(f => `<div style="color:#f87171;margin:2px 0;">✗ ${f.name}<br><span style="opacity:.6">${f.detail}</span></div>`).join('')
+        : '';
+    const html = `<div style="font-weight:700;margin:8px 0 4px;color:${res.failed.length ? '#f87171' : '#4ade80'};">
+                    🔧 ${res.passed}/${res.total} system checks passed
+                  </div>${rows}`;
+    if (panel) panel.insertAdjacentHTML('beforeend', html);
+    return res;
 }
 
 // ── DEBUG MENU (?debug=1 or Build → More tools → 🛠 Debug) ───────────────────
@@ -22388,5 +22667,7 @@ window.addEventListener('online', () => {
 </script>
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+<script src="../cookie-consent.js"></script>
 </body>
 </html>

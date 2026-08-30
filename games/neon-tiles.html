@@ -226,6 +226,7 @@ html, body {
 .how { font-size:.82rem; color:rgba(255,255,255,.6); line-height:1.6; margin-bottom:18px; text-align:left; }
 .how b { color:#fff; }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Neon Tiles","url":"https://jvdesignstudio.co.uk/games/neon-tiles.html","description":"Tap falling tiles across four lanes, nail the timing for perfects, chain combos, dodge traps and climb the levels.","genre":"Action","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/NeonTilesCover.webp"}</script>
 </head>
 <body>
 <div class="wrap">
@@ -333,87 +334,9 @@ function hitY() { return fieldH() * HIT_LINE_FRAC; }
 function renderLives() {
   const el = document.getElementById('lives');
   el.innerHTML = '';
-  for (let i = 0; i 
-/* ═══════════════ SETUP ═══════════════ */
-const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles', 'echo');
-const soundManager = new SoundManager(gameSystem);
-const audioEffects = new AudioEffects(0.7);
-if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
-
-const LANES = 4;
-const LANE_COLORS = ['l0','l1','l2','l3'];
-const HIT_LINE_FRAC = 0.86;   // fraction of field height where the hit line sits
-const HIT_WINDOW = 0.10;      // +/- fraction around the line that counts as a hit
-
-const field = document.getElementById('field');
-const hitZone = document.getElementById('hitZone');
-
-let tiles = [];       // {el, lane, y(px), speed, type, judged}
-let rafId = null;
-let lastT = 0;
-let spawnTimer = 0;
-
-const S = {
-  running:false, score:0, combo:0, bestCombo:0, lives:3,
-  level:1, tilesCleared:0, tilesForLevel:12,
-  fallMs:2600,        // ms for a tile to cross the field
-  spawnMs:900,        // ms between spawns
-  trapChance:0,       // introduced at higher levels
-  goldChance:0.08,
-};
-
-/* ═══════════════ LEVEL CONFIG ═══════════════ */
-function applyLevel(level) {
-  S.level = level;
-  S.tilesCleared = 0;
-  S.tilesForLevel = 10 + level * 2;
-  // Everything is measured in 8th-note steps of the soundtrack (250ms at
-  // 120 BPM) so tiles always land on the beat.
-  S.fallSteps = Math.max(3, 8 - Math.floor((level - 1) * 0.6));
-  S.spawnSteps = Math.max(1, 2 - Math.floor((level - 1) / 4));
-  S.fallMs = S.fallSteps * MUSIC.STEP_MS;
-  S.spawnMs = S.spawnSteps * MUSIC.STEP_MS;
-  S.trapChance = level >= 3 ? Math.min(0.05 + (level - 3) * 0.02, 0.20) : 0;
-  S.goldChance = 0.08;
-}
-
-/* ═══════════════ HELPERS ═══════════════ */
-function fieldH() { return field.clientHeight; }
-function fieldW() { return field.clientWidth; }
-function laneW() { return fieldW() / LANES; }
-function hitY() { return fieldH() * HIT_LINE_FRAC; }
-
-function renderLives() {
-  const el = document.getElementById('lives');
-  el.innerHTML = '';
   for (let i = 0; i < 3; i++) {
     const h = document.createElement('span');
     h.className = 'life' + (i >= S.lives ? ' lost' : '');
-    h.textContent = '❤️';
-    el.appendChild(h);
-  }
-}
-
-function updateHud() {
-  document.getElementById('levelVal').textContent = S.level;
-  document.getElementById('scoreVal').textContent = S.score;
-  document.getElementById('comboVal').textContent = S.combo + (S.combo >= 2 ? '×' : '');
-  document.getElementById('lvlFill').style.width = (S.tilesCleared / S.tilesForLevel * 100) + '%';
-}
-
-function judge(text, color) {
-  const j = document.getElementById('judge');
-  j.textContent = text;
-  j.style.color = color;
-  j.classList.remove('show'); void j.offsetWidth; j.classList.add('show');
-}
-
-/* ═══════════════ SPAWNING ═══════════════ */
-function spawnTile() {
-  const lane = Math.floor(Math.random() * LANES);
-  let type = 'normal';
-  const roll = Math.random();
-  if (roll = S.lives ? ' lost' : '');
     h.textContent = '❤️';
     el.appendChild(h);
   }
@@ -473,26 +396,6 @@ function hitLane(lane) {
   for (const t of tiles) {
     if (t.lane !== lane || t.judged) continue;
     const d = Math.abs((t.y + t.size / 2) - hitY());
-    if (d  { e.preventDefault(); onTileTap(tile); }, { passive:false });
-  tiles.push(tile);
-}
-
-/* ═══════════════ INPUT ═══════════════ */
-const LANE_KEYS = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
-window.addEventListener('keydown', (e) => {
-  if (!S.running) return;
-  const lane = LANE_KEYS[e.code];
-  if (lane === undefined) return;
-  e.preventDefault();
-  hitLane(lane);
-});
-function hitLane(lane) {
-  flashPad(lane);
-  let bestT = null, bestD = Infinity;
-  const win = fieldH() * HIT_WINDOW;
-  for (const t of tiles) {
-    if (t.lane !== lane || t.judged) continue;
-    const d = Math.abs((t.y + t.size / 2) - hitY());
     if (d < bestD) { bestD = d; bestT = t; }
   }
   if (!bestT) { breakCombo(); judge('·', 'rgba(255,255,255,.4)'); return; }  // empty lane press
@@ -530,32 +433,6 @@ function onTileTap(tile) {
     return;
   }
 
-  if (dist  pad.classList.remove('press'), 120);
-}
-let padPulseT = null;
-function pulsePads() {
-  const pads = document.querySelectorAll('.hit-pads span');
-  pads.forEach(pad => pad.classList.add('pulse'));
-  if (padPulseT) clearTimeout(padPulseT);
-  padPulseT = setTimeout(() => pads.forEach(pad => pad.classList.remove('pulse')), 110);
-}
-function onTileTap(tile) {
-  if (!S.running || tile.judged) return;
-  gameSystem.unlockAchievement('firstTap');
-  const center = tile.y + tile.size / 2;
-  const dist = Math.abs(center - hitY());
-  const window = fieldH() * HIT_WINDOW;
-
-  if (tile.type === 'trap') {
-    // tapping a trap is a mistake
-    tile.judged = true;
-    tile.el.classList.add('miss');
-    loseLife('trap');
-    audioEffects.playError();
-    setTimeout(() => removeTile(tile), 300);
-    return;
-  }
-
   if (dist <= window) {
     // successful hit, quality based on distance
     const perfect = dist <= window * 0.4;
@@ -563,7 +440,6 @@ function onTileTap(tile) {
     tile.el.classList.add('hit');
     registerHit(tile, perfect);
     setTimeout(() => removeTile(tile), 250);
-  } else if (center  removeTile(tile), 250);
   } else if (center < hitY()) {
     // tapped too early, small penalty, break combo but no life lost
     tile.judged = true;
@@ -572,50 +448,6 @@ function onTileTap(tile) {
     judge('Early', '#ffd24a');
     audioEffects.playTap(300);
     setTimeout(() => removeTile(tile), 250);
-  }
-}
-
-function registerHit(tile, perfect) {
-  S.combo++;
-  S.bestCombo = Math.max(S.bestCombo, S.combo);
-  const mult = 1 + Math.min(Math.floor(S.combo / 5), 6) * 0.5; // up to 4x
-  let base = perfect ? 100 : 60;
-  if (tile.type === 'gold') base *= 2;
-  const pts = Math.round(base * mult);
-  S.score += pts;
-  S.tilesCleared++;
-
-  gameSystem.addXP(Math.max(1, Math.floor(pts / 40)));
-
-  if (tile.type === 'gold') { judge('GOLD! +' + pts, '#ffd24a'); ParticleSystem.burst(tileCenterX(tile), fieldTopOffset() + hitY(), '⭐', 8); }
-  else judge(perfect ? 'PERFECT +' + pts : 'Good +' + pts, perfect ? '#3cff8f' : '#00e5ff');
-
-  audioEffects.playTap(500 + Math.min(S.combo, 20) * 40);
-  if (perfect) audioEffects.playSuccess(900 + Math.min(S.combo, 15) * 30);
-  if (S.combo > 0 && S.combo % 10 === 0) {
-    audioEffects.playCombo(S.combo / 5);
-    ScreenShake.shake(field, 5, 150);
-    gameSystem.unlockAchievement('combo10');
-  }
-
-  updateHud();
-  if (S.tilesCleared >= S.tilesForLevel) levelUp();
-}
-
-function breakCombo() {
-  S.combo = 0;
-  updateHud();
-}
-
-function loseLife(reason) {
-  S.combo = 0;
-  S.lives--;
-  renderLives();
-  updateHud();
-  ScreenShake.shake(field, 8, 220);
-  if (reason === 'miss') judge('MISS', '#ff5b6b');
-  else if (reason === 'trap') judge('TRAP! −1', '#ff5b6b');
-  if (S.lives  removeTile(tile), 250);
   }
 }
 
@@ -688,106 +520,6 @@ function loop(t) {
     tile.y += tile.speed * dt;
     tile.el.style.transform = `translateY(${tile.y}px)`;
     if (!tile.judged && tile.y > limit) {
-      // fell off the bottom
-      tile.judged = true;
-      if (tile.type === 'trap') {
-        // letting a trap fall is correct, small reward
-        S.score += 10; updateHud();
-      } else {
-        loseLife('miss');
-      }
-      removeTile(tile);
-    }
-  }
-  rafId = requestAnimationFrame(loop);
-}
-
-function removeTile(tile) {
-  tile.el.remove();
-  const i = tiles.indexOf(tile);
-  if (i >= 0) tiles.splice(i, 1);
-}
-
-function clearTiles() {
-  tiles.forEach(t => t.el.remove());
-  tiles = [];
-}
-
-/* ═══════════════ MUSIC + BEAT GRID ═══════════════
-   A procedural soundtrack: kick on the quarters, hats on the off-beats,
-   a rolling bass pattern and an arp on the B section. The spawn grid reads
-   the same clock, so tiles rise and land on the beat — the game finally
-   has a song because the song IS the level design. */
-const MUSIC = {
-  bpm: 120, STEP_MS: 250,          // 120 BPM, 8th-note steps
-  step: 0, nextTime: 0, timer: null, running: false,
-  ctx: null, master: null, scheduled: [],
-  bass: [110, 0, 110, 146.83, 110, 0, 164.81, 146.83],
-  arp:  [440, 0, 523.25, 0, 392, 0, 587.33, 0],
-};
-function musicMuted() {
-  try { if (localStorage.getItem('jvds_sound') === '0') return true; } catch (e) {}
-  try { if (localStorage.getItem('soundEnabled') === 'false') return true; } catch (e) {}
-  const gs = typeof GameSystem !== 'undefined' && GameSystem.lastInstance;
-  if (gs && gs.getSetting('soundEnabled') === false) return true;
-  return false;
-}
-function musicAudio() {
-  if (!MUSIC.ctx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    MUSIC.ctx = new AC();
-    MUSIC.master = MUSIC.ctx.createGain();
-    MUSIC.master.gain.value = 0.5;
-    MUSIC.master.connect(MUSIC.ctx.destination);
-  }
-  if (MUSIC.ctx.state === 'suspended') MUSIC.ctx.resume();
-  return MUSIC.ctx;
-}
-function mNote(freq, t, dur, type, gain) {
-  const o = MUSIC.ctx.createOscillator(), g = MUSIC.ctx.createGain();
-  o.type = type; o.frequency.value = freq;
-  o.connect(g); g.connect(MUSIC.master);
-  g.gain.setValueAtTime(gain, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.start(t); o.stop(t + dur + 0.02);
-}
-function mDrum(t, kind) {
-  const o = MUSIC.ctx.createOscillator(), g = MUSIC.ctx.createGain();
-  o.connect(g); g.connect(MUSIC.master);
-  if (kind === 'kick') {
-    o.type = 'sine';
-    o.frequency.setValueAtTime(150, t);
-    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-    g.gain.setValueAtTime(0.5, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-    o.start(t); o.stop(t + 0.18);
-  } else {
-    o.type = 'square'; o.frequency.value = 6000;
-    g.gain.setValueAtTime(0.05, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-    o.start(t); o.stop(t + 0.05);
-  }
-}
-function mScheduleStep(step, t) {
-  const s16 = step % 16;                                    // 2-bar loop
-  if (s16 % 4 === 0) mDrum(t, 'kick');
-  if (s16 % 2 === 1) mDrum(t, 'hat');
-  const b = MUSIC.bass[s16 % 8]; if (b) mNote(b, t, 0.22, 'triangle', 0.2);
-  if (Math.floor(step / 16) % 2 === 1) {                    // arp on the B section
-    const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.045);
-  }
-}
-function musicStart() {
-  if (musicMuted()) return;
-  const ac = musicAudio();
-  MUSIC.running = true;
-  MUSIC.step = 0;
-  MUSIC.scheduled = [];
-  MUSIC.nextTime = ac.currentTime + 0.1;
-  if (!MUSIC.timer) {
-    MUSIC.timer = setInterval(() => {
-      if (!MUSIC.running || !MUSIC.ctx) return;
-      while (MUSIC.nextTime  limit) {
       // fell off the bottom
       tile.judged = true;
       if (tile.type === 'trap') {
@@ -984,89 +716,8 @@ window.addEventListener('beforeunload', () => {
 
 renderLives();
 updateHud();
- {
-  if (document.visibilityState === 'hidden') musicStop();
-  else if (S.running) musicStart();
-});
-
-/* ═══════════════ FLOW ═══════════════ */
-function startGame() {
-  document.getElementById('modal').classList.remove('show');
-  S.running = false; S.score = 0; S.combo = 0; S.bestCombo = 0; S.lives = 3;
-  applyLevel(1);
-  clearTiles();
-  renderLives();
-  updateHud();
-  musicStart();                              // beat starts with the countdown
-  countdown(3, () => {
-    S.running = true;
-    lastT = performance.now();
-    rafId = requestAnimationFrame(loop);
-  });
-}
-
-function countdown(n, done) {
-  const cd = document.getElementById('countdown');
-  const num = document.getElementById('cdNum');
-  cd.style.display = 'grid';
-  let cur = n;
-  const tick = () => {
-    if (cur === 0) { cd.style.display = 'none'; done(); return; }
-    num.textContent = cur;
-    num.style.animation = 'none'; void num.offsetWidth; num.style.animation = 'cd 1s ease-out';
-    audioEffects.playTap(400 + (n - cur) * 100);
-    cur--;
-    setTimeout(tick, 500);
-  };
-  tick();
-}
-
-function levelUp() {
-  applyLevel(S.level + 1);
-  updateHud();
-  judge('LEVEL ' + S.level + '!', '#7c5cff');
-  audioEffects.playLevelUp();
-  ParticleSystem.confetti(window.innerWidth / 2, fieldTopOffset() + fieldH() / 3, 16);
-  if (S.level >= 5) gameSystem.unlockAchievement('level5');
-}
-
-function gameOver() {
-  S.running = false;
-  musicStop();
-  cancelAnimationFrame(rafId);
-  clearTiles();
-
-  // Report the run's score into the shared save so the Arcade hub can see it.
-  if (S.score > 0) gameSystem.addScore(S.score);
-  const xp = Math.floor(S.score / 40) + S.bestCombo * 2;
-  gameSystem.addXP(xp);
-  if (S.bestCombo >= 25) gameSystem.unlockAchievement('streak10');
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
-
-  audioEffects.playError();
-  if (S.bestCombo >= 20) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18);
-
-  document.getElementById('modalEmoji').textContent = S.level >= 5 ? '🏆' : '⚡';
-  document.getElementById('modalTitle').textContent = 'Game Over';
-  document.getElementById('modalSub').textContent = S.level >= 5 ? 'Incredible run!' : 'Nice try, go again!';
-  document.getElementById('howBox').style.display = 'none';
-  document.getElementById('modalStats').style.display = 'flex';
-  document.getElementById('mScore').textContent = S.score;
-  document.getElementById('mCombo').textContent = S.bestCombo + '×';
-  document.getElementById('mLevel').textContent = S.level;
-  document.getElementById('mXp').textContent = xp;
-  document.getElementById('modalBtn').textContent = 'Play Again';
-  document.getElementById('modal').classList.add('show');
-}
-
-window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
-});
-
-renderLives();
-updateHud();
 </script>
+<script src="../cookie-consent.js"></script>
+<script src="../game-mute.js"></script>
 </body>
 </html>
