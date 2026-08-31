@@ -411,17 +411,6 @@ img{display:block;max-width:100%;}
 .btn-study-play:hover{filter:brightness(1.1);transform:translateY(-2px);}
 .btn-study-skip{padding:14px 18px;border:1px solid rgba(255,255,255,.15);border-radius:12px;background:transparent;color:rgba(255,255,255,.5);font-family:'Fredoka',cursive;font-size:.9rem;cursor:pointer;transition:background .15s;}
 .btn-study-skip:hover{background:rgba(255,255,255,.07);color:#fff;}
-.study-quiz{margin-top:20px;padding:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;}
-.study-quiz-label{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px;text-align:center;}
-.study-quiz-q{font-family:'Fredoka',cursive;font-size:1rem;color:#fff;text-align:center;margin-bottom:12px;line-height:1.4;}
-.study-quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-@media(max-width:440px){.study-quiz-opts{grid-template-columns:1fr;}}
-.study-quiz-btn{padding:10px 12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);border-radius:10px;color:rgba(255,255,255,.85);font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;}
-.study-quiz-btn:hover:not(:disabled){background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);}
-.study-quiz-btn.correct{background:rgba(52,211,153,.18);border-color:#34D399;color:#34D399;}
-.study-quiz-btn.wrong{background:rgba(248,113,113,.12);border-color:#F87171;color:#F87171;}
-.study-quiz-btn:disabled{cursor:default;}
-.study-quiz-result{font-size:.82rem;text-align:center;margin-top:8px;color:rgba(255,255,255,.5);}
 /* card study button */
 .card-study-btn{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:.78rem;padding:7px 14px;border-radius:7px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6);cursor:pointer;transition:background .15s,color .15s;margin-top:8px;width:100%;justify-content:center;}
 .card-study-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
@@ -694,7 +683,7 @@ window.JVDS.announce = function (msg) {
 </div>
 
 <!-- ═══ HERO ═══ -->
-<section id="main-content" role="main" class="hero">
+<main id="main-content" class="hero">
   <span class="hero-float" style="top:12%;left:8%;--sz:2.4rem;--dur:6s;--delay:0s;--ty:-14px;--rot:12deg;">🦎</span>
   <span class="hero-float" style="top:18%;right:10%;--sz:2rem;--dur:7s;--delay:1.2s;--ty:-18px;--rot:-10deg;">🚀</span>
   <span class="hero-float" style="bottom:15%;left:14%;--sz:1.8rem;--dur:8s;--delay:.6s;--ty:-12px;--rot:6deg;">🔬</span>
@@ -728,7 +717,7 @@ window.JVDS.announce = function (msg) {
     </div>
   </div>
   <div class="hero-divider"></div>
-</section>
+</main>
 
 <!-- ═══ CROSS-SECTION NAV ═══ -->
 <nav class="learn-tabs" aria-label="Learning sections">
@@ -932,19 +921,7 @@ window.JVDS.announce = function (msg) {
 </footer>
 <script>
 (function () {
-const footerRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const parent = entry.target.parentElement;
-            const siblings = [...parent.querySelectorAll('.reveal')];
-            const idx = siblings.indexOf(entry.target);
-            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
-            footerRevealObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0 });
-document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
-  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  // Failsafe: show any hidden content after 2s
   setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
 })();
 </script>
@@ -1217,6 +1194,7 @@ function buildGenericMCQ(body, cfg) {
     fb.textContent = ok
       ? '✅ Correct!' + (q.explain ? ' — '+q.explain : '')
       : `❌ ${q.opts[q.ans]}` + (q.explain ? ', '+q.explain : '');
+    if(typeof JVDS!=='undefined'&&JVDS.announce) JVDS.announce(ok?'Correct!':'Incorrect. The answer is '+q.opts[q.ans]);
     S.idx++;
     setTimeout(nextQ, 1800);
   };
@@ -1229,6 +1207,7 @@ function buildGenericMCQ(body, cfg) {
     document.getElementById('gameBody').querySelector('.gc').insertAdjacentHTML('beforeend',
       cfg.donePanel(S.score, S.qs.length)
     );
+    if(typeof JVDS!=='undefined'&&JVDS.announce) JVDS.announce(`${cfg.doneLabel} ${S.score} out of ${S.qs.length} correct.`);
   }
 
   // Expose for openGame() to call
@@ -1436,7 +1415,7 @@ const STUDY = {
       { icon:'⬇️', title:'Gravity', text:'Every object with mass pulls other objects towards it. Earth\'s gravity pulls you to the ground at 9.8 m/s². Without it, you\'d float away!' },
       { icon:'🧲', title:'Forces cause change', text:'A force makes something start moving, stop moving, speed up, slow down, or change direction. Push and pull are both forces.' },
       { icon:'🌡️', title:'States of matter', text:'Everything is solid, liquid or gas. Heat can change state, ice (solid) → water (liquid) → steam (gas). The material itself stays the same.' },
-      { icon:'🌱', title:'Living things', text:'All living things breathe, eat, grow, reproduce, and respond to their environment. These are the seven life processes (MRS NERG).' },
+      { icon:'🌱', title:'Living things', text:'All living things breathe, eat, grow, reproduce, and respond to their environment. These are the seven life processes (MRS GREN).' },
     ]
   },
   strange: {
@@ -1485,12 +1464,12 @@ const STUDY = {
     ]
   },
   logic: {
-    intro: 'Coding logic is the ability to break problems into steps, make decisions, and repeat actions. It\'s a superpower for any career!',
+    intro: 'Logic gates are the building blocks of every computer. They take inputs and produce outputs based on simple rules. Let\'s learn the four main gates!',
     facts: [
-      { icon:'📦', title:'Variables store data', text:'A variable is like a labelled box. x = 5 puts the number 5 in a box called x. You can change it anytime: x = x + 1 makes x = 6.' },
-      { icon:'🔁', title:'Loops repeat code', text:'"for i in range(10)" runs the indented code 10 times. Loops avoid writing the same code over and over computers never get bored!' },
-      { icon:'🤔', title:'If/else makes decisions', text:'"if score > 90: print(\'A+\')" runs only when the condition is true. The else block handles everything else.' },
-      { icon:'⚡', title:'Boolean logic', text:'TRUE AND TRUE = TRUE. TRUE AND FALSE = FALSE. TRUE OR FALSE = TRUE. NOT TRUE = FALSE. These rules power every computer circuit on Earth.' },
+      { icon:'🔌', title:'AND gate', text:'An AND gate outputs ON only when BOTH inputs are ON. If either input is OFF, the output is OFF. Think of it as: both must be true.' },
+      { icon:'🔀', title:'OR gate', text:'An OR gate outputs ON when AT LEAST ONE input is ON. Only when both inputs are OFF is the output OFF. Think: at least one must be true.' },
+      { icon:'🔄', title:'NOT gate', text:'A NOT gate flips the signal. ON becomes OFF, OFF becomes ON. It\'s the simplest gate with just one input and one output.' },
+      { icon:'⚡', title:'XOR gate', text:'XOR (exclusive OR) outputs ON when the inputs are DIFFERENT. ON+OFF=ON, OFF+ON=ON, but ON+ON=OFF and OFF+OFF=OFF.' },
     ]
   },
   art: {
@@ -3200,7 +3179,7 @@ function engLoop(){
     if(nextIdx>=0){
       const ch=EG.target[nextIdx];
       engSpawn(EG,ch,nextIdx,W,true);
-      const pool='ABCDEFGHIJKLMNOPRSTUVWXYZ'.split('').filter(c=>c!==ch);
+      const pool='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter(c=>c!==ch);
       engSpawn(EG,pool[Math.floor(Math.random()*pool.length)],-1,W,false);
     }
   }
@@ -4352,7 +4331,7 @@ function lgcLoadPuzzle(idx){
   document.getElementById('lgcInputs').innerHTML=LQ.inputs.map((_,i)=>`
     <div style="display:flex;align-items:center;gap:10px;">
       <span style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.4);min-width:24px;">A${i+1}</span>
-      <button id="lgcSwitch${i}" onclick="lgcToggle(${i})" style="width:60px;height:30px;border-radius:15px;border:none;background:rgba(255,255,255,.1);cursor:pointer;position:relative;transition:background .2s;">
+      <button id="lgcSwitch${i}" onclick="lgcToggle(${i})" role="switch" aria-checked="false" aria-label="Switch A${i+1}" style="width:60px;height:30px;border-radius:15px;border:none;background:rgba(255,255,255,.1);cursor:pointer;position:relative;transition:background .2s;">
         <span style="position:absolute;top:3px;left:4px;width:24px;height:24px;border-radius:50%;background:#666;transition:transform .2s,background .2s;" id="lgcKnob${i}"></span>
       </button>
       <span id="lgcSwitchLabel${i}" style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.3);min-width:28px;">OFF</span>
@@ -4370,6 +4349,7 @@ function lgcToggle(i){
   const knob=document.getElementById('lgcKnob'+i);
   const lbl=document.getElementById('lgcSwitchLabel'+i);
   sw.style.background=on?'#22D3EE':'rgba(255,255,255,.1)';
+  sw.setAttribute('aria-checked',on?'true':'false');
   knob.style.transform=on?'translateX(30px)':'translateX(0)';
   knob.style.background=on?'#fff':'#666';
   lbl.style.color=on?'#22D3EE':'rgba(255,255,255,.3)';

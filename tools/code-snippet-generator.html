@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Snippet Generator | JVDesignStudio</title>
+<meta name="description" content="Generate common code patterns for GDScript, C#, JavaScript and Python. Game loops, input handling, collision detection and more.">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--accent-lt:#a78bfa;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.header .lang-sel{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:.82rem;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:280px 1fr;gap:20px}
+@media(max-width:700px){.wrap{grid-template-columns:1fr}}
+.sidebar{display:flex;flex-direction:column;gap:4px}
+.cat-btn{padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font-weight:600;font-size:.85rem;cursor:pointer;text-align:left;transition:all .15s}
+.cat-btn:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.cat-btn.active{background:var(--accent);border-color:var(--accent);color:white}
+.main{display:flex;flex-direction:column;gap:16px}
+.snippet-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.snippet-card:hover{border-color:rgba(124,58,237,.3)}
+.snippet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.snippet-title{font-weight:700;font-size:.95rem}
+.snippet-desc{font-size:.8rem;color:var(--muted);padding:14px 18px}
+.code-block{background:#070a0f;border-top:1px solid var(--border);padding:14px 18px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.8;color:#a5f3fc;overflow-x:auto;white-space:pre;position:relative}
+.copy-btn{background:var(--accent);color:white;border:none;padding:6px 14px;border-radius:8px;font-size:.75rem;font-weight:700;cursor:pointer;transition:all .15s}
+.copy-btn:hover{filter:brightness(1.15)}
+.lang-badge{font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:999px;background:rgba(124,58,237,.15);color:var(--accent-lt)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Code Snippet Generator</h1>
+  <select class="lang-sel" id="langSel" onchange="filterLang()">
+    <option value="all">All Languages</option>
+    <option value="gdscript">GDScript</option>
+    <option value="csharp">C#</option>
+    <option value="js">JavaScript</option>
+    <option value="py">Python</option>
+  </select>
+</div>
+<div class="wrap">
+  <nav class="sidebar" id="cats"></nav>
+  <div class="main" id="snippets"></div>
+</div>
+<script>
+const SNIPPETS=[
+  {cat:'Movement',lang:'gdscript',title:'2D Character Movement',desc:'GDScript character body with WASD/arrow input',
+   code:`extends CharacterBody2D
+
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
+
+func _physics_process(delta):
+    if not is_on_floor():
+        velocity.y += gravity * delta
+    if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+        velocity.y = JUMP_VELOCITY
+    var direction = Input.get_axis("ui_left","ui_right")
+    velocity.x = direction * SPEED
+    move_and_slide()`},
+  {cat:'Movement',lang:'csharp',title:'Unity Player Controller',desc:'CharacterController with input, gravity and jump',
+   code:`using UnityEngine;
+
+public class PlayerController : MonoBehaviour {
+    public float speed = 6f;
+    public float jumpHeight = 2f;
+    CharacterController cc;
+    float gravity = -9.81f;
+    float yVelocity;
+
+    void Start() => cc = GetComponent<CharacterController>();
+
+    void Update() {
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        Vector3 move = new Vector3(h, 0, v);
+        cc.SimpleMove(move * speed);
+        if (Input.GetButtonDown("Jump") && cc.isGrounded)
+            yVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        yVelocity += gravity * Time.deltaTime;
+        cc.Move(Vector3.up * yVelocity * Time.deltaTime);
+    }
+}`},
+  {cat:'Movement',lang:'js',title:'Canvas 2D Movement',desc:'Arrow key movement for a 2D canvas game',
+   code:`const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const keys = {};
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
+
+const player = { x: 100, y: 100, w: 32, h: 32, speed: 4 };
+
+function update() {
+  if (keys['ArrowLeft']) player.x -= player.speed;
+  if (keys['ArrowRight']) player.x += player.speed;
+  if (keys['ArrowUp']) player.y -= player.speed;
+  if (keys['ArrowDown']) player.y += player.speed;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#7c3aed';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+}
+
+function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+gameLoop();`},
+  {cat:'Movement',lang:'py',title:'Pygame Movement',desc:'Basic player movement with Pygame',
+   code:`import pygame
+
+pygame.init()
+screen = pygame.display.set_mode((800, 600))
+clock = pygame.time.Clock()
+
+player = pygame.Rect(400, 300, 40, 40)
+speed = 5
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]: player.x -= speed
+    if keys[pygame.K_RIGHT]: player.x += speed
+    if keys[pygame.K_UP]: player.y -= speed
+    if keys[pygame.K_DOWN]: player.y += speed
+
+    screen.fill((0, 0, 0))
+    pygame.draw.rect(screen, (124, 58, 237), player)
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()`},
+  {cat:'Collision',lang:'gdscript',title:'Area2D Collision',desc:'Detect when a player touches an enemy',
+   code:`extends Area2D
+
+func _on_body_entered(body):
+    if body.is_in_group("player"):
+        body.take_damage(10)
+        queue_free()`},
+  {cat:'Collision',lang:'csharp',title:'Unity Trigger Collision',desc:'OnTriggerEnter for pickups',
+   code:`using UnityEngine;
+
+public class Pickup : MonoBehaviour {
+    void OnTriggerEnter(Collider other) {
+        if (other.CompareTag("Player")) {
+            GameManager.Instance.AddScore(10);
+            Destroy(gameObject);
+        }
+    }
+}`},
+  {cat:'Collision',lang:'js',title:'AABB Collision',desc:'Simple rectangle overlap check',
+   code:`function aabbCollision(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
+// Usage
+if (aabbCollision(player, enemy)) {
+  player.health -= 10;
+  enemy.destroy();
+}`},
+  {cat:'Collision',lang:'py',title:'Pygame Rect Collision',desc:'Use pygame.Rect for overlap detection',
+   code:`import pygame
+
+player = pygame.Rect(400, 300, 40, 40)
+enemy = pygame.Rect(500, 300, 40, 40)
+
+# Simple overlap check
+if player.colliderect(enemy):
+    player.x -= 50  # knockback
+    enemy.kill()
+
+# Sprite group collision
+enemies = pygame.sprite.Group()
+hits = pygame.sprite.spritecollide(player, enemies, True)  # True = kill on hit`},
+  {cat:'Spawning',lang:'gdscript',title:'Enemy Spawner',desc:'Spawn enemies at random intervals',
+   code:`extends Node2D
+
+@export var enemy_scene: PackedScene
+@export var spawn_delay: float = 2.0
+var timer: float = 0.0
+
+func _process(delta):
+    timer += delta
+    if timer >= spawn_delay:
+        timer = 0.0
+        spawn_enemy()
+
+func spawn_enemy():
+    var enemy = enemy_scene.instantiate()
+    enemy.position = Vector2(randf_range(0, 1152), -50)
+    add_child(enemy)`},
+  {cat:'Spawning',lang:'csharp',title:'Unity Object Pool',desc:'Reuse objects instead of instantiating',
+   code:`using UnityEngine;
+using System.Collections.Generic;
+
+public class ObjectPool : MonoBehaviour {
+    public GameObject prefab;
+    public int poolSize = 10;
+    List<GameObject> pool = new List<GameObject>();
+
+    void Awake() {
+        for (int i = 0; i < poolSize; i++) {
+            var obj = Instantiate(prefab, transform);
+            obj.SetActive(false);
+            pool.Add(obj);
+        }
+    }
+
+    public GameObject Get() {
+        foreach (var obj in pool)
+            if (!obj.activeSelf) { obj.SetActive(true); return obj; }
+        var newObj = Instantiate(prefab, transform);
+        pool.Add(newObj);
+        return newObj;
+    }
+}`},
+  {cat:'Score',lang:'gdscript',title:'Score Display',desc:'HUD score with label',
+   code:`extends CanvasLayer
+
+@onready var label = $Label
+var score = 0
+
+func add_score(points):
+    score += points
+    label.text = "Score: " + str(score)`},
+  {cat:'Score',lang:'csharp',title:'Unity Score Manager',desc:'Singleton score tracker',
+   code:`using UnityEngine;
+using TMPro;
+
+public class ScoreManager : MonoBehaviour {
+    public static ScoreManager Instance;
+    public TextMeshProUGUI scoreText;
+    private int score = 0;
+
+    void Awake() => Instance = this;
+
+    public void AddScore(int points) {
+        score += points;
+        scoreText.text = "Score: " + score;
+    }
+}`},
+  {cat:'Audio',lang:'gdscript',title:'Play Sound Effect',desc:'Play a one-shot SFX',
+   code:`@onready var sfx = $AudioStreamPlayer2D
+
+func play_hit():
+    sfx.stream = preload("res://hit.wav")
+    sfx.pitch_scale = randf_range(0.9, 1.1)
+    sfx.play()`},
+  {cat:'Audio',lang:'csharp',title:'Unity Audio Play',desc:'Play SFX with pitch variation',
+   code:`using UnityEngine;
+
+public class AudioManager : MonoBehaviour {
+    public static AudioManager Instance;
+    public AudioClip hitSfx;
+    AudioSource src;
+
+    void Awake() { Instance = this; src = GetComponent<AudioSource>(); }
+
+    public void PlayHit() {
+        src.pitch = Random.Range(0.9f, 1.1f);
+        src.PlayOneShot(hitSfx);
+    }
+}`},
+  {cat:'State',lang:'gdscript',title:'Simple State Machine',desc:'Finite state pattern for enemies',
+   code:`extends CharacterBody2D
+
+enum State { IDLE, CHASE, ATTACK }
+var current_state = State.IDLE
+
+func _physics_process(delta):
+    match current_state:
+        State.IDLE:
+            if can_see_player():
+                current_state = State.CHASE
+        State.CHASE:
+            chase_player(delta)
+            if global_position.distance_to(Global.player.global_position) < 50:
+                current_state = State.ATTACK
+        State.ATTACK:
+            attack()
+            if not can_see_player():
+                current_state = State.IDLE`},
+  {cat:'State',lang:'csharp',title:'Unity State Pattern',desc:'Interface-based state machine',
+   code:`public interface IState {
+    void Enter();
+    void Update();
+    void Exit();
+}
+
+public class StateMachine {
+    IState currentState;
+    public void ChangeState(IState newState) {
+        currentState?.Exit();
+        currentState = newState;
+        currentState.Enter();
+    }
+    public void Update() => currentState?.Update();
+}`},
+  {cat:'UI',lang:'gdscript',title:'Simple Menu',desc:'Main menu with start button',
+   code:`extends Control
+
+func _on_start_pressed():
+    get_tree().change_scene_to_file("res://game.tscn")
+
+func _on_quit_pressed():
+    get_tree().quit()`},
+  {cat:'UI',lang:'csharp',title:'Unity UI Manager',desc:'Show/hide panels with a manager',
+   code:`using UnityEngine;
+using UnityEngine.UI;
+
+public class UIManager : MonoBehaviour {
+    public GameObject startPanel, gamePanel, gameOverPanel;
+
+    void Start() => ShowPanel(startPanel);
+
+    public void ShowPanel(GameObject panel) {
+        startPanel.SetActive(false);
+        gamePanel.SetActive(false);
+        gameOverPanel.SetActive(false);
+        panel.SetActive(true);
+    }
+}`},
+  {cat:'Timer',lang:'gdscript',title:'Countdown Timer',desc:'Display time remaining',
+   code:`extends Control
+
+@onready var label = $Label
+var time_left = 60.0
+
+func _process(delta):
+    time_left -= delta
+    label.text = str(int(time_left))
+    if time_left <= 0:
+        get_tree().reload_current_scene()`},
+  {cat:'Timer',lang:'js',title:'Game Timer',desc:'Simple countdown with display',
+   code:`let timeLeft = 60;
+const timerEl = document.getElementById('timer');
+
+setInterval(() => {
+  timeLeft--;
+  timerEl.textContent = timeLeft;
+  if (timeLeft <= 0) {
+    clearInterval(this);
+    gameOver();
+  }
+}, 1000);`},
+  {cat:'Pattern',lang:'gdscript',title:'Singleton Autoload',desc:'Global game manager pattern',
+   code:`# game_manager.gd (set as Autoload in Project Settings)
+extends Node
+
+var score = 0
+var level = 1
+
+func add_score(points):
+    score += points
+    if score >= level * 100:
+        level += 1
+        level_up()
+
+func level_up():
+    # Handle level transition
+    pass`},
+  {cat:'Pattern',lang:'csharp',title:'Unity Singleton',desc:'DontDestroyOnLoad singleton',
+   code:`using UnityEngine;
+
+public class GameManager : MonoBehaviour {
+    public static GameManager Instance { get; private set; }
+
+    void Awake() {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    public int Score { get; private set; }
+    public void AddScore(int n) => Score += n;
+}`},
+  {cat:'Pattern',lang:'js',title:'Event Emitter',desc:'Simple pub/sub for game events',
+   code:`class EventEmitter {
+  constructor() { this.listeners = {}; }
+  on(event, fn) {
+    (this.listeners[event] = this.listeners[event] || []).push(fn);
+  }
+  emit(event, data) {
+    (this.listeners[event] || []).forEach(fn => fn(data));
+  }
+  off(event, fn) {
+    this.listeners[event] = (this.listeners[event] || []).filter(f => f !== fn);
+  }
+}
+
+// Usage
+const events = new EventEmitter();
+events.on('enemyKilled', score => console.log('Killed:', score));
+events.emit('enemyKilled', 100);`},
+  {cat:'Pattern',lang:'py',title:'Pygame Game Loop',desc:'Structured game loop with states',
+   code:`import pygame
+
+class Game:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((800, 600))
+        self.clock = pygame.time.Clock()
+        self.state = 'menu'
+        self.running = True
+
+    def run(self):
+        while self.running:
+            if self.state == 'menu': self.menu()
+            elif self.state == 'play': self.play()
+            elif self.state == 'over': self.game_over()
+
+    def menu(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: self.running = False
+            if event.type == pygame.KEYDOWN: self.state = 'play'
+        self.screen.fill((30, 30, 40))
+        pygame.display.flip()
+        self.clock.tick(60)
+
+    def play(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: self.running = False
+        self.screen.fill((10, 10, 20))
+        pygame.display.flip()
+        self.clock.tick(60)
+
+    def game_over(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: self.running = False
+            if event.type == pygame.KEYDOWN: self.state = 'menu'
+        self.screen.fill((40, 10, 10))
+        pygame.display.flip()
+        self.clock.tick(60)
+
+Game().run()`},
+  {cat:'Saving',lang:'gdscript',title:'Save/Load JSON',desc:'Save game data to file',
+   code:`const SAVE_PATH = "user://savegame.json"
+
+func save_game(data: Dictionary):
+    var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+    file.store_string(JSON.stringify(data))
+
+func load_game() -> Dictionary:
+    if not FileAccess.file_exists(SAVE_PATH):
+        return {}
+    var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
+    return JSON.parse_string(file.get_as_text())`},
+  {cat:'Saving',lang:'js',title:'LocalStorage Save',desc:'Save/load with localStorage',
+   code:`function saveGame(data) {
+  localStorage.setItem('gameSave', JSON.stringify(data));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('gameSave');
+  return raw ? JSON.parse(raw) : null;
+}
+
+// Usage
+saveGame({ score: 1200, level: 5, inventory: ['sword', 'shield'] });
+const save = loadGame();
+console.log(save.score); // 1200`},
+];
+const cats=[...new Set(SNIPPETS.map(s=>s.cat))];
+let currentLang='all';
+function buildCats(){
+  const el=document.getElementById('cats');
+  el.innerHTML='<button class="cat-btn active" onclick="filterCat(\'all\',this)">All</button>';
+  cats.forEach(c=>{el.innerHTML+=`<button class="cat-btn" onclick="filterCat('${c}',this)">${c}</button>`;});
+}
+let currentCat='all';
+function filterCat(cat,btn){
+  currentCat=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderSnippets();
+}
+function filterLang(){
+  currentLang=document.getElementById('langSel').value;
+  renderSnippets();
+}
+function renderSnippets(){
+  const el=document.getElementById('snippets');
+  const filtered=SNIPPETS.filter(s=>(currentCat==='all'||s.cat===currentCat)&&(currentLang==='all'||s.lang===currentLang));
+  el.innerHTML=filtered.map(s=>`
+    <div class="snippet-card">
+      <div class="snippet-head">
+        <span class="snippet-title">${s.title}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="lang-badge">${s.lang.toUpperCase()}</span>
+          <button class="copy-btn" onclick="copyCode(this,${JSON.stringify(s.code).replace(/"/g,'&quot;')})">Copy</button>
+        </div>
+      </div>
+      <div class="snippet-desc">${s.desc}</div>
+      <div class="code-block">${escapeHtml(s.code)}</div>
+    </div>
+  `).join('');
+  if(!filtered.length) el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No snippets match</div>';
+}
+function escapeHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function copyCode(btn,code){
+  navigator.clipboard.writeText(code).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>{});
+}
+buildCats();renderSnippets();
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+</body>
+</html>

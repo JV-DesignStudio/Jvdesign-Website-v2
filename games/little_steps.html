@@ -345,6 +345,13 @@
   <button class="btn btn-secondary" onclick="showScreen('menuScreen')">← Back</button>
 </div>
 
+<div id="pauseOverlay" class="screen" style="background:rgba(10,6,20,.88);backdrop-filter:blur(6px)">
+  <h1 class="title" style="font-size:2rem">⏸ Paused</h1>
+  <p style="color:rgba(255,255,255,.6);margin:12px 0 20px;font-size:.9rem">Tap Resume or press Escape</p>
+  <button class="btn" onclick="togglePause()">▶ Resume</button>
+  <button class="btn btn-secondary" onclick="game.active=false;showScreen('menuScreen')" style="margin-top:8px">Menu</button>
+</div>
+
 <div id="gameOverScreen" class="screen">
   <h1 class="title">Rest <span class="accent">Now</span></h1>
   <div class="go-stats">
@@ -592,6 +599,12 @@ function doTurn(dir){
   game.lastLaneChangeT = performance.now();
   if (db.haptics && navigator.vibrate) navigator.vibrate(15);
 }
+function togglePause(){
+  if (!game.active) return;
+  game.paused = !game.paused;
+  const overlay = document.getElementById('pauseOverlay');
+  if (overlay) overlay.classList.toggle('show', game.paused);
+}
 
 /* Touch */
 let tStartX=null, tStartY=null, tStartT=0;
@@ -623,6 +636,10 @@ canvas.addEventListener('touchend', e=>{
 },{passive:true});
 
 window.addEventListener('keydown', e=>{
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P'){
+    e.preventDefault(); togglePause(); return;
+  }
+  if (game.paused) return;
   if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w'){
     e.preventDefault();
     if (game.active){ if (game.grounded) doJump(); else doAirJump(); }
@@ -715,6 +732,7 @@ function showHint(text, sub){
 /* ─── Start ─── */
 function startGame(){
   game.active = true;
+  game.paused = false;
   game.score = 0;
   game.runSparks = 0;
   game.startTime = performance.now();
@@ -754,11 +772,17 @@ function forwardSpeed(score){
   return Math.min(13, 4 + Math.sqrt(score) * 0.22);
 }
 function spawnGap(score){
-  return Math.max(800, 1900 - score * 0.9);
+  const base = Math.max(800, 1900 - score * 0.9);
+  // Difficulty waves: brief lull every 500m for recovery
+  const wavePhase = score % 500;
+  if (wavePhase < 80) return base * 1.8; // lull period
+  if (wavePhase < 120) return base * 0.7; // surge after lull
+  return base;
 }
 
 function loop(now){
   if (!game.active) return;
+  if (game.paused) { game.lastFrame = now; requestAnimationFrame(loop); return; }
   const dt = Math.min(48, now - game.lastFrame);
   game.lastFrame = now;
   update(dt, now);
@@ -890,6 +914,17 @@ function update(dt, now){
         if (sameLane && o.z < 0.09 * forgiveness && o.z > 0.0){
           if (game.y > -50){ game.combo = 0; gameOver(); return; }
         }
+        // Close call: jumped over a crystal in the same lane
+        if (!o._jumpCloseChecked && o.z < 0.05 && o.z > -0.05 && sameLane && game.y < -50){
+          o._jumpCloseChecked = true;
+          game.runSparks += 2;
+          game.nearMissFlashT = 250;
+          game.nearMissTextT = 800;
+          SFX.nearMiss();
+          const px = W/2 + game.laneX * (perspW(0)/3);
+          spawnBurst(px, H - 130 + game.y, '#4ade80', 10);
+          game._lastNearMissText = 'JUMP CLOSE! +2';
+        }
         // Near miss: just changed lanes and a crystal whizzes past in the old lane
         if (!o._nearMissChecked && o.z < 0.1 && o.z > 0.04){
           o._nearMissChecked = true;
@@ -897,6 +932,7 @@ function update(dt, now){
             game.runSparks += 1;
             game.nearMissFlashT = 350;
             game.nearMissTextT = 900;
+            game._lastNearMissText = 'NEAR MISS! +1 ✨';
             SFX.nearMiss();
             const px = W/2 + game.laneX * (perspW(0)/3);
             spawnBurst(px, H - 130 + game.y, '#5ee1ff', 8);
@@ -906,6 +942,16 @@ function update(dt, now){
         if (o.z < 0.09 * forgiveness && o.z > 0.0){
           const blocked = o.lanes.includes(game.lane);
           if (blocked && !game.sliding){ game.combo = 0; gameOver(); return; }
+          // Slide reward: bonus for sliding under a vine
+          if (blocked && game.sliding && !o._slideReward){
+            o._slideReward = true;
+            game.runSparks += 1;
+            game.nearMissTextT = 700;
+            game._lastNearMissText = 'SLIDE DODGE! +1 ✨';
+            SFX.spark();
+            const px = W/2 + game.laneX * (perspW(0)/3);
+            spawnBurst(px, H - 160 + game.y, '#a78bfa', 6);
+          }
         }
       }
     }
@@ -999,15 +1045,17 @@ function drawNearMissFlash(){
 function drawNearMissText(){
   if (game.nearMissTextT <= 0) return;
   const fade = Math.min(1, game.nearMissTextT / 300);
+  const txt = game._lastNearMissText || 'NEAR MISS! +1 ✨';
+  const col = txt.includes('JUMP') ? '#4ade80' : txt.includes('SLIDE') ? '#a78bfa' : '#5ee1ff';
   ctx.save();
   ctx.globalAlpha = fade;
   ctx.font = '800 20px Fredoka, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = '#5ee1ff';
-  ctx.shadowColor = 'rgba(94,225,255,.9)';
+  ctx.fillStyle = col;
+  ctx.shadowColor = col;
   ctx.shadowBlur = 16;
-  ctx.fillText('NEAR MISS! +1 ✨', W/2, H * 0.3);
+  ctx.fillText(txt, W/2, H * 0.3);
   ctx.restore();
 }
 
@@ -1556,12 +1604,16 @@ function gameOver(){
   if (typeof gameSystem !== 'undefined') gameSystem.recordGamePlay(Date.now());
   const isBest = game.score > db.best;
   if (isBest) db.best = game.score;
-  GameUI.showMedal(document.getElementById('goMedal'), game.score,
-    [[300,'🥉','Wanderer'],[800,'🥈','Dreamwalker'],[1500,'🏆','Cosmic Stepper']]);
+  if (typeof GameUI !== 'undefined') {
+    GameUI.showMedal(document.getElementById('goMedal'), game.score,
+      [[300,'🥉','Wanderer'],[800,'🥈','Dreamwalker'],[1500,'🏆','Cosmic Stepper']]);
+  }
   saveDB();
   document.getElementById('goDist').textContent = game.score + 'm';
   const goDistEl = document.getElementById('goDist');
-  GameUI.countUp(goDistEl, game.score);
+  if (typeof GameUI !== 'undefined') {
+    GameUI.countUp(goDistEl, game.score);
+  }
   document.getElementById('goSparks').textContent = '✨ ' + game.runSparks;
   document.getElementById('goBest').classList.toggle('show', isBest);
   setTimeout(()=>showScreen('gameOverScreen'), 450);

@@ -1359,6 +1359,17 @@ function exportSheet(){
   const sctx=sh.getContext('2d');sctx.imageSmoothingEnabled=false;
   frames.forEach((_,fi)=>{const c=fi%cols,r=Math.floor(fi/cols);sctx.drawImage(flattenFrame(fi),c*cW*sc,r*cH*sc,cW*sc,cH*sc);});
   const a=document.createElement('a');a.href=sh.toDataURL('image/png');a.download='spritesheet.png';a.click();
+  // Also offer JSON atlas download (Godot/Unity/Phaser compatible)
+  try{
+    const atlas={frames:{},meta:{size:{w:cW*cols*sc,h:cH*rows*sc},scale:1,format:'PNG'}};
+    frames.forEach((_,fi)=>{
+      const c=fi%cols,r=Math.floor(fi/cols);
+      atlas.frames['frame_'+fi]={frame:{x:c*cW*sc,y:r*cH*sc,w:cW*sc,h:cH*sc},rotated:false,trimmed:false,sourceSize:{w:cW,h:cH}};
+    });
+    const blob=new Blob([JSON.stringify(atlas,null,2)],{type:'application/json'});
+    const b=document.createElement('a');b.href=URL.createObjectURL(blob);b.download='spritesheet.json';b.click();
+  }catch(e){}
+  showToast('Spritesheet + JSON atlas exported');
 }
 function exportGIF(){
   const modal=document.getElementById('gifModal');
