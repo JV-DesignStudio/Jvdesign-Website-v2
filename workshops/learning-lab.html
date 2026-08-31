@@ -974,7 +974,7 @@ const SUBJECTS = [
   { id:'echo',     emoji:'🦎', name:'Echo',              subject:'Computing',     color:'#3EC9A7', type:'Puzzle',  age:'8+', tier:'intermediate',
     desc:'Build a sequence of code blocks to move Echo through 10 increasingly tricky platformer levels.',
     tags:['Algorithms','Sequences','Debugging'], game:'echo', maxScore:1500 },
-  { id:'pip',      emoji:'🐢', name:'Pip',               subject:'Maths',         color:'#F5A623', type:'Arcade',  age:'7+', tier:'intermediate',
+  { id:'pip',      emoji:'🐢', name:'Pip',               subject:'Maths',         color:'#F5A623', type:'Arcade',  age:'7+', tier:'beginner',
     desc:'Pip\'s Biscuit Shop is open! Work out the total cost of each customer\'s order before the queue loses patience.',
     tags:['Multiplication','Addition','Money'], game:'pip', maxScore:100 },
   { id:'lumo',     emoji:'🦊', name:'Lumo',              subject:'Number Bonds',  color:'#818CF8', type:'Quiz',    age:'6+', tier:'beginner',
@@ -990,8 +990,8 @@ const SUBJECTS = [
     desc:'16 cards face down, flip two at a time to find all 8 matching pairs. How fast can you clear the board?',
     tags:['Memory','Concentration','Pairs'], game:'strange', maxScore:160 },
   { id:'geo',      emoji:'🌍', name:'Atlas',              subject:'Geography',     color:'#60A5FA', type:'Puzzle',    age:'9+', tier:'advanced',
-    desc:'Match 24 country flags to their names across Europe, the Americas, Asia and Africa. How many can you recognise?',
-    tags:['Flags','Countries','Continents'], game:'geo', maxScore:360 },
+    desc:'Match 24 country flags to their names, then tackle a capitals quiz. 5 rounds across Europe, the Americas, Asia and Africa.',
+    tags:['Flags','Capitals','Countries'], game:'geo', maxScore:360 },
   { id:'times',    emoji:'🔢', name:'Pip\'s Tables',      subject:'Times Tables',  color:'#FF9A3C', type:'Speed',   age:'7+', tier:'intermediate', isNew:true,
     desc:'Speed-round multiplication! Pick your table, then race to answer 20 questions before the streak breaks.',
     tags:['Times Tables','Multiplication','Speed Maths'], game:'times', maxScore:500 },
@@ -3663,6 +3663,21 @@ const FLAG_SETS = [
   ]},
 ];
 
+const CAPITALS_QUIZ = [
+  {q:'What is the capital of France?',opts:['Lyon','Paris','Marseille','Nice'],ans:1},
+  {q:'What is the capital of Japan?',opts:['Osaka','Kyoto','Tokyo','Yokohama'],ans:2},
+  {q:'What is the capital of Australia?',opts:['Sydney','Melbourne','Canberra','Brisbane'],ans:2},
+  {q:'What is the capital of Brazil?',opts:['Rio de Janeiro','São Paulo','Brasília','Salvador'],ans:2},
+  {q:'What is the capital of Egypt?',opts:['Alexandria','Cairo','Luxor','Giza'],ans:1},
+  {q:'What is the capital of Canada?',opts:['Toronto','Vancouver','Montreal','Ottawa'],ans:3},
+  {q:'What is the capital of India?',opts:['Mumbai','Delhi','New Delhi','Kolkata'],ans:2},
+  {q:'What is the capital of South Korea?',opts:['Busan','Seoul','Incheon','Daegu'],ans:1},
+  {q:'What is the capital of Turkey?',opts:['Istanbul','Ankara','Izmir','Antalya'],ans:1},
+  {q:'What is the capital of Nigeria?',opts:['Lagos','Abuja','Kano','Ibadan'],ans:1},
+  {q:'What is the capital of Germany?',opts:['Munich','Berlin','Hamburg','Frankfurt'],ans:1},
+  {q:'What is the capital of Spain?',opts:['Barcelona','Madrid','Seville','Valencia'],ans:1},
+];
+
 function buildGeo(body){
   body.innerHTML=`<div class="gc">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
@@ -3681,7 +3696,8 @@ function buildGeo(body){
 
 function geoLoadSet(idx){
   const GQ=window.GQ; GQ.setIdx=idx; GQ.selected=null; GQ.matched=0; GQ.locked=new Set();
-  if(idx>=FLAG_SETS.length){geoFinal();return;}
+  if(idx===FLAG_SETS.length){geoCapitals();return;}
+  if(idx>FLAG_SETS.length){geoFinal();return;}
   const set=FLAG_SETS[idx];
   document.getElementById('geoRegion').textContent=`🌍 ${set.region}`;
   document.getElementById('geoSetNum').textContent=idx+1;
@@ -3772,6 +3788,52 @@ function geoTap(btn){
       document.getElementById('geoFb').textContent='Not a match, try again!';
     }
   }
+}
+
+function geoCapitals(){
+  const GQ=window.GQ;
+  const qs=shuffle([...CAPITALS_QUIZ]).slice(0,6);
+  GQ.capIdx=0; GQ.capScore=0; GQ.capQs=qs;
+  document.getElementById('modalScore').textContent='Capitals Round';
+  geoShowCapQ();
+}
+
+function geoShowCapQ(){
+  const GQ=window.GQ;
+  if(GQ.capIdx>=GQ.capQs.length){geoFinal();return;}
+  const q=GQ.capQs[GQ.capIdx];
+  const board=document.getElementById('geoBoard');
+  document.getElementById('geoRegion').textContent='🏙️ Capital Cities';
+  document.getElementById('geoSetNum').textContent=GQ.capIdx+1;
+  document.getElementById('geoMatched').textContent=GQ.capScore;
+  document.getElementById('modalScore').textContent=`Capitals ${GQ.capIdx+1}/${GQ.capQs.length}`;
+  document.getElementById('geoFb').className='fb';
+  board.innerHTML=`<div style="grid-column:1/-1;text-align:center;font-family:'Fredoka',cursive;font-size:1.1rem;color:#fff;margin-bottom:12px;">${q.q}</div>
+    ${q.opts.map((o,i)=>`<button class="geo-cap-btn" data-idx="${i}" style="padding:14px 10px;background:rgba(96,165,250,.08);border:2px solid rgba(96,165,250,.2);border-radius:12px;font-size:.95rem;font-weight:700;color:#fff;cursor:pointer;transition:background .12s,border-color .12s;">${o}</button>`).join('')}`;
+  board.querySelectorAll('.geo-cap-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      const chosen=parseInt(btn.dataset.idx);
+      board.querySelectorAll('.geo-cap-btn').forEach(b=>{b.disabled=true;});
+      if(chosen===q.ans){
+        sndCorrect(); GQ.capScore++; GQ.score+=20; GQ.streak++;
+        if(GQ.streak>GQ.bestStreak)GQ.bestStreak=GQ.streak;
+        btn.style.background='rgba(52,211,153,.25)'; btn.style.borderColor='#34D399'; btn.style.color='#34D399';
+        document.getElementById('geoFb').className='fb show ok';
+        document.getElementById('geoFb').textContent=`✅ ${q.opts[q.ans]} is correct! +20`;
+      } else {
+        sndWrong(); GQ.streak=0;
+        btn.style.background='rgba(248,113,113,.15)'; btn.style.borderColor='#F87171';
+        board.querySelectorAll('.geo-cap-btn')[q.ans].style.background='rgba(52,211,153,.25)';
+        board.querySelectorAll('.geo-cap-btn')[q.ans].style.borderColor='#34D399';
+        document.getElementById('geoFb').className='fb show bad';
+        document.getElementById('geoFb').textContent=`❌ The answer is ${q.opts[q.ans]}`;
+      }
+      document.getElementById('geoScore').textContent=GQ.score;
+      document.getElementById('geoMatched').textContent=GQ.capScore;
+      GQ.capIdx++;
+      setTimeout(geoShowCapQ,1400);
+    };
+  });
 }
 
 function geoFinal(){
@@ -4579,7 +4641,7 @@ const SPACE_QS=[
   {era:'Solar System',q:'Which planet is famous for its large, beautiful rings?',opts:['Mars','Saturn','Mercury','Earth'],ans:1,explain:'Saturn has the most spectacular ring system, made of ice and rock.'},
   {era:'Solar System',q:'Which planet has the most known moons?',opts:['Jupiter','Saturn','Neptune','Uranus'],ans:1,explain:'Saturn has over 140 known moons, more than any other planet. Jupiter is second with around 95.'},
   {era:'The Moon',q:'What is the name of the natural object that orbits the Earth?',opts:['The Sun','The Moon','Mars','A comet'],ans:1,explain:'The Moon is Earth\'s only natural satellite and orbits us roughly every 27 days.'},
-  {era:'The Moon',q:'Who was the first person to walk on the Moon?',opts:['Buzz Aldrin','Yuri Gagarin','Neil Armstrong','Tim Peake'],ans:2,explain:'Neil Armstrong became the first person to walk on the Moon on 20 July 1969.'},
+  {era:'The Moon',q:'Who was the first woman in space?',opts:['Sally Ride','Valentina Tereshkova','Mae Jemison','Christina Koch'],ans:1,explain:'Valentina Tereshkova of the Soviet Union became the first woman in space on 16 June 1963, orbiting Earth 48 times.',d:3},
   {era:'The Moon',q:'Why does the Moon seem to change shape across the month?',opts:['It changes size','Different amounts of it are lit by the Sun','It moves closer and further away','It spins very fast'],ans:1,explain:'The Moon doesn\'t change shape, we just see different amounts of its sunlit side, called phases.'},
   {era:'Astronauts',q:'What do astronauts wear outside their spacecraft to survive?',opts:['A wetsuit','A spacesuit','A raincoat','Nothing special'],ans:1,explain:'Spacesuits give astronauts oxygen, pressure and protection in the vacuum of space.'},
   {era:'Astronauts',q:'Why do astronauts float around inside the International Space Station?',opts:['It\'s very windy','They are in freefall, falling around the Earth continuously','The floor is slippery','There is no gravity in space'],ans:1,explain:'The ISS orbits at about 400km up where gravity is still 90% as strong as on the surface. Astronauts float because the station and everything in it are in continuous freefall, falling around the Earth.'},
@@ -4608,21 +4670,21 @@ function buildSpace(body,s){
 //  ██  NATURE, HABITAT QUIZ
 // ══════════════════════════════════════════════════════
 const NATURE_QS=[
-  {era:'Habitats',q:'What do we call the natural home of an animal?',opts:['A nest','A habitat','A burrow','A territory'],ans:1,explain:'A habitat is the natural environment where an animal lives, like a forest, desert or ocean.'},
-  {era:'Habitats',q:'Which habitat would you expect to find a polar bear living in?',opts:['Desert','Rainforest','Arctic ice','Savannah'],ans:2,explain:'Polar bears live in the cold Arctic, hunting seals on the sea ice.'},
-  {era:'Habitats',q:'Which habitat would you expect to find a camel living in?',opts:['Desert','Ocean','Rainforest','Arctic'],ans:0,explain:'Camels are adapted to live in hot, dry deserts, storing fat in their humps.'},
-  {era:'Habitats',q:'Which animal habitat has the most tree cover and rainfall?',opts:['Desert','Rainforest','Tundra','Savannah'],ans:1,explain:'Rainforests get huge amounts of rain and are full of dense trees and plant life.'},
-  {era:'Food Chains',q:'In a food chain, where does the energy originally come from?',opts:['The soil','The Sun','The rain','Other animals'],ans:1,explain:'Plants use sunlight to make their own food (photosynthesis), and that energy passes up the food chain.'},
-  {era:'Food Chains',q:'What do we call an animal that only eats plants?',opts:['Carnivore','Herbivore','Omnivore','Predator'],ans:1,explain:'A herbivore is an animal that only eats plants, like a rabbit or a cow.'},
-  {era:'Food Chains',q:'What do we call an animal that eats both plants and meat?',opts:['Herbivore','Carnivore','Omnivore','Producer'],ans:2,explain:'An omnivore eats both plants and meat, humans and bears are examples.'},
-  {era:'Food Chains',q:'What do we call an animal that hunts and eats other animals?',opts:['Herbivore','Predator','Producer','Omnivore'],ans:1,explain:'A predator is an animal that hunts other animals (called prey) for food.'},
-  {era:'Baby Animals',q:'What is a group of lions called?',opts:['A pack','A pride','A herd','A flock'],ans:1,explain:'A group of lions is called a pride. They typically consist of related females, their cubs, and a small number of adult males.'},
-  {era:'Baby Animals',q:'What is a baby frog called?',opts:['Tadpole','Kit','Joey','Fawn'],ans:0,explain:'A baby frog starts life as a tadpole before growing legs and losing its tail.'},
-  {era:'Baby Animals',q:'What is a baby kangaroo called?',opts:['Cub','Joey','Calf','Kid'],ans:1,explain:'A baby kangaroo is called a joey, and it grows inside its mother\'s pouch.'},
-  {era:'Baby Animals',q:'What is a baby cow called?',opts:['Calf','Lamb','Foal','Kid'],ans:0,explain:'A baby cow is called a calf.'},
-  {era:'Animal Groups',q:'What do we call animals that have fur and feed milk to their babies?',opts:['Reptiles','Birds','Mammals','Fish'],ans:2,explain:'Mammals have fur or hair and feed their babies milk, humans, dogs and whales are all mammals.'},
-  {era:'Animal Groups',q:'What do we call animals that have feathers and lay eggs, like a robin or eagle?',opts:['Mammals','Birds','Reptiles','Amphibians'],ans:1,explain:'Birds have feathers, lay eggs, and most can fly.'},
-  {era:'Animal Groups',q:'What do we call animals with scaly skin, like snakes and lizards?',opts:['Mammals','Birds','Reptiles','Fish'],ans:2,explain:'Reptiles have dry, scaly skin and most lay eggs on land.'},
+  {era:'Habitats',q:'What do we call the natural home of an animal?',opts:['A nest','A habitat','A burrow','A territory'],ans:1,explain:'A habitat is the natural environment where an animal lives, like a forest, desert or ocean.',d:1},
+  {era:'Habitats',q:'Which habitat would you expect to find a polar bear living in?',opts:['Desert','Rainforest','Arctic ice','Savannah'],ans:2,explain:'Polar bears live in the cold Arctic, hunting seals on the sea ice.',d:1},
+  {era:'Habitats',q:'Which habitat would you expect to find a camel living in?',opts:['Desert','Ocean','Rainforest','Arctic'],ans:0,explain:'Camels are adapted to live in hot, dry deserts, storing fat in their humps.',d:1},
+  {era:'Habitats',q:'Which animal habitat has the most tree cover and rainfall?',opts:['Desert','Rainforest','Tundra','Savannah'],ans:1,explain:'Rainforests get huge amounts of rain and are full of dense trees and plant life.',d:1},
+  {era:'Food Chains',q:'In a food chain, where does the energy originally come from?',opts:['The soil','The Sun','The rain','Other animals'],ans:1,explain:'Plants use sunlight to make their own food (photosynthesis), and that energy passes up the food chain.',d:1},
+  {era:'Food Chains',q:'What do we call an animal that only eats plants?',opts:['Carnivore','Herbivore','Omnivore','Predator'],ans:1,explain:'A herbivore is an animal that only eats plants, like a rabbit or a cow.',d:1},
+  {era:'Food Chains',q:'What do we call an animal that eats both plants and meat?',opts:['Herbivore','Carnivore','Omnivore','Producer'],ans:2,explain:'An omnivore eats both plants and meat, humans and bears are examples.',d:1},
+  {era:'Food Chains',q:'What do we call an animal that hunts and eats other animals?',opts:['Herbivore','Predator','Producer','Omnivore'],ans:1,explain:'A predator is an animal that hunts other animals (called prey) for food.',d:1},
+  {era:'Baby Animals',q:'What is a group of lions called?',opts:['A pack','A pride','A herd','A flock'],ans:1,explain:'A group of lions is called a pride. They typically consist of related females, their cubs, and a small number of adult males.',d:2},
+  {era:'Baby Animals',q:'What is a baby frog called?',opts:['Tadpole','Kit','Joey','Fawn'],ans:0,explain:'A baby frog starts life as a tadpole before growing legs and losing its tail.',d:1},
+  {era:'Baby Animals',q:'What is a baby kangaroo called?',opts:['Cub','Joey','Calf','Kid'],ans:1,explain:'A baby kangaroo is called a joey, and it grows inside its mother\'s pouch.',d:2},
+  {era:'Baby Animals',q:'What is a baby cow called?',opts:['Calf','Lamb','Foal','Kid'],ans:0,explain:'A baby cow is called a calf.',d:1},
+  {era:'Animal Groups',q:'What do we call animals that have fur and feed milk to their babies?',opts:['Reptiles','Birds','Mammals','Fish'],ans:2,explain:'Mammals have fur or hair and feed their babies milk, humans, dogs and whales are all mammals.',d:1},
+  {era:'Animal Groups',q:'What do we call animals that have feathers and lay eggs, like a robin or eagle?',opts:['Mammals','Birds','Reptiles','Amphibians'],ans:1,explain:'Birds have feathers, lay eggs, and most can fly.',d:1},
+  {era:'Animal Groups',q:'What do we call animals with scaly skin, like snakes and lizards?',opts:['Mammals','Birds','Reptiles','Fish'],ans:2,explain:'Reptiles have dry, scaly skin and most lay eggs on land.',d:1},
 ];
 function buildNature(body,s){
   buildGenericMCQ(body,{
