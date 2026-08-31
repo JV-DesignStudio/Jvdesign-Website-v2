@@ -958,6 +958,7 @@ function toggleSection(id){
 // PROGRESS
 // ══════════════════════════════════════
 function trackProgress(){
+  gddPushUndo();
   queueGddAutosave();
   clearTimeout(progressTimer);
   progressTimer = setTimeout(() => {
@@ -1062,6 +1063,22 @@ function setData(d){
   if(d.musicStyleChips) setChips('musicStyleChips',d.musicStyleChips);
   buildCoverColours(); buildCoverEmojis();
   updateCover(); refreshCounters(); trackProgress();
+}
+
+// ── UNDO ──
+let gddUndoStack=[], gddRedoStack=[];
+function gddPushUndo(){gddUndoStack.push(JSON.stringify(getData()));if(gddUndoStack.length>30)gddUndoStack.shift();gddRedoStack=[];}
+function gddUndo(){
+  if(!gddUndoStack.length){showToast('Nothing to undo');return;}
+  gddRedoStack.push(JSON.stringify(getData()));
+  setData(JSON.parse(gddUndoStack.pop()));
+  showToast('Undo');
+}
+function gddRedo(){
+  if(!gddRedoStack.length){showToast('Nothing to redo');return;}
+  gddUndoStack.push(JSON.stringify(getData()));
+  setData(JSON.parse(gddRedoStack.pop()));
+  showToast('Redo');
 }
 
 const GDD_AUTO_KEY='jvds_gdd_auto';
@@ -1237,6 +1254,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const m=document.getElementById('gddWelcomeModal');
   if(m) m.addEventListener('click',e=>{ if(e.target===m) closeGddWelcome(); });
   document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){gddUndo();e.preventDefault();return;}
+    if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){gddRedo();e.preventDefault();return;}
     if(e.key==='Escape'){ const o=document.querySelector('.modal-overlay.open'); if(o&&o.id==='gddWelcomeModal'){ closeGddWelcome(); e.preventDefault(); } }
     else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); if(m) m.classList.add('open'); }
   });

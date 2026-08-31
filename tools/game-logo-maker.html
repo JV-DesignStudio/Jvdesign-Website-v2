@@ -479,6 +479,7 @@ function buildTemplateGrid(){
     const b=document.createElement('button');b.className='style-btn';
     b.innerHTML=`${t.label}`;
     b.onclick=()=>{
+      logoPushUndo();
       const s=STYLES.find(x=>x.id===t.style);
       if(s){
         stylePreset=s.id;currentFont=t.font;titleColor=s.title;glowColor=s.glow;bgMode=s.bg;
@@ -505,6 +506,7 @@ function buildStyleGrid(){
     const b=document.createElement('button');b.className='style-btn'+(s.id===stylePreset?' on':'');b.id='style-'+s.id;
     b.innerHTML=`<span class="style-icon">${s.icon}</span>${s.label}`;
     b.onclick=()=>{
+      logoPushUndo();
       stylePreset=s.id;currentFont=s.font;titleColor=s.title;glowColor=s.glow;bgMode=s.bg;
       document.querySelectorAll('.style-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
       syncFontGrid();render();
@@ -804,6 +806,22 @@ function dl(blob,name){
   toast('Logo downloaded!');
 }
 
+// ── UNDO ──
+let logoUndoStack=[], logoRedoStack=[];
+function logoPushUndo(){logoUndoStack.push(JSON.stringify(getState()));if(logoUndoStack.length>30)logoUndoStack.shift();logoRedoStack=[];}
+function logoUndo(){
+  if(!logoUndoStack.length){toast('Nothing to undo');return;}
+  logoRedoStack.push(JSON.stringify(getState()));
+  applyState(JSON.parse(logoUndoStack.pop()));
+  rebuildAll();syncLabels();render();toast('Undo');
+}
+function logoRedo(){
+  if(!logoRedoStack.length){toast('Nothing to redo');return;}
+  logoUndoStack.push(JSON.stringify(getState()));
+  applyState(JSON.parse(logoRedoStack.pop()));
+  rebuildAll();syncLabels();render();toast('Redo');
+}
+
 function getState(){
   return {v:1,stylePreset,currentFont,titleColor,glowColor,bgMode,fx:[...activeEffects],
     t:id('titleText').value,s:id('subText').value,i:id('iconEmoji').value,
@@ -927,6 +945,8 @@ function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;c
   const m=id('logoWelcomeModal');
   if(m) m.addEventListener('click',e=>{ if(e.target===m) closeLogoWelcome(); });
   document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();logoUndo();return;}
+    if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();logoRedo();return;}
     if(e.key==='Escape'){ const o=document.querySelector('.modal-overlay.open'); if(o&&o.id==='logoWelcomeModal'){ closeLogoWelcome(); e.preventDefault(); } }
     else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); if(m) m.classList.add('open'); }
   });

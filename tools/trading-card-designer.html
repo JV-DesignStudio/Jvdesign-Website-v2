@@ -729,6 +729,22 @@ function darken(hex,pct){
 }
 
 // ── CARD DATA (collect / apply) ──
+// ── UNDO ──
+let cardUndoStack=[], cardRedoStack=[];
+function cardPushUndo(){cardUndoStack.push(JSON.stringify(collectCardData()));if(cardUndoStack.length>30)cardUndoStack.shift();cardRedoStack=[];}
+function cardUndo(){
+  if(!cardUndoStack.length){toast('Nothing to undo');return;}
+  cardRedoStack.push(JSON.stringify(collectCardData()));
+  applyCardData(JSON.parse(cardUndoStack.pop()));
+  toast('Undo');
+}
+function cardRedo(){
+  if(!cardRedoStack.length){toast('Nothing to redo');return;}
+  cardUndoStack.push(JSON.stringify(collectCardData()));
+  applyCardData(JSON.parse(cardRedoStack.pop()));
+  toast('Redo');
+}
+
 function collectCardData(){
   return {
     v:2,
@@ -999,6 +1015,8 @@ maybeShowTradingWelcome();
 const _twm=id('tradingWelcomeModal');
 if(_twm) _twm.addEventListener('click',e=>{ if(e.target===_twm) closeTradingWelcome(); });
 document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();cardUndo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();cardRedo();return;}
   if(e.key==='Escape'){ const o=document.querySelector('.modal-overlay.open'); if(o && o.id==='tradingWelcomeModal'){ closeTradingWelcome(); e.preventDefault(); } }
   else if(e.key==='?' && !e.ctrlKey && !e.metaKey){
     const tag=(e.target.tagName||'').toLowerCase();
@@ -1008,7 +1026,7 @@ document.addEventListener('keydown',e=>{
 });
 
 ['cardName','cardSub','cardHP','cardFlavour','artEmoji'].forEach(i=>{
-  const el=id(i);if(el) el.addEventListener('input',render);
+  const el=id(i);if(el) el.addEventListener('mousedown',()=>cardPushUndo());
 });
 
 let toastT;
