@@ -519,6 +519,34 @@ let saved = (function(){
 let harmonyMode = 'none';
 
 // ══════════════════════════════════════════════════
+// AUTOSAVE current palette state
+// ══════════════════════════════════════════════════
+let palAutosaveT = null;
+function schedulePaletteAutosave(){
+  clearTimeout(palAutosaveT);
+  palAutosaveT = setTimeout(()=>{
+    try{
+      const cols = palette.map(p=>p.adjHex||p.hex);
+      localStorage.setItem('jvds_palette_current',JSON.stringify({mood:currentMood?.id||null,cols,paletteSize,harmonyMode}));
+    }catch(e){}
+  },600);
+}
+function restorePaletteCurrent(){
+  try{
+    const d=JSON.parse(localStorage.getItem('jvds_palette_current'));
+    if(d&&Array.isArray(d.cols)&&d.cols.length){
+      if(d.mood){const m=MOODS.find(x=>x.id===d.mood);if(m)currentMood=m;}
+      palette=d.cols.map(hex=>({hex,locked:false}));
+      paletteSize=d.paletteSize||6;
+      harmonyMode=d.harmonyMode||'none';
+      const s=document.getElementById('adjSize');if(s)s.value=paletteSize;
+      const v=document.getElementById('sizeVal');if(v)v.textContent=paletteSize;
+      document.querySelectorAll('.mood-card').forEach(c=>c.classList.toggle('active',c.id==='mood-'+(currentMood?.id||'')));
+    }
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════════════
 // BUILD UI
 // ══════════════════════════════════════════════════
 function buildMoodGrid(){
@@ -640,6 +668,7 @@ function renderPalette(sat,bri,con){
 function toggleLock(i){
   palette[i].locked=!palette[i].locked;
   applyAdjust();
+  schedulePaletteAutosave();
 }
 
 function shufflePalette(){
@@ -647,6 +676,7 @@ function shufflePalette(){
   const newHexes=currentMood.gen(paletteSize);
   palette=newHexes.slice(0,palette.length).map(hex=>({hex,locked:false}));
   applyAdjust();
+  schedulePaletteAutosave();
 }
 
 function shuffleUnlocked(){
@@ -654,6 +684,7 @@ function shuffleUnlocked(){
   const newHexes=currentMood.gen(paletteSize);
   palette=palette.map((p,i)=>p.locked?p:{hex:newHexes[i],locked:false});
   applyAdjust();
+  schedulePaletteAutosave();
 }
 
 function setPaletteSize(n){
@@ -665,6 +696,7 @@ function setPaletteSize(n){
     palette=palette.slice(0,n);
     applyAdjust();
   }
+  schedulePaletteAutosave();
 }
 
 // ══════════════════════════════════════════════════
@@ -1017,7 +1049,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   const hadShare=tryRestorePaletteShare();
   if(hadShare) applyAdjust();
-  else { setHarmonyMode('none'); selectMood('retro'); }
+  else {
+    restorePaletteCurrent();
+    if(currentMood) applyAdjust();
+    else { setHarmonyMode('none'); selectMood('retro'); }
+  }
   maybeShowPaletteWelcome();
 });
 </script>

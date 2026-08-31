@@ -1237,6 +1237,28 @@ let pattern = emptyPattern();      // 16 steps × arrays of {kit, idx}
 let advancedMode = !!lsGet('jvds_drum_advanced', false);
 function clonePattern(p) { return JSON.parse(JSON.stringify(p)); }
 
+// ── AUTOSAVE current pattern ──
+let drumAutosaveT = null;
+function scheduleDrumAutosave(){
+  clearTimeout(drumAutosaveT);
+  drumAutosaveT = setTimeout(()=>{
+    try{lsSet('jvds_drum_autosave',{kit:currentKit,bpm:parseInt(bpmRange?bpmRange.value:120,10),pattern:clonePattern(pattern)});}catch(e){}
+  },600);
+}
+function restoreDrumAutosave(){
+  try{
+    const d=lsGet('jvds_drum_autosave',null);
+    if(d&&Array.isArray(d.pattern)){
+      currentKit=d.kit||'drum';
+      pattern=d.pattern;
+      while(pattern.length<BPM_STEPS)pattern.push([]);
+      if(bpmRange&&d.bpm){bpmRange.value=d.bpm;bpmLabel.textContent=d.bpm;}
+      switchKit(currentKit);
+      renderSeq();
+    }
+  }catch(e){}
+}
+
 // ── RENDER KITS ────────────────────────────────────────────────
 const kitBar = document.getElementById('kitBar');
 Object.keys(KITS).forEach(k => {
@@ -1560,6 +1582,7 @@ function renderSeq() {
         syncCell(cell, row, s);
         refreshLoopUI();
         saveBtn.style.display = hasPattern() ? '' : 'none';
+        scheduleDrumAutosave();
       });
       seqGrid.appendChild(cell);
     }
@@ -1736,6 +1759,7 @@ captureBtn.addEventListener('click', () => {
 renderPads();
 renderPatterns();
 applyAdvancedMode();
+restoreDrumAutosave();
 refreshLoopUI();
 </script>
 <script src="../player-profile.js"></script>

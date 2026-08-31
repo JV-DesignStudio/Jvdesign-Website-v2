@@ -312,6 +312,39 @@ let filters = { engine: 'any', complex: 'any' };
 let current = null;
 let history = [];
 
+// ── AUTOSAVE current idea + filters ──
+let ideaAutosaveT = null;
+function scheduleIdeaAutosave(){
+  clearTimeout(ideaAutosaveT);
+  ideaAutosaveT = setTimeout(()=>{
+    try{localStorage.setItem('jvds_gameidea_current',JSON.stringify({current,filters}));}catch(e){}
+  },400);
+}
+function restoreIdeaCurrent(){
+  try{
+    const d=JSON.parse(localStorage.getItem('jvds_gameidea_current'));
+    if(d&&d.current&&d.current.genre){
+      current=d.current;
+      if(d.filters) filters=d.filters;
+      document.getElementById('emptyState').style.display='none';
+      document.getElementById('ideaContent').style.display='';
+      document.getElementById('ideaTitle').textContent=current.title;
+      document.getElementById('slotGenre').textContent=current.genre;
+      document.getElementById('slotTheme').textContent=current.theme;
+      document.getElementById('slotMechanic').textContent=current.mechanic;
+      document.getElementById('slotTwist').textContent=current.twist;
+      document.getElementById('resultCard').classList.add('has-idea');
+      document.getElementById('actionRow').style.display='';
+      // restore filter chips
+      document.querySelectorAll('.chip').forEach(c=>{
+        const f=c.dataset.filter,v=c.dataset.val;
+        if(f&&v&&filters[f]===v) c.classList.add('on');
+        else if(f&&v) c.classList.remove('on');
+      });
+    }
+  }catch(e){}
+}
+
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function getList(key) {
   const d = DATA[key];
@@ -351,6 +384,7 @@ function generate(keepGenre=false, keepTheme=false, keepMechanic=false, keepTwis
   document.getElementById('slotTwist').textContent = twist;
   document.getElementById('resultCard').classList.add('has-idea');
   document.getElementById('actionRow').style.display = '';
+  scheduleIdeaAutosave();
 
   if (!keepGenre && !keepTheme && !keepMechanic && !keepTwist) {
     history.unshift(current);
@@ -497,7 +531,8 @@ document.addEventListener('keydown',e=>{
 });
 
 // Bring back anything kept from a previous visit.
-tryRestoreShare();
+const hadShare=tryRestoreShare();
+if(!hadShare) restoreIdeaCurrent();
 loadHistory();
 renderHistory();
 maybeShowGameIdeaWelcome();
@@ -510,6 +545,7 @@ document.querySelectorAll('.chip').forEach(chip => {
     filters[f] = v;
     document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(c => c.classList.remove('on'));
     chip.classList.add('on');
+    scheduleIdeaAutosave();
   });
 });
 
