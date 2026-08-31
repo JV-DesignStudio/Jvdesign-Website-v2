@@ -5467,6 +5467,8 @@ const liveConfig = {
     asteroidCount:6, asteroidSpeedMul:1.0, asteroidDrag:50, asteroidSaucer:true,
     // Dodge options
     dodgeStarRatio:30,
+    // Paper Toss options
+    paperTossWindMax:140, paperTossBinWidth:70, paperTossMissLimit:3,
     // Runner options
     runnerObstacleMix:'standard', runnerCoinFreq:0.15, runnerParallax:true,
     // Shooter options
@@ -6861,6 +6863,11 @@ function surpriseMe() {
         case 'DODGE':
             liveConfig.difficultyScale = pick(0.5, 1.0, 2.0, 3.0);
             liveConfig.dodgeStarRatio  = rand(10, 60, 5);
+            break;
+        case 'PAPERTOSS':
+            liveConfig.paperTossWindMax = rand(60, 200, 10);
+            liveConfig.paperTossBinWidth = rand(50, 90, 5);
+            liveConfig.paperTossMissLimit = pick(3, 5);
             break;
     }
     // Sync visible sliders for the core Build tab
@@ -9699,8 +9706,262 @@ function sceneWaveSurvival(data) {
     };
 }
 
+// ── PAPER TOSS ──────────────────────────────────────────────────────────────
+// Swipe-up to throw a paper ball into a bin, with wind. Classic OG feel.
+function scenePaperToss(data) {
+    const Base = makeBaseScene(data);
+    return class extends Base {
+        constructor() { super({key:'PaperTossScene'}); }
+        create() {
+            this.score = 0; this._invincible = false;
+            this._misses = 0;
+            this._maxMisses = liveConfig.paperTossMissLimit || 3;
+            this._wind = 0; this._streak = 0; this._throwing = false;
+            this._drawBg();
+            _initWeather(this);
+            this.scoreText = this._makeScoreText();
+
+            // Miss counter (hearts)
+            this._missTxt = this.add.text(10, 12, '', {
+                fontSize:'16px', fill:'#ef4444', fontFamily:"'JetBrains Mono',monospace"
+            }).setDepth(10);
+            this._updateMissDisplay();
+
+            // Wind indicator
+            this._windGfx = this.add.graphics().setDepth(10);
+            this._windLabel = this.add.text(GW/2, 12, '', {
+                fontSize:'11px', fill:'rgba(255,255,255,.5)', fontFamily:"'JetBrains Mono',monospace"
+            }).setOrigin(0.5, 0).setDepth(10);
+            this._newWind();
+
+            // Trash bin — sits near top, perspective style
+            const binW = liveConfig.paperTossBinWidth || 70;
+            const binH = 30;
+            const binX = GW / 2;
+            const binY = 80;
+            // Bin opening (darker ellipse)
+            this._binOpen = this.add.ellipse(binX, binY, binW, 16, 0x1a1a2e).setDepth(2);
+            // Bin body (trapezoid via graphics)
+            this._binGfx = this.add.graphics().setDepth(1);
+            this._binGfx.fillStyle(themeInt(2, 0x475569), 1);
+            this._binGfx.beginPath();
+            this._binGfx.moveTo(binX - binW/2, binY);
+            this._binGfx.lineTo(binX + binW/2, binY);
+            this._binGfx.lineTo(binX + binW/2 - 8, binY + 50);
+            this._binGfx.lineTo(binX - binW/2 + 8, binY + 50);
+            this._binGfx.closePath();
+            this._binGfx.fillPath();
+            // Bin rim highlight
+            this._binGfx.lineStyle(2, themeInt(0, 0x64748b), 0.6);
+            this._binGfx.strokeEllipse(binX, binY, binW, 16);
+            this._binRect = new Phaser.Geom.Rectangle(binX - binW/2, binY - 8, binW, 16);
+            this._binX = binX; this._binY = binY; this._binW = binW;
+
+            // Desk / ground line
+            this.add.rectangle(GW/2, GH - 20, GW, 40, themeInt(2, 0x1e293b)).setDepth(0);
+
+            // Paper ball (starts at bottom center)
+            this._ball = this.add.circle(GW/2, GH - 80, 10, 0xf1f5f9).setDepth(5);
+            this._ball.setStrokeStyle(1.5, 0xcbd5e1);
+            this._ballShadow = this.add.ellipse(GW/2, GH - 68, 18, 6, 0x000000, 0.2).setDepth(4);
+            // Ball trail
+            this._trailGfx = this.add.graphics().setDepth(3);
+
+            // Swipe state
+            this._swipeStart = null; this._swipeActive = false;
+            this._swipeLine = this.add.graphics().setDepth(6);
+
+            // Input: pointer down / move / up
+            this.input.on('pointerdown', (p) => {
+                if (this._throwing) return;
+                this._swipeStart = { x: p.x, y: p.y };
+                this._swipeActive = true;
+            });
+            this.input.on('pointermove', (p) => {
+                if (!this._swipeActive || !this._swipeStart || this._throwing) return;
+                this._swipeLine.clear();
+                this._swipeLine.lineStyle(2, 0xfbbf24, 0.5);
+                this._swipeLine.lineBetween(this._swipeStart.x, this._swipeStart.y, p.x, p.y);
+                // Power indicator: length of swipe
+                const dx = p.x - this._swipeStart.x;
+                const dy = p.y - this._swipeStart.y;
+                const len = Math.sqrt(dx*dx + dy*dy);
+                const powerPct = Math.min(1, len / 200);
+                // Arrow direction
+                const ang = Math.atan2(dy, dx);
+                this._swipeLine.fillStyle(0xfbbf24, 0.3 + powerPct * 0.5);
+                this._swipeLine.fillCircle(this._swipeStart.x, this._swipeStart.y, 6 + powerPct * 10);
+            });
+            this.input.on('pointerup', (p) => {
+                if (!this._swipeActive || !this._swipeStart || this._throwing) return;
+                this._swipeLine.clear();
+                this._swipeActive = false;
+                const dx = p.x - this._swipeStart.x;
+                const dy = p.y - this._swipeStart.y;
+                const len = Math.sqrt(dx*dx + dy*dy);
+                if (len < 20) return; // too short, ignore
+                // Only allow upward swipes
+                if (dy > -10) return;
+                this._throwBall(dx, dy, len);
+            });
+
+            // Keyboard fallback: Space to throw straight, Left/Right arrows to aim
+            this._keyDir = 0;
+            this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+            this.leftKey  = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
+            this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
+            this._keyPower = 0;
+
+            this._initPowerUps();
+        }
+        _newWind() {
+            const maxW = liveConfig.paperTossWindMax || 140;
+            this._wind = Phaser.Math.Between(-maxW, maxW);
+            const dir = this._wind > 0 ? '→' : this._wind < 0 ? '←' : '•';
+            const strength = Math.abs(this._wind);
+            const pct = Math.round((strength / maxW) * 100);
+            if (this._windLabel) this._windLabel.setText(`Wind: ${dir} ${pct}%`);
+            // Draw wind arrow
+            if (this._windGfx) {
+                this._windGfx.clear();
+                const cx = GW/2, cy = 38;
+                const arrowLen = (strength / maxW) * 40;
+                if (arrowLen > 2) {
+                    this._windGfx.lineStyle(2, 0x60a5fa, 0.6);
+                    this._windGfx.lineBetween(cx, cy, cx + this._wind, cy);
+                    // Arrowhead
+                    const tipX = cx + this._wind;
+                    const headDir = this._wind > 0 ? -1 : 1;
+                    this._windGfx.fillStyle(0x60a5fa, 0.6);
+                    this._windGfx.fillTriangle(
+                        tipX, cy,
+                        tipX + headDir * 6, cy - 4,
+                        tipX + headDir * 6, cy + 4
+                    );
+                }
+            }
+        }
+        _updateMissDisplay() {
+            if (this._missTxt) {
+                const hearts = '❤️'.repeat(Math.max(0, this._maxMisses - this._misses));
+                const lost = '🖤'.repeat(this._misses);
+                this._missTxt.setText(hearts + lost);
+            }
+        }
+        _throwBall(dx, dy, len) {
+            if (this._throwing) return;
+            this._throwing = true;
+            // Calculate throw velocity from swipe direction + power
+            const power = Math.min(1, len / 200);
+            const baseSpeed = 400 + power * 300;
+            const angle = Math.atan2(dy, dx);
+            const vx = Math.cos(angle) * baseSpeed;
+            const vy = Math.sin(angle) * baseSpeed; // negative = upward
+            // Set ball velocity
+            this._ballVx = vx + this._wind; // wind affects horizontal
+            this._ballVy = vy;
+            this._ballGravity = 280; // arc gravity
+            this._ballActive = true;
+            this._ballAge = 0;
+            GameAudio.play('shoot');
+            _triggerHaptic('jump');
+        }
+        _resetBall() {
+            this._ball.x = GW/2;
+            this._ball.y = GH - 80;
+            this._ball.setScale(1);
+            this._ballShadow.x = GW/2;
+            this._ballShadow.y = GH - 68;
+            this._ballShadow.setScale(1);
+            this._ballAlpha = 1;
+            if (this._trailGfx) this._trailGfx.clear();
+            this._throwing = false;
+            this._ballActive = false;
+            this._newWind();
+        }
+        update(_t, delta) {
+            if (!this._ballActive) {
+                // Keyboard throw: space = straight, left/right to aim
+                if (this.spaceKey && this.spaceKey.isDown && !this._throwing) {
+                    this._keyDir = 0;
+                    if (this.leftKey && this.leftKey.isDown) this._keyDir = -1;
+                    if (this.rightKey && this.rightKey.isDown) this._keyDir = 1;
+                    this._throwBall(this._keyDir * 80, -200, 200);
+                }
+                return;
+            }
+            const dt = delta / 1000;
+            this._ballAge += dt;
+            // Physics: velocity + gravity
+            this._ballVy += this._ballGravity * dt;
+            this._ball.x += this._ballVx * dt;
+            this._ball.y += this._ballVy * dt;
+            // Shadow follows horizontally, stays on ground
+            this._ballShadow.x = this._ball.x;
+            // Scale ball based on "distance" (y position) for pseudo-3D
+            const t = Phaser.Math.Clamp((this._ball.y - 40) / (GH - 100), 0, 1);
+            const scale = 0.5 + t * 0.7;
+            this._ball.setScale(scale);
+            this._ballShadow.setScale(scale * 0.8);
+            this._ballShadow.y = this._ball.y + 12;
+            // Trail
+            if (this._trailGfx && this._ballAge < 1.5) {
+                this._trailGfx.fillStyle(0xf1f5f9, Math.max(0, 0.3 - this._ballAge * 0.2));
+                this._trailGfx.fillCircle(this._ball.x, this._ball.y, 4 * scale);
+            }
+            // Check if ball reached bin height
+            if (this._ball.y <= this._binY + 8 && this._ballVy < 0) {
+                const inBin = Math.abs(this._ball.x - this._binX) < this._binW / 2;
+                if (inBin) {
+                    // SCORE!
+                    this._streak++;
+                    const pts = (liveConfig.pointsPerKill || 10) * this._puScoreMul() * (1 + Math.floor(this._streak / 3));
+                    this.score += pts;
+                    this.scoreText.setText('Score: ' + this.score);
+                    this._flashScore(this.scoreText);
+                    this._burst(this._binX, this._binY, 0xfbbf24);
+                    this._popText(this._binX, this._binY - 20, '+' + Math.round(pts), '#fbbf24');
+                    GameAudio.play('score');
+                    _triggerHaptic('kill');
+                    _sessionKills++;
+                    if (this._streak >= 3) {
+                        showToast('🔥 ' + this._streak + ' streak!');
+                        _juiceText(this._binX, this._binY - 40, this._streak + '× STREAK!', '#fbbf24');
+                    }
+                    this.cameras.main.shake(40, 0.004);
+                    this.time.delayedCall(300, () => this._resetBall());
+                    return;
+                }
+            }
+            // Check if ball went off screen or hit ground
+            if (this._ball.y > GH + 20 || this._ball.x < -40 || this._ball.x > GW + 40) {
+                // MISS
+                this._misses++;
+                this._streak = 0;
+                this._updateMissDisplay();
+                this.cameras.main.shake(80, 0.008);
+                GameAudio.play('hit');
+                _triggerHaptic('hit');
+                if (this._misses >= this._maxMisses) {
+                    // Game over
+                    this._ballActive = false;
+                    this.time.delayedCall(400, () => this._onHit(this._ball));
+                    return;
+                }
+                showToast('💨 Miss! ' + (this._maxMisses - this._misses) + ' left');
+                this.time.delayedCall(400, () => this._resetBall());
+                return;
+            }
+            // Ball rotated while in flight for visual flair
+            this._ball.rotation = this._ballAge * 3;
+            this._syncPuLabels();
+            this._tickBase(this.score);
+        }
+    };
+}
+
 function getScene(data) {
-    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense, PINBALL:scenePinball, CLICKER:sceneClicker, MEMORY:sceneMemory, WAVESURVIVAL:sceneWaveSurvival };
+    const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense, PINBALL:scenePinball, CLICKER:sceneClicker, MEMORY:sceneMemory, WAVESURVIVAL:sceneWaveSurvival, PAPERTOSS:scenePaperToss };
     return scenes[data.genre] ? scenes[data.genre](data) : sceneShooter(data);
 }
 

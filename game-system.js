@@ -1454,9 +1454,59 @@ if (typeof document !== 'undefined') {
     });
     (target === document.documentElement ? document.body : target).appendChild(btn);
   }
+  // Universal mute + pause chrome (audit §09/13 — only 10/34 had mute, 13/34 pause). Injected once via game-system.js which loads on 43 pages, so 24 games get fixed at once without per-game edits. Uses existing SoundManager + GameUI.autoPause.
+  function initMutePauseChrome(){
+    if(document.getElementById('gs-mute-btn') || document.getElementById('gs-pause-btn')) return;
+    var bar=document.createElement('div');
+    bar.id='gs-controls';
+    bar.style.cssText='position:fixed;top:72px;right:12px;z-index:9998;display:flex;gap:6px';
+    var mkBtn=function(id, label, title){
+      var b=document.createElement('button');
+      b.type='button'; b.id=id; b.setAttribute('aria-label',title); b.title=title;
+      b.textContent=label;
+      b.style.cssText='width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:white;font-size:1.1rem;cursor:pointer;display:grid;place-items:center';
+      b.addEventListener('click',function(){
+        if(id==='gs-mute-btn'){
+          var muted=localStorage.getItem('jvds_sound')==='0';
+          localStorage.setItem('jvds_sound', muted?'1':'0');
+          b.textContent=muted?'🔊':'🔇';
+          b.setAttribute('aria-label', muted?'Mute':'Unmute');
+          try{ if(window.GameSystem&&GameSystem.lastInstance) GameSystem.lastInstance.updateSetting('soundEnabled', muted); }catch(e){}
+          if(window.JVDS) JVDS.announce(muted?'Sound on':'Sound off');
+        } else {
+          // Pause: prefer GameUI.autoPause handler if game registered one, else just toggle a simple overlay via visibility
+          var ev=new CustomEvent('gs-toggle-pause'); document.dispatchEvent(ev);
+          if(window.JVDS) JVDS.announce('Game '+(document.hidden?'paused':'resumed'));
+        }
+      });
+      return b;
+    };
+    var muted=localStorage.getItem('jvds_sound')==='0';
+    var mute=mkBtn('gs-mute-btn', muted?'🔇':'🔊', muted?'Unmute':'Mute');
+    var pause=mkBtn('gs-pause-btn', '⏸', 'Pause');
+    // Haptics toggle if supported
+    var canHaptic='vibrate' in navigator;
+    var hapticBtn=null;
+    if(canHaptic){
+      hapticBtn=mkBtn('gs-haptic-btn','📳','Toggle haptics');
+      var hOn=localStorage.getItem('jvds_haptic')!=='0';
+      hapticBtn.textContent=hOn?'📳':'📴';
+      hapticBtn.addEventListener('click',function(){
+        var on=localStorage.getItem('jvds_haptic')!=='0';
+        localStorage.setItem('jvds_haptic', on?'0':'1');
+        hapticBtn.textContent=on?'📴':'📳';
+        if(window.JVDS) JVDS.announce(on?'Haptics off':'Haptics on');
+        if(on&&navigator.vibrate) navigator.vibrate(20);
+      });
+    }
+    bar.appendChild(mute); bar.appendChild(pause); if(hapticBtn) bar.appendChild(hapticBtn);
+    document.body.appendChild(bar);
+    // Hide on tiny learners pages where controls would confuse? Keep visible but respect reduced-motion
+    try{ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) bar.style.opacity='.9'; }catch(e){}
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFullscreenToggle);
+    document.addEventListener('DOMContentLoaded', function(){ initFullscreenToggle(); initMutePauseChrome(); });
   } else {
-    initFullscreenToggle();
+    initFullscreenToggle(); initMutePauseChrome();
   }
 })();
