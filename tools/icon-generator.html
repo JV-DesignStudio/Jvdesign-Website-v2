@@ -240,9 +240,9 @@ body{display:flex;flex-direction:column;}
 
     <div class="ctrl-section">
       <h3>Custom Colours</h3>
-      <div class="field"><label>Background Top</label><input type="color" id="inBgTop" value="#2a0e4d" oninput="state.bgTop=this.value;clearPalette();render()"></div>
-      <div class="field"><label>Background Bottom</label><input type="color" id="inBgBottom" value="#0a0514" oninput="state.bgBottom=this.value;clearPalette();render()"></div>
-      <div class="field"><label>Accent / Trim</label><input type="color" id="inAccent" value="#f5c842" oninput="state.accent=this.value;clearPalette();render()"></div>
+      <div class="field"><label>Background Top</label><input type="color" id="inBgTop" value="#2a0e4d" onmousedown="pushUndo()" oninput="state.bgTop=this.value;clearPalette();render();scheduleAutosave()"></div>
+      <div class="field"><label>Background Bottom</label><input type="color" id="inBgBottom" value="#0a0514" onmousedown="pushUndo()" oninput="state.bgBottom=this.value;clearPalette();render();scheduleAutosave()"></div>
+      <div class="field"><label>Accent / Trim</label><input type="color" id="inAccent" value="#f5c842" onmousedown="pushUndo()" oninput="state.accent=this.value;clearPalette();render();scheduleAutosave()"></div>
     </div>
 
     <div class="ctrl-section">
@@ -327,6 +327,28 @@ function id(x){return document.getElementById(x);}
 const DEFAULTS={symbol:'shield',palette:'royal',bgTop:'#2a0e4d',bgBottom:'#0a0514',accent:'#f5c842',
   bgStyle:'radial',corner:'rounded',stars:true,symGlow:true,scale:100};
 let state=JSON.parse(JSON.stringify(DEFAULTS));
+
+/* ── undo / autosave ── */
+let undoStack=[],redoStack=[];
+let autosaveT=null;
+function snapshotState(){return JSON.stringify(state);}
+function pushUndo(){undoStack.push(snapshotState());if(undoStack.length>30)undoStack.shift();redoStack.length=0;}
+function undo(){
+  if(!undoStack.length){toast('Nothing to undo');return;}
+  redoStack.push(snapshotState());
+  state=JSON.parse(undoStack.pop());
+  syncInputs();syncUI();render();toast('Undo');
+}
+function redo(){
+  if(!redoStack.length){toast('Nothing to redo');return;}
+  undoStack.push(snapshotState());
+  state=JSON.parse(redoStack.pop());
+  syncInputs();syncUI();render();toast('Redo');
+}
+function scheduleAutosave(){
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(()=>{try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}},600);
+}
 
 const PALETTES=[
   {id:'royal', name:'Royal',   top:'#2a0e4d',bottom:'#0a0514',accent:'#f5c842'},
@@ -605,13 +627,14 @@ function buildPaletteGrid(){
 }
 function applyPalette(pid){
   const p=PALETTES.find(x=>x.id===pid);if(!p)return;
+  pushUndo();
   state.palette=pid;state.bgTop=p.top;state.bgBottom=p.bottom;state.accent=p.accent;
-  syncInputs();render();
+  syncInputs();render();scheduleAutosave();
 }
 function clearPalette(){state.palette='custom';syncUI();}
-function pickSymbol(v){state.symbol=v;syncUI();render();}
-function pickBg(v){state.bgStyle=v;syncUI();render();}
-function pickCorner(v){state.corner=v;syncUI();render();}
+function pickSymbol(v){pushUndo();state.symbol=v;syncUI();render();scheduleAutosave();}
+function pickBg(v){pushUndo();state.bgStyle=v;syncUI();render();scheduleAutosave();}
+function pickCorner(v){pushUndo();state.corner=v;syncUI();render();scheduleAutosave();}
 
 function syncInputs(){
   id('inBgTop').value=state.bgTop;id('inBgBottom').value=state.bgBottom;
@@ -633,7 +656,7 @@ function buildFx(){
     const b=document.createElement('button');
     b.className='fx-btn'+(state[fx.id]?' on':'');b.id='fx-'+fx.id;
     b.textContent=fx.label;
-    b.onclick=()=>{state[fx.id]=!state[fx.id];b.classList.toggle('on',state[fx.id]);render();};
+    b.onclick=()=>{pushUndo();state[fx.id]=!state[fx.id];b.classList.toggle('on',state[fx.id]);render();scheduleAutosave();};
     el.appendChild(b);
   });
 }
@@ -704,6 +727,8 @@ function copyIconShareLink(){
   }catch(e){ toast('Could not share'); }
 }
 document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redo();return;}
   if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); openStart(); }
   else if(e.key==='Escape'){ const o=document.getElementById('ig-overlay'); if(o&&o.classList.contains('show')){ closeStart(); e.preventDefault(); } }
 });

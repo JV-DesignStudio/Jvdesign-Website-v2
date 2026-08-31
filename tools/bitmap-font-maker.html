@@ -343,6 +343,44 @@ let drawTool='pen';
 let clipboard=null;
 let pvScale=3,pvSpacing=1,pvLineGap=2;
 
+// ── Undo / Autosave ──
+let undoStack=[],redoStack=[];
+let autosaveT=null;
+function snapshotFont(){return JSON.stringify({gw:GW,gh:GH,chars:Object.fromEntries(Object.entries(fontData).map(([k,v])=>[k,Array.from(v)]))});}
+function pushUndo(){
+  undoStack.push(snapshotFont());
+  if(undoStack.length>40) undoStack.shift();
+  redoStack.length=0;
+}
+function undo(){
+  if(!undoStack.length){toast('Nothing to undo');return;}
+  redoStack.push(snapshotFont());
+  const d=JSON.parse(undoStack.pop());
+  GW=d.gw;GH=d.gh;
+  fontData={};
+  Object.keys(d.chars).forEach(k=>{fontData[k]=new Uint8Array(d.chars[k]);});
+  id('gridSel').value=`${GW}x${GH}`;
+  resizeCanvas();drawEditor();drawPreview();updateCharBtns();
+  toast('Undo');
+}
+function redo(){
+  if(!redoStack.length){toast('Nothing to redo');return;}
+  undoStack.push(snapshotFont());
+  const d=JSON.parse(redoStack.pop());
+  GW=d.gw;GH=d.gh;
+  fontData={};
+  Object.keys(d.chars).forEach(k=>{fontData[k]=new Uint8Array(d.chars[k]);});
+  id('gridSel').value=`${GW}x${GH}`;
+  resizeCanvas();drawEditor();drawPreview();updateCharBtns();
+  toast('Redo');
+}
+function scheduleAutosave(){
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(()=>{
+    try{localStorage.setItem('jvds_bitmapfont',snapshotFont());}catch(e){}
+  },800);
+}
+
 // Character sets
 const CHAR_SETS=[
   {label:'Uppercase',chars:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'},
@@ -434,12 +472,14 @@ function startPaint(e){
   e.preventDefault();
   const cell=pointerToCell(e);
   if(!cell) return;
+  pushUndo();
   const arr=getArr(currentChar);
   if(drawTool==='pen') paintValue=arr[cell.idx]?0:1; // toggle
   else if(drawTool==='erase') paintValue=0;
   else if(drawTool==='fill'){paintValue=arr[cell.idx]?0:1;}
   painting=true;
   applyTool(e);
+  scheduleAutosave();
 }
 function movePaint(e){
   if(!painting) return;
@@ -483,12 +523,13 @@ function setTool(t){
   id('btn'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('on');
 }
 
-function clearChar(){getArr(currentChar).fill(0);drawEditor();drawPreview();updateCharBtns();}
-function invertChar(){const a=getArr(currentChar);for(let i=0;i<a.length;i++) a[i]=a[i]?0:1;drawEditor();drawPreview();}
+function clearChar(){pushUndo();getArr(currentChar).fill(0);drawEditor();drawPreview();updateCharBtns();scheduleAutosave();}
+function invertChar(){pushUndo();const a=getArr(currentChar);for(let i=0;i<a.length;i++) a[i]=a[i]?0:1;drawEditor();drawPreview();scheduleAutosave();}
 function copyGlyph(){clipboard=new Uint8Array(getArr(currentChar));}
-function pasteGlyph(){if(clipboard){fontData[currentChar.charCodeAt(0)]=new Uint8Array(clipboard);drawEditor();drawPreview();updateCharBtns();}}
+function pasteGlyph(){if(clipboard){pushUndo();fontData[currentChar.charCodeAt(0)]=new Uint8Array(clipboard);drawEditor();drawPreview();updateCharBtns();scheduleAutosave();}}
 
 function shift(dx,dy){
+  pushUndo();
   const src=getArr(currentChar);
   const dst=new Uint8Array(GW*GH);
   for(let r=0;r<GH;r++)for(let c=0;c<GW;c++){
@@ -497,6 +538,7 @@ function shift(dx,dy){
   }
   fontData[currentChar.charCodeAt(0)]=dst;
   drawEditor();drawPreview();
+  scheduleAutosave();
 }
 
 // ── Grid size ──
@@ -618,6 +660,8 @@ id('pv-text').addEventListener('input',drawPreview);
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redo();return;}
   if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();nextChar();}
   else if(e.key==='ArrowLeft'){e.preventDefault();prevChar();}
   else if(e.key.toLowerCase()==='d') setTool('pen');

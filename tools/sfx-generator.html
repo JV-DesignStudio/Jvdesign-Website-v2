@@ -744,6 +744,35 @@ let history = (function(){
 })();
 
 // --------------------------------------------------
+// AUTOSAVE current sound settings
+// --------------------------------------------------
+let autosaveT=null;
+function scheduleSfxAutosave(){
+  clearTimeout(autosaveT);
+  autosaveT=setTimeout(()=>{
+    if(currentCat===null||currentVariant===null) return;
+    try{localStorage.setItem('jvds_sfx_current',JSON.stringify({cat:currentCat,variant:currentVariant,tweaks:readTweaks()}));}catch(e){}
+  },600);
+}
+function restoreSfxCurrent(){
+  try{
+    const d=JSON.parse(localStorage.getItem('jvds_sfx_current'));
+    if(d&&d.cat!==undefined&&d.variant!==undefined){
+      currentCat=d.cat;currentVariant=d.variant;
+      if(d.tweaks){
+        const el=id.bind(null);
+        if(d.tweaks.vol!==undefined) el('vol').value=d.tweaks.vol;
+        if(d.tweaks.pitch!==undefined) el('pitch').value=d.tweaks.pitch;
+        if(d.tweaks.speed!==undefined) el('speed').value=d.tweaks.speed;
+        if(d.tweaks.rev!==undefined) el('rev').value=d.tweaks.rev;
+        if(d.tweaks.dist!==undefined) el('dist').value=d.tweaks.dist;
+        if(d.tweaks.crush!==undefined) el('crush').value=d.tweaks.crush;
+      }
+    }
+  }catch(e){}
+}
+
+// --------------------------------------------------
 // UI BUILD
 // --------------------------------------------------
 function buildCategories(){
@@ -793,6 +822,7 @@ function selectAndPlay(catId, varIdx, btn){
   btn.classList.add('playing');
   const dur=previewCurrent();
   syncHash();
+  scheduleSfxAutosave();
   clearTimeout(selectAndPlay._t);
   selectAndPlay._t=setTimeout(()=>btn.classList.remove('playing'), Math.max(350,(dur||0.3)*1000+250));
 }
@@ -1189,7 +1219,8 @@ function copySnippet(){
 document.addEventListener('DOMContentLoaded',()=>{
   buildCategories();
   renderHistory();
-  document.querySelectorAll('input.tw').forEach(el=>el.addEventListener('input',syncHash));
+  restoreSfxCurrent();
+  document.querySelectorAll('input.tw').forEach(el=>el.addEventListener('input',()=>{syncHash();scheduleSfxAutosave();}));
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ const o=document.getElementById('sfxWelcomeModal'); if(o&&o.classList.contains('open')){ closeSfxWelcome(); return; } closeCodeModal(); } else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); const w=document.getElementById('sfxWelcomeModal'); if(w) w.classList.add('open'); }});
   const wm=document.getElementById('sfxWelcomeModal');
   if(wm) wm.addEventListener('click',e=>{ if(e.target===wm) closeSfxWelcome(); });
