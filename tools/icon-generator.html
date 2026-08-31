@@ -278,6 +278,7 @@ body{display:flex;flex-direction:column;}
       <button class="act-btn exp-apple" onclick="exportSize(180,'apple-touch-icon.png')">📥 apple-touch-icon.png</button>
       <button class="act-btn exp-fav" onclick="exportSize(48,'favicon-48.png')">📥 favicon-48.png</button>
       <button class="act-btn exp-all" onclick="downloadAll()">⬇ Download All Sizes</button>
+      <button class="act-btn" onclick="copyIconShareLink()" style="background:#f59e0b;color:#000;margin-top:6px;">🔗 Share Link</button>
       <p class="exp-note">Standard PWA names , drop straight into your site's <b>icons/</b> folder.</p>
     </div>
 
@@ -298,6 +299,7 @@ body{display:flex;flex-direction:column;}
     <div class="preview-hint"><strong>Tip:</strong> these filenames match PWA conventions. Export, drop into your <b>icons/</b> folder, and reference them from your web manifest.</div>
   </div>
 </div>
+<!-- WELCOME MODAL -->
 <div id="ig-overlay" onclick="if(event.target===this)closeStart()">
   <div class="ig-box">
     <div class="ig-title">🖼️ Welcome to Icon Generator</div>
@@ -693,6 +695,18 @@ const IG_SEEN='jvds_icon_seen';
 function openStart(){ id('ig-overlay').classList.add('show'); }
 function closeStart(){ id('ig-overlay').classList.remove('show'); try{localStorage.setItem(IG_SEEN,'1');}catch(e){} }
 function igHasSeen(){ try{ return localStorage.getItem(IG_SEEN)==='1'; }catch(e){ return true; } }
+function copyIconShareLink(){
+  try{
+    const url=location.href.split('#')[0]+'#icon='+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,ts:Date.now()})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    history.replaceState(null,'',url);
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(()=>toast('🔗 Share link copied')).catch(()=>prompt('Copy:',url));
+    else prompt('Copy:',url);
+  }catch(e){ toast('Could not share'); }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); openStart(); }
+  else if(e.key==='Escape'){ const o=document.getElementById('ig-overlay'); if(o&&o.classList.contains('show')){ closeStart(); e.preventDefault(); } }
+});
 
 /* ── init ── */
 loadSaved();

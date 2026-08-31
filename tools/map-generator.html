@@ -330,6 +330,36 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
     </div>
   </div>
 </div>
+<style>
+/* Welcome modal — dark-panel standard */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel2);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(460px,94vw);max-height:82vh;overflow:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal h3{font-family:'Fredoka',cursive;font-size:1.05rem;color:var(--accent);margin-bottom:10px;}
+.modal-btns{display:flex;gap:8px;margin-top:12px;}
+.m-ok{flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;background:var(--accent);color:white;}
+.m-cancel{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border2);cursor:pointer;font-family:'Fredoka',cursive;background:rgba(255,255,255,.06);color:var(--text);}
+</style>
+
+<!-- WELCOME MODAL -->
+<div class="modal-overlay" id="mapWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="mapWelcomeTitle">
+  <div class="modal">
+    <h3 id="mapWelcomeTitle">🗺 Welcome to Map Generator</h3>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:12px;">Generate dungeons, worlds or islands — then paint tiles, undo, and export PNG or JSON for Godot/Unity.</p>
+    <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;">
+      <div>🏚 <strong>Mode</strong> — Dungeon / World / Island with live seed</div>
+      <div>🖌 <strong>Paint</strong> — Place / Erase / Pick + tile picker, Ctrl+Z/Y</div>
+      <div>🔗 <strong>Share</strong> — copy link keeps mode + seed</div>
+      <div>📥 <strong>Export</strong> — PNG or JSON tilemap (all tiles)</div>
+    </div>
+    <div style="font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid var(--border2);border-radius:4px;background:var(--panel3);">?</kbd> to reopen. Seed is in URL — share it.</div>
+    <div class="modal-btns">
+      <button class="m-ok" onclick="closeMapWelcome()">Generate map ✓</button>
+      <button class="m-cancel" onclick="closeMapWelcome()">Got it</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -858,6 +888,11 @@ function exportJSON(){
   toast('JSON tilemap downloaded!');
 }
 
+// ── Welcome modal (full standard) ──
+const MAP_WELCOME_KEY='jvds_map_seen_v1';
+function closeMapWelcome(){ try{localStorage.setItem(MAP_WELCOME_KEY,'1');}catch{} const m=id('mapWelcomeModal'); if(m) m.classList.remove('open'); }
+function maybeShowMapWelcome(){ try{if(localStorage.getItem(MAP_WELCOME_KEY)==='1') return;}catch{} const m=id('mapWelcomeModal'); if(m) m.classList.add('open'); }
+
 // ── Init ──
 (function(){
   if(readShareParams()){
@@ -872,6 +907,15 @@ function exportJSON(){
 generate();
 let toastT;
 function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}
+(function(){
+  const m=id('mapWelcomeModal');
+  if(m) m.addEventListener('click',e=>{ if(e.target===m) closeMapWelcome(); });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ const o=document.querySelector('.modal-overlay.open'); if(o&&o.id==='mapWelcomeModal'){ closeMapWelcome(); e.preventDefault(); } }
+    else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); if(m) m.classList.add('open'); }
+  });
+  maybeShowMapWelcome();
+})();
 </script>
 
 <!-- BUILD:footer-tools -->

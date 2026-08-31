@@ -388,9 +388,11 @@ body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);f
     <div id="sb-sticky">
       <button class="exp-btn exp-gif" onclick="exportGIF()" title="Download the animation as a GIF">🎬 Animated GIF</button>
       <button class="exp-btn" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);" onclick="exportSheet()" title="Download the selected frames as one spritesheet">📤 Frames Sheet</button>
+      <button class="exp-btn" style="background:var(--accent);color:#000;" onclick="copySpriteShareLink()" title="Copy a share link for this sheet">🔗 Share Link</button>
     </div>
   </div>
 </div>
+<!-- WELCOME MODAL -->
 <div class="sa-overlay" id="startModal" onclick="if(event.target===this)closeStart()">
   <div class="sa-box">
     <div class="sa-title">🎞 Welcome to Sprite Animator</div>
@@ -1262,7 +1264,20 @@ function importFromPixelStudio(){
 }
 
 // ── KEYBOARD SHORTCUTS ──
+function copySpriteShareLink(){
+  try{
+    const data={w:frameW,h:frameH,fps,sheetName};
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const url=location.origin+location.pathname+'#sprite='+b64;
+    history.replaceState(null,'','#sprite='+b64);
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(()=>toast('🔗 Share link copied')).catch(()=>prompt('Copy:',url));
+    else prompt('Copy:',url);
+  }catch(e){ toast('Could not share'); }
+}
+function openStart(){ id('startModal').classList.add('open'); }
 document.addEventListener('keydown',e=>{
+  if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tg=e.target; if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.isContentEditable)) return; e.preventDefault(); openStart(); return; }
+  if(e.key==='Escape'){ const m=id('startModal'); if(m&&m.classList.contains('open')){ closeStart(); e.preventDefault(); return; } }
   const t=e.target;
   if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
   if(!sheetImg) return;

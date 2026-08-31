@@ -61,7 +61,8 @@ body::before {
 .title { font-size: 1.15rem; font-weight: 800; letter-spacing: .3px; background: linear-gradient(90deg,#b98bff,#5b8cff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
 .stars-chip { background: rgba(255,210,74,.12); border: 1px solid rgba(255,210,74,.35); color: #ffd24a;
   font-size: .8rem; font-weight: 800; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
-.home-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #cdb8ff; width: 40px; height: 40px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; display: grid; place-items: center; }
+.home-btn { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #cdb8ff; width: 40px; height: 40px; border-radius: 12px; font-size: 1.2rem; cursor: pointer; flex-shrink: 0; display: grid; place-items: center; font-weight: 800; }
+#helpBtn { background: rgba(185,139,255,.15); border-color: rgba(185,139,255,.3); color: #b98bff; }
 .home-btn:active { transform: scale(.92); }
 
 /* ── STATS ROW ── */
@@ -70,8 +71,8 @@ body::before {
 .stat-label { font-size: .58rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: rgba(255,255,255,.5); }
 .stat-value { font-size: 1.15rem; font-weight: 800; margin-top: 1px; }
 .stat.moves .stat-value { color: #ffd24a; }
-.stat.moves.low .stat-value { color: #ff5b6b; animation: pulseWarn .6s infinite; }
-@keyframes pulseWarn { 50% { opacity: .45; } }
+.stat.moves.low .stat-value { color: #ff5b6b; animation: pulseWarn .5s infinite; }
+@keyframes pulseWarn { 50% { opacity: .35; transform: scale(1.08); } }
 
 /* ── TARGET BAR ── */
 .target-wrap { padding: 0 16px 8px; }
@@ -87,6 +88,9 @@ body::before {
   width: min(94vw, 430px);
   aspect-ratio: 7 / 8;
   max-height: 100%;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+  box-shadow: 0 0 40px rgba(185,139,255,.12), inset 0 0 30px rgba(0,0,0,.3);
 }
 .bubble {
   position: absolute; top: 0; left: 0;
@@ -97,13 +101,13 @@ body::before {
 .bubble-inner {
   position: absolute; inset: 3px; border-radius: 50%;
   display: grid; place-items: center;
-  box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 3px 8px rgba(0,0,0,.35);
+  box-shadow: inset 0 -5px 10px rgba(0,0,0,.3), inset 0 2px 4px rgba(255,255,255,.15), 0 4px 10px rgba(0,0,0,.4);
   cursor: pointer;
   transition: transform .12s;
 }
 .bubble-inner::after {
-  content: ''; position: absolute; top: 14%; left: 20%; width: 34%; height: 30%;
-  border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+  content: ''; position: absolute; top: 12%; left: 18%; width: 36%; height: 32%;
+  border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%);
   pointer-events: none;
 }
 .bubble-inner:active { transform: scale(.9); }
@@ -116,14 +120,22 @@ body::before {
 .bubble.bomb .bubble-inner { background: radial-gradient(circle at 35% 30%, #3a3a4a, #111); border: 2px solid #ffd24a; font-size: 1.1rem; animation: bombPulse 1s infinite; }
 @keyframes bombPulse { 50% { box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 0 16px rgba(255,210,74,.8); } }
 .bubble.popping { z-index: 5; }
-.bubble.popping .bubble-inner { animation: popOut .22s forwards; }
-@keyframes popOut { 40% { transform: scale(1.25); } 100% { transform: scale(0); opacity: 0; } }
+.bubble.popping .bubble-inner { animation: popOut .28s cubic-bezier(.36,1.4,.5,1) forwards; }
+@keyframes popOut { 0% { transform: scale(1); opacity:1; } 35% { transform: scale(1.35); opacity:1; } 100% { transform: scale(0); opacity:0; } }
 .bubble.hint .bubble-inner { animation: hintGlow 1s infinite; }
 @keyframes hintGlow { 50% { box-shadow: inset 0 -4px 8px rgba(0,0,0,.28), 0 0 14px rgba(255,255,255,.9); } }
+/* new: cascade chain flash on the board */
+@keyframes cascadeFlash { 0% { box-shadow: inset 0 0 30px rgba(185,139,255,.5); } 100% { box-shadow: none; } }
+.board.cascade { animation: cascadeFlash .4s ease-out; }
 
 /* group size floating label */
-.pop-score { position: fixed; z-index: 60; pointer-events: none; font-weight: 800; font-size: 1.3rem; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.6); animation: floatUp .8s ease-out forwards; }
-@keyframes floatUp { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.6); } 30% { transform: translate(-50%,-70%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%,-150%) scale(1); } }
+.pop-score { position: fixed; z-index: 60; pointer-events: none; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.7), 0 0 16px rgba(185,139,255,.4); animation: floatUp .9s cubic-bezier(.25,.8,.25,1) forwards; }
+.pop-score.big { font-size: 1.8rem; }
+.pop-score.mega { font-size: 2.2rem; color: #ffd24a; text-shadow: 0 2px 10px rgba(0,0,0,.7), 0 0 24px rgba(255,210,74,.5); }
+@keyframes floatUp { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.4); } 25% { transform: translate(-50%,-60%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%,-180%) scale(.9); } }
+/* chain combo banner */
+.chain-banner { position: fixed; z-index: 60; pointer-events: none; font-weight: 900; font-size: 1.4rem; color: #ffd24a; text-shadow: 0 2px 10px rgba(0,0,0,.7); animation: chainPop 1s ease-out forwards; }
+@keyframes chainPop { 0% { opacity:0; transform: translate(-50%,-50%) scale(.3); } 20% { opacity:1; transform: translate(-50%,-50%) scale(1.3); } 50% { transform: translate(-50%,-50%) scale(1); } 100% { opacity:0; transform: translate(-50%,-100%) scale(.8); } }
 
 /* ── FOOTER HINT ── */
 .footer { text-align: center; padding: 0 16px 10px; font-size: .72rem; color: rgba(255,255,255,.4); }
@@ -157,6 +169,7 @@ body::before {
   <div class="header">
     <div class="title">🫧 Bubble Pop Galaxy</div>
     <div class="stars-chip" id="starsChip" title="Stars earned across the galaxy">⭐ 0</div>
+    <button class="home-btn" id="helpBtn" title="How to Play" onclick="showTutorial()">?</button>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
 
@@ -213,6 +226,7 @@ let cells = [];          // cells[r][c] = bubble | null
 let nextId = 1;
 let busy = false;        // input lock during animation
 let hintTimer = null;
+let chainCount = 0;      // cascade chain counter
 
 const game = {
   level: 1,
@@ -372,6 +386,26 @@ function hasMoves() {
   return false;
 }
 
+// Find ALL groups of 2+ on the board (for cascade detection)
+function findAllGroups() {
+  const visited = new Set();
+  const groups = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const key = r + ',' + c;
+      if (visited.has(key)) continue;
+      const b = cells[r][c];
+      if (!b || b.special === 'bomb') continue;
+      const group = connectedGroup(r, c);
+      if (group.length >= 2) {
+        group.forEach(([gr, gc]) => visited.add(gr + ',' + gc));
+        groups.push(group);
+      }
+    }
+  }
+  return groups;
+}
+
 /* ═══════════════ TAP HANDLER ═══════════════ */
 function onTap(id) {
   if (busy || game.over) return;
@@ -410,16 +444,25 @@ function onTap(id) {
   gameSystem.addXP(Math.max(1, Math.floor(gained / 25)));
 
   // audio + juice
-  if (isBomb) { audioEffects.playPop(); ScreenShake.shake(document.querySelector('.board'), 10, 220); }
-  else if (size >= 6) { audioEffects.playCombo(size); ScreenShake.shake(document.querySelector('.board'), 5, 160); }
-  else { audioEffects.playPop(); }
+  if (isBomb) {
+    audioEffects.playCombo(6);
+    ScreenShake.shake(document.querySelector('.board'), 14, 300);
+    floatScore(window.innerWidth/2, window.innerHeight*0.28, '💥 BOMB! +' + gained, '#ffd24a', 'mega');
+  } else if (size >= 6) {
+    audioEffects.playCombo(size);
+    ScreenShake.shake(document.querySelector('.board'), 7, 180);
+    floatScore(window.innerWidth/2, window.innerHeight*0.28, '✨ ' + size + ' cluster!', '#b98bff', 'big');
+  } else { audioEffects.playPop(); }
   if (game.streak >= 2) audioEffects.playCombo(game.streak);
 
   // floating score + particles at tap point
   const tapEl = document.querySelector(`.bubble[data-id="${id}"]`);
   if (tapEl) {
     const rect = tapEl.getBoundingClientRect();
-    floatScore(rect.left + rect.width/2, rect.top + rect.height/2, '+' + gained, isBomb ? '#ffd24a' : '#fff');
+    const scoreSize = size >= 10 ? 'mega' : size >= 5 ? 'big' : '';
+    const scoreColor = isBomb ? '#ffd24a' : mult > 1 ? '#ffd24a' : '#fff';
+    floatScore(rect.left + rect.width/2, rect.top + rect.height/2, '+' + gained, scoreColor, scoreSize);
+    if (mult > 1) floatScore(rect.left + rect.width/2, rect.top + rect.height/2 + 30, '×' + mult.toFixed(1) + ' streak!', '#ff5b6b', 'big');
     if (size >= 5 || isBomb) ParticleSystem.burst(rect.left + rect.width/2, rect.top + rect.height/2, isBomb ? '💥' : '💫', Math.min(14, size + 2));
   }
 
@@ -447,7 +490,37 @@ function onTap(id) {
     collapse();
     refill();
     render();
-    setTimeout(afterResolve, 300);
+    // Chain cascade detection: check if refill created auto-matches
+    setTimeout(() => {
+      const autoGroups = findAllGroups();
+      if (autoGroups.length > 0) {
+        // Cascade chain! Pop them automatically with bonus
+        chainCount = (chainCount || 0) + 1;
+        const chainBonus = chainCount * 50;
+        game.score += chainBonus;
+        game.levelScore += chainBonus;
+        const board = document.querySelector('.board');
+        if (board) { board.classList.remove('cascade'); void board.offsetWidth; board.classList.add('cascade'); }
+        if (chainCount >= 2) showChainBanner('⚡ ' + chainCount + 'x CHAIN! +' + chainBonus);
+        else floatScore(window.innerWidth/2, window.innerHeight * 0.3, 'Chain +' + chainBonus, '#b98bff', 'big');
+        autoGroups.forEach(g => {
+          g.forEach(([gr, gc]) => {
+            const bub = cells[gr][gc];
+            if (bub) {
+              const el = document.querySelector(`.bubble[data-id="${bub.id}"]`);
+              if (el) el.classList.add('popping');
+              cells[gr][gc] = null;
+            }
+          });
+        });
+        if (chainCount >= 3) ScreenShake.shake(document.querySelector('.board'), 6, 180);
+        updateHud();
+        setTimeout(() => { collapse(); refill(); render(); setTimeout(afterResolve, 300); }, 200);
+        return;
+      }
+      chainCount = 0;
+      afterResolve();
+    }, 250);
   }, 200);
 }
 
@@ -542,7 +615,9 @@ function updateHud() {
   document.getElementById('movesStat').classList.toggle('low', game.moves <= 5);
 
   const footer = document.getElementById('footer');
-  if (game.streak >= 2) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak!</span>`;
+  if (game.streak >= 3) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak! +${(1 + Math.min(game.streak, 5) * 0.3).toFixed(1)}x multiplier!</span>`;
+  else if (game.streak >= 2) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak!</span>`;
+  else if (game.moves <= 5) footer.innerHTML = `<span style="color:#ff5b6b;font-weight:700">⚠️ ${game.moves} moves left — make them count!</span>`;
   else footer.textContent = 'Tap groups of 2+ · big groups leave bombs 💣';
 }
 
@@ -574,15 +649,25 @@ function markHint(group) {
 }
 
 /* ═══════════════ FX HELPERS ═══════════════ */
-function floatScore(x, y, text, color) {
+function floatScore(x, y, text, color, size) {
   const el = document.createElement('div');
-  el.className = 'pop-score';
+  el.className = 'pop-score' + (size === 'mega' ? ' mega' : size === 'big' ? ' big' : '');
   el.textContent = text;
   el.style.left = x + 'px';
   el.style.top = y + 'px';
   el.style.color = color || '#fff';
+  el.style.fontSize = size === 'mega' ? '2.2rem' : size === 'big' ? '1.8rem' : '1.3rem';
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 800);
+  setTimeout(() => el.remove(), 900);
+}
+function showChainBanner(text) {
+  const el = document.createElement('div');
+  el.className = 'chain-banner';
+  el.textContent = text;
+  el.style.left = '50%';
+  el.style.top = '35%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
 }
 function nudge(id) {
   const el = document.querySelector(`.bubble[data-id="${id}"]`);
@@ -602,6 +687,7 @@ function startLevel(level) {
   game.streak = 0;
   game.over = false;
   busy = false;
+  chainCount = 0;
   document.getElementById('modal').classList.remove('show');
   fillBoard();
   render();
@@ -610,10 +696,13 @@ function startLevel(level) {
   if (level > 1) {
     const gravNote = cfg.grav === 'left' ? ' · ⬅ Gravity drifts sideways!' : '';
     const bossNote = cfg.boss ? 'SUPERNOVA · ' : '';
+    let tip = '';
+    if (level === 2) tip = '\n💡 Pop 5+ to spawn a Bomb!';
+    if (level === 3) tip = '\n💡 Chains = free bonus points!';
     showBanner((cfg.boss ? '💥 ' : '') + 'Level ' + level + ' — ' + cfg.region,
-      bossNote + cfg.colors + ' colours · ' + cfg.moves + ' moves' + gravNote);
+      bossNote + cfg.colors + ' colours · ' + cfg.moves + ' moves' + gravNote + tip);
   } else {
-    showBanner('Level 1 — ' + cfg.region, 'Tap groups of 2+ to pop them');
+    showBanner('Level 1 — ' + cfg.region, 'Tap groups of 2+ same-colour bubbles');
   }
   scheduleHint();
 }
@@ -660,7 +749,8 @@ function levelComplete() {
 
   showModal('🎉', 'Level ' + game.level + ' Complete!',
     '⭐'.repeat(stars) + '☆'.repeat(3 - stars) +
-    (leftover > 0 ? ` · +${bonus} move bonus (${leftover} left)` : ''),
+    (leftover > 0 ? ` · +${bonus} move bonus (${leftover} left)` : '') +
+    (stars === 3 ? '\n🏆 Perfect clear!' : stars === 2 ? '\n👍 Nice work!' : ''),
     xp, 'Next Level');
   document.getElementById('modalBtn').dataset.next = 'level';
   updateStarsChip();
@@ -679,7 +769,7 @@ function gameOver() {
   gameSystem.saveState();
 
   audioEffects.playError();
-  showModal('🌌', 'Out of Moves', `Level ${game.level} — ${game.region || 'the galaxy'} · Retry when ready`, Math.max(0, xp), 'Retry Level ' + game.level);
+  showModal('🌌', 'Out of Moves', `You reached ${game.levelScore} / ${game.target} on Level ${game.level}\n${game.region || 'the galaxy'} · Retry or adjust your strategy`, Math.max(0, xp), 'Retry Level ' + game.level);
   document.getElementById('modalBtn').dataset.next = 'retry';
 }
 
@@ -719,6 +809,74 @@ window.addEventListener('beforeunload', () => {
 // vs Start Over. First-time players just start at Level 1.
 document.querySelector('#modal .modal-stats').style.display = 'none'; // run stats are meaningless on the map
 updateStarsChip();
+
+// ── Tutorial / How to Play ──
+const TUTORIAL_KEY = 'bp_galaxy_tutorial_seen';
+function showTutorial() {
+  document.getElementById('tutorialModal').classList.add('show');
+}
+function closeTutorial() {
+  document.getElementById('tutorialModal').classList.remove('show');
+  try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch(e) {}
+}
+function hasSeenTutorial() {
+  try { return localStorage.getItem(TUTORIAL_KEY) === '1'; } catch(e) { return false; }
+}
+
+// ── Contextual tips (first 3 levels) ──
+const TIPS = {
+  1: [
+    { trigger: 'firstPop', text: 'Nice! Tap bigger groups for more points 🫧' },
+    { trigger: 'moves5', text: 'Watch your moves! ⚠️ Running low...' },
+  ],
+  2: [
+    { trigger: 'start', text: 'Tip: Pop 5+ bubbles and the last one becomes a 💣 Bomb!' },
+    { trigger: 'bomb', text: 'Bombs blast a 3×3 area — huge points! 💥' },
+  ],
+  3: [
+    { trigger: 'start', text: 'Chain combos happen when new bubbles fall into matches! ⚡' },
+    { trigger: 'chain', text: 'Chains give bonus points — keep them going! 🔥' },
+  ],
+};
+let tipShown = {};
+function showTip(level, trigger) {
+  if (level > 3) return;
+  const key = level + ':' + trigger;
+  if (tipShown[key]) return;
+  const tips = TIPS[level];
+  if (!tips) return;
+  const tip = tips.find(t => t.trigger === trigger);
+  if (!tip) return;
+  tipShown[key] = true;
+  const overlay = document.getElementById('tipOverlay');
+  const text = document.getElementById('tipText');
+  if (!overlay || !text) return;
+  text.textContent = tip.text;
+  overlay.style.opacity = '1';
+  setTimeout(() => { overlay.style.opacity = '0'; }, 4000);
+}
+
+// Intercept first pop to show tip
+const _origOnTap = onTap;
+let firstPopDone = false;
+// We'll call showTip from within the game events instead of wrapping onTap
+
+// Hook into game events for tips
+const _origLevelComplete = levelComplete;
+const _origGameOver = gameOver;
+
+// Show start-of-level tip
+const _origStartLevel = startLevel;
+startLevel = function(level) {
+  _origStartLevel(level);
+  if (level <= 3) showTip(level, 'start');
+};
+
+// Show bomb tip when bomb spawns
+const _origOnTapInner = onTap;
+// We'll track bombs via the existing code — the bomb floatScore call is our hook
+
+// Boot
 if (prog.bestLevel > 1) {
   const total = totalStars();
   showModal('🌌', 'Galaxy Map',
@@ -726,9 +884,39 @@ if (prog.bestLevel > 1) {
     0, 'Continue — Level ' + prog.bestLevel);
   document.getElementById('modalBtn').dataset.next = 'continue';
 } else {
-  newGame();
+  // First time: show tutorial, then start
+  if (!hasSeenTutorial()) {
+    showTutorial();
+    document.querySelector('#tutorialModal .btn').onclick = function() {
+      closeTutorial();
+      newGame();
+    };
+  } else {
+    newGame();
+  }
 }
 </script>
 <script src="../cookie-consent.js"></script>
+<!-- Tutorial / How to Play -->
+<div class="modal" id="tutorialModal">
+  <div class="modal-card" style="max-width:380px">
+    <div class="modal-emoji">🫧</div>
+    <div class="modal-title">How to Play</div>
+    <div class="modal-sub" style="text-align:left; line-height:1.7">
+      <b style="color:#4fd6c8">Tap</b> groups of <b>2 or more</b> same-colour bubbles to pop them.<br><br>
+      <b style="color:#ffd24a">Bigger groups</b> = more points. Pop <b>5+</b> to earn bonus score.<br><br>
+      Pop a <b>big group</b> and the last bubble becomes a <b>💣 Bomb</b> — tap it to blast a 3×3 area!<br><br>
+      <b style="color:#b98bff">Chain combos</b> happen when gravity fills new matches automatically.<br><br>
+      Hit the <b style="color:#4fd6c8">target score</b> before you run out of <b style="color:#ffd24a">moves</b> to clear each level.<br><br>
+      <span style="font-size:.8rem; opacity:.7">Earn ⭐ stars for clearing with moves to spare!</span>
+    </div>
+    <button class="btn" onclick="closeTutorial()">Let's Go! 🚀</button>
+  </div>
+</div>
+
+<!-- In-game tip overlay (first few levels) -->
+<div id="tipOverlay" style="position:fixed; bottom:60px; left:50%; transform:translateX(-50%); z-index:80; pointer-events:none; text-align:center; opacity:0; transition: opacity .4s;">
+  <div style="background:rgba(0,0,0,.75); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.15); border-radius:14px; padding:10px 18px; font-size:.8rem; color:#fff; max-width:300px; line-height:1.5;" id="tipText"></div>
+</div>
 </body>
 </html>

@@ -464,6 +464,7 @@ input[type=color].fpick{width:21px;height:18px;border:none;border-radius:3px;cur
       <button class="ab ab-s" onclick="exportCharJSON()" style="margin-top:2px;background:#10b981;color:white;box-shadow:0 2px 0 #059669;">? Export Character</button>
       <button class="ab ab-s" onclick="importCharJSON()" style="background:#3b82f6;color:white;box-shadow:0 2px 0 #1e40af;">? Import Character</button>
       <button class="ab ab-s" onclick="triggerImport()">&#x2B06; Import PNG</button>
+      <button class="ab ab-s" onclick="copyCharShareLink()" style="background:#f59e0b;color:#000;box-shadow:0 2px 0 #b45309;">🔗 Share Link</button>
       <input type="file" id="importInput" accept="image/*" style="display:none;" onchange="handleImport(this)">
     </div>
   </div>
@@ -478,7 +479,7 @@ input[type=color].fpick{width:21px;height:18px;border:none;border-radius:3px;cur
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
-<div id="toast"></div>
+<!-- WELCOME MODAL -->
 <div class="modal-overlay" id="startModal">
   <div class="modal start-modal">
     <h3>?? Welcome to Character Designer</h3>
@@ -497,6 +498,8 @@ input[type=color].fpick{width:21px;height:18px;border:none;border-radius:3px;cur
     </div>
   </div>
 </div>
+
+<div id="toast"></div>
 
 <div class="modal-overlay" id="keysModal">
   <div class="modal start-modal" style="max-width:420px!important;">
@@ -1023,6 +1026,16 @@ const CD_SEEN_KEY='jvds_char_seen';
 function openStart(){document.getElementById('startModal').classList.add('open');}
 function dismissStart(){closeModal('startModal');try{localStorage.setItem(CD_SEEN_KEY,'1');}catch(e){}}
 function openKeys(){document.getElementById('keysModal').classList.add('open');}
+function copyCharShareLink(){
+  try{
+    const data={name:document.getElementById('charName').value||'Character',template:currentTemplate,charState,pose:currentPose};
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const url=location.origin+location.pathname+'#char='+b64;
+    history.replaceState(null,'','#char='+b64);
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(()=>showToast('🔗 Share link copied')).catch(()=>prompt('Copy:',url));
+    else prompt('Copy:',url);
+  }catch(e){ showToast('Could not share'); }
+}
 function cdHasSeen(){try{return localStorage.getItem(CD_SEEN_KEY)==='1';}catch(e){return true;}}
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o) closeModal(o.id);}));
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2600);}

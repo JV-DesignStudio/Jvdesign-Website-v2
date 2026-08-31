@@ -324,6 +324,36 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
   </div>
 </div>
 
+<style>
+/* Welcome modal — dark-panel standard */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel2);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(460px,94vw);max-height:82vh;overflow:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal h3{font-family:'Fredoka',cursive;font-size:1.05rem;color:var(--accent2);margin-bottom:10px;}
+.modal-btns{display:flex;gap:8px;margin-top:12px;}
+.m-ok{flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;background:var(--accent2);color:#000;}
+.m-cancel{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border2);cursor:pointer;font-family:'Fredoka',cursive;background:rgba(255,255,255,.06);color:var(--text);}
+</style>
+
+<!-- WELCOME MODAL -->
+<div class="modal-overlay" id="sfxWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="sfxWelcomeTitle">
+  <div class="modal">
+    <h3 id="sfxWelcomeTitle">🔊 Welcome to SFX Studio</h3>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:12px;">Design retro sound effects — pitch, reverb, bit-crush — then download WAV ready for Godot/Unity.</p>
+    <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;">
+      <div>🎛 <strong>Tweak</strong> — variant, pitch, reverb, crush</div>
+      <div>▶ <strong>Preview</strong> — play instantly, copy snippet for engine</div>
+      <div>📦 <strong>Batch</strong> — preset packs + zip of 72 sounds</div>
+      <div>🔗 <strong>Share</strong> — copy link keeps category + variant</div>
+    </div>
+    <div style="font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid var(--border2);border-radius:4px;background:var(--panel3);">?</kbd> to reopen.</div>
+    <div class="modal-btns">
+      <button class="m-ok" onclick="closeSfxWelcome()">Make a sound ✓</button>
+      <button class="m-cancel" onclick="closeSfxWelcome()">Got it</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -992,6 +1022,11 @@ function clearHistory(){
 }
 
 // --------------------------------------------------
+// WELCOME (full standard)
+const SFX_WELCOME_KEY='jvds_sfx_seen_v1';
+function closeSfxWelcome(){ try{localStorage.setItem(SFX_WELCOME_KEY,'1');}catch{} const m=document.getElementById('sfxWelcomeModal'); if(m) m.classList.remove('open'); }
+function maybeShowSfxWelcome(){ try{if(localStorage.getItem(SFX_WELCOME_KEY)==='1') return;}catch{} const m=document.getElementById('sfxWelcomeModal'); if(m) m.classList.add('open'); }
+
 // TOAST
 // --------------------------------------------------
 function showToast(msg){
@@ -1155,7 +1190,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildCategories();
   renderHistory();
   document.querySelectorAll('input.tw').forEach(el=>el.addEventListener('input',syncHash));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCodeModal();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){ const o=document.getElementById('sfxWelcomeModal'); if(o&&o.classList.contains('open')){ closeSfxWelcome(); return; } closeCodeModal(); } else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); const w=document.getElementById('sfxWelcomeModal'); if(w) w.classList.add('open'); }});
+  const wm=document.getElementById('sfxWelcomeModal');
+  if(wm) wm.addEventListener('click',e=>{ if(e.target===wm) closeSfxWelcome(); });
+  maybeShowSfxWelcome();
   const m=location.hash.match(/^#s=([\w,.\-%]+)$/);
   if(m&&!applySeed(decodeURIComponent(m[1]))) showToast('Invalid sound link ignored');
   document.body.addEventListener('pointerdown',()=>getCtx(),{once:true});
