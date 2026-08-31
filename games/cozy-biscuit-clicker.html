@@ -12,6 +12,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -98,7 +99,7 @@ html body{font-family:'Nunito',system-ui,sans-serif;color:var(--cocoa);backgroun
 
 /* CLICKER */
 .clicker-area{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:9px 0 8px}
-.biscuit-tin{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;width:clamp(150px,38vw,206px);height:clamp(150px,38vw,206px);flex-shrink:0;z-index:1}
+.biscuit-tin{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;width:clamp(150px,38vw,206px);height:clamp(150px,38vw,206px);flex-shrink:0;z-index:1;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .tin-glow{position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle,rgba(245,199,106,.5) 0%,transparent 68%);animation:glowPulse 2.8s ease-in-out infinite;pointer-events:none}
 @keyframes glowPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.2);opacity:1}}
 .tin-emoji{font-size:90px;line-height:1;animation:tinFloat 3.5s ease-in-out infinite;filter:drop-shadow(0 6px 14px rgba(74,53,40,.18));pointer-events:none}
@@ -1546,8 +1547,8 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'2.0.1',
-  build:12,
+  version:'2.0.2',
+  build:13,
   codename:'Hobnob',
 };
 
@@ -2536,39 +2537,49 @@ function maybeRain(){
 }
 
 // ══ EVENTS ══
-const tinBtn=document.getElementById('tinBtn');
-let lastTapTime=0, lastPointerTime=0;
+let lastTapTime=0;
 function handleTinTap(x,y){
   const now=Date.now();if(now-lastTapTime<16)return;lastTapTime=now;
-  // If welcome/tutorial is blocking, dismiss it — the tap both closes and bakes
   const wm=document.getElementById('welcomeModal'),tm=document.getElementById('tutorialModal');
   if(wm&&wm.classList.contains('show'))wm.classList.remove('show');
   else if(tm&&tm.classList.contains('show'))tm.classList.remove('show');
-  doClick(x,y);
+  try{doClick(x,y);}catch(e){console.warn('[tap] doClick failed',e);}
 }
-tinBtn.addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  lastPointerTime=Date.now();
-  handleTinTap(e.clientX,e.clientY);
-},{passive:false});
-tinBtn.addEventListener('click',e=>{
-  // Deduplicate: if pointerdown already handled this gesture, ignore click
-  if(Date.now()-lastPointerTime<500)return;
-  handleTinTap(e.clientX,e.clientY);
-});
-// If welcome/tutorial is covering the tin, any tap on the overlay should also count as a bake + dismiss
-['welcomeModal','tutorialModal'].forEach(id=>{
-  const m=document.getElementById(id);
-  if(!m)return;
-  m.addEventListener('pointerdown',e=>{
-    if(!m.classList.contains('show'))return;
-    // Don't double-dismiss when the close button itself was tapped
-    if(e.target.closest('[data-close]'))return;
-    m.classList.remove('show');
-    // Count this tap as a bake too (so the first tap both dismisses and bakes)
-    handleTinTap(e.clientX,e.clientY);
+function attachTinHandlers(){
+  const tinBtn=document.getElementById('tinBtn');
+  if(!tinBtn){console.warn('[tap] tinBtn not found, retrying');setTimeout(attachTinHandlers,300);return;}
+  let lastPointerDown=0;
+  const onTap=(e)=>{
+    if(e.button!=null&&e.button!==0)return;
+    if(e.type==='click'&&Date.now()-lastPointerDown<400)return;
+    if(e.type==='pointerdown'||e.type==='touchstart')lastPointerDown=Date.now();
+    if(e.touches&&e.touches[0]){handleTinTap(e.touches[0].clientX,e.touches[0].clientY);}
+    else handleTinTap(e.clientX,e.clientY);
+  };
+  // Unified: pointerdown covers mouse+touch+pen on modern WebViews; keep touchstart/click as fallbacks
+  tinBtn.addEventListener('pointerdown',e=>{try{e.preventDefault();}catch{};onTap(e);},{passive:false});
+  tinBtn.addEventListener('touchstart',e=>{try{e.preventDefault();}catch{};onTap(e);},{passive:false});
+  tinBtn.addEventListener('click',onTap);
+  // If welcome/tutorial is covering the tin, any tap on the overlay should also count as a bake + dismiss
+  ['welcomeModal','tutorialModal'].forEach(id=>{
+    const m=document.getElementById(id);
+    if(!m)return;
+    m.addEventListener('pointerdown',e=>{
+      if(!m.classList.contains('show'))return;
+      if(e.target.closest('[data-close]'))return;
+      m.classList.remove('show');
+      handleTinTap(e.clientX,e.clientY);
+    });
+    m.addEventListener('touchstart',e=>{
+      if(!m.classList.contains('show'))return;
+      if(e.target.closest('[data-close]'))return;
+      m.classList.remove('show');
+      const t=e.touches&&e.touches[0];handleTinTap(t?t.clientX:e.clientX,t?t.clientY:e.clientY);
+    },{passive:false});
   });
-});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attachTinHandlers);
+else attachTinHandlers();
 
 const audioBtn=document.getElementById('audioBtn');
 audioBtn.addEventListener('click',()=>{
