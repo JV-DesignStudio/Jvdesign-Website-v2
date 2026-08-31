@@ -1517,6 +1517,26 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
   #ppHud .pp-chip-syn{animation:none;}
 }
 
+
+/* ── Header consolidation: second bar slimmed to save VH (auto-injected) ── */
+.jvds-site-nav + .site-header,
+.jvds-site-nav + .hdr,
+.jvds-site-nav + header.site-header,
+.jvds-site-nav + header.hdr {
+  height:36px !important;
+  min-height:36px !important;
+  padding:0 10px !important;
+}
+.jvds-site-nav + .site-header .site-logo img,
+.jvds-site-nav + .hdr .hdr-logo img { display:none !important; }
+@media(pointer:coarse){
+  .tb,.bb-tb,.tool-btn,.shape-btn,.char-btn,.tb-btn,.sw,.bb-sw,.colour-swatch,.seq-cell,.loop-dot,.pad,.kit-btn,button {
+    min-height:32px;
+  }
+  .seq-cell{ height:36px !important; min-height:36px !important; }
+  .z-btn,.lb{ min-width:32px; min-height:32px; }
+}
+
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 </head>
@@ -11319,6 +11339,9 @@ function sceneShooter(data) {
             { const _s=Math.round(29*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).setDrag(120);
+            // Engine trail graphics
+            this._trailGfx = this.add.graphics().setDepth(0);
+            this._trailTimer = 0;
             this.spawnTimer = this.time.addEvent({ delay:liveConfig.spawnDelay, loop:true, callback:()=>{
                 // Don't spawn regular enemies while boss fight is active
                 if (liveConfig.bossEnabled && this._newBossActive) return;
@@ -11354,11 +11377,12 @@ function sceneShooter(data) {
                     e.setTint(0xff0000); this.tweens.add({targets:e,alpha:0.3,duration:60,yoyo:true,onComplete:()=>{ if(e.active&&!data.enemySprite) e.clearTint(); }}); return;
                 }
                 const ex = e.x, ey = e.y;
-                // Capture score data BEFORE destroy(), Phaser wipes the data manager
                 const ePts = e.getData('pts') || 1;
                 this._burst(ex, ey, themeInt(1,0xa78bfa));
                 _spawnParticles(this, ex, ey);
                 e.destroy();
+                // Screen shake: tiny on normal, bigger on tank kills
+                this.cameras.main.shake(ePts >= 2 ? 80 : 40, ePts >= 2 ? 0.008 : 0.004);
                 _ppOnKill(this, ex, ey);
                 _juiceKill(ex, ey, themeInt(0, 0xa78bfa));
                 _triggerHaptic('kill');
@@ -11397,8 +11421,8 @@ function sceneShooter(data) {
                 _sessionKills++; if (this.score===liveConfig.pointsPerKill) _achUnlock('first_blood');
                 if (this._combo >= 10) _achUnlock('shooter_combo10');
             });
-            this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; this._onHit(this.actor); });
-            this.physics.add.overlap(this.actor, this._bossBullets, (_,b)=>{ if(!b||!b.active) return; b.destroy(); this._onHit(this.actor); });
+            this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{ this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; this.cameras.main.shake(120, 0.012); this._onHit(this.actor); });
+            this.physics.add.overlap(this.actor, this._bossBullets, (_,b)=>{ if(!b||!b.active) return; b.destroy(); this.cameras.main.shake(100, 0.01); this._onHit(this.actor); });
             this._initPowerUps();
             // Collectibles HUD
             this._coins = 0;
@@ -11431,7 +11455,23 @@ function sceneShooter(data) {
             this.actor.setVelocity(vx, vy);
             this.actor.setAngularVelocity(0);
             this.actor.setAcceleration(0);
-            this.actor.setRotation(0); // always face up
+            this.actor.setRotation(0);
+            // Engine trail effect
+            this._trailTimer = (this._trailTimer || 0) + 1;
+            if (this._trailGfx && this._trailTimer % 2 === 0) {
+                this._trailGfx.clear();
+                const tx = this.actor.x, ty = this.actor.y + 14;
+                this._trailGfx.fillStyle(0x60a5fa, 0.2);
+                this._trailGfx.fillCircle(tx, ty, 5);
+                this._trailGfx.fillCircle(tx, ty + 5, 3.5);
+                this._trailGfx.fillCircle(tx, ty + 9, 2);
+                this._trailGfx.fillStyle(0xffffff, 0.15);
+                this._trailGfx.fillCircle(tx, ty, 2.5);
+            }
+            // Invincibility blink
+            if (this._invincible && this.actor.active) {
+                this.actor.setAlpha(Math.sin(Date.now() * 0.02) > 0 ? 1 : 0.3);
+            }
             // Live spawn delay, update timer if slider changed
             if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             // Difficulty ramp: enemies speed up over time
@@ -11554,6 +11594,7 @@ function sceneShooter(data) {
                     if (this._bossActive) {
                         this._bossActive = false;
                         showToast('💀 Boss defeated! +200');
+                        this.cameras.main.shake(250, 0.015);
                         this.score += 200;
                         this.scoreText.setText('Score: '+this.score);
                         this._flashScore(this.scoreText);
@@ -11622,6 +11663,7 @@ function sceneShooter(data) {
                         this._burst(GW/2, GH/2, 0xff2222);
                         this._burst(GW/2-50, GH/2+30, 0xffd700);
                         this._burst(GW/2+50, GH/2+30, 0xffd700);
+                        this.cameras.main.shake(300, 0.018);
                         const defeat = this.add.text(GW/2, GH/2, 'BOSS DEFEATED! 🎉', {
                             fontSize:'26px', fill:'#ffd700', fontFamily:"'Fredoka',sans-serif",
                             fontStyle:'bold', stroke:'#000', strokeThickness:4
@@ -12404,53 +12446,72 @@ function sceneRunner(data) {
         create() {
             this.score=0; this.surviveTimer=0; this._invincible=false; this._runTime=0;
             this._jumpsLeft=1; this._upWasDown=false;
+            this._ramp = 1;
+            this._coyoteTimer = 0; this._jumpHeld = false; this._wasOnGround = false;
+            this._distance = 0; this._deathFx = false;
             this._drawBg();
             this._buildRunnerParallax();
             this._initParallax();
             _initWeather(this);
             this.scoreText = this._makeScoreText();
+            // Distance counter (top-right)
+            this._distTxt = this.add.text(GW - 10, 12, '0m', {
+                fontSize:'13px', fill:'rgba(255,255,255,.5)', fontFamily:"'JetBrains Mono',monospace"
+            }).setOrigin(1,0).setDepth(10);
             this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
             this.upKey    = this.input.keyboard.createCursorKeys().up;
+            this.downKey  = this.input.keyboard.createCursorKeys().down;
             this.obstacles = this.physics.add.group();
             // Ground
             const ground = this.add.rectangle(GW/2, GH-8, GW, 16, themeInt(2, 0x334155));
             this.physics.add.existing(ground, true);
             this.groundObj = ground;
-            // Player — deliberately LARGER than obstacles and a fixed high-contrast
-            // colour, so the hero never blends into the hazard palette
+            // Ground detail: scrolling grass tufts
+            this._groundDeco = [];
+            for (let i = 0; i < 12; i++) {
+                const gx = Phaser.Math.Between(0, GW);
+                const gh = Phaser.Math.Between(4, 10);
+                const gw = Phaser.Math.Between(3, 8);
+                const g = this.add.rectangle(gx, GH - 16, gw, gh, themeInt(1, 0x4ade80), 0.35).setDepth(0);
+                this._groundDeco.push(g);
+            }
+            // Player
             this.actor = this.physics.add.sprite(100, GH-50, 'player');
             { const _s=Math.round(30*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.72),Math.round(_s*.72),true); }
             this._tint(this.actor, 0, 0xffffff);
-            if (!data.sprite) this.actor.setTint(0x00d4aa); // signature teal hero
+            if (!data.sprite) this.actor.setTint(0x00d4aa);
             this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
-            this.downKey = this.input.keyboard.createCursorKeys().down;
             this._sliding = false;
             this.physics.add.collider(this.actor, this.groundObj);
+            // Trail particles
+            this._trailGfx = this.add.graphics().setDepth(1);
             // Coin group
             this._coinGrp = this.physics.add.group();
-            // Obstacle spawner, types controlled by liveConfig.runnerObstacleMix
+            // Obstacle spawner
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
-                const coinFreq = liveConfig.runnerCoinFreq !== undefined ? liveConfig.runnerCoinFreq : 0.15;
+                const coinFreq = liveConfig.runnerCoinFreq !== undefined ? liveConfig.runnerCoinFreq : 0.18;
                 const mix      = liveConfig.runnerObstacleMix || 'standard';
                 const r = Math.random();
-                const spd = -liveConfig.obstacleSpeed * (1 + this.score * 0.005) * _ramp;
+                const spd = -liveConfig.obstacleSpeed * (1 + this.score * 0.005) * this._ramp;
                 if (coinFreq > 0 && r < coinFreq) {
-                    // Floating coin row
-                    for (let i=0;i<3;i++) {
-                        const c=this._coinGrp.create(GW+20+i*24, GH-80, 'block').setDisplaySize(10,10);
+                    // Coin arc: curved pattern for satisfying collection
+                    const arcH = Phaser.Math.Between(20, 50);
+                    const count = Phaser.Math.Between(3, 5);
+                    for (let i=0;i<count;i++) {
+                        const t = i / (count - 1);
+                        const cy = GH - 80 - Math.sin(t * Math.PI) * arcH;
+                        const c=this._coinGrp.create(GW+20+i*22, cy, 'block').setDisplaySize(10,10);
                         c.body.allowGravity=false; c.setTint(0xfbbf24); c.setVelocityX(spd);
                     }
                 } else if (mix !== 'standard' && r > 0.75) {
-                    // Overhead ceiling hazard, hangs from top, duck to avoid
                     const oh = Phaser.Math.Between(28, 44);
-                    const oy = GH - 56 - oh / 2;   // sits just above standing player height
+                    const oy = GH - 56 - oh / 2;
                     const ob = this.obstacles.create(GW+20, oy, 'block').setDisplaySize(38, oh);
                     ob.body.setSize(38,oh); ob.setImmovable(true); ob.body.allowGravity=false;
                     ob.setTint(themeInt(2, 0xef4444)); ob.setData('overhead', true);
                     ob.setVelocityX(spd);
                 } else if (mix === 'mixed' && r > 0.55) {
-                    // Gap pair, two blocks with a gap in the middle
                     [GW+10, GW+60].forEach(bx => {
                         const h = Phaser.Math.Between(24, 44);
                         const ob = this.obstacles.create(bx, GH-8-h/2,'block').setDisplaySize(20,h);
@@ -12458,8 +12519,6 @@ function sceneRunner(data) {
                         ob.setTint(themeInt(1, 0xa78bfa)); ob.setVelocityX(spd);
                     });
                 } else {
-                    // Standard tall/normal block — slimmer than the player so
-                    // silhouettes stay readable at speed
                     const isTall = r < (coinFreq + 0.23);
                     const h = isTall ? Phaser.Math.Between(50,70) : Phaser.Math.Between(20,38);
                     const ob = this.obstacles.create(GW+20, GH-8-h/2,'block').setDisplaySize(16,h);
@@ -12469,8 +12528,8 @@ function sceneRunner(data) {
                 }
             }});
             this.physics.add.collider(this.actor, this.obstacles, (_,ob)=>{
-                if (ob.getData('tall') && this._sliding) return;    // slide under tall blocks
-                if (ob.getData('overhead') && this._sliding) return; // duck under overhead hazards
+                if (ob.getData('tall') && this._sliding) return;
+                if (ob.getData('overhead') && this._sliding) return;
                 this._onHit(this.actor);
             });
             this.physics.add.overlap(this.actor, this._coinGrp, (_,c)=>{
@@ -12484,32 +12543,50 @@ function sceneRunner(data) {
             this._initPowerUps();
         }
         update(_t, delta) {
+            if (this._deathFx) return;
             this._runTime = (this._runTime||0) + delta;
-            const _ramp = 1 + Math.min(2, (this._runTime / 1000) / 40) * (liveConfig.difficultyScale||1);
+            this._ramp = 1 + Math.min(2, (this._runTime / 1000) / 40) * (liveConfig.difficultyScale||1);
             this.actor.body.setGravityY(liveConfig.gravity);
             const onGround = this.actor.body.blocked.down;
-            if (onGround) this._jumpsLeft = liveConfig.doubleJump ? 2 : 1;
+            // Coyote time: 80ms grace after leaving ground
+            if (onGround) { this._coyoteTimer = 80; this._jumpsLeft = liveConfig.doubleJump ? 2 : 1; }
+            else this._coyoteTimer = Math.max(0, this._coyoteTimer - delta);
+            const canCoyoteJump = this._coyoteTimer > 0;
             const upNow = this.spaceKey.isDown || this.upKey.isDown || touchInput.up;
-            // Jump: press-edge OR hold-to-hop. Pure edge detection made mobile taps
-            // feel dead — holding the canvas should keep bouncing over obstacles.
             const pressEdge = upNow && !this._upWasDown;
-            if (pressEdge) this._jumpBuf = 120;              // 120ms input buffer
-            this._jumpBuf = Math.max(0, (this._jumpBuf || 0) - 16);
-            this._holdHopT = Math.max(0, (this._holdHopT || 0) - 16);
-            const wantJump = (this._jumpBuf > 0) || (upNow && onGround && this._holdHopT <= 0);
-            if (wantJump && onGround) {
+            if (pressEdge) this._jumpBuf = 120;
+            this._jumpBuf = Math.max(0, (this._jumpBuf || 0) - delta);
+            this._holdHopT = Math.max(0, (this._holdHopT || 0) - delta);
+            const wantJump = (this._jumpBuf > 0) || (upNow && (onGround || canCoyoteJump) && this._holdHopT <= 0);
+            if (wantJump && (onGround || canCoyoteJump)) {
                 this.actor.setVelocityY(-liveConfig.jumpForce);
-                this._jumpBuf = 0; this._holdHopT = 240;     // auto-hop cadence
-                GameAudio.play('jump');
-                _triggerHaptic('jump');
+                this._jumpBuf = 0; this._holdHopT = 240; this._coyoteTimer = 0;
+                this._jumpHeld = true;
+                GameAudio.play('jump'); _triggerHaptic('jump');
+                // Squash-stretch: stretch on jump
+                this.actor.setDisplaySize(Math.round(30*(liveConfig.playerScale||1)*0.85), Math.round(30*(liveConfig.playerScale||1)*1.2));
             } else if (pressEdge && !onGround && this._jumpsLeft > 0) {
-                // mid-air press → double jump when enabled
                 this.actor.setVelocityY(-liveConfig.jumpForce);
                 this._jumpsLeft--;
+                this._jumpHeld = true;
                 GameAudio.play('jump'); _triggerHaptic('jump');
             }
+            // Variable jump height: release early = cut upward velocity
+            if (!upNow && this._jumpHeld && this.actor.body.velocity.y < 0) {
+                this.actor.body.velocity.y *= 0.45;
+                this._jumpHeld = false;
+            }
+            if (onGround) this._jumpHeld = false;
             this._upWasDown = upNow;
-            // Slide: hold down to duck (halve hitbox height)
+            // Squash-stretch: squash on land
+            if (onGround && !this._wasOnGround) {
+                this.actor.setDisplaySize(Math.round(30*(liveConfig.playerScale||1)*1.2), Math.round(30*(liveConfig.playerScale||1)*0.85));
+                this.time.delayedCall(80, () => {
+                    if (this.actor && this.actor.active) this.actor.setDisplaySize(Math.round(30*(liveConfig.playerScale||1)), Math.round(30*(liveConfig.playerScale||1)));
+                });
+            }
+            this._wasOnGround = onGround;
+            // Slide
             const slideNow = this.downKey.isDown || touchInput.fire;
             const _rs=Math.round(30*(liveConfig.playerScale||1));
             if (slideNow && onGround && !this._sliding) {
@@ -12517,8 +12594,6 @@ function sceneRunner(data) {
                 this.actor.body.setSize(Math.round(_rs*.72), Math.round(_rs*.35), true);
                 this.actor.setDisplaySize(_rs, Math.round(_rs*0.5));
             } else if (!slideNow && this._sliding) {
-                // Don't stand up inside an overhead hazard — stay ducked until clear,
-                // otherwise restoring the full hitbox while overlapping embeds the player
                 const blockedAbove = this.obstacles.getChildren().some(o =>
                     o.getData && o.getData('overhead') &&
                     Math.abs(o.x - this.actor.x) < (o.displayWidth + this.actor.displayWidth) / 2 &&
@@ -12529,14 +12604,31 @@ function sceneRunner(data) {
                     this.actor.setDisplaySize(_rs,_rs);
                 }
             }
-            if (this.spawnTimer) this.spawnTimer.delay = Math.max(300, liveConfig.spawnDelay / _ramp);
+            if (this.spawnTimer) this.spawnTimer.delay = Math.max(300, liveConfig.spawnDelay / this._ramp);
             this.obstacles.getChildren().forEach(o=>{ if(o.x<-30) o.destroy(); });
             this._coinGrp.getChildren().forEach(c=>{ if(c.x<-30) c.destroy(); });
-            this.surviveTimer+=16;
+            this.surviveTimer+=delta;
             if(this.surviveTimer>1000) { this.surviveTimer=0; this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score); }
+            // Distance tracking
+            this._distance += liveConfig.obstacleSpeed * this._ramp * delta * 0.001;
+            if (this._distTxt) this._distTxt.setText(Math.floor(this._distance) + 'm');
+            // Trail effect
+            if (this._trailGfx && !this._sliding) {
+                this._trailGfx.clear();
+                this._trailGfx.fillStyle(0x00d4aa, 0.12);
+                const tx = this.actor.x - 12, ty = this.actor.y;
+                this._trailGfx.fillCircle(tx, ty, 6);
+                this._trailGfx.fillCircle(tx - 8, ty + 1, 4);
+                this._trailGfx.fillCircle(tx - 14, ty + 2, 2);
+            }
+            // Scroll ground decorations
+            this._groundDeco.forEach(g => {
+                g.x -= liveConfig.obstacleSpeed * this._ramp * delta * 0.06;
+                if (g.x < -10) { g.x = GW + Phaser.Math.Between(10, 40); g.width = Phaser.Math.Between(3, 8); }
+            });
             // Parallax scroll
-            if (this._runFar)  this._runFar.tilePositionX  += 0.6;
-            if (this._runNear) this._runNear.tilePositionX += 2.0;
+            if (this._runFar)  this._runFar.tilePositionX  += 0.6 * this._ramp;
+            if (this._runNear) this._runNear.tilePositionX += 2.0 * this._ramp;
             this._updateParallax();
             this._syncPuLabels();
             this._tickBase(this.score);
@@ -12578,6 +12670,7 @@ function sceneFlappy(data) {
         constructor() { super({key:'FlappyScene'}); }
         create() {
             this.score=0; this._invincible=false; this._upWasDown=false;
+            this._distance=0; this._dead=false;
             this._drawBg();
             this._initParallax();
             _initWeather(this);
@@ -12589,29 +12682,42 @@ function sceneFlappy(data) {
             this.physics.add.existing(gnd,true); this._gnd=gnd;
             const ceil = this.add.rectangle(GW/2,4,GW,8,themeInt(1,0x22c55e));
             this.physics.add.existing(ceil,true); this._ceil=ceil;
+            // Scrolling ground deco
+            this._groundDeco = [];
+            for (let i = 0; i < 16; i++) {
+                const gx = Phaser.Math.Between(0, GW);
+                const gh = Phaser.Math.Between(3, 7);
+                const gw = Phaser.Math.Between(6, 18);
+                const g = this.add.rectangle(gx, GH - 9, gw, gh, themeInt(0, 0x15803d), 0.4).setDepth(0);
+                this._groundDeco.push(g);
+            }
             // Player bird
             this.actor = this.physics.add.sprite(100,GH/2,'player');
-            { const _s=Math.round(18*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.60),Math.round(_s*.60),true); } // 60% hitbox, gives generous gap forgiveness
+            { const _s=Math.round(18*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.60),Math.round(_s*.60),true); }
             this._tint(this.actor,0,0xffd700); this._setupActorAnim(this.actor);
             this.actor.body.setGravityY(liveConfig.gravity);
             this.actor.setCollideWorldBounds(false);
+            // Trail graphics
+            this._trailGfx = this.add.graphics().setDepth(1);
             // Pipe group + coins in gaps
             this.pipes = this.physics.add.group();
             this._flCoins = this.physics.add.group();
             this._streak = 0; this._bestStreak = 0;
             this._streakText = this.add.text(GW-8,28,'',{fontSize:'10px',fill:themeHex(3,'#ffd700'),fontFamily:"'JetBrains Mono',monospace"}).setOrigin(1,0).setDepth(10);
-            // Best score display (persistent via liveConfig._flappyBest)
+            // Distance counter (top-center below score)
+            this._distTxt = this.add.text(GW/2, 28, '0m', {
+                fontSize:'10px', fill:'rgba(255,255,255,.4)', fontFamily:"'JetBrains Mono',monospace"
+            }).setOrigin(0.5,0).setDepth(10);
+            // Best score display
             const _flBest = liveConfig._flappyBest || 0;
             this._bestText = this.add.text(10, 28, _flBest > 0 ? `Best: ${_flBest}` : '',
                 { fontSize:'10px', fill:'rgba(251,191,36,.6)', fontFamily:"'JetBrains Mono',monospace" }).setOrigin(0,0).setDepth(10);
             this.pipeTimer = this.time.addEvent({delay:Math.max(900,liveConfig.spawnDelay+400),loop:true,callback:this._spawnPipe,callbackScope:this});
-            // Delay the first pipe so player has time to get ready
             this.pipeTimer.paused = true;
             this.time.delayedCall(1800, () => { if (this.pipeTimer) this.pipeTimer.paused = false; });
-            // Colliders
-            this.physics.add.collider(this.actor,this._gnd,()=>{ this._streak=0; this._onHit(this.actor); });
-            this.physics.add.collider(this.actor,this._ceil,()=>{ this._streak=0; this._onHit(this.actor); });
-            this.physics.add.overlap(this.actor,this.pipes,()=>{ this._streak=0; this._onHit(this.actor); });
+            this.physics.add.collider(this.actor,this._gnd,()=>{ if(this._dead) return; this._streak=0; this._onHit(this.actor); });
+            this.physics.add.collider(this.actor,this._ceil,()=>{ if(this._dead) return; this._streak=0; this._onHit(this.actor); });
+            this.physics.add.overlap(this.actor,this.pipes,()=>{ if(this._dead) return; this._streak=0; this._onHit(this.actor); });
             this.physics.add.overlap(this.actor,this._flCoins,(_,c)=>{
                 if(c.getData('col')) return; c.setData('col',true); c.destroy();
                 this.score+=(liveConfig.pointsPerKill||10)*this._puScoreMul(); this.scoreText.setText('Score: '+this.score);
@@ -12620,23 +12726,31 @@ function sceneFlappy(data) {
             this._initPowerUps();
         }
         _spawnPipe() {
-            // Difficulty ramp: gap narrows and speed rises with score
+            if (this._dead) return;
             const baseGap = liveConfig.pipeGap || 120;
             const gap = Math.max(65, baseGap - Math.floor(this.score * 1.4));
             const spd = -Math.max(120, liveConfig.obstacleSpeed + Math.floor(this.score * 2.8));
             const gapY = Phaser.Math.Between(50, GH - gap - 50);
+            // Top pipe
             const tp=this.pipes.create(GW+30,gapY/2,'block').setDisplaySize(40,gapY);
-            // Shrink body 2px at gap edge + 2px on each side, prevents visual-graze deaths
             tp.body.setSize(36, Math.max(2, gapY-2));
             tp.setImmovable(true); tp.body.allowGravity=false; tp.setVelocityX(spd);
             tp.setTint(themeInt(1,0x22c55e)); tp._isTop=true; tp._scored=false;
+            // Top pipe cap (wider lip at gap edge)
+            const capTop = this.pipes.create(GW+30, gapY - 6, 'block').setDisplaySize(48, 12);
+            capTop.setImmovable(true); capTop.body.allowGravity=false; capTop.setVelocityX(spd);
+            capTop.setTint(themeInt(0, 0x15803d)); capTop.body.setSize(48, 12); capTop.setVisible(true);
+            // Bottom pipe
             const bpH=GH-gapY-gap;
             const bp=this.pipes.create(GW+30,gapY+gap+bpH/2,'block').setDisplaySize(40,Math.max(4,bpH));
-            // Shrink bottom pipe body 2px at its top edge (gap side)
             bp.body.setSize(36, Math.max(2, bpH-2));
-            if (bpH > 4) { bp.body.offset.y = 2; } // push hitbox 2px down from gap
+            if (bpH > 4) { bp.body.offset.y = 2; }
             bp.setImmovable(true); bp.body.allowGravity=false; bp.setVelocityX(spd);
             bp.setTint(themeInt(1,0x22c55e));
+            // Bottom pipe cap
+            const capBot = this.pipes.create(GW+30, gapY + gap + 6, 'block').setDisplaySize(48, 12);
+            capBot.setImmovable(true); capBot.body.allowGravity=false; capBot.setVelocityX(spd);
+            capBot.setTint(themeInt(0, 0x15803d)); capBot.body.setSize(48, 12); capBot.setVisible(true);
             // Coin in the gap centre
             if (Math.random()<0.55) {
                 const cy=gapY+gap/2;
@@ -12644,14 +12758,43 @@ function sceneFlappy(data) {
                 c.body.allowGravity=false; c.setVelocityX(spd);
             }
         }
-        update() {
+        update(_t, delta) {
+            if (this._dead) { this._trailGfx.clear(); return; }
             if (this.pipeTimer && this.pipeTimer.delay !== Math.max(900, liveConfig.spawnDelay+400)) this.pipeTimer.delay = Math.max(900, liveConfig.spawnDelay+400);
             if (!this.actor.active) return;
             this.actor.body.setGravityY(liveConfig.gravity);
             if (this.actor.y>GH+10||this.actor.y<-10) { this._streak=0; this._onHit(this.actor); return; }
             const upNow=this.spaceKey.isDown||this.upKey.isDown||touchInput.up;
-            if (upNow&&!this._upWasDown) { this.actor.setVelocityY(-liveConfig.jumpForce); GameAudio.play('jump'); _triggerHaptic('jump'); }
+            if (upNow&&!this._upWasDown) {
+                this.actor.setVelocityY(-liveConfig.jumpForce);
+                // Flap tilt: rotate up briefly
+                this.tweens.add({targets:this.actor, angle:-25, duration:120, ease:'Power2'});
+                GameAudio.play('jump'); _triggerHaptic('jump');
+            }
             this._upWasDown=upNow;
+            // Velocity-based rotation: tilt down when falling
+            const vy = this.actor.body.velocity.y;
+            if (vy > 0 && this.actor.angle < 70) {
+                this.actor.angle = Math.min(70, this.actor.angle + vy * 0.004);
+            }
+            // Distance tracking
+            this._distance += Math.max(120, liveConfig.obstacleSpeed + this.score * 2.8) * delta * 0.001;
+            if (this._distTxt) this._distTxt.setText(Math.floor(this._distance) + 'm');
+            // Trail effect
+            if (this._trailGfx) {
+                this._trailGfx.clear();
+                const tx = this.actor.x - 10, ty = this.actor.y;
+                this._trailGfx.fillStyle(0xffd700, 0.15);
+                this._trailGfx.fillCircle(tx, ty, 5);
+                this._trailGfx.fillCircle(tx - 7, ty + 1, 3);
+                this._trailGfx.fillCircle(tx - 12, ty + 2, 1.5);
+            }
+            // Scroll ground deco
+            const spd = Math.max(120, liveConfig.obstacleSpeed + this.score * 2.8);
+            this._groundDeco.forEach(g => {
+                g.x -= spd * delta * 0.06;
+                if (g.x < -20) { g.x = GW + Phaser.Math.Between(10, 40); g.width = Phaser.Math.Between(6, 18); }
+            });
             this._syncPuLabels();
             this._flCoins.getChildren().forEach(c=>{ if(c.x<-30) c.destroy(); });
             this.pipes.getChildren().forEach(p=>{
@@ -12660,7 +12803,6 @@ function sceneFlappy(data) {
                     this._burst(this.actor.x, this.actor.y, 0xffd700);
                     this._streak++; if(this._streak>this._bestStreak) this._bestStreak=this._streak;
                     this.score++; this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText); GameAudio.play('score');
-                    // Update best score
                     if (this.score > (liveConfig._flappyBest || 0)) {
                         liveConfig._flappyBest = this.score;
                         if (this._bestText) this._bestText.setText('Best: '+this.score).setFill('#fbbf24');
