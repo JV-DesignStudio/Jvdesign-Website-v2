@@ -1327,20 +1327,25 @@ const LAB_BADGES = [
   { id:'champion',icon:'🏆', name:'Champion',      desc:'Reach the Champion level (600 XP)',    check: s => s.xp >= 600 },
   { id:'master',  icon:'🌟', name:'Master',        desc:'Reach the Master level (1000 XP)',     check: s => s.xp >= 1000 },
   { id:'practice',icon:'🔁', name:'Practice Pro',  desc:'Play one game 3 times',                check: s => s.maxPlaysAny >= 3 },
-  { id:'high',    icon:'💯', name:'High Scorer',   desc:'Score 80%+ of max in any game',        check: s => s.highScoreAny }
+  { id:'high',    icon:'💯', name:'High Scorer',   desc:'Score 80%+ of max in any game',        check: s => s.highScoreAny },
+  { id:'perfect', icon:'⭐', name:'Perfect Score',  desc:'Get 12/12 correct in any quiz',       check: s => s.perfectQuiz },
+  { id:'streak7', icon:'🔥', name:'On Fire',        desc:'Reach a 7-day streak',                check: s => s.streak >= 7 },
 ];
 
 function computeLabStats(){
-  let triedCount=0, maxPlaysAny=0, highScoreAny=false;
+  let triedCount=0, maxPlaysAny=0, highScoreAny=false, perfectQuiz=false;
   SUBJECTS.forEach(subj=>{
     const p = PROGRESS[subj.id];
     if(p && p.plays>0){
       triedCount++;
       if(p.plays>maxPlaysAny) maxPlaysAny=p.plays;
       if(p.best >= subj.maxScore*0.8) highScoreAny=true;
+      if(subj.maxScore<=12 && p.best >= subj.maxScore) perfectQuiz=true;
     }
   });
-  return { triedCount, maxPlaysAny, highScoreAny, xp: PROGRESS._xp||0 };
+  const streakData = JSON.parse(localStorage.getItem('jvds_lab_streak')||'{}');
+  const streak = streakData.streak||0;
+  return { triedCount, maxPlaysAny, highScoreAny, perfectQuiz, streak, xp: PROGRESS._xp||0 };
 }
 
 function renderLabBadges(){

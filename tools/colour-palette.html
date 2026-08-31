@@ -547,6 +547,38 @@ function restorePaletteCurrent(){
 }
 
 // ══════════════════════════════════════════════════
+// UNDO
+// ══════════════════════════════════════════════════
+let palUndoStack=[], palRedoStack=[];
+function palPushUndo(){
+  palUndoStack.push(JSON.stringify({mood:currentMood?.id||null,palette:palette.map(p=>({hex:p.hex,locked:p.locked})),paletteSize,harmonyMode}));
+  if(palUndoStack.length>30) palUndoStack.shift();
+  palRedoStack=[];
+}
+function palUndo(){
+  if(!palUndoStack.length){showToast('Nothing to undo');return;}
+  palRedoStack.push(JSON.stringify({mood:currentMood?.id||null,palette:palette.map(p=>({hex:p.hex,locked:p.locked})),paletteSize,harmonyMode}));
+  const d=JSON.parse(palUndoStack.pop());
+  if(d.mood){const m=MOODS.find(x=>x.id===d.mood);if(m)currentMood=m;}
+  palette=d.palette;paletteSize=d.paletteSize;harmonyMode=d.harmonyMode||'none';
+  const s=document.getElementById('adjSize');if(s)s.value=paletteSize;
+  const v=document.getElementById('sizeVal');if(v)v.textContent=paletteSize;
+  document.querySelectorAll('.mood-card').forEach(c=>c.classList.toggle('active',c.id==='mood-'+(currentMood?.id||'')));
+  applyAdjust();showToast('Undo');
+}
+function palRedo(){
+  if(!palRedoStack.length){showToast('Nothing to redo');return;}
+  palUndoStack.push(JSON.stringify({mood:currentMood?.id||null,palette:palette.map(p=>({hex:p.hex,locked:p.locked})),paletteSize,harmonyMode}));
+  const d=JSON.parse(palRedoStack.pop());
+  if(d.mood){const m=MOODS.find(x=>x.id===d.mood);if(m)currentMood=m;}
+  palette=d.palette;paletteSize=d.paletteSize;harmonyMode=d.harmonyMode||'none';
+  const s=document.getElementById('adjSize');if(s)s.value=paletteSize;
+  const v=document.getElementById('sizeVal');if(v)v.textContent=paletteSize;
+  document.querySelectorAll('.mood-card').forEach(c=>c.classList.toggle('active',c.id==='mood-'+(currentMood?.id||'')));
+  applyAdjust();showToast('Redo');
+}
+
+// ══════════════════════════════════════════════════
 // BUILD UI
 // ══════════════════════════════════════════════════
 function buildMoodGrid(){
@@ -569,6 +601,7 @@ function buildMoodGrid(){
 }
 
 function selectMood(id){
+  palPushUndo();
   currentMood=MOODS.find(m=>m.id===id);
   document.querySelectorAll('.mood-card').forEach(c=>c.classList.toggle('active',c.id==='mood-'+id));
   palette=[]; // fresh mood → fresh palette (locks don't carry across moods)
@@ -666,6 +699,7 @@ function renderPalette(sat,bri,con){
 }
 
 function toggleLock(i){
+  palPushUndo();
   palette[i].locked=!palette[i].locked;
   applyAdjust();
   schedulePaletteAutosave();
@@ -673,6 +707,7 @@ function toggleLock(i){
 
 function shufflePalette(){
   if(!currentMood) return;
+  palPushUndo();
   const newHexes=currentMood.gen(paletteSize);
   palette=newHexes.slice(0,palette.length).map(hex=>({hex,locked:false}));
   applyAdjust();
@@ -681,6 +716,7 @@ function shufflePalette(){
 
 function shuffleUnlocked(){
   if(!currentMood) return;
+  palPushUndo();
   const newHexes=currentMood.gen(paletteSize);
   palette=palette.map((p,i)=>p.locked?p:{hex:newHexes[i],locked:false});
   applyAdjust();
@@ -1035,6 +1071,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   const _pwm=document.getElementById('paletteWelcomeModal');
   if(_pwm) _pwm.addEventListener('click',e=>{ if(e.target===_pwm) closePaletteWelcome(); });
   document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();palUndo();return;}
+    if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();palRedo();return;}
     if(e.key==='Escape'){ const o=document.querySelector('.modal-overlay.open'); if(o&&o.id==='paletteWelcomeModal'){ closePaletteWelcome(); e.preventDefault(); } }
     else if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){ const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select') return; e.preventDefault(); if(_pwm) _pwm.classList.add('open'); }
   });

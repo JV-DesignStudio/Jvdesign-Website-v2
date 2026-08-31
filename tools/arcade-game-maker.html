@@ -12434,67 +12434,117 @@ function sceneDodge(data) {
         create() {
             this.score=0; this.difficulty=1; this._invincible=false;
             this._combo=0; this._comboTimer=null; this._dodgeShield=false;
+            this._slowMo=false; this._scoreMult=1; this._multTimer=null;
+            this._nearMissT=0; this._waveCount=0; this._waveTimer=0;
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this._comboText = this.add.text(GW/2,26,'',{fontSize:'11px',fill:'#fbbf24',fontFamily:"'JetBrains Mono',monospace",fontStyle:'bold'}).setOrigin(0.5,0).setDepth(10);
+            // Status display
+            this._statusTxt = this.add.text(GW/2,42,'',{fontSize:'9px',fill:'rgba(255,255,255,.5)',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(10);
             this.cursors = this.input.keyboard.createCursorKeys();
             this.hazards = this.physics.add.group();
             this.stars   = this.physics.add.group();
             this._dodgeItems = this.physics.add.group();
             this._shieldGfx = this.add.graphics().setDepth(5);
+            this._trailGfx = this.add.graphics().setDepth(1);
             this.actor = this.physics.add.sprite(GW/2, GH-40, 'player');
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.allowGravity=false;
             this.spawnTimer = this.time.addEvent({delay:liveConfig.spawnDelay,loop:true,callback:()=>{
-                const x=Phaser.Math.Between(20,GW-20);
-                const r=Math.random();
+                this._waveCount++;
                 const ratio=(liveConfig.dodgeStarRatio||30)/100;
-                if (r < ratio) {
-                    const s=this.stars.create(x,-20,'laser').setDisplaySize(16,16).setTint(0xffd700);
-                    s.body.setSize(16,16); s.setVelocityY(liveConfig.enemySpeed*0.7); s.body.allowGravity=false;
-                } else if (r < ratio+0.06) {
-                    // Shield drop (rare)
-                    const it=this._dodgeItems.create(x,-20,'laser').setDisplaySize(14,14).setTint(0x60a5fa);
-                    it.body.setSize(14,14); it.setVelocityY(liveConfig.enemySpeed*0.5); it.body.allowGravity=false;
-                    it.setData('type','shield');
+                const spd = liveConfig.enemySpeed * this.difficulty;
+                // Wave patterns every 8 spawns
+                if (this._waveCount % 8 === 0) {
+                    this._spawnWave(spd);
                 } else {
-                    const isFast=this.difficulty>1.8&&Math.random()<0.3;
-                    const e=this.hazards.create(x,-20,'enemy');
-                    e.setDisplaySize(isFast?16:24,isFast?16:24); e.body.setSize(isFast?13:20,isFast?13:20,true);
-                    if (!data.enemySprite) e.setTint(isFast?0xef4444:themeInt(1,0xa78bfa));
-                    e.setVelocityY(liveConfig.enemySpeed * this.difficulty * (isFast?1.6:1)); e.body.allowGravity=false;
+                    // Normal spawn with variety
+                    const x=Phaser.Math.Between(20,GW-20);
+                    const r=Math.random();
+                    if (r < ratio) {
+                        const s=this.stars.create(x,-20,'laser').setDisplaySize(16,16).setTint(0xffd700);
+                        s.body.setSize(16,16); s.setVelocityY(spd*0.7); s.body.allowGravity=false;
+                    } else if (r < ratio+0.04) {
+                        const it=this._dodgeItems.create(x,-20,'laser').setDisplaySize(14,14).setTint(0x60a5fa);
+                        it.body.setSize(14,14); it.setVelocityY(spd*0.5); it.body.allowGravity=false;
+                        it.setData('type','shield');
+                    } else if (r < ratio+0.07) {
+                        // Slow-mo drop
+                        const it=this._dodgeItems.create(x,-20,'laser').setDisplaySize(14,14).setTint(0xa78bfa);
+                        it.body.setSize(14,14); it.setVelocityY(spd*0.5); it.body.allowGravity=false;
+                        it.setData('type','slowmo');
+                    } else if (r < ratio+0.09) {
+                        // Score multiplier drop
+                        const it=this._dodgeItems.create(x,-20,'laser').setDisplaySize(14,14).setTint(0x4ade80);
+                        it.body.setSize(14,14); it.setVelocityY(spd*0.5); it.body.allowGravity=false;
+                        it.setData('type','mult');
+                    } else {
+                        const isFast=this.difficulty>1.8&&Math.random()<0.3;
+                        const e=this.hazards.create(x,-20,'enemy');
+                        e.setDisplaySize(isFast?16:24,isFast?16:24); e.body.setSize(isFast?13:20,isFast?13:20,true);
+                        if (!data.enemySprite) e.setTint(isFast?0xef4444:themeInt(1,0xa78bfa));
+                        e.setVelocityY(spd * (isFast?1.6:1)); e.body.allowGravity=false;
+                    }
                 }
             }});
             this.physics.add.overlap(this.actor, this.stars, (_,s)=>{
                 this._burst(s.x,s.y,0xffd700); s.destroy();
                 this._combo++; if(this._comboTimer) this._comboTimer.remove(false);
                 this._comboTimer=this.time.delayedCall(3000,()=>{ this._combo=0; if(this._comboText) this._comboText.setText(''); });
-                const mul=Math.min(5, 1+Math.floor(this._combo/4));
+                const mul=Math.min(5, 1+Math.floor(this._combo/4)) * this._scoreMult;
                 const pts = (liveConfig.pointsPerKill||10) * this._puScoreMul() * mul;
                 this.score+=pts;
                 if (typeof this._popText === 'function') this._popText(s.x, s.y - 10, '+' + Math.round(pts), '#4ade80');
                 this.scoreText.setText('Score: '+this.score); this._flashScore(this.scoreText);
                 this.difficulty = 1+this.score*0.02*(liveConfig.difficultyScale||1);
                 GameAudio.play('score');
-                if(mul>=2&&this._comboText) this._comboText.setText(`🌟 ×${mul} COMBO`);
+                if(mul>=2&&this._comboText) this._comboText.setText(`🌟 ×${Math.round(mul)} COMBO`);
                 _sessionKills++; if (this.score===(liveConfig.pointsPerKill||10)) _achUnlock('first_blood');
             });
             this.physics.add.overlap(this.actor, this._dodgeItems, (_,it)=>{
                 if(it.getData('col')) return; it.setData('col',true); it.destroy();
-                this._dodgeShield=true; showToast('🛡 Shield!'); GameAudio.play('score');
-                this.time.delayedCall(4000,()=>{ this._dodgeShield=false; this._shieldGfx.clear(); });
+                const type = it.getData('type');
+                if (type === 'shield') {
+                    this._dodgeShield=true; showToast('🛡 Shield!'); GameAudio.play('score');
+                    this.time.delayedCall(4000,()=>{ this._dodgeShield=false; this._shieldGfx.clear(); });
+                } else if (type === 'slowmo') {
+                    this._slowMo=true; showToast('🐌 Slow-mo!'); GameAudio.play('score');
+                    this.time.delayedCall(3000,()=>{ this._slowMo=false; });
+                } else if (type === 'mult') {
+                    this._scoreMult=2; showToast('✨ ×2 Score!'); GameAudio.play('score');
+                    if(this._multTimer) this._multTimer.remove(false);
+                    this._multTimer=this.time.delayedCall(5000,()=>{ this._scoreMult=1; });
+                }
             });
             this.physics.add.overlap(this.actor, this.hazards, (_,e)=>{
                 if(this._dodgeShield){ this._dodgeShield=false; this._shieldGfx.clear(); this._burst(e.x,e.y,0x60a5fa); e.destroy(); showToast('🛡 Shield absorbed!'); return; }
-                this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; if(this._comboText) this._comboText.setText(''); this._onHit(this.actor);
+                this._burst(e.x,e.y,0xff5555); e.destroy(); this._combo=0; this._scoreMult=1; if(this._comboText) this._comboText.setText(''); this._onHit(this.actor);
             });
             this._initPowerUps();
         }
+        _spawnWave(spd) {
+            // Create a row of obstacles with a gap
+            const gapX = Phaser.Math.Between(40, GW-40);
+            const gapW = Phaser.Math.Between(60, 100);
+            const count = Math.floor(GW / 40);
+            for (let i = 0; i < count; i++) {
+                const x = (i + 0.5) * (GW / count);
+                if (Math.abs(x - gapX) < gapW/2) continue; // gap
+                const e = this.hazards.create(x, -20, 'enemy');
+                e.setDisplaySize(20, 20); e.body.setSize(16, 16, true);
+                if (!data.enemySprite) e.setTint(themeInt(2, 0xef4444));
+                e.setVelocityY(spd); e.body.allowGravity = false;
+            }
+            // Coins in the gap
+            for (let i = 0; i < 3; i++) {
+                const s = this.stars.create(gapX + (i-1)*20, -20 - i*15, 'laser').setDisplaySize(14,14).setTint(0xffd700);
+                s.body.setSize(14,14); s.setVelocityY(spd*0.7); s.body.allowGravity=false;
+            }
+        }
         update(time) {
             const {left,right,up,down} = this.cursors;
-            const spd = liveConfig.speed;
-            // Full 8-way movement, up/down/left/right + diagonals
+            const spd = liveConfig.speed * (this._slowMo ? 0.5 : 1);
             if (left.isDown||touchInput.left)       this.actor.setVelocityX(-spd);
             else if (right.isDown||touchInput.right) this.actor.setVelocityX(spd);
             else                                     this.actor.setVelocityX(0);
@@ -12502,8 +12552,41 @@ function sceneDodge(data) {
             else if (down.isDown||touchInput.down)   this.actor.setVelocityY(spd);
             else                                     this.actor.setVelocityY(0);
             this.actor.y = Phaser.Math.Clamp(this.actor.y, 20, GH - 20);
+            // Slow-mo effect: slow down obstacles
+            if (this._slowMo) {
+                this.hazards.getChildren().forEach(e => e.setVelocityY(e.body.velocity.y * 0.95));
+                this.stars.getChildren().forEach(s => s.setVelocityY(s.body.velocity.y * 0.95));
+            }
             if (this.spawnTimer && this.spawnTimer.delay !== liveConfig.spawnDelay) this.spawnTimer.delay = liveConfig.spawnDelay;
             [...this.hazards.getChildren(),...this.stars.getChildren(),...this._dodgeItems.getChildren()].forEach(o=>{ if(o.y>GH+20) o.destroy(); });
+            // Near-miss detection: reward dodging close to hazards
+            if (this._nearMissT > 0) this._nearMissT -= 16;
+            this.hazards.getChildren().forEach(e => {
+                if (e.getData('nearMissed')) return;
+                const dx = Math.abs(this.actor.x - e.x);
+                const dy = Math.abs(this.actor.y - e.y);
+                if (dx < 30 && dy < 40 && dy > 10 && !e.getData('nearMissed')) {
+                    e.setData('nearMissed', true);
+                    this._nearMissT = 400;
+                    this.score += 5;
+                    this.scoreText.setText('Score: '+this.score);
+                    if (typeof this._popText === 'function') this._popText(this.actor.x, this.actor.y - 20, 'CLOSE! +5', '#fbbf24');
+                    GameAudio.play('jump');
+                }
+            });
+            // Trail
+            if (this._trailGfx) {
+                this._trailGfx.clear();
+                this._trailGfx.fillStyle(this._slowMo ? 0xa78bfa : 0x00d4aa, 0.12);
+                this._trailGfx.fillCircle(this.actor.x, this.actor.y + 10, 6);
+                this._trailGfx.fillCircle(this.actor.x, this.actor.y + 16, 4);
+            }
+            // Status display
+            let status = '';
+            if (this._slowMo) status += '🐌 SLOW ';
+            if (this._scoreMult > 1) status += '✨×' + this._scoreMult + ' ';
+            if (this._dodgeShield) status += '🛡 ';
+            if (this._statusTxt) this._statusTxt.setText(status);
             // Shield gfx
             if(this._dodgeShield && this._shieldGfx){
                 this._shieldGfx.clear();
@@ -20350,6 +20433,102 @@ function scenePuzzle(data) {
          1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
          1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
          1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 5: zigzag corridor, 3 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,3,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,
+         1,0,0,0,0,0,1,0,0,2,0,0,0,1,0,0,0,3,0,1,
+         1,1,1,0,0,0,1,0,0,0,0,0,0,1,0,0,1,1,1,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,0,0,0,1,0,0,0,0,0,0,1,0,0,1,1,1,1,
+         1,0,0,0,0,0,1,0,0,2,0,0,0,1,0,0,0,0,0,1,
+         1,0,3,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 6: cross shape, 4 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,1,0,3,0,0,1,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 7: spiral, 5 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,
+         1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,
+         1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,1,
+         1,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,1,0,5,0,2,0,1,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,1,1,1,3,3,1,1,0,1,0,1,0,0,1,
+         1,0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,1,0,0,1,
+         1,0,1,0,1,1,1,1,1,2,1,1,1,1,1,0,1,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 8: twin rooms, 4 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
+         1,0,3,0,0,0,1,0,0,0,0,0,0,1,0,0,0,3,0,1,
+         1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1,
+         1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
+         1,0,3,0,0,0,1,0,0,0,0,0,0,1,0,0,0,3,0,1,
+         1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 9: narrow maze, 6 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,
+         1,0,3,0,1,0,1,1,1,1,1,1,1,0,1,0,3,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,1,1,1,0,1,0,2,0,0,2,0,1,0,1,1,1,0,1,
+         1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,
+         1,1,1,0,1,0,1,0,0,5,0,0,0,1,0,1,0,1,1,1,
+         1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,
+         1,0,2,0,1,1,1,0,0,0,0,0,0,1,1,1,0,2,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,1,
+         1,0,1,1,1,0,1,0,0,0,0,0,0,1,0,1,1,1,0,1,
+         1,0,0,0,0,0,1,0,2,0,0,2,0,1,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        // Level 10: grand finale, 7 crates
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,1,
+         1,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,
+         1,0,0,2,0,0,0,1,0,0,0,0,1,0,0,0,2,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,2,0,0,0,1,0,0,0,0,1,0,0,0,2,0,0,1,
+         1,0,0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,
+         1,0,3,0,0,3,0,0,0,0,0,0,0,0,3,0,0,3,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ];
 
     return class PuzzleScene extends Phaser.Scene {
@@ -20403,6 +20582,11 @@ function scenePuzzle(data) {
             this._msgText   = this.add.text(GW/2,GH/2,'',{fontSize:'28px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif",stroke:'#000',strokeThickness:5}).setOrigin(0.5).setScrollFactor(0).setDepth(12).setVisible(false);
             const resetBtn  = this.add.text(GW-10,GH-20,'↺ Reset',{fontSize:'11px',fill:'#a78bfa',fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,1).setScrollFactor(0).setDepth(10).setInteractive();
             resetBtn.on('pointerdown',()=>this._reset());
+            // Hint button
+            const hintBtn = this.add.text(GW-80,GH-20,'💡 Hint',{fontSize:'11px',fill:'#fbbf24',fontFamily:"'Fredoka',sans-serif"}).setOrigin(1,1).setScrollFactor(0).setDepth(10).setInteractive();
+            hintBtn.on('pointerdown',()=>this._showHint());
+            this._hintGfx = this.add.graphics().setDepth(1);
+            this._hintTimer = 0;
 
             this.cursors = this.input.keyboard.createCursorKeys();
             this._keyUndo = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
@@ -20504,7 +20688,36 @@ function scenePuzzle(data) {
             this._msgText.setVisible(false);
             this._playerImg.setPosition(px*32+16,py*32+16);
             this._drawTiles();
+            if(this._hintGfx) this._hintGfx.clear();
             showToast('↺ Level reset');
+        }
+        _showHint() {
+            if(this._won) return;
+            // Find all targets and their nearest crates
+            const targets = [];
+            const crates = [];
+            for(let r=0;r<15;r++) for(let c=0;c<20;c++){
+                const v=this._map[r*20+c];
+                if(v===3) targets.push({x:c,y:r});
+                if(v===2||v===4) crates.push({x:c,y:r});
+            }
+            if(!targets.length || !crates.length) return;
+            // Highlight the player's position and nearest target
+            if(this._hintGfx){
+                this._hintGfx.clear();
+                // Glow on player
+                this._hintGfx.lineStyle(3,0xfbbf24,0.8);
+                this._hintGfx.strokeCircle(this._px*32+16, this._py*32+16, 20);
+                // Glow on nearest target
+                let nearT=targets[0], nearD=999;
+                targets.forEach(t=>{
+                    const d=Math.abs(t.x-this._px)+Math.abs(t.y-this._py);
+                    if(d<nearD){nearD=d;nearT=t;}
+                });
+                this._hintGfx.lineStyle(2,0x22c55e,0.6);
+                this._hintGfx.strokeRect(nearT.x*32+2, nearT.y*32+2, 28, 28);
+            }
+            showToast('💡 Push crates onto green targets!');
         }
 
         update(time) {

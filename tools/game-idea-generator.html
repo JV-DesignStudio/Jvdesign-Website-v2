@@ -345,6 +345,56 @@ function restoreIdeaCurrent(){
   }catch(e){}
 }
 
+// ── UNDO ──
+let ideaUndoStack=[], ideaRedoStack=[];
+function ideaPushUndo(){ideaUndoStack.push(JSON.stringify({current,filters:JSON.parse(JSON.stringify(filters))}));if(ideaUndoStack.length>30)ideaUndoStack.shift();ideaRedoStack=[];}
+function ideaUndo(){
+  if(!ideaUndoStack.length){flash('Nothing to undo');return;}
+  ideaRedoStack.push(JSON.stringify({current,filters:JSON.parse(JSON.stringify(filters))}));
+  const d=JSON.parse(ideaUndoStack.pop());
+  current=d.current;filters=d.filters;
+  if(current&&current.genre){
+    document.getElementById('emptyState').style.display='none';
+    document.getElementById('ideaContent').style.display='';
+    document.getElementById('ideaTitle').textContent=current.title;
+    document.getElementById('slotGenre').textContent=current.genre;
+    document.getElementById('slotTheme').textContent=current.theme;
+    document.getElementById('slotMechanic').textContent=current.mechanic;
+    document.getElementById('slotTwist').textContent=current.twist;
+    document.getElementById('resultCard').classList.add('has-idea');
+    document.getElementById('actionRow').style.display='';
+  }
+  document.querySelectorAll('.chip').forEach(c=>{
+    const f=c.dataset.filter,v=c.dataset.val;
+    if(f&&v&&filters[f]===v) c.classList.add('on');
+    else if(f&&v) c.classList.remove('on');
+  });
+  flash('Undo');
+}
+function ideaRedo(){
+  if(!ideaRedoStack.length){flash('Nothing to redo');return;}
+  ideaUndoStack.push(JSON.stringify({current,filters:JSON.parse(JSON.stringify(filters))}));
+  const d=JSON.parse(ideaRedoStack.pop());
+  current=d.current;filters=d.filters;
+  if(current&&current.genre){
+    document.getElementById('emptyState').style.display='none';
+    document.getElementById('ideaContent').style.display='';
+    document.getElementById('ideaTitle').textContent=current.title;
+    document.getElementById('slotGenre').textContent=current.genre;
+    document.getElementById('slotTheme').textContent=current.theme;
+    document.getElementById('slotMechanic').textContent=current.mechanic;
+    document.getElementById('slotTwist').textContent=current.twist;
+    document.getElementById('resultCard').classList.add('has-idea');
+    document.getElementById('actionRow').style.display='';
+  }
+  document.querySelectorAll('.chip').forEach(c=>{
+    const f=c.dataset.filter,v=c.dataset.val;
+    if(f&&v&&filters[f]===v) c.classList.add('on');
+    else if(f&&v) c.classList.remove('on');
+  });
+  flash('Redo');
+}
+
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function getList(key) {
   const d = DATA[key];
@@ -368,6 +418,7 @@ function buildTitle(genre, theme, mechanic) {
 }
 
 function generate(keepGenre=false, keepTheme=false, keepMechanic=false, keepTwist=false) {
+  ideaPushUndo();
   const genre    = keepGenre    ? current.genre    : pick(getList('genres'));
   const theme    = keepTheme    ? current.theme    : pick(DATA.themes);
   const mechanic = keepMechanic ? current.mechanic : pick(getList('mechanics'));

@@ -1259,6 +1259,26 @@ function restoreDrumAutosave(){
   }catch(e){}
 }
 
+// ── UNDO ──
+let drumUndoStack=[], drumRedoStack=[];
+function drumPushUndo(){drumUndoStack.push(JSON.stringify({kit:currentKit,pattern:clonePattern(pattern)}));if(drumUndoStack.length>30)drumUndoStack.shift();drumRedoStack=[];}
+function drumUndo(){
+  if(!drumUndoStack.length){showToast('Nothing to undo');return;}
+  drumRedoStack.push(JSON.stringify({kit:currentKit,pattern:clonePattern(pattern)}));
+  const d=JSON.parse(drumUndoStack.pop());
+  currentKit=d.kit;pattern=d.pattern;
+  while(pattern.length<BPM_STEPS)pattern.push([]);
+  switchKit(currentKit);renderSeq();showToast('Undo');
+}
+function drumRedo(){
+  if(!drumRedoStack.length){showToast('Nothing to redo');return;}
+  drumUndoStack.push(JSON.stringify({kit:currentKit,pattern:clonePattern(pattern)}));
+  const d=JSON.parse(drumRedoStack.pop());
+  currentKit=d.kit;pattern=d.pattern;
+  while(pattern.length<BPM_STEPS)pattern.push([]);
+  switchKit(currentKit);renderSeq();showToast('Redo');
+}
+
 // ── RENDER KITS ────────────────────────────────────────────────
 const kitBar = document.getElementById('kitBar');
 Object.keys(KITS).forEach(k => {
@@ -1571,6 +1591,7 @@ function renderSeq() {
       cell.setAttribute('aria-label', `${pad.label} · step ${s + 1}`);
       syncCell(cell, row, s);
       cell.addEventListener('click', () => {
+        drumPushUndo();
         const arr = pattern[s];
         const i = arr.findIndex(h => h.kit === currentKit && h.idx === row);
         if (i >= 0) {
@@ -1625,6 +1646,8 @@ function closeModal(m) { m.classList.remove('open'); }
   m.addEventListener('click', e => { if (e.target === m) closeModal(m); });
 });
 document.addEventListener('keydown', e => {
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !e.shiftKey) { e.preventDefault(); drumUndo(); return; }
+  if ((e.ctrlKey||e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))) { e.preventDefault(); drumRedo(); return; }
   if (e.key === 'Escape') { closeModal(nameModal); closeModal(confirmModal); }
 });
 
