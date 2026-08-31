@@ -148,6 +148,15 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
   0%{opacity:.12} 50%{opacity:.22} 100%{opacity:.12}
 }
 
+/* Stats overlay */
+.ship-stats{position:absolute;top:12px;left:12px;background:rgba(10,22,40,0.88);border:1px solid rgba(212,168,67,0.25);border-radius:5px;padding:7px 11px;z-index:5;font-family:'Courier Prime',monospace;font-size:10px;color:var(--parchment-dim);min-width:140px}
+.ship-stats .stat-title{font-size:9px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;border-bottom:1px solid rgba(212,168,67,0.15);padding-bottom:3px}
+.ship-stats .stat-row{display:flex;align-items:center;gap:5px;margin:3px 0}
+.ship-stats .stat-lbl{width:52px;flex-shrink:0;font-size:9px}
+.ship-stats .stat-track{flex:1;height:4px;background:rgba(212,168,67,0.1);border-radius:2px;overflow:hidden}
+.ship-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.ship-stats .stat-val{min-width:18px;text-align:right;color:var(--gold-bright);font-size:9px}
+
 /* ═══ MOBILE ═══ */
 @media (max-width: 860px) {
   body { overflow:auto; height:auto; min-height:100vh; }
@@ -217,7 +226,6 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
 /* ── MOBILE RESPONSIVE PATCH ──────────────────────────── */
 @media(max-width:480px){
   canvas{max-width:100% !important;height:auto !important;}
-  .header-actions button{font-size:10px;padding:6px 8px;}
   #sidebar{font-size:.82rem;}
   .step-list{font-size:.8rem;}
 }
@@ -346,6 +354,7 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
 
     <h1>🏴‍☠️ Pirate Ship Shipyard</h1>
     <div class="hdr-btns">
+      <button onclick="randomShip()">🎲 Random</button>
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
       <button onclick="exportOBJ()">⬇ Export OBJ</button>
@@ -367,6 +376,7 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
   </div>
   <div id="viewport">
     <div class="toast" id="toast"></div>
+    <div class="ship-stats" id="shipStats"></div>
     <div class="dims">Ship: <span id="dL">12</span>m × <span id="dW">4</span>m × <span id="dH">3</span>m</div>
     <div class="vhint">Drag to orbit · Scroll to zoom</div>
   </div>
@@ -923,6 +933,7 @@ function rebuildShip(){
   document.getElementById('dL').textContent=HL.toFixed(1);
   document.getElementById('dW').textContent=HB.toFixed(1);
   document.getElementById('dH').textContent=(HD+p.sternH).toFixed(1);
+  updateStats();
 }
 
 // ═══════════════════════════════════════
@@ -1107,7 +1118,7 @@ function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();
 function resetAll(){
   if(!confirm('Reset all parameters to defaults?'))return;
   Object.assign(P,{hullLen:12,hullBeam:4,hullDepth:3,bowSharp:0.7,sternW:0.6,keelDepth:0.8,deckThick:0.15,bspritLen:4,bspritR:0.08,bspritAngle:25,sternH:1.8,sternLen:3,fcH:1.2,fcLen:2,mainMastH:10,mainMastR:0.12,mainMastPos:0.05,foreMastH:8,foreMastR:0.1,foreMastPos:0.32,mizzenMastH:7,mizzenMastR:0.09,mizzenMastPos:-0.35,sailW:1.0,sailBillow:0.4,sailCount:2,nestR:0.5,nestH:0.3,nestPos:0.7,railH:0.4,railPosts:12,cannonCount:5,cannonR:0.06,rudderW:1.0,rudderH:2.0,anchorSize:0.8,figSize:0.6,showFigure:true,flagW:1.5,flagH:1.0,showJolly:true,winCount:3,winR:0.25,hullColor:'#3a2010',deckColor:'#8b6b3a',sailColor:'#e8dcc8',mastColor:'#6b4a2a',metalColor:'#555555',flagColor:'#1a1a1a',trimColor:'#c9a84c',waterColor:'#0a3060',showRopes:true,showLanterns:true});
-  curStep=0;rebuildShip();updateUI();toast('Reset to defaults');
+  curStep=0;rebuildShip();updateStats();updateUI();toast('Reset to defaults');
 }
 
 function exportOBJ(){
@@ -1146,9 +1157,61 @@ function exportOBJ(){
 }
 
 // ═══════════════════════════════════════
+// STATS SYSTEM
+// ═══════════════════════════════════════
+function computeStats(){
+  const speed=Math.min(10,Math.round((P.hullLen/25*3)+(P.sailCount*0.8)+(P.sailBillow*1.2)-(P.hullDepth*0.3)-(P.cannonCount*0.2)+(P.mainMastH/18*2)));
+  const firepower=Math.min(10,Math.round(P.cannonCount*1.2+P.cannonR*15));
+  const cargo=Math.min(10,Math.round((P.hullLen/25*4)+(P.hullBeam/8*3)+(P.hullDepth/6*2)-(P.sternH*0.3)));
+  const crew=Math.min(10,Math.round((P.hullLen/25*2)+(P.hullBeam/8*2)+(P.railPosts/24*2)+(P.winCount*0.5)));
+  return{speed:Math.max(1,speed),firepower:Math.max(1,firepower),cargo:Math.max(1,cargo),crew:Math.max(1,crew)};
+}
+
+function updateStats(){
+  const s=computeStats();
+  const el=document.getElementById('shipStats');
+  if(!el)return;
+  const bar=(v,c)=>`<div class="stat-track"><div class="stat-fill" style="width:${v*10}%;background:${c}"></div></div>`;
+  el.innerHTML=`<div class="stat-title">Ship Stats</div>`+
+    `<div class="stat-row"><span class="stat-lbl">Speed</span>${bar(s.speed,'#d4a843')}<span class="stat-val">${s.speed}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Fire</span>${bar(s.firepower,'#8b1a1a')}<span class="stat-val">${s.firepower}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Cargo</span>${bar(s.cargo,'#4a7a4a')}<span class="stat-val">${s.cargo}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Crew</span>${bar(s.crew,'#4466aa')}<span class="stat-val">${s.crew}</span></div>`;
+}
+
+// ═══════════════════════════════════════
+// RANDOM BUILD
+// ═══════════════════════════════════════
+function randomShip(){
+  const rnd=(mn,mx,s)=>{const v=mn+Math.random()*(mx-mn);return s?Math.round(v/s)*s:Math.round(v*100)/100;};
+  Object.assign(P,{
+    hullLen:rnd(6,20,0.5),hullBeam:rnd(2.5,6,0.2),hullDepth:rnd(1.5,4.5,0.2),
+    bowSharp:rnd(0.3,1.2,0.05),sternW:rnd(0.3,0.9,0.05),keelDepth:rnd(0.3,1.2,0.05),
+    deckThick:rnd(0.08,0.3,0.02),
+    bspritLen:rnd(1.5,6,0.2),bspritR:rnd(0.04,0.15,0.01),bspritAngle:rnd(10,35,1),
+    sternH:rnd(0.8,3,0.1),sternLen:rnd(1.5,4.5,0.2),
+    fcH:rnd(0.5,2.5,0.1),fcLen:rnd(1,4,0.2),
+    mainMastH:rnd(6,16,0.5),mainMastR:rnd(0.06,0.2,0.01),mainMastPos:rnd(-0.1,0.2,0.01),
+    foreMastH:rnd(4,13,0.5),foreMastR:rnd(0.05,0.18,0.01),foreMastPos:rnd(0.2,0.4,0.01),
+    mizzenMastH:rnd(4,12,0.5),mizzenMastR:rnd(0.05,0.16,0.01),mizzenMastPos:rnd(-0.4,-0.2,0.01),
+    sailW:rnd(0.5,1.3,0.05),sailBillow:rnd(0.1,1,0.05),sailCount:Math.round(1+Math.random()*2),
+    nestR:rnd(0.3,0.8,0.05),nestH:rnd(0.2,0.5,0.02),nestPos:rnd(0.55,0.85,0.02),
+    railH:rnd(0.2,0.6,0.02),railPosts:Math.round(6+Math.random()*16),
+    cannonCount:Math.round(2+Math.random()*8),cannonR:rnd(0.04,0.1,0.005),
+    rudderW:rnd(0.6,1.6,0.1),rudderH:rnd(1,3,0.1),
+    anchorSize:rnd(0.5,1.2,0.05),
+    figSize:rnd(0.3,1,0.05),showFigure:Math.random()>0.3,
+    flagW:rnd(0.8,2.5,0.1),flagH:rnd(0.5,1.5,0.1),showJolly:Math.random()>0.2,
+    winCount:Math.round(1+Math.random()*5),winR:rnd(0.15,0.4,0.02),
+    showRopes:Math.random()>0.2,showLanterns:Math.random()>0.2,
+  });
+  rebuildShip();updateStats();updateUI();toast('Random ship generated!');
+}
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{initThree();rebuildShip();updateUI();});
+document.addEventListener('DOMContentLoaded',()=>{initThree();rebuildShip();updateStats();updateUI();});
 document.getElementById('modalO').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
 </script>

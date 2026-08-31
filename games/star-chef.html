@@ -22,95 +22,95 @@
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: radial-gradient(700px 500px at 20% 15%, #ff8a3d 0%, transparent 60%), radial-gradient(600px 400px at 90% 85%, #e94e0a 0%, transparent 60%), linear-gradient(135deg, #fb5607 0%, #ffbe0b 100%); display: flex; align-items: center; justify-content: center; }
-.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 500px; display: flex; flex-direction: column; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); overflow: hidden; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:radial-gradient(700px 500px at 20% 15%,#ff8a3d 0%,transparent 60%),radial-gradient(600px 400px at 90% 85%,#e94e0a 0%,transparent 60%),linear-gradient(135deg,#fb5607 0%,#ffbe0b 100%);display:flex;align-items:center;justify-content:center}
+.wrapper{position:relative;width:100%;height:100vh;height:100dvh;max-width:500px;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);overflow:hidden}
 
-.hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 8px; }
-.pills { display: flex; gap: 8px; }
-.pill { background: rgba(60,12,0,.28); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 7px 14px; color: #fff; font-weight: 700; font-size: .72rem; letter-spacing: .04em; display: flex; gap: 5px; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.16); }
-.pill b { color: #fff; }
-.home-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
-.home-btn:active { transform: scale(.92); }
+/* HUD */
+.hud{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;gap:6px;z-index:10}
+.pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{background:rgba(60,12,0,.28);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 10px;color:#fff;font-weight:700;font-size:.68rem;letter-spacing:.04em;display:flex;gap:4px;align-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+.pill b{color:#fff}
+.home-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-size:1rem;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+.home-btn:active{transform:scale(.92)}
 
-.kitchen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-.customer { text-align: center; animation: slideIn .4s ease-out; }
-.customer-emoji { font-size: 3rem; margin-bottom: 8px; }
-.customer-order { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
-.patience-label { font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
-  color:rgba(255,255,255,.85); margin-bottom:6px; text-shadow:0 1px 4px rgba(0,0,0,.35); }
-.patience-label.now { color:#baffc9; animation:pulseLabel .5s ease-in-out infinite; }
-@keyframes pulseLabel { 50% { transform:scale(1.08); } }
-.patience { width: 200px; height: 20px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 2px 6px rgba(0,0,0,.25); }
-.patience-bar { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a, #ffb300); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); transition: width .12s linear; }
-.serve-btn { background: linear-gradient(135deg, #fff, #ffe8d6); border: none; border-radius: 16px; padding: 16px 40px; font-size: 1.2rem; font-weight: 800; color: #fb5607; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.2); }
-.serve-btn.ready { animation: servePulse .8s ease-in-out infinite; box-shadow: 0 0 0 6px rgba(255,255,255,.35), 0 8px 20px rgba(0,0,0,.25); }
-@keyframes servePulse { 50% { transform: scale(1.07); box-shadow: 0 0 0 10px rgba(255,255,255,.18), 0 8px 20px rgba(0,0,0,.25); } }
-.serve-btn:active { transform: scale(.95); }
-.tip-float { position: fixed; pointer-events: none; font-weight: 800; font-size: 1.2rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.4); animation: tipFloat 1s ease-out forwards; z-index: 50; }
-.tip-float.big { font-size: 1.7rem; color: #ffd54f; }
-@keyframes tipFloat { 0%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-150%) scale(1.2);} }
-@keyframes slideIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+/* KITCHEN — customer grid */
+.kitchen{flex:1;display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:10px;padding:8px 10px;overflow-y:auto}
 
-.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(30,10,0,.65); backdrop-filter: blur(5px); }
-.modal.show { display: flex; }
-.card-modal { background: linear-gradient(165deg, #d84315, #8b3310); border: 1px solid rgba(251,86,7,.35); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
-.card-modal h1 { font-family: 'Fredoka', cursive; font-size: 2rem; color: #fff; margin-bottom: 8px; }
-.card-modal .sub { color: #ffb74d; font-weight: 700; margin-bottom: 14px; }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
-.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
-.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
-.stat .v { font-size: 1.5rem; font-weight: 800; color: #ffb74d; margin-top: 3px; }
-.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #fb5607, #ffbe0b); color: #fff; box-shadow: 0 8px 18px rgba(251, 86, 7, .4); margin-top: 10px; }
-.btn:active { transform: scale(.97); }
-.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
-.how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffb74d; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+/* CUSTOMER CARD */
+.cust{width:46%;min-width:150px;max-width:220px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.12);border-radius:16px;padding:10px 8px 8px;text-align:center;cursor:pointer;transition:transform .12s,border-color .15s,box-shadow .15s;position:relative;animation:slideIn .35s ease-out}
+.cust:active{transform:scale(.96)}
+.cust.vip{border-color:rgba(255,215,0,.5);box-shadow:0 0 16px rgba(255,215,0,.2)}
+.cust.rush{border-color:rgba(255,50,50,.5);box-shadow:0 0 12px rgba(255,50,50,.2)}
+.cust.critic{border-color:rgba(180,120,255,.5);box-shadow:0 0 12px rgba(180,120,255,.2)}
+.cust.served{animation:servedPop .4s ease-out forwards;pointer-events:none}
+.cust.left{animation:leftPop .35s ease-in forwards;pointer-events:none}
+@keyframes slideIn{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes servedPop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.15)}100%{transform:scale(.8);opacity:0}}
+@keyframes leftPop{0%{transform:scale(1);opacity:1}100%{transform:translateY(-20px) scale(.7);opacity:0}}
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { width: 100%; height: 100%; overflow: hidden; }
-body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: radial-gradient(700px 500px at 20% 15%, #ff8a3d 0%, transparent 60%), radial-gradient(600px 400px at 90% 85%, #e94e0a 0%, transparent 60%), linear-gradient(135deg, #fb5607 0%, #ffbe0b 100%); display: flex; align-items: center; justify-content: center; }
-.wrapper { position: relative; width: 100%; height: 100vh; height: 100dvh; max-width: 500px; display: flex; flex-direction: column; padding: env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); overflow: hidden; }
+.cust-badge{position:absolute;top:-8px;right:-6px;font-size:.7rem;padding:2px 7px;border-radius:999px;font-weight:800;letter-spacing:.05em}
+.cust-badge.vip{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#5a3800}
+.cust-badge.rush{background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff}
+.cust-badge.critic{background:linear-gradient(135deg,#b478ff,#7c3aed);color:#fff}
 
-.hud { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 8px; }
-.pills { display: flex; gap: 8px; }
-.pill { background: rgba(60,12,0,.28); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 7px 14px; color: #fff; font-weight: 700; font-size: .72rem; letter-spacing: .04em; display: flex; gap: 5px; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,.16); }
-.pill b { color: #fff; }
-.home-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.1); color: #fff; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; }
-.home-btn:active { transform: scale(.92); }
+.cust-emoji{font-size:2.2rem;margin-bottom:4px}
+.cust-order{font-size:.78rem;font-weight:700;color:rgba(255,255,255,.9);margin-bottom:6px}
+.cust-order .food{font-size:1.1rem}
 
-.kitchen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-.customer { text-align: center; animation: slideIn .4s ease-out; }
-.customer-emoji { font-size: 3rem; margin-bottom: 8px; }
-.customer-order { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
-.patience-label { font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
-  color:rgba(255,255,255,.85); margin-bottom:6px; text-shadow:0 1px 4px rgba(0,0,0,.35); }
-.patience-label.now { color:#baffc9; animation:pulseLabel .5s ease-in-out infinite; }
-@keyframes pulseLabel { 50% { transform:scale(1.08); } }
-.patience { width: 200px; height: 20px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.18); border-radius: 10px; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 2px 6px rgba(0,0,0,.25); }
-.patience-bar { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a, #ffb300); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); transition: width .12s linear; }
-.serve-btn { background: linear-gradient(135deg, #fff, #ffe8d6); border: none; border-radius: 16px; padding: 16px 40px; font-size: 1.2rem; font-weight: 800; color: #fb5607; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.2); }
-.serve-btn.ready { animation: servePulse .8s ease-in-out infinite; box-shadow: 0 0 0 6px rgba(255,255,255,.35), 0 8px 20px rgba(0,0,0,.25); }
-@keyframes servePulse { 50% { transform: scale(1.07); box-shadow: 0 0 0 10px rgba(255,255,255,.18), 0 8px 20px rgba(0,0,0,.25); } }
-.serve-btn:active { transform: scale(.95); }
-.tip-float { position: fixed; pointer-events: none; font-weight: 800; font-size: 1.2rem; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.4); animation: tipFloat 1s ease-out forwards; z-index: 50; }
-.tip-float.big { font-size: 1.7rem; color: #ffd54f; }
-@keyframes tipFloat { 0%{opacity:1;transform:translate(-50%,-50%) scale(1);} 100%{opacity:0;transform:translate(-50%,-150%) scale(1.2);} }
-@keyframes slideIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+/* Patience bar */
+.patience{width:100%;height:10px;background:rgba(0,0,0,.25);border-radius:5px;overflow:hidden;margin-bottom:6px;border:1px solid rgba(255,255,255,.1)}
+.patience-fill{height:100%;border-radius:5px;transition:width .1s linear;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.patience-fill.green{background:linear-gradient(90deg,#4caf50,#8bc34a)}
+.patience-fill.yellow{background:linear-gradient(90deg,#ffb300,#ff9800)}
+.patience-fill.red{background:linear-gradient(90deg,#ff5722,#f44336);animation:pulseBar .4s infinite alternate}
+@keyframes pulseBar{from{opacity:1}to{opacity:.6}}
 
-.modal { position: absolute; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(30,10,0,.65); backdrop-filter: blur(5px); }
-.modal.show { display: flex; }
-.card-modal { background: linear-gradient(165deg, #d84315, #8b3310); border: 1px solid rgba(251,86,7,.35); border-radius: 22px; padding: 28px 24px; width: 100%; max-width: 330px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
-.card-modal h1 { font-family: 'Fredoka', cursive; font-size: 2rem; color: #fff; margin-bottom: 8px; }
-.card-modal .sub { color: #ffb74d; font-weight: 700; margin-bottom: 14px; }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 18px; }
-.stat { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 10px; }
-.stat .l { font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.5); }
-.stat .v { font-size: 1.5rem; font-weight: 800; color: #ffb74d; margin-top: 3px; }
-.btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-weight: 800; font-size: 1rem; cursor: pointer; background: linear-gradient(90deg, #fb5607, #ffbe0b); color: #fff; box-shadow: 0 8px 18px rgba(251, 86, 7, .4); margin-top: 10px; }
-.btn:active { transform: scale(.97); }
-.btn.ghost { background: rgba(255,255,255,.08); color: #fff; box-shadow: none; }
-.how { text-align: left; background: rgba(255,255,255,.08); border-left: 4px solid #ffb74d; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: .84rem; color: rgba(255,255,255,.85); line-height: 1.6; }
+/* Status label */
+.cust-status{font-size:.65rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.5);min-height:1.2em}
+.cust-status.cooking{color:#ffb74d}
+.cust-status.ready{color:#baffc9;animation:pulseLabel .5s infinite}
+.cust-status.serving{color:#81d4fa}
+@keyframes pulseLabel{50%{transform:scale(1.06)}}
+
+/* Timing bar (minigame) */
+.timing-wrap{width:100%;height:14px;background:rgba(0,0,0,.3);border-radius:7px;overflow:hidden;margin:4px 0;position:relative;border:1px solid rgba(255,255,255,.1)}
+.timing-zone{position:absolute;top:0;height:100%;background:rgba(76,175,80,.45);border-radius:7px}
+.timing-needle{position:absolute;top:-2px;width:3px;height:18px;background:#fff;border-radius:2px;box-shadow:0 0 6px rgba(255,255,255,.8);transition:none}
+
+/* Kitchen slots */
+.kitchen-empty{width:46%;min-width:150px;max-width:220px;height:120px;border:2px dashed rgba(255,255,255,.12);border-radius:16px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.2);font-size:.75rem;font-weight:600}
+
+/* Float text */
+.tip-float{position:fixed;pointer-events:none;font-weight:800;font-size:1.1rem;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);animation:tipFloat 1s ease-out forwards;z-index:50}
+.tip-float.big{font-size:1.5rem;color:#ffd54f}
+.tip-float.mega{font-size:1.8rem;color:#ff6b6b;text-shadow:0 2px 12px rgba(255,0,0,.5)}
+@keyframes tipFloat{0%{opacity:1;transform:translate(-50%,-50%) scale(.8)}30%{transform:translate(-50%,-70%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-140%) scale(1)}}
+
+/* Modals */
+.modal{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(30,10,0,.65);backdrop-filter:blur(5px)}
+.modal.show{display:flex}
+.card-modal{background:linear-gradient(165deg,#d84315,#8b3310);border:1px solid rgba(251,86,7,.35);border-radius:22px;padding:24px 20px;width:100%;max-width:360px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);max-height:90vh;overflow-y:auto}
+.card-modal h1{font-family:'Fredoka',cursive;font-size:1.8rem;color:#fff;margin-bottom:6px}
+.card-modal .sub{color:#ffb74d;font-weight:700;margin-bottom:12px;font-size:.9rem}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 16px}
+.stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px}
+.stat .l{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.stat .v{font-size:1.3rem;font-weight:800;color:#ffb74d;margin-top:2px}
+.btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:.95rem;cursor:pointer;background:linear-gradient(90deg,#fb5607,#ffbe0b);color:#fff;box-shadow:0 8px 18px rgba(251,86,7,.4);margin-top:8px}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:rgba(255,255,255,.08);color:#fff;box-shadow:none}
+.how{text-align:left;background:rgba(255,255,255,.08);border-left:4px solid #ffb74d;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.78rem;color:rgba(255,255,255,.85);line-height:1.6}
+
+/* Wave banner */
+.wave-banner{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%) scale(.5);z-index:60;text-align:center;pointer-events:none;opacity:0}
+.wave-banner.show{animation:bannerPop 1.4s ease-out forwards}
+@keyframes bannerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}80%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+.wave-banner h2{font-family:'Fredoka',cursive;font-size:2rem;color:#fff;text-shadow:0 3px 12px rgba(0,0,0,.5)}
+.wave-banner p{font-size:.9rem;color:rgba(255,255,255,.7);margin-top:4px}
+
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Star Chef","url":"https://jvdesignstudio.co.uk/games/star-chef.html","description":"Serve hungry customers fast and earn big tips. Build your 5-star restaurant reputation!","genre":"Strategy","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/StarChefCover.webp"}</script>
 </head>
@@ -121,231 +121,359 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
       <div class="pill">💰 <b id="moneyHud">0</b></div>
       <div class="pill">⭐ <b id="starsHud">0</b></div>
       <div class="pill">🔥 <b id="streakHud">0</b></div>
-      <div class="pill">⏱ <b id="timeHud">45</b></div>
+      <div class="pill">⏱ <b id="timeHud">60</b></div>
     </div>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
   </div>
 
   <div class="kitchen" id="kitchen"></div>
 
+  <!-- START -->
   <div class="modal show" id="startModal">
     <div class="card-modal">
       <h1>🍽️ Star Chef</h1>
-      <div class="sub">Serve hungry customers fast</div>
+      <div class="sub">Juggle orders, beat the clock!</div>
       <div class="how">
-        <div>Tap "Serve" the moment the food is ready , fast service means happy customers.</div>
-        <div style="margin-top:8px;">Happy serves build your 🔥 <b>streak</b>: every serve in a streak multiplies your tips, up to ×3. Keep customers from storming out , the kitchen gets busier as the shift goes on!</div>
+        <div>👥 <b>Multiple customers</b> arrive at once — tap one to start cooking.</div>
+        <div style="margin-top:6px">⏱ <b>Timing minigame</b> — hit the green zone on the bar for bonus tips!</div>
+        <div style="margin-top:6px">🍽️ <b>Serve fast</b> — patience drains while you cook. Don't let them leave!</div>
+        <div style="margin-top:6px">🔥 <b>Streak</b> — consecutive happy serves multiply your tips up to ×3.</div>
+        <div style="margin-top:6px">⭐ <b>Special customers</b> — VIPs pay more, Rushers are impatient, Critics demand perfection.</div>
       </div>
       <div class="stats">
         <div class="stat"><div class="l">Best Tips</div><div class="v" id="bestStart">0</div></div>
         <div class="stat"><div class="l">Served</div><div class="v" id="gamesStart">0</div></div>
       </div>
-      <button class="btn" onclick="startGame()">Open Restaurant</button>
+      <button class="btn" onclick="startGame()">Open Restaurant 🍳</button>
       <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
     </div>
   </div>
 
+  <!-- END -->
   <div class="modal" id="endModal">
     <div class="card-modal">
       <h1 id="endTitle">🎉 Great Shift!</h1>
       <div class="sub" id="endSub">Keep it up!</div>
       <div class="stats">
         <div class="stat"><div class="l">Tips Earned</div><div class="v" id="finalMoney">0</div></div>
-        <div class="stat"><div class="l">5-Star Reviews</div><div class="v" id="finalStars">0</div></div>
+        <div class="stat"><div class="l">Happy Serves</div><div class="v" id="finalStars">0</div></div>
+        <div class="stat"><div class="l">Best Streak</div><div class="v" id="finalStreak">0</div></div>
+        <div class="stat"><div class="l">Customers Lost</div><div class="v" id="finalMisses">0</div></div>
       </div>
-      <button class="btn" onclick="startGame()">Another Shift</button>
+      <button class="btn" onclick="startGame()">Another Shift 🔄</button>
       <button class="btn ghost" onclick="location.href='mobile-games.html'">Back</button>
     </div>
   </div>
 </div>
 
+<!-- Wave banner -->
+<div class="wave-banner" id="waveBanner"><h2 id="waveTitle"></h2><p id="waveSub"></p></div>
+
 <script>
-const gameSystem = new GameSystem('star-chef', 'Star Chef', 'squirt');
-const audioEffects = new AudioEffects(0.6);
+const gameSystem=new GameSystem('star-chef','Star Chef','squirt');
+const audio=new AudioEffects(0.6);
 
-const CUSTOMERS = ['😋', '🤩', '😊', '🥰', '🤤'];
-const FOODS = ['🍔', '🍕', '🍜', '🍱', '🥘'];
+/* ══ CONTENT ══ */
+const CUSTOMERS=['😋','🤩','😊','🥰','🤤','👩‍🍳','🧑‍🍳','👨‍🍳'];
+const FOODS=['🍔','🍕','🍜','🍱','🥘','🌮','🍣','🥗'];
+const MAX_SLOTS=4;
+const SHIFT_TIME=60000;
 
-let state = 'menu';
-let money = 0, stars = 0, best = 0;
-let served = 0, streak = 0, bestStreak = 0;
-let currentCustomer = null;
-let startTime = 0;
-let sessionTime = 45000; // 45 seconds per shift
+/* ══ STATE ══ */
+let state='menu';
+let money=0,stars=0,best=0,served=0,misses=0;
+let streak=0,bestStreak=0;
+let startTime=0;
+let customers=[]; // active customer slots
+let nextId=1;
+let spawnTimer=0;
+let waveNum=0;
+let waveTimer=0;
+let activeTiming=null; // {customerId,zoneStart,zoneEnd,pos,speed,dir}
 
-function newCustomer() {
-  // the kitchen gets busier as the shift goes on
-  const prog = state === 'playing' ? Math.min((Date.now() - startTime) / sessionTime, 1) : 0;
-  const order = FOODS[Math.floor(Math.random() * FOODS.length)];
-  const cook = (800 + Math.random() * 800) * (1 - prog * 0.3);
-  // once food is ready, the customer waits this long before storming out
-  const serveWindow = 2600 - prog * 1400 + Math.random() * 600;
-  const tip = Math.ceil(8 + Math.random() * 10);
-  currentCustomer = { emoji: CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)], order, cook, cookStart: Date.now(), serveWindow, tip };
-
-  // Build the customer's DOM once per customer, not once per frame. render()
-  // used to rebuild this whole block every animation frame (~60/sec), which
-  // restarted .customer's CSS slideIn entrance animation on every single
-  // frame -- so it was permanently trapped at the animation's opacity:0
-  // starting keyframe and never became visible at all.
-  document.getElementById('kitchen').innerHTML = `
-    <div class="customer">
-      <div class="customer-emoji">${currentCustomer.emoji}</div>
-      <div class="customer-order">Wants ${currentCustomer.order}</div>
-      <div class="patience-label" id="patienceLabel">⏳ Cooking…</div>
-      <div class="patience">
-        <div class="patience-bar"></div>
-      </div>
-      <button class="serve-btn" onclick="serve()"></button>
-    </div>
-  `;
-  render();
+/* ══ LEVEL PROGRESSION ══ */
+function waveConfig(w){
+  const maxCust=Math.min(2+Math.floor(w/3),MAX_SLOTS);
+  const spawnRate=Math.max(1800,4000-w*150);
+  const patienceMul=Math.max(0.5,1-w*0.04);
+  const cookSpeed=Math.max(0.6,1-w*0.03);
+  return{maxCust,spawnRate,patienceMul,cookSpeed};
 }
 
-function customerHappyness() {
-  const sinceReady = Math.max(0, Date.now() - (currentCustomer.cookStart + currentCustomer.cook));
-  return Math.max(0, 1 - sinceReady / currentCustomer.serveWindow);
+/* ══ CUSTOMER FACTORY ══ */
+function makeCustomer(){
+  const cfg=waveConfig(waveNum);
+  const r=Math.random();
+  let type='normal';
+  if(r<0.08) type='critic';
+  else if(r<0.22) type='rush';
+  else if(r<0.35) type='vip';
+
+  const food=FOODS[Math.floor(Math.random()*FOODS.length)];
+  const cookTime=(1200+Math.random()*800)/cfg.cookSpeed;
+  const patience=(type==='rush'?2500:type==='critic'?3500:4000)*cfg.patienceMul+Math.random()*500;
+  const baseTip=type==='vip'?25:type==='critic'?20:type==='rush'?12:Math.ceil(8+Math.random()*10);
+
+  return{
+    id:nextId++,type,emoji:CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)],
+    food,cookTime,cookStart:0,state:'waiting', // waiting|cooking|ready|served|left
+    patience,maxPatience:patience,baseTip,
+    timingZone:0,timingPos:0,timingSpeed:3+Math.random()*2,timingDir:1
+  };
 }
 
-function render() {
-  if (!currentCustomer) return;
-  const now = Date.now();
-  const cookProgress = Math.min((now - currentCustomer.cookStart) / currentCustomer.cook, 1);
-  const happyness = customerHappyness();
-  const patiencePercent = happyness * 100;
+/* ══ DOM RENDER ══ */
+function renderKitchen(){
+  const el=document.getElementById('kitchen');
+  let html='';
+  const active=customers.filter(c=>c.state!=='served'&&c.state!=='left');
+  for(const c of active){
+    const patPct=Math.max(0,c.patience/c.maxPatience*100);
+    const patClass=patPct>50?'green':patPct>25?'yellow':'red';
+    const badge=c.type!=='normal'?`<div class="cust-badge ${c.type}">${c.type==='vip'?'⭐VIP':c.type==='rush'?'⚡RUSH':'🔍CRITIC'}</div>`:'';
+    let status='Tap to cook';
+    if(c.state==='cooking'){
+      const pct=Math.min(100,(Date.now()-c.cookStart)/c.cookTime*100);
+      status=`Cooking ${Math.round(pct)}%`;
+    } else if(c.state==='ready'){
+      status='Timing!';
+    } else if(c.state==='served'){
+      status='Served!';
+    }
+    const statusClass=c.state==='cooking'?'cooking':c.state==='ready'?'ready':'';
 
-  // Update the existing customer DOM in place -- see newCustomer() for why
-  // this no longer recreates it every frame.
-  const bar = document.querySelector('.patience-bar');
-  if (bar) bar.style.width = patiencePercent + '%';
-  const btn = document.querySelector('.serve-btn');
-  if (btn) {
-    const ready = cookProgress >= 0.9;
-    btn.disabled = !ready;
-    btn.style.opacity = ready ? 1 : 0.5;
-    btn.textContent = ready ? '🍽️ SERVE NOW!' : '🍳 Cooking… ' + Math.round(cookProgress*100) + '%';
-    btn.classList.toggle('ready', ready);
-    const lbl = document.getElementById('patienceLabel');
-    if (lbl) {
-      lbl.textContent = ready ? '🔔 SERVE NOW — before they get grumpy!' : '⏳ Cooking…';
-      lbl.classList.toggle('now', ready);
+    html+=`<div class="cust ${c.type}${c.state==='served'?' served':''}${c.state==='left'?' left':''}" id="cust-${c.id}" onclick="tapCustomer(${c.id})">
+      ${badge}
+      <div class="cust-emoji">${c.emoji}</div>
+      <div class="cust-order">Wants <span class="food">${c.food}</span></div>
+      <div class="patience"><div class="patience-fill ${patClass}" style="width:${patPct}%"></div></div>
+      <div class="cust-status ${statusClass}" id="status-${c.id}">${status}</div>
+      ${c.state==='cooking'?'<div class="timing-wrap"><div class="timing-zone" style="left:'+c.timingZone+'%;width:20%"></div><div class="timing-needle" style="left:'+c.timingPos+'%"></div></div>':''}
+    </div>`;
+  }
+  // Empty slots
+  const empty=Math.max(0,waveConfig(waveNum).maxCust-active.length);
+  for(let i=0;i<empty;i++) html+=`<div class="kitchen-empty">Empty seat</div>`;
+
+  el.innerHTML=html;
+}
+
+/* ══ GAME LOOP ══ */
+let lastFrame=0;
+function loop(ts){
+  if(state!=='playing') return;
+  requestAnimationFrame(loop);
+  const dt=ts-lastFrame; lastFrame=ts;
+  if(dt>100) return;
+
+  const now=Date.now();
+  const elapsed=now-startTime;
+  const remaining=Math.max(0,SHIFT_TIME-elapsed);
+
+  // Timer
+  document.getElementById('timeHud').textContent=Math.ceil(remaining/1000);
+  if(remaining<=0){endShift();return;}
+
+  // Wave progression
+  waveTimer+=dt;
+  const waveLen=12000+waveNum*2000;
+  if(waveTimer>=waveLen){ waveTimer=0; waveNum++; showWaveBanner('Wave '+(waveNum+1),'More customers incoming!'); }
+
+  // Spawn new customers
+  const cfg=waveConfig(waveNum);
+  spawnTimer+=dt;
+  const activeCount=customers.filter(c=>c.state!=='served'&&c.state!=='left').length;
+  if(spawnTimer>=cfg.spawnRate && activeCount<cfg.maxCust){
+    spawnTimer=0;
+    customers.push(makeCustomer());
+    // Start cooking immediately for first customer
+    const newC=customers[customers.length-1];
+    startCooking(newC);
+  }
+
+  // Update customers
+  for(const c of customers){
+    if(c.state==='served'||c.state==='left') continue;
+
+    if(c.state==='waiting'){
+      // Waiting: patience drains
+      c.patience-=dt;
+      if(c.patience<=0){ c.state='left'; misses++; streak=0; audio.playError(); ScreenShake.shake(document.getElementById('kitchen'),5,180); }
+    } else if(c.state==='cooking'){
+      // Update timing needle
+      c.timingPos+=c.timingSpeed*c.timingDir*(dt/16);
+      if(c.timingPos>=95){c.timingPos=95;c.timingDir=-1;}
+      if(c.timingPos<=5){c.timingPos=5;c.timingDir=1;}
+      // Patience still drains while cooking (slower)
+      c.patience-=dt*0.4;
+      if(c.patience<=0){ c.state='left'; misses++; streak=0; audio.playError(); ScreenShake.shake(document.getElementById('kitchen'),5,180); }
+    } else if(c.state==='ready'){
+      // Ready: patience drains fast
+      c.patience-=dt*1.2;
+      if(c.patience<=0){ c.state='left'; misses++; streak=0; audio.playError(); ScreenShake.shake(document.getElementById('kitchen'),5,180); }
     }
   }
 
-  document.getElementById('moneyHud').textContent = money;
-  document.getElementById('starsHud').textContent = stars;
-  document.getElementById('streakHud').textContent = streak;
-  const remaining = Math.max(0, sessionTime - (now - startTime));
-  document.getElementById('timeHud').textContent = Math.ceil(remaining / 1000);
+  // HUD
+  document.getElementById('moneyHud').textContent=money;
+  document.getElementById('starsHud').textContent=stars;
+  document.getElementById('streakHud').textContent=streak;
 
-  if (remaining <= 0) { endShift(); return; }
-  if (happyness <= 0) miss();
-  else if (state === 'playing') requestAnimationFrame(render);
+  renderKitchen();
 }
 
-function serve() {
-  const now = Date.now();
-  const cookProgress = Math.min((now - currentCustomer.cookStart) / currentCustomer.cook, 1);
-  if (cookProgress < 0.9) return;
+/* ══ TAP CUSTOMER ══ */
+function tapCustomer(id){
+  const c=customers.find(x=>x.id===id);
+  if(!c||c.state==='served'||c.state==='left') return;
 
-  const happyness = customerHappyness();
-  const happy = happyness >= 0.55;   // served within the first half of the window
+  if(c.state==='waiting'){
+    startCooking(c);
+    audio.playTap(600);
+  } else if(c.state==='cooking'){
+    // Check timing hit
+    checkTimingHit(c);
+  } else if(c.state==='ready'){
+    // Already timed — just serve
+    serveCustomer(c);
+  }
+}
 
-  if (happy) { streak++; bestStreak = Math.max(bestStreak, streak); }
-  else streak = 0;
+function startCooking(c){
+  c.state='cooking';
+  c.cookStart=Date.now();
+  // Randomize timing zone position (20% of bar, placed randomly)
+  c.timingZone=Math.random()*60+10; // 10-70%
+  c.timingPos=0;
+  c.timingDir=1;
+  c.timingSpeed=2.5+Math.random()*2.5;
+}
 
-  const mult = 1 + Math.min(streak, 8) * 0.25;   // streak multiplier, up to ×3
-  const tipEarned = Math.ceil(currentCustomer.tip * (0.5 + happyness * 0.5) * mult);
+function checkTimingHit(c){
+  // Needle is at c.timingPos (%), zone starts at c.timingZone (%), width 20%
+  const inZone=c.timingPos>=c.timingZone && c.timingPos<=c.timingZone+20;
+  const nearZone=Math.abs(c.timingPos-(c.timingZone+10))<15;
 
-  money += tipEarned;
-  served++;
-  if (happy) stars++;
-  gameSystem.addXP(Math.floor(tipEarned / 5));
-
-  const el = document.getElementById('kitchen');
-  const rect = el.getBoundingClientRect();
-  const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
-
-  if (happy && streak >= 2) {
-    floatText(x, y, '🔥 ×' + mult.toFixed(2).replace(/\.?0+$/, '') + '  +' + tipEarned + '💰', true);
-    audioEffects.playCombo(streak);
-    if (streak % 5 === 0) {
-      ParticleSystem.confetti(x, y, 12);
-      audioEffects.playLevelUp();
-    } else {
-      ParticleSystem.burst(x, y - 40, '⭐', 5);
-    }
+  if(inZone){
+    // Perfect hit!
+    c.state='ready';
+    c.timingPos=c.timingZone+10; // snap to center
+    audio.playSuccess(1000);
+    const rect=document.getElementById('cust-'+c.id)?.getBoundingClientRect();
+    if(rect) floatText(rect.left+rect.width/2,rect.top,'Perfect! 🎯','#4caf50');
+  } else if(nearZone){
+    // Close — still serve but less bonus
+    c.state='ready';
+    audio.playTap(700);
   } else {
-    floatText(x, y, '+' + tipEarned + '💰');
-    audioEffects.playSuccess(happy ? 850 : 650);
+    // Missed — penalty
+    c.patience*=0.7;
+    audio.playError();
+    const rect=document.getElementById('cust-'+c.id)?.getBoundingClientRect();
+    if(rect) floatText(rect.left+rect.width/2,rect.top,'Miss! 😬','#ff5722');
+  }
+}
+
+function serveCustomer(c){
+  const happy=c.patience/c.maxPatience>=0.4;
+  if(happy){streak++;bestStreak=Math.max(bestStreak,streak);}
+  else streak=0;
+
+  const mult=1+Math.min(streak,8)*0.25;
+  const tip=Math.ceil(c.baseTip*(0.5+c.patience/c.maxPatience*0.5)*mult*(c.type==='vip'?1.8:1));
+  money+=tip;
+  served++;
+  if(happy) stars++;
+  gameSystem.addXP(Math.floor(tip/5));
+
+  c.state='served';
+
+  const rect=document.getElementById('cust-'+c.id)?.getBoundingClientRect();
+  const x=rect?rect.left+rect.width/2:window.innerWidth/2;
+  const y=rect?rect.top+rect.height/2:window.innerHeight/2;
+
+  if(happy&&streak>=2){
+    floatText(x,y,'🔥 ×'+mult.toFixed(1)+' +'+tip+'💰',true);
+    audio.playCombo(streak);
+    if(streak%5===0){ParticleSystem.confetti(x,y,14);audio.playLevelUp();}
+    else ParticleSystem.burst(x,y-20,'⭐',5);
+  } else {
+    floatText(x,y,'+'+tip+'💰');
+    audio.playSuccess(happy?850:650);
   }
 
-  if (Date.now() - startTime >= sessionTime) endShift();
-  else newCustomer();
+  // Remove after animation
+  setTimeout(()=>{customers=customers.filter(x=>x.id!==c.id);},400);
 }
 
-function miss() {
-  streak = 0;
-  audioEffects.playError();
-  ScreenShake.shake(document.getElementById('kitchen'), 7, 220);
-  const rect = document.getElementById('kitchen').getBoundingClientRect();
-  floatText(rect.left + rect.width / 2, rect.top + rect.height / 3, '💨 Customer left!');
-  newCustomer();
+/* ══ WAVE BANNER ══ */
+function showWaveBanner(title,sub){
+  const el=document.getElementById('waveBanner');
+  document.getElementById('waveTitle').textContent=title;
+  document.getElementById('waveSub').textContent=sub;
+  el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
 }
 
-function startGame() {
+/* ══ START / END ══ */
+function startGame(){
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('endModal').classList.remove('show');
-  document.getElementById('bestStart').textContent = best;
-  document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
-  state = 'playing';
-  money = 0;
-  stars = 0;
-  served = 0;
-  streak = 0;
-  bestStreak = 0;
-  startTime = Date.now();
-  newCustomer();
+  state='playing';
+  money=0;stars=0;served=0;misses=0;streak=0;bestStreak=0;
+  customers=[];nextId=1;spawnTimer=0;waveNum=0;waveTimer=0;
+  startTime=Date.now();lastFrame=0;
+  // Spawn first customer immediately
+  customers.push(makeCustomer());
+  startCooking(customers[0]);
+  showWaveBanner('🍳 Shift Start!','Serve as many as you can!');
+  requestAnimationFrame(loop);
 }
 
-function endShift() {
-  if (state === 'over') return;
-  state = 'over';
+function endShift(){
+  if(state==='over') return;
+  state='over';
   gameSystem.addScore(money);
-  gameSystem.addXP(Math.max(5, Math.floor(money / 20)));
+  gameSystem.addXP(Math.max(5,Math.floor(money/20)));
   gameSystem.unlockAchievement('firstPlay');
-  if (stars >= 3) gameSystem.unlockAchievement('5star');
-  gameSystem.recordGamePlay(Math.round((Date.now() - startTime) / 1000));
+  if(stars>=3) gameSystem.unlockAchievement('5star');
+  if(bestStreak>=5) gameSystem.unlockAchievement('streak5');
+  gameSystem.recordGamePlay(Math.round((Date.now()-startTime)/1000));
   gameSystem.saveState();
 
-  best = Math.max(best, money);
-  if (stars >= 3) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 16);
-  document.getElementById('endTitle').textContent = stars >= 5 ? '⭐ Five Stars!' : '🎉 Great Shift!';
-  document.getElementById('endSub').textContent = (stars >= 5 ? 'Outstanding service!' : 'Nice earnings!') + (bestStreak >= 3 ? ' Best streak: 🔥' + bestStreak : '');
-  document.getElementById('finalMoney').textContent = money.toLocaleString();
-  GameUI.countUp(document.getElementById('finalMoney'), money);
-  document.getElementById('finalStars').textContent = stars;
-  GameUI.showMedal(document.getElementById('finalMoney').closest('.stats'), money, [
-    [40, '🥉', 'Line Cook'],
-    [90, '🥈', 'Sous Chef'],
-    [150, '🥇', 'Head Chef'],
-  ]);
+  best=Math.max(best,money);
+  if(stars>=3) ParticleSystem.confetti(window.innerWidth/2,window.innerHeight/3,16);
+
+  const rating=stars>=8?'⭐ Five Stars!':stars>=5?'🎉 Great Shift!':'👍 Not Bad!';
+  document.getElementById('endTitle').textContent=rating;
+  document.getElementById('endSub').textContent=(stars>=8?'Outstanding service!':stars>=5?'Nice work!':'Room to improve!')+(bestStreak>=3?' Best streak: 🔥'+bestStreak:'');
+  document.getElementById('finalMoney').textContent=money;
+  document.getElementById('finalStars').textContent=stars;
+  document.getElementById('finalStreak').textContent=bestStreak;
+  document.getElementById('finalMisses').textContent=misses;
+
+  if(typeof GameUI!=='undefined'){
+    GameUI.countUp(document.getElementById('finalMoney'),money);
+    GameUI.showMedal(document.getElementById('finalMoney').closest('.stats'),money,[
+      [40,'🥉','Line Cook'],[90,'🥈','Sous Chef'],[150,'🥇','Head Chef']
+    ]);
+  }
   document.getElementById('endModal').classList.add('show');
 }
 
-function floatText(x, y, txt, big) {
-  const div = document.createElement('div');
-  div.className = 'tip-float' + (big ? ' big' : '');
-  div.textContent = txt;
-  div.style.left = x + 'px';
-  div.style.top = y + 'px';
+/* ══ FX ══ */
+function floatText(x,y,txt,big){
+  const div=document.createElement('div');
+  div.className='tip-float'+(big?' big':'');
+  div.textContent=txt;
+  div.style.left=x+'px';div.style.top=y+'px';
   document.body.appendChild(div);
-  setTimeout(() => div.remove(), 1000);
+  setTimeout(()=>div.remove(),1000);
 }
 
-best = gameSystem.state.highScore || 0;
-document.getElementById('bestStart').textContent = best;
-document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+/* ══ BOOT ══ */
+best=gameSystem.state.highScore||0;
+document.getElementById('bestStart').textContent=best;
+document.getElementById('gamesStart').textContent=gameSystem.state.gamesPlayed||0;
 </script>
 <script src="../cookie-consent.js"></script>
 </body>

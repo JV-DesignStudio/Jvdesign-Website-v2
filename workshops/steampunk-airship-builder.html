@@ -148,7 +148,15 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
 .mbc{background:transparent;border:1px solid var(--rivet);color:var(--parch-dim);}
 
 /* Gears decoration */
-@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* Stats overlay */
+.airship-stats{position:absolute;top:10px;left:10px;background:rgba(26,22,16,0.88);border:1px solid rgba(200,168,78,0.2);border-radius:4px;padding:6px 10px;z-index:5;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--parch-dim);min-width:130px}
+.airship-stats .stat-title{font-size:8px;color:var(--brass);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;border-bottom:1px solid rgba(200,168,78,0.12);padding-bottom:2px}
+.airship-stats .stat-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.airship-stats .stat-lbl{width:44px;flex-shrink:0;font-size:8px}
+.airship-stats .stat-track{flex:1;height:3px;background:rgba(200,168,78,0.1);border-radius:2px;overflow:hidden}
+.airship-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.airship-stats .stat-val{min-width:16px;text-align:right;color:var(--brass-bright);font-size:8px}
 
 /* ══ SITE NAV BAR ══════════════════════════════════════════ */
 @media(max-width:1024px){.jvds-nav-links{display:none!important;}.jvds-nav-toggle{display:block!important;}}
@@ -272,6 +280,7 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
 
     <h1>⚙️ Steampunk Airship Dockyard</h1>
     <div class="hb">
+      <button onclick="randomAirship()">🎲 Random</button>
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
       <button onclick="exportOBJ()">⬇ OBJ</button>
@@ -302,6 +311,7 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
   </div>
   <div id="viewport">
     <div class="toast" id="toast"></div>
+    <div class="airship-stats" id="airshipStats"></div>
     <div class="dims">Airship: <span id="dL">10</span>m × <span id="dW">3</span>m × <span id="dH">6</span>m</div>
     <div class="vhint">Drag to orbit · Scroll to zoom</div>
   </div>
@@ -464,6 +474,7 @@ function rebuild(){
     let w=HW*0.5;
     if(t<0.3)w*=Math.pow(Math.max(0,t/0.3),p.bowTaper);
     else if(t>0.7)w*=p.sternTaper+(1-p.sternTaper)*Math.pow(Math.max(0,1-(t-0.7)/0.3),0.6);
+    w*=0.5+p.hullRound*0.5;
     hullPts.push(new THREE.Vector2(Math.max(w,0.05),z));
   }
   const hullGeo=new THREE.LatheGeometry(hullPts,24);
@@ -507,7 +518,7 @@ function rebuild(){
   // ─── GAS ENVELOPE (BALLOON) ───
   const bGeo=new THREE.SphereGeometry(1,24,16);
   const balloon=new THREE.Mesh(bGeo,balloonMat);
-  balloon.scale.set(p.balloonW*0.5,p.balloonH*0.5,p.balloonLen*0.5);
+  balloon.scale.set(p.balloonW*0.5,p.balloonH*0.5*(1-p.balloonPointy*0.3),p.balloonLen*0.5);
   balloon.position.y=p.balloonY;balloon.castShadow=true;
   shipGroup.add(balloon);
 
@@ -549,17 +560,17 @@ function rebuild(){
   // ─── BRIDGE ───
   const brGeo=new THREE.BoxGeometry(p.bridgeW,p.bridgeH,p.bridgeLen);
   const bridge=new THREE.Mesh(brGeo,hullMat);
-  bridge.position.set(0,HD*0.35+p.bridgeH*0.5,HL*0.35);bridge.castShadow=true;
+  bridge.position.set(0,HD*0.35+p.bridgeH*0.5,HL*0.35+p.bridgeZ);bridge.castShadow=true;
   shipGroup.add(bridge);
   // Bridge windows (front)
   const bwGeo=new THREE.PlaneGeometry(p.bridgeW*0.7,p.bridgeH*0.5);
   const bWin=new THREE.Mesh(bwGeo,glassMat);
-  bWin.position.set(0,HD*0.35+p.bridgeH*0.55,HL*0.35+p.bridgeLen*0.51);
+  bWin.position.set(0,HD*0.35+p.bridgeH*0.55,HL*0.35+p.bridgeLen*0.51+p.bridgeZ);
   shipGroup.add(bWin);
   // Wheel
   const whGeo=new THREE.TorusGeometry(0.2,0.025,8,16);
   const wheel=new THREE.Mesh(whGeo,brassMat);
-  wheel.position.set(0,HD*0.35+p.bridgeH*0.4,HL*0.35+p.bridgeLen*0.3);
+  wheel.position.set(0,HD*0.35+p.bridgeH*0.4,HL*0.35+p.bridgeLen*0.3+p.bridgeZ);
   shipGroup.add(wheel);
 
   // ─── ENGINES ───
@@ -798,6 +809,7 @@ function rebuild(){
   document.getElementById('dL').textContent=HL.toFixed(1);
   document.getElementById('dW').textContent=(HW*2).toFixed(1);
   document.getElementById('dH').textContent=(p.balloonY+p.balloonH*0.5+HD*0.5).toFixed(1);
+  updateStats();
 }
 
 // ═══════════════════════════════════════
@@ -811,7 +823,7 @@ function ctrlsFor(i){
     case'balloon':return[{t:'range',k:'balloonW',l:'Envelope Width',mn:1,mx:6,s:0.1},{t:'range',k:'balloonH',l:'Envelope Height',mn:1,mx:5,s:0.1},{t:'range',k:'balloonLen',l:'Envelope Length',mn:4,mx:16,s:0.2},{t:'range',k:'balloonY',l:'Height Above Hull',mn:2,mx:7,s:0.1}];
     case'balloonStyle':return[{t:'range',k:'ribCount',l:'Rib Count',mn:0,mx:12,s:1},{t:'range',k:'ribDepth',l:'Rib Thickness',mn:0.02,mx:0.15,s:0.005},{t:'range',k:'balloonPointy',l:'Pointiness',mn:0,mx:0.8,s:0.05}];
     case'gondola':return[{t:'range',k:'gondolaLen',l:'Cabin Length',mn:2,mx:8,s:0.2},{t:'range',k:'gondolaW',l:'Cabin Width',mn:1,mx:4,s:0.1},{t:'range',k:'gondolaH',l:'Cabin Height',mn:0.5,mx:2.5,s:0.1},{t:'range',k:'gondolaZ',l:'Position (fore/aft)',mn:-3,mx:3,s:0.2}];
-    case'bridge':return[{t:'range',k:'bridgeW',l:'Bridge Width',mn:0.8,mx:3,s:0.1},{t:'range',k:'bridgeH',l:'Bridge Height',mn:0.6,mx:2.5,s:0.1},{t:'range',k:'bridgeLen',l:'Bridge Length',mn:0.8,mx:3,s:0.1}];
+    case'bridge':return[{t:'range',k:'bridgeW',l:'Bridge Width',mn:0.8,mx:3,s:0.1},{t:'range',k:'bridgeH',l:'Bridge Height',mn:0.6,mx:2.5,s:0.1},{t:'range',k:'bridgeLen',l:'Bridge Length',mn:0.8,mx:3,s:0.1},{t:'range',k:'bridgeZ',l:'Position (fore/aft)',mn:-2,mx:2,s:0.1}];
     case'engines':return[{t:'range',k:'engineR',l:'Engine Radius',mn:0.2,mx:1,s:0.05},{t:'range',k:'engineLen',l:'Engine Length',mn:0.5,mx:2.5,s:0.1},{t:'range',k:'engineCount',l:'Engine Pairs',mn:1,mx:3,s:1},{t:'range',k:'engineSpread',l:'Engine Spread',mn:1,mx:4,s:0.1}];
     case'propellers':return[{t:'range',k:'propR',l:'Propeller Radius',mn:0.4,mx:2.5,s:0.1},{t:'range',k:'propBlades',l:'Blade Count',mn:2,mx:8,s:1},{t:'range',k:'propZ',l:'Prop Offset',mn:-1.5,mx:0.5,s:0.1},{t:'toggle',k:'showRearProp',l:'Show Rear Propeller'},{t:'range',k:'rearPropR',l:'Rear Prop Size',mn:0.3,mx:1.5,s:0.1}];
     case'smokestacks':return[{t:'range',k:'stackR',l:'Stack Radius',mn:0.05,mx:0.4,s:0.01},{t:'range',k:'stackH',l:'Stack Height',mn:0.5,mx:3,s:0.1},{t:'range',k:'stackCount',l:'Stack Count',mn:1,mx:4,s:1},{t:'range',k:'stackSpread',l:'Spread',mn:0.3,mx:2,s:0.1}];
@@ -917,7 +929,7 @@ function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();
 function resetAll(){
   if(!confirm('Reset all to defaults?'))return;
   Object.assign(P,{hullLen:10,hullW:2.5,hullDepth:1.8,bowTaper:0.65,sternTaper:0.4,hullRound:0.6,balloonW:3.5,balloonH:3,balloonLen:9,balloonY:3.5,ribCount:6,ribDepth:0.08,balloonPointy:0.3,gondolaLen:5,gondolaW:2,gondolaH:1.2,gondolaZ:0,bridgeW:1.6,bridgeH:1.4,bridgeLen:1.8,bridgeZ:0,engineR:0.5,engineLen:1.2,engineCount:2,engineSpread:1.8,propR:1.2,propBlades:4,propZ:-0.4,rearPropR:0.8,showRearProp:true,stackR:0.15,stackH:1.5,stackCount:2,stackSpread:1.0,wingSpan:2.5,wingChord:1.0,wingAngle:5,tailWingSpan:1.5,tailWingChord:0.8,rudderH:1.5,rudderW:0.8,rigCount:4,showRigging:true,railH:0.3,railPosts:10,showPlanks:true,cannonCount:2,cannonR:0.08,turretR:0.3,pipeR:0.04,pipeCount:3,showGauges:true,lanternCount:4,lanternR:0.08,lanternGlow:true,hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444',showAnchor:true,showFlag:true,showNameplate:true,flagColor:'#8b1a1a'});
-  curStep=0;rebuild();updateUI();if(mode==='sandbox')buildSandbox();toast('Reset to defaults');
+  curStep=0;rebuild();updateStats();updateUI();if(mode==='sandbox')buildSandbox();toast('Reset to defaults');
 }
 
 function exportOBJ(){
@@ -937,9 +949,59 @@ function exportOBJ(){
 }
 
 // ═══════════════════════════════════════
+// STATS SYSTEM
+// ═══════════════════════════════════════
+function computeStats(){
+  const altitude=Math.min(10,Math.round((p.balloonH/5*3)+(p.balloonY/7*3)+(p.balloonLen/16*2)-(p.hullDepth*0.5)));
+  const speed=Math.min(10,Math.round((p.engineCount*1.5)+(p.propR/2.5*2)+(p.propBlades*0.3)-(p.wingSpan*0.2)));
+  const firepower=Math.min(10,Math.round(p.cannonCount*1.5+p.turretR*8));
+  const range=Math.min(10,Math.round((p.hullLen/20*3)+(p.engineLen/2.5*2)+(p.gondolaLen/8*2)+(p.pipeCount*0.3)));
+  return{altitude:Math.max(1,altitude),speed:Math.max(1,speed),firepower:Math.max(1,firepower),range:Math.max(1,range)};
+}
+
+function updateStats(){
+  const s=computeStats();
+  const el=document.getElementById('airshipStats');
+  if(!el)return;
+  const bar=(v,c)=>`<div class="stat-track"><div class="stat-fill" style="width:${v*10}%;background:${c}"></div></div>`;
+  el.innerHTML=`<div class="stat-title">Airship Stats</div>`+
+    `<div class="stat-row"><span class="stat-lbl">Height</span>${bar(s.altitude,'#c8a84e')}<span class="stat-val">${s.altitude}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Speed</span>${bar(s.speed,'#b87333')}<span class="stat-val">${s.speed}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Fire</span>${bar(s.firepower,'#c0392b')}<span class="stat-val">${s.firepower}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Range</span>${bar(s.range,'#555')}<span class="stat-val">${s.range}</span></div>`;
+}
+
+// ═══════════════════════════════════════
+// RANDOM BUILD
+// ═══════════════════════════════════════
+function randomAirship(){
+  const rnd=(mn,mx,s)=>{const v=mn+Math.random()*(mx-mn);return s?Math.round(v/s)*s:Math.round(v*100)/100;};
+  Object.assign(P,{
+    hullLen:rnd(5,16,0.5),hullW:rnd(1.5,4,0.1),hullDepth:rnd(1,3.5,0.1),
+    bowTaper:rnd(0.3,1,0.05),sternTaper:rnd(0.3,0.8,0.05),hullRound:rnd(0.3,0.9,0.05),
+    balloonW:rnd(2,5,0.1),balloonH:rnd(1.5,4.5,0.1),balloonLen:rnd(5,14,0.2),balloonY:rnd(2.5,6,0.1),
+    ribCount:Math.round(2+Math.random()*10),ribDepth:rnd(0.03,0.12,0.005),balloonPointy:rnd(0.1,0.6,0.05),
+    gondolaLen:rnd(3,7,0.2),gondolaW:rnd(1.2,3.5,0.1),gondolaH:rnd(0.6,2,0.1),gondolaZ:rnd(-2,2,0.2),
+    bridgeW:rnd(1,2.5,0.1),bridgeH:rnd(0.8,2,0.1),bridgeLen:rnd(1,2.5,0.1),bridgeZ:rnd(-1,1,0.1),
+    engineR:rnd(0.3,0.8,0.05),engineLen:rnd(0.6,2,0.1),engineCount:Math.round(1+Math.random()*2),engineSpread:rnd(1.2,3,0.1),
+    propR:rnd(0.6,2,0.1),propBlades:Math.round(3+Math.random()*5),propZ:rnd(-1,0.3,0.1),rearPropR:rnd(0.4,1.2,0.1),showRearProp:Math.random()>0.3,
+    stackR:rnd(0.08,0.3,0.01),stackH:rnd(0.8,2.5,0.1),stackCount:Math.round(1+Math.random()*3),stackSpread:rnd(0.4,1.5,0.1),
+    wingSpan:rnd(1,4,0.1),wingChord:rnd(0.5,1.5,0.1),wingAngle:rnd(-5,20,1),tailWingSpan:rnd(0.5,2.5,0.1),tailWingChord:rnd(0.3,1.2,0.1),
+    rudderH:rnd(0.8,2.5,0.1),rudderW:rnd(0.4,1.5,0.1),
+    rigCount:Math.round(2+Math.random()*6),showRigging:Math.random()>0.2,
+    railH:rnd(0.15,0.6,0.02),railPosts:Math.round(4+Math.random()*14),showPlanks:Math.random()>0.3,
+    cannonCount:Math.round(1+Math.random()*4),cannonR:rnd(0.05,0.12,0.005),turretR:rnd(0.2,0.4,0.02),
+    pipeR:rnd(0.025,0.06,0.005),pipeCount:Math.round(1+Math.random()*4),showGauges:Math.random()>0.3,
+    lanternCount:Math.round(2+Math.random()*5),lanternR:rnd(0.05,0.12,0.005),lanternGlow:Math.random()>0.2,
+    showAnchor:Math.random()>0.3,showFlag:Math.random()>0.2,showNameplate:Math.random()>0.3,
+  });
+  rebuild();updateStats();updateUI();toast('Random airship generated!');
+}
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{initThree();rebuild();updateUI();});
+document.addEventListener('DOMContentLoaded',()=>{initThree();rebuild();updateStats();updateUI();});
 document.getElementById('modalO').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
 </script>
