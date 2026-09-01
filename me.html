@@ -137,6 +137,31 @@ body{font-family:'Inter',sans-serif;background:#0d0b08;color:#e8eaf2;overflow-x:
 .section-head .sh-line{flex:1;height:1px;background:rgba(255,255,255,.08)}
 .section-head .sh-count{font-size:.75rem;color:rgba(240,234,214,.4);font-weight:700}
 
+/* ── Parent Summary ── */
+.parent-section{margin-bottom:28px}
+.parent-section h2{font-family:'Fredoka',cursive;font-size:1.2rem;color:#f0ead6;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.parent-section h2 .p-count{font-size:.72rem;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:999px;font-family:'Inter',sans-serif;color:rgba(240,234,214,.5)}
+.parent-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;margin-bottom:12px}
+.parent-card h3{font-family:'Fredoka',cursive;font-size:1rem;color:#f0ead6;margin-bottom:6px}
+.parent-card p{font-size:.85rem;color:rgba(240,234,214,.55);line-height:1.6}
+.parent-summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.parent-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;text-align:center}
+.parent-stat .ps-icon{font-size:1.6rem;margin-bottom:6px}
+.parent-stat strong{display:block;font-family:'Fredoka',cursive;font-size:1.8rem;color:#f0ead6;line-height:1.1}
+.parent-stat span{display:block;font-size:.78rem;color:rgba(240,234,214,.45);margin-top:4px;font-weight:600}
+.parent-ws-list{list-style:none;padding:0;margin:0}
+.parent-ws-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem;color:rgba(240,234,214,.75)}
+.parent-ws-list li:last-child{border-bottom:none}
+.parent-ws-list .pw-icon{font-size:1.1rem;flex-shrink:0}
+.parent-ws-list .pw-name{flex:1;font-weight:600;color:#f0ead6}
+.parent-ws-list .pw-xp{font-size:.75rem;font-weight:700;color:var(--teal)}
+.parent-next{background:linear-gradient(135deg,rgba(112,163,167,.1),rgba(188,71,73,.08));border:1px solid rgba(112,163,167,.25);border-radius:14px;padding:18px}
+.parent-next h3{font-family:'Fredoka',cursive;font-size:1rem;color:#f0ead6;margin-bottom:8px}
+.parent-next a{color:var(--teal);font-weight:700;text-decoration:none}
+.parent-next a:hover{text-decoration:underline}
+.parent-link{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:var(--teal);color:white;padding:10px 20px;border-radius:12px;font-weight:700;font-size:.88rem;text-decoration:none;transition:transform .15s,box-shadow .15s;box-shadow:0 3px 0 var(--teal-dk)}
+.parent-link:hover{transform:translateY(-2px);box-shadow:0 5px 0 var(--teal-dk)}
+
 @media(max-width:600px){
   .ring-wrap{width:130px;height:130px}
   .ring-svg{width:130px;height:130px}
@@ -283,6 +308,7 @@ window.JVDS.announce = function (msg) {
     <button class="tab" data-tab="workshops">Workshops</button>
     <button class="tab" data-tab="games">Best scores</button>
     <button class="tab" data-tab="quests">Quests & achievements</button>
+    <button class="tab" data-tab="parent">👨‍👩‍👧 Parent</button>
   </div>
 
   <div id="panel-overview" class="panel active">
@@ -299,6 +325,9 @@ window.JVDS.announce = function (msg) {
   <div id="panel-quests" class="panel">
     <div class="section-head"><h2>🏆 Quests</h2><div class="sh-line"></div><div class="sh-count" id="questCount"></div></div>
     <div id="questsGrid" class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+  </div>
+  <div id="panel-parent" class="panel">
+    <div id="parentContent"></div>
   </div>
 
   <div class="backup">
@@ -523,6 +552,9 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
     // ── Quests Panel ──
     renderQuests();
 
+    // ── Parent Panel ──
+    renderParent(s);
+
     // Announce
     if(s.totalXP===0) JVDS.announce('Welcome. Play one game to start your streak.');
   }
@@ -667,6 +699,68 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
       html+='</div></div>';
     });
     document.getElementById('questCount').textContent=completed+' / '+allQuests.length+' completed';
+    el.innerHTML=html;
+  }
+
+  /* ═══ PARENT SUMMARY ═══ */
+  function renderParent(s){
+    var el=document.getElementById('parentContent');
+    if(!el) return;
+    var html='';
+
+    // Hero stats
+    html+='<div class="parent-summary-grid">';
+    html+='<div class="parent-stat"><div class="ps-icon">⭐</div><strong>'+s.level+'</strong><span>Level</span></div>';
+    html+='<div class="parent-stat"><div class="ps-icon">✨</div><strong>'+s.totalXP+'</strong><span>Total XP</span></div>';
+    html+='<div class="parent-stat"><div class="ps-icon">🔥</div><strong>'+s.dailyStreak+'</strong><span>Day Streak</span></div>';
+    html+='<div class="parent-stat"><div class="ps-icon">🎓</div><strong>'+s.workshopsCompleted+'</strong><span>Workshops Done</span></div>';
+    html+='<div class="parent-stat"><div class="ps-icon">🎮</div><strong>'+countGames()+'</strong><span>Games Played</span></div>';
+    html+='<div class="parent-stat"><div class="ps-icon">🏅</div><strong>'+s.achievementsUnlocked+'</strong><span>Achievements</span></div>';
+    html+='</div>';
+
+    // What they've been learning
+    var completed=getCompletedWorkshops();
+    if(completed.length>0){
+      html+='<div class="parent-section"><h2>🎓 What They\'ve Learned</h2>';
+      html+='<ul class="parent-ws-list">';
+      var shown=completed.slice(0,10);
+      shown.forEach(function(id){
+        html+='<li><span class="pw-icon">✅</span><span class="pw-name">'+wsName(id)+'</span></li>';
+      });
+      if(completed.length>10) html+='<li style="color:rgba(240,234,214,.4);font-size:.82rem">...and '+(completed.length-10)+' more</li>';
+      html+='</ul></div>';
+    }
+
+    // What's next
+    html+='<div class="parent-section"><div class="parent-next">';
+    html+='<h3>📌 What\'s Next?</h3>';
+    if(completed.length===0){
+      html+='<p>No workshops completed yet. <a href="/workshop">Browse workshops</a> to find a starting point for your child\'s age group.</p>';
+    }else if(completed.length<5){
+      html+='<p>Great start! Your child has completed '+completed.length+' workshop'+(completed.length>1?'s':'')+'. Try <a href="/workshops/learning-lab.html">Learning Lab</a> for school subjects or <a href="/workshop">browse more workshops</a> to keep learning.</p>';
+    }else if(completed.length<15){
+      html+='<p>Your child is making great progress with '+completed.length+' workshops done. Check out <a href="/workshops/learn.html">Teen Learn</a> for real coding courses, or explore <a href="/games">browser games</a> to practice skills.</p>';
+    }else{
+      html+='<p>Impressive! '+completed.length+' workshops completed. Your child is building serious skills. Explore <a href="/dev-tools">creative tools</a> or <a href="/workshop">advanced workshops</a> to take it further.</p>';
+    }
+    html+='</div></div>';
+
+    // XP breakdown
+    var wXP=0,gXP=0,bXP=0;
+    try{wXP=playerProfile.state.workshopXP||0;gXP=playerProfile.state.gameXP||0;bXP=playerProfile.state.bonusXP||0;}catch(e){}
+    if(wXP+gXP+bXP>0){
+      html+='<div class="parent-section"><h2>📊 Learning Breakdown</h2>';
+      html+='<div class="parent-summary-grid" style="grid-template-columns:repeat(3,1fr)">';
+      html+='<div class="parent-stat"><div class="ps-icon">🎓</div><strong>'+wXP+'</strong><span>Workshop XP</span></div>';
+      html+='<div class="parent-stat"><div class="ps-icon">🎮</div><strong>'+gXP+'</strong><span>Game XP</span></div>';
+      html+='<div class="parent-stat"><div class="ps-icon">⭐</div><strong>'+bXP+'</strong><span>Bonus XP</span></div>';
+      html+='</div></div>';
+    }
+
+    // Link to parents page
+    html+='<div style="text-align:center;margin-top:8px"><a href="/parents" class="parent-link">👨‍👩‍👧 For Parents — safety, age groups & more</a></div>';
+
+    if(!html) html='<div class="empty-state"><div class="empty-icon">👨‍👩‍👧</div><p>No progress yet. Play a game or start a workshop to see your child\'s summary here.</p><a href="/parents">For Parents</a></div>';
     el.innerHTML=html;
   }
 

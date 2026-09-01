@@ -7636,6 +7636,21 @@ const DAILY_PROMPTS = [
   "A collector where you're being chased by your own high score",
   'A puzzle game where the goal moves every turn',
   'A game about the very last bee',
+  // Extended prompts for more variety
+  'A snake that grows but also gets slower with each food',
+  'A pong game where the ball splits into two on every hit',
+  'A dungeon where walls shift when you blink',
+  'A platformer where enemies leave behind platforms when defeated',
+  'A shooter where your ship has a trail that damages enemies',
+  'A memory game where cards change positions after each match',
+  'A clicker where clicking too fast hurts your score',
+  'A rhythm game where missed notes spawn enemies',
+  'A breaker where bricks shoot back at you',
+  'A dodge game where you grow larger every 10 seconds',
+  'A hopper where each platform moves faster than the last',
+  'A roguelike where dying makes you stronger next run',
+  'A tower defense where enemies drop resources to build more towers',
+  'A wave survival where each wave has a different twist',
 ];
 function daysSinceEpochLocalMaker() {
   const d = new Date();
@@ -22860,6 +22875,20 @@ async function _dbgRender() {
         keys.sort((a, b) => b[1] - a[1]);
     } catch (e) {}
     const lbCount = keys.filter(([k]) => k.startsWith('jv_lb_')).length;
+    // ── 2b. Session run stats ──
+    const streak = _getDailyStreak ? _getDailyStreak() : {streak:0,history:[]};
+    const totalRuns = streak.history ? streak.history.length : 0;
+    const bestScore = _engineData ? (parseInt(localStorage.getItem('jv_best_' + (_engineData.genre||'SHOOTER')) || '0', 10)) : 0;
+    html += `<div><div class="sec-label" style="margin-bottom:6px;">Session</div>
+        ${_dbgRow(true, 'genre', (_engineData && _engineData.genre) || 'none')}
+        ${_dbgRow(true, 'personal best', bestScore.toLocaleString())}
+        ${_dbgRow(true, 'daily streak', streak.streak + ' days')}
+        ${_dbgRow(true, 'daily runs logged', totalRuns + ' entries')}
+        ${_dbgRow(RunMods.picksTaken > 0, 'perks taken this run', String(RunMods.picksTaken || 0))}
+        ${_dbgRow(RunMods.synergies.length > 0, 'active synergies', RunMods.synergies.length + ' active')}
+        ${_dbgRow(liveConfig._dailySeed > 0, 'daily challenge', ' #' + (liveConfig._dailySeed % 10000))}
+        ${_dbgRow(true, 'analytics', localStorage.getItem('jv_analytics_ok') === '1' ? 'consented' : 'off')}</div>`;
+
     html += `<div><div class="sec-label" style="margin-bottom:6px;">Data</div>
         ${_dbgRow(true, 'localStorage used', (total / 1024).toFixed(1) + ' KB')}
         ${_dbgRow(!!localStorage.getItem('jv_arcade_autosave'), 'autosave present', localStorage.getItem('jv_arcade_autosave') ? ((localStorage.getItem('jv_arcade_autosave').length / 1024).toFixed(0) + ' KB') : '')}

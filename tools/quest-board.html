@@ -108,8 +108,8 @@
 
   <!-- Basics: habits + life -->
   <div class="mini2">
-    <div class="mtile" onclick="switchView('habits')"><span>🏃</span><b id="hbCount">, </b><i>Habits today</i><div class="mbar"><i id="hbBar"></i></div></div>
-    <div class="mtile" onclick="switchView('life')"><span>🌟</span><b id="lifeCount">, </b><i>Life quests</i><div class="mbar"><i id="lifeBar"></i></div></div>
+    <div class="mtile" onclick="switchView('habits')"><span>🏃</span><b id="hbCount">0</b><i>Habits today</i><div class="mbar"><i id="hbBar"></i></div></div>
+    <div class="mtile" onclick="switchView('life')"><span>🌟</span><b id="lifeCount">0</b><i>Life quests</i><div class="mbar"><i id="lifeBar"></i></div></div>
   </div>
 
   <!-- Main quests -->
@@ -192,9 +192,9 @@
       <div class="rpg-panel">
         <div class="rpg-panel-title">⚔️ Attributes</div>
         <div class="stats-grid">
-          <div class="stat-row"><span class="stat-icon">❤️</span><span class="stat-name">HP, Vitality</span><span class="stat-val" id="sHpVal">, </span></div>
-          <div class="stat-row"><span class="stat-icon">🗡️</span><span class="stat-name">ATK, Dungeon Power</span><span class="stat-val" id="sAtk">, </span></div>
-          <div class="stat-row"><span class="stat-icon">🛡️</span><span class="stat-name">DEF, Armor</span><span class="stat-val" id="sDef">, </span></div>
+          <div class="stat-row"><span class="stat-icon">❤️</span><span class="stat-name">HP, Vitality</span><span class="stat-val" id="sHpVal">—</span></div>
+          <div class="stat-row"><span class="stat-icon">🗡️</span><span class="stat-name">ATK, Dungeon Power</span><span class="stat-val" id="sAtk">—</span></div>
+          <div class="stat-row"><span class="stat-icon">🛡️</span><span class="stat-name">DEF, Armor</span><span class="stat-val" id="sDef">—</span></div>
           <div class="stat-row"><span class="stat-icon">💪</span><span class="stat-name">STR, Bug Smashing</span><span class="stat-val" id="sStr">10</span></div>
           <div class="stat-row"><span class="stat-icon">🧙</span><span class="stat-name">INT, Feature Craft</span><span class="stat-val" id="sInt">10</span></div>
           <div class="stat-row"><span class="stat-icon">🏹</span><span class="stat-name">DEX, Clean Deploy</span><span class="stat-val" id="sDex">10</span></div>
@@ -288,7 +288,7 @@
   <div class="raids-wrap">
     <div class="rpg-panel" style="margin-bottom:0">
       <div class="rpg-panel-title">🐉 Guild Raids <span style="font-size:.62rem;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:400">, name the thing that's draining you, then chip it down one quest at a time</span></div>
-        <div style="display:flex;gap:12px;margin:4px 0 6px"><span style="font-size:.62rem;color:var(--muted2)" id="raidAtkStat">⚔️ ATK , </span><span style="font-size:.62rem;color:var(--muted2)">Tokens: <span id="raidTokenBalance">0</span></span></div>
+        <div style="display:flex;gap:12px;margin:4px 0 6px"><span style="font-size:.62rem;color:var(--muted2)" id="raidAtkStat">⚔️ ATK —</span><span style="font-size:.62rem;color:var(--muted2)">Tokens: <span id="raidTokenBalance">0</span></span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px">
         <input class="modal-input" id="raidName" placeholder="Boss name e.g. Merge Conflict Wyrm…">
         <select class="modal-select" id="raidType">
@@ -326,7 +326,7 @@
     <div class="dungeon-frame">
       <div class="dg-bars" id="dgBars" style="display:none">
         <div><div class="dg-bar-label"><span>🛡️ YOU</span><span id="dgPhpText"></span></div><div class="dg-hp-track"><div class="dg-hp-fill you" id="dgPhp"></div></div></div>
-        <div><div class="dg-bar-label"><span id="dgEname">, </span><span id="dgEhpText"></span></div><div class="dg-hp-track"><div class="dg-hp-fill foe" id="dgEhp"></div></div></div>
+        <div><div class="dg-bar-label"><span id="dgEname">—</span><span id="dgEhpText"></span></div><div class="dg-hp-track"><div class="dg-hp-fill foe" id="dgEhp"></div></div></div>
       </div>
       <div class="dungeon-screen" id="dungeonScreen">=== COFFEE-BREAK DUNGEON ===<br>
 Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 🧙 Spells, CHA haggles 💰 Bribes.<br><br>
@@ -780,7 +780,7 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
 <script>
 /* ── DATA ── */
 const SK='qb-data-v1', RK='qb-rpg-v1';
-const APP_VERSION='2.4.1-clean'; // bump every release
+const APP_VERSION='2.5.0-final'; // bump every release
 let state={
   columns:[
     {id:'todo',  title:'📋 To Do',       colour:'#7c3aed'},
@@ -1489,8 +1489,6 @@ function switchTheme(themeId){
   showToast(`🎨 Theme: ${themeId}`,'success');
 }
 // Kept for legacy compatibility
-function buyItem(){}
-function updateCyberBtn(){_updateThemeSelect();}
 function _updateThemeSelect(){
   const sel=document.getElementById('themeSelect');if(!sel)return;
   sel.value=rpg.activeTheme||'fantasy';
@@ -1635,7 +1633,7 @@ function dungeonAct(act){
     if(fleeCost>0)addGold(-fleeCost);
     playSfx('error');dg.active=false;showDgBtns(false);
     document.querySelector('.dungeon-controls button').style.display='';
-    dgPrint('You fled! Lost '+fleeCost+'g in the chaos.');
+    dgPrint(fleeCost>0?'You fled! Lost '+fleeCost+'g in the chaos.':'You fled into the shadows!');
   }
 }
 function enemyTurn(){
@@ -1960,7 +1958,6 @@ function updateStats(){
   const dd=document.getElementById('dTotal');if(dd){dd.textContent=total;document.getElementById('dDone').textContent=done;document.getElementById('dMain').textContent=state.cards.filter(c=>c.priority==='high').length;}
 }
 
-/* ── DASHBOARD ── */
 /* ── DASHBOARD ── */
 /* ── UP NEXT ───────────────────────────────────────────────────────────────────
    The single next commitment, with a relative countdown. Calendar imports carry
@@ -2499,7 +2496,7 @@ const SHOP_ITEMS=[
   {id:'streaksav',cat:'consume',icon:'🔥', name:'Streak Shield',   desc:'Saves your streak once if you miss a day.',                     cost:300, effect:{type:'streakSave',uses:1}},
   {id:'pomtonic', cat:'consume',icon:'🧪', name:'Focus Tonic',     desc:'Extends your next Pomodoro session to 35 minutes.',             cost:150, effect:{type:'pomBoost',  uses:1}},
   {id:'goldmagnet',cat:'consume',icon:'🧲',name:'Gold Magnet',     desc:'Next 5 quests completed give +50% gold bonus.',                 cost:180, effect:{type:'goldBoost', uses:5}},
-  {id:'hp_potion', cat:'consume',icon:'❤️', name:'Health Potion',     desc:'Restore 25 HP immediately.',                                        cost:50,  effect:{type:'hpHeal',   uses:1}},
+  {id:'hp_potion', cat:'consume',icon:'❤️', name:'Health Potion',     desc:'Restore 25+level×2 HP immediately.',                              cost:50,  effect:{type:'hpHeal',   uses:1}},
   {id:'mp_potion', cat:'consume',icon:'💙', name:'Mana Potion',       desc:'Restore 10 MP immediately.',                                        cost:40,  effect:{type:'mpHeal',   uses:1}},
   // ── Mystery Crates ───────────────────────────────────────────────────────
   {id:'chest_b',  cat:'crate',  icon:'📦', name:'Bronze Chest',   desc:'Contains: 20-60g, a random equipment item, or 50 XP.',          cost:150},
@@ -2589,7 +2586,7 @@ function buyShopItem(id){
   if(item.themeId){
     // Theme purchase
     rpg.activeTheme=item.themeId;
-    if(id==='cyber')rpg.unlockedCyberpunk=true;
+    
     applyTheme();showToast(`${item.icon} ${item.name} theme activated!`,'success');
   } else if(item.cat==='crate'){
     _openCrate(id);
@@ -2609,7 +2606,7 @@ function buyShopItem(id){
   } else if(item.effect){
     // Direct heal effects (not buffs)
     if(item.effect.type==='hpHeal'){
-      const heal=25;const max=_maxHp();rpg.hp=Math.min(max,(rpg.hp||max)+heal);
+      const heal=25+rpg.level*2;const max=_maxHp();rpg.hp=Math.min(max,(rpg.hp||max)+heal);
       showToast('❤️ Restored '+heal+' HP! ('+rpg.hp+'/'+max+')','success');playSfx('unlock');
     } else if(item.effect.type==='mpHeal'){
       const heal=10;const max=_manaMax();rpg.mana=Math.min(max,(rpg.mana||0)+heal);
@@ -4012,7 +4009,7 @@ function filterNotesList(){
   renderNotesList(q);
 }
 function searchNotes(){
-  const q=(document.getElementById('noteSearchInput')?.value||'').toLowerCase();
+  const q=(document.getElementById('notesSideSearch')?.value||'').toLowerCase();
   const preview=document.getElementById('notesPreview');if(!preview)return;
   preview.innerHTML='';
   const notes=(rpg.notes||[]).filter(n=>!q||n.title.toLowerCase().includes(q)||n.body.toLowerCase().includes(q));
