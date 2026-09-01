@@ -2693,7 +2693,7 @@ let state={
   ],
   nextId:10
 };
-let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[]};
+let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,hp:100,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[],selfCare:{items:[],checkInDate:'',mood:{},weeklyBoss:null,lastDamageCheck:'',restInn:false,restInnUntil:0},party:null};
 
 /* ── STORAGE ── */
 var _saveTimer=null;
@@ -5555,6 +5555,189 @@ function dailyLoginBonus(){
     spawnXpFloat(`+${bonus}g`,'green');
     setTimeout(()=>el.remove(),5000);
   },600);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HABITICA-STYLE ACCOUNTABILITY LOOP
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. HP LOSS ON MISSED DAILIES ──────────────────────────────────────────── */
+/* Life items are "dailies". Miss them = lose HP. Die = lose level + gold. */
+function _maxHp(){ return 100+rpg.level*5; }
+function _takeDamage(amount, reason){
+  if(!rpg.hp) rpg.hp=_maxHp();
+  rpg.hp=Math.max(0,rpg.hp-amount);
+  spawnXpFloat(`−${amount} HP`,'purple');
+  showToast(`💔 ${reason} −${amount} HP`,'error');
+  if(rpg.hp<=0) _die();
+}
+function _die(){
+  playSfx('error');
+  // Lose 1 level (min1) + 50% gold
+  const lostGold=Math.floor(rpg.gold*.5);
+  rpg.gold=Math.max(0,rpg.gold-lostGold);
+  if(rpg.level>1){ rpg.level--; rpg.xp=0; }
+  rpg.hp=_maxHp(); // respawn full
+  showToast(`☠️ You have fallen! Lost 1 level and ${lostGold}g. Respawning…`,'error');
+  spawnXpFloat('☠️ DEATH −1 Level','purple');
+  document.getElementById('celebrateTitle').textContent='☠️ FALLEN IN BATTLE';
+  document.getElementById('celebrateSub').innerHTML=`You were defeated by neglect!<br>Lost 1 level and ${lostGold}g<br><em style="color:var(--muted)">Complete your dailies to stay alive!</em>`;
+  document.getElementById('celebrateOverlay').classList.add('show');
+  startConfetti();
+}
+function checkDailyDamage(){
+  _initSelfCare();
+  const today=new Date().toDateString();
+  const yesterday=new Date(Date.now()-86400000).toDateString();
+  // Only check once per day
+  if(rpg.selfCare.lastDamageCheck===today) return;
+  // Don't damage on first day (no yesterday data)
+  if(!rpg.selfCare.lastDamageCheck){ rpg.selfCare.lastDamageCheck=today; save(); return; }
+  // Tavern rest pauses damage
+  if(rpg.selfCare.restInn){
+    if(rpg.selfCare.restInnUntil && Date.now()>rpg.selfCare.restInnUntil){
+      rpg.selfCare.restInn=false; rpg.selfCare.restInnUntil=null;
+      showToast('🏰 Tavern rest ended — welcome back, adventurer!');
+    } else {
+      rpg.selfCare.lastDamageCheck=today; save(); return;
+    }
+  }
+  // Check yesterday's life items
+  const items=rpg.selfCare.items||[];
+  if(!items.length){ rpg.selfCare.lastDamageCheck=today; save(); return; }
+  let totalDamage=0;
+  let missed=0;
+  items.forEach(item=>{
+    if(item.lastDone!==yesterday){
+      const catDamage=item.category==='medicine'?8:item.category==='physical'?5:4;
+      totalDamage+=catDamage;
+      missed++;
+    }
+  });
+  if(missed>0){
+    _takeDamage(totalDamage,`${missed} daily${missed>1?'s':''} missed yesterday`);
+  } else {
+    // Perfect day bonus
+    _perfectDayBonus();
+  }
+  rpg.selfCare.lastDamageCheck=today;
+  save();
+  updateRpgWidgets();
+}
+function _perfectDayBonus(){
+  const items=rpg.selfCare.items||[];
+  if(!items.length) return;
+  const today=new Date(Date.now()-86400000).toDateString(); // yesterday
+  const allDone=items.every(x=>x.lastDone===today);
+  if(!allDone) return;
+  const bonusXp=20+rpg.level*2;
+  addXp(bonusXp);
+  rpg.mana=_manaMax();
+  showToast(`🌟 Perfect Day! All dailies done! +${bonusXp} XP + Full Mana!`,'success');
+  spawnXpFloat('🌟 PERFECT DAY!','gold');
+}
+
+/* ── 2. TAVERN REST (pause damage) ─────────────────────────────────────────── */
+function toggleTavernRest(){
+  _initSelfCare();
+  if(rpg.selfCare.restInn){
+    rpg.selfCare.restInn=false; rpg.selfCare.restInnUntil=null;
+    showToast('🏰 Leaving the tavern — damage resumes!','info');
+  } else {
+    rpg.selfCare.restInn=true;
+    rpg.selfCare.restInnUntil=Date.now()+24*3600000; // 24h
+    showToast('🏰 Resting in the Tavern — no damage for 24h!','success');
+  }
+  save(); renderLifeTab();
+}
+
+/* ── 3. +/- HABITS ─────────────────────────────────────────────────────────── */
+/* Habits can now be positive (+XP) or negative (−HP) */
+function tickHabitDown(id){
+  const h=rpg.habits.find(x=>x.id===id);if(!h)return;
+  const today=new Date().toDateString();
+  if(h.lastDown===today){showToast('Already penalised today.');return;}
+  h.lastDown=today;
+  const dmg=Math.max(3,Math.min(10,h.xp||5));
+  _takeDamage(dmg,`Bad habit: "${h.text.slice(0,20)}"`);
+  save(); renderHabits(); renderHabitsPreview();
+}
+
+/* ── 4. PARTY SYSTEM (Gist-backed async) ───────────────────────────────────── */
+function _partyGistFile(code){ return 'questlog-party-'+code+'.json'; }
+async function createParty(){
+  const token=localStorage.getItem('gh_pat'); if(!token){showToast('Link GitHub Gist PAT first','warn');return;}
+  const name=(localStorage.getItem('qb-player-name')||'Adventurer');
+  const party={id:'p'+Date.now(),name:name+"'s Party",members:[{name,hp:100,maxHp:100,dmg:0}],boss:null,createdAt:Date.now()};
+  try{
+    const res=await fetch('https://api.github.com/gists',{method:'POST',headers:{'Authorization':'token '+token,'Content-Type':'application/json'},body:JSON.stringify({description:'QuestLog Party '+party.name,public:false,files:{[_partyGistFile(party.id)]:{content:JSON.stringify(party)}}})});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j=await res.json();
+    rpg.party={gistId:j.id,partyId:party.id,party};
+    save(); renderParty(); showToast('🎉 Party created! Share ID: '+j.id,'success');
+    try{await navigator.clipboard.writeText(j.id);}catch(e){}
+  }catch(e){showToast('Party create failed: '+e.message,'error');}
+}
+async function joinParty(){
+  const code=(document.getElementById('partyCodeIn')?.value||'').trim(); if(!code){showToast('Paste a Gist ID','warn');return;}
+  const token=localStorage.getItem('gh_pat')||'';
+  try{
+    const res=await fetch('https://api.github.com/gists/'+code,{headers:token?{'Authorization':'token '+token}:{}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j=await res.json();
+    const fileKey=Object.keys(j.files||{}).find(k=>k.startsWith('questlog-party-'));
+    if(!fileKey) throw new Error('Not a party gist');
+    const party=JSON.parse(j.files[fileKey].content);
+    const me=localStorage.getItem('qb-player-name')||'You';
+    if(!party.members.find(m=>m.name===me)) party.members.push({name:me,hp:100,maxHp:100,dmg:0});
+    rpg.party={gistId:code,partyId:party.id,party};
+    save(); renderParty(); showToast('🎉 Joined '+party.name,'success');
+  }catch(e){showToast('Join failed: '+e.message,'error');}
+}
+function leaveParty(){if(!rpg.party)return;rpg.party=null;save();renderParty();showToast('Left party','info');}
+async function pollParty(){
+  if(!rpg.party?.gistId)return;
+  try{
+    const token=localStorage.getItem('gh_pat')||'';
+    const res=await fetch('https://api.github.com/gists/'+rpg.party.gistId,{headers:token?{'Authorization':'token '+token}:{}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const j=await res.json();
+    const fileKey=Object.keys(j.files||{}).find(k=>k.startsWith('questlog-party-'));
+    if(!fileKey) throw new Error('No party file');
+    rpg.party.party=JSON.parse(j.files[fileKey].content);
+    save(); renderParty();
+  }catch(e){showToast('Poll failed: '+e.message,'error');}
+}
+async function damagePartyBoss(dmg){
+  if(!rpg.party?.gistId||!rpg.party?.party?.boss)return;
+  const boss=rpg.party.party.boss; boss.hp=Math.max(0,boss.hp-dmg);
+  const me=localStorage.getItem('qb-player-name')||'You';
+  const member=rpg.party.party.members.find(m=>m.name===me);
+  if(member) member.dmg=(member.dmg||0)+dmg;
+  const token=localStorage.getItem('gh_pat'); if(!token)return;
+  try{
+    await fetch('https://api.github.com/gists/'+rpg.party.gistId,{method:'PATCH',headers:{'Authorization':'token '+token,'Content-Type':'application/json'},body:JSON.stringify({files:{[_partyGistFile(boss.id)]:{content:JSON.stringify(rpg.party.party)}}})});
+  }catch(e){}
+  save(); renderParty();
+}
+function renderParty(){
+  const body=document.getElementById('partyBody');if(!body)return;
+  if(!rpg.party||!rpg.party.party){body.innerHTML='<div style="color:var(--muted2);font-size:.75rem">No party yet — create or join one!</div>';return;}
+  const p=rpg.party.party;
+  const bossHtml=p.boss?`<div class="raid-card${p.boss.hp<=0?' slain':''}" style="margin-top:8px">
+    <div class="raid-boss-name">⚔️ ${escHtml(p.boss.name)}</div>
+    <div class="raid-hp-bg"><div class="raid-hp-bar" style="width:${Math.round(p.boss.hp/p.boss.maxHp*100)}%"></div></div>
+    <div style="font-size:.62rem;color:var(--muted)">${p.boss.hp}/${p.boss.maxHp} HP</div>
+    ${p.boss.hp<=0?'<div style="color:var(--green);font-weight:900">🎉 SLAIN!</div>':''}
+  </div>`:'<div style="font-size:.72rem;color:var(--muted2)">No boss active — create one in Raids.</div>';
+  body.innerHTML=`<div style="margin-top:8px">
+    <div style="font-size:.72rem;font-weight:900;margin-bottom:6px">👥 Members (${p.members.length})</div>
+    ${p.members.sort((a,b)=>b.dmg-a.dmg).map(m=>`<div style="display:flex;justify-content:space-between;font-size:.72rem;background:var(--bg3);padding:6px 8px;border-radius:6px;margin-bottom:4px">
+      <span>${escHtml(m.name)}</span><span style="color:var(--gold)">${m.dmg||0} dmg</span>
+    </div>`).join('')}
+    ${bossHtml}
+    <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(rpg.party.gistId).then(()=>showToast('Copied Party ID','success'))">📋 Copy Party ID</button></div>
+  </div>`;
 }
 
 /* ── NOTES ── */
