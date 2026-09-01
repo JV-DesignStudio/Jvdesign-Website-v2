@@ -64,6 +64,7 @@ function saveProgress() {
       challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(function(c){ return c.id; }),
       fillsPassed: [...document.querySelectorAll('.concept-fill.passed')].map(function(c){ return c.id; })
     }));
+    localStorage.setItem('jvds_last_workshop', location.pathname);
   } catch(e) {}
 }
 
@@ -436,4 +437,5 @@ initKeyboardAccess();
 loadProgress();
 updateProgress();
 updateXpDisplay();
+try { localStorage.setItem('jvds_last_workshop', location.pathname); } catch(e) {}
 })();

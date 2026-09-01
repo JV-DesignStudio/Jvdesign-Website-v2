@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#ff004d">
+<script src="../analytics-loader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build a Snake Game in Pico-8 | Free Workshop for Kids | JVDesignStudio</title>
+<meta name="description" content="Build a Snake game in Pico-8! A free parent & child workshop. Learn grid movement, growth mechanics and collision detection with real Lua code. Ages 8+.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/pico8-snake-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/pico8-snake-workshop.html">
+<meta property="og:title" content="Build a Snake Game in Pico-8 | Free Workshop for Kids | JVDesignStudio">
+<meta property="og:description" content="Build a Snake game in Pico-8. Free parent & child workshop, no experience needed. Ages 8+.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/pico8-snake-workshop.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pico8-snake-workshop.png">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {--accent:#ff004d;--accent2:#ff5577;--green:#06d6a0;--teal:#4dd9e0;--asphalt:#2a2d3a;--xp-gold:#ffd166;--xp-glow:rgba(255,209,102,.3);}
+.print-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(232,234,242,.6);cursor:pointer;text-decoration:none;transition:background .15s,color .15s}.print-btn:hover{background:rgba(255,255,255,.09);color:var(--text)}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#ff004d,#ff7700,#ff004d,#ff7700)">
+  <span>🎮 My First Pico-8 Game · Episode 2 of 6 · <a href="my-first-pico8-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
+</div>
+
+<section class="hero" id="main-content">
+  <div class="hero-inner">
+    <div class="hero-badge">🐍 Episode 2 · Beginner · Builds on Episode 1</div>
+    <h1>Snake on<br><em>a Grid!</em></h1>
+    <p class="hero-sub">Guide a growing snake to eat food without hitting the walls or yourself. Learn grid-based movement, Lua tables and collision detection.</p>
+    <div class="hero-pills">
+      <span class="pill p-age">👶 Ages 8+</span>
+      <span class="pill p-time">⏱️ ~1 Hour</span>
+      <span class="pill p-tool">🎮 Pico-8</span>
+      <span class="pill p-free">✓ Free</span>
+    </div>
+    <div class="skills-strip">
+      <span class="skill-tag"><span>📦</span> Tables</span>
+      <span class="skill-tag"><span>🔄</span> Grid Movement</span>
+      <span class="skill-tag"><span>🎯</span> Collision</span>
+      <span class="skill-tag"><span>➕</span> Growth</span>
+      <span class="skill-tag"><span>⏱️</span> Timer</span>
+    </div>
+    <div class="hero-btns">
+      <a href="#step-1" class="btn-start">🐍 Let's Build! Start Step 1</a>
+      <a href="my-first-pico8-game.html" class="btn-outline">← All Episodes</a>
+      <a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a>
+    </div>
+  </div>
+</section>
+
+<div class="xp-wrap"><div class="xp-bar"><div class="xp-icon">⭐</div><div class="xp-label" id="xpLabel">0 XP</div><div class="xp-track"><div class="xp-fill" id="xpFill"></div></div><div class="xp-level" id="xpLevel">Level 1</div><div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div></div></div>
+<div class="progress-wrap"><div class="progress-header"><span class="progress-label">Your Progress</span><span class="progress-count" id="progressCount">0 / 9 steps</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="step-dots" id="stepDots"></div></div>
+
+<main class="workshop">
+
+  <!-- STEP 1 -->
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">1</div><div class="step-title-wrap"><div class="step-emoji">📐</div><div class="step-title">Set Up the Grid</div><div class="step-blurb">Create a grid system for the snake to move on</div></div><span class="step-status ss-active">Active</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Set up an 8x8 grid on the 128x128 Pico-8 screen and learn how grid coordinates work.</p></div></div>
+      <div class="callout parent"><div class="callout-icon">👨‍👧</div><div><strong>Parent note:</strong> Snake works on a grid, not pixel coordinates. Each grid cell is 16x16 pixels (128 / 8 = 16). This makes movement and collision much simpler!</div></div>
+      <h3>Create the grid</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In <strong>_init()</strong>, set up the grid size: <strong>g=16</strong> (each cell is 16 pixels).</span></li>
+        <li><span class="num-badge">2</span><span>Draw the grid lines in <strong>_draw()</strong> using a for loop to draw faint lines.</span></li>
+        <li><span class="num-badge">3</span><span>Use colour <strong>1</strong> (dark blue) for the grid lines so they're subtle.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Grid Setup</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  g=<span class="pico-num">16</span> <span class="pico-cmt">-- grid cell size</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+  <span class="pico-cmt">-- draw grid lines</span>
+  <span class="pico-kw">for</span> i=<span class="pico-num">0</span>,<span class="pico-num">8</span> <span class="pico-kw">do</span>
+    <span class="pico-fn">line</span>(i*g,<span class="pico-num">0</span>,i*g,<span class="pico-num">128</span>,<span class="pico-num">1</span>)
+    <span class="pico-fn">line</span>(<span class="pico-num">0</span>,i*g,<span class="pico-num">128</span>,i*g,<span class="pico-num">1</span>)
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div></div>
+
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">If the screen is 128 pixels wide and each grid cell is 16 pixels, how many cells fit across?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>4 cells</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>8 cells</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>16 cells</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">2</div><div class="step-title-wrap"><div class="step-emoji">🐍</div><div class="step-title">Create the Snake</div><div class="step-blurb">Use a Lua table to store the snake body segments</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Use a Lua table to store the snake's body segments and draw them on screen.</p></div></div>
+      <h3>Build the snake with a table</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create a table: <strong>snake={}</strong> in _init(). Each entry is {x, y}.</span></li>
+        <li><span class="num-badge">2</span><span>Add starting segments: <strong>add(snake,{4,4})</strong> for the head, then {3,4} and {2,4} for the body.</span></li>
+        <li><span class="num-badge">3</span><span>In _draw(), loop through the table: <strong>for s in all(snake) do rectfill(s.x*g, s.y*g, ...)</strong></span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Body Table</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  g=<span class="pico-num">16</span>
+  snake={}
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">4</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">3</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">2</span>,y=<span class="pico-num">4</span>})
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+  <span class="pico-kw">for</span> s <span class="pico-kw">in</span> <span class="pico-fn">all</span>(snake) <span class="pico-kw">do</span>
+    <span class="pico-fn">rectfill</span>(
+      s.x*g+<span class="pico-num">1</span>,s.y*g+<span class="pico-num">1</span>,
+      s.x*g+<span class="pico-num">14</span>,s.y*g+<span class="pico-num">14</span>,
+      <span class="pico-num">11</span>)
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div></div>
+
+      <div class="code-challenge" id="cc-2" data-step="2">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks to add a new segment at grid position (5, 3) to the snake table:</div>
+        <div class="cc-code-area"><span class="pico-fn">add</span>(snake,{x=<input class="cc-blank" data-a="NQ==" placeholder="?" size="4">,y=<input class="cc-blank" data-a="Mw==" placeholder="?" size="4">})</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The first number is the x grid position (column), the second is y (row).</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-k="Mg==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What does <strong>add(snake, {x=5, y=3})</strong> do?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Removes a segment from the snake</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Adds a new segment at position (5,3) to the snake table</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Moves the snake to position (5,3)</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-yellow">3</div><div class="step-title-wrap"><div class="step-emoji">🔄</div><div class="step-title">Move the Snake</div><div class="step-blurb">Add grid-based movement with arrow keys</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Make the snake move continuously in one direction, controlled by arrow keys.</p></div></div>
+      <h3>Add direction and movement</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create direction variables: <strong>dx=1</strong> (moving right), <strong>dy=0</strong>.</span></li>
+        <li><span class="num-badge">2</span><span>Use <strong>btnp()</strong> instead of <strong>btn()</strong> for direction changes (only triggers once per press).</span></li>
+        <li><span class="num-badge">3</span><span>In _update(), move the head: <strong>snake[1].x += dx</strong> and <strong>snake[1].y += dy</strong>.</span></li>
+        <li><span class="num-badge">4</span><span>Prevent reversing: only allow UP if currently going LEFT/RIGHT, etc.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Movement</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  g=<span class="pico-num">16</span> dx=<span class="pico-num">1</span> dy=<span class="pico-num">0</span>
+  snake={}
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">4</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">3</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">2</span>,y=<span class="pico-num">4</span>})
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- change direction</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btnp</span>(<span class="pico-num">0</span>) <span class="pico-kw">and</span> dx==<span class="pico-num">0</span> <span class="pico-kw">then</span>
+    dx=<span class="pico-op">-</span><span class="pico-num">1</span> dy=<span class="pico-num">0</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btnp</span>(<span class="pico-num">1</span>) <span class="pico-kw">and</span> dx==<span class="pico-num">0</span> <span class="pico-kw">then</span>
+    dx=<span class="pico-num">1</span> dy=<span class="pico-num">0</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btnp</span>(<span class="pico-num">2</span>) <span class="pico-kw">and</span> dy==<span class="pico-num">0</span> <span class="pico-kw">then</span>
+    dx=<span class="pico-num">0</span> dy=<span class="pico-op">-</span><span class="pico-num">1</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btnp</span>(<span class="pico-num">3</span>) <span class="pico-kw">and</span> dy==<span class="pico-num">0</span> <span class="pico-kw">then</span>
+    dx=<span class="pico-num">0</span> dy=<span class="pico-num">1</span>
+  <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- move head</span>
+  snake[<span class="pico-num">1</span>].x=snake[<span class="pico-num">1</span>].x+dx
+  snake[<span class="pico-num">1</span>].y=snake[<span class="pico-num">1</span>].y+dy
+<span class="pico-kw">end</span></div></div>
+
+      <div class="tf-round" id="tf-3" data-step="3">
+        <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False?</div><div class="tf-xp-badge">+15 XP</div></div>
+        <div class="tf-item" data-a="dHJ1ZQ=="><div class="tf-statement"><strong>btnp()</strong> only returns true once per press, while <strong>btn()</strong> returns true every frame.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+        <div class="tf-item" data-a="ZmFsc2U="><div class="tf-statement">The snake can reverse direction (go left when going right).</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+        <div class="tf-item" data-a="dHJ1ZQ=="><div class="tf-statement">snake[1] refers to the head of the snake.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+        <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
+        <div class="tf-feedback"></div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-k="Mw==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we check <strong>dx==0</strong> before allowing UP or DOWN?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To prevent the snake from reversing into itself</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To make the snake move faster</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>To save memory</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-pink">4</div><div class="step-title-wrap"><div class="step-emoji">🔗</div><div class="step-title">Body Follows the Head</div><div class="step-blurb">Make each segment follow the one in front of it</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Each body segment should move to where the segment in front of it was, creating the classic snake movement.</p></div></div>
+      <h3>Body following logic</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Loop backwards from the last segment to the second: <strong>for i=#snake,2,-1</strong></span></li>
+        <li><span class="num-badge">2</span><span>Each segment copies the position of the one before it: <strong>snake[i].x = snake[i-1].x</strong></span></li>
+        <li><span class="num-badge">3</span><span>The head (snake[1]) moves with dx/dy as before.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Body Following</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- direction changes here...</span>
+
+  <span class="pico-cmt">-- body follows head</span>
+  <span class="pico-kw">for</span> i=<span class="pico-fn">#</span>snake,<span class="pico-num">2</span>,<span class="pico-op">-</span><span class="pico-num">1</span> <span class="pico-kw">do</span>
+    snake[i].x=snake[i<span class="pico-op">-</span><span class="pico-num">1</span>].x
+    snake[i].y=snake[i<span class="pico-op">-</span><span class="pico-num">1</span>].y
+  <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- move head</span>
+  snake[<span class="pico-num">1</span>].x=snake[<span class="pico-num">1</span>].x+dx
+  snake[<span class="pico-num">1</span>].y=snake[<span class="pico-num">1</span>].y+dy
+<span class="pico-kw">end</span></div></div>
+
+      <div class="callout tip"><div class="callout-icon">💡</div><div>The <strong>#</strong> operator gives you the length of a table. So <strong>#snake</strong> tells you how many segments the snake has!</div></div>
+
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-k="NA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we loop <strong>backwards</strong> (from #snake to 2) instead of forwards?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It's faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>If we looped forwards, each segment would copy the already-updated position of the one in front, creating a diagonal line</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Lua only supports backwards loops</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-purple">5</div><div class="step-title-wrap"><div class="step-emoji">🍎</div><div class="step-title">Add Food</div><div class="step-blurb">Spawn food at random positions for the snake to eat</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create food that appears at random grid positions and draw it as a red square.</p></div></div>
+      <h3>Spawn food</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create food variables: <strong>fx</strong> and <strong>fy</strong> in _init().</span></li>
+        <li><span class="num-badge">2</span><span>Use <strong>fx=flr(rnd(8))</strong> to get a random grid position 0-7.</span></li>
+        <li><span class="num-badge">3</span><span>Draw food as a red filled rectangle in _draw().</span></li>
+        <li><span class="num-badge">4</span><span>Check if head overlaps food: <strong>if snake[1].x==fx and snake[1].y==fy</strong></span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Food</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  g=<span class="pico-num">16</span> dx=<span class="pico-num">1</span> dy=<span class="pico-num">0</span>
+  snake={}
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">4</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">3</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">add</span>(snake,{x=<span class="pico-num">2</span>,y=<span class="pico-num">4</span>})
+  <span class="pico-fn">spawn_food</span>()
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">spawn_food</span>()
+  fx=<span class="pico-fn">flr</span>(<span class="pico-fn">rnd</span>(<span class="pico-num">8</span>))
+  fy=<span class="pico-fn">flr</span>(<span class="pico-fn">rnd</span>(<span class="pico-num">8</span>))
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+  <span class="pico-cmt">-- draw food</span>
+  <span class="pico-fn">rectfill</span>(
+    fx*g+<span class="pico-num">2</span>,fy*g+<span class="pico-num">2</span>,
+    fx*g+<span class="pico-num">13</span>,fy*g+<span class="pico-num">13</span>,<span class="pico-num">8</span>)
+  <span class="pico-cmt">-- draw snake...</span>
+<span class="pico-kw">end</span></div></div>
+
+      <div class="code-challenge" id="cc-5" data-step="5">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks to spawn food at a random grid position (0 to 7):</div>
+        <div class="cc-code-area">fx=<span class="pico-fn">flr</span>(<span class="pico-fn">rnd</span>(<input class="cc-blank" data-a="OA==" placeholder="?" size="4">))
+fy=<span class="pico-fn">flr</span>(<span class="pico-fn">rnd</span>(<input class="cc-blank" data-a="OA==" placeholder="?" size="4">))</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The grid is 8x8, so rnd() should go from 0 to 7.</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="NQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we use <strong>flr()</strong> around <strong>rnd()</strong>?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>rnd() returns a decimal like 3.7, and flr() rounds down to 3 so we get a whole grid position</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>flr() makes the food appear faster</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>rnd() doesn't work without flr()</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-teal">6</div><div class="step-title-wrap"><div class="step-emoji">➕</div><div class="step-title">Grow the Snake</div><div class="step-blurb">Add a new segment when the snake eats food</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>When the snake eats food, add a new body segment and spawn new food.</p></div></div>
+      <h3>Eating and growing</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>After moving the snake, check if head overlaps food.</span></li>
+        <li><span class="num-badge">2</span><span>If yes, add a new segment at the tail's position: <strong>add(snake, {x=snake[#snake].x, y=snake[#snake].y})</strong></span></li>
+        <li><span class="num-badge">3</span><span>Then call <strong>spawn_food()</strong> to place new food.</span></li>
+        <li><span class="num-badge">4</span><span>Also add a score variable: <strong>score=0</strong> and increment it: <strong>score+=1</strong>.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Eating Logic</div>
+<div class="blocks-body"><span class="pico-cmt">-- in _update, after moving:</span>
+<span class="pico-kw">if</span> snake[<span class="pico-num">1</span>].x==fx
+  <span class="pico-kw">and</span> snake[<span class="pico-num">1</span>].y==fy <span class="pico-kw">then</span>
+  score=score+<span class="pico-num">1</span>
+  <span class="pico-fn">add</span>(snake,{
+    x=snake[<span class="pico-fn">#</span>snake].x,
+    y=snake[<span class="pico-fn">#</span>snake].y})
+  <span class="pico-fn">spawn_food</span>()
+  <span class="pico-fn">sfx</span>(<span class="pico-num">0</span>)
+<span class="pico-kw">end</span></div></div>
+
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-k="Ng==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">When the snake eats food, where is the new segment added?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>At the head position</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>At the tail position (end of the table)</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>At a random position</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card locked" id="step-7" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-orange">7</div><div class="step-title-wrap"><div class="step-emoji">💀</div><div class="step-title">Game Over: Wall &amp; Self Collision</div><div class="step-blurb">End the game if the snake hits a wall or itself</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Detect when the snake hits the screen edges or its own body and show a game over screen.</p></div></div>
+      <h3>Collision detection</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Wall check: <strong>if snake[1].x&lt;0 or snake[1].x&gt;7 or snake[1].y&lt;0 or snake[1].y&gt;7</strong></span></li>
+        <li><span class="num-badge">2</span><span>Self check: loop from segment 2 onwards, if any matches head position, game over.</span></li>
+        <li><span class="num-badge">3</span><span>Create a <strong>game_over</strong> variable. When true, show "GAME OVER" and press Z to restart.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Game Over</div>
+<div class="blocks-body"><span class="pico-cmt">-- wall collision</span>
+<span class="pico-kw">if</span> snake[<span class="pico-num">1</span>].x&lt;<span class="pico-num">0</span>
+  <span class="pico-kw">or</span> snake[<span class="pico-num">1</span>].x&gt;<span class="pico-num">7</span>
+  <span class="pico-kw">or</span> snake[<span class="pico-num">1</span>].y&lt;<span class="pico-num">0</span>
+  <span class="pico-kw">or</span> snake[<span class="pico-num">1</span>].y&gt;<span class="pico-num">7</span> <span class="pico-kw">then</span>
+  game_over=<span class="pico-kw">true</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-cmt">-- self collision</span>
+<span class="pico-kw">for</span> i=<span class="pico-num">2</span>,<span class="pico-fn">#</span>snake <span class="pico-kw">do</span>
+  <span class="pico-kw">if</span> snake[<span class="pico-num">1</span>].x==snake[i].x
+    <span class="pico-kw">and</span> snake[<span class="pico-num">1</span>].y==snake[i].y <span class="pico-kw">then</span>
+    game_over=<span class="pico-kw">true</span>
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div></div>
+
+      <div class="predict-challenge" id="pred-7" data-step="7" data-k="MQ==">
+        <div class="pc-header"><div class="pc-icon">🔮</div><div class="pc-title">Predict What Happens</div><div class="pc-xp-badge">+15 XP</div></div>
+        <div class="pc-scenario">The snake is 5 segments long. The head is at (3,3). Segment 3 is also at (3,3).<br><br><strong>What happens?</strong></div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Nothing, the snake passes through itself</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Game over because the head overlaps a body segment</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The snake grows longer</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkPredict(this)">🔮 Check Prediction</button>
+      </div>
+
+      <div class="quiz-gate" id="quiz-7" data-step="7" data-k="Nw==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we start the self-collision loop from <strong>segment 2</strong> and not segment 1?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Segment 1 is the head, which we're checking against</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Segment 1 doesn't exist</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It doesn't matter where we start</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8 -->
+  <div class="step-card locked" id="step-8" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">8</div><div class="step-title-wrap"><div class="step-emoji">💨</div><div class="step-title">Add Speed Increase</div><div class="step-blurb">Make the snake move faster as the score goes up</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Use a timer so the snake only moves every N frames, and decrease that interval as the score increases.</p></div></div>
+      <h3>Timer-based movement</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create <strong>move_timer=0</strong> and <strong>move_speed=8</strong> in _init().</span></li>
+        <li><span class="num-badge">2</span><span>In _update(), increment timer: <strong>move_timer+=1</strong>. Only move when <strong>move_timer&gt;=move_speed</strong>.</span></li>
+        <li><span class="num-badge">3</span><span>After eating food, decrease move_speed: <strong>if move_speed&gt;3 then move_speed-=0.5 end</strong></span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Snake - Speed</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  move_timer=move_timer+<span class="pico-num">1</span>
+  <span class="pico-kw">if</span> move_timer&lt;move_speed <span class="pico-kw">then</span>
+    <span class="pico-kw">return</span>
+  <span class="pico-kw">end</span>
+  move_timer=<span class="pico-num">0</span>
+
+  <span class="pico-cmt">-- direction + movement here</span>
+
+  <span class="pico-cmt">-- after eating food:</span>
+  <span class="pico-kw">if</span> move_speed&gt;<span class="pico-num">3</span> <span class="pico-kw">then</span>
+    move_speed=move_speed-<span class="pico-num">0.5</span>
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div></div>
+
+      <div class="quiz-gate" id="quiz-8" data-step="8" data-k="OA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">If move_speed starts at 8 and decreases by 0.5 each food eaten, how many foods until speed is 3?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>5 foods</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>10 foods</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>16 foods</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(8)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 9 -->
+  <div class="step-card locked" id="step-9" data-step="9">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">9</div><div class="step-title-wrap"><div class="step-emoji">🎉</div><div class="step-title">Add Title Screen &amp; Polish</div><div class="step-blurb">Add a start screen, sound effects and final touches</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add a title screen, display the score, add sound effects and make the game feel polished.</p></div></div>
+      <h3>Title screen and polish</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Add a <strong>title=true</strong> state in _init(). Show "SNAKE" text and "press z" while title is true.</span></li>
+        <li><span class="num-badge">2</span><span>Display the score: <strong>print("score: "..score, 2, 2, 7)</strong></span></li>
+        <li><span class="num-badge">3</span><span>Add <strong>sfx(0)</strong> when eating food and <strong>sfx(1)</strong> on game over.</span></li>
+        <li><span class="num-badge">4</span><span>On game over, show score and "press z to restart". Reset everything when Z is pressed.</span></li>
+      </ul>
+
+      <div class="concept-fill" id="cf-9" data-step="9">
+        <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+        <div class="cf-sentence">In Snake, we use a <input class="cf-blank" data-a="dGFibGU=" placeholder="?????" size="8"> to store all the body segments, and <input class="cf-blank" data-a="Zmxy" placeholder="???" size="6">() to convert random decimals to whole grid numbers.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-9" data-step="9" data-k="OQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Final Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What does <strong>all(snake)</strong> do in a for loop?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It loops through every segment in the snake table</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It checks if the snake is alive</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It deletes the snake table</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(9)">🎉 I Finished the Snake Workshop!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINISH BANNER -->
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🐍🍎🎮💀</div>
+    <div class="finish-title">You Built a Snake Game!</div>
+    <p class="finish-sub">Amazing, you've made a real Snake game with grid movement, growth, collision and increasing speed. Now try Episode 3!</p>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <a href="pico8-dungeon-workshop.html" class="next-ep-btn">🏰 Episode 3: Dungeon Explorer →</a>
+    <div class="support-prompt"><p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p><a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a></div>
+  </div>
+
+</main>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script src="../player-profile.js"></script>
+<script src="../tracks.js"></script>
+<script>
+const TOTAL=9;const STORAGE_KEY='jvds-pico8-snake-v1';
+let completed=new Set();let xp=0;let level=1;let streak=0;let bestStreak=0;let totalQuizzes=0;let correctFirst=0;
+const XP_PER_LEVEL=100;const XP_QUIZ=15;const XP_CODE=20;const XP_STREAK_BONUS=5;
+function _dec(el,k){var e=el.dataset[k];if(e!==undefined){try{return decodeURIComponent(atob(e));}catch(_){return '';}}return k==='a'?(el.dataset.answer||''):(el.dataset.correct||'');}
+function _answers(el){return _dec(el,'a').split('|');}_canon=function(el){return _answers(el)[0];};
+function _match(el,val){var v=val.trim().toLowerCase();return _answers(el).some(function(a){return a.trim().toLowerCase()===v;});}
+function _key(el){return parseInt(_dec(el,'k'),10);}
+function _shuffleQuiz(){document.querySelectorAll('.quiz-options').forEach(function(o){var k=[].slice.call(o.children);for(var i=k.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=k[i];k[i]=k[j];k[j]=t;}k.forEach(function(c){o.appendChild(c);});var L=['A','B','C','D','E'];o.querySelectorAll('.opt-letter').forEach(function(l,i){l.textContent=L[i]||'';});});}
+function _initKbd(){function act(el){return function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};}document.querySelectorAll('.quiz-opt').forEach(function(o){o.setAttribute('role','button');o.setAttribute('tabindex','0');o.addEventListener('keydown',act(o));});document.querySelectorAll('.step-header').forEach(function(h){h.setAttribute('role','button');h.setAttribute('tabindex','0');h.addEventListener('keydown',act(h));});}
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp,level,streak,bestStreak,totalQuizzes,correctFirst,quizzesPassed:[...document.querySelectorAll('.quiz-gate.passed')].map(q=>q.id),challengesPassed:[...document.querySelectorAll('.code-challenge.passed')].map(c=>c.id)}));}catch(e){}}
+function loadProgress(){try{const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!data)return;if(data.xp){xp=data.xp;level=data.level||1;streak=data.streak||0;bestStreak=data.bestStreak||0;totalQuizzes=data.totalQuizzes||0;correctFirst=data.correctFirst||0;}if(data.completed&&data.completed.length){data.completed.forEach(n=>{completed.add(n);const card=document.getElementById('step-'+n);if(!card)return;card.classList.remove('active-step','open','locked');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';});const next=getActiveStep();if(next<=TOTAL){const nc=document.getElementById('step-'+next);if(nc){nc.classList.remove('locked');nc.classList.add('active-step','open');nc.querySelector('.step-status').className='step-status ss-active';nc.querySelector('.step-status').textContent='Current';}}if(data.completed.length===TOTAL)document.getElementById('finishBanner').classList.add('show');}if(data.quizzesPassed)data.quizzesPassed.forEach(id=>{const q=document.getElementById(id);if(q){q.classList.add('passed');q.querySelector('.quiz-next-btn').classList.add('show');q.querySelector('.quiz-submit').style.display='none';q.querySelectorAll('.quiz-opt').forEach(o=>o.classList.add('disabled'));}});if(data.challengesPassed)data.challengesPassed.forEach(id=>{const c=document.getElementById(id);if(c){c.classList.add('passed');c.querySelector('.cc-check-btn').disabled=true;c.querySelectorAll('.cc-blank').forEach(b=>{b.value=_canon(b);b.disabled=true;b.classList.add('correct');});}});updateXpDisplay();}catch(e){}}
+function getActiveStep(){for(let i=1;i<=TOTAL;i++){if(!completed.has(i))return i;}return TOTAL;}
+function buildDots(){const c=document.getElementById('stepDots');c.innerHTML='';for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='step-dot'+(completed.has(i)?' done':(i===getActiveStep()?' active':''));d.textContent=i;d.onclick=()=>{const el=document.getElementById('step-'+i);if(el&&!el.classList.contains('locked'))el.scrollIntoView({behavior:'smooth',block:'start'});};c.appendChild(d);}}
+function updateProgress(){const n=completed.size;document.getElementById('progressCount').textContent=n+' / '+TOTAL+' steps';document.getElementById('progressFill').style.width=(n/TOTAL*100)+'%';buildDots();}
+function updateXpDisplay(){const xpInLevel=xp%XP_PER_LEVEL;document.getElementById('xpLabel').textContent=xp+' XP';document.getElementById('xpFill').style.width=(xpInLevel/XP_PER_LEVEL*100)+'%';document.getElementById('xpLevel').textContent='Level '+level;document.getElementById('streakCount').textContent=streak;document.getElementById('xpStreak').classList.toggle('hot',streak>=3);}
+function awardXp(amount,label){const oldLevel=level;xp+=amount;level=Math.floor(xp/XP_PER_LEVEL)+1;updateXpDisplay();document.getElementById('xpLabel').classList.add('xp-pop');setTimeout(()=>document.getElementById('xpLabel').classList.remove('xp-pop'),400);showXpToast('+'+amount+' XP'+(label?' · '+label:''));if(streak>=3)streakFx(streak);if(level>oldLevel)setTimeout(()=>showLevelUp(level),600);saveProgress();}
+function streakFx(s){const tier=Math.min(Math.floor(s/3),4);const anchor=document.getElementById('xpLabel');if(!anchor)return;const r=anchor.getBoundingClientRect();const n=3+tier*2;for(let i=0;i<n;i++){const p=document.createElement('span');p.textContent='✨';const angle=Math.random()*Math.PI*2,dist=20+Math.random()*30;p.style.cssText='position:fixed;left:'+(r.left+r.width/2)+'px;top:'+(r.top+r.height/2)+'px;font-size:'+(12+tier)+'px;pointer-events:none;z-index:9999;--dx:'+(Math.cos(angle)*dist).toFixed(1)+'px;--dy:'+(Math.sin(angle)*dist).toFixed(1)+'px;animation:streakPop .55s ease-out forwards;';document.body.appendChild(p);setTimeout(()=>p.remove(),570);}if(tier>=2){document.body.classList.add('streak-shake');setTimeout(()=>document.body.classList.remove('streak-shake'),300);}}
+function showXpToast(text){const existing=document.querySelector('.xp-toast');if(existing)existing.remove();const t=document.createElement('div');t.className='xp-toast';t.textContent=text;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2000);}
+function showLevelUp(lvl){const overlay=document.createElement('div');overlay.className='levelup-overlay';overlay.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';document.body.appendChild(overlay);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});}
+function selectQuizOpt(el){const gate=el.closest('.quiz-gate')||el.closest('.predict-challenge');if(!gate||gate.classList.contains('passed'))return;gate.querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');const submitBtn=gate.querySelector('.quiz-submit');if(submitBtn)submitBtn.classList.add('show');}
+function checkQuiz(btn){const gate=btn.closest('.quiz-gate');const selected=gate.querySelector('.quiz-opt.selected');if(!selected)return;const correct=_key(gate);const chosenIdx=parseInt(selected.dataset.idx);const fb=gate.querySelector('.quiz-feedback');totalQuizzes++;if(chosenIdx===correct){selected.classList.add('correct');fb.className='quiz-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';gate.classList.add('passed');btn.style.display='none';gate.querySelector('.quiz-next-btn').classList.add('show');gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;let bonus=XP_QUIZ;let label='Quiz correct';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{selected.classList.add('wrong');fb.className='quiz-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, try again!</span>';streak=0;updateXpDisplay();setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);}saveProgress();}
+function checkCodeChallenge(btn){const challenge=btn.closest('.code-challenge');const blanks=challenge.querySelectorAll('.cc-blank');const fb=challenge.querySelector('.cc-feedback');const hint=challenge.querySelector('.cc-hint');let allCorrect=true;blanks.forEach(b=>{if(_match(b,b.value)){b.classList.remove('wrong');b.classList.add('correct');}else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}});if(allCorrect){fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';challenge.classList.add('passed');btn.disabled=true;blanks.forEach(b=>{b.value=_canon(b);b.disabled=true;});hint.classList.remove('show');streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_CODE;let label='Code challenge';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='cc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';hint.classList.add('show');streak=0;updateXpDisplay();totalQuizzes++;}saveProgress();}
+function checkConceptFill(btn){const wrap=btn.closest('.concept-fill');const blanks=wrap.querySelectorAll('.cf-blank');const fb=wrap.querySelector('.cf-feedback');let allCorrect=true;blanks.forEach(b=>{if(_match(b,b.value)){b.classList.remove('wrong');b.classList.add('correct');}else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}});if(allCorrect){fb.className='cf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>';wrap.classList.add('passed');btn.disabled=true;blanks.forEach(b=>{b.value=_canon(b);b.disabled=true;});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_QUIZ;let label='Concept fill';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='cf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Some blanks aren\'t right, try again!</span>';streak=0;updateXpDisplay();totalQuizzes++;}saveProgress();}
+function pickTF(btn,value){const item=btn.closest('.tf-item');item.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');btn.dataset.picked=value;}
+function checkTF(btn){const round=btn.closest('.tf-round');const items=round.querySelectorAll('.tf-item');const fb=round.querySelector('.tf-feedback');let allAnswered=true,allCorrect=true;items.forEach(item=>{const selected=item.querySelector('.tf-btn.selected');if(!selected){allAnswered=false;return;}const correct=_dec(item,'a').trim().toLowerCase();const picked=selected.dataset.picked;item.classList.add('answered');if(picked===correct){selected.classList.add('correct-answer');}else{selected.classList.add('wrong-answer');item.querySelectorAll('.tf-btn').forEach(b=>{if(b.dataset.picked!==picked&&b.textContent.toLowerCase()===correct)b.classList.add('correct-answer');});allCorrect=false;}});if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>';return;}if(allCorrect){fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';round.classList.add('passed');btn.disabled=true;streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_QUIZ;let label='True/False';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not all correct, look at the highlighted answers and try again next time.</span>';streak=0;updateXpDisplay();totalQuizzes++;setTimeout(()=>{items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});fb.classList.remove('show');},2500);}saveProgress();}
+function checkPredict(btn){const challenge=btn.closest('.predict-challenge');const selected=challenge.querySelector('.quiz-opt.selected');if(!selected)return;const correct=_key(challenge);const chosenIdx=parseInt(selected.dataset.idx);const fb=challenge.querySelector('.quiz-feedback');totalQuizzes++;if(chosenIdx===correct){selected.classList.add('correct');fb.className='quiz-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Great prediction! You really understand how this works.</span>';challenge.classList.add('passed');btn.style.display='none';challenge.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;let bonus=XP_QUIZ;let label='Prediction';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{selected.classList.add('wrong');fb.className='quiz-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, think about it again!</span>';streak=0;updateXpDisplay();setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);}saveProgress();}
+function completeStep(n){completed.add(n);const card=document.getElementById('step-'+n);card.classList.remove('active-step','open');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';const next=document.getElementById('step-'+(n+1));if(next){next.classList.remove('locked');next.classList.add('active-step','open');next.querySelector('.step-status').className='step-status ss-active';next.querySelector('.step-status').textContent='Current';setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),150);}if(completed.size===TOTAL){document.getElementById('finishBanner').classList.add('show');document.getElementById('finalXp').textContent=xp;document.getElementById('finalLevel').textContent=level;document.getElementById('finalStreak').textContent=bestStreak;document.getElementById('finalAccuracy').textContent=totalQuizzes?Math.round(correctFirst/totalQuizzes*100)+'%':'0%';setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);if(typeof playerProfile!=='undefined'){playerProfile.markWorkshopCompleted('pico8-snake-workshop',80);}}updateProgress();saveProgress();}
+function toggleStep(header){const card=header.closest('.step-card');if(card.classList.contains('locked'))return;const body=card.querySelector('.step-body');const isOpen=card.classList.contains('open');card.classList.toggle('open',!isOpen);body.style.display=isOpen?'none':'block';}
+_shuffleQuiz();_initKbd();loadProgress();updateProgress();updateXpDisplay();
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"Build a Snake Game in Pico-8","description":"Build a Snake game in Pico-8! A free parent & child workshop. Learn grid movement, growth mechanics and collision detection with real Lua code. Ages 8+.","url":"https://jvdesignstudio.co.uk/workshops/pico8-snake-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H"}}</script>
+</body>
+</html>

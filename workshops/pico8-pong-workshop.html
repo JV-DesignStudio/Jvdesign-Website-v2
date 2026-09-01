@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#ff004d">
+<script src="../analytics-loader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build a Pong Clone in Pico-8 | Free Workshop for Kids | JVDesignStudio</title>
+<meta name="description" content="Build your first Pico-8 game! A free parent & child workshop. Create paddles, a bouncing ball and score tracking with real Lua code. Ages 8+.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/pico8-pong-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/pico8-pong-workshop.html">
+<meta property="og:title" content="Build a Pong Clone in Pico-8 | Free Workshop for Kids | JVDesignStudio">
+<meta property="og:description" content="Build a Pong game in Pico-8. Free parent & child workshop, no experience needed. Ages 8+.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/pico8-pong-workshop.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pico8-pong-workshop.png">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+  --accent:#ff004d;--accent2:#ff5577;--green:#06d6a0;--teal:#4dd9e0;
+  --asphalt:#2a2d3a;--xp-gold:#ffd166;--xp-glow:rgba(255,209,102,.3);
+}
+.pico-lua{color:#fff8e0;font-family:'JetBrains Mono','Courier New',monospace}
+.pico-kw{color:#ff004d;font-weight:700}
+.pico-fn{color:#29adff}
+.pico-num{color:#ffa300}
+.pico-str{color:#00e436}
+.pico-cmt{color:#5f574f;font-style:italic}
+.pico-op{color:#ff77a8}
+.print-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(232,234,242,.6);cursor:pointer;text-decoration:none;transition:background .15s,color .15s}.print-btn:hover{background:rgba(255,255,255,.09);color:var(--text)}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+</head>
+<body>
+
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#ff004d,#ff7700,#ff004d,#ff7700)">
+  <span>🎮 My First Pico-8 Game · Episode 1 of 6 · <a href="my-first-pico8-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
+</div>
+
+<section class="hero" id="main-content">
+  <div class="hero-inner">
+    <div class="hero-badge">🏓 Episode 1 · Beginner · No Experience Needed</div>
+    <h1>Paddle &amp; Ball!<br><em>Pong Clone</em></h1>
+    <p class="hero-sub">Build the classic Pong game with two paddles, a bouncing ball and score tracking. Your first real Pico-8 cartridge using Lua code!</p>
+    <div class="hero-pills">
+      <span class="pill p-age">👶 Ages 8+</span>
+      <span class="pill p-time">⏱️ ~1 Hour</span>
+      <span class="pill p-tool">🎮 Pico-8</span>
+      <span class="pill p-free">✓ Free</span>
+    </div>
+    <div class="skills-strip">
+      <span class="skill-tag"><span>🔄</span> Game Loop</span>
+      <span class="skill-tag"><span>⬆️</span> Input</span>
+      <span class="skill-tag"><span>📐</span> Collision</span>
+      <span class="skill-tag"><span>🔢</span> Variables</span>
+      <span class="skill-tag"><span>📏</span> Coordinates</span>
+      <span class="skill-tag"><span>🔊</span> Sound</span>
+    </div>
+    <div class="hero-btns">
+      <a href="#step-1" class="btn-start">🏓 Let's Build! Start Step 1</a>
+      <a href="my-first-pico8-game.html" class="btn-outline">← All Episodes</a>
+      <a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- XP BAR -->
+<div class="xp-wrap">
+  <div class="xp-bar">
+    <div class="xp-icon">⭐</div>
+    <div class="xp-label" id="xpLabel">0 XP</div>
+    <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+    <div class="xp-level" id="xpLevel">Level 1</div>
+    <div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-header">
+    <span class="progress-label">Your Progress</span>
+    <span class="progress-count" id="progressCount">0 / 8 steps</span>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="step-dots" id="stepDots"></div>
+</div>
+
+<main class="workshop">
+
+  <!-- STEP 1 -->
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-red">1</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🎮</div>
+        <div class="step-title">Open Pico-8 &amp; Start a New Cartridge</div>
+        <div class="step-blurb">Launch Pico-8 and create a blank Lua file</div>
+      </div>
+      <span class="step-status ss-active">Active</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Get Pico-8 open with a blank cartridge ready to write code in.</p></div>
+      </div>
+      <div class="callout parent"><div class="callout-icon">👨‍👧</div><div><strong>Parent note:</strong> Pico-8 is a small program you download from <strong>lexaloffle.com/pico-8.php</strong>. The free trial works perfectly for all these workshops. It costs around £11 for the full version but you don't need it yet.</div></div>
+      <h3>Get started</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Open <strong>Pico-8</strong> from your Start Menu or Applications folder. A black console window appears.</span></li>
+        <li><span class="num-badge">2</span><span>Type <strong>folder</strong> and press Enter. This opens the Pico-8 cart data folder where your games are saved.</span></li>
+        <li><span class="num-badge">3</span><span>In the Pico-8 console, type <strong>code</strong> and press Enter. This opens the code editor.</span></li>
+        <li><span class="num-badge">4</span><span>You'll see an empty code editor. The editor has tabs: <strong>CODE</strong>, <strong>SPRITE</strong>, <strong>MAP</strong>, <strong>SFX</strong>, and <strong>MUSIC</strong>.</span></li>
+        <li><span class="num-badge">5</span><span>Pico-8 games use three special functions: <strong>_init()</strong> (runs once), <strong>_update()</strong> (runs 30 times per second), and <strong>_draw()</strong> (draws the screen).</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Basic Pico-8 Structure</div>
+        <div class="blocks-body"><span class="pico-cmt">-- pong.p8</span>
+<span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  <span class="pico-cmt">-- runs once at start</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- runs 30x per second</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-cmt">-- draws the screen</span>
+<span class="pico-kw">end</span></div>
+      </div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>Type this basic structure into your code editor. Press <strong>Ctrl+S</strong> to save, then <strong>Esc</strong> to return to the console and type <strong>run</strong> to test. You should see a black screen!</div></div>
+
+      <!-- QUIZ GATE -->
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">How many times per second does <strong>_update()</strong> run in Pico-8?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>10 times</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>30 times</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>60 times</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-green">2</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🏓</div>
+        <div class="step-title">Draw the Paddles</div>
+        <div class="step-blurb">Create two paddles on screen using rect()</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Draw a white paddle on each side of the screen that the player can move up and down.</p></div>
+      </div>
+      <h3>Set up paddle variables and draw them</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In <strong>_init()</strong>, create variables for the paddle positions. We'll use <strong>py1</strong> for the left paddle's Y position and <strong>py2</strong> for the right paddle.</span></li>
+        <li><span class="num-badge">2</span><span>Set both to <strong>54</strong> so they start in the middle of the 128-pixel screen.</span></li>
+        <li><span class="num-badge">3</span><span>In <strong>_draw()</strong>, use <strong>cls(0)</strong> to clear the screen black, then <strong>rectfill()</strong> to draw each paddle as a white rectangle.</span></li>
+        <li><span class="num-badge">4</span><span>The paddles are 3 pixels wide and 20 pixels tall. Left paddle at x=2, right paddle at x=123.</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Draw Paddles</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  <span class="pico-cmt">-- paddle y positions</span>
+  py1=<span class="pico-num">54</span>  <span class="pico-cmt">-- left paddle</span>
+  py2=<span class="pico-num">54</span>  <span class="pico-cmt">-- right paddle</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)  <span class="pico-cmt">-- clear screen black</span>
+
+  <span class="pico-cmt">-- left paddle (white)</span>
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">2</span>,py1,<span class="pico-num">4</span>,py1+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+
+  <span class="pico-cmt">-- right paddle (white)</span>
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">123</span>,py2,<span class="pico-num">125</span>,py2+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+<span class="pico-kw">end</span></div>
+      </div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>Pico-8 screen is <strong>128x128 pixels</strong>. Colours are numbered 0-15. Colour <strong>7</strong> is white. <strong>rectfill(x1,y1,x2,y2,col)</strong> draws a filled rectangle.</div></div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-2" data-step="2">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks to draw a filled green rectangle from (10,20) to (30,40):</div>
+        <div class="cc-code-area">
+<span class="pico-fn">rectfill</span>(<input class="cc-blank" data-a="MTA=" placeholder="?" size="4">,<input class="cc-blank" data-a="MjA=" placeholder="?" size="4">,<input class="cc-blank" data-a="MzA=" placeholder="?" size="4">,<input class="cc-blank" data-a="NDA=" placeholder="?" size="4">,<input class="cc-blank" data-a="MTE=" placeholder="??" size="4">)</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: rectfill uses (x1, y1, x2, y2, colour). Green is colour 11 in Pico-8.</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-k="Mg==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What colour number is <strong>white</strong> in Pico-8?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>0</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>7</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>15</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-yellow">3</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">⬆️</div>
+        <div class="step-title">Move the Paddles</div>
+        <div class="step-blurb">Use btn() to detect arrow key input</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Make the left paddle move with arrow keys and the right paddle with X and Z buttons.</p></div>
+      </div>
+      <h3>Add input handling</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In <strong>_update()</strong>, use <strong>btn(2)</strong> and <strong>btn(3)</strong> to check if UP or DOWN is pressed.</span></li>
+        <li><span class="num-badge">2</span><span><strong>btn(0)</strong>=left, <strong>btn(1)</strong>=right, <strong>btn(2)</strong>=up, <strong>btn(3)</strong>=down, <strong>btn(4)</strong>=Z/C, <strong>btn(5)</strong>=X</span></li>
+        <li><span class="num-badge">3</span><span>Move py1 up/down by 2 pixels. Use <strong>if py1&lt;0 then py1=0 end</strong> to keep it on screen.</span></li>
+        <li><span class="num-badge">4</span><span>For the right paddle, use btn(4) and btn(5) or add a second set of keys.</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Paddle Movement</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- left paddle: arrow keys</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">2</span>) <span class="pico-kw">then</span> py1=<span class="pico-op">-</span><span class="pico-num">2</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">3</span>) <span class="pico-kw">then</span> py1=<span class="pico-op">+</span><span class="pico-num">2</span> <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- keep paddle on screen</span>
+  <span class="pico-kw">if</span> py1&lt;<span class="pico-num">0</span> <span class="pico-kw">then</span> py1=<span class="pico-num">0</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py1&gt;<span class="pico-num">108</span> <span class="pico-kw">then</span> py1=<span class="pico-num">108</span> <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- right paddle: z/x keys</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">4</span>) <span class="pico-kw">then</span> py2=<span class="pico-op">-</span><span class="pico-num">2</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">5</span>) <span class="pico-kw">then</span> py2=<span class="pico-op">+</span><span class="pico-num">2</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py2&lt;<span class="pico-num">0</span> <span class="pico-kw">then</span> py2=<span class="pico-num">0</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py2&gt;<span class="pico-num">108</span> <span class="pico-kw">then</span> py2=<span class="pico-num">108</span> <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div>
+      </div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>108 is 128 minus 20 (paddle height). This keeps the paddle from going off the bottom of the screen!</div></div>
+
+      <!-- TRUE/FALSE -->
+      <div class="tf-round" id="tf-3" data-step="3">
+        <div class="tf-header">
+          <div class="tf-icon">⚡</div>
+          <div class="tf-title">True or False?</div>
+          <div class="tf-xp-badge">+15 XP</div>
+        </div>
+        <div class="tf-item" data-a="dHJ1ZQ==">
+          <div class="tf-statement"><strong>btn(2)</strong> checks if the UP arrow is pressed.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <div class="tf-item" data-a="dHJ1ZQ==">
+          <div class="tf-statement">The Pico-8 screen is 128 pixels wide and 128 pixels tall.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <div class="tf-item" data-a="ZmFsc2U=">
+          <div class="tf-statement"><strong>btn(4)</strong> checks if the LEFT arrow is pressed.</div>
+          <div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div>
+        </div>
+        <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
+        <div class="tf-feedback"></div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-k="Mw==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Which button number does <strong>btn(0)</strong> check?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>UP arrow</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>LEFT arrow</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Z button</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-pink">4</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">⚪</div>
+        <div class="step-title">Add the Ball</div>
+        <div class="step-blurb">Create a ball that moves and bounces off walls</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add a ball with position, speed and direction that bounces off the top and bottom walls.</p></div>
+      </div>
+      <h3>Create the ball</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In <strong>_init()</strong>, add ball variables: <strong>bx</strong> (x position), <strong>by</strong> (y position), <strong>bdx</strong> (x speed), <strong>bdy</strong> (y speed).</span></li>
+        <li><span class="num-badge">2</span><span>Set bx=63, by=63 (centre), bdx=2, bdy=1.</span></li>
+        <li><span class="num-badge">3</span><span>In <strong>_draw()</strong>, add <strong>circfill(bx,by,2,7)</strong> to draw a white filled circle.</span></li>
+        <li><span class="num-badge">4</span><span>In <strong>_update()</strong>, move the ball: <strong>bx=bx+bdx</strong> and <strong>by=by+bdy</strong>.</span></li>
+        <li><span class="num-badge">5</span><span>Add wall bounce: <strong>if by&lt;1 or by&gt;126 then bdy=-bdy end</strong></span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Ball Movement</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  py1=<span class="pico-num">54</span> py2=<span class="pico-num">54</span>
+  bx=<span class="pico-num">63</span> by=<span class="pico-num">63</span>
+  bdx=<span class="pico-num">2</span> bdy=<span class="pico-num">1</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- move ball</span>
+  bx=bx+bdx
+  by=by+bdy
+
+  <span class="pico-cmt">-- bounce off top/bottom</span>
+  <span class="pico-kw">if</span> by&lt;<span class="pico-num">1</span> <span class="pico-kw">or</span> by&gt;<span class="pico-num">126</span> <span class="pico-kw">then</span>
+    bdy=<span class="pico-op">-</span>bdy
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">2</span>,py1,<span class="pico-num">4</span>,py1+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">123</span>,py2,<span class="pico-num">125</span>,py2+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+  <span class="pico-fn">circfill</span>(bx,by,<span class="pico-num">2</span>,<span class="pico-num">7</span>)
+<span class="pico-kw">end</span></div>
+      </div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-4" data-step="4">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks to make the ball bounce off the top and bottom walls:</div>
+        <div class="cc-code-area">
+<span class="pico-kw">if</span> by&lt;<input class="cc-blank" data-a="MQ==" placeholder="?" size="3"> <span class="pico-kw">or</span> by&gt;<input class="cc-blank" data-a="MTI2" placeholder="?" size="5"> <span class="pico-kw">then</span>
+  bdy=<input class="cc-blank" data-a="LWJkeQ==" placeholder="????" size="6">
+<span class="pico-kw">end</span></div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: The ball bounces when it hits y=1 (top) or y=126 (bottom). Negating bdy reverses direction.</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-k="NA==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What does <strong>circfill(bx,by,2,7)</strong> draw?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A white rectangle 2 pixels wide</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A white filled circle with radius 2</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A green circle outline</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-purple">5</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🏓</div>
+        <div class="step-title">Paddle Collision &amp; Bounce</div>
+        <div class="step-blurb">Make the ball bounce off the paddles</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Detect when the ball hits a paddle and reverse its direction.</p></div>
+      </div>
+      <h3>Add collision detection</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>We need to check: is the ball overlapping the left paddle? Use <strong>bx&lt;6</strong> and <strong>by&gt;=py1</strong> and <strong>by&lt;=py1+19</strong>.</span></li>
+        <li><span class="num-badge">2</span><span>When it hits, set <strong>bx=5</strong> (push it back) and <strong>bdx=-bdx</strong> (reverse direction).</span></li>
+        <li><span class="num-badge">3</span><span>Do the same for the right paddle with <strong>bx&gt;121</strong> and <strong>by&gt;=py2</strong>.</span></li>
+        <li><span class="num-badge">4</span><span>Add a score variable: <strong>sc1</strong> and <strong>sc2</strong>. When the ball goes past a paddle, add a point and reset the ball.</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Collision &amp; Score</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  py1=<span class="pico-num">54</span> py2=<span class="pico-num">54</span>
+  bx=<span class="pico-num">63</span> by=<span class="pico-num">63</span>
+  bdx=<span class="pico-num">2</span> bdy=<span class="pico-num">1</span>
+  sc1=<span class="pico-num">0</span> sc2=<span class="pico-num">0</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  bx=bx+bdx
+  by=by+bdy
+
+  <span class="pico-cmt">-- bounce top/bottom</span>
+  <span class="pico-kw">if</span> by&lt;<span class="pico-num">1</span> <span class="pico-kw">or</span> by&gt;<span class="pico-num">126</span> <span class="pico-kw">then</span> bdy=<span class="pico-op">-</span>bdy <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- left paddle bounce</span>
+  <span class="pico-kw">if</span> bx&lt;<span class="pico-num">6</span> <span class="pico-kw">and</span>
+     by&gt;=py1 <span class="pico-kw">and</span> by&lt;=py1+<span class="pico-num">19</span> <span class="pico-kw">then</span>
+    bdx=<span class="pico-op">-</span>bdx bx=<span class="pico-num">5</span>
+  <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- right paddle bounce</span>
+  <span class="pico-kw">if</span> bx&gt;<span class="pico-num">121</span> <span class="pico-kw">and</span>
+     by&gt;=py2 <span class="pico-kw">and</span> by&lt;=py2+<span class="pico-num">19</span> <span class="pico-kw">then</span>
+    bdx=<span class="pico-op">-</span>bdx bx=<span class="pico-num">122</span>
+  <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- scoring</span>
+  <span class="pico-kw">if</span> bx&lt;<span class="pico-num">0</span> <span class="pico-kw">then</span>
+    sc2=sc2+<span class="pico-num">1</span>
+    bx=<span class="pico-num">63</span> by=<span class="pico-num">63</span>
+    bdx=<span class="pico-num">2</span> bdy=<span class="pico-num">1</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> bx&gt;<span class="pico-num">128</span> <span class="pico-kw">then</span>
+    sc1=sc1+<span class="pico-num">1</span>
+    bx=<span class="pico-num">63</span> by=<span class="pico-num">63</span>
+    bdx=<span class="pico-op">-</span><span class="pico-num">2</span> bdy=<span class="pico-num">1</span>
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div>
+      </div>
+
+      <!-- PREDICT -->
+      <div class="predict-challenge" id="pred-5" data-step="5" data-k="MQ==">
+        <div class="pc-header">
+          <div class="pc-icon">🔮</div>
+          <div class="pc-title">Predict What Happens</div>
+          <div class="pc-xp-badge">+15 XP</div>
+        </div>
+        <div class="pc-scenario">The ball is at position bx=4, by=60. The left paddle is at py1=50 (so it spans y=50 to y=69). The ball's bdx is currently 2.<br><br><strong>What happens next?</strong></div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The ball passes through the paddle (no collision)</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The ball bounces off the paddle and reverses direction</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The game crashes</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkPredict(this)">🔮 Check Prediction</button>
+      </div>
+
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="NQ==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why do we set <strong>bx=5</strong> after the left paddle bounce?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To make the ball go faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To push the ball back so it doesn't get stuck inside the paddle</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>To reset the score</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-teal">6</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🔢</div>
+        <div class="step-title">Draw the Score</div>
+        <div class="step-blurb">Display the score on screen for both players</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Show the score at the top of the screen so both players can see who's winning.</p></div>
+      </div>
+      <h3>Add score display</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In <strong>_draw()</strong>, use <strong>print(sc1, 54, 6, 7)</strong> to draw player 1's score near the left.</span></li>
+        <li><span class="num-badge">2</span><span>Use <strong>print(sc2, 70, 6, 7)</strong> for player 2's score near the right.</span></li>
+        <li><span class="num-badge">3</span><span>Add a centre line using a loop: <strong>for i=0,128,8 do pset(64,i,5) end</strong></span></li>
+        <li><span class="num-badge">4</span><span>Colour 5 is grey, which makes a nice dashed centre line.</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Score Display</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+
+  <span class="pico-cmt">-- dashed centre line</span>
+  <span class="pico-kw">for</span> i=<span class="pico-num">0</span>,<span class="pico-num">128</span>,<span class="pico-num">8</span> <span class="pico-kw">do</span>
+    <span class="pico-fn">pset</span>(<span class="pico-num">64</span>,i,<span class="pico-num">5</span>)
+  <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- draw score</span>
+  <span class="pico-fn">print</span>(sc1,<span class="pico-num">54</span>,<span class="pico-num">6</span>,<span class="pico-num">7</span>)
+  <span class="pico-fn">print</span>(sc2,<span class="pico-num">70</span>,<span class="pico-num">6</span>,<span class="pico-num">7</span>)
+
+  <span class="pico-cmt">-- draw paddles and ball</span>
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">2</span>,py1,<span class="pico-num">4</span>,py1+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+  <span class="pico-fn">rectfill</span>(<span class="pico-num">123</span>,py2,<span class="pico-num">125</span>,py2+<span class="pico-num">19</span>,<span class="pico-num">7</span>)
+  <span class="pico-fn">circfill</span>(bx,by,<span class="pico-num">2</span>,<span class="pico-num">7</span>)
+<span class="pico-kw">end</span></div>
+      </div>
+
+      <!-- CODE CHALLENGE -->
+      <div class="code-challenge" id="cc-6" data-step="6">
+        <div class="cc-header">
+          <div class="cc-icon">💻</div>
+          <div class="cc-title">Code Challenge</div>
+          <div class="cc-xp-badge">+20 XP</div>
+        </div>
+        <div class="cc-prompt">Fill in the blanks to draw the score for player 1 at position (54, 6) in white:</div>
+        <div class="cc-code-area">
+<span class="pico-fn">print</span>(<input class="cc-blank" data-a="c2Mx" placeholder="???" size="6">,<input class="cc-blank" data-a="NTQ=" placeholder="??" size="4">,<input class="cc-blank" data-a="Ng==" placeholder="?" size="3">,<input class="cc-blank" data-a="Nw==" placeholder="?" size="3">)</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: print() takes (text, x, y, colour). The score variable for player 1 is sc1.</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-k="Ng==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">What does the <strong>for i=0,128,8</strong> loop do?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Draws a single pixel at position 8</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Draws pixels every 8 pixels from 0 to 128, creating a dashed line</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Moves the ball 128 times</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card locked" id="step-7" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-orange">7</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🤖</div>
+        <div class="step-title">Add a Computer Opponent</div>
+        <div class="step-blurb">Make the right paddle follow the ball automatically</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add simple AI so the right paddle automatically follows the ball, making it a single-player game.</p></div>
+      </div>
+      <h3>Simple AI movement</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Remove the btn(4)/btn(5) controls for the right paddle.</span></li>
+        <li><span class="num-badge">2</span><span>Replace them with: if <strong>py2+10&lt;by</strong> then py2=py2+1.5 end</span></li>
+        <li><span class="num-badge">3</span><span>And: <strong>if py2+10&gt;by then py2=py2-1.5 end</strong></span></li>
+        <li><span class="num-badge">4</span><span>This makes the AI paddle slowly follow the ball's Y position. The <strong>1.5</strong> speed makes it beatable!</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - AI Paddle</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-cmt">-- left paddle: arrow keys</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">2</span>) <span class="pico-kw">then</span> py1=py1-<span class="pico-num">2</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> <span class="pico-fn">btn</span>(<span class="pico-num">3</span>) <span class="pico-kw">then</span> py1=py1+<span class="pico-num">2</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py1&lt;<span class="pico-num">0</span> <span class="pico-kw">then</span> py1=<span class="pico-num">0</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py1&gt;<span class="pico-num">108</span> <span class="pico-kw">then</span> py1=<span class="pico-num">108</span> <span class="pico-kw">end</span>
+
+  <span class="pico-cmt">-- right paddle: simple ai</span>
+  <span class="pico-kw">if</span> py2+<span class="pico-num">10</span>&lt;by <span class="pico-kw">then</span>
+    py2=py2+<span class="pico-num">1.5</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py2+<span class="pico-num">10</span>&gt;by <span class="pico-kw">then</span>
+    py2=py2-<span class="pico-num">1.5</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py2&lt;<span class="pico-num">0</span> <span class="pico-kw">then</span> py2=<span class="pico-num">0</span> <span class="pico-kw">end</span>
+  <span class="pico-kw">if</span> py2&gt;<span class="pico-num">108</span> <span class="pico-kw">then</span> py2=<span class="pico-num">108</span> <span class="pico-kw">end</span>
+<span class="pico-kw">end</span></div>
+      </div>
+
+      <div class="callout tip"><div class="callout-icon">💡</div><div>Try changing the AI speed! Use <strong>1</strong> for easy, <strong>2</strong> for hard. The AI is always slightly slower than the player's paddle (which moves at 2).</div></div>
+
+      <div class="quiz-gate" id="quiz-7" data-step="7" data-k="Nw==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Why does the AI paddle use <strong>py2+10</strong> instead of just <strong>py2</strong>?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It makes the AI move faster</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It aims for the middle of the paddle instead of the top, so the AI tracks the ball more naturally</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It prevents the paddle from going off screen</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8 -->
+  <div class="step-card locked" id="step-8" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num sn-red">8</div>
+      <div class="step-title-wrap">
+        <div class="step-emoji">🎉</div>
+        <div class="step-title">Add Sound &amp; Polish!</div>
+        <div class="step-blurb">Add sound effects and a title screen</div>
+      </div>
+      <span class="step-status ss-todo">Locked</span>
+    </div>
+    <div class="step-body">
+      <div class="big-goal">
+        <div class="big-goal-icon">🎯</div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add sound effects when the ball bounces and scores, plus a simple title screen to make the game feel complete.</p></div>
+      </div>
+      <h3>Add sound effects</h3>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>In the Pico-8 editor, click the <strong>SFX</strong> tab. Create a short "blip" sound effect.</span></li>
+        <li><span class="num-badge">2</span><span>In your code, add <strong>sfx(0)</strong> when the ball bounces off a paddle (sfx number 0).</span></li>
+        <li><span class="num-badge">3</span><span>Create a different sound for scoring and play it with <strong>sfx(1)</strong>.</span></li>
+        <li><span class="num-badge">4</span><span>Add a title screen variable: <strong>title=true</strong> in _init(). When title is true, show "PONG" text and wait for Z button press.</span></li>
+      </ul>
+      <div class="blocks-wrap">
+        <div class="blocks-label">📝 Pong - Title Screen</div>
+        <div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  title=<span class="pico-kw">true</span>
+  py1=<span class="pico-num">54</span> py2=<span class="pico-num">54</span>
+  bx=<span class="pico-num">63</span> by=<span class="pico-num">63</span>
+  bdx=<span class="pico-num">2</span> bdy=<span class="pico-num">1</span>
+  sc1=<span class="pico-num">0</span> sc2=<span class="pico-num">0</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_update</span>()
+  <span class="pico-kw">if</span> title <span class="pico-kw">then</span>
+    <span class="pico-kw">if</span> <span class="pico-fn">btnp</span>(<span class="pico-num">4</span>) <span class="pico-kw">then</span>
+      title=<span class="pico-kw">false</span>
+    <span class="pico-kw">end</span>
+    <span class="pico-kw">return</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-cmt">-- rest of game code here</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">_draw</span>()
+  <span class="pico-kw">if</span> title <span class="pico-kw">then</span>
+    <span class="pico-fn">cls</span>(<span class="pico-num">0</span>)
+    <span class="pico-fn">print</span>(<span class="pico-str">"🏓 pong"</span>,<span class="pico-num">42</span>,<span class="pico-num">40</span>,<span class="pico-num">7</span>)
+    <span class="pico-fn">print</span>(<span class="pico-str">"press z to start"</span>,<span class="pico-num">26</span>,<span class="pico-num">70</span>,<span class="pico-num">6</span>)
+    <span class="pico-kw">return</span>
+  <span class="pico-kw">end</span>
+  <span class="pico-cmt">-- rest of draw code here</span>
+<span class="pico-kw">end</span></div>
+      </div>
+
+      <!-- CONCEPT FILL -->
+      <div class="concept-fill" id="cf-8" data-step="8">
+        <div class="cf-header">
+          <div class="cf-icon">✏️</div>
+          <div class="cf-title">Fill in the Blanks</div>
+          <div class="cf-xp-badge">+15 XP</div>
+        </div>
+        <div class="cf-sentence">Pico-8 games have three main functions: <input class="cf-blank" data-a="X2lua" placeholder="????" size="8"> runs once at the start, <input class="cf-blank" data-a="X3VwZGF0ZQ==" placeholder="????????" size="10"> runs 30 times per second, and <input class="cf-blank" data-a="X2RyYXc=" placeholder="????" size="8"> draws the screen.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-8" data-step="8" data-k="OA==">
+        <div class="quiz-header">
+          <div class="quiz-icon">🧠</div>
+          <div class="quiz-title">Final Knowledge Check</div>
+          <div class="quiz-xp-badge">+15 XP</div>
+        </div>
+        <div class="quiz-question">Which function is called <strong>30 times per second</strong> to handle game logic?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>_init()</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>_update()</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>_draw()</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(8)">🎉 I Finished the Pong Workshop!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINISH BANNER -->
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🏓🎮🎊⚪</div>
+    <div class="finish-title">You Built a Pico-8 Game!</div>
+    <p class="finish-sub">Amazing, you've made a real Pong game with paddles, a bouncing ball, scoring, AI and sound effects. Now try Episode 2!</p>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <a href="pico8-snake-workshop.html" class="next-ep-btn">🐍 Episode 2: Snake Game →</a>
+    <div class="support-prompt">
+      <p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a>
+    </div>
+  </div>
+
+</main>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script src="../player-profile.js"></script>
+<script src="../tracks.js"></script>
+
+<script>
+const TOTAL = 8;
+const STORAGE_KEY = 'jvds-pico8-pong-v1';
+
+let completed = new Set();
+let xp = 0;
+let level = 1;
+let streak = 0;
+let bestStreak = 0;
+let totalQuizzes = 0;
+let correctFirst = 0;
+
+const XP_PER_LEVEL = 100;
+const XP_QUIZ = 15;
+const XP_CODE = 20;
+const XP_STREAK_BONUS = 5;
+
+function _dec(el, k){ var e = el.dataset[k]; if (e !== undefined){ try { return decodeURIComponent(atob(e)); } catch(_){ return ''; } } return k === 'a' ? (el.dataset.answer || '') : (el.dataset.correct || ''); }
+function _answers(el){ return _dec(el,'a').split('|'); }
+function _canon(el){ return _answers(el)[0]; }
+function _match(el, val){ var v = val.trim().toLowerCase(); return _answers(el).some(function(a){ return a.trim().toLowerCase() === v; }); }
+function _key(el){ return parseInt(_dec(el,'k'), 10); }
+function _shuffleQuiz(){ document.querySelectorAll('.quiz-options').forEach(function(o){ var k = [].slice.call(o.children); for (var i = k.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = k[i]; k[i] = k[j]; k[j] = t; } k.forEach(function(c){ o.appendChild(c); }); var L = ['A','B','C','D','E']; o.querySelectorAll('.opt-letter').forEach(function(l, i){ l.textContent = L[i] || ''; }); }); }
+function _initKbd(){ function act(el){ return function(e){ if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); } }; } document.querySelectorAll('.quiz-opt').forEach(function(o){ o.setAttribute('role','button'); o.setAttribute('tabindex','0'); o.addEventListener('keydown', act(o)); }); document.querySelectorAll('.step-header').forEach(function(h){ h.setAttribute('role','button'); h.setAttribute('tabindex','0'); h.addEventListener('keydown', act(h)); }); }
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      completed: [...completed], total: TOTAL, xp, level, streak, bestStreak, totalQuizzes, correctFirst,
+      quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(q => q.id),
+      challengesPassed: [...document.querySelectorAll('.code-challenge.passed')].map(c => c.id)
+    }));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!data) return;
+    if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
+    if (data.completed && data.completed.length) {
+      data.completed.forEach(n => {
+        completed.add(n);
+        const card = document.getElementById('step-' + n);
+        if (!card) return;
+        card.classList.remove('active-step', 'open', 'locked');
+        card.classList.add('completed');
+        card.querySelector('.step-status').className = 'step-status ss-done';
+        card.querySelector('.step-status').textContent = '✓ Done';
+        card.querySelector('.step-body').style.display = 'none';
+      });
+      const next = getActiveStep();
+      if (next <= TOTAL) {
+        const nc = document.getElementById('step-' + next);
+        if (nc) { nc.classList.remove('locked'); nc.classList.add('active-step', 'open'); nc.querySelector('.step-status').className = 'step-status ss-active'; nc.querySelector('.step-status').textContent = 'Current'; }
+      }
+      if (data.completed.length === TOTAL) document.getElementById('finishBanner').classList.add('show');
+    }
+    if (data.quizzesPassed) data.quizzesPassed.forEach(id => {
+      const q = document.getElementById(id);
+      if (q) { q.classList.add('passed'); q.querySelector('.quiz-next-btn').classList.add('show'); q.querySelector('.quiz-submit').style.display = 'none'; q.querySelectorAll('.quiz-opt').forEach(o => o.classList.add('disabled')); }
+    });
+    if (data.challengesPassed) data.challengesPassed.forEach(id => {
+      const c = document.getElementById(id);
+      if (c) { c.classList.add('passed'); c.querySelector('.cc-check-btn').disabled = true; c.querySelectorAll('.cc-blank').forEach(b => { b.value = _canon(b); b.disabled = true; b.classList.add('correct'); }); }
+    });
+    updateXpDisplay();
+  } catch(e) {}
+}
+
+function getActiveStep() {
+  for (let i = 1; i <= TOTAL; i++) { if (!completed.has(i)) return i; }
+  return TOTAL;
+}
+
+function buildDots() {
+  const c = document.getElementById('stepDots');
+  c.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'step-dot' + (completed.has(i) ? ' done' : (i === getActiveStep() ? ' active' : ''));
+    d.textContent = i;
+    d.onclick = () => { const el = document.getElementById('step-' + i); if (el && !el.classList.contains('locked')) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+    c.appendChild(d);
+  }
+}
+
+function updateProgress() {
+  const n = completed.size;
+  document.getElementById('progressCount').textContent = n + ' / ' + TOTAL + ' steps';
+  document.getElementById('progressFill').style.width = (n / TOTAL * 100) + '%';
+  buildDots();
+}
+
+function updateXpDisplay() {
+  const xpInLevel = xp % XP_PER_LEVEL;
+  document.getElementById('xpLabel').textContent = xp + ' XP';
+  document.getElementById('xpFill').style.width = (xpInLevel / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevel').textContent = 'Level ' + level;
+  document.getElementById('streakCount').textContent = streak;
+  const streakEl = document.getElementById('xpStreak');
+  streakEl.classList.toggle('hot', streak >= 3);
+}
+
+function awardXp(amount, label) {
+  const oldLevel = level;
+  xp += amount;
+  level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  updateXpDisplay();
+  document.getElementById('xpLabel').classList.add('xp-pop');
+  setTimeout(() => document.getElementById('xpLabel').classList.remove('xp-pop'), 400);
+  showXpToast('+' + amount + ' XP' + (label ? ' · ' + label : ''));
+  if (streak >= 3) streakFx(streak);
+  if (level > oldLevel) setTimeout(() => showLevelUp(level), 600);
+  saveProgress();
+}
+
+function streakFx(s) {
+  const tier = Math.min(Math.floor(s / 3), 4);
+  const anchor = document.getElementById('xpLabel');
+  if (!anchor) return;
+  const r = anchor.getBoundingClientRect();
+  const n = 3 + tier * 2;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('span');
+    p.textContent = '✨';
+    const angle = Math.random() * Math.PI * 2, dist = 20 + Math.random() * 30;
+    p.style.cssText = 'position:fixed;left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 2) + 'px;font-size:' + (12 + tier) + 'px;pointer-events:none;z-index:9999;--dx:' + (Math.cos(angle) * dist).toFixed(1) + 'px;--dy:' + (Math.sin(angle) * dist).toFixed(1) + 'px;animation:streakPop .55s ease-out forwards;';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 570);
+  }
+  if (tier >= 2) {
+    document.body.classList.add('streak-shake');
+    setTimeout(() => document.body.classList.remove('streak-shake'), 300);
+  }
+}
+
+function showXpToast(text) {
+  const existing = document.querySelector('.xp-toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 2000);
+}
+
+function showLevelUp(lvl) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function selectQuizOpt(el) {
+  const gate = el.closest('.quiz-gate') || el.closest('.predict-challenge');
+  if (!gate || gate.classList.contains('passed')) return;
+  gate.querySelectorAll('.quiz-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const submitBtn = gate.querySelector('.quiz-submit');
+  if (submitBtn) submitBtn.classList.add('show');
+}
+
+function checkQuiz(btn) {
+  const gate = btn.closest('.quiz-gate');
+  const selected = gate.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = _key(gate);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = gate.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct');
+    fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';
+    gate.classList.add('passed');
+    btn.style.display = 'none';
+    gate.querySelector('.quiz-next-btn').classList.add('show');
+    gate.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++;
+    let bonus = XP_QUIZ; let label = 'Quiz correct';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong');
+    fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, try again!</span>';
+    streak = 0; updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong', 'selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+function checkCodeChallenge(btn) {
+  const challenge = btn.closest('.code-challenge');
+  const blanks = challenge.querySelectorAll('.cc-blank');
+  const fb = challenge.querySelector('.cc-feedback');
+  const hint = challenge.querySelector('.cc-hint');
+  let allCorrect = true;
+  blanks.forEach(b => {
+    if (_match(b, b.value)) { b.classList.remove('wrong'); b.classList.add('correct'); }
+    else { b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false; }
+  });
+  if (allCorrect) {
+    fb.className = 'cc-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+    challenge.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
+    hint.classList.remove('show');
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_CODE; let label = 'Code challenge';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cc-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';
+    hint.classList.add('show'); streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+function checkConceptFill(btn) {
+  const wrap = btn.closest('.concept-fill');
+  const blanks = wrap.querySelectorAll('.cf-blank');
+  const fb = wrap.querySelector('.cf-feedback');
+  let allCorrect = true;
+  blanks.forEach(b => { if (_match(b, b.value)) { b.classList.remove('wrong'); b.classList.add('correct'); } else { b.classList.remove('correct'); b.classList.add('wrong'); allCorrect = false; } });
+  if (allCorrect) {
+    fb.className = 'cf-feedback correct show'; fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect!</span>';
+    wrap.classList.add('passed'); btn.disabled = true;
+    blanks.forEach(b => { b.value = _canon(b); b.disabled = true; });
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ; let label = 'Concept fill';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'cf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks aren\'t right, try again!</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+  }
+  saveProgress();
+}
+
+function pickTF(btn, value) {
+  const item = btn.closest('.tf-item');
+  item.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); btn.dataset.picked = value;
+}
+
+function checkTF(btn) {
+  const round = btn.closest('.tf-round');
+  const items = round.querySelectorAll('.tf-item');
+  const fb = round.querySelector('.tf-feedback');
+  let allAnswered = true, allCorrect = true;
+  items.forEach(item => {
+    const selected = item.querySelector('.tf-btn.selected');
+    if (!selected) { allAnswered = false; return; }
+    const correct = _dec(item,'a').trim().toLowerCase();
+    const picked = selected.dataset.picked;
+    item.classList.add('answered');
+    if (picked === correct) { selected.classList.add('correct-answer'); }
+    else { selected.classList.add('wrong-answer'); item.querySelectorAll('.tf-btn').forEach(b => { if (b.dataset.picked !== picked && b.textContent.toLowerCase() === correct) b.classList.add('correct-answer'); }); allCorrect = false; }
+  });
+  if (!allAnswered) { fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>'; return; }
+  if (allCorrect) {
+    fb.className = 'tf-feedback correct show'; fb.innerHTML = '<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';
+    round.classList.add('passed'); btn.disabled = true;
+    streak++; if (streak > bestStreak) bestStreak = streak;
+    correctFirst++; totalQuizzes++;
+    let bonus = XP_QUIZ; let label = 'True/False';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    fb.className = 'tf-feedback wrong show'; fb.innerHTML = '<span class="fb-icon">❌</span><span>Not all correct, look at the highlighted answers and try again next time.</span>';
+    streak = 0; updateXpDisplay(); totalQuizzes++;
+    setTimeout(() => { items.forEach(item => { item.classList.remove('answered'); item.querySelectorAll('.tf-btn').forEach(b => { b.classList.remove('selected','correct-answer','wrong-answer'); }); }); fb.classList.remove('show'); }, 2500);
+  }
+  saveProgress();
+}
+
+function checkPredict(btn) {
+  const challenge = btn.closest('.predict-challenge');
+  const selected = challenge.querySelector('.quiz-opt.selected');
+  if (!selected) return;
+  const correct = _key(challenge);
+  const chosenIdx = parseInt(selected.dataset.idx);
+  const fb = challenge.querySelector('.quiz-feedback');
+  totalQuizzes++;
+  if (chosenIdx === correct) {
+    selected.classList.add('correct'); fb.className = 'quiz-feedback correct show';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Great prediction! You really understand how this works.</span>';
+    challenge.classList.add('passed'); btn.style.display = 'none';
+    challenge.querySelectorAll('.quiz-opt').forEach(o => { if (!o.classList.contains('correct')) o.classList.add('disabled'); });
+    streak++; if (streak > bestStreak) bestStreak = streak; correctFirst++;
+    let bonus = XP_QUIZ; let label = 'Prediction';
+    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + streak bonus'; }
+    awardXp(bonus, label);
+  } else {
+    selected.classList.add('wrong'); fb.className = 'quiz-feedback wrong show';
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, think about it again!</span>';
+    streak = 0; updateXpDisplay();
+    setTimeout(() => { selected.classList.remove('wrong','selected'); fb.classList.remove('show'); }, 1500);
+  }
+  saveProgress();
+}
+
+function completeStep(n) {
+  completed.add(n);
+  const card = document.getElementById('step-' + n);
+  card.classList.remove('active-step', 'open');
+  card.classList.add('completed');
+  card.querySelector('.step-status').className = 'step-status ss-done';
+  card.querySelector('.step-status').textContent = '✓ Done';
+  card.querySelector('.step-body').style.display = 'none';
+  const next = document.getElementById('step-' + (n + 1));
+  if (next) {
+    next.classList.remove('locked');
+    next.classList.add('active-step', 'open');
+    next.querySelector('.step-status').className = 'step-status ss-active';
+    next.querySelector('.step-status').textContent = 'Current';
+    setTimeout(() => next.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  }
+  if (completed.size === TOTAL) {
+    document.getElementById('finishBanner').classList.add('show');
+    document.getElementById('finalXp').textContent = xp;
+    document.getElementById('finalLevel').textContent = level;
+    document.getElementById('finalStreak').textContent = bestStreak;
+    document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+    setTimeout(() => document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}), 200);
+    if (typeof playerProfile !== 'undefined') { playerProfile.markWorkshopCompleted('pico8-pong-workshop', 75); }
+  }
+  updateProgress(); saveProgress();
+}
+
+function toggleStep(header) {
+  const card = header.closest('.step-card');
+  if (card.classList.contains('locked')) return;
+  const body = card.querySelector('.step-body');
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  body.style.display = isOpen ? 'none' : 'block';
+}
+
+_shuffleQuiz(); _initKbd(); loadProgress(); updateProgress(); updateXpDisplay();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Build a Pong Clone in Pico-8","description":"Build your first Pico-8 game! A free parent & child workshop. Create paddles, a bouncing ball and score tracking with real Lua code. Ages 8+.","url":"https://jvdesignstudio.co.uk/workshops/pico8-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H"}}
+</script>
+</body>
+</html>
