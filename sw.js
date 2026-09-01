@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v13
-const CACHE='jvds-v13';
+// JVDesignStudio Service Worker v14
+const CACHE='jvds-v14';
 const CORE=[
   '/',
   '/index.html',
@@ -27,9 +27,6 @@ const CORE=[
   '/pages/downloads.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  // JVDS Arcade app shell. Precached so the installed Arcade opens offline
-  // straight after install, before any game has been visited. Individual
-  // games are cached by the runtime handlers below as they get played.
   '/arcade.html',
   '/arcade.webmanifest',
   '/games-registry.js',
@@ -40,19 +37,14 @@ const CORE=[
   '/icons/arcade-192.png',
   '/icons/arcade-512.png',
   '/icons/arcade-180.png',
-  // Pixel Studio installable app. Precached so the installed editor opens
-  // offline straight after install.
   '/tools/pixel-studio.html',
   '/tools/pixel-studio.webmanifest',
   '/tools/pixel-studio-landing.html',
   '/icons/pixel-studio-192.png',
   '/icons/pixel-studio-512.png',
   '/icons/pixel-studio-maskable-512.png',
-  // JVDS Map Generator. Precached so maps can be generated and edited offline.
   '/tools/map-generator.html',
   '/tools/map-generator-landing.html',
-  // Level Designer installable app. Precached so the installed designer opens
-  // offline straight after install.
   '/tools/level-designer.html',
   '/tools/level-designer.webmanifest',
   '/icons/level-designer-192.png',
@@ -63,7 +55,7 @@ const CORE=[
 self.addEventListener('install',e=>{
   e.waitUntil(
     caches.open(CACHE)
-      .then(c=>c.addAll(CORE).catch(()=>{})) // don't fail install if icons missing yet
+      .then(c=>c.addAll(CORE).catch(()=>{}))
       .then(()=>self.skipWaiting())
   );
 });
@@ -79,6 +71,7 @@ self.addEventListener('activate',e=>{
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const url=new URL(e.request.url);
+
   // Network-first for HTML (always get latest app)
   if(url.pathname.endsWith('.html')||url.pathname==='/'){
     e.respondWith(
@@ -88,7 +81,24 @@ self.addEventListener('fetch',e=>{
     );
     return;
   }
-  // Cache-first for everything else (icons, manifest)
+
+  // Stale-while-revalidate for CSS/JS (serve fast, update in background)
+  if(url.pathname.endsWith('.css')||url.pathname.endsWith('.js')){
+    e.respondWith(
+      caches.open(CACHE).then(cache=>{
+        return cache.match(e.request).then(cached=>{
+          const fetchPromise=fetch(e.request).then(res=>{
+            if(res.ok)cache.put(e.request,res.clone());
+            return res;
+          }).catch(()=>cached);
+          return cached||fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-first for static assets (icons, images, fonts)
   e.respondWith(
     caches.match(e.request).then(cached=>{
       if(cached)return cached;
