@@ -1510,3 +1510,178 @@ if (typeof document !== 'undefined') {
     initFullscreenToggle(); initMutePauseChrome();
   }
 })();
+
+/* ═══════════════════════════════════════════════════════════════════
+   NARRATIVE METAGAME — "The Void is Spreading"
+   An overarching story that unfolds as you play different games.
+   Each game is a chapter. Progress in any game reveals story fragments.
+   Complete all 25 games to unlock the secret 26th game.
+   ═══════════════════════════════════════════════════════════════════ */
+const VoidStory = {
+  STORAGE_KEY: 'jvds_void_story',
+  
+  // Story fragments — unlocked by game milestones
+  FRAGMENTS: [
+    // Chapter 1: The Awakening (first game played)
+    { id: 'ch1_1', game: '*', milestone: 'firstPlay', title: 'The First Stirring', text: 'In the depths between worlds, something stirs. A darkness older than the stars begins to wake.', chapter: 1 },
+    { id: 'ch1_2', game: '*', milestone: 'tenGames', title: 'Whispers in the Dark', text: 'The darkness spreads. Players everywhere feel it — a chill in the code, a flicker in the light.', chapter: 1 },
+    
+    // Chapter 2: The Void Approaches (specific game milestones)
+    { id: 'ch2_1', game: 'void-rush', milestone: 'score100', title: 'First Contact', text: 'The Void Entity appears in deep space, chasing your ship through neon corridors.', chapter: 2 },
+    { id: 'ch2_2', game: 'dungeon-delve', milestone: 'floor5', title: 'Corrupted Depths', text: 'The dungeon floors begin to shift. Walls crack. Darkness seeps through.', chapter: 2 },
+    { id: 'ch2_3', game: 'gem-match', milestone: 'score500', title: 'Dark Gems', text: 'Obsidian gems appear in the board, spreading corruption with each match.', chapter: 2 },
+    
+    // Chapter 3: The Defense (mid-game milestones)
+    { id: 'ch3_1', game: 'garden-defense', milestone: 'wave10', title: 'Garden Under Siege', text: 'Void pests invade the garden. Lumo must defend the last bastion of light.', chapter: 3 },
+    { id: 'ch3_2', game: 'arcane-citadel', milestone: 'wave20', title: 'The Citadel Falls', text: 'Dark crystals hunger for the Citadel. The mages prepare their final stand.', chapter: 3 },
+    { id: 'ch3_3', game: 'crypt-crawlers', milestone: 'floor15', title: 'Crypt of Shadows', text: 'The crypt floors darken. Monsters grow stronger. The exit seems further away.', chapter: 3 },
+    
+    // Chapter 4: The Turning Point (late-game milestones)
+    { id: 'ch4_1', game: 'lumo-dash', milestone: 'score300', title: 'Lumo\'s Run', text: 'Lumo dashes through corrupted terrain, carrying the last hope.', chapter: 4 },
+    { id: 'ch4_2', game: 'critter-whack', milestone: 'wave50', title: 'Whack the Darkness', text: 'The critters fight back. Each whack pushes the void further.', chapter: 4 },
+    { id: 'ch4_3', game: 'gem-match', milestone: 'score2000', title: 'Light Gems Return', text: 'Golden gems glow brighter. The board begins to clear.', chapter: 4 },
+    
+    // Chapter 5: The Secret (all games completed)
+    { id: 'ch5_1', game: '*', milestone: 'allComplete', title: 'The Void Revealed', text: 'With all games mastered, the Void Entity\'s true form is revealed. It was never a monster — it was a test.', chapter: 5 },
+    { id: 'ch5_2', game: '*', milestone: 'allComplete', title: 'The 26th Game', text: 'A new door opens. Behind it lies a game that was always there, waiting for the worthy.', chapter: 5 },
+  ],
+  
+  // Game corruption levels — visual elements added to games as story progresses
+  CORRUPTION: {
+    'void-rush': { level: 3, visual: 'void-trail' },
+    'dungeon-delve': { level: 2, visual: 'dark-tiles' },
+    'gem-match': { level: 2, visual: 'dark-gems' },
+    'garden-defense': { level: 1, visual: 'void-pests' },
+    'arcane-citadel': { level: 2, visual: 'dark-crystals' },
+    'crypt-crawlers': { level: 1, visual: 'shadow-floors' },
+    'lumo-dash': { level: 1, visual: 'corrupted-terrain' },
+    'critter-whack': { level: 1, visual: 'void-critters' },
+  },
+  
+  // Load story state
+  load() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      return raw ? JSON.parse(raw) : { fragments: [], corruption: 0, gamesPlayed: new Set() };
+    } catch (e) { return { fragments: [], corruption: 0, gamesPlayed: new Set() }; }
+  },
+  
+  // Save story state
+  save(state) {
+    try {
+      const data = { ...state, gamesPlayed: Array.from(state.gamesPlayed) };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  },
+  
+  // Record game play — check for new fragments
+  recordGamePlay(gameId, score, level) {
+    const state = this.load();
+    state.gamesPlayed.add(gameId);
+    
+    // Calculate corruption level (0-100)
+    let corruption = 0;
+    for (const [gId, config] of Object.entries(this.CORRUPTION)) {
+      if (state.gamesPlayed.has(gId)) {
+        corruption += config.level * 10;
+      }
+    }
+    state.corruption = Math.min(100, corruption);
+    
+    // Check for new fragments
+    const newFragments = [];
+    for (const frag of this.FRAGMENTS) {
+      if (state.fragments.includes(frag.id)) continue;
+      
+      let unlocked = false;
+      if (frag.game === '*') {
+        // Global milestones
+        if (frag.milestone === 'firstPlay' && state.gamesPlayed.size >= 1) unlocked = true;
+        if (frag.milestone === 'tenGames' && state.gamesPlayed.size >= 10) unlocked = true;
+        if (frag.milestone === 'allComplete' && state.gamesPlayed.size >= 25) unlocked = true;
+      } else if (frag.game === gameId) {
+        // Game-specific milestones
+        if (frag.milestone === 'firstPlay' && score > 0) unlocked = true;
+        if (frag.milestone === 'score100' && score >= 100) unlocked = true;
+        if (frag.milestone === 'score500' && score >= 500) unlocked = true;
+        if (frag.milestone === 'score2000' && score >= 2000) unlocked = true;
+        if (frag.milestone === 'score300' && score >= 300) unlocked = true;
+        if (frag.milestone === 'floor5' && level >= 5) unlocked = true;
+        if (frag.milestone === 'floor15' && level >= 15) unlocked = true;
+        if (frag.milestone === 'wave10' && level >= 10) unlocked = true;
+        if (frag.milestone === 'wave20' && level >= 20) unlocked = true;
+        if (frag.milestone === 'wave50' && level >= 50) unlocked = true;
+      }
+      
+      if (unlocked) {
+        state.fragments.push(frag.id);
+        newFragments.push(frag);
+      }
+    }
+    
+    this.save(state);
+    return { newFragments, corruption: state.corruption };
+  },
+  
+  // Get current story chapter
+  getCurrentChapter() {
+    const state = this.load();
+    const fragmentCount = state.fragments.length;
+    if (fragmentCount >= 10) return 5;
+    if (fragmentCount >= 6) return 4;
+    if (fragmentCount >= 3) return 3;
+    if (fragmentCount >= 1) return 2;
+    return 1;
+  },
+  
+  // Get all unlocked fragments
+  getFragments() {
+    const state = this.load();
+    return this.FRAGMENTS.filter(f => state.fragments.includes(f.id));
+  },
+  
+  // Check if secret 26th game is unlocked
+  isSecretUnlocked() {
+    const state = this.load();
+    return state.fragments.length >= 10;
+  },
+  
+  // Get corruption level for a specific game
+  getCorruption(gameId) {
+    const config = this.CORRUPTION[gameId];
+    if (!config) return 0;
+    const state = this.load();
+    return state.gamesPlayed.has(gameId) ? config.level : 0;
+  },
+  
+  // Show story toast
+  showStoryToast(fragment) {
+    if (!document.body) return;
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(20,10,40,.95);border:1px solid rgba(155,111,209,.5);border-radius:12px;padding:12px 20px;z-index:99999;pointer-events:none;max-width:320px;text-align:center;font-family:Inter,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;transition:opacity .4s';
+    t.innerHTML = '<div style="font-size:.6rem;color:rgba(192,132,252,.7);letter-spacing:.1em;margin-bottom:4px">📖 STORY UNLOCKED</div><div style="font-size:.95rem;font-weight:700;color:#c084fc;margin-bottom:4px">' + fragment.title + '</div><div style="font-size:.78rem;color:rgba(240,234,214,.7);line-height:1.5">' + fragment.text + '</div>';
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.style.opacity = '1');
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 6000);
+  }
+};
+
+// Hook into GameSystem.recordGamePlay
+const _origRecord = GameSystem.prototype.recordGamePlay;
+GameSystem.prototype.recordGamePlay = function() {
+  const r = _origRecord.apply(this, arguments);
+  if (r && this.gameId) {
+    const score = this.state.score || 0;
+    const level = this.state.level || 1;
+    const result = VoidStory.recordGamePlay(this.gameId, score, level);
+    if (result.newFragments.length > 0) {
+      result.newFragments.forEach(f => {
+        setTimeout(() => VoidStory.showStoryToast(f), 2000);
+      });
+    }
+  }
+  return r;
+};
+
+// Export for hub
+if (typeof window !== 'undefined') window.VoidStory = VoidStory;
