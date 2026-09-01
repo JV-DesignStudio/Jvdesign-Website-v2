@@ -13,6 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Steampunk Airship Dockyard | JVDesignStudio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 <style>
 /* ── JVDS Site Nav ── */
 
@@ -227,59 +228,42 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
 <!-- BUILD:nav-tools -->
 <header class="jvds-site-nav" id="jvdsSiteNav">
     <div class="jvds-nav-inner">
-        <a href="/index.html" class="jvds-nav-logo">
+        <a href="/" class="jvds-nav-logo">
             <img loading="lazy" src="/logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
             JVDesignStudio
         </a>
-        <nav class="jvds-nav-links">
-            <a href="/index.html" data-page="index.html">Home</a>
-            <a href="/pages/games.html" data-page="games.html">🎮 Games</a>
-            <a href="/pages/books.html" data-page="books.html">📚 Books</a>
-            <a href="/pages/learn-hub.html" data-page="learn-hub.html">🎓 Learn</a>
-            <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
-            <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
-            <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
-            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
-            <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
-            <a href="/pages/about.html" data-page="about.html">About</a>
-            <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
+        <nav class="jvds-nav-links" id="jvdsNavLinks">
+            <a href="/" data-page="index">Home</a>
+            <a href="/games" data-page="games">🎮 Games</a>
+            <a href="/books" data-page="books">📚 Books</a>
+            <a href="/learn-hub" data-page="learn-hub">🎓 Learn</a>
+            <a href="/workshop" data-page="workshop">🔧 Workshop</a>
+            <a href="/dev-tools" data-page="dev-tools">🛠️ Tools</a>
+            <a href="/freebies" data-page="freebies">🎁 Freebies</a>
+            <a href="/downloads" data-page="downloads">📦 Downloads</a>
+            <a href="/workshops/my-progress.html" data-page="my-progress">📊 Progress</a>
+            <a href="/about" data-page="about">About</a>
+            <a href="/search" data-page="search" aria-label="Search">🔍</a>
         </nav>
-        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Open menu" aria-expanded="false" aria-controls="jvdsMobileNav">☰</button>
+        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Open menu" aria-expanded="false" aria-controls="jvdsNavLinks">☰</button>
     </div>
-    <nav class="jvds-mobile-nav" id="jvdsMobileNav">
-        <a href="/index.html">🏠 Home</a>
-        <a href="/pages/games.html">🎮 Games</a>
-        <a href="/pages/books.html">📚 Books</a>
-        <a href="/pages/learn-hub.html">🎓 Learn</a>
-        <a href="/pages/workshop.html">🔧 Workshop</a>
-        <a href="/pages/dev-tools.html">🛠️ Tools</a>
-        <a href="/pages/freebies.html">🎁 Freebies</a>
-        <a href="/workshops/my-progress.html">📊 Progress</a>
-        <a href="/pages/devlog.html">📓 Dev Log</a>
-        <a href="/pages/about.html">👤 About</a>
-        <a href="/pages/contact.html">✉️ Contact</a>
-        <a href="/pages/search.html">🔍 Search</a>
-        <a href="/pages/sitemap.html">🗺️ Sitemap</a>
-    </nav>
 </header>
 <script>
 (function(){
-    var path = location.pathname;
-    var page = path.split('/').pop() || 'index.html';
-    // Highlight by exact page, with a section fallback so tool/workshop pages
-    // still show their parent section as active.
+    var seg = location.pathname.split('/').pop() || 'index.html';
+    var page = seg.replace(/\.html$/, '');
     var links = document.querySelectorAll('.jvds-nav-links a[data-page]');
     var matched = false;
     links.forEach(function(a){ if(a.getAttribute('data-page') === page){ a.classList.add('active'); matched = true; } });
     if(!matched){
-        var section = /\/tools\//.test(path) ? 'dev-tools.html'
-                    : /\/workshops\//.test(path) ? 'workshop.html'
-                    : /\/games\//.test(path) ? 'games.html'
-                    : /\/books\//.test(path) ? 'books.html' : null;
+        var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
+                    : /\/workshops\//.test(location.pathname) ? 'workshop'
+                    : /\/games\//.test(location.pathname) ? 'games'
+                    : /\/books\//.test(location.pathname) ? 'books' : null;
         if(section) links.forEach(function(a){ if(a.getAttribute('data-page') === section) a.classList.add('active'); });
     }
     var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsMobileNav');
+    var nav = document.getElementById('jvdsNavLinks');
     if(!btn || !nav) return;
     function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
     function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
@@ -301,6 +285,7 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
       <button onclick="exportOBJ()">⬇ OBJ</button>
+      <button onclick="exportGLB()">📦 GLB</button>
       <button onclick="resetAll()">🔄 Reset</button>
     </div>
   </header>
@@ -314,7 +299,7 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
       <div class="prog">
         <div class="prog-label">Build Progress</div>
         <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-        <div class="prog-ct" id="progCt">Step 1 of 18</div>
+        <div class="prog-ct" id="progCt">Step 1 of 19</div>
       </div>
       <div class="slist" id="stepList"></div>
       <div class="cpan" id="cpan"></div>
@@ -351,6 +336,7 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
 // DATA
 // ═══════════════════════════════════════
 const STEPS=[
+  {id:'name',name:'Name Your Airship',d:'Give your airship a distinguished name'},
   {id:'hull',name:'Hull Shape',d:'Main gondola body — length, width and depth'},
   {id:'hullCurve',name:'Hull Curvature',d:'Bow taper, stern shape and hull roundness'},
   {id:'balloon',name:'Gas Envelope',d:'The main lifting balloon above the hull'},
@@ -372,6 +358,7 @@ const STEPS=[
 ];
 
 let P={
+  airshipName:'HMS Ironclad',
   // Hull
   hullLen:10,hullW:2.5,hullDepth:1.8,
   bowTaper:0.65,sternTaper:0.4,hullRound:0.6,
@@ -846,6 +833,7 @@ function rebuild(){
 function ctrlsFor(i){
   const s=STEPS[i].id;
   switch(s){
+    case'name':return[{t:'text',k:'airshipName',l:'Airship Name'}];
     case'hull':return[{t:'range',k:'hullLen',l:'Length (m)',mn:4,mx:20,s:0.5},{t:'range',k:'hullW',l:'Beam Width (m)',mn:1,mx:5,s:0.1},{t:'range',k:'hullDepth',l:'Depth (m)',mn:0.5,mx:4,s:0.1}];
     case'hullCurve':return[{t:'range',k:'bowTaper',l:'Bow Taper',mn:0.2,mx:1.2,s:0.05},{t:'range',k:'sternTaper',l:'Stern Taper',mn:0.2,mx:1,s:0.05},{t:'range',k:'hullRound',l:'Roundness',mn:0.1,mx:1,s:0.05}];
     case'balloon':return[{t:'range',k:'balloonW',l:'Envelope Width',mn:1,mx:6,s:0.1},{t:'range',k:'balloonH',l:'Envelope Height',mn:1,mx:5,s:0.1},{t:'range',k:'balloonLen',l:'Envelope Length',mn:4,mx:16,s:0.2},{t:'range',k:'balloonY',l:'Height Above Hull',mn:2,mx:7,s:0.1}];
@@ -873,6 +861,7 @@ function renderCtrl(c){
   if(c.t==='color')return`<div class="cg"><label>${c.l}</label><input type="color" value="${P[c.k]}" oninput="upd('${c.k}',this.value)"></div>`;
   if(c.t==='toggle')return`<div class="cg"><label><input type="checkbox" ${P[c.k]?'checked':''} onchange="upd('${c.k}',this.checked)"> ${c.l}</label></div>`;
   if(c.t==='presets')return`<div style="margin-bottom:10px"><label style="display:block;font-size:9.5px;color:var(--parch-dim);margin-bottom:4px;letter-spacing:.5px;font-weight:700">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" onclick="applyLivery('${n}')">${n}</button>`).join('')}</div></div>`;
+  if(c.t==='text')return`<div class="cg"><label>${c.l}</label><input type="text" value="${P[c.k]||''}" oninput="upd('${c.k}',this.value)" style="width:100%;padding:5px 8px;background:rgba(0,0,0,.25);border:1px solid var(--rivet);color:var(--parch);font-family:'Alegreya Sans',sans-serif;font-size:11px;border-radius:2px;outline:none"></div>`;
   return'';
 }
 
@@ -957,7 +946,7 @@ function doLoad(n){const sv=getSaves();if(!sv[n])return;P={...sv[n].params};curS
 function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();}
 function resetAll(){
   if(!confirm('Reset all to defaults?'))return;
-  Object.assign(P,{hullLen:10,hullW:2.5,hullDepth:1.8,bowTaper:0.65,sternTaper:0.4,hullRound:0.6,balloonW:3.5,balloonH:3,balloonLen:9,balloonY:3.5,ribCount:6,ribDepth:0.08,balloonPointy:0.3,gondolaLen:5,gondolaW:2,gondolaH:1.2,gondolaZ:0,bridgeW:1.6,bridgeH:1.4,bridgeLen:1.8,bridgeZ:0,engineR:0.5,engineLen:1.2,engineCount:2,engineSpread:1.8,propR:1.2,propBlades:4,propZ:-0.4,rearPropR:0.8,showRearProp:true,stackR:0.15,stackH:1.5,stackCount:2,stackSpread:1.0,wingSpan:2.5,wingChord:1.0,wingAngle:5,tailWingSpan:1.5,tailWingChord:0.8,rudderH:1.5,rudderW:0.8,rigCount:4,showRigging:true,railH:0.3,railPosts:10,showPlanks:true,cannonCount:2,cannonR:0.08,turretR:0.3,pipeR:0.04,pipeCount:3,showGauges:true,lanternCount:4,lanternR:0.08,lanternGlow:true,hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444',showAnchor:true,showFlag:true,showNameplate:true,flagColor:'#8b1a1a'});
+  Object.assign(P,{airshipName:'HMS Ironclad',hullLen:10,hullW:2.5,hullDepth:1.8,bowTaper:0.65,sternTaper:0.4,hullRound:0.6,balloonW:3.5,balloonH:3,balloonLen:9,balloonY:3.5,ribCount:6,ribDepth:0.08,balloonPointy:0.3,gondolaLen:5,gondolaW:2,gondolaH:1.2,gondolaZ:0,bridgeW:1.6,bridgeH:1.4,bridgeLen:1.8,bridgeZ:0,engineR:0.5,engineLen:1.2,engineCount:2,engineSpread:1.8,propR:1.2,propBlades:4,propZ:-0.4,rearPropR:0.8,showRearProp:true,stackR:0.15,stackH:1.5,stackCount:2,stackSpread:1.0,wingSpan:2.5,wingChord:1.0,wingAngle:5,tailWingSpan:1.5,tailWingChord:0.8,rudderH:1.5,rudderW:0.8,rigCount:4,showRigging:true,railH:0.3,railPosts:10,showPlanks:true,cannonCount:2,cannonR:0.08,turretR:0.3,pipeR:0.04,pipeCount:3,showGauges:true,lanternCount:4,lanternR:0.08,lanternGlow:true,hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444',showAnchor:true,showFlag:true,showNameplate:true,flagColor:'#8b1a1a'});
   curStep=0;rebuild();updateStats();updateUI();if(mode==='sandbox')buildSandbox();toast('Reset to defaults');
 }
 
@@ -977,6 +966,22 @@ function exportOBJ(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([obj],{type:'text/plain'}));a.download='steampunk_airship.obj';a.click();toast('OBJ exported!');
 }
 
+function exportGLB() {
+  var group = rocketGroup || robotGroup || shipGroup;
+  if (!group) { toast('Build something first!'); return; }
+  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
+  var exporter = new THREE.GLTFExporter();
+  exporter.parse(group, function(result) {
+    var blob = new Blob([result], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (window.R ? R.name : window.P ? 'ship' : 'build').toLowerCase().replace(/\s+/g, '-') + '.glb';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('GLB exported!');
+  }, { binary: true });
+}
+
 // STATE HOOKS (for share/undo)
 window._builderGetState = function() { return { params: { ...P }, step: curStep, mode: mode }; };
 window._builderApplyState = function(s) {
@@ -984,6 +989,7 @@ window._builderApplyState = function(s) {
   if (typeof s.step === 'number') curStep = s.step;
   if (s.mode) setMode(s.mode);
   rebuild(); updateStats(); updateUI();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
 };
 
 // ═══════════════════════════════════════
@@ -1015,6 +1021,8 @@ function updateStats(){
 // ═══════════════════════════════════════
 function randomAirship(){
   const rnd=(mn,mx,s)=>{const v=mn+Math.random()*(mx-mn);return s?Math.round(v/s)*s:Math.round(v*100)/100;};
+  const names=['HMS Ironclad','The Aether Pioneer','Iron Valiant','Skyward Hammer','The Brass Wanderer','Aero Dominus','Crimson Zephyr','The Gilded Hornet','Aether Tempest','The Clockwork Raven','Vanguard of the Skies','The Steam Nomad','Iron Widow','The Jade Gale','Copper Dawn','The Cloud Serpent','Nimbus Argent','The Ember Swift','Aurora Mechanica','The Drift Commander','Thundermantle','Skyforge One','The Riveted Wanderer','The Propeller Duke','Aetherstrike','The Boiler Baron','Zephyr Commandant','The Gearwork Ghost','Iron Hauler','The Aether Warden'];
+  P.airshipName=names[Math.floor(Math.random()*names.length)];
   Object.assign(P,{
     hullLen:rnd(5,16,0.5),hullW:rnd(1.5,4,0.1),hullDepth:rnd(1,3.5,0.1),
     bowTaper:rnd(0.3,1,0.05),sternTaper:rnd(0.3,0.8,0.05),hullRound:rnd(0.3,0.9,0.05),
@@ -1104,7 +1112,7 @@ function showProfileCard() {
     ctx.fillStyle = '#e8dcc0';
     ctx.font = 'bold 28px "Abril Fatface", serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Steampunk Airship', 200, 284);
+    ctx.fillText(P.airshipName || 'Steampunk Airship', 200, 284);
     ctx.fillStyle = '#c8a84e';
     ctx.font = '10px monospace';
     ctx.fillText('AIRSHIP PROFILE  ·  JVDESIGNSTUDIO.CO.UK', 200, 302);

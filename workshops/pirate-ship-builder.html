@@ -13,6 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pirate Ship Shipyard | JVDesignStudio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 <style>
 /* ── JVDS Site Nav ── */
 
@@ -299,59 +300,42 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
 <!-- BUILD:nav-tools -->
 <header class="jvds-site-nav" id="jvdsSiteNav">
     <div class="jvds-nav-inner">
-        <a href="/index.html" class="jvds-nav-logo">
+        <a href="/" class="jvds-nav-logo">
             <img loading="lazy" src="/logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
             JVDesignStudio
         </a>
-        <nav class="jvds-nav-links">
-            <a href="/index.html" data-page="index.html">Home</a>
-            <a href="/pages/games.html" data-page="games.html">🎮 Games</a>
-            <a href="/pages/books.html" data-page="books.html">📚 Books</a>
-            <a href="/pages/learn-hub.html" data-page="learn-hub.html">🎓 Learn</a>
-            <a href="/pages/workshop.html" data-page="workshop.html">🔧 Workshop</a>
-            <a href="/pages/dev-tools.html" data-page="dev-tools.html">🛠️ Tools</a>
-            <a href="/pages/freebies.html" data-page="freebies.html">🎁 Freebies</a>
-            <a href="/pages/downloads.html" data-page="downloads.html">📦 Downloads</a>
-            <a href="/workshops/my-progress.html" data-page="my-progress.html">📊 Progress</a>
-            <a href="/pages/about.html" data-page="about.html">About</a>
-            <a href="/pages/search.html" data-page="search.html" aria-label="Search">🔍</a>
+        <nav class="jvds-nav-links" id="jvdsNavLinks">
+            <a href="/" data-page="index">Home</a>
+            <a href="/games" data-page="games">🎮 Games</a>
+            <a href="/books" data-page="books">📚 Books</a>
+            <a href="/learn-hub" data-page="learn-hub">🎓 Learn</a>
+            <a href="/workshop" data-page="workshop">🔧 Workshop</a>
+            <a href="/dev-tools" data-page="dev-tools">🛠️ Tools</a>
+            <a href="/freebies" data-page="freebies">🎁 Freebies</a>
+            <a href="/downloads" data-page="downloads">📦 Downloads</a>
+            <a href="/workshops/my-progress.html" data-page="my-progress">📊 Progress</a>
+            <a href="/about" data-page="about">About</a>
+            <a href="/search" data-page="search" aria-label="Search">🔍</a>
         </nav>
-        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Open menu" aria-expanded="false" aria-controls="jvdsMobileNav">☰</button>
+        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Open menu" aria-expanded="false" aria-controls="jvdsNavLinks">☰</button>
     </div>
-    <nav class="jvds-mobile-nav" id="jvdsMobileNav">
-        <a href="/index.html">🏠 Home</a>
-        <a href="/pages/games.html">🎮 Games</a>
-        <a href="/pages/books.html">📚 Books</a>
-        <a href="/pages/learn-hub.html">🎓 Learn</a>
-        <a href="/pages/workshop.html">🔧 Workshop</a>
-        <a href="/pages/dev-tools.html">🛠️ Tools</a>
-        <a href="/pages/freebies.html">🎁 Freebies</a>
-        <a href="/workshops/my-progress.html">📊 Progress</a>
-        <a href="/pages/devlog.html">📓 Dev Log</a>
-        <a href="/pages/about.html">👤 About</a>
-        <a href="/pages/contact.html">✉️ Contact</a>
-        <a href="/pages/search.html">🔍 Search</a>
-        <a href="/pages/sitemap.html">🗺️ Sitemap</a>
-    </nav>
 </header>
 <script>
 (function(){
-    var path = location.pathname;
-    var page = path.split('/').pop() || 'index.html';
-    // Highlight by exact page, with a section fallback so tool/workshop pages
-    // still show their parent section as active.
+    var seg = location.pathname.split('/').pop() || 'index.html';
+    var page = seg.replace(/\.html$/, '');
     var links = document.querySelectorAll('.jvds-nav-links a[data-page]');
     var matched = false;
     links.forEach(function(a){ if(a.getAttribute('data-page') === page){ a.classList.add('active'); matched = true; } });
     if(!matched){
-        var section = /\/tools\//.test(path) ? 'dev-tools.html'
-                    : /\/workshops\//.test(path) ? 'workshop.html'
-                    : /\/games\//.test(path) ? 'games.html'
-                    : /\/books\//.test(path) ? 'books.html' : null;
+        var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
+                    : /\/workshops\//.test(location.pathname) ? 'workshop'
+                    : /\/games\//.test(location.pathname) ? 'games'
+                    : /\/books\//.test(location.pathname) ? 'books' : null;
         if(section) links.forEach(function(a){ if(a.getAttribute('data-page') === section) a.classList.add('active'); });
     }
     var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsMobileNav');
+    var nav = document.getElementById('jvdsNavLinks');
     if(!btn || !nav) return;
     function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
     function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
@@ -373,6 +357,7 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
       <button onclick="exportOBJ()">⬇ OBJ</button>
+      <button onclick="exportGLB()">📦 GLB</button>
       <button onclick="resetAll()">🔄 Reset</button>
     </div>
   </header>
@@ -414,6 +399,7 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
 // DATA
 // ═══════════════════════════════════════
 const STEPS=[
+  {id:'name',name:'Name Your Ship',d:'Give your pirate vessel a fearsome name'},
   {id:'hull',name:'Hull Shape',d:'Length, beam width and depth of the hull'},
   {id:'hullCurve',name:'Hull Curvature',d:'Bow sharpness, stern width and keel depth'},
   {id:'deck',name:'Main Deck',d:'Deck thickness and plank style'},
@@ -437,6 +423,8 @@ const STEPS=[
 ];
 
 let P={
+  // Name
+  shipName: 'Black Pearl',
   // Hull
   hullLen:12, hullBeam:4, hullDepth:3,
   bowSharp:0.7, sternW:0.6, keelDepth:0.8,
@@ -968,6 +956,7 @@ function rebuildShip(){
 function ctrlsFor(i){
   const s=STEPS[i].id;
   switch(s){
+    case'name':return[{t:'text',k:'shipName',l:'Ship Name'}];
     case 'hull': return [
       {t:'range',k:'hullLen',l:'Length (m)',mn:5,mx:25,s:0.5},
       {t:'range',k:'hullBeam',l:'Beam Width (m)',mn:2,mx:8,s:0.2},
@@ -1079,6 +1068,8 @@ function renderCtrls(){
       h+=`<div class="cg"><label>${c.l}</label><input type="color" value="${P[c.k]}" oninput="upd('${c.k}',this.value)"></div>`;
     } else if(c.t==='toggle'){
       h+=`<div class="cg"><label><input type="checkbox" ${P[c.k]?'checked':''} onchange="upd('${c.k}',this.checked)"> ${c.l}</label></div>`;
+    } else if(c.t==='text'){
+      h+=`<div class="cg"><label>${c.l}</label><input type="text" value="${P[c.k]||''}" oninput="upd('${c.k}',this.value)" style="width:100%;padding:6px 8px;background:rgba(0,0,0,.3);border:1px solid rgba(212,168,67,.25);color:var(--parchment);font-family:'IM Fell English SC',serif;font-size:12px;border-radius:3px;outline:none"></div>`;
     }
   });
   cp.innerHTML=h;
@@ -1146,7 +1137,7 @@ function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();
 
 function resetAll(){
   if(!confirm('Reset all parameters to defaults?'))return;
-  Object.assign(P,{hullLen:12,hullBeam:4,hullDepth:3,bowSharp:0.7,sternW:0.6,keelDepth:0.8,deckThick:0.15,bspritLen:4,bspritR:0.08,bspritAngle:25,sternH:1.8,sternLen:3,fcH:1.2,fcLen:2,mainMastH:10,mainMastR:0.12,mainMastPos:0.05,foreMastH:8,foreMastR:0.1,foreMastPos:0.32,mizzenMastH:7,mizzenMastR:0.09,mizzenMastPos:-0.35,sailW:1.0,sailBillow:0.4,sailCount:2,nestR:0.5,nestH:0.3,nestPos:0.7,railH:0.4,railPosts:12,cannonCount:5,cannonR:0.06,rudderW:1.0,rudderH:2.0,anchorSize:0.8,figSize:0.6,showFigure:true,flagW:1.5,flagH:1.0,showJolly:true,winCount:3,winR:0.25,hullColor:'#3a2010',deckColor:'#8b6b3a',sailColor:'#e8dcc8',mastColor:'#6b4a2a',metalColor:'#555555',flagColor:'#1a1a1a',trimColor:'#c9a84c',waterColor:'#0a3060',showRopes:true,showLanterns:true});
+  Object.assign(P,{shipName:'Black Pearl',hullLen:12,hullBeam:4,hullDepth:3,bowSharp:0.7,sternW:0.6,keelDepth:0.8,deckThick:0.15,bspritLen:4,bspritR:0.08,bspritAngle:25,sternH:1.8,sternLen:3,fcH:1.2,fcLen:2,mainMastH:10,mainMastR:0.12,mainMastPos:0.05,foreMastH:8,foreMastR:0.1,foreMastPos:0.32,mizzenMastH:7,mizzenMastR:0.09,mizzenMastPos:-0.35,sailW:1.0,sailBillow:0.4,sailCount:2,nestR:0.5,nestH:0.3,nestPos:0.7,railH:0.4,railPosts:12,cannonCount:5,cannonR:0.06,rudderW:1.0,rudderH:2.0,anchorSize:0.8,figSize:0.6,showFigure:true,flagW:1.5,flagH:1.0,showJolly:true,winCount:3,winR:0.25,hullColor:'#3a2010',deckColor:'#8b6b3a',sailColor:'#e8dcc8',mastColor:'#6b4a2a',metalColor:'#555555',flagColor:'#1a1a1a',trimColor:'#c9a84c',waterColor:'#0a3060',showRopes:true,showLanterns:true});
   curStep=0;rebuildShip();updateStats();updateUI();toast('Reset to defaults');
 }
 
@@ -1185,12 +1176,29 @@ function exportOBJ(){
   toast('OBJ exported!');
 }
 
+function exportGLB() {
+  var group = rocketGroup || robotGroup || shipGroup;
+  if (!group) { toast('Build something first!'); return; }
+  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
+  var exporter = new THREE.GLTFExporter();
+  exporter.parse(group, function(result) {
+    var blob = new Blob([result], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (window.R ? R.name : window.P ? 'ship' : 'build').toLowerCase().replace(/\s+/g, '-') + '.glb';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('GLB exported!');
+  }, { binary: true });
+}
+
 // STATE HOOKS (for share/undo)
 window._builderGetState = function() { return { params: { ...P }, step: curStep }; };
 window._builderApplyState = function(s) {
   if (s.params) Object.assign(P, s.params);
   if (typeof s.step === 'number') curStep = s.step;
   rebuildShip(); updateStats(); updateUI();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
 };
 
 // ═══════════════════════════════════════
@@ -1221,7 +1229,9 @@ function updateStats(){
 // ═══════════════════════════════════════
 function randomShip(){
   const rnd=(mn,mx,s)=>{const v=mn+Math.random()*(mx-mn);return s?Math.round(v/s)*s:Math.round(v*100)/100;};
+  const names=['Black Pearl','Queen Anne\'s Revenge','The Flying Dutchman','Red Death','Night\'s Revenge','Sea Serpent','Devil\'s Luck','Storm Chaser','Crimson Tide','Golden Hind','Molly May','The Dreadnought','Rogue Wave','Dark Horizon','Jolly Roger'];
   Object.assign(P,{
+    shipName:names[Math.floor(Math.random()*names.length)],
     hullLen:rnd(6,20,0.5),hullBeam:rnd(2.5,6,0.2),hullDepth:rnd(1.5,4.5,0.2),
     bowSharp:rnd(0.3,1.2,0.05),sternW:rnd(0.3,0.9,0.05),keelDepth:rnd(0.3,1.2,0.05),
     deckThick:rnd(0.08,0.3,0.02),
@@ -1274,7 +1284,7 @@ function showProfileCard() {
     ctx.fillStyle = '#e8d5b0';
     ctx.font = 'bold 30px "Pirata One", cursive';
     ctx.textAlign = 'center';
-    ctx.fillText('Pirate Ship', 200, 284);
+    ctx.fillText(P.shipName || 'Pirate Ship', 200, 284);
     ctx.fillStyle = '#d4a843';
     ctx.font = '10px monospace';
     ctx.fillText('SHIP PROFILE  ·  JVDESIGNSTUDIO.CO.UK', 200, 302);

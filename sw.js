@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v12
-const CACHE='jvds-v12';
+// JVDesignStudio Service Worker v13
+const CACHE='jvds-v13';
 const CORE=[
   '/',
   '/index.html',
@@ -10,13 +10,20 @@ const CORE=[
   '/workshop-enhancements.js',
   '/cookie-consent.js',
   '/logo.png',
+  '/workshop',
   '/pages/workshop.html',
+  '/games',
   '/pages/games.html',
+  '/books',
   '/pages/books.html',
   '/workshops/my-progress.html',
+  '/learn-hub',
   '/pages/learn-hub.html',
+  '/dev-tools',
   '/pages/dev-tools.html',
+  '/freebies',
   '/pages/freebies.html',
+  '/downloads',
   '/pages/downloads.html',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
