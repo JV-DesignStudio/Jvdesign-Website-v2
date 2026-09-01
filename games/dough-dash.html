@@ -157,6 +157,7 @@ const audioEffects = new AudioEffects(0.6);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
 const TILES = ['🍪', '🧁', '🥐', '🍰', '🍩'];
+const TILE_COLORS = {'🍪':'#ff8c42','🧁':'#ff6b9d','🥐':'#ffd93d','🍰':'#6bcb77','🍩':'#a855f7'};
 const COLS = 5, ROWS = 8;
 const MOVES_LIMIT = 30;
 
@@ -168,15 +169,14 @@ let busy = false;   // true while swaps/cascades animate
 let startTime = 0;
 
 function randomTileAvoiding(r, c) {
-  // avoid spawning a ready-made match when filling the board
   let t;
   do {
     t = TILES[Math.floor(Math.random() * TILES.length)];
   } while (
-    (c >= 2 && grid[r][c-1] === t && grid[r][c-2] === t) ||
-    (r >= 2 && grid[r-1] && grid[r-2] && grid[r-1][c] === t && grid[r-2][c] === t)
+    (c >= 2 && grid[r][c-1] && grid[r][c-1].type === t && grid[r][c-2] && grid[r][c-2].type === t) ||
+    (r >= 2 && grid[r-1] && grid[r-2] && grid[r-1][c] && grid[r-1][c].type === t && grid[r-2][c] && grid[r-2][c].type === t)
   );
-  return t;
+  return {type: t, special: null};
 }
 
 function initGrid() {
@@ -184,7 +184,7 @@ function initGrid() {
   for (let r = 0; r < ROWS; r++) {
     grid[r] = [];
     for (let c = 0; c < COLS; c++) {
-      grid[r][c] = randomTileAvoiding(r, c);
+      grid[r][c] = randomTileAvoiding(r, c); // returns {type, special}
     }
   }
   score = 0;
@@ -200,7 +200,10 @@ function renderBoard() {
     for (let c = 0; c < COLS; c++) {
       const btn = document.createElement('button');
       btn.className = 'tile' + (selected && selected.r === r && selected.c === c ? ' selected' : '');
-      btn.textContent = grid[r][c] || '';
+      const cell = grid[r][c];
+      if (cell && cell.special === 'bomb') { btn.textContent = '💣'; btn.style.background = 'linear-gradient(145deg,#ff4444,#cc0000)'; }
+      else if (cell && cell.special === 'rainbow') { btn.textContent = '🌈'; btn.style.background = 'linear-gradient(145deg,#a855f7,#6366f1)'; }
+      else { btn.textContent = cell ? cell.type : ''; btn.style.background = ''; }
       btn.onclick = () => selectTile(r, c);
       board.appendChild(btn);
     }
@@ -285,6 +288,31 @@ function findHintPair() {
   return null;
 }
 
+function activateBomb(r, c) {
+  // Clear 3x3 area around bomb
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc]) {
+        grid[nr][nc] = null;
+      }
+    }
+  }
+  audioEffects.playCombo(4);
+  ScreenShake.shake(document.getElementById('board'), 8, 250);
+}
+function activateRainbow(r, c) {
+  // Clear all tiles of the same color
+  const targetType = grid[r][c] ? grid[r][c].type : null;
+  if (!targetType) return;
+  for (let rr = 0; rr < ROWS; rr++) {
+    for (let cc = 0; cc < COLS; cc++) {
+      if (grid[rr][cc] && grid[rr][cc].type === targetType) grid[rr][cc] = null;
+    }
+  }
+  audioEffects.playCombo(5);
+  ScreenShake.shake(document.getElementById('board'), 10, 300);
+}
 function selectTile(r, c) {
   clearHint(); scheduleHint();
   if (state !== 'playing' || busy || !grid[r][c]) return;
@@ -307,13 +335,20 @@ function selectTile(r, c) {
     renderBoard();
     return;
   }
+  // Check if either tile is a special
+  const sTile = grid[s.r][s.c];
+  const tTile = grid[r][c];
+  if (sTile && sTile.special === 'bomb') { activateBomb(s.r, s.c); grid[s.r][s.c] = null; selected = null; renderBoard(); return; }
+  if (tTile && tTile.special === 'bomb') { activateBomb(r, c); grid[r][c] = null; selected = null; renderBoard(); return; }
+  if (sTile && sTile.special === 'rainbow') { activateRainbow(s.r, s.c); grid[s.r][s.c] = null; selected = null; renderBoard(); return; }
+  if (tTile && tTile.special === 'rainbow') { activateRainbow(r, c); grid[r][c] = null; selected = null; renderBoard(); return; }
   selected = null;
   doSwap(s, { r, c });
 }
 
 function doSwap(a, b) {
   busy = true;
-  [grid[a.r][a.c], grid[b.r][b.c]] = [grid[b.r][b.c], grid[a.r][a.c]];
+  [grid[a.r][a.c], grid[b.r][b.c]] = [{...grid[b.r][b.c]}, {...grid[a.r][a.c]}];
   renderBoard();
   // swap pulse on both tiles so the exchange reads as a motion, not a teleport
   const board0 = document.getElementById('board');
@@ -342,30 +377,41 @@ function doSwap(a, b) {
 
 function findMatches() {
   const toRemove = new Set();
+  const specials = []; // {r, c, type}
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS - 2; c++) {
-      if (grid[r][c] && grid[r][c] === grid[r][c+1] && grid[r][c] === grid[r][c+2]) {
-        for (let i = c; i <= c + 2; i++) toRemove.add(`${r},${i}`);
+      if (grid[r][c] && grid[r][c+1] && grid[r][c+2] && grid[r][c].type === grid[r][c+1].type && grid[r][c].type === grid[r][c+2].type) {
+        let end = c + 2;
+        while (end + 1 < COLS && grid[r][end+1] && grid[r][end+1].type === grid[r][c].type) end++;
+        for (let i = c; i <= end; i++) toRemove.add(`${r},${i}`);
+        if (end - c + 1 >= 5) specials.push({r, c: Math.floor((c + end) / 2), special: 'rainbow'});
+        else if (end - c + 1 >= 4) specials.push({r, c: Math.floor((c + end) / 2), special: 'bomb'});
       }
     }
   }
   for (let c = 0; c < COLS; c++) {
     for (let r = 0; r < ROWS - 2; r++) {
-      if (grid[r][c] && grid[r][c] === grid[r+1][c] && grid[r][c] === grid[r+2][c]) {
-        for (let i = r; i <= r + 2; i++) toRemove.add(`${i},${c}`);
+      if (grid[r][c] && grid[r+1][c] && grid[r+2][c] && grid[r][c].type === grid[r+1][c].type && grid[r][c].type === grid[r+2][c].type) {
+        let end = r + 2;
+        while (end + 1 < ROWS && grid[end+1][c] && grid[end+1][c].type === grid[r][c].type) end++;
+        for (let i = r; i <= end; i++) toRemove.add(`${i},${c}`);
+        if (end - r + 1 >= 5) specials.push({r: Math.floor((r + end) / 2), c, special: 'rainbow'});
+        else if (end - r + 1 >= 4) specials.push({r: Math.floor((r + end) / 2), c, special: 'bomb'});
       }
     }
   }
-  return toRemove;
+  return {toRemove, specials};
 }
 
 function resolveMatches(chain) {
-  const toRemove = findMatches();
+  const {toRemove, specials} = findMatches();
   if (!toRemove.size) return false;
   busy = true;
 
+  // Combo multiplier
+  const mult = chain >= 5 ? 3 : chain >= 3 ? 2 : chain >= 2 ? 1.5 : 1;
   const size = toRemove.size;
-  let pts = size * 10 * chain;
+  let pts = Math.round(size * 10 * chain * mult);
   if (size >= 4) pts += (size - 3) * 20;
   score += pts;
   // float the points right where the match happened
@@ -389,6 +435,13 @@ function resolveMatches(chain) {
     }
   });
 
+  // Show combo multiplier
+  if (mult > 1) {
+    const cd = document.getElementById('comboDisplay');
+    cd.textContent = '×' + mult + ' COMBO!';
+    cd.classList.add('show');
+    setTimeout(() => cd.classList.remove('show'), 1500);
+  }
   if (chain >= 2) {
     floatText('CHAIN ×' + chain + '  +' + pts, chain >= 3);
     audioEffects.playCombo(chain);
@@ -405,6 +458,12 @@ function resolveMatches(chain) {
       grid[r][c] = null;
     });
     cascade();
+    // Spawn special tiles from matches
+    specials.forEach(sp => {
+      if (grid[sp.r] && grid[sp.r][sp.c]) {
+        grid[sp.r][sp.c].special = sp.special;
+      }
+    });
     renderBoard();
     if (!resolveMatches(chain + 1)) {
       busy = false;
@@ -465,7 +524,7 @@ function cascade() {
         write--;
       }
     }
-    for (let r = 0; r <= write; r++) grid[r][c] = TILES[Math.floor(Math.random() * TILES.length)];
+    for (let r = 0; r <= write; r++) grid[r][c] = {type: TILES[Math.floor(Math.random() * TILES.length)], special: null};
   }
 }
 
