@@ -299,7 +299,7 @@
         <button class="btn btn-rose" onclick="createRaid()">Assemble</button>
       </div>
       <div style="font-size:.68rem;color:var(--muted)">Completing quests deals damage: low=25, med=50, high=150 HP per quest moved to Done.</div>
-        <div style="font-size:.72rem;font-weight:900;color:#f97316;margin-top:6px">⚔️ Dungeon Raid Tokens: <span id="raidTokenBalance">0</span> <span style="font-weight:700;color:var(--muted)">· slay monsters in the Coffee-Break Dungeon to earn them · 5 tokens = one 150-dmg Strike</span></div>
+        <div style="font-size:.72rem;font-weight:900;color:#f97316;margin-top:6px">⚔️ Dungeon Raid Tokens: <span id="raidTokenBalance2">0</span> <span style="font-weight:700;color:var(--muted)">· slay monsters in the Coffee-Break Dungeon to earn them · 5 tokens = one 150-dmg Strike</span></div>
     </div>
     <div class="raids-list" id="raidsList"></div>
     <div class="rpg-panel" id="partyPanel" style="margin-top:14px">
@@ -780,7 +780,7 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
 <script>
 /* ── DATA ── */
 const SK='qb-data-v1', RK='qb-rpg-v1';
-const APP_VERSION='2.3.0-complete'; // bump every release
+const APP_VERSION='2.4.1-clean'; // bump every release
 let state={
   columns:[
     {id:'todo',  title:'📋 To Do',       colour:'#7c3aed'},
@@ -795,7 +795,7 @@ let state={
   ],
   nextId:10
 };
-let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,hp:100,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[],raidTokens:0,bestStreak:0,dailyStatGains:{date:"",count:0},selfCare:{items:[],checkInDate:'',mood:{},weeklyBoss:null,lastDamageCheck:'',restInn:false,restInnUntil:0},party:null};
+let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,hp:100,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[],raidTokens:0,bestStreak:0,inventorySize:16,dailyStatGains:{date:"",count:0},selfCare:{items:[],checkInDate:'',mood:{},weeklyBoss:null,lastDamageCheck:'',restInn:false,restInnUntil:0},party:null};
 
 /* ── STORAGE ── */
 var _saveTimer=null;
@@ -932,12 +932,12 @@ function addFamiliarDrop(kind,id){
 function rollFamiliarDrops(){
   // Throttle: max 1 drop per 5 minutes
   if(!rpg._lastFamDrop)rpg._lastFamDrop=0;
-  if(Date.now()-rpg._lastFamDrop<300000)return;
+  if(Date.now()-rpg._lastFamDrop<180000)return;
   const bonus=_dexLootBonus();
   let _anyDrop=false;
-  if(Math.random()<0.04+bonus*0.2){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);_anyDrop=true;}
-  if(Math.random()<0.04+bonus*0.2){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);_anyDrop=true;}
-  if(Math.random()<0.03+bonus*0.15){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);_anyDrop=true;}
+  if(Math.random()<0.06+bonus*0.2){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);_anyDrop=true;}
+  if(Math.random()<0.06+bonus*0.2){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);_anyDrop=true;}
+  if(Math.random()<0.05+bonus*0.15){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);_anyDrop=true;}
   if(_anyDrop)rpg._lastFamDrop=Date.now();
 }
 function hatchFamiliar(eggId,essId){
@@ -1033,7 +1033,8 @@ function getXpMultiplier(){
 }
 function addXp(n){
   const mult=getXpMultiplier();
-  const actual=Math.round(n*mult);
+  let actual=Math.round(n*mult);
+  if(hasActiveBuff('xp2x')){actual=Math.round(actual*2);consumeBuff('xp2x');}
   rpg.lifetimeXp=(rpg.lifetimeXp||0)+actual;
   rpg.xp+=actual;const need=rpg.level*1000;
   if(rpg.xp>=need){rpg.xp-=need;rpg.level++;triggerLevelUp();}
@@ -1167,9 +1168,8 @@ function onQuestComplete(card){
   if(rpg.comboCount>=3)setTimeout(()=>showCombo(rpg.comboCount),600);
   const streakMsg=rpg.streak>1?` 🔥 ${rpg.streak}-day streak!`:'';
   showToast(`+${actualXp}XP  +${actualG}g${streakMsg}`,'xp',{label:'Undo',fn:undoLast});
-  // Apply rewards (consume xp2x buff per quest — AFTER addXp so the final use still pays ×2)
-  addXp(baseXp); addGold(actualG);
-  if(hasActiveBuff('xp2x'))consumeBuff('xp2x');
+  // Apply rewards — pass base values, addXp/addGold apply multipliers internally
+  addXp(baseXp); addGold(baseG);
   // Clear boss threat
   if(card.isBoss&&rpg.bossThreats)delete rpg.bossThreats[card.id];
   // stat bumps — capped at 3 stat gains per day (slows progression)
@@ -2011,7 +2011,7 @@ function renderUpNext(){
   el.onclick=()=>{switchView('board');setTimeout(()=>{const ce=document.querySelector(`[data-card-id="${next.c.id}"]`);if(ce){ce.scrollIntoView({behavior:'smooth',block:'center'});ce.classList.add('shake');setTimeout(()=>ce.classList.remove('shake'),400);}},200);};
 }
 
-function renderDash(){
+
   updateStats();
   renderUpNext();
   // Hero banner
@@ -2128,7 +2128,7 @@ function processQuick(){
     added++;
     playSfx('coin');
   });
-  save();render();renderDash();input.value='';
+  save();render();input.value='';
   if(added)showToast(`⚡ ${added} quest${added!==1?'s':''} captured!`);
 }
 function _dateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -2265,20 +2265,7 @@ function renderHabitsPreview(){
   });
 }
 
-/* ── PROGRESS CHARTS ─────────────────────────────────────────────────────────── */
-function renderProgressCharts(){
-  // 7-day bar chart
-  const bars=document.getElementById('statBars');if(!bars)return;
-  const days=[];const maxC=1;
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=d.toDateString();days.push({label:d.toLocaleDateString('en',{weekday:'short'}),count:(rpg.dailyStats||{})[k]?.completed||0});}
-  const max=Math.max(...days.map(d=>d.count),1);
-  bars.innerHTML=days.map(d=>`<div class="stat-bar-col"><div class="stat-bar-num">${d.count||''}</div><div class="stat-bar" style="height:${Math.max(3,Math.round(d.count/max*52))}px"></div><div class="stat-bar-label">${d.label}</div></div>`).join('');
-  // 30-day streak calendar
-  const cal=document.getElementById('streakCal');if(!cal)return;
-  let calHtml='';
-  for(let i=29;i>=0;i--){
-    const d=new Date();d.setDate(d.getDate()-i);const k=d.toDateString();
-    const done=(rpg.dailyStats||{})[k]?.completed>0;
+/* ── TIME TRACKING ── */
     const isToday=i===0;
     calHtml+=`<div class="streak-day${done?' done':''}${isToday?' today':''}" title="${d.toLocaleDateString()}"></div>`;
   }
@@ -2489,7 +2476,7 @@ function sheetComplete(){
   card.colId='done';
   if(prevCol!=='done')onQuestComplete(card);
   save();render();closeProjectSheet();
-  if(document.getElementById('view-dash').classList.contains('active'))renderDash();
+  if(document.getElementById('view-dash').classList.contains('active'))
 }
 
 /* ── CHECKLIST TOGGLE ── */
@@ -2538,7 +2525,7 @@ function addSwipeToCard(el,card){
         // Swipe right → complete
         el.classList.remove('swipe-right');
         card._prevCol=card.colId;card.colId='done';onQuestComplete(card);save();render();
-        if(document.getElementById('view-dash').classList.contains('active'))renderDash();
+        if(document.getElementById('view-dash').classList.contains('active'))
       } else if(dx<-80){
         // Swipe left → open edit
         el.classList.remove('swipe-left');
@@ -2683,6 +2670,7 @@ function buyShopItem(id){
     else{rpg.inventory.push(loot);showToast(`🎒 Bagged: ${loot.text} (weaker than equipped)`);}
     spawnXpFloat('GEAR ACQUIRED!','gold');
   } else if(id==='questexp'){
+    rpg.inventorySize=(rpg.inventorySize||16)+4;
     _addExtraColumn();
   } else if(id==='bounty+'){
     // Handled in rollBounties (check shopUnlocked.bounty+)
@@ -2996,7 +2984,7 @@ async function loadGistData(){
     const d=JSON.parse(content);
     if(d.state){if(d.state.columns)state.columns=d.state.columns;if(d.state.cards)state.cards=d.state.cards;if(d.state.nextId)state.nextId=d.state.nextId;}
     if(d.rpg)Object.assign(rpg,d.rpg);
-    save();render();updateRpgWidgets();renderDash();
+    save();render();updateRpgWidgets();
     showToast('📥 Restored from GitHub Gist!');playSfx('levelup');
     initGistUI();
   }catch(e){
@@ -3104,7 +3092,7 @@ function placeWager(){
   playSfx('coin');flashScreen();
   spawnXpFloat('🎲 WAGER PLACED','purple');
   showToast('🎲 Wager live! All 3 by midnight = +'+WAGER_REWARD+'g','success');
-  save();renderDash();
+  save();
 }
 function _wagerSatisfied(w){
   const start=_wagerDayStart(w.date);
@@ -3123,7 +3111,7 @@ function checkWagerProgress(){
     playSfx('quest');startConfetti();
     spawnXpFloat('+'+WAGER_REWARD+'g WAGER WON!','gold');
     showToast('🎲 Wager WON! +'+WAGER_REWARD+'g — nerves of steel.','success');
-    save();renderDash();
+    save();
   } else { save(); }
 }
 function resolveWagerOnBoot(){
@@ -3294,7 +3282,7 @@ function completeDailyChallenge(){
   ch.completed=true;addXp(ch.xpBonus);
   spawnXpFloat(`+${ch.xpBonus} CHALLENGE!`,'purple');
   showToast(`⚡ Daily Challenge complete! +${ch.xpBonus} bonus XP!`);
-  save();render();renderDailyChallenge();renderDash();
+  save();render();renderDailyChallenge();
 }
 
 /* ── 9. QUEST STATUS FLAGS ────────────────────────────────────────────────── */
@@ -3611,7 +3599,7 @@ function completeCheckIn(){
   flashScreen();playSfx('levelup');
   document.getElementById('checkInModal').classList.remove('open');
   showToast(`☀️ Day started! ${xp?'+'+xp+' XP, ':''} Let's go!`);
-  save();renderDash();refreshCheckinCard();renderHome();
+  save();refreshCheckinCard();renderHome();
 }
 
 /* ── CLASS EVOLUTION ─────────────────────────────────────────────────────────── */
@@ -3654,7 +3642,7 @@ function ascend(){
   if(!confirm('ASCEND?\n\nResets Level & XP to 1.\nYou KEEP: gold, gear, quests, streak, achievements.\nYou GAIN: permanent +10% XP per Ascension, forever.'))return;
   rpg.prestige=(rpg.prestige||0)+1;rpg.level=1;rpg.xp=0;
   unlockAch('ascended');
-  save();updateRpgWidgets();updateStreakDisplay();renderDash();
+  save();updateRpgWidgets();updateStreakDisplay();
   document.getElementById('celebrateTitle').textContent='⭐ ASCENSION!';
   document.getElementById('celebrateSub').innerHTML='Ascension <strong style="color:#c084fc">×'+rpg.prestige+'</strong>.<br>All XP now multiplied by <strong style="color:var(--gold)">×'+getXpMultiplier().toFixed(2)+'</strong>, forever.';
   document.getElementById('celebrateOverlay').classList.add('show');
@@ -3804,8 +3792,8 @@ function dailyLoginBonus(){
   const today=new Date().toDateString();
   if(rpg.loginDate===today)return;
   rpg.loginDate=today;
-  const streakBonus=Math.min((rpg.streak||0)*5,100);
-  const bonus=50+streakBonus;
+  const streakBonus=Math.min((rpg.streak||0)*3,60);
+  const bonus=30+streakBonus;
   addGold(bonus);
   save();
   setTimeout(()=>{
@@ -4329,7 +4317,7 @@ function switchView(v){
   closeFab();
   if(v==='calendar'){renderCalendar();}
   if(v==='raids')renderRaids();
-  if(v==='dash'){renderDash();renderProgressCharts();renderHome();}
+  if(v==='dash'){renderHome();}
   if(v==='notes'){renderNotesList(document.getElementById('notesSideSearch')?.value||'');}
   if(v==='habits'){renderHabits();}
   if(v==='life'){renderLifeTab();}
@@ -4446,7 +4434,7 @@ function undoLast(){
   try{
     const d=JSON.parse(u.snap);
     state.cards=d.cards;state.columns=d.columns;state.nextId=d.nextId;rpg=d.rpg;
-    save();render();renderDash();updateRpgWidgets();updateStreakDisplay();renderActiveBuffs();
+    save();render();updateRpgWidgets();updateStreakDisplay();renderActiveBuffs();
     playSfx('coin');
     showToast('↩️ Undone: '+u.label,'success');
   }catch(e){showToast('Undo failed','error');}
@@ -4457,7 +4445,7 @@ function snoozeCard(id,days){
   const base=c.date?new Date(c.date+'T00:00:00'):new Date();
   base.setDate(base.getDate()+days);
   c.date=_dateStr(base);
-  save();render();renderDash();closeProjectSheet();
+  save();render();closeProjectSheet();
   playSfx('coin');
   showToast('⏰ Snoozed '+days+'d → '+c.date,'success',{label:'Undo',fn:undoLast});
 }
@@ -4472,7 +4460,7 @@ function duplicateCard(id){
   clone.createdAt=new Date().toISOString();
   const idx=state.cards.indexOf(c);
   state.cards.splice(idx+1,0,clone);
-  save();render();renderDash();closeProjectSheet();
+  save();render();closeProjectSheet();
   playSfx('coin');
   showToast('⧉ Duplicated: '+clone.title.slice(0,30),'success');
 }
@@ -4532,7 +4520,7 @@ function castSpell(id){
       easiest.colId='done';easiest.completedAt=Date.now();easiest.justCompleted=true;
       var xp=Math.round((XP_PER[easiest.priority]||50)*1.5);var g=Math.round((GOLD_PER[easiest.priority]||8)*1.5);
       addXp(xp);addGold(g);
-      msg='✨ Holy Bolt: '+easiest.text+' +'+xp+'XP +'+g+'g!';
+      msg='✨ Holy Bolt: '+easiest.title+' +'+xp+'XP +'+g+'g!';
       spawnXpFloat('+'+xp+'XP ✨','xp');
     } else { msg='✨ No overdue quests to smite.'; rpg.mana+=_spellCost(s); }
   } else if(id==='wildgrow'){
@@ -4550,7 +4538,7 @@ function castSpell(id){
   playSfx('unlock');flashScreen();
   spawnXpFloat('✨ '+s.name,'purple');
   showToast(msg,'success');
-  save();renderActiveBuffs();renderDash();updateRpgWidgets();
+  save();renderActiveBuffs();updateRpgWidgets();
 }
 function renderSpellbook(){
   const list=document.getElementById('spellList');if(!list)return;
@@ -4582,7 +4570,7 @@ function dbg(what){
   else if(what==='tokens'){rpg.raidTokens=(rpg.raidTokens||0)+10;}
   playSfx('coin');flashScreen();spawnXpFloat('🛠️ DEBUG','purple');
   showToast('🛠️ '+what+' applied (v'+APP_VERSION+')','warn');
-  save();updateRpgWidgets();renderDash();refreshDbgData();
+  save();updateRpgWidgets();refreshDbgData();
 }
 function refreshDbgData(){
   var el=document.getElementById('dbgData');if(!el)return;
@@ -4824,8 +4812,8 @@ if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativ
 checkWeeklyBoss();
 backfillRecurring();
 resolveWagerOnBoot();
-renderDash();
-renderProgressCharts();
+
+
 renderHome();
 renderClassPath();
 renderActiveBuffs();
@@ -4969,7 +4957,7 @@ function completeSetup(){
   try{playSfx('levelup');}catch(e){}
   setTimeout(()=>{
     showToast(`⚔️ Welcome, ${name}! Your adventure begins now.`,'success');
-    renderDash();flashScreen();
+    flashScreen();
   },250);
 }
 </script>

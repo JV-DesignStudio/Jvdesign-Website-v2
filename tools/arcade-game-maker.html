@@ -8387,6 +8387,11 @@ function _showRunSuccess() {
         setTimeout(() => runBtn.classList.remove('success'), 600);
     }
 }
+// ── Analytics (consent-gated) ────────────────────────────────────────────
+function _trackEvent(name, params) {
+    if (localStorage.getItem('jv_analytics_ok') !== '1') return;
+    try { gtag('event', name, params || {}); } catch(_e) {}
+}
 
 function _showError(message) {
     // Replace raw console errors with user-friendly toast notifications
@@ -8584,6 +8589,7 @@ function compileAndBootEngine() {
     }
     const data = getPayload();
     _engineData = data;
+    _trackEvent('maker_run', { genre: data.genre, title: data.title });
     // ── Autosave: persist full config (incl. sprites & audio) so it survives a refresh ──
     try { localStorage.setItem('jv_arcade_autosave', JSON.stringify(_buildSaveData())); } catch(_e) { _handleAutosaveQuotaError(_e); }
     Object.assign(liveConfig, { speed:data.speed, gravity:data.gravity, jumpForce:data.jump });
@@ -13683,7 +13689,8 @@ function scenePong(data) {
             const {up,down}=this.cursors;
             // W/S also move the player paddle in 1P mode (no conflict in 2P, pRight gets W/S below)
             const _p1Up   = up.isDown   || touchInput.up   || (!liveConfig.pong2Player && this.p2Up.isDown);
-            const _p1Down = down.isDown || touchInput.down || this.spaceKey.isDown || (!liveConfig.pong2Player && this.p2Down.isDown);
+            const _p1Down = down.isDown || touchInput.down || this.spaceKey.isDown || touchInput.fire || (!liveConfig.pong2Player && this.p2Down.isDown);
+            if (touchInput.fire) touchInput.fire = false;
             if(_p1Up)        this.pLeft.setVelocityY(-liveConfig.speed);
             else if(_p1Down) this.pLeft.setVelocityY(liveConfig.speed);
             else             this.pLeft.setVelocityY(0);
@@ -17351,6 +17358,7 @@ function _shareGameScore() {
     const genre = _goPendingGenre || 'ARCADE';
     const title = _engineData ? (_engineData.title || 'My Game') : 'My Arcade Game';
     const shareUrl = _shareBaseUrl();
+    _trackEvent('share_create', { method: 'score_link', genre, title, score });
     _nativeShare({
         title: `${title}, Score: ${score}`,
         text: `I scored ${score} in ${title} (${genre})! Can you beat it? 🕹️`,
@@ -17368,6 +17376,7 @@ async function _shareGameCard(score) {
         const genre  = (document.getElementById('genreMode') || {}).value || 'SHOOTER';
         const icon   = _GENRE_ICONS[genre] || '🕹️';
         const title  = ((document.getElementById('gameTitle') || {}).value || 'My Arcade Game');
+        _trackEvent('share_create', { method: 'game_card', genre, title, score });
         const c1 = gameTheme.cols[0] || '#7c3aed';
         const c2 = gameTheme.cols[1] || '#4ade80';
 
@@ -17483,6 +17492,7 @@ function showGameOver(score) {
     GameAudio.stopMusic();
     _goPendingScore = score;
     _goPendingGenre = _engineData ? _engineData.genre : 'SHOOTER';
+    _trackEvent('game_finish', { genre: _goPendingGenre, score: score, victory: false, picks: RunMods.picksTaken || 0 });
     // ── Persist personal best score per genre ──────────────────────────────
     try {
         const _bKey = 'jv_best_' + _goPendingGenre;
@@ -17890,6 +17900,8 @@ function _spawnConfetti() {
 
 function showVictory(score) {
     _triggerHaptic('win');
+    const genre = _engineData ? _engineData.genre : 'SHOOTER';
+    _trackEvent('game_finish', { genre: genre, score: score, victory: true, picks: RunMods.picksTaken || 0 });
     const t = document.getElementById('goTitle');
     const b = document.getElementById('goWinBanner');
     const ov = document.getElementById('goOverlay');
@@ -18073,6 +18085,7 @@ window.addEventListener('DOMContentLoaded',function(){
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     showToast('🎮 "' + _engineData.title + '" downloaded, works offline!');
+    _trackEvent('share_create', { method: 'download', genre: _engineData.genre, title: _engineData.title });
 }
 
 // ── TOUCH CONTROLS ───────────────────────────────────────────────────────────

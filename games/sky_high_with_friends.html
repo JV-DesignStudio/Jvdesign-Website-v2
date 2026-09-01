@@ -408,6 +408,14 @@
   .ftue-step { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--ui-stroke); border-radius: 12px; padding: 10px 12px; }
   .ftue-icon { font-size: 20px; width: 28px; text-align: center; }
 
+  /* Daily wheel */
+  #daily-wheel { position: fixed; inset: 0; z-index: 460; display: grid; place-items: center; background: rgba(10,6,23,0.85); }
+  #daily-wheel.hidden { display: none; }
+  .wheel-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(340px, 90vw); text-align: center; }
+  .wheel-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 12px; }
+  #wheel-canvas { display: block; margin: 0 auto 12px; max-width: 100%; }
+  .wheel-reward { font-size: 16px; font-weight: 700; margin-top: 8px; min-height: 24px; color: var(--accent); }
+
   /* Big primary Play button */
   .btn.play-big {
     width: 100%;
@@ -1113,6 +1121,7 @@
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
 <script src="../player-profile.js"></script>
+<script src="../crashlytics.js"></script>
 <link rel="stylesheet" href="../game-system.css"><style>
   /* style-shared.css sets body{font-family:'Inter'...} and, loading after
      this page's own inline <style>, wins the cascade on source order alone
@@ -1181,6 +1190,15 @@
       <div class="ftue-step"><span class="ftue-icon">🪙</span><span>Collect coins & dodge wasps</span></div>
     </div>
     <button class="btn" id="ftue-go">Got it — Play!</button>
+  </div>
+</div>
+
+<div id="daily-wheel" class="hidden">
+  <div class="wheel-card">
+    <div class="wheel-title">🎁 Daily Reward</div>
+    <canvas id="wheel-canvas" width="280" height="280"></canvas>
+    <button class="btn" id="wheel-spin-btn">Spin!</button>
+    <div class="wheel-reward" id="wheel-reward"></div>
   </div>
 </div>
 <div id="wrap">
@@ -1347,6 +1365,9 @@
       <button class="btn secondary small" id="pz-restart-btn" aria-label="Restart run">Restart</button>
       <button class="btn danger small" id="pz-quit-btn" aria-label="Quit to menu">Quit</button>
     </div>
+    <div class="btn-row">
+      <button class="btn secondary small" id="pz-leaderboard-btn" aria-label="View leaderboard">🏆 Leaderboard</button>
+    </div>
   </div>
 </div>
 
@@ -1398,6 +1419,14 @@
       <span class="setting-label">Remove Ads</span>
       <button class="toggle-btn" id="remove-ads-btn">Buy — $1.99</button>
     </div>
+    <div class="setting-row" id="coin-pack-row">
+      <span class="setting-label">500 Coins</span>
+      <button class="toggle-btn" id="coin-pack-btn">$0.99</button>
+    </div>
+    <div class="setting-row" id="starter-row">
+      <span class="setting-label">Starter Pack</span>
+      <button class="toggle-btn" id="starter-btn">$2.99</button>
+    </div>
 
     <div class="setting-row hidden" id="tilt-row">
       <span class="setting-label">Tilt Calibration</span>
@@ -1437,7 +1466,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.4', code: 12, date: '2026-09-01', codename: 'Celestial' };
+const GAME_VERSION = { v: '3.0', code: 14, date: '2026-09-01', codename: 'Horizon' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1519,8 +1548,10 @@ const CHARS = {
              perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
   stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', name: 'Stardust',           emoji: '✨', unlockM: 12000,
              perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail · +10% coins', secret: true },
+  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', name: 'Prism',              emoji: '🔮', unlockM: 24000,
+             perk: 'prismatic', perkName: 'Prismatic', perkDesc: 'Rainbow trail · +15% coins', secret: true },
 };
-const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust'];
+const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust', 'prism'];
 function perkActive(p) {
   const c = CHARS[state.character];
   return !!(c && c.perk === p && save.unlockedChars.includes(state.character));
@@ -1606,7 +1637,7 @@ function defaultSave() {
     bestHeight: 0,
     lifetimeCoins: 0,
     coins: 0,
-    iap: { removeAds: false },
+    iap: { removeAds: false, coinPack500: false, starterPack: false },
     unlockedChars: ['turtle'],
     owned: { hat: ['none'], skin: ['default'], aura: ['none'] },
     equipped: {
@@ -1614,17 +1645,18 @@ function defaultSave() {
       fox:     { hat: 'none', skin: 'default', aura: 'none' },
       tiger:   { hat: 'none', skin: 'default', aura: 'none' },
       axolotl: { hat: 'none', skin: 'default', aura: 'none' },
+      stardust:{ hat: 'none', skin: 'default', aura: 'none' },
     },
     upgrades: { coinValue: 0, springBoost: 0, magnetTime: 0, luck: 0 },
     weeklyBest: { seed: 0, best: 0 },
     missions: { date: null, best: {}, claimed: [] },
     achievements: [],
-    // XP / level
     xp: 0,
     level: 1,
-    // Ghost: array of { t, x, y } samples from best run
     ghostRun: null,
     ghostChar: 'turtle',
+    ghostRun2: null, ghostChar2: 'turtle', ghostHeight2: 0,
+    ghostRun3: null, ghostChar3: 'turtle', ghostHeight3: 0,
     // Streak
     lastPlayDate: null,    // 'YYYY-MM-DD'
     streak: 0,
@@ -1818,13 +1850,19 @@ function startMusic() {
   if (!sound.ctx || music.playing || !music.enabled) return;
   music.master = sound.ctx.createGain();
   music.master.gain.value = 0.14;
+  music.zoneFilter = sound.ctx.createBiquadFilter();
+  music.zoneFilter.type = 'peaking';
+  music.zoneFilter.frequency.value = 1000;
+  music.zoneFilter.Q.value = 0.7;
+  music.zoneFilter.gain.value = 0;
+  music.zoneFilter.connect(music.master);
   music.master.connect(sound.ctx.destination);
   music.calmGain = sound.ctx.createGain();
   music.calmGain.gain.value = 1;
-  music.calmGain.connect(music.master);
+  music.calmGain.connect(music.zoneFilter);
   music.nightGain = sound.ctx.createGain();
   music.nightGain.gain.value = 0;
-  music.nightGain.connect(music.master);
+  music.nightGain.connect(music.zoneFilter);
   music.playing = true;
   music.nextNoteTime = sound.ctx.currentTime + 0.1;
   music.step = 0;
@@ -1856,6 +1894,11 @@ function musicZoneTick() {
   const target = state.mode === 'paused' ? 0.25 : 1;
   music.nightGain.gain.setTargetAtTime(0.85 * intensity * target, sound.ctx.currentTime, 0.9);
   music.calmGain.gain.setTargetAtTime((1 - 0.45 * intensity) * target, sound.ctx.currentTime, 0.9);
+  // Zone-specific filter: Meadow warm (lowpass), deep zones airy (highpass)
+  if (music.zoneFilter) {
+    const zf = state.zone <= 1 ? 800 : state.zone >= 4 ? 1200 : 1000;
+    music.zoneFilter.frequency.setTargetAtTime(zf, sound.ctx.currentTime, 1.2);
+  }
 }
 
 /* ---------- Achievements ----------
@@ -1872,6 +1915,9 @@ const ACHIEVEMENTS = [
   { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: '🌑', check: (s) => s.bestHeight >= 16000 },
   { id: 'reach20000',   name: 'Infinity',        desc: 'Reach 20000m',                      icon: '♾️', check: (s) => s.bestHeight >= 20000 },
   { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
+  { id: 'reach24000',   name: 'Infinite Voyager', desc: 'Reach 24000m',                    icon: '🌌', check: (s) => s.bestHeight >= 24000 },
+  { id: 'totalCoins10k', name: 'Midas',           desc: 'Collect 10000 coins lifetime',    icon: '💰', check: (s) => s.lifetimeCoins >= 10000 },
+  { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: '🎯', check: (s, r) => r && r.nearMisses >= 10 },
   { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
   { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
   { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: '👨‍👩‍👧‍👦', check: (s) => s.unlockedChars.length >= 4 },
@@ -2058,19 +2104,32 @@ function recordGhostSample() {
 
 function getGhostPosAtFrame(f) {
   if (!save.ghostRun || save.ghostRun.length < 6) return null;
-  // ghostRun is flat: [f0,x0,y0, f1,x1,y1, ...]
-  // Replay frames advance monotonically, so keep a cursor and slide it
-  // forward instead of rescanning the array every frame.
   const arr = save.ghostRun;
   while (state.ghostCursor + 3 < arr.length && arr[state.ghostCursor + 3] <= f) {
     state.ghostCursor += 3;
   }
   const i = state.ghostCursor;
-  if (i + 3 >= arr.length) return null; // ghost run is over
+  if (i + 3 >= arr.length) return null;
   const f0 = arr[i],   x0 = arr[i+1], y0 = arr[i+2];
   const f1 = arr[i+3], x1 = arr[i+4], y1 = arr[i+5];
   const t = (f - f0) / (f1 - f0);
   return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t };
+}
+function getGhostPosAtFrame2(f) {
+  if (!save.ghostRun2 || save.ghostRun2.length < 6) return null;
+  const arr = save.ghostRun2;
+  let c = 0; while (c + 3 < arr.length && arr[c + 3] <= f) c += 3;
+  if (c + 3 >= arr.length) return null;
+  const f0 = arr[c], x0 = arr[c+1], y0 = arr[c+2], f1 = arr[c+3], x1 = arr[c+4], y1 = arr[c+5];
+  return { x: x0 + (x1-x0) * ((f-f0)/(f1-f0)), y: y0 + (y1-y0) * ((f-f0)/(f1-f0)) };
+}
+function getGhostPosAtFrame3(f) {
+  if (!save.ghostRun3 || save.ghostRun3.length < 6) return null;
+  const arr = save.ghostRun3;
+  let c = 0; while (c + 3 < arr.length && arr[c + 3] <= f) c += 3;
+  if (c + 3 >= arr.length) return null;
+  const f0 = arr[c], x0 = arr[c+1], y0 = arr[c+2], f1 = arr[c+3], x1 = arr[c+4], y1 = arr[c+5];
+  return { x: x0 + (x1-x0) * ((f-f0)/(f1-f0)), y: y0 + (y1-y0) * ((f-f0)/(f1-f0)) };
 }
 
 const state = {
@@ -2176,6 +2235,7 @@ const ZONES = [
   { name: 'Cosmos',    minM: 12000, sky: ['#01010a', '#1a0a2e'], plat: '#7c4dff', platEdge: '#2a0a4a' },
   { name: 'Void',      minM: 16000, sky: ['#000000', '#0d020d'], plat: '#1a1a2e', platEdge: '#000000' },
   { name: 'Infinity',  minM: 20000, sky: ['#000000', '#1a0033'], plat: '#e0e7ff', platEdge: '#4338ca' },
+  { name: 'Infinite',  minM: 24000, sky: ['#000000', '#0a001a'], plat: '#fff', platEdge: '#e0e7ff' },
 ];
 
 function getZone(m) {
@@ -2346,16 +2406,20 @@ function attachSpawns(plat, h, rand) {
     if (rand() < chance) {
       const hr = rand();
       let kind = 'gust';
-      if (h > 1200 && hr < 0.33) kind = 'wasp';
-      else if (h > 2000 && hr < 0.66) kind = 'spike';
+      if (h > 1200 && hr < 0.30) kind = 'wasp';
+      else if (h > 2000 && hr < 0.60) kind = 'spike';
+      else if (h > 8000 && hr < 0.85) kind = 'comet';
+      else if (h > 16000 && hr < 0.95) kind = 'voidhole';
       const isWasp = kind === 'wasp';
       const isSpike = kind === 'spike';
+      const isComet = kind === 'comet';
+      const isVoid = kind === 'voidhole';
       plat.hazardSpec = {
         ox: 20 + rand() * (W - 40) - cx,
         oy: -90 - rand() * 40,
-        vx: (rand() < 0.5 ? -1 : 1) * (isWasp ? (1.4 + rand() * 1.0) : (0.8 + rand() * 0.9)),
+        vx: isVoid ? 0 : (rand() < 0.5 ? -1 : 1) * (isWasp ? (1.4 + rand() * 1.0) : isComet ? (2.2 + rand() * 0.8) : (0.8 + rand() * 0.9)),
         kind: kind,
-        r: isSpike ? 14 : isWasp ? 15 : 16,
+        r: isSpike ? 14 : isWasp ? 15 : isComet ? 16 : isVoid ? 18 : 16,
       };
     }
   }
@@ -2779,6 +2843,11 @@ function update() {
   if (save.settings.particles!==false && state.character === 'stardust' && state.gameTime % 3 === 0) {
     state.particles.push({ x: p.x + p.w/2 + (Math.random()-0.5)*6, y: p.y + p.h/2, vx:(Math.random()-0.5)*0.6, vy:0.8+Math.random()*0.8, life:0.7, color: Math.random()<0.5?'#a5b4fc':'#fde68a', shape:'circle', size:1.2+Math.random()*1.8, rot:0, rotV:0 });
   }
+  // Prism rainbow trail
+  if (save.settings.particles!==false && state.character === 'prism' && state.gameTime % 2 === 0) {
+    const hues=['#ff0066','#ff9900','#ffd23f','#66dd44','#5cdbff','#9966ff'];
+    state.particles.push({ x: p.x + p.w/2 + (Math.random()-0.5)*8, y: p.y + p.h/2, vx:(Math.random()-0.5)*0.8, vy:0.6+Math.random()*0.6, life:0.6, color: hues[Math.floor(Math.random()*hues.length)], shape:'diamond', size:1+Math.random()*2, rot:Math.random()*Math.PI, rotV:(Math.random()-0.5)*0.15 });
+  }
 
   recordGhostSample();
 
@@ -2821,10 +2890,36 @@ function update() {
   }
 
   for (const hz of state.hazards) {
-    hz.x += hz.vx;
-    if (hz.x < hz.r) { hz.x = hz.r; hz.vx = Math.abs(hz.vx); }
-    if (hz.x > W - hz.r) { hz.x = W - hz.r; hz.vx = -Math.abs(hz.vx); }
-    hz.bob += 0.06;
+    if (hz.kind === 'voidhole') {
+      // Voidhole: orbits slowly in place, pulls player toward it
+      hz.orbit = (hz.orbit || 0) + 0.02;
+      hz.x = hz.x + Math.sin(hz.orbit) * 0.4;
+      hz.bob += 0.04;
+      if (state.invulnFrames <= 0) {
+        const dx = (p.x + p.w/2) - hz.x;
+        const dy = (p.y + p.h/2) - hz.y;
+        const d2 = dx*dx + dy*dy;
+        if (d2 < 120*120 && d2 > 4) {
+          const d = Math.sqrt(d2);
+          p.vx += (dx / d) * 0.15;
+          p.vy += (dy / d) * 0.12;
+        }
+        if (d2 < (hz.r + 16)*(hz.r + 16)) {
+          const soft = perkActive('sturdy') ? 0.5 : 1;
+          p.vy = 5 * soft;
+          state.invulnFrames = 30;
+          state.hazardHits++;
+          addShake(5);
+          vib(40);
+          SFX.death();
+        }
+      }
+    } else {
+      hz.x += hz.vx;
+      if (hz.x < hz.r) { hz.x = hz.r; hz.vx = Math.abs(hz.vx); }
+      if (hz.x > W - hz.r) { hz.x = W - hz.r; hz.vx = -Math.abs(hz.vx); }
+      hz.bob += 0.06;
+    }
     if (state.invulnFrames <= 0) {
       const dx = (p.x + p.w/2) - hz.x;
       const dy = (p.y + p.h/2) - hz.y;
@@ -3294,6 +3389,30 @@ hazardSprites.spike = makeSprite(42, 42, (g) => {
   }
   g.fillStyle = 'rgba(255,255,255,0.45)'; g.beginPath(); g.arc(17, 15, 3, 0, Math.PI * 2); g.fill();
 });
+hazardSprites.comet = makeSprite(42, 42, (g) => {
+  // Comet — blazing orange-yellow streak
+  g.fillStyle = 'rgba(255,167,38,0.3)'; g.beginPath(); g.arc(21, 21, 18, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ff9800'; g.beginPath(); g.arc(21, 21, 13, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ffeb3b'; g.beginPath(); g.arc(21, 21, 8, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(21, 21, 3, 0, Math.PI * 2); g.fill();
+  // Trail streaks
+  g.strokeStyle = 'rgba(255,167,38,0.6)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(38, 21); g.lineTo(18, 21); g.stroke();
+  g.beginPath(); g.moveTo(36, 16); g.lineTo(22, 20); g.stroke();
+  g.beginPath(); g.moveTo(36, 26); g.lineTo(22, 22); g.stroke();
+});
+hazardSprites.voidhole = makeSprite(42, 42, (g) => {
+  // Void hole — swirling dark vortex
+  g.fillStyle = 'rgba(120,0,180,0.3)'; g.beginPath(); g.arc(21, 21, 20, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#1a0033'; g.beginPath(); g.arc(21, 21, 14, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#0d001a'; g.beginPath(); g.arc(21, 21, 8, 0, Math.PI * 2); g.fill();
+  // Swirl rings
+  g.strokeStyle = 'rgba(180,120,255,0.5)'; g.lineWidth = 1.5;
+  for(let i=0;i<3;i++){ const r=6+i*4; g.beginPath(); g.arc(21,21,r,0+i*1.2, Math.PI+i*1.2); g.stroke(); }
+  // Pull lines
+  g.strokeStyle = 'rgba(120,0,200,0.4)'; g.lineWidth = 1;
+  for(let a=0;a<6;a++){ const angle=a*Math.PI/3; g.beginPath(); g.moveTo(21+Math.cos(angle)*20, 21+Math.sin(angle)*20); g.lineTo(21+Math.cos(angle)*12, 21+Math.sin(angle)*12); g.stroke(); }
+});
 // Back-compat alias
 const hazardSprite = hazardSprites.gust;
 
@@ -3306,9 +3425,23 @@ function getCharSprite(charId, bodyColor, accentColor, facing){
   const SZ = 42;
   spr = makeSprite(SZ, SZ, (g,w,h)=> drawCharacter(g, charId, 0,0,w,h, bodyColor, accentColor, facing));
   charSpriteCache.set(key, spr);
-  if(charSpriteCache.size>32){ const fk=charSpriteCache.keys().next().value; charSpriteCache.delete(fk); }
+  if(charSpriteCache.size>64){ const fk=charSpriteCache.keys().next().value; charSpriteCache.delete(fk); }
   return spr;
 }
+// Pre-bake top 5 skins × 5 chars × 2 facings = 50 sprites on load
+(function preBakeSprites(){
+  const topSkins = [{tint:null},{tint:'#222'},{tint:'#9fdfff'},{tint:'#ff6b9d'},{tint:'#ffd23f'}];
+  const chars = Object.keys(CHARS);
+  for(const cid of chars){
+    const base = CHARS[cid];
+    for(const sk of topSkins){
+      const bc = sk.tint || base.body;
+      const ac = sk.tint ? darken(sk.tint, 0.3) : base.accent;
+      getCharSprite(cid, bc, ac, 1);
+      getCharSprite(cid, bc, ac, -1);
+    }
+  }
+})();
 
 /* ── Coin: 8 spin frames ── */
 const coinFrames = [];
@@ -3479,15 +3612,44 @@ function drawSky() {
   }
   ctx.globalAlpha = 1;
 
-  // Twinkling stars
+  // Twinkling stars — denser in deeper zones
+  const starDensity = state.zone >= 4 ? 1.5 : 1;
   const starA = Math.min(1, Math.max(0, (state.heightM - 800) / 1200));
   if (starA > 0) {
     ctx.fillStyle = '#fff';
-    for (const st of STARS) {
+    const count = Math.floor(STARS.length * starDensity);
+    for (let i = 0; i < count; i++) {
+      const st = STARS[i % STARS.length];
       ctx.globalAlpha = starA * (0.45 + 0.55 * (0.5 + 0.5 * Math.sin(state.gameTime * st.sp + st.ph)));
-      ctx.fillRect(st.nx * W, st.ny * H, st.s, st.s);
+      ctx.fillRect(st.nx * W, st.ny * H, st.s * (state.zone >= 5 ? 1.3 : 1), st.s * (state.zone >= 5 ? 1.3 : 1));
     }
     ctx.globalAlpha = 1;
+  }
+
+  // Nebula glow for zones 4+ (Cosmos/Void/Infinity)
+  if (state.zone >= 4) {
+    const nebulaA = state.zone === 4 ? 0.12 : state.zone === 5 ? 0.18 : 0.25;
+    const tt = performance.now() / 1000;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = nebulaA * (0.7 + 0.3 * Math.sin(tt * 0.1));
+    // Purple nebula cloud
+    const ng = ctx.createRadialGradient(W * 0.3, H * 0.3, 10, W * 0.3, H * 0.3, W * 0.5);
+    ng.addColorStop(0, 'rgba(120,60,200,0.6)');
+    ng.addColorStop(0.5, 'rgba(60,20,120,0.3)');
+    ng.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ng;
+    ctx.fillRect(0, 0, W, H);
+    // Red nebula cloud
+    const rg = ctx.createRadialGradient(W * 0.75, H * 0.6, 10, W * 0.75, H * 0.6, W * 0.4);
+    rg.addColorStop(0, 'rgba(200,40,80,0.5)');
+    rg.addColorStop(0.5, 'rgba(120,20,60,0.2)');
+    rg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   // Aurora ribbons — three slow, layered waves (zone 4)
@@ -3722,7 +3884,8 @@ function drawCharChip(cv, id, cssSize) {
   const accentColor = skin && skin.tint ? darken(skin.tint, 0.3) : c.accent;
   const pad = cssSize * 0.13;
   const box = cssSize - pad * 2;
-  drawCharacter(g, id, pad, pad, box, box, bodyColor, accentColor, 1);
+  const spr = getCharSprite(id, bodyColor, accentColor, 1);
+  g.drawImage(spr.c, pad, pad, box, box);
   const hat = COSMETICS.hat.find(h => h.id === (eq.hat || 'none'));
   if (hat && hat.draw) hat.draw(g, pad, pad, box, box);
 }
@@ -3775,10 +3938,22 @@ function drawHazards() {
     const spr = hazardSprites[hz.kind] || hazardSprites.gust;
     ctx.save();
     ctx.translate(hz.x, y);
-    // wasp wiggles faster, spike stays still
-    const rotSpd = hz.kind === 'wasp' ? 0.06 : hz.kind === 'spike' ? 0.015 : 0.03;
-    ctx.rotate(Math.sin(state.gameTime * rotSpd + hz.bob) * 0.3);
+    const rotSpd = hz.kind === 'wasp' ? 0.06 : hz.kind === 'spike' ? 0.015 : hz.kind === 'comet' ? -0.08 : hz.kind === 'voidhole' ? 0.04 : 0.03;
+    ctx.rotate(Math.sin(state.gameTime * rotSpd + hz.bob) * (hz.kind === 'voidhole' ? 0.6 : 0.3));
     ctx.drawImage(spr.c, -21, -21, spr.w, spr.h);
+    // Color-blind high-contrast outline per type
+    const cbColors = { gust: '#9e9e9e', wasp: '#ffc107', spike: '#e53935', comet: '#ff9800', voidhole: '#7c4dff' };
+    ctx.strokeStyle = cbColors[hz.kind] || '#fff';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.65;
+    ctx.beginPath(); ctx.arc(0, 0, hz.r + 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    if (hz.kind === 'voidhole') {
+      ctx.globalAlpha = 0.3 + 0.2 * Math.sin(state.gameTime * 0.05);
+      ctx.fillStyle = 'rgba(180,120,255,0.4)';
+      ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 }
@@ -4109,7 +4284,7 @@ function charBlush(c, bx, by, rx, ry) {
 function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
   const f = facing || 1;
   const eo = f * (w * 0.06);
-  const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : charId === 'axolotl' ? 176 : 208;
+  const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : charId === 'axolotl' ? 176 : charId === 'stardust' ? 208 : 240;
   const blink = ((performance.now() / 16.7 + blinkSeed) % 240) < 8;
 
   if (charId === 'turtle') {
@@ -4264,6 +4439,28 @@ function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
     charEye(c, cx - w*0.10, cy - h*0.06, w*0.075, blink, f); charEye(c, cx + w*0.10, cy - h*0.06, w*0.075, blink, f);
     c.fillStyle='#ffd23f'; c.beginPath(); c.arc(cx - w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx + w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill();
     charBlush(c, cx - w*0.18, cy + h*0.08, w*0.045, h*0.028); charBlush(c, cx + w*0.18, cy + h*0.08, w*0.045, h*0.028);
+  } else if (charId === 'prism') {
+    const cx = x + w*0.5, cy = y + h*0.48;
+    // Glass orb glow
+    const glow = c.createRadialGradient(cx, cy, w*0.06, cx, cy, w*0.58);
+    glow.addColorStop(0, 'rgba(196,181,253,0.95)'); glow.addColorStop(0.5, 'rgba(91,33,182,0.3)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.58, 0, Math.PI*2); c.fill();
+    // Glass body
+    c.fillStyle = charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.arc(cx, cy, w*0.24, 0, Math.PI*2); c.fill(); charOutline(c, '#5b21b6', w); c.stroke();
+    // Rainbow refraction bands
+    const rainbow = ['#ff0000','#ff8800','#ffff00','#00ff00','#0088ff','#8800ff'];
+    for(let i=0;i<6;i++){ c.fillStyle=rainbow[i]; c.globalAlpha=0.35; const a=i*Math.PI/3; c.beginPath(); c.ellipse(cx+Math.cos(a)*w*0.06, cy+Math.sin(a)*w*0.06, w*0.06, w*0.02, a, 0, Math.PI*2); c.fill(); }
+    c.globalAlpha=1;
+    c.fillStyle='rgba(255,255,255,0.85)'; c.beginPath(); c.arc(cx-w*0.06, cy-w*0.06, w*0.05,0,Math.PI*2); c.fill();
+    // Rainbow tail
+    const hues=['#ff0066','#ff9900','#ffd23f','#66dd44','#5cdbff','#9966ff'];
+    for(let i=0;i<4;i++){ c.fillStyle=hues[i]; c.globalAlpha=0.45-i*0.08; c.beginPath(); c.ellipse(cx-f*w*(0.18+i*0.06), y+h*(0.68+i*0.03), w*0.08-i*1, h*0.03, -0.15*i, 0, Math.PI*2); c.fill(); }
+    c.globalAlpha=1;
+    // Eyes — prism sparkle
+    charEye(c, cx - w*0.10, cy - h*0.05, w*0.07, blink, f); charEye(c, cx + w*0.10, cy - h*0.05, w*0.07, blink, f);
+    c.fillStyle='#ff0066'; c.beginPath(); c.arc(cx - w*0.10 + f*w*0.02, cy - h*0.05, w*0.012,0,Math.PI*2); c.fill();
+    c.fillStyle='#5cdbff'; c.beginPath(); c.arc(cx + w*0.10 + f*w*0.02, cy - h*0.05, w*0.012,0,Math.PI*2); c.fill();
+    charBlush(c, cx - w*0.18, cy + h*0.10, w*0.045, h*0.028); charBlush(c, cx + w*0.18, cy + h*0.10, w*0.045, h*0.028);
   }
 }
 
@@ -4389,6 +4586,35 @@ function drawGhost() {
   const gspr = getCharSprite(ghostCharId, ghostChar.body, ghostChar.accent, 1);
   ctx.drawImage(gspr.c, pos.x, y, w, h);
   ctx.restore();
+
+  // Ghost 2 (3rd best)
+  if (save.ghostRun3) {
+    const pos3 = getGhostPosAtFrame3(ghostFrame);
+    if (pos3) {
+      const y3 = pos3.y - state.cameraY;
+      if (y3 > -50 && y3 < H + 50) {
+        const gc3 = CHARS[save.ghostChar3] || CHARS.turtle;
+        const gspr3 = getCharSprite(save.ghostChar3, gc3.body, gc3.accent, 1);
+        ctx.save(); ctx.globalAlpha = 0.15;
+        ctx.drawImage(gspr3.c, pos3.x, y3, w, h);
+        ctx.restore();
+      }
+    }
+  }
+  // Ghost 3 (2nd best)
+  if (save.ghostRun2) {
+    const pos2 = getGhostPosAtFrame2(ghostFrame);
+    if (pos2) {
+      const y2 = pos2.y - state.cameraY;
+      if (y2 > -50 && y2 < H + 50) {
+        const gc2 = CHARS[save.ghostChar2] || CHARS.turtle;
+        const gspr2 = getCharSprite(save.ghostChar2, gc2.body, gc2.accent, 1);
+        ctx.save(); ctx.globalAlpha = 0.22;
+        ctx.drawImage(gspr2.c, pos2.x, y2, w, h);
+        ctx.restore();
+      }
+    }
+  }
 
   // "GHOST" label
   const p = state.player;
@@ -4745,6 +4971,8 @@ function die() {
   let coinMult = modMult('coinMult')
     * upgradeMult('coinValue', 0.05);
   if (perkActive('celestial')) coinMult *= 1.1; // Stardust +10%
+  if (perkActive('prismatic')) coinMult *= 1.15; // Prism +15%
+  if (save.nextRunBonus) { coinMult *= save.nextRunBonus; save.nextRunBonus = 0; }
   const bankedCoins = Math.round(state.runCoins * coinMult);
   save.coins += bankedCoins;
 
@@ -4772,6 +5000,9 @@ function die() {
       save.bestHeight = state.heightM;
       // Save ghost recording, but only if it's a meaningful run
       if (ghostRecording.length >= 30) {
+        // Shift old ghosts to slot 2/3
+        if (save.ghostRun) { save.ghostRun3 = save.ghostRun2; save.ghostChar3 = save.ghostChar2; save.ghostHeight3 = save.ghostHeight2; }
+        if (save.ghostRun) { save.ghostRun2 = save.ghostRun; save.ghostChar2 = save.ghostChar; save.ghostHeight2 = save.bestHeight; }
         save.ghostRun = ghostRecording.slice();
         save.ghostChar = state.character;
       }
@@ -4820,6 +5051,7 @@ function die() {
     tiger:  ['#ec4899', '#db2777', '#f9a8d4', '#fce7f3'],
     axolotl:['#e91e63', '#c2185b', '#f48fb1', '#fce4ec'],
     stardust:['#e0e7ff', '#a5b4fc', '#c4b5fd', '#ffd23f'],
+    prism:['#c4b5fd','#ff0066','#ffd23f','#5cdbff'],
   };
   const dColors = charColors[state.character] || confettiColors;
   spawnBurstParticles(state.player.x + state.player.w / 2, state.player.y + state.player.h / 2, dColors, 16, {
@@ -4990,6 +5222,11 @@ function pulseEl(el, cls = 'pulse') {
 function refreshMenu() {
   document.getElementById('menu-best').textContent = save.bestHeight + 'm';
   document.getElementById('menu-coins').textContent = save.coins;
+  // Daily wheel check — show once per day
+  if(save.tutorialDone && !save.dailySpin && !state._wheelShown){
+    save.dailySpin = true; persist(); state._wheelShown = true;
+    setTimeout(()=>{ showDailyWheel(); }, 800);
+  }
 
   const dm = getDailyModifier();
   document.getElementById('dailyModBadge').innerHTML =
@@ -5079,6 +5316,8 @@ function seasonalFree(item){
   const m=new Date().getMonth();
   if(item.id==='santa' && m===11) return true;
   if(item.id==='horns' && m===9) return true;
+  if(item.id==='flower' && m===3) return true; // Easter (April)
+  if(item.id==='party' && m===0) return true; // New Year (January)
   return false;
 }
 function refreshShop() {
@@ -5353,6 +5592,13 @@ document.getElementById('pause-btn').addEventListener('click', pauseGame);
 document.getElementById('resume-btn').addEventListener('click', resumeGame);
 document.getElementById('pz-restart-btn').addEventListener('click', () => startGame(state.weekly));
 document.getElementById('pz-quit-btn').addEventListener('click', quitToMenu);
+document.getElementById('pz-leaderboard-btn').addEventListener('click', async ()=>{
+  try{
+    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
+    if(pg && pg.showLeaderboard){ await pg.showLeaderboard({ leaderboardId: 'sky_high_leaderboard' }); }
+    else showToast('Leaderboards available on mobile');
+  }catch(e){ showToast('Leaderboard unavailable'); }
+});
 document.getElementById('pause-sound-toggle').addEventListener('click', toggleSound);
 document.getElementById('pause-music-toggle').addEventListener('click', () => {
   initAudio();
@@ -5406,6 +5652,10 @@ document.querySelectorAll('.shop-tab').forEach(t => {
 
 /* ---------- FTUE ---------- */
 let ftueTimer=null;
+// Reduced motion hint on first visit
+if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches && !save._rmHint){
+  setTimeout(()=>{ showToast('Reduced motion enabled — animations paused'); save._rmHint=true; persist(); },1200);
+}
 function showFTUE(){
   const ftue=document.getElementById('ftue');
   const txt=document.getElementById('ftue-ctrl-text');
@@ -5422,6 +5672,89 @@ function hideFTUE(auto){
   if(!save.tutorialDone){ save.tutorialDone=true; persist(); try{ if(typeof gtag==='function') gtag('event','ftue_complete', { auto: !!auto }); }catch(e){} }
 }
 document.getElementById('ftue-go').addEventListener('click', ()=>{ hideFTUE(); openModChooser(false); });
+
+/* ---------- Daily Reward Wheel ---------- */
+const WHEEL_SEGMENTS = [
+  { label: '100 🪙', weight: 30, grant: (s)=>{ s.coins+=100; return '100 coins!'; }},
+  { label: '200 🪙', weight: 22, grant: (s)=>{ s.coins+=200; return '200 coins!'; }},
+  { label: '500 🪙', weight: 8,  grant: (s)=>{ s.coins+=500; return '500 coins!'; }},
+  { label: '+1 Level', weight: 12, grant: (s)=>{ s.xp+=200; return '+200 XP!'; }},
+  { label: 'Random Hat', weight: 10, grant: (s)=>{
+    const unh=COSMETICS.hat.filter(h=>h.id!=='none'&&!s.owned.hat.includes(h.id));
+    if(!unh.length){ s.coins+=150; return '150 coins (all hats owned!)'; }
+    const pick=unh[Math.floor(Math.random()*unh.length)];
+    s.owned.hat.push(pick.id); return pick.name+'!';
+  }},
+  { label: 'Random Skin', weight: 8, grant: (s)=>{
+    const uns=COSMETICS.skin.filter(x=>!s.owned.skin.includes(x.id)&&x.price>0);
+    if(!uns.length){ s.coins+=200; return '200 coins (all skins owned!)'; }
+    const pick=uns[Math.floor(Math.random()*uns.length)];
+    s.owned.skin.push(pick.id); return pick.name+'!';
+  }},
+  { label: '2× Next Run', weight: 7, grant: (s)=>{ s.nextRunBonus=2; return 'Double coins next run!'; }},
+  { label: 'Mystery ✨', weight: 5, grant: (s)=>{ s.coins+=300; return '300 mystery coins!'; }},
+];
+let wheelSpinning=false;
+function showDailyWheel(){
+  const wh=document.getElementById('daily-wheel');
+  if(!wh) return;
+  wh.classList.remove('hidden');
+  drawWheelCanvas(0);
+  document.getElementById('wheel-reward').textContent='';
+  document.getElementById('wheel-spin-btn').textContent='Spin!';
+  document.getElementById('wheel-spin-btn').disabled=false;
+}
+function drawWheelCanvas(rotation){
+  const cv=document.getElementById('wheel-canvas');
+  if(!cv) return;
+  const c=cv.getContext('2d');
+  const cx=140, cy=140, r=130;
+  const total=WHEEL_SEGMENTS.reduce((a,s)=>a+s.weight,0);
+  const colors=['#ffd23f','#ff7eb9','#5cdbff','#7bdc7f','#c4b5fd','#f9a8d4','#81c784','#fde68a'];
+  c.clearRect(0,0,280,280);
+  let angle=rotation;
+  WHEEL_SEGMENTS.forEach((seg,i)=>{
+    const sweep=(seg.weight/total)*Math.PI*2;
+    c.beginPath(); c.moveTo(cx,cy); c.arc(cx,cy,r,angle,angle+sweep); c.closePath();
+    c.fillStyle=colors[i%colors.length]; c.fill();
+    c.strokeStyle='rgba(0,0,0,0.15)'; c.lineWidth=1; c.stroke();
+    const mid=angle+sweep/2;
+    c.save(); c.translate(cx,cy); c.rotate(mid);
+    c.fillStyle='#1a1030'; c.font='bold 10px Fredoka, sans-serif'; c.textAlign='center';
+    c.fillText(seg.label, r*0.55, 3);
+    c.restore();
+    angle+=sweep;
+  });
+  // Arrow
+  c.fillStyle='#1a1030'; c.beginPath(); c.moveTo(cx,cy-r-8); c.lineTo(cx-8,cy-r-22); c.lineTo(cx+8,cy-r-22); c.closePath(); c.fill();
+}
+function spinWheel(){
+  if(wheelSpinning) return;
+  wheelSpinning=true;
+  const btn=document.getElementById('wheel-spin-btn');
+  btn.disabled=true; btn.textContent='Spinning...';
+  const total=WHEEL_SEGMENTS.reduce((a,s)=>a+s.weight,0);
+  let rand=Math.random()*total, acc=0, winIdx=0;
+  for(let i=0;i<WHEEL_SEGMENTS.length;i++){ acc+=WHEEL_SEGMENTS[i].weight; if(rand<acc){ winIdx=i; break; } }
+  const totalAngle=Math.PI*2*5 + (Math.PI*2 - winIdx/WHEEL_SEGMENTS.length * Math.PI*2);
+  let start=performance.now();
+  function tick(now){
+    const t=Math.min(1,(now-start)/2200);
+    const ease=1-Math.pow(1-t,3);
+    drawWheelCanvas(ease*totalAngle);
+    if(t<1) requestAnimationFrame(tick);
+    else {
+      wheelSpinning=false;
+      const reward=WHEEL_SEGMENTS[winIdx].grant(save);
+      document.getElementById('wheel-reward').textContent='You got: '+reward;
+      btn.textContent='✓ Collected';
+      persist(); try{ if(typeof gtag==='function') gtag('event','daily_wheel',{segment:WHEEL_SEGMENTS[winIdx].label}); }catch(e){}
+      setTimeout(()=>{ document.getElementById('daily-wheel').classList.add('hidden'); },2000);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+document.getElementById('wheel-spin-btn').addEventListener('click', spinWheel);
 
 /* ---------- Settings ---------- */
 function openSettings() {
@@ -5515,17 +5848,45 @@ document.getElementById('remove-ads-btn').addEventListener('click', async ()=>{
     if(billing && billing.purchase){
       await billing.purchase({ productId: 'remove_ads' });
     } else {
-      // Dev fallback — grant immediately
       await new Promise(r=>setTimeout(r,600));
     }
     save.iap = save.iap||{}; save.iap.removeAds=true; persist();
     refreshSettings(); showToast('Ads removed! Thank you ✨'); SFX.buy();
-    try{ if(typeof gtag==='function') gtag('event','purchase', { items:[{id:'remove_ads'}] }); }catch(e){}
-    // Hide any ad buttons
+    try{ if(typeof gtag==='function') gtag('event','iap_purchase', { items:[{id:'remove_ads'}] }); }catch(e){}
     const adBtn=document.getElementById('ad-double-btn'); if(adBtn) adBtn.style.display='none';
-    const contRow=document.getElementById('continue-row'); // keep continue but hide its ad? continue uses rewarded, also hide if owned? keep for now
   }catch(e){ showToast('Purchase failed'); btn.textContent='Buy — $1.99'; btn.disabled=false; }
 });
+// IAP restore on boot
+async function restoreIAP(){
+  try{
+    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
+    if(billing && billing.getAvailableProducts){
+      const prods = await billing.getAvailableProducts();
+      for(const p of prods){
+        if(p.productId==='remove_ads') save.iap.removeAds=true;
+        if(p.productId==='coin_pack_500') save.iap.coinPack500=true;
+        if(p.productId==='starter_pack') save.iap.starterPack=true;
+      }
+      persist();
+    }
+  }catch(e){}
+}
+restoreIAP();
+
+async function grantIAP(productId){
+  try{
+    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
+    if(billing && billing.purchase){ await billing.purchase({ productId }); }
+    else { await new Promise(r=>setTimeout(r,600)); }
+    if(productId==='remove_ads'){ save.iap.removeAds=true; }
+    else if(productId==='coin_pack_500'){ save.coins+=500; showToast('500 coins added! 🪙'); }
+    else if(productId==='starter_pack'){ save.coins+=1000; for(const h of COSMETICS.hat.filter(x=>x.id!=='none')){ if(!save.owned.hat.includes(h.id)) save.owned.hat.push(h.id); } for(const s of COSMETICS.skin.filter(x=>x.price>0)){ if(!save.owned.skin.includes(s.id)) save.owned.skin.push(s.id); } showToast('Starter Pack unlocked! ✨'); }
+    persist(); refreshSettings(); SFX.buy();
+    try{ if(typeof gtag==='function') gtag('event','iap_purchase',{items:[{id:productId}]}); }catch(e){}
+  }catch(e){ showToast('Purchase failed'); }
+}
+document.getElementById('coin-pack-btn').addEventListener('click', ()=>grantIAP('coin_pack_500'));
+document.getElementById('starter-btn').addEventListener('click', ()=>grantIAP('starter_pack'));
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('This will erase ALL progress, coins, cosmetics, and achievements. Are you sure?')) {
     localStorage.removeItem(SAVE_KEY);
