@@ -566,6 +566,18 @@
   };
 
   /* ═══════════════════════════════════════
+     ANALYTICS
+     ═══════════════════════════════════════ */
+  window.builderTrack = function(event, data) {
+    try {
+      var events = JSON.parse(localStorage.getItem('jvds-builder-analytics') || '[]');
+      events.push({ event: event, data: data || {}, time: Date.now(), page: location.pathname.split('/').pop() });
+      if (events.length > 100) events = events.slice(-100);
+      localStorage.setItem('jvds-builder-analytics', JSON.stringify(events));
+    } catch(e) {}
+  };
+
+  /* ═══════════════════════════════════════
      INIT
      ═══════════════════════════════════════ */
   function injectBuilderExtras() {
