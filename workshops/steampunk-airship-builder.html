@@ -194,6 +194,21 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
 .jv-site-footer{background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.1);padding:14px;text-align:center;font-size:.72rem;}
 .jv-site-footer a{color:rgba(255,255,255,.45);text-decoration:none;margin:0 8px;transition:color .15s;}
 .jv-site-footer a:hover{color:rgba(255,255,255,.85);}
+
+.pcard-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(6px)}
+.pcard-overlay.show{display:flex}
+.pcard-box{background:linear-gradient(145deg,var(--bg-mid),var(--bg));border:1px solid var(--brass);border-radius:12px;padding:20px;max-width:380px;width:90%;box-shadow:0 0 60px rgba(200,168,78,.12)}
+.pcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pcard-title{font-family:'Abril Fatface',serif;font-size:1rem;color:var(--brass)}
+.pcard-close{background:none;border:none;color:var(--parch-dim);font-size:1.1rem;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s}
+.pcard-close:hover{color:#fff}
+#pcardImg{display:block;width:100%;border-radius:8px;margin-bottom:10px;border:1px solid rgba(200,168,78,.15)}
+.pcard-dl{display:block;width:100%;padding:9px;background:var(--brass);color:var(--bg);border:none;border-radius:8px;font-family:'Abril Fatface',serif;font-size:.95rem;cursor:pointer;transition:filter .15s}
+.pcard-dl:hover{filter:brightness(1.12)}
+
+.preset-row{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}
+.preset-btn{background:rgba(200,168,78,.08);border:1px solid rgba(200,168,78,.25);color:var(--brass);font-family:'Alegreya Sans',sans-serif;font-size:10px;padding:4px 8px;border-radius:3px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.preset-btn:hover{background:var(--brass);color:var(--bg)}
 </style>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/steampunk-airship-builder.html">
@@ -281,6 +296,8 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
     <h1>⚙️ Steampunk Airship Dockyard</h1>
     <div class="hb">
       <button onclick="randomAirship()">🎲 Random</button>
+      <button onclick="downloadPNG()">📸 PNG</button>
+      <button onclick="showProfileCard()">🃏 Card</button>
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
       <button onclick="exportOBJ()">⬇ OBJ</button>
@@ -317,6 +334,17 @@ input[type="color"]{width:100%;height:26px;border:1px solid var(--rivet);backgro
   </div>
 </div>
 <div class="mo" id="modalO"><div class="md" id="modalC"></div></div>
+<canvas id="pcardOffscreen" style="display:none;position:absolute"></canvas>
+<div class="pcard-overlay" id="profileCard">
+  <div class="pcard-box">
+    <div class="pcard-head">
+      <span class="pcard-title">⚙️ Airship Profile Card</span>
+      <button class="pcard-close" onclick="document.getElementById('profileCard').classList.remove('show')">✕</button>
+    </div>
+    <img id="pcardImg" src="" alt="Airship profile card">
+    <button class="pcard-dl" id="pcardDl">⬇ Download Profile Card</button>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════
@@ -834,7 +862,7 @@ function ctrlsFor(i){
     case'weapons':return[{t:'range',k:'cannonCount',l:'Cannons per Side',mn:0,mx:6,s:1},{t:'range',k:'cannonR',l:'Cannon Size',mn:0.04,mx:0.15,s:0.005},{t:'range',k:'turretR',l:'Turret Size',mn:0.15,mx:0.5,s:0.02}];
     case'pipes':return[{t:'range',k:'pipeR',l:'Pipe Radius',mn:0.02,mx:0.08,s:0.005},{t:'range',k:'pipeCount',l:'Pipe Rows',mn:1,mx:6,s:1},{t:'toggle',k:'showGauges',l:'Show Pressure Gauges'}];
     case'lanterns':return[{t:'range',k:'lanternCount',l:'Lanterns per Side',mn:0,mx:8,s:1},{t:'range',k:'lanternR',l:'Lantern Size',mn:0.04,mx:0.15,s:0.005},{t:'toggle',k:'lanternGlow',l:'Lantern Glow'}];
-    case'colors':return[{t:'color',k:'hullColor',l:'Hull'},{t:'color',k:'deckColor',l:'Deck'},{t:'color',k:'balloonColor',l:'Envelope'},{t:'color',k:'brassColor',l:'Brass Fittings'},{t:'color',k:'ironColor',l:'Iron/Metal'},{t:'color',k:'fabricColor',l:'Fabric/Canvas'},{t:'color',k:'glassColor',l:'Glass'},{t:'color',k:'smokeColor',l:'Smokestacks'}];
+    case'colors':return[{t:'presets',l:'Livery Presets'},{t:'color',k:'hullColor',l:'Hull'},{t:'color',k:'deckColor',l:'Deck'},{t:'color',k:'balloonColor',l:'Envelope'},{t:'color',k:'brassColor',l:'Brass Fittings'},{t:'color',k:'ironColor',l:'Iron/Metal'},{t:'color',k:'fabricColor',l:'Fabric/Canvas'},{t:'color',k:'glassColor',l:'Glass'},{t:'color',k:'smokeColor',l:'Smokestacks'}];
     case'extras':return[{t:'toggle',k:'showAnchor',l:'Show Anchor'},{t:'toggle',k:'showFlag',l:'Show Flag'},{t:'color',k:'flagColor',l:'Flag Color'},{t:'toggle',k:'showNameplate',l:'Show Nameplate'}];
     default:return[];
   }
@@ -844,6 +872,7 @@ function renderCtrl(c){
   if(c.t==='range')return`<div class="cg"><label>${c.l} <span class="rv" id="v_${c.k}">${P[c.k]}</span></label><input type="range" min="${c.mn}" max="${c.mx}" step="${c.s}" value="${P[c.k]}" oninput="upd('${c.k}',parseFloat(this.value))"></div>`;
   if(c.t==='color')return`<div class="cg"><label>${c.l}</label><input type="color" value="${P[c.k]}" oninput="upd('${c.k}',this.value)"></div>`;
   if(c.t==='toggle')return`<div class="cg"><label><input type="checkbox" ${P[c.k]?'checked':''} onchange="upd('${c.k}',this.checked)"> ${c.l}</label></div>`;
+  if(c.t==='presets')return`<div style="margin-bottom:10px"><label style="display:block;font-size:9.5px;color:var(--parch-dim);margin-bottom:4px;letter-spacing:.5px;font-weight:700">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" onclick="applyLivery('${n}')">${n}</button>`).join('')}</div></div>`;
   return'';
 }
 
@@ -1000,10 +1029,103 @@ function randomAirship(){
 }
 
 // ═══════════════════════════════════════
+// LIVERY PRESETS
+// ═══════════════════════════════════════
+const LIVERY_PRESETS = {
+  'Brass & Copper': {hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444'},
+  'Crimson Dawn': {hullColor:'#4a1a0a',deckColor:'#6b3a2a',balloonColor:'#8b1a1a',brassColor:'#aa6633',ironColor:'#444444',fabricColor:'#8b1a1a',glassColor:'#ccaa88',smokeColor:'#333333'},
+  'Arctic Explorer': {hullColor:'#2a3a4a',deckColor:'#6a7a8a',balloonColor:'#aabbcc',brassColor:'#c0c0c0',ironColor:'#888888',fabricColor:'#8899aa',glassColor:'#aaddff',smokeColor:'#666666'},
+  'Midnight Ops': {hullColor:'#0a0a14',deckColor:'#1a1a2a',balloonColor:'#1a1a2e',brassColor:'#333344',ironColor:'#222233',fabricColor:'#1a1a2e',glassColor:'#334455',smokeColor:'#111122'},
+  'Golden Age': {hullColor:'#3a2a10',deckColor:'#8b6b3a',balloonColor:'#6b4a20',brassColor:'#f0c850',ironColor:'#8b7355',fabricColor:'#8b6b3a',glassColor:'#ffdd88',smokeColor:'#555544'},
+  'Jade Storm': {hullColor:'#1a3a2a',deckColor:'#3a6a4a',balloonColor:'#2a5a3a',brassColor:'#4a8a5a',ironColor:'#555555',fabricColor:'#3a6a4a',glassColor:'#88ccaa',smokeColor:'#334433'},
+};
+function applyLivery(name) {
+  const p = LIVERY_PRESETS[name];
+  if (!p) return;
+  Object.assign(P, p);
+  rebuild();
+  updateStats();
+  if (mode === 'sandbox') buildSandbox(); else renderCtrls();
+  toast('Livery: ' + name);
+}
+
+// ═══════════════════════════════════════
+// PNG EXPORT & PROFILE CARD
+// ═══════════════════════════════════════
+function _drawStatBar(ctx, x, y, w, label, val, color) {
+  ctx.fillStyle = 'rgba(232,220,192,0.45)';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x, y + 8);
+  const barX = x + 50, barW = w - 80, barH = 8;
+  ctx.fillStyle = 'rgba(200,168,78,0.12)';
+  ctx.fillRect(barX, y, barW, barH);
+  ctx.fillStyle = color;
+  ctx.fillRect(barX, y, barW * (val / 10), barH);
+  ctx.textAlign = 'right';
+  ctx.fillText(val, x + w, y + 8);
+}
+
+function downloadPNG() {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = url; a.download = 'steampunk-airship.png'; a.click();
+  toast('Screenshot saved!');
+}
+
+function showProfileCard() {
+  renderer.render(scene, camera);
+  const stats = computeStats();
+  const oc = document.getElementById('pcardOffscreen');
+  oc.width = 400; oc.height = 540;
+  const ctx = oc.getContext('2d');
+  ctx.fillStyle = '#1a1610';
+  ctx.fillRect(0, 0, 400, 540);
+  const grd = ctx.createRadialGradient(200, 130, 10, 200, 130, 160);
+  grd.addColorStop(0, 'rgba(200,168,78,0.12)');
+  grd.addColorStop(1, 'rgba(200,168,78,0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 400, 280);
+  ctx.strokeStyle = 'rgba(200,168,78,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(1, 1, 398, 538);
+  const img = new Image();
+  img.onload = function() {
+    ctx.drawImage(img, 40, 16, 320, 240);
+    ctx.fillStyle = '#e8dcc0';
+    ctx.font = 'bold 28px "Abril Fatface", serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Steampunk Airship', 200, 284);
+    ctx.fillStyle = '#c8a84e';
+    ctx.font = '10px monospace';
+    ctx.fillText('AIRSHIP PROFILE  ·  JVDESIGNSTUDIO.CO.UK', 200, 302);
+    ctx.fillStyle = 'rgba(200,168,78,0.3)';
+    ctx.fillRect(40, 312, 320, 1);
+    _drawStatBar(ctx, 40, 326, 320, 'HEIGHT', stats.altitude, '#c8a84e');
+    _drawStatBar(ctx, 40, 352, 320, 'SPEED', stats.speed, '#b87333');
+    _drawStatBar(ctx, 40, 378, 320, 'FIRE', stats.firepower, '#c0392b');
+    _drawStatBar(ctx, 40, 404, 320, 'RANGE', stats.range, '#555555');
+    ctx.fillStyle = 'rgba(232,220,192,0.22)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('jvdesignstudio.co.uk  ·  Airship Dockyard  ·  Free', 200, 520);
+    const cardUrl = oc.toDataURL('image/png');
+    document.getElementById('pcardImg').src = cardUrl;
+    document.getElementById('pcardDl').onclick = function() {
+      const a = document.createElement('a'); a.href = cardUrl;
+      a.download = 'steampunk-airship-profile-card.png'; a.click();
+    };
+    document.getElementById('profileCard').classList.add('show');
+  };
+  img.src = renderer.domElement.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{initThree();rebuild();updateStats();updateUI();});
 document.getElementById('modalO').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('profileCard').addEventListener('click', e => { if (e.target === e.currentTarget) e.target.classList.remove('show'); });
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
 </script>
 <script>

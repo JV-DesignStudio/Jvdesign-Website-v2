@@ -12,13 +12,13 @@
 | **level-designer.html** | Y | · | Y | Y | Y | Y | Y | Y | Y | Has startModal, missing welcomeModal |
 | **story-editor.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-08-31 |
 | **trading-card-designer.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-08-31 |
-| **character-designer.html** | Y | · | Y | Y | · | · | Y | Y | Y | Needs welcome/save/share |
-| **particle-designer.html** | Y | · | Y | Y | · | · | Y | Y | Y | Needs welcome/save/share |
-| **music-maker.html** | Y | · | Y | Y | · | Y | · | Y | Y | Needs welcome/save |
-| **sprite-animator.html** | Y | · | Y | Y | · | · | Y | Y | Y | Needs welcome/save/share |
-| **sound-studio.html** | Y | · | Y | Y | · | · | Y | Y | Y | Duplicate of sfx-generator |
-| **map-generator.html** | Y | · | · | Y | · | Y | Y | Y | Y | Needs welcome/seen |
-| **game-logo-maker.html** | Y | · | · | Y | · | Y | Y | Y | Y | Needs welcome/seen/save |
+| **character-designer.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
+| **particle-designer.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
+| **music-maker.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
+| **sprite-animator.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
+| **sound-studio.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
+| **map-generator.html** | Y | Y | Y | Y | · | Y | Y | Y | Y | No save/load library |
+| **game-logo-maker.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
 | **sfx-generator.html** | Y | · | · | · | · | Y | · | Y | Y | Needs welcome/seen/autosave/save |
 | **drum-pad.html** | Y | · | · | · | · | · | · | Y | Y | Needs welcome/save/autosave/share |
 | **gdd-builder.html** | Y | · | · | Y | · | · | · | Y | Y | Planning tool, save/export stub |
@@ -40,13 +40,16 @@
 ## Tiering (standalone value)
 
 - **Overshadowing (benchmark)**: arcade-game-maker, pixel-studio, buildlab, level-designer — export actually builds a playable game / asset.
-- **Mid (needs gap-fill)**: character-designer, particle-designer, music-maker, sprite-animator, sound-studio, map-generator, game-logo-maker — functional but missing 2-3 standard pieces.
-- **Weak (pilot)**: roblox-builder (stub), game-idea-generator (no persist/export/share), colour-palette (no welcome/share), gdd-builder, icon-generator, bitmap-font-maker, drum-pad, sfx-generator — usable solo but not “worth keeping” without save/share.
+- **Complete**: story-editor, trading-card-designer, colour-palette, game-idea-generator, roblox-builder (redirect), character-designer, particle-designer, music-maker, sprite-animator, sound-studio, game-logo-maker — full standard met.
+- **Near complete**: map-generator — full standard except no save/load library.
+- **Weak**: gdd-builder, icon-generator, bitmap-font-maker, drum-pad, sfx-generator — usable solo but missing several standard pieces.
 
-## Next — Pilot 3 patches (full standard)
+## Next — Weak tier patches (full standard)
 
-1. **roblox-builder.html** — replace redirect with minimal standalone builder (or confirm deprecation → remove from dev-tools grid). If kept: add nav, welcome modal, toast, export.
-2. **game-idea-generator.html** — add welcome modal + seen-key `jvds_gameidea_seen_v1`, toast `#toast`, autosave/share (copy + share link), keep history as save slots, add `?` help. Keep chips/filters.
-3. **colour-palette.html** — add welcome modal + seen-key `jvds_palette_seen_v1`, share link (hash with cols/mood), `?` help, ensure autosave already via `jvds_palettes`. Normalize export to match CSS/JSON/GDScript pattern.
+1. **gdd-builder.html** — add welcome modal + seen-key, save/export, share
+2. **icon-generator.html** — add welcome modal + seen-key, autosave, save/share
+3. **bitmap-font-maker.html** — add welcome modal + seen-key, save/share, autosave
+4. **drum-pad.html** — add welcome modal + seen-key, save, autosave, share
+5. **sfx-generator.html** — add welcome modal + seen-key, autosave, save, export
 
-After pilots pass, sweep mid tier with same template (welcome+seen+share+save gaps) then landings.
+After weak tier, sweep landings (arcade-game-maker-landing, pixel-studio-landing, level-designer-landing, map-generator-landing).

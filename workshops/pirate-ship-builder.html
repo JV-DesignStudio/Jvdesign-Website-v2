@@ -268,6 +268,19 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
 .jv-site-footer{background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.1);padding:14px;text-align:center;font-size:.72rem;}
 .jv-site-footer a{color:rgba(255,255,255,.45);text-decoration:none;margin:0 8px;transition:color .15s;}
 .jv-site-footer a:hover{color:rgba(255,255,255,.85);}
+.pcard-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(6px)}
+.pcard-overlay.show{display:flex}
+.pcard-box{background:linear-gradient(145deg,var(--sea-mid),var(--sea));border:1px solid var(--gold);border-radius:16px;padding:20px;max-width:380px;width:90%;box-shadow:0 0 60px rgba(212,168,67,.15)}
+.pcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pcard-title{font-family:'Pirata One',cursive;font-size:1rem;color:var(--gold)}
+.pcard-close{background:none;border:none;color:var(--parchment-dim);font-size:1.1rem;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s}
+.pcard-close:hover{color:#fff}
+#pcardImg{display:block;width:100%;border-radius:8px;margin-bottom:10px;border:1px solid rgba(212,168,67,.2)}
+.pcard-dl{display:block;width:100%;padding:9px;background:var(--gold);color:var(--sea);border:none;border-radius:8px;font-family:'Pirata One',cursive;font-size:.95rem;cursor:pointer;transition:filter .15s}
+.pcard-dl:hover{filter:brightness(1.12)}
+.preset-row{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}
+.preset-btn{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.25);color:var(--gold);font-family:'IM Fell English SC',serif;font-size:10px;padding:4px 8px;border-radius:3px;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.preset-btn:hover{background:var(--gold);color:var(--sea)}
 </style>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/pirate-ship-builder.html">
@@ -355,9 +368,11 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
     <h1>🏴‍☠️ Pirate Ship Shipyard</h1>
     <div class="hdr-btns">
       <button onclick="randomShip()">🎲 Random</button>
+      <button onclick="downloadPNG()">📸 PNG</button>
+      <button onclick="showProfileCard()">🃏 Card</button>
       <button onclick="openSaveModal()">💾 Save</button>
       <button onclick="openLoadModal()">📂 Load</button>
-      <button onclick="exportOBJ()">⬇ Export OBJ</button>
+      <button onclick="exportOBJ()">⬇ OBJ</button>
       <button onclick="resetAll()">🔄 Reset</button>
     </div>
   </header>
@@ -382,6 +397,17 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
   </div>
 </div>
 <div class="mo" id="modalO"><div class="md" id="modalC"></div></div>
+<canvas id="pcardOffscreen" style="display:none;position:absolute"></canvas>
+<div class="pcard-overlay" id="profileCard">
+  <div class="pcard-box">
+    <div class="pcard-head">
+      <span class="pcard-title">🏴‍☠️ Ship Profile Card</span>
+      <button class="pcard-close" onclick="document.getElementById('profileCard').classList.remove('show')">✕</button>
+    </div>
+    <img id="pcardImg" src="" alt="Ship profile card">
+    <button class="pcard-dl" id="pcardDl">⬇ Download Profile Card</button>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════
@@ -1022,6 +1048,7 @@ function ctrlsFor(i){
       {t:'range',k:'winR',l:'Window Size',mn:0.1,mx:0.5,s:0.02},
     ];
     case 'colors': return [
+      {t:'presets',l:'Livery Presets'},
       {t:'color',k:'hullColor',l:'Hull'},
       {t:'color',k:'deckColor',l:'Deck'},
       {t:'color',k:'sailColor',l:'Sails'},
@@ -1044,7 +1071,9 @@ function renderCtrls(){
   const cs=ctrlsFor(curStep);
   let h=`<div class="ct">${STEPS[curStep].d}</div>`;
   cs.forEach(c=>{
-    if(c.t==='range'){
+    if(c.t==='presets'){
+      h += `<div style="margin-bottom:10px"><label style="display:block;font-size:10px;color:var(--parchment-dim);margin-bottom:4px;letter-spacing:1px">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" onclick="applyLivery('${n}')">${n}</button>`).join('')}</div></div>`;
+    } else if(c.t==='range'){
       h+=`<div class="cg"><label>${c.l} <span class="rv" id="v_${c.k}">${P[c.k]}</span></label><input type="range" min="${c.mn}" max="${c.mx}" step="${c.s}" value="${P[c.k]}" oninput="upd('${c.k}',parseFloat(this.value))"></div>`;
     } else if(c.t==='color'){
       h+=`<div class="cg"><label>${c.l}</label><input type="color" value="${P[c.k]}" oninput="upd('${c.k}',this.value)"></div>`;
@@ -1208,11 +1237,99 @@ function randomShip(){
   rebuildShip();updateStats();updateUI();toast('Random ship generated!');
 }
 
+function downloadPNG() {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = url; a.download = 'pirate-ship.png'; a.click();
+  toast('Screenshot saved!');
+}
+
+function showProfileCard() {
+  renderer.render(scene, camera);
+  const stats = computeStats();
+  const oc = document.getElementById('pcardOffscreen');
+  oc.width = 400; oc.height = 540;
+  const ctx = oc.getContext('2d');
+  ctx.fillStyle = '#0a1628';
+  ctx.fillRect(0, 0, 400, 540);
+  const grd = ctx.createRadialGradient(200, 130, 10, 200, 130, 160);
+  grd.addColorStop(0, 'rgba(212,168,67,0.15)');
+  grd.addColorStop(1, 'rgba(212,168,67,0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 400, 280);
+  ctx.strokeStyle = 'rgba(212,168,67,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(1, 1, 398, 538);
+  const img = new Image();
+  img.onload = function() {
+    ctx.drawImage(img, 40, 16, 320, 240);
+    ctx.fillStyle = '#e8d5b0';
+    ctx.font = 'bold 30px "Pirata One", cursive';
+    ctx.textAlign = 'center';
+    ctx.fillText('Pirate Ship', 200, 284);
+    ctx.fillStyle = '#d4a843';
+    ctx.font = '10px monospace';
+    ctx.fillText('SHIP PROFILE  ·  JVDESIGNSTUDIO.CO.UK', 200, 302);
+    ctx.fillStyle = 'rgba(212,168,67,0.3)';
+    ctx.fillRect(40, 312, 320, 1);
+    _drawStatBar(ctx, 40, 326, 320, 'SPEED', stats.speed, '#d4a843');
+    _drawStatBar(ctx, 40, 352, 320, 'FIRE', stats.firepower, '#8b1a1a');
+    _drawStatBar(ctx, 40, 378, 320, 'CARGO', stats.cargo, '#4a7a4a');
+    _drawStatBar(ctx, 40, 404, 320, 'CREW', stats.crew, '#4466aa');
+    ctx.fillStyle = 'rgba(232,213,176,0.22)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('jvdesignstudio.co.uk  ·  Pirate Ship Shipyard  ·  Free', 200, 520);
+    const cardUrl = oc.toDataURL('image/png');
+    document.getElementById('pcardImg').src = cardUrl;
+    document.getElementById('pcardDl').onclick = function() {
+      const a = document.createElement('a'); a.href = cardUrl;
+      a.download = 'pirate-ship-profile-card.png'; a.click();
+    };
+    document.getElementById('profileCard').classList.add('show');
+  };
+  img.src = renderer.domElement.toDataURL('image/png');
+}
+
+function _drawStatBar(ctx, x, y, w, label, value, color) {
+  ctx.fillStyle = 'rgba(232,213,176,0.5)';
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x, y + 11);
+  const bx = x + 60, bw = w - 100;
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(bx, y + 2, bw, 12);
+  ctx.fillStyle = color;
+  ctx.fillRect(bx, y + 2, bw * value / 10, 12);
+  ctx.fillStyle = 'rgba(232,213,176,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText(value + '/10', x + w, y + 12);
+}
+
+const LIVERY_PRESETS = {
+  'Royal Navy': {hullColor:'#1a1a2e',deckColor:'#8b7355',sailColor:'#e8e0d0',mastColor:'#5a3a1a',metalColor:'#888888',flagColor:'#002868',trimColor:'#c9a84c',waterColor:'#0a3060'},
+  'Jolly Roger': {hullColor:'#1a0a00',deckColor:'#3a2a1a',sailColor:'#f5f0e8',mastColor:'#2a1a0a',metalColor:'#333333',flagColor:'#111111',trimColor:'#8b6b3a',waterColor:'#0a2040'},
+  'Crimson Fleet': {hullColor:'#4a0a0a',deckColor:'#6b3a2a',sailColor:'#f0e8d8',mastColor:'#3a1a0a',metalColor:'#aa6633',flagColor:'#8b1a1a',trimColor:'#d4a843',waterColor:'#0a2848'},
+  'Golden Horde': {hullColor:'#2a1a0a',deckColor:'#8b6b3a',sailColor:'#f5e8c8',mastColor:'#4a3a1a',metalColor:'#d4a843',flagColor:'#d4a843',trimColor:'#f0c850',waterColor:'#1a3050'},
+  'Ghost Ship': {hullColor:'#1a1a2e',deckColor:'#2a2a3e',sailColor:'#c8c8d8',mastColor:'#3a3a4e',metalColor:'#666688',flagColor:'#8888aa',trimColor:'#aaaacc',waterColor:'#0a1830'},
+  'Emerald Isles': {hullColor:'#1a3a1a',deckColor:'#4a6a3a',sailColor:'#e8f0e0',mastColor:'#2a4a1a',metalColor:'#557744',flagColor:'#228b22',trimColor:'#88aa44',waterColor:'#0a4050'},
+};
+function applyLivery(name) {
+  const p = LIVERY_PRESETS[name];
+  if (!p) return;
+  Object.assign(P, p);
+  rebuildShip();
+  updateStats();
+  renderCtrls();
+  toast('Livery: ' + name);
+}
+
 // ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{initThree();rebuildShip();updateStats();updateUI();});
 document.getElementById('modalO').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('profileCard').addEventListener('click',e=>{if(e.target===e.currentTarget)e.target.classList.remove('show');});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
 </script>
 <script>
