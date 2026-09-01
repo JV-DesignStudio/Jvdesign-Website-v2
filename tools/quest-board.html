@@ -946,6 +946,18 @@ button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
 .charTab .rpg-panel{margin-bottom:0}
 .sell-hint{font-size:.42rem;color:#f87171;cursor:pointer}
 
+
+/* ── FAMILIARS ── */
+.fam-card{background:linear-gradient(160deg,var(--bg2) 0%,rgba(12,8,4,.9) 100%);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;transition:border-color .15s,transform .15s}
+.fam-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.fam-card.owned{border-color:rgba(245,200,66,.25);background:linear-gradient(160deg,rgba(245,200,66,.08),var(--bg2))}
+.fam-card.mounted{border-color:var(--green);background:linear-gradient(160deg,rgba(34,197,94,.08),var(--bg2))}
+.fam-egg{font-size:1.8rem}
+.fam-name{font-family:'Cinzel',serif;font-size:.72rem;font-weight:900;color:var(--gold)}
+.fam-meta{font-size:.62rem;color:var(--muted)}
+.fam-feedbar{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.fam-feedfill{height:100%;background:linear-gradient(90deg,var(--gold),#22c55e);transition:width .3s}
+
 /* ── BASICS TILES ── */
 .mini2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .mtile{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:11px 13px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
@@ -2382,6 +2394,28 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
   </div>
 </div>
 
+<!-- FAMILIARS VIEW -->
+<div class="view" id="view-familiars">
+  <div class="shop-wrap" style="max-width:1060px">
+    <div class="shop-header">
+      <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.3rem">🐾 Familiars</h2>
+      <div style="font-size:.72rem;color:var(--muted)">Hatch 54 combos · Feed to Mount</div>
+    </div>
+    <div class="rpg-panel">
+      <div class="rpg-panel-title">🎒 Ingredients <span style="font-size:.6rem;color:var(--muted);font-weight:400">drops from quests, dungeon & crates</span></div>
+      <div id="famIngredients" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div class="rpg-panel">
+      <div class="rpg-panel-title">🥚 Hatch — Egg + Essence</div>
+      <div id="famHatchGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
+    </div>
+    <div class="rpg-panel">
+      <div class="rpg-panel-title">🏠 Stable — Pets & Mounts</div>
+      <div id="famStable"></div>
+    </div>
+  </div>
+</div>
+
 <!-- DAILY LIFE VIEW -->
 <div class="view" id="view-life">
   <div class="life-wrap">
@@ -2669,6 +2703,7 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
       <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('raids')">🐉 Raids</button>
       <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('dungeon')">⚔️ Dungeon</button>
       <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('shop')">🛒 Market</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start" onclick="goToView('familiars')">🐾 Familiars</button>
     </div>
     <div class="modal-actions"><button class="btn btn-ghost" onclick="closeMoreMenu()">Close</button></div>
   </div>
@@ -3096,6 +3131,7 @@ function onQuestComplete(card){
   chance=Math.min(.65,chance+_dexLootBonus()); // DEX perk: keener eye for loot
   if(hasActiveBuff('lootGuar')){chance=1;consumeBuff('lootGuar');}
   if(Math.random()<chance)openLoot();
+  rollFamiliarDrops();
   rpg.mana=Math.min(_manaMax(),(rpg.mana==null?_manaMax()-1:rpg.mana)+1); // quests restore mana
   // Record daily stats
   const todayKey=new Date().toDateString();
@@ -3529,7 +3565,7 @@ function enemyTurn(){
   if(dg.playerHp<=0){playSfx('error');dgPrint('<br><strong style="color:#ff4444">☠️ You were defeated! Retreat, rest up (touch grass 🌱), and try again.</strong>');dg.active=false;showDgBtns(false);document.querySelector('.dungeon-controls button').style.display='';}
 }
 function checkMonsterDead(){
-  if(dg.monster.hp<=0){playSfx('quest');const line=VICTORY_LINES[Math.floor(Math.random()*VICTORY_LINES.length)];dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g <em style="font-size:.68rem;color:var(--muted)">— ${line}</em>`);addXp(dg.monster.xp);addGold(dg.monster.g);const tok=Math.max(1,Math.ceil(dg.floor/2))+(rpg.class==='QA Ranger'?1:0);rpg.raidTokens=(rpg.raidTokens||0)+tok;dgPrint(' ⚔️ +'+tok+' Raid Token'+(tok>1?'s':''));dgFloat('+'+tok+' ⚔️TOKEN','var(--gold)');dg.floor++;spawnMonster();return true;}
+  if(dg.monster.hp<=0){playSfx('quest');const line=VICTORY_LINES[Math.floor(Math.random()*VICTORY_LINES.length)];dgPrint(`<br>🎉 <strong style="color:var(--gold)">${dg.monster.name} defeated!</strong> +${dg.monster.xp}XP +${dg.monster.g}g <em style="font-size:.68rem;color:var(--muted)">— ${line}</em>`);addXp(dg.monster.xp);addGold(dg.monster.g);const tok=Math.max(1,Math.ceil(dg.floor/2))+(rpg.class==='QA Ranger'?1:0);rpg.raidTokens=(rpg.raidTokens||0)+tok;dgPrint(' ⚔️ +'+tok+' Raid Token'+(tok>1?'s':''));dgFloat('+'+tok+' ⚔️TOKEN','var(--gold)');if(Math.random()<0.12){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);}dg.floor++;spawnMonster();return true;}
   return false;
 }
 
@@ -4598,6 +4634,11 @@ function _openCrate(id){
   } else if(roll<0.62&&t.xp){
     addXp(t.xp);spawnXpFloat(`+${t.xp} XP`,'xp');
     showToast(`📦 ${t.label} Chest: +${t.xp} XP!`,'xp');
+  } else if(roll<0.72){
+    const pick=Math.random();
+    if(pick<0.4){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);}
+    else if(pick<0.7){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);}
+    else{const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);}
   } else {
     pendingLoot=t.pool[Math.floor(Math.random()*t.pool.length)];
     document.getElementById('lootChest').textContent='📦';
@@ -6185,6 +6226,7 @@ function switchView(v){
   if(v==='habits'){renderHabits();}
   if(v==='life'){renderLifeTab();}
   if(v==='shop'){renderShop();renderActiveBuffs();}
+  if(v==='familiars'){renderFamiliars();}
   if(v==='profile'){rollBounties();updateRpgWidgets();renderClassPath();initGistUI();_updateThemeSelect();renderCharTab();}
   document.getElementById('mobtab-habits')?.classList[v==='habits'?'add':'remove']('active');
 }
@@ -6646,7 +6688,8 @@ if(!rpg.firstPlayTs)rpg.firstPlayTs=Date.now();
 // Lifetime counters for Year Wrapped — estimate XP from level history on first run
 if(rpg.lifetimeXp==null)rpg.lifetimeXp=(rpg.xp||0)+(rpg.level-1)*1000+20000*(rpg.prestige||0);
 if(rpg.lifetimeGold==null)rpg.lifetimeGold=0;
-if(rpg.mana==null)rpg.mana=5;
+if(rpg.mana==null)rpg.mana=5
+if(rpg.hp==null)rpg.hp=_maxHp?_maxHp():100;;
 // Ensure all cards have new fields
 state.cards.forEach((c,i)=>{
   c.colId=_normCol(c.colId); // rescue cards routed to legacy/deleted columns

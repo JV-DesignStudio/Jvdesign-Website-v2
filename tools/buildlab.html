@@ -973,6 +973,8 @@ let currentTool = 'add';
 let currentColour = '#e94560';
 let currentShape = 'box';
 let selectedBlock = null;
+let selectedBlocks = []; // multi-select array
+let clipboard = []; // for copy/paste
 let buildName = 'My Build';
 let toastTimer = null;
 
@@ -1247,10 +1249,14 @@ function selectBlock(mesh) {
     document.getElementById('propH').value = mesh.userData.h || 1;
     document.getElementById('propD').value = mesh.userData.d || 1;
     document.getElementById('propRot').value = mesh.userData.rot || 0;
+    document.getElementById('propRotX').value = mesh.userData.rotX || 0;
+    document.getElementById('propRotZ').value = mesh.userData.rotZ || 0;
     document.getElementById('propWVal').textContent = mesh.userData.w || 1;
     document.getElementById('propHVal').textContent = mesh.userData.h || 1;
     document.getElementById('propDVal').textContent = mesh.userData.d || 1;
     document.getElementById('propRotVal').textContent = (mesh.userData.rot || 0) + '';
+    document.getElementById('propRotXVal').textContent = (mesh.userData.rotX || 0) + '';
+    document.getElementById('propRotZVal').textContent = (mesh.userData.rotZ || 0) + '';
     const yBase = Math.round(mesh.position.y - (mesh.userData.h||1)/2);
     document.getElementById('propYVal').textContent = yBase;
 
@@ -1288,33 +1294,111 @@ function moveBlockY(dir) {
 
 function deselectBlock() {
   selectedBlock = null;
-  window.highlight.visible = false;
+  selectedBlocks = [];
+  clearMultiHighlights();
   if (transformControls) {
     transformControls.detach();
   }
   document.getElementById('propPanel').style.display = 'none';
 }
 
+// Multi-select highlight meshes
+let _multiHighlights = [];
+
+function clearMultiHighlights() {
+  _multiHighlights.forEach(h => scene.remove(h));
+  _multiHighlights = [];
+}
+
+function toggleMultiSelect(mesh) {
+  const idx = selectedBlocks.indexOf(mesh);
+  if (idx >= 0) {
+    selectedBlocks.splice(idx, 1);
+  } else {
+    selectedBlocks.push(mesh);
+  }
+  // Set selectedBlock to last one for property panel
+  selectedBlock = selectedBlocks.length > 0 ? selectedBlocks[selectedBlocks.length - 1] : null;
+  updateMultiHighlights();
+  if (selectedBlock) {
+    selectBlock(selectedBlock); // refresh property panel
+  } else {
+    document.getElementById('propPanel').style.display = 'none';
+    if (transformControls) transformControls.detach();
+  }
+}
+
+function updateMultiHighlights() {
+  clearMultiHighlights();
+  selectedBlocks.forEach(mesh => {
+    const box = new THREE.BoxGeometry(
+      (mesh.userData.w||1) * 1.05,
+      (mesh.userData.h||1) * 1.05,
+      (mesh.userData.d||1) * 1.05
+    );
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00d4aa, wireframe: true, transparent: true, opacity: 0.5 });
+    const hl = new THREE.Mesh(box, mat);
+    hl.position.copy(mesh.position);
+    hl.rotation.copy(mesh.rotation);
+    scene.add(hl);
+    _multiHighlights.push(hl);
+  });
+}
+
+function selectAllBlocks() {
+  selectedBlocks = [...blocks];
+  if (selectedBlocks.length > 0) {
+    selectedBlock = selectedBlocks[0];
+    selectBlock(selectedBlock);
+  }
+  updateMultiHighlights();
+  toast('Selected ' + selectedBlocks.length + ' blocks');
+}
+
+function deleteSelectedBlocks() {
+  if (selectedBlocks.length === 0) return;
+  pushHistory();
+  [...selectedBlocks].forEach(b => deleteBlock(b));
+  selectedBlocks = [];
+  toast('Deleted ' + selectedBlocks.length + ' blocks');
+}
+
+function duplicateSelectedBlocks() {
+  if (selectedBlocks.length === 0) return;
+  pushHistory();
+  const newSelection = [];
+  selectedBlocks.forEach(b => {
+    const d = b.userData;
+    const m = addBlock(
+      b.position.x + 1, b.position.y - d.h/2, b.position.z,
+      d.w, d.h, d.d, d.colour, d.shape, d.rot, d.rotX, d.rotZ
+    );
+    newSelection.push(m);
+  });
+  selectedBlocks = newSelection;
+  updateMultiHighlights();
+  toast('Duplicated ' + newSelection.length + ' blocks');
+}
+
 function updateProp(prop, val) {
   if (!selectedBlock) return;
-  // Imported OBJ meshes have arbitrary geometry, never rebuild them
   if (selectedBlock.userData.isImported) return;
   pushHistory('resize');
   const d = selectedBlock.userData;
-  // Capture the block's base (bottom) Y using the *current* height, before it
-  // changes, so resizing grows the block upward instead of dropping it to the floor.
   const baseY = selectedBlock.position.y - (d.h || 1) / 2;
   if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
   if (prop === 'h') { d.h = parseFloat(val); document.getElementById('propHVal').textContent = val; }
   if (prop === 'd') { d.d = parseFloat(val); document.getElementById('propDVal').textContent = val; }
-  if (prop === 'rot') { d.rot = parseFloat(val); document.getElementById('propRotVal').textContent = val + ''; }
+  if (prop === 'rot')  { d.rot = parseFloat(val);  document.getElementById('propRotVal').textContent = val + ''; }
+  if (prop === 'rotX') { d.rotX = parseFloat(val); document.getElementById('propRotXVal').textContent = val + ''; }
+  if (prop === 'rotZ') { d.rotZ = parseFloat(val); document.getElementById('propRotZVal').textContent = val + ''; }
 
   const newGeo = makeGeometry(d.shape, d.w, d.h, d.d);
   selectedBlock.geometry.dispose();
   selectedBlock.geometry = newGeo;
-  selectedBlock.rotation.y = d.rot * Math.PI / 180;
-  selectedBlock.position.y = baseY + d.h / 2; // keep the base fixed
-  selectBlock(selectedBlock); // refresh highlight
+  selectedBlock.rotation.set((d.rotX||0) * Math.PI / 180, (d.rot||0) * Math.PI / 180, (d.rotZ||0) * Math.PI / 180);
+  selectedBlock.position.y = baseY + d.h / 2;
+  selectBlock(selectedBlock);
 }
 
 function duplicateSelected() {
@@ -1325,7 +1409,7 @@ function duplicateSelected() {
     selectedBlock.position.x + 1,
     selectedBlock.position.y - d.h/2,
     selectedBlock.position.z,
-    d.w, d.h, d.d, d.colour, d.shape, d.rot
+    d.w, d.h, d.d, d.colour, d.shape, d.rot, d.rotX, d.rotZ
   );
   toast('Block duplicated!');
 }
@@ -1907,7 +1991,13 @@ function handleAction() {
 
   } else if (currentTool === 'select' || currentTool === 'resize' || currentTool === 'move') {
     if (blockHits.length > 0) {
-      selectBlock(blockHits[0].object);
+      const mesh = blockHits[0].object;
+      if (window._ctrlHeld) {
+        // Ctrl+click: toggle in/out of multi-selection
+        toggleMultiSelect(mesh);
+      } else {
+        selectBlock(mesh);
+      }
     } else {
       deselectBlock();
     }
@@ -2037,7 +2127,8 @@ function saveToSlot(idx) {
       x: b.position.x, y: b.position.y - (b.userData.h||1)/2,
       z: b.position.z,
       w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
-      colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0
+      colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
+      rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0
     }))
   };
   setSlots(slots);
@@ -2053,7 +2144,7 @@ function loadSlot(idx) {
   pushHistory();
   clearAll(true);
   buildName = slot.name;
-  slot.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+  slot.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
   toast('Loaded: ' + buildName);
 }
 
@@ -2172,21 +2263,23 @@ function exportRBXM() {
     const pz = mesh.position.z.toFixed(3);
     const rgb = hexToRgb(d.colour || '#aaaaaa');
     const brick = nearestBrick(d.colour || '#aaaaaa');
-    const rot = d.rot || 0;
-    const a = rot * Math.PI / 180;
-    const ca = Math.cos(a), sa = Math.sin(a);
+    // Build rotation matrix from Euler angles (X, Y, Z) in degrees
+    const rx = (d.rotX || 0) * Math.PI / 180;
+    const ry = (d.rot  || 0) * Math.PI / 180;
+    const rz = (d.rotZ || 0) * Math.PI / 180;
+    const cx = Math.cos(rx), sx2 = Math.sin(rx);
+    const cy = Math.cos(ry), sy = Math.sin(ry);
+    const cz = Math.cos(rz), sz = Math.sin(rz);
+    // R = Rz * Ry * Rx (row-major)
+    const r00 = cy*cz + sx2*sy*sz,  r01 = cz*sx2*sy - cy*sz,  r02 = cx*sy;
+    const r10 = cx*sz,               r11 = cx*cz,               r12 = -sx2;
+    const r20 = -cz*sy + cy*sx2*sz, r21 = sy*sz + cy*cz*sx2,  r22 = cy*cx;
     // Roblox Part.Shape enum: Ball = 0, Block = 1, Cylinder = 2
     const shapeToken = d.shape === 'sphere' ? 0 : d.shape === 'cylinder' ? 2 : 1;
-    // THREE cylinders point along Y but Roblox cylinder parts point along X,
-    // so rotate the CFrame by 90 around Z and pass the length via Size.X.
     const isCyl = d.shape === 'cylinder';
     const sx = (isCyl ? h      : w).toFixed(3);
-    const sy = (isCyl ? w      : h).toFixed(3);
+    const sy2 = (isCyl ? w      : h).toFixed(3);
     const sz = (isCyl ? w      : depth).toFixed(3);
-    const r00 = isCyl ? 0  : ca;
-    const r01 = isCyl ? -1 : 0;
-    const r02 = isCyl ? 0  : sa;
-    const r11 = isCyl ? 0  : 1;
 
     parts += `
     <Item class="Part" referent="RBX${i}">
@@ -2197,13 +2290,13 @@ function exportRBXM() {
           <R00>${r00.toFixed(6)}</R00>
           <R01>${r01.toFixed(6)}</R01>
           <R02>${r02.toFixed(6)}</R02>
-          <R10>${ca.toFixed(6)}</R10><R11>${r11.toFixed(6)}</R11><R12>${sa.toFixed(6)}</R12>
-          <R20>${(-sa).toFixed(6)}</R20>
-          <R21>0</R21>
-          <R22>${ca.toFixed(6)}</R22>
+          <R10>${r10.toFixed(6)}</R10><R11>${r11.toFixed(6)}</R11><R12>${r12.toFixed(6)}</R12>
+          <R20>${r20.toFixed(6)}</R20>
+          <R21>${r21.toFixed(6)}</R21>
+          <R22>${r22.toFixed(6)}</R22>
         </CoordinateFrame>
         <Vector3 name="Size">
-          <X>${sx}</X><Y>${sy}</Y><Z>${sz}</Z>
+          <X>${sx}</X><Y>${sy2}</Y><Z>${sz}</Z>
         </Vector3>
         <Color3 name="Color">
           <R>${rgb.r.toFixed(6)}</R><G>${rgb.g.toFixed(6)}</G><B>${rgb.b.toFixed(6)}</B>
@@ -2646,6 +2739,7 @@ function captureState() {
       x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
       w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
       colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
+      rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0,
       metalness: b.material ? (b.material.metalness||0) : 0.1,
       roughness: b.material ? (b.material.roughness ?? 0.55) : 0.55
     };
@@ -2678,7 +2772,7 @@ function restoreState(records) {
   records.forEach(r => {
     if (r.imported) { scene.add(r.mesh); blocks.push(r.mesh); }
     else {
-      const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot);
+      const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot, r.rotX, r.rotZ);
       if (m.material) { m.material.metalness = r.metalness; m.material.roughness = r.roughness; }
     }
   });
@@ -2733,6 +2827,9 @@ document.addEventListener('keydown', (e) => {
   // Never hijack keys while the user is typing in a field
   if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
 
+  // Track Ctrl/Cmd for multi-select
+  window._ctrlHeld = e.ctrlKey || e.metaKey;
+
   // ? opens the help/welcome modal
   if (e.key === '?') { openWelcome(); e.preventDefault(); return; }
 
@@ -2747,6 +2844,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'r' || e.key === 'R') { setGizmoMode('rotate'); e.preventDefault(); }
   if (e.key === 's' || e.key === 'S') { setGizmoMode('scale'); e.preventDefault(); }
   if (e.key === 'x' || e.key === 'X' || e.key === 'Delete' || e.key === 'Backspace') { pushHistory(); deleteBlock(selectedBlock); e.preventDefault(); }
+});
+
+document.addEventListener('keyup', (e) => {
+  window._ctrlHeld = e.ctrlKey || e.metaKey;
 });
 
 // -------------------------------------------------------
@@ -2875,7 +2976,9 @@ function addToAssetLibrary() {
       d: b.userData.d,
       colour: b.userData.colour,
       shape: b.userData.shape,
-      rot: b.userData.rot
+      rot: b.userData.rot,
+      rotX: b.userData.rotX||0,
+      rotZ: b.userData.rotZ||0
     })),
     timestamp: Date.now()
   };
@@ -2893,7 +2996,7 @@ function loadAssetFromLibrary(idx) {
   pushHistory();
   clearAll(true);
   buildName = asset.name;
-  asset.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+  asset.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
   toast('Loaded: ' + asset.name);
 }
 
@@ -2948,7 +3051,9 @@ function encodeBuildData() {
     w: b.userData.w || 1, h: b.userData.h || 1, d: b.userData.d || 1,
     c: (b.userData.colour || '#aaaaaa').replace('#', ''),
     s: SHARE_SHAPE_CODES[b.userData.shape] || 'b',
-    r: b.userData.rot || 0
+    r: b.userData.rot || 0,
+    rx: b.userData.rotX || 0,
+    rz: b.userData.rotZ || 0
   }));
 }
 
@@ -2958,7 +3063,9 @@ function decodeBuildData(arr) {
     w: b.w || 1, h: b.h || 1, d: b.d || 1,
     colour: '#' + String(b.c || 'e94560').replace('#', ''),
     shape: SHARE_CODE_SHAPES[b.s] || 'box',
-    rot: b.r || 0
+    rot: b.r || 0,
+    rotX: b.rx || 0,
+    rotZ: b.rz || 0
   }));
 }
 
@@ -2989,7 +3096,7 @@ function loadFromHash() {
   buildName = data.n || 'Shared Build';
   const nameInput = document.getElementById('buildNameInput');
   if (nameInput) nameInput.value = buildName;
-  decodeBuildData(data.b).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+  decodeBuildData(data.b).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
   history.replaceState(null, '', location.pathname); // clean URL once loaded
   return true;
 }
@@ -3011,7 +3118,7 @@ function restoreAutosave() {
     buildName = d.name || buildName;
     const nameInput = document.getElementById('buildNameInput');
     if (nameInput) nameInput.value = buildName;
-    decodeBuildData(d.blocks).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot));
+    decodeBuildData(d.blocks).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
     return true;
   } catch (e) { return false; }
 }
