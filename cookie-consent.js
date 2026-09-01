@@ -27,7 +27,7 @@
   banner.innerHTML = [
     '<div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">',
     '<p style="flex:1;min-width:220px;margin:0;font-size:.85rem;line-height:1.5;color:#403B33;">',
-    '🍪 We use <a href="/pages/privacy-policy.html" style="color:#BC4749;font-weight:700;">cookies</a> to understand how people use this site (Google Analytics). No personal data is sold.',
+    '🍪 We use <a href="/privacy-policy" style="color:#BC4749;font-weight:700;">cookies</a> to understand how people use this site (Google Analytics). No personal data is sold.',
     '</p>',
     '<div style="display:flex;gap:8px;flex-shrink:0;">',
     '<button id="cookie-accept" style="background:#BC4749;color:white;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 3px 0 #9b3a3c;">Accept</button>',

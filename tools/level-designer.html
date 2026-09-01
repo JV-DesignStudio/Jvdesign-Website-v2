@@ -737,7 +737,7 @@ body{height:100%;display:flex;flex-direction:column;overflow:hidden;background:v
 
 <!-- MODAL -->
 <!-- START / HELP OVERLAY -->
-<div id="start-overlay" onclick="if(event.target===this)closeStart()">
+<div id="start-overlay" role="dialog" aria-modal="true" onclick="if(event.target===this)closeStart()">
   <div class="start-box">
     <div class="start-title">?? Welcome to Level Designer</div>
     <p class="start-lead">Build a playable game level by painting tiles onto layers, then press <b style="color:var(--accent3)">? Play</b> to test it straight away. Levels export as PNG or JSON, or go directly into Arcade Game Maker.</p>
@@ -1233,7 +1233,13 @@ function setupEvents(){
   document.addEventListener('keydown',e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
     if(e.key==='Escape'){closeHotkeys();closeAIPanel();closeShare();cancelPath();return;}
-    if(e.key==='?'){showHotkeys();return;}
+    if(e.key==='?'){
+      var so=document.getElementById('start-overlay');
+      if(so&&so.classList.contains('show')){closeStart();}
+      else if(so){openStart();}
+      else{showHotkeys();}
+      return;
+    }
     if(e.code==='Space'&&!spaceHeld){e.preventDefault();spaceHeld=true;return;}
     if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){undo();return;}
     if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){redo();return;}
@@ -1796,6 +1802,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
+<script src="../shared-modal.js"></script>
 <script src="../tool-analytics.js"></script>
 </body>
 </html>

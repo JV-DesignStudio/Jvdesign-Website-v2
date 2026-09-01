@@ -1354,7 +1354,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.0', code: 5, date: '2026-09-01', codename: '' };
+const GAME_VERSION = { v: '2.1', code: 7, date: '2026-09-01', codename: '' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1434,8 +1434,10 @@ const CHARS = {
              perk: 'spring', perkName: 'Big Bounce',  perkDesc: 'Springs launch 15% higher' },
   axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Echo the Axolotl',  emoji: '🦎', unlockM: 4500,
              perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
+  stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', name: 'Stardust',           emoji: '✨', unlockM: 12000,
+             perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail · +10% coins', secret: true },
 };
-const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl'];
+const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust'];
 function perkActive(p) {
   const c = CHARS[state.character];
   return !!(c && c.perk === p && save.unlockedChars.includes(state.character));
@@ -1761,6 +1763,7 @@ const ACHIEVEMENTS = [
   { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: '🚀', check: (s) => s.bestHeight >= 3000 },
   { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: '⭐', check: (s) => s.bestHeight >= 5000 },
   { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🌌', check: (s) => s.bestHeight >= 8000 },
+  { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: '🪐', check: (s) => s.bestHeight >= 12000 },
   { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
   { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
   { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
@@ -2063,6 +2066,7 @@ const ZONES = [
   { name: 'Dusk',      minM: 1000, sky: ['#5d3a82', '#ff7043'], plat: '#8d6e63', platEdge: '#3e2723' },
   { name: 'Night Sky', minM: 5000, sky: ['#0d0633', '#1a0a4a'], plat: '#7e57c2', platEdge: '#311b92' },
   { name: 'Aurora',    minM: 8000, sky: ['#02131f', '#0b3d3b'], plat: '#26a69a', platEdge: '#004d40' },
+  { name: 'Cosmos',    minM: 12000, sky: ['#01010a', '#1a0a2e'], plat: '#7c4dff', platEdge: '#2a0a4a' },
 ];
 
 function getZone(m) {
@@ -2652,6 +2656,11 @@ function update() {
   if (state.trailTimer % 3 === 0) spawnTrailParticle();
 
   // Ghost recording
+  // Stardust trail
+  if (state.character === 'stardust' && state.gameTime % 3 === 0) {
+    state.particles.push({ x: p.x + p.w/2 + (Math.random()-0.5)*6, y: p.y + p.h/2, vx:(Math.random()-0.5)*0.6, vy:0.8+Math.random()*0.8, life:0.7, color: Math.random()<0.5?'#a5b4fc':'#fde68a', shape:'circle', size:1.2+Math.random()*1.8, rot:0, rotV:0 });
+  }
+
   recordGhostSample();
 
   // Coin magnet: pull nearby coins toward the player before collision checks
@@ -3168,6 +3177,19 @@ hazardSprites.spike = makeSprite(42, 42, (g) => {
 });
 // Back-compat alias
 const hazardSprite = hazardSprites.gust;
+
+/* ── Char + particle atlas (perf B) ── */
+const charSpriteCache = new Map();
+function getCharSprite(charId, bodyColor, accentColor, facing){
+  const key = charId+'|'+bodyColor+'|'+accentColor+'|'+facing;
+  let spr = charSpriteCache.get(key);
+  if(spr) return spr;
+  const SZ = 42;
+  spr = makeSprite(SZ, SZ, (g,w,h)=> drawCharacter(g, charId, 0,0,w,h, bodyColor, accentColor, facing));
+  charSpriteCache.set(key, spr);
+  if(charSpriteCache.size>32){ const fk=charSpriteCache.keys().next().value; charSpriteCache.delete(fk); }
+  return spr;
+}
 
 /* ── Coin: 8 spin frames ── */
 const coinFrames = [];
@@ -3950,237 +3972,162 @@ function charBlush(c, bx, by, rx, ry) {
 
 function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
   const f = facing || 1;
-  const eo = f * (w * 0.06); // eye offset for facing
-  const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : 176;
-  // Wall-clock, not gameTime: previews and menus would otherwise freeze the
-  // blink shut. Blinking is cosmetic, so it's safe to run while paused.
+  const eo = f * (w * 0.06);
+  const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : charId === 'axolotl' ? 176 : 208;
   const blink = ((performance.now() / 16.7 + blinkSeed) % 240) < 8;
 
   if (charId === 'turtle') {
     const cx = x + w * 0.5;
-    // Legs + tail (behind the shell)
-    c.fillStyle = darken(bodyColor, 0.08);
+    // Back legs + tail
+    c.fillStyle = darken(bodyColor, 0.1);
     charOutline(c, bodyColor, w);
-    c.beginPath(); c.ellipse(x + w * 0.2, y + h * 0.84, w * 0.12, h * 0.09, -0.25, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.ellipse(x + w * 0.8, y + h * 0.84, w * 0.12, h * 0.09, 0.25, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.ellipse(cx - f * w * 0.42, y + h * 0.72, w * 0.09, h * 0.06, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    // Shell
-    c.fillStyle = charGrad(c, x, y, w, h, darken(bodyColor, 0.12));
-    c.beginPath(); c.ellipse(cx, y + h * 0.48, w * 0.5, h * 0.44, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(x + w * 0.18, y + h * 0.86, w * 0.13, h * 0.10, -0.3, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.ellipse(x + w * 0.82, y + h * 0.86, w * 0.13, h * 0.10, 0.3, 0, Math.PI * 2); c.fill(); c.stroke();
+    // Claws hint
+    c.fillStyle = '#f5e6a3'; c.beginPath(); c.arc(x + w * 0.14, y + h * 0.90, w * 0.022, 0, Math.PI*2); c.fill(); c.beginPath(); c.arc(x + w * 0.86, y + h * 0.90, w * 0.022, 0, Math.PI*2); c.fill();
+    c.fillStyle = darken(bodyColor, 0.08);
+    c.beginPath(); c.ellipse(cx - f * w * 0.44, y + h * 0.70, w * 0.09, h * 0.06, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    // Shell — deeper dome + highlight
+    c.fillStyle = charGrad(c, x, y, w, h, darken(bodyColor, 0.14));
+    c.beginPath(); c.ellipse(cx, y + h * 0.50, w * 0.52, h * 0.45, 0, 0, Math.PI * 2); c.fill();
     charOutline(c, bodyColor, w); c.stroke();
-    // Scutes
-    c.fillStyle = darken(bodyColor, 0.3);
-    c.beginPath(); c.ellipse(cx, y + h * 0.32, w * 0.13, h * 0.11, 0, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.ellipse(cx - w * 0.19, y + h * 0.56, w * 0.1, h * 0.09, 0, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.ellipse(cx + w * 0.19, y + h * 0.56, w * 0.1, h * 0.09, 0, 0, Math.PI * 2); c.fill();
-    // Shell rim
-    c.strokeStyle = lighten(accentColor, 0.18);
-    c.lineWidth = Math.max(1.2, w * 0.045);
-    c.beginPath(); c.ellipse(cx, y + h * 0.48, w * 0.5, h * 0.44, 0, Math.PI * 0.18, Math.PI * 0.82); c.stroke();
-    // Head
-    const hx = cx + f * w * 0.08;
-    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
-    c.beginPath(); c.ellipse(hx, y + h * 0.22, w * 0.24, h * 0.21, 0, 0, Math.PI * 2); c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
-    // Eyes
-    charEye(c, hx - w * 0.1, y + h * 0.19, w * 0.09, blink, f);
-    charEye(c, hx + w * 0.1, y + h * 0.19, w * 0.09, blink, f);
-    // Smile
-    c.strokeStyle = '#2a1a12';
-    c.lineWidth = Math.max(1, w * 0.035);
-    c.beginPath(); c.arc(hx + eo * 0.4, y + h * 0.26, w * 0.08, 0.15, Math.PI - 0.15); c.stroke();
-    // Blush
-    charBlush(c, hx - w * 0.2, y + h * 0.25, w * 0.05, h * 0.028);
-    charBlush(c, hx + w * 0.2, y + h * 0.25, w * 0.05, h * 0.028);
+    // Shell highlight
+    c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(cx - w*0.12, y + h*0.36, w*0.18, h*0.14, -0.3, 0, Math.PI*2); c.fill();
+    // Central scute + 6 surrounding (hex-like)
+    c.fillStyle = darken(bodyColor, 0.32);
+    c.beginPath(); c.ellipse(cx, y + h * 0.46, w * 0.15, h * 0.12, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.16)'; c.lineWidth = Math.max(1, w*0.02); c.stroke();
+    const scutes = [[-0.18, -0.10],[0.18,-0.10],[-0.20,0.14],[0.20,0.14],[0, -0.22],[0,0.22]];
+    c.fillStyle = darken(bodyColor, 0.24);
+    for(const [ox,oy] of scutes){ c.beginPath(); c.ellipse(cx+ox*w, y+h*(0.46+oy), w*0.085, h*0.075, 0,0,Math.PI*2); c.fill(); c.stroke(); }
+    // Shell rim light
+    c.strokeStyle = lighten(accentColor, 0.22); c.lineWidth = Math.max(1.2, w*0.05); c.beginPath(); c.ellipse(cx, y + h*0.50, w*0.52, h*0.45, 0, Math.PI*0.15, Math.PI*0.85); c.stroke();
+    // Head — slightly more beak-like, extends forward
+    const hx = cx + f * w * 0.10;
+    c.fillStyle = charGrad(c, x, y, w, h, lighten(bodyColor, 0.04));
+    c.beginPath(); c.ellipse(hx, y + h * 0.22, w * 0.26, h * 0.20, 0, 0, Math.PI * 2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    // Nostrils
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.arc(hx+f*w*0.14, y+h*0.20, w*0.015,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(hx+f*w*0.14, y+h*0.24, w*0.015,0,Math.PI*2); c.fill();
+    // Eyes — slightly larger for turtle
+    charEye(c, hx - w * 0.10, y + h * 0.19, w * 0.095, blink, f);
+    charEye(c, hx + w * 0.10, y + h * 0.19, w * 0.095, blink, f);
+    // Gentle smile + chin
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, w * 0.032); c.beginPath(); c.arc(hx + eo * 0.3, y + h * 0.27, w * 0.07, 0.12, Math.PI - 0.12); c.stroke();
+    charBlush(c, hx - w * 0.20, y + h * 0.25, w * 0.05, h * 0.028); charBlush(c, hx + w * 0.20, y + h * 0.25, w * 0.05, h * 0.028);
 
   } else if (charId === 'fox') {
     const cx = x + w * 0.5;
-    // Bushy tail with white tip (kept below ear level so it reads as tail)
+    // Tail — double layer for fluff: dark base + bright body + white tip
+    c.fillStyle = darken(bodyColor, 0.22); charOutline(c, bodyColor, w);
+    c.beginPath(); c.moveTo(cx - f * w * 0.22, y + h * 0.56); c.quadraticCurveTo(cx - f * w * 0.60, y + h * 0.30, cx - f * w * 0.48, y + h * 0.14); c.quadraticCurveTo(cx - f * w * 0.24, y + h * 0.28, cx - f * w * 0.08, y + h * 0.56); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath();
-    c.moveTo(cx - f * w * 0.25, y + h * 0.52);
-    c.quadraticCurveTo(cx - f * w * 0.55, y + h * 0.28, cx - f * w * 0.42, y + h * 0.16);
-    c.quadraticCurveTo(cx - f * w * 0.22, y + h * 0.3, cx - f * w * 0.1, y + h * 0.56);
-    c.closePath();
-    c.fill(); c.stroke();
-    c.fillStyle = '#fff';
-    c.beginPath(); c.ellipse(cx - f * w * 0.44, y + h * 0.2, w * 0.065, h * 0.055, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = darken(bodyColor, 0.52);
-    c.lineWidth = Math.max(1, w * 0.03); c.stroke();
-    // Body
-    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
-    roundRect(c, x + w * 0.15, y + h * 0.25, w * 0.7, h * 0.55, w * 0.18);
-    c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
-    // Belly — fixed light lavender for purple Lumo
-    c.fillStyle = '#ede9fe';
-    c.beginPath();
-    c.ellipse(cx, y + h * 0.6, w * 0.2, h * 0.17, 0, 0, Math.PI * 2);
-    c.fill();
-    // Pointy ears
-    c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath(); c.moveTo(x + w * 0.25, y + h * 0.3); c.lineTo(x + w * 0.2, y + h * 0.02); c.lineTo(x + w * 0.38, y + h * 0.22); c.closePath(); c.fill(); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.75, y + h * 0.3); c.lineTo(x + w * 0.8, y + h * 0.02); c.lineTo(x + w * 0.62, y + h * 0.22); c.closePath(); c.fill(); c.stroke();
-    // Inner ears — tinted lavender for purple Lumo
-    c.fillStyle = '#e9d5ff';
-    c.beginPath(); c.moveTo(x + w * 0.27, y + h * 0.26); c.lineTo(x + w * 0.24, y + h * 0.1); c.lineTo(x + w * 0.34, y + h * 0.22); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(x + w * 0.73, y + h * 0.26); c.lineTo(x + w * 0.76, y + h * 0.1); c.lineTo(x + w * 0.66, y + h * 0.22); c.closePath(); c.fill();
-    // Snout + shiny nose
-    c.fillStyle = '#fff';
-    c.beginPath();
-    c.ellipse(cx + eo, y + h * 0.42, w * 0.14, h * 0.1, 0, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = '#2a1a12';
-    c.beginPath(); c.ellipse(cx + eo * 1.5, y + h * 0.37, w * 0.045, h * 0.032, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = 'rgba(255,255,255,0.85)';
-    c.beginPath(); c.arc(cx + eo * 1.5 - w * 0.013, y + h * 0.358, w * 0.014, 0, Math.PI * 2); c.fill();
-    // Eyes
-    charEye(c, cx + eo - w * 0.15, y + h * 0.32, w * 0.09, blink, f);
-    charEye(c, cx + eo + w * 0.15, y + h * 0.32, w * 0.09, blink, f);
-    // Whiskers
-    c.strokeStyle = 'rgba(120,110,110,0.8)';
-    c.lineWidth = Math.max(0.6, w * 0.016);
-    const wx = cx + f * w * 0.15;
-    c.beginPath(); c.moveTo(wx, y + h * 0.4); c.lineTo(wx + f * w * 0.2, y + h * 0.36); c.stroke();
-    c.beginPath(); c.moveTo(wx, y + h * 0.42); c.lineTo(wx + f * w * 0.2, y + h * 0.44); c.stroke();
-    // Feet
-    c.fillStyle = darken(accentColor, 0.05);
-    charOutline(c, bodyColor, w);
-    c.beginPath(); c.ellipse(cx - w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.ellipse(cx + w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    // Blush
-    charBlush(c, cx - w * 0.23, y + h * 0.38, w * 0.05, h * 0.028);
-    charBlush(c, cx + w * 0.23, y + h * 0.38, w * 0.05, h * 0.028);
+    c.beginPath(); c.moveTo(cx - f * w * 0.20, y + h * 0.54); c.quadraticCurveTo(cx - f * w * 0.52, y + h * 0.32, cx - f * w * 0.42, y + h * 0.18); c.quadraticCurveTo(cx - f * w * 0.26, y + h * 0.30, cx - f * w * 0.10, y + h * 0.54); c.closePath(); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx - f * w * 0.46, y + h * 0.19, w * 0.075, h * 0.062, 0, 0, Math.PI * 2); c.fill(); c.strokeStyle = darken(bodyColor, 0.52); c.lineWidth = Math.max(1, w*0.03); c.stroke();
+    // Body — tapered chest
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor); roundRect(c, x + w * 0.16, y + h * 0.26, w * 0.68, h * 0.54, w * 0.18); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    // Chest ruff
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx, y + h*0.38, w*0.18, h*0.11, 0,0,Math.PI*2); c.fill();
+    // Belly
+    c.fillStyle = '#ede9fe'; c.beginPath(); c.ellipse(cx, y + h * 0.62, w * 0.19, h * 0.15, 0, 0, Math.PI * 2); c.fill();
+    // Ears — taller, with black tip notch
+    c.fillStyle = bodyColor; charOutline(c, bodyColor, w);
+    c.beginPath(); c.moveTo(x + w * 0.26, y + h * 0.30); c.lineTo(x + w * 0.18, y - h * 0.02); c.lineTo(x + w * 0.40, y + h * 0.20); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x + w * 0.74, y + h * 0.30); c.lineTo(x + w * 0.82, y - h * 0.02); c.lineTo(x + w * 0.60, y + h * 0.20); c.closePath(); c.fill(); c.stroke();
+    // Ear tips dark
+    c.fillStyle = '#1a1030'; c.beginPath(); c.moveTo(x+w*0.20, y+h*0.08); c.lineTo(x+w*0.18, y-h*0.02); c.lineTo(x+w*0.24, y+h*0.04); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(x+w*0.80, y+h*0.08); c.lineTo(x+w*0.82, y-h*0.02); c.lineTo(x+w*0.76, y+h*0.04); c.closePath(); c.fill();
+    c.fillStyle = '#e9d5ff'; c.beginPath(); c.moveTo(x + w*0.27, y+h*0.26); c.lineTo(x+w*0.24, y+h*0.10); c.lineTo(x+w*0.34, y+h*0.20); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(x+w*0.73, y+h*0.26); c.lineTo(x+w*0.76, y+h*0.10); c.lineTo(x+w*0.66, y+h*0.20); c.closePath(); c.fill();
+    // Snout — narrower, with highlight
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx + eo, y + h * 0.42, w * 0.13, h * 0.095, 0, 0, Math.PI * 2); c.fill(); c.strokeStyle='rgba(0,0,0,0.08)'; c.lineWidth=1; c.stroke();
+    c.fillStyle = '#1a1030'; c.beginPath(); c.ellipse(cx + eo*1.4, y + h*0.38, w*0.042, h*0.030, 0,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx+eo*1.4 - w*0.012, y+h*0.37, w*0.012,0,Math.PI*2); c.fill();
+    charEye(c, cx+eo - w*0.14, y+h*0.31, w*0.095, blink, f); charEye(c, cx+eo + w*0.14, y+h*0.31, w*0.095, blink, f);
+    // Eyebrows
+    c.strokeStyle = darken(bodyColor,0.32); c.lineWidth=Math.max(1,w*0.022); c.beginPath(); c.moveTo(cx+eo - w*0.20, y+h*0.24); c.quadraticCurveTo(cx+eo - w*0.14, y+h*0.22, cx+eo - w*0.08, y+h*0.24); c.stroke(); c.beginPath(); c.moveTo(cx+eo + w*0.08, y+h*0.24); c.quadraticCurveTo(cx+eo + w*0.14, y+h*0.22, cx+eo + w*0.20, y+h*0.24); c.stroke();
+    c.strokeStyle='rgba(90,40,120,0.55)'; c.lineWidth=Math.max(0.6,w*0.015); const wx=cx+f*w*0.15; c.beginPath(); c.moveTo(wx, y+h*0.41); c.lineTo(wx+f*w*0.22, y+h*0.37); c.stroke(); c.beginPath(); c.moveTo(wx, y+h*0.44); c.lineTo(wx+f*w*0.22, y+h*0.46); c.stroke();
+    c.fillStyle = darken(accentColor,0.08); charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke();
+    charBlush(c, cx-w*0.24, y+h*0.38, w*0.05, h*0.028); charBlush(c, cx+w*0.24, y+h*0.38, w*0.05, h*0.028);
 
   } else if (charId === 'tiger') {
     const cx = x + w * 0.5;
-    // Tail
-    c.strokeStyle = bodyColor;
-    c.lineWidth = Math.max(2.5, w * 0.09);
-    c.lineCap = 'round';
-    c.beginPath();
-    c.moveTo(cx - f * w * 0.2, y + h * 0.65);
-    c.quadraticCurveTo(cx - f * w * 0.5, y + h * 0.4, cx - f * w * 0.35, y + h * 0.32);
-    c.stroke();
-    c.lineCap = 'butt';
+    // Tail — with magenta/black rings
+    c.strokeStyle = bodyColor; c.lineWidth=Math.max(3,w*0.10); c.lineCap='round'; c.beginPath(); c.moveTo(cx - f*w*0.18, y+h*0.66); c.quadraticCurveTo(cx - f*w*0.54, y+h*0.40, cx - f*w*0.38, y+h*0.30); c.stroke(); c.lineCap='butt';
+    c.strokeStyle='#1a0a12'; c.lineWidth=Math.max(1.8,w*0.045); for(let i=0;i<3;i++){ const t=0.22+i*0.24; const tx=cx - f*w*(0.18+t*0.52); const ty=y+h*(0.66 - t*0.62); c.beginPath(); c.moveTo(tx- w*0.04, ty-2); c.lineTo(tx+ w*0.04, ty+2); c.stroke(); }
     // Body
-    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
-    roundRect(c, x + w * 0.12, y + h * 0.2, w * 0.76, h * 0.6, w * 0.2);
-    c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
-    // Stripes (rounded)
-    c.fillStyle = darken(accentColor, 0.05);
-    for (let i = 0; i < 3; i++) {
-      const sy = y + h * (0.32 + i * 0.14);
-      roundRect(c, x + w * 0.2, sy, w * 0.14, h * 0.045, h * 0.022); c.fill();
-      roundRect(c, x + w * 0.66, sy, w * 0.14, h * 0.045, h * 0.022); c.fill();
-    }
-    // Belly
-    c.fillStyle = '#fff3e0';
-    c.beginPath();
-    c.ellipse(cx, y + h * 0.58, w * 0.2, h * 0.17, 0, 0, Math.PI * 2);
-    c.fill();
-    // Round ears
-    c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath(); c.arc(x + w * 0.22, y + h * 0.18, w * 0.12, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.arc(x + w * 0.78, y + h * 0.18, w * 0.12, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.fillStyle = '#f9a8d4';
-    c.beginPath(); c.arc(x + w * 0.22, y + h * 0.18, w * 0.06, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.arc(x + w * 0.78, y + h * 0.18, w * 0.06, 0, Math.PI * 2); c.fill();
-    // Head
-    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
-    c.beginPath(); c.ellipse(cx, y + h * 0.28, w * 0.28, h * 0.18, 0, 0, Math.PI * 2); c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
-    // Forehead stripe
-    c.fillStyle = darken(accentColor, 0.05);
-    roundRect(c, cx - w * 0.04, y + h * 0.15, w * 0.08, h * 0.1, h * 0.02); c.fill();
-    // Muzzle + nose — magenta-tinted
-    c.fillStyle = '#fce7f3';
-    c.beginPath();
-    c.ellipse(cx + eo, y + h * 0.35, w * 0.12, h * 0.07, 0, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = '#be185d';
-    c.beginPath(); c.ellipse(cx + eo * 1.3, y + h * 0.32, w * 0.042, h * 0.032, 0, 0, Math.PI * 2); c.fill();
-    // Eyes
-    charEye(c, cx + eo - w * 0.13, y + h * 0.27, w * 0.085, blink, f);
-    charEye(c, cx + eo + w * 0.13, y + h * 0.27, w * 0.085, blink, f);
-    // Whiskers
-    c.strokeStyle = 'rgba(140,130,130,0.8)';
-    c.lineWidth = Math.max(0.6, w * 0.016);
-    const twx = cx + f * w * 0.12;
-    c.beginPath(); c.moveTo(twx, y + h * 0.34); c.lineTo(twx + f * w * 0.2, y + h * 0.3); c.stroke();
-    c.beginPath(); c.moveTo(twx, y + h * 0.36); c.lineTo(twx + f * w * 0.2, y + h * 0.38); c.stroke();
-    // Feet
-    c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath(); c.ellipse(cx - w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.ellipse(cx + w * 0.2, y + h * 0.85, w * 0.11, h * 0.08, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    // Blush
-    charBlush(c, cx - w * 0.22, y + h * 0.35, w * 0.05, h * 0.028);
-    charBlush(c, cx + w * 0.22, y + h * 0.35, w * 0.05, h * 0.028);
+    c.fillStyle = charGrad(c, x, y, w, h, bodyColor); roundRect(c, x+w*0.12, y+h*0.20, w*0.76, h*0.60, w*0.20); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    // Stripes — more, with slight taper
+    c.fillStyle = '#1a0a12';
+    for(let i=0;i<4;i++){ const sy=y+h*(0.28+i*0.11); const sw = i%2===0?0.13:0.11; roundRect(c, x+w*0.18, sy, w*sw, h*0.042, h*0.02); c.fill(); roundRect(c, x+w*0.82 - w*sw, sy, w*sw, h*0.042, h*0.02); c.fill(); }
+    // Belly + chest
+    c.fillStyle = '#fff7ed'; c.beginPath(); c.ellipse(cx, y+h*0.60, w*0.21, h*0.16,0,0,Math.PI*2); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx, y+h*0.36, w*0.16, h*0.08,0,0,Math.PI*2); c.fill();
+    // Ears — with black rim
+    c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.13,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.13,0,Math.PI*2); c.fill(); c.stroke();
+    c.strokeStyle='#1a0a12'; c.lineWidth=Math.max(1.2,w*0.03); c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.13,0,Math.PI*2); c.stroke(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.13,0,Math.PI*2); c.stroke();
+    c.fillStyle='#f9a8d4'; c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.06,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.06,0,Math.PI*2); c.fill();
+    // Head — with cheek stripes
+    c.fillStyle=charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.ellipse(cx, y+h*0.28, w*0.29, h*0.18,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    c.fillStyle='#1a0a12'; // forehead M
+    c.beginPath(); c.moveTo(cx, y+h*0.18); c.lineTo(cx-w*0.07, y+h*0.24); c.lineTo(cx-w*0.03, y+h*0.24); c.lineTo(cx, y+h*0.20); c.lineTo(cx+w*0.03, y+h*0.24); c.lineTo(cx+w*0.07, y+h*0.24); c.closePath(); c.fill();
+    // Cheek stripes
+    for(let s=-1;s<=1;s+=2){ c.fillStyle='rgba(20,8,12,0.85)'; c.beginPath(); c.ellipse(cx+s*w*0.18, y+h*0.32, w*0.025, h*0.045, s*0.35,0,Math.PI*2); c.fill(); }
+    c.fillStyle='#fce7f3'; c.beginPath(); c.ellipse(cx+eo, y+h*0.36, w*0.13, h*0.075,0,0,Math.PI*2); c.fill();
+    c.fillStyle='#9d174d'; c.beginPath(); c.ellipse(cx+eo*1.2, y+h*0.33, w*0.048, h*0.038,0,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx+eo*1.2 - w*0.01, y+h*0.318, w*0.012,0,Math.PI*2); c.fill();
+    charEye(c, cx+eo - w*0.13, y+h*0.27, w*0.088, blink, f); charEye(c, cx+eo + w*0.13, y+h*0.27, w*0.088, blink, f);
+    // Whiskers + fangs hint
+    c.strokeStyle='rgba(80,20,40,0.75)'; c.lineWidth=Math.max(0.6,w*0.016); const twx=cx+f*w*0.12; c.beginPath(); c.moveTo(twx, y+h*0.35); c.lineTo(twx+f*w*0.22, y+h*0.31); c.stroke(); c.beginPath(); c.moveTo(twx, y+h*0.38); c.lineTo(twx+f*w*0.22, y+h*0.40); c.stroke();
+    c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke();
+    charBlush(c, cx-w*0.23, y+h*0.35, w*0.05, h*0.028); charBlush(c, cx+w*0.23, y+h*0.35, w*0.05, h*0.028);
 
   } else if (charId === 'axolotl') {
     const cx = x + w * 0.5;
-    // Gills — the signature axolotl feature, 3 branches each side
-    c.strokeStyle = accentColor;
-    c.lineWidth = Math.max(2, w * 0.06);
-    c.lineCap = 'round';
-    c.beginPath(); c.moveTo(x + w * 0.2, y + h * 0.35); c.lineTo(x + w * 0.02, y + h * 0.1); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.18, y + h * 0.3); c.lineTo(x - w * 0.02, y + h * 0.22); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.15, y + h * 0.35); c.lineTo(x - w * 0.03, y + h * 0.35); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.8, y + h * 0.35); c.lineTo(x + w * 0.98, y + h * 0.1); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.82, y + h * 0.3); c.lineTo(x + w * 1.02, y + h * 0.22); c.stroke();
-    c.beginPath(); c.moveTo(x + w * 0.85, y + h * 0.35); c.lineTo(x + w * 1.03, y + h * 0.35); c.stroke();
-    c.lineCap = 'butt';
-    // Gill tips
-    c.fillStyle = accentColor;
-    for (const [tx, ty] of [[0.02, 0.1], [-0.02, 0.22], [-0.03, 0.35], [0.98, 0.1], [1.02, 0.22], [1.03, 0.35]]) {
-      c.beginPath(); c.arc(x + w * tx, y + h * ty, Math.max(1.5, w * 0.055), 0, Math.PI * 2); c.fill();
+    // Gills — feathery: 3 stalks each side with 3 filaments
+    c.strokeStyle = accentColor; c.lineWidth=Math.max(2.2,w*0.065); c.lineCap='round';
+    const stalks=[ [0.20,0.34,0.02,0.10],[0.18,0.30,-0.02,0.22],[0.15,0.35,-0.03,0.35],[0.80,0.34,0.98,0.10],[0.82,0.30,1.02,0.22],[0.85,0.35,1.03,0.35] ];
+    for(const [x0,y0,x1,y1] of stalks){ c.beginPath(); c.moveTo(x+w*x0, y+h*y0); c.lineTo(x+w*x1, y+h*y1); c.stroke(); }
+    // Filaments
+    c.strokeStyle = lighten(accentColor,0.18); c.lineWidth=Math.max(1, w*0.025);
+    for(const [x1,y1] of [[0.02,0.10],[-0.02,0.22],[-0.03,0.35],[0.98,0.10],[1.02,0.22],[1.03,0.35]]){
+      for(let k=-1;k<=1;k++){ c.beginPath(); c.moveTo(x+w*x1, y+h*y1); c.lineTo(x+w*(x1+k*0.018), y+h*(y1+0.035)); c.stroke(); }
     }
-    // Tail (behind body)
-    c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath();
-    c.moveTo(cx - f * w * 0.15, y + h * 0.7);
-    c.quadraticCurveTo(cx - f * w * 0.5, y + h * 0.55, cx - f * w * 0.45, y + h * 0.45);
-    c.quadraticCurveTo(cx - f * w * 0.35, y + h * 0.6, cx - f * w * 0.1, y + h * 0.72);
-    c.closePath();
-    c.fill(); c.stroke();
-    // Body (rounded, chubby)
-    c.fillStyle = charGrad(c, x, y, w, h, bodyColor);
-    c.beginPath();
-    c.ellipse(cx, y + h * 0.5, w * 0.38, h * 0.35, 0, 0, Math.PI * 2);
-    c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
+    c.lineCap='butt'; c.fillStyle=accentColor;
+    for(const [tx,ty] of [[0.02,0.10],[-0.02,0.22],[-0.03,0.35],[0.98,0.10],[1.02,0.22],[1.03,0.35]]){ c.beginPath(); c.arc(x+w*tx, y+h*ty, Math.max(1.6,w*0.058),0,Math.PI*2); c.fill(); }
+    // Tail — with translucent fin membrane
+    c.fillStyle='rgba(244,143,177,0.35)'; c.beginPath(); c.moveTo(cx - f*w*0.12, y+h*0.56); c.quadraticCurveTo(cx - f*w*0.58, y+h*0.48, cx - f*w*0.50, y+h*0.40); c.quadraticCurveTo(cx - f*w*0.30, y+h*0.58, cx - f*w*0.08, y+h*0.62); c.closePath(); c.fill();
+    c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.moveTo(cx - f*w*0.15, y+h*0.70); c.quadraticCurveTo(cx - f*w*0.50, y+h*0.55, cx - f*w*0.45, y+h*0.45); c.quadraticCurveTo(cx - f*w*0.35, y+h*0.60, cx - f*w*0.10, y+h*0.72); c.closePath(); c.fill(); c.stroke();
+    // Body — chubbier, with highlight
+    c.fillStyle=charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.ellipse(cx, y+h*0.51, w*0.39, h*0.34,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    c.fillStyle='rgba(255,255,255,0.16)'; c.beginPath(); c.ellipse(cx - w*0.10, y+h*0.38, w*0.14, h*0.10, -0.25,0,Math.PI*2); c.fill();
     // Belly spots
-    c.fillStyle = darken(accentColor, 0.05);
-    c.beginPath(); c.arc(x + w * 0.36, y + h * 0.58, w * 0.032, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.arc(x + w * 0.56, y + h * 0.62, w * 0.026, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.arc(x + w * 0.66, y + h * 0.5, w * 0.022, 0, Math.PI * 2); c.fill();
-    // Head
-    c.fillStyle = charGrad(c, x, y, w, h, lighten(bodyColor, 0.06));
-    c.beginPath();
-    c.ellipse(cx, y + h * 0.33, w * 0.3, h * 0.2, 0, 0, Math.PI * 2);
-    c.fill();
-    charOutline(c, bodyColor, w); c.stroke();
-    // Wide smile
-    c.strokeStyle = '#2a1a12';
-    c.lineWidth = Math.max(1.1, w * 0.04);
-    c.beginPath(); c.arc(cx + eo * 0.5, y + h * 0.38, w * 0.12, 0.12, Math.PI - 0.12); c.stroke();
-    // Blush
-    charBlush(c, cx - w * 0.22, y + h * 0.38, w * 0.055, h * 0.03);
-    charBlush(c, cx + w * 0.22, y + h * 0.38, w * 0.055, h * 0.03);
-    // Eyes (big, shiny)
-    charEye(c, cx + eo - w * 0.13, y + h * 0.3, w * 0.08, blink, f);
-    charEye(c, cx + eo + w * 0.13, y + h * 0.3, w * 0.08, blink, f);
-    // Stubby legs
-    c.fillStyle = bodyColor;
-    charOutline(c, bodyColor, w);
-    c.beginPath(); c.ellipse(cx - w * 0.25, y + h * 0.8, w * 0.1, h * 0.08, -0.2, 0, Math.PI * 2); c.fill(); c.stroke();
-    c.beginPath(); c.ellipse(cx + w * 0.25, y + h * 0.8, w * 0.1, h * 0.08, 0.2, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle=darken(accentColor,0.08); c.beginPath(); c.arc(x+w*0.36, y+h*0.58, w*0.032,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.56, y+h*0.62, w*0.026,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.66, y+h*0.50, w*0.022,0,Math.PI*2); c.fill();
+    // Head — wider, with smile curve
+    c.fillStyle=charGrad(c, x,y,w,h, lighten(bodyColor,0.06)); c.beginPath(); c.ellipse(cx, y+h*0.33, w*0.31, h*0.20,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
+    c.strokeStyle='#2a1a12'; c.lineWidth=Math.max(1.2,w*0.038); c.beginPath(); c.arc(cx+eo*0.5, y+h*0.39, w*0.13, 0.10, Math.PI-0.10); c.stroke();
+    // Tiny teeth hint inside smile
+    c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx+eo*0.5 - w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill(); c.beginPath(); c.ellipse(cx+eo*0.5 + w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill();
+    charBlush(c, cx-w*0.23, y+h*0.39, w*0.055, h*0.030); charBlush(c, cx+w*0.23, y+h*0.39, w*0.055, h*0.030);
+    // Eyes — big, high on head
+    charEye(c, cx+eo - w*0.13, y+h*0.30, w*0.082, blink, f); charEye(c, cx+eo + w*0.13, y+h*0.30, w*0.082, blink, f);
+    // Stubby legs with toes hint
+    c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.26, y+h*0.81, w*0.10, h*0.080, -0.22,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.26, y+h*0.81, w*0.10, h*0.080, 0.22,0,Math.PI*2); c.fill(); c.stroke();
+    c.fillStyle='rgba(255,255,255,0.5)'; c.beginPath(); c.arc(cx-w*0.26, y+h*0.83, w*0.015,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx+w*0.26, y+h*0.83, w*0.015,0,Math.PI*2); c.fill();
+  } else if (charId === 'stardust') {
+    const cx = x + w*0.5, cy = y + h*0.48;
+    // Glow
+    const glow = c.createRadialGradient(cx, cy, w*0.08, cx, cy, w*0.62);
+    glow.addColorStop(0, 'rgba(224,231,255,0.95)'); glow.addColorStop(0.45, 'rgba(139,92,246,0.35)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.62, 0, Math.PI*2); c.fill();
+    // Body — star orb
+    c.fillStyle = charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.arc(cx, cy, w*0.26, 0, Math.PI*2); c.fill(); charOutline(c, '#4338ca', w); c.stroke();
+    // Star points
+    c.fillStyle = '#fff'; for(let i=0;i<5;i++){ const a=(i/5)*Math.PI*2 - Math.PI/2; const x1=cx+Math.cos(a)*w*0.34, y1=cy+Math.sin(a)*w*0.34; const x2=cx+Math.cos(a+0.22)*w*0.16, y2=cy+Math.sin(a+0.22)*w*0.16; c.beginPath(); c.moveTo(cx,cy); c.lineTo(x1,y1); c.lineTo(x2,y2); c.closePath(); c.fill(); }
+    c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx - w*0.08, cy - w*0.08, w*0.06,0,Math.PI*2); c.fill();
+    // Tail — comet trail
+    c.fillStyle='rgba(199,210,254,0.55)'; c.beginPath(); c.ellipse(cx - f*w*0.22, y+h*0.72, w*0.14, h*0.08, -0.2,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,255,255,0.45)'; c.beginPath(); c.ellipse(cx - f*w*0.28, y+h*0.72, w*0.07, h*0.04, -0.2,0,Math.PI*2); c.fill();
+    // Eyes — starry
+    charEye(c, cx - w*0.10, cy - h*0.06, w*0.075, blink, f); charEye(c, cx + w*0.10, cy - h*0.06, w*0.075, blink, f);
+    c.fillStyle='#ffd23f'; c.beginPath(); c.arc(cx - w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx + w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill();
+    charBlush(c, cx - w*0.18, cy + h*0.08, w*0.045, h*0.028); charBlush(c, cx + w*0.18, cy + h*0.08, w*0.045, h*0.028);
   }
 }
 
@@ -4224,7 +4171,14 @@ function drawPlayer() {
     ctx.globalAlpha = (state.invulnFrames % 8) < 4 ? 0.35 : 1;
   }
 
-  drawCharacter(ctx, state.character, drawX, drawY, drawW, drawH, bodyColor, accentColor, p.facing);
+  // Perf B: cached sprite when not squishing/shielded (blink still works via overlay)
+  const canCache = p.squish < 0.02 && !state.shieldActive && state.invulnFrames === 0 && state.jetpackFrames === 0;
+  if (canCache) {
+    const spr = getCharSprite(state.character, bodyColor, accentColor, p.facing||1);
+    ctx.drawImage(spr.c, drawX, drawY, drawW, drawH);
+  } else {
+    drawCharacter(ctx, state.character, drawX, drawY, drawW, drawH, bodyColor, accentColor, p.facing||1);
+  }
 
   // Hat on top (leans with the character)
   if (hat && hat.draw) hat.draw(ctx, drawX, drawY, drawW, drawH);
@@ -4640,8 +4594,9 @@ function die() {
   };
 
   // Coins banked: run modifier multipliers + Golden Touch upgrade + perks
-  const coinMult = modMult('coinMult')
+  let coinMult = modMult('coinMult')
     * upgradeMult('coinValue', 0.05);
+  if (perkActive('celestial')) coinMult *= 1.1; // Stardust +10%
   const bankedCoins = Math.round(state.runCoins * coinMult);
   save.coins += bankedCoins;
 
@@ -4713,6 +4668,7 @@ function die() {
     fox:    ['#8b5cf6', '#7c3aed', '#c4b5fd', '#ede9fe'],
     tiger:  ['#ec4899', '#db2777', '#f9a8d4', '#fce7f3'],
     axolotl:['#e91e63', '#c2185b', '#f48fb1', '#fce4ec'],
+    stardust:['#e0e7ff', '#a5b4fc', '#c4b5fd', '#ffd23f'],
   };
   const dColors = charColors[state.character] || confettiColors;
   spawnBurstParticles(state.player.x + state.player.w / 2, state.player.y + state.player.h / 2, dColors, 16, {
@@ -4909,6 +4865,7 @@ function refreshMenu() {
   for (const id of CHAR_ORDER) {
     const c = CHARS[id];
     const unlocked = save.unlockedChars.includes(id);
+    if (c.secret && !unlocked) continue; // Stardust hidden until Cosmos
     const btn = document.createElement('button');
     btn.className = 'char-btn' + (state.character === id ? ' active' : '') + (unlocked ? '' : ' locked');
     btn.dataset.char = id;

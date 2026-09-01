@@ -419,6 +419,136 @@
   });
 
   /* ═══════════════════════════════════════
+     BADGE / ACHIEVEMENT SYSTEM
+     ═══════════════════════════════════════ */
+  var BUILDER_ID = (location.pathname.split('/').pop() || '').replace('.html', '').replace('-builder', '');
+  var BADGES_KEY = 'jvds-builder-badges';
+
+  var ALL_BADGES = {
+    'first-build':   { icon: '🏗️', name: 'First Build', desc: 'Completed your first builder' },
+    'rocket-badge':  { icon: '🚀', name: 'Rocket Scientist', desc: 'Built a rocket' },
+    'robot-badge':   { icon: '🤖', name: 'Robot Engineer', desc: 'Built a robot' },
+    'pirate-badge':  { icon: '🏴‍☠️', name: 'Pirate Captain', desc: 'Built a pirate ship' },
+    'airship-badge': { icon: '🛩️', name: 'Airship Pilot', desc: 'Built an airship' },
+    'all-builders':  { icon: '🏆', name: 'Master Builder', desc: 'Completed all 4 builders' },
+    'speed-builder': { icon: '⚡', name: 'Speed Builder', desc: 'Completed a build in under 2 minutes' },
+    'randomizer':    { icon: '🎲', name: 'Randomizer', desc: 'Used the Random build feature' },
+    'sharer':        { icon: '🔗', name: 'Shark Sharer', desc: 'Shared a build link' },
+    'saver':         { icon: '💾', name: 'Pack Rat', desc: 'Saved 5 or more builds' },
+  };
+
+  function getBadges() {
+    try { return JSON.parse(localStorage.getItem(BADGES_KEY) || '{}'); } catch(e) { return {}; }
+  }
+
+  function saveBadges(b) { localStorage.setItem(BADGES_KEY, JSON.stringify(b)); }
+
+  window.builderAwardBadge = function(id) {
+    var badges = getBadges();
+    if (badges[id]) return;
+    badges[id] = Date.now();
+    saveBadges(badges);
+    var b = ALL_BADGES[id];
+    if (b && toast) toast('🏅 Badge: ' + b.name);
+  };
+
+  window.builderShowBadges = function() {
+    var badges = getBadges();
+    var existing = document.getElementById('badgeOverlay');
+    if (existing) { existing.remove(); return; }
+    var overlay = document.createElement('div');
+    overlay.id = 'badgeOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+    var grid = Object.keys(ALL_BADGES).map(function(id) {
+      var b = ALL_BADGES[id];
+      var earned = badges[id];
+      return '<div style="text-align:center;padding:10px 8px;border-radius:8px;border:1px solid ' + (earned ? 'rgba(255,209,102,.3)' : 'rgba(255,255,255,.06)') + ';background:' + (earned ? 'rgba(255,209,102,.06)' : 'rgba(255,255,255,.02)') + ';opacity:' + (earned ? '1' : '.4') + '">' +
+        '<div style="font-size:1.8rem;margin-bottom:4px">' + (earned ? b.icon : '🔒') + '</div>' +
+        '<div style="font-size:.72rem;font-weight:700;color:' + (earned ? '#ffd166' : 'rgba(232,238,248,.3)') + '">' + b.name + '</div>' +
+        '<div style="font-size:.6rem;color:rgba(232,238,248,.35);margin-top:2px">' + b.desc + '</div>' +
+        (earned ? '<div style="font-size:.5rem;color:rgba(232,238,248,.25);margin-top:3px">' + new Date(badges[id]).toLocaleDateString() + '</div>' : '') +
+        '</div>';
+    }).join('');
+    var total = Object.keys(ALL_BADGES).length;
+    var earned = Object.keys(badges).length;
+    overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:520px;width:92%">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+      '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.04em">🏅 Badges (' + earned + '/' + total + ')</h3>' +
+      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.parentElement.remove()">✕</button></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:350px;overflow-y:auto">' + grid + '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
+  };
+
+  window.builderTrackProgress = function() {
+    var builders = {};
+    try { builders = JSON.parse(localStorage.getItem('jvds-builder-progress') || '{}'); } catch(e) {}
+    var page = location.pathname.split('/').pop();
+    if (!builders[page]) builders[page] = { visits: 0, lastVisit: 0, completed: false };
+    builders[page].visits++;
+    builders[page].lastVisit = Date.now();
+    localStorage.setItem('jvds-builder-progress', JSON.stringify(builders));
+  };
+
+  window.builderMarkComplete = function() {
+    var builders = {};
+    try { builders = JSON.parse(localStorage.getItem('jvds-builder-progress') || '{}'); } catch(e) {}
+    var page = location.pathname.split('/').pop();
+    if (!builders[page]) builders[page] = { visits: 0, lastVisit: 0, completed: false };
+    builders[page].completed = true;
+    builders[page].completedAt = Date.now();
+    localStorage.setItem('jvds-builder-progress', JSON.stringify(builders));
+
+    // Award builder-specific badge
+    if (page.includes('rocket'))  window.builderAwardBadge('rocket-badge');
+    if (page.includes('robot'))   window.builderAwardBadge('robot-badge');
+    if (page.includes('pirate'))  window.builderAwardBadge('pirate-badge');
+    if (page.includes('airship')) window.builderAwardBadge('airship-badge');
+    window.builderAwardBadge('first-build');
+
+    // Check if all builders complete
+    var allDone = ['rocket-builder.html','robot-builder.html','pirate-ship-builder.html','steampunk-airship-builder.html'].every(function(p) {
+      return builders[p] && builders[p].completed;
+    });
+    if (allDone) window.builderAwardBadge('all-builders');
+  };
+
+  window.builderShowProgress = function() {
+    var builders = {};
+    try { builders = JSON.parse(localStorage.getItem('jvds-builder-progress') || '{}'); } catch(e) {}
+    var pages = [
+      { key: 'rocket-builder.html', name: '🚀 Rocket Builder', icon: '🚀' },
+      { key: 'robot-builder.html', name: '🤖 Robot Builder', icon: '🤖' },
+      { key: 'pirate-ship-builder.html', name: '🏴‍☠️ Pirate Ship', icon: '🏴‍☠️' },
+      { key: 'steampunk-airship-builder.html', name: '🛩️ Airship', icon: '🛩️' },
+    ];
+    var existing = document.getElementById('progressOverlay');
+    if (existing) { existing.remove(); return; }
+    var overlay = document.createElement('div');
+    overlay.id = 'progressOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+    var rows = pages.map(function(p) {
+      var d = builders[p.key];
+      var done = d && d.completed;
+      var visits = d ? d.visits : 0;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)">' +
+        '<div style="font-size:1.5rem">' + (done ? '✅' : '⬜') + '</div>' +
+        '<div style="flex:1"><div style="font-size:.85rem;color:' + (done ? '#4ade80' : 'var(--text)') + ';font-weight:700">' + p.name + '</div>' +
+        '<div style="font-size:.65rem;color:rgba(232,238,248,.35)">' + (done ? 'Completed' : visits + ' visits') + '</div></div>' +
+        '</div>';
+    }).join('');
+    var completed = pages.filter(function(p) { return builders[p.key] && builders[p.key].completed; }).length;
+    overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:400px;width:92%">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+      '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.04em">📊 Builder Progress (' + completed + '/4)</h3>' +
+      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.parentElement.remove()">✕</button></div>' +
+      rows +
+      '<div style="margin-top:14px;text-align:center"><button onclick="this.closest(\'div\').parentElement.parentElement.remove();builderShowBadges()" style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);color:#ffd166;padding:7px 18px;border-radius:6px;font-size:.78rem;cursor:pointer;font-weight:700">🏅 View Badges</button></div></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
+  };
+
+  /* ═══════════════════════════════════════
      INIT
      ═══════════════════════════════════════ */
   function injectBuilderExtras() {
@@ -471,11 +601,18 @@
       helpBtn.className = btnClass; helpBtn.textContent = '❓';
       helpBtn.title = 'Keyboard shortcuts (?)'; helpBtn.onclick = window.builderShowShortcuts;
       hdrRight.appendChild(helpBtn);
+
+      // Progress
+      var progBtn = document.createElement('button');
+      progBtn.className = btnClass; progBtn.textContent = '📊 Progress';
+      progBtn.title = 'Builder progress & badges'; progBtn.onclick = window.builderShowProgress;
+      hdrRight.appendChild(progBtn);
     }
 
     setupMobileDrawer();
     showOnboarding();
     window.builderLoadFromURL();
+    window.builderTrackProgress();
   }
 
   if (document.readyState === 'loading') {
