@@ -357,24 +357,41 @@
   };
 
   /* ═══════════════════════════════════════
-     MOBILE RIGHTBAR DRAWER
+     MOBILE CONTROLS DRAWER
      ═══════════════════════════════════════ */
   function setupMobileDrawer() {
     var rb = document.getElementById('rightbar');
-    if (!rb) return;
-    var btn = document.createElement('button');
-    btn.id = 'rbDrawerToggle';
-    btn.textContent = '⚙️';
-    btn.title = 'Quick Controls';
-    btn.style.cssText = 'display:none;position:fixed;bottom:16px;right:16px;z-index:80;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--acc,#e8543a),var(--acc-dk,#b03020));color:#fff;border:none;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);transition:transform .15s';
-    btn.addEventListener('click', function() {
-      rb.classList.toggle('drawer-open');
-      btn.style.transform = rb.classList.contains('drawer-open') ? 'rotate(90deg)' : '';
-    });
-    document.body.appendChild(btn);
+    var cpanel = document.getElementById('cpanel') || document.querySelector('.cpanel');
     var style = document.createElement('style');
-    style.textContent = '@media(max-width:860px){#rightbar{display:block!important;position:fixed;top:0;right:-300px;width:280px;height:100vh;z-index:100;transition:right .3s ease;overflow-y:auto;border-left:1px solid var(--border,#fff1)}#rightbar.drawer-open{right:0}#rbDrawerToggle{display:block!important}}';
-    document.head.appendChild(style);
+
+    if (rb) {
+      // Robot/Rocket: rightbar drawer
+      var btn = document.createElement('button');
+      btn.id = 'rbDrawerToggle';
+      btn.textContent = '⚙️';
+      btn.title = 'Quick Controls';
+      btn.style.cssText = 'display:none;position:fixed;bottom:16px;right:16px;z-index:80;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--acc,#e8543a),var(--acc-dk,#b03020));color:#fff;border:none;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);transition:transform .15s';
+      btn.addEventListener('click', function() {
+        rb.classList.toggle('drawer-open');
+        btn.style.transform = rb.classList.contains('drawer-open') ? 'rotate(90deg)' : '';
+      });
+      document.body.appendChild(btn);
+      style.textContent = '@media(max-width:860px){#rightbar{display:block!important;position:fixed;top:0;right:-300px;width:280px;height:100vh;z-index:100;transition:right .3s ease;overflow-y:auto;border-left:1px solid var(--border,#fff1)}#rightbar.drawer-open{right:0}#rbDrawerToggle{display:block!important}}';
+    } else if (cpanel) {
+      // Pirate/Airship: bottom-sheet controls
+      var btn2 = document.createElement('button');
+      btn2.id = 'rbDrawerToggle';
+      btn2.textContent = '🎛️';
+      btn2.title = 'Build Controls';
+      btn2.style.cssText = 'display:none;position:fixed;bottom:16px;right:16px;z-index:80;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--gold,#d4a843),var(--rust,#8b4513));color:var(--sea,#0a1628);border:none;font-size:1.3rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4);transition:transform .15s';
+      btn2.addEventListener('click', function() {
+        var isOpen = cpanel.classList.toggle('mobile-drawer-open');
+        btn2.style.transform = isOpen ? 'rotate(45deg)' : '';
+      });
+      document.body.appendChild(btn2);
+      style.textContent = '@media(max-width:860px){.cpanel,#cpan{position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;max-height:55vh!important;width:100%!important;border-radius:14px 14px 0 0!important;z-index:100!important;transform:translateY(100%);transition:transform .3s ease!important;overflow-y:auto!important;box-shadow:0 -4px 20px rgba(0,0,0,.4)!important}.cpanel.mobile-drawer-open,#cpan.mobile-drawer-open{transform:translateY(0)!important}#rbDrawerToggle{display:block!important}.snav{position:sticky;bottom:0;background:var(--sea,#0a1628);z-index:101;border-top:1px solid rgba(212,168,67,.15)}}';
+    }
+    if (style.textContent) document.head.appendChild(style);
   }
 
   /* ═══════════════════════════════════════

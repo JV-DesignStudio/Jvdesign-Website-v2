@@ -992,6 +992,13 @@
   }
   .toggle-btn.off { background: #555; }
   .toggle-btn.danger { background: #d32f2f; }
+  .seg-row { display: flex; gap: 6px; }
+  .seg-btn { background: rgba(255,255,255,0.08); border: 1px solid var(--ui-stroke); color: var(--ui-text); padding: 6px 12px; border-radius: 999px; font-weight: 800; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .seg-btn.active { background: var(--accent); color: #2a1a00; border-color: var(--accent); }
+  /* Touch buttons for controls=buttons */
+  #touchBtns { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom)); left: 0; right: 0; display: none; justify-content: space-between; padding: 0 14px; pointer-events: none; z-index: 6; }
+  #touchBtns.show { display: flex; }
+  .tbtn { width: 72px; height: 72px; border-radius: 18px; background: rgba(20,14,38,0.65); border: 1px solid var(--ui-stroke); color: #fff; font-size: 26px; display: grid; place-items: center; pointer-events: auto; touch-action: none; user-select: none; }
   .toggle-btn.danger:hover { background: #f44336; }
   .btn.small {
     padding: 10px 16px;
@@ -1141,6 +1148,7 @@
 <div id="wrap">
   <canvas id="game" width="420" height="700" role="img" aria-label="Sky High With Friends game. Tilt your device to steer your character upward."></canvas>
 </div>
+<div id="touchBtns"><button class="tbtn" id="tbtnL" aria-label="Move left">◀</button><button class="tbtn" id="tbtnR" aria-label="Move right">▶</button></div>
 
 <div class="hud">
   <div class="pill"><span class="label">Height</span><span id="hud-height">0m</span></div>
@@ -1316,6 +1324,35 @@
       <button class="toggle-btn" id="music-toggle">ON</button>
     </div>
 
+    <div class="setting-row">
+      <span class="setting-label">Controls</span>
+      <div class="seg-row" id="controls-seg">
+        <button class="seg-btn" data-val="tilt">Tilt</button>
+        <button class="seg-btn" data-val="drag">Drag</button>
+        <button class="seg-btn" data-val="buttons">Buttons</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Haptics</span>
+      <button class="toggle-btn" id="haptics-toggle">ON</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Screen Shake</span>
+      <button class="toggle-btn" id="shake-toggle">ON</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Particles</span>
+      <button class="toggle-btn" id="particles-toggle">ON</button>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Ghost</span>
+      <button class="toggle-btn" id="ghost-toggle">ON</button>
+    </div>
+
     <div class="setting-row hidden" id="tilt-row">
       <span class="setting-label">Tilt Calibration</span>
       <button class="toggle-btn" id="tilt-recal-btn">Recalibrate</button>
@@ -1354,7 +1391,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.1', code: 7, date: '2026-09-01', codename: '' };
+const GAME_VERSION = { v: '2.2', code: 8, date: '2026-09-01', codename: '' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1539,7 +1576,7 @@ function defaultSave() {
     lastPlayDate: null,    // 'YYYY-MM-DD'
     streak: 0,
     bestStreak: 0,
-    settings: { sound: true, music: true },
+    settings: { sound: true, music: true, controls: 'tilt', haptics: true, shake: true, particles: true, ghost: true },
     firstPlayTs: Date.now(),
     tutorialDone: false,
   };
@@ -2457,6 +2494,7 @@ async function enableTiltForMobile() {
 document.getElementById('tilt-recal-btn').addEventListener('click', recalibrateTilt);
 
 function spawnParticles(x, y, color, n = 6) {
+  if (save.settings.particles===false) return;
   // Hard cap: jetpack + aura + bursts can otherwise stack into the hundreds
   // on long runs, which shows up as frame drops on low-end phones.
   if (state.particles.length > MAX_PARTICLES) {
@@ -2475,6 +2513,7 @@ function spawnParticles(x, y, color, n = 6) {
 }
 
 function spawnBurstParticles(x, y, color, n, opts = {}) {
+  if (save.settings.particles===false) return;
   if (state.particles.length > MAX_PARTICLES) {
     state.particles.splice(0, state.particles.length - MAX_PARTICLES);
   }
@@ -2498,6 +2537,7 @@ function spawnBurstParticles(x, y, color, n, opts = {}) {
    Shake/flash values are computed once per physics step so a paused or
    backgrounded frame can't leave the screen jittering behind an overlay. */
 function addShake(mag) {
+  if (save.settings.shake===false) return;
   state.shakeMag = Math.min(14, Math.max(state.shakeMag, mag));
 }
 function addFlash(color, alpha) {
@@ -2515,6 +2555,7 @@ function addText(x, y, str, opts = {}) {
   });
 }
 function vib(pattern) {
+  if (save.settings.haptics===false) return;
   try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
 }
 
@@ -2555,14 +2596,20 @@ function update() {
   if (state.coinStreakTimer > 0) state.coinStreakTimer--; else state.coinStreak = 0;
   if (state.gameTime % 30 === 0) musicZoneTick();
 
-  // Movement: tilt takes priority on mobile, keys otherwise
+  // Movement: respect Settings → Controls choice
   const maxV = PHYS.moveMax * (perkActive('speed') ? 1.12 : 1);
-  if (tilt.enabled) {
-    // Direct velocity from tilt, feels much more responsive than acceleration
+  const ctrl = save.settings.controls || 'tilt';
+  if (ctrl === 'tilt' && tilt.enabled) {
     p.vx = tilt.value * maxV * modMult('frictionMult');
     if (tilt.value < -0.05) p.facing = -1;
     else if (tilt.value > 0.05) p.facing = 1;
+  } else if (ctrl === 'drag') {
+    // drag sets p.vx directly via pointermove; just clamp + friction when idle
+    if (!dragActive) p.vx *= PHYS.friction * modMult('frictionMult');
+    p.vx = Math.max(-maxV, Math.min(maxV, p.vx));
+    if (p.vx < -0.05) p.facing = -1; else if (p.vx > 0.05) p.facing = 1;
   } else {
+    // buttons or keyboard fallback (also used when tilt not available)
     if (keys.left)  { p.vx -= PHYS.moveAccel; p.facing = -1; }
     if (keys.right) { p.vx += PHYS.moveAccel; p.facing = 1; }
     if (!keys.left && !keys.right) p.vx *= PHYS.friction * modMult('frictionMult');
@@ -2656,8 +2703,8 @@ function update() {
   if (state.trailTimer % 3 === 0) spawnTrailParticle();
 
   // Ghost recording
-  // Stardust trail
-  if (state.character === 'stardust' && state.gameTime % 3 === 0) {
+  // Stardust trail — respects particles toggle
+  if (save.settings.particles!==false && state.character === 'stardust' && state.gameTime % 3 === 0) {
     state.particles.push({ x: p.x + p.w/2 + (Math.random()-0.5)*6, y: p.y + p.h/2, vx:(Math.random()-0.5)*0.6, vy:0.8+Math.random()*0.8, life:0.7, color: Math.random()<0.5?'#a5b4fc':'#fde68a', shape:'circle', size:1.2+Math.random()*1.8, rot:0, rotV:0 });
   }
 
@@ -4237,6 +4284,7 @@ function drawStar(c, cx, cy, spikes, outerR, innerR) {
 }
 
 function drawGhost() {
+  if (save.settings.ghost===false) return;
   if (!save.ghostRun) return;
   const pos = getGhostPosAtFrame(ghostFrame);
   if (!pos) return;
@@ -4417,6 +4465,7 @@ function startGame(weekly) {
   state.mode = 'playing';
   state.weekly = !!weekly;
   document.body.dataset.mode = 'playing';
+  updateControlMode();
   state.modifier = state.pendingModifier || null;
   state.player = makePlayer();
   state.coins.length = 0;
@@ -5250,11 +5299,68 @@ function closeSettings() {
 }
 function refreshSettings() {
   syncSoundButtons();
+  // Controls seg
+  document.querySelectorAll('#controls-seg .seg-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === (save.settings.controls||'tilt'));
+  });
+  for(const id of ['haptics','shake','particles','ghost']){
+    const btn=document.getElementById(id+'-toggle');
+    if(btn){ const on = save.settings[id]!==false; btn.textContent=on?'ON':'OFF'; btn.classList.toggle('off', !on); }
+  }
+  document.getElementById('tilt-row').classList.toggle('hidden', (save.settings.controls||'tilt')!=='tilt' || !tilt.enabled);
+  document.getElementById('touchBtns').classList.toggle('show', (save.settings.controls||'tilt')==='buttons' && state.mode==='playing');
 }
+function updateControlMode(){
+  const mode = save.settings.controls||'tilt';
+  document.getElementById('touchBtns').classList.toggle('show', mode==='buttons' && state.mode==='playing');
+  document.getElementById('tilt-row').classList.toggle('hidden', mode!=='tilt' || !tilt.enabled);
+}
+// Drag handling
+let dragX = 0, dragActive=false;
+canvas.addEventListener('pointerdown', e=>{
+  if((save.settings.controls||'tilt')!=='drag' || state.mode!=='playing') return;
+  dragActive=true; dragX=e.clientX;
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!dragActive || (save.settings.controls||'tilt')!=='drag' || state.mode!=='playing') return;
+  const dx = e.clientX - dragX;
+  state.player && (state.player.vx = Math.max(-6.5, Math.min(6.5, dx*0.04)));
+  if(dx < -5) state.player.facing=-1; else if(dx>5) state.player.facing=1;
+});
+canvas.addEventListener('pointerup', ()=> dragActive=false);
+canvas.addEventListener('pointercancel', ()=> dragActive=false);
+[['tbtnL','left'],['tbtnR','right']].forEach(([id,key])=>{
+  const b=document.getElementById(id);
+  if(!b) return;
+  const down=e=>{ e.preventDefault(); if((save.settings.controls||'tilt')!=='buttons') return; keys[key]=true; };
+  const up=e=>{ e.preventDefault(); keys[key]=false; };
+  b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+});
+updateControlMode();
+new MutationObserver(updateControlMode).observe(document.body, {attributes:true, attributeFilter:['data-mode']});
 
 document.getElementById('settings-btn').addEventListener('click', () => { initAudio(); openSettings(); });
 document.getElementById('settings-back-btn').addEventListener('click', closeSettings);
 document.getElementById('sound-toggle').addEventListener('click', toggleSound);
+document.querySelectorAll('#controls-seg .seg-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    save.settings.controls = b.dataset.val;
+    persist();
+    refreshSettings();
+    updateControlMode();
+    SFX.click();
+  });
+});
+for(const id of ['haptics','shake','particles','ghost']){
+  const btn=document.getElementById(id+'-toggle');
+  if(btn) btn.addEventListener('click', ()=>{
+    const cur = save.settings[id]!==false;
+    save.settings[id] = !cur;
+    persist();
+    refreshSettings();
+    SFX.click();
+  });
+}
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('This will erase ALL progress, coins, cosmetics, and achievements. Are you sure?')) {
     localStorage.removeItem(SAVE_KEY);
