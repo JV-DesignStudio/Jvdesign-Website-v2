@@ -202,6 +202,9 @@ body{
 }
 .board-outer-glow.fever{opacity:1;animation:glowPulse 1s ease-in-out infinite alternate}
 @keyframes glowPulse{from{transform:scale(1)}to{transform:scale(1.05)}}
+@keyframes gemFallIn{0%{transform:translateY(-44px) scale(.75);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+#board.fever-active .cell{filter:brightness(1.1) saturate(1.2)}
+#board.fever-active .cell::after{animation-duration:1.8s!important}
 
 #board{
   width:100%;aspect-ratio:1;
@@ -824,17 +827,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
-  const btn=document.getElementById('themeBtn');
-  if(btn){
-    const saved=localStorage.getItem('jv_theme');
-    if(saved){document.documentElement.setAttribute('data-theme',saved);btn.textContent=saved==='dark'?'☀️':'🌙';}
-    btn.addEventListener('click',()=>{
-      const isDark=document.documentElement.getAttribute('data-theme')==='dark';
-      document.documentElement.setAttribute('data-theme',isDark?'light':'dark');
-      btn.textContent=isDark?'🌙':'☀️';
-      localStorage.setItem('jv_theme',isDark?'light':'dark');
-    });
-  }
+  // dead code removed: themeBtn does not exist
 });
 </script>
 <script>
@@ -965,9 +958,12 @@ function mkGrid(){
   boardEl.innerHTML='';
   for(let i=0;i<TOTAL;i++){
     const d=document.createElement('div');
+    const r=Math.floor(i/COLS), c=i%COLS;
     d.className='cell'; d.dataset.index=i; d.dataset.color=board[i];
     d.textContent=EMOJI[board[i]]||'';
     d.style.setProperty('--sd',(Math.random()*3.5).toFixed(2)+'s');
+    d.style.animationDelay=(r*40+c*30)+'ms';
+    d.style.animation='gemFallIn .4s cubic-bezier(.22,1,.36,1) both';
     boardEl.appendChild(d);
   }
   addInput();
@@ -1222,7 +1218,7 @@ async function resolve(m){
 
   // Fever trigger
   if(chain>=FEVER_AT&&!fever){
-    fever=true;
+    fever=true; boardEl.classList.add('fever-active');
     boardEl.classList.add('fever-board');
     boardGlow.classList.add('fever');
     scoreCard.classList.add('fever');
@@ -1296,7 +1292,7 @@ async function resolve(m){
 }
 
 function endChain(){
-  if(fever){ fever=false; boardEl.classList.remove('fever-board'); boardGlow.classList.remove('fever'); scoreCard.classList.remove('fever'); setTimeout(()=>feverPill.classList.remove('show'),900); }
+  if(fever){ fever=false; boardEl.classList.remove('fever-board','fever-active'); boardGlow.classList.remove('fever'); scoreCard.classList.remove('fever'); setTimeout(()=>feverPill.classList.remove('show'),900); }
   chain=0; setTimeout(()=>comboPill.classList.remove('show'),1000);
 }
 
