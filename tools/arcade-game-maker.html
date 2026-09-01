@@ -11888,12 +11888,11 @@ function sceneShooter(data) {
             this._newBossActive = true;
             const hp = liveConfig.bossHpNew || 20;
             this._newBossMaxHp = hp;
+            this._bossPhase = 1; // track which phase (1/2/3) the boss is in
             const bsz = 60;
             const bx = GW / 2;
             const boss = this.hazards.create(bx, -80, 'enemy');
-            boss.setScale(3); // 3× scale
-            // Hitbox matched to the VISUAL size — the old fixed 51px body was
-            // smaller than the ~78px sprite, so edge hits never registered
+            boss.setScale(3);
             boss.body.setSize(Math.round(boss.displayWidth * 0.8), Math.round(boss.displayHeight * 0.8), true);
             if (!data.enemySprite) boss.setTint(0xff1111);
             boss.body.allowGravity = false;
@@ -11907,15 +11906,28 @@ function sceneShooter(data) {
             this._bossHpBarFg = this.add.rectangle(20, 14, GW-40, 10, 0xff2222).setScrollFactor(0).setDepth(26).setOrigin(0, 0.5);
             const bossLbl = this.add.text(GW/2, 24, '💀 BOSS', {fontSize:'9px',fill:'#fff',fontFamily:"'JetBrains Mono',monospace"}).setOrigin(0.5,0).setDepth(26).setScrollFactor(0);
 
-            // Boss shoot timer
+            // 3-phase boss shoot timer — ramps from 3 bullets to 5 to 7 as HP drops
             const bShoot2 = this.time.addEvent({ delay:900, loop:true, callback:()=>{
                 if (!boss || !boss.active) { bShoot2.remove(false); return; }
                 if (boss.y < 50) return;
-                [-35, 0, 35].forEach(deg => {
+                const hpRatio = boss.getData('hp') / hp;
+                const phase = hpRatio > 0.66 ? 1 : hpRatio > 0.33 ? 2 : 3;
+                const angles = phase===1 ? [-35, 0, 35] : phase===2 ? [-50, -20, 0, 20, 50] : [-70, -40, -15, 0, 15, 40, 70];
+                const spd = phase===1 ? 220 : phase===2 ? 280 : 340;
+                angles.forEach(deg => {
                     const b = this._bossBullets.create(boss.x, boss.y + 28, 'laser').setDisplaySize(11,11);
-                    b.setTint(0xff0000); b.body.allowGravity = false;
-                    this.physics.velocityFromAngle(90 + deg, 220, b.body.velocity);
+                    b.setTint(phase===3 ? 0xff44ff : 0xff0000); b.body.allowGravity = false;
+                    this.physics.velocityFromAngle(90 + deg, spd, b.body.velocity);
                 });
+                // Phase 3: also spawn spiral bullets
+                if (phase === 3) {
+                    for (let i = 0; i < 8; i++) {
+                        const ang = (360/8)*i + ((this.time.now||0)*0.1 % 360);
+                        const b = this._bossBullets.create(boss.x, boss.y + 14, 'laser').setDisplaySize(8,8);
+                        b.setTint(0xaa00ff); b.body.allowGravity = false;
+                        this.physics.velocityFromAngle(ang, 180, b.body.velocity);
+                    }
+                }
             }});
 
             // Kill poll
@@ -11942,7 +11954,6 @@ function sceneShooter(data) {
                         this.scoreText.setText('Score: '+this.score);
                         this._flashScore(this.scoreText);
                         GameAudio.play('score');
-                        // Reset so boss can re-appear at the next score milestone
                         this._newBossTriggered = false;
                         showToast('💀 Boss slain! Next boss at ' + ((this._lastBossThresh||(liveConfig.bossScore||500)) + (liveConfig.bossScore||500)) + ' pts');
                     }
@@ -11954,8 +11965,18 @@ function sceneShooter(data) {
             if (!boss || !boss.active) return;
             const ax = this.actor ? this.actor.x : GW/2;
             const ay = this.actor ? this.actor.y : GH/2;
-            // Phase switch every 3 seconds for random/sweep modes
-            if (time - this._bossPhaseTimer > 3000) {
+            const hpRatio = boss.getData('hp') / this._newBossMaxHp;
+            const phase = hpRatio > 0.66 ? 1 : hpRatio > 0.33 ? 2 : 3;
+            // Phase tint: P1 red, P2 orange, P3 purple
+            if (this._bossPhase !== phase && !data.enemySprite) {
+                this._bossPhase = phase;
+                boss.setTint(phase===1 ? 0xff1111 : phase===2 ? 0xff8800 : 0xaa00ff);
+                if (phase===3) { this.cameras.main.shake(120, 0.012); GameAudio.play('hit'); showToast('💀 PHASE 3 — ENRAGE!', 'warn', 2000); }
+                else if (phase===2) { showToast('💀 Phase 2 — faster!', undefined, 1500); }
+            }
+            // Phase switch interval: P1=3s, P2=1.8s, P3=0.9s
+            const phaseInterval = phase===1 ? 3000 : phase===2 ? 1800 : 900;
+            if (time - this._bossPhaseTimer > phaseInterval) {
                 this._bossPhaseTimer = time;
                 if (liveConfig.bossBehaviour === 'random') {
                     this._bossMode = this._bossMode === 'sweep' ? 'chase' : 'sweep';
@@ -11964,15 +11985,19 @@ function sceneShooter(data) {
             // Move boss into arena first
             if (boss.y < 80) { boss.setVelocityY(60); boss.setVelocityX(0); return; }
             if (this._bossMode === 'sweep') {
-                // Side-to-side sweep
                 const swX = Math.sin(time * 0.001) * (GW * 0.35);
-                boss.setVelocityX((GW/2 + swX - boss.x) * 2);
-                boss.setVelocityY(Math.sin(time * 0.0008) * 30);
+                boss.setVelocityX((GW/2 + swX - boss.x) * (phase===3 ? 3 : 2));
+                boss.setVelocityY(Math.sin(time * 0.0008) * (phase===3 ? 60 : 30));
             } else {
-                // Chase player
-                const spd = 90;
+                const spd = phase===3 ? 140 : phase===2 ? 110 : 90;
                 boss.setVelocityX(ax > boss.x ? spd : -spd);
                 boss.setVelocityY(ay > boss.y ? spd * 0.4 : -spd * 0.4);
+            }
+            // Update HP bar color and phase indicator
+            if (this._bossHpBarFg && this._bossHpBarFg.active) {
+                const ratio = Math.max(0, boss.getData('hp') / this._newBossMaxHp);
+                this._bossHpBarFg.displayWidth = Math.max(0, (GW-40) * ratio);
+                this._bossHpBarFg.setFillStyle(phase===3 ? 0xaa00ff : phase===2 ? 0xff8800 : 0xff2222);
             }
         }
     };

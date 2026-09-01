@@ -780,7 +780,7 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
 <script>
 /* ── DATA ── */
 const SK='qb-data-v1', RK='qb-rpg-v1';
-const APP_VERSION='2.2.0-balanced'; // bump every release
+const APP_VERSION='2.3.0-complete'; // bump every release
 let state={
   columns:[
     {id:'todo',  title:'📋 To Do',       colour:'#7c3aed'},
@@ -2582,6 +2582,8 @@ const SHOP_ITEMS=[
   {id:'streaksav',cat:'consume',icon:'🔥', name:'Streak Shield',   desc:'Saves your streak once if you miss a day.',                     cost:300, effect:{type:'streakSave',uses:1}},
   {id:'pomtonic', cat:'consume',icon:'🧪', name:'Focus Tonic',     desc:'Extends your next Pomodoro session to 35 minutes.',             cost:150, effect:{type:'pomBoost',  uses:1}},
   {id:'goldmagnet',cat:'consume',icon:'🧲',name:'Gold Magnet',     desc:'Next 5 quests completed give +50% gold bonus.',                 cost:180, effect:{type:'goldBoost', uses:5}},
+  {id:'hp_potion', cat:'consume',icon:'❤️', name:'Health Potion',     desc:'Restore 25 HP immediately.',                                        cost:50,  effect:{type:'hpHeal',   uses:1}},
+  {id:'mp_potion', cat:'consume',icon:'💙', name:'Mana Potion',       desc:'Restore 10 MP immediately.',                                        cost:40,  effect:{type:'mpHeal',   uses:1}},
   // ── Mystery Crates ───────────────────────────────────────────────────────
   {id:'chest_b',  cat:'crate',  icon:'📦', name:'Bronze Chest',   desc:'Contains: 20-60g, a random equipment item, or 50 XP.',          cost:150},
   {id:'chest_s',  cat:'crate',  icon:'💜', name:'Silver Chest',   desc:'Contains: 60-180g, a mid-tier item, or 200 XP.',                cost:420},
@@ -2687,14 +2689,22 @@ function buyShopItem(id){
     showToast('🎯 Now rolling 4 daily bounties!','success');
     rollBounties(true);
   } else if(item.effect){
-    if(!rpg.activeBuffs)rpg.activeBuffs=[];
-    const eff={...item.effect,name:item.name,icon:item.icon,_id:'buf'+Date.now()};
-    if(eff.startDay==='TODAY')eff.startDay=new Date().toDateString();
-    if(eff.expires&&typeof eff.expires==='number')eff.expires=Date.now()+eff.expires;
-    // Stack uses if same type buff already active
-    const existing=rpg.activeBuffs.find(b=>b.type===eff.type);
-    if(existing&&eff.uses){existing.uses+=eff.uses;showToast(`${item.icon} Stacked! ${eff.type} now at ${existing.uses} uses`,'success');}
-    else{rpg.activeBuffs.push(eff);showToast(`${item.icon} ${item.name} activated!`,'success');}
+    // Direct heal effects (not buffs)
+    if(item.effect.type==='hpHeal'){
+      const heal=25;const max=_maxHp();rpg.hp=Math.min(max,(rpg.hp||max)+heal);
+      showToast('❤️ Restored '+heal+' HP! ('+rpg.hp+'/'+max+')','success');playSfx('unlock');
+    } else if(item.effect.type==='mpHeal'){
+      const heal=10;const max=_manaMax();rpg.mana=Math.min(max,(rpg.mana||0)+heal);
+      showToast('💙 Restored '+heal+' MP! ('+rpg.mana+'/'+max+')','success');playSfx('unlock');
+    } else {
+      if(!rpg.activeBuffs)rpg.activeBuffs=[];
+      const eff={...item.effect,name:item.name,icon:item.icon,_id:'buf'+Date.now()};
+      if(eff.startDay==='TODAY')eff.startDay=new Date().toDateString();
+      if(eff.expires&&typeof eff.expires==='number')eff.expires=Date.now()+eff.expires;
+      const existing=rpg.activeBuffs.find(b=>b.type===eff.type);
+      if(existing&&eff.uses){existing.uses+=eff.uses;showToast(`${item.icon} Stacked! ${eff.type} now at ${existing.uses} uses`,'success');}
+      else{rpg.activeBuffs.push(eff);showToast(`${item.icon} ${item.name} activated!`,'success');}
+    }
   }
 
   save();renderShop();renderActiveBuffs();updateRpgWidgets();
