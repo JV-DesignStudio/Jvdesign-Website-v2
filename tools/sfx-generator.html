@@ -272,6 +272,7 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
     <button class="act-btn" style="background:#ff6b5b;color:white;box-shadow:0 3px 0 #cc5549;" onclick="downloadPresetPack()">?? Download Pack</button>
     <button class="act-btn" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;border-color:#7c3aed;" onclick="sendToGameMaker()">??? Send to Game Maker</button>
     <a class="act-btn" href="arcade-game-maker.html" style="background:#16a34a;color:white;border-color:#15803d;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">? Back to Game Maker</a>
+    <button class="act-btn" style="background:#10b981;color:white;box-shadow:0 3px 0 #059669;" onclick="saveCurrentSfx()">💾 Save</button>
   </div>
 
   <!-- HISTORY -->
@@ -282,6 +283,17 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
     </div>
     <div class="history-list" id="historyList">
       <div class="empty-state">Your downloaded sounds will appear here</div>
+    </div>
+  </div>
+
+  <!-- SAVED SOUNDS -->
+  <div class="history-section" id="savedSection" style="margin-top:16px;">
+    <div class="history-title">
+      💾 Saved Sounds
+      <button class="history-clear" onclick="clearSfxSaves()">Clear</button>
+    </div>
+    <div class="history-list" id="savedList">
+      <div class="empty-state">Save a sound to see it here</div>
     </div>
   </div>
 
@@ -346,6 +358,8 @@ input[type=range].tw{width:100%;accent-color:var(--accent);height:4px;cursor:poi
 // --------------------------------------------------
 // AUDIO CONTEXT
 // --------------------------------------------------
+function id(x) { return document.getElementById(x); }
+
 let ctx = null;
 function getCtx(){
   if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -1082,6 +1096,74 @@ function clearHistory(){
 }
 
 // --------------------------------------------------
+// SAVED SOUNDS (manual save/load library)
+// --------------------------------------------------
+const SFX_SAVES_KEY = 'jvds_sfx_saves';
+let sfxSaves = [];
+
+function loadSfxSaves() {
+  try { sfxSaves = JSON.parse(localStorage.getItem(SFX_SAVES_KEY) || '[]'); } catch(e) { sfxSaves = []; }
+}
+
+function saveCurrentSfx() {
+  if (currentCat === null || currentVariant === null) { showToast('Select a sound first!'); return; }
+  const catObj = CATEGORIES.find(c => c.id === currentCat);
+  const varObj = catObj ? VARIANTS[currentCat][currentVariant] : null;
+  const name = (catObj ? catObj.name : currentCat) + ', ' + (varObj ? varObj.name : currentVariant);
+  sfxSaves.unshift({
+    name: name,
+    date: new Date().toLocaleDateString(),
+    cat: currentCat,
+    variant: currentVariant,
+    tweaks: readTweaks()
+  });
+  sfxSaves = sfxSaves.slice(0, 20);
+  localStorage.setItem(SFX_SAVES_KEY, JSON.stringify(sfxSaves));
+  renderSfxSaves();
+  showToast('Sound saved!');
+}
+
+function loadSfxSave(i) {
+  const s = sfxSaves[i];
+  if (!s) return;
+  currentCat = s.cat;
+  currentVariant = s.variant;
+  if (s.tweaks) applyParams(s.tweaks);
+  selectCategory(s.cat);
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.variant-card');
+    if (cards[s.variant]) cards[s.variant].click();
+  }, 50);
+  showToast('Loaded: ' + s.name);
+}
+
+function deleteSfxSave(i, e) {
+  e.stopPropagation();
+  sfxSaves.splice(i, 1);
+  localStorage.setItem(SFX_SAVES_KEY, JSON.stringify(sfxSaves));
+  renderSfxSaves();
+}
+
+function clearSfxSaves() {
+  sfxSaves = [];
+  localStorage.removeItem(SFX_SAVES_KEY);
+  renderSfxSaves();
+}
+
+function renderSfxSaves() {
+  const el = document.getElementById('savedList');
+  if (!el) return;
+  if (!sfxSaves.length) { el.innerHTML = '<div class="empty-state">Save a sound to see it here</div>'; return; }
+  el.innerHTML = sfxSaves.map((s, i) =>
+    '<div onclick="loadSfxSave(' + i + ')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel2);border-radius:8px;cursor:pointer;margin-bottom:4px;border:1px solid var(--border);transition:background .12s;">' +
+    '<span style="flex:1;font-size:.75rem;color:var(--text);">' + s.name + '</span>' +
+    '<span style="font-size:.6rem;color:var(--muted);">' + s.date + '</span>' +
+    '<button onclick="deleteSfxSave(' + i + ',event)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;">✕</button>' +
+    '</div>'
+  ).join('');
+}
+
+// --------------------------------------------------
 // WELCOME (full standard)
 const SFX_WELCOME_KEY='jvds_sfx_seen_v1';
 function closeSfxWelcome(){ try{localStorage.setItem(SFX_WELCOME_KEY,'1');}catch{} const m=document.getElementById('sfxWelcomeModal'); if(m) m.classList.remove('open'); }
@@ -1249,6 +1331,8 @@ function copySnippet(){
 document.addEventListener('DOMContentLoaded',()=>{
   buildCategories();
   renderHistory();
+  loadSfxSaves();
+  renderSfxSaves();
   restoreSfxCurrent();
   document.querySelectorAll('input.tw').forEach(el=>el.addEventListener('input',()=>{syncHash();scheduleSfxAutosave();}));
   document.addEventListener('keydown',e=>{

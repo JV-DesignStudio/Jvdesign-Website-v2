@@ -365,7 +365,7 @@ input[type="color"] { width:100%; height:28px; border:1px solid rgba(212,168,67,
     <div class="prog">
       <div class="prog-label">Shipyard Progress</div>
       <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-      <div class="prog-count" id="progCount">Step 1 of 20</div>
+      <div class="prog-count" id="progCount">Step 1 of 21</div>
     </div>
     <div class="step-list" id="stepList"></div>
     <div class="cpanel" id="cpanel"></div>
@@ -420,6 +420,7 @@ const STEPS=[
   {id:'windows',name:'Stern Windows',d:'Captain cabin windows'},
   {id:'colors',name:'Colors & Materials',d:'Paint and wood colors'},
   {id:'details',name:'Final Details',d:'Rope, lanterns, finishing touches'},
+  {id:'setSail',name:'Set Sail!',d:'Launch your ship and watch it sail'},
 ];
 
 let P={
@@ -467,6 +468,11 @@ let P={
 };
 
 let curStep=0;
+let activated = false;
+let particles = null;
+let particleVels = [];
+let particleLife = 0;
+let activationTime = 0;
 let scene,camera,renderer,shipGroup,waterMesh;
 let isDrag=false,mX=0,mY=0,cTheta=0.5,cPhi=0.75,cDist=20;
 
@@ -539,6 +545,25 @@ function initThree(){
     const cz=cDist*Math.sin(cPhi)*Math.sin(cTheta);
     camera.position.set(cx,cy+2,cz);
     camera.lookAt(0,1.5,0);
+    // Activation animation
+    if (activated && shipGroup) {
+      activationTime += 0.016;
+      shipGroup.position.y = Math.sin(activationTime * 1.5) * 0.15;
+      shipGroup.rotation.z = Math.sin(activationTime * 0.8) * 0.03;
+      shipGroup.rotation.x = Math.sin(activationTime * 0.6) * 0.02;
+    }
+    // Particle update
+    if (particles && particleLife > 0) {
+      particleLife--;
+      particles.material.opacity = Math.pow(particleLife / 80, 0.5);
+      const pos = particles.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.setXYZ(i, pos.getX(i) + particleVels[i].x, pos.getY(i) + particleVels[i].y, pos.getZ(i) + particleVels[i].z);
+        particleVels[i].y -= 0.0008;
+      }
+      pos.needsUpdate = true;
+      if (particleLife <= 0) { scene.remove(particles); particles = null; }
+    }
     renderer.render(scene,camera);
   })();
 }
@@ -1051,6 +1076,7 @@ function ctrlsFor(i){
       {t:'toggle',k:'showRopes',l:'Show Rigging Ropes'},
       {t:'toggle',k:'showLanterns',l:'Show Lanterns'},
     ];
+    case'setSail':return[];
     default: return [];
   }
 }
@@ -1072,6 +1098,10 @@ function renderCtrls(){
       h+=`<div class="cg"><label>${c.l}</label><input type="text" value="${P[c.k]||''}" oninput="upd('${c.k}',this.value)" style="width:100%;padding:6px 8px;background:rgba(0,0,0,.3);border:1px solid rgba(212,168,67,.25);color:var(--parchment);font-family:'IM Fell English SC',serif;font-size:12px;border-radius:3px;outline:none"></div>`;
     }
   });
+  if(STEPS[curStep].id==='setSail'){
+    cp.innerHTML=`<div class="ct">Your ship is ready to sail!</div><button onclick="setSail()" style="width:100%;padding:12px;background:var(--gold);color:var(--sea);font-family:'Pirata One',cursive;font-size:16px;border:none;border-radius:5px;cursor:pointer;letter-spacing:2px;box-shadow:0 3px 0 var(--gold-dim);transition:transform .1s,filter .15s" onmouseover="this.style.filter='brightness(1.12)';this.style.transform='translateY(-2px)'" onmouseout="this.style.filter='';this.style.transform=''">🏴‍☠️ Set Sail!</button>`;
+    return;
+  }
   cp.innerHTML=h;
 }
 
@@ -1340,6 +1370,44 @@ function applyLivery(name) {
   updateStats();
   renderCtrls();
   toast('Livery: ' + name);
+}
+
+function spawnParticles() {
+  if (particles) { scene.remove(particles); particles = null; }
+  const count = 80;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const col = new Float32Array(count * 3);
+  particleVels = [];
+  const goldC = new THREE.Color(0xd4a843);
+  const whiteC = new THREE.Color(0xe8d5b0);
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const elev = (Math.random() - 0.2) * Math.PI * 0.5;
+    pos[i*3] = (Math.random()-0.5) * 4;
+    pos[i*3+1] = 2 + Math.random() * 3;
+    pos[i*3+2] = (Math.random()-0.5) * 8;
+    const spd = 0.02 + Math.random() * 0.05;
+    particleVels.push({ x: Math.cos(angle) * spd * 0.5, y: Math.abs(Math.sin(elev)) * spd + 0.01, z: Math.sin(angle) * spd * 0.3 });
+    const useGold = Math.random() > 0.5;
+    col[i*3]   = useGold ? goldC.r : whiteC.r;
+    col[i*3+1] = useGold ? goldC.g : whiteC.g;
+    col[i*3+2] = useGold ? goldC.b : whiteC.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: 1, depthWrite: false });
+  particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+  particleLife = 80;
+}
+
+function setSail() {
+  activated = true;
+  activationTime = 0;
+  rebuildShip();
+  spawnParticles();
+  toast('🏴‍☠️ Set sail! ' + (P.shipName || 'Ship') + ' is underway!');
 }
 
 // ═══════════════════════════════════════

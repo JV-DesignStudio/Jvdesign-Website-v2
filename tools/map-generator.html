@@ -217,6 +217,7 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
       </div>
 
       <button class="gen-btn" onclick="generate()">🗺 Generate Map</button>
+      <button class="gen-btn" onclick="saveMap()" style="background:var(--accent3);margin-top:6px;">💾 Save Map</button>
 
       <div class="ctrl-section">
         <div class="ctrl-section-title">Seed</div>
@@ -307,6 +308,13 @@ select.ctrl-select{width:100%;background:var(--panel2);border:1px solid var(--bo
           </select>
         </div>
         <button class="gen-btn" onclick="clearMap()" style="background:var(--accent4);padding:8px;">🗑 Clear Map</button>
+      </div>
+      <div class="ctrl-section">
+        <div class="ctrl-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          Saved Maps
+          <button class="exp-btn" onclick="clearSavedMaps()" style="font-size:.5rem;padding:2px 6px;">Clear</button>
+        </div>
+        <div id="savedMapsList" style="max-height:160px;overflow-y:auto;font-size:.6rem;"></div>
       </div>
     </div>
 
@@ -816,6 +824,73 @@ function dismissRestore(){
   id('restoreBar').style.display='none';
 }
 
+// ── Save / Load Library ──
+const MAP_SAVES_KEY = 'jvds_map_saves';
+let savedMaps = [];
+
+function loadSavedMaps() {
+  try { savedMaps = JSON.parse(localStorage.getItem(MAP_SAVES_KEY) || '[]'); } catch(e) { savedMaps = []; }
+}
+
+function saveMap(name) {
+  if (!currentMap) { toast('Generate a map first!'); return; }
+  savedMaps.unshift({
+    name: name || (currentMode + ' ' + id('seedInput').value),
+    date: new Date().toLocaleDateString(),
+    mode: currentMode,
+    seed: id('seedInput').value,
+    W: currentMap.W,
+    H: currentMap.H,
+    tiles: Array.from(currentMap.map),
+    ctrls: collectCtrls()
+  });
+  savedMaps = savedMaps.slice(0, 20);
+  localStorage.setItem(MAP_SAVES_KEY, JSON.stringify(savedMaps));
+  renderSavedMaps();
+  toast('Map saved!');
+}
+
+function loadMap(i) {
+  const s = savedMaps[i];
+  if (!s) return;
+  if (s.mode !== currentMode) setMode(s.mode);
+  id('seedInput').value = s.seed;
+  applyCtrls(s.ctrls);
+  generate();
+  if (currentMap && s.tiles) {
+    const len = Math.min(s.tiles.length, currentMap.map.length);
+    for (let i = 0; i < len; i++) currentMap.map[i] = s.tiles[i];
+    render(currentMap);
+  }
+  toast('Loaded: ' + s.name);
+}
+
+function deleteMap(i, e) {
+  e.stopPropagation();
+  savedMaps.splice(i, 1);
+  localStorage.setItem(MAP_SAVES_KEY, JSON.stringify(savedMaps));
+  renderSavedMaps();
+}
+
+function clearSavedMaps() {
+  savedMaps = [];
+  localStorage.removeItem(MAP_SAVES_KEY);
+  renderSavedMaps();
+}
+
+function renderSavedMaps() {
+  const el = document.getElementById('savedMapsList');
+  if (!el) return;
+  if (!savedMaps.length) { el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--muted);">No saved maps</div>'; return; }
+  el.innerHTML = savedMaps.map((s, i) =>
+    '<div onclick="loadMap(' + i + ')" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--panel2);border-radius:6px;cursor:pointer;margin-bottom:4px;border:1px solid var(--border);">' +
+    '<span style="flex:1;font-size:.6rem;color:var(--text);">' + s.name + '</span>' +
+    '<span style="font-size:.5rem;color:var(--muted);">' + s.mode + '</span>' +
+    '<button onclick="deleteMap(' + i + ',event)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.6rem;">✕</button>' +
+    '</div>'
+  ).join('');
+}
+
 // ── Share link (?mode=&seed=) ──
 function buildShareURL(){
   const u=new URL(location.href.split('?')[0].split('#')[0]);
@@ -891,6 +966,8 @@ function maybeShowMapWelcome(){ try{if(localStorage.getItem(MAP_WELCOME_KEY)==='
     if(hasSave) id('restoreBar').style.display='flex';
   }
 })();
+loadSavedMaps();
+renderSavedMaps();
 generate();
 let toastT;
 function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2500);}

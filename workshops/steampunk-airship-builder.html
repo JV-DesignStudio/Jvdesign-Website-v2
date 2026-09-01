@@ -355,6 +355,7 @@ const STEPS=[
   {id:'lanterns',name:'Lanterns',d:'Navigation and cabin lights'},
   {id:'colors',name:'Colors & Materials',d:'Paint, brass, wood and fabric'},
   {id:'extras',name:'Final Touches',d:'Anchor, flag, nameplate'},
+  {id:'takeOff',name:'Take Off!',d:'Launch your airship into the sky'},
 ];
 
 let P={
@@ -398,6 +399,11 @@ let P={
 };
 
 let curStep=0,mode='guided';
+let activated = false;
+let particles = null;
+let particleVels = [];
+let particleLife = 0;
+let activationTime = 0;
 let scene,camera,renderer,shipGroup;
 let isDrag=false,mX=0,mY=0,cTheta=0.5,cPhi=0.7,cDist=18;
 
@@ -460,6 +466,24 @@ function initThree(){
     shipGroup.traverse(c=>{if(c.userData.propeller)c.rotation.z+=0.12;if(c.userData.rearProp)c.rotation.z+=0.08;});
     const cx=cDist*Math.sin(cPhi)*Math.cos(cTheta),cy=cDist*Math.cos(cPhi),cz=cDist*Math.sin(cPhi)*Math.sin(cTheta);
     camera.position.set(cx,cy+2,cz);camera.lookAt(0,1.5,0);
+    // Activation animation
+    if (activated && shipGroup) {
+      activationTime += 0.016;
+      shipGroup.position.y = 0.3 + Math.sin(activationTime * 0.8) * 0.2;
+      shipGroup.rotation.z = Math.sin(activationTime * 0.5) * 0.015;
+    }
+    // Particle update (steam from smokestacks)
+    if (particles && particleLife > 0) {
+      particleLife--;
+      particles.material.opacity = Math.pow(particleLife / 90, 0.5);
+      const pos = particles.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.setXYZ(i, pos.getX(i) + particleVels[i].x, pos.getY(i) + particleVels[i].y, pos.getZ(i) + particleVels[i].z);
+        particleVels[i].y += 0.0003;
+      }
+      pos.needsUpdate = true;
+      if (particleLife <= 0) { scene.remove(particles); particles = null; }
+    }
     renderer.render(scene,camera);
   })();
 }
@@ -852,6 +876,7 @@ function ctrlsFor(i){
     case'lanterns':return[{t:'range',k:'lanternCount',l:'Lanterns per Side',mn:0,mx:8,s:1},{t:'range',k:'lanternR',l:'Lantern Size',mn:0.04,mx:0.15,s:0.005},{t:'toggle',k:'lanternGlow',l:'Lantern Glow'}];
     case'colors':return[{t:'presets',l:'Livery Presets'},{t:'color',k:'hullColor',l:'Hull'},{t:'color',k:'deckColor',l:'Deck'},{t:'color',k:'balloonColor',l:'Envelope'},{t:'color',k:'brassColor',l:'Brass Fittings'},{t:'color',k:'ironColor',l:'Iron/Metal'},{t:'color',k:'fabricColor',l:'Fabric/Canvas'},{t:'color',k:'glassColor',l:'Glass'},{t:'color',k:'smokeColor',l:'Smokestacks'}];
     case'extras':return[{t:'toggle',k:'showAnchor',l:'Show Anchor'},{t:'toggle',k:'showFlag',l:'Show Flag'},{t:'color',k:'flagColor',l:'Flag Color'},{t:'toggle',k:'showNameplate',l:'Show Nameplate'}];
+    case'takeOff':return[];
     default:return[];
   }
 }
@@ -862,13 +887,16 @@ function renderCtrl(c){
   if(c.t==='toggle')return`<div class="cg"><label><input type="checkbox" ${P[c.k]?'checked':''} onchange="upd('${c.k}',this.checked)"> ${c.l}</label></div>`;
   if(c.t==='presets')return`<div style="margin-bottom:10px"><label style="display:block;font-size:9.5px;color:var(--parch-dim);margin-bottom:4px;letter-spacing:.5px;font-weight:700">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" onclick="applyLivery('${n}')">${n}</button>`).join('')}</div></div>`;
   if(c.t==='text')return`<div class="cg"><label>${c.l}</label><input type="text" value="${P[c.k]||''}" oninput="upd('${c.k}',this.value)" style="width:100%;padding:5px 8px;background:rgba(0,0,0,.25);border:1px solid var(--rivet);color:var(--parch);font-family:'Alegreya Sans',sans-serif;font-size:11px;border-radius:2px;outline:none"></div>`;
+  if(STEPS[curStep]&&STEPS[curStep].id==='takeOff')return`<div style="text-align:center;padding:16px 0"><div style="font-size:2rem;margin-bottom:12px">🛩️</div><div style="font-size:12px;color:var(--parch-dim);margin-bottom:14px">Your airship is ready for departure!</div><button onclick="takeOff()" style="width:100%;padding:12px;background:var(--brass);color:var(--bg);font-family:'Abril Fatface',serif;font-size:16px;border:none;border-radius:4px;cursor:pointer;letter-spacing:1px;box-shadow:0 3px 0 var(--copper-dk);transition:transform .1s,filter .15s" onmouseover="this.style.filter='brightness(1.12)';this.style.transform='translateY(-2px)'" onmouseout="this.style.filter='';this.style.transform=''">⚙️ Take Off!</button></div>`;
   return'';
 }
 
 function renderCtrls(){
   const cp=document.getElementById('cpan');
   const cs=ctrlsFor(curStep);
-  cp.innerHTML=`<div class="ct">${STEPS[curStep].d}</div>`+cs.map(renderCtrl).join('');
+  let html=`<div class="ct">${STEPS[curStep].d}</div>`+cs.map(renderCtrl).join('');
+  if(STEPS[curStep]&&STEPS[curStep].id==='takeOff')html+=`<div style="text-align:center;padding:16px 0"><div style="font-size:2rem;margin-bottom:12px">🛩️</div><div style="font-size:12px;color:var(--parch-dim);margin-bottom:14px">Your airship is ready for departure!</div><button onclick="takeOff()" style="width:100%;padding:12px;background:var(--brass);color:var(--bg);font-family:'Abril Fatface',serif;font-size:16px;border:none;border-radius:4px;cursor:pointer;letter-spacing:1px;box-shadow:0 3px 0 var(--copper-dk);transition:transform .1s,filter .15s" onmouseover="this.style.filter='brightness(1.12)';this.style.transform='translateY(-2px)'" onmouseout="this.style.filter='';this.style.transform=''">⚙️ Take Off!</button></div>`;
+  cp.innerHTML=html;
 }
 
 function upd(k,v){
@@ -1135,6 +1163,45 @@ function showProfileCard() {
     document.getElementById('profileCard').classList.add('show');
   };
   img.src = renderer.domElement.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════
+// ACTIVATION & PARTICLES
+// ═══════════════════════════════════════
+function spawnParticles() {
+  if (particles) { scene.remove(particles); particles = null; }
+  const count = 70;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const col = new Float32Array(count * 3);
+  particleVels = [];
+  const brassC = new THREE.Color(0xc8a84e);
+  const steamC = new THREE.Color(0xccccbb);
+  for (let i = 0; i < count; i++) {
+    pos[i*3] = (Math.random()-0.5) * 6;
+    pos[i*3+1] = 3 + Math.random() * 5;
+    pos[i*3+2] = (Math.random()-0.5) * 6;
+    const spd = 0.015 + Math.random() * 0.04;
+    particleVels.push({ x: (Math.random()-0.5) * spd, y: spd + 0.005, z: (Math.random()-0.5) * spd });
+    const useBrass = Math.random() > 0.6;
+    col[i*3]   = useBrass ? brassC.r : steamC.r;
+    col[i*3+1] = useBrass ? brassC.g : steamC.g;
+    col[i*3+2] = useBrass ? brassC.b : steamC.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.07, vertexColors: true, transparent: true, opacity: 1, depthWrite: false });
+  particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+  particleLife = 90;
+}
+
+function takeOff() {
+  activated = true;
+  activationTime = 0;
+  rebuild();
+  spawnParticles();
+  toast('⬆️ ' + (P.airshipName || 'Airship') + ' takes to the skies!');
 }
 
 // ═══════════════════════════════════════
