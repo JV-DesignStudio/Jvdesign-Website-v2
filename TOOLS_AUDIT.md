@@ -19,14 +19,14 @@
 | **sound-studio.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Patched 2026-09-01 |
 | **map-generator.html** | Y | Y | Y | Y | · | Y | Y | Y | Y | No save/load library |
 | **game-logo-maker.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
-| **sfx-generator.html** | Y | · | · | · | · | Y | · | Y | Y | Needs welcome/seen/autosave/save |
-| **drum-pad.html** | Y | · | · | · | · | · | · | Y | Y | Needs welcome/save/autosave/share |
-| **gdd-builder.html** | Y | · | · | Y | · | · | · | Y | Y | Planning tool, save/export stub |
-| **icon-generator.html** | Y | · | Y | · | · | · | Y | Y | Y | Needs welcome/autosave/save/share |
-| **bitmap-font-maker.html** | Y | · | · | · | · | · | Y | Y | Y | Needs welcome/save/share/autosave |
-| **colour-palette.html** ★ | Y | · | · | · | Y | · | Y | Y | Y | ★ Pilot: needs welcome/seen/share/autosave? has save |
-| **game-idea-generator.html** ★ | Y | · | · | · | · | · | · | · | Y | ★ Pilot: missing toast, autosave/history exists but not standard save/share |
-| **roblox-builder.html** ★ | · | · | · | · | · | · | · | · | · | ★ Pilot: stub redirect → rebuild as BuildLab lite? |
+| **sfx-generator.html** | Y | Y | Y | Y | · | Y | Y | Y | Y | No manual save/load (autosave + history only) |
+| **drum-pad.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
+| **gdd-builder.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
+| **icon-generator.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
+| **bitmap-font-maker.html** | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Full standard |
+| **colour-palette.html** ★ | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Pilot patched 2026-09-01 |
+| **game-idea-generator.html** ★ | Y | Y | Y | Y | Y | Y | Y | Y | Y | ✅ Pilot patched 2026-09-01 |
+| **roblox-builder.html** ★ | Y | Y | Y | · | · | Y | · | Y | Y | ✅ Redirect to BuildLab, patched 2026-09-01 |
 | **dev-board.html** | · | · | · | · | · | · | · | · | Y | No shared nav, minimal |
 | **quest-board.html** | · | · | · | · | · | · | Y | Y | Y | Separate RPG system, out of scope for dev-tools standard |
 | **quest-board-page.html** | · | · | · | · | · | · | · | · | Y | Landing wrapper |
@@ -40,16 +40,14 @@
 ## Tiering (standalone value)
 
 - **Overshadowing (benchmark)**: arcade-game-maker, pixel-studio, buildlab, level-designer — export actually builds a playable game / asset.
-- **Complete**: story-editor, trading-card-designer, colour-palette, game-idea-generator, roblox-builder (redirect), character-designer, particle-designer, music-maker, sprite-animator, sound-studio, game-logo-maker — full standard met.
-- **Near complete**: map-generator — full standard except no save/load library.
-- **Weak**: gdd-builder, icon-generator, bitmap-font-maker, drum-pad, sfx-generator — usable solo but missing several standard pieces.
+- **Complete**: story-editor, trading-card-designer, colour-palette, game-idea-generator, roblox-builder (redirect), character-designer, particle-designer, music-maker, sprite-animator, sound-studio, game-logo-maker, gdd-builder, icon-generator, bitmap-font-maker, drum-pad — full standard met.
+- **Near complete**: map-generator (no save/load library), sfx-generator (no manual save/load).
 
-## Next — Weak tier patches (full standard)
+## Next — Landing page patches
 
-1. **gdd-builder.html** — add welcome modal + seen-key, save/export, share
-2. **icon-generator.html** — add welcome modal + seen-key, autosave, save/share
-3. **bitmap-font-maker.html** — add welcome modal + seen-key, save/share, autosave
-4. **drum-pad.html** — add welcome modal + seen-key, save, autosave, share
-5. **sfx-generator.html** — add welcome modal + seen-key, autosave, save, export
+1. **arcade-game-maker-landing.html** — add welcome modal + seen-key
+2. **pixel-studio-landing.html** — add welcome modal + seen-key
+3. **level-designer-landing.html** — add welcome modal + seen-key
+4. **map-generator-landing.html** — add welcome modal + seen-key
 
-After weak tier, sweep landings (arcade-game-maker-landing, pixel-studio-landing, level-designer-landing, map-generator-landing).
+After landings, review remaining pages (dev-board, quest-board, project-tracker, story-player) for standard compliance.
