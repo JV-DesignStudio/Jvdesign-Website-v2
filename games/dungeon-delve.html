@@ -508,7 +508,7 @@
 // ══════════════════════════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════════════════════════
-const MAP_W = 13, MAP_H = 9, FLOOR_COUNT = 5;
+const MAP_W = 17, MAP_H = 11, FLOOR_COUNT = 5;
 
 const CLASSES = [
   { name:"Knight", emoji:"🛡️", hp:120, atk:12, def:8, speed:3, ability:"Shield Bash", abilityDesc:"Stuns enemy for 1 turn", color:"#4a90d9" },
@@ -683,8 +683,8 @@ buildTitle();
 function generateDungeon(floor) {
   const map = Array.from({length:MAP_H}, () => Array(MAP_W).fill(1));
   const rooms = [];
-  for (let i = 0; i < 30; i++) {
-    const rw = rand(2,4), rh = rand(2,3);
+  for (let i = 0; i < 50; i++) {
+    const rw = rand(2,5), rh = rand(2,4);
     const rx = rand(1, MAP_W-rw-1), ry = rand(1, MAP_H-rh-1);
     let overlap = false;
     for (const r of rooms) {
@@ -732,6 +732,16 @@ function generateDungeon(floor) {
     if ((cx===playerStart.x&&cy===playerStart.y)||(cx===stairsPos.x&&cy===stairsPos.y)) continue;
     if (monsters.some(m=>m.x===cx&&m.y===cy)) continue;
     chests.push({x:cx,y:cy,opened:false,id:'c'+i});
+  }
+
+  // Place traps (3-5 per floor)
+  const trapCount = rand(3, 5 + floor);
+  for (let t = 0; t < trapCount; t++) {
+    const tr = rooms[rand(1, rooms.length-1)];
+    const tx = rand(tr.x, tr.x+tr.w-1), ty = rand(tr.y, tr.y+tr.h-1);
+    if (map[ty][tx] === 0 && !(tx === playerStart.x && ty === playerStart.y) && !(tx === stairsPos.x && ty === stairsPos.y)) {
+      map[ty][tx] = 3;
+    }
   }
 
   let shop = null;
@@ -789,9 +799,13 @@ function renderMap() {
     }
 
     const isWall = dungeon.map[y][x]===1;
+    const isTrap = dungeon.map[y][x]===3;
     div.className = 'tile ' + (isWall?'wall':'floor');
 
     if (!isWall) {
+      if (isTrap) {
+        div.innerHTML = '<span style="font-size:14px;opacity:0.4">⚠️</span>';
+      }
       const isPlayer = playerPos.x===x&&playerPos.y===y;
       const isStairs = dungeon.stairsPos.x===x&&dungeon.stairsPos.y===y;
       const monster = dungeon.monsters.find(m=>m.x===x&&m.y===y&&m.hp>0);
@@ -850,6 +864,14 @@ function movePlayer(dx, dy) {
   const nx = playerPos.x+dx, ny = playerPos.y+dy;
   if (nx<0||nx>=MAP_W||ny<0||ny>=MAP_H) return;
   if (dungeon.map[ny][nx]===1) return;
+  // Trap: damage player
+  if (dungeon.map[ny][nx]===3) {
+    dungeon.map[ny][nx] = 0;
+    const trapDmg = rand(5, 15 + player.floor * 3);
+    player.hp -= trapDmg;
+    sfx.hit(); addCombatLog(`⚠️ You stepped on a trap! -${trapDmg} HP`, "enemy");
+    if (player.hp <= 0) { gameOver(); return; }
+  }
 
   const monster = dungeon.monsters.find(m=>m.x===nx&&m.y===ny&&m.hp>0);
   if (monster) { startCombat(monster); return; }
@@ -859,6 +881,27 @@ function movePlayer(dx, dy) {
 
   playerPos = {x:nx, y:ny};
   revealFog(playerPos);
+  // Enemy movement: enemies within 4 tiles chase player
+  for (const m of dungeon.monsters) {
+    if (m.hp <= 0) continue;
+    const mdx = playerPos.x - m.x, mdy = playerPos.y - m.y;
+    const mdist = Math.abs(mdx) + Math.abs(mdy);
+    if (mdist <= 4 && mdist > 0) {
+      const ndx = mdx > 0 ? 1 : mdx < 0 ? -1 : 0;
+      const ndy = mdy > 0 ? 1 : mdy < 0 ? -1 : 0;
+      // Try horizontal first, then vertical
+      const tryMoves = Math.abs(mdx) >= Math.abs(mdy)
+        ? [{x:m.x+ndx,y:m.y},{x:m.x,y:m.y+ndy}]
+        : [{x:m.x,y:m.y+ndy},{x:m.x+ndx,y:m.y}];
+      for (const tm of tryMoves) {
+        if (tm.x>=0&&tm.x<MAP_W&&tm.y>=0&&tm.y<MAP_H && dungeon.map[tm.y][tm.x]===0
+            && !(tm.x===playerPos.x&&tm.y===playerPos.y)
+            && !dungeon.monsters.some(o=>o!==m&&o.hp>0&&o.x===tm.x&&o.y===tm.y)) {
+          m.x=tm.x; m.y=tm.y; break;
+        }
+      }
+    }
+  }
   renderMap();
 
   const chest = dungeon.chests.find(c=>c.x===nx&&c.y===ny&&!c.opened);
@@ -921,6 +964,27 @@ function goNextFloor() {
   renderMap();
   renderHUD();
   showToast(`Floor ${newFloor+1}, Deeper into the dungeon...`);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// STATUS EFFECTS
+// ══════════════════════════════════════════════════════════════════
+let statusEffects = []; // [{type, turns, value}]
+function applyStatus(type, value, turns) {
+  // Don't stack same type
+  const existing = statusEffects.find(s => s.type === type);
+  if (existing) { existing.turns = Math.max(existing.turns, turns); existing.value = Math.max(existing.value, value); }
+  else statusEffects.push({type, value, turns});
+}
+function tickStatus() {
+  for (let i = statusEffects.length-1; i >= 0; i--) {
+    const s = statusEffects[i];
+    if (s.type === 'poison') { const dmg = s.value; player.hp = Math.max(1, player.hp - dmg); addCombatLog(`🟢 Poison deals ${dmg} damage!`, "hit"); }
+    if (s.type === 'bleed') { const dmg = s.value; player.hp = Math.max(1, player.hp - dmg); addCombatLog(`🩸 Bleed deals ${dmg} damage!`, "hit"); }
+    s.turns--;
+    if (s.turns <= 0) statusEffects.splice(i, 1);
+  }
+  updateCombatUI();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1037,6 +1101,15 @@ function enemyDefeated() {
 }
 
 function combatAttack() {
+  // Dodge check
+  const dodgeChance = Math.min(0.25, (currentEnemy.spd || 3) * 0.03);
+  if (Math.random() < dodgeChance) {
+    combatLog.push(currentEnemy.name+' dodges your attack!');
+    sfx.hit(false);
+    setTimeout(enemyTurn, 280);
+    renderCombat();
+    return;
+  }
   const dmg = Math.max(1, player.atk - currentEnemy.def + rand(-2,3));
   const crit = Math.random()<0.15;
   const total = crit ? dmg*2 : dmg;
