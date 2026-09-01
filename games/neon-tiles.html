@@ -551,11 +551,12 @@ function clearTiles() {
    the same clock, so tiles rise and land on the beat — the game finally
    has a song because the song IS the level design. */
 const MUSIC = {
-  bpm: 120, STEP_MS: 250,          // 120 BPM, 8th-note steps
+  bpm: 128, STEP_MS: 234,          // 128 BPM for more energy
   step: 0, nextTime: 0, timer: null, running: false,
   ctx: null, master: null, scheduled: [],
-  bass: [110, 0, 110, 146.83, 110, 0, 164.81, 146.83],
-  arp:  [440, 0, 523.25, 0, 392, 0, 587.33, 0],
+  bass:  [110, 110, 146.83, 110, 164.81, 110, 146.83, 130.81],  // more notes, less rest
+  arp:   [440, 523.25, 392, 587.33, 440, 523.25, 659.25, 392], // full arp
+  pad:   [130.81, 164.81, 196.00, 220.00],                     // pad chord
 };
 function musicMuted() {
   try { if (localStorage.getItem('jvds_sound') === '0') return true; } catch (e) {}
@@ -601,12 +602,20 @@ function mDrum(t, kind) {
   }
 }
 function mScheduleStep(step, t) {
-  const s16 = step % 16;                                    // 2-bar loop
+  const s16 = step % 16;
+  // Kick pattern: kick on 1 and 3, open hat on 2 and 4
   if (s16 % 4 === 0) mDrum(t, 'kick');
+  if (s16 % 4 === 2) mDrum(t, 'kick');
   if (s16 % 2 === 1) mDrum(t, 'hat');
-  const b = MUSIC.bass[s16 % 8]; if (b) mNote(b, t, 0.22, 'triangle', 0.2);
-  if (Math.floor(step / 16) % 2 === 1) {                    // arp on the B section
-    const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.045);
+  // Driving bass
+  const b = MUSIC.bass[s16 % 8]; if (b) mNote(b, t, 0.22, 'triangle', 0.18);
+  // Arp on every section, not just B
+  const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.035);
+  // Pad chord on every 8 steps (every 2 seconds)
+  if (s16 % 8 === 0) {
+    MUSIC.pad.forEach((f, i) => {
+      mNote(f, t + i*0.01, 1.8, 'sine', 0.025);
+    });
   }
 }
 function musicStart() {
