@@ -157,6 +157,15 @@
         .star-count {
             font-size:0.85rem; font-weight:600; color:var(--lantern);
         }
+        .score-bar{display:flex;gap:8px;width:100%;max-width:700px;margin:0 auto 12px;justify-content:center}
+        .score-pill{background:rgba(22,32,50,.72);backdrop-filter:blur(12px);border:1px solid rgba(232,213,160,.12);border-radius:10px;padding:6px 14px;display:flex;align-items:center;gap:6px;font-size:.8rem;font-weight:700;color:var(--moon);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+        .score-pill .sp-val{font-size:1.1rem;color:#fff;font-weight:800}
+        .score-pill .sp-lbl{font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(232,213,160,.5)}
+        .combo-pill{background:rgba(245,166,35,.15);border-color:rgba(245,166,35,.4);color:var(--lantern)}
+        .combo-pill .sp-val{color:var(--lantern)}
+        .stars-rating{display:flex;gap:3px;justify-content:center;margin:4px 0}
+        .stars-rating .star-dot{width:14px;height:14px;border-radius:50%;background:rgba(232,213,160,.12);border:1.5px solid rgba(232,213,160,.2);transition:all .3s ease}
+        .stars-rating .star-dot.filled{background:var(--lantern);border-color:var(--lantern);box-shadow:0 0 8px rgba(245,166,35,.5)}
         .audio-toggle-btn {
             background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15);
             border-radius:50%; width:30px; height:30px; flex-shrink:0;
@@ -448,6 +457,13 @@ window.JVDS.announce = function (msg) {
         </div>
     </div>
 
+    <!-- Score -->
+    <div class="score-bar">
+        <div class="score-pill"><div><div class="sp-val" id="scoreVal">0</div><div class="sp-lbl">Score</div></div></div>
+        <div class="score-pill"><div><div class="sp-val" id="timerVal">0:00</div><div class="sp-lbl">Time</div></div></div>
+        <div class="score-pill combo-pill" id="comboPill" style="display:none"><div><div class="sp-val" id="comboVal">x1</div><div class="sp-lbl">Combo</div></div></div>
+    </div>
+
     <!-- Canvas -->
     <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="game-canvas"></canvas>
@@ -456,6 +472,7 @@ window.JVDS.announce = function (msg) {
         <div class="celebrate-overlay" id="celebrate">
             <div class="celebrate-emoji" id="celebrate-emoji">🌟</div>
             <div class="celebrate-title" id="celebrate-title">Beautiful!</div>
+            <div class="stars-rating" id="starsRating"></div>
             <div class="celebrate-sub" id="celebrate-sub">You drew Pip the Turtle</div>
             <button class="btn-game btn-primary celebrate-btn" id="btn-next">
                 Next Picture →
@@ -869,6 +886,9 @@ let shakeT = 0, shakeMag = 0;
 let completedLevels = [];
 let starsCollected = 0;
 let audioEnabled = true;
+let levelScore = 0, totalScore = 0, combo = 0, comboTimer = 0;
+let levelStartTime = 0, levelTime = 0;
+let levelStars = {}; // level -> 1-3 star rating
 
 function loadProgress() {
     try {
@@ -879,12 +899,14 @@ function loadProgress() {
             completedLevels = data.completedLevels.filter(i => i >= 0 && i < PUZZLES.length);
         }
         if(typeof data.starsCollected === 'number') starsCollected = data.starsCollected;
+        if(data.levelStars) levelStars = data.levelStars;
+        if(typeof data.totalScore === 'number') totalScore = data.totalScore;
     } catch(e){}
 }
 
 function saveProgress() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ completedLevels, starsCollected }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ completedLevels, starsCollected, levelStars, totalScore }));
     } catch(e){}
 }
 
@@ -1024,7 +1046,12 @@ function loadLevel(idx) {
     revealActive = false;
     lineParticles = [];
     confetti = [];
+    levelScore = 0; combo = 0; comboTimer = 0;
+    levelStartTime = performance.now();
+    document.getElementById('comboPill').style.display = 'none';
     if(hintTimer) clearTimeout(hintTimer);
+    ensurePuzzlePool();
+    startScoreTimer();
 
     const p = PUZZLES[idx];
     document.getElementById('level-title').textContent = p.name;
@@ -1050,7 +1077,84 @@ function loadLevel(idx) {
         if(i===idx) dot.classList.add('current');
     });
 
-    document.getElementById('star-count').textContent = '⭐ ' + starsCollected;
+    document.getElementById('star-count').textContent = '⭐ ' + starsCollected + ' / ' + Object.values(levelStars).reduce((a,b)=>a+b,0);
+    // Update progress dots with star ratings
+    PUZZLES.forEach((_,i)=>{
+        const dot = document.getElementById('pdot-'+i);
+        if(!dot) return;
+        if(completedLevels.includes(i)){
+            const r = levelStars[i]||1;
+            dot.style.background = r>=3?'var(--lantern)':r>=2?'rgba(245,166,35,.6)':'rgba(245,166,35,.3)';
+            dot.style.boxShadow = r>=3?'0 0 8px rgba(245,166,35,.5)':'none';
+        }
+    });
+}
+
+// ── SCORING ──
+function updateScoreHUD(){
+    document.getElementById('scoreVal').textContent = totalScore + levelScore;
+    const elapsed = Math.floor((performance.now() - levelStartTime)/1000);
+    const m = Math.floor(elapsed/60), sec = elapsed%60;
+    document.getElementById('timerVal').textContent = m+':'+String(sec).padStart(2,'0');
+}
+function addCombo(){
+    combo++;
+    comboTimer = 2.5;
+    document.getElementById('comboPill').style.display = 'flex';
+    document.getElementById('comboVal').textContent = 'x'+Math.min(combo,10);
+}
+function resetCombo(){
+    combo = 0;
+    document.getElementById('comboPill').style.display = 'none';
+}
+function calcLevelStars(){
+    const elapsed = (performance.now() - levelStartTime)/1000;
+    const stars = PUZZLES[currentLevel].stars.length;
+    const timePerStar = elapsed / stars;
+    if(levelMistakes === 0 && timePerStar < 2.5) return 3;
+    if(levelMistakes <= 1 && timePerStar < 4) return 2;
+    return 1;
+}
+let scoreTimerID = null;
+function startScoreTimer(){
+    clearInterval(scoreTimerID);
+    scoreTimerID = setInterval(updateScoreHUD, 200);
+}
+function stopScoreTimer(){ clearInterval(scoreTimerID); }
+// ── PROCEDURAL PUZZLE GENERATOR ──
+function genConstellation(stars){
+    const pts = [];
+    for(let i=0;i<stars;i++){
+        pts.push({x:0.15+Math.random()*0.7, y:0.15+Math.random()*0.7});
+    }
+    // connect each to nearest unconnected neighbor for a tree shape
+    const conn = [[0,1]];
+    for(let i=2;i<stars;i++){
+        let best=0,bestD=Infinity;
+        for(let j=0;j<i;j++){
+            const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+            const d=dx*dx+dy*dy;
+            if(d<bestD){bestD=d;best=j;}
+        }
+        conn.push([best,i]);
+    }
+    const names=['Star Cluster','Nebula','Galaxy','Pulsar','Quasar','Comet','Asteroid Belt','Supernova Remnant','Binary Star','Dark Cloud'];
+    const colors=['#70A3A7','#9b6fd1','#f5a623','#BC4749','#4a7c59','#e8a0c4','#f5c842','#ff8c00'];
+    return{
+        name:names[Math.floor(Math.random()*names.length)],
+        emoji:'✨',
+        completeEmoji:'🌟',
+        completeMsg:'Beautiful!',
+        color:colors[Math.floor(Math.random()*colors.length)],
+        glowColor:'rgba(200,200,255,.4)',
+        stars:pts,
+        connections:conn,
+        revealExtras:[],
+        procedural:true
+    };
+}
+function ensurePuzzlePool(){
+    while(PUZZLES.length < 20) PUZZLES.push(genConstellation(6+Math.floor(Math.random()*8)));
 }
 
 // ── PARTICLE BURST ──
@@ -1091,6 +1195,7 @@ function spawnConfetti(cx, cy, count) {
 
 // ── RENDERING ──
 function render() {
+    updateScoreHUD();
     const w = canvas._logW || 500;
     const h = canvas._logH || 500;
     ctx.clearRect(0, 0, w, h);
@@ -1320,7 +1425,7 @@ function onTap(e) {
         const prevStar = currentStar;
         currentStar++;
         starsCollected++;
-        document.getElementById('star-count').textContent = '⭐ ' + starsCollected;
+        document.getElementById('star-count').textContent = '⭐ ' + starsCollected + ' / ' + Object.values(levelStars).reduce((a,b)=>a+b,0);
         playStarTap(currentStar-1, p.stars.length);
         hintActive = false;
 
@@ -1373,16 +1478,25 @@ function onTap(e) {
 // ── LEVEL COMPLETE ──
 function completeLevel() {
     playComplete();
+    stopScoreTimer();
     if(!completedLevels.includes(currentLevel)) completedLevels.push(currentLevel);
-    // Perfect-clear streak: consecutive constellations finished with zero
-    // wrong taps. Broken by a single mistake, not by finishing (just slower).
+    // Scoring: base + speed bonus + combo + streak
+    levelTime = (performance.now() - levelStartTime) / 1000;
+    const stars = PUZZLES[currentLevel].stars.length;
+    const speedBonus = Math.max(0, Math.round((stars * 3 - levelTime) * 15));
+    const comboBonus = Math.min(combo, 10) * 25;
     if(levelMistakes === 0) { perfectStreak++; bestPerfectStreak = Math.max(bestPerfectStreak, perfectStreak); }
     else perfectStreak = 0;
     const streakBonus = perfectStreak >= 3 ? Math.min((perfectStreak-2)*20, 100) : 0;
-    // expose progress to the XP tracker (100 pts per constellation)
-    window.__gsScore = (window.__gsScore||0) + 100 + streakBonus;
-    window.__gsBestRun = Math.max(window.__gsBestRun||0, completedLevels.length * 100);
-    if (typeof gameSystem !== 'undefined') { gameSystem.addScore(100 + streakBonus); gameSystem.recordGamePlay(Date.now()); }
+    const pts = 100 + speedBonus + comboBonus + streakBonus;
+    levelScore += pts;
+    totalScore += levelScore;
+    const starRating = calcLevelStars();
+    levelStars[currentLevel] = Math.max(levelStars[currentLevel]||0, starRating);
+    starsCollected += starRating;
+    window.__gsScore = (window.__gsScore||0) + pts;
+    window.__gsBestRun = Math.max(window.__gsBestRun||0, totalScore);
+    if (typeof gameSystem !== 'undefined') { gameSystem.addScore(pts); gameSystem.recordGamePlay(Date.now()); }
     saveProgress();
 
     const p = PUZZLES[currentLevel];
@@ -1408,11 +1522,15 @@ function completeLevel() {
     setTimeout(() => {
         document.getElementById('celebrate-emoji').textContent = p.completeEmoji;
         document.getElementById('celebrate-title').textContent = p.completeMsg;
+        // Star rating display
+        const rating = levelStars[currentLevel]||1;
+        const ratingEl = document.getElementById('starsRating');
+        ratingEl.innerHTML = [1,2,3].map(i=>`<div class="star-dot${i<=rating?' filled':''}"></div>`).join('');
         const streakNote = perfectStreak >= 2 ? ` 🔥 ${perfectStreak} perfect in a row!` : '';
         document.getElementById('celebrate-sub').textContent =
-            (currentLevel < PUZZLES.length - 1
-                ? `${PUZZLES.length - completedLevels.length} picture${PUZZLES.length - completedLevels.length !== 1 ? 's' : ''} left to find!`
-                : 'You found every constellation! 🌌') + streakNote;
+            `+${levelScore} pts` + (currentLevel < PUZZLES.length - 1
+                ? ` · ${PUZZLES.length - completedLevels.length} picture${PUZZLES.length - completedLevels.length !== 1 ? 's' : ''} left!`
+                : ' · 🌌 Every constellation found!') + streakNote;
 
         const btnNext = document.getElementById('btn-next');
         if(currentLevel < PUZZLES.length - 1) {
