@@ -31,12 +31,16 @@ class GA4Analytics {
   }
 
   generateOrGetUserId() {
-    let userId = localStorage.getItem('ga4_user_id');
-    if (!userId) {
-      userId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('ga4_user_id', userId);
+    try {
+      let userId = localStorage.getItem('ga4_user_id');
+      if (!userId) {
+        userId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('ga4_user_id', userId);
+      }
+      return userId;
+    } catch (e) {
+      return 'anon_' + Date.now();
     }
-    return userId;
   }
 
   generateSessionId() {

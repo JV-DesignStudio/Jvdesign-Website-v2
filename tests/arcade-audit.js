@@ -19,7 +19,7 @@ const zlib = require('zlib');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.join(__dirname, '..');
-const PORT = process.env.AUDIT_PORT || 8979;
+const PORT = process.env.AUDIT_PORT || 8982;
 const BASE = `http://localhost:${PORT}/`;
 const MAKER = BASE + 'tools/arcade-game-maker.html';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',

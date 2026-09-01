@@ -1452,7 +1452,11 @@ function deselectBlock() {
 let _multiHighlights = [];
 
 function clearMultiHighlights() {
-  _multiHighlights.forEach(h => scene.remove(h));
+  _multiHighlights.forEach(h => {
+    scene.remove(h);
+    h.geometry.dispose();
+    h.material.dispose();
+  });
   _multiHighlights = [];
 }
 
@@ -1520,6 +1524,18 @@ function duplicateSelectedBlocks() {
       b.position.x + 1, b.position.y - d.h/2, b.position.z,
       d.w, d.h, d.d, d.colour, d.shape, d.rot, d.rotX, d.rotZ
     );
+    if (m.material && b.material) {
+      m.material.metalness = b.material.metalness;
+      m.material.roughness = b.material.roughness;
+    }
+    if (d.opacity !== undefined && d.opacity < 1) {
+      m.material.transparent = true;
+      m.material.opacity = d.opacity;
+      m.material.needsUpdate = true;
+      m.userData.opacity = d.opacity;
+    }
+    if (d.blockName) m.userData.blockName = d.blockName;
+    if (d.robloxMaterial) m.userData.robloxMaterial = d.robloxMaterial;
     newSelection.push(m);
   });
   selectedBlocks = newSelection;
@@ -2239,6 +2255,10 @@ function toast(msg) {
 }
 showToast=toast;
 
+function escapeHTML(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function updateStats() {
   document.getElementById('blockCount').textContent = blocks.length;
   const colours = new Set(blocks.map(b => b.userData.colour)).size;
@@ -2341,7 +2361,7 @@ function renderSaveSlots() {
     const el = document.createElement('div');
     el.className = 'save-slot' + (slot ? ' filled' : '');
     el.innerHTML = slot
-      ? `<div class="slot-name">${slot.name}</div><div class="slot-count">${slot.count} blocks  ${slot.date}</div>`
+      ? `<div class="slot-name">${escapeHTML(slot.name)}</div><div class="slot-count">${slot.count} blocks  ${escapeHTML(slot.date)}</div>`
       : `<div>Slot ${i+1}</div><div style="font-size:.6rem">Empty</div>`;
     el.onclick = () => slot ? loadSlot(i) : null;
     container.appendChild(el);
@@ -2357,7 +2377,7 @@ function renderModalSaveSlots() {
     const el = document.createElement('div');
     el.className = 'save-slot' + (slot ? ' filled' : '');
     el.innerHTML = slot
-      ? `<div class="slot-name">Overwrite ${slot.name}</div><div class="slot-count">${slot.count} blocks</div>`
+      ? `<div class="slot-name">Overwrite ${escapeHTML(slot.name)}</div><div class="slot-count">${slot.count} blocks</div>`
       : `<div>Save to Slot ${i+1}</div>`;
     el.onclick = () => saveToSlot(i);
     container.appendChild(el);
@@ -2482,6 +2502,7 @@ function exportRBXM() {
     const innerParts = [];
     // Resolve blockIds to meshes
     const groupMeshes = g.blockIds.map(id => blocks.find(b => b.userData.blockId === id)).filter(Boolean);
+    let gPartIdx = 0;
     groupMeshes.forEach(mesh => {
       groupedBlockIds.add(mesh.userData.blockId);
       const d = mesh.userData;
@@ -2506,9 +2527,9 @@ function exportRBXM() {
       const sy = (isCyl ? w : h).toFixed(3);
       const sz = (isCyl ? w : depth).toFixed(3);
       innerParts.push(`
-      <Item class="Part" referent="RBX${idx}">
+      <Item class="Part" referent="RBXGI${gPartIdx}">
         <Properties>
-          <string name="Name">Part ${idx+1}</string>
+          <string name="Name">${(d.blockName || (g.name + ' Part ' + (gPartIdx+1))).replace(/[<>&"]/g,'')}</string>
           <CoordinateFrame name="CFrame">
             <X>${px}</X><Y>${py}</Y><Z>${pz}</Z>
             <R00>${rr00.toFixed(6)}</R00><R01>${rr01.toFixed(6)}</R01><R02>${rr02.toFixed(6)}</R02>
@@ -2524,6 +2545,7 @@ function exportRBXM() {
           <string name="Material">${d.robloxMaterial || 'SmoothPlastic'}</string>
         </Properties>
       </Item>`);
+      gPartIdx++;
     });
     if (innerParts.length > 0) {
       groupParts += `
@@ -3025,10 +3047,14 @@ let ambientLight = null;
 let directionalLight = null;
 
 function initLighting() {
-  // Find existing lights
+  // Find the main directional light (first one = shadow caster) and ambient
+  let foundMain = false;
   scene.children.forEach(child => {
-    if (child instanceof THREE.AmbientLight) ambientLight = child;
-    if (child instanceof THREE.DirectionalLight) directionalLight = child;
+    if (child instanceof THREE.AmbientLight && !ambientLight) ambientLight = child;
+    if (child instanceof THREE.DirectionalLight && !foundMain) {
+      directionalLight = child;
+      foundMain = true;
+    }
   });
 }
 
@@ -3277,7 +3303,12 @@ document.addEventListener('keydown', (e) => {
       x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
       w: b.userData.w, h: b.userData.h, d: b.userData.d,
       colour: b.userData.colour, shape: b.userData.shape,
-      rot: b.userData.rot, rotX: b.userData.rotX, rotZ: b.userData.rotZ
+      rot: b.userData.rot, rotX: b.userData.rotX, rotZ: b.userData.rotZ,
+      metalness: b.material ? b.material.metalness : 0,
+      roughness: b.material ? b.material.roughness : 0.55,
+      opacity: b.userData.opacity !== undefined ? b.userData.opacity : 1,
+      blockName: b.userData.blockName || '',
+      robloxMat: b.userData.robloxMaterial || ''
     }));
     toast('Copied ' + clipboard.length + ' blocks');
     e.preventDefault(); return;
@@ -3290,6 +3321,18 @@ document.addEventListener('keydown', (e) => {
     selectedBlocks = [];
     clipboard.forEach(b => {
       const m = addBlock(b.x + 2, b.y, b.z + 2, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+      if (m.material) {
+        m.material.metalness = b.metalness || 0;
+        m.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+      }
+      if (b.opacity !== undefined && b.opacity < 1) {
+        m.material.transparent = true;
+        m.material.opacity = b.opacity;
+        m.material.needsUpdate = true;
+        m.userData.opacity = b.opacity;
+      }
+      if (b.blockName) m.userData.blockName = b.blockName;
+      if (b.robloxMat) m.userData.robloxMaterial = b.robloxMat;
       selectedBlocks.push(m);
     });
     selectedBlock = selectedBlocks[0];
@@ -3556,7 +3599,7 @@ function renderAssetLibrary() {
   assets.forEach((asset, i) => {
     const el = document.createElement('div');
     el.style.cssText = 'background:var(--panel3);border:1px solid var(--border);border-radius:6px;padding:6px;cursor:pointer;font-size:.65rem;transition:0.2s;';
-    el.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${asset.name}</div><div style="color:var(--muted);font-size:.6rem;">${asset.blocks.length} blocks</div>
+    el.innerHTML = `<div style="font-weight:600;margin-bottom:2px;">${escapeHTML(asset.name)}</div><div style="color:var(--muted);font-size:.6rem;">${asset.blocks.length} blocks</div>
       <div style="margin-top:4px;display:flex;gap:3px;">
         <button onclick="event.stopPropagation();loadAssetFromLibrary(${i})" style="font-size:.55rem;padding:2px 4px;background:rgba(0,212,170,.2);color:var(--accent3);border:1px solid rgba(0,212,170,.3);border-radius:3px;cursor:pointer;">Load</button>
         <button onclick="event.stopPropagation();insertAssetFromLibrary(${i})" style="font-size:.55rem;padding:2px 4px;background:rgba(91,192,248,.2);color:#5bc0f8;border:1px solid rgba(91,192,248,.3);border-radius:3px;cursor:pointer;">Insert</button>
@@ -3717,7 +3760,12 @@ function mobCopy() {
     x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
     w: b.userData.w, h: b.userData.h, d: b.userData.d,
     colour: b.userData.colour, shape: b.userData.shape,
-    rot: b.userData.rot, rotX: b.userData.rotX, rotZ: b.userData.rotZ
+    rot: b.userData.rot, rotX: b.userData.rotX, rotZ: b.userData.rotZ,
+    metalness: b.material ? b.material.metalness : 0,
+    roughness: b.material ? b.material.roughness : 0.55,
+    opacity: b.userData.opacity !== undefined ? b.userData.opacity : 1,
+    blockName: b.userData.blockName || '',
+    robloxMat: b.userData.robloxMaterial || ''
   }));
   toast('Copied ' + clipboard.length + ' blocks');
 }
@@ -3729,6 +3777,18 @@ function mobPaste() {
   selectedBlocks = [];
   clipboard.forEach(b => {
     const m = addBlock(b.x + 2, b.y, b.z + 2, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    if (m.material) {
+      m.material.metalness = b.metalness || 0;
+      m.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+    }
+    if (b.opacity !== undefined && b.opacity < 1) {
+      m.material.transparent = true;
+      m.material.opacity = b.opacity;
+      m.material.needsUpdate = true;
+      m.userData.opacity = b.opacity;
+    }
+    if (b.blockName) m.userData.blockName = b.blockName;
+    if (b.robloxMat) m.userData.robloxMaterial = b.robloxMat;
     selectedBlocks.push(m);
   });
   selectedBlock = selectedBlocks[0];

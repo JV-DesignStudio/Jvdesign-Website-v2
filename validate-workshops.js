@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const ROOT = __dirname;
+
 const CONVERTED = [
   'add-your-own-stage.html', 'barrel-blast-workshop.html', 'blender-workshop.html',
   'cpp-tower-defence-builder.html', 'fairy-survivors-guide.html', 'fnaf-blueprint.html',
@@ -46,7 +48,7 @@ const results = { valid: [], builder_style: [], missing_key: [], missing_functio
 
 CONVERTED.forEach(file => {
   try {
-    const content = fs.readFileSync(path.join('workshops', file), 'utf8');
+    const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
     const isBuilder = BUILDER_STYLE.includes(file);
     const hasStorageKey = content.includes('STORAGE_KEY');
 
@@ -90,3 +92,6 @@ console.log(`✗ Missing Functions: ${results.missing_functions.length}`);
 if (results.missing_functions.length > 0) console.log('  Files: ' + results.missing_functions.join(', '));
 console.log(`✗ Read Errors: ${results.errors.length}`);
 if (results.errors.length > 0) results.errors.forEach(e => console.log(`  ${e.file}: ${e.error}`));
+
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0;
+if (hasFailures) process.exitCode = 1;

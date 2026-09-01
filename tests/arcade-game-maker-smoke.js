@@ -11,7 +11,7 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.join(__dirname, '..');
-const PORT = process.env.AGM_PORT || 8979;
+const PORT = process.env.AGM_PORT || 8980;
 const BASE = `http://localhost:${PORT}/`;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };

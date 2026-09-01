@@ -230,4 +230,4 @@ function check(name, ok, detail) {
   server.close();
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL MUSIC MAKER CHECKS PASSED');
   process.exit(failures ? 1 : 0);
-})();
+})().catch(e => { console.error(e); process.exit(1); });

@@ -21,7 +21,7 @@ let failures = 0;
 const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if (!cond) failures++; };
 
 (async () => {
-  await new Promise(r => server.listen(8126, r));
+  await new Promise(r => server.listen(8127, r));
   const browser = await puppeteer.launch({
     headless: 'new',
     args: ['--no-sandbox'],
@@ -32,7 +32,7 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 
-  await page.goto('http://127.0.0.1:8126/tools/pixel-studio.html', { waitUntil: 'networkidle2', timeout: 30000 });
+  await page.goto('http://127.0.0.1:8127/tools/pixel-studio.html', { waitUntil: 'networkidle2', timeout: 30000 });
   await new Promise(r => setTimeout(r, 1000));
 
   const client = await page.target().createCDPSession();

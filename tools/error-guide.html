@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="description" content="Bug Hunter's Guide — a visual flowchart for fixing common code errors in Scratch, Roblox, Godot, Unity, Python and JavaScript. Free from JVDesignStudio.">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script src="../analytics-loader.js"></script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/error-guide.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Hunter's Guide | JVDesignStudio</title>
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{
+  --bg:#0d1117;--panel:#161c27;--panel2:#1c2535;--panel3:#222f45;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#ef4444;
+  --blue:#3b82f6;--text:#e8edf8;--muted:#8b93a0;
+  --charcoal:#403B33;--rose:#BC4749;--teal:#70A3A7;--beige:#F0EAD6;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* HERO */
+.page-hero{background:linear-gradient(135deg,#1e1e2e 0%,#2d2d3f 100%);padding:56px 24px 48px;text-align:center;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(244,114,182,.1) 1px,transparent 1px);background-size:26px 26px;}
+.hero-eyebrow{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1.5px solid rgba(244,114,182,.3);border-radius:999px;padding:4px 14px;display:inline-block;margin-bottom:14px;position:relative;}
+.hero-title{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,5vw,2.8rem);font-weight:600;color:white;line-height:1.15;margin-bottom:10px;position:relative;}
+.hero-sub{font-size:.9rem;color:rgba(255,255,255,.6);line-height:1.7;max-width:520px;margin:0 auto 28px;position:relative;}
+
+/* SEARCH */
+.search-wrap{position:relative;max-width:440px;margin:0 auto 10px;}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem;pointer-events:none;color:var(--muted);}
+.search-input{width:100%;padding:12px 16px 12px 42px;border:1.5px solid var(--border2);border-radius:12px;background:var(--panel2);color:var(--text);font-family:'Inter',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s,box-shadow .2s;}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(244,114,182,.15);}
+.search-input::placeholder{color:rgba(232,237,248,.3);}
+.search-count{font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px;}
+
+/* ENGINE TABS */
+.engine-tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:860px;margin:0 auto;padding:20px 16px 0;}
+.engine-tab{padding:8px 18px;border-radius:10px;border:1.5px solid var(--border2);background:var(--panel2);cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;color:var(--muted);transition:all .15s;}
+.engine-tab:hover{border-color:var(--accent);color:var(--accent);}
+.engine-tab.active{background:var(--accent);border-color:var(--accent);color:#000;}
+
+/* MAIN CONTENT */
+.guide-container{max-width:920px;margin:0 auto;padding:24px 16px 80px;}
+
+/* ENGINE SECTION */
+.engine-section{display:none;margin-bottom:32px;}
+.engine-section.visible{display:block;}
+.engine-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--border2);}
+.engine-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;}
+.engine-name{font-family:'Fredoka',cursive;font-size:1.3rem;font-weight:700;color:white;flex:1;}
+.engine-badge{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:white;padding:4px 12px;border-radius:999px;}
+
+/* ERROR CARDS */
+.error-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;transition:border-color .2s;}
+.error-card:hover{border-color:rgba(244,114,182,.2);}
+.error-card.hidden{display:none;}
+.error-title{font-family:'Fredoka',cursive;font-size:1.05rem;font-weight:700;color:white;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* PROBLEM BOX */
+.box-problem{background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.25);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.box-label{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.box-label.problem{color:#ef4444;}
+.box-label.solution{color:#10b981;}
+.box-label.prevent{color:#f59e0b;}
+.box-text{font-size:.85rem;color:rgba(232,237,248,.85);line-height:1.65;}
+
+/* ARROW */
+.arrow-down{display:flex;justify-content:center;padding:4px 0;}
+.arrow-down svg{width:24px;height:24px;}
+
+/* SOLUTION BOX */
+.box-solution{background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.25);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.solution-steps{list-style:none;counter-reset:step;}
+.solution-steps li{counter-increment:step;font-size:.85rem;color:rgba(232,237,248,.85);line-height:1.65;padding:3px 0 3px 0;}
+.solution-steps li::before{content:"Step " counter(step) ": ";font-weight:700;color:#10b981;}
+
+/* PREVENTION BOX */
+.box-prevent{background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 16px;}
+
+/* FOOTER */
+.site-footer{background:#080a10;border-top:1px solid var(--border2);padding:40px 24px 32px;text-align:center;}
+.footer-inner{max-width:900px;margin:0 auto;}
+.footer-logo{font-family:'Fredoka',cursive;font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:4px;}
+.footer-tagline{font-size:.72rem;color:var(--muted);margin-bottom:18px;}
+.footer-links,.footer-socials{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.footer-links a,.footer-socials a{font-size:.8rem;color:rgba(232,237,248,.35);transition:color .15s;}
+.footer-links a:hover,.footer-socials a:hover{color:rgba(232,237,248,.7);}
+.footer-copy{font-size:.68rem;color:rgba(232,237,248,.2);margin-top:14px;}
+
+@media print{
+  .page-hero,.engine-tabs,.search-wrap,.search-count{display:none !important;}
+  body{background:#fff;color:#000;}
+  .engine-section{display:block !important;}
+  .error-card{border:1px solid #ccc;page-break-inside:avoid;background:#fafafa;}
+  .box-problem{background:#fef2f2;border-color:#fecaca;}
+  .box-solution{background:#f0fdf4;border-color:#bbf7d0;}
+  .box-prevent{background:#fffbeb;border-color:#fde68a;}
+  .box-text,.solution-steps li{color:#000;}
+  @page{margin:1.5cm;size:A4;}
+  .site-footer{display:none !important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     HERO
+═══════════════════════════════════════ -->
+<section class="page-hero">
+  <span class="hero-eyebrow">JVDesignStudio</span>
+  <h1 class="hero-title">🔍 Bug Hunter's Guide</h1>
+  <p class="hero-sub">When your code doesn't work, don't panic! Use this guide to track down and squash every bug. Pick your engine, find your error, and follow the fix.</p>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" id="searchInput" placeholder="Search errors... e.g. 'null reference' or 'sprite not moving'">
+  </div>
+  <div class="search-count" id="searchCount"></div>
+</section>
+
+<!-- ENGINE TABS -->
+<div class="engine-tabs" id="engineTabs">
+  <button class="engine-tab active" data-engine="scratch">🐱 Scratch</button>
+  <button class="engine-tab" data-engine="roblox">🎮 Roblox</button>
+  <button class="engine-tab" data-engine="godot">🔧 Godot</button>
+  <button class="engine-tab" data-engine="unity">🎯 Unity</button>
+  <button class="engine-tab" data-engine="python">🐍 Python / Pygame</button>
+  <button class="engine-tab" data-engine="javascript">🌐 JavaScript</button>
+</div>
+
+<div class="guide-container">
+
+<!-- ═══════════════════════════════════════
+     SCRATCH
+═══════════════════════════════════════ -->
+<div class="engine-section visible" id="engine-scratch">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#ff9a3d,#ff6b35);">🐱</div>
+    <span class="engine-name">Scratch</span>
+    <span class="engine-badge" style="background:#ff9a3d;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="sprite not moving movement block when green flag clicked forever">
+    <div class="error-title">🐛 Sprite Not Moving</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">You added a "move 10 steps" block but nothing happens when you click the green flag. The sprite stays in the same place.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Make sure you have a <code>when green flag clicked</code> block on top.</li>
+        <li>Wrap your move block inside a <code>forever</code> loop — otherwise it only runs once.</li>
+        <li>Check the sprite actually has that script — click the sprite thumbnail in the sprite list.</li>
+        <li>Verify the sprite isn't hidden (use <code>show</code> block).</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always start with the <code>when green flag clicked</code> block. If you want continuous movement, always wrap actions in <code>forever</code>.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="costume not changing switch backdrop visual appear">
+    <div class="error-title">🐛 Costume Not Changing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">You added "switch costume to..." but the sprite's appearance doesn't change visually.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the costume name matches exactly — spelling and spaces matter.</li>
+        <li>Go to the Costumes tab and verify you actually created the costumes.</li>
+        <li>Make sure you're targeting the right sprite — costumes are per-sprite.</li>
+        <li>If using "next costume", the sprite cycles through existing costumes.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Name your costumes clearly (e.g. "idle", "run1", "run2") so you can reference them in code without typos.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="variable not updating score counter set change">
+    <div class="error-title">🐛 Variable Not Updating</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your score variable stays at 0 even though you're collecting items. The variable reporter on stage shows the same number.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Make sure you created the variable first (Variables → Make a Variable).</li>
+        <li>Use "change [score] by 1" — not "set score to 0" — when incrementing.</li>
+        <li>Check the "for all sprites" vs "for this sprite" scope — is the right sprite reading it?</li>
+        <li>Verify the "if touching [player]" condition actually triggers.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Add the variable reporter to the stage so you can watch it update in real-time. Use "for all sprites" for shared scores.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="clone issues duplicates create delete myself clones not working">
+    <div class="error-title">🐛 Clone Issues</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Clones aren't appearing, or they're all doing the same thing, or they won't go away.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Clones need <code>when I start as a clone</code> to know what to do.</li>
+        <li>Use <code>delete this clone</code> at the end of the clone script or it'll pile up.</li>
+        <li>The original sprite (before cloning) can't use "delete this clone" — only clones can.</li>
+        <li>Don't use <code>forever</code> without a wait inside clone scripts — it'll freeze Scratch.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Limit clones with a "if number of clones < 50 then" check. Too many clones slow everything down.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ROBLOX
+═══════════════════════════════════════ -->
+<div class="engine-section" id="engine-roblox">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">🎮</div>
+    <span class="engine-name">Roblox</span>
+    <span class="engine-badge" style="background:#3b82f6;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="script not running output empty server local print error">
+    <div class="error-title">🐛 Script Not Running</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your Lua script doesn't seem to execute at all. No output in the console, no errors, nothing happens.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the script type: Server scripts run on the server, Local scripts on the client.</li>
+        <li>LocalScripts must be inside StarterPlayerScripts, StarterGui, or a Tool — not in ServerScriptService.</li>
+        <li>Add <code>print("Script started")</code> at the top to confirm it runs.</li>
+        <li>Make sure the script isn't disabled — check the Enabled property.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always start scripts with a print statement. If it never shows in Output, the script isn't running — check its parent location.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="part not anchored falling physics gravity unanchored moves">
+    <div class="error-title">🐛 Part Not Anchored</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your part falls through the baseplate or flies away when you hit Play. It's not staying where you placed it.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Select the part and check "Anchored" in the Properties panel.</li>
+        <li>If it should move but stay in place, use a "BodyPosition" or "AlignPosition" constraint instead.</li>
+        <li>Use WeldConstraints to stick parts together without anchoring each one.</li>
+        <li>Parts in Workspace are affected by gravity unless Anchored = true.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Get in the habit of anchoring static parts (walls, floors, props) as you build them. Only leave dynamic parts unanchored.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="remote event not firing client server bindable event listen">
+    <div class="error-title">🐛 Remote Event Not Firing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Client fires a RemoteEvent but the server never receives it, or vice versa. Nothing happens on the other end.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check both scripts are listening on the same event name — typos are the #1 cause.</li>
+        <li>Server scripts use <code>RemoteEvent.OnServerEvent:Connect(...)</code>.</li>
+        <li>Local scripts use <code>RemoteEvent.OnClientEvent:Connect(...)</code> and fire with <code>:FireServer()</code>.</li>
+        <li>Make sure the RemoteEvent is in ReplicatedStorage so both sides can access it.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Create a ModuleScript that stores all RemoteEvent names as constants. Import it in both scripts to avoid typos.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="leaderstats not saving data store saves persistent">
+    <div class="error-title">🐛 Leaderstats Not Saving</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Leaderstats reset when the player rejoins. Coins, score, level — all gone on reconnect.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>You need DataStoreService — leaderstats alone only creates the display, not persistence.</li>
+        <li>Use <code>game.Players.PlayerAdded</code> to load saved data into leaderstats on join.</li>
+        <li>Use <code>game.Players.PlayerRemoving</code> and <code>BindToClose</code> to save data on leave.</li>
+        <li>Enable API Services in Game Settings → Security → Allow HTTP Requests.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always wrap DataStore calls in pcall() to prevent errors from crashing your server. Test with Studio play sessions first.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     GODOT
+═══════════════════════════════════════ -->
+<div class="engine-section" id="engine-godot">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#478cbf,#2d6da3);">🔧</div>
+    <span class="engine-name">Godot</span>
+    <span class="engine-badge" style="background:#478cbf;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="node not found get_node path invalid null reference">
+    <div class="error-title">🐛 Node Not Found</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Godot says "Node not found" when you try to get a node. The scene loads but crashes on a get_node() call.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the node path is correct: use the Scene tree dock to verify names and nesting.</li>
+        <li>Use <code>$NodeName</code> or <code>%UniqueName</code> — unique names need the "Unique" checkbox.</li>
+        <li>Make sure the node exists in the current scene — it might be in a different scene.</li>
+        <li>If instancing dynamically, wait for <code>_ready()</code> before accessing child nodes.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use unique node names (%) for frequently accessed nodes. Avoid deep paths like <code>../../UI/Panel/Label</code>.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="signal not connected emitted never fires callable connect">
+    <div class="error-title">🐛 Signal Not Connected</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">You emit a signal but the connected function never runs. Or Godot says "Can't emit non-existent signal".</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the signal name is spelled correctly in both <code>emit_signal()</code> and <code>connect()</code>.</li>
+        <li>In the Node dock → Signals tab, verify the connection was actually made.</li>
+        <li>Use <code>signal_name.connect(callable)</code> — make sure the Callable is valid.</li>
+        <li>The emitting node must exist in the scene tree — signals don't work on freed nodes.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Define signals with <code>signal my_signal</code> at the top of the script. Use the editor's Signals tab to connect — it auto-generates correct code.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="physics not working collision detection rigidbody areas overlap">
+    <div class="error-title">🐛 Physics Not Working</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Objects fall through each other. Collision detection doesn't trigger. RigidBodies ignore the floor.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Both nodes need collision shapes — a Sprite alone has no collision.</li>
+        <li>Check CollisionObject2D layers and masks — matching layers = can collide.</li>
+        <li>StaticBody2D for floors/walls, RigidBody2D for physics objects, CharacterBody2D for players.</li>
+        <li>For Area2D, use <code>body_entered</code> signal and make sure monitoring is on.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Set up collision layers early. Layer 1 = world, Layer 2 = player, Layer 3 = enemies — then mask them logically.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="scene not loading load error resource missing invalid scene">
+    <div class="error-title">🐛 Scene Not Loading</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Godot shows an error when loading a scene. "Invalid scene" or "Can't load resource".</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the scene file (.tscn) exists at the correct path — files moved in Explorer break references.</li>
+        <li>Use <code>preload("res://path/to/scene.tscn")</code> with exact paths from the FileSystem dock.</li>
+        <li>Run "Reimport" on the FileSystem dock — some resources need reimporting after moves.</li>
+        <li>Verify the scene's root node type is valid (e.g. not a missing custom class).</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always move files from within Godot's FileSystem dock, never from Windows Explorer or Finder — that breaks internal references.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     UNITY
+═══════════════════════════════════════ -->
+<div class="engine-section" id="engine-unity">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#6b7280,#374151);">🎯</div>
+    <span class="engine-name">Unity</span>
+    <span class="engine-badge" style="background:#6b7280;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="null reference exception object reference not set destroyed missing">
+    <div class="error-title">🐛 Null Reference Exception</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Unity throws "NullReferenceException: Object reference not set to an instance of an object" and your code stops.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the error line — which variable is null? Add a null check: <code>if(obj != null)</code>.</li>
+        <li>Make sure you assigned the reference in the Inspector (drag the object into the field).</li>
+        <li>Check that <code>GetComponent&lt;T&gt;()</code> actually found the component — it returns null if not found.</li>
+        <li>Don't access a GameObject after <code>Destroy()</code> — it's null after destruction.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use <code>[SerializeField] private T field;</code> and assign in Inspector. Or use <code>FindObjectOfType&lt;T&gt;()</code> in Awake(). Always null-check before using.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="component not assigned missing inspector drag drop">
+    <div class="error-title">🐛 Component Not Assigned</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">A script field shows "None (GameObject)" in the Inspector. The code can't find the component it needs.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Drag the GameObject from the Hierarchy into the Inspector field on your script.</li>
+        <li>For components, drag the object that has the component (Unity finds it automatically).</li>
+        <li>If the field is private, add <code>[SerializeField]</code> to expose it in the Inspector.</li>
+        <li>Check the field type matches what you're dragging — e.g. a Transform, not a GameObject.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use <code>[SerializeField]</code> on private fields so you can drag-assign while keeping encapsulation. Never leave Inspector fields as None at runtime.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="physics jitter shaking movement rb addforce rigidbody">
+    <div class="error-title">🐛 Physics Jitter</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your object shakes or jitters when moving. The movement looks jerky and unstable.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Use <code>FixedUpdate()</code> for physics code, <code>Update()</code> for input-only code.</li>
+        <li>Use <code>Time.deltaTime</code> when moving with transform.position — not with Rigidbody.</li>
+        <li>For Rigidbody movement, use <code>AddForce()</code> or set <code>velocity</code> directly — not transform.position.</li>
+        <li>Increase Rigidbody interpolation: set Interpolate to "Interpolate" in the Inspector.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Rule of thumb: position changes via transform → Update(). Force-based movement via Rigidbody → FixedUpdate(). Never mix the two.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="scene not loading scene management build settings loadscene">
+    <div class="error-title">🐛 Scene Not Loading</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text"><code>SceneManager.LoadScene("SceneName")</code> does nothing or throws an error. The scene won't switch.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Add the scene to Build Settings: File → Build Settings → Add Open Scenes.</li>
+        <li>Use the exact scene name as shown in the Hierarchy (no path, no .unity extension).</li>
+        <li>Make sure <code>using UnityEngine.SceneManagement;</code> is at the top of the script.</li>
+        <li>Check you're not loading a scene that doesn't exist in the build list.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use scene build indices: <code>LoadScene(1)</code> instead of names. Add all scenes to Build Settings as you create them.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PYTHON / PYGAME
+═══════════════════════════════════════ -->
+<div class="engine-section" id="engine-python">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#3776ab,#2d5d8a);">🐍</div>
+    <span class="engine-name">Python / Pygame</span>
+    <span class="engine-badge" style="background:#3776ab;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="module not found import error pip install pygame">
+    <div class="error-title">🐛 Module Not Found</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Python says "ModuleNotFoundError: No module named 'pygame'" when you run your script.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Open a terminal and run: <code>pip install pygame</code></li>
+        <li>If you have multiple Python versions, try: <code>pip3 install pygame</code></li>
+        <li>Check you're using the same Python interpreter your editor is using.</li>
+        <li>If using VS Code, select the correct interpreter (Ctrl+Shift+P → "Python: Select Interpreter").</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Create a virtual environment: <code>python -m venv venv</code>, then <code>venv\Scripts\activate</code> before installing packages.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="window not showing display surface blank screen pygame.init">
+    <div class="error-title">🐛 Window Not Showing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your Pygame window doesn't appear, or appears blank/white. The script runs but nothing is drawn.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Make sure <code>pygame.init()</code> is called before creating the display surface.</li>
+        <li>Check you have a game loop with <code>pygame.display.flip()</code> or <code>pygame.display.update()</code>.</li>
+        <li>Add <code>pygame.event.pump()</code> in your loop to prevent Windows "not responding".</li>
+        <li>Verify your screen.fill() and draw calls happen before display.flip().</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always use this structure: init → create display → game loop → flip → clock.tick. Every frame must call event.pump() and display.flip().</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="collision not detecting collision detection rect overlap pygame">
+    <div class="error-title">🐛 Collision Not Detecting</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Two sprites overlap on screen but your collision code says they don't collide.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Use <code>sprite1.rect.colliderect(sprite2.rect)</code> for rect-based collision.</li>
+        <li>Make sure both sprites have <code>self.rect = self.image.get_rect()</code> set correctly.</li>
+        <li>Update <code>self.rect.center = (self.x, self.y)</code> every frame if you move by x/y.</li>
+        <li>For pixel-perfect collision, use <code>pygame.sprite.collide_mask()</code>.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always update the rect after moving the sprite. Use <code>pygame.sprite.groupcollide()</code> for group-vs-group collisions.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="sound not playing mixer audio pygame.mixer music">
+    <div class="error-title">🐛 Sound Not Playing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">You call <code>pygame.mixer.Sound.play()</code> but no sound is heard. The mixer loads but stays silent.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the sound file path is correct — use <code>os.path.exists()</code> to verify.</li>
+        <li>Supported formats: WAV, OGG, MP3. Some MP3 files may not load — try OGG.</li>
+        <li>Set mixer frequency: <code>pygame.mixer.pre_init(44100, -16, 2)</code> before <code>pygame.init()</code>.</li>
+        <li>For music vs sound effects: use <code>pygame.mixer.music</code> for background, <code>Sound</code> for SFX.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use OGG format for small sound effects. Call <code>pygame.mixer.pre_init()</code> before <code>pygame.init()</code> to avoid initialization issues.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════ -->
+<div class="engine-section" id="engine-javascript">
+  <div class="engine-header">
+    <div class="engine-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">🌐</div>
+    <span class="engine-name">JavaScript</span>
+    <span class="engine-badge" style="background:#f59e0b;color:#000;">4 Errors</span>
+  </div>
+
+  <div class="error-card" data-keywords="canvas not drawing rendering blank context2d">
+    <div class="error-title">🐛 Canvas Not Drawing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Your &lt;canvas&gt; element is on the page but nothing appears on it. The drawing code runs but the canvas stays blank.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check you called <code>canvas.getContext('2d')</code> and saved the result.</li>
+        <li>Make sure the canvas has width/height attributes (not just CSS size).</li>
+        <li>Drawing coordinates start at top-left (0,0). Check your x/y values.</li>
+        <li>If using <code>requestAnimationFrame</code>, make sure the function actually calls itself.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Set canvas width/height in JavaScript, not CSS: <code>canvas.width = 800</code>. CSS size scales the visual but not the buffer.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="event not firing click keydown listener addEventListener">
+    <div class="error-title">🐛 Event Not Firing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">You add an event listener for click or keydown but the callback never runs. The element exists but doesn't respond.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Make sure the element exists in the DOM when you add the listener — check for null.</li>
+        <li>Event names are case-sensitive: <code>"click"</code> not <code>"Click"</code>.</li>
+        <li>Check if another element with a higher z-index is blocking clicks (pointer-events).</li>
+        <li>For keydown, the target must have focus or you need to listen on <code>document</code>.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Put your script at the end of &lt;body&gt; or use <code>DOMContentLoaded</code>. Log the element to console before adding listeners.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="image not loading broken src cross origin cors">
+    <div class="error-title">🐛 Image Not Loading</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">An image shows as a broken link or doesn't appear. The <code>onload</code> callback may never fire.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Check the image path — use relative paths from the HTML file, not absolute.</li>
+        <li>Wait for <code>onload</code> before drawing: <code>img.onload = function() { ... }</code></li>
+        <li>For local files, use a local server (VS Code Live Server, Python http.server).</li>
+        <li>CORS: cross-origin images may load but can't be drawn to canvas without the server allowing it.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Always use <code>img.onload</code> — never draw immediately after setting src. Use a local server for development.</div>
+    </div>
+  </div>
+
+  <div class="error-card" data-keywords="sound not playing audio autoplay policy browser silent">
+    <div class="error-title">🐛 Sound Not Playing</div>
+    <div class="box-problem">
+      <div class="box-label problem">❌ Problem</div>
+      <div class="box-text">Audio plays silently or not at all. The Audio element loads but <code>.play()</code> returns a rejected promise.</div>
+    </div>
+    <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m0 0l-6-6m6 6l6-6" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="box-solution">
+      <div class="box-label solution">✅ Solution</div>
+      <ol class="solution-steps">
+        <li>Browsers block autoplay until a user interacts. Play audio inside a click/keydown handler.</li>
+        <li>Call <code>audio.play()</code> and catch the promise: <code>audio.play().catch(e => ...)</code></li>
+        <li>Check the audio file path and format (MP3/WAV/OGG supported by most browsers).</li>
+        <li>Make sure the Audio object isn't muted and volume isn't 0.</li>
+      </ol>
+    </div>
+    <div class="box-prevent">
+      <div class="box-label prevent">💡 Prevention Tip</div>
+      <div class="box-text">Use the Web Audio API or play sound on user's first click. "Click to start" screens solve the autoplay policy problem.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- guide-container -->
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-logo">JVDesignStudio</div>
+    <div class="footer-tagline">Books · Games · Creative Adventures</div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/games">Play — Games</a>
+      <a href="/workshop">Learn — Workshops</a>
+      <a href="/dev-tools">Make — Tools</a>
+      <a href="/about">Studio</a>
+      <a href="/parents">For Parents</a>
+      <a href="/contact">Contact</a>
+      <a href="/sitemap">Sitemap</a>
+    </div>
+    <div class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Buy Me a Coffee</a>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener">Ko-fi</a>
+    </div>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+// ══════════════════════════════════════
+// ENGINE TABS
+// ══════════════════════════════════════
+document.querySelectorAll('.engine-tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.engine-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.engine-section').forEach(function(s){ s.classList.remove('visible'); });
+    var target = document.getElementById('engine-' + btn.getAttribute('data-engine'));
+    if(target) target.classList.add('visible');
+    // Reset search
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchCount').textContent = '';
+    document.querySelectorAll('.error-card').forEach(function(c){ c.classList.remove('hidden'); });
+  });
+});
+
+// ══════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════
+var searchInput = document.getElementById('searchInput');
+var searchCount = document.getElementById('searchCount');
+
+if(searchInput){
+  searchInput.addEventListener('input', function(){
+    var q = this.value.toLowerCase().trim();
+    if(!q){
+      document.querySelectorAll('.engine-section').forEach(function(s){
+        s.style.display = '';
+      });
+      document.querySelectorAll('.error-card').forEach(function(c){
+        c.classList.remove('hidden');
+      });
+      searchCount.textContent = '';
+      return;
+    }
+    // Show all engines when searching
+    document.querySelectorAll('.engine-section').forEach(function(s){
+      s.style.display = 'block';
+      s.classList.add('visible');
+    });
+    var found = 0;
+    document.querySelectorAll('.error-card').forEach(function(card){
+      var text = card.textContent.toLowerCase() + ' ' + (card.dataset.keywords || '').toLowerCase();
+      if(text.indexOf(q) !== -1){
+        card.classList.remove('hidden');
+        found++;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+    searchCount.textContent = found + ' error' + (found !== 1 ? 's' : '') + ' found';
+  });
+}
+</script>
+
+</body>
+</html>

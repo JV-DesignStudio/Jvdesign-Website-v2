@@ -6,8 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
-const ROOT = 'F:/Website/Jvdesign-Website-v2';
-const PORT = 8979;
+const ROOT = path.join(__dirname, '..');
+const PORT = process.env.SWEEP_PORT || 8981;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
   '.woff': 'font/woff', '.woff2': 'font/woff2', '.m4a': 'audio/mp4', '.wav': 'audio/wav' };

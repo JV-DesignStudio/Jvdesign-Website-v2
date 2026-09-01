@@ -18,7 +18,7 @@
   Requires puppeteer (already a devDependency).
 */
 const fs = require('fs');
-const path = require('p' + 'ath');
+const path = require('path');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.resolve(__dirname, '..');
