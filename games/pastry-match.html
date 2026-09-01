@@ -119,7 +119,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 </head>
 <body>
 <div class="wrapper" id="wrapper">
-  <div class="hud">
+  <div class="hud" style="position:relative">
+  <button class="sound-toggle" id="soundBtn" onclick="toggleSound()">🔊</button>
     <div class="pills">
       <div class="pill">SCORE <b id="scoreHud">0</b></div>
       <div class="pill">MOVES <b id="movesHud">0</b></div>
@@ -176,6 +177,12 @@ const MODES = [
   { id: 'hard', cols: 6, rows: 4, pairs: 12, label: '🔥 Head Chef' },
 ];
 const PM_KEY = 'pastryMatch:v2';
+function toggleSound() {
+  const current = localStorage.getItem('soundEnabled') !== 'false';
+  localStorage.setItem('soundEnabled', current ? 'false' : 'true');
+  audioEffects.setMasterVolume(current ? 0 : 0.6);
+  document.getElementById('soundBtn').textContent = current ? '🔇' : '🔊';
+}
 function loadModes() {
   try { return JSON.parse(localStorage.getItem(PM_KEY)) || {}; } catch (e) { return {}; }
 }
@@ -184,7 +191,7 @@ let chosenMode = 'std';
 let cards = [];
 let cardEls = [];
 let state = 'menu';
-let score = 0, moves = 0, best = 0, streak = 0;
+let score = 0, moves = 0, best = 0, streak = 0, maxMoves = 0;
 let flipped = [];
 let matched = 0;
 let startTime = 0;
@@ -207,6 +214,7 @@ function initCards() {
   score = 0;
   moves = 0;
   streak = 0;
+  maxMoves = mode.pairs * 3; // move limit = 3x pairs
   const boardEl = document.getElementById('board');
   boardEl.classList.toggle('cols6', currentMode().cols === 6);
   boardEl.style.gridTemplateColumns = 'repeat(' + currentMode().cols + ', 1fr)';
@@ -252,7 +260,7 @@ function floatText(txt, big) {
 }
 
 function flipCard(i) {
-  if (state !== 'playing' || cards[i].state !== 'hidden' || flipped.length >= 2) return;
+  if (state !== 'playing' || cards[i].state !== 'hidden' || flipped.length >= 2 || moves >= maxMoves) return;
   audioEffects.playTap(600);
   cards[i].state = 'flipped';
   flipped.push(i);
@@ -273,13 +281,16 @@ function checkMatch() {
     cards[b].state = 'matched';
     matched++;
     streak++;
-    const bonus = (streak - 1) * 25;
-    score += Math.max(100 - moves * 2, 10) + bonus;
+    const mult = streak >= 10 ? 3 : streak >= 5 ? 2 : streak >= 3 ? 1.5 : 1;
+    const bonus = Math.round((streak - 1) * 25 * mult);
+    score += Math.round((Math.max(100 - moves * 2, 10)) * mult) + bonus;
     updateCard(a);
     updateCard(b);
     ParticleSystem.sparkle(cardEls[a], 5);
     ParticleSystem.sparkle(cardEls[b], 5);
     if (streak >= 2) {
+      const comboEl = document.getElementById('comboDisplay');
+      if (comboEl) { comboEl.textContent = '×' + mult + ' COMBO!'; comboEl.classList.add('show'); setTimeout(() => comboEl.classList.remove('show'), 1500); }
       floatText('STREAK ×' + streak + '  +' + bonus, streak >= 3);
       audioEffects.playCombo(streak);
     } else {
@@ -294,6 +305,7 @@ function checkMatch() {
     updateCard(a, true);
     updateCard(b, true);
     audioEffects.playError();
+    if (moves >= maxMoves) { setTimeout(() => endGame(false), 600); return; }
   }
 }
 
@@ -304,6 +316,7 @@ function startGame() {
   buildBoard();
   clearInterval(timerInterval);
   document.getElementById('timeHud').textContent = 0;
+  document.getElementById('movesHud').textContent = '0/' + maxMoves;
 
   // sneak peek: show every pastry briefly, then flip back and start
   state = 'peek';
@@ -322,8 +335,8 @@ function startGame() {
   }, 1600);
 }
 
-function endGame() {
-  state = 'won';
+function endGame(didWin = true) {
+  state = didWin ? 'won' : 'lost';
   clearInterval(timerInterval);
   const time = Math.round((performance.now() - startTime) / 1000);
   const timeBonus = Math.max(0, 90 - time) * 2;
@@ -344,7 +357,8 @@ function endGame() {
   document.getElementById('bestStart').textContent = best;
   ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18);
   audioEffects.playLevelUp();
-  document.getElementById('winSub').textContent = (moves <= 16 ? 'Perfect memory! 🧠' : 'Great match!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
+  const won = matched === currentMode().pairs;
+  document.getElementById('winSub').textContent = (won ? (moves <= 16 ? 'Perfect memory! 🧠' : 'Great match!') : 'Out of moves!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
   document.getElementById('finalScore').textContent = score.toLocaleString();
   GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalMoves').textContent = moves;
