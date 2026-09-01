@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Page Builder | JVDesignStudio</title>
+<meta name="description" content="Build store pages for Steam and itch.io with templates, screenshots, descriptions and tags. Export as HTML.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Store Page Builder","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/store-page-builder.html","description":"Build store pages for Steam and itch.io with templates, screenshots, descriptions and tags. Export as HTML.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:1fr 380px;gap:20px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.preview-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px}
+.preview-card{background:white;border-radius:12px;overflow:hidden;max-width:600px;margin:0 auto;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.preview-header{background:linear-gradient(135deg,#1a1028,#0a1a20);padding:24px;color:white;text-align:center}
+.preview-header h2{font-family:'Fredoka',cursive;font-size:1.5rem;margin-bottom:8px}
+.preview-header p{font-size:.85rem;color:rgba(255,255,255,.7)}
+.preview-screenshots{display:flex;gap:8px;padding:16px;overflow-x:auto}
+.preview-screenshots img{height:120px;border-radius:8px;object-fit:cover}
+.preview-body{padding:20px;color:#333}
+.preview-body h3{font-size:1rem;margin-bottom:8px}
+.preview-body p{font-size:.85rem;color:#666;line-height:1.6}
+.preview-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.preview-tag{font-size:.7rem;padding:4px 10px;border-radius:999px;background:#f0f0f0;color:#666}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-section h3{font-size:.85rem;font-weight:700;margin-bottom:10px}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:.85rem}
+.form-group textarea{min-height:80px;resize:vertical}
+.btn{padding:10px 18px;border-radius:8px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Store Page Builder</h1>
+  <button class="btn btn-primary" onclick="exportHTML()">📥 Export HTML</button>
+  <button class="btn btn-secondary" onclick="copyBBCode()">📋 Copy BBCode</button>
+</div>
+<div class="wrap">
+  <div class="preview-area">
+    <div class="preview-card" id="previewCard">
+      <div class="preview-header">
+        <h2 id="previewTitle">My Game</h2>
+        <p id="previewTagline">A subtitle or tagline</p>
+      </div>
+      <div class="preview-screenshots" id="previewScreenshots">
+        <div style="height:120px;width:200px;background:#222;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#666;font-size:.8rem">No screenshots</div>
+      </div>
+      <div class="preview-body">
+        <h3>About this game</h3>
+        <p id="previewDesc">Write your game description here...</p>
+        <div class="preview-tags" id="previewTags"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Game Info</h3>
+      <div class="form-group">
+        <label>Game Title</label>
+        <input type="text" id="gameTitle" placeholder="My Awesome Game" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Tagline</label>
+        <input type="text" id="tagline" placeholder="A short tagline" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="description" placeholder="Write your game description..." oninput="renderPreview()"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tags (comma-separated)</label>
+        <input type="text" id="tags" placeholder="Action, Indie, Pixel Art" oninput="renderPreview()">
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Screenshots</h3>
+      <div class="form-group">
+        <label>Upload Screenshots</label>
+        <input type="file" id="screenshotsInput" accept="image/*" multiple onchange="loadScreenshots(this)">
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Links</h3>
+      <div class="form-group">
+        <label>Steam URL</label>
+        <input type="url" id="steamUrl" placeholder="https://store.steampowered.com/app/...">
+      </div>
+      <div class="form-group">
+        <label>itch.io URL</label>
+        <input type="url" id="itchUrl" placeholder="https://yourname.itch.io/game">
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let screenshots = [];
+
+function loadScreenshots(input) {
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      screenshots.push(e.target.result);
+      renderPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPreview() {
+  document.getElementById('previewTitle').textContent = document.getElementById('gameTitle').value || 'My Game';
+  document.getElementById('previewTagline').textContent = document.getElementById('tagline').value || '';
+  document.getElementById('previewDesc').textContent = document.getElementById('description').value || 'Write your game description here...';
+  
+  // Screenshots
+  const container = document.getElementById('previewScreenshots');
+  if (screenshots.length) {
+    container.innerHTML = screenshots.map(s => '<img src="' + s + '" alt="Screenshot">').join('');
+  }
+  
+  // Tags
+  const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  document.getElementById('previewTags').innerHTML = tags.map(t => '<span class="preview-tag">' + t + '</span>').join('');
+}
+
+function exportHTML() {
+  const title = document.getElementById('gameTitle').value || 'My Game';
+  const tagline = document.getElementById('tagline').value || '';
+  const desc = document.getElementById('description').value || '';
+  const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const steamUrl = document.getElementById('steamUrl').value;
+  const itchUrl = document.getElementById('itchUrl').value;
+  
+  let html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n';
+  html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+  html += '<title>' + title + '</title>\n';
+  html += '<style>body{font-family:Inter,sans-serif;max-width:800px;margin:0 auto;padding:40px 20px;background:#0a0b10;color:#e8eaf2}\n';
+  html += 'h1{font-family:Fredoka,sans-serif;font-size:2rem;margin-bottom:8px}\n';
+  html += '.tagline{color:rgba(255,255,255,.6);margin-bottom:24px}\n';
+  html += '.screenshots{display:flex;gap:8px;overflow-x:auto;margin:24px 0}\n';
+  html += '.screenshots img{height:200px;border-radius:8px}\n';
+  html += '.tags{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}\n';
+  html += '.tag{font-size:.8rem;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}\n';
+  html += '.cta{display:inline-flex;gap:10px;margin-top:24px}\n';
+  html += '.cta a{padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700}\n';
+  html += '.cta .steam{background:#1a9fff;color:white}\n';
+  html += '.cta .itch{background:#fa5c5c;color:white}\n';
+  html += 'p{line-height:1.7;color:rgba(255,255,255,.7)}</style>\n</head>\n<body>\n';
+  html += '<h1>' + title + '</h1>\n';
+  if (tagline) html += '<p class="tagline">' + tagline + '</p>\n';
+  if (screenshots.length) {
+    html += '<div class="screenshots">\n';
+    screenshots.forEach(s => html += '  <img src="' + s + '" alt="Screenshot">\n');
+    html += '</div>\n';
+  }
+  if (desc) html += '<p>' + desc.replace(/\n/g, '<br>') + '</p>\n';
+  if (tags.length) {
+    html += '<div class="tags">\n';
+    tags.forEach(t => html += '  <span class="tag">' + t + '</span>\n');
+    html += '</div>\n';
+  }
+  html += '<div class="cta">\n';
+  if (steamUrl) html += '  <a href="' + steamUrl + '" class="steam">Buy on Steam</a>\n';
+  if (itchUrl) html += '  <a href="' + itchUrl + '" class="itch">Buy on itch.io</a>\n';
+  html += '</div>\n</body>\n</html>';
+  
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (title.replace(/\s+/g, '-').toLowerCase()) + '-store.html';
+  a.click();
+  showToast('HTML exported!');
+}
+
+function copyBBCode() {
+  const title = document.getElementById('gameTitle').value || 'My Game';
+  const desc = document.getElementById('description').value || '';
+  const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const itchUrl = document.getElementById('itchUrl').value;
+  
+  let bb = '[h1]' + title + '[/h1]\n\n';
+  if (desc) bb += desc + '\n\n';
+  if (tags.length) bb += '[b]Tags:[/b] ' + tags.join(', ') + '\n\n';
+  if (itchUrl) bb += '[url=' + itchUrl + ']Buy on itch.io[/url]\n';
+  
+  navigator.clipboard.writeText(bb).then(() => showToast('BBCode copied!')).catch(() => prompt('Copy:', bb));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+renderPreview();
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>

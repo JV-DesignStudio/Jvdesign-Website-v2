@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Screenshot Generator | JVDesignStudio</title>
+<meta name="description" content="Auto-capture game screenshots with custom text overlays, borders and backgrounds. Export as PNG for Steam, itch.io and social media.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Screenshot Generator","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/screenshot-generator.html","description":"Auto-capture game screenshots with custom text overlays, borders and backgrounds. Export as PNG for Steam, itch.io and social media.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:1fr 320px;gap:20px}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}}
+.preview-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.preview-area canvas{max-width:100%;border:1px solid var(--border);border-radius:8px}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-section h3{font-size:.85rem;font-weight:700;margin-bottom:10px}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;font-size:.85rem}
+.form-group textarea{min-height:60px;resize:vertical}
+.btn{padding:10px 18px;border-radius:8px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Screenshot Generator</h1>
+  <button class="btn btn-primary" onclick="exportPNG()">📥 Export PNG</button>
+</div>
+<div class="wrap">
+  <div class="preview-area">
+    <canvas id="preview" width="1280" height="720"></canvas>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px">1280x720 — Steam standard. Upload a screenshot and add overlays.</p>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Screenshot</h3>
+      <div class="form-group">
+        <label>Upload Image</label>
+        <input type="file" id="screenshotInput" accept="image/*" onchange="loadScreenshot(this)">
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Title Overlay</h3>
+      <div class="form-group">
+        <label>Game Title</label>
+        <input type="text" id="title" placeholder="My Game" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Subtitle</label>
+        <input type="text" id="subtitle" placeholder="A subtitle or tagline" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Title Colour</label>
+        <input type="color" id="titleColor" value="#ffffff" oninput="renderPreview()">
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Background</h3>
+      <div class="form-group">
+        <label>Background Colour</label>
+        <input type="color" id="bgColor" value="#0a0b10" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Border</label>
+        <select id="borderStyle" onchange="renderPreview()">
+          <option value="none">None</option>
+          <option value="solid" selected>Solid</option>
+          <option value="rounded">Rounded</option>
+          <option value="gradient">Gradient</option>
+        </select>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Badges</h3>
+      <div class="form-group">
+        <label>Badge Text</label>
+        <input type="text" id="badgeText" placeholder="NEW / FREE / SALE" oninput="renderPreview()">
+      </div>
+      <div class="form-group">
+        <label>Badge Colour</label>
+        <input type="color" id="badgeColor" value="#22c55e" oninput="renderPreview()">
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let screenshotImg = null;
+
+function loadScreenshot(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => { screenshotImg = img; renderPreview(); showToast('Screenshot loaded'); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPreview() {
+  const canvas = document.getElementById('preview');
+  const ctx = canvas.getContext('2d');
+  const w = 1280, h = 720;
+  canvas.width = w; canvas.height = h;
+
+  // Background
+  ctx.fillStyle = document.getElementById('bgColor').value;
+  ctx.fillRect(0, 0, w, h);
+
+  // Screenshot
+  if (screenshotImg) {
+    const scale = Math.min(w / screenshotImg.width, h / screenshotImg.height);
+    const sw = screenshotImg.width * scale, sh = screenshotImg.height * scale;
+    ctx.drawImage(screenshotImg, (w - sw) / 2, (h - sh) / 2, sw, sh);
+  }
+
+  // Border
+  const border = document.getElementById('borderStyle').value;
+  if (border === 'solid') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+  } else if (border === 'rounded') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(2, 2, w - 4, h - 4, 20);
+    ctx.stroke();
+  } else if (border === 'gradient') {
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#7c3aed');
+    grad.addColorStop(0.5, '#f59e0b');
+    grad.addColorStop(1, '#22c55e');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w - 6, h - 6);
+  }
+
+  // Title overlay
+  const title = document.getElementById('title').value;
+  const subtitle = document.getElementById('subtitle').value;
+  const titleColor = document.getElementById('titleColor').value;
+  if (title) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, h - 120, w, 120);
+    ctx.font = 'bold 48px Fredoka, sans-serif';
+    ctx.fillStyle = titleColor;
+    ctx.textAlign = 'center';
+    ctx.fillText(title, w / 2, h - 60);
+    if (subtitle) {
+      ctx.font = '24px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(subtitle, w / 2, h - 25);
+    }
+  }
+
+  // Badge
+  const badge = document.getElementById('badgeText').value;
+  const badgeColor = document.getElementById('badgeColor').value;
+  if (badge) {
+    ctx.font = 'bold 20px Inter, sans-serif';
+    const tw = ctx.measureText(badge).width;
+    ctx.fillStyle = badgeColor;
+    ctx.beginPath();
+    ctx.roundRect(w - tw - 50, 20, tw + 30, 36, 18);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(badge, w - tw/2 - 35, 44);
+  }
+}
+
+function exportPNG() {
+  const canvas = document.getElementById('preview');
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'screenshot-' + Date.now() + '.png';
+  a.click();
+  showToast('PNG exported!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+renderPreview();
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>

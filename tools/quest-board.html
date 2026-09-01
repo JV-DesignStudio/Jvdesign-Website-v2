@@ -2792,6 +2792,122 @@ const LEVEL_UNLOCKS={
   10:{icon:'🌟',text:'MAX POWER, Animated borders unlocked across the board!'},
   15:{icon:'💀',text:'Death Knight prestige class is yours. You are unstoppable.'},
 };
+/* ── FAMILIARS — D&D Habitica pet loop ── */
+const FAMILIAR_EGGS=[
+  {id:'owlbear',emoji:'🦉',label:'Owlbear',rarity:'rare'},
+  {id:'pseudo',emoji:'🐉',label:'Pseudodragon',rarity:'epic'},
+  {id:'mimic',emoji:'📦',label:'Mimic',rarity:'rare'},
+  {id:'blink',emoji:'🐾',label:'Blink Pup',rarity:'common'},
+  {id:'wisp',emoji:'✨',label:'Wisp',rarity:'common'},
+  {id:'slime',emoji:'🟢',label:'Slime',rarity:'common'},
+  {id:'drake',emoji:'🐲',label:'Drake',rarity:'legendary'},
+  {id:'sprite',emoji:'🧚',label:'Sprite',rarity:'rare'},
+  {id:'golem',emoji:'🪨',label:'Pebble Golem',rarity:'common'},
+];
+const ESSENCES=[
+  {id:'arcane',emoji:'🔮',label:'Arcane'},
+  {id:'ember',emoji:'🔥',label:'Ember'},
+  {id:'frost',emoji:'❄️',label:'Frost'},
+  {id:'shadow',emoji:'🌑',label:'Shadow'},
+  {id:'verdant',emoji:'🌿',label:'Verdant'},
+  {id:'storm',emoji:'⚡',label:'Storm'},
+];
+const FAMILIAR_FOODS=[
+  {id:'treat',emoji:'🍖',label:'Treat'},
+  {id:'berry',emoji:'🫐',label:'Moonberry'},
+];
+function _hasMount(egg,ess){return(rpg.familiars.mounts||[]).some(m=>m.egg===egg&&m.essence===ess);}
+function _hasPet(egg,ess){return(rpg.familiars.pets||[]).some(p=>p.egg===egg&&p.essence===ess);}
+function addFamiliarDrop(kind,id){
+  if(!rpg.familiars)return;
+  if(!rpg.familiars.foods)rpg.familiars.foods={};
+  if(kind==='egg'){rpg.familiars.eggs[id]=(rpg.familiars.eggs[id]||0)+1;showToast('🥚 Found egg: '+(FAMILIAR_EGGS.find(e=>e.id===id)?.label||id));}
+  else if(kind==='ess'){rpg.familiars.essences[id]=(rpg.familiars.essences[id]||0)+1;showToast((ESSENCES.find(e=>e.id===id)?.emoji||'🔮')+' Found essence: '+(ESSENCES.find(e=>e.id===id)?.label||id));}
+  else if(kind==='food'){rpg.familiars.foods[id]=(rpg.familiars.foods[id]||0)+1;showToast((FAMILIAR_FOODS.find(f=>f.id===id)?.emoji||'🍖')+' Found: '+(FAMILIAR_FOODS.find(f=>f.id===id)?.label||id));}
+  if(typeof renderFamiliars==='function')try{renderFamiliars();}catch(e){}
+  save();
+}
+function rollFamiliarDrops(){
+  const bonus=_dexLootBonus();
+  if(Math.random()<0.04+bonus*0.2){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);}
+  if(Math.random()<0.04+bonus*0.2){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);}
+  if(Math.random()<0.03+bonus*0.15){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);}
+}
+function hatchFamiliar(eggId,essId){
+  if(!rpg.familiars)return;
+  if(_hasPet(eggId,essId)){showToast('Already hatched!','warn');return;}
+  if((rpg.familiars.eggs[eggId]||0)<1){showToast('Need 1 '+eggId+' egg','error');return;}
+  if((rpg.familiars.essences[essId]||0)<1){showToast('Need 1 '+essId+' essence','error');return;}
+  rpg.familiars.eggs[eggId]--;rpg.familiars.essences[essId]--;
+  if(rpg.familiars.eggs[eggId]<=0)delete rpg.familiars.eggs[eggId];
+  if(rpg.familiars.essences[essId]<=0)delete rpg.familiars.essences[essId];
+  rpg.familiars.pets.push({egg:eggId,essence:essId,fed:0,hatchedAt:Date.now()});
+  playSfx('quest');showToast('🥚 Hatched '+(FAMILIAR_EGGS.find(e=>e.id===eggId)?.label||eggId)+' of '+(ESSENCES.find(s=>s.id===essId)?.label||essId)+'!','success');
+  save();renderFamiliars();updateRpgWidgets();
+}
+function feedFamiliar(eggId,essId){
+  const pet=(rpg.familiars.pets||[]).find(p=>p.egg===eggId&&p.essence===essId);
+  if(!pet){showToast('Pet not found','error');return;}
+  if(_hasMount(eggId,essId)){showToast('Already a mount!','warn');return;}
+  if(!rpg.familiars.foods)rpg.familiars.foods={};
+  let foodId=null;
+  if((rpg.familiars.foods['berry']||0)>0)foodId='berry';
+  else if((rpg.familiars.foods['treat']||0)>0)foodId='treat';
+  else{showToast('No food — complete quests for drops!','warn');return;}
+  rpg.familiars.foods[foodId]--;if(rpg.familiars.foods[foodId]<=0)delete rpg.familiars.foods[foodId];
+  pet.fed=(pet.fed||0)+(foodId==='berry'?2:1);
+  playSfx('coin');
+  if(pet.fed>=12&&!_hasMount(eggId,essId)){
+    rpg.familiars.mounts.push({egg:eggId,essence:essId});
+    showToast('🏔️ Mount unlocked: '+(FAMILIAR_EGGS.find(e=>e.id===eggId)?.label||eggId)+'!','success');
+    spawnXpFloat('MOUNT UNLOCKED!','gold');
+  }else{showToast('🍖 Fed '+pet.fed+'/12','success');}
+  save();renderFamiliars();
+}
+function setActiveFamiliar(eggId,essId,kind){
+  if(kind==='pet'){rpg.familiars.activePet={egg:eggId,essence:essId};showToast('Active familiar set','success');}
+  else{rpg.familiars.activeMount={egg:eggId,essence:essId};showToast('Active mount set','success');}
+  save();renderFamiliars();updateRpgWidgets();
+}
+function renderFamiliars(){
+  const ing=document.getElementById('famIngredients');if(ing){
+    const eggs=Object.entries(rpg.familiars.eggs||{}).map(([id,c])=>{const e=FAMILIAR_EGGS.find(x=>x.id===id);return`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem">${e?.emoji||'🥚'} ${e?.label||id} ×${c}</span>`}).join('')||'<span style="color:var(--muted2);font-size:.75rem">No eggs yet — complete quests!</span>';
+    const ess=Object.entries(rpg.familiars.essences||{}).map(([id,c])=>{const s=ESSENCES.find(x=>x.id===id);return`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem">${s?.emoji||'🔮'} ${s?.label||id} ×${c}</span>`}).join('')||'<span style="color:var(--muted2);font-size:.75rem">No essences</span>';
+    const foods=Object.entries(rpg.familiars.foods||{}).map(([id,c])=>{const f=FAMILIAR_FOODS.find(x=>x.id===id);return`<span style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem">${f?.emoji||'🍖'} ${f?.label||id} ×${c}</span>`}).join('')||'<span style="color:var(--muted2);font-size:.75rem">No food</span>';
+    ing.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="font-size:.68rem;color:var(--muted)">Eggs:</strong> ${eggs}</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="font-size:.68rem;color:var(--muted)">Essences:</strong> ${ess}</div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><strong style="font-size:.68rem;color:var(--muted)">Food:</strong> ${foods}</div>`;
+  }
+  const grid=document.getElementById('famHatchGrid');if(grid){
+    grid.innerHTML='';
+    FAMILIAR_EGGS.forEach(egg=>{
+      ESSENCES.forEach(ess=>{
+        const owned=_hasPet(egg.id,ess.id);const mounted=_hasMount(egg.id,ess.id);
+        const canHatch=!owned&&(rpg.familiars.eggs[egg.id]||0)>=1&&(rpg.familiars.essences[ess.id]||0)>=1;
+        const div=document.createElement('div');div.className='fam-card'+(mounted?' mounted':owned?' owned':'');
+        div.innerHTML=`<div class="fam-egg">${egg.emoji}${ess.emoji}</div><div class="fam-name">${egg.label}<br><span style="font-size:.62rem;color:var(--muted)">${ess.label}</span></div><div class="fam-meta">${mounted?'🏔️ Mount':owned?'🐾 Pet':'🥚 Not hatched'}</div>${!owned?`<button class="btn ${canHatch?'btn-gold':'btn-ghost'} btn-sm" style="width:100%;justify-content:center" ${canHatch?'':'disabled'} onclick="hatchFamiliar('${egg.id}','${ess.id}')">${canHatch?'Hatch 🥚+🔮':'Need Egg+Essence'}</button>`:''}`;
+        grid.appendChild(div);
+      });
+    });
+  }
+  const stable=document.getElementById('famStable');if(stable){
+    const pets=rpg.familiars.pets||[];const mounts=rpg.familiars.mounts||[];
+    if(!pets.length){stable.innerHTML='<div style="color:var(--muted2);font-size:.75rem;text-align:center;padding:20px">No familiars yet. Hatch an Egg + Essence above!</div>';return;}
+    stable.innerHTML=pets.map(p=>{
+      const egg=FAMILIAR_EGGS.find(e=>e.id===p.egg),ess=ESSENCES.find(s=>s.id===p.essence);
+      const mounted=_hasMount(p.egg,p.essence);const pct=Math.min(100,Math.round((p.fed||0)/12*100));
+      const activePet=rpg.familiars.activePet&&rpg.familiars.activePet.egg===p.egg&&rpg.familiars.activePet.essence===p.essence;
+      const activeMount=rpg.familiars.activeMount&&rpg.familiars.activeMount.egg===p.egg&&rpg.familiars.activeMount.essence===p.essence;
+      return`<div class="fam-card ${mounted?'mounted':''}" style="flex-direction:row;align-items:center;gap:12px;text-align:left">
+        <div style="font-size:1.8rem">${egg?.emoji||'🐾'}${ess?.emoji||''}</div>
+        <div style="flex:1"><div class="fam-name">${egg?.label||p.egg} · ${ess?.label||p.essence}</div><div class="fam-meta">${mounted?'🏔️ Mount ready':`Fed ${p.fed||0}/12`}</div><div class="fam-feedbar"><div class="fam-feedfill" style="width:${pct}%"></div></div></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${!mounted?`<button class="btn btn-gold btn-sm" onclick="feedFamiliar('${p.egg}','${p.essence}')">🍖 Feed</button>`:''}
+          <button class="btn ${activePet?'btn-gold':'btn-ghost'} btn-sm" onclick="setActiveFamiliar('${p.egg}','${p.essence}','pet')">${activePet?'★ Active':'Set Pet'}</button>
+          ${mounted?`<button class="btn ${activeMount?'btn-gold':'btn-ghost'} btn-sm" onclick="setActiveFamiliar('${p.egg}','${p.essence}','mount')">${activeMount?'★ Mount':'Set Mount'}</button>`:''}
+        </div>
+      </div>`;
+    }).join('')+(mounts.length?`<div style="margin-top:12px;font-size:.68rem;color:var(--muted);text-align:center">🏔️ ${mounts.length} mount(s) unlocked</div>`:'');
+  }
+}
 function getXpMultiplier(){
   let m=1;
   // Streak
@@ -6546,6 +6662,7 @@ rollBounties();
 updateRpgWidgets();
 updateStreakDisplay();
 dailyLoginBonus();
+checkDailyDamage();
 checkBossThreats();
 checkBackupNeeded();
 scheduleDailyCheck();

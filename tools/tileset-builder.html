@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tileset Builder | JVDesignStudio</title>
+<meta name="description" content="Combine tiles into reusable tilesets for Godot, Unity and Phaser. Auto-generate atlas JSON with frame coordinates.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tileset Builder","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/tileset-builder.html","description":"Combine tiles into reusable tilesets for Godot, Unity and Phaser. Auto-generate atlas JSON with frame coordinates.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--accent-lt:#a78bfa;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:1fr 320px;gap:20px}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}}
+.canvas-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:400px}
+.canvas-area canvas{width:100%;border:1px solid var(--border);border-radius:8px;cursor:crosshair}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-section h3{font-size:.85rem;font-weight:700;margin-bottom:10px}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:4px}
+.tile{width:48px;height:48px;border:1px solid var(--border);border-radius:4px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .15s}
+.tile:hover{border-color:var(--accent)}
+.tile.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.tile canvas{width:100%;height:100%;image-rendering:pixelated}
+.tile-remove{position:absolute;top:2px;right:2px;background:var(--rose);color:white;border:none;border-radius:50%;width:16px;height:16px;font-size:.6rem;cursor:pointer;display:none}
+.tile:hover .tile-remove{display:block}
+.btn{padding:10px 18px;border-radius:8px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--rose);color:white}
+.add-tile{width:48px;height:48px;border:2px dashed var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.2rem;color:var(--muted);transition:all .15s}
+.add-tile:hover{border-color:var(--accent);color:var(--text)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Tileset Builder</h1>
+  <button class="btn btn-secondary" onclick="importTiles()">📋 Import Tiles</button>
+  <button class="btn btn-primary" onclick="exportPNG()">📥 Export PNG</button>
+  <button class="btn btn-primary" onclick="exportJSON()">📥 Export JSON</button>
+  <input type="file" id="importInput" accept="image/*" multiple style="display:none" onchange="handleImport(this)">
+</div>
+<div class="wrap">
+  <div class="canvas-area">
+    <canvas id="preview" width="512" height="512"></canvas>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:8px;text-align:center">Tiles are arranged in a grid. Export as PNG (image) or JSON (atlas with coordinates).</p>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Tiles (<span id="tileCount">0</span>)</h3>
+      <div class="tile-grid" id="tileGrid"></div>
+      <div class="add-tile" onclick="document.getElementById('importInput').click()">+</div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Settings</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <label style="font-size:.78rem;color:var(--muted)">Tile Size</label>
+        <input type="number" id="tileSize" value="16" min="4" max="128" style="width:60px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem">
+        <label style="font-size:.78rem;color:var(--muted)">Columns</label>
+        <input type="number" id="cols" value="8" min="1" max="32" style="width:60px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem">
+      </div>
+      <button class="btn btn-secondary" onclick="updatePreview()" style="width:100%">Refresh Preview</button>
+    </div>
+    <div class="sidebar-section">
+      <h3>Selected Tile</h3>
+      <div id="selectedInfo" style="font-size:.78rem;color:var(--muted)">Click a tile to select it</div>
+      <button class="btn btn-danger" onclick="removeSelected()" style="width:100%;margin-top:8px;display:none" id="removeBtn">Remove Selected</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let tiles = [];
+let selectedIdx = -1;
+
+function importTiles() {
+  document.getElementById('importInput').click();
+}
+
+function handleImport(input) {
+  const files = input.files;
+  if (!files.length) return;
+  let loaded = 0;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        // Split image into tiles based on current tile size
+        const ts = parseInt(document.getElementById('tileSize').value) || 16;
+        const cols = Math.floor(img.width / ts);
+        const rows = Math.floor(img.height / ts);
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = ts; canvas.height = ts;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(img, c * ts, r * ts, ts, ts, 0, 0, ts, ts);
+            tiles.push({ canvas, name: file.name.replace(/\.\w+$/, '') + '_' + (r * cols + c) });
+          }
+        }
+        loaded++;
+        if (loaded === files.length) {
+          renderTiles();
+          updatePreview();
+          showToast('Imported ' + tiles.length + ' tiles');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderTiles() {
+  const grid = document.getElementById('tileGrid');
+  grid.innerHTML = '';
+  tiles.forEach((tile, i) => {
+    const div = document.createElement('div');
+    div.className = 'tile' + (i === selectedIdx ? ' selected' : '');
+    div.onclick = () => selectTile(i);
+    const canvas = document.createElement('canvas');
+    canvas.width = 48; canvas.height = 48;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tile.canvas, 0, 0, 48, 48);
+    div.appendChild(canvas);
+    const remove = document.createElement('button');
+    remove.className = 'tile-remove';
+    remove.textContent = '✕';
+    remove.onclick = (e) => { e.stopPropagation(); removeTile(i); };
+    div.appendChild(remove);
+    grid.appendChild(div);
+  });
+  document.getElementById('tileCount').textContent = tiles.length;
+}
+
+function selectTile(idx) {
+  selectedIdx = idx;
+  renderTiles();
+  const tile = tiles[idx];
+  document.getElementById('selectedInfo').innerHTML = '<strong>' + tile.name + '</strong><br>' + tile.canvas.width + 'x' + tile.canvas.height + 'px';
+  document.getElementById('removeBtn').style.display = '';
+}
+
+function removeTile(idx) {
+  tiles.splice(idx, 1);
+  if (selectedIdx === idx) selectedIdx = -1;
+  else if (selectedIdx > idx) selectedIdx--;
+  renderTiles();
+  updatePreview();
+}
+
+function removeSelected() {
+  if (selectedIdx >= 0) removeTile(selectedIdx);
+}
+
+function updatePreview() {
+  const canvas = document.getElementById('preview');
+  const ctx = canvas.getContext('2d');
+  const ts = parseInt(document.getElementById('tileSize').value) || 16;
+  const cols = parseInt(document.getElementById('cols').value) || 8;
+  const rows = Math.ceil(tiles.length / cols);
+  canvas.width = cols * ts;
+  canvas.height = rows * ts;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+  tiles.forEach((tile, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    ctx.drawImage(tile.canvas, c * ts, r * ts, ts, ts);
+  });
+  // Draw grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= cols; x++) {
+    ctx.beginPath(); ctx.moveTo(x * ts, 0); ctx.lineTo(x * ts, rows * ts); ctx.stroke();
+  }
+  for (let y = 0; y <= rows; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * ts); ctx.lineTo(cols * ts, y * ts); ctx.stroke();
+  }
+}
+
+function exportPNG() {
+  if (!tiles.length) { showToast('Add some tiles first'); return; }
+  const canvas = document.getElementById('preview');
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'tileset.png';
+  a.click();
+  showToast('PNG exported!');
+}
+
+function exportJSON() {
+  if (!tiles.length) { showToast('Add some tiles first'); return; }
+  const ts = parseInt(document.getElementById('tileSize').value) || 16;
+  const cols = parseInt(document.getElementById('cols').value) || 8;
+  const atlas = {
+    meta: { size: { w: cols * ts, h: Math.ceil(tiles.length / cols) * ts }, tile_size: ts, format: 'PNG' },
+    frames: {}
+  };
+  tiles.forEach((tile, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    atlas.frames[tile.name || 'tile_' + i] = {
+      frame: { x: c * ts, y: r * ts, w: ts, h: ts },
+      rotated: false, trimmed: false, sourceSize: { w: ts, h: ts }
+    };
+  });
+  const blob = new Blob([JSON.stringify(atlas, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tileset.json';
+  a.click();
+  showToast('JSON atlas exported!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>

@@ -994,7 +994,7 @@ function openLoadModal(){
   document.getElementById('modalO').classList.add('open');
 }
 function closeModal(){document.getElementById('modalO').classList.remove('open');}
-function doSave(){const n=document.getElementById('saveName').value.trim();if(!n)return;const sv=getSaves();sv[n]={params:{...P},step:curStep,date:Date.now()};setSaves(sv);closeModal();toast('Airship saved!');}
+function doSave(){const n=document.getElementById('saveName').value.trim();if(!n)return;const sv=getSaves();sv[n]={params:{...P},step:curStep,date:Date.now()};setSaves(sv);closeModal();toast('Airship saved!');if(window.builderTrack)builderTrack('save');}
 function doLoad(n){const sv=getSaves();if(!sv[n])return;P={...sv[n].params};curStep=sv[n].step||0;closeModal();rebuild();updateUI();toast(`Loaded: ${n}`);}
 function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();}
 function resetAll(){
@@ -1004,6 +1004,7 @@ function resetAll(){
 }
 
 function exportOBJ(){
+  if(window.builderTrack)builderTrack('export',{format:'obj'});
   let obj='# Steampunk Airship - Exported from Airship Dockyard\n';
   let vOff=0;
   shipGroup.traverse(child=>{
@@ -1096,6 +1097,7 @@ function randomAirship(){
     showAnchor:Math.random()>0.3,showFlag:Math.random()>0.2,showNameplate:Math.random()>0.3,
   });
   rebuild();updateStats();updateUI();toast('Random airship generated!');
+  if(window.builderTrack)builderTrack('random_build');
 }
 
 // ═══════════════════════════════════════
@@ -1228,6 +1230,7 @@ function spawnParticles() {
 function takeOff() {
   activated = true;
   activationTime = 0;
+  if(window.builderTrack)builderTrack('activate');
   rebuild();
   spawnParticles();
   toast('⬆️ ' + (P.airshipName || 'Airship') + ' takes to the skies!');

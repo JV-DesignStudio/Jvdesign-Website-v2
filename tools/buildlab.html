@@ -568,9 +568,18 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
         <div class="prop-val" id="propDVal">1</div>
       </div>
       <div class="prop-row">
-        <div class="prop-label">Rotate Y</div>
-        <input type="range" class="prop-slider" id="propRot" min="0" max="315" step="45" value="0" oninput="updateProp('rot',this.value)">
-        <div class="prop-val" id="propRotVal">0</div>
+        <div class="prop-label">Rotate</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div style="flex:1;"><div style="font-size:.55rem;color:var(--muted);">X</div>
+          <input type="range" class="prop-slider" id="propRotX" min="0" max="345" step="15" value="0" oninput="updateProp('rotX',this.value)">
+          <div class="prop-val" id="propRotXVal">0</div></div>
+          <div style="flex:1;"><div style="font-size:.55rem;color:var(--muted);">Y</div>
+          <input type="range" class="prop-slider" id="propRot" min="0" max="345" step="15" value="0" oninput="updateProp('rot',this.value)">
+          <div class="prop-val" id="propRotVal">0</div></div>
+          <div style="flex:1;"><div style="font-size:.55rem;color:var(--muted);">Z</div>
+          <input type="range" class="prop-slider" id="propRotZ" min="0" max="345" step="15" value="0" oninput="updateProp('rotZ',this.value)">
+          <div class="prop-val" id="propRotZVal">0</div></div>
+        </div>
       </div>
       <div class="prop-row">
         <div class="prop-label">Move Up / Down</div>
@@ -827,10 +836,22 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
         <div class="mob-prop-val" id="mobPropDVal">1</div>
       </div>
       <div class="mob-prop-row">
+        <div class="mob-prop-label">Rotate X</div>
+        <input type="range" class="mob-prop-slider" id="mobPropRotX" min="0" max="345" step="15" value="0"
+               oninput="updateProp('rotX',this.value);document.getElementById('propRotX').value=this.value;">
+        <div class="mob-prop-val" id="mobPropRotXVal">0</div>
+      </div>
+      <div class="mob-prop-row">
         <div class="mob-prop-label">Rotate Y</div>
-        <input type="range" class="mob-prop-slider" id="mobPropRot" min="0" max="315" step="45" value="0"
+        <input type="range" class="mob-prop-slider" id="mobPropRot" min="0" max="345" step="15" value="0"
                oninput="updateProp('rot',this.value);document.getElementById('propRot').value=this.value;">
         <div class="mob-prop-val" id="mobPropRotVal">0</div>
+      </div>
+      <div class="mob-prop-row">
+        <div class="mob-prop-label">Rotate Z</div>
+        <input type="range" class="mob-prop-slider" id="mobPropRotZ" min="0" max="345" step="15" value="0"
+               oninput="updateProp('rotZ',this.value);document.getElementById('propRotZ').value=this.value;">
+        <div class="mob-prop-val" id="mobPropRotZVal">0</div>
       </div>
       <div class="mob-prop-row">
         <div class="mob-prop-label">Move Up / Down</div>
@@ -1147,7 +1168,7 @@ function snap(v) { return Math.round(v / GRID) * GRID; }
 // -------------------------------------------------------
 // BLOCK MANAGEMENT
 // -------------------------------------------------------
-function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentShape, rot=0) {
+function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentShape, rot=0, rotX=0, rotZ=0) {
   const geo = makeGeometry(shape, w, h, d);
   const mat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(colour),
@@ -1156,10 +1177,10 @@ function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentSha
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(x, y + h/2, z);
-  mesh.rotation.y = rot * Math.PI / 180;
+  mesh.rotation.set(rotX * Math.PI / 180, rot * Math.PI / 180, rotZ * Math.PI / 180);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.userData = { w, h, d, colour, shape, rot, isBlock: true };
+  mesh.userData = { w, h, d, colour, shape, rot, rotX: rotX||0, rotZ: rotZ||0, isBlock: true };
   scene.add(mesh);
   blocks.push(mesh);
   updateStats();
@@ -3331,6 +3352,7 @@ window.convertSketch = function() {
     toast('?? Draw more points to create a shape');
     return;
   }
+  pushHistory('sketch');
 
   // Simple approach: create blocks along the sketch path with extrusion
   const step = Math.max(1, Math.floor(sketchPoints.length / 20)); // Sample points
@@ -3380,6 +3402,7 @@ function exitVoxelPaintMode() {
 }
 
 function paintVoxelAtRay(raycaster) {
+  pushHistory('voxel');
   const hits = raycaster.intersectObjects(blocks);
   let hitPos = null;
 
