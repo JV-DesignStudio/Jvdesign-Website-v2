@@ -780,7 +780,7 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
 <script>
 /* ── DATA ── */
 const SK='qb-data-v1', RK='qb-rpg-v1';
-const APP_VERSION='2.1.0-fixed'; // bump every release
+const APP_VERSION='2.2.0-balanced'; // bump every release
 let state={
   columns:[
     {id:'todo',  title:'📋 To Do',       colour:'#7c3aed'},
@@ -795,7 +795,7 @@ let state={
   ],
   nextId:10
 };
-let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,hp:100,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[],raidTokens:0,bestStreak:0,selfCare:{items:[],checkInDate:'',mood:{},weeklyBoss:null,lastDamageCheck:'',restInn:false,restInnUntil:0},party:null};
+let rpg={level:1,xp:0,prestige:0,gold:0,mana:5,hp:100,class:'Code Conjurer',title:'The Novice',stats:{str:10,int:10,dex:10,cha:10},inventory:[],equipped:{weapon:null,armor:null,trinket:null},raids:[],activeTheme:'fantasy',achievements:{},completedBounties:[],bountiesDate:'',bounties:[],unlockedCyberpunk:false,notes:[],streak:0,lastQuestDate:'',comboCount:0,lastComboTime:0,loginDate:'',bossThreats:{},dailyStats:{},habits:[],notificationsEnabled:false,lastExport:'',lastBackupReminder:'',activeBuffs:[],shopUnlocked:{},weeklyReviews:[],raidTokens:0,bestStreak:0,dailyStatGains:{date:"",count:0},selfCare:{items:[],checkInDate:'',mood:{},weeklyBoss:null,lastDamageCheck:'',restInn:false,restInnUntil:0},party:null};
 
 /* ── STORAGE ── */
 var _saveTimer=null;
@@ -930,10 +930,15 @@ function addFamiliarDrop(kind,id){
   save();
 }
 function rollFamiliarDrops(){
+  // Throttle: max 1 drop per 5 minutes
+  if(!rpg._lastFamDrop)rpg._lastFamDrop=0;
+  if(Date.now()-rpg._lastFamDrop<300000)return;
   const bonus=_dexLootBonus();
-  if(Math.random()<0.04+bonus*0.2){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);}
-  if(Math.random()<0.04+bonus*0.2){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);}
-  if(Math.random()<0.03+bonus*0.15){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);}
+  let _anyDrop=false;
+  if(Math.random()<0.04+bonus*0.2){const e=FAMILIAR_EGGS[Math.floor(Math.random()*FAMILIAR_EGGS.length)];addFamiliarDrop('egg',e.id);_anyDrop=true;}
+  if(Math.random()<0.04+bonus*0.2){const s=ESSENCES[Math.floor(Math.random()*ESSENCES.length)];addFamiliarDrop('ess',s.id);_anyDrop=true;}
+  if(Math.random()<0.03+bonus*0.15){const f=FAMILIAR_FOODS[Math.floor(Math.random()*FAMILIAR_FOODS.length)];addFamiliarDrop('food',f.id);_anyDrop=true;}
+  if(_anyDrop)rpg._lastFamDrop=Date.now();
 }
 function hatchFamiliar(eggId,essId){
   if(!rpg.familiars)return;
@@ -1167,12 +1172,19 @@ function onQuestComplete(card){
   if(hasActiveBuff('xp2x'))consumeBuff('xp2x');
   // Clear boss threat
   if(card.isBoss&&rpg.bossThreats)delete rpg.bossThreats[card.id];
-  // stat bumps — matched by quest keywords/tags, not legacy column ids
+  // stat bumps — capped at 3 stat gains per day (slows progression)
   const hay=_cardHay(card);
-  if(/\b(fix|bug|debug|crash|error)\b/.test(hay)||card.priority==='high')rpg.stats.str=Math.min(rpg.stats.str+1,99);
-  if(/\b(build|page|feature|app|game|workshop|course|book|chapter|write)\b/.test(hay))rpg.stats.int=Math.min(rpg.stats.int+1,99);
-  if(/\b(deploy|publish|launch|ship|release)\b/.test(hay))rpg.stats.dex=Math.min(rpg.stats.dex+1,99);
-  if(/\b(art|cover|design|video|thumbnail|social|sticker)\b/.test(hay))rpg.stats.cha=Math.min(rpg.stats.cha+1,99);
+  if(!rpg.dailyStatGains)rpg.dailyStatGains={date:'',count:0};
+  const _today=new Date().toDateString();
+  if(rpg.dailyStatGains.date!==_today){rpg.dailyStatGains.date=_today;rpg.dailyStatGains.count=0;}
+  if(rpg.dailyStatGains.count<3){
+    let gained=false;
+    if(/\b(fix|bug|debug|crash|error)\b/.test(hay)||card.priority==='high'){rpg.stats.str=Math.min(rpg.stats.str+1,99);gained=true;}
+    if(/\b(build|page|feature|app|game|workshop|course|book|chapter|write)\b/.test(hay)){rpg.stats.int=Math.min(rpg.stats.int+1,99);gained=true;}
+    if(/\b(deploy|publish|launch|ship|release)\b/.test(hay)){rpg.stats.dex=Math.min(rpg.stats.dex+1,99);gained=true;}
+    if(/\b(art|cover|design|video|thumbnail|social|sticker)\b/.test(hay)){rpg.stats.cha=Math.min(rpg.stats.cha+1,99);gained=true;}
+    if(gained)rpg.dailyStatGains.count++;
+  }
   // achievements
   unlockAch('first_quest');
   if(_countDone(/\b(fix|bug|debug)\b/)>=5)unlockAch('bug_crusher');
@@ -2563,41 +2575,41 @@ function installApp(){
    ══════════════════════════════════════════════════════════════════════════════ */
 const SHOP_ITEMS=[
   // ── Consumables ─────────────────────────────────────────────────────────
-  {id:'coffee',   cat:'consume',icon:'☕', name:'Coffee Boost',    desc:'×2 XP on your next 3 quest completions. Stacks with streak.',     cost:50,  effect:{type:'xp2x',   uses:3}},
-  {id:'moonburn', cat:'consume',icon:'🌙', name:'Night Fuel',      desc:'+50% XP on all quests for the rest of today.',                  cost:80,  effect:{type:'xpDay',   startDay:'TODAY'}},
-  {id:'bossshld', cat:'consume',icon:'🛡️', name:'Boss Shield',     desc:'Boss quests cannot attack your gold for 48 hours.',             cost:120, effect:{type:'bossShield',expires:172800000}},
-  {id:'lucky',    cat:'consume',icon:'🍀', name:'Lucky Clover',    desc:'Your next quest completion guarantees a loot drop.',             cost:150, effect:{type:'lootGuar',  uses:1}},
-  {id:'streaksav',cat:'consume',icon:'🔥', name:'Streak Shield',   desc:'Saves your streak once if you miss a day.',                     cost:200, effect:{type:'streakSave',uses:1}},
-  {id:'pomtonic', cat:'consume',icon:'🧪', name:'Focus Tonic',     desc:'Extends your next Pomodoro session to 35 minutes.',             cost:100, effect:{type:'pomBoost',  uses:1}},
-  {id:'goldmagnet',cat:'consume',icon:'🧲',name:'Gold Magnet',     desc:'Next 5 quests completed give +50% gold bonus.',                 cost:130, effect:{type:'goldBoost', uses:5}},
+  {id:'coffee',   cat:'consume',icon:'☕', name:'Coffee Boost',    desc:'×2 XP on your next 3 quest completions. Stacks with streak.',     cost:80,  effect:{type:'xp2x',   uses:3}},
+  {id:'moonburn', cat:'consume',icon:'🌙', name:'Night Fuel',      desc:'+50% XP on all quests for the rest of today.',                  cost:120, effect:{type:'xpDay',   startDay:'TODAY'}},
+  {id:'bossshld', cat:'consume',icon:'🛡️', name:'Boss Shield',     desc:'Boss quests cannot attack your gold for 48 hours.',             cost:180, effect:{type:'bossShield',expires:172800000}},
+  {id:'lucky',    cat:'consume',icon:'🍀', name:'Lucky Clover',    desc:'Your next quest completion guarantees a loot drop.',             cost:200, effect:{type:'lootGuar',  uses:1}},
+  {id:'streaksav',cat:'consume',icon:'🔥', name:'Streak Shield',   desc:'Saves your streak once if you miss a day.',                     cost:300, effect:{type:'streakSave',uses:1}},
+  {id:'pomtonic', cat:'consume',icon:'🧪', name:'Focus Tonic',     desc:'Extends your next Pomodoro session to 35 minutes.',             cost:150, effect:{type:'pomBoost',  uses:1}},
+  {id:'goldmagnet',cat:'consume',icon:'🧲',name:'Gold Magnet',     desc:'Next 5 quests completed give +50% gold bonus.',                 cost:180, effect:{type:'goldBoost', uses:5}},
   // ── Mystery Crates ───────────────────────────────────────────────────────
-  {id:'chest_b',  cat:'crate',  icon:'📦', name:'Bronze Chest',   desc:'Contains: 20-60g, a random equipment item, or 50 XP.',          cost:100},
-  {id:'chest_s',  cat:'crate',  icon:'💜', name:'Silver Chest',   desc:'Contains: 60-180g, a mid-tier item, or 200 XP.',                cost:280},
-  {id:'chest_g',  cat:'crate',  icon:'💎', name:'Gold Chest',     desc:'Contains: 150-500g, a rare item, or 600 XP. Always good.',      cost:600},
+  {id:'chest_b',  cat:'crate',  icon:'📦', name:'Bronze Chest',   desc:'Contains: 20-60g, a random equipment item, or 50 XP.',          cost:150},
+  {id:'chest_s',  cat:'crate',  icon:'💜', name:'Silver Chest',   desc:'Contains: 60-180g, a mid-tier item, or 200 XP.',                cost:420},
+  {id:'chest_g',  cat:'crate',  icon:'💎', name:'Gold Chest',     desc:'Contains: 150-500g, a rare item, or 600 XP. Always good.',      cost:900},
   // ── Permanent Upgrades ───────────────────────────────────────────────────
   {id:'xp_tome',  cat:'upgrade',icon:'📚', name:"Scholar's Tome", desc:'Permanently earn +10% XP from all quests. Stacks with streak.',  cost:500, oneTime:true},
   {id:'gold_eye', cat:'upgrade',icon:'👁️', name:"Merchant's Eye", desc:'Permanently earn +15% gold from all quests.',                   cost:600, oneTime:true},
   {id:'lootluck', cat:'upgrade',icon:'🎲', name:'Loot Luck',      desc:'Loot drop chance increases: 15% → 25% on every quest.',         cost:350, oneTime:true},
   {id:'xp_tome2', cat:'upgrade',icon:'📖', name:"Grand Tome",     desc:'Permanently earn +25% XP. Requires Scholar\'s Tome.',           cost:1200,oneTime:true,req:'xp_tome'},
-  {id:'questexp', cat:'upgrade',icon:'🗺️', name:'Quest Expansion',desc:'Adds a new custom column to your board.',                       cost:400, oneTime:false},
+  {id:'questexp', cat:'upgrade',icon:'🗺️', name:'Quest Expansion',desc:'Adds a new custom column to your board.',                       cost:600, oneTime:false},
   {id:'bounty+',  cat:'upgrade',icon:'🎯', name:'Bounty Hunter',  desc:'Roll 4 daily bounties instead of 3.',                           cost:500, oneTime:true},
   // ── Themes ───────────────────────────────────────────────────────────────
   {id:'cyber',    cat:'theme',  icon:'🎮', name:'Cyberpunk',      desc:'Neon blue-green on deep black. Matrix energy.',                  cost:200, oneTime:true, themeId:'cyberpunk'},
   {id:'ocean',    cat:'theme',  icon:'🌊', name:'Ocean Depths',   desc:'Deep sea teal and aqua on dark navy.',                           cost:350, oneTime:true, themeId:'ocean'},
   {id:'blood',    cat:'theme',  icon:'🩸', name:'Blood Moon',     desc:'Crimson and dark red. For the relentlessly focused.',            cost:500, oneTime:true, themeId:'blood'},
   // ── Gear Forge (buy gear directly with gold earned from tasks) ───────────
-  {id:'g_dagger',  cat:'gear', icon:'🗡️', name:'Dagger of Tiny Wins',        text:'🗡️ Dagger of Tiny Wins',        slot:'weapon', stat:'str', val:3, r:'common',    cost:150,  desc:'Every epic run starts with one small step. +3 STR.'},
-  {id:'g_hoodie',  cat:'gear', icon:'🧥', name:'Comfy Focus Hoodie',         text:'🧥 Comfy Focus Hoodie',         slot:'armor',  stat:'int', val:3, r:'common',    cost:160,  desc:'Cozy brain, sharp brain. +3 INT.'},
-  {id:'g_beads',   cat:'gear', icon:'📿', name:'Beads of Remembrance',       text:'📿 Beads of Remembrance',       slot:'trinket',stat:'cha', val:2, r:'common',    cost:140,  desc:'A tactile anchor for wandering minds. +2 CHA.'},
-  {id:'g_bow',     cat:'gear', icon:'🏹', name:'Bow of Hyperfocus',          text:'🏹 Bow of Hyperfocus',          slot:'weapon', stat:'dex', val:4, r:'rare',      cost:420,  desc:'One target. Zero distractions. +4 DEX.'},
-  {id:'g_spoons',  cat:'gear', icon:'🥄', name:'Vest of Spoon Preservation', text:'🥄 Vest of Spoon Preservation', slot:'armor',  stat:'str', val:4, r:'rare',      cost:450,  desc:'Protect your energy reserves. +4 STR.'},
-  {id:'g_ringret', cat:'gear', icon:'💍', name:'Ring of Returning',          text:'💍 Ring of Returning',          slot:'trinket',stat:'cha', val:4, r:'rare',      cost:430,  desc:'Wander off, always find your way back. +4 CHA.'},
-  {id:'g_blade',   cat:'gear', icon:'⚔️', name:'Blade of Finished Projects', text:'⚔️ Blade of Finished Projects', slot:'weapon', stat:'str', val:5, r:'epic',      cost:950,  desc:'Forged from every task you actually shipped. +5 STR.'},
-  {id:'g_helm',    cat:'gear', icon:'⛑️', name:'Helm of Single-Tasking',     text:'⛑️ Helm of Single-Tasking',     slot:'armor',  stat:'int', val:5, r:'epic',      cost:980,  desc:'One tab at a time. Yes, really. +5 INT.'},
-  {id:'g_amulet',  cat:'gear', icon:'💎', name:"Amulet of Done > Perfect",   text:"💎 Amulet of Done > Perfect",   slot:'trinket',stat:'dex', val:5, r:'epic',      cost:960,  desc:'Shipped beats flawless. +5 DEX.'},
-  {id:'g_excal',   cat:'gear', icon:'🌟', name:'Excalibur, Task-Slayer',     text:'🌟 Excalibur, Task-Slayer',     slot:'weapon', stat:'str', val:7, r:'legendary', cost:2200, desc:'The board trembles before you. +7 STR.'},
-  {id:'g_mantle',  cat:'gear', icon:'🛡️', name:'Mantle of the Unbothered',   text:'🛡️ Mantle of the Unbothered',   slot:'armor',  stat:'cha', val:6, r:'legendary', cost:2000, desc:'Notifications bounce right off. +6 CHA.'},
-  {id:'g_turner',  cat:'gear', icon:'⏳', name:'Time-Turner of Deep Work',   text:'⏳ Time-Turner of Deep Work',   slot:'trinket',stat:'int', val:7, r:'legendary', cost:2300, desc:'Hours bend around your focus. +7 INT.'},
+  {id:'g_dagger',  cat:'gear', icon:'🗡️', name:'Dagger of Tiny Wins',        text:'🗡️ Dagger of Tiny Wins',        slot:'weapon', stat:'str', val:3, r:'common',    cost:200,  desc:'Every epic run starts with one small step. +3 STR.'},
+  {id:'g_hoodie',  cat:'gear', icon:'🧥', name:'Comfy Focus Hoodie',         text:'🧥 Comfy Focus Hoodie',         slot:'armor',  stat:'int', val:3, r:'common',    cost:210,  desc:'Cozy brain, sharp brain. +3 INT.'},
+  {id:'g_beads',   cat:'gear', icon:'📿', name:'Beads of Remembrance',       text:'📿 Beads of Remembrance',       slot:'trinket',stat:'cha', val:2, r:'common',    cost:185,  desc:'A tactile anchor for wandering minds. +2 CHA.'},
+  {id:'g_bow',     cat:'gear', icon:'🏹', name:'Bow of Hyperfocus',          text:'🏹 Bow of Hyperfocus',          slot:'weapon', stat:'dex', val:4, r:'rare',      cost:550,  desc:'One target. Zero distractions. +4 DEX.'},
+  {id:'g_spoons',  cat:'gear', icon:'🥄', name:'Vest of Spoon Preservation', text:'🥄 Vest of Spoon Preservation', slot:'armor',  stat:'str', val:4, r:'rare',      cost:590,  desc:'Protect your energy reserves. +4 STR.'},
+  {id:'g_ringret', cat:'gear', icon:'💍', name:'Ring of Returning',          text:'💍 Ring of Returning',          slot:'trinket',stat:'cha', val:4, r:'rare',      cost:560,  desc:'Wander off, always find your way back. +4 CHA.'},
+  {id:'g_blade',   cat:'gear', icon:'⚔️', name:'Blade of Finished Projects', text:'⚔️ Blade of Finished Projects', slot:'weapon', stat:'str', val:5, r:'epic',      cost:1250,  desc:'Forged from every task you actually shipped. +5 STR.'},
+  {id:'g_helm',    cat:'gear', icon:'⛑️', name:'Helm of Single-Tasking',     text:'⛑️ Helm of Single-Tasking',     slot:'armor',  stat:'int', val:5, r:'epic',      cost:1280,  desc:'One tab at a time. Yes, really. +5 INT.'},
+  {id:'g_amulet',  cat:'gear', icon:'💎', name:"Amulet of Done > Perfect",   text:"💎 Amulet of Done > Perfect",   slot:'trinket',stat:'dex', val:5, r:'epic',      cost:1250,  desc:'Shipped beats flawless. +5 DEX.'},
+  {id:'g_excal',   cat:'gear', icon:'🌟', name:'Excalibur, Task-Slayer',     text:'🌟 Excalibur, Task-Slayer',     slot:'weapon', stat:'str', val:7, r:'legendary', cost:2900, desc:'The board trembles before you. +7 STR.'},
+  {id:'g_mantle',  cat:'gear', icon:'🛡️', name:'Mantle of the Unbothered',   text:'🛡️ Mantle of the Unbothered',   slot:'armor',  stat:'cha', val:6, r:'legendary', cost:2600, desc:'Notifications bounce right off. +6 CHA.'},
+  {id:'g_turner',  cat:'gear', icon:'⏳', name:'Time-Turner of Deep Work',   text:'⏳ Time-Turner of Deep Work',   slot:'trinket',stat:'int', val:7, r:'legendary', cost:3000, desc:'Hours bend around your focus. +7 INT.'},
 ];
 
 let _shopCat='all';
@@ -3458,7 +3470,7 @@ function tickLifeItem(id){
   item.lastDone=today;
   // Stat buff for category
   const cat=LIFE_CATS[item.category];
-  if(cat?.stat)rpg.stats[cat.stat]=Math.min(rpg.stats[cat.stat]+1,99);
+  if(cat?.stat&&rpg.dailyStatGains&&rpg.dailyStatGains.count<3){rpg.stats[cat.stat]=Math.min(rpg.stats[cat.stat]+1,99);rpg.dailyStatGains.count++;}
   flashScreen();playSfx('quest');
   const streakBonus=Math.min(Math.floor(item.streak/7)*10,60);
   const xpEarned=item.xp+streakBonus;

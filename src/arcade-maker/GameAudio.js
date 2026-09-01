@@ -1,11 +1,10 @@
-﻿/* GameAudio.js — extracted from arcade-game-maker.html for Vite module split. */
-/* In the monolith this is inline; here it is a proper ES module for tree-shaking. */
-/* Import: import { GameAudio } from './GameAudio.js'; */
+﻿// GameAudio.js — extracted from tools/arcade-game-maker.html for Vite module split.
+// This is the complete audio engine: Web Audio API SFX synthesis, music, and buffers.
+// Import: import { GameAudio } from './GameAudio.js';
 
 const GameAudio = {
     ctx: null, volume: 0.5, sfxEnabled: true,
-    sfxVol: 1.0,   // category multiplier (0-1), Sounds tab slider
-    musicVol: 0.6, // category multiplier (0-1), Sounds tab slider
+    sfxVol: 1.0, musicVol: 0.6,
     sounds: { shoot:'laser', jump:'boing', hit:'boom', score:'coin', levelup:'fanfare', death:'lose', powerup:'powerup', victory:'victory' },
     customBuffers: { shoot:null, jump:null, hit:null, score:null, levelup:null, death:null, powerup:null, victory:null },
     musicNodes: [], musicTimeout: null, musicStep: 0,
@@ -32,21 +31,7 @@ const GameAudio = {
         this.play(event);
         this.sfxEnabled = saved;
     },
-    previewMusic() {
-        // Play 3 seconds of the current music (custom or built-in style)
-        // Read the REAL toggle state (this.musicOn was never defined, so the
-        // "already playing" branch could never trigger)
-        const wasOn = document.getElementById('musicToggle')?.checked || false;
-        if (!wasOn) {
-            const style = document.getElementById('musicStyle')?.value || 'chiptune';
-            this.startMusic(style);
-            setTimeout(() => { if (!wasOn) this.stopMusic(); }, 3000);
-        } else {
-            showToast('Music is already playing!');
-        }
-    },
-    // Missing method: preference restore called GameAudio.setVolume() on boot
-    // and silently failed inside its try/catch, so saved volume never applied
+
     setVolume(v) {
         this.volume = Math.max(0, Math.min(1, Number(v) || 0));
     },
@@ -55,7 +40,6 @@ const GameAudio = {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         const o = ac.createOscillator(), g = ac.createGain();
         o.type = window._soundPackType || type;
-        // Pitch randomisation: if enabled, vary detune Â±semitones for organic feel
         const _pitchVariance = window._sfxPitchVariance || 0;
         const _randomDetune = _pitchVariance > 0 ? (Math.random() * 2 - 1) * _pitchVariance * 100 : 0;
         o.detune.value = (window._soundPackDetune || 0) + _randomDetune;
@@ -79,8 +63,7 @@ const GameAudio = {
         src.start(t);
     },
 
-    // SHOOT sounds
-    _snd_laser() { this._osc('sawtooth', 880, 110, 0.13, 0.25); },
+    _snd_laser()  { this._osc('sawtooth', 880, 110, 0.13, 0.25); },
     _snd_plasma() { this._osc('square', 440, 55, 0.18, 0.2); },
     _snd_zap() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
@@ -95,22 +78,13 @@ const GameAudio = {
         });
     },
     _snd_pop() { this._osc('sine', 600, 200, 0.07, 0.3); },
-
-    // JUMP sounds
-    _snd_boing() { this._osc('sine', 220, 550, 0.22, 0.3); },
+    _snd_boing()  { this._osc('sine', 220, 550, 0.22, 0.3); },
     _snd_spring() { this._osc('triangle', 300, 700, 0.15, 0.28); },
     _snd_rocket() { this._osc('sawtooth', 150, 600, 0.2, 0.22); },
-    _snd_float() { this._osc('sine', 400, 600, 0.3, 0.18); },
-
-    // HIT/DIE sounds
-    _snd_boom() {
-        this._noise(0.25, 0.4);
-        this._osc('sine', 80, 20, 0.25, 0.3);
-    },
+    _snd_float()  { this._osc('sine', 400, 600, 0.3, 0.18); },
+    _snd_boom()   { this._noise(0.25, 0.4); this._osc('sine', 80, 20, 0.25, 0.3); },
     _snd_crunch() { this._noise(0.12, 0.35); },
-    _snd_buzz() { this._osc('square', 220, 80, 0.2, 0.3); },
-
-    // SCORE sounds
+    _snd_buzz()   { this._osc('square', 220, 80, 0.2, 0.3); },
     _snd_coin() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [523, 784].forEach((f, i) => {
@@ -136,8 +110,6 @@ const GameAudio = {
             o.start(st); o.stop(st + 0.16);
         });
     },
-
-    // LEVEL UP sounds, picks randomly from 3 fanfares for variety
     _snd_fanfare() {
         const _pick = Math.floor(Math.random() * 3);
         if (_pick === 1) { this._snd_fanfare_b(); return; }
@@ -154,7 +126,6 @@ const GameAudio = {
             o.start(st); o.stop(st+0.25);
         });
     },
-    // Fanfare variant B, upward triad arpeggio
     _snd_fanfare_b() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [392,494,587,784,988].forEach((f,i) => {
@@ -168,7 +139,6 @@ const GameAudio = {
             o.start(st); o.stop(st+0.2);
         });
     },
-    // Fanfare variant C, triumphant chord swell
     _snd_fanfare_c() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [[440,554,659],[554,659,880]].forEach(([f1,f2,f3],i) => {
@@ -197,8 +167,6 @@ const GameAudio = {
             o.start(st); o.stop(st+0.2);
         });
     },
-
-    // DEATH / GAME OVER sounds
     _snd_lose() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [440,350,280,220].forEach((f,i) => {
@@ -212,10 +180,8 @@ const GameAudio = {
             o.start(st); o.stop(st+0.22);
         });
     },
-    _snd_wah() { this._osc('sawtooth', 300, 100, 0.5, 0.25); },
+    _snd_wah()   { this._osc('sawtooth', 300, 100, 0.5, 0.25); },
     _snd_splat() { this._noise(0.35, 0.4); this._osc('sine', 100, 40, 0.4, 0.2); },
-
-    // POWERUP sounds
     _snd_powerup() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [392,523,659,784].forEach((f,i) => {
@@ -231,8 +197,6 @@ const GameAudio = {
     },
     _snd_sparkle() { this._osc('sine', 1200, 2400, 0.18, 0.18); },
     _snd_shield()  { this._osc('triangle', 500, 800, 0.22, 0.2); },
-
-    // VICTORY / WIN sounds
     _snd_victory() {
         const ac = this.getCtx(), t = ac.currentTime + 0.01;
         [523,659,784,880,1047].forEach((f,i) => {
@@ -256,14 +220,13 @@ const GameAudio = {
             o.frequency.value = f;
             const st = t + i*0.08;
             g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.2);
-            o.start(st); o.stop(st+0.22);
+            g.gain.exponentialRampToValueAtTime(0.001, st+0.22);
+            o.start(st); o.stop(st+0.24);
         });
     },
 
     _playBuffer(dataUrl) {
         const ac = this.getCtx();
-        // fetch() does not support data: URLs in Firefox/Safari, decode base64 directly.
         const _decode = (ab) => {
             ac.decodeAudioData(ab).then(buf => {
                 const src = ac.createBufferSource(), g = ac.createGain();
@@ -284,7 +247,6 @@ const GameAudio = {
         }
     },
 
-    // BACKGROUND MUSIC
     setMusic(on) {
         if (on) this.startMusic(document.getElementById('musicStyle').value);
         else this.stopMusic();
@@ -348,8 +310,19 @@ const GameAudio = {
         } else {
             fetch(url).then(r => r.arrayBuffer()).then(ab => ac.decodeAudioData(ab)).then(_start).catch(() => {});
         }
+    },
+
+    previewMusic() {
+        const wasOn = document.getElementById('musicToggle')?.checked || false;
+        if (!wasOn) {
+            const style = document.getElementById('musicStyle')?.value || 'chiptune';
+            this.startMusic(style);
+            setTimeout(() => { if (!wasOn) this.stopMusic(); }, 3000);
+        } else {
+            window.showToast && showToast('Music is already playing!');
+        }
     }
 };
 
-// ── Exports for Vite consumption ──────────────────────────────────────────
 export { GameAudio };
+export default GameAudio;

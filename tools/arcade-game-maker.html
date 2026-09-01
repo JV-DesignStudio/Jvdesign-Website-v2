@@ -73,6 +73,7 @@ body.theme-light .bp-code{color:rgba(30,41,59,.8);}
 body.theme-light input[type=text],body.theme-light input[type=number],body.theme-light select,body.theme-light textarea{background:rgba(0,0,0,.04);color:var(--text);}
 body.theme-light .btn-sm{background:rgba(0,0,0,.06);color:rgba(30,41,59,.8);border-color:rgba(0,0,0,.1);}
 body.theme-light #game-container{background:#f0f4ff;}
+body.overlay-active .panel-fab{display:none!important;}
 /* Theme toggle button */
 #themeToggle{background:none;border:1px solid var(--border2);padding:4px 9px;border-radius:7px;cursor:pointer;font-size:.8rem;color:var(--muted);transition:color .15s,border-color .15s;}
 #themeToggle:hover{color:var(--text);border-color:var(--purple-lt);}
@@ -7844,7 +7845,7 @@ const CONTROLS = {
     SHOOTER:  'Controls: Move with arrows · SPACE to shoot',
     PLATFORMER:'Controls: LEFT/RIGHT run · UP/SPACE jump · Scroll right, how far can you go?',
     DODGE:    'Controls: LEFT/RIGHT to dodge · Collect ⭐ avoid 👾',
-    BREAKER:  'Controls: LEFT/RIGHT to move paddle · Don\'t miss the ball!',
+    BREAKER:  'Controls: Drag on canvas to move paddle · Don\'t miss the ball!',
     RUNNER:   'Controls: SPACE or UP to jump · Leap over obstacles!',
     FLAPPY:   'Controls: SPACE or tap anywhere to flap!',
     INVADERS: 'Controls: LEFT/RIGHT move · SPACE shoot',
@@ -8948,6 +8949,7 @@ function _runCountdown(cb) {
 
 function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
+    document.body.classList.remove('overlay-active');
     _updateLandscapeNudge(true);
     _maybeStoryIntro(() => _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame())));
 }
@@ -17661,6 +17663,7 @@ function showGameOver(score) {
     _maybeCutscene('after', () => {
         const goEl = document.getElementById('goOverlay');
         goEl.classList.add('show');
+        document.body.classList.add('overlay-active');
         _a11yTrapFocus(goEl);
         // Only auto-focus initials on non-touch devices, on mobile, focus()
         // triggers the keyboard which obscures the game-over screen.
@@ -17719,6 +17722,7 @@ function _saveGoScore() {
 }
 
 function closeGameOver() {
+    document.body.classList.remove('overlay-active');
     // Ensure score is saved even if player skips initials entry
     const nameRow = document.getElementById('goNameRow');
     if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
