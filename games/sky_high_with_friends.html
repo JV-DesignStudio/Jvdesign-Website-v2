@@ -399,6 +399,15 @@
     color: rgba(255,255,255,0.38);
   }
 
+  /* FTUE */
+  #ftue { position: fixed; inset: 0; z-index: 450; display: grid; place-items: center; background: rgba(10,6,23,0.82); }
+  #ftue.hidden { display: none; }
+  .ftue-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(360px, 90vw); text-align: center; }
+  .ftue-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
+  .ftue-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; text-align: left; }
+  .ftue-step { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--ui-stroke); border-radius: 12px; padding: 10px 12px; }
+  .ftue-icon { font-size: 20px; width: 28px; text-align: center; }
+
   /* Big primary Play button */
   .btn.play-big {
     width: 100%;
@@ -1163,6 +1172,17 @@
   <div class="intro-studio">A JVDesignStudio game · <span id="intro-version"></span></div>
 </div>
 
+<div id="ftue" class="hidden">
+  <div class="ftue-card">
+    <div class="ftue-title">How to play</div>
+    <div class="ftue-steps">
+      <div class="ftue-step"><span class="ftue-icon">📱</span><span id="ftue-ctrl-text">Tilt to steer</span></div>
+      <div class="ftue-step"><span class="ftue-icon">🦘</span><span>Land on platforms to jump</span></div>
+      <div class="ftue-step"><span class="ftue-icon">🪙</span><span>Collect coins & dodge wasps</span></div>
+    </div>
+    <button class="btn" id="ftue-go">Got it — Play!</button>
+  </div>
+</div>
 <div id="wrap">
   <canvas id="game" width="420" height="700" role="img" aria-label="Sky High With Friends game. Tilt your device to steer your character upward."></canvas>
 </div>
@@ -1272,6 +1292,7 @@
       <button class="btn" id="retry-btn">Retry</button>
       <button class="btn secondary" id="menu-btn">Menu</button>
       <button class="btn secondary small hidden" id="boards-btn">🏆 Boards</button>
+      <button class="btn secondary small" id="share-btn" aria-label="Share score">📤 Share</button>
     </div>
     <button class="btn small hidden" id="export-deaths-btn" style="margin-top:8px;font-size:11px;opacity:0.5;">📊 Export Run Data</button>
   </div>
@@ -1411,7 +1432,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.2', code: 9, date: '2026-09-01', codename: '' };
+const GAME_VERSION = { v: '2.3', code: 10, date: '2026-09-01', codename: '' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1627,6 +1648,20 @@ function loadSave() {
 function persist() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
   catch (e) { console.warn('Save failed', e); }
+  cloudSave();
+}
+// Cloud saves stub — hook Play Games Saved Games when plugin available, else no-op
+function cloudSave(){
+  try{
+    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
+    if(pg && pg.saveGameState){ pg.saveGameState({ key: SAVE_KEY, data: JSON.stringify(save) }).catch(()=>{}); }
+  }catch(e){}
+}
+async function cloudLoad(){
+  try{
+    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
+    if(pg && pg.loadGameState){ const r = await pg.loadGameState({ key: SAVE_KEY }); if(r && r.data){ const d=JSON.parse(r.data); Object.assign(save, d); } }
+  }catch(e){}
 }
 
 /* ---------- Sound system ----------
@@ -1821,6 +1856,7 @@ const ACHIEVEMENTS = [
   { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: '⭐', check: (s) => s.bestHeight >= 5000 },
   { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🌌', check: (s) => s.bestHeight >= 8000 },
   { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: '🪐', check: (s) => s.bestHeight >= 12000 },
+  { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: '🌑', check: (s) => s.bestHeight >= 16000 },
   { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
   { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
   { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
@@ -2124,6 +2160,7 @@ const ZONES = [
   { name: 'Night Sky', minM: 5000, sky: ['#0d0633', '#1a0a4a'], plat: '#7e57c2', platEdge: '#311b92' },
   { name: 'Aurora',    minM: 8000, sky: ['#02131f', '#0b3d3b'], plat: '#26a69a', platEdge: '#004d40' },
   { name: 'Cosmos',    minM: 12000, sky: ['#01010a', '#1a0a2e'], plat: '#7c4dff', platEdge: '#2a0a4a' },
+  { name: 'Void',      minM: 16000, sky: ['#000000', '#0d020d'], plat: '#1a1a2e', platEdge: '#000000' },
 ];
 
 function getZone(m) {
@@ -4317,7 +4354,8 @@ function drawGhost() {
 
   ctx.save();
   ctx.globalAlpha = 0.3;
-  drawCharacter(ctx, ghostCharId, pos.x, y, w, h, ghostChar.body, ghostChar.accent, 1);
+  const gspr = getCharSprite(ghostCharId, ghostChar.body, ghostChar.accent, 1);
+  ctx.drawImage(gspr.c, pos.x, y, w, h);
   ctx.restore();
 
   // "GHOST" label
@@ -4993,6 +5031,12 @@ function closeShop() {
   refreshMenu();
 }
 
+function seasonalFree(item){
+  const m=new Date().getMonth();
+  if(item.id==='santa' && m===11) return true;
+  if(item.id==='horns' && m===9) return true;
+  return false;
+}
 function refreshShop() {
   document.getElementById('shop-coin-count').textContent = save.coins;
 
@@ -5081,14 +5125,15 @@ function refreshShop() {
     const equipped = equippedId === item.id;
     const lockedByAchievement = item.achievement && !save.achievements.includes(item.achievement);
     const lockedByLevel = item.levelReq && save.level < item.levelReq;
-    const canAfford = save.coins >= item.price;
+    const effPrice = seasonalFree(item) ? 0 : item.price;
+    const canAfford = save.coins >= effPrice;
 
     const div = document.createElement('div');
     div.className = 'shop-item';
     if (equipped) div.classList.add('equipped');
     else if (owned) div.classList.add('owned');
     if ((lockedByAchievement || lockedByLevel) && !owned) div.classList.add('locked');
-    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && item.price > 0) div.classList.add('cant-afford');
+    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && effPrice > 0) div.classList.add('cant-afford');
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'shop-item-preview';
@@ -5116,7 +5161,8 @@ function refreshShop() {
       status.textContent = 'Lv ' + item.levelReq;
     } else {
       status.className = 'shop-item-price';
-      status.textContent = item.price === 0 ? 'Free' : '🪙 ' + item.price;
+      if(seasonalFree(item) && !owned) status.textContent = '🎃 Free this month!';
+      else status.textContent = effPrice === 0 ? 'Free' : '🪙 ' + effPrice;
     }
 
     div.appendChild(previewWrap);
@@ -5147,17 +5193,18 @@ function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedB
     refreshShop();
     return;
   }
-  if (save.coins < item.price) {
+  const effPrice2 = seasonalFree(item) ? 0 : item.price;
+  if (save.coins < effPrice2) {
     SFX.error();
     showToast('Not enough coins!');
     return;
   }
   SFX.buy();
-  save.coins -= item.price;
+  save.coins -= effPrice2;
   save.owned[shopTab].push(item.id);
   save.equipped[shopChar][shopTab] = item.id;
   persist();
-  showToast(`Bought ${item.name}!`);
+  showToast(effPrice2===0 && seasonalFree(item) ? `Claimed ${item.name}! 🎃` : `Bought ${item.name}!`);
   pulseEl(document.getElementById('shop-coins'));
   refreshShop();
 }
@@ -5191,7 +5238,7 @@ function drawShopPreview(canvas, charId, tab, item) {
   }
 }
 
-document.getElementById('play-btn').addEventListener('click', () => { initAudio(); enableTiltForMobile(); openModChooser(false); });
+document.getElementById('play-btn').addEventListener('click', () => { initAudio(); enableTiltForMobile(); if(!save.tutorialDone){ showFTUE(); return; } openModChooser(false); });
 document.getElementById('shop-btn').addEventListener('click', () => { initAudio(); openShop(); });
 document.getElementById('shop-back-btn').addEventListener('click', closeShop);
 document.getElementById('retry-btn').addEventListener('click', () => { initAudio(); enableTiltForMobile(); startGame(state.weekly); });
@@ -5202,6 +5249,14 @@ document.getElementById('export-deaths-btn').addEventListener('click', () => {
   var btn = document.getElementById('export-deaths-btn');
   if (btn) btn.textContent = '✅ Exported ' + count + ' runs';
   setTimeout(() => { if (btn) btn.textContent = '📊 Export Run Data'; }, 2000);
+});
+document.getElementById('share-btn').addEventListener('click', async () => {
+  const text = `I hit ${state.heightM}m with ${state.runCoins} coins in Sky High With Friends! Can you beat it?`;
+  try{
+    if(navigator.share){ await navigator.share({ title: 'Sky High With Friends', text, url: location.href }); }
+    else if(navigator.clipboard){ await navigator.clipboard.writeText(text); showToast('Score copied!'); }
+    else showToast(text);
+  }catch(e){ showToast('Share cancelled'); }
 });
 
 // Telemetry welcome message (dev console)
@@ -5304,6 +5359,20 @@ document.querySelectorAll('.shop-tab').forEach(t => {
     refreshShop();
   });
 });
+
+/* ---------- FTUE ---------- */
+function showFTUE(){
+  const ftue=document.getElementById('ftue');
+  const txt=document.getElementById('ftue-ctrl-text');
+  const ctrl=save.settings.controls||'tilt';
+  txt.textContent = ctrl==='tilt' ? 'Tilt to steer' : ctrl==='drag' ? 'Drag to steer' : 'Use ◀ ▶ buttons to steer';
+  ftue.classList.remove('hidden');
+}
+function hideFTUE(){
+  document.getElementById('ftue').classList.add('hidden');
+  save.tutorialDone=true; persist();
+}
+document.getElementById('ftue-go').addEventListener('click', ()=>{ hideFTUE(); openModChooser(false); });
 
 /* ---------- Settings ---------- */
 function openSettings() {

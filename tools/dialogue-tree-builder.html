@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dialogue Tree Builder | JVDesignStudio</title>
+<meta name="description" content="Build branching dialogue trees for RPGs visually. Node editor with conditions, variables and export to JSON for Godot, Unity and Ren'Py.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Dialogue Tree Builder","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/dialogue-tree-builder.html","description":"Build branching dialogue trees for RPGs visually. Node editor with conditions, variables and export to JSON for Godot, Unity and Ren'Py.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:1fr 300px;gap:20px}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}}
+.canvas-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;min-height:500px;position:relative;overflow:auto}
+.canvas-area canvas{width:100%;height:100%}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-section h3{font-size:.85rem;font-weight:700;margin-bottom:10px}
+.node{position:absolute;background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:12px;min-width:200px;cursor:move;z-index:10}
+.node.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.node-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.node-type{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase}
+.node-type.dialogue{background:rgba(124,58,237,.2);color:var(--accent)}
+.node-type.choice{background:rgba(245,158,11,.2);color:var(--gold)}
+.node-type.condition{background:rgba(6,214,160,.2);color:var(--teal)}
+.node-type.event{background:rgba(239,68,68,.2);color:var(--rose)}
+.node-name{font-weight:700;font-size:.85rem}
+.node-body{font-size:.78rem;color:var(--muted);line-height:1.5}
+.node-choices{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.node-choice{font-size:.75rem;padding:4px 8px;background:rgba(255,255,255,.05);border-radius:4px;cursor:pointer}
+.node-choice:hover{background:rgba(255,255,255,.1)}
+.node-port{width:12px;height:12px;border-radius:50%;background:var(--accent);position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);cursor:pointer;border:2px solid var(--panel)}
+.node-port:hover{background:var(--green)}
+.btn{padding:8px 14px;border-radius:6px;border:none;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--rose);color:white}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Dialogue Tree Builder</h1>
+  <button class="btn btn-secondary" onclick="addNode('dialogue')">+ Dialogue</button>
+  <button class="btn btn-secondary" onclick="addNode('choice')">+ Choice</button>
+  <button class="btn btn-secondary" onclick="addNode('condition')">+ Condition</button>
+  <button class="btn btn-primary" onclick="exportJSON()">📥 Export JSON</button>
+</div>
+<div class="wrap">
+  <div class="canvas-area" id="canvasArea">
+    <canvas id="lineCanvas"></canvas>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Selected Node</h3>
+      <div id="nodeEditor" style="font-size:.78rem;color:var(--muted)">Click a node to edit</div>
+    </div>
+    <div class="sidebar-section">
+      <h3>How to use</h3>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.6">
+        <p><strong>1. Add nodes</strong> — Dialogue, Choice, Condition, Event</p>
+        <p><strong>2. Connect</strong> — Drag from output port to input port</p>
+        <p><strong>3. Edit</strong> — Click a node to edit text and choices</p>
+        <p><strong>4. Export</strong> — Download as JSON for Godot/Unity/Ren'Py</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let nodes = [];
+let connections = [];
+let selectedNode = -1;
+let dragging = null;
+let dragOffset = { x: 0, y: 0 };
+let connecting = null;
+let nodeId = 0;
+
+function addNode(type, x, y) {
+  const id = nodeId++;
+  nodes.push({
+    id, type,
+    x: x || 100 + Math.random() * 400,
+    y: y || 100 + Math.random() * 300,
+    name: type === 'dialogue' ? 'NPC' : type === 'choice' ? 'Player' : type === 'condition' ? 'If...' : 'Event',
+    text: '',
+    choices: type === 'choice' ? ['Option 1', 'Option 2'] : [],
+    variable: '',
+    value: '',
+    eventName: ''
+  });
+  renderNodes();
+}
+
+function renderNodes() {
+  const area = document.getElementById('canvasArea');
+  // Remove old nodes
+  area.querySelectorAll('.node').forEach(n => n.remove());
+  nodes.forEach((node, i) => {
+    const div = document.createElement('div');
+    div.className = 'node' + (i === selectedNode ? ' selected' : '');
+    div.style.left = node.x + 'px';
+    div.style.top = node.y + 'px';
+    div.innerHTML = `
+      <div class="node-header">
+        <span class="node-type ${node.type}">${node.type}</span>
+        <span class="node-name">${node.name}</span>
+      </div>
+      <div class="node-body">${node.text || 'Click to edit...'}</div>
+      ${node.type === 'choice' ? '<div class="node-choices">' + node.choices.map(c => '<div class="node-choice">' + c + '</div>').join('') + '</div>' : ''}
+      <div class="node-port" data-node="${i}" data-port="out"></div>
+    `;
+    div.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('node-port')) {
+        connecting = i;
+        e.stopPropagation();
+        return;
+      }
+      selectedNode = i;
+      dragging = i;
+      dragOffset = { x: e.clientX - node.x, y: e.clientY - node.y };
+      renderNodes();
+      renderEditor();
+    });
+    div.addEventListener('mouseup', (e) => {
+      if (connecting !== null && e.target.classList.contains('node-port')) {
+        const toIdx = parseInt(e.target.dataset.node);
+        if (connecting !== toIdx) {
+          connections.push({ from: connecting, to: toIdx });
+          renderLines();
+        }
+        connecting = null;
+      }
+    });
+    area.appendChild(div);
+  });
+}
+
+function renderEditor() {
+  if (selectedNode < 0) return;
+  const node = nodes[selectedNode];
+  const el = document.getElementById('nodeEditor');
+  el.innerHTML = `
+    <div style="margin-bottom:8px">
+      <label style="font-size:.75rem;color:var(--muted)">Name</label>
+      <input type="text" value="${node.name}" onchange="nodes[${selectedNode}].name=this.value;renderNodes()" style="width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem;margin-top:4px">
+    </div>
+    <div style="margin-bottom:8px">
+      <label style="font-size:.75rem;color:var(--muted)">Text</label>
+      <textarea onchange="nodes[${selectedNode}].text=this.value;renderNodes()" style="width:100%;min-height:60px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem;margin-top:4px">${node.text}</textarea>
+    </div>
+    ${node.type === 'choice' ? `
+    <div style="margin-bottom:8px">
+      <label style="font-size:.75rem;color:var(--muted)">Choices (one per line)</label>
+      <textarea onchange="nodes[${selectedNode}].choices=this.value.split('\\n').filter(Boolean);renderNodes()" style="width:100%;min-height:60px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem;margin-top:4px">${node.choices.join('\n')}</textarea>
+    </div>` : ''}
+    ${node.type === 'condition' ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div>
+        <label style="font-size:.75rem;color:var(--muted)">Variable</label>
+        <input type="text" value="${node.variable}" onchange="nodes[${selectedNode}].variable=this.value" style="width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem;margin-top:4px">
+      </div>
+      <div>
+        <label style="font-size:.75rem;color:var(--muted)">Value</label>
+        <input type="text" value="${node.value}" onchange="nodes[${selectedNode}].value=this.value" style="width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem;margin-top:4px">
+      </div>
+    </div>` : ''}
+    <button class="btn btn-danger" onclick="deleteNode(${selectedNode})" style="width:100%;margin-top:8px">Delete Node</button>
+  `;
+}
+
+function deleteNode(idx) {
+  nodes.splice(idx, 1);
+  connections = connections.filter(c => c.from !== idx && c.to !== idx);
+  connections.forEach(c => { if (c.from > idx) c.from--; if (c.to > idx) c.to--; });
+  selectedNode = -1;
+  renderNodes();
+  renderLines();
+  document.getElementById('nodeEditor').innerHTML = '<div style="font-size:.78rem;color:var(--muted)">Click a node to edit</div>';
+}
+
+function renderLines() {
+  const canvas = document.getElementById('lineCanvas');
+  const area = document.getElementById('canvasArea');
+  canvas.width = area.scrollWidth;
+  canvas.height = area.scrollHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  connections.forEach(conn => {
+    const fromNode = nodes[conn.from];
+    const toNode = nodes[conn.to];
+    if (!fromNode || !toNode) return;
+    const fromEl = area.querySelectorAll('.node')[conn.from];
+    const toEl = area.querySelectorAll('.node')[conn.to];
+    if (!fromEl || !toEl) return;
+    const x1 = fromNode.x + fromEl.offsetWidth / 2;
+    const y1 = fromNode.y + fromEl.offsetHeight;
+    const x2 = toNode.x + toEl.offsetWidth / 2;
+    const y2 = toNode.y;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(x1, y1 + 50, x2, y2 - 50, x2, y2);
+    ctx.strokeStyle = 'rgba(124,58,237,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (dragging !== null) {
+    const node = nodes[dragging];
+    node.x = e.clientX - dragOffset.x;
+    node.y = e.clientY - dragOffset.y;
+    renderNodes();
+    renderLines();
+  }
+});
+
+document.addEventListener('mouseup', () => { dragging = null; connecting = null; });
+
+function exportJSON() {
+  const data = {
+    nodes: nodes.map(n => ({
+      id: n.id, type: n.type, name: n.name, text: n.text,
+      choices: n.choices, variable: n.variable, value: n.value,
+      eventName: n.eventName, x: Math.round(n.x), y: Math.round(n.y)
+    })),
+    connections: connections.map(c => ({ from: c.from, to: c.to }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dialogue-tree.json';
+  a.click();
+  showToast('JSON exported!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+// Start with a demo
+addNode('dialogue', 50, 50);
+addNode('choice', 300, 50);
+connections.push({ from: 0, to: 1 });
+renderLines();
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>

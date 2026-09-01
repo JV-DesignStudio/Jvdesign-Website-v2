@@ -2254,6 +2254,20 @@ button,.btn,.tab-btn,.mob-nav-btn,.filter-chip,.card,.fab,.fab-mini,.col-add,
         <div style="font-size:.72rem;font-weight:900;color:#f97316;margin-top:6px">⚔️ Dungeon Raid Tokens: <span id="raidTokenBalance">0</span> <span style="font-weight:700;color:var(--muted)">· slay monsters in the Coffee-Break Dungeon to earn them · 5 tokens = one 150-dmg Strike</span></div>
     </div>
     <div class="raids-list" id="raidsList"></div>
+    <div class="rpg-panel" id="partyPanel" style="margin-top:14px">
+      <div class="rpg-panel-title">👥 Party <span style="font-size:.62rem;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:400">, share a boss, async damage (Gist)</span></div>
+      <div id="partyBody"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btn-rose btn-sm" onclick="createParty()">🎉 Create Party</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <input class="modal-input" id="partyCodeIn" placeholder="Paste Party Gist ID to join" style="flex:2;min-width:160px">
+        <button class="btn btn-ghost btn-sm" onclick="joinParty()">Join</button>
+        <button class="btn btn-ghost btn-sm" onclick="pollParty()">↻ Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="leaveParty()">Leave</button>
+      </div>
+      <div style="font-size:.62rem;color:var(--muted2);margin-top:6px">Needs GitHub Gist PAT linked in Profile. Offline? Party shows local data only.</div>
+    </div>
   </div>
 </div>
 
@@ -2421,9 +2435,14 @@ Complete real quests to boost your stats , STR powers 🗡️ Attack, INT fuels 
   <div class="life-wrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:10px">
       <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.2rem">🌟 Daily Life</h2>
-      <div class="buff-row" id="lifeBuffDisplay"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:.75rem;font-weight:900;color:var(--rose)">❤️ <span id="lifeHp">100</span>/<span id="lifeMaxHp">100</span> HP</span>
+        <button class="btn btn-ghost btn-sm" onclick="toggleTavernRest()" id="tavernRestBtn" style="font-size:.68rem">🏰 Tavern</button>
+        <div class="buff-row" id="lifeBuffDisplay"></div>
+      </div>
     </div>
-    <div style="font-size:.74rem;color:var(--muted);margin-bottom:16px">Self-care directly powers your RPG stats. Medicine ✓ → health stays up. Exercise ✓ → STR grows. Mental care ✓ → INT grows. Full completion = ×1.2 XP all day.</div>
+    <div style="font-size:.74rem;color:var(--muted);margin-bottom:6px">Self-care directly powers your RPG stats. Medicine ✓ → health stays up. Exercise ✓ → STR grows. Mental care ✓ → INT grows. Full completion = ×1.2 XP all day.</div>
+    <div id="tavernRestBanner" style="display:none;background:rgba(112,163,167,.12);border:1px solid rgba(112,163,167,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.75rem;color:var(--teal-lt)">🏰 Resting in the Tavern — no damage from missed dailies for 24h. <button class="btn btn-ghost btn-sm" onclick="toggleTavernRest()" style="font-size:.62rem;margin-left:8px">Leave Tavern</button></div>
     <div class="life-grid" id="lifeGrid"></div>
     <!-- Add item -->
     <div class="rpg-panel">
@@ -3448,6 +3467,7 @@ var tb=document.getElementById('raidTokenBalance');if(tb)tb.textContent=String(r
     el.innerHTML=`<div class="raid-boss-name">${r.name}</div><div style="font-size:.65rem;color:var(--muted);text-transform:uppercase">${r.maxHp} HP Boss</div><div style="display:flex;justify-content:space-between;font-size:.7rem;font-weight:800;color:var(--rose);margin-top:4px"><span>HP</span><span>${r.hp}/${r.maxHp} (${pct}%)</span></div><div class="raid-hp-bg"><div class="raid-hp-bar" style="width:${pct}%;${r.slain?'background:var(--green)':''}"></div></div><div style="font-size:.62rem;color:var(--muted2);display:flex;justify-content:space-between;margin-top:4px"><span>Spawned: ${r.date}</span>${!r.slain?`<button class="btn btn-ghost btn-sm" onclick="strikeRaid('${r.id}')" style="padding:2px 6px;font-size:.55rem;margin-right:4px;background:rgba(245,200,66,.12);color:var(--gold);border-color:rgba(245,200,66,.35)">⚔️ Strike (5🎫)</button><button class="btn btn-ghost btn-sm" onclick="abandonRaid('${r.id}')" style="padding:2px 6px;font-size:.55rem">Retreat</button>`:''}</div>`;
     c.appendChild(el);
   });
+  try{renderParty();}catch(e){}
 }
 function dealRaidDamage(dmg){
   let changed=false;
@@ -4133,14 +4153,14 @@ function applyTemplate(i){
 }
 
 /* ── HABITS ──────────────────────────────────────────────────────────────────── */
-function saveHabit(){
+function saveHabit(dir){
   const text=document.getElementById('habitInput').value.trim();
   if(!text){showToast('Name your habit first!');return;}
   const xp=parseInt(document.getElementById('habitXp').value)||50;
   if(!rpg.habits)rpg.habits=[];
-  rpg.habits.push({id:'h'+Date.now(),text,xp,streak:0,lastDone:''});
+  rpg.habits.push({id:'h'+Date.now(),text,xp,streak:0,lastDone:'',lastDown:'',negative:dir==='down'});
   document.getElementById('habitInput').value='';
-  save();renderHabits();showToast('🏃 Habit added!');playSfx('coin');
+  save();renderHabits();showToast(dir==='down'?'⚠️ Negative habit added!':'🏃 Habit added!');playSfx('coin');
 }
 function tickHabit(id){
   const h=rpg.habits.find(x=>x.id===id);if(!h)return;
@@ -4166,7 +4186,8 @@ function renderHabits(){
   rpg.habits.forEach(h=>{
     const done=h.lastDone===today;
     const el=document.createElement('div');el.className='habit-item'+(done?' done-today':'');
-    el.innerHTML=`<div class="habit-check${done?' done':''}" onclick="tickHabit('${h.id}')">${done?'✓':''}</div><div class="habit-info"><div class="habit-name">${escHtml(h.text)}</div><div class="habit-meta">${h.xp} XP${done?' · Done today ✅':''}</div></div><div class="habit-streak">🔥 ${h.streak||0}</div><button class="habit-del" onclick="deleteHabit('${h.id}')">🗑</button>`;
+    const negDone=h.lastDown===today;
+    el.innerHTML=`<div class="habit-check${done?' done':''}${h.negative&&!done?' done':''}" style="${h.negative?'border-color:var(--rose);color:var(--rose)':''}" onclick="${h.negative?`tickHabitDown('${h.id}')`:`tickHabit('${h.id}')`}">${done?'✓':h.negative?'▼':''}</div><div class="habit-info"><div class="habit-name">${escHtml(h.text)}</div><div class="habit-meta">${h.negative?'⚠️ −HP'+(negDone?' · Penalised today':''):(h.xp+' XP'+(done?' · Done today ✅':''))}</div></div>${h.negative?'':`<div class="habit-streak">🔥 ${h.streak||0}</div>`}<button class="habit-del" onclick="deleteHabit('${h.id}')">🗑</button>`;
     list.appendChild(el);
   });
 }
@@ -5423,6 +5444,20 @@ function renderLifeTab(){
     });
     grid.appendChild(div);
   });
+  // Update HP display
+  const hpEl=document.getElementById('lifeHp');const maxHpEl=document.getElementById('lifeMaxHp');
+  if(hpEl)hpEl.textContent=rpg.hp||_maxHp();
+  if(maxHpEl)maxHpEl.textContent=_maxHp();
+  // Tavern rest banner
+  const banner=document.getElementById('tavernRestBanner');const btn=document.getElementById('tavernRestBtn');
+  if(banner&&btn){
+    if(rpg.selfCare.restInn){
+      banner.style.display='block';btn.textContent='Leave Tavern 🏰';
+      const remaining=Math.max(0,rpg.selfCare.restInnUntil-Date.now());
+      const hrs=Math.floor(remaining/3600000);const mins=Math.floor((remaining%3600000)/60000);
+      banner.innerHTML=`🏰 Resting in the Tavern — no damage for ${hrs}h ${mins}m. <button class="btn btn-ghost btn-sm" onclick="toggleTavernRest()" style="font-size:.62rem;margin-left:8px">Leave Tavern</button>`;
+    }else{banner.style.display='none';btn.textContent='🏰 Tavern';}
+  }
   updateLifeBuffs();
 }
 function _isTimeDue(t){
@@ -6679,6 +6714,9 @@ if(!rpg.bossThreats)rpg.bossThreats={};
 if(!rpg.streak)rpg.streak=0;
 if(!rpg.dailyStats)rpg.dailyStats={};
 if(!rpg.habits)rpg.habits=[];
+if(!rpg.familiars)rpg.familiars={eggs:{},essences:{},foods:{},pets:[],mounts:[],activePet:null,activeMount:null};
+if(!rpg.familiars.eggs)rpg.familiars.eggs={};if(!rpg.familiars.essences)rpg.familiars.essences={};if(!rpg.familiars.foods)rpg.familiars.foods={};if(!rpg.familiars.pets)rpg.familiars.pets=[];if(!rpg.familiars.mounts)rpg.familiars.mounts=[];
+if(!rpg.party)rpg.party=null;
 if(!rpg.calEvents)rpg.calEvents=[];
 if(!rpg.activeBuffs)rpg.activeBuffs=[];
 if(!rpg.shopUnlocked)rpg.shopUnlocked={};

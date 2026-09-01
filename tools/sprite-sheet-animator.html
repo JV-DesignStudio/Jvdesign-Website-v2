@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprite Sheet Animator | JVDesignStudio</title>
+<meta name="description" content="Combine sprite frames into animated spritesheets. Import from Pixel Studio, preview animations, export as PNG + JSON atlas for Godot, Unity and Phaser.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Sprite Sheet Animator","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/sprite-sheet-animator.html","description":"Combine sprite frames into animated spritesheets. Import from Pixel Studio, preview animations, export as PNG + JSON atlas.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1100px;margin:0 auto;padding:24px;width:100%;display:grid;grid-template-columns:1fr 300px;gap:20px}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}}
+.preview-area{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+.preview-area canvas{width:100%;border:1px solid var(--border);border-radius:8px;image-rendering:pixelated}
+.frames-area{display:flex;gap:8px;flex-wrap:wrap;padding:12px 0}
+.frame{width:64px;height:64px;border:1px solid var(--border);border-radius:4px;position:relative;cursor:pointer;overflow:hidden}
+.frame.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.frame canvas{width:100%;height:100%;image-rendering:pixelated}
+.frame-num{position:absolute;bottom:2px;left:2px;font-size:.5rem;background:rgba(0,0,0,.6);color:white;padding:1px 3px;border-radius:2px}
+.frame-remove{position:absolute;top:2px;right:2px;background:var(--rose);color:white;border:none;border-radius:50%;width:14px;height:14px;font-size:.5rem;cursor:pointer;display:none}
+.frame:hover .frame-remove{display:block}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.sidebar-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.sidebar-section h3{font-size:.85rem;font-weight:700;margin-bottom:10px}
+.form-group{margin-bottom:8px}
+.form-group label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.form-group input,.form-group select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:4px;font-size:.85rem}
+.btn{padding:8px 14px;border-radius:6px;border:none;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--rose);color:white}
+.playback{display:flex;align-items:center;gap:8px;margin:12px 0}
+.playback canvas{border:1px solid var(--border);border-radius:8px;image-rendering:pixelated}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Sprite Sheet Animator</h1>
+  <button class="btn btn-secondary" onclick="importFromPixelStudio()">📋 From Pixel Studio</button>
+  <button class="btn btn-secondary" onclick="importFrames()">📥 Import Frames</button>
+  <button class="btn btn-primary" onclick="exportPNG()">📥 Export PNG</button>
+  <button class="btn btn-primary" onclick="exportJSON()">📥 Export JSON</button>
+  <input type="file" id="importInput" accept="image/*" multiple style="display:none" onchange="handleImport(this)">
+</div>
+<div class="wrap">
+  <div class="preview-area">
+    <div style="text-align:center;margin-bottom:12px">
+      <span style="font-size:.85rem;color:var(--muted)">Preview</span>
+    </div>
+    <div class="playback">
+      <button class="btn btn-secondary" onclick="togglePlay()" id="playBtn">▶ Play</button>
+      <span style="font-size:.78rem;color:var(--muted)">FPS:</span>
+      <input type="number" id="fps" value="8" min="1" max="60" style="width:50px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem">
+      <canvas id="previewCanvas" width="128" height="128" style="width:128px;height:128px"></canvas>
+      <span id="frameInfo" style="font-size:.78rem;color:var(--muted)">0/0</span>
+    </div>
+    <div style="text-align:center;margin:12px 0">
+      <span style="font-size:.85rem;color:var(--muted)">Sheet Preview</span>
+    </div>
+    <canvas id="sheetCanvas" width="512" height="512" style="width:100%;max-height:300px"></canvas>
+    <div id="framesContainer" class="frames-area"></div>
+  </div>
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Frames (<span id="frameCount">0</span>)</h3>
+      <button class="btn btn-secondary" onclick="addEmptyFrame()" style="width:100%;margin-bottom:8px">+ Empty Frame</button>
+      <button class="btn btn-danger" onclick="removeSelectedFrame()" style="width:100%" id="removeFrameBtn" disabled>Remove Selected</button>
+    </div>
+    <div class="sidebar-section">
+      <h3>Animation</h3>
+      <div class="form-group">
+        <label>Loop</label>
+        <select id="loopMode">
+          <option value="loop">Loop</option>
+          <option value="once">Play Once</option>
+          <option value="pingpong">Ping-Pong</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Frame Duration (ms)</label>
+        <input type="number" id="frameDuration" value="125" min="16" max="2000">
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Sheet Layout</h3>
+      <div class="form-group">
+        <label>Columns</label>
+        <input type="number" id="sheetCols" value="4" min="1" max="32">
+      </div>
+      <div class="form-group">
+        <label>Padding</label>
+        <input type="number" id="sheetPad" value="0" min="0" max="8">
+      </div>
+      <button class="btn btn-secondary" onclick="updateSheet()" style="width:100%">Refresh Sheet</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script>
+let frames = [];
+let selectedFrame = -1;
+let playing = false;
+let playInterval = null;
+let currentPlayFrame = 0;
+
+function importFromPixelStudio() {
+  try {
+    const raw = localStorage.getItem('jvds_pixel');
+    if (!raw) { showToast('No Pixel Studio project found'); return; }
+    const data = JSON.parse(raw);
+    if (!data.frames || !data.frames.length) { showToast('No frames in Pixel Studio project'); return; }
+    // Convert each frame to a canvas
+    frames = data.frames.map((frameData, i) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = data.cW; canvas.height = data.cH;
+      const ctx = canvas.getContext('2d');
+      // Flatten layers
+      const imgData = ctx.createImageData(data.cW, data.cH);
+      frameData.forEach(layer => {
+        if (layer) {
+          const layerData = new Uint8Array(layer);
+          for (let j = 0; j < layerData.length; j += 4) {
+            if (layerData[j+3] > 0) {
+              imgData.data[j] = layerData[j];
+              imgData.data[j+1] = layerData[j+1];
+              imgData.data[j+2] = layerData[j+2];
+              imgData.data[j+3] = layerData[j+3];
+            }
+          }
+        }
+      });
+      ctx.putImageData(imgData, 0, 0);
+      return { canvas, name: 'frame_' + i };
+    });
+    renderFrames();
+    updateSheet();
+    showToast('Imported ' + frames.length + ' frames from Pixel Studio');
+  } catch(e) { showToast('Failed to import: ' + e.message); }
+}
+
+function importFrames() {
+  document.getElementById('importInput').click();
+}
+
+function handleImport(input) {
+  const files = input.files;
+  if (!files.length) return;
+  let loaded = 0;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0);
+        frames.push({ canvas, name: file.name.replace(/\.\w+$/, '') });
+        loaded++;
+        if (loaded === files.length) {
+          renderFrames();
+          updateSheet();
+          showToast('Imported ' + frames.length + ' frames');
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function addEmptyFrame() {
+  const size = frames.length > 0 ? frames[0].canvas.width : 16;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  frames.push({ canvas, name: 'frame_' + frames.length });
+  renderFrames();
+  updateSheet();
+}
+
+function removeSelectedFrame() {
+  if (selectedFrame < 0) return;
+  frames.splice(selectedFrame, 1);
+  selectedFrame = -1;
+  renderFrames();
+  updateSheet();
+  document.getElementById('removeFrameBtn').disabled = true;
+}
+
+function selectFrame(idx) {
+  selectedFrame = idx;
+  renderFrames();
+  document.getElementById('removeFrameBtn').disabled = false;
+}
+
+function renderFrames() {
+  const container = document.getElementById('framesContainer');
+  container.innerHTML = '';
+  frames.forEach((frame, i) => {
+    const div = document.createElement('div');
+    div.className = 'frame' + (i === selectedFrame ? ' selected' : '');
+    div.onclick = () => selectFrame(i);
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(frame.canvas, 0, 0, 64, 64);
+    div.appendChild(canvas);
+    const num = document.createElement('div');
+    num.className = 'frame-num';
+    num.textContent = i;
+    div.appendChild(num);
+    const remove = document.createElement('button');
+    remove.className = 'frame-remove';
+    remove.textContent = '✕';
+    remove.onclick = (e) => { e.stopPropagation(); frames.splice(i, 1); if (selectedFrame === i) selectedFrame = -1; renderFrames(); updateSheet(); };
+    div.appendChild(remove);
+    container.appendChild(div);
+  });
+  document.getElementById('frameCount').textContent = frames.length;
+}
+
+function updateSheet() {
+  if (!frames.length) return;
+  const cols = parseInt(document.getElementById('sheetCols').value) || 4;
+  const pad = parseInt(document.getElementById('sheetPad').value) || 0;
+  const fw = frames[0].canvas.width;
+  const fh = frames[0].canvas.height;
+  const rows = Math.ceil(frames.length / cols);
+  const canvas = document.getElementById('sheetCanvas');
+  canvas.width = cols * (fw + pad * 2);
+  canvas.height = rows * (fh + pad * 2);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+  frames.forEach((frame, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    ctx.drawImage(frame.canvas, c * (fw + pad * 2) + pad, r * (fh + pad * 2) + pad);
+  });
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= cols; x++) {
+    ctx.beginPath(); ctx.moveTo(x * (fw + pad * 2), 0); ctx.lineTo(x * (fw + pad * 2), canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= rows; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * (fh + pad * 2)); ctx.lineTo(canvas.width, y * (fh + pad * 2)); ctx.stroke();
+  }
+}
+
+function togglePlay() {
+  if (playing) { stopPlay(); } else { startPlay(); }
+}
+
+function startPlay() {
+  if (!frames.length) { showToast('No frames to play'); return; }
+  playing = true;
+  currentPlayFrame = 0;
+  document.getElementById('playBtn').textContent = '⏹ Stop';
+  const fps = parseInt(document.getElementById('fps').value) || 8;
+  playInterval = setInterval(() => {
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(frames[currentPlayFrame].canvas, 0, 0, canvas.width, canvas.height);
+    document.getElementById('frameInfo').textContent = (currentPlayFrame + 1) + '/' + frames.length;
+    const mode = document.getElementById('loopMode').value;
+    if (mode === 'loop') currentPlayFrame = (currentPlayFrame + 1) % frames.length;
+    else if (mode === 'pingpong') {
+      if (currentPlayFrame >= frames.length - 1) currentPlayFrame = 0;
+      else currentPlayFrame++;
+    } else {
+      if (currentPlayFrame < frames.length - 1) currentPlayFrame++;
+      else stopPlay();
+    }
+  }, 1000 / fps);
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(playInterval);
+  document.getElementById('playBtn').textContent = '▶ Play';
+}
+
+function exportPNG() {
+  if (!frames.length) { showToast('No frames to export'); return; }
+  const canvas = document.getElementById('sheetCanvas');
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'spritesheet.png';
+  a.click();
+  showToast('PNG exported!');
+}
+
+function exportJSON() {
+  if (!frames.length) { showToast('No frames to export'); return; }
+  const cols = parseInt(document.getElementById('sheetCols').value) || 4;
+  const pad = parseInt(document.getElementById('sheetPad').value) || 0;
+  const fw = frames[0].canvas.width;
+  const fh = frames[0].canvas.height;
+  const rows = Math.ceil(frames.length / cols);
+  const atlas = {
+    meta: { size: { w: cols * (fw + pad * 2), h: rows * (fh + pad * 2) }, scale: 1, format: 'PNG' },
+    frames: {}
+  };
+  frames.forEach((frame, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    atlas.frames[frame.name || 'frame_' + i] = {
+      frame: { x: c * (fw + pad * 2) + pad, y: r * (fh + pad * 2) + pad, w: fw, h: fh },
+      rotated: false, trimmed: false, sourceSize: { w: fw, h: fh }
+    };
+  });
+  const blob = new Blob([JSON.stringify(atlas, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'spritesheet.json';
+  a.click();
+  showToast('JSON atlas exported!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>
