@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#22c55e">
+<script src="../analytics-loader.js"></script>
+
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/phone-stand-builder.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phone Stand Builder - Design Your Own 3D Printable Stand | JVDesignStudio</title>
+<meta name="description" content="Design and build your own 3D printable phone stand step by step. Choose style, size, angle, grip texture and export STL for printing. Free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/phone-stand-builder.html">
+<meta property="og:title" content="Phone Stand Builder - Design Your Own 3D Printable Stand | JVDesignStudio">
+<meta property="og:description" content="Design and build your own 3D printable phone stand. Choose style, size, angle and export STL. Free.">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Phone Stand Builder - Design Your Own 3D Printable Stand | JVDesignStudio">
+<meta name="twitter:description" content="Design and build your own 3D printable phone stand. Free.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<style>
+:root {
+  --bg:#f8f9fa;--bg2:#ffffff;--bg3:#f0f1f3;
+  --border:rgba(0,0,0,.08);
+  --text:#1a1a2e;--muted:rgba(26,26,46,.5);
+  --acc:#22c55e;--acc-lt:#4ade80;--acc-dk:#16a34a;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+#app{display:grid;grid-template-columns:340px 1fr 240px;grid-template-rows:54px 1fr;height:100vh}
+
+.hdr{grid-column:1/-1;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:90;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(34,197,94,.4),transparent)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px;color:var(--text)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),var(--acc-dk));color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(0,0,0,.2)}
+
+#sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+.prog-section{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.prog-track{width:100%;height:4px;background:rgba(0,0,0,.07);border-radius:999px;margin-top:5px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc-lt));border-radius:999px;transition:width .4s ease}
+.prog-ct{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);margin-top:3px}
+
+.slist{flex:1;overflow-y:auto;padding:4px 6px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.slist::-webkit-scrollbar{width:3px}
+.slist::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.si{padding:7px 9px;margin-bottom:2px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px solid transparent;transition:all .18s}
+.si:hover{background:rgba(34,197,94,.04)}
+.si.active{background:rgba(34,197,94,.1);border-color:var(--acc)}
+.si.done{opacity:.55}
+.si.done .sn{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sn{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(34,197,94,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;flex-shrink:0;color:var(--acc-dk);transition:all .2s}
+.sl{font-size:11.5px;color:var(--text);line-height:1.2}
+.si.active .sl{color:var(--acc-dk)}
+
+.cpan{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.02);overflow-y:auto;flex-shrink:0;max-height:48vh;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.cpan::-webkit-scrollbar{width:3px}
+.cpan::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+
+.snav{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0}
+.snav button{flex:1;padding:8px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(0,0,0,.05);color:var(--muted);border:1px solid var(--border) !important}
+.btn-n{background:rgba(34,197,94,.14);color:var(--acc-dk);border:1px solid rgba(34,197,94,.25) !important}
+.btn-p:hover:not(:disabled){background:rgba(0,0,0,.1);color:var(--text)}
+.btn-n:hover:not(:disabled){background:rgba(34,197,94,.24)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+#viewport{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.scene-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scene-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scene-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-dk)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.scene-wrap{flex:1;position:relative;overflow:hidden}
+#standCanvas{display:block;width:100%;height:100%;touch-action:none}
+.vhint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);background:rgba(255,255,255,.85);padding:3px 10px;border-radius:6px;pointer-events:none;white-space:nowrap;border:1px solid var(--border)}
+.dims{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1px solid rgba(34,197,94,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8}
+.dims span{color:var(--acc-dk)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--acc-dk);flex-shrink:0;min-height:26px}
+
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-dk);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.04em;color:var(--text);margin-bottom:5px;line-height:1}
+.step-intro{font-size:.78rem;color:var(--muted);line-height:1.72;margin-bottom:9px}
+.step-intro strong{color:var(--text)}
+
+.box{border-radius:7px;padding:8px 11px;margin:5px 0;font-size:.72rem;line-height:1.55;display:flex;gap:7px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.16);color:rgba(26,26,46,.7)}
+.box-c::before{content:"?"}
+.box-t{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.14);color:rgba(26,26,46,.7)}
+.box-t::before{content:"?"}
+.box-r{background:rgba(251,146,60,.06);border:1px solid rgba(251,146,60,.16);color:rgba(26,26,46,.7)}
+.box-r::before{content:"!"}
+
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:7px;margin:8px 0}
+.opt-btn{padding:9px 7px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:700;color:var(--muted);text-align:center;transition:all .15s;line-height:1.3}
+.opt-btn:hover{border-color:rgba(34,197,94,.4);color:var(--text);background:rgba(34,197,94,.05)}
+.opt-btn.sel{border-color:var(--acc);color:var(--acc-dk);background:rgba(34,197,94,.08)}
+.opt-icon{font-size:1.3rem;display:block;margin-bottom:3px}
+
+.swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:var(--text);transform:scale(1.18)}
+.custom-colour{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.72rem;color:var(--muted)}
+.custom-colour input[type=color]{width:32px;height:32px;border:2px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg2)}
+
+.slider-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+.slider-row:last-child{border:none}
+.slider-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.05em}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--acc-dk);min-width:36px;text-align:right}
+input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
+
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:3px}
+.task-item{display:flex;align-items:center;gap:6px;font-size:.7rem;padding:4px 8px;border-radius:5px;background:rgba(0,0,0,.02);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.18);color:var(--acc-dk)}
+.task-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--acc)}
+
+.name-input{width:100%;background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:7px;color:var(--acc-dk);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;padding:8px 12px;outline:none;transition:border-color .2s;margin:7px 0}
+.name-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(34,197,94,.12)}
+.name-input::placeholder{color:var(--muted);font-size:.95rem}
+
+.run-btn{width:100%;margin-top:8px;padding:10px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+
+#rightbar{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+#rightbar::-webkit-scrollbar{width:3px}
+#rightbar::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.rb-section{background:rgba(0,0,0,.03);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.rb-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(34,197,94,.14)}
+.rb-row{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:24px}
+.rb-row label{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex-shrink:0;width:48px}
+.rb-row input[type=color]{width:26px;height:22px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--bg2);flex-shrink:0}
+.rb-row input[type=range]{flex:1;accent-color:var(--acc);min-width:0;height:16px;cursor:pointer}
+.rb-row select{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:.62rem;padding:2px 3px;cursor:pointer;font-family:'Nunito',sans-serif;min-width:0}
+.rv{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-dk);min-width:28px;text-align:right;flex-shrink:0}
+.rb-toggle{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.52rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rb-toggle input[type=checkbox]{accent-color:var(--acc);flex-shrink:0;width:13px;height:13px}
+
+.stand-stats{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border:1px solid rgba(34,197,94,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8;min-width:130px}
+.stand-stats .stat-title{font-size:8px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;border-bottom:1px solid rgba(34,197,94,.15);padding-bottom:2px}
+.stand-stats .stat-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.stand-stats .stat-lbl{width:48px;flex-shrink:0;font-size:8px}
+.stand-stats .stat-track{flex:1;height:3px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden}
+.stand-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.stand-stats .stat-val{min-width:16px;text-align:right;color:var(--acc-dk);font-size:8px}
+
+.quiz-box{background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.18);border-radius:8px;padding:10px 12px;margin:8px 0}
+.quiz-q{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.4}
+.quiz-opts{display:flex;flex-direction:column;gap:4px}
+.quiz-opt{padding:7px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg3);font-size:.72rem;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'Nunito',sans-serif}
+.quiz-opt:hover{border-color:rgba(34,197,94,.4);color:var(--text)}
+.quiz-opt.correct{border-color:var(--acc);background:rgba(34,197,94,.1);color:var(--acc-dk)}
+.quiz-opt.wrong{border-color:#ef4444;background:rgba(239,68,68,.08);color:#dc2626}
+.quiz-feedback{margin-top:6px;font-size:.72rem;color:var(--acc-dk);font-weight:700}
+
+.profile-card{background:rgba(0,0,0,.03);border:1px solid var(--border);border-radius:8px;padding:10px;margin:6px 0}
+.profile-name{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--text);letter-spacing:.04em;margin-bottom:4px}
+.profile-dims{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);margin-bottom:6px}
+.profile-stats{display:flex;flex-direction:column;gap:4px}
+.profile-stat{display:flex;align-items:center;gap:5px}
+.profile-stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.48rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);width:56px;flex-shrink:0}
+.profile-stat-track{flex:1;height:3px;background:rgba(0,0,0,.08);border-radius:2px;overflow:hidden}
+.profile-stat-fill{height:100%;border-radius:2px;transition:width .5s}
+.profile-stat-val{min-width:14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:.48rem;color:var(--acc-dk)}
+
+@media(max-width:860px){
+  html,body{overflow:auto;height:auto}
+  #app{grid-template-columns:1fr;grid-template-rows:54px auto auto;height:auto;min-height:100vh}
+  .hdr{grid-column:1}
+  #sidebar{max-height:55vh;border-right:none;border-bottom:1px solid var(--border)}
+  .slist{min-height:60px}
+  .cpan{max-height:36vh}
+  #viewport{min-height:320px;height:56vw;max-height:520px}
+  #rightbar{display:none}
+}
+@media(max-width:480px){
+  .logo{font-size:1rem}
+  .quick-btn{font-size:.78rem;padding:6px 12px}
+  #viewport{min-height:260px;height:50vw;max-height:420px}
+  .cpan{max-height:40vh}
+  .snav button{padding:10px 6px;font-size:.75rem}
+}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div id="app">
+
+  <header class="hdr">
+    <h1 class="logo">📱 Phone Stand Builder</h1>
+    <div class="hdr-right">
+      <a href="../pages/workshop.html" class="back-link">← Workshop</a>
+      <button class="quick-btn" onclick="randomBuild()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
+      <button class="quick-btn" onclick="exportPNG()" style="background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63">📷 PNG</button>
+      <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
+      <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
+      <button class="quick-btn" onclick="exportOBJ()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">📦 OBJ</button>
+      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">🧊 GLB</button>
+      <button class="quick-btn" onclick="exportSTL()" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 3px 0 #15803d">🖨️ STL</button>
+      <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
+    </div>
+  </header>
+
+  <div id="sidebar">
+    <div class="prog-section">
+      <div class="prog-lbl">Build Progress</div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+      <div class="prog-ct" id="progCt">0 / 14 steps</div>
+    </div>
+    <div class="slist" id="stepList"></div>
+    <div class="cpan" id="stepBody"></div>
+    <div class="snav">
+      <button class="btn-p" id="navPrev" onclick="go(currentStep-1)" disabled aria-label="Previous step">← Back</button>
+      <button class="btn-n" id="navNext" onclick="go(currentStep+1)" aria-label="Next step">Next →</button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div class="scene-top">
+      <span class="scene-top-l">🔍 Live 3D Preview</span>
+      <div class="scene-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus" aria-live="polite">Apply Step 1 to begin</span></div>
+      </div>
+    </div>
+    <div class="scene-wrap">
+      <canvas id="standCanvas" role="application" aria-label="3D phone stand preview viewport"></canvas>
+      <div class="stand-stats" id="standStats"></div>
+      <div class="vhint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
+      <div class="dims" id="dimsOverlay">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:var(--text);margin-bottom:2px" id="sName">UNNAMED</div>
+        <div>Style&nbsp;<span id="sStyle">—</span></div>
+        <div>Width&nbsp;<span id="sWidth">—</span></div>
+        <div>Depth&nbsp;<span id="sDepth">—</span></div>
+        <div>Height&nbsp;<span id="sHeight">—</span></div>
+        <div>Angle&nbsp;<span id="sAngle">—</span></div>
+      </div>
+    </div>
+    <div class="obar" id="obar" aria-live="polite">📐 Choose a stand style to start building</div>
+  </div>
+
+  <div id="rightbar" aria-label="Quick controls">
+
+    <div class="rb-section">
+      <div class="rb-title">📐 Quick Dimensions</div>
+      <div class="rb-row">
+        <label>Width</label>
+        <input type="range" min="80" max="150" step="1" value="100" id="rb-w"
+          oninput="P.standWidth=parseInt(this.value);document.getElementById('rb-wv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-wv">100mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Depth</label>
+        <input type="range" min="60" max="120" step="1" value="80" id="rb-d"
+          oninput="P.standDepth=parseInt(this.value);document.getElementById('rb-dv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-dv">80mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Height</label>
+        <input type="range" min="40" max="100" step="1" value="60" id="rb-h"
+          oninput="P.standHeight=parseInt(this.value);document.getElementById('rb-hv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-hv">60mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Angle</label>
+        <input type="range" min="30" max="80" step="1" value="60" id="rb-a"
+          oninput="P.angle=parseInt(this.value);document.getElementById('rb-av').textContent=this.value+'°';buildStand()">
+        <span class="rv" id="rb-av">60°</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🎨 Color</div>
+      <div class="rb-row">
+        <label>Color</label>
+        <input type="color" id="rb-col" value="#22c55e" oninput="P.color=this.value;buildStand()">
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">📱 Phone Size</div>
+      <div class="rb-row">
+        <label>Width</label>
+        <input type="range" min="60" max="100" step="1" value="75" id="rb-pw"
+          oninput="P.phoneWidth=parseInt(this.value);document.getElementById('rb-pwv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-pwv">75mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Thick</label>
+        <input type="range" min="6" max="15" step="1" value="10" id="rb-pt"
+          oninput="P.phoneThickness=parseInt(this.value);document.getElementById('rb-ptv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-ptv">10mm</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔧 Details</div>
+      <div class="rb-row">
+        <label>Base</label>
+        <input type="range" min="3" max="8" step="1" value="4" id="rb-bt"
+          oninput="P.baseThickness=parseInt(this.value);document.getElementById('rb-btv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-btv">4mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Lip H</label>
+        <input type="range" min="5" max="20" step="1" value="8" id="rb-lh"
+          oninput="P.lipHeight=parseInt(this.value);document.getElementById('rb-lhv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-lhv">8mm</span>
+      </div>
+      <div class="rb-row">
+        <label>Corner</label>
+        <input type="range" min="0" max="5" step="0.5" value="3" id="rb-cr"
+          oninput="P.cornerRadius=parseFloat(this.value);document.getElementById('rb-crv').textContent=this.value+'mm';buildStand()">
+        <span class="rv" id="rb-crv">3mm</span>
+      </div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-cable" onchange="P.cableSlot=this.checked;buildStand()">
+        Cable slot
+      </label>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-rounded" checked onchange="P.roundedCorners=this.checked;buildStand()">
+        Rounded corners
+      </label>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">📊 Profile</div>
+      <div id="profileCard"></div>
+    </div>
+
+  </div>
+
+</div>
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)"><div id="modalContent" style="background:var(--bg2);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw"></div></div>
+<style>#modalOverlay.open{display:flex}</style>
+
+<script>
+/* STLExporter - minimal inline version for Three.js r128 */
+THREE.STLExporter = function() {};
+THREE.STLExporter.prototype.parse = function(scene) {
+  var triangles = 0;
+  var geometry, mesh, normalMatrixWorld = new THREE.Matrix3();
+  var output = '';
+  scene.traverse(function(object) {
+    if (!object.isMesh) return;
+    geometry = object.geometry;
+    if (!geometry.isBufferGeometry) return;
+    var index = geometry.index;
+    var positionAttribute = geometry.getAttribute('position');
+    if (!positionAttribute) return;
+    var normalAttribute = geometry.getAttribute('normal');
+    triangles += (index !== null) ? (index.count / 3) : (positionAttribute.count / 3);
+    var matrixWorld = object.matrixWorld;
+    normalMatrixWorld.getNormalMatrix(matrixWorld);
+    var va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+    var vna = new THREE.Vector3(), vnb = new THREE.Vector3(), vnc = new THREE.Vector3();
+    for (var i = 0; i < index.count; i += 3) {
+      var a = index.getX(i), b = index.getX(i+1), c = index.getX(i+2);
+      va.fromBufferAttribute(positionAttribute, a).applyMatrix4(matrixWorld);
+      vb.fromBufferAttribute(positionAttribute, b).applyMatrix4(matrixWorld);
+      vc.fromBufferAttribute(positionAttribute, c).applyMatrix4(matrixWorld);
+      if (normalAttribute) {
+        vna.fromBufferAttribute(normalAttribute, a).applyMatrix3(normalMatrixWorld).normalize();
+        vnb.fromBufferAttribute(normalAttribute, b).applyMatrix3(normalMatrixWorld).normalize();
+        vnc.fromBufferAttribute(normalAttribute, c).applyMatrix3(normalMatrixWorld).normalize();
+      }
+      var edge1 = new THREE.Vector3().subVectors(vb, va);
+      var edge2 = new THREE.Vector3().subVectors(vc, va);
+      var n = new THREE.Vector3().copy(edge1).cross(edge2).normalize();
+      output += 'facet normal '+n.x+' '+n.y+' '+n.z+'\n';
+      output += ' outer loop\n';
+      output += '  vertex '+va.x+' '+va.y+' '+va.z+'\n';
+      output += '  vertex '+vb.x+' '+vb.y+' '+vb.z+'\n';
+      output += '  vertex '+vc.x+' '+vc.y+' '+vc.z+'\n';
+      output += ' endloop\n';
+      output += 'endfacet\n';
+    }
+  });
+  return 'solid model\n' + output + 'endsolid model\n';
+};
+</script>
+
+<script>
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('standCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0xf8f9fa);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xf8f9fa, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 40, 90);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.2);
+sun.position.set(50, 80, 60);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xddeeff, 0.4);
+fill.position.set(-60, 20, -40);
+scene.add(fill);
+
+/* Ground grid */
+(function(){
+  const gridGeo = new THREE.BufferGeometry();
+  const verts = [];
+  const size = 100, step = 5;
+  for (let i = -size; i <= size; i += step) {
+    verts.push(-size, 0, i, size, 0, i);
+    verts.push(i, 0, -size, i, 0, size);
+  }
+  gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const gridMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
+  scene.add(new THREE.LineSegments(gridGeo, gridMat));
+  const groundGeo = new THREE.PlaneGeometry(200, 200);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 1, metalness: 0 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.1;
+  ground.receiveShadow = true;
+  scene.add(ground);
+})();
+
+/* -------------------------------
+   STAND STATE
+------------------------------- */
+const P = {
+  standName: 'My Stand',
+  standStyle: 'angled',
+  phoneWidth: 75,
+  phoneThickness: 10,
+  standWidth: 100,
+  standDepth: 80,
+  standHeight: 60,
+  angle: 60,
+  baseThickness: 4,
+  lipHeight: 8,
+  lipAngle: 15,
+  cableSlot: true,
+  cableSlotWidth: 12,
+  gripTexture: 'ridges',
+  color: '#22c55e',
+  roundedCorners: true,
+  cornerRadius: 3,
+  brandText: '',
+  brandFontSize: 12,
+};
+
+let standGroup = null;
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD STAND
+------------------------------- */
+function buildStand() {
+  if (standGroup) scene.remove(standGroup);
+  standGroup = new THREE.Group();
+
+  const S = P.standStyle;
+  const sw = P.standWidth;
+  const sd = P.standDepth;
+  const sh = P.standHeight;
+  const bt = P.baseThickness;
+  const lh = P.lipHeight;
+  const la = P.lipAngle * Math.PI / 180;
+  const ang = P.angle * Math.PI / 180;
+  const pw = P.phoneWidth;
+  const pt = P.phoneThickness;
+  const col = hexToThree(P.color);
+  const cr = P.cornerRadius;
+
+  const mainMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.35, metalness: 0.15 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.7), roughness: 0.4, metalness: 0.1 });
+
+  if (S === 'angled') {
+    /* Base plate */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(base);
+
+    /* Angled back support */
+    const supportH = sh * 0.85;
+    const supportD = bt * 1.2;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, supportD);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    const supportCenterY = bt + supportH / 2;
+    const supportCenterZ = -(sd * 0.15);
+    support.position.set(0, supportCenterY, supportCenterZ);
+    support.rotation.x = -(Math.PI / 2 - ang);
+    support.castShadow = true;
+    standGroup.add(support);
+
+    /* Back brace */
+    const braceH = sh * 0.6;
+    const braceGeo = new THREE.BoxGeometry(sw * 0.6, braceH, bt * 0.8);
+    const brace = new THREE.Mesh(braceGeo, darkMat);
+    brace.position.set(0, bt + braceH * 0.35, -sd * 0.35);
+    brace.rotation.x = -(Math.PI / 2 - ang) * 0.5;
+    brace.castShadow = true;
+    standGroup.add(brace);
+
+    /* Phone lip */
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.3);
+    lip.castShadow = true;
+    standGroup.add(lip);
+
+    /* Lip side walls */
+    const wallH = lh * 1.2;
+    const wallGeo = new THREE.BoxGeometry(bt * 0.8, wallH, bt);
+    const wallL = new THREE.Mesh(wallGeo, darkMat);
+    wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
+    wallL.castShadow = true;
+    standGroup.add(wallL);
+    const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
+    wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
+    wallR.castShadow = true;
+    standGroup.add(wallR);
+
+    /* Cable slot */
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.3);
+      standGroup.add(slot);
+    }
+
+    /* Grip texture ridges on support */
+    if (P.gripTexture === 'ridges') {
+      const ridgeCount = 8;
+      for (let i = 0; i < ridgeCount; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.7, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        const t = i / (ridgeCount - 1);
+        const ry = bt + 4 + t * (supportH - 8);
+        const rz = supportCenterZ + Math.cos(ang) * (t - 0.5) * supportH * 0.3;
+        ridge.position.set(0, ry, rz);
+        ridge.rotation.x = -(Math.PI / 2 - ang);
+        standGroup.add(ridge);
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 6; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          const dx = (c - 2.5) * (sw * 0.12);
+          const dz = supportCenterZ + (r - 1) * 5;
+          const dy = bt + 6 + r * 6;
+          dot.position.set(dx, dy, dz);
+          standGroup.add(dot);
+        }
+      }
+    }
+
+    /* Brand text placeholder */
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256;
+      canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = 'transparent';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.6, P.brandFontSize * 0.5);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.5, supportCenterZ + supportD * 0.6);
+      textMesh.rotation.x = -(Math.PI / 2 - ang) * 0.5;
+      standGroup.add(textMesh);
+    }
+
+  } else if (S === 'flat') {
+    /* Flat 90 degree stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(base);
+
+    const backGeo = new THREE.BoxGeometry(sw, sh, bt);
+    const back = new THREE.Mesh(backGeo, mainMat);
+    back.position.set(0, bt + sh / 2, -sd * 0.35);
+    back.castShadow = true;
+    standGroup.add(back);
+
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.3);
+    lip.castShadow = true;
+    standGroup.add(lip);
+
+    const wallH = lh * 1.2;
+    const wallGeo = new THREE.BoxGeometry(bt * 0.8, wallH, bt);
+    const wallL = new THREE.Mesh(wallGeo, darkMat);
+    wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
+    standGroup.add(wallL);
+    const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
+    wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
+    standGroup.add(wallR);
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.3));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 8; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.7, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * (sh * 0.1), -sd * 0.35 + bt * 0.6);
+        standGroup.add(ridge);
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 6; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2.5) * (sw * 0.12), bt + 6 + r * 6, -sd * 0.35 + bt * 0.6);
+          standGroup.add(dot);
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.6, P.brandFontSize * 0.5);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + sh * 0.5, -sd * 0.35 + bt * 0.55);
+      standGroup.add(textMesh);
+    }
+
+  } else if (S === 'cradle') {
+    /* Cradle / wrap-around stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(base);
+
+    const supportH = sh * 0.9;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    support.position.set(0, bt + supportH / 2, -sd * 0.3);
+    support.castShadow = true;
+    standGroup.add(support);
+
+    /* Side cradle arms */
+    const armW = bt * 1.2;
+    const armH = lh * 2.5;
+    const armD = sd * 0.7;
+    const armGeo = new THREE.BoxGeometry(armW, armH, armD);
+    const armL = new THREE.Mesh(armGeo, darkMat);
+    armL.position.set(-(pw / 2 + 3), bt + armH / 2, sd * 0.15);
+    armL.castShadow = true;
+    standGroup.add(armL);
+    const armR = new THREE.Mesh(armGeo.clone(), darkMat);
+    armR.position.set(pw / 2 + 3, bt + armH / 2, sd * 0.15);
+    armR.castShadow = true;
+    standGroup.add(armR);
+
+    /* Front lip */
+    const lipGeo = new THREE.BoxGeometry(pw + 12, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.35);
+    lip.castShadow = true;
+    standGroup.add(lip);
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.35));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 6; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.6, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * 5, -sd * 0.3 + bt * 0.6);
+        standGroup.add(ridge);
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 5; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.3 + bt * 0.6);
+          standGroup.add(dot);
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.5, P.brandFontSize * 0.4);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.5, -sd * 0.3 + bt * 0.55);
+      standGroup.add(textMesh);
+    }
+
+  } else if (S === 'foldable') {
+    /* Foldable / hinged stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd * 0.5);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, sd * 0.15);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(base);
+
+    const supportH = sh * 0.8;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    const sAng = ang * 0.7;
+    support.position.set(0, bt + supportH * Math.cos(sAng) * 0.5, -sd * 0.1);
+    support.rotation.x = -sAng;
+    support.castShadow = true;
+    standGroup.add(support);
+
+    /* Hinge accent */
+    const hingeGeo = new THREE.CylinderGeometry(bt * 0.7, bt * 0.7, sw * 0.15, 12);
+    const hingeMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+    const hinge = new THREE.Mesh(hingeGeo, hingeMat);
+    hinge.rotation.z = Math.PI / 2;
+    hinge.position.set(0, bt, -sd * 0.1);
+    standGroup.add(hinge);
+
+    /* Support strut */
+    const strutLen = sh * 0.5;
+    const strutGeo = new THREE.BoxGeometry(bt * 0.6, strutLen, bt * 0.6);
+    const strut = new THREE.Mesh(strutGeo, darkMat);
+    strut.position.set(0, bt + strutLen * 0.3, -sd * 0.25);
+    strut.rotation.x = -sAng * 0.4;
+    strut.castShadow = true;
+    standGroup.add(strut);
+
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.35);
+    lip.castShadow = true;
+    standGroup.add(lip);
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.35));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 6; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.6, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * (supportH * 0.12), -sd * 0.15);
+        ridge.rotation.x = -sAng;
+        standGroup.add(ridge);
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 5; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.15);
+          standGroup.add(dot);
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.5, P.brandFontSize * 0.4);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.4, -sd * 0.1 + bt * 0.55);
+      textMesh.rotation.x = -sAng * 0.5;
+      standGroup.add(textMesh);
+    }
+  }
+
+  /* Phone silhouette */
+  const phoneGeo = new THREE.BoxGeometry(pw, pt, 4);
+  const phoneMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.35 });
+  const phone = new THREE.Mesh(phoneGeo, phoneMat);
+  phone.position.set(0, bt + lh + pt / 2, sd * 0.25);
+  standGroup.add(phone);
+
+  scene.add(standGroup);
+  updateSpecCard();
+  updateStats();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.3, phi: 1.1, radius: 90, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(30, Math.min(200, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 20;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 20, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.08; e.preventDefault(); }, { passive: false });
+
+let pinchDist0 = 0;
+canvas.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
+  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', function() { orbit.dragging = false; });
+canvas.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1 && orbit.dragging) {
+    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
+    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
+    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    orbit.radius *= pinchDist0 / d; pinchDist0 = d;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.002;
+  updateCamera();
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   SPEC OVERLAY
+------------------------------- */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.standName || 'UNNAMED';
+  const styleLabels = { angled: 'Angled', flat: 'Flat (90°)', cradle: 'Cradle', foldable: 'Foldable' };
+  document.getElementById('sStyle').textContent = styleLabels[P.standStyle] || '—';
+  document.getElementById('sWidth').textContent = P.standWidth + 'mm';
+  document.getElementById('sDepth').textContent = P.standDepth + 'mm';
+  document.getElementById('sHeight').textContent = P.standHeight + 'mm';
+  document.getElementById('sAngle').textContent = P.angle + '°';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-w', P.standWidth); st('rb-wv', P.standWidth + 'mm');
+  sv('rb-d', P.standDepth); st('rb-dv', P.standDepth + 'mm');
+  sv('rb-h', P.standHeight); st('rb-hv', P.standHeight + 'mm');
+  sv('rb-a', P.angle); st('rb-av', P.angle + '°');
+  sv('rb-col', P.color);
+  sv('rb-pw', P.phoneWidth); st('rb-pwv', P.phoneWidth + 'mm');
+  sv('rb-pt', P.phoneThickness); st('rb-ptv', P.phoneThickness + 'mm');
+  sv('rb-bt', P.baseThickness); st('rb-btv', P.baseThickness + 'mm');
+  sv('rb-lh', P.lipHeight); st('rb-lhv', P.lipHeight + 'mm');
+  sv('rb-cr', P.cornerRadius); st('rb-crv', P.cornerRadius + 'mm');
+  sc('rb-cable', P.cableSlot);
+  sc('rb-rounded', P.roundedCorners);
+  updateProfileCard();
+}
+
+/* -------------------------------
+   PROFILE CARD
+------------------------------- */
+function computeStats() {
+  const stability = Math.min(10, Math.round(
+    (P.baseThickness / 8) * 3 + (P.standWidth / 150) * 3 + (P.standDepth / 120) * 2 + (P.angle <= 70 ? 2 : 1)
+  ));
+  const phoneFit = Math.min(10, Math.round(
+    (P.phoneWidth >= 60 && P.phoneWidth <= 85 ? 4 : 2) +
+    (P.lipHeight >= 6 ? 3 : 1) +
+    (P.phoneThickness <= 12 ? 2 : 1) +
+    (P.standWidth > P.phoneWidth + 10 ? 1 : 0)
+  ));
+  const printQuality = Math.min(10, Math.round(
+    (P.roundedCorners ? 2 : 0) +
+    (P.cornerRadius >= 2 ? 2 : 1) +
+    (P.baseThickness >= 3 ? 2 : 1) +
+    (P.gripTexture === 'smooth' ? 1 : 2) +
+    (P.standHeight >= 40 ? 2 : 1)
+  ));
+  const aesthetics = Math.min(10, Math.round(
+    (P.color !== '#22c55e' ? 1 : 2) +
+    (P.brandText ? 2 : 0) +
+    (P.roundedCorners ? 2 : 1) +
+    (P.standStyle === 'cradle' || P.standStyle === 'foldable' ? 2 : 1) +
+    (P.gripTexture !== 'smooth' ? 1 : 0)
+  ));
+  return {
+    stability: Math.max(1, stability),
+    phoneFit: Math.max(1, phoneFit),
+    printQuality: Math.max(1, printQuality),
+    aesthetics: Math.max(1, aesthetics)
+  };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('standStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">Stand Stats</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Stable</span>${bar(s.stability, '#22c55e')}<span class="stat-val">${s.stability}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Fit</span>${bar(s.phoneFit, '#38bdf8')}<span class="stat-val">${s.phoneFit}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Print</span>${bar(s.printQuality, '#f5c842')}<span class="stat-val">${s.printQuality}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Style</span>${bar(s.aesthetics, '#a78bfa')}<span class="stat-val">${s.aesthetics}</span></div>`;
+}
+
+function updateProfileCard() {
+  const s = computeStats();
+  const el = document.getElementById('profileCard');
+  if (!el) return;
+  const bar = (v, c) => `<div class="profile-stat-track"><div class="profile-stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="profile-card">
+    <div class="profile-name">${P.standName || 'UNNAMED'}</div>
+    <div class="profile-dims">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}°</div>
+    <div class="profile-stats">
+      <div class="profile-stat"><span class="profile-stat-lbl">Stability</span>${bar(s.stability, '#22c55e')}<span class="profile-stat-val">${s.stability}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Phone Fit</span>${bar(s.phoneFit, '#38bdf8')}<span class="profile-stat-val">${s.phoneFit}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Print Q</span>${bar(s.printQuality, '#f5c842')}<span class="profile-stat-val">${s.printQuality}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Aesthet</span>${bar(s.aesthetics, '#a78bfa')}<span class="profile-stat-val">${s.aesthetics}/10</span></div>
+    </div>
+  </div>`;
+}
+
+/* -------------------------------
+   EXPORT STL
+------------------------------- */
+function exportSTL() {
+  var group = standGroup || new THREE.Group();
+  if (!group.children.length) { toast('Build something first!'); return; }
+  var exporter = new THREE.STLExporter();
+  var result = exporter.parse(group);
+  var blob = new Blob([result], { type: 'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.stl';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('STL exported! Ready for 3D printing.');
+}
+
+/* -------------------------------
+   EXPORT OBJ
+------------------------------- */
+function exportOBJ() {
+  if (!standGroup || !standGroup.children.length) { toast('Build something first!'); return; }
+  standGroup.updateMatrixWorld(true);
+  const name = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-');
+  let obj = '# ' + P.standName + ', JV Phone Stand Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '.mtl\n';
+  let mtl = '# Materials for ' + P.standName + '\n';
+  const matMap = {};
+  let matIdx = 0, vOff = 1, meshIdx = 0;
+
+  standGroup.traverse(function(node) {
+    if (!node.isMesh) return;
+    const col = node.material.color ? node.material.color : new THREE.Color(0x888888);
+    const hex = col.getHexString();
+    if (!matMap[hex]) {
+      const mName = 'm' + (matIdx++);
+      matMap[hex] = mName;
+      mtl += '\nnewmtl ' + mName + '\n';
+      mtl += 'Kd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\n';
+      mtl += 'Ka 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
+    }
+    const g = node.geometry.clone();
+    g.applyMatrix4(node.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const pos = g.attributes.position;
+    const nor = g.attributes.normal;
+    const idx = g.index;
+    const n = pos.count;
+    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
+    for (let i = 0; i < n; i++) {
+      obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
+    }
+    for (let i = 0; i < n; i++) {
+      obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
+    }
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
+        const a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    } else {
+      for (let i = 0; i < n; i += 3) {
+        const a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    }
+    vOff += n;
+  });
+
+  const objBlob = new Blob([obj], { type: 'text/plain' });
+  const objUrl = URL.createObjectURL(objBlob);
+  const la = document.createElement('a');
+  la.href = objUrl; la.download = name + '.obj'; la.click();
+  URL.revokeObjectURL(objUrl);
+  setTimeout(function() {
+    const mtlBlob = new Blob([mtl], { type: 'text/plain' });
+    const mtlUrl = URL.createObjectURL(mtlBlob);
+    const lb = document.createElement('a');
+    lb.href = mtlUrl; lb.download = name + '.mtl'; lb.click();
+    URL.revokeObjectURL(mtlUrl);
+  }, 300);
+  toast('OBJ exported!');
+}
+
+/* -------------------------------
+   EXPORT GLB
+------------------------------- */
+function exportGLB() {
+  var group = standGroup || new THREE.Group();
+  if (!group || !group.children.length) { toast('Build something first!'); return; }
+  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
+  var exporter = new THREE.GLTFExporter();
+  exporter.parse(group, function(result) {
+    var blob = new Blob([result], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.glb';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('GLB exported!');
+  }, { binary: true });
+}
+
+/* -------------------------------
+   EXPORT PNG
+------------------------------- */
+function exportPNG() {
+  renderer.render(scene, camera);
+  canvas.toBlob(function(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('PNG screenshot exported!');
+  });
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(14).fill(false);
+
+function opts(id, options, currentVal, onChange) {
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" onclick="(${onChange})('${o.val}',this)">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" onclick="(${onChange})('${c}',this)"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" oninput="(${onChange})(this.value,null)">
+  </div>`;
+}
+
+const STEPS = [
+
+/* 1 */
+{
+  title: 'Name Your Stand',
+  tag: 'STEP 01 — IDENTITY',
+  intro: `Every great 3D print starts with a purpose. Name your phone stand so you can find it later and feel proud when someone asks where you got it.`,
+  boxes: [
+    { t:'box-c', tx:'Phone stands are one of the most popular 3D printing projects. They\'re quick to print, useful every day, and make great gifts. A good name helps you track versions when you iterate on the design.' },
+    { t:'box-t', tx:'Keep it short — you\'ll see this name on the export filename and spec card.' },
+  ],
+  tasks: ['Enter a stand name'],
+  html() { return `<input class="name-input" id="standName" maxlength="20" placeholder="E.G. DESK STAND" value="${P.standName==='My Stand'?'':P.standName}">`; },
+  onApply() { P.standName = document.getElementById('standName')?.value?.trim() || 'My Stand'; buildStand(); sout('✅ ' + P.standName + ' is registered.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */
+{
+  title: 'Stand Style',
+  tag: 'STEP 02 — STYLE',
+  intro: `Choose how your stand is shaped. <strong>Angled</strong> gives a comfortable viewing angle. <strong>Flat</strong> is a simple 90° back. <strong>Cradle</strong> wraps around the phone. <strong>Foldable</strong> has a hinge mechanism.`,
+  boxes: [
+    { t:'box-c', tx:'Angled stands (60°) are ideal for video calls. Flat stands (90°) are better for reading. Cradle stands work for all phones. Foldable stands can collapse for travel.' },
+    { t:'box-t', tx:'Angled is the most popular choice for desk use. It puts the screen at a natural viewing angle.' },
+  ],
+  tasks: ['Choose a stand style'],
+  html() {
+    const o = `(function(v,el){P.standStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return opts('style', [
+      { val:'angled',   icon:'📐', label:'Angled' },
+      { val:'flat',     icon:'📏', label:'Flat 90°' },
+      { val:'cradle',   icon:'🤗', label:'Cradle' },
+      { val:'foldable', icon:'🪭', label:'Foldable' },
+    ], P.standStyle, o);
+  },
+  onApply() { buildStand(); sout('Style: ' + P.standStyle + ' applied.'); document.getElementById('liveStatus').textContent = 'Style set!'; }
+},
+
+/* 3 */
+{
+  title: 'Phone Size',
+  tag: 'STEP 03 — PHONE',
+  intro: `Set your phone's width and thickness. Most modern smartphones are 65-80mm wide. The iPhone 15 is 71.6mm, Samsung S24 is 70.6mm. Include any case thickness!`,
+  boxes: [
+    { t:'box-c', tx:'Most modern smartphones are 65-80mm wide. The iPhone 15 is 71.6mm, Samsung S24 is 70.6mm. Always measure with your case on — a thick case can add 3-5mm.' },
+    { t:'box-t', tx:'Add 2-3mm to your phone width for a comfortable fit. The lip should hold the phone without being too tight.' },
+  ],
+  tasks: ['Set phone width', 'Set phone thickness'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Width (mm)</span>
+        <input type="range" min="60" max="100" step="1" value="${P.phoneWidth}"
+          oninput="P.phoneWidth=parseInt(this.value);document.getElementById('pwVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="pwVal">${P.phoneWidth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Thickness (mm)</span>
+        <input type="range" min="6" max="15" step="1" value="${P.phoneThickness}"
+          oninput="P.phoneThickness=parseInt(this.value);document.getElementById('ptVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="ptVal">${P.phoneThickness}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Phone: ' + P.phoneWidth + 'mm × ' + P.phoneThickness + 'mm.'); document.getElementById('liveStatus').textContent = 'Phone set!'; }
+},
+
+/* 4 */
+{
+  title: 'Stand Dimensions',
+  tag: 'STEP 04 — SCALE',
+  intro: `Set the overall size of your stand in millimetres. Width affects stability. Depth affects the footprint. Height determines how tall the back support is.`,
+  boxes: [
+    { t:'box-c', tx:'A wider base = more stability. 100mm is a good starting point. Deeper stands take up more desk space but hold the phone more securely. Taller backs support larger phones better.' },
+  ],
+  tasks: ['Set width, depth, and height'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Width (mm)</span>
+        <input type="range" min="80" max="150" step="1" value="${P.standWidth}"
+          oninput="P.standWidth=parseInt(this.value);document.getElementById('swVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="swVal">${P.standWidth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Depth (mm)</span>
+        <input type="range" min="60" max="120" step="1" value="${P.standDepth}"
+          oninput="P.standDepth=parseInt(this.value);document.getElementById('sdVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="sdVal">${P.standDepth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Height (mm)</span>
+        <input type="range" min="40" max="100" step="1" value="${P.standHeight}"
+          oninput="P.standHeight=parseInt(this.value);document.getElementById('shVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="shVal">${P.standHeight}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Dimensions: ' + P.standWidth + '×' + P.standDepth + '×' + P.standHeight + 'mm.'); document.getElementById('liveStatus').textContent = 'Dimensions set!'; }
+},
+
+/* 5 */
+{
+  title: 'Viewing Angle',
+  tag: 'STEP 05 — ANGLE',
+  intro: `The angle of the back support determines how you view your phone. The optimal viewing angle for video calls is 60-70 degrees from horizontal.`,
+  boxes: [
+    { t:'box-c', tx:'The optimal viewing angle for video calls is 60-70 degrees from horizontal. Lower angles (30-45°) are good for typing. Higher angles (70-80°) are better for watching videos hands-free.' },
+    { t:'box-t', tx:'60° is the sweet spot for most desk use. It balances viewing comfort with stability.' },
+  ],
+  tasks: ['Set the viewing angle'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Angle (degrees)</span>
+        <input type="range" min="30" max="80" step="1" value="${P.angle}"
+          oninput="P.angle=parseInt(this.value);document.getElementById('angVal').textContent=this.value+'°';buildStand()">
+        <span class="slider-val" id="angVal">${P.angle}°</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Angle: ' + P.angle + '°.'); document.getElementById('liveStatus').textContent = 'Angle set!'; }
+},
+
+/* 6 */
+{
+  title: 'Base Thickness',
+  tag: 'STEP 06 — BASE',
+  intro: `The base plate thickness affects stability and print time. Thicker bases are heavier and more stable but use more filament.`,
+  boxes: [
+    { t:'box-c', tx:'A 4mm base is a good balance — thick enough for stability, thin enough to print quickly. Thicker bases (6-8mm) are better for heavy phones or if you want extra weight.' },
+    { t:'box-t', tx:'For PLA printing, 3-4mm walls give excellent strength. Going thicker just adds weight and print time.' },
+  ],
+  tasks: ['Set the base thickness'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Base (mm)</span>
+        <input type="range" min="3" max="8" step="1" value="${P.baseThickness}"
+          oninput="P.baseThickness=parseInt(this.value);document.getElementById('btVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="btVal">${P.baseThickness}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Base: ' + P.baseThickness + 'mm thick.'); document.getElementById('liveStatus').textContent = 'Base set!'; }
+},
+
+/* 7 */
+{
+  title: 'Phone Lip',
+  tag: 'STEP 07 — LIP',
+  intro: `The lip at the front holds your phone in place. Taller lips hold thicker phones. The angle helps the phone rest securely against the back.`,
+  boxes: [
+    { t:'box-c', tx:'The lip should be at least as tall as your phone thickness, plus 2-3mm for a secure grip. Too tall and it blocks the screen. Too short and the phone slips out.' },
+    { t:'box-t', tx:'8mm is a safe default for most phones. If you have a thick case, go to 10-12mm.' },
+  ],
+  tasks: ['Set the lip height'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Lip Height (mm)</span>
+        <input type="range" min="5" max="20" step="1" value="${P.lipHeight}"
+          oninput="P.lipHeight=parseInt(this.value);document.getElementById('lhVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="lhVal">${P.lipHeight}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Lip: ' + P.lipHeight + 'mm tall.'); document.getElementById('liveStatus').textContent = 'Lip set!'; }
+},
+
+/* 8 */
+{
+  title: 'Cable Slot',
+  tag: 'STEP 08 — CABLE',
+  intro: `Add a slot at the bottom of the lip for a charging cable. This lets you charge your phone while it's in the stand.`,
+  boxes: [
+    { t:'box-c', tx:'Most USB-C and Lightning cables are about 8-12mm wide at the connector. A 12mm slot fits virtually any cable without being too wide to hold the phone securely.' },
+    { t:'box-t', tx:'If you rarely charge while using the stand, you can skip this. But it\'s a nice-to-have feature.' },
+  ],
+  tasks: ['Toggle cable slot', 'Set slot width'],
+  html() {
+    return `<div style="padding:6px 0">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">
+        <input type="checkbox" ${P.cableSlot?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.cableSlot=this.checked;buildStand()">
+        Enable cable slot
+      </label>
+      <div class="slider-row">
+        <span class="slider-lbl">Slot Width (mm)</span>
+        <input type="range" min="8" max="20" step="1" value="${P.cableSlotWidth}"
+          oninput="P.cableSlotWidth=parseInt(this.value);document.getElementById('csVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="csVal">${P.cableSlotWidth}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout(P.cableSlot ? 'Cable slot: ' + P.cableSlotWidth + 'mm wide.' : 'No cable slot.'); document.getElementById('liveStatus').textContent = 'Cable set!'; }
+},
+
+/* 9 */
+{
+  title: 'Grip Texture',
+  tag: 'STEP 09 — TEXTURE',
+  intro: `Add a texture to the back support where the phone rests. Ridges give the most grip. Dots look modern. Smooth is easiest to print.`,
+  boxes: [
+    { t:'box-c', tx:'Textured surfaces increase friction and prevent the phone from sliding. Ridges work best for vertical grip. Dots provide grip in all directions. Smooth surfaces are easiest to clean.' },
+    { t:'box-t', tx:'Ridges are the most practical choice. They print well and provide excellent grip.' },
+  ],
+  tasks: ['Choose a grip texture'],
+  html() {
+    const o = `(function(v,el){P.gripTexture=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return opts('grip', [
+      { val:'ridges', icon:'〰️', label:'Ridges' },
+      { val:'dots',   icon:'⚫', label:'Dots' },
+      { val:'smooth', icon:'✨', label:'Smooth' },
+    ], P.gripTexture, o);
+  },
+  onApply() { buildStand(); sout('Grip: ' + P.gripTexture + '.'); document.getElementById('liveStatus').textContent = 'Grip set!'; }
+},
+
+/* 10 */
+{
+  title: 'Colour',
+  tag: 'STEP 10 — COLOUR',
+  intro: `Pick a colour for your stand. This is the filament colour you'll print with. PLA comes in hundreds of colours — pick one that matches your desk.`,
+  boxes: [
+    { t:'box-c', tx:'PLA filament is the most common 3D printing material. It comes in virtually every colour, is easy to print, biodegradable, and strong enough for a phone stand.' },
+    { t:'box-t', tx:'Bright colours make the stand a desk accent piece. Neutral colours blend in. Match your phone case!' },
+  ],
+  tasks: ['Choose a colour'],
+  html() {
+    const o = `(function(c,el){P.color=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return swatchRow('cc', ['#22c55e','#e8543a','#38bdf8','#f5c842','#a78bfa','#fb923c','#ffffff','#1a1a2e'], P.color, o);
+  },
+  onApply() { buildStand(); sout('Colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 11 */
+{
+  title: 'Rounded Corners',
+  tag: 'STEP 11 — CORNERS',
+  intro: `Rounded corners look better and are more comfortable to handle. They also print slightly better as the nozzle doesn't have to make sharp direction changes.`,
+  boxes: [
+    { t:'box-c', tx:'Sharp 90° corners on 3D prints can cause stress concentrations and are prone to snapping. Rounded corners distribute force more evenly and look more professional.' },
+    { t:'box-t', tx:'A 3mm radius is a good balance between aesthetics and printability. Go up to 5mm for a very smooth look.' },
+  ],
+  tasks: ['Toggle rounded corners', 'Set corner radius'],
+  html() {
+    return `<div style="padding:6px 0">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">
+        <input type="checkbox" ${P.roundedCorners?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.roundedCorners=this.checked;buildStand()">
+        Rounded corners
+      </label>
+      <div class="slider-row">
+        <span class="slider-lbl">Radius (mm)</span>
+        <input type="range" min="0" max="5" step="0.5" value="${P.cornerRadius}"
+          oninput="P.cornerRadius=parseFloat(this.value);document.getElementById('crVal').textContent=this.value+'mm';buildStand()">
+        <span class="slider-val" id="crVal">${P.cornerRadius}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout(P.roundedCorners ? 'Rounded corners: ' + P.cornerRadius + 'mm radius.' : 'Sharp corners.'); document.getElementById('liveStatus').textContent = 'Corners set!'; }
+},
+
+/* 12 */
+{
+  title: 'Brand Text',
+  tag: 'STEP 12 — TEXT',
+  intro: `Add your name, logo, or a custom message to the back of the stand. This is purely decorative but makes it uniquely yours.`,
+  boxes: [
+    { t:'box-t', tx:'Short text works best — 12 characters or fewer. The text will appear on the back support of the stand.' },
+    { t:'box-c', tx:'In a slicer like Cura or PrusaSlicer, you can add embossed text as a post-processing step too. This builder bakes it into the model.' },
+  ],
+  tasks: ['Enter brand text (optional)'],
+  html() {
+    return `<div style="padding:6px 0">
+      <input class="name-input" id="brandText" maxlength="16" placeholder="YOUR NAME / LOGO" value="${P.brandText}">
+      <div class="slider-row">
+        <span class="slider-lbl">Font Size (mm)</span>
+        <input type="range" min="8" max="20" step="1" value="${P.brandFontSize}"
+          oninput="P.brandFontSize=parseInt(this.value);document.getElementById('bfsVal').textContent=this.value+'mm';">
+        <span class="slider-val" id="bfsVal">${P.brandFontSize}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { P.brandText = document.getElementById('brandText')?.value?.trim() || ''; buildStand(); sout(P.brandText ? 'Text: "' + P.brandText + '" applied.' : 'No brand text.'); document.getElementById('liveStatus').textContent = 'Text set!'; }
+},
+
+/* 13 */
+{
+  title: 'Stats & Preview',
+  tag: 'STEP 13 — REVIEW',
+  intro: `Review your stand design. Check the stats, rotate the 3D preview, and make sure everything looks right before exporting.`,
+  boxes: [
+    { t:'box-c', tx:'A stability score of 7+ means your stand won\'t tip easily. A phone fit score of 7+ means your phone will sit securely. Print quality above 7 means it should print cleanly.' },
+    { t:'box-t', tx:'Drag the 3D view to rotate. Scroll to zoom. Check all angles before exporting.' },
+  ],
+  tasks: ['Review the 3D preview', 'Check stats are acceptable'],
+  html() {
+    const s = computeStats();
+    return `<div style="padding:6px 0">
+      <div class="profile-card">
+        <div class="profile-name">${P.standName || 'UNNAMED'}</div>
+        <div class="profile-dims">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
+        <div class="profile-stats">
+          <div class="profile-stat"><span class="profile-stat-lbl">Stability</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.stability*10}%;background:#22c55e"></div></div><span class="profile-stat-val">${s.stability}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Phone Fit</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.phoneFit*10}%;background:#38bdf8"></div></div><span class="profile-stat-val">${s.phoneFit}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Print Q</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.printQuality*10}%;background:#f5c842"></div></div><span class="profile-stat-val">${s.printQuality}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Aesthet</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.aesthetics*10}%;background:#a78bfa"></div></div><span class="profile-stat-val">${s.aesthetics}/10</span></div>
+        </div>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Design reviewed. Ready to export!'); document.getElementById('liveStatus').textContent = 'Reviewed!'; }
+},
+
+/* 14 */
+{
+  title: 'Export STL',
+  tag: 'STEP 14 — EXPORT',
+  intro: `Your phone stand is ready! Export as <strong>STL</strong> for 3D printing (Cura, PrusaSlicer, Bambu Studio). You can also export OBJ or GLB for 3D viewers.`,
+  boxes: [
+    { t:'box-r', tx:'STL is the standard format for 3D printing. Open the exported .stl file in your slicer (Cura, PrusaSlicer, Bambu Studio), set your print settings, and hit print!' },
+    { t:'box-c', tx:'Recommended PLA print settings: 0.2mm layer height, 20% infill, 3 walls, no supports needed for most designs. Print time: roughly 30-60 minutes depending on size.' },
+    { t:'box-t', tx:'Use the STL button in the header for the green export button. OBJ and GLB are also available for 3D viewers and games.' },
+  ],
+  tasks: ['Export your stand as STL'],
+  html() {
+    return `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:2.4rem;margin-bottom:7px">🖨️</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-dk);letter-spacing:.1em;margin-bottom:6px">${P.standName || 'YOUR STAND'}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
+      <button class="run-btn" style="font-size:1rem;padding:12px" onclick="exportSTL()">🖨️ EXPORT STL</button>
+      <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
+        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#2d6a4f;box-shadow:0 3px 0 #1a4035" onclick="exportOBJ()">📦 OBJ</button>
+        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#6366f1;box-shadow:0 3px 0 #4338ca" onclick="exportGLB()">🧊 GLB</button>
+        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#0891b2;box-shadow:0 3px 0 #155e75" onclick="exportPNG()">📷 PNG</button>
+      </div>
+    </div>`;
+  },
+  onApply() { exportSTL(); }
+},
+
+];
+
+/* QUIZ */
+const QUIZZES = [
+  {
+    q: 'What is the most common 3D printing material for phone stands?',
+    opts: ['ABS', 'PLA', 'PETG', 'Nylon'],
+    correct: 1,
+    explain: 'PLA is the most common — it\'s easy to print, biodegradable, and strong enough for a phone stand.'
+  },
+  {
+    q: 'What is the optimal viewing angle for video calls?',
+    opts: ['30-40°', '60-70°', '80-90°', '10-20°'],
+    correct: 1,
+    explain: '60-70° from horizontal is ideal for video calls — the screen faces you naturally.'
+  },
+  {
+    q: 'What does STL stand for in 3D printing?',
+    opts: ['Standard Triangle Language', 'Stereo Lithography', 'Simple Tessellation Language', 'STandard Layout'],
+    correct: 2,
+    explain: 'STL stands for Standard Tessellation Language (or StereoLithography). It describes 3D geometry as triangles.'
+  },
+  {
+    q: 'What does the infill percentage control in 3D printing?',
+    opts: ['How fast it prints', 'How dense the inside is', 'The layer height', 'The nozzle temperature'],
+    correct: 1,
+    explain: 'Infill controls how solid the inside of the print is. 20% means 20% solid, 80% air — enough strength for a phone stand.'
+  },
+  {
+    q: 'Why are rounded corners better for 3D prints?',
+    opts: ['They print faster', 'They use less filament', 'They distribute stress more evenly', 'They look more colourful'],
+    correct: 2,
+    explain: 'Rounded corners distribute force evenly, reducing stress concentrations that can cause snapping.'
+  }
+];
+
+let quizAnswered = {};
+
+function renderQuiz(idx) {
+  const q = QUIZZES[idx];
+  if (!q) return '';
+  const answered = quizAnswered[idx];
+  return `<div class="quiz-box">
+    <div class="quiz-q">Quiz: ${q.q}</div>
+    <div class="quiz-opts">${q.opts.map((o, i) => {
+      let cls = '';
+      if (answered !== undefined) {
+        if (i === q.correct) cls = 'correct';
+        else if (i === answered && answered !== q.correct) cls = 'wrong';
+      }
+      return `<div class="quiz-opt ${cls}" onclick="answerQuiz(${idx},${i})" ${answered !== undefined ? 'style="pointer-events:none"' : ''}>${o}</div>`;
+    }).join('')}</div>
+    ${answered !== undefined ? `<div class="quiz-feedback">${answered === q.correct ? '✅ Correct! ' : '❌ Not quite. '}${q.explain}</div>` : ''}
+  </div>`;
+}
+
+function answerQuiz(qIdx, aIdx) {
+  if (quizAnswered[qIdx] !== undefined) return;
+  quizAnswered[qIdx] = aIdx;
+  renderStep();
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map(t => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  /* Quiz every 4 steps */
+  if ((currentStep + 1) % 4 === 0 && currentStep < 12) {
+    const quizIdx = Math.floor(currentStep / 4);
+    html += renderQuiz(quizIdx);
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" onclick="applyStep(${currentStep})">✅ Apply</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 14 steps';
+  document.querySelectorAll('.si').forEach((el, i) => {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    const sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+function quickBuild() {
+  P.standName = 'QUICK STAND';
+  P.standStyle = 'angled';
+  P.phoneWidth = 75;
+  P.phoneThickness = 10;
+  P.standWidth = 100;
+  P.standDepth = 80;
+  P.standHeight = 60;
+  P.angle = 60;
+  P.baseThickness = 4;
+  P.lipHeight = 8;
+  P.cableSlot = true;
+  P.cableSlotWidth = 12;
+  P.gripTexture = 'ridges';
+  P.color = '#22c55e';
+  P.roundedCorners = true;
+  P.cornerRadius = 3;
+  P.brandText = 'JVDS';
+  P.brandFontSize = 12;
+  buildStand();
+  sout('⚡ Quick build loaded!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: QUICK STAND loaded!');
+}
+
+/* STATE HOOKS */
+window._builderGetState = function() { return { params: { ...P }, step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  buildStand(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+};
+
+/* TOAST */
+function toast(m) {
+  let t = document.getElementById('standToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'standToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.95);border:1px solid rgba(34,197,94,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-dk);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.1)';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* RANDOM */
+function randomBuild() {
+  const rnd = (mn, mx, s) => { const v = mn + Math.random() * (mx - mn); return s ? Math.round(v / s) * s : Math.round(v * 100) / 100; };
+  const styles = ['angled', 'flat', 'cradle', 'foldable'];
+  const textures = ['ridges', 'dots', 'smooth'];
+  const colours = ['#22c55e','#e8543a','#38bdf8','#f5c842','#a78bfa','#fb923c','#1a1a2e','#ffffff'];
+  Object.assign(P, {
+    standName: 'STAND-' + Math.round(100 + Math.random() * 900),
+    standStyle: styles[Math.floor(Math.random() * styles.length)],
+    phoneWidth: Math.round(65 + Math.random() * 25),
+    phoneThickness: Math.round(7 + Math.random() * 6),
+    standWidth: Math.round(80 + Math.random() * 50),
+    standDepth: Math.round(60 + Math.random() * 40),
+    standHeight: Math.round(40 + Math.random() * 50),
+    angle: Math.round(35 + Math.random() * 40),
+    baseThickness: Math.round(3 + Math.random() * 4),
+    lipHeight: Math.round(6 + Math.random() * 10),
+    cableSlot: Math.random() > 0.3,
+    cableSlotWidth: Math.round(8 + Math.random() * 10),
+    gripTexture: textures[Math.floor(Math.random() * textures.length)],
+    color: colours[Math.floor(Math.random() * colours.length)],
+    roundedCorners: Math.random() > 0.2,
+    cornerRadius: rnd(1, 5, 0.5),
+    brandText: Math.random() > 0.5 ? ['JVDS','PHONE','HELLO','WORK'][Math.floor(Math.random()*4)] : '',
+    brandFontSize: Math.round(10 + Math.random() * 8),
+  });
+  buildStand(); updateStats(); syncRightBar(); toast('Random stand generated!');
+}
+
+/* SAVE / LOAD */
+function getSaves() { try { return JSON.parse(localStorage.getItem('phoneStandSaves') || '{}'); } catch { return {}; } }
+function setSaves(s) { localStorage.setItem('phoneStandSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Save Stand</h2><input type="text" id="standSaveName" placeholder="Name your stand..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:7px;color:var(--acc-dk);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button onclick="doStandSave()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>`;
+  modal.classList.add('open');
+  setTimeout(() => { const inp = document.getElementById('standSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  const sv = getSaves(), ks = Object.keys(sv);
+  let h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved stands yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(k => {
+    const d = new Date(sv[k].date).toLocaleDateString();
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(34,197,94,.05)'" onmouseout="this.style.background='transparent'" onclick="doStandLoad('${k.replace(/'/g, "\\'")}')"><div><div style="font-size:.82rem;color:var(--text)">${k}</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">${d}</div></div><button onclick="event.stopPropagation();doStandDel('${k.replace(/'/g, "\\'")}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.9rem;padding:2px 5px">✕</button></div>`;
+  }).join('') + '</div>';
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Load Stand</h2>${h}<div style="display:flex;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>`;
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function doStandSave() {
+  const inp = document.getElementById('standSaveName');
+  if (!inp) return;
+  const n = inp.value.trim();
+  if (!n) return;
+  const sv = getSaves();
+  sv[n] = { params: { ...P }, step: currentStep, date: Date.now() };
+  setSaves(sv);
+  closeModal();
+  toast('Stand saved!');
+}
+
+function doStandLoad(n) {
+  const sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  closeModal();
+  buildStand();
+  renderStep();
+  updateProgress();
+  syncRightBar();
+  toast('Loaded: ' + n);
+}
+
+function doStandDel(n) {
+  const sv = getSaves();
+  delete sv[n];
+  setSaves(sv);
+  openLoadModal();
+}
+
+/* KEYBOARD NAV */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+function init() {
+  const listEl = document.getElementById('stepList');
+  STEPS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
+    item.onclick = () => go(i);
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildStand();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="../cookie-consent.js"></script>
+
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+})();
+</script>
+</body>
+</html>

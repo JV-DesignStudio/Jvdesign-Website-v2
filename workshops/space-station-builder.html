@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#7c3aed">
+<script src="../analytics-loader.js"></script>
+
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/space-station-builder.html">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Station Builder Design Your Own Orbital Outpost | JVDesignStudio</title>
+<meta name="description" content="Design and build your own 3D space station step by step. Choose modules, solar panels, docking ports, antennas and more then launch it into orbit. Ages 10+. Free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/space-station-builder.html">
+<meta property="og:title" content="Space Station Builder Design Your Own Orbital Outpost | JVDesignStudio">
+<meta property="og:description" content="Design and build your own 3D space station step by step. Choose modules, solar panels, docking ports and more. Ages 10+. Free.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/SpaceStationBuilder.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Space Station Builder Design Your Own Orbital Outpost | JVDesignStudio">
+<meta name="twitter:description" content="Design and build your own 3D space station step by step. Free.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/SpaceStationBuilder.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+
+  :root {
+  --bg:#06040f;--bg2:#0a0818;--bg3:#100c24;
+  --border:rgba(255,255,255,.07);
+  --text:#e0ddf0;--muted:rgba(224,221,240,.45);
+  --acc:#a78bfa;--acc-lt:#c4b5fd;--acc-dk:#7c3aed;
+  --blue:#38bdf8;--green:#4ade80;--orange:#fb923c;--purple:#a78bfa;--gold:#f5c842;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+#app{display:grid;grid-template-columns:340px 1fr 240px;grid-template-rows:54px 1fr;height:100vh}
+
+.hdr{grid-column:1/-1;background:rgba(6,4,15,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:90;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.4),transparent)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),#5b21b6);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+#sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+.prog-section{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.prog-track{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:999px;margin-top:5px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--blue));border-radius:999px;transition:width .4s ease}
+.prog-ct{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);margin-top:3px}
+
+.slist{flex:1;overflow-y:auto;padding:4px 6px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.slist::-webkit-scrollbar{width:3px}
+.slist::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.si{padding:7px 9px;margin-bottom:2px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px solid transparent;transition:all .18s}
+.si:hover{background:rgba(167,139,250,.04)}
+.si.active{background:rgba(167,139,250,.1);border-color:var(--acc)}
+.si.done{opacity:.55}
+.si.done .sn{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sn{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(167,139,250,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;flex-shrink:0;color:var(--acc-lt);transition:all .2s}
+.sl{font-size:11.5px;color:var(--text);line-height:1.2}
+.si.active .sl{color:var(--acc-lt)}
+
+.cpan{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.12);overflow-y:auto;flex-shrink:0;max-height:48vh;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.cpan::-webkit-scrollbar{width:3px}
+.cpan::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+
+.snav{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0}
+.snav button{flex:1;padding:8px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border) !important}
+.btn-n{background:rgba(167,139,250,.14);color:var(--acc-lt);border:1px solid rgba(167,139,250,.25) !important}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-n:hover:not(:disabled){background:rgba(167,139,250,.24)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+#viewport{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.scene-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scene-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scene-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.scene-wrap{flex:1;position:relative;overflow:hidden}
+#stationCanvas{display:block;width:100%;height:100%;touch-action:none}
+.vhint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:6px;pointer-events:none;white-space:nowrap}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--acc-lt);flex-shrink:0;min-height:26px}
+
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.04em;color:#fff;margin-bottom:5px;line-height:1}
+.step-intro{font-size:.78rem;color:var(--muted);line-height:1.72;margin-bottom:9px}
+.step-intro strong{color:var(--text)}
+
+.box{border-radius:7px;padding:8px 11px;margin:5px 0;font-size:.72rem;line-height:1.55;display:flex;gap:7px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.16);color:rgba(224,221,240,.7)}
+.box-c::before{content:"🛰️"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(224,221,240,.7)}
+.box-t::before{content:"💡"}
+.box-r{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);color:rgba(224,221,240,.8)}
+.box-r::before{content:"🌍"}
+
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:7px;margin:8px 0}
+.opt-btn{padding:9px 7px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:700;color:var(--muted);text-align:center;transition:all .15s;line-height:1.3}
+.opt-btn:hover{border-color:rgba(167,139,250,.4);color:var(--text);background:rgba(167,139,250,.05)}
+.opt-btn.sel{border-color:var(--acc);color:var(--acc-lt);background:rgba(167,139,250,.08)}
+.opt-icon{font-size:1.3rem;display:block;margin-bottom:3px}
+
+.swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff;transform:scale(1.18)}
+.custom-colour{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.72rem;color:var(--muted)}
+.custom-colour input[type=color]{width:32px;height:32px;border:2px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg2)}
+
+.slider-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.slider-row:last-child{border:none}
+.slider-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.05em}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--acc-lt);min-width:36px;text-align:right}
+input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
+
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:3px}
+.task-item{display:flex;align-items:center;gap:6px;font-size:.7rem;padding:4px 8px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+.name-input{width:100%;background:var(--bg3);border:1px solid rgba(167,139,250,.3);border-radius:7px;color:var(--acc-lt);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;padding:8px 12px;outline:none;transition:border-color .2s;margin:7px 0}
+.name-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(167,139,250,.12)}
+.name-input::placeholder{color:var(--muted);font-size:.95rem}
+
+.run-btn{width:100%;margin-top:8px;padding:10px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+
+#rightbar{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+#rightbar::-webkit-scrollbar{width:3px}
+#rightbar::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.rb-section{background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.rb-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(167,139,250,.14)}
+.rb-row{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:24px}
+.rb-row label{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex-shrink:0;width:52px}
+.rb-row input[type=color]{width:26px;height:22px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--bg2);flex-shrink:0}
+.rb-row input[type=range]{flex:1;accent-color:var(--acc);min-width:0;height:16px;cursor:pointer}
+.rb-row select{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:.62rem;padding:2px 3px;cursor:pointer;font-family:'Nunito',sans-serif;min-width:0}
+.rv{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt);min-width:28px;text-align:right;flex-shrink:0}
+.rb-toggle{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.52rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rb-toggle input[type=checkbox]{accent-color:var(--acc);flex-shrink:0;width:13px;height:13px}
+
+.station-stats{position:absolute;top:10px;left:10px;background:rgba(6,4,15,.88);border:1px solid rgba(167,139,250,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8;min-width:130px}
+.station-stats .stat-title{font-size:8px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;border-bottom:1px solid rgba(167,139,250,.15);padding-bottom:2px}
+.station-stats .stat-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.station-stats .stat-lbl{width:52px;flex-shrink:0;font-size:8px}
+.station-stats .stat-track{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.station-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.station-stats .stat-val{min-width:16px;text-align:right;color:var(--acc-lt);font-size:8px}
+
+.dims{position:absolute;top:10px;right:10px;background:rgba(6,4,15,.88);border:1px solid rgba(167,139,250,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8}
+.dims span{color:var(--acc-lt)}
+
+@media(max-width:860px){
+  html,body{overflow:auto;height:auto}
+  #app{grid-template-columns:1fr;grid-template-rows:54px auto auto;height:auto;min-height:100vh}
+  .hdr{grid-column:1}
+  #sidebar{max-height:55vh;border-right:none;border-bottom:1px solid var(--border)}
+  .slist{min-height:60px}
+  .cpan{max-height:36vh}
+  #viewport{min-height:320px;height:56vw;max-height:520px}
+  #rightbar{display:none}
+}
+@media(max-width:480px){
+  .logo{font-size:1rem}
+  .quick-btn{font-size:.78rem;padding:6px 12px}
+  #viewport{min-height:260px;height:50vw;max-height:420px}
+  .cpan{max-height:40vh}
+  .snav button{padding:10px 6px;font-size:.75rem}
+}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+
+<div id="app">
+
+  <header class="hdr">
+    <h1 class="logo">🛰️ Space Station Builder</h1>
+    <div class="hdr-right">
+      <a href="../pages/workshop.html" class="back-link">🎓 Workshop</a>
+      <button class="quick-btn" onclick="randomStation()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
+      <button class="quick-btn" onclick="quickBuild()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 3px 0 #1e3a5f">⚡ Quick Build</button>
+    </div>
+  </header>
+
+  <div id="sidebar">
+    <div class="prog-section">
+      <div class="prog-lbl">Build Progress</div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+      <div class="prog-ct" id="progCt">0 / 16 steps</div>
+    </div>
+    <div class="slist" id="stepList"></div>
+    <div class="cpan" id="stepBody"></div>
+    <div class="snav">
+      <button class="btn-p" id="navPrev" onclick="go(currentStep-1)" disabled aria-label="Previous step">← Back</button>
+      <button class="btn-n" id="navNext" onclick="go(currentStep+1)" aria-label="Next step">Next →</button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div class="scene-top">
+      <span class="scene-top-l">🛸 Live 3D Preview</span>
+      <div class="scene-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus" aria-live="polite">Apply Step 1 to begin</span></div>
+      </div>
+    </div>
+    <div class="scene-wrap">
+      <canvas id="stationCanvas" role="application" aria-label="3D space station preview viewport"></canvas>
+      <div class="station-stats" id="stationStats"></div>
+      <div class="vhint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
+      <div class="dims" id="dimsOverlay">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px" id="sName">UNNAMED</div>
+        <div>Style&nbsp;&nbsp;<span id="sStyle">—</span></div>
+        <div>Modules<span id="sModules">—</span></div>
+        <div>Solar&nbsp;&nbsp;<span id="sSolar">—</span></div>
+        <div>Dock&nbsp;&nbsp;<span id="sDock">—</span></div>
+        <div>Crew&nbsp;&nbsp;&nbsp;<span id="sCrew">—</span></div>
+      </div>
+    </div>
+    <div class="obar" id="obar" aria-live="polite">🛰️ Name your station to start building</div>
+  </div>
+
+  <div id="rightbar" aria-label="Quick controls">
+    <div class="rb-section">
+      <div class="rb-title">🎨 Colors</div>
+      <div class="rb-row">
+        <label>Primary</label>
+        <input type="color" id="rb-prim" value="#e0e0e0" oninput="P.primaryCol=this.value;buildStation()">
+      </div>
+      <div class="rb-row">
+        <label>Accent</label>
+        <input type="color" id="rb-accent" value="#a78bfa" oninput="P.accentCol=this.value;buildStation()">
+      </div>
+      <div class="rb-row">
+        <label>Stripe</label>
+        <input type="color" id="rb-stripe-col" value="#a78bfa" oninput="P.stripeCol=this.value;buildStation()">
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔩 Modules</div>
+      <div class="rb-row">
+        <label>Style</label>
+        <select id="rb-style" onchange="P.moduleStyle=this.value;buildStation()">
+          <option value="cylinder">Cylinder</option>
+          <option value="box">Box</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Count</label>
+        <input type="range" min="2" max="8" step="1" value="4" id="rb-mcount"
+          oninput="P.moduleCount=parseInt(this.value);document.getElementById('rb-mcv').textContent=this.value;buildStation()">
+        <span class="rv" id="rb-mcv">4</span>
+      </div>
+      <div class="rb-row">
+        <label>Length</label>
+        <input type="range" min="1" max="6" step="0.5" value="3" id="rb-mlen"
+          oninput="P.moduleLength=parseFloat(this.value);document.getElementById('rb-mlv').textContent=parseFloat(this.value).toFixed(1)+'m';buildStation()">
+        <span class="rv" id="rb-mlv">3.0m</span>
+      </div>
+      <div class="rb-row">
+        <label>Radius</label>
+        <input type="range" min="0.5" max="2.0" step="0.1" value="1.0" id="rb-mrad"
+          oninput="P.moduleRadius=parseFloat(this.value);document.getElementById('rb-mrv').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+        <span class="rv" id="rb-mrv">1.0</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">☀️ Solar & Power</div>
+      <div class="rb-row">
+        <label>Panels</label>
+        <input type="range" min="0" max="8" step="1" value="4" id="rb-scount"
+          oninput="P.solarPanelCount=parseInt(this.value);document.getElementById('rb-scv').textContent=this.value;buildStation()">
+        <span class="rv" id="rb-scv">4</span>
+      </div>
+      <div class="rb-row">
+        <label>Panel Sz</label>
+        <input type="range" min="0.5" max="3.0" step="0.1" value="1.5" id="rb-ssize"
+          oninput="P.solarPanelSize=parseFloat(this.value);document.getElementById('rb-ssv').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+        <span class="rv" id="rb-ssv">1.5</span>
+      </div>
+      <div class="rb-row">
+        <label>Radiators</label>
+        <input type="range" min="0" max="6" step="1" value="2" id="rb-rcount"
+          oninput="P.radiatorCount=parseInt(this.value);document.getElementById('rb-rcv').textContent=this.value;buildStation()">
+        <span class="rv" id="rb-rcv">2</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">📡 Details</div>
+      <div class="rb-row">
+        <label>Dock</label>
+        <input type="range" min="0" max="6" step="1" value="2" id="rb-dcount"
+          oninput="P.dockingPortCount=parseInt(this.value);document.getElementById('rb-dcv').textContent=this.value;buildStation()">
+        <span class="rv" id="rb-dcv">2</span>
+      </div>
+      <div class="rb-row">
+        <label>Antenna</label>
+        <input type="range" min="0" max="6" step="1" value="3" id="rb-acount"
+          oninput="P.antennaCount=parseInt(this.value);document.getElementById('rb-acv').textContent=this.value;buildStation()">
+        <span class="rv" id="rb-acv">3</span>
+      </div>
+      <div class="rb-row">
+        <label>Cupola</label>
+        <input type="range" min="0" max="1.5" step="0.1" value="0.8" id="rb-cupola"
+          oninput="P.cupolaSize=parseFloat(this.value);document.getElementById('rb-cupv').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+        <span class="rv" id="rb-cupv">0.8</span>
+      </div>
+      <div class="rb-row">
+        <label>Truss</label>
+        <input type="range" min="2" max="16" step="1" value="8" id="rb-truss"
+          oninput="P.trussLength=parseInt(this.value);document.getElementById('rb-trv').textContent=this.value+'m';buildStation()">
+        <span class="rv" id="rb-trv">8m</span>
+      </div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-stripe-on" onchange="P.stripeOn=this.checked;buildStation()">
+        Stripe band
+      </label>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔄 Rotation</div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-ring" onchange="P.rotatingRing=this.checked;buildStation()">
+        Rotating ring
+      </label>
+      <div class="rb-row">
+        <label>Ring R</label>
+        <input type="range" min="2" max="6" step="0.5" value="3" id="rb-ringrad"
+          oninput="P.ringRadius=parseFloat(this.value);document.getElementById('rb-rrv').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+        <span class="rv" id="rb-rrv">3.0</span>
+      </div>
+    </div>
+
+    <div style="padding:4px 2px">
+      <button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" onclick="launchStation()">🚀 LAUNCH STATION</button>
+    </div>
+  </div>
+
+</div>
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)"><div id="modalContent" style="background:linear-gradient(145deg,#0a0818,#06040f);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw"></div></div>
+<style>#modalOverlay.open{display:flex}</style>
+
+<script>
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('stationCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x06040f);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x06040f, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
+camera.position.set(0, 4, 16);
+
+const ambient = new THREE.AmbientLight(0x334466, 0.5);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.3);
+sun.position.set(8, 12, 8);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4466aa, 0.35);
+fill.position.set(-8, 3, -6);
+scene.add(fill);
+const stationGlow = new THREE.PointLight(0xa78bfa, 0, 6);
+scene.add(stationGlow);
+
+// Stars
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 2000; i++) {
+    verts.push((Math.random()-0.5)*140, (Math.random()-0.5)*140, (Math.random()-0.5)*140);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+// Earth sphere
+(function(){
+  const earthGeo = new THREE.SphereGeometry(30, 48, 48);
+  const earthMat = new THREE.MeshStandardMaterial({ color: 0x1a5276, roughness: 0.8, metalness: 0.1, wireframe: false });
+  const earth = new THREE.Mesh(earthGeo, earthMat);
+  earth.position.set(0, -35, -50);
+  scene.add(earth);
+  // land patches
+  const landMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.85 });
+  for (let i = 0; i < 12; i++) {
+    const patchGeo = new THREE.SphereGeometry(4 + Math.random() * 6, 8, 8);
+    const patch = new THREE.Mesh(patchGeo, landMat);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    patch.position.set(
+      -50 * Math.sin(phi) * Math.cos(theta),
+      -35 + 30 * Math.cos(phi),
+      -50 - 30 * Math.sin(phi) * Math.sin(theta)
+    );
+    scene.add(patch);
+  }
+  // clouds
+  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9, transparent: true, opacity: 0.3 });
+  for (let i = 0; i < 8; i++) {
+    const cGeo = new THREE.SphereGeometry(3 + Math.random() * 4, 8, 8);
+    const cloud = new THREE.Mesh(cGeo, cloudMat);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    cloud.position.set(
+      -52 * Math.sin(phi) * Math.cos(theta),
+      -35 + 32 * Math.cos(phi),
+      -52 - 32 * Math.sin(phi) * Math.sin(theta)
+    );
+    scene.add(cloud);
+  }
+})();
+
+/* -------------------------------
+   STATION STATE
+------------------------------- */
+const P = {
+  stationName: 'Arcadia',
+  moduleCount: 4,
+  moduleLength: 3,
+  moduleRadius: 1.0,
+  moduleStyle: 'cylinder',
+  primaryCol: '#e0e0e0',
+  accentCol: '#a78bfa',
+  solarPanelCount: 4,
+  solarPanelSize: 1.5,
+  dockingPortCount: 2,
+  antennaCount: 3,
+  cupolaSize: 0.8,
+  trussLength: 8,
+  radiatorCount: 2,
+  crewCapacity: 6,
+  rotatingRing: false,
+  ringRadius: 3,
+  lightCol: '#ffffff',
+  stripeOn: false,
+  stripeCol: '#a78bfa',
+  launched: false,
+  launchTime: 0,
+};
+
+let stationGroup = null;
+let stationRotating = false;
+let starParticles = null;
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD STATION
+------------------------------- */
+function buildStation() {
+  if (stationGroup) scene.remove(stationGroup);
+  stationGroup = new THREE.Group();
+
+  const pMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.35, metalness: 0.5 });
+  const aMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.3, metalness: 0.55 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7, metalness: 0.3 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.6, emissive: new THREE.Color(0x224466), emissiveIntensity: 0.4 });
+  const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, roughness: 0.3, metalness: 0.6, side: THREE.DoubleSide });
+  const radiatorMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.7, metalness: 0.4, side: THREE.DoubleSide });
+  const antennaMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.6 });
+  const tipMat = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.4, metalness: 0.3, emissive: new THREE.Color(0xff2222), emissiveIntensity: 0.5 });
+  const dockMat = new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.5, metalness: 0.6 });
+  const ringMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.3, metalness: 0.5 });
+
+  const mc = P.moduleCount;
+  const ml = P.moduleLength;
+  const mr = P.moduleRadius;
+
+  // Central spine: modules along X axis
+  const totalLen = mc * ml;
+  const startX = -totalLen / 2;
+
+  for (let i = 0; i < mc; i++) {
+    const mx = startX + i * ml + ml / 2;
+
+    if (P.moduleStyle === 'cylinder') {
+      const mGeo = new THREE.CylinderGeometry(mr, mr, ml, 24);
+      const mod = new THREE.Mesh(mGeo, pMat.clone());
+      mod.rotation.z = Math.PI / 2;
+      mod.position.x = mx;
+      mod.castShadow = true;
+      stationGroup.add(mod);
+    } else {
+      const mGeo = new THREE.BoxGeometry(ml, mr * 1.8, mr * 1.8);
+      const mod = new THREE.Mesh(mGeo, pMat.clone());
+      mod.position.x = mx;
+      mod.castShadow = true;
+      stationGroup.add(mod);
+    }
+
+    // Connection rings between modules
+    if (i > 0) {
+      const ringGeo = new THREE.TorusGeometry(mr * 0.85, 0.06, 8, 24);
+      const ring = new THREE.Mesh(ringGeo, darkMat);
+      ring.rotation.y = Math.PI / 2;
+      ring.position.x = startX + i * ml;
+      stationGroup.add(ring);
+    }
+
+    // Accent bands on each module
+    const bandGeo = P.moduleStyle === 'cylinder'
+      ? new THREE.TorusGeometry(mr + 0.01, 0.04, 8, 24)
+      : new THREE.BoxGeometry(0.08, mr * 1.85, mr * 1.85);
+    const band = new THREE.Mesh(bandGeo, aMat.clone());
+    band.position.x = mx;
+    if (P.moduleStyle === 'cylinder') band.rotation.y = Math.PI / 2;
+    stationGroup.add(band);
+
+    // Stripe
+    if (P.stripeOn) {
+      const stripeMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.stripeCol), roughness: 0.4, metalness: 0.5 });
+      if (P.moduleStyle === 'cylinder') {
+        const sGeo = new THREE.CylinderGeometry(mr + 0.015, mr + 0.015, 0.12, 24);
+        const stripe = new THREE.Mesh(sGeo, stripeMat);
+        stripe.rotation.z = Math.PI / 2;
+        stripe.position.x = mx;
+        stationGroup.add(stripe);
+      } else {
+        const sGeo = new THREE.BoxGeometry(ml * 0.3, mr * 1.86, mr * 1.86);
+        const stripe = new THREE.Mesh(sGeo, stripeMat);
+        stripe.position.x = mx;
+        stationGroup.add(stripe);
+      }
+    }
+
+    // Docking ports on end modules
+    if ((i === 0 || i === mc - 1) && P.dockingPortCount > 0) {
+      const portsPerEnd = Math.ceil(P.dockingPortCount / 2);
+      for (let p = 0; p < portsPerEnd; p++) {
+        const angle = (p / portsPerEnd) * Math.PI * 2;
+        const px = mx + (i === 0 ? -ml / 2 - 0.2 : ml / 2 + 0.2);
+        const py = Math.cos(angle) * mr * 0.6;
+        const pz = Math.sin(angle) * mr * 0.6;
+
+        const dockGeo = new THREE.CylinderGeometry(0.15, 0.18, 0.4, 12);
+        const dock = new THREE.Mesh(dockGeo, dockMat);
+        dock.rotation.z = Math.PI / 2;
+        dock.position.set(px, py, pz);
+        stationGroup.add(dock);
+
+        const rimGeo = new THREE.TorusGeometry(0.18, 0.025, 6, 16);
+        const rim = new THREE.Mesh(rimGeo, darkMat);
+        rim.rotation.y = Math.PI / 2;
+        rim.position.set(px + (i === 0 ? -0.2 : 0.2), py, pz);
+        stationGroup.add(rim);
+      }
+    }
+
+    // Antennas
+    if (i === Math.floor(mc / 2) && P.antennaCount > 0) {
+      for (let a = 0; a < P.antennaCount; a++) {
+        const aAngle = (a / P.antennaCount) * Math.PI * 2;
+        const aLen = 0.8 + Math.random() * 0.5;
+        const ax = mx + Math.cos(aAngle) * mr * 0.3;
+        const az = Math.sin(aAngle) * mr * 0.3;
+
+        const aGeo = new THREE.CylinderGeometry(0.015, 0.02, aLen, 6);
+        const ant = new THREE.Mesh(aGeo, antennaMat);
+        ant.position.set(ax, mr + aLen / 2, az);
+        stationGroup.add(ant);
+
+        const tipGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const tip = new THREE.Mesh(tipGeo, tipMat);
+        tip.position.set(ax, mr + aLen + 0.05, az);
+        stationGroup.add(tip);
+      }
+    }
+
+    // Cupola on one module
+    if (i === Math.floor(mc / 2) && P.cupolaSize > 0) {
+      const cs = P.cupolaSize;
+      const cupGeo = new THREE.SphereGeometry(cs, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const cupola = new THREE.Mesh(cupGeo, glassMat);
+      cupola.position.set(mx, mr + 0.01, 0);
+      stationGroup.add(cupola);
+
+      const cupRimGeo = new THREE.TorusGeometry(cs, 0.03, 8, 24);
+      const cupRim = new THREE.Mesh(cupRimGeo, darkMat);
+      cupRim.rotation.x = Math.PI / 2;
+      cupRim.position.set(mx, mr + 0.02, 0);
+      stationGroup.add(cupRim);
+
+      // Cupola struts
+      for (let s = 0; s < 6; s++) {
+        const sAngle = (s / 6) * Math.PI * 2;
+        const sx = Math.cos(sAngle) * cs * 0.8;
+        const sz = Math.sin(sAngle) * cs * 0.8;
+        const strutGeo = new THREE.CylinderGeometry(0.012, 0.012, cs * 0.9, 4);
+        const strut = new THREE.Mesh(strutGeo, darkMat);
+        strut.position.set(mx + sx * 0.3, mr + cs * 0.45, sz * 0.3);
+        strut.rotation.z = Math.PI / 2;
+        strut.lookAt(mx + sx, mr + cs, sz);
+        stationGroup.add(strut);
+      }
+    }
+  }
+
+  // Truss: long beam connecting solar panels
+  const trussY = mr + 1.2;
+  const trussGeo = new THREE.BoxGeometry(P.trussLength, 0.15, 0.15);
+  const truss = new THREE.Mesh(trussGeo, darkMat);
+  truss.position.y = trussY;
+  stationGroup.add(truss);
+
+  // Secondary truss beam
+  const truss2Geo = new THREE.BoxGeometry(P.trussLength, 0.08, 0.08);
+  const truss2 = new THREE.Mesh(truss2Geo, darkMat);
+  truss2.position.set(0, trussY - 0.3, 0);
+  stationGroup.add(truss2);
+
+  // Cross struts on truss
+  for (let t = 0; t < Math.floor(P.trussLength / 1.5); t++) {
+    const tx = -P.trussLength / 2 + t * 1.5 + 0.75;
+    const strutGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.45, 4);
+    const strut = new THREE.Mesh(strutGeo, darkMat);
+    strut.position.set(tx, trussY - 0.15, 0);
+    stationGroup.add(strut);
+  }
+
+  // Solar panels
+  if (P.solarPanelCount > 0) {
+    const panelSize = P.solarPanelSize;
+    const panelsPerSide = Math.ceil(P.solarPanelCount / 2);
+
+    for (let side = 0; side < 2; side++) {
+      const sideX = side === 0 ? -1 : 1;
+      for (let p = 0; p < panelsPerSide; p++) {
+        const px = sideX * (P.trussLength / 2 + panelSize / 2 + p * (panelSize + 0.15));
+        const py = trussY;
+
+        // Panel arm
+        const armGeo = new THREE.CylinderGeometry(0.025, 0.025, panelSize * 0.6, 4);
+        const arm = new THREE.Mesh(armGeo, darkMat);
+        arm.rotation.z = Math.PI / 2;
+        arm.position.set(px, py, 0);
+        stationGroup.add(arm);
+
+        // Solar panel surface
+        const panelGeo = new THREE.BoxGeometry(panelSize, 0.03, panelSize * 0.7);
+        const panel = new THREE.Mesh(panelGeo, solarMat.clone());
+        panel.position.set(px, py, 0);
+        panel.castShadow = true;
+        stationGroup.add(panel);
+
+        // Grid lines on panel
+        for (let g = 0; g < 4; g++) {
+          const gx = px - panelSize / 2 + (g + 1) * panelSize / 5;
+          const lineGeo = new THREE.BoxGeometry(0.01, 0.035, panelSize * 0.7);
+          const line = new THREE.Mesh(lineGeo, new THREE.MeshStandardMaterial({ color: 0x283593, roughness: 0.5 }));
+          line.position.set(gx, py, 0);
+          stationGroup.add(line);
+        }
+        for (let g = 0; g < 3; g++) {
+          const gz = -panelSize * 0.35 + (g + 1) * panelSize * 0.7 / 4;
+          const lineGeo = new THREE.BoxGeometry(panelSize, 0.035, 0.01);
+          const line = new THREE.Mesh(lineGeo, new THREE.MeshStandardMaterial({ color: 0x283593, roughness: 0.5 }));
+          line.position.set(px, py, gz);
+          stationGroup.add(line);
+        }
+
+        // Hinge joint
+        const hingeGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.1, 8);
+        const hinge = new THREE.Mesh(hingeGeo, darkMat);
+        hinge.rotation.x = Math.PI / 2;
+        hinge.position.set(sideX * (P.trussLength / 2), py, 0);
+        stationGroup.add(hinge);
+      }
+    }
+  }
+
+  // Radiators
+  if (P.radiatorCount > 0) {
+    for (let r = 0; r < P.radiatorCount; r++) {
+      const rx = (r - (P.radiatorCount - 1) / 2) * 1.5;
+      const ry = trussY - 0.6;
+
+      // Radiator panel
+      const rGeo = new THREE.BoxGeometry(1.2, 0.02, 0.8);
+      const rad = new THREE.Mesh(rGeo, radiatorMat);
+      rad.position.set(rx, ry, 0);
+      stationGroup.add(rad);
+
+      // Radiator fins (grid pattern)
+      for (let f = 0; f < 5; f++) {
+        const fx = rx - 0.5 + f * 0.25;
+        const finGeo = new THREE.BoxGeometry(0.01, 0.025, 0.8);
+        const fin = new THREE.Mesh(finGeo, new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8 }));
+        fin.position.set(fx, ry, 0);
+        stationGroup.add(fin);
+      }
+
+      // Support strut
+      const sGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.7, 4);
+      const s = new THREE.Mesh(sGeo, darkMat);
+      s.position.set(rx, trussY - 0.3, 0);
+      stationGroup.add(s);
+    }
+  }
+
+  // Rotating ring
+  if (P.rotatingRing) {
+    const rr = P.ringRadius;
+    const tubeR = 0.12;
+    const torusGeo = new THREE.TorusGeometry(rr, tubeR, 12, 48);
+    const torus = new THREE.Mesh(torusGeo, ringMat);
+    torus.rotation.x = Math.PI / 2;
+    torus.position.y = mr * 0.3;
+    stationGroup.add(torus);
+
+    // Ring spokes
+    for (let s = 0; s < 8; s++) {
+      const sAngle = (s / 8) * Math.PI * 2;
+      const spokeLen = rr;
+      const spokeGeo = new THREE.CylinderGeometry(0.025, 0.025, spokeLen, 4);
+      const spoke = new THREE.Mesh(spokeGeo, darkMat);
+      spoke.rotation.z = Math.PI / 2;
+      spoke.rotation.y = sAngle;
+      spoke.position.set(0, mr * 0.3, 0);
+      stationGroup.add(spoke);
+    }
+
+    // Hub
+    const hubGeo = new THREE.CylinderGeometry(tubeR * 2, tubeR * 2, 0.3, 16);
+    const hub = new THREE.Mesh(hubGeo, aMat);
+    hub.position.y = mr * 0.3;
+    stationGroup.add(hub);
+  }
+
+  // Light strip on modules
+  const lightMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.lightCol), emissive: new THREE.Color(P.lightCol), emissiveIntensity: 0.8, roughness: 0.2 });
+  for (let i = 0; i < mc; i++) {
+    const lx = startX + i * ml + ml / 2;
+    const lGeo = new THREE.BoxGeometry(ml * 0.15, 0.04, 0.04);
+    const light = new THREE.Mesh(lGeo, lightMat);
+    light.position.set(lx, mr + 0.03, 0);
+    stationGroup.add(light);
+    const light2 = light.clone();
+    light2.position.set(lx, -mr - 0.03, 0);
+    stationGroup.add(light2);
+  }
+
+  scene.add(stationGroup);
+  updateSpecCard();
+  updateStats();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.3, phi: 1.1, radius: 16, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(5, Math.min(35, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 0, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+
+let pinchDist0 = 0;
+canvas.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
+  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', function() { orbit.dragging = false; });
+canvas.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1 && orbit.dragging) {
+    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
+    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
+    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    orbit.radius *= pinchDist0 / d; pinchDist0 = d;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.002;
+  updateCamera();
+
+  // Station rotation when launched
+  if (stationRotating && stationGroup) {
+    stationGroup.rotation.y += 0.003;
+  }
+
+  // Ring rotation
+  if (P.rotatingRing && stationGroup) {
+    stationGroup.children.forEach(function(child) {
+      if (child.geometry && child.geometry.type === 'TorusGeometry') {
+        child.rotation.z += 0.008;
+      }
+    });
+  }
+
+  // Star particle twinkle
+  if (starParticles) {
+    const pos = starParticles.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      pos.setY(i, y + Math.sin(frame * 0.01 + i) * 0.001);
+    }
+    pos.needsUpdate = true;
+  }
+
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   SPEC OVERLAY
+------------------------------- */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.stationName || 'UNNAMED';
+  document.getElementById('sStyle').textContent = P.moduleStyle === 'cylinder' ? 'Cylinder' : 'Box';
+  document.getElementById('sModules').textContent = P.moduleCount + ' × ' + P.moduleLength + 'm';
+  document.getElementById('sSolar').textContent = P.solarPanelCount + ' panels';
+  document.getElementById('sDock').textContent = P.dockingPortCount + ' ports';
+  document.getElementById('sCrew').textContent = P.crewCapacity + ' crew';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-prim', P.primaryCol);
+  sv('rb-accent', P.accentCol);
+  sv('rb-stripe-col', P.stripeCol);
+  sv('rb-style', P.moduleStyle);
+  sv('rb-mcount', P.moduleCount); st('rb-mcv', P.moduleCount);
+  sv('rb-mlen', P.moduleLength); st('rb-mlv', P.moduleLength.toFixed(1) + 'm');
+  sv('rb-mrad', P.moduleRadius); st('rb-mrv', P.moduleRadius.toFixed(1));
+  sv('rb-scount', P.solarPanelCount); st('rb-scv', P.solarPanelCount);
+  sv('rb-ssize', P.solarPanelSize); st('rb-ssv', P.solarPanelSize.toFixed(1));
+  sv('rb-rcount', P.radiatorCount); st('rb-rcv', P.radiatorCount);
+  sv('rb-dcount', P.dockingPortCount); st('rb-dcv', P.dockingPortCount);
+  sv('rb-acount', P.antennaCount); st('rb-acv', P.antennaCount);
+  sv('rb-cupola', P.cupolaSize); st('rb-cupv', P.cupolaSize.toFixed(1));
+  sv('rb-truss', P.trussLength); st('rb-trv', P.trussLength + 'm');
+  sc('rb-stripe-on', P.stripeOn);
+  sc('rb-ring', P.rotatingRing);
+  sv('rb-ringrad', P.ringRadius); st('rb-rrv', P.ringRadius.toFixed(1));
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(16).fill(false);
+
+function nav(i) { return ''; }
+
+function opts(id, options, currentVal, onChange) {
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" onclick="(${onChange})('${o.val}',this)">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" onclick="(${onChange})('${c}',this)"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" oninput="(${onChange})(this.value,null)">
+  </div>`;
+}
+
+const FACTS = {
+  stationName: "The International Space Station has been continuously occupied since November 2000. Over 270 people from 21 countries have visited.",
+  moduleCount: "The ISS has 16 pressurized modules — each one a self-contained lab that took years to design and build.",
+  moduleLength: "The ISS modules are roughly 6.7 metres long and 4.4 metres in diameter — about the size of a school bus.",
+  moduleRadius: "The Zvezda service module is 2.9m in radius. Bigger modules mean more room for experiments and crew.",
+  moduleStyle: "Cylindrical modules are structurally stronger in vacuum. Box modules are easier to outfit internally.",
+  solarPanelCount: "The ISS solar arrays span 73 metres, larger than a Boeing 777 wingspan. They generate 75-90 kilowatts.",
+  solarPanelSize: "Each ISS solar panel wing is 34m long. They track the Sun automatically as the station orbits.",
+  dockingPortCount: "The ISS has multiple docking adapters: PMA-2, IDA-2, IDA-3, and the Russian Zvezda port.",
+  antennaCount: "The ISS uses S-band, Ku-band, and L-band antennas for voice, data, and video communication with Earth.",
+  cupolaSize: "The ISS Cupola has 7 windows and gives astronauts a 360° view — essential for robotics and docking.",
+  trussLength: "The ISS main truss (ITS) is 108.5 metres long — longer than a football field.",
+  radiatorCount: "The ISS has 6 ammonia-based thermal control radiators that dissipate waste heat into space.",
+  crewCapacity: "The ISS typically hosts 6-7 crew members. During crew rotations, up to 13 people may be aboard.",
+  rotatingRing: "No real station has a rotating ring yet, but concepts like Nautilus-X propose artificial gravity rings.",
+  ringRadius: "A 30m radius ring spinning at 4 RPM would produce roughly 0.5g — enough to prevent bone loss.",
+};
+
+const STEPS = [
+/* 1 */ {
+  title: 'Name Your Station',
+  tag: 'STEP 01 — IDENTITY',
+  intro: `Every space station needs a name. <strong>International Space Station</strong>. <strong>Mir</strong>. <strong>Tiangong</strong>. <strong>Skylab</strong>. What will your orbital outpost be called?`,
+  boxes: [
+    { t:'box-c', tx:'Station names often reflect ambition or origin. Mir means "peace" in Russian. Tiangong means "heavenly palace" in Chinese. Skylab was literally a lab in the sky.' },
+    { t:'box-t', tx:'Keep it under 14 characters — it looks best on the spec overlay and profile card.' },
+  ],
+  tasks: ['Enter a station name', 'Press Apply to lock it in'],
+  html() { return `<input class="name-input" id="stationName" maxlength="16" placeholder="E.G. ARCADIA" value="${P.stationName==='Arcadia'?'':P.stationName}">`; },
+  onApply() { P.stationName = document.getElementById('stationName')?.value?.trim() || 'Arcadia'; buildStation(); sout('🛰️ ' + P.stationName + ' is registered. Now choose a module style.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */ {
+  title: 'Module Style',
+  tag: 'STEP 02 — STRUCTURE',
+  intro: `Modules are the core building blocks of your station. <strong>Cylinders</strong> are pressure-optimized (like real ISS modules). <strong>Box</strong> modules are easier to outfit and give a more futuristic look.`,
+  boxes: [
+    { t:'box-c', tx:'Real space station modules are cylindrical because a cylinder distributes internal pressure evenly. The ISS uses Unity, Destiny, Columbus, Kibo — all cylinders.' },
+    { t:'box-t', tx:'Cylinders look authentic. Boxes look sci-fi. Pick your vibe.' },
+  ],
+  tasks: ['Choose a module shape'],
+  html() {
+    const o = `(function(v,el){P.moduleStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return opts('style', [
+      { val:'cylinder', icon:'🔵', label:'Cylinder' },
+      { val:'box', icon:'⬜', label:'Box' },
+    ], P.moduleStyle, o);
+  },
+  onApply() { buildStation(); sout('Module style: ' + P.moduleStyle + '.'); document.getElementById('liveStatus').textContent = 'Style set!'; }
+},
+
+/* 3 */ {
+  title: 'Module Count',
+  tag: 'STEP 03 — SCALE',
+  intro: `How many modules will your station have? More modules = more labs, more crew space, more capability. But also more mass to launch and maintain.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has 16 pressurized modules from 5 space agencies. Mir had 7. Tiangong currently has 3. Each module is launched separately and assembled in orbit.' },
+    { t:'box-t', tx:'4 modules is a solid starter station. 8 is a full-scale orbital city.' },
+  ],
+  tasks: ['Set the module count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Modules</span>
+      <input type="range" min="2" max="8" step="1" value="${P.moduleCount}"
+        oninput="P.moduleCount=parseInt(this.value);document.getElementById('mcVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="mcVal">${P.moduleCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.moduleCount + ' modules configured.'); document.getElementById('liveStatus').textContent = 'Modules set!'; }
+},
+
+/* 4 */ {
+  title: 'Module Size',
+  tag: 'STEP 04 — DIMENSIONS',
+  intro: `Set the length and radius of each module. <strong>Longer</strong> modules hold more equipment. <strong>Wider</strong> modules give more internal volume for crew.',
+  boxes: [
+    { t:'box-c', tx:'The ISS Destiny lab is 6.7m long and 4.4m in diameter. Columbus is 6.7m × 4.5m. Kibo is the largest at 11.2m × 4.4m with an external porch.' },
+  ],
+  tasks: ['Adjust length and radius'],
+  html() {
+    return `<div style="padding:6px 0">
+    <div class="slider-row">
+      <span class="slider-lbl">Length</span>
+      <input type="range" min="1" max="6" step="0.5" value="${P.moduleLength}"
+        oninput="P.moduleLength=parseFloat(this.value);document.getElementById('mlVal').textContent=parseFloat(this.value).toFixed(1)+'m';buildStation()">
+      <span class="slider-val" id="mlVal">${P.moduleLength.toFixed(1)}m</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Radius</span>
+      <input type="range" min="0.5" max="2.0" step="0.1" value="${P.moduleRadius}"
+        oninput="P.moduleRadius=parseFloat(this.value);document.getElementById('mrVal').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+      <span class="slider-val" id="mrVal">${P.moduleRadius.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Module size adjusted.'); document.getElementById('liveStatus').textContent = 'Size set!'; }
+},
+
+/* 5 */ {
+  title: 'Body Colour',
+  tag: 'STEP 05 — LIVERY',
+  intro: `The primary colour of your station modules. White reflects sunlight and keeps modules cool. Silver is modern. Dark colours absorb heat — fine for deep-space stations.`,
+  boxes: [
+    { t:'box-c', tx:'ISS modules are white or silver to reflect solar radiation. White paint keeps the internal temperature manageable. Real thermal control is critical in space.' },
+    { t:'box-t', tx:'Pick a bold colour — you\'ll add accent colours next.' },
+  ],
+  tasks: ['Choose a primary colour'],
+  html() {
+    const o = `(function(c,el){P.primaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return swatchRow('pc', ['#e0e0e0','#f5f5f5','#1a1a2a','#c0c0c0','#e8e0d0','#2a3a5a','#8b1a1a','#a78bfa'], P.primaryCol, o);
+  },
+  onApply() { buildStation(); sout('Primary colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 6 */ {
+  title: 'Accent Colour',
+  tag: 'STEP 06 — CONTRAST',
+  intro: `The accent colour appears on connector bands, the truss, and the rotating ring. A contrasting accent makes your station look designed and professional.`,
+  boxes: [
+    { t:'box-t', tx:'Classic combos: white modules + blue accents (ISS). Silver + gold (Tiangong). White + red (Mir). Purple is a popular sci-fi choice.' },
+  ],
+  tasks: ['Choose an accent colour'],
+  html() {
+    const o = `(function(c,el){P.accentCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return swatchRow('ac', ['#a78bfa','#38bdf8','#4ade80','#f5c842','#fb923c','#e8543a','#ffffff','#1a1a2a'], P.accentCol, o);
+  },
+  onApply() { buildStation(); sout('Accent colour applied!'); document.getElementById('liveStatus').textContent = 'Accent set!'; }
+},
+
+/* 7 */ {
+  title: 'Solar Panels',
+  tag: 'STEP 07 — POWER',
+  intro: `Solar panels are your station\'s lifeline. They convert sunlight into electricity. More panels = more power for experiments, life support, and communications.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS solar arrays span 73 metres — larger than a Boeing 777 wingspan. They generate 75-90 kilowatts, enough to power 40 homes. The panels track the Sun as the station orbits.' },
+    { t:'box-t', tx:'4 panels is a good starting point. 8 panels gives you serious power reserves.' },
+  ],
+  tasks: ['Set panel count and size'],
+  html() {
+    return `<div style="padding:6px 0">
+    <div class="slider-row">
+      <span class="slider-lbl">Panel Count</span>
+      <input type="range" min="0" max="8" step="1" value="${P.solarPanelCount}"
+        oninput="P.solarPanelCount=parseInt(this.value);document.getElementById('spcVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="spcVal">${P.solarPanelCount}</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Panel Size</span>
+      <input type="range" min="0.5" max="3.0" step="0.1" value="${P.solarPanelSize}"
+        oninput="P.solarPanelSize=parseFloat(this.value);document.getElementById('spsVal').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+      <span class="slider-val" id="spsVal">${P.solarPanelSize.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.solarPanelCount + ' solar panels configured.'); document.getElementById('liveStatus').textContent = 'Solar set!'; }
+},
+
+/* 8 */ {
+  title: 'Docking Ports',
+  tag: 'STEP 08 — ACCESS',
+  intro: `Docking ports allow spacecraft to connect to your station. Crew Dragon, Soyuz, Cargo ships — they all need a port to attach to.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has multiple docking ports: the Russian Zvezda aft port, Harmony forward and zenith ports, and the PMA adapters for Dragon and Starliner.' },
+    { t:'box-t', tx:'2-3 ports is realistic. 6 ports means your station is a busy orbital hub.' },
+  ],
+  tasks: ['Set the number of docking ports'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Docking Ports</span>
+      <input type="range" min="0" max="6" step="1" value="${P.dockingPortCount}"
+        oninput="P.dockingPortCount=parseInt(this.value);document.getElementById('dpVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="dpVal">${P.dockingPortCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.dockingPortCount + ' docking ports installed.'); document.getElementById('liveStatus').textContent = 'Docking set!'; }
+},
+
+/* 9 */ {
+  title: 'Antennas',
+  tag: 'STEP 09 — COMMUNICATIONS',
+  intro: `Antennas keep your station connected to Earth. Voice, video, telemetry, science data — it all flows through these. More antennas = more bandwidth.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS uses S-band for voice, Ku-band for high-speed data and video, and L-band for navigation. The main high-gain antenna can transmit at 300 Mbps.' },
+  ],
+  tasks: ['Set antenna count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Antennas</span>
+      <input type="range" min="0" max="6" step="1" value="${P.antennaCount}"
+        oninput="P.antennaCount=parseInt(this.value);document.getElementById('anVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="anVal">${P.antennaCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.antennaCount + ' antennas installed.'); document.getElementById('liveStatus').textContent = 'Antennas set!'; }
+},
+
+/* 10 */ {
+  title: 'Cupola',
+  tag: 'STEP 10 — OBSERVATION',
+  intro: `The cupola is an observation dome — a multi-windowed dome that gives crew a panoramic view of Earth and approaching spacecraft. It\'s the most iconic feature of the ISS.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS Cupola was built by ESA and has 7 windows. It\'s used for robotics operations, Earth observation, and docking. Astronauts call it the best office in the world.' },
+    { t:'box-t', tx:'Set size to 0 to remove the cupola entirely. Bigger cupolas look more impressive but add mass.' },
+  ],
+  tasks: ['Set cupola size (0 to remove)'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Cupola Size</span>
+      <input type="range" min="0" max="1.5" step="0.1" value="${P.cupolaSize}"
+        oninput="P.cupolaSize=parseFloat(this.value);document.getElementById('cpVal').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+      <span class="slider-val" id="cpVal">${P.cupolaSize.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.cupolaSize > 0 ? 'Cupola: ' + P.cupolaSize.toFixed(1) + 'm' : 'No cupola.'); document.getElementById('liveStatus').textContent = 'Cupola set!'; }
+},
+
+/* 11 */ {
+  title: 'Truss',
+  tag: 'STEP 11 — BACKBONE',
+  intro: `The truss is the structural backbone that holds your solar panels, radiators, and external equipment. A longer truss means more room for power generation.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS Integrated Truss Structure is 108.5 metres long — longer than a football field. It supports the solar arrays, thermal radiators, and external payloads.' },
+    { t:'box-t', tx:'Match the truss to your solar panel count. More panels need a longer truss.' },
+  ],
+  tasks: ['Set truss length'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Truss Length</span>
+      <input type="range" min="2" max="16" step="1" value="${P.trussLength}"
+        oninput="P.trussLength=parseInt(this.value);document.getElementById('trVal').textContent=this.value+'m';buildStation()">
+      <span class="slider-val" id="trVal">${P.trussLength}m</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Truss length: ' + P.trussLength + 'm.'); document.getElementById('liveStatus').textContent = 'Truss set!'; }
+},
+
+/* 12 */ {
+  title: 'Radiators',
+  tag: 'STEP 12 — THERMAL',
+  intro: `Space is both freezing cold and scorching hot. Radiators dump excess heat from electronics, life support, and crew metabolism into the void.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has 6 ammonia-based thermal control radiators that can dissipate up to 70 kilowatts. Without them, electronics would overheat within hours.' },
+    { t:'box-t', tx:'More modules and crew = more heat. Scale your radiators accordingly.' },
+  ],
+  tasks: ['Set radiator count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Radiators</span>
+      <input type="range" min="0" max="6" step="1" value="${P.radiatorCount}"
+        oninput="P.radiatorCount=parseInt(this.value);document.getElementById('rdVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="rdVal">${P.radiatorCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.radiatorCount + ' radiators installed.'); document.getElementById('liveStatus').textContent = 'Thermal set!'; }
+},
+
+/* 13 */ {
+  title: 'Crew Capacity',
+  tag: 'STEP 13 — CREW',
+  intro: `How many people can live and work on your station? More crew means more experiments, but also more life support, food, water, and oxygen.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS typically hosts 6-7 crew members. During Soyuz crew rotations, up to 13 people may be aboard briefly. Each crew member needs about 1kg of food, 2.5L of water, and 0.84kg of oxygen per day.' },
+    { t:'box-t', tx:'Match crew capacity to your module count. 1-2 people per module is realistic.' },
+  ],
+  tasks: ['Set crew capacity'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Crew</span>
+      <input type="range" min="1" max="12" step="1" value="${P.crewCapacity}"
+        oninput="P.crewCapacity=parseInt(this.value);document.getElementById('ccVal').textContent=this.value;buildStation()">
+      <span class="slider-val" id="ccVal">${P.crewCapacity}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Crew capacity: ' + P.crewCapacity + ' souls.'); document.getElementById('liveStatus').textContent = 'Crew set!'; }
+},
+
+/* 14 */ {
+  title: 'Rotating Ring',
+  tag: 'STEP 14 — ARTIFICIAL GRAVITY',
+  intro: `A rotating ring creates artificial gravity through centripetal acceleration. No real station has one yet, but it\'s a staple of science fiction and future station concepts.`,
+  boxes: [
+    { t:'box-c', tx:'Concepts like Nautilus-X and the Mars Transit Station propose rotating rings. A 30m radius ring at 4 RPM would produce ~0.5g — enough to prevent bone loss and muscle atrophy.' },
+    { t:'box-t', tx:'Toggle the ring on and adjust the radius. Bigger rings = more comfortable gravity.' },
+  ],
+  tasks: ['Toggle rotating ring', 'Set ring radius'],
+  html() {
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+      <span style="font-size:.78rem;color:var(--muted)">Rotating Ring:</span>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
+        <input type="checkbox" ${P.rotatingRing?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.rotatingRing=this.checked;buildStation()">
+        Enable rotating ring
+      </label>
+    </div>
+    <div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Ring Radius</span>
+      <input type="range" min="2" max="6" step="0.5" value="${P.ringRadius}"
+        oninput="P.ringRadius=parseFloat(this.value);document.getElementById('rrVal').textContent=parseFloat(this.value).toFixed(1);buildStation()">
+      <span class="slider-val" id="rrVal">${P.ringRadius.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.rotatingRing ? '🔄 Rotating ring: ' + P.ringRadius.toFixed(1) + 'm radius' : 'No rotating ring.'); document.getElementById('liveStatus').textContent = P.rotatingRing ? 'Ring active!' : 'No ring'; }
+},
+
+/* 15 */ {
+  title: 'Stats & Preview',
+  tag: 'STEP 15 — REVIEW',
+  intro: `Review your station\'s capabilities. The stats reflect your design choices — more modules boost capacity, solar panels boost power, antennas boost science.`,
+  boxes: [
+    { t:'box-r', tx:'Your station is nearly complete. Review the stats on the right side of the viewport. Every choice you\'ve made contributes to the final capability profile.' },
+    { t:'box-t', tx:'Drag the 3D viewport to orbit around your station. Scroll to zoom in and out. Take a good look before launch!' },
+  ],
+  tasks: ['Review your station stats', 'Orbit the 3D preview'],
+  html() { return ''; },
+  onApply() { sout('Stats reviewed. Ready for launch!'); document.getElementById('liveStatus').textContent = 'Review done!'; }
+},
+
+/* 16 */ {
+  title: 'Launch Station!',
+  tag: 'STEP 16 — ORBIT',
+  intro: `All systems are go. Your station is fully designed. Hit the launch button to deploy it into orbit and watch it come alive.`,
+  boxes: [
+    { t:'box-r', tx:'🛰️ Deploying into orbit... Solar panels extending. Systems powering up. Welcome to space!' },
+    { t:'box-c', tx:'A complete space station needs: modules (habitation), truss (structure), solar panels (power), radiators (thermal), docking ports (access), and antennas (communication). You\'ve built all of them.' },
+  ],
+  tasks: ['Press Launch and watch it go!'],
+  html() {
+    return `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:2.4rem;margin-bottom:7px">🛰️</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${P.stationName || 'YOUR STATION'}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for orbital deployment.</div>
+    </div>
+    <button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">🚀 DEPLOY TO ORBIT!</button>`;
+  },
+  onApply() { launchStation(); }
+},
+];
+
+/* -------------------------------
+   LAUNCH STATION
+------------------------------- */
+function launchStation() {
+  P.launched = true;
+  P.launchTime = Date.now();
+  stationRotating = true;
+  buildStation();
+  sout('🛰️ ' + (P.stationName || 'STATION') + ' is now operational in orbit!');
+  document.getElementById('liveStatus').textContent = '🛰️ IN ORBIT!';
+  document.getElementById('sceneHint').textContent = 'Station is orbiting — drag to follow';
+
+  // Spawn star particles
+  if (!starParticles) {
+    const geo = new THREE.BufferGeometry();
+    const verts = [];
+    for (let i = 0; i < 500; i++) {
+      verts.push((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
+    }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.7 });
+    starParticles = new THREE.Points(geo, mat);
+    scene.add(starParticles);
+  }
+
+  // Toast
+  toast('🛰️ ' + (P.stationName || 'STATION') + ' is operational!');
+
+  // Mark launch step done
+  stepDone[STEPS.length - 1] = true;
+  updateProgress();
+  renderStep();
+}
+
+/* -------------------------------
+   NAVIGATION
+------------------------------- */
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+
+  // Educational fact
+  const factKey = ['stationName','moduleCount','moduleStyle','moduleLength','moduleRadius','solarPanelCount','solarPanelSize','dockingPortCount','antennaCount','cupolaSize','trussLength','radiatorCount','crewCapacity','rotatingRing','ringRadius',''][currentStep];
+  if (factKey && FACTS[factKey]) {
+    html += `<div style="margin:8px 0;padding:8px 11px;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15);border-radius:7px;font-size:.7rem;line-height:1.6;color:rgba(224,221,240,.65)">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);display:block;margin-bottom:3px">Did you know?</span>
+      ${FACTS[factKey]}
+    </div>`;
+  }
+
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map(t => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" onclick="applyStep(${currentStep})">⚡ Apply to Station</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach((el, i) => {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    const sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+/* -------------------------------
+   QUICK BUILD
+------------------------------- */
+function quickBuild() {
+  P.stationName = 'ARCHON-7';
+  P.moduleCount = 6; P.moduleLength = 3; P.moduleRadius = 1.0;
+  P.moduleStyle = 'cylinder';
+  P.primaryCol = '#e0e0e0'; P.accentCol = '#a78bfa';
+  P.solarPanelCount = 6; P.solarPanelSize = 1.8;
+  P.dockingPortCount = 3; P.antennaCount = 4;
+  P.cupolaSize = 0.8; P.trussLength = 12;
+  P.radiatorCount = 3; P.crewCapacity = 8;
+  P.rotatingRing = true; P.ringRadius = 3.5;
+  P.stripeOn = true; P.stripeCol = '#a78bfa';
+  P.launched = false;
+  buildStation();
+  sout('⚡ Quick build: ARCHON-7 loaded. Press Launch at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: ARCHON-7 loaded!');
+}
+
+/* -------------------------------
+   RANDOM BUILD
+------------------------------- */
+function randomStation() {
+  const rnd = (mn, mx, s) => { const v = mn + Math.random() * (mx - mn); return s ? Math.round(v / s) * s : Math.round(v * 100) / 100; };
+  const styles = ['cylinder', 'box'];
+  P.stationName = 'STN-' + Math.round(100 + Math.random() * 900);
+  P.moduleCount = Math.round(2 + Math.random() * 6);
+  P.moduleLength = rnd(1.5, 5, 0.5);
+  P.moduleRadius = rnd(0.5, 1.8, 0.1);
+  P.moduleStyle = styles[Math.floor(Math.random() * styles.length)];
+  P.primaryCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.accentCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.solarPanelCount = Math.round(Math.random() * 8);
+  P.solarPanelSize = rnd(0.5, 3, 0.1);
+  P.dockingPortCount = Math.round(Math.random() * 5);
+  P.antennaCount = Math.round(Math.random() * 5);
+  P.cupolaSize = rnd(0, 1.5, 0.1);
+  P.trussLength = Math.round(2 + Math.random() * 14);
+  P.radiatorCount = Math.round(Math.random() * 5);
+  P.crewCapacity = Math.round(1 + Math.random() * 11);
+  P.rotatingRing = Math.random() > 0.5;
+  P.ringRadius = rnd(2, 6, 0.5);
+  P.stripeOn = Math.random() > 0.4;
+  P.stripeCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.launched = false;
+  buildStation(); updateStats(); syncRightBar();
+  toast('Random station generated!');
+}
+
+/* -------------------------------
+   STATS
+------------------------------- */
+function computeStats() {
+  const science = Math.min(10, Math.round(P.moduleCount * 1.2 + (P.cupolaSize > 0 ? 2 : 0) + P.antennaCount * 0.8 + (P.rotatingRing ? 2 : 0)));
+  const capacity = Math.min(10, Math.round(P.moduleCount * 1.0 + P.crewCapacity * 0.3 + P.dockingPortCount * 0.8));
+  const power = Math.min(10, Math.round(P.solarPanelCount * 1.0 + P.solarPanelSize * 0.8 + P.radiatorCount * 0.5));
+  const range = Math.min(10, Math.round(P.moduleLength * 1.2 + P.trussLength * 0.4 + P.moduleCount * 0.5));
+  return { science: Math.max(1, science), capacity: Math.max(1, capacity), power: Math.max(1, power), range: Math.max(1, range) };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('stationStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">Station Stats</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Science</span>${bar(s.science, '#a78bfa')}<span class="stat-val">${s.science}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Capacity</span>${bar(s.capacity, '#4ade80')}<span class="stat-val">${s.capacity}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Power</span>${bar(s.power, '#f5c842')}<span class="stat-val">${s.power}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Range</span>${bar(s.range, '#38bdf8')}<span class="stat-val">${s.range}</span></div>`;
+}
+
+/* -------------------------------
+   QUIZ
+------------------------------- */
+window.BQ = {
+  key: "jvds-space-station-builder-v1",
+  name: "Space Station Builder",
+  profileId: "space-station-builder",
+  quiz: [
+    { q: "Why are real space station modules <strong>cylindrical</strong>?", opts: ["They look cooler", "Cylinders distribute internal pressure evenly", "They are cheaper to build", "Astronauts prefer round rooms"], a: 1, why: "A cylinder spreads the force of internal air pressure evenly across its surface, preventing weak points that could burst." },
+    { q: "What do <strong>solar panels</strong> on a space station do?", opts: ["Keep the station warm", "Convert sunlight into electricity", "Reflect sunlight for communication", "Protect from radiation"], a: 1, why: "Solar cells convert photons from sunlight directly into electrical current to power all station systems." },
+    { q: "Why does a space station need <strong>radiators</strong>?", opts: ["To collect solar energy", "To dump excess heat into space", "To slow the station down", "To create artificial gravity"], a: 1, why: "Electronics and crew produce heat. In vacuum, the only way to get rid of it is through infrared radiation." },
+    { q: "What is a <strong>docking port</strong>?", opts: ["A window for observing Earth", "A place where spacecraft can attach", "A fuel storage tank", "A communication antenna"], a: 1, why: "Docking ports are standardized connectors that let crew and cargo spacecraft link up with the station." },
+    { q: "Why might a future station have a <strong>rotating ring</strong>?", opts: ["To look like a wheel", "To generate artificial gravity through centripetal force", "To spin faster in orbit", "To collect more solar energy"], a: 1, why: "Rotation creates centripetal acceleration that simulates gravity, preventing bone loss and muscle atrophy in crew." },
+  ]
+};
+
+/* -------------------------------
+   PROFILE CARD
+------------------------------- */
+function getProfileCard() {
+  const s = computeStats();
+  return {
+    name: P.stationName || 'UNNAMED',
+    stats: { Science: s.science, Capacity: s.capacity, Power: s.power, Range: s.range }
+  };
+}
+window._builderGetProfile = getProfileCard;
+
+/* -------------------------------
+   TOAST
+------------------------------- */
+function toast(m) {
+  let t = document.getElementById('stationToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'stationToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(6,4,15,.92);border:1px solid rgba(167,139,250,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* -------------------------------
+   STATE HOOKS
+------------------------------- */
+window._builderGetState = function() { return { params: { ...P }, step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  P.launched = false; stationRotating = false;
+  buildStation(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+};
+
+/* -------------------------------
+   KEYBOARD NAV
+------------------------------- */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') { const modal = document.getElementById('modalOverlay'); if (modal) modal.classList.remove('open'); }
+});
+
+/* -------------------------------
+   INIT
+------------------------------- */
+function init() {
+  const listEl = document.getElementById('stepList');
+  STEPS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
+    item.onclick = () => go(i);
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildStation();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', e => { if (e.target === e.currentTarget) modal.classList.remove('open'); });
+}
+
+init();
+</script>
+<script src="../cookie-consent.js"></script>
+
+<!-- DEV TOOLS CALLOUT -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🛠️ Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/buildlab.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🎮</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">BuildLab</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Design Roblox-style 3D models</div></div></a>
+      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🎨</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div></div></a>
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">✏️</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div></div></a>
+      <a href="../tools/arcade-game-maker.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🕹️</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Arcade Game Maker</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build & play browser games</div></div></a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🛠️ See All 20 Free Tools →</a>
+  </div>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+<script src="../player-profile.js"></script>
+<script src="builder-quiz.js"></script>
+<script src="builder-extras.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Space Station Builder Design Your Own Orbital Outpost","description":"Design and build your own 3D space station step by step. Choose modules, solar panels, docking ports, antennas and more then launch it into orbit. Ages 10+. Free.","url":"https://jvdesignstudio.co.uk/workshops/space-station-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+</script>
+<script src="workshop-track.js"></script>
+</body>
+</html>

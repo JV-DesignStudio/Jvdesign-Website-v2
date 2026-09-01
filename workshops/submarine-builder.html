@@ -1,0 +1,1562 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#0ea5e9">
+<script src="../analytics-loader.js"></script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/submarine-builder.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submarine Builder Design Your Own Sub | JVDesignStudio</title>
+<meta name="description" content="Design and build your own 3D submarine step by step. Choose hull, conning tower, propeller, fins, sonar and more then dive! Ages 10+. Free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/submarine-builder.html">
+<meta property="og:title" content="Submarine Builder Design Your Own Sub | JVDesignStudio">
+<meta property="og:description" content="Design and build your own 3D submarine step by step. Free.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/SubmarineBuilder.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Submarine Builder Design Your Own Sub | JVDesignStudio">
+<meta name="twitter:description" content="Design and build your own 3D submarine step by step. Free.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/SubmarineBuilder.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<style>
+
+  :root {
+  --bg:#040e1a;--bg2:#081424;--bg3:#0c1a30;
+  --border:rgba(255,255,255,.07);
+  --text:#e0e8f0;--muted:rgba(224,232,240,.45);
+  --acc:#0ea5e9;--acc-lt:#38bdf8;--acc-dk:#0369a1;
+  --blue:#38bdf8;--green:#4ade80;--orange:#fb923c;--purple:#a78bfa;--gold:#f5c842;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+#app{display:grid;grid-template-columns:340px 1fr 240px;grid-template-rows:54px 1fr;height:100vh}
+
+.hdr{grid-column:1/-1;background:rgba(4,14,26,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:90;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(14,165,233,.4),transparent)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),#0369a1);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+#sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+.prog-section{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.prog-track{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:999px;margin-top:5px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),#38bdf8);border-radius:999px;transition:width .4s ease}
+.prog-ct{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);margin-top:3px}
+
+.slist{flex:1;overflow-y:auto;padding:4px 6px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.slist::-webkit-scrollbar{width:3px}
+.slist::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.si{padding:7px 9px;margin-bottom:2px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px solid transparent;transition:all .18s}
+.si:hover{background:rgba(14,165,233,.04)}
+.si.active{background:rgba(14,165,233,.1);border-color:var(--acc)}
+.si.done{opacity:.55}
+.si.done .sn{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sn{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(14,165,233,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;flex-shrink:0;color:var(--acc-lt);transition:all .2s}
+.sl{font-size:11.5px;color:var(--text);line-height:1.2}
+.si.active .sl{color:var(--acc-lt)}
+
+.cpan{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.12);overflow-y:auto;flex-shrink:0;max-height:48vh;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.cpan::-webkit-scrollbar{width:3px}
+.cpan::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+
+.snav{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0}
+.snav button{flex:1;padding:8px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border) !important}
+.btn-n{background:rgba(14,165,233,.14);color:var(--acc-lt);border:1px solid rgba(14,165,233,.25) !important}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-n:hover:not(:disabled){background:rgba(14,165,233,.24)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+#viewport{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.scene-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scene-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scene-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.scene-wrap{flex:1;position:relative;overflow:hidden}
+#subCanvas{display:block;width:100%;height:100%;touch-action:none}
+.vhint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:6px;pointer-events:none;white-space:nowrap}
+.dims{position:absolute;top:10px;right:10px;background:rgba(4,14,26,.88);border:1px solid rgba(14,165,233,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8}
+.dims span{color:var(--acc-lt)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--acc-lt);flex-shrink:0;min-height:26px}
+
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.04em;color:#fff;margin-bottom:5px;line-height:1}
+.step-intro{font-size:.78rem;color:var(--muted);line-height:1.72;margin-bottom:9px}
+.step-intro strong{color:var(--text)}
+
+.box{border-radius:7px;padding:8px 11px;margin:5px 0;font-size:.72rem;line-height:1.55;display:flex;gap:7px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.16);color:rgba(224,232,240,.7)}
+.box-c::before{content:"?"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(224,232,240,.7)}
+.box-t::before{content:"?"}
+.box-r{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);color:rgba(224,232,240,.8)}
+.box-r::before{content:"?"}
+
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:7px;margin:8px 0}
+.opt-btn{padding:9px 7px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:700;color:var(--muted);text-align:center;transition:all .15s;line-height:1.3}
+.opt-btn:hover{border-color:rgba(14,165,233,.4);color:var(--text);background:rgba(14,165,233,.05)}
+.opt-btn.sel{border-color:var(--acc);color:var(--acc-lt);background:rgba(14,165,233,.08)}
+.opt-icon{font-size:1.3rem;display:block;margin-bottom:3px}
+
+.swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff;transform:scale(1.18)}
+.custom-colour{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.72rem;color:var(--muted)}
+.custom-colour input[type=color]{width:32px;height:32px;border:2px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg2)}
+
+.slider-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.slider-row:last-child{border:none}
+.slider-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.05em}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--acc-lt);min-width:36px;text-align:right}
+input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
+
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:3px}
+.task-item{display:flex;align-items:center;gap:6px;font-size:.7rem;padding:4px 8px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+.name-input{width:100%;background:var(--bg3);border:1px solid rgba(14,165,233,.3);border-radius:7px;color:var(--acc-lt);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;padding:8px 12px;outline:none;transition:border-color .2s;margin:7px 0}
+.name-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(14,165,233,.12)}
+.name-input::placeholder{color:var(--muted);font-size:.95rem}
+
+.run-btn{width:100%;margin-top:8px;padding:10px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+
+#rightbar{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+#rightbar::-webkit-scrollbar{width:3px}
+#rightbar::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.rb-section{background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.rb-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(14,165,233,.14)}
+.rb-row{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:24px}
+.rb-row label{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex-shrink:0;width:48px}
+.rb-row input[type=color]{width:26px;height:22px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--bg2);flex-shrink:0}
+.rb-row input[type=range]{flex:1;accent-color:var(--acc);min-width:0;height:16px;cursor:pointer}
+.rb-row select{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:.62rem;padding:2px 3px;cursor:pointer;font-family:'Nunito',sans-serif;min-width:0}
+.rv{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt);min-width:28px;text-align:right;flex-shrink:0}
+.rb-toggle{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.52rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rb-toggle input[type=checkbox]{accent-color:var(--acc);flex-shrink:0;width:13px;height:13px}
+.preset-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.6rem;font-weight:700;padding:5px 3px;border-radius:6px;cursor:pointer;transition:all .15s;text-align:center;width:100%}
+.preset-btn:hover{background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.35);color:var(--text)}
+
+@media(max-width:860px){
+  html,body{overflow:auto;height:auto}
+  #app{grid-template-columns:1fr;grid-template-rows:54px auto auto;height:auto;min-height:100vh}
+  .hdr{grid-column:1}
+  #sidebar{max-height:55vh;border-right:none;border-bottom:1px solid var(--border)}
+  .slist{min-height:60px}
+  .cpan{max-height:36vh}
+  #viewport{min-height:320px;height:56vw;max-height:520px}
+  #rightbar{display:none}
+}
+@media(max-width:480px){
+  .logo{font-size:1rem}
+  .quick-btn{font-size:.78rem;padding:6px 12px}
+  #viewport{min-height:260px;height:50vw;max-height:420px}
+  .cpan{max-height:40vh}
+  .snav button{padding:10px 6px;font-size:.75rem}
+}
+
+.sub-stats{position:absolute;top:10px;left:10px;background:rgba(4,14,26,.88);border:1px solid rgba(14,165,233,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8;min-width:130px}
+.sub-stats .stat-title{font-size:8px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;border-bottom:1px solid rgba(14,165,233,.15);padding-bottom:2px}
+.sub-stats .stat-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.sub-stats .stat-lbl{width:52px;flex-shrink:0;font-size:8px}
+.sub-stats .stat-track{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.sub-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.sub-stats .stat-val{min-width:16px;text-align:right;color:var(--acc-lt);font-size:8px}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div id="app">
+
+  <header class="hdr">
+    <h1 class="logo">🌊 Submarine Builder</h1>
+    <div class="hdr-right">
+      <a href="../pages/workshop.html" class="back-link">← Workshop</a>
+      <button class="quick-btn" onclick="randomSub()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
+      <button class="quick-btn" onclick="downloadSubPNG()" style="background:linear-gradient(135deg,#059669,#065f46);box-shadow:0 3px 0 #064e3b">🖼 PNG</button>
+      <button class="quick-btn" onclick="openCardModal()" style="background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63">📇 Card</button>
+      <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
+      <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
+      <button class="quick-btn" onclick="downloadSub()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">📦 OBJ</button>
+      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📎 GLB</button>
+      <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
+    </div>
+  </header>
+
+  <div id="sidebar">
+    <div class="prog-section">
+      <div class="prog-lbl">Build Progress</div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+      <div class="prog-ct" id="progCt">0 / 16 steps</div>
+    </div>
+    <div class="slist" id="stepList"></div>
+    <div class="cpan" id="stepBody"></div>
+    <div class="snav">
+      <button class="btn-p" id="navPrev" onclick="go(currentStep-1)" disabled aria-label="Previous step">← Back</button>
+      <button class="btn-n" id="navNext" onclick="go(currentStep+1)" aria-label="Next step">Next →</button>
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div class="scene-top">
+      <span class="scene-top-l">🌊 Live 3D Preview</span>
+      <div class="scene-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus" aria-live="polite">Apply Step 1 to begin</span></div>
+      </div>
+    </div>
+    <div class="scene-wrap">
+      <canvas id="subCanvas" role="application" aria-label="3D submarine preview viewport"></canvas>
+      <div class="sub-stats" id="subStats"></div>
+      <div class="vhint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
+      <div class="dims" id="dimsOverlay">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px" id="sName">NAUTILUS</div>
+        <div>Hull&nbsp;&nbsp;&nbsp;<span id="sHull">—</span></div>
+        <div>Length&nbsp;<span id="sLen">—</span></div>
+        <div>Tower&nbsp;&nbsp;<span id="sTower">—</span></div>
+        <div>Props&nbsp;&nbsp;<span id="sProps">—</span></div>
+        <div>Fins&nbsp;&nbsp;&nbsp;<span id="sFins">—</span></div>
+      </div>
+    </div>
+    <div class="obar" id="obar" aria-live="polite">Choose a hull shape to start building</div>
+  </div>
+
+  <div id="rightbar" aria-label="Quick controls">
+    <div class="rb-section">
+      <div class="rb-title">🎨 Colors</div>
+      <div class="rb-row"><label>Body</label><input type="color" id="rb-prim" value="#1a3a5a" oninput="P.primaryCol=this.value;buildSub()"></div>
+      <div class="rb-row"><label>Accent</label><input type="color" id="rb-accent" value="#0ea5e9" oninput="P.accentCol=this.value;buildSub()"></div>
+      <div class="rb-row"><label>Light</label><input type="color" id="rb-light" value="#ffdd44" oninput="P.lightCol=this.value;buildSub()"></div>
+      <div class="rb-row"><label>Stripe</label><input type="color" id="rb-stripe-col" value="#ffffff" oninput="P.stripeCol=this.value;buildSub()"></div>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🚢 Hull</div>
+      <div class="rb-row"><label>Shape</label><select id="rb-hull" onchange="P.hullStyle=this.value;buildSub()"><option value="cylinder">Cylinder</option><option value="teardrop">Teardrop</option><option value="flat">Flat</option></select></div>
+      <div class="rb-row"><label>Length</label><input type="range" min="4" max="14" step="0.5" value="8" id="rb-hlen" oninput="P.hullLen=parseFloat(this.value);document.getElementById('rb-hlv').textContent=parseFloat(this.value).toFixed(1)+'m';buildSub()"><span class="rv" id="rb-hlv">8.0m</span></div>
+      <div class="rb-row"><label>Radius</label><input type="range" min="0.6" max="2.0" step="0.1" value="1.2" id="rb-hrad" oninput="P.hullRad=parseFloat(this.value);document.getElementById('rb-hrv').textContent=parseFloat(this.value).toFixed(1);buildSub()"><span class="rv" id="rb-hrv">1.2</span></div>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🏗️ Tower</div>
+      <label class="rb-toggle"><input type="checkbox" id="rb-tower" onchange="P.conningTower=this.checked;buildSub()">Conning tower</label>
+      <div class="rb-row"><label>Height</label><input type="range" min="3" max="15" step="1" value="8" id="rb-th" oninput="P.towerH=this.value/10;document.getElementById('rb-thv').textContent=(this.value/10).toFixed(1);buildSub()"><span class="rv" id="rb-thv">0.8</span></div>
+      <div class="rb-row"><label>Width</label><input type="range" min="3" max="10" step="1" value="6" id="rb-tw" oninput="P.towerW=this.value/10;document.getElementById('rb-twv').textContent=(this.value/10).toFixed(1);buildSub()"><span class="rv" id="rb-twv">0.6</span></div>
+      <label class="rb-toggle"><input type="checkbox" id="rb-scope" onchange="P.periscope=this.checked;buildSub()">Periscope</label>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">⚙️ Propulsion</div>
+      <div class="rb-row"><label>Blades</label><select id="rb-pblades" onchange="P.propellerBlades=parseInt(this.value);buildSub()"><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option></select></div>
+      <div class="rb-row"><label>Radius</label><input type="range" min="3" max="10" step="1" value="5" id="rb-pr" oninput="P.propellerR=this.value/10;document.getElementById('rb-prv').textContent=(this.value/10).toFixed(1);buildSub()"><span class="rv" id="rb-prv">0.5</span></div>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🐟 Fins</div>
+      <div class="rb-row"><label>Count</label><select id="rb-fcount" onchange="P.finCount=parseInt(this.value);buildSub()"><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select></div>
+      <div class="rb-row"><label>Size</label><input type="range" min="3" max="12" step="1" value="6" id="rb-fsize" oninput="P.finSize=this.value/10;document.getElementById('rb-fsv').textContent=(this.value/10).toFixed(1);buildSub()"><span class="rv" id="rb-fsv">0.6</span></div>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🔍 Details</div>
+      <div class="rb-row"><label>Portholes</label><input type="range" min="0" max="12" step="1" value="6" id="rb-phole" oninput="P.portholeCount=parseInt(this.value);document.getElementById('rb-phv').textContent=this.value;buildSub()"><span class="rv" id="rb-phv">6</span></div>
+      <div class="rb-row"><label>PH R</label><input type="range" min="5" max="30" step="1" value="15" id="rb-phr" oninput="P.portholeR=this.value/100;document.getElementById('rb-phrv').textContent=(this.value/100).toFixed(2);buildSub()"><span class="rv" id="rb-phrv">0.15</span></div>
+      <label class="rb-toggle"><input type="checkbox" id="rb-sonar" onchange="P.sonarDome=this.checked;buildSub()">Sonar dome</label>
+      <label class="rb-toggle"><input type="checkbox" id="rb-antenna" onchange="P.antenna=this.checked;buildSub()">Antenna</label>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🎯 Weapons</div>
+      <div class="rb-row"><label>Tubes</label><select id="rb-tubes" onchange="P.torpedoTubes=parseInt(this.value);buildSub()"><option value="0">None</option><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option></select></div>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">🌊 Extras</div>
+      <label class="rb-toggle"><input type="checkbox" id="rb-tint" onchange="P.windowTint=this.checked;buildSub()">Window tint</label>
+      <label class="rb-toggle"><input type="checkbox" id="rb-stripe-on" onchange="P.stripeOn=this.checked;buildSub()">Stripe band</label>
+    </div>
+    <div class="rb-section">
+      <div class="rb-title">⚓ Presets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <button class="preset-btn" onclick="applyPreset('nautilus')">🔱 Nautilus</button>
+        <button class="preset-btn" onclick="applyPreset('attack')">⚔️ Attack</button>
+        <button class="preset-btn" onclick="applyPreset('explorer')">🔭 Explorer</button>
+        <button class="preset-btn" onclick="applyPreset('deepsea')">🌑 Deep Sea</button>
+        <button class="preset-btn" onclick="applyPreset('stealth')">👻 Stealth</button>
+        <button class="preset-btn" onclick="applyPreset('vintage')">⚓ Vintage</button>
+      </div>
+    </div>
+    <div style="padding:4px 2px">
+      <button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" onclick="dive()">🤿 DIVE!</button>
+    </div>
+  </div>
+
+</div>
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)"><div id="modalContent" style="background:linear-gradient(145deg,#081424,#040e1a);border:1px solid rgba(14,165,233,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw"></div></div>
+<style>#modalOverlay.open{display:flex}</style><script>
+'use strict';
+
+const canvas = document.getElementById('subCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x040e1a);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x040e1a, 20, 60);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 3, 12);
+
+const ambient = new THREE.AmbientLight(0x223344, 0.7);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.2);
+sun.position.set(5, 10, 6);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x2266aa, 0.5);
+fill.position.set(-6, 2, -4);
+scene.add(fill);
+const deepLight = new THREE.PointLight(0x0066aa, 0.8, 20);
+deepLight.position.set(0, -5, 0);
+scene.add(deepLight);
+
+let underwaterParticles = [];
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 600; i++) {
+    verts.push((Math.random()-0.5)*40, (Math.random()-0.5)*20, (Math.random()-0.5)*40);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0x4488aa, size: 0.08, transparent: true, opacity: 0.4 });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  underwaterParticles.push(pts);
+})();
+
+const padGeo = new THREE.CylinderGeometry(3, 3, 0.15, 32);
+const padMat = new THREE.MeshStandardMaterial({ color: 0x0c1a30, roughness: 0.9 });
+const pad = new THREE.Mesh(padGeo, padMat);
+pad.position.y = -0.075;
+pad.receiveShadow = true;
+scene.add(pad);
+
+(function(){
+  const gridMat = new THREE.LineBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.15 });
+  for (let i = -3; i <= 3; i += 0.6) {
+    const g1 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i, 0.01, -3), new THREE.Vector3(i, 0.01, 3)]);
+    scene.add(new THREE.Line(g1, gridMat));
+    const g2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3, 0.01, i), new THREE.Vector3(3, 0.01, i)]);
+    scene.add(new THREE.Line(g2, gridMat));
+  }
+})();
+
+const P = {
+  subName: 'Nautilus',
+  hullStyle: 'cylinder',
+  hullLen: 8, hullRad: 1.2,
+  primaryCol: '#1a3a5a',
+  accentCol: '#0ea5e9',
+  conningTower: true, towerH: 0.8, towerW: 0.6,
+  periscope: true,
+  propellerBlades: 4, propellerR: 0.5,
+  finCount: 4, finSize: 0.6,
+  portholeCount: 6, portholeR: 0.15,
+  sonarDome: true,
+  torpedoTubes: 2,
+  antenna: true,
+  lightCol: '#ffdd44',
+  windowTint: false,
+  stripeOn: false, stripeCol: '#ffffff',
+  depth: 0,
+  diving: false,
+  diveY: 0,
+};
+
+let subGroup = null;
+let bubbleParticles = [];
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+function downloadSub() {
+  if (!subGroup) { sout('Build your submarine first!'); return; }
+  if(window.builderTrack)builderTrack('export',{format:'obj'});
+  subGroup.updateMatrixWorld(true);
+  const name = (P.subName || 'submarine').replace(/\s+/g, '-').toLowerCase();
+  sout('Preparing OBJ export...');
+  let obj = '# ' + P.subName + ', JV Submarine Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '-submarine.mtl\n';
+  let mtl = '# Materials for ' + P.subName + '\n# jvdesignstudio.co.uk\n';
+  const matMap = {};
+  let matIdx = 0, vOff = 1, meshIdx = 0;
+  subGroup.traverse(function(node) {
+    if (!node.isMesh) return;
+    const col = node.material.color ? node.material.color : new THREE.Color(0x888888);
+    const hex = col.getHexString();
+    if (!matMap[hex]) {
+      const mName = 'm' + (matIdx++);
+      matMap[hex] = mName;
+      mtl += '\nnewmtl ' + mName + '\n';
+      mtl += 'Kd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\n';
+      mtl += 'Ka 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
+    }
+    const g = node.geometry.clone();
+    g.applyMatrix4(node.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const pos = g.attributes.position;
+    const nor = g.attributes.normal;
+    const idx = g.index;
+    const n = pos.count;
+    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
+    for (let i = 0; i < n; i++) obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
+    for (let i = 0; i < n; i++) obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
+    if (idx) {
+      for (let i = 0; i < idx.count; i += 3) {
+        const a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    } else {
+      for (let i = 0; i < n; i += 3) {
+        const a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    }
+    vOff += n;
+  });
+  const objBlob = new Blob([obj], { type: 'text/plain' });
+  const objUrl = URL.createObjectURL(objBlob);
+  const la = document.createElement('a');
+  la.href = objUrl; la.download = name + '-submarine.obj'; la.click();
+  URL.revokeObjectURL(objUrl);
+  setTimeout(function() {
+    const mtlBlob = new Blob([mtl], { type: 'text/plain' });
+    const mtlUrl = URL.createObjectURL(mtlBlob);
+    const lb = document.createElement('a');
+    lb.href = mtlUrl; lb.download = name + '-submarine.mtl'; lb.click();
+    URL.revokeObjectURL(mtlUrl);
+  }, 300);
+  sout('Downloaded ' + name + '-submarine.obj + .mtl!');
+}
+
+function exportGLB() {
+  if (!subGroup) { toast('Build something first!'); return; }
+  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
+  var exporter = new THREE.GLTFExporter();
+  exporter.parse(subGroup, function(result) {
+    var blob = new Blob([result], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = P.subName.toLowerCase().replace(/\s+/g, '-') + '.glb';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('GLB exported!');
+  }, { binary: true });
+}
+
+function downloadSubPNG() {
+  if (!subGroup) { toast('Build your submarine first!'); return; }
+  if(window.builderTrack)builderTrack('export',{format:'png'});
+  renderer.render(scene, camera);
+  canvas.toBlob(function(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = P.subName.toLowerCase().replace(/\s+/g, '-') + '-submarine.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('PNG saved!');
+  }, 'image/png');
+}
+
+function buildSub() {
+  if (subGroup) scene.remove(subGroup);
+  bubbleParticles = [];
+  subGroup = new THREE.Group();
+  subGroup.position.y = P.diveY;
+
+  const bodyMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.35, metalness: 0.55 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.4, metalness: 0.45 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a2a3a, roughness: 0.6, metalness: 0.3 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.1, transparent: true, opacity: P.windowTint ? 0.5 : 0.75, emissive: new THREE.Color(0x224466), emissiveIntensity: 0.3 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: 0.5, metalness: 0.7 });
+  const lightMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.lightCol), emissive: hexToThree(P.lightCol), emissiveIntensity: 0.8, roughness: 0.2 });
+
+  const hl = P.hullLen;
+  const hr = P.hullRad;
+  const baseY = 0.4;
+
+  // HULL
+  if (P.hullStyle === 'cylinder') {
+    const hullGeo = new THREE.CylinderGeometry(hr, hr, hl, 24);
+    const hull = new THREE.Mesh(hullGeo, bodyMat);
+    hull.rotation.z = Math.PI / 2;
+    hull.position.set(0, baseY, 0);
+    hull.castShadow = true;
+    subGroup.add(hull);
+    const endGeo = new THREE.SphereGeometry(hr, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+    const bowEnd = new THREE.Mesh(endGeo, bodyMat);
+    bowEnd.rotation.x = Math.PI / 2;
+    bowEnd.position.set(hl / 2, baseY, 0);
+    subGroup.add(bowEnd);
+    const sternEnd = new THREE.Mesh(endGeo.clone(), bodyMat);
+    sternEnd.rotation.x = -Math.PI / 2;
+    sternEnd.position.set(-hl / 2, baseY, 0);
+    subGroup.add(sternEnd);
+  } else if (P.hullStyle === 'teardrop') {
+    const pts = [];
+    const segs = 20;
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      let r;
+      if (t < 0.15) {
+        r = hr * Math.pow(t / 0.15, 0.5) * 0.95;
+      } else if (t < 0.7) {
+        const mt = (t - 0.15) / 0.55;
+        r = hr * (0.95 + 0.05 * Math.sin(mt * Math.PI));
+      } else {
+        const st = (t - 0.7) / 0.3;
+        r = hr * (1.0 - 0.6 * st * st);
+      }
+      pts.push(new THREE.Vector2(r, (t - 0.5) * hl));
+    }
+    const latheGeo = new THREE.LatheGeometry(pts, 24);
+    const hull = new THREE.Mesh(latheGeo, bodyMat);
+    hull.rotation.x = Math.PI / 2;
+    hull.position.set(0, baseY, 0);
+    hull.castShadow = true;
+    subGroup.add(hull);
+  } else {
+    const hullGeo = new THREE.BoxGeometry(hl, hr * 1.6, hr * 1.6);
+    const hull = new THREE.Mesh(hullGeo, bodyMat);
+    hull.position.set(0, baseY, 0);
+    hull.castShadow = true;
+    subGroup.add(hull);
+    const bowGeo = new THREE.ConeGeometry(hr * 1.6 * 0.7, hr * 1.2, 4);
+    const bow = new THREE.Mesh(bowGeo, bodyMat);
+    bow.rotation.z = -Math.PI / 2;
+    bow.position.set(hl / 2 + hr * 0.6, baseY, 0);
+    subGroup.add(bow);
+    const sternGeo = new THREE.ConeGeometry(hr * 1.6 * 0.7, hr * 0.8, 4);
+    const stern = new THREE.Mesh(sternGeo, bodyMat);
+    stern.rotation.z = Math.PI / 2;
+    stern.position.set(-hl / 2 - hr * 0.4, baseY, 0);
+    subGroup.add(stern);
+  }
+
+  // STRIPE
+  if (P.stripeOn) {
+    const stripeGeo = new THREE.TorusGeometry(hr + 0.01, 0.06, 8, 24);
+    const stripeMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.stripeCol), roughness: 0.4, metalness: 0.5 });
+    const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+    stripe.rotation.y = Math.PI / 2;
+    stripe.position.set(0, baseY, 0);
+    subGroup.add(stripe);
+    const stripe2 = new THREE.Mesh(stripeGeo.clone(), stripeMat);
+    stripe2.rotation.y = Math.PI / 2;
+    stripe2.position.set(hl * 0.2, baseY, 0);
+    subGroup.add(stripe2);
+  }
+
+  // CONNING TOWER
+  if (P.conningTower) {
+    const tw = P.towerW, th = P.towerH;
+    const towerGeo = new THREE.BoxGeometry(tw * 2, th, tw * 1.2);
+    const tower = new THREE.Mesh(towerGeo, bodyMat);
+    tower.position.set(-hl * 0.05, baseY + hr + th / 2, 0);
+    tower.castShadow = true;
+    subGroup.add(tower);
+    const edgeGeo = new THREE.BoxGeometry(tw * 2.1, 0.06, tw * 1.3);
+    const edge = new THREE.Mesh(edgeGeo, accentMat);
+    edge.position.set(-hl * 0.05, baseY + hr + th, 0);
+    subGroup.add(edge);
+
+    if (P.periscope) {
+      const scopeGeo = new THREE.CylinderGeometry(0.04, 0.04, th * 1.5, 8);
+      const scope = new THREE.Mesh(scopeGeo, accentMat);
+      scope.position.set(-hl * 0.05 + tw * 0.4, baseY + hr + th + th * 0.75, 0);
+      subGroup.add(scope);
+      const headGeo = new THREE.BoxGeometry(0.08, 0.06, 0.12);
+      const head = new THREE.Mesh(headGeo, darkMat);
+      head.position.set(-hl * 0.05 + tw * 0.4, baseY + hr + th * 1.5 + 0.06, 0);
+      subGroup.add(head);
+    }
+
+    if (P.antenna) {
+      const antGeo = new THREE.CylinderGeometry(0.02, 0.015, th * 2, 6);
+      const ant = new THREE.Mesh(antGeo, accentMat);
+      ant.position.set(-hl * 0.05 - tw * 0.5, baseY + hr + th + th, 0);
+      subGroup.add(ant);
+      const tipGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const tip = new THREE.Mesh(tipGeo, lightMat);
+      tip.position.set(-hl * 0.05 - tw * 0.5, baseY + hr + th * 2 + 0.02, 0);
+      subGroup.add(tip);
+    }
+  }
+
+  // SONAR DOME
+  if (P.sonarDome) {
+    const domeGeo = new THREE.SphereGeometry(hr * 0.3, 16, 12);
+    const dome = new THREE.Mesh(domeGeo, accentMat);
+    dome.position.set(hl / 2 + hr * 0.15, baseY - hr * 0.15, 0);
+    subGroup.add(dome);
+  }
+
+  // TORPEDO TUBES
+  if (P.torpedoTubes > 0) {
+    const tubeGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 10);
+    const tubeMat = new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.4, metalness: 0.6 });
+    const tubesPerSide = Math.ceil(P.torpedoTubes / 2);
+    for (let s = -1; s <= 1; s += 2) {
+      for (let t = 0; t < tubesPerSide; t++) {
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        const yOff = t === 0 ? 0.12 : -0.12;
+        tube.rotation.z = Math.PI / 2;
+        tube.position.set(hl / 2 + 0.2, baseY + yOff, s * hr * 0.45);
+        subGroup.add(tube);
+        const ringGeo = new THREE.TorusGeometry(0.09, 0.02, 8, 16);
+        const ring = new THREE.Mesh(ringGeo, darkMat);
+        ring.rotation.y = Math.PI / 2;
+        ring.position.set(hl / 2 + 0.46, baseY + yOff, s * hr * 0.45);
+        subGroup.add(ring);
+      }
+    }
+  }
+
+  // FINS
+  const finAngles = [];
+  for (let i = 0; i < P.finCount; i++) finAngles.push((i / P.finCount) * Math.PI * 2);
+  const fs = Math.max(0.2, P.finSize);
+  finAngles.forEach(function(angle) {
+    const finGroup = new THREE.Group();
+    const finGeo = new THREE.BoxGeometry(hl * 0.2 * fs, 0.06, hr * 0.8 * fs);
+    const fin = new THREE.Mesh(finGeo, bodyMat);
+    fin.position.set(-hl * 0.38, baseY, 0);
+    fin.castShadow = true;
+    finGroup.add(fin);
+    const tipGeo = new THREE.BoxGeometry(hl * 0.08 * fs, 0.08, hr * 0.3 * fs);
+    const tipMesh = new THREE.Mesh(tipGeo, accentMat);
+    tipMesh.position.set(-hl * 0.38 - hl * 0.06 * fs, baseY, 0);
+    finGroup.add(tipMesh);
+    finGroup.rotation.y = angle;
+    subGroup.add(finGroup);
+  });
+
+  // PROPELLER
+  if (P.propellerBlades > 0) {
+    const propGroup = new THREE.Group();
+    const pr = P.propellerR;
+    const hubGeo = new THREE.CylinderGeometry(pr * 0.25, pr * 0.25, 0.2, 10);
+    const hub = new THREE.Mesh(hubGeo, darkMat);
+    hub.rotation.z = Math.PI / 2;
+    propGroup.add(hub);
+    for (let i = 0; i < P.propellerBlades; i++) {
+      const a = (i / P.propellerBlades) * Math.PI * 2;
+      const bladeGeo = new THREE.BoxGeometry(0.04, pr * 0.8, pr * 0.3);
+      const blade = new THREE.Mesh(bladeGeo, accentMat);
+      blade.position.set(0, Math.sin(a) * pr * 0.45, Math.cos(a) * pr * 0.45);
+      blade.rotation.x = a;
+      propGroup.add(blade);
+    }
+    const shaftGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
+    const shaft = new THREE.Mesh(shaftGeo, darkMat);
+    shaft.rotation.z = Math.PI / 2;
+    shaft.position.set(-0.4, 0, 0);
+    propGroup.add(shaft);
+    propGroup.position.set(-hl / 2 - 0.5, baseY, 0);
+    subGroup.add(propGroup);
+  }
+
+  // PORTHOLES
+  if (P.portholeCount > 0) {
+    const phCount = P.portholeCount;
+    const phR = P.portholeR;
+    for (let i = 0; i < phCount; i++) {
+      const angle = (i / phCount) * Math.PI * 2;
+      const yPos = baseY;
+      const zPos = Math.sin(angle) * (hr + 0.01);
+      const xPos = Math.cos(angle) * hl * 0.3;
+      const rimGeo = new THREE.TorusGeometry(phR, phR * 0.15, 8, 18);
+      const rim = new THREE.Mesh(rimGeo, rimMat);
+      rim.position.set(xPos, yPos, zPos);
+      rim.lookAt(xPos, yPos, zPos * 5);
+      subGroup.add(rim);
+      const glassGeo = new THREE.CircleGeometry(phR * 0.8, 16);
+      const glass = new THREE.Mesh(glassGeo, glassMat);
+      glass.position.set(xPos, yPos, zPos);
+      glass.lookAt(xPos, yPos, zPos * 5);
+      subGroup.add(glass);
+    }
+    const sideCount = Math.min(phCount, 4);
+    for (let i = 0; i < sideCount; i++) {
+      const xPos = -hl * 0.1 + (i / (sideCount - 1 || 1)) * hl * 0.3;
+      [-1, 1].forEach(function(side) {
+        const zPos = side * (hr + 0.01);
+        const rimGeo = new THREE.TorusGeometry(phR, phR * 0.15, 8, 18);
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.position.set(xPos, baseY, zPos);
+        rim.lookAt(xPos, baseY, zPos * 5);
+        subGroup.add(rim);
+        const glassGeo = new THREE.CircleGeometry(phR * 0.8, 16);
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.set(xPos, baseY, zPos);
+        glass.lookAt(xPos, baseY, zPos * 5);
+        subGroup.add(glass);
+      });
+    }
+  }
+
+  // LIGHTS
+  const lightGeo = new THREE.SphereGeometry(0.12, 10, 10);
+  const light1 = new THREE.Mesh(lightGeo, lightMat);
+  light1.position.set(hl / 2 + 0.15, baseY + 0.3, 0);
+  subGroup.add(light1);
+  const light2 = new THREE.Mesh(lightGeo.clone(), lightMat);
+  light2.position.set(hl / 2 + 0.15, baseY - 0.3, 0);
+  subGroup.add(light2);
+
+  scene.add(subGroup);
+  updateSpecCard();
+  updateStats();
+  syncRightBar();
+}
+let orbit = { theta: 0.3, phi: 1.1, radius: 12, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(4, Math.min(24, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 0.4, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+
+let pinchDist0 = 0;
+canvas.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
+  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', function() { orbit.dragging = false; });
+canvas.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1 && orbit.dragging) {
+    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
+    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
+    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    orbit.radius *= pinchDist0 / d; pinchDist0 = d;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.003;
+  updateCamera();
+  underwaterParticles.forEach(function(p) {
+    const pos = p.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      pos.setY(i, pos.getY(i) + 0.002);
+      if (pos.getY(i) > 10) pos.setY(i, -10);
+    }
+    pos.needsUpdate = true;
+  });
+  bubbleParticles.forEach(function(b) {
+    b.mesh.position.y += b.speed;
+    b.mesh.material.opacity -= 0.005;
+    if (b.mesh.material.opacity <= 0 || b.mesh.position.y > 5) {
+      if (b.mesh.parent) b.mesh.parent.remove(b.mesh);
+      b.dead = true;
+    }
+  });
+  bubbleParticles = bubbleParticles.filter(function(b) { return !b.dead; });
+  if (P.diving && P.diveY > -3) {
+    P.diveY -= 0.02;
+    if (subGroup) subGroup.position.y = P.diveY;
+  }
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.subName || 'NAUTILUS';
+  document.getElementById('sHull').textContent = {cylinder:'Cylinder',teardrop:'Teardrop',flat:'Flat'}[P.hullStyle] || '—';
+  document.getElementById('sLen').textContent = P.hullLen ? P.hullLen.toFixed(1)+'m' : '—';
+  document.getElementById('sTower').textContent = P.conningTower ? (P.periscope ? 'Tower+Scope' : 'Tower') : 'None';
+  document.getElementById('sProps').textContent = P.propellerBlades + ' blades';
+  document.getElementById('sFins').textContent = P.finCount + ' fins';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-prim', P.primaryCol);
+  sv('rb-accent', P.accentCol);
+  sv('rb-light', P.lightCol);
+  sv('rb-stripe-col', P.stripeCol);
+  sv('rb-hull', P.hullStyle);
+  sv('rb-hlen', P.hullLen); st('rb-hlv', parseFloat(P.hullLen).toFixed(1) + 'm');
+  sv('rb-hrad', P.hullRad); st('rb-hrv', parseFloat(P.hullRad).toFixed(1));
+  sc('rb-tower', P.conningTower);
+  sv('rb-th', Math.round(P.towerH * 10)); st('rb-thv', P.towerH.toFixed(1));
+  sv('rb-tw', Math.round(P.towerW * 10)); st('rb-twv', P.towerW.toFixed(1));
+  sc('rb-scope', P.periscope);
+  sv('rb-pblades', P.propellerBlades);
+  sv('rb-pr', Math.round(P.propellerR * 10)); st('rb-prv', P.propellerR.toFixed(1));
+  sv('rb-fcount', P.finCount);
+  sv('rb-fsize', Math.round(P.finSize * 10)); st('rb-fsv', P.finSize.toFixed(1));
+  sv('rb-phole', P.portholeCount); st('rb-phv', P.portholeCount);
+  sv('rb-phr', Math.round(P.portholeR * 100)); st('rb-phrv', P.portholeR.toFixed(2));
+  sc('rb-sonar', P.sonarDome);
+  sc('rb-antenna', P.antenna);
+  sv('rb-tubes', P.torpedoTubes);
+  sc('rb-tint', P.windowTint);
+  sc('rb-stripe-on', P.stripeOn);
+}
+
+const PRESETS = {
+  nautilus:  { primaryCol:'#1a3a5a', accentCol:'#0ea5e9', hullStyle:'cylinder', hullLen:8, hullRad:1.2, conningTower:true, towerH:0.8, towerW:0.6, periscope:true, propellerBlades:4, propellerR:0.5, finCount:4, finSize:0.6, portholeCount:6, portholeR:0.15, sonarDome:true, torpedoTubes:2, antenna:true, lightCol:'#ffdd44', windowTint:false, stripeOn:false },
+  attack:    { primaryCol:'#2d3748', accentCol:'#e53e3e', hullStyle:'teardrop', hullLen:10, hullRad:1.0, conningTower:true, towerH:0.5, towerW:0.4, periscope:true, propellerBlades:6, propellerR:0.4, finCount:4, finSize:0.5, portholeCount:2, portholeR:0.1, sonarDome:true, torpedoTubes:4, antenna:false, lightCol:'#ff4444', windowTint:true, stripeOn:true, stripeCol:'#e53e3e' },
+  explorer:  { primaryCol:'#2d6a4f', accentCol:'#95d5b2', hullStyle:'cylinder', hullLen:12, hullRad:1.4, conningTower:true, towerH:1.0, towerW:0.7, periscope:true, propellerBlades:4, propellerR:0.6, finCount:4, finSize:0.8, portholeCount:8, portholeR:0.2, sonarDome:true, torpedoTubes:0, antenna:true, lightCol:'#ffffff', windowTint:false, stripeOn:true, stripeCol:'#f5c842' },
+  deepsea:   { primaryCol:'#0d1b2a', accentCol:'#1b4965', hullStyle:'teardrop', hullLen:6, hullRad:1.0, conningTower:false, towerH:0.6, towerW:0.5, periscope:false, propellerBlades:3, propellerR:0.4, finCount:3, finSize:0.4, portholeCount:3, portholeR:0.12, sonarDome:true, torpedoTubes:0, antenna:false, lightCol:'#00ffff', windowTint:true, stripeOn:false },
+  stealth:   { primaryCol:'#1a1a2e', accentCol:'#16213e', hullStyle:'teardrop', hullLen:9, hullRad:0.9, conningTower:true, towerH:0.4, towerW:0.35, periscope:false, propellerBlades:4, propellerR:0.35, finCount:4, finSize:0.4, portholeCount:0, portholeR:0.1, sonarDome:false, torpedoTubes:2, antenna:false, lightCol:'#333333', windowTint:true, stripeOn:false },
+  vintage:   { primaryCol:'#8b4513', accentCol:'#daa520', hullStyle:'cylinder', hullLen:7, hullRad:1.1, conningTower:true, towerH:0.9, towerW:0.65, periscope:true, propellerBlades:4, propellerR:0.5, finCount:2, finSize:0.5, portholeCount:4, portholeR:0.18, sonarDome:true, torpedoTubes:1, antenna:true, lightCol:'#ffdd44', windowTint:false, stripeOn:true, stripeCol:'#daa520' },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  Object.assign(P, p);
+  buildSub();
+  const labels = { nautilus:'Nautilus Classic', attack:'Attack Sub', explorer:'Deep Explorer', deepsea:'Deep Sea Probe', stealth:'Stealth Black', vintage:'Vintage Brass' };
+  sout((labels[name] || name) + ' preset applied!');
+  document.getElementById('liveStatus').textContent = labels[name] || name;
+}
+let currentStep = 0;
+const stepDone = new Array(16).fill(false);
+
+function opts(id, options, currentVal, onChange) {
+  return '<div class="opt-grid">' + options.map(function(o) {
+    return '<button class="opt-btn' + (currentVal === o.val ? ' sel' : '') + '" onclick="' + onChange + '(\'' + o.val + '\',this)"><span class="opt-icon">' + o.icon + '</span>' + o.label + '</button>';
+  }).join('') + '</div>';
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  return '<div class="swatch-row">' + colours.map(function(c) {
+    return '<div class="swatch' + (currentVal === c ? ' sel' : '') + '" style="background:' + c + '" onclick="' + onChange + '(\'' + c + '\',this)"></div>';
+  }).join('') + '</div><div class="custom-colour"><span>Custom:</span><input type="color" value="' + currentVal + '" oninput="' + onChange + '(this.value,null)"></div>';
+}
+
+const STEPS = [
+{
+  title: 'Name Your Sub',
+  tag: 'STEP 01 \u2014 IDENTITY',
+  intro: 'Every submarine needs a name. From the <strong>Nautilus</strong> to the <strong>USS Missouri</strong>. Famous subs have names that evoke mystery, power, or the deep ocean. What will yours be called?',
+  boxes: [
+    { t:'box-c', tx:'Submarine names often reference mythology, sea creatures, or military tradition. The USS Tennessee, HMS Dreadnought, K-19 the Widowmaker. Pick something that fits your mission.' },
+    { t:'box-t', tx:'Keep it under 12 characters for the best look on the spec overlay.' },
+  ],
+  tasks: ['Enter a submarine name', 'Press Apply to lock it in'],
+  html: function() { return '<input class="name-input" id="subName" maxlength="14" placeholder="E.G. NAUTILUS" value="' + (P.subName === 'Nautilus' ? '' : P.subName) + '">'; },
+  onApply: function() { P.subName = document.getElementById('subName')?.value?.trim() || 'Nautilus'; buildSub(); sout(P.subName + ' is registered. Now choose a hull shape.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+{
+  title: 'Hull Shape',
+  tag: 'STEP 02 \u2014 HYDRODYNAMICS',
+  intro: 'The hull is the main body. <strong>Cylinder</strong> is classic and strong. <strong>Teardrop</strong> is the most hydrodynamic. <strong>Flat</strong> gives a more industrial look.',
+  boxes: [
+    { t:'box-c', tx:'Teardrop hulls are the most hydrodynamic, reducing drag by up to 60% compared to flat hulls. Modern attack submarines use teardrop shapes for speed and stealth.' },
+    { t:'box-t', tx:'For maximum style, try Teardrop \u2014 it gives the most realistic submarine silhouette.' },
+  ],
+  tasks: ['Choose a hull shape', 'See how it changes the silhouette'],
+  html: function() {
+    var o = "(function(v,el){P.hullStyle=v;el.closest('.opt-grid').querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildSub();})";
+    return opts('hull', [
+      { val:'cylinder', icon:'\uD83D\uDD35', label:'Cylinder' },
+      { val:'teardrop', icon:'\uD83D\uDCA7', label:'Teardrop' },
+      { val:'flat', icon:'\u25AC', label:'Flat' },
+    ], P.hullStyle, o);
+  },
+  onApply: function() { buildSub(); sout('Hull: ' + P.hullStyle + '. Looking seaworthy!'); document.getElementById('liveStatus').textContent = 'Hull set!'; }
+},
+{
+  title: 'Hull Size',
+  tag: 'STEP 03 \u2014 SCALE',
+  intro: 'How big is your submarine? A small research sub might be 6m. A nuclear attack sub is over 100m. <strong>Length</strong> affects range and capacity. <strong>Radius</strong> affects interior space.',
+  boxes: [
+    { t:'box-c', tx:'Larger hulls carry more crew and equipment, but require more power. The pressure hull must withstand immense deep-sea forces.' },
+    { t:'box-t', tx:'Try Medium (8m x 1.2) for a balanced look.' },
+  ],
+  tasks: ['Set hull length', 'Set hull radius'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Length</span><input type="range" min="4" max="14" step="0.5" value="' + P.hullLen + '" oninput="P.hullLen=parseFloat(this.value);document.getElementById(\'sLenVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildSub()"><span class="slider-val" id="sLenVal">' + P.hullLen.toFixed(1) + 'm</span></div><div class="slider-row"><span class="slider-lbl">Radius</span><input type="range" min="6" max="20" step="1" value="' + Math.round(P.hullRad*10) + '" oninput="P.hullRad=this.value/10;document.getElementById(\'sRadVal\').textContent=(this.value/10).toFixed(1);buildSub()"><span class="slider-val" id="sRadVal">' + P.hullRad.toFixed(1) + '</span></div></div>';
+  },
+  onApply: function() { buildSub(); sout('Hull: ' + P.hullLen.toFixed(1) + 'm x ' + P.hullRad.toFixed(1) + ' radius.'); document.getElementById('liveStatus').textContent = 'Hull sized!'; }
+},
+{
+  title: 'Body Color',
+  tag: 'STEP 04 \u2014 LIVERY',
+  intro: 'The main hull colour. <strong>Dark grey</strong> is stealthy. <strong>Navy blue</strong> is classic. <strong>Black</strong> is ominous.',
+  boxes: [
+    { t:'box-c', tx:'Most military submarines use dark hull colours for camouflage underwater. Research subs sometimes use brighter colours for visibility.' },
+    { t:'box-t', tx:'Pick a bold colour \u2014 you\'ll add a contrasting accent in the next step.' },
+  ],
+  tasks: ['Choose a body colour'],
+  html: function() {
+    var o = "(function(c,el){P.primaryCol=c;el.closest('.swatch-row').querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildSub();})";
+    return swatchRow('pc', ['#1a3a5a','#2d3748','#0d1b2a','#1a1a2e','#2d6a4f','#8b4513','#4a5568','#1a202c'], P.primaryCol, o);
+  },
+  onApply: function() { buildSub(); sout('Body colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+{
+  title: 'Accent Color',
+  tag: 'STEP 05 \u2014 CONTRAST',
+  intro: 'The accent colour appears on <strong>conning tower details</strong>, <strong>fins</strong>, <strong>propeller</strong>, and <strong>lights</strong>.',
+  boxes: [
+    { t:'box-t', tx:'Classic combos: dark hull + teal accent (military). Dark hull + gold accent (vintage). Black hull + red accent (attack).' },
+  ],
+  tasks: ['Choose an accent colour'],
+  html: function() {
+    var o = "(function(c,el){P.accentCol=c;el.closest('.swatch-row').querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildSub();})";
+    return swatchRow('ac', ['#0ea5e9','#e53e3e','#95d5b2','#daa520','#a78bfa','#16213e','#4ade80','#fb923c'], P.accentCol, o);
+  },
+  onApply: function() { buildSub(); sout('Accent colour applied!'); document.getElementById('liveStatus').textContent = 'Accent set!'; }
+},
+{
+  title: 'Conning Tower',
+  tag: 'STEP 06 \u2014 COMMAND',
+  intro: 'The <strong>conning tower</strong> (sail) houses the periscope, navigation equipment, and serves as the command centre.',
+  boxes: [
+    { t:'box-c', tx:'The conning tower is also called the "sail". It contains the periscope, radio antennas, and bridge.' },
+    { t:'box-t', tx:'Toggle the tower on, then adjust height and width to match your hull proportions.' },
+  ],
+  tasks: ['Toggle conning tower', 'Adjust height and width'],
+  html: function() {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font-size:.82rem;color:var(--muted)">Conning Tower:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.conningTower ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.conningTower=this.checked;buildSub()">Add command tower</label></div><div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Height</span><input type="range" min="3" max="15" step="1" value="' + Math.round(P.towerH*10) + '" oninput="P.towerH=this.value/10;document.getElementById(\'tHeightVal\').textContent=(this.value/10).toFixed(1);buildSub()"><span class="slider-val" id="tHeightVal">' + P.towerH.toFixed(1) + '</span></div><div class="slider-row"><span class="slider-lbl">Width</span><input type="range" min="3" max="10" step="1" value="' + Math.round(P.towerW*10) + '" oninput="P.towerW=this.value/10;document.getElementById(\'tWidthVal\').textContent=(this.value/10).toFixed(1);buildSub()"><span class="slider-val" id="tWidthVal">' + P.towerW.toFixed(1) + '</span></div></div>';
+  },
+  onApply: function() { buildSub(); sout(P.conningTower ? 'Conning tower added!' : 'No conning tower, sleek profile.'); document.getElementById('liveStatus').textContent = P.conningTower ? 'Tower added!' : 'No tower'; }
+},
+{
+  title: 'Periscope',
+  tag: 'STEP 07 \u2014 OBSERVATION',
+  intro: 'The <strong>periscope</strong> lets the crew see above the waterline while submerged. It extends from the conning tower.',
+  boxes: [
+    { t:'box-c', tx:'A periscope uses mirrors and lenses to redirect light from above the surface. Modern subs use photonics masts with cameras instead.' },
+    { t:'box-t', tx:'The periscope only appears if you have a conning tower enabled.' },
+  ],
+  tasks: ['Toggle periscope on or off'],
+  html: function() {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font-size:.82rem;color:var(--muted)">Periscope:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.periscope ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.periscope=this.checked;buildSub()">Deploy periscope</label></div>';
+  },
+  onApply: function() { buildSub(); sout(P.periscope ? 'Periscope deployed!' : 'No periscope, running silent.'); document.getElementById('liveStatus').textContent = P.periscope ? 'Scope up!' : 'No scope'; }
+},
+{
+  title: 'Propeller',
+  tag: 'STEP 08 \u2014 PROPULSION',
+  intro: 'The <strong>propeller</strong> drives the submarine through water. More blades = smoother, quieter operation.',
+  boxes: [
+    { t:'box-c', tx:'Modern submarine propellers have 5-7 blades for quiet operation. The shape is designed to minimise cavitation (bubbles on blades) which creates noise.' },
+    { t:'box-t', tx:'6 blades is the quietest option. 3 blades is the simplest.' },
+  ],
+  tasks: ['Choose blade count', 'Set propeller radius'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Blades</span><input type="range" min="3" max="6" step="1" value="' + P.propellerBlades + '" oninput="P.propellerBlades=parseInt(this.value);document.getElementById(\'pBladeVal\').textContent=this.value;buildSub()"><span class="slider-val" id="pBladeVal">' + P.propellerBlades + '</span></div><div class="slider-row"><span class="slider-lbl">Radius</span><input type="range" min="3" max="10" step="1" value="' + Math.round(P.propellerR*10) + '" oninput="P.propellerR=this.value/10;document.getElementById(\'pRadiusVal\').textContent=(this.value/10).toFixed(1);buildSub()"><span class="slider-val" id="pRadiusVal">' + P.propellerR.toFixed(1) + '</span></div></div>';
+  },
+  onApply: function() { buildSub(); sout(P.propellerBlades + '-blade propeller installed.'); document.getElementById('liveStatus').textContent = 'Prop set!'; }
+},
+{
+  title: 'Fins',
+  tag: 'STEP 09 \u2014 STABILITY',
+  intro: 'Fins at the rear <strong>stabilise and steer</strong> the submarine. They work like rudders.',
+  boxes: [
+    { t:'box-c', tx:'Submarine fins (hydroplanes) control pitch and yaw. Most subs have 4 fins in a cross pattern.' },
+    { t:'box-t', tx:'4 fins in a cross pattern is the most stable. 2 fins is the most streamlined.' },
+  ],
+  tasks: ['Choose fin count', 'Set fin size'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Fins</span><input type="range" min="2" max="4" step="1" value="' + P.finCount + '" oninput="P.finCount=parseInt(this.value);document.getElementById(\'fCountVal\').textContent=this.value;buildSub()"><span class="slider-val" id="fCountVal">' + P.finCount + '</span></div><div class="slider-row"><span class="slider-lbl">Size</span><input type="range" min="3" max="12" step="1" value="' + Math.round(P.finSize*10) + '" oninput="P.finSize=this.value/10;document.getElementById(\'fSizeVal\').textContent=(this.value/10).toFixed(1);buildSub()"><span class="slider-val" id="fSizeVal">' + P.finSize.toFixed(1) + '</span></div></div>';
+  },
+  onApply: function() { buildSub(); sout(P.finCount + ' fins, size ' + P.finSize.toFixed(1) + '.'); document.getElementById('liveStatus').textContent = 'Fins set!'; }
+},
+{
+  title: 'Portholes',
+  tag: 'STEP 10 \u2014 OBSERVATION',
+  intro: 'Portholes are <strong>circular windows</strong> along the hull. More portholes = more visibility but less structural strength.',
+  boxes: [
+    { t:'box-c', tx:'Real submarines have very few portholes because each one weakens the pressure hull. Deep-sea subs use thick acrylic windows.' },
+    { t:'box-t', tx:'More portholes look great visually but reduce stealth. 4-6 is a good balance.' },
+  ],
+  tasks: ['Set porthole count', 'Set porthole radius'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Count</span><input type="range" min="0" max="12" step="1" value="' + P.portholeCount + '" oninput="P.portholeCount=parseInt(this.value);document.getElementById(\'phCountVal\').textContent=this.value;buildSub()"><span class="slider-val" id="phCountVal">' + P.portholeCount + '</span></div><div class="slider-row"><span class="slider-lbl">Radius</span><input type="range" min="5" max="30" step="1" value="' + Math.round(P.portholeR*100) + '" oninput="P.portholeR=this.value/100;document.getElementById(\'phRadVal\').textContent=(this.value/100).toFixed(2);buildSub()"><span class="slider-val" id="phRadVal">' + P.portholeR.toFixed(2) + '</span></div></div>';
+  },
+  onApply: function() { buildSub(); sout(P.portholeCount + ' portholes installed.'); document.getElementById('liveStatus').textContent = 'Portholes set!'; }
+},
+{
+  title: 'Sonar Dome',
+  tag: 'STEP 11 \u2014 DETECTION',
+  intro: 'The <strong>sonar dome</strong> at the bow houses the active/passive sonar array. It bounces sound waves off objects to detect vessels and obstacles.',
+  boxes: [
+    { t:'box-c', tx:'Sonar works by emitting sound pulses and listening for echoes. "Active sonar" sends pings. "Passive sonar" just listens.' },
+    { t:'box-t', tx:'The sonar dome adds a distinctive bulb at the bow.' },
+  ],
+  tasks: ['Toggle sonar dome on or off'],
+  html: function() {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font-size:.82rem;color:var(--muted)">Sonar Dome:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.sonarDome ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.sonarDome=this.checked;buildSub()">Add sonar dome</label></div>';
+  },
+  onApply: function() { buildSub(); sout(P.sonarDome ? 'Sonar dome installed!' : 'No sonar dome.'); document.getElementById('liveStatus').textContent = P.sonarDome ? 'Sonar on!' : 'No sonar'; }
+},
+{
+  title: 'Torpedo Tubes',
+  tag: 'STEP 12 \u2014 FIREPOWER',
+  intro: 'Torpedo tubes launch <strong>underwater missiles</strong> at targets. More tubes = more firepower.',
+  boxes: [
+    { t:'box-c', tx:'Torpedo tubes use compressed air or water pressure to launch torpedoes. Some tubes can also launch cruise missiles.' },
+    { t:'box-t', tx:'2 tubes is standard. 4 tubes makes a serious attack sub.' },
+  ],
+  tasks: ['Choose torpedo tube count'],
+  html: function() {
+    var o = "(function(v,el){P.torpedoTubes=parseInt(v);el.closest('.opt-grid').querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildSub();})";
+    return opts('tubes', [
+      { val:'0', icon:'\uD83D\uDEAB', label:'None' },
+      { val:'1', icon:'\uD83D\uDD39', label:'1 Tube' },
+      { val:'2', icon:'\uD83D\uDD38', label:'2 Tubes' },
+      { val:'4', icon:'\u2694\uFE0F', label:'4 Tubes' },
+    ], String(P.torpedoTubes), o);
+  },
+  onApply: function() { buildSub(); sout(P.torpedoTubes ? P.torpedoTubes + ' torpedo tube(s) armed!' : 'No torpedo tubes.'); document.getElementById('liveStatus').textContent = P.torpedoTubes + ' tubes!'; }
+},
+{
+  title: 'Antenna',
+  tag: 'STEP 13 \u2014 COMMUNICATION',
+  intro: 'The <strong>antenna</strong> extends from the conning tower for communication when surfaced or at periscope depth.',
+  boxes: [
+    { t:'box-c', tx:'Submarines communicate via VLF radio when surfaced. The antenna mast is retractable.' },
+    { t:'box-t', tx:'The antenna adds a nice vertical detail to the conning tower.' },
+  ],
+  tasks: ['Toggle antenna on or off'],
+  html: function() {
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font-size:.82rem;color:var(--muted)">Antenna:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.antenna ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.antenna=this.checked;buildSub()">Deploy antenna mast</label></div>';
+  },
+  onApply: function() { buildSub(); sout(P.antenna ? 'Antenna deployed!' : 'No antenna, running dark.'); document.getElementById('liveStatus').textContent = P.antenna ? 'Antenna up!' : 'No antenna'; }
+},
+{
+  title: 'Details',
+  tag: 'STEP 14 \u2014 FINISHING TOUCHES',
+  intro: 'Add the final details: <strong>light colour</strong> for bow lights, <strong>window tint</strong> for darker portholes, and a <strong>stripe band</strong>.',
+  boxes: [
+    { t:'box-t', tx:'Lights appear at the bow. Window tint darkens the glass. A stripe band wraps around the hull.' },
+  ],
+  tasks: ['Set light colour', 'Toggle window tint', 'Toggle stripe'],
+  html: function() {
+    var o = "(function(c,el){P.lightCol=c;el.closest('.swatch-row').querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildSub();})";
+    return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0"><span style="font-size:.82rem;color:var(--muted)">Window Tint:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.windowTint ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.windowTint=this.checked;buildSub()">Dark tinted glass</label></div><div style="display:flex;align-items:center;gap:12px;padding:8px 0"><span style="font-size:.82rem;color:var(--muted)">Stripe Band:</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)"><input type="checkbox" ' + (P.stripeOn ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" onchange="P.stripeOn=this.checked;buildSub()">Show stripe band</label></div><div style="margin-top:6px"><div style="font-family:\'JetBrains Mono\',monospace;font-size:.56rem;color:var(--muted);margin-bottom:4px">LIGHT COLOUR</div>' + swatchRow('lc', ['#ffdd44','#ffffff','#ff4444','#00ffff','#44ff44','#ff88ff'], P.lightCol, o) + '</div>';
+  },
+  onApply: function() { buildSub(); sout('Details applied!'); document.getElementById('liveStatus').textContent = 'Details set!'; }
+},
+{
+  title: 'Stats & Preview',
+  tag: 'STEP 15 \u2014 EVALUATION',
+  intro: 'Check your submarine\'s <strong>performance stats</strong>. Depth rating, stealth, firepower, and range are calculated from your design choices.',
+  boxes: [
+    { t:'box-c', tx:'Your stats are computed from hull shape, size, equipment, and details. Teardrop hulls improve stealth. More torpedo tubes boost firepower.' },
+    { t:'box-t', tx:'Use the sliders and toggles to fine-tune your stats before the final dive.' },
+  ],
+  tasks: ['Review your stats', 'Make any final adjustments'],
+  html: function() { return ''; },
+  onApply: function() { buildSub(); sout('Stats reviewed. Ready to dive!'); document.getElementById('liveStatus').textContent = 'Stats reviewed!'; }
+},
+{
+  title: 'Dive!',
+  tag: 'STEP 16 \u2014 DIVE!',
+  intro: 'All systems are go. Your submarine is fully designed. Hit the dive button to submerge.',
+  boxes: [
+    { t:'box-r', tx: '3... 2... 1... Dive! The ballast tanks flood, the sub descends, and bubbles rise from the propeller.' },
+    { t:'box-c', tx: 'A complete submarine needs: hull, conning tower, propulsion, fins, and details. You\'ve built all of them.' },
+    { t:'box-t', tx: 'Hit the header buttons to download your sub as .obj or .glb, or try a Quick Build.' },
+  ],
+  tasks: ['Press Dive and watch it go!'],
+  html: function() {
+    return '<div style="text-align:center;padding:8px 0"><div style="font-size:2.4rem;margin-bottom:7px">\uD83E\uDD3F</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">' + (P.subName || 'YOUR SUBMARINE') + '</div><div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for deep dive.</div></div><button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">\uD83E\uDD3F DIVE, DIVE, DIVE!</button>';
+  },
+  onApply: function() { dive(); }
+},
+];
+function dive() {
+  P.diving = true;
+  if(window.builderTrack)builderTrack('activate');
+  P.diveY = 0;
+  buildSub();
+  sout((P.subName || 'SUBMARINE') + ' is diving!');
+  document.getElementById('liveStatus').textContent = 'DIVE!';
+  document.getElementById('sceneHint').textContent = 'Drag to follow the sub';
+  stepDone[STEPS.length - 1] = true;
+  updateProgress();
+  renderStep();
+  setInterval(function() {
+    if (!P.diving) return;
+    if (subGroup) {
+      var propX = -P.hullLen / 2 - 0.5;
+      var propY = 0.4 + P.diveY;
+      for (var i = 0; i < 3; i++) {
+        var bGeo = new THREE.SphereGeometry(0.04 + Math.random() * 0.06, 6, 6);
+        var bMat = new THREE.MeshBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.6 });
+        var bubble = new THREE.Mesh(bGeo, bMat);
+        bubble.position.set(propX + Math.random() * 0.3 - 0.15, propY + Math.random() * 0.2, Math.random() * 0.4 - 0.2);
+        scene.add(bubble);
+        bubbleParticles.push({ mesh: bubble, speed: 0.02 + Math.random() * 0.03, dead: false });
+      }
+    }
+  }, 200);
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  var items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  var s = STEPS[currentStep];
+  var body = document.getElementById('stepBody');
+  var html = '<div class="step-tag">' + s.tag + '</div><div class="step-title">' + s.title + '</div><div class="step-intro">' + s.intro + '</div>';
+  (s.boxes || []).forEach(function(b) { html += '<div class="box ' + b.t + '">' + b.tx + '</div>'; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += '<div class="task-list">' + s.tasks.map(function(t) {
+      var done = stepDone[currentStep];
+      return '<div class="task-item' + (done ? ' done' : '') + '"><div class="task-dot"></div>' + t + '</div>';
+    }).join('') + '</div>';
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += '<button class="run-btn" onclick="applyStep(' + currentStep + ')">Apply to Submarine</button>';
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach(function(el, i) { el.classList.toggle('active', i === currentStep); });
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  var done = stepDone.filter(Boolean).length;
+  var pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach(function(el, i) {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    var sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '\u2713' : (i + 1);
+  });
+}
+
+function quickBuild() {
+  P.subName = 'ABYSS-7'; P.hullStyle = 'teardrop'; P.hullLen = 10; P.hullRad = 1.1;
+  P.primaryCol = '#1a3a5a'; P.accentCol = '#0ea5e9'; P.conningTower = true; P.towerH = 0.7; P.towerW = 0.5;
+  P.periscope = true; P.propellerBlades = 6; P.propellerR = 0.5; P.finCount = 4; P.finSize = 0.6;
+  P.portholeCount = 4; P.portholeR = 0.15; P.sonarDome = true; P.torpedoTubes = 2; P.antenna = true;
+  P.lightCol = '#ffdd44'; P.windowTint = false; P.stripeOn = true; P.stripeCol = '#0ea5e9';
+  P.depth = 0; P.diving = false; P.diveY = 0;
+  buildSub();
+  sout('Quick build: ABYSS-7 loaded. Press Dive at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: ABYSS-7 loaded!');
+}
+
+window._builderGetState = function() { return { params: JSON.parse(JSON.stringify(P)), step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  P.diving = false; P.diveY = 0;
+  buildSub(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
+};
+
+function toast(m) {
+  var t = document.getElementById('subToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'subToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(4,14,26,.92);border:1px solid rgba(14,165,233,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(function() { t.style.opacity = '0'; }, 1800);
+}
+
+function computeStats() {
+  var depth = 5, stealth = 5, firepower = 5, range = 5;
+  if (P.hullStyle === 'teardrop') { stealth += 2; range += 1; }
+  if (P.hullStyle === 'flat') { depth += 2; }
+  if (P.hullLen > 10) { range += 3; firepower += 1; }
+  if (P.hullLen < 6) { stealth += 2; }
+  if (P.torpedoTubes >= 4) { firepower += 3; }
+  else if (P.torpedoTubes >= 2) { firepower += 1; }
+  if (P.sonarDome) { stealth += 2; }
+  if (P.portholeCount > 4) { stealth -= 1; }
+  if (P.conningTower) { stealth -= 1; depth += 1; }
+  if (P.propellerBlades >= 6) { range += 1; }
+  return { depth: Math.max(1,Math.min(10,depth)), stealth: Math.max(1,Math.min(10,stealth)), firepower: Math.max(1,Math.min(10,firepower)), range: Math.max(1,Math.min(10,range)) };
+}
+
+function updateStats() {
+  var s = computeStats();
+  var el = document.getElementById('subStats');
+  if (!el) return;
+  var bar = function(v, c) { return '<div class="stat-track"><div class="stat-fill" style="width:' + (v * 10) + '%;background:' + c + '"></div></div>'; };
+  el.innerHTML = '<div class="stat-title">Submarine Stats</div>' +
+    '<div class="stat-row"><span class="stat-lbl">Depth</span>' + bar(s.depth, '#0ea5e9') + '<span class="stat-val">' + s.depth + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Stealth</span>' + bar(s.stealth, '#4ade80') + '<span class="stat-val">' + s.stealth + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Firepower</span>' + bar(s.firepower, '#e53e3e') + '<span class="stat-val">' + s.firepower + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Range</span>' + bar(s.range, '#f5c842') + '<span class="stat-val">' + s.range + '</span></div>';
+}
+
+function randomSub() {
+  var rnd = function(mn, mx, s) { var v = mn + Math.random() * (mx - mn); return s ? Math.round(v / s) * s : Math.round(v * 100) / 100; };
+  var hulls = ['cylinder', 'teardrop', 'flat'];
+  Object.assign(P, {
+    subName: 'SUB-' + Math.round(100 + Math.random() * 900),
+    hullStyle: hulls[Math.floor(Math.random() * hulls.length)],
+    hullLen: rnd(5, 13, 0.5), hullRad: rnd(0.7, 1.8, 0.1),
+    primaryCol: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    accentCol: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    conningTower: Math.random() > 0.2,
+    towerH: rnd(0.4, 1.2, 0.1), towerW: rnd(0.3, 0.8, 0.05),
+    periscope: Math.random() > 0.3,
+    propellerBlades: Math.round(3 + Math.random() * 3),
+    propellerR: rnd(0.3, 0.8, 0.05),
+    finCount: Math.round(2 + Math.random() * 2),
+    finSize: rnd(0.3, 0.9, 0.05),
+    portholeCount: Math.round(Math.random() * 10),
+    portholeR: rnd(0.08, 0.25, 0.01),
+    sonarDome: Math.random() > 0.3,
+    torpedoTubes: Math.round(Math.random() * 4),
+    antenna: Math.random() > 0.3,
+    lightCol: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    windowTint: Math.random() > 0.5,
+    stripeOn: Math.random() > 0.5,
+    stripeCol: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    depth: 0, diving: false, diveY: 0,
+  });
+  buildSub(); updateStats(); syncRightBar(); toast('Random submarine generated!');
+  if(window.builderTrack)builderTrack('random_build');
+}
+
+function openCardModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  var s = computeStats();
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px;font-size:1.3rem;letter-spacing:.06em">Profile Card</h2><div style="background:linear-gradient(135deg,#0c1a30,#040e1a);border:1px solid rgba(14,165,233,.3);border-radius:10px;padding:16px;text-align:center"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:1.8rem;color:var(--acc-lt);letter-spacing:.08em;margin-bottom:4px">' + (P.subName || 'NAUTILUS') + '</div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:var(--muted);margin-bottom:12px;letter-spacing:.1em">' + P.hullStyle.toUpperCase() + ' HULL &middot; ' + P.hullLen + 'm &middot; ' + P.finCount + ' FINS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left"><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.55rem;color:var(--muted);margin-bottom:2px">DEPTH</div><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:' + (s.depth*10) + '%;height:100%;background:#0ea5e9;border-radius:2px"></div></div><span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:var(--acc-lt)">' + s.depth + '</span></div></div><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.55rem;color:var(--muted);margin-bottom:2px">STEALTH</div><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:' + (s.stealth*10) + '%;height:100%;background:#4ade80;border-radius:2px"></div></div><span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:var(--acc-lt)">' + s.stealth + '</span></div></div><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.55rem;color:var(--muted);margin-bottom:2px">FIREPOWER</div><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:' + (s.firepower*10) + '%;height:100%;background:#e53e3e;border-radius:2px"></div></div><span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:var(--acc-lt)">' + s.firepower + '</span></div></div><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:.55rem;color:var(--muted);margin-bottom:2px">RANGE</div><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px"><div style="width:' + (s.range*10) + '%;height:100%;background:#f5c842;border-radius:2px"></div></div><span style="font-family:\'JetBrains Mono\',monospace;font-size:.6rem;color:var(--acc-lt)">' + s.range + '</span></div></div></div></div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>';
+  modal.classList.add('open');
+}
+
+function getSaves() { try { return JSON.parse(localStorage.getItem('subSaves') || '{}'); } catch(e) { return {}; } }
+function setSaves(s) { localStorage.setItem('subSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Save Submarine</h2><input type="text" id="subSaveName" placeholder="Name your sub..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(14,165,233,.3);border-radius:7px;color:var(--acc-lt);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button onclick="doSubSave()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>';
+  modal.classList.add('open');
+  setTimeout(function() { var inp = document.getElementById('subSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  var sv = getSaves(), ks = Object.keys(sv);
+  var h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved submarines yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(function(k) {
+    var d = new Date(sv[k].date).toLocaleDateString();
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background=\'rgba(14,165,233,.05)\'" onmouseout="this.style.background=\'transparent\'" onclick="doSubLoad(\'' + k.replace(/'/g, "\\'") + '\')"><div><div style="font-size:.82rem;color:var(--text)">' + k + '</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">' + d + '</div></div><button onclick="event.stopPropagation();doSubDel(\'' + k.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:.9rem;padding:2px 5px">x</button></div>';
+  }).join('') + '</div>';
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Load Submarine</h2>' + h + '<div style="display:flex;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>';
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  var modal = document.getElementById('modalOverlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function doSubSave() {
+  var inp = document.getElementById('subSaveName');
+  if (!inp) return;
+  var n = inp.value.trim();
+  if (!n) return;
+  var sv = getSaves();
+  sv[n] = { params: JSON.parse(JSON.stringify(P)), step: currentStep, date: Date.now() };
+  setSaves(sv);
+  closeModal();
+  if(window.builderTrack)builderTrack('save');
+  toast('Submarine saved!');
+}
+
+function doSubLoad(n) {
+  var sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  P.diving = false; P.diveY = 0;
+  closeModal();
+  buildSub();
+  renderStep();
+  updateProgress();
+  syncRightBar();
+  toast('Loaded: ' + n);
+}
+
+function doSubDel(n) {
+  var sv = getSaves();
+  delete sv[n];
+  setSaves(sv);
+  openLoadModal();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+function init() {
+  var listEl = document.getElementById('stepList');
+  STEPS.forEach(function(s, i) {
+    var item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = '<div class="sn">' + (i + 1) + '</div><div class="sl">' + s.title + '</div>';
+    item.onclick = function() { go(i); };
+    listEl.appendChild(item);
+  });
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+  buildSub();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+  var modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="../cookie-consent.js"></script>
+
+<!-- --- DEV TOOLS CALLOUT --- -->
+<section style="background:#0d0820;border-top:3px solid rgba(14,165,233,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#38bdf8;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/buildlab.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(14,165,233,.18)';this.style.borderColor='rgba(14,165,233,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">BuildLab</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">BuildLab</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Design Roblox-style 3D models</div></div></a>
+      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(14,165,233,.18)';this.style.borderColor='rgba(14,165,233,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">Colour Palette</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div></div></a>
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(14,165,233,.18)';this.style.borderColor='rgba(14,165,233,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">Pixel Studio</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div></div></a>
+      <a href="../tools/arcade-game-maker.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(14,165,233,.18)';this.style.borderColor='rgba(14,165,233,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">Arcade Game Maker</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Arcade Game Maker</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build & play browser games</div></div></a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(14,165,233,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">See All 20 Free Tools</a>
+  </div>
+</section>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+window.BQ={"key":"jvds-submarine-builder","name":"Submarine Builder","profileId":"submarine-builder","quiz":[{"q":"What does a submarine's <strong>sonar</strong> do?","opts":["Makes the sub go faster","Detects objects underwater using sound waves","Cools the engines","Stores extra oxygen"],"a":1,"why":"Sonar sends sound waves through water and listens for echoes to detect objects, terrain, and other vessels."},{"q":"Why is the hull shaped like a <strong>teardrop</strong>?","opts":["To look nice","To reduce water resistance/drag","To hold more fuel","To be lighter"],"a":1,"why":"Teardrop hulls are the most hydrodynamic shape, reducing drag by up to 60% compared to flat hulls."},{"q":"What do the <strong>fins</strong> at the rear do?","opts":["Generate electricity","Decorate the sub","Stabilise and steer the submarine","Cool the water"],"a":2,"why":"Fins (hydroplanes) control pitch and yaw, keeping the submarine stable and allowing it to change direction."},{"q":"How does a submarine <strong>control its depth</strong>?","opts":["By using the propeller","By ballast tanks filling with water or air","By spinning in circles","By using solar panels"],"a":1,"why":"Ballast tanks can be filled with water (to sink) or blown with compressed air (to rise), controlling buoyancy."},{"q":"What is a <strong>periscope</strong>?","opts":["A type of torpedo","A navigation compass","Allows viewing above water while submerged","A radio antenna"],"a":2,"why":"A periscope uses mirrors and lenses to let the crew see above the waterline while the submarine is submerged."}]};
+</script>
+<script src="../player-profile.js"></script>
+<script src="builder-quiz.js"></script>
+<script src="builder-extras.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Submarine Builder Design Your Own Sub","description":"Design and build your own 3D submarine step by step. Choose hull, conning tower, propeller, fins, sonar and more then dive! Ages 10+. Free.","url":"https://jvdesignstudio.co.uk/workshops/submarine-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+</script>
+<script src="workshop-track.js"></script>
+</body>
+</html>

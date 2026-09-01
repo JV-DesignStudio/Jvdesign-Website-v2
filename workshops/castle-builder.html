@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta name="theme-color" content="#c9a84c">
+<script src="../analytics-loader.js"></script>
+
+    <link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/castle-builder.html">
+    <meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Castle Builder Design Your Own Medieval Fortress | JVDesignStudio</title>
+<meta name="description" content="Design and build your own 3D medieval castle step by step. Choose walls, towers, gates, keeps, moats and banners then light the torches. Ages 10+. Free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/castle-builder.html">
+<meta property="og:title" content="Castle Builder Design Your Own Medieval Fortress | JVDesignStudio">
+<meta property="og:description" content="Design and build your own 3D medieval castle step by step. Choose walls, towers, gates, keeps, moats and banners. Ages 10+. Free.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/CastleBuilder.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Castle Builder Design Your Own Medieval Fortress | JVDesignStudio">
+<meta name="twitter:description" content="Design and build your own 3D medieval castle step by step. Free.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/CastleBuilder.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+
+  :root {
+  --bg:#0f0d0a;--bg2:#1a1610;--bg3:#241e14;
+  --border:rgba(255,255,255,.07);
+  --text:#e8dcc0;--muted:rgba(232,220,192,.45);
+  --acc:#c9a84c;--acc-lt:#e8c85e;--acc-dk:#8b7355;
+  --stone:#6b5a40;--green:#4ade80;--blue:#38bdf8;--red:#f87171;
+}
+html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* -- APP GRID -- */
+#app{display:grid;grid-template-columns:340px 1fr 240px;grid-template-rows:54px 1fr;height:100vh}
+
+/* -- HEADER -- */
+.hdr{grid-column:1/-1;background:rgba(15,13,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:90;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent)}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.quick-btn{background:linear-gradient(135deg,var(--acc),#8b7355);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.88rem;letter-spacing:.08em;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 3px 0 #5a4a2e;transition:filter .15s,transform .1s}
+.quick-btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.back-link{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);padding:5px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;transition:color .15s,border-color .15s}
+.back-link:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
+
+/* -- SIDEBAR -- */
+#sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+
+/* Progress */
+.prog-section{padding:9px 12px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.prog-track{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:999px;margin-top:5px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc-lt));border-radius:999px;transition:width .4s ease}
+.prog-ct{font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);margin-top:3px}
+
+/* Step list */
+.slist{flex:1;overflow-y:auto;padding:4px 6px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.slist::-webkit-scrollbar{width:3px}
+.slist::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.si{padding:7px 9px;margin-bottom:2px;border-radius:5px;cursor:pointer;display:flex;align-items:center;gap:8px;border:1px solid transparent;transition:all .18s}
+.si:hover{background:rgba(201,168,76,.04)}
+.si.active{background:rgba(201,168,76,.1);border-color:var(--acc)}
+.si.done{opacity:.55}
+.si.done .sn{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sn{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(201,168,76,.45);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;flex-shrink:0;color:var(--acc-lt);transition:all .2s}
+.sl{font-size:11.5px;color:var(--text);line-height:1.2}
+.si.active .sl{color:var(--acc-lt)}
+
+/* Controls panel */
+.cpan{padding:10px 12px 14px;border-top:1px solid var(--border);background:rgba(0,0,0,.12);overflow-y:auto;flex-shrink:0;max-height:48vh;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+.cpan::-webkit-scrollbar{width:3px}
+.cpan::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+
+/* Sidebar nav */
+.snav{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);flex-shrink:0}
+.snav button{flex:1;padding:8px;border-radius:7px;font-size:.8rem;font-weight:800;cursor:pointer;border:none;transition:background .15s;font-family:'Nunito',sans-serif}
+.btn-p{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border) !important}
+.btn-n{background:rgba(201,168,76,.14);color:var(--acc-lt);border:1px solid rgba(201,168,76,.25) !important}
+.btn-p:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-n:hover:not(:disabled){background:rgba(201,168,76,.24)}
+.btn-p:disabled,.btn-n:disabled{opacity:.28;cursor:default}
+
+/* -- VIEWPORT -- */
+#viewport{position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.scene-top{padding:8px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scene-top-l{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scene-top-r{display:flex;align-items:center;gap:7px}
+.live-wrap{display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--acc);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.14}}
+.scene-wrap{flex:1;position:relative;overflow:hidden}
+#castleCanvas{display:block;width:100%;height:100%;touch-action:none}
+.vhint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:.5rem;color:var(--muted);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:6px;pointer-events:none;white-space:nowrap}
+.dims{position:absolute;top:10px;right:10px;background:rgba(15,13,10,.88);border:1px solid rgba(201,168,76,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8}
+.dims span{color:var(--acc-lt)}
+.obar{padding:5px 12px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--acc-lt);flex-shrink:0;min-height:26px}
+
+/* -- STEP CONTENT STYLES -- */
+.step-tag{font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-lt);margin-bottom:3px}
+.step-title{font-family:'Bebas Neue',sans-serif;font-size:1.55rem;letter-spacing:.04em;color:#fff;margin-bottom:5px;line-height:1}
+.step-intro{font-size:.78rem;color:var(--muted);line-height:1.72;margin-bottom:9px}
+.step-intro strong{color:var(--text)}
+
+.box{border-radius:7px;padding:8px 11px;margin:5px 0;font-size:.72rem;line-height:1.55;display:flex;gap:7px;align-items:flex-start}
+.box::before{flex-shrink:0;margin-top:1px}
+.box-c{background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.16);color:rgba(232,220,192,.7)}
+.box-c::before{content:"??"}
+.box-t{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);color:rgba(232,220,192,.7)}
+.box-t::before{content:"??"}
+.box-r{background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.18);color:rgba(232,220,192,.8)}
+.box-r::before{content:"??"}
+
+.opt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:7px;margin:8px 0}
+.opt-btn{padding:9px 7px;border-radius:8px;border:2px solid var(--border);background:var(--bg3);cursor:pointer;font-family:'Nunito',sans-serif;font-size:.74rem;font-weight:700;color:var(--muted);text-align:center;transition:all .15s;line-height:1.3}
+.opt-btn:hover{border-color:rgba(201,168,76,.4);color:var(--text);background:rgba(201,168,76,.05)}
+.opt-btn.sel{border-color:var(--acc);color:var(--acc-lt);background:rgba(201,168,76,.08)}
+.opt-icon{font-size:1.3rem;display:block;margin-bottom:3px}
+
+.swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff;transform:scale(1.18)}
+.custom-colour{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:.72rem;color:var(--muted)}
+.custom-colour input[type=color]{width:32px;height:32px;border:2px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:var(--bg2)}
+
+.slider-row{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.slider-row:last-child{border:none}
+.slider-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);flex:1;text-transform:uppercase;letter-spacing:.05em}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--acc-lt);min-width:36px;text-align:right}
+input[type=range]{flex:2;accent-color:var(--acc);cursor:pointer}
+
+.task-list{margin:6px 0;display:flex;flex-direction:column;gap:3px}
+.task-item{display:flex;align-items:center;gap:6px;font-size:.7rem;padding:4px 8px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid var(--border);color:var(--muted);transition:all .3s}
+.task-item.done{background:rgba(74,222,128,.05);border-color:rgba(74,222,128,.18);color:var(--green)}
+.task-dot{width:6px;height:6px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;transition:background .3s}
+.task-item.done .task-dot{background:var(--green)}
+
+.name-input{width:100%;background:var(--bg3);border:1px solid rgba(201,168,76,.3);border-radius:7px;color:var(--acc-lt);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;padding:8px 12px;outline:none;transition:border-color .2s;margin:7px 0}
+.name-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(201,168,76,.12)}
+.name-input::placeholder{color:var(--muted);font-size:.95rem}
+
+.run-btn{width:100%;margin-top:8px;padding:10px;background:var(--acc);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:.9rem;letter-spacing:.1em;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 var(--acc-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.run-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+
+/* -- RIGHT BAR -- */
+#rightbar{background:var(--bg2);border-left:1px solid var(--border);overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:var(--acc-dk) transparent}
+#rightbar::-webkit-scrollbar{width:3px}
+#rightbar::-webkit-scrollbar-thumb{background:var(--acc-dk);border-radius:2px}
+.rb-section{background:rgba(0,0,0,.15);border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.rb-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--acc);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid rgba(201,168,76,.14)}
+.rb-row{display:flex;align-items:center;gap:5px;padding:2px 0;min-height:24px}
+.rb-row label{font-family:'JetBrains Mono',monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);flex-shrink:0;width:48px}
+.rb-row input[type=color]{width:26px;height:22px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;background:var(--bg2);flex-shrink:0}
+.rb-row input[type=range]{flex:1;accent-color:var(--acc);min-width:0;height:16px;cursor:pointer}
+.rb-row select{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:.62rem;padding:2px 3px;cursor:pointer;font-family:'Nunito',sans-serif;min-width:0}
+.rv{font-family:'JetBrains Mono',monospace;font-size:.56rem;color:var(--acc-lt);min-width:28px;text-align:right;flex-shrink:0}
+.rb-toggle{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.52rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rb-toggle input[type=checkbox]{accent-color:var(--acc);flex-shrink:0;width:13px;height:13px}
+.preset-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.6rem;font-weight:700;padding:5px 3px;border-radius:6px;cursor:pointer;transition:all .15s;text-align:center;width:100%}
+.preset-btn:hover{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.35);color:var(--text)}
+
+/* Stats overlay */
+.castle-stats{position:absolute;top:10px;left:10px;background:rgba(15,13,10,.88);border:1px solid rgba(201,168,76,.22);border-radius:6px;padding:7px 11px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);z-index:5;line-height:1.8;min-width:130px}
+.castle-stats .stat-title{font-size:8px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;border-bottom:1px solid rgba(201,168,76,.15);padding-bottom:2px}
+.castle-stats .stat-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.castle-stats .stat-lbl{width:48px;flex-shrink:0;font-size:8px}
+.castle-stats .stat-track{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.castle-stats .stat-fill{height:100%;border-radius:2px;transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+.castle-stats .stat-val{min-width:16px;text-align:right;color:var(--acc-lt);font-size:8px}
+
+/* -- MOBILE -- */
+@media(max-width:860px){
+  html,body{overflow:auto;height:auto}
+  #app{grid-template-columns:1fr;grid-template-rows:54px auto auto;height:auto;min-height:100vh}
+  .hdr{grid-column:1}
+  #sidebar{max-height:55vh;border-right:none;border-bottom:1px solid var(--border)}
+  .slist{min-height:60px}
+  .cpan{max-height:36vh}
+  #viewport{min-height:320px;height:56vw;max-height:520px}
+  #rightbar{display:none}
+}
+@media(max-width:480px){
+  .logo{font-size:1rem}
+  .quick-btn{font-size:.78rem;padding:6px 12px}
+  #viewport{min-height:260px;height:50vw;max-height:420px}
+  .cpan{max-height:40vh}
+  .snav button{padding:10px 6px;font-size:.75rem}
+}
+</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <h1 class="logo">🏰 Castle Builder</h1>
+    <div class="hdr-right">
+      <a href="../pages/workshop.html" class="back-link">← Workshop</a>
+      <button class="quick-btn" onclick="randomCastle()" style="background:linear-gradient(135deg,#8b1a1a,#5a1010);box-shadow:0 3px 0 #3a0808">🎲 Random</button>
+      <button class="quick-btn" onclick="quickBuild()" style="font-size:.88rem">⚡ Quick Build</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="prog-section">
+      <div class="prog-lbl">Build Progress</div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:3%"></div></div>
+      <div class="prog-ct" id="progCt">0 / 16 steps</div>
+    </div>
+    <div class="slist" id="stepList"></div>
+    <div class="cpan" id="stepBody"></div>
+    <div class="snav">
+      <button class="btn-p" id="navPrev" onclick="go(currentStep-1)" disabled aria-label="Previous step">← Back</button>
+      <button class="btn-n" id="navNext" onclick="go(currentStep+1)" aria-label="Next step">Next →</button>
+    </div>
+  </div>
+
+  <!-- VIEWPORT -->
+  <div id="viewport">
+    <div class="scene-top">
+      <span class="scene-top-l">🏰 Live 3D Preview</span>
+      <div class="scene-top-r">
+        <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus" aria-live="polite">Apply Step 1 to begin</span></div>
+      </div>
+    </div>
+    <div class="scene-wrap">
+      <canvas id="castleCanvas" role="application" aria-label="3D castle preview viewport"></canvas>
+      <div class="castle-stats" id="castleStats"></div>
+      <div class="vhint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
+      <div class="dims" id="dimsOverlay">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px" id="sName">UNNAMED</div>
+        <div>Walls&nbsp;&nbsp;<span id="sWalls">-</span></div>
+        <div>Towers&nbsp;<span id="sTowers">-</span></div>
+        <div>Keep&nbsp;&nbsp;&nbsp;<span id="sKeep">-</span></div>
+        <div>Gate&nbsp;&nbsp;&nbsp;<span id="sGate">-</span></div>
+        <div>Moat&nbsp;&nbsp;&nbsp;<span id="sMoat">-</span></div>
+      </div>
+    </div>
+    <div class="obar" id="obar" aria-live="polite">👑 Name your castle to start building</div>
+  </div>
+
+  <!-- RIGHT BAR -->
+  <div id="rightbar" aria-label="Quick controls">
+
+    <div class="rb-section">
+      <div class="rb-title">🎨 Wall Colours</div>
+      <div class="rb-row">
+        <label>Wall</label>
+        <input type="color" id="rb-wallCol" value="#6b5a40" oninput="P.wallColor=this.value;buildCastle()">
+      </div>
+      <div class="rb-row">
+        <label>Stone</label>
+        <input type="color" id="rb-stoneCol" value="#8b7355" oninput="P.stoneColor=this.value;buildCastle()">
+      </div>
+      <div class="rb-row">
+        <label>Banner</label>
+        <input type="color" id="rb-bannerCol" value="#8b1a1a" oninput="P.bannerColor=this.value;buildCastle()">
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🏰 Walls</div>
+      <div class="rb-row">
+        <label>Height</label>
+        <input type="range" min="3" max="8" step="0.5" value="5" id="rb-wh"
+          oninput="P.wallHeight=parseFloat(this.value);document.getElementById('rb-whv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-whv">5.0</span>
+      </div>
+      <div class="rb-row">
+        <label>Thick</label>
+        <input type="range" min="0.4" max="1.5" step="0.1" value="0.8" id="rb-wt"
+          oninput="P.wallThickness=parseFloat(this.value);document.getElementById('rb-wtv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-wtv">0.8</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🗼 Towers</div>
+      <div class="rb-row">
+        <label>Count</label>
+        <input type="range" min="0" max="8" step="1" value="4" id="rb-tc"
+          oninput="P.towerCount=parseInt(this.value);document.getElementById('rb-tcv').textContent=this.value;buildCastle()">
+        <span class="rv" id="rb-tcv">4</span>
+      </div>
+      <div class="rb-row">
+        <label>Height</label>
+        <input type="range" min="4" max="14" step="0.5" value="8" id="rb-th"
+          oninput="P.towerHeight=parseFloat(this.value);document.getElementById('rb-thv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-thv">8.0</span>
+      </div>
+      <div class="rb-row">
+        <label>Style</label>
+        <select id="rb-ts" onchange="P.towerStyle=this.value;buildCastle()">
+          <option value="round">Round</option>
+          <option value="square">Square</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🚪 Gate</div>
+      <div class="rb-row">
+        <label>Style</label>
+        <select id="rb-gs" onchange="P.gateStyle=this.value;buildCastle()">
+          <option value="arch">Arch</option>
+          <option value="double">Double</option>
+          <option value="portcullis">Portcullis</option>
+        </select>
+      </div>
+      <div class="rb-row">
+        <label>Width</label>
+        <input type="range" min="1" max="4" step="0.2" value="2" id="rb-gw"
+          oninput="P.gateWidth=parseFloat(this.value);document.getElementById('rb-gwv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-gwv">2.0</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🏗 Keep</div>
+      <div class="rb-row">
+        <label>Height</label>
+        <input type="range" min="5" max="16" step="0.5" value="10" id="rb-kh"
+          oninput="P.keepHeight=parseFloat(this.value);document.getElementById('rb-khv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-khv">10.0</span>
+      </div>
+      <div class="rb-row">
+        <label>Width</label>
+        <input type="range" min="2" max="6" step="0.2" value="4" id="rb-kw"
+          oninput="P.keepWidth=parseFloat(this.value);document.getElementById('rb-kwv').textContent=parseFloat(this.value).toFixed(1);buildCastle()">
+        <span class="rv" id="rb-kwv">4.0</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">⚔ Details</div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-moat" onchange="P.moat=this.checked;buildCastle()">
+        Moat
+      </label>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-drawbridge" onchange="P.drawbridge=this.checked;buildCastle()">
+        Drawbridge
+      </label>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-courtyard" onchange="P.courtyard=this.checked;buildCastle()">
+        Courtyard
+      </label>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🏴 Banners & Flags</div>
+      <div class="rb-row">
+        <label>Count</label>
+        <input type="range" min="0" max="8" step="1" value="4" id="rb-fc"
+          oninput="P.flagCount=parseInt(this.value);document.getElementById('rb-fcv').textContent=this.value;buildCastle()">
+        <span class="rv" id="rb-fcv">4</span>
+      </div>
+    </div>
+
+    <div class="rb-section">
+      <div class="rb-title">🔥 Torches</div>
+      <label class="rb-toggle">
+        <input type="checkbox" id="rb-torches" onchange="P.torchCount=this.checked?8:0;buildCastle()">
+        Torches
+      </label>
+      <div class="rb-row">
+        <label>Count</label>
+        <input type="range" min="2" max="16" step="2" value="8" id="rb-torchc"
+          oninput="P.torchCount=parseInt(this.value);document.getElementById('rb-torchc').textContent=this.value;buildCastle()">
+        <span class="rv" id="rb-torchc">8</span>
+      </div>
+    </div>
+
+    <div style="padding:4px 2px">
+      <button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" onclick="lightTorches()">🔥 Light the Torches!</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('castleCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x0f0d0a);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0f0d0a, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 8, 20);
+
+/* Lights */
+const ambient = new THREE.AmbientLight(0x332211, 0.5);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff0d4, 1.2);
+sun.position.set(8, 14, 10);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x445566, 0.3);
+fill.position.set(-8, 4, -6);
+scene.add(fill);
+const rimLight = new THREE.DirectionalLight(0xc9a84c, 0.25);
+rimLight.position.set(0, 2, -12);
+scene.add(rimLight);
+
+/* Ground */
+const groundGeo = new THREE.PlaneGeometry(80, 80);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.95 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.01;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* Grass ring around moat area */
+const grassGeo = new THREE.RingGeometry(12, 20, 48);
+const grassMat = new THREE.MeshStandardMaterial({ color: 0x3a5a28, roughness: 0.9 });
+const grass = new THREE.Mesh(grassGeo, grassMat);
+grass.rotation.x = -Math.PI / 2;
+grass.position.y = 0.005;
+grass.receiveShadow = true;
+scene.add(grass);
+
+/* Stars */
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 600; i++) {
+    verts.push((Math.random()-0.5)*120, 20 + Math.random()*50, (Math.random()-0.5)*120);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xfff8e0, size: 0.08 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+/* -------------------------------
+   CASTLE STATE
+------------------------------- */
+const P = {
+  castleName: 'Ironhold',
+  wallHeight: 5, wallThickness: 0.8,
+  wallColor: '#6b5a40', stoneColor: '#8b7355',
+  towerCount: 4, towerHeight: 8, towerRadius: 1.2,
+  towerStyle: 'round',
+  gateStyle: 'arch',
+  gateWidth: 2,
+  battlementSize: 0.4,
+  keepHeight: 10, keepWidth: 4,
+  moat: true, moatWidth: 3,
+  drawbridge: true,
+  bannerColor: '#8b1a1a',
+  flagCount: 4,
+  windowCount: 8,
+  torchCount: 8,
+  courtyard: true,
+};
+
+let castleGroup = null;
+let torchLights = [];
+let torchParticles = [];
+let torchesLit = false;
+let torchAnimFrame = 0;
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD CASTLE
+------------------------------- */
+function buildCastle() {
+  if (castleGroup) scene.remove(castleGroup);
+  castleGroup = new THREE.Group();
+  torchLights = [];
+
+  const wallMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.wallColor), roughness: 0.85, metalness: 0.05 });
+  const stoneMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.stoneColor), roughness: 0.8, metalness: 0.08 });
+  const darkStone = new THREE.MeshStandardMaterial({ color: 0x3a3020, roughness: 0.9, metalness: 0.05 });
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.85, metalness: 0.02 });
+  const ironMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.6, metalness: 0.65 });
+  const bannerMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.bannerColor), roughness: 0.6, metalness: 0.1, side: THREE.DoubleSide });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.6, emissive: new THREE.Color(0x223344), emissiveIntensity: 0.3 });
+  const torchMat = new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.7, metalness: 0.3 });
+  const fireMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.85 });
+  const moatMat = new THREE.MeshStandardMaterial({ color: 0x1a3a5a, roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.8 });
+  const bridgeMat = new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.8, metalness: 0.02 });
+
+  const halfSize = 6;
+  const wh = P.wallHeight;
+  const wt = P.wallThickness;
+  const baseY = 0;
+
+  /* ---- MOAT ---- */
+  if (P.moat) {
+    const moatW = P.moatWidth;
+    const moatR = halfSize + moatW / 2 + wt;
+    const moatGeo = new THREE.TorusGeometry(moatR, moatW / 2, 8, 48);
+    const moatMesh = new THREE.Mesh(moatGeo, moatMat);
+    moatMesh.rotation.x = Math.PI / 2;
+    moatMesh.position.y = -0.3;
+    castleGroup.add(moatMesh);
+
+    /* Moat edge rings */
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 });
+    const outerEdge = new THREE.Mesh(new THREE.TorusGeometry(moatR + moatW / 2 + 0.15, 0.15, 8, 48), edgeMat);
+    outerEdge.rotation.x = Math.PI / 2;
+    outerEdge.position.y = 0.05;
+    castleGroup.add(outerEdge);
+    const innerEdge = new THREE.Mesh(new THREE.TorusGeometry(moatR - moatW / 2 - 0.15, 0.15, 8, 48), edgeMat);
+    innerEdge.rotation.x = Math.PI / 2;
+    innerEdge.position.y = 0.05;
+    castleGroup.add(innerEdge);
+  }
+
+  /* ---- DRAWBRIDGE ---- */
+  if (P.drawbridge && P.moat) {
+    const bridgeGeo = new THREE.BoxGeometry(P.gateWidth + 0.6, 0.2, P.moatWidth + 1);
+    const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
+    bridge.position.set(0, 0.05, -halfSize - P.moatWidth / 2 - wt / 2);
+    bridge.castShadow = true;
+    bridge.receiveShadow = true;
+    castleGroup.add(bridge);
+
+    /* Chain cables */
+    const chainMat = ironMat;
+    for (let side = -1; side <= 1; side += 2) {
+      const chainGeo = new THREE.CylinderGeometry(0.03, 0.03, P.moatWidth + 2, 6);
+      const chain = new THREE.Mesh(chainGeo, chainMat);
+      chain.position.set(side * (P.gateWidth / 2 + 0.3), wh * 0.6, -halfSize - P.moatWidth / 2);
+      chain.rotation.x = Math.PI * 0.12;
+      castleGroup.add(chain);
+    }
+  }
+
+  /* ---- WALLS (4 segments) ---- */
+  const wallLength = halfSize * 2;
+  const wallData = [
+    { rx: 0, rz: 0, pos: [0, wh / 2 + baseY, -halfSize] },
+    { rx: 0, rz: 0, pos: [0, wh / 2 + baseY, halfSize] },
+    { rx: 0, rz: Math.PI / 2, pos: [-halfSize, wh / 2 + baseY, 0] },
+    { rx: 0, rz: Math.PI / 2, pos: [halfSize, wh / 2 + baseY, 0] },
+  ];
+
+  wallData.forEach(function(w) {
+    const wallGeo = new THREE.BoxGeometry(wallLength, wh, wt);
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.position.set(w.pos[0], w.pos[1], w.pos[2]);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    castleGroup.add(wall);
+  });
+
+  /* Wall stone detail strips */
+  for (let i = 0; i < 3; i++) {
+    const stripY = wh * (0.2 + i * 0.3);
+    const stripGeo = new THREE.BoxGeometry(wallLength + 0.05, 0.12, wt + 0.05);
+    const strip = new THREE.Mesh(stripGeo, stoneMat);
+    strip.position.set(0, stripY + baseY, -halfSize);
+    castleGroup.add(strip);
+    const strip2 = new THREE.Mesh(stripGeo.clone(), stoneMat);
+    strip2.position.set(0, stripY + baseY, halfSize);
+    castleGroup.add(strip2);
+    const strip3 = new THREE.Mesh(new THREE.BoxGeometry(wt + 0.05, 0.12, wallLength + 0.05), stoneMat);
+    strip3.position.set(-halfSize, stripY + baseY, 0);
+    castleGroup.add(strip3);
+    const strip4 = new THREE.Mesh(new THREE.BoxGeometry(wt + 0.05, 0.12, wallLength + 0.05), stoneMat);
+    strip4.position.set(halfSize, stripY + baseY, 0);
+    castleGroup.add(strip4);
+  }
+
+  /* ---- BATTLEMENTS ---- */
+  const bSize = P.battlementSize;
+  const bCount = Math.floor(wallLength / (bSize * 2));
+  const wallPositions = [
+    { axis: 'z', pos: [-halfSize, wh + baseY, -halfSize], dir: [0, 0, 1], length: wallLength },
+    { axis: 'z', pos: [-halfSize, wh + baseY, halfSize], dir: [0, 0, 1], length: wallLength },
+    { axis: 'x', pos: [-halfSize, wh + baseY, -halfSize], dir: [1, 0, 0], length: wallLength },
+    { axis: 'x', pos: [halfSize, wh + baseY, -halfSize], dir: [1, 0, 0], length: wallLength },
+  ];
+
+  wallPositions.forEach(function(wp) {
+    const bc = Math.floor(wp.length / (bSize * 2.5));
+    for (let i = 0; i < bc; i++) {
+      if (i % 2 === 0) {
+        const bGeo = new THREE.BoxGeometry(bSize, bSize * 1.5, wt + 0.1);
+        const bMesh = new THREE.Mesh(bGeo, wallMat);
+        const t = (i / bc) * wp.length;
+        if (wp.axis === 'z') {
+          bMesh.position.set(wp.pos[0] + t + bSize, wp.pos[1] + bSize * 0.75, wp.pos[2]);
+        } else {
+          bMesh.position.set(wp.pos[0], wp.pos[1] + bSize * 0.75, wp.pos[2] + t + bSize);
+        }
+        bMesh.castShadow = true;
+        castleGroup.add(bMesh);
+      }
+    }
+  });
+
+  /* ---- TOWERS ---- */
+  const towerPositions = [
+    [-halfSize, -halfSize],
+    [halfSize, -halfSize],
+    [halfSize, halfSize],
+    [-halfSize, halfSize],
+  ];
+
+  /* Add extra tower positions for > 4 towers */
+  if (P.towerCount > 4) {
+    towerPositions.push([0, -halfSize]);
+    towerPositions.push([0, halfSize]);
+    towerPositions.push([-halfSize, 0]);
+    towerPositions.push([halfSize, 0]);
+  }
+
+  const towerCount = Math.min(P.towerCount, towerPositions.length);
+  for (let i = 0; i < towerCount; i++) {
+    const tx = towerPositions[i][0];
+    const tz = towerPositions[i][1];
+    const tH = P.towerHeight;
+    const tR = P.towerRadius;
+
+    if (P.towerStyle === 'round') {
+      const towerGeo = new THREE.CylinderGeometry(tR, tR * 1.05, tH, 16);
+      const tower = new THREE.Mesh(towerGeo, wallMat);
+      tower.position.set(tx, tH / 2 + baseY, tz);
+      tower.castShadow = true;
+      tower.receiveShadow = true;
+      castleGroup.add(tower);
+
+      /* Conical roof */
+      const roofGeo = new THREE.ConeGeometry(tR * 1.3, tH * 0.3, 16);
+      const roofMat = new THREE.MeshStandardMaterial({ color: 0x4a2a10, roughness: 0.75, metalness: 0.1 });
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.set(tx, tH + tH * 0.15 + baseY, tz);
+      roof.castShadow = true;
+      castleGroup.add(roof);
+
+      /* Tower stone bands */
+      for (let b = 0; b < 3; b++) {
+        const bandGeo = new THREE.TorusGeometry(tR + 0.05, 0.08, 6, 16);
+        const band = new THREE.Mesh(bandGeo, stoneMat);
+        band.rotation.x = Math.PI / 2;
+        band.position.set(tx, tH * (0.2 + b * 0.3) + baseY, tz);
+        castleGroup.add(band);
+      }
+    } else {
+      /* Square tower */
+      const towerGeo = new THREE.BoxGeometry(tR * 2, tH, tR * 2);
+      const tower = new THREE.Mesh(towerGeo, wallMat);
+      tower.position.set(tx, tH / 2 + baseY, tz);
+      tower.castShadow = true;
+      tower.receiveShadow = true;
+      castleGroup.add(tower);
+
+      /* Crenellations on square tower */
+      for (let c = 0; c < 4; c++) {
+        for (let j = 0; j < 3; j++) {
+          if (j % 2 === 0) {
+            const cGeo = new THREE.BoxGeometry(tR * 0.4, bSize * 1.2, bSize * 0.8);
+            const cMesh = new THREE.Mesh(cGeo, wallMat);
+            const angle = c * Math.PI / 2;
+            const offset = (j - 1) * tR * 0.6;
+            if (c === 0 || c === 2) {
+              cMesh.position.set(tx + (c === 0 ? -tR : tR), tH + bSize * 0.6 + baseY, tz + offset);
+            } else {
+              cMesh.position.set(tx + offset, tH + bSize * 0.6 + baseY, tz + (c === 1 ? -tR : tR));
+            }
+            cMesh.castShadow = true;
+            castleGroup.add(cMesh);
+          }
+        }
+      }
+
+      /* Flat roof with slight raised edge */
+      const capGeo = new THREE.BoxGeometry(tR * 2 + 0.2, 0.15, tR * 2 + 0.2);
+      const cap = new THREE.Mesh(capGeo, stoneMat);
+      cap.position.set(tx, tH + baseY, tz);
+      castleGroup.add(cap);
+    }
+
+    /* Tower windows */
+    if (P.windowCount > 0) {
+      const winCount = Math.min(2, Math.floor(P.windowCount / towerCount));
+      for (let w = 0; w < winCount; w++) {
+        const winAngle = (w / winCount) * Math.PI * 2;
+        const winR = P.towerStyle === 'round' ? tR + 0.01 : tR + 0.01;
+        const winX = tx + Math.cos(winAngle) * winR;
+        const winZ = tz + Math.sin(winAngle) * winR;
+        const winGeo = new THREE.CircleGeometry(0.2, 12);
+        const win = new THREE.Mesh(winGeo, glassMat);
+        win.position.set(winX, tH * 0.5 + baseY, winZ);
+        win.lookAt(winX * 2, tH * 0.5 + baseY, winZ * 2);
+        castleGroup.add(win);
+      }
+    }
+  }
+
+  /* ---- GATE ---- */
+  const gateY = baseY;
+  const gateW = P.gateWidth;
+  const gateH = wh * 0.65;
+
+  if (P.gateStyle === 'arch') {
+    /* Two pillars */
+    const pillarGeo = new THREE.BoxGeometry(0.3, gateH, wt + 0.1);
+    const pillarL = new THREE.Mesh(pillarGeo, darkStone);
+    pillarL.position.set(-gateW / 2, gateH / 2 + gateY, -halfSize);
+    pillarL.castShadow = true;
+    castleGroup.add(pillarL);
+    const pillarR = new THREE.Mesh(pillarGeo.clone(), darkStone);
+    pillarR.position.set(gateW / 2, gateH / 2 + gateY, -halfSize);
+    pillarR.castShadow = true;
+    castleGroup.add(pillarR);
+
+    /* Arch top - half torus */
+    const archGeo = new THREE.TorusGeometry(gateW / 2, 0.2, 8, 16, Math.PI);
+    const arch = new THREE.Mesh(archGeo, darkStone);
+    arch.position.set(0, gateH + gateY, -halfSize);
+    arch.rotation.z = Math.PI;
+    castleGroup.add(arch);
+
+    /* Dark interior */
+    const interiorGeo = new THREE.PlaneGeometry(gateW - 0.2, gateH - 0.2);
+    const interiorMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1 });
+    const interior = new THREE.Mesh(interiorGeo, interiorMat);
+    interior.position.set(0, gateH / 2 + gateY + 0.1, -halfSize + 0.01);
+    castleGroup.add(interior);
+  } else if (P.gateStyle === 'double') {
+    /* Double doors */
+    const doorGeo = new THREE.BoxGeometry(gateW / 2 - 0.1, gateH, 0.15);
+    const doorL = new THREE.Mesh(doorGeo, woodMat);
+    doorL.position.set(-gateW / 4 - 0.05, gateH / 2 + gateY, -halfSize);
+    doorL.castShadow = true;
+    castleGroup.add(doorL);
+    const doorR = new THREE.Mesh(doorGeo.clone(), woodMat);
+    doorR.position.set(gateW / 4 + 0.05, gateH / 2 + gateY, -halfSize);
+    doorR.castShadow = true;
+    castleGroup.add(doorR);
+
+    /* Iron bands */
+    for (let d = 0; d < 3; d++) {
+      const bandY = gateH * (0.2 + d * 0.3);
+      const bandGeo = new THREE.BoxGeometry(gateW + 0.1, 0.08, 0.17);
+      const band = new THREE.Mesh(bandGeo, ironMat);
+      band.position.set(0, bandY + gateY, -halfSize);
+      castleGroup.add(band);
+    }
+
+    /* Door ring handles */
+    for (let side = -1; side <= 1; side += 2) {
+      const ringGeo = new THREE.TorusGeometry(0.12, 0.02, 6, 12);
+      const ring = new THREE.Mesh(ringGeo, ironMat);
+      ring.position.set(side * (gateW / 4 + 0.05), gateH * 0.45 + gateY, -halfSize - 0.1);
+      castleGroup.add(ring);
+    }
+  } else {
+    /* Portcullis */
+    const frameGeo = new THREE.BoxGeometry(gateW + 0.3, gateH + 0.3, 0.15);
+    const frame = new THREE.Mesh(frameGeo, ironMat);
+    frame.position.set(0, gateH / 2 + gateY, -halfSize);
+    frame.castShadow = true;
+    castleGroup.add(frame);
+
+    /* Grid bars */
+    const barCount = Math.floor(gateW / 0.3);
+    for (let b = 0; b < barCount; b++) {
+      const barGeo = new THREE.CylinderGeometry(0.03, 0.03, gateH, 6);
+      const bar = new THREE.Mesh(barGeo, ironMat);
+      bar.position.set(-gateW / 2 + 0.15 + b * (gateW / barCount), gateH / 2 + gateY, -halfSize - 0.08);
+      castleGroup.add(bar);
+    }
+    /* Horizontal bars */
+    const hBarCount = Math.floor(gateH / 0.4);
+    for (let h = 0; h < hBarCount; h++) {
+      const hBarGeo = new THREE.CylinderGeometry(0.025, 0.025, gateW, 6);
+      const hBar = new THREE.Mesh(hBarGeo, ironMat);
+      hBar.rotation.z = Math.PI / 2;
+      hBar.position.set(0, gateH * (0.15 + h * (1 / hBarCount)) + gateY, -halfSize - 0.08);
+      castleGroup.add(hBar);
+    }
+
+    /* Dark interior */
+    const interiorGeo = new THREE.PlaneGeometry(gateW - 0.1, gateH - 0.1);
+    const interiorMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1 });
+    const interior = new THREE.Mesh(interiorGeo, interiorMat);
+    interior.position.set(0, gateH / 2 + gateY + 0.1, -halfSize + 0.02);
+    castleGroup.add(interior);
+  }
+
+  /* Gate arch top (for all styles) */
+  const archTopGeo = new THREE.BoxGeometry(gateW + 0.6, 0.35, wt + 0.2);
+  const archTop = new THREE.Mesh(archTopGeo, darkStone);
+  archTop.position.set(0, gateH + 0.15 + gateY, -halfSize);
+  castleGroup.add(archTop);
+
+  /* ---- KEEP ---- */
+  const kH = P.keepHeight;
+  const kW = P.keepWidth;
+  const keepGeo = new THREE.BoxGeometry(kW, kH, kW);
+  const keep = new THREE.Mesh(keepGeo, wallMat);
+  keep.position.set(0, kH / 2 + baseY, 0);
+  keep.castShadow = true;
+  keep.receiveShadow = true;
+  castleGroup.add(keep);
+
+  /* Keep roof */
+  const keepRoofGeo = new THREE.ConeGeometry(kW * 0.75, kH * 0.2, 4);
+  const keepRoofMat = new THREE.MeshStandardMaterial({ color: 0x3a2a10, roughness: 0.8 });
+  const keepRoof = new THREE.Mesh(keepRoofGeo, keepRoofMat);
+  keepRoof.position.set(0, kH + kH * 0.1 + baseY, 0);
+  keepRoof.rotation.y = Math.PI / 4;
+  keepRoof.castShadow = true;
+  castleGroup.add(keepRoof);
+
+  /* Keep crenellations */
+  for (let c = 0; c < 4; c++) {
+    for (let j = 0; j < 4; j++) {
+      if (j % 2 === 0) {
+        const cGeo = new THREE.BoxGeometry(kW * 0.2, bSize * 1.5, bSize);
+        const cMesh = new THREE.Mesh(cGeo, wallMat);
+        const angle = c * Math.PI / 2;
+        const offset = (j - 1.5) * kW * 0.22;
+        if (c === 0 || c === 2) {
+          cMesh.position.set((c === 0 ? -kW / 2 : kW / 2), kH + bSize * 0.75 + baseY, offset);
+        } else {
+          cMesh.rotation.y = Math.PI / 2;
+          cMesh.position.set(offset, kH + bSize * 0.75 + baseY, (c === 1 ? -kW / 2 : kW / 2));
+        }
+        cMesh.castShadow = true;
+        castleGroup.add(cMesh);
+      }
+    }
+  }
+
+  /* Keep stone detail */
+  for (let d = 0; d < 2; d++) {
+    const dY = kH * (0.3 + d * 0.35);
+    const dGeo = new THREE.BoxGeometry(kW + 0.1, 0.12, kW + 0.1);
+    const dMesh = new THREE.Mesh(dGeo, stoneMat);
+    dMesh.position.set(0, dY + baseY, 0);
+    castleGroup.add(dMesh);
+  }
+
+  /* Keep windows */
+  const keepWinCount = Math.min(4, Math.floor(P.windowCount / 3));
+  for (let w = 0; w < keepWinCount; w++) {
+    const wAngle = (w / keepWinCount) * Math.PI * 2;
+    const wX = Math.cos(wAngle) * (kW / 2 + 0.01);
+    const wZ = Math.sin(wAngle) * (kW / 2 + 0.01);
+    const wGeo = new THREE.PlaneGeometry(0.5, 0.8);
+    const wMesh = new THREE.Mesh(wGeo, glassMat);
+    wMesh.position.set(wX, kH * 0.55 + baseY, wZ);
+    wMesh.lookAt(wX * 3, kH * 0.55 + baseY, wZ * 3);
+    castleGroup.add(wMesh);
+  }
+
+  /* ---- COURTYARD ---- */
+  if (P.courtyard) {
+    const courtGeo = new THREE.BoxGeometry(kW * 1.6, 0.08, kW * 1.6);
+    const courtMat = new THREE.MeshStandardMaterial({ color: 0x6a5a40, roughness: 0.9 });
+    const court = new THREE.Mesh(courtGeo, courtMat);
+    court.position.set(0, 0.04, 0);
+    court.receiveShadow = true;
+    castleGroup.add(court);
+  }
+
+  /* ---- WINDOWS (wall windows) ---- */
+  const wallWinCount = Math.max(0, P.windowCount - keepWinCount - P.towerCount * 2);
+  for (let w = 0; w < wallWinCount; w++) {
+    const side = w % 4;
+    const row = Math.floor(w / 4);
+    const winGeo = new THREE.PlaneGeometry(0.4, 0.6);
+    const winMesh = new THREE.Mesh(winGeo, glassMat);
+    let wx, wy, wz, rotY = 0;
+    wy = wh * 0.4 + row * wh * 0.2 + baseY;
+    if (side === 0) { wx = -2 + (w % 2) * 4; wz = -halfSize - 0.01; rotY = 0; }
+    else if (side === 1) { wx = -2 + (w % 2) * 4; wz = halfSize + 0.01; rotY = Math.PI; }
+    else if (side === 2) { wx = -halfSize - 0.01; wz = -2 + (w % 2) * 4; rotY = Math.PI / 2; }
+    else { wx = halfSize + 0.01; wz = -2 + (w % 2) * 4; rotY = -Math.PI / 2; }
+    winMesh.position.set(wx, wy, wz);
+    winMesh.rotation.y = rotY;
+    castleGroup.add(winMesh);
+  }
+
+  /* ---- BANNERS ---- */
+  if (P.flagCount > 0) {
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x5a4a30, roughness: 0.7, metalness: 0.3 });
+    const bannerPositions = [];
+
+    /* On towers */
+    for (let i = 0; i < Math.min(P.towerCount, towerPositions.length); i++) {
+      bannerPositions.push([towerPositions[i][0], P.towerHeight + baseY + 0.5, towerPositions[i][1]]);
+    }
+    /* Extra banner positions on walls */
+    if (P.flagCount > P.towerCount) {
+      bannerPositions.push([0, wh + 0.5, -halfSize]);
+      bannerPositions.push([0, wh + 0.5, halfSize]);
+      bannerPositions.push([-halfSize, wh + 0.5, 0]);
+      bannerPositions.push([halfSize, wh + 0.5, 0]);
+    }
+
+    const bannerCount = Math.min(P.flagCount, bannerPositions.length);
+    for (let i = 0; i < bannerCount; i++) {
+      const bp = bannerPositions[i];
+      /* Pole */
+      const poleGeo = new THREE.CylinderGeometry(0.03, 0.03, 2, 6);
+      const pole = new THREE.Mesh(poleGeo, poleMat);
+      pole.position.set(bp[0], bp[1] + 1, bp[2]);
+      castleGroup.add(pole);
+
+      /* Flag */
+      const flagGeo = new THREE.PlaneGeometry(0.8, 0.5);
+      const flag = new THREE.Mesh(flagGeo, bannerMat);
+      flag.position.set(bp[0] + 0.45, bp[1] + 1.5, bp[2]);
+      flag.rotation.y = Math.PI / 2;
+      castleGroup.add(flag);
+
+      /* Small ball on top */
+      const ballGeo = new THREE.SphereGeometry(0.06, 8, 8);
+      const ball = new THREE.Mesh(ballGeo, ironMat);
+      ball.position.set(bp[0], bp[1] + 2, bp[2]);
+      castleGroup.add(ball);
+    }
+  }
+
+  /* ---- TORCHES ---- */
+  torchLights = [];
+  if (P.torchCount > 0) {
+    const torchPositions = [];
+    /* Torches along walls */
+    const perSide = Math.ceil(P.torchCount / 4);
+    for (let side = 0; side < 4; side++) {
+      for (let t = 0; t < perSide; t++) {
+        if (torchPositions.length >= P.torchCount) break;
+        const frac = (t + 1) / (perSide + 1);
+        let tx, tz, tNormal;
+        if (side === 0) { tx = -halfSize + frac * wallLength; tz = -halfSize; tNormal = [0, 0, -1]; }
+        else if (side === 1) { tx = -halfSize + frac * wallLength; tz = halfSize; tNormal = [0, 0, 1]; }
+        else if (side === 2) { tx = -halfSize; tz = -halfSize + frac * wallLength; tNormal = [-1, 0, 0]; }
+        else { tx = halfSize; tz = -halfSize + frac * wallLength; tNormal = [1, 0, 0]; }
+        torchPositions.push([tx, wh * 0.7 + baseY, tz, tNormal]);
+      }
+    }
+
+    for (let i = 0; i < torchPositions.length; i++) {
+      const tp = torchPositions[i];
+      /* Bracket */
+      const bracketGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+      const bracket = new THREE.Mesh(bracketGeo, torchMat);
+      bracket.position.set(tp[0], tp[1], tp[2]);
+      castleGroup.add(bracket);
+
+      /* Torch stick */
+      const stickGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6);
+      const stick = new THREE.Mesh(stickGeo, torchMat);
+      stick.position.set(tp[0], tp[1] + 0.35, tp[2]);
+      castleGroup.add(stick);
+
+      /* Fire ball (glowing when lit) */
+      const fireGeo = new THREE.SphereGeometry(0.12, 8, 8);
+      const fireClone = fireMat.clone();
+      fireClone.opacity = 0;
+      const fire = new THREE.Mesh(fireGeo, fireClone);
+      fire.position.set(tp[0], tp[1] + 0.65, tp[2]);
+      castleGroup.add(fire);
+
+      /* Point light (off by default) */
+      const light = new THREE.PointLight(0xff8833, 0, 6);
+      light.position.set(tp[0], tp[1] + 0.7, tp[2]);
+      castleGroup.add(light);
+
+      torchLights.push({ fire: fire, light: light, basePos: [tp[0], tp[1] + 0.65, tp[2]] });
+    }
+  }
+
+  /* Update torch toggle state */
+  const torchToggle = document.getElementById('rb-torches');
+  if (torchToggle) torchToggle.checked = P.torchCount > 0;
+
+  scene.add(castleGroup);
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.4, phi: 1.0, radius: 20, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(6, Math.min(40, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 4;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 3, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.015; e.preventDefault(); }, { passive: false });
+
+let pinchDist0 = 0;
+canvas.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
+  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  e.preventDefault();
+}, { passive: false });
+canvas.addEventListener('touchend', function() { orbit.dragging = false; });
+canvas.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1 && orbit.dragging) {
+    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
+    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
+    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
+  }
+  if (e.touches.length === 2) {
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    orbit.radius *= pinchDist0 / d; pinchDist0 = d;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  torchAnimFrame++;
+  if (!orbit.dragging) orbit.theta += 0.002;
+  updateCamera();
+
+  /* Animate lit torches */
+  if (torchesLit) {
+    torchLights.forEach(function(t, i) {
+      const flicker = 0.7 + Math.sin(torchAnimFrame * 0.15 + i * 1.7) * 0.3;
+      t.light.intensity = 2.5 * flicker;
+      t.fire.material.opacity = 0.6 + Math.sin(torchAnimFrame * 0.2 + i) * 0.3;
+      const s = 0.9 + Math.sin(torchAnimFrame * 0.18 + i * 0.8) * 0.15;
+      t.fire.scale.setScalar(s);
+      t.fire.position.y = t.basePos[1] + Math.sin(torchAnimFrame * 0.12 + i) * 0.03;
+    });
+  }
+
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   SPEC OVERLAY
+------------------------------- */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.castleName || 'UNNAMED';
+  document.getElementById('sWalls').textContent = P.wallHeight + 'm tall';
+  document.getElementById('sTowers').textContent = P.towerCount + ' × ' + P.towerStyle;
+  document.getElementById('sKeep').textContent = P.keepHeight + 'm';
+  document.getElementById('sGate').textContent = P.gateStyle.charAt(0).toUpperCase() + P.gateStyle.slice(1);
+  document.getElementById('sMoat').textContent = P.moat ? P.moatWidth + 'm wide' : 'None';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-wallCol', P.wallColor);
+  sv('rb-stoneCol', P.stoneColor);
+  sv('rb-bannerCol', P.bannerColor);
+  sv('rb-wh', P.wallHeight); st('rb-whv', P.wallHeight.toFixed(1));
+  sv('rb-wt', P.wallThickness); st('rb-wtv', P.wallThickness.toFixed(1));
+  sv('rb-tc', P.towerCount); st('rb-tcv', P.towerCount);
+  sv('rb-th', P.towerHeight); st('rb-thv', P.towerHeight.toFixed(1));
+  sv('rb-ts', P.towerStyle);
+  sv('rb-gs', P.gateStyle);
+  sv('rb-gw', P.gateWidth); st('rb-gwv', P.gateWidth.toFixed(1));
+  sv('rb-kh', P.keepHeight); st('rb-khv', P.keepHeight.toFixed(1));
+  sv('rb-kw', P.keepWidth); st('rb-kwv', P.keepWidth.toFixed(1));
+  sc('rb-moat', P.moat);
+  sc('rb-drawbridge', P.drawbridge);
+  sc('rb-courtyard', P.courtyard);
+  sv('rb-fc', P.flagCount); st('rb-fcv', P.flagCount);
+  sc('rb-torches', P.torchCount > 0);
+  sv('rb-torchc', P.torchCount); st('rb-torchc', P.torchCount);
+}
+
+/* -------------------------------
+   STATS
+------------------------------- */
+function computeStats() {
+  const defense = Math.min(10, Math.round(
+    P.wallHeight * 0.6 + P.wallThickness * 1.5 + P.towerCount * 0.5 +
+    P.battlementSize * 5 + (P.moat ? 2 : 0) + (P.towerHeight > P.wallHeight ? 1 : 0)
+  ));
+  const grandeur = Math.min(10, Math.round(
+    P.keepHeight * 0.4 + P.towerCount * 0.3 + P.flagCount * 0.3 +
+    P.windowCount * 0.15 + (P.towerStyle === 'round' ? 1 : 0) + P.wallHeight * 0.2
+  ));
+  const comfort = Math.min(10, Math.round(
+    (P.courtyard ? 3 : 0) + P.windowCount * 0.2 + P.torchCount * 0.15 +
+    (P.drawbridge ? 1 : 0) + P.keepWidth * 0.3
+  ));
+  const access = Math.min(10, Math.round(
+    P.gateWidth * 1.5 + (P.drawbridge ? 3 : 0) + (P.gateStyle === 'portcullis' ? -1 : 0) +
+    (P.moat ? 0 : 2)
+  ));
+  return {
+    defense: Math.max(1, defense),
+    grandeur: Math.max(1, grandeur),
+    comfort: Math.max(1, comfort),
+    access: Math.max(1, access)
+  };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('castleStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">${P.castleName || 'Castle'} Stats</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Defense</span>${bar(s.defense, '#c9a84c')}<span class="stat-val">${s.defense}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Grandeur</span>${bar(s.grandeur, '#a78bfa')}<span class="stat-val">${s.grandeur}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Comfort</span>${bar(s.comfort, '#4ade80')}<span class="stat-val">${s.comfort}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Access</span>${bar(s.access, '#38bdf8')}<span class="stat-val">${s.access}</span></div>`;
+}
+
+/* -------------------------------
+   LIGHT TORCHES
+------------------------------- */
+function lightTorches() {
+  if (torchLights.length === 0) {
+    toast('No torches to light! Add some first.');
+    return;
+  }
+  torchesLit = !torchesLit;
+  if (torchesLit) {
+    toast('🔥 ' + (P.castleName || 'Your Castle') + ' is illuminated!');
+    sout('🔥 ' + (P.castleName || 'Your Castle') + ' is illuminated!');
+    document.getElementById('liveStatus').textContent = 'Torches lit!';
+  } else {
+    toast('Torches extinguished.');
+    sout('Torches extinguished.');
+    document.getElementById('liveStatus').textContent = 'Torches off.';
+    torchLights.forEach(function(t) {
+      t.light.intensity = 0;
+      t.fire.material.opacity = 0;
+    });
+  }
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(16).fill(false);
+
+const FACTS = {
+  name: 'The Tower of London has stood for over 900 years and has been a royal palace, prison, and fortress. It was founded by William the Conqueror in 1066.',
+  wallHeight: 'Castle walls were typically 2-6 metres thick to withstand siege engines and battering rams. The walls of Krak des Chevaliers were up to 8 metres thick.',
+  wallThickness: 'Thicker walls meant fewer arrowslits but greater resistance. Medieval engineers balanced defence with the need to see and shoot at attackers.',
+  wallColor: 'Castle stone varied by region: limestone in England, granite in Scotland, sandstone in France. The colour told you where the stone was quarried.',
+  stoneColor: 'Mortar was made from lime, sand, and water. Some Roman concrete formulas were so strong they still hold after 2000 years.',
+  towers: 'Round towers were harder to undermine than square ones because there were no corners to weaken. Castles like Bodiam used round corner towers.',
+  gate: 'The gatehouse was the most vulnerable point, so it was also the most heavily defended. Many had murder holes, drawbridges, and multiple portcullises.',
+  battlements: 'Battlements (crenellations) let defenders shoot through the gaps (crenels) and hide behind the solid parts (merlons). They became a symbol of lordship.',
+  keep: 'The keep was the last line of defence. The Tower of London\'s White Tower is 27 metres tall and has walls 4.5 metres thick at the base.',
+  moat: 'Moats could be wet (filled with water) or dry (a deep ditch). Some were stocked with fish to feed the garrison during a siege.',
+  drawbridge: 'Drawbridges could be raised in seconds. Some castles had counterweighted bridges that one person could operate with a windlass.',
+  banners: 'Banners identified the lord of the castle. Heraldry developed in the 12th century so knights could be recognised wearing helmets.',
+  windows: 'Early castle windows were tiny arrow slits. By the 14th century, larger decorative windows appeared as castles became more comfortable.',
+  torches: 'Torches were made from bundled reeds soaked in pitch or tallow. A castle might burn through hundreds of torches per week.',
+  courtyard: 'The courtyard was the heart of daily life. It held the well, the smithy, stables, kitchens, and space for mustering troops.',
+  quiz: 'Medieval castles inspired fantasy worlds from Tolkien\'s Minas Tirith to Game of Thrones\' Winterfell. Real history is the best fantasy.'
+};
+
+function opts(id, options, currentVal, onChange) {
+  return '<div class="opt-grid">' + options.map(function(o) {
+    return '<button class="opt-btn' + (currentVal === o.val ? ' sel' : '') + '" onclick="' + onChange + '(\'' + o.val + '\',this)">' +
+      '<span class="opt-icon">' + o.icon + '</span>' + o.label + '</button>';
+  }).join('') + '</div>';
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  return '<div class="swatch-row">' + colours.map(function(c) {
+    return '<div class="swatch' + (currentVal === c ? ' sel' : '') + '" style="background:' + c + '" onclick="' + onChange + '(\'' + c + '\',this)"></div>';
+  }).join('') + '</div>' +
+  '<div class="custom-colour"><span>Custom:</span><input type="color" value="' + currentVal + '" oninput="' + onChange + '(this.value,null)"></div>';
+}
+
+const STEPS = [
+
+/* 1 */ {
+  title: 'Name Your Castle',
+  tag: 'STEP 01 — IDENTITY',
+  intro: 'Every great castle has a name. Ironhold. Stormreach. The Dun Cow. Names carry history, legend, and fear. What will your fortress be called?',
+  boxes: [
+    { t:'box-c', tx: FACTS.name },
+    { t:'box-t', tx:'Keep it under 12 characters — it displays best on the spec overlay and profile card.' },
+  ],
+  tasks: ['Enter a castle name', 'Press Apply to lock it in'],
+  html: function() { return '<input class="name-input" id="castleName" maxlength="14" placeholder="E.G. IRONHOLD" value="' + (P.castleName === 'Ironhold' ? '' : P.castleName) + '">'; },
+  onApply: function() { P.castleName = document.getElementById('castleName')?.value?.trim() || 'Ironhold'; buildCastle(); sout('👑 ' + P.castleName + ' is founded. Now choose your walls.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */ {
+  title: 'Wall Height',
+  tag: 'STEP 02 — FORTIFICATION',
+  intro: 'How tall are your castle walls? Taller walls are harder to scale with ladders and siege towers, but they need more stone and skilled masons.',
+  boxes: [
+    { t:'box-c', tx: FACTS.wallHeight },
+    { t:'box-t', tx:'Start with Medium — it gives a balanced look with towers and the keep.' },
+  ],
+  tasks: ['Choose a wall height', 'Notice how towers and keep proportions change'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row">' +
+      '<span class="slider-lbl">Wall Height</span>' +
+      '<input type="range" min="3" max="8" step="0.5" value="' + P.wallHeight + '" ' +
+      'oninput="P.wallHeight=parseFloat(this.value);document.getElementById(\'whVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="whVal">' + P.wallHeight.toFixed(1) + 'm</span>' +
+    '</div></div>';
+  },
+  onApply: function() { buildCastle(); sout('Walls: ' + P.wallHeight + 'm tall. Strong foundation!'); document.getElementById('liveStatus').textContent = 'Walls set!'; }
+},
+
+/* 3 */ {
+  title: 'Wall Thickness',
+  tag: 'STEP 03 — RESILIENCE',
+  intro: 'Thicker walls can withstand battering rams and catapults. But they cost more stone and reduce the interior courtyard space.',
+  boxes: [
+    { t:'box-c', tx: FACTS.wallThickness },
+  ],
+  tasks: ['Set the wall thickness'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row">' +
+      '<span class="slider-lbl">Thickness</span>' +
+      '<input type="range" min="0.4" max="1.5" step="0.1" value="' + P.wallThickness + '" ' +
+      'oninput="P.wallThickness=parseFloat(this.value);document.getElementById(\'wtVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="wtVal">' + P.wallThickness.toFixed(1) + 'm</span>' +
+    '</div></div>';
+  },
+  onApply: function() { buildCastle(); sout('Wall thickness: ' + P.wallThickness + 'm. Siege-resistant!'); document.getElementById('liveStatus').textContent = 'Thickness set!'; }
+},
+
+/* 4 */ {
+  title: 'Wall Colour',
+  tag: 'STEP 04 — APPEARANCE',
+  intro: 'Choose the colour of your castle walls. Limestone is pale, granite is grey, sandstone is warm. The stone colour sets the entire mood of your fortress.',
+  boxes: [
+    { t:'box-c', tx: FACTS.wallColor },
+  ],
+  tasks: ['Choose a wall colour'],
+  html: function() {
+    return swatchRow('wc', ['#6b5a40','#8b7355','#a09080','#4a4a50','#3a3020','#7a6a50','#9a8a70','#c0b090'], P.wallColor, 'setWallColor');
+  },
+  onApply: function() { buildCastle(); sout('Wall colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 5 */ {
+  title: 'Stone Colour',
+  tag: 'STEP 05 — DETAIL',
+  intro: 'The secondary stone colour appears on decorative bands, window frames, and trim. A contrasting stone adds visual richness to the walls.',
+  boxes: [
+    { t:'box-c', tx: FACTS.stoneColor },
+  ],
+  tasks: ['Choose a stone accent colour'],
+  html: function() {
+    return swatchRow('sc', ['#8b7355','#6b5a40','#a09080','#4a4a50','#3a3020','#7a6a50','#c0b090','#5a5040'], P.stoneColor, 'setStoneColor');
+  },
+  onApply: function() { buildCastle(); sout('Stone accent applied!'); document.getElementById('liveStatus').textContent = 'Stone set!'; }
+},
+
+/* 6 */ {
+  title: 'Towers',
+  tag: 'STEP 06 — WATCHTOWERS',
+  intro: 'Towers give height advantage for archers and lookouts. More towers mean more defensive positions. Round towers are harder to undermine; square towers are easier to build.',
+  boxes: [
+    { t:'box-c', tx: FACTS.towers },
+    { t:'box-t', tx:'4 towers at the corners is the classic layout. Try 6 or 8 for a more imposing fortress.' },
+  ],
+  tasks: ['Set tower count, height, and style'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      '<div class="slider-row"><span class="slider-lbl">Count</span>' +
+      '<input type="range" min="0" max="8" step="1" value="' + P.towerCount + '" ' +
+      'oninput="P.towerCount=parseInt(this.value);document.getElementById(\'tcVal\').textContent=this.value;buildCastle()">' +
+      '<span class="slider-val" id="tcVal">' + P.towerCount + '</span></div>' +
+      '<div class="slider-row"><span class="slider-lbl">Height</span>' +
+      '<input type="range" min="4" max="14" step="0.5" value="' + P.towerHeight + '" ' +
+      'oninput="P.towerHeight=parseFloat(this.value);document.getElementById(\'thVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="thVal">' + P.towerHeight.toFixed(1) + 'm</span></div>' +
+      '<div class="slider-row"><span class="slider-lbl">Style</span>' +
+      '<select onchange="P.towerStyle=this.value;buildCastle()"><option value="round"' + (P.towerStyle === 'round' ? ' selected' : '') + '>Round</option><option value="square"' + (P.towerStyle === 'square' ? ' selected' : '') + '>Square</option></select></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout(P.towerCount + ' ' + P.towerStyle + ' towers, ' + P.towerHeight + 'm tall.'); document.getElementById('liveStatus').textContent = 'Towers set!'; }
+},
+
+/* 7 */ {
+  title: 'Gate Style',
+  tag: 'STEP 07 — ENTRANCE',
+  intro: 'The gate is the castle\'s weak point — and its most impressive feature. An arch gate is classic. Double doors are grand. A portcullis is imposing and heavily defended.',
+  boxes: [
+    { t:'box-c', tx: FACTS.gate },
+  ],
+  tasks: ['Choose a gate style', 'Set the gate width'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      opts('gate', [
+        { val:'arch', icon:'🏰', label:'Arch' },
+        { val:'double', icon:'🚪', label:'Double Door' },
+        { val:'portcullis', icon:'⚔', label:'Portcullis' },
+      ], P.gateStyle, 'setGateStyle') +
+      '<div class="slider-row"><span class="slider-lbl">Width</span>' +
+      '<input type="range" min="1" max="4" step="0.2" value="' + P.gateWidth + '" ' +
+      'oninput="P.gateWidth=parseFloat(this.value);document.getElementById(\'gwVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="gwVal">' + P.gateWidth.toFixed(1) + 'm</span></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout('Gate: ' + P.gateStyle + ', ' + P.gateWidth + 'm wide.'); document.getElementById('liveStatus').textContent = 'Gate set!'; }
+},
+
+/* 8 */ {
+  title: 'Battlements',
+  tag: 'STEP 08 — CRENELLATIONS',
+  intro: 'The notched pattern along the wall top is called crenellation. The solid parts (merlons) give cover, while the gaps (crenels) let archers fire.',
+  boxes: [
+    { t:'box-c', tx: FACTS.battlements },
+  ],
+  tasks: ['Set the battlement size'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row">' +
+      '<span class="slider-lbl">Size</span>' +
+      '<input type="range" min="0.2" max="0.8" step="0.05" value="' + P.battlementSize + '" ' +
+      'oninput="P.battlementSize=parseFloat(this.value);document.getElementById(\'bsVal\').textContent=parseFloat(this.value).toFixed(2)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="bsVal">' + P.battlementSize.toFixed(2) + 'm</span>' +
+    '</div></div>';
+  },
+  onApply: function() { buildCastle(); sout('Battlements: ' + P.battlementSize.toFixed(2) + 'm. Defenders have cover!'); document.getElementById('liveStatus').textContent = 'Battlements set!'; }
+},
+
+/* 9 */ {
+  title: 'The Keep',
+  tag: 'STEP 09 — STRONGHOLD',
+  intro: 'The keep is the innermost stronghold — the lord\'s residence and last refuge. A taller keep dominates the skyline. A wider keep provides more living space.',
+  boxes: [
+    { t:'box-c', tx: FACTS.keep },
+  ],
+  tasks: ['Set the keep height and width'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      '<div class="slider-row"><span class="slider-lbl">Height</span>' +
+      '<input type="range" min="5" max="16" step="0.5" value="' + P.keepHeight + '" ' +
+      'oninput="P.keepHeight=parseFloat(this.value);document.getElementById(\'khVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="khVal">' + P.keepHeight.toFixed(1) + 'm</span></div>' +
+      '<div class="slider-row"><span class="slider-lbl">Width</span>' +
+      '<input type="range" min="2" max="6" step="0.2" value="' + P.keepWidth + '" ' +
+      'oninput="P.keepWidth=parseFloat(this.value);document.getElementById(\'kwVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="kwVal">' + P.keepWidth.toFixed(1) + 'm</span></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout('Keep: ' + P.keepHeight + 'm tall, ' + P.keepWidth + 'm wide.'); document.getElementById('liveStatus').textContent = 'Keep built!'; }
+},
+
+/* 10 */ {
+  title: 'The Moat',
+  tag: 'STEP 10 — WATER DEFENCE',
+  intro: 'A moat surrounds the castle with water or a deep ditch, preventing miners from tunneling under the walls and stopping siege towers from reaching them.',
+  boxes: [
+    { t:'box-c', tx: FACTS.moat },
+  ],
+  tasks: ['Toggle the moat', 'Set its width'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">' +
+      '<input type="checkbox" ' + (P.moat ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" ' +
+      'onchange="P.moat=this.checked;buildCastle()"> Surround with a moat</label>' +
+      '<div class="slider-row"><span class="slider-lbl">Width</span>' +
+      '<input type="range" min="1" max="6" step="0.5" value="' + P.moatWidth + '" ' +
+      'oninput="P.moatWidth=parseFloat(this.value);document.getElementById(\'mwVal\').textContent=parseFloat(this.value).toFixed(1)+\'m\';buildCastle()">' +
+      '<span class="slider-val" id="mwVal">' + P.moatWidth.toFixed(1) + 'm</span></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout(P.moat ? 'Moat: ' + P.moatWidth + 'm wide. No siege towers getting through!' : 'No moat — open ground defence.'); document.getElementById('liveStatus').textContent = P.moat ? 'Moat added!' : 'No moat'; }
+},
+
+/* 11 */ {
+  title: 'Drawbridge',
+  tag: 'STEP 11 — CROSSING',
+  intro: 'A drawbridge spans the moat and can be raised to seal the gate. Counterweighted bridges could be raised by a single person with a windlass mechanism.',
+  boxes: [
+    { t:'box-c', tx: FACTS.drawbridge },
+    { t:'box-t', tx:'Only appears if you have a moat enabled.' },
+  ],
+  tasks: ['Toggle the drawbridge'],
+  html: function() {
+    return '<div style="padding:6px 0"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text)">' +
+      '<input type="checkbox" ' + (P.drawbridge ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" ' +
+      'onchange="P.drawbridge=this.checked;buildCastle()"> Add drawbridge</label></div>';
+  },
+  onApply: function() { buildCastle(); sout(P.drawbridge ? 'Drawbridge installed! Chain-operated.' : 'No drawbridge — bridge or open approach.'); document.getElementById('liveStatus').textContent = P.drawbridge ? 'Bridge added!' : 'No bridge'; }
+},
+
+/* 12 */ {
+  title: 'Banners & Flags',
+  tag: 'STEP 12 — HERALDRY',
+  intro: 'Banners identify the lord of the castle and display their coat of arms. Coloured flags flying from towers were a sign of wealth and power.',
+  boxes: [
+    { t:'box-c', tx: FACTS.banners },
+  ],
+  tasks: ['Choose banner colour', 'Set flag count'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      swatchRow('bc', ['#8b1a1a','#1a3a6b','#2a5a2a','#6b4a1a','#4a1a5a','#1a5a5a','#c9a84c','#ffffff'], P.bannerColor, 'setBannerColor') +
+      '<div class="slider-row"><span class="slider-lbl">Flags</span>' +
+      '<input type="range" min="0" max="8" step="1" value="' + P.flagCount + '" ' +
+      'oninput="P.flagCount=parseInt(this.value);document.getElementById(\'fcVal\').textContent=this.value;buildCastle()">' +
+      '<span class="slider-val" id="fcVal">' + P.flagCount + '</span></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout(P.flagCount + ' banners fly over ' + P.castleName + '.'); document.getElementById('liveStatus').textContent = 'Banners up!'; }
+},
+
+/* 13 */ {
+  title: 'Windows',
+  tag: 'STEP 13 — LIGHT',
+  intro: 'Windows let light into the castle but also create weak points. Early windows were narrow arrow slits. Later castles had larger decorative windows.',
+  boxes: [
+    { t:'box-c', tx: FACTS.windows },
+  ],
+  tasks: ['Set the window count'],
+  html: function() {
+    return '<div style="padding:6px 0"><div class="slider-row">' +
+      '<span class="slider-lbl">Windows</span>' +
+      '<input type="range" min="0" max="16" step="1" value="' + P.windowCount + '" ' +
+      'oninput="P.windowCount=parseInt(this.value);document.getElementById(\'wncVal\').textContent=this.value;buildCastle()">' +
+      '<span class="slider-val" id="wncVal">' + P.windowCount + '</span>' +
+    '</div></div>';
+  },
+  onApply: function() { buildCastle(); sout(P.windowCount + ' windows let light into the castle.'); document.getElementById('liveStatus').textContent = 'Windows set!'; }
+},
+
+/* 14 */ {
+  title: 'Torches',
+  tag: 'STEP 14 — ILLUMINATION',
+  intro: 'Torches light the castle walls and courtyards. They can be lit in the final step for a dramatic fire-lit scene. Set the count and position now.',
+  boxes: [
+    { t:'box-c', tx: FACTS.torches },
+  ],
+  tasks: ['Toggle torches on', 'Set the torch count'],
+  html: function() {
+    return '<div style="padding:6px 0">' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">' +
+      '<input type="checkbox" ' + (P.torchCount > 0 ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" ' +
+      'onchange="P.torchCount=this.checked?8:0;buildCastle()"> Enable torches</label>' +
+      '<div class="slider-row"><span class="slider-lbl">Count</span>' +
+      '<input type="range" min="2" max="16" step="2" value="' + P.torchCount + '" ' +
+      'oninput="P.torchCount=parseInt(this.value);document.getElementById(\'tnVal\').textContent=this.value;buildCastle()">' +
+      '<span class="slider-val" id="tnVal">' + P.torchCount + '</span></div>' +
+    '</div>';
+  },
+  onApply: function() { buildCastle(); sout(P.torchCount + ' torches placed. Light them in the final step!'); document.getElementById('liveStatus').textContent = 'Torches placed!'; }
+},
+
+/* 15 */ {
+  title: 'Stats & Preview',
+  tag: 'STEP 15 — OVERVIEW',
+  intro: 'Your castle is complete. Review its statistics — Defense, Grandeur, Comfort, and Accessibility — then head to the final step to light the torches.',
+  boxes: [
+    { t:'box-r', tx:'<strong>' + (P.castleName || 'Your Castle') + '</strong> — Rotate the 3D view to admire your creation from every angle.' },
+  ],
+  tasks: ['Review your castle stats', 'Rotate the 3D view'],
+  html: function() {
+    const s = computeStats();
+    return '<div style="padding:8px 0">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:var(--acc-lt);letter-spacing:.08em;margin-bottom:8px">' + (P.castleName || 'YOUR CASTLE') + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
+      statCard('Defense', s.defense, '#c9a84c', 'Walls, towers, battlements, moat') +
+      statCard('Grandeur', s.grandeur, '#a78bfa', 'Keep, towers, banners, windows') +
+      statCard('Comfort', s.comfort, '#4ade80', 'Courtyard, windows, torches') +
+      statCard('Access', s.access, '#38bdf8', 'Gate width, drawbridge') +
+      '</div></div>';
+  },
+  onApply: function() { sout('Stats reviewed. Ready for the final step!'); document.getElementById('liveStatus').textContent = 'Stats reviewed!'; }
+},
+
+/* 16 */ {
+  title: 'Light the Torches!',
+  tag: 'STEP 16 — ILLUMINATION',
+  intro: 'The sun has set. Your garrison stands ready. It\'s time to light the torches and watch ' + (P.castleName || 'your castle') + ' come alive with firelight.',
+  boxes: [
+    { t:'box-r', tx:'🔥 The torches flicker to life, casting dancing shadows across the stone walls. The banners ripple in the warm updraft.' },
+    { t:'box-c', tx: FACTS.quiz },
+  ],
+  tasks: ['Press to light the torches!'],
+  html: function() {
+    return '<div style="text-align:center;padding:8px 0">' +
+      '<div style="font-size:2.4rem;margin-bottom:7px">🏰</div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">' + (P.castleName || 'YOUR CASTLE') + '</div>' +
+      '<div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">Night falls. The garrison prepares.<br>Light the fires.</div>' +
+    '</div>' +
+    '<button class="run-btn" style="font-size:1rem;padding:12px" onclick="applyStep(currentStep)">🔥 LIGHT THE TORCHES!</button>';
+  },
+  onApply: function() { lightTorches(); }
+},
+
+];
+
+function statCard(label, value, color, desc) {
+  return '<div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:7px 9px">' +
+    '<div style="font-family:JetBrains Mono,monospace;font-size:.5rem;text-transform:uppercase;letter-spacing:.08em;color:' + color + ';margin-bottom:3px">' + label + '</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:1.4rem;color:var(--text);line-height:1">' + value + '<span style="font-size:.7rem;color:var(--muted)">/10</span></div>' +
+    '<div style="font-size:.55rem;color:var(--muted);margin-top:2px">' + desc + '</div>' +
+  '</div>';
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = '<div class="step-tag">' + s.tag + '</div>' +
+    '<div class="step-title">' + s.title + '</div>' +
+    '<div class="step-intro">' + s.intro + '</div>';
+  (s.boxes || []).forEach(function(b) { html += '<div class="box ' + b.t + '">' + b.tx + '</div>'; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += '<div class="task-list">' + s.tasks.map(function(t) {
+      var done = stepDone[currentStep];
+      return '<div class="task-item' + (done ? ' done' : '') + '"><div class="task-dot"></div>' + t + '</div>';
+    }).join('') + '</div>';
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += '<button class="run-btn" onclick="applyStep(' + currentStep + ')">✦ Apply to Castle</button>';
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach(function(el, i) { el.classList.toggle('active', i === currentStep); });
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  var done = stepDone.filter(Boolean).length;
+  var pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach(function(el, i) {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    var sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+/* -------------------------------
+   OPTION/SWATCH HANDLERS
+------------------------------- */
+window.setWallColor = function(c, el) {
+  P.wallColor = c;
+  el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  buildCastle();
+};
+window.setStoneColor = function(c, el) {
+  P.stoneColor = c;
+  el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  buildCastle();
+};
+window.setBannerColor = function(c, el) {
+  P.bannerColor = c;
+  el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  buildCastle();
+};
+window.setGateStyle = function(v, el) {
+  P.gateStyle = v;
+  el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('sel'); });
+  if (el) el.classList.add('sel');
+  buildCastle();
+};
+
+/* -------------------------------
+   QUICK BUILD
+------------------------------- */
+function quickBuild() {
+  P.castleName = 'Stormreach';
+  P.wallHeight = 6; P.wallThickness = 1.0;
+  P.wallColor = '#6b5a40'; P.stoneColor = '#8b7355';
+  P.towerCount = 6; P.towerHeight = 10; P.towerRadius = 1.2;
+  P.towerStyle = 'round';
+  P.gateStyle = 'portcullis'; P.gateWidth = 2.5;
+  P.battlementSize = 0.5;
+  P.keepHeight = 12; P.keepWidth = 4.5;
+  P.moat = true; P.moatWidth = 3;
+  P.drawbridge = true;
+  P.bannerColor = '#8b1a1a';
+  P.flagCount = 6;
+  P.windowCount = 12;
+  P.torchCount = 12;
+  P.courtyard = true;
+  torchesLit = false;
+  buildCastle();
+  sout('⚡ Quick build: Stormreach loaded! Press Light Torches at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: Stormreach loaded!');
+}
+
+/* -------------------------------
+   RANDOM CASTLE
+------------------------------- */
+function randomCastle() {
+  var rnd = function(mn, mx) { return mn + Math.random() * (mx - mn); };
+  var names = ['Ironhold','Stormreach','Dunmore','Ashford','Ravencrest','Wolfhall','Thornkeep','Blackwall','Greystone','Redmoat','Cloudspire','Hawksworth','Nightguard','Kingsport'];
+  var styles = ['round','square'];
+  var gates = ['arch','double','portcullis'];
+  var cols = ['#6b5a40','#8b7355','#a09080','#4a4a50','#3a3020','#7a6a50','#9a8a70','#c0b090'];
+  var banners = ['#8b1a1a','#1a3a6b','#2a5a2a','#6b4a1a','#4a1a5a','#1a5a5a','#c9a84c'];
+
+  P.castleName = names[Math.floor(Math.random() * names.length)];
+  P.wallHeight = Math.round(rnd(4, 7) * 2) / 2;
+  P.wallThickness = Math.round(rnd(0.5, 1.3) * 10) / 10;
+  P.wallColor = cols[Math.floor(Math.random() * cols.length)];
+  P.stoneColor = cols[Math.floor(Math.random() * cols.length)];
+  P.towerCount = Math.round(rnd(3, 7));
+  P.towerHeight = Math.round(rnd(6, 12) * 2) / 2;
+  P.towerStyle = styles[Math.floor(Math.random() * styles.length)];
+  P.gateStyle = gates[Math.floor(Math.random() * gates.length)];
+  P.gateWidth = Math.round(rnd(1.2, 3) * 10) / 10;
+  P.battlementSize = Math.round(rnd(0.25, 0.6) * 20) / 20;
+  P.keepHeight = Math.round(rnd(7, 14) * 2) / 2;
+  P.keepWidth = Math.round(rnd(2.5, 5) * 10) / 10;
+  P.moat = Math.random() > 0.3;
+  P.moatWidth = Math.round(rnd(2, 5) * 10) / 10;
+  P.drawbridge = P.moat && Math.random() > 0.3;
+  P.bannerColor = banners[Math.floor(Math.random() * banners.length)];
+  P.flagCount = Math.round(rnd(2, 7));
+  P.windowCount = Math.round(rnd(4, 14));
+  P.torchCount = Math.round(rnd(4, 14));
+  P.courtyard = Math.random() > 0.3;
+  torchesLit = false;
+  buildCastle();
+  sout('🎲 Random castle: ' + P.castleName + ' generated!');
+  document.getElementById('liveStatus').textContent = 'Random castle!';
+  toast('Random: ' + P.castleName);
+}
+
+/* -------------------------------
+   TOAST
+------------------------------- */
+function toast(m) {
+  var t = document.getElementById('castleToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'castleToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(15,13,10,.92);border:1px solid rgba(201,168,76,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(function() { t.style.opacity = '0'; }, 1800);
+}
+
+/* -------------------------------
+   KEYBOARD NAV
+------------------------------- */
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+});
+
+/* -------------------------------
+   INIT
+------------------------------- */
+function init() {
+  var listEl = document.getElementById('stepList');
+  STEPS.forEach(function(s, i) {
+    var item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = '<div class="sn">' + (i + 1) + '</div><div class="sl">' + s.title + '</div>';
+    item.onclick = function() { go(i); };
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildCastle();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="../cookie-consent.js"></script>
+
+<!-- --- DEV TOOLS CALLOUT --- -->
+<section style="background:#0d0820;border-top:3px solid rgba(124,58,237,0.35);padding:64px 24px;text-align:center;">
+  <div style="max-width:1100px;margin:0 auto;">
+    <p style="font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:5px 16px;display:inline-block;margin-bottom:16px;">🔧 Free In-House Dev Tools</p>
+    <h2 style="font-family:'Fredoka',cursive;font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;color:white;margin-bottom:10px;">Make It Yours</h2>
+    <p style="font-size:.95rem;color:rgba(240,234,214,.65);line-height:1.75;max-width:520px;margin:0 auto 36px;">Use these free browser tools alongside this workshop to create custom sprites, sounds, levels and colour schemes for your game. No installs. Free forever.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;max-width:980px;margin:0 auto 32px;text-align:left;">
+      <a href="../tools/buildlab.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🧊</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">BuildLab</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Design Roblox-style 3D models</div></div></a>
+      <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🎨</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build a game-ready colour scheme</div></div></a>
+      <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🖌️</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Draw sprites & animations</div></div></a>
+      <a href="../tools/arcade-game-maker.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;" onmouseover="this.style.background='rgba(124,58,237,.18)';this.style.borderColor='rgba(124,58,237,.45)'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)'"><span style="font-size:1.7rem;flex-shrink:0;">🕹️</span><div style="text-align:left;"><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;line-height:1.2;">Arcade Game Maker</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);margin-top:2px;">Build & play browser games</div></div></a>
+    </div>
+    <a href="../pages/dev-tools.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(124,58,237,.85);color:white;font-weight:700;font-size:.88rem;padding:11px 26px;border-radius:999px;text-decoration:none;">🔧 See All 20 Free Tools →</a>
+  </div>
+</section>
+
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+
+<script>
+window.BQ={"key":"jvds-castle-builder-v2","name":"Castle Builder","profileId":"castle-builder","quiz":[{"q":"Why were castle <strong>walls</strong> so thick?","opts":["To keep the heat in","To withstand siege engines and battering rams","To store treasure inside them","To make them look impressive"],"a":1,"why":"Thick walls could absorb the impact of catapults and rams, making the castle much harder to conquer."},{"q":"What is a <strong>moat</strong>?","opts":["A type of tower","A water-filled ditch surrounding the castle","The castle kitchen","A type of drawbridge"],"a":1,"why":"Moats prevented enemies from tunneling under the walls and stopped siege towers from reaching them."},{"q":"What are <strong>crenellations</strong> (battlements)?","opts":["Decorative roof tiles","The notched pattern on wall tops for archers to fire through","Windows in the keep","The gate hinges"],"a":1,"why":"The gaps (crenels) let archers shoot while the solid parts (merlons) provided cover from return fire."},{"q":"Why were <strong>round towers</strong> preferred over square ones?","opts":["They were cheaper to build","They were harder to undermine at the corners","They looked more modern","Round towers were taller"],"a":1,"why":"Square towers had weak corners that could be mined and collapsed. Round towers had no corners to exploit."},{"q":"What was the <strong>keep</strong> used for?","opts":["Housing the horses","The lord's residence and last line of defence","A place to grow vegetables","Storing gunpowder only"],"a":1,"why":"The keep was the strongest part of the castle — the lord's home and the final refuge if all outer walls fell."}]};
+</script>
+<script src="../player-profile.js"></script>
+<script src="builder-quiz.js"></script>
+<script src="builder-extras.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Castle Builder Design Your Own Medieval Fortress","description":"Design and build your own 3D medieval castle step by step. Choose walls, towers, gates, keeps, moats and banners then light the torches. Ages 10+. Free.","url":"https://jvdesignstudio.co.uk/workshops/castle-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+</script>
+<script src="workshop-track.js"></script>
+</body>
+</html>
