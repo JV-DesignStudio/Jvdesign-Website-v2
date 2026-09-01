@@ -1592,6 +1592,64 @@ window.JVDS.announce = function (msg) {
     </div>
 </section>
 
+<script>
+(function(){
+    var cards = [].slice.call(document.querySelectorAll('.tool-card'));
+    var categories = [].slice.call(document.querySelectorAll('.tool-category'));
+    var filterBtns = [].slice.call(document.querySelectorAll('.filter-btn'));
+    var searchInput = document.getElementById('toolSearch');
+    var searchResults = document.getElementById('searchResults');
+    var activeFilter = 'all';
+
+    function applyFilter(filter){
+        activeFilter = filter;
+        filterBtns.forEach(function(btn){
+            btn.classList.toggle('active', btn.getAttribute('data-filter') === filter);
+        });
+        categories.forEach(function(cat){
+            var catName = cat.getAttribute('data-category');
+            var match = filter === 'all' || catName === filter;
+            cat.style.display = match ? '' : 'none';
+        });
+    }
+
+    filterBtns.forEach(function(btn){
+        btn.addEventListener('click', function(){
+            applyFilter(btn.getAttribute('data-filter'));
+            if(searchInput) searchInput.value = '';
+            if(searchResults) searchResults.style.display = 'none';
+        });
+    });
+
+    function filterToolsBySearch(query){
+        var q = (query || '').toLowerCase().trim();
+        if(!q){
+            applyFilter(activeFilter || 'all');
+            if(searchResults) searchResults.style.display = 'none';
+            return;
+        }
+        var shown = 0;
+        cards.forEach(function(card){
+            var title = (card.querySelector('.tool-title') || {}).textContent || '';
+            var desc = (card.querySelector('.tool-desc') || {}).textContent || '';
+            var tags = (card.querySelector('.tool-tags') || {}).textContent || '';
+            var text = (title + ' ' + desc + ' ' + tags).toLowerCase();
+            var match = text.indexOf(q) !== -1;
+            card.style.display = match ? '' : 'none';
+            if(match) shown++;
+        });
+        categories.forEach(function(cat){ cat.style.display = ''; });
+        filterBtns.forEach(function(btn){ btn.classList.remove('active'); });
+        if(searchResults){
+            searchResults.style.display = 'block';
+            searchResults.textContent = shown + ' tool' + (shown !== 1 ? 's' : '') + ' found for "' + query + '"';
+        }
+    }
+
+    window.filterToolsBySearch = filterToolsBySearch;
+})();
+</script>
+
 <!-- FOOTER -->
 <!-- BUILD:footer-content -->
 <footer class="site-footer">
