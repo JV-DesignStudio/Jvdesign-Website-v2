@@ -206,6 +206,51 @@ function showToast(msg) {
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
 }
 
+// ── AUTOSAVE / RESTORE ──
+const LS_KEY = 'jvds_screenshot';
+function saveToLS() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      title: document.getElementById('title').value,
+      subtitle: document.getElementById('subtitle').value,
+      titleColor: document.getElementById('titleColor').value,
+      bgColor: document.getElementById('bgColor').value,
+      borderStyle: document.getElementById('borderStyle').value,
+      badgeText: document.getElementById('badgeText').value,
+      badgeColor: document.getElementById('badgeColor').value
+    }));
+  } catch(e) {}
+}
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.title) document.getElementById('title').value = data.title;
+    if (data.subtitle) document.getElementById('subtitle').value = data.subtitle;
+    if (data.titleColor) document.getElementById('titleColor').value = data.titleColor;
+    if (data.bgColor) document.getElementById('bgColor').value = data.bgColor;
+    if (data.borderStyle) document.getElementById('borderStyle').value = data.borderStyle;
+    if (data.badgeText) document.getElementById('badgeText').value = data.badgeText;
+    if (data.badgeColor) document.getElementById('badgeColor').value = data.badgeColor;
+    renderPreview();
+  } catch(e) {}
+}
+let autosaveTimer = null;
+function scheduleAutosave() { clearTimeout(autosaveTimer); autosaveTimer = setTimeout(saveToLS, 500); }
+document.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', scheduleAutosave));
+
+// ── HELP ──
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    e.preventDefault();
+    showToast('Tip: Upload a screenshot, add title/badge overlays, export as PNG');
+  }
+});
+
+loadFromLS();
 renderPreview();
 </script>
 <script src="../player-profile.js"></script>

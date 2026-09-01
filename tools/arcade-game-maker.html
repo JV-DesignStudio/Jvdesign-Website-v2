@@ -17990,6 +17990,15 @@ window.addEventListener('DOMContentLoaded',function(){
     // are not shipped beside it.
     root.querySelectorAll('script[src*="qrcode-generator"],script[data-maker-only],link[data-maker-only]')
         .forEach(s => s.remove());
+    // Tree-shake: strip studio chrome from exported HTML (saves ~120 KB, faster load).
+    // Exported game only needs #gameWrap/#game-container + overlays; studio panels,
+    // workshop iframes, and template markup are maker-only.
+    root.querySelectorAll('.studio-panel,.wk-overlay,.handbook-fab,#mobile-run-bar,#panelFab,.hb-tip,template').forEach(el=>el.remove());
+    // Remove unused workshop tool links (keep only the game + Phaser)
+    root.querySelectorAll('link[rel="preconnect"],link[rel="manifest"]').forEach(el=>{
+        // keep fonts preconnect for exported title, but drop manifest
+        if(el.getAttribute('href')?.includes('manifest')) el.remove();
+    });
     // Patch <title> and OG tags to reflect the game's actual name
     const _exportTitle = _engineData.title || 'My Arcade Game';
     const _titleEl = root.querySelector('title');

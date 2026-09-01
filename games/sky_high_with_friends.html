@@ -1394,6 +1394,11 @@
       <button class="toggle-btn" id="ghost-toggle">ON</button>
     </div>
 
+    <div class="setting-row" id="remove-ads-row">
+      <span class="setting-label">Remove Ads</span>
+      <button class="toggle-btn" id="remove-ads-btn">Buy — $1.99</button>
+    </div>
+
     <div class="setting-row hidden" id="tilt-row">
       <span class="setting-label">Tilt Calibration</span>
       <button class="toggle-btn" id="tilt-recal-btn">Recalibrate</button>
@@ -1432,7 +1437,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.3', code: 10, date: '2026-09-01', codename: '' };
+const GAME_VERSION = { v: '2.3', code: 11, date: '2026-09-01', codename: '' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1540,6 +1545,8 @@ const COSMETICS = {
     { id: 'mushroom',  name: 'Mushroom Cap', price: 180, draw: drawHatMushroom },
     { id: 'beanie',    name: 'Beanie', price: 250, draw: drawHatBeanie },
     { id: 'headphones',name: 'Headphones', price: 400, levelReq: 6, draw: drawHatHeadphones },
+    { id: 'astro',     name: 'Astro Helmet', price: 450, draw: drawHatAstro },
+    { id: 'viking',    name: 'Viking Helm', price: 380, draw: drawHatViking },
   ],
   skin: [
     { id: 'default',   name: 'Default',    price: 0,    tint: null },
@@ -1552,6 +1559,8 @@ const COSMETICS = {
     { id: 'sunset',    name: 'Sunset',     price: 350,  tint: '#ff9d5c' },
     { id: 'ocean',     name: 'Ocean',      price: 320,  tint: '#1e88e5' },
     { id: 'candy',     name: 'Candy',      price: 0,    tint: '#ff69b4', levelReq: 12 },
+    { id: 'nebula',    name: 'Nebula',     price: 400,  tint: '#c084fc' },
+    { id: 'stardust',  name: 'Stardust',   price: 450,  tint: '#fef3c7' },
   ],
   aura: [
     { id: 'none',      name: 'No Aura',    price: 0, color: null },
@@ -1565,6 +1574,8 @@ const COSMETICS = {
     { id: 'shadow2',   name: 'Dark Matter', price: 400, color: '#1a1a2e' },
     { id: 'love',      name: 'Love',       price: 200, color: '#ff1493' },
     { id: 'aurora',    name: 'Aurora',     price: 550, color: '#3ee6c4' },
+    { id: 'starlight', name: 'Starlight',  price: 500, color: '#e0e7ff' },
+    { id: 'nebula',    name: 'Nebula',     price: 480, color: '#c084fc' },
     { id: 'keepsake',  name: 'Keepsake',   price: 0, color: '#c9a96e', achievement: 'anniversary', lockedHint: 'A once-a-year gift' },
   ],
 };
@@ -1595,6 +1606,7 @@ function defaultSave() {
     bestHeight: 0,
     lifetimeCoins: 0,
     coins: 0,
+    iap: { removeAds: false },
     unlockedChars: ['turtle'],
     owned: { hat: ['none'], skin: ['default'], aura: ['none'] },
     equipped: {
@@ -1624,6 +1636,7 @@ function defaultSave() {
 }
 
 let save = loadSave();
+cloudLoad().then(()=>{ try{ persist(); }catch(e){} });
 
 function loadSave() {
   try {
@@ -1857,6 +1870,7 @@ const ACHIEVEMENTS = [
   { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🌌', check: (s) => s.bestHeight >= 8000 },
   { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: '🪐', check: (s) => s.bestHeight >= 12000 },
   { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: '🌑', check: (s) => s.bestHeight >= 16000 },
+  { id: 'reach20000',   name: 'Infinity',        desc: 'Reach 20000m',                      icon: '♾️', check: (s) => s.bestHeight >= 20000 },
   { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
   { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
   { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
@@ -2161,6 +2175,7 @@ const ZONES = [
   { name: 'Aurora',    minM: 8000, sky: ['#02131f', '#0b3d3b'], plat: '#26a69a', platEdge: '#004d40' },
   { name: 'Cosmos',    minM: 12000, sky: ['#01010a', '#1a0a2e'], plat: '#7c4dff', platEdge: '#2a0a4a' },
   { name: 'Void',      minM: 16000, sky: ['#000000', '#0d020d'], plat: '#1a1a2e', platEdge: '#000000' },
+  { name: 'Infinity',  minM: 20000, sky: ['#000000', '#1a0033'], plat: '#e0e7ff', platEdge: '#4338ca' },
 ];
 
 function getZone(m) {
@@ -3675,7 +3690,9 @@ function drawMenuPet() {
   ctx.ellipse(W / 2, cloudTop + 10, (dw / 2.4) * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  drawCharacter(ctx, id, dx, dy, dw, dh, bodyColor, accentColor, Math.sin(t * 0.0011) > 0 ? 1 : -1);
+  const mf = Math.sin(t * 0.0011) > 0 ? 1 : -1;
+  const mspr = getCharSprite(id, bodyColor, accentColor, mf);
+  ctx.drawImage(mspr.c, dx, dy, dw, dh);
   if (hat && hat.draw) hat.draw(ctx, dx, dy, dw, dh);
 
   // Name tag under the cloud
@@ -4033,6 +4050,21 @@ function drawHatHeadphones(ctx, x, y, w, h) {
   ctx.fillStyle = '#ef5350';
   ctx.beginPath(); ctx.ellipse(cx - w * 0.42, y + 2, 3, 4.5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(cx + w * 0.42, y + 2, 3, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+}
+function drawHatAstro(ctx, x, y, w, h) {
+  const cx = x + w/2;
+  ctx.fillStyle = '#eceff1'; ctx.strokeStyle='#90a4ae'; ctx.lineWidth=Math.max(1.2,w*0.04);
+  ctx.beginPath(); ctx.arc(cx, y+2, w*0.44, Math.PI, 0); ctx.lineTo(cx+w*0.44, y+6); ctx.lineTo(cx-w*0.44, y+6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(120,180,255,0.45)'; ctx.beginPath(); ctx.arc(cx, y+1, w*0.32, Math.PI, 0); ctx.fill();
+  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(cx+w*0.12, y-4, 2,0,Math.PI*2); ctx.fill();
+}
+function drawHatViking(ctx, x, y, w, h) {
+  const cx = x + w/2;
+  ctx.fillStyle='#8d6e63'; ctx.strokeStyle='#3e2723'; ctx.lineWidth=Math.max(1.2,w*0.04);
+  ctx.beginPath(); ctx.arc(cx, y+4, w*0.44, Math.PI, 0); ctx.lineTo(cx+w*0.44, y+10); ctx.lineTo(cx-w*0.44, y+10); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#b0bec5'; // horns
+  ctx.beginPath(); ctx.moveTo(x+w*0.08, y+6); ctx.quadraticCurveTo(x+w*0.02, y-10, x+w*0.15, y-12); ctx.lineTo(x+w*0.20, y-8); ctx.quadraticCurveTo(x+w*0.08, y-2, x+w*0.12, y+6); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+w*0.92, y+6); ctx.quadraticCurveTo(x+w*0.98, y-10, x+w*0.85, y-12); ctx.lineTo(x+w*0.80, y-8); ctx.quadraticCurveTo(x+w*0.92, y-2, x+w*0.88, y+6); ctx.fill(); ctx.stroke();
 }
 
 /* ---------- Character drawing (shared) ----------
@@ -4593,6 +4625,15 @@ function startGame(weekly) {
   if (streakResult.newDay && streakResult.bonus > 0) {
     setTimeout(() => showToast(`🔥 Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
   }
+  // 7-day chest
+  if (streakResult.newDay && save.streak % 7 === 0 && save.streak > 0) {
+    const chestCoins = 500;
+    save.coins += chestCoins;
+    // random hat not owned
+    const allHats = COSMETICS.hat.filter(h=>h.id!=='none' && !save.owned.hat.includes(h.id));
+    if(allHats.length){ const pick=allHats[Math.floor(Math.random()*allHats.length)]; save.owned.hat.push(pick.id); showToast(`🎁 7-day chest! +${chestCoins} coins + ${pick.name}!`); } else showToast(`🎁 7-day chest! +${chestCoins} coins!`);
+    persist(); try{ if(typeof gtag==='function') gtag('event','streak_chest', { streak: save.streak }); }catch(e){}
+  }
 
   // Run modifier badge
   const badge = document.getElementById('runmod-badge');
@@ -4758,6 +4799,9 @@ function die() {
   }
 
   persist();
+  // Leaderboard — submit when new best
+  try{ const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames; if(pg && pg.submitScore && isNewBest) pg.submitScore({ leaderboardId: 'sky_high_leaderboard', score: save.bestHeight }); }catch(e){}
+  try{ if(typeof gtag==='function' && isNewBest) gtag('event','new_best', { height_m: save.bestHeight }); }catch(e){}
 
   // Confetti burst behind the panel when it's a new best
   if (isNewBest) {
@@ -5361,16 +5405,21 @@ document.querySelectorAll('.shop-tab').forEach(t => {
 });
 
 /* ---------- FTUE ---------- */
+let ftueTimer=null;
 function showFTUE(){
   const ftue=document.getElementById('ftue');
   const txt=document.getElementById('ftue-ctrl-text');
   const ctrl=save.settings.controls||'tilt';
   txt.textContent = ctrl==='tilt' ? 'Tilt to steer' : ctrl==='drag' ? 'Drag to steer' : 'Use ◀ ▶ buttons to steer';
   ftue.classList.remove('hidden');
+  clearTimeout(ftueTimer);
+  ftueTimer=setTimeout(()=>{ if(!ftue.classList.contains('hidden')){ hideFTUE(true); openModChooser(false); } },10000);
+  try{ if(typeof gtag==='function') gtag('event','ftue_shown', { controls: ctrl }); }catch(e){}
 }
-function hideFTUE(){
+function hideFTUE(auto){
+  clearTimeout(ftueTimer);
   document.getElementById('ftue').classList.add('hidden');
-  save.tutorialDone=true; persist();
+  if(!save.tutorialDone){ save.tutorialDone=true; persist(); try{ if(typeof gtag==='function') gtag('event','ftue_complete', { auto: !!auto }); }catch(e){} }
 }
 document.getElementById('ftue-go').addEventListener('click', ()=>{ hideFTUE(); openModChooser(false); });
 
@@ -5398,6 +5447,13 @@ function refreshSettings() {
   }
   document.getElementById('tilt-row').classList.toggle('hidden', (save.settings.controls||'tilt')!=='tilt' || !tilt.enabled);
   document.getElementById('touchBtns').classList.toggle('show', (save.settings.controls||'tilt')==='buttons' && state.mode==='playing');
+  const adBtn=document.getElementById('remove-ads-btn');
+  if(adBtn){
+    const owned = save.iap && save.iap.removeAds;
+    adBtn.textContent = owned ? '✓ Owned' : 'Buy — $1.99';
+    adBtn.classList.toggle('off', !!owned);
+    adBtn.disabled = !!owned;
+  }
 }
 function updateControlMode(){
   const mode = save.settings.controls||'tilt';
@@ -5450,6 +5506,26 @@ for(const id of ['haptics','shake','particles','ghost']){
     SFX.click();
   });
 }
+document.getElementById('remove-ads-btn').addEventListener('click', async ()=>{
+  if(save.iap && save.iap.removeAds) return;
+  const btn=document.getElementById('remove-ads-btn');
+  btn.textContent='…'; btn.disabled=true;
+  try{
+    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
+    if(billing && billing.purchase){
+      await billing.purchase({ productId: 'remove_ads' });
+    } else {
+      // Dev fallback — grant immediately
+      await new Promise(r=>setTimeout(r,600));
+    }
+    save.iap = save.iap||{}; save.iap.removeAds=true; persist();
+    refreshSettings(); showToast('Ads removed! Thank you ✨'); SFX.buy();
+    try{ if(typeof gtag==='function') gtag('event','purchase', { items:[{id:'remove_ads'}] }); }catch(e){}
+    // Hide any ad buttons
+    const adBtn=document.getElementById('ad-double-btn'); if(adBtn) adBtn.style.display='none';
+    const contRow=document.getElementById('continue-row'); // keep continue but hide its ad? continue uses rewarded, also hide if owned? keep for now
+  }catch(e){ showToast('Purchase failed'); btn.textContent='Buy — $1.99'; btn.disabled=false; }
+});
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('This will erase ALL progress, coins, cosmetics, and achievements. Are you sure?')) {
     localStorage.removeItem(SAVE_KEY);

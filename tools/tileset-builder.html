@@ -234,6 +234,51 @@ function showToast(msg) {
   t.textContent = msg; t.style.opacity = 1;
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
 }
+
+// ── AUTOSAVE / RESTORE ──
+const LS_KEY = 'jvds_tileset';
+function saveToLS() {
+  try {
+    const data = tiles.map(t => ({ width: t.canvas.width, height: t.canvas.height, data: t.canvas.toDataURL('image/png'), name: t.name }));
+    localStorage.setItem(LS_KEY, JSON.stringify({ tiles: data }));
+  } catch(e) {}
+}
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data.tiles || !data.tiles.length) return;
+    let loaded = 0;
+    data.tiles.forEach(td => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = td.width; canvas.height = td.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0);
+        tiles.push({ canvas, name: td.name });
+        loaded++;
+        if (loaded === data.tiles.length) { renderTiles(); updatePreview(); showToast('Session restored'); }
+      };
+      img.src = td.data;
+    });
+  } catch(e) {}
+}
+function scheduleAutosave() { clearTimeout(window._tsAutosave); window._tsAutosave = setTimeout(saveToLS, 1000); }
+
+// ── HELP ──
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    e.preventDefault();
+    showToast('Tip: Import tile images, arrange in grid, export PNG + JSON atlas');
+  }
+});
+
+loadFromLS();
 </script>
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>

@@ -63,13 +63,16 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
     }, genre);
     await new Promise(r=>setTimeout(r,300));
     await page.evaluate(()=>{ if(typeof compileAndBootEngine==='function') compileAndBootEngine(); });
-    await new Promise(r=>setTimeout(r,1800));
+    await new Promise(r=>setTimeout(r,800));
+    // Dismiss intro to actually launch Phaser
+    await page.evaluate(()=>{ const el=document.getElementById('introOverlay'); if(el && el.classList.contains('show')){ if(typeof closeIntro==='function') closeIntro(); else el.classList.remove('show'); } });
+    await new Promise(r=>setTimeout(r,1400));
     const hasCanvas = await page.evaluate(()=> !!document.querySelector('#game-container canvas'));
     record(`${genre} boots canvas`, hasCanvas);
     record(`${genre} no JS errors`, jsErrors.length===0, jsErrors.slice(0,1).join(' | '));
-    // Reset for next genre
-    await page.evaluate(()=>{ try{ if(window.currentPhaserGame) window.currentPhaserGame.destroy(true); }catch(e){} });
-    await new Promise(r=>setTimeout(r,400));
+    // Reset for next genre — wait >700ms debounce window
+    await page.evaluate(()=>{ try{ if(window.currentPhaserGame) window.currentPhaserGame.destroy(true); }catch(e){} try{ document.getElementById('game-container').innerHTML=''; }catch(e){} });
+    await new Promise(r=>setTimeout(r,900));
   }
 
   // Sprite validator — uploading a fake large file should toast and reject

@@ -214,6 +214,49 @@ function showToast(msg) {
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
 }
 
+// ── AUTOSAVE / RESTORE ──
+const LS_KEY = 'jvds_store_page';
+function saveToLS() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      gameTitle: document.getElementById('gameTitle').value,
+      tagline: document.getElementById('tagline').value,
+      description: document.getElementById('description').value,
+      tags: document.getElementById('tags').value,
+      steamUrl: document.getElementById('steamUrl').value,
+      itchUrl: document.getElementById('itchUrl').value
+    }));
+  } catch(e) {}
+}
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.gameTitle) document.getElementById('gameTitle').value = data.gameTitle;
+    if (data.tagline) document.getElementById('tagline').value = data.tagline;
+    if (data.description) document.getElementById('description').value = data.description;
+    if (data.tags) document.getElementById('tags').value = data.tags;
+    if (data.steamUrl) document.getElementById('steamUrl').value = data.steamUrl;
+    if (data.itchUrl) document.getElementById('itchUrl').value = data.itchUrl;
+    renderPreview();
+  } catch(e) {}
+}
+let autosaveTimer = null;
+function scheduleAutosave() { clearTimeout(autosaveTimer); autosaveTimer = setTimeout(saveToLS, 500); }
+document.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', scheduleAutosave));
+
+// ── HELP ──
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    e.preventDefault();
+    showToast('Tip: Fill in game info, upload screenshots, export as HTML or copy BBCode');
+  }
+});
+
+loadFromLS();
 renderPreview();
 </script>
 <script src="../player-profile.js"></script>

@@ -255,11 +255,54 @@ function showToast(msg) {
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
 }
 
-// Start with a demo
-addNode('dialogue', 50, 50);
-addNode('choice', 300, 50);
-connections.push({ from: 0, to: 1 });
-renderLines();
+// ── AUTOSAVE / RESTORE ──
+const LS_KEY = 'jvds_dialogue_tree';
+function saveToLS() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ nodes, connections, nodeId })); } catch(e) {}
+}
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.nodes && data.nodes.length) {
+        nodes = data.nodes;
+        connections = data.connections || [];
+        nodeId = data.nodeId || nodes.length;
+        selectedNode = -1;
+        renderNodes();
+        renderLines();
+        showToast('Session restored');
+        return;
+      }
+    }
+  } catch(e) {}
+}
+function setupAutosave() {
+  const observer = new MutationObserver(() => saveToLS());
+  observer.observe(document.getElementById('canvasArea'), { childList: true, subtree: true });
+  document.addEventListener('mouseup', () => setTimeout(saveToLS, 100));
+}
+
+// ── HELP ──
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    e.preventDefault();
+    showToast('Tip: Add nodes with buttons above, drag to move, click ports to connect');
+  }
+});
+
+// Start with a demo or restore
+loadFromLS();
+if (!nodes.length) {
+  addNode('dialogue', 50, 50);
+  addNode('choice', 300, 50);
+  connections.push({ from: 0, to: 1 });
+  renderLines();
+}
+setupAutosave();
 </script>
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>

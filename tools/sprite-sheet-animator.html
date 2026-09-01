@@ -342,6 +342,64 @@ function showToast(msg) {
   t.textContent = msg; t.style.opacity = 1;
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
 }
+
+// ── AUTOSAVE / RESTORE ──
+const LS_KEY = 'jvds_sprite_sheet';
+function saveToLS() {
+  try {
+    const data = frames.map(f => ({
+      width: f.canvas.width, height: f.canvas.height,
+      data: f.canvas.toDataURL('image/png'),
+      name: f.name
+    }));
+    localStorage.setItem(LS_KEY, JSON.stringify({ frames: data, fps: parseInt(document.getElementById('fps').value) || 8 }));
+  } catch(e) {}
+}
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data.frames || !data.frames.length) return;
+    let loaded = 0;
+    data.frames.forEach(fd => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = fd.width; canvas.height = fd.height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0);
+        frames.push({ canvas, name: fd.name });
+        loaded++;
+        if (loaded === data.frames.length) {
+          if (data.fps) document.getElementById('fps').value = data.fps;
+          renderFrames();
+          updateSheet();
+          showToast('Session restored');
+        }
+      };
+      img.src = fd.data;
+    });
+  } catch(e) {}
+}
+let autosaveTimer = null;
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveToLS, 1000);
+}
+
+// ── HELP ──
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    e.preventDefault();
+    showToast('Tip: Import from Pixel Studio, add frames, preview animation, export PNG + JSON');
+  }
+});
+
+loadFromLS();
 </script>
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
