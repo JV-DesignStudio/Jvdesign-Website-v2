@@ -465,6 +465,13 @@ window.JVDS.announce = function (msg) {
         <div class="score-pill combo-pill" id="comboPill" style="display:none"><div><div class="sp-val" id="comboVal">x1</div><div class="sp-lbl">Combo</div></div></div>
     </div>
 
+    <!-- Score -->
+    <div class="score-bar">
+        <div class="score-pill"><div><div class="sp-val" id="scoreVal">0</div><div class="sp-lbl">Score</div></div></div>
+        <div class="score-pill"><div><div class="sp-val" id="timerVal">0:00</div><div class="sp-lbl">Time</div></div></div>
+        <div class="score-pill combo-pill" id="comboPill" style="display:none"><div><div class="sp-val" id="comboVal">x1</div><div class="sp-lbl">Combo</div></div></div>
+    </div>
+
     <!-- Canvas -->
     <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="game-canvas"></canvas>
@@ -485,6 +492,7 @@ window.JVDS.announce = function (msg) {
     <div class="hint-bar" id="hint-bar">
         Tap star <span class="hint-num" id="hint-next">1</span> to start drawing!
     </div>
+    <div class="combo-display" id="comboDisplay"></div>
 
     <!-- Buttons -->
     <div class="game-btns">
@@ -922,11 +930,15 @@ let bgStars = [];
 let animFrame;
 let hintActive = false;
 let hintTimer = null;
-// Line draw animation
-let lineParticles = [];  // burst particles on tap
-let drawnSegments = [];  // {ax,ay,bx,by,progress,color,glow}, animated line draw
-let revealSegments = []; // same but for reveal
+let lineParticles = [];
+let drawnSegments = [];
+let revealSegments = [];
 let revealActive = false;
+// Timed challenge mode
+let challengeMode = false;
+let challengeTime = 0;
+let challengeTimer = null;
+let challengeActive = false;
 // Confetti
 let confetti = [];
 
@@ -958,6 +970,29 @@ function playComplete() {
 }
 function playWrong() {
     playTone(220, 0.25, 'square', 0.05);
+}
+// Timed challenge
+function startChallenge() {
+    challengeMode = true;
+    challengeActive = true;
+    challengeTime = 30; // 30 seconds
+    document.getElementById('comboDisplay').textContent = '⏱ CHALLENGE MODE';
+    document.getElementById('comboDisplay').classList.add('show');
+    setTimeout(() => document.getElementById('comboDisplay').classList.remove('show'), 2000);
+    challengeTimer = setInterval(() => {
+        challengeTime--;
+        updateChallengeTimer();
+        if (challengeTime <= 0) { clearInterval(challengeTimer); challengeActive = false; }
+    }, 1000);
+}
+function updateChallengeTimer() {
+    const el = document.getElementById('challengeTimer');
+    if (el) el.textContent = '⏱ ' + challengeTime + 's';
+}
+function stopChallenge() {
+    clearInterval(challengeTimer);
+    challengeActive = false;
+    challengeMode = false;
 }
 
 // -- INIT --
