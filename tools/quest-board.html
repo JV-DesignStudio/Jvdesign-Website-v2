@@ -2012,67 +2012,6 @@ function renderUpNext(){
 }
 
 
-  updateStats();
-  renderUpNext();
-  // Hero banner
-  const pct=Math.round((rpg.xp/(rpg.level*1000))*100);
-  const av=AVATARS[rpg.class]||'🧙‍♂️';
-  const hqAvatar=document.getElementById('hqAvatar');
-  if(hqAvatar){
-    hqAvatar.textContent=av;
-    document.getElementById('hqName').textContent=_dispName();
-    document.getElementById('hqClass').textContent=`LV.${rpg.level} ${rpg.class}`;
-    document.getElementById('hqXpBar').style.width=pct+'%';
-    document.getElementById('hqXpText').textContent=`${rpg.xp} / ${rpg.level*1000} XP`;
-  }
-  const hqTotal=document.getElementById('hqTotal');
-  if(hqTotal){
-    const total=state.cards.length,done=state.cards.filter(c=>c.colId==='done').length;
-    animCount(hqTotal,total);
-    animCount(document.getElementById('hqDone2'),done);
-    animCount(document.getElementById('hqGold2'),rpg.gold,550,'g');
-    animCount(document.getElementById('hqMain'),state.cards.filter(c=>c.priority==='high'&&c.colId!=='done').length);
-  }
-  // Today + week
-  const now=new Date();
-  const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const weekEnd=new Date(now);weekEnd.setDate(now.getDate()+7);
-  const weekEndStr=`${weekEnd.getFullYear()}-${String(weekEnd.getMonth()+1).padStart(2,'0')}-${String(weekEnd.getDate()).padStart(2,'0')}`;
-
-  function makeQuestRow(q,extraLabel){
-    const col=q.priority==='high'?'var(--rose)':q.priority==='med'?'var(--gold)':'var(--green)';
-    const div=document.createElement('div');div.className='hq-quest-row';div.style.borderLeftColor=col;
-    div.innerHTML=`<span class="hq-q-dot" style="background:${col}"></span><span class="hq-q-title">${escHtml(q.title)}</span>${extraLabel?`<span style="font-size:.58rem;font-weight:900;color:var(--rose);flex-shrink:0">${extraLabel}</span>`:''}`;
-    div.onclick=()=>{switchView('board');setTimeout(()=>{const ce=document.querySelector(`[data-card-id="${q.id}"]`);if(ce){ce.scrollIntoView({behavior:'smooth',block:'center'});ce.classList.add('shake');setTimeout(()=>ce.classList.remove('shake'),400);}},200);};
-    return div;
-  }
-
-  const todayEl=document.getElementById('hqToday');
-  if(todayEl){
-    const todayCards=state.cards.filter(c=>c.colId!=='done'&&c.date&&c.date<=todayStr);
-    if(!todayCards.length){todayEl.innerHTML='<div class="hq-empty">No quests due today 🎉</div>';}
-    else{todayEl.innerHTML='';todayCards.slice(0,7).forEach(q=>todayEl.appendChild(makeQuestRow(q,q.date<todayStr?'OVERDUE':'')));}
-  }
-
-  const weekEl=document.getElementById('hqWeek');
-  if(weekEl){
-    const weekCards=state.cards.filter(c=>c.colId!=='done'&&c.date&&c.date>todayStr&&c.date<=weekEndStr);
-    if(!weekCards.length){weekEl.innerHTML='<div class="hq-empty">Nothing else due this week</div>';}
-    else{weekEl.innerHTML='';weekCards.slice(0,7).forEach(q=>{const row=makeQuestRow(q,'');row.querySelector('.hq-q-title').insertAdjacentHTML('afterend',`<span style="font-size:.58rem;color:var(--muted);flex-shrink:0">${q.date}</span>`);weekEl.appendChild(row);});}
-  }
-
-  renderBounties();
-  searchNotes();
-  renderStoryChapter('storyPanelDash');
-  renderWeeklyBoss();
-  renderHabitsPreview();
-  updateLifeBuffs();
-  // New features
-  renderMotivation();
-  renderTop3();
-  renderRival();
-  renderDailyChallenge();
-}
 /* ── ENHANCED QUICK CAPTURE, keyword → quest ──────────────────────────────── */
 // Supports: @column, #tag, date keywords, priority keywords, smart column routing
 function processQuick(){
@@ -2266,13 +2205,6 @@ function renderHabitsPreview(){
 }
 
 /* ── TIME TRACKING ── */
-    const isToday=i===0;
-    calHtml+=`<div class="streak-day${done?' done':''}${isToday?' today':''}" title="${d.toLocaleDateString()}"></div>`;
-  }
-  cal.innerHTML=calHtml;
-}
-
-/* ── TIME TRACKING ───────────────────────────────────────────────────────────── */
 function startTimer(cardId){
   const card=state.cards.find(c=>c.id===cardId);if(!card)return;
   if(!card.timeLogs)card.timeLogs=[];
@@ -2476,7 +2408,6 @@ function sheetComplete(){
   card.colId='done';
   if(prevCol!=='done')onQuestComplete(card);
   save();render();closeProjectSheet();
-  if(document.getElementById('view-dash').classList.contains('active'))
 }
 
 /* ── CHECKLIST TOGGLE ── */
@@ -2525,7 +2456,6 @@ function addSwipeToCard(el,card){
         // Swipe right → complete
         el.classList.remove('swipe-right');
         card._prevCol=card.colId;card.colId='done';onQuestComplete(card);save();render();
-        if(document.getElementById('view-dash').classList.contains('active'))
       } else if(dx<-80){
         // Swipe left → open edit
         el.classList.remove('swipe-left');

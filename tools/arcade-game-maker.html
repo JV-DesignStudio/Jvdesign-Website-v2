@@ -14120,11 +14120,39 @@ function sceneRoguelike(data) {
                         this._obstacles.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setTint(obCol).refreshBody();
                 });
             } else if (!noObs) {
-                const obCount = Phaser.Math.Between(2,5);
-                for(let i=0;i<obCount;i++){
-                    const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
-                    this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
-                }
+                // Room prefabs: curated layouts for variety (not just random blocks)
+                const prefabs = [
+                    // Cross: 4 blocks forming a + shape
+                    () => {
+                        const cx=GW/2, cy=GH/2;
+                        [[cx-70,cy,28,60],[cx+70,cy,28,60],[cx,cy-50,60,28],[cx,cy+50,60,28]].forEach(([x,y,w,h])=>
+                            this._obstacles.create(x,y,'block').setDisplaySize(w,h).setTint(obCol).refreshBody());
+                    },
+                    // Pillars: 4 corner pillars
+                    () => {
+                        [[GW*0.25,GH*0.3],[GW*0.75,GH*0.3],[GW*0.25,GH*0.7],[GW*0.75,GH*0.7]].forEach(([x,y])=>
+                            this._obstacles.create(x,y,'block').setDisplaySize(40,40).setTint(obCol).refreshBody());
+                    },
+                    // Corridor: 2 long walls creating a chokepoint
+                    () => {
+                        this._obstacles.create(GW/2,GH*0.35,'block').setDisplaySize(120,18).setTint(obCol).refreshBody();
+                        this._obstacles.create(GW/2,GH*0.65,'block').setDisplaySize(120,18).setTint(obCol).refreshBody();
+                    },
+                    // Diamond: 4 blocks in diamond pattern
+                    () => {
+                        [[GW/2,GH*0.25],[GW*0.3,GH/2],[GW*0.7,GH/2],[GW/2,GH*0.75]].forEach(([x,y])=>
+                            this._obstacles.create(x,y,'block').setDisplaySize(32,32).setTint(obCol).refreshBody());
+                    },
+                    // Random scatter (original behavior)
+                    () => {
+                        const obCount = Phaser.Math.Between(2,5);
+                        for(let i=0;i<obCount;i++){
+                            const ox=Phaser.Math.Between(W+70,GW-W-70),oy=Phaser.Math.Between(W+60,GH-W-60);
+                            this._obstacles.create(ox,oy,'block').setDisplaySize(Phaser.Math.Between(28,68),Phaser.Math.Between(20,44)).setTint(obCol).refreshBody();
+                        }
+                    }
+                ];
+                prefabs[Phaser.Math.Between(0, prefabs.length - 1)]();
             }
 
             // If returning from a future room, just mark cleared, open forward door, done
